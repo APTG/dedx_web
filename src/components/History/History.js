@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import { connect } from 'react-redux';
 import './History.css';
 
 class History extends Component {
@@ -7,9 +8,18 @@ class History extends Component {
         return(
             <div className="History">
                 <p>History component works!</p>
+
+                <ul>
+                    {this.props.history.list.map(result => <li>{result}</li>)}
+                </ul>
+
             </div>
         )
     }
 }
 
-export default History;
+const mapStateToProps = state => ({
+    history: state.history
+});
+
+export default connect(mapStateToProps, {}) (History);

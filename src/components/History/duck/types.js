@@ -1,0 +1,7 @@
+const ADD_RESULT = 'ADD_RESULT';
+const RESET_RESULTS = 'RESET_RESULTS';
+
+export default {
+    ADD_RESULT,
+    RESET_RESULTS
+}
