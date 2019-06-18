@@ -1,0 +1,3 @@
+Use following command (in here) to generate transpiled functions from ./src/dedx_file.c
+
+emcc ./src/dedx_file.c -o ./generated/dedx_file.html -s EXPORTED_FUNCTIONS='["_dedx_get_program_file", "_dedx_get_energy_file"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
