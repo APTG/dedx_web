@@ -2,6 +2,8 @@ import React, { Component } from 'react';
 import './Plot.css';
 import Plotly from 'react-plotly.js';
 
+import { connect } from 'react-redux';
+
 class Plot extends Component {
 
     render() {
@@ -9,22 +11,9 @@ class Plot extends Component {
             <div className="Plot">
                 <p>Plot component works!</p>
                 <Plotly
-                    data={[
-                        {
-                            type: 'scatter',
-                            x: [1, 2, 3],
-                            y: [2, 6, 3],
-                            mode: 'lines+points',
-                            marker: {color: 'red'},
-                        },
-                        {
-                            type: 'bar',
-                            x: [1, 2, 3],
-                            y: [2, 1, 3]
-                        },
-                    ]}
+                    data={this.props.plot.data}
                     layout={{
-                        title: 'Plot title',
+                        title: 'Initial data from redux state',
                         autosize: true
                     }}
                     style={{ width: '100%', height: '100%' }}
@@ -35,4 +24,8 @@ class Plot extends Component {
     }
 }
 
-export default Plot;
+const mapStateToProps = state => ({
+    plot: state.plot
+});
+
+export default connect(mapStateToProps, {}) (Plot);
