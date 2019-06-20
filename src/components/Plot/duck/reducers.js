@@ -25,6 +25,10 @@ const plotReducer = (state = INITIAL_STATE, action) => {
             return {
                 val: action.item
             };
+        case types.ADD_DATA:
+            return {
+                ...state, data: [...state.data, action.item]
+            };
         default:
             return state
     }
