@@ -1,6 +1,7 @@
 import React, { Component } from 'react';
 import './Form.css';
-import actions from '../History/duck/actions'
+import actionsHistory from '../History/duck/actions'
+import actionsPlot from '../Plot/duck/actions'
 
 import { connect } from 'react-redux';
 
@@ -25,8 +26,13 @@ class Form extends Component {
                 <p>Form component works!</p>
 
                 <form onSubmit={this.addResult}>
-                    <input ref={this.formInput} defaultValue={this.props.form.val} />
-                    <button type='submit'>Save in redux state</button>
+                    <input
+                        type='number'
+                        ref={this.formInput}
+                        defaultValue={this.props.form.val}
+                        required={true}
+                    />
+                    <button type='submit'>Save in redux state and plot</button>
                 </form>
 
             </div>
@@ -39,7 +45,22 @@ const mapStateToProps = state => ({
 });
 
 const mapDispatchToProps = dispatch => ({
-    add: result => dispatch(actions.add(result))
+    add: (result) => {
+        let R = Math.floor(Math.random()*255);
+        let G = Math.floor(Math.random()*128);
+        let B = Math.floor(Math.random()*255);
+
+        dispatch(actionsHistory.add(result));
+        dispatch(actionsPlot.add(
+            {
+                type: 'scatter',
+                x: [1, 4],
+                y: [result, result],
+                mode: 'lines',
+                marker: {color: `rgb(${R}, ${G}, ${B})`},
+            }
+        ));
+    }
 });
 
 export default connect(mapStateToProps, mapDispatchToProps) (Form);

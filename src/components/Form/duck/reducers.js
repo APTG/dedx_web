@@ -1,7 +1,7 @@
 import types from './types';
 
 const INITIAL_STATE = {
-    val: 'default val from redux'
+    val: '5'
 };
 
 const formReducer = (state = INITIAL_STATE, action) => {
