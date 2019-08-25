@@ -4,15 +4,20 @@ import './History.css';
 
 class History extends Component {
 
+    constructor(props) {
+        super(props);
+        this.keyListCounter = 0;
+    }
+
     render() {
         return(
             <div className="History">
                 <p>History component works!</p>
-
                 <ul>
-                    {this.props.history.list.map(result => <li>{result}</li>)}
+                    {this.props.history.list.map(result =>
+                        <li key={this.keyListCounter++}>{result}</li>
+                    )}
                 </ul>
-
             </div>
         )
     }

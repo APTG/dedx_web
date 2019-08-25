@@ -4,6 +4,7 @@
   "private": true,
   "homepage": "https://APTG.github.io/dedx_web",
   "dependencies": {
+    "antd": "^3.22.0",
     "plotly.js": "^1.48.3",
     "react": "^16.8.6",
     "react-dom": "^16.8.6",

@@ -1,0 +1,7 @@
+const SET_RESULT = 'SET_RESULT';
+const RESET_RESULTS = 'RESET_RESULTS';
+
+export default {
+    SET_RESULT,
+    RESET_RESULTS
+}
