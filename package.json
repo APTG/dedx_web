@@ -2,6 +2,7 @@
   "name": "dedx_web",
   "version": "0.1.0",
   "private": true,
+  "homepage": "https://APTG.github.io/dedx_web",
   "dependencies": {
     "plotly.js": "^1.48.3",
     "react": "^16.8.6",
