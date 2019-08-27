@@ -5,3 +5,5 @@
 Web interface for dedx
 
 yarn start - starts app
+
+Your site is published at https://aptg.github.io/dedx_web/
