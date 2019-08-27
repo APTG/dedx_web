@@ -1,4 +1,5 @@
 import React, { Component } from 'react';
+import {connect} from "react-redux";
 import './Result.css';
 
 class Result extends Component {
@@ -7,9 +8,16 @@ class Result extends Component {
         return(
             <div className="Result">
                 <p>Result component works!</p>
+                <p>Last value: {this.props.result.value}</p>
             </div>
         )
     }
 }
 
-export default Result;
+
+
+const mapStateToProps = state => ({
+    result: state.result
+});
+
+export default connect(mapStateToProps, {}) (Result);

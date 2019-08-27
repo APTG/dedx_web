@@ -2,22 +2,33 @@ import React, { Component } from 'react';
 import './Form.css';
 import actionsHistory from '../History/duck/actions'
 import actionsPlot from '../Plot/duck/actions'
+import actionsResult from '../Result/duck/actions'
 
 import { connect } from 'react-redux';
+import { Button, Input } from 'antd';
+import { Form as AntForm } from 'antd';
+
 
 class Form extends Component {
 
     constructor(props) {
         super(props);
         this.addResult = this.addResult.bind(this);
-    }
+        this.handleChange = this.handleChange.bind(this);
 
-    formInput = React.createRef();
+        this.state = {
+            formVal: this.props.form.val
+        }
+    }
 
     addResult(event) {
         event.preventDefault();
-        this.props.add(this.formInput.current.value);
-        this.formInput.current.value = '';
+        this.props.add(this.state.formVal);
+        this.setState({formVal: ''});
+    }
+
+    handleChange(event) {
+        this.setState({formVal: event.target.value});
     }
 
     render() {
@@ -25,16 +36,19 @@ class Form extends Component {
             <div className="Form">
                 <p>Form component works!</p>
 
-                <form onSubmit={this.addResult}>
-                    <input
-                        type='number'
-                        ref={this.formInput}
-                        defaultValue={this.props.form.val}
-                        required={true}
-                    />
-                    <button type='submit'>Save in redux state and plot</button>
-                </form>
-
+                <AntForm onSubmit={this.addResult} layout="vertical">
+                    <AntForm.Item>
+                        <Input
+                            type='number'
+                            required={true}
+                            value={this.state.formVal}
+                            onChange={this.handleChange.bind(this)}
+                        />
+                    </AntForm.Item>
+                    <AntForm.Item>
+                        <Button type="primary" htmlType='submit'>Save in redux state and plot</Button>
+                    </AntForm.Item>
+                </AntForm>
             </div>
         )
     }
@@ -51,6 +65,7 @@ const mapDispatchToProps = dispatch => ({
         let B = Math.floor(Math.random()*255);
 
         dispatch(actionsHistory.add(result));
+        dispatch(actionsResult.set(result));
         dispatch(actionsPlot.add(
             {
                 type: 'scatter',
@@ -60,7 +75,7 @@ const mapDispatchToProps = dispatch => ({
                 marker: {color: `rgb(${R}, ${G}, ${B})`},
             }
         ));
-    }
+    },
 });
 
 export default connect(mapStateToProps, mapDispatchToProps) (Form);
