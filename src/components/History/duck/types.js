@@ -1,7 +1,0 @@
-const ADD_HISTORY_ITEM = 'ADD_HISTORY_ITEM';
-const RESET_HISTORY = 'RESET_HISTORY';
-
-export default {
-    ADD_HISTORY_ITEM,
-    RESET_HISTORY
-}

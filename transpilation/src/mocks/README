@@ -1,4 +1,0 @@
-Use following command (in here) to generate transpiled functions from .
-
-emcc dedx.c utils.c dedx_periodic_table.c -o ../../generated/simple_stp.html -s EXPORTED_FUNCTIONS='["__dedx_get_atom_charge","__dedx_get_atom_mass","_dedx_get_error_code","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_material_name","_dedx_get_ion_name","_dedx_get_version","_dedx_get_i_value","_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_get_stp","_dedx_get_simple_stp","_dedx_free_config","__dedx_get_i_value","__dedx_validate_config","__dedx_set_names","__dedx_read_energy_data","__dedx_read_binary_data","__dedx_convert_energy_to_mstar","__dedx_calculate_bethe_energy","__dedx_binary_search","__dedx_evaluate_spline","__dedx_evaluate_compound","__dedx_calculate_coefficients"]' -s EXTRA_EXPORTED_RUNTIME_METHODS='["ccall", "cwrap"]'
-
