@@ -1,0 +1,24 @@
+{
+  "files": {
+    "main.css": "/dedx_web/static/css/main.06fc1afc.chunk.css",
+    "main.js": "/dedx_web/static/js/main.07eb1f90.chunk.js",
+    "main.js.map": "/dedx_web/static/js/main.07eb1f90.chunk.js.map",
+    "runtime-main.js": "/dedx_web/static/js/runtime-main.9933ecf3.js",
+    "runtime-main.js.map": "/dedx_web/static/js/runtime-main.9933ecf3.js.map",
+    "static/css/2.48db8b0f.chunk.css": "/dedx_web/static/css/2.48db8b0f.chunk.css",
+    "static/js/2.a6e21bef.chunk.js": "/dedx_web/static/js/2.a6e21bef.chunk.js",
+    "static/js/2.a6e21bef.chunk.js.map": "/dedx_web/static/js/2.a6e21bef.chunk.js.map",
+    "index.html": "/dedx_web/index.html",
+    "precache-manifest.4e4f0c31d54a7c5f61cb452004118f34.js": "/dedx_web/precache-manifest.4e4f0c31d54a7c5f61cb452004118f34.js",
+    "service-worker.js": "/dedx_web/service-worker.js",
+    "static/css/2.48db8b0f.chunk.css.map": "/dedx_web/static/css/2.48db8b0f.chunk.css.map",
+    "static/css/main.06fc1afc.chunk.css.map": "/dedx_web/static/css/main.06fc1afc.chunk.css.map"
+  },
+  "entrypoints": [
+    "static/js/runtime-main.9933ecf3.js",
+    "static/css/2.48db8b0f.chunk.css",
+    "static/js/2.a6e21bef.chunk.js",
+    "static/css/main.06fc1afc.chunk.css",
+    "static/js/main.07eb1f90.chunk.js"
+  ]
+}
