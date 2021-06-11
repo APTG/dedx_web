@@ -1,19 +1,28 @@
 import { Component } from "react";
+import makeAsyncScriptLoader from "react-async-script";
 
 //#region TODO:
 import Form from "./Form";
 import Graph from "./Graph";
 //#endregion
 
+
+const JSRootLink ='https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
+
 class ContentWrapper extends Component{
     constructor(props){
         super(props);
 
         this.state = {
+            ready:false,
             traces:[]
         }
 
         this.submithandler = this.submitHandler.bind(this);
+    }
+
+    shouldComponentUpdate(_){
+        return !this.props.JSROOT
     }
 
     //TODO
@@ -24,13 +33,22 @@ class ContentWrapper extends Component{
     }
 
     render(){
+        if(this.props.JSROOT) console.log("ready")
         return(
             <div className="content">
-                <Form onSubmit={this.submitHandler}/>
-                <Graph traces={this.state.traces} />
+                {
+                    /*
+                    <Form/>
+                    <Graph/>
+                    */
+                }
             </div>
         )
     }
 }
 
-export default ContentWrapper;
+
+
+export default makeAsyncScriptLoader(JSRootLink,{
+    globalName:"JSROOT"
+})(ContentWrapper);
