@@ -1,10 +1,6 @@
 import { Component } from "react";
 import makeAsyncScriptLoader from "react-async-script";
 
-//#region TODO:
-import Form from "./Form";
-import Graph from "./Graph";
-//#endregion
 
 
 const JSRootLink ='https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
