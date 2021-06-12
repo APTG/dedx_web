@@ -13,7 +13,7 @@ function App() {
   return (
     <>
     <div>HELLO</div>
-    <ContentWrapper asyncScriptOnLoad ={onLoad}/>,
+    <ContentWrapper asyncScriptOnLoad ={onLoad}/>
     </>
   );
 }
