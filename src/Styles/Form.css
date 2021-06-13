@@ -94,11 +94,11 @@ input::-webkit-inner-spin-button{
 }
 
 .radio:hover{
-    background: #eee;
+    background: #ddd !important;
 }
 
 .radio-group input:checked  ~ .radio {
-    background: #666;
+    background: #666 !important;
     color: #fff;
 }
 
