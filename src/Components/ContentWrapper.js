@@ -1,5 +1,6 @@
 import { Component } from "react";
 import makeAsyncScriptLoader from "react-async-script";
+
 import JSRootGraph from "./JSRootGraph";
 
 
@@ -13,6 +14,7 @@ class ContentWrapper extends Component {
         this.state = {
             ready: false,
             traces: []
+
         }
 
         this.submithandler = this.submitHandler.bind(this);
@@ -53,6 +55,7 @@ class ContentWrapper extends Component {
         )
     }
 }
+
 
 
 
