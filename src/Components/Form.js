@@ -14,10 +14,11 @@ class Form extends Component {
         }
     }
 
-    handleSubmit() {
-        console.log(this.props.onSubmit);
-        this.props.onSubmit("Hello");
-    }
+
+      handleSubmit(){
+        this.props.onSubmit("Hello")
+      }
+    
 
     methodChangeHandler(event) {
         this.setState({
@@ -27,6 +28,7 @@ class Form extends Component {
 
 
     render() {
+
         return (
             <form className="particle-input">
                 <div>
