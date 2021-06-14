@@ -15,11 +15,12 @@ class Navbar extends React.Component{
         return(
             <Router>
                 <div className="navbar">
+                    <Link className="logo" to={"/"}>dEdx</Link>
                     <Link to={"/"}>Home</Link>
-                    <Link to={"/energy"}>Home</Link>
-                    <Link to={"/energy/single"}>Home</Link>
-                    <Link to={"/power"}>Home</Link>
-                    <Link to={"/power/single"}>Home</Link>
+                    <Link to={"/energy"}>Energy</Link>
+                    <Link to={"/energy/single"}>Single Energy</Link>
+                    <Link to={"/power"}>Power</Link>
+                    <Link to={"/power/single"}>Single Power</Link>
                 </div>
                 <Switch>
                     <Route exact path={"/"} component={Home}/>

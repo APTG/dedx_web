@@ -2,12 +2,12 @@
     margin: 0;
     padding: 0;
     display: flex;
-    flex-direction: row;
+    flex-direction: row-reverse;
     width: 100%;
     height: 4rem;
-    background: #ccc;   
+    background: #777;   
     align-items: center;
-
+    position: relative;
 }
 
 .navbar > a{
@@ -18,4 +18,23 @@
     height: 100%;
     vertical-align: middle;
     padding: 0 1rem 0 1rem;
+    font-weight: bold;
+    color: white;
+}
+
+.navbar > a:hover{
+    color: white;
+    background: #333;
+}
+
+.logo{
+    position: absolute;
+    left: 1rem;
+    top: 0;
+    font-size: xx-large;
+    font-family: Verdana, Geneva, Tahoma, sans-serif;
+}
+
+.logo:hover{
+    background: none !important;
 }
