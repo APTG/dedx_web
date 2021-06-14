@@ -8,7 +8,6 @@ class Form extends Component {
       }
 
       handleSubmit(){
-          console.log(this.props.onSubmit);
         this.props.onSubmit("Hello")
       }
     

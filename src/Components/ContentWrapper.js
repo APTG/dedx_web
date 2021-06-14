@@ -3,7 +3,7 @@ import makeAsyncScriptLoader from "react-async-script";
 import Form from "./Form";
 import JSRootGraph from "./JSRootGraph";
 
-import JSRootGraph from "./JSRootGraph";
+import {getTrace} from '../Backend/WASMWrapper'
 
 
 
@@ -22,31 +22,37 @@ class ContentWrapper extends Component {
         this.submitHandler = this.submitHandler.bind(this);
     }
 
-    shouldComponentUpdate(_) {
-        return !this.props.JSROOT
+    shouldComponentUpdate(_, nextState) {
+        return !this.props.JSROOT || this.state.traces.length !== nextState.traces.length;
     }
 
-    static getDerivedStateFromProps(props,_){
+    static getDerivedStateFromProps(props,state){
         if(props.JSROOT){
             return{
                 ready: true,
-                traces:[]
+                traces:state.traces
             }
         }
         return { ready: false,
-            traces:[]};
+            traces:state.traces};
     }
 
     //TODO
     submitHandler(message){
         console.log(message);
-        console.log(this);
-        this.setState(state=>({
-            traces: state.traces.concat([]/*Incomming data*/)
-        }))
+        const traces = this.state.traces;
+        traces.push(getTrace(message,""));
+        this.setState({
+            traces: traces
+        })
+        this.forceUpdate();
+
     }
 
     render() {
+
+        console.log("rerender wrapper");
+
         return (
             <div className="content">
                 <Form onSubmit = {this.submitHandler} />
