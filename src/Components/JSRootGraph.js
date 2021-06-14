@@ -11,6 +11,15 @@ function createMultigraphFromProps(traces) {
     return JSROOT.createTMultiGraph(...(traces.map(createTGraphFromTrace)));
 }
 
+function drawOptFromProps(props){
+    const res = [];
+    if(props.logx) res.push("logx");
+    if(props.logy) res.push("logy");
+    if(!props.line) res.push("P");
+
+    return res.join(';');
+}
+
 //#endregion Helper functions
 
 // COMPONENT
@@ -41,32 +50,39 @@ class JSRootGraph extends Component {
     componentDidMount() {
         if (this.props.traces.length !== 0) {
             const toDraw = createMultigraphFromProps(this.props.traces);
-            JSROOT.draw(this.graphRef.current, toDraw, "logx;logy")
+            JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
         }
     }
 
 
 
     shouldComponentUpdate(nextProps, nextState) {
-        if (!nextState.drawn) {
+        const should =!nextState.drawn
+        || this.props.logx !== nextProps.logx
+        || this.props.logy !== nextProps.logy
+        || this.props.line !== nextProps.line;
+
+        if (should) {
+            JSROOT.cleanup(this.graphRef.current);
             const toDraw = createMultigraphFromProps(nextState.traces);
-            JSROOT.draw(this.graphRef.current, toDraw, "logx;logy")
+            const opts = drawOptFromProps(nextProps);
+            console.log(opts);
+            JSROOT.draw(this.graphRef.current, toDraw, opts)
                 .then(_ => {
                     JSRootGraph.traces = nextProps.traces.length;
                     this.setState({
                         drawn: true
                     })
                 });
-
+                return true;
         }
-        return !nextState.drawn;
+        return false;
     }
 
     render() {
         return (
             <div>
-                Hello graph
-                <div style={{ width: 640, height: 480 }} ref={this.graphRef}></div>
+                <div style={{ width: "100%", height: 480 }} ref={this.graphRef}></div>
             </div>
 
         )

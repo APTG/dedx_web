@@ -41,7 +41,7 @@ class Form extends Component {
                     </label>
                     <label>
                         {this.state.method === "Points" ? "Number of points" : "Step size"}
-                        <input className="input-box" type="number" step="0.01" value={500} placeholder={500} />
+                        <input className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
                     </label>
 
                 </div>
@@ -61,47 +61,7 @@ class Form extends Component {
                     </label>
 
                 </div>
-                <div className="radio-group">
-                    <div style={{ minWidth: "8%" }}>X</div>
-                    <div>
-                        <label>
-                            <input type="radio" name="xAxis" />
-                            <span className="radio">Linear</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="xAxis" />
-                            <span className="radio">Logarithmic</span>
-                        </label>
-                    </div>
-                </div >
-                <div className="radio-group">
-                    <div style={{ minWidth: "8%" }}>Y</div>
-                    <div>
-                        <label>
-                            <input type="radio" name="yAxis"/>
-                            <span className="radio">Linear</span>
-
-                        </label>
-                        <label>
-                            <input type="radio" name="yAxis" />
-                            <span className="radio">Logarithmic</span>
-                        </label>
-                    </div>
-                </div >
-                <div className="radio-group">
-                    <div style={{ minWidth: "8%" }}>Plot as</div>
-                    <div>
-                        <label>
-                            <input type="radio" name="plotType" />
-                            <span className="radio">Points</span>
-                        </label>
-                        <label>
-                            <input type="radio" name="plotType" />
-                            <span className="radio">Line</span>
-                        </label>
-                    </div>
-                </div >
-                <input className="button" type="button" onClick={this.handleSubmit} value="Submit" />
+                <button className="button" type="button" onClick={this.handleSubmit}>Submit</button>
             </form>
         );
     }
