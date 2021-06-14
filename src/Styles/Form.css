@@ -1,0 +1,59 @@
+.particle-input{
+    display: flex;
+    flex-direction: column;
+    gap: 2rem;
+    padding: 1rem 3rem;
+}
+
+.particle-input > *{
+    display: flex;
+    gap: 2rem;
+}
+
+.particle-input label{
+    flex-direction: column;
+    width: 100%;
+}
+
+input::-webkit-outer-spin-button,
+input::-webkit-inner-spin-button{
+    -moz-appearance: textfield;
+    -webkit-appearance: none;
+}
+
+.particle-input input[type="number" i]{
+    width: calc(100% - 1em - 1.985px) !important; /*Don't ask*/
+}
+
+.particle-input input[type="number" i]:focus{
+    background: #eee;
+}
+
+.particle-input .input-box{
+    padding: 1em 0 1em 1em;
+    width: 100%;
+}
+
+.particle-input .input-box:hover{
+    background: #eee;
+}
+
+.particle-input > .button{
+    justify-content: center;
+    width: 70%;
+    margin: auto;
+    padding: 1rem;
+    border: 2px solid #666;
+    background: none;
+    font-weight: bold;
+    font-size: 20px;
+    color: #666;
+    transition: 0.2s background, 0.2s color ease-in-out;
+}
+
+.particle-input > .button:hover{
+    color: #fff;
+    background: #666;
+}
+
+
