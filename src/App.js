@@ -11,9 +11,7 @@ const onLoad = ()=>{
 function App() {
 
   return (
-    <>
     <ContentWrapper asyncScriptOnLoad ={onLoad}/>
-    </>
   );
 }
 

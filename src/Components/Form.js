@@ -1,9 +1,9 @@
-import { Component } from 'react';
+import React from 'react'
 import { getParticles, getMaterials } from '../Backend/WASMWrapper';
 
 import '../Styles/Form.css'
 
-class Form extends Component {
+class Form extends React.Component {
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
