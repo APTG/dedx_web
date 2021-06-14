@@ -3,8 +3,6 @@ import makeAsyncScriptLoader from "react-async-script";
 import Form from "./Form";
 import JSRootGraph from "./JSRootGraph";
 
-import JSRootGraph from "./JSRootGraph";
-
 
 
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
@@ -48,7 +46,7 @@ class ContentWrapper extends Component {
 
     render() {
         return (
-            <div className="content">
+            <div className="content gridish">
                 <Form onSubmit = {this.submitHandler} />
                 {
                     this.state.ready
