@@ -33,11 +33,12 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     needs: [build]
+    if: ${{ github.ref == 'refs/heads/master' }}
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
 
-      - name: Install and Build 🔧 # This example project is built using npm and outputs the result to the 'build' folder. Replace with the commands required to build your project, or remove this step entirely if your site is pre-built.
+      - name: Install and Build 🔧 
         run: |
           npm install
           npm run build
@@ -45,7 +46,7 @@ jobs:
       - name: Deploy 🚀
         uses: JamesIves/github-pages-deploy-action@4.1.4
         with:
-          branch: gh-pages # The branch the action should deploy to.
-          folder: build # The folder the action should deploy.
+          branch: gh-pages
+          folder: build
           ssh-key: ${{ secrets.WEBDEV }}
           repository-name: APTG/web_dev
