@@ -1,19 +1,15 @@
 import React from 'react';
 import './App.css';
 
-import ContentWrapper from './Components/ContentWrapper';
+import Navbar from './Components/Navbar';
 
 
-const onLoad = ()=>{
-  console.log("Scripd done - outside");
-}
 
 function App() {
-
   return (
-    <>
-    <ContentWrapper asyncScriptOnLoad ={onLoad}/>
-    </>
+    <div>
+      <Navbar />
+    </div>
   );
 }
 
