@@ -5,8 +5,6 @@ import JSRootGraph from "./JSRootGraph";
 
 import {getTrace} from '../Backend/WASMWrapper'
 
-
-
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
 
 class ContentWrapper extends Component {
@@ -54,7 +52,7 @@ class ContentWrapper extends Component {
         console.log("rerender wrapper");
 
         return (
-            <div className="content">
+            <div className="content gridish">
                 <Form onSubmit = {this.submitHandler} />
                 {
                     this.state.ready
