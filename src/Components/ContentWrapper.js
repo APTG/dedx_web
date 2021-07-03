@@ -1,4 +1,4 @@
-import { Component } from "react";
+import React,{ Component } from "react";
 import makeAsyncScriptLoader from "react-async-script";
 import Form from "./Form";
 import JSRootGraph from "./JSRootGraph";
