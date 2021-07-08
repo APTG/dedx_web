@@ -42,7 +42,7 @@ jobs:
       - name: Install and Build 🔧 
         run: |
           npm install
-          gh-pages -d build
+          npm run deploy
 
       - name: Deploy 🚀
         if: ${{ github.ref == 'refs/heads/master' }}
