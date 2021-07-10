@@ -38,6 +38,8 @@ jobs:
     steps:
       - name: Checkout 🛎️
         uses: actions/checkout@v2
+
+      - name: Configure Identity
         run: git config user.email "mslazak99@gmail.com"
         run: git config user.name "Mexolius"
 
