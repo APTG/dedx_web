@@ -41,10 +41,13 @@ jobs:
 
       - name: Install 🔧 
         run: npm install
-         
-      - name: Deploy
+
+      - name: Setup Git
         run: |
           git remote set-url origin https://git:${GITHUB_TOKEN}@github.com/APTG/web_dev.git
-          npm run deploy -- -u "github-actions-bot <mslazak99@gmail.com>" -r "https://github.com/APTG/web_dev.git"
+
+      - name: Deploy
+        run: |
+          npm run deploy -- -u "Mexolius <mslazak99@gmail.com>" -r "https://git@github.com:Mexolius/APTG/web_dev.git"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
