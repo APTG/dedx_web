@@ -44,5 +44,5 @@ jobs:
          
       - name: Deploy
         run: |
-          git remote set-url origin https://Mexolius:${secrets.WEBDEV}@github.com/APTG/web_dev.git
+          git remote set-url origin https://Mexolius:${{secrets.WEBDEV}}@github.com/APTG/web_dev.git
           npx run deploy -- -u "github-actions-bot <mslazak99@gmail.com>" -r "APTG/web_dev"
