@@ -11,11 +11,11 @@ const Toggle = ({name, children, onChange, startValue})=>{
 
     return(
         <div className="toggle-body">
-            <div className="toggle-name">{name}</div>
-            <div>
+            {name && <div className="toggle-name">{name}</div>}
+            <div className="option-container">
                 {children.map((c,k)=>{
                 return(
-                    <div onClick={()=>exportChange(k)} className={`toggle-option${selected===k?" selected":""}`}>{c}</div>
+                    <div key={`toggle-${name}-${k}`} onClick={()=>exportChange(k)} className={`toggle-option${selected===k?" selected":""}`}>{c}</div>
                 )
             })}
             </div>

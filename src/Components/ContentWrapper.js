@@ -25,6 +25,10 @@ class ContentWrapper extends Component {
         this.setState({plotStyle:newState})
     }
 
+    onLayoutChange(newState){
+        this.setState({layout:newState})
+    }
+
     constructor(props) {
         super(props);
 
@@ -34,6 +38,7 @@ class ContentWrapper extends Component {
             logx: 0,
             logy: 1,
             plotStyle: 0,
+            layout:0,
         }
 
         this.submitHandler = this.submitHandler.bind(this);
@@ -45,6 +50,7 @@ class ContentWrapper extends Component {
         || this.state.logx !== nextState.logx
         || this.state.logy !== nextState.logy
         || this.state.plotStyle !== nextState.plotStyle
+        || this.state.layout !== nextState.layout
 
     }
 
@@ -74,12 +80,13 @@ class ContentWrapper extends Component {
         return (
             <div className="content gridish">
                 <div>
-                    <Form onSubmit={this.submitHandler} />
+                    <Form onSubmit={this.submitHandler} layout={this.state.layout} />
+                    <div style={{display: "flex", flexDirection:"row", gap:20, padding:"1rem 3rem"}}>
                     <Toggle onChange={this.onXAxisStateChange.bind(this)} name={"X Axis:"} startValue={this.state.logx}>
                         <>Linear</>
                         <>Logarithmic</>
                     </Toggle>
-                    <Toggle onChange={this.onYAxisStateChange.bind(this)} name={"Y Axis"} startValue={this.state.logy}>
+                    <Toggle onChange={this.onYAxisStateChange.bind(this)} name={"Y Axis:"} startValue={this.state.logy}>
                         <>Linear</>
                         <>Logarithmic</>
                     </Toggle>
@@ -87,6 +94,8 @@ class ContentWrapper extends Component {
                         <>Line</>
                         <>Points</>
                     </Toggle>
+
+                    </div>
                 </div>
                 {
                     this.state.ready

@@ -1,7 +1,6 @@
 .toggle-body {
     display: flex;
-    align-items: center;
-    flex-direction: row;
+    flex-direction: column;
     flex-wrap: nowrap;
     position: relative;
     margin-bottom: 12px;
@@ -9,25 +8,34 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+    width: 100%;
+    gap: 5px;
+    font-size: large;
+    font-weight: bold;
 }
 
 .toggle-body .toggle-option {
     background: #fff;
-    display: inline-block;
     text-align: center;
-    height: 25px;
     border: 1px solid #666;
     color:#666;
-    padding: 0.6rem;
+    padding: 1rem;
     cursor: pointer;
-    max-width: 8rem !important;
     min-width: 8rem !important;
+    flex: 1 1 100%;
   
     
     font-weight: bold;
   
     transition: 0.2s background, 0.2s color ease-in-out;
 }
+
+.toggle-body .option-container {
+    width: 100%;
+    flex-direction: row;
+    display: flex;
+}
+
 
 .toggle-option:hover{
     background: #ddd !important;
@@ -39,5 +47,5 @@
 }
 
 .toggle-name{
-    width: 11ch;
-  }
+    width: 100%;
+}

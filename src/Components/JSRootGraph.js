@@ -38,6 +38,8 @@ class JSRootGraph extends Component {
         }
 
         JSROOT = window.JSROOT;
+
+        
     }
 
     static getDerivedStateFromProps(props, state) {
@@ -51,6 +53,9 @@ class JSRootGraph extends Component {
         if (this.props.traces.length !== 0) {
             const toDraw = createMultigraphFromProps(this.props.traces);
             JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
+        }
+        else{
+            JSROOT.draw(this.graphRef.current,JSROOT.createTGraph(1))
         }
     }
 

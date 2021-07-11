@@ -2,28 +2,27 @@ import { Component } from 'react';
 import { getParticles, getMaterials } from '../Backend/WASMWrapper';
 
 import '../Styles/Form.css'
+import Toggle from './Toggle';
 
 class Form extends Component {
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
-        this.methodChangeHandler = this.methodChangeHandler.bind(this);
 
         this.state = {
-            method: "Points"
+            method: 0
         }
     }
 
 
-      handleSubmit(){
+    handleSubmit() {
         this.props.onSubmit("Hello")
-      }
-    
+    }
 
-    methodChangeHandler(event) {
-        this.setState({
-            method: event.target.value
-        })
+
+    onMethodChange(newState) {
+        this.setState({ method: newState })
+
     }
 
 
@@ -32,34 +31,35 @@ class Form extends Component {
         return (
             <form className="particle-input">
                 <div>
-                    <label>
-                        Generate points
-                        <select onChange={this.methodChangeHandler} className="input-box">
-                            <option>Points</option>
-                            <option>Step</option>
-                        </select>
+                    <label className="input-wrapper">
+                        Name
+                        <input type="text" className="input-box" />
                     </label>
-                    <label>
-                        {this.state.method === "Points" ? "Number of points" : "Step size"}
-                        <input className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
-                    </label>
-
+                    <div className="input-wrapper">
+                        Plot using
+                        <div className="toggle-compound">
+                            <input className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
+                            <Toggle onChange={this.onMethodChange.bind(this)}>
+                                <>Step</>
+                                <>Points</>
+                            </Toggle>
+                        </div>
+                    </div>
                 </div>
                 <div>
-                    <label>
+                    <label className="input-wrapper">
                         Particle
                         <select className="input-box">
                             {getParticles().map((particle, key) => <option key={"material_" + key}>{particle}</option>)}
                         </select>
                     </label>
-                    <label>
+                    <label className="input-wrapper">
                         Material
                         <select className="input-box">
                             Material
                             {getMaterials().map((material, key) => <option key={"material_" + key}>{material}</option>)}
                         </select>
                     </label>
-
                 </div>
                 <button className="button" type="button" onClick={this.handleSubmit}>Submit</button>
             </form>
