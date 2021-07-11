@@ -1,0 +1,43 @@
+.toggle-body {
+    display: flex;
+    align-items: center;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    position: relative;
+    margin-bottom: 12px;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+}
+
+.toggle-body .toggle-option {
+    background: #fff;
+    display: inline-block;
+    text-align: center;
+    height: 25px;
+    border: 1px solid #666;
+    color:#666;
+    padding: 0.6rem;
+    cursor: pointer;
+    max-width: 8rem !important;
+    min-width: 8rem !important;
+  
+    
+    font-weight: bold;
+  
+    transition: 0.2s background, 0.2s color ease-in-out;
+}
+
+.toggle-option:hover{
+    background: #ddd !important;
+}
+
+.toggle-option.selected{
+    background: #666 !important;
+    color: white;
+}
+
+.toggle-name{
+    width: 11ch;
+  }
