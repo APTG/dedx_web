@@ -6,7 +6,7 @@ import JSRootGraph from "./JSRootGraph";
 import { getTrace } from '../Backend/WASMWrapper'
 import Toggle from "./Toggle";
 
-const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
+const JSRootLink : string = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
 
 
 
@@ -67,7 +67,7 @@ class ContentWrapper extends Component {
     //TODO
     submitHandler(message) {
         console.log(message);
-        const traces = this.state.traces;
+        const traces : any = this.state.traces;
         traces.push(getTrace(message, ""));
         this.setState({
             traces: traces

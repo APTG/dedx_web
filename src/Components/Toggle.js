@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import '../Styles/Toggle.css'
 
-const Toggle = ({name, children, onChange, startValue})=>{
+const Toggle : any = ({name, children, onChange, startValue})=>{
     const [selected, setSelected] = useState(startValue??0);
 
-    const exportChange = (newState) => {
+    const exportChange : any = (newState) => {
         setSelected(newState);
         onChange(newState);
     }

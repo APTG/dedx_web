@@ -4,7 +4,7 @@ import './App.css';
 import ContentWrapper from './Components/ContentWrapper';
 
 
-const onLoad = ()=>{
+const onLoad : any = ()=>{
   console.log("Scripd done - outside");
 }
 

@@ -1,4 +1,4 @@
-const __wasm = __init_wasm()
+const __wasm : any = __init_wasm()
 
 //#region TODO:
 function __init_wasm() { }
