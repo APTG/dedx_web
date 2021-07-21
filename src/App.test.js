@@ -3,7 +3,7 @@ import App from './App';
 
 test('renders Form', () => {
   render(<App />);
-  const linkElement = screen.getByText(/Generate points/i);
+  const linkElement = screen.getByText(/Name/i);
   expect(linkElement).toBeInTheDocument();
 });
 

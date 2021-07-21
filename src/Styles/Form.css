@@ -10,9 +10,13 @@
     gap: 2rem;
 }
 
-.particle-input label{
+.particle-input .input-wrapper{
+    display: flex;
     flex-direction: column;
+    gap: 5px;
     width: 100%;
+    font-size: large;
+    font-weight: bold;
 }
 
 input::-webkit-outer-spin-button,
@@ -21,8 +25,9 @@ input::-webkit-inner-spin-button{
     -webkit-appearance: none;
 }
 
-.particle-input input[type="number" i]{
-    width: calc(100% - 1em - 1.985px) !important; /*Don't ask*/
+.particle-input input[type="number" i], input[type="text"]{
+    width: calc(100% - 34px) !important; /*Don't ask*/
+    height: 24px;
 }
 
 .particle-input input[type="number" i]:focus{
@@ -30,8 +35,10 @@ input::-webkit-inner-spin-button{
 }
 
 .particle-input .input-box{
-    padding: 1em 0 1em 1em;
+    padding: 1rem;
     width: 100%;
+    border-width: 1px;
+    font-size: large;
 }
 
 .particle-input .input-box:hover{
@@ -54,6 +61,11 @@ input::-webkit-inner-spin-button{
 .particle-input > .button:hover{
     color: #fff;
     background: #666;
+}
+
+.toggle-compound{
+    display: flex;
+    flex-direction: row;
 }
 
 

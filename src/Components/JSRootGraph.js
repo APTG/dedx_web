@@ -13,9 +13,9 @@ function createMultigraphFromProps(traces) {
 
 function drawOptFromProps(props){
     const res = [];
-    if(props.logx) res.push("logx");
-    if(props.logy) res.push("logy");
-    if(!props.line) res.push("P");
+    if(props.logx === 1) res.push("logx");
+    if(props.logy === 1) res.push("logy");
+    if(props.plotStyle === 1) res.push("P");
 
     return res.join(';');
 }
@@ -38,6 +38,8 @@ class JSRootGraph extends Component {
         }
 
         JSROOT = window.JSROOT;
+
+        
     }
 
     static getDerivedStateFromProps(props, state) {
@@ -52,6 +54,9 @@ class JSRootGraph extends Component {
             const toDraw = createMultigraphFromProps(this.props.traces);
             JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
         }
+        else{
+            JSROOT.draw(this.graphRef.current,JSROOT.createTGraph(1))
+        }
     }
 
 
@@ -60,7 +65,7 @@ class JSRootGraph extends Component {
         const should =!nextState.drawn
         || this.props.logx !== nextProps.logx
         || this.props.logy !== nextProps.logy
-        || this.props.line !== nextProps.line;
+        || this.props.plotStyle !== nextProps.plotStyle;
 
         if (should) {
             JSROOT.cleanup(this.graphRef.current);

@@ -4,19 +4,41 @@ import Form from "./Form";
 import JSRootGraph from "./JSRootGraph";
 
 import { getTrace } from '../Backend/WASMWrapper'
+import Toggle from "./Toggle";
 
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
 
+
+
+
 class ContentWrapper extends Component {
+
+    onXAxisStateChange(newState){
+        this.setState({logx:newState})
+    }
+    
+    onYAxisStateChange(newState){
+        this.setState({logy:newState})
+    }
+    
+    onPlottingMethodChange(newState){
+        this.setState({plotStyle:newState})
+    }
+
+    onLayoutChange(newState){
+        this.setState({layout:newState})
+    }
+
     constructor(props) {
         super(props);
 
         this.state = {
             ready: false,
             traces: [],
-            logx: false,
-            logy: true,
-            line: true
+            logx: 0,
+            logy: 1,
+            plotStyle: 0,
+            layout:0,
         }
 
         this.submitHandler = this.submitHandler.bind(this);
@@ -27,7 +49,8 @@ class ContentWrapper extends Component {
         || this.state.traces.length !== nextState.traces.length
         || this.state.logx !== nextState.logx
         || this.state.logy !== nextState.logy
-        || this.state.line !== nextState.line
+        || this.state.plotStyle !== nextState.plotStyle
+        || this.state.layout !== nextState.layout
 
     }
 
@@ -37,7 +60,7 @@ class ContentWrapper extends Component {
             traces: state.traces,
             logx: state.logx,
             logy: state.logy,
-            line: state.line,
+            plotStyle: state.plotStyle,
         };
     }
 
@@ -54,61 +77,29 @@ class ContentWrapper extends Component {
     }
 
     render() {
-
-        console.log("rerender wrapper");
-
         return (
             <div className="content gridish">
                 <div>
-                    <Form onSubmit={this.submitHandler} />
-                    <form onChange={_=>{}} className="radio-container">
-                        <div className="radio-group">
-                            <div  className="radio-label">X</div>
-                            <div>
-                                <label>
-                                    <input onClick={_=>this.setState({logx:false})} type="radio" name="xAxis" />
-                                    <span className="radio">Linear</span>
-                                </label>
-                                <label>
-                                    <input onClick={_=>this.setState({logx:true})} type="radio" name="xAxis" />
-                                    <span className="radio">Logarithmic</span>
-                                </label>
-                            </div>
-                        </div >
-                        <div className="radio-group">
-                            <div className="radio-label">Y</div>
-                            <div>
-                                <label>
-                                    <input onClick={_=>this.setState({logy:false})} type="radio" name="yAxis" />
-                                    <span className="radio">Linear</span>
+                    <Form onSubmit={this.submitHandler} layout={this.state.layout} />
+                    <div style={{display: "flex", flexDirection:"row", gap:20, padding:"1rem 3rem"}}>
+                    <Toggle onChange={this.onXAxisStateChange.bind(this)} name={"X Axis:"} startValue={this.state.logx}>
+                        <>Linear</>
+                        <>Logarithmic</>
+                    </Toggle>
+                    <Toggle onChange={this.onYAxisStateChange.bind(this)} name={"Y Axis:"} startValue={this.state.logy}>
+                        <>Linear</>
+                        <>Logarithmic</>
+                    </Toggle>
+                    <Toggle onChange={this.onPlottingMethodChange.bind(this)} name={"Plotting Method:"} startValue={this.state.line}>
+                        <>Line</>
+                        <>Points</>
+                    </Toggle>
 
-                                </label>
-                                <label>
-                                    <input onClick={_=>this.setState({logy:true})} type="radio" name="yAxis" />
-                                    <span className="radio">Logarithmic</span>
-                                </label>
-                            </div>
-                        </div >
-                        <div className="radio-group">
-                            <div className="radio-label">Plot as</div>
-                            <div>
-                                <label>
-                                    <input onClick={_=>this.setState({line:false})} type="radio" name="plotType" />
-                                    <span className="radio">Points</span>
-                                </label>
-                                <label>
-                                    <input onClick={_=>this.setState({line:true})} type="radio" name="plotType" />
-                                    <span className="radio">Line</span>
-                                </label>
-                            </div>
-                        </div >
-
-                    </form>
-
+                    </div>
                 </div>
                 {
                     this.state.ready
-                        ? <JSRootGraph traces={this.state.traces} logx={this.state.logx} logy={this.state.logy} line={this.state.line} />
+                        ? <JSRootGraph traces={this.state.traces} logx={this.state.logx} logy={this.state.logy} plotStyle={this.state.plotStyle} />
                         : <h2>JSROOT still loading</h2>
                 }
             </div>
