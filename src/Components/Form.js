@@ -1,4 +1,4 @@
-import { Component } from 'react';
+import React,{ Component } from 'react';
 import { getParticles, getMaterials } from '../Backend/WASMWrapper';
 
 import '../Styles/Form.css'
