@@ -48,6 +48,6 @@ jobs:
 
       - name: Deploy
         run: |
-          npm run deploy -- -u "Mexolius <mslazak99@gmail.com>" -r "git@github.com:Mexolius/APTG/web_dev.git"
+          npm run deploy -- -u "Leszek Grzanka <leszek.grzanka@gmail.com>" -r "git@github.com:grzanka/APTG/web_dev.git"
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
