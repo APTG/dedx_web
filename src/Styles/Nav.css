@@ -1,0 +1,34 @@
+.nav-menu {
+    display: flex;
+    flex-direction: row-reverse;
+    flex-wrap: nowrap;
+    align-items: center;
+
+    height: 2.5em;
+    width: 100%;
+    position: fixed;
+    top: 0;
+}
+
+.nav-menu a {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+    height: 2.5em;
+    padding: 0 1em;
+    text-decoration: none;
+}
+
+.nav-menu{
+    background: #ccc;
+    z-index: 100;
+}
+
+.nav-menu a{
+    font-weight: 600;
+}
+
+.nav-menu a:hover{
+    background: #eee;
+}
