@@ -55,6 +55,7 @@ input::-webkit-inner-spin-button{
     font-weight: bold;
     font-size: 20px;
     color: #666;
+    background: #fff;
     transition: 0.2s background, 0.2s color ease-in-out;
 }
 
