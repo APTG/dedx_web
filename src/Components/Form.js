@@ -29,22 +29,24 @@ class Form extends Component {
     render() {
 
         return (
-            <form className="particle-input">
+            <form data-testid="form-1" className="particle-input">
                 <div>
                     <label className="input-wrapper">
                         Name
                         <input type="text" className="input-box" />
                     </label>
                     <div className="input-wrapper">
-                        Plot using
+                        <label htmlFor="plot_using">Plot using</label>
                         <div className="toggle-compound">
-                            <input className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
+                            <input id="plot_using" className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
                             <Toggle onChange={this.onMethodChange.bind(this)}>
                                 <>Step</>
                                 <>Points</>
                             </Toggle>
                         </div>
                     </div>
+                   
+                    
                 </div>
                 <div>
                     <label className="input-wrapper">
@@ -56,7 +58,6 @@ class Form extends Component {
                     <label className="input-wrapper">
                         Material
                         <select className="input-box">
-                            Material
                             {getMaterials().map((material, key) => <option key={"material_" + key}>{material}</option>)}
                         </select>
                     </label>
