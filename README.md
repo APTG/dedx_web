@@ -10,6 +10,10 @@ The idea of this project is to prepare a web interface of the dEdx library. Than
 
 Part of the project is similar to the PSTAR program of the National Institue of Standards and Technology, but we aim to add more options to the queries, make the plots dynamicly generated, create a fluent user interface and - by focusing on responsivenes of the web layout - enable researchers from around the world to gather the necessery data on their mobile phones in lab enviroment.
 
+## Related projects
+- PSTAR project https://physics.nist.gov/PhysRefData/Star/Text/PSTAR.html
+- ATIMA project https://www.isotopea.com/webatima/
+
 ## Technologies used in the project
 The project uses 3 key technologies:
 - React.js - frontend development framework
