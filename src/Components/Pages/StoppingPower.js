@@ -41,7 +41,7 @@ class StoppingPowerComponent extends React.Component{
 
     //TODO
     submitHandler(message) {
-        console.log(message);
+        
         const traces = this.state.traces;
         traces.push(getTrace(message, ""));
         this.setState({

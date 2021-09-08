@@ -7,7 +7,7 @@ function __init_wasm() { }
 //#region MOCK
 //#region GET
 export function getTrace(particle, propagationMedium) {
-    if (__wasm) console.log("wasm");
+    if (__wasm) 
     return {
         x: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
         y: Array.from(new Array(10),_=>Math.random()*100)

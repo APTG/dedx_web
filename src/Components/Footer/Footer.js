@@ -9,7 +9,7 @@ const Footer = _ => {
     const [info, setInfo] = useState({})
 
     const getInfo = () => {
-        console.log(window.location)
+        
         fetch('http://'+window.location.host+'/web_dev/config/deploy.json', {
             headers: {
                 'Content-Type': 'application/json',
@@ -23,7 +23,7 @@ const Footer = _ => {
                 setInfo(json);
             })
             .catch(err => {
-                console.log(err)
+                
             })
 
     }
