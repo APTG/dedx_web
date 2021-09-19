@@ -38,11 +38,9 @@ class JSRootGraph extends Component {
         }
 
         JSROOT = window.JSROOT;
-
-        
     }
 
-    static getDerivedStateFromProps(props, state) {
+    static getDerivedStateFromProps(props, _) {
         return {
             traces: props.traces,
             drawn: props.traces.length===JSRootGraph.traces
@@ -59,13 +57,9 @@ class JSRootGraph extends Component {
         }
     }
 
-
-
     shouldComponentUpdate(nextProps, nextState) {
         const should =!nextState.drawn
-        || this.props.logx !== nextProps.logx
-        || this.props.logy !== nextProps.logy
-        || this.props.plotStyle !== nextProps.plotStyle;
+        || ['logx','logy','plotStyle'].some(el=>this.props[el] !== nextProps[el])
 
         if (should) {
             JSROOT.cleanup(this.graphRef.current);
@@ -89,7 +83,6 @@ class JSRootGraph extends Component {
             <div>
                 <div style={{ width: "100%", height: 480 }} ref={this.graphRef}></div>
             </div>
-
         )
     }
 }

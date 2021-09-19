@@ -1,4 +1,4 @@
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, fireEvent } from '@testing-library/react'
 import Form from '../Form'
 import StoppingPowerComponent from '../Pages/StoppingPower'
 
@@ -58,8 +58,6 @@ describe('form', () => {
             particle: 'He',
             material: 'Water',
         })
-
-
     })
 })
 
