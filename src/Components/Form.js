@@ -1,11 +1,12 @@
 import React, { Component } from 'react';
 import { getParticles, getMaterials } from '../Backend/WASMWrapper';
+import PropTypes from 'prop-types';
 
 import '../Styles/Form.css'
 import Toggle from './Toggle';
 
 class Form extends Component {
-    constructor(props) {
+    constructor({props}) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
 
@@ -74,4 +75,9 @@ class Form extends Component {
         );
     }
 }
+
+Form.propTypes = {
+    onSubmit: PropTypes.func.isRequired
+}
+
 export default Form

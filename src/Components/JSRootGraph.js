@@ -1,4 +1,5 @@
 import React,{ Component, createRef } from "react";
+import PropTypes from 'prop-types';
 
 let JSROOT
 //#region Helper functions
@@ -85,6 +86,18 @@ class JSRootGraph extends Component {
             </div>
         )
     }
+}
+
+JSRootGraph.PropTypes = {
+    logx: PropTypes.oneOf([0, 1]).isRequired,
+    logy: PropTypes.oneOf([0, 1]).isRequired,
+    plotStyle: PropTypes.oneOf([0, 1]).isRequired,
+    traces: PropTypes.arrayOf(
+        PropTypes.object({
+            x: PropTypes.arrayOf(PropTypes.number),
+            y: PropTypes.arrayOf(PropTypes.number)
+        })
+    ).isRequired
 }
 
 export default JSRootGraph;
