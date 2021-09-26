@@ -1,13 +1,13 @@
-.content{
+.content {
   padding: 2rem 2rem 0 2rem;
 }
 
-.gridish{
+.gridish {
   display: flex;
   flex-direction: column;
   flex-wrap: wrap;
 }
 
-.gridish > *{
+.gridish>* {
   flex: 1 1 30em;
 }

@@ -18,15 +18,12 @@
     background: #fff;
     text-align: center;
     border: 1px solid #666;
-    color:#666;
+    color: #666;
     padding: 1rem;
     cursor: pointer;
     min-width: 8rem !important;
     flex: 1 1 100%;
-  
-    
     font-weight: bold;
-  
     transition: 0.2s background, 0.2s color ease-in-out;
 }
 
@@ -36,16 +33,15 @@
     display: flex;
 }
 
-
-.toggle-option:hover{
+.toggle-option:hover {
     background: #ddd !important;
 }
 
-.toggle-option.selected{
+.toggle-option.selected {
     background: #666 !important;
     color: white;
 }
 
-.toggle-name{
+.toggle-name {
     width: 100%;
 }

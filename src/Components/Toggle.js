@@ -22,7 +22,6 @@ const Toggle = ({ name, children, startValue, onChange }) => {
                     )
                 })}
             </div>
-
         </div>
     )
 }

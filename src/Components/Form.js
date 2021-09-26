@@ -1,11 +1,10 @@
 import React, { Component } from 'react';
-import PropTypes from 'prop-types';
+import { getMaterials, getParticles } from '../Backend/WASMWrapper';
 
+import PropTypes from 'prop-types';
 import Toggle from './Toggle';
-import { getParticles, getMaterials } from '../Backend/WASMWrapper';
 
 import '../Styles/Form.css'
-
 
 class Form extends Component {
 
@@ -13,7 +12,7 @@ class Form extends Component {
         onSubmit: PropTypes.func.isRequired
     }
 
-    constructor({props}) {
+    constructor({ props }) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
 
@@ -21,7 +20,6 @@ class Form extends Component {
             method: 0
         }
     }
-
 
     handleSubmit(event) {
         event.preventDefault()
@@ -34,15 +32,11 @@ class Form extends Component {
         })
     }
 
-
     onMethodChange(newState) {
         this.setState({ method: newState })
-
     }
 
-
     render() {
-
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
                 <div>
@@ -60,9 +54,8 @@ class Form extends Component {
                             </Toggle>
                         </div>
                     </div>
-
-
                 </div>
+
                 <div>
                     <label className="input-wrapper">
                         Particle

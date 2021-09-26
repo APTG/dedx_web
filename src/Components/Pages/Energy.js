@@ -1,7 +1,7 @@
 import React from 'react'
 
-class EnergyComponent extends React.Component{
-    render(){
+class EnergyComponent extends React.Component {
+    render() {
         return <>HELLO ENERGY</>;
     }
 }

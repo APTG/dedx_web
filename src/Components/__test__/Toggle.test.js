@@ -1,22 +1,24 @@
+import { fireEvent, render } from '@testing-library/react'
+
 import React from 'react'
 import Toggle from "../Toggle"
 
-import { render, fireEvent } from '@testing-library/react'
 
-describe('Toggle element', ()=>{
+
+describe('Toggle element', () => {
     const testFunc = jest.fn()
     const testToggle = <Toggle name="testToggle" onChange={testFunc}>
         <>Option 1</>
         <>Option 2</>
-    </Toggle> 
+    </Toggle>
 
-    test('render options',()=>{
+    test('render options', () => {
         const { getByText } = render(testToggle)
         expect(getByText('Option 1')).toBeInTheDocument()
         expect(getByText('Option 2')).toBeInTheDocument()
     })
 
-    test('call onChange when changed', ()=>{
+    test('call onChange when changed', () => {
         const { getByText } = render(testToggle)
         const newChoice = getByText('Option 2')
         const oldChoice = getByText('Option 1')
@@ -26,7 +28,7 @@ describe('Toggle element', ()=>{
         expect(testFunc).toBeCalledTimes(3)
     })
 
-    test('change color when changing state', ()=>{
+    test('change color when changing state', () => {
         const { getByText } = render(testToggle)
         const newChoice = getByText('Option 2')
         const oldChoice = getByText('Option 1')
