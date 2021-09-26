@@ -1,7 +1,7 @@
 import ContentWrapper from "./ContentWrapper"
 import Footer from "./Footer/Footer"
 
-const Main = _ =>{
+const Main = () =>{
     return(
         <>
         <div className="site-wrapper">

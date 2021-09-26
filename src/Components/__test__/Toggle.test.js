@@ -1,3 +1,4 @@
+import React from 'react'
 import { render, fireEvent } from '@testing-library/react'
 import Toggle from "../Toggle"
 
@@ -6,7 +7,7 @@ describe('Toggle element', ()=>{
     const testToggle = <Toggle name="testToggle" onChange={testFunc}>
         <>Option 1</>
         <>Option 2</>
-    </Toggle>
+    </Toggle> 
 
     test('render options',()=>{
         const { getByText } = render(testToggle)
