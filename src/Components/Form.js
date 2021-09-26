@@ -1,11 +1,18 @@
 import React, { Component } from 'react';
-import { getParticles, getMaterials } from '../Backend/WASMWrapper';
 import PropTypes from 'prop-types';
 
-import '../Styles/Form.css'
 import Toggle from './Toggle';
+import { getParticles, getMaterials } from '../Backend/WASMWrapper';
+
+import '../Styles/Form.css'
+
 
 class Form extends Component {
+
+    static propTypes = {
+        onSubmit: PropTypes.func.isRequired
+    }
+
     constructor({props}) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
@@ -47,7 +54,7 @@ class Form extends Component {
                         <label htmlFor="plot_using">Plot using</label>
                         <div className="toggle-compound">
                             <input name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
-                            <Toggle onChange={this.onMethodChange.bind(this)}>
+                            <Toggle name={''} onChange={this.onMethodChange.bind(this)}>
                                 <>Step</>
                                 <>Points</>
                             </Toggle>
@@ -74,10 +81,6 @@ class Form extends Component {
             </form>
         );
     }
-}
-
-Form.propTypes = {
-    onSubmit: PropTypes.func.isRequired
 }
 
 export default Form

@@ -3,7 +3,7 @@ import Toggle from "../Toggle"
 
 describe('Toggle element', ()=>{
     const testFunc = jest.fn()
-    const testToggle = <Toggle onChange={testFunc}>
+    const testToggle = <Toggle name="testToggle" onChange={testFunc}>
         <>Option 1</>
         <>Option 2</>
     </Toggle>

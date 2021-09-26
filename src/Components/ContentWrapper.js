@@ -5,8 +5,6 @@ import CalculatorComponent from "./Pages/Calculator";
 import EnergyComponent from "./Pages/Energy";
 import StoppingPowerComponent from "./Pages/StoppingPower";
 
-import Footer from './Footer/Footer'
-
 import '../Styles/Nav.css'
 
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
@@ -32,11 +30,8 @@ class ContentWrapper extends React.Component {
                         <Route path={'/Energy'} render={() => <EnergyComponent ready={this.props.JSROOT ? true : false} />}  />
                         <Route path={'/Calculator'} render={() => <CalculatorComponent ready={this.props.JSROOT ? true : false} />}  />
                     </Switch>
-
                     </div>
-                    
                 </div>
-                <Footer />
             </Router>
         );
     }

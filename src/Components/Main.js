@@ -1,5 +1,5 @@
 import ContentWrapper from "./ContentWrapper"
-import Footer from "./Footer"
+import Footer from "./Footer/Footer"
 
 const Main = _ =>{
     return(

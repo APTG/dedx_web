@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import '../Styles/Toggle.css'
 import PropTypes from 'prop-types'
 
-const Toggle = ({ name, children, startValue=0, onChange }) => {
+const Toggle = ({ name, children, startValue, onChange }) => {
     const [selected, setSelected] = useState(startValue);
 
     const exportChange = (newState) => {
@@ -32,6 +32,10 @@ Toggle.propTypes = {
     children: PropTypes.arrayOf(PropTypes.node).isRequired,
     startValue: PropTypes.number,
     onChange: PropTypes.func.isRequired,
+}
+
+Toggle.defaultProps = {
+    startValue: 0
 }
 
 export default Toggle;

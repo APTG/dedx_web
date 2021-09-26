@@ -29,6 +29,18 @@ class JSRootGraph extends Component {
 
     static traces = 0;
 
+    static propTypes = {
+        logx: PropTypes.oneOf([0, 1]).isRequired,
+        logy: PropTypes.oneOf([0, 1]).isRequired,
+        plotStyle: PropTypes.oneOf([0, 1]).isRequired,
+        traces: PropTypes.arrayOf(
+            PropTypes.shape({
+                x: PropTypes.arrayOf(PropTypes.number),
+                y: PropTypes.arrayOf(PropTypes.number)
+            })
+        ).isRequired
+    }
+
     constructor(props) {
         super(props);   
         this.graphRef = createRef(null);
@@ -86,18 +98,6 @@ class JSRootGraph extends Component {
             </div>
         )
     }
-}
-
-JSRootGraph.PropTypes = {
-    logx: PropTypes.oneOf([0, 1]).isRequired,
-    logy: PropTypes.oneOf([0, 1]).isRequired,
-    plotStyle: PropTypes.oneOf([0, 1]).isRequired,
-    traces: PropTypes.arrayOf(
-        PropTypes.object({
-            x: PropTypes.arrayOf(PropTypes.number),
-            y: PropTypes.arrayOf(PropTypes.number)
-        })
-    ).isRequired
 }
 
 export default JSRootGraph;
