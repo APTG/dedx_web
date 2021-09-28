@@ -1,4 +1,6 @@
 import { render } from '@testing-library/react'
+
+import jest from 'jest'
 import JSRootGraph from '../JSRootGraph'
 
 describe('JSRootGraphp', () => {
