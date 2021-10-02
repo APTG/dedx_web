@@ -8,8 +8,8 @@ import Toggle from "../Toggle"
 describe('Toggle element', () => {
     const testFunc = jest.fn()
     const testToggle = <Toggle name="testToggle" onChange={testFunc}>
-        <>Option 1</>
-        <>Option 2</>
+        {"Option 1"}
+        {"Option 2"}
     </Toggle>
 
     test('render options', () => {

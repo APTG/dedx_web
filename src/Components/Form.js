@@ -49,8 +49,8 @@ class Form extends Component {
                         <div className="toggle-compound">
                             <input name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
                             <Toggle name={''} onChange={this.onMethodChange.bind(this)}>
-                                <>Step</>
-                                <>Points</>
+                                {"Step"}
+                                {"Points"}
                             </Toggle>
                         </div>
                     </div>

@@ -37,9 +37,9 @@ class StoppingPowerComponent extends React.Component {
         }
 
         this.submitHandler = this.submitHandler.bind(this);
-        this.onXAxisStateChange = this.submitHandler.bind(this);
-        this.onYAxisStateChange = this.submitHandler.bind(this);
-        this.onPlottingMethodChange = this.submitHandler.bind(this);
+        this.onXAxisStateChange = this.onXAxisStateChange.bind(this);
+        this.onYAxisStateChange = this.onYAxisStateChange.bind(this);
+        this.onPlottingMethodChange = this.onPlottingMethodChange.bind(this);
     }
 
     //TODO
@@ -59,16 +59,16 @@ class StoppingPowerComponent extends React.Component {
                     <Form onSubmit={this.submitHandler} layout={this.state.layout} />
                     <div style={{ display: "flex", flexDirection: "row", gap: 20, padding: "1rem 3rem" }}>
                         <Toggle onChange={this.onXAxisStateChange} name={"X Axis:"} startValue={this.state.logx}>
-                            <>Linear</>
-                            <>Logarithmic</>
+                             {"Linear"}
+                             {"Logarithmic"}
                         </Toggle>
                         <Toggle onChange={this.onYAxisStateChange} name={"Y Axis:"} startValue={this.state.logy}>
-                            <>Linear</>
-                            <>Logarithmic</>
+                             {"Linear"}
+                             {"Logarithmic"}
                         </Toggle>
                         <Toggle onChange={this.onPlottingMethodChange} name={"Plotting Method:"} startValue={this.state.line}>
-                            <>Line</>
-                            <>Points</>
+                             {"Line"}
+                             {"Points"}
                         </Toggle>
                     </div>
                 </div>
