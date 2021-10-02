@@ -1,9 +1,8 @@
 import { getTrace } from '../../Backend/WASMWrapper'
 
-import React from "react";
-
 import Form from "../Form";
 import JSRootGraph from "../JSRootGraph";
+import React from "react";
 import Toggle from "../Toggle";
 
 class StoppingPowerComponent extends React.Component {
