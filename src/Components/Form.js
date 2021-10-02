@@ -6,7 +6,7 @@ import Toggle from './Toggle';
 
 import '../Styles/Form.css'
 
-class Form extends Component {
+export default class Form extends Component {
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
@@ -75,5 +75,3 @@ class Form extends Component {
         );
     }
 }
-
-export default Form

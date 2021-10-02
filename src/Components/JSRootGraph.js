@@ -25,7 +25,7 @@ function drawOptFromProps(props) {
 
 // COMPONENT
 
-class JSRootGraph extends Component {
+export default class JSRootGraph extends Component {
 
     static traces = 0;
 
@@ -99,5 +99,3 @@ class JSRootGraph extends Component {
         )
     }
 }
-
-export default JSRootGraph;
