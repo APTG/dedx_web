@@ -27,9 +27,15 @@ class ContentWrapper extends React.Component {
                     </div>
                     <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
                         <Switch>
-                            <Route path={'/StoppingPower'} render={() => <StoppingPowerComponent ready={this.props.JSROOT ? true : false} />} />
-                            <Route path={'/Energy'} render={() => <EnergyComponent ready={this.props.JSROOT ? true : false} />} />
-                            <Route path={'/Calculator'} render={() => <CalculatorComponent ready={this.props.JSROOT ? true : false} />} />
+                            <Route path={'/StoppingPower'}>
+                                <StoppingPowerComponent ready={this.props.JSROOT ? true : false} />
+                            </Route>
+                            <Route path={'/Energy'}>
+                                <EnergyComponent ready={this.props.JSROOT ? true : false} />
+                            </Route>
+                            <Route path={'/Calculator'} >
+                                <CalculatorComponent ready={this.props.JSROOT ? true : false} />
+                            </Route>
                         </Switch>
                     </div>
                 </div>
