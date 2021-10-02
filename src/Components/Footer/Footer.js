@@ -3,7 +3,7 @@ import logo from './github-logo.png'
 
 import '../../Styles/Footer.css'
 
-const Footer = _ => {
+function Footer() {
 
     const [info, setInfo] = useState({})
 
