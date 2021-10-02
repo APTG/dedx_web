@@ -9,7 +9,7 @@ function Footer() {
 
     const getInfo = () => {
         console.log(window.location)
-        fetch('http://' + window.location.host + '/web_dev/config/deploy.json', {
+        fetch(`http://${window.location.host}/web_dev/config/deploy.json`, {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
