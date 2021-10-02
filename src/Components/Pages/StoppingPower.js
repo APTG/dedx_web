@@ -6,7 +6,7 @@ import PropTypes from 'prop-types';
 import React from "react";
 import Toggle from "../Toggle";
 
-class StoppingPowerComponent extends React.Component {
+class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
         ready: PropTypes.bool.isRequired
