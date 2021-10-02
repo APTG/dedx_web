@@ -1,4 +1,4 @@
-import React, { Component, createRef } from "react";
+import React, { createRef } from "react";
 import PropTypes from 'prop-types';
 
 let JSROOT
@@ -25,7 +25,7 @@ function drawOptFromProps(props) {
 
 // COMPONENT
 
-export default class JSRootGraph extends Component {
+export default class JSRootGraph extends React.Component {
 
     static traces = 0;
 

@@ -2,10 +2,15 @@ import { getTrace } from '../../Backend/WASMWrapper'
 
 import Form from "../Form";
 import JSRootGraph from "../JSRootGraph";
+import PropTypes from 'prop-types';
 import React from "react";
 import Toggle from "../Toggle";
 
 class StoppingPowerComponent extends React.Component {
+
+    static propTypes = {
+        ready: PropTypes.bool.isRequired
+    }
 
     onXAxisStateChange(newState) {
         this.setState({ logx: newState })

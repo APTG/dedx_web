@@ -1,12 +1,12 @@
-import React, { Component } from 'react';
 import { getMaterials, getParticles } from '../Backend/WASMWrapper';
 
 import PropTypes from 'prop-types';
+import React from 'react';
 import Toggle from './Toggle';
 
 import '../Styles/Form.css'
 
-export default class Form extends Component {
+export default class Form extends React.Component {
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
