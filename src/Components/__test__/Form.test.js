@@ -1,6 +1,5 @@
 import { fireEvent, render } from '@testing-library/react'
 
-import jest from 'jest'
 import Form from '../Form'
 import StoppingPowerComponent from '../Pages/StoppingPower'
 
