@@ -6,9 +6,9 @@ describe('JSRootGraphp', () => {
     const createTGraph = jest.fn()
     const createTMultiGraph = jest.fn()
     window.JSROOT = {
-        draw: draw,
-        createTGraph: createTGraph,
-        createTMultiGraph: createTMultiGraph
+        draw,
+        createTGraph,
+        createTMultiGraph
     }
 
     test('should render an empty graph', () => {
