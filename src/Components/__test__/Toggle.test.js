@@ -1,5 +1,6 @@
 import { fireEvent, render } from '@testing-library/react'
 
+import jest from 'jest'
 import React from 'react'
 import Toggle from "../Toggle"
 
