@@ -1,11 +1,12 @@
-import { BrowserRouter as Router, Link, Route, Switch } from 'react-router-dom';
+import { Link, Route, BrowserRouter as Router, Switch } from 'react-router-dom';
 
 import CalculatorComponent from "./Pages/Calculator";
 import EnergyComponent from "./Pages/Energy";
-import makeAsyncScriptLoader from "react-async-script";
 import PropTypes from 'prop-types';
 import React from "react";
 import StoppingPowerComponent from "./Pages/StoppingPower";
+
+import makeAsyncScriptLoader from "react-async-script";
 
 import '../Styles/Nav.css'
 
