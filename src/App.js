@@ -1,17 +1,12 @@
 import React from 'react';
 import './App.css';
 
-import ContentWrapper from './Components/ContentWrapper';
-
-const onLoad = ()=>{
-  console.log("Scripd done - outside");
-}
+import Main from './Components/Main';
 
 function App() {
-
   return (
     <div>
-      <ContentWrapper asyncScriptOnLoad ={onLoad}/>
+      <Main />
     </div>
   );
 }

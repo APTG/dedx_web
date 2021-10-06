@@ -3,14 +3,13 @@ import logo from './github-logo.png'
 
 import '../../Styles/Footer.css'
 
-
-const Footer = _ => {
+function Footer() {
 
     const [info, setInfo] = useState({})
 
     const getInfo = () => {
         console.log(window.location)
-        fetch('http://'+window.location.host+'/web_dev/config/deploy.json', {
+        fetch(`http://${window.location.host}/web_dev/config/deploy.json`, {
             headers: {
                 'Content-Type': 'application/json',
                 'Accept': 'application/json'
@@ -25,14 +24,11 @@ const Footer = _ => {
             .catch(err => {
                 console.log(err)
             })
-
     }
 
     useEffect(() => {
         getInfo();
     }, [])
-
-
 
     return (
         <footer className="footer" id="footer">

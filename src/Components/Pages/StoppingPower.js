@@ -1,26 +1,31 @@
-import React from "react";
+import { getTrace } from '../../Backend/WASMWrapper'
+
 import Form from "../Form";
 import JSRootGraph from "../JSRootGraph";
-
-import { getTrace } from '../../Backend/WASMWrapper'
+import PropTypes from 'prop-types';
+import React from "react";
 import Toggle from "../Toggle";
 
-class StoppingPowerComponent extends React.Component{
-    
-    onXAxisStateChange(newState){
-        this.setState({logx:newState})
-    }
-    
-    onYAxisStateChange(newState){
-        this.setState({logy:newState})
-    }
-    
-    onPlottingMethodChange(newState){
-        this.setState({plotStyle:newState})
+class StoppingPowerComponent extends React.PureComponent {
+
+    static propTypes = {
+        ready: PropTypes.bool.isRequired
     }
 
-    onLayoutChange(newState){
-        this.setState({layout:newState})
+    onXAxisStateChange(newState) {
+        this.setState({ logx: newState })
+    }
+
+    onYAxisStateChange(newState) {
+        this.setState({ logy: newState })
+    }
+
+    onPlottingMethodChange(newState) {
+        this.setState({ plotStyle: newState })
+    }
+
+    onLayoutChange(newState) {
+        this.setState({ layout: newState })
     }
 
     constructor(props) {
@@ -32,23 +37,23 @@ class StoppingPowerComponent extends React.Component{
             logx: 0,
             logy: 1,
             plotStyle: 0,
-            layout:0,
+            layout: 0,
         }
 
         this.submitHandler = this.submitHandler.bind(this);
+        this.onXAxisStateChange = this.onXAxisStateChange.bind(this);
+        this.onYAxisStateChange = this.onYAxisStateChange.bind(this);
+        this.onPlottingMethodChange = this.onPlottingMethodChange.bind(this);
     }
-
 
     //TODO
     submitHandler(message) {
-        console.log(message);
         const traces = this.state.traces;
         traces.push(getTrace(message, ""));
         this.setState({
             traces: traces
         })
         this.forceUpdate();
-
     }
 
     render() {
@@ -56,20 +61,19 @@ class StoppingPowerComponent extends React.Component{
             <div className="content gridish">
                 <div>
                     <Form onSubmit={this.submitHandler} layout={this.state.layout} />
-                    <div style={{display: "flex", flexDirection:"row", gap:20, padding:"1rem 3rem"}}>
-                    <Toggle onChange={this.onXAxisStateChange.bind(this)} name={"X Axis:"} startValue={this.state.logx}>
-                        <>Linear</>
-                        <>Logarithmic</>
-                    </Toggle>
-                    <Toggle onChange={this.onYAxisStateChange.bind(this)} name={"Y Axis:"} startValue={this.state.logy}>
-                        <>Linear</>
-                        <>Logarithmic</>
-                    </Toggle>
-                    <Toggle onChange={this.onPlottingMethodChange.bind(this)} name={"Plotting Method:"} startValue={this.state.line}>
-                        <>Line</>
-                        <>Points</>
-                    </Toggle>
-
+                    <div style={{ display: "flex", flexDirection: "row", gap: 20, padding: "1rem 3rem" }}>
+                        <Toggle onChange={this.onXAxisStateChange} name={"X Axis:"} startValue={this.state.logx}>
+                             {"Linear"}
+                             {"Logarithmic"}
+                        </Toggle>
+                        <Toggle onChange={this.onYAxisStateChange} name={"Y Axis:"} startValue={this.state.logy}>
+                             {"Linear"}
+                             {"Logarithmic"}
+                        </Toggle>
+                        <Toggle onChange={this.onPlottingMethodChange} name={"Plotting Method:"} startValue={this.state.line}>
+                             {"Line"}
+                             {"Points"}
+                        </Toggle>
                     </div>
                 </div>
                 {

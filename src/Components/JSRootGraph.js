@@ -1,4 +1,5 @@
-import React,{ Component, createRef } from "react";
+import React, { createRef } from "react";
+import PropTypes from 'prop-types';
 
 let JSROOT
 //#region Helper functions
@@ -11,11 +12,11 @@ function createMultigraphFromProps(traces) {
     return JSROOT.createTMultiGraph(...(traces.map(createTGraphFromTrace)));
 }
 
-function drawOptFromProps(props){
+function drawOptFromProps(props) {
     const res = [];
-    if(props.logx === 1) res.push("logx");
-    if(props.logy === 1) res.push("logy");
-    if(props.plotStyle === 1) res.push("P");
+    if (props.logx === 1) res.push("logx");
+    if (props.logy === 1) res.push("logy");
+    if (props.plotStyle === 1) res.push("P");
 
     return res.join(';');
 }
@@ -24,12 +25,24 @@ function drawOptFromProps(props){
 
 // COMPONENT
 
-class JSRootGraph extends Component {
+export default class JSRootGraph extends React.Component {
 
     static traces = 0;
 
+    static propTypes = {
+        logx: PropTypes.oneOf([0, 1]).isRequired,
+        logy: PropTypes.oneOf([0, 1]).isRequired,
+        plotStyle: PropTypes.oneOf([0, 1]).isRequired,
+        traces: PropTypes.arrayOf(
+            PropTypes.shape({
+                x: PropTypes.arrayOf(PropTypes.number),
+                y: PropTypes.arrayOf(PropTypes.number)
+            })
+        ).isRequired
+    }
+
     constructor(props) {
-        super(props);   
+        super(props);
         this.graphRef = createRef(null);
 
         this.state = {
@@ -43,7 +56,7 @@ class JSRootGraph extends Component {
     static getDerivedStateFromProps(props, _) {
         return {
             traces: props.traces,
-            drawn: props.traces.length===JSRootGraph.traces
+            drawn: props.traces.length === JSRootGraph.traces
         }
     }
 
@@ -52,14 +65,14 @@ class JSRootGraph extends Component {
             const toDraw = createMultigraphFromProps(this.props.traces);
             JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
         }
-        else{
-            JSROOT.draw(this.graphRef.current,JSROOT.createTGraph(1))
+        else {
+            JSROOT.draw(this.graphRef.current, JSROOT.createTGraph(1))
         }
     }
 
     shouldComponentUpdate(nextProps, nextState) {
-        const should =!nextState.drawn
-        || ['logx','logy','plotStyle'].some(el=>this.props[el] !== nextProps[el])
+        const should = !nextState.drawn
+            || ['logx', 'logy', 'plotStyle'].some(el => this.props[el] !== nextProps[el])
 
         if (should) {
             JSROOT.cleanup(this.graphRef.current);
@@ -73,7 +86,7 @@ class JSRootGraph extends Component {
                         drawn: true
                     })
                 });
-                return true;
+            return true;
         }
         return false;
     }
@@ -86,5 +99,3 @@ class JSRootGraph extends Component {
         )
     }
 }
-
-export default JSRootGraph;

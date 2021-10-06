@@ -1,11 +1,18 @@
-import React, { Component } from 'react';
-import { getParticles, getMaterials } from '../Backend/WASMWrapper';
+import { getMaterials, getParticles } from '../Backend/WASMWrapper';
 
-import '../Styles/Form.css'
+import PropTypes from 'prop-types';
+import React from 'react';
 import Toggle from './Toggle';
 
-class Form extends Component {
-    constructor(props) {
+import '../Styles/Form.css'
+
+export default class Form extends React.Component {
+
+    static propTypes = {
+        onSubmit: PropTypes.func.isRequired
+    }
+
+    constructor({ props }) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
 
@@ -13,7 +20,6 @@ class Form extends Component {
             method: 0
         }
     }
-
 
     handleSubmit(event) {
         event.preventDefault()
@@ -26,15 +32,11 @@ class Form extends Component {
         })
     }
 
-
     onMethodChange(newState) {
         this.setState({ method: newState })
-
     }
 
-
     render() {
-
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
                 <div>
@@ -46,15 +48,14 @@ class Form extends Component {
                         <label htmlFor="plot_using">Plot using</label>
                         <div className="toggle-compound">
                             <input name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
-                            <Toggle onChange={this.onMethodChange.bind(this)}>
-                                <>Step</>
-                                <>Points</>
+                            <Toggle name={''} onChange={this.onMethodChange.bind(this)}>
+                                {"Step"}
+                                {"Points"}
                             </Toggle>
                         </div>
                     </div>
-
-
                 </div>
+
                 <div>
                     <label className="input-wrapper">
                         Particle
@@ -74,4 +75,3 @@ class Form extends Component {
         );
     }
 }
-export default Form
