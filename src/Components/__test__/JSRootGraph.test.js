@@ -1,8 +1,8 @@
 import { render } from '@testing-library/react'
 
-import JSRootGraph from '../JSRootGraph'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
+import JSRootGraph from '../JSRootGraph'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029, JS-0249
 
-describe('JSRootGraphp', () => {
+describe('JSRootGraphp', () => {  // skipcq: JS-0125
     const draw = jest.fn()
     const createTGraph = jest.fn()
     const createTMultiGraph = jest.fn()
