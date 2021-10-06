@@ -1,7 +1,7 @@
 import { fireEvent, render } from '@testing-library/react'
 
-import Form from '../Form'
-import StoppingPowerComponent from '../Pages/StoppingPower'
+import Form from '../Form'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
+import StoppingPowerComponent from '../Pages/StoppingPower'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
 
 describe('form', () => {
     test('should render form', () => {

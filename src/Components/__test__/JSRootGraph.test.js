@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 
-import JSRootGraph from '../JSRootGraph'
+import JSRootGraph from '../JSRootGraph'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
 
 describe('JSRootGraphp', () => {
     const draw = jest.fn()
