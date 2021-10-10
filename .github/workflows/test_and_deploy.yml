@@ -57,6 +57,7 @@ jobs:
           - name: Get current date
             id: date
             run: echo "::set-output name=date::$(date +'%Y-%m-%d')"
+
           - name: Get commit short hash
             id: commit_hash
             run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
@@ -65,17 +66,16 @@ jobs:
             shell: bash
             run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
             id: branch
-          - name: create-json
-            id: create-json
-            uses: jsdaniell/create-json@1.1.2
-            with:
-              name: "deploy.json"
-              json: '{
-                  "date": "${{ steps.date.outputs.date }}",
-                  "commit": "${{ steps.commit_hash.outputs.sha_short }}",
-                  "branch": "${{ steps.branch.outputs.branch }}"
-                }'
-              dir: 'public/config/'
+
+        uses: jsdaniell/create-json@1.1.2
+        with:
+          name: "deploy.json"
+          json: '{
+              "date": "${{ steps.date.outputs.date }}",
+              "commit": "${{ steps.commit_hash.outputs.sha_short }}",
+              "branch": "${{ steps.branch.outputs.branch }}"
+            }'
+          dir: 'public/config/'
 
       - name: Deploy
         if: github.ref == 'refs/heads/master'
