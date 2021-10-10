@@ -73,9 +73,9 @@ jobs:
               with:
                 name: "deploy.json"
                 json: '{
-                    "date":"${{ steps.date.outputs.date }}",
-                    "commit":"${{ steps.commit_hash.outputs.sha_short }}",
-                    "branch":"${{ steps.branch.outputs.branch }}"
+                    "date": "${{ steps.date.outputs.date }}",
+                    "commit": "${{ steps.commit_hash.outputs.sha_short }}",
+                    "branch": "${{ steps.branch.outputs.branch }}"
                   }'
                 dir: 'public/config/'
 
