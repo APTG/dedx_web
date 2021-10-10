@@ -62,10 +62,10 @@ jobs:
               id: commit_hash
               run: echo "::set-output name=sha_short::$(git rev-parse --short HEAD)"
               
-            - name: Extract branch name
+            - name: Get branch name
               shell: bash
               run: echo "##[set-output name=branch;]$(echo ${GITHUB_REF#refs/heads/})"
-              id: extract_branch
+              id: branch
 
             - name: create-json
               id: create-json
@@ -74,8 +74,8 @@ jobs:
                 name: "deploy.json"
                 json: '{
                     "date":"${{ steps.date.outputs.date }}",
-                    "commit":"${{ steps.vars.outputs.sha_short }}",
-                    "branch":"${{ steps.extract_branch.outputs.branch }}"
+                    "commit":"${{ steps.commit_hash.outputs.sha_short }}",
+                    "branch":"${{ steps.branch.outputs.branch }}"
                   }'
                 dir: 'public/config/'
 
