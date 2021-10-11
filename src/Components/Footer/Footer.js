@@ -1,6 +1,7 @@
 import React from 'react';
-import logo from './github-logo.png'
 import data from './deploy.json'
+import logo from './github-logo.png'
+
 
 import '../../Styles/Footer.css'
 
