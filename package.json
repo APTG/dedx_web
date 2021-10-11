@@ -14,7 +14,7 @@
     "web-vitals": "^2.1.1"
   },
   "scripts": {
-    "identify":"echo > ./src/Components/Footer/deploy.json && node ./src/deploy.js > ./src/Components/Footer/deploy.json",
+    "identify":"node ./src/deploy.js > ./src/Components/Footer/deploy.json",
 
     "prestart": "npm run identify",
     "prebuild": "npm run identify",
