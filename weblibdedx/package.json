@@ -1,0 +1,10 @@
+{
+    "name": "weblibdedx",
+    "version": "0.1.0",
+    "files": [
+      "weblibdedx.wasm",
+      "weblibdedx.js"
+    ],
+    "module": "weblibdedx.js",
+    "sideEffects": "false"
+  }
