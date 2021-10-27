@@ -1,8 +1,10 @@
 import Module from './weblibdedx.js'
 
-//#region TODO:
-function __init_wasm() { }
-//#endregion TODO
+let _wasm;
+
+async function _init_wasm(){
+    _wasm = await Module()
+}
 
 //#region MOCK
 //#region GET
@@ -14,14 +16,8 @@ export function getTrace(particle, propagationMedium) {
 }
 
 export async function getParticles() {
-    Module().then(mod=>{
-        const programs = mod.getAllPrograms()
-        for(let i=0;i<programs.size();i++){
-            console.log(programs.get(i).repr)
-        }
-    }).catch(err=>{
-        console.log(err)
-    })
+    if(!_wasm) await _init_wasm()
+    return _wasm._dedx_get_all_programs()
 }
 
 export function getMaterials() {
