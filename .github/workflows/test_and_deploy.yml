@@ -44,9 +44,10 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - run: pwd
-
-    - run: ls -al
+    - name: Test generated files checkout
+      run: |
+        ls -al ./public
+        ls -al ./src/Backend
         
     - run: npm ci
     
