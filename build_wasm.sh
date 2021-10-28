@@ -21,10 +21,18 @@ FUNCTIONS+=']'
 
 emcc ./bin/libdedx.a -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
 
+ls -al ./bin
+
+echo -------
+
+ls -al ..
+
 cp ${WASM_FILENAME} ${WASM_PUBLIC}
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$WASM_FILENAME/$PROPER_PATH/" ${JS}
 sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
+
+
 
 cd ..
