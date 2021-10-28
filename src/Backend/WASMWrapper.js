@@ -15,9 +15,13 @@ export function getTrace(particle, propagationMedium) {
     }
 }
 
-export async function getParticles() {
+export async function getPrograms() {
     if(!_wasm) await _init_wasm()
     return _wasm._dedx_get_all_programs()
+}
+
+export function getParticles() {
+    return ['He', 'O', 'C', 'N']
 }
 
 export function getMaterials() {

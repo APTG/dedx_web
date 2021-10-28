@@ -5,6 +5,6 @@ import {getParticles} from '../Backend/WASMWrapper'
 describe('WASMWrapper', () => {
     test('_dedx_get_all_programs', ()=>{
         const programs = getParticles()
-        expect(programs).toBeInstanceOf([])
+        expect(programs).toBeInstanceOf(Array)
     })
 })

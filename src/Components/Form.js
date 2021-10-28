@@ -9,15 +9,6 @@ import '../Styles/Form.css'
 
 export default class Form extends React.Component {
 
-    async componentDidMount(){
-        //const wasm = await getParticles()
-        // wasm.then(w=>{
-        //     console.log(w)
-        // })
-        console.log('waiting for wasm')
-        await getParticles()
-    }
-
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
     }
@@ -70,7 +61,7 @@ export default class Form extends React.Component {
                     <label className="input-wrapper">
                         Particle
                         <select name="particle" className="input-box">
-                            {[].map((particle, key) => <option key={"material_" + key}>{particle}</option>)}
+                            {getParticles().map((particle, key) => <option key={"material_" + key}>{particle}</option>)}
                         </select>
                     </label>
                     <label className="input-wrapper">
