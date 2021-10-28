@@ -11,6 +11,8 @@ cd ./build
 
 emmake make -j4
 
+ls -al
+
 FUNCTIONS='['
 
 FUNCTIONS+='_dedx_get_program_list'
