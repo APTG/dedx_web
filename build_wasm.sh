@@ -19,7 +19,7 @@ FUNCTIONS+='_dedx_get_program_list'
 
 FUNCTIONS+=']'
 
-emcc ./bin/libdedx.a -o weblibdedx.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
+emcc ./bin/libdedx.a -o weblibdedx.html -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
 
 ls -al ./bin
 
