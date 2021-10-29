@@ -24,16 +24,16 @@ FUNCTIONS+=']'
 
 emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
 
-ls -al
-
 cd ../../..
 pwd
+ls -al
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
-cp ./libdedx/build/libdedx/WASM_FILENAME ./public
-
-rm -d libdedx/build/libdedx/
+cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$PROJECT_NAME.wasm/$PROPER_PATH/" ${JS}
 sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
+
+#cleanup
+rm -r libdedx/build
