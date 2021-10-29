@@ -5,11 +5,13 @@ PROPER_PATH="\/web_dev\/$WASM_FILENAME"
 JS=../src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
 
-emcmake cmake -S . -B ./build
+cd ./libdedx
+
+emcmake cmake . -B ./build
 
 cd ./build
 
-emmake make -j4
+emmake cmake --build .
 
 ls -al
 
@@ -19,20 +21,16 @@ FUNCTIONS+='_dedx_get_program_list'
 
 FUNCTIONS+=']'
 
-emcc ./bin/libdedx.a -o weblibdedx.html -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
+emcc libdedx.a -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
 
-ls -al ./bin
+ls -al
 
 echo -------
 
 ls -al ..
 
-cp ${WASM_FILENAME} ${WASM_PUBLIC}
+# cp ${WASM_FILENAME} ${WASM_PUBLIC}
 
-sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
-sed -i "s/$WASM_FILENAME/$PROPER_PATH/" ${JS}
-sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
-
-
-
-cd ..
+# sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
+# sed -i "s/$WASM_FILENAME/$PROPER_PATH/" ${JS}
+# sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
