@@ -31,6 +31,12 @@ ls -al
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
 
+echo PUBLIC
+ls -al ./public
+echo -----
+echo ./src/Backend
+ls -al ./src/Backend
+
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$PROJECT_NAME.wasm/$PROPER_PATH/" ${JS}
 sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
