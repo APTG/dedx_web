@@ -12,6 +12,7 @@ emcmake cmake . -B ./build
 cd ./build
 
 emmake cmake --build .
+cd libdedx
 
 ls -al
 
