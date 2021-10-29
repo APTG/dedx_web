@@ -22,7 +22,7 @@ FUNCTIONS+='_dedx_get_program_list'
 
 FUNCTIONS+=']'
 
-emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
+emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
 
 cd ../../..
 pwd
