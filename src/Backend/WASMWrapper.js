@@ -3,7 +3,6 @@ import Module from './weblibdedx.js'
 let _wasm;
 
 async function _init_wasm(){
-    console.log("initing")
     _wasm = await Module()
 }
 
@@ -11,7 +10,6 @@ async function _init_wasm(){
 async function getFromWASM(name){
     if(!_wasm) await _init_wasm()
     if(_wasm[name]) return _wasm[name]()
-    else return undefined
 }
 
 export async function getPrograms() {

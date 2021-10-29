@@ -1,17 +1,20 @@
 import { fireEvent, render } from '@testing-library/react'
 
 import Form from '../Components/Form'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
+import React from 'react'
 import StoppingPowerComponent from '../Components/Pages/StoppingPower'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
 
 describe('form', () => {
+    const mockFunction = jest.fn()
+
     test('should render form', () => {
-        const { getByTestId } = render(<Form onSubmit={() => { }} />)
+        const { getByTestId } = render(<Form onSubmit={mockFunction} />)
 
         expect(getByTestId('form-1')).toBeInTheDocument()
     })
 
     test('should render all form fields', () => {
-        const { getByLabelText } = render(<Form onSubmit={() => { }} />)
+        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
         const texts = [
             'Name',
             'Plot using',
@@ -47,12 +50,11 @@ describe('form', () => {
     })
 
     test('should handle submit', () => {
-        const mockfn = jest.fn();
-        const { getByText } = render(<Form onSubmit={mockfn} />)
+        const { getByText } = render(<Form onSubmit={mockFunction} />)
 
         fireEvent.click(getByText('Submit'))
-        expect(mockfn).toBeCalledTimes(1)
-        expect(mockfn).toBeCalledWith({
+        expect(mockFunction).toBeCalledTimes(1)
+        expect(mockFunction).toBeCalledWith({
             name: '',
             plot_using: '500',
             method: 0,
