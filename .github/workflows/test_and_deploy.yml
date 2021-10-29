@@ -29,9 +29,17 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: wasm files
+        name: wasm bin
         path: |
           public/weblibdedx.wasm
+        if-no-files-found: error
+        retention-days: 5
+
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: wasm js
+        path: |
           src/Backend/weblibdedx.js
         if-no-files-found: error
         retention-days: 5
@@ -54,7 +62,17 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - name: Test generated files checkout
+   - uses: actions/download-artifact@v2
+        with:
+          name: wasm bin
+          path: public
+   
+   - uses: actions/download-artifact@v2
+        with:
+          name: wasm js
+          path: src/Backend
+
+    - name: Test downloaded file structure
       run: |
         ls -al ./public
         ls -al ./src/Backend
