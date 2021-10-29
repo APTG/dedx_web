@@ -26,11 +26,11 @@ emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s EXPORT_
 
 ls -al
 
-cd ../..
+cd ../../..
 pwd
 
-cp libdedx/build/libdedx/$PROJECT_NAME.js $JS
-cp libdedx/build/libdedx/WASM_FILENAME $WASM_PUBLIC
+cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
+cp ./libdedx/build/libdedx/WASM_FILENAME ./public
 
 rm -d libdedx/build/libdedx/
 
