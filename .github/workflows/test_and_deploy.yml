@@ -62,15 +62,15 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-   - uses: actions/download-artifact@v2
-        with:
-          name: wasm bin
-          path: public
+    - uses: actions/download-artifact@v2
+      with:
+        name: wasm bin
+        path: public
    
-   - uses: actions/download-artifact@v2
-        with:
-          name: wasm js
-          path: src/Backend
+    - uses: actions/download-artifact@v2
+      with:
+        name: wasm js
+        path: src/Backend
 
     - name: Test downloaded file structure
       run: |
