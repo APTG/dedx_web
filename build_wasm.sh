@@ -12,6 +12,7 @@ cd ./build
 
 emmake cmake --build .
 cd libdedx
+pwd
 
 ls -al
 
@@ -26,6 +27,7 @@ emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s EXPORT_
 ls -al
 
 cd ../..
+pwd
 
 cp libdedx/build/libdedx/$PROJECT_NAME.js $JS
 cp libdedx/build/libdedx/WASM_FILENAME $WASM_PUBLIC
