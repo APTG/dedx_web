@@ -26,6 +26,16 @@ jobs:
     - name: Complie to wasm
       run: ./build_wasm.sh
 
+    - name: 'Upload Artifact'
+      uses: actions/upload-artifact@v2
+      with:
+        name: wasm files
+        path: |
+          public/weblibdedx.wasm
+          src/Backend/weblibdedx.js
+        if-no-files-found: error
+        retention-days: 5
+
   build:
 
     runs-on: ubuntu-latest
