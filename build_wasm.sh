@@ -12,30 +12,27 @@ cd ./build
 
 emmake cmake --build .
 cd libdedx
-pwd
-
-ls -al
 
 FUNCTIONS='['
 
-FUNCTIONS+='_dedx_get_program_list'
+FUNCTIONS+='_dedx_get_program_list,'
+FUNCTIONS+='_dedx_get_material_list,'
+FUNCTIONS+='_dedx_get_ion_list,'
+FUNCTIONS+='_dedx_get_min_energy,'
+FUNCTIONS+='_dedx_get_max_energy,'
+FUNCTIONS+='_dedx_get_ion_name,'
+FUNCTIONS+='_dedx_get_material_name,'
+FUNCTIONS+='_dedx_get_program_name'
+
 
 FUNCTIONS+=']'
 
-emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1
+emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap"]
 
 cd ../../..
-pwd
-ls -al
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
-
-echo PUBLIC
-ls -al ./public
-echo -----
-echo ./src/Backend
-ls -al ./src/Backend
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$PROJECT_NAME.wasm/$PROPER_PATH/" ${JS}

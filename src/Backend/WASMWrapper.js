@@ -1,6 +1,6 @@
 import Module from './weblibdedx.js'
 
-let _wasm;
+let _wasm; // skipcq: JS-0119
 
 async function _init_wasm(){
     _wasm = await Module()
