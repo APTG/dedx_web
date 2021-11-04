@@ -2,12 +2,17 @@
   padding: 2rem 2rem 0 2rem;
 }
 
-.gridish {
+.gridish, .gridish50 {
   display: flex;
-  flex-direction: column;
+  flex-direction: row;
   flex-wrap: wrap;
+  gap: 1rem;
 }
 
 .gridish>* {
-  flex: 1 1 30em;
+  flex: 1 1 12em;
+}
+
+.gridish50>* {
+  flex: 1 1 200px;
 }

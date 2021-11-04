@@ -27,18 +27,10 @@ export default class WASMWrapper{
     }
 }
 
-let _wasm; // skipcq: JS-0119
 
 
 
-// ensures WASM is loaded and the function is compiled and reachable.
-async function getFromWASM(name,return_t,params_t){
-    
-}
 
-export async function getPrograms() {
-
-}
 //#region MOCK
 //#region GET
 export function getTrace(particle, propagationMedium) {
@@ -56,4 +48,3 @@ export function getMaterials() {
     return ['Water', 'Air', 'Earth', 'Fire']
 }
 //#endregion GET
-//#endregion MOCK

@@ -24,6 +24,7 @@ class ContentWrapper extends React.Component {
 
     render() {
         const { JSROOT } = this.props
+        if(JSROOT) console.log(JSROOT)
 
         return (
             <Router>

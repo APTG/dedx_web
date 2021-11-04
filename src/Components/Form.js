@@ -1,5 +1,4 @@
 import WASMWrapper, { getMaterials, getParticles } from '../Backend/WASMWrapper';
-
 import PropTypes from 'prop-types';
 import React from 'react';
 import Toggle from './Toggle';
@@ -8,7 +7,6 @@ import Toggle from './Toggle';
 import '../Styles/Form.css'
 
 export default class Form extends React.Component {
-
     async componentDidMount(){
         const programs = await WASMWrapper.getPrograms()
         console.log(programs)
@@ -45,7 +43,6 @@ export default class Form extends React.Component {
     render() {
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
-                <div>
                     <label className="input-wrapper">
                         Name
                         <input name="name" type="text" className="input-box" />
@@ -60,9 +57,6 @@ export default class Form extends React.Component {
                             </Toggle>
                         </div>
                     </div>
-                </div>
-
-                <div>
                     <label className="input-wrapper">
                         Particle
                         <select name="particle" className="input-box">
@@ -75,7 +69,6 @@ export default class Form extends React.Component {
                             {getMaterials().map((material, key) => <option key={"material_" + key}>{material}</option>)}
                         </select>
                     </label>
-                </div>
                 <button className="button" type="submit">Submit</button>
             </form>
         );
