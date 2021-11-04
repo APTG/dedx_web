@@ -1,4 +1,4 @@
-import { getMaterials, getParticles } from '../Backend/WASMWrapper';
+import WASMWrapper, { getMaterials, getParticles } from '../Backend/WASMWrapper';
 
 import PropTypes from 'prop-types';
 import React from 'react';
@@ -8,6 +8,11 @@ import Toggle from './Toggle';
 import '../Styles/Form.css'
 
 export default class Form extends React.Component {
+
+    async componentDidMount(){
+        const programs = await WASMWrapper.getPrograms()
+        console.log(programs)
+    }
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
