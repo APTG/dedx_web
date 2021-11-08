@@ -1,10 +1,9 @@
-import { getTrace } from '../../Backend/WASMWrapper'
-
 import Form from "../Form";
 import JSRootGraph from "../JSRootGraph";
 import PropTypes from 'prop-types';
 import React from "react";
 import GraphSetting from '../GraphSettings/GraphSettings';
+import WASMWrapper from "../../Backend/WASMWrapper";
 
 class StoppingPowerComponent extends React.PureComponent {
 
@@ -36,7 +35,7 @@ class StoppingPowerComponent extends React.PureComponent {
     //TODO
     submitHandler(message) {
         const traces = this.state.traces;
-        traces.push(getTrace(message, ""));
+        traces.push(WASMWrapper.getTrace(message, ""));
         this.setState({
             traces: traces
         })

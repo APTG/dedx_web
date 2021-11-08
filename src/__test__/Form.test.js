@@ -2,7 +2,15 @@ import { fireEvent, render } from '@testing-library/react'
 
 import Form from '../Components/Form'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
 import React from 'react'
-import StoppingPowerComponent from '../Components/Pages/StoppingPower'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
+
+import Enzyme,{mount} from 'enzyme'
+import Adapter from '@wojtekmaj/enzyme-adapter-react-17'
+
+import {mockPrograms, mockMaterials, mockIons} from './MockData'
+
+Enzyme.configure({adapter: new Adapter()})
+
+jest.mock('../Backend/WASMWrapper.js')
 
 describe('form', () => {
     const mockFunction = jest.fn()
@@ -19,7 +27,8 @@ describe('form', () => {
             'Name',
             'Plot using',
             'Material',
-            'Particle',
+            'Ion',
+            'Program'
         ]
 
         texts.forEach(t => {
@@ -27,14 +36,41 @@ describe('form', () => {
         })
     })
 
-    test('should be rendered on the stopping power subsite', () => {
-        const { getByLabelText } = render(<StoppingPowerComponent ready={false} />)
+    test('should render all programs', ()=>{
+        const wrapper = mount(<Form onSubmit={mockFunction} />)
 
-        expect(getByLabelText('Name')).toBeInTheDocument()
+        wrapper.setState({
+            programs: mockPrograms
+        })
+
+        const options = wrapper.find('option').map((option)=>option.text())
+        expect(options).toEqual(mockPrograms.map(x=>x.name))
+    })
+
+    test('should render all ions', ()=>{
+        const wrapper = mount(<Form onSubmit={mockFunction} />)
+
+        wrapper.setState({
+            programs: mockIons
+        })
+
+        const options = wrapper.find('option').map((option)=>option.text())
+        expect(options).toEqual(mockIons.map(x=>x.name))
+    })
+
+    test('should render all materials', ()=>{
+        const wrapper = mount(<Form onSubmit={mockFunction} />)
+
+        wrapper.setState({
+            programs: mockMaterials
+        })
+
+        const options = wrapper.find('option').map((option)=>option.text())
+        expect(options).toEqual(mockMaterials.map(x=>x.name))
     })
 
     test('should handle text inputs', () => {
-        const { getByLabelText } = render(<StoppingPowerComponent ready={false} />)
+        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
 
         const nameNode = getByLabelText('Name')
         expect(nameNode.value).toMatch('')
@@ -44,23 +80,9 @@ describe('form', () => {
     })
 
     test('should handle numeric input', () => {
-        const { getByLabelText } = render(<StoppingPowerComponent ready={false} />)
+        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
 
         testNumericInput(getByLabelText, 'Plot using')
-    })
-
-    test('should handle submit', () => {
-        const { getByText } = render(<Form onSubmit={mockFunction} />)
-
-        fireEvent.click(getByText('Submit'))
-        expect(mockFunction).toBeCalledTimes(1)
-        expect(mockFunction).toBeCalledWith({
-            name: '',
-            plot_using: '500',
-            method: 0,
-            particle: 'He',
-            material: 'Water',
-        })
     })
 })
 
