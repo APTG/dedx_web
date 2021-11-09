@@ -23,8 +23,7 @@ class ContentWrapper extends React.Component {
     }
 
     render() {
-        const { JSROOT } = this.props
-        if(JSROOT) console.log(JSROOT)
+        const ready = this.props.JSROOT?true:false
 
         return (
             <Router>
@@ -37,13 +36,13 @@ class ContentWrapper extends React.Component {
                     <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
                         <Switch>
                             <Route path={'/StoppingPower'}>
-                                <StoppingPowerComponent ready={JSROOT ? true : false} />
+                                <StoppingPowerComponent ready={ready} />
                             </Route>
                             <Route path={'/Energy'}>
-                                <EnergyComponent ready={JSROOT ? true : false} />
+                                <EnergyComponent ready={ready} />
                             </Route>
                             <Route path={'/Calculator'} >
-                                <CalculatorComponent ready={JSROOT ? true : false} />
+                                <CalculatorComponent ready={ready} />
                             </Route>
                         </Switch>
                     </div>

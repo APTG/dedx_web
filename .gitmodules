@@ -3,3 +3,4 @@
 	path = libdedx
 	url = https://github.com/APTG/libdedx.git
 	branch = change_get_functions
+	shallow = true
