@@ -24,7 +24,9 @@ FUNCTIONS+='_dedx_get_min_energy,'
 FUNCTIONS+='_dedx_get_max_energy,'
 FUNCTIONS+='_dedx_get_ion_name,'
 FUNCTIONS+='_dedx_get_material_name,'
-FUNCTIONS+='_dedx_get_program_name'
+FUNCTIONS+='_dedx_get_program_name,'
+FUNCTIONS+='_malloc,'
+FUNCTIONS+='_free'
 
 
 FUNCTIONS+=']'
