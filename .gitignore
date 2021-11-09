@@ -21,3 +21,8 @@
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+src/Components/Footer/deploy.json
+src/Backend/weblibdedx.js
+.gitignore
+public/weblibdedx.wasm
+.vscode/settings.json

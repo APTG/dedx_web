@@ -19,9 +19,9 @@
     text-align: center;
     border: 1px solid #666;
     color: #666;
-    padding: 1rem;
+    padding: 0.2rem;
     cursor: pointer;
-    min-width: 8rem !important;
+    min-width: 4rem !important;
     flex: 1 1 100%;
     font-weight: bold;
     transition: 0.2s background, 0.2s color ease-in-out;

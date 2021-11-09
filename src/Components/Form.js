@@ -1,23 +1,60 @@
-import { getMaterials, getParticles } from '../Backend/WASMWrapper';
-
 import PropTypes from 'prop-types';
 import React from 'react';
 import Toggle from './Toggle';
 
+import WASMWrapper from '../Backend/WASMWrapper';
 import '../Styles/Form.css'
 
 export default class Form extends React.Component {
+    async componentDidMount() {
+        try {
+            const [programs, ions, materials] = await Promise.all([
+                this.wrapper.getPrograms(),
+                this.wrapper.getIons(this.state.program),
+                this.wrapper.getMaterials(this.state.program)
+            ])
+            this.setState({
+                programs: programs,
+                ions: ions,
+                materials: materials
+            })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    async onProgramChange(newProgram) {
+        const { value } = newProgram.target
+        try {
+           const [mats, ions] = await Promise.all([
+                this.wrapper.getMaterials(value),
+                this.wrapper.getIons(value)]
+            )
+             this.setState({
+                program: value,
+                materials: mats,
+                ions: ions
+            })
+        } catch(err){
+            console.log(err)
+        }
+        
+    }
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
     }
 
-    constructor({ props }) {
+    constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
-
+        this.wrapper = new WASMWrapper()
         this.state = {
-            method: 0
+            method: 0,
+            program: 1,
+            programs: [],
+            ions: [],
+            materials: []
         }
     }
 
@@ -26,8 +63,9 @@ export default class Form extends React.Component {
         this.props.onSubmit({
             name: event.target.elements.name.value,
             plot_using: event.target.elements.plot_using.value,
+            program: this.state.program,
             method: this.state.method,
-            particle: event.target.elements.particle.value,
+            ion: event.target.elements.ion.value,
             material: event.target.elements.material.value,
         })
     }
@@ -36,10 +74,14 @@ export default class Form extends React.Component {
         this.setState({ method: newState })
     }
 
+
+
     render() {
+        const { ready, programs, ions, materials } = this.state
+
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
-                <div>
+                <div className="gridish50">
                     <label className="input-wrapper">
                         Name
                         <input name="name" type="text" className="input-box" />
@@ -54,19 +96,22 @@ export default class Form extends React.Component {
                             </Toggle>
                         </div>
                     </div>
-                </div>
-
-                <div>
                     <label className="input-wrapper">
-                        Particle
-                        <select name="particle" className="input-box">
-                            {getParticles().map((particle, key) => <option key={"material_" + key}>{particle}</option>)}
+                        Program
+                        <select id="programSelect" name="program" onChange={this.onProgramChange.bind(this)} className="input-box">
+                            {programs.map((program, key) => <option value={program.code} key={"program" + key}>{program.name}</option>)}
+                        </select>
+                    </label>
+                    <label className="input-wrapper">
+                        Ion
+                        <select id="ionSelect" name="ion" className="input-box">
+                            {ions.map((ion, key) => <option value={ion.code} key={"ion_" + key}>{ion.name}</option>)}
                         </select>
                     </label>
                     <label className="input-wrapper">
                         Material
-                        <select name="material" className="input-box">
-                            {getMaterials().map((material, key) => <option key={"material_" + key}>{material}</option>)}
+                        <select id="materialSelect" name="material" className="input-box">
+                            {materials.map((material, key) => <option value={material.code} key={"material_" + key}>{material.name}</option>)}
                         </select>
                     </label>
                 </div>
