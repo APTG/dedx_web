@@ -85,8 +85,6 @@ jobs:
     - run: npm run build --if-present
     
     - run: npm test
-    
-
 
 
   test_and_deploy:
@@ -108,6 +106,16 @@ jobs:
         with:
           # Private SSH key to register in the SSH agent
           ssh-private-key: ${{ secrets.WEBDEV }}
+
+      - uses: actions/download-artifact@v2
+        with:
+          name: wasm bin
+          path: public
+   
+      - uses: actions/download-artifact@v2
+        with:
+          name: wasm js
+          path: src/Backend
 
       - name: Deploy
         if: github.ref == 'refs/heads/master'
