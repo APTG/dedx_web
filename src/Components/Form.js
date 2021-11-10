@@ -13,84 +13,86 @@ export default class Form extends React.Component {
                 this.wrapper.getIons(this.state.program),
                 this.wrapper.getMaterials(this.state.program)
             ])
-            this.setState({
-                programs: programs,
-                ions: ions,
-                materials: materials
-            })
+            this.setState({ programs, ions, materials})
         } catch (err) {
             console.log(err)
         }
     }
 
     async onProgramChange(newProgram) {
-        const { value } = newProgram.target
+        const program = (Number)(newProgram.target.value)
         try {
-           const [mats, ions] = await Promise.all([
-                this.wrapper.getMaterials(value),
-                this.wrapper.getIons(value)]
+            const [materials, ions] = await Promise.all([
+                this.wrapper.getMaterials(program),
+                this.wrapper.getIons(program)]
             )
-             this.setState({
-                program: value,
-                materials: mats,
-                ions: ions
-            })
-        } catch(err){
+            this.setState({ program, materials, ions })
+        } catch (err) {
             console.log(err)
         }
-        
+
     }
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
     }
 
+    seriesMessage = series => `Series ${series}`
+
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
-        this.wrapper = new WASMWrapper()
+        this.wrapper = props.wrapper || new WASMWrapper()
+
+        const startingSeriesNumber = 0
+
         this.state = {
+            seriesNumber: startingSeriesNumber,
+            name: this.seriesMessage(startingSeriesNumber),
             method: 0,
+            plotUsing: 100,
             program: 1,
+            ion: 2,
+            material: 2,
             programs: [],
             ions: [],
             materials: []
         }
     }
 
+    onNameChange = name => this.setState({ name: name.target.value })
+    onMethodChange = method => this.setState({ method: method })
+    onPlotUsingChange = plotUsing => this.setState({ plotUsing: plotUsing.target.value })
+    onIonChange = ion => this.setState({ ion: (Number)(ion.target.value) })
+    onMaterialChange = material => this.setState({ material: (Number)(material.target.value) })
+
+
     handleSubmit(event) {
         event.preventDefault()
-        this.props.onSubmit({
-            name: event.target.elements.name.value,
-            plot_using: event.target.elements.plot_using.value,
-            program: this.state.program,
-            method: this.state.method,
-            ion: event.target.elements.ion.value,
-            material: event.target.elements.material.value,
-        })
+        const { name, method, plotUsing, program, ion, material } = this.state
+        this.props.onSubmit({ name, method, plotUsing, program, ion, material })
+        this.setState(pervState => ({
+            seriesNumber: ++pervState.seriesNumber,
+            name: this.seriesMessage(pervState.seriesNumber)
+        }))
+        this.forceUpdate()
     }
-
-    onMethodChange(newState) {
-        this.setState({ method: newState })
-    }
-
-
 
     render() {
-        const { ready, programs, ions, materials } = this.state
+        const { programs, ions, materials } = this.state
 
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
                 <div className="gridish50">
                     <label className="input-wrapper">
                         Name
-                        <input name="name" type="text" className="input-box" />
+                        <input onChange={this.onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
                     <div className="input-wrapper">
                         <label htmlFor="plot_using">Plot using</label>
                         <div className="toggle-compound">
-                            <input name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={500} placeholder={500} />
-                            <Toggle name={''} onChange={this.onMethodChange.bind(this)}>
+                            <input onChange={this.onPlotUsingChange} name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
+                            <Toggle name={''} onChange={this.onMethodChange}>
                                 {"Step"}
                                 {"Points"}
                             </Toggle>
@@ -98,19 +100,19 @@ export default class Form extends React.Component {
                     </div>
                     <label className="input-wrapper">
                         Program
-                        <select id="programSelect" name="program" onChange={this.onProgramChange.bind(this)} className="input-box">
+                        <select onChange={this.onProgramChange.bind(this)} id="programSelect" name="program" className="input-box">
                             {programs.map((program, key) => <option value={program.code} key={"program" + key}>{program.name}</option>)}
                         </select>
                     </label>
                     <label className="input-wrapper">
                         Ion
-                        <select id="ionSelect" name="ion" className="input-box">
+                        <select onChange={this.onIonChange} id="ionSelect" name="ion" className="input-box">
                             {ions.map((ion, key) => <option value={ion.code} key={"ion_" + key}>{ion.name}</option>)}
                         </select>
                     </label>
                     <label className="input-wrapper">
                         Material
-                        <select id="materialSelect" name="material" className="input-box">
+                        <select onChange={this.onMaterialChange} id="materialSelect" name="material" className="input-box">
                             {materials.map((material, key) => <option value={material.code} key={"material_" + key}>{material.name}</option>)}
                         </select>
                     </label>

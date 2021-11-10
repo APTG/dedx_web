@@ -14,8 +14,8 @@ function createMultigraphFromProps(traces) {
 
 function drawOptFromProps(props) {
     const res = [];
-    if (props.logx === 1) res.push("logx");
-    if (props.logy === 1) res.push("logy");
+    if (props.xAxis === 1) res.push("logx");
+    if (props.yAxis === 1) res.push("logy");
     if (props.plotStyle === 1) res.push("P");
 
     return res.join(';');
@@ -30,8 +30,8 @@ export default class JSRootGraph extends React.Component {
     static traces = 0;
 
     static propTypes = {
-        logx: PropTypes.oneOf([0, 1]).isRequired,
-        logy: PropTypes.oneOf([0, 1]).isRequired,
+        xAxis: PropTypes.oneOf([0, 1]).isRequired,
+        yAxis: PropTypes.oneOf([0, 1]).isRequired,
         plotStyle: PropTypes.oneOf([0, 1]).isRequired,
         traces: PropTypes.arrayOf(
             PropTypes.shape({
@@ -60,7 +60,13 @@ export default class JSRootGraph extends React.Component {
         }
     }
 
+    refreshGraph(){
+            JSROOT.resize(this.graphRef.current)
+    }
+
     componentDidMount() {
+        window.addEventListener('resize', this.refreshGraph.bind(this))
+
         if (this.props.traces.length !== 0) {
             const toDraw = createMultigraphFromProps(this.props.traces);
             JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
@@ -72,13 +78,12 @@ export default class JSRootGraph extends React.Component {
 
     shouldComponentUpdate(nextProps, nextState) {
         const should = !nextState.drawn
-            || ['logx', 'logy', 'plotStyle'].some(el => this.props[el] !== nextProps[el])
+            || ['xAxis', 'yAxis', 'plotStyle'].some(el => this.props[el] !== nextProps[el])
 
         if (should) {
             JSROOT.cleanup(this.graphRef.current);
             const toDraw = createMultigraphFromProps(nextState.traces);
             const opts = drawOptFromProps(nextProps);
-            console.log(opts);
             JSROOT.draw(this.graphRef.current, toDraw, opts)
                 .then(_ => {
                     JSRootGraph.traces = nextProps.traces.length;

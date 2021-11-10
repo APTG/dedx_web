@@ -79,7 +79,7 @@ export default class WASMWrapper {
         return this.getNames(untyped, 'dedx_get_material_name')
     }
 
-    getTrace(particle, propagationMedium) {
+    getTrace(program, ion, material) {
         return {
             x: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
             y: Array.from(new Array(10), _ => Math.random() * 100)
