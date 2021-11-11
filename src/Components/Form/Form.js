@@ -1,9 +1,10 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import Toggle from './Toggle';
+import Toggle from '../Toggle';
 
-import WASMWrapper from '../Backend/WASMWrapper';
-import '../Styles/Form.css'
+import WASMWrapper from '../../Backend/WASMWrapper';
+import '../../Styles/Form.css'
+import Dropdown from './Dropdown';
 
 export default class Form extends React.Component {
     async componentDidMount() {
@@ -58,6 +59,8 @@ export default class Form extends React.Component {
             ions: [],
             materials: []
         }
+
+        this.onProgramChange = this.onProgramChange.bind(this)
     }
 
     onNameChange = name => this.setState({ name: name.target.value })
@@ -79,6 +82,7 @@ export default class Form extends React.Component {
     }
 
     render() {
+        console.log(this.state)
         const { programs, ions, materials } = this.state
 
         return (
@@ -98,24 +102,9 @@ export default class Form extends React.Component {
                             </Toggle>
                         </div>
                     </div>
-                    <label className="input-wrapper">
-                        Program
-                        <select onChange={this.onProgramChange.bind(this)} id="programSelect" name="program" className="input-box">
-                            {programs.map((program, key) => <option value={program.code} key={"program" + key}>{program.name}</option>)}
-                        </select>
-                    </label>
-                    <label className="input-wrapper">
-                        Ion
-                        <select onChange={this.onIonChange} id="ionSelect" name="ion" className="input-box">
-                            {ions.map((ion, key) => <option value={ion.code} key={"ion_" + key}>{ion.name}</option>)}
-                        </select>
-                    </label>
-                    <label className="input-wrapper">
-                        Material
-                        <select onChange={this.onMaterialChange} id="materialSelect" name="material" className="input-box">
-                            {materials.map((material, key) => <option value={material.code} key={"material_" + key}>{material.name}</option>)}
-                        </select>
-                    </label>
+                    <Dropdown name="Program" data={programs} onchange={this.onProgramChange} />
+                    <Dropdown name="Ion" data={ions} onchange={this.onIonChange} />
+                    <Dropdown name="Material" data={materials} onchange={this.onMaterialChange} />
                 </div>
                 <button className="button" type="submit">Submit</button>
             </form>
