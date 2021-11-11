@@ -30,7 +30,7 @@ class StoppingPowerComponent extends React.PureComponent {
     submitHandler(message) {
         const { name, program, ion, material } = message
         const trace = Object.assign({
-            isShown: false,
+            isShown: true,
             name
         }, this.wrapper.getTrace(program, ion, material))
 
