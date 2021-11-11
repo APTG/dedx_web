@@ -9,15 +9,13 @@ function createTGraphFromTrace(trace) {
 }
 
 function createMultigraphFromTraces(traces) {
-    const tGraphs = JSROOT.createTMultiGraph(
-        ...(
-            traces
+    const filtered = traces
                 .filter(trace => trace.isShown)
                 .map(createTGraphFromTrace)
-        )
-    );
 
-    return tGraphs.length !== 0 ? tGraphs : JSROOT.createTGraph(1)
+    return filtered.length !== 0 
+        ? JSROOT.createTMultiGraph(...filtered) 
+        : JSROOT.createTGraph(1)
 }
 
 function drawOptFromProps(props) {

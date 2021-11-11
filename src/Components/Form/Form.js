@@ -82,7 +82,6 @@ export default class Form extends React.Component {
     }
 
     render() {
-        console.log(this.state)
         const { programs, ions, materials } = this.state
 
         return (

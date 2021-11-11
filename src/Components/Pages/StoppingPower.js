@@ -30,7 +30,7 @@ class StoppingPowerComponent extends React.PureComponent {
     submitHandler(message) {
         const { name, program, ion, material } = message
         const trace = Object.assign({
-            isShown: true,
+            isShown: false,
             name
         }, this.wrapper.getTrace(program, ion, material))
 
@@ -54,8 +54,6 @@ class StoppingPowerComponent extends React.PureComponent {
     }
 
     render() {
-        console.log(this.state.traces)
-
         return (
             <div className="content gridish">
                 <Form onSubmit={this.submitHandler} layout={this.state.layout} wrapper={this.wrapper} />
