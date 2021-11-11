@@ -1,6 +1,5 @@
 import React, { createRef } from "react";
 import PropTypes from 'prop-types';
-import { Component } from "react";
 
 let JSROOT
 //#region Helper functions
@@ -93,7 +92,7 @@ export default class JSRootGraph extends React.Component {
     render() {
         return (
             <div>
-                <div style={{ width: "100%", height: 480 }} ref={this.graphRef}></div>
+                <div style={{ width: "100%", height: '40vw', minHeight:'400px' }} ref={this.graphRef}></div>
             </div>
         )
     }
