@@ -4,7 +4,7 @@ import Toggle from "../Toggle";
 
 function GraphSetting({startValues, onChange}) {
     return (
-        <div className="gridish50" style={{paddingTop:"1rem"}}>
+        <div className="gridish250" style={{paddingTop:"1rem"}}>
             <Toggle onChange={onChange.xAxis} name={"X Axis:"} startValue={startValues.xAxis}>
                 {"Linear"}
                 {"Logarithmic"}

@@ -3,6 +3,7 @@
     flex-direction: column;
     gap: 0.6rem;
     padding: 1rem 1rem;
+    max-height: min-content;
 }
 
 .particle-input>* {
@@ -49,6 +50,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     justify-content: center;
     width: 70%;
     margin: auto;
+    margin-top: 2rem;
     padding: 0.5em;
     border: 2px solid #666;
     background: none;

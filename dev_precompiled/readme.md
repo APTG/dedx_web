@@ -1,1 +1,0 @@
-Precompiled versions of the emcc output. Keep in mind it might not be up-to-date with the version of the submodule or the main project (usually missing functions).

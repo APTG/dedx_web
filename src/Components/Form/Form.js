@@ -86,7 +86,7 @@ export default class Form extends React.Component {
 
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
-                <div className="gridish50">
+                <div className="gridish250">
                     <label className="input-wrapper">
                         Name
                         <input onChange={this.onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
