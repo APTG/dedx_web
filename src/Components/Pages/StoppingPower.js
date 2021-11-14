@@ -1,4 +1,4 @@
-import Form from "../Form";
+import Form from "../Form/Form";
 import JSRootGraph from "../JSRootGraph";
 import PropTypes from 'prop-types';
 import React from "react";
@@ -11,18 +11,15 @@ class StoppingPowerComponent extends React.PureComponent {
         ready: PropTypes.bool.isRequired
     }
 
-    onLayoutChange(newState) {
-        this.setState({ layout: newState })
-    }
-
     constructor(props) {
         super(props);
 
+        this.wrapper = props.wrapper || new WASMWrapper()
+
         this.state = {
-            ready: false,
             traces: [],
-            logx: 0,
-            logy: 1,
+            xAxis: 0,
+            yAxis: 1,
             plotStyle: 0,
             layout: 0,
         }
@@ -30,44 +27,43 @@ class StoppingPowerComponent extends React.PureComponent {
         this.submitHandler = this.submitHandler.bind(this);
     }
 
-
-
-    //TODO
     submitHandler(message) {
-        const traces = this.state.traces;
-        traces.push(WASMWrapper.getTrace(message, ""));
-        this.setState({
-            traces: traces
-        })
+        const { name, program, ion, material } = message
+        const trace = Object.assign({
+            isShown: true,
+            name
+        }, this.wrapper.getTrace(program, ion, material))
+
+        // destruct oldState before assiging new values
+        this.setState(oldState => ({
+            ...oldState,
+            traces: [...oldState.traces, trace]
+        }))
         this.forceUpdate();
     }
 
     startValues() {
-        return {
-            xAxis: this.state.logx,
-            yAxis: this.state.logy,
-            method: this.state.plotStyle
-        }
+        const { xAxis, yAxis, method } = this.state
+        return { xAxis, yAxis, method }
+    }
+
+    onSettingsChange = {
+        xAxis: (xAxis => this.setState({ xAxis })),
+        yAxis: (yAxis => this.setState({ yAxis })),
+        method: (plotStyle => this.setState({ plotStyle }))
     }
 
     render() {
-        const onSettingsChange = {
-            xAxis: (newState => this.setState({ logx: newState })),
-            yAxis: (newState => this.setState({ logy: newState })),
-            method: (newState => this.setState({ plotStyle: newState }))
-        }
-
         return (
             <div className="content gridish">
-                <Form onSubmit={this.submitHandler} layout={this.state.layout} />
-                <div style={{minWidth:"70%"}}>
-                    <GraphSetting startValues={this.startValues()} onChange={onSettingsChange} />
+                <Form onSubmit={this.submitHandler} layout={this.state.layout} wrapper={this.wrapper} />
+                <div style={{ minWidth: "70%" }}>
+                    <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph traces={this.state.traces} logx={this.state.logx} logy={this.state.logy} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph traces={this.state.traces} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
                             : <h2>JSROOT still loading</h2>
                     }
-
                 </div>
             </div>
         )

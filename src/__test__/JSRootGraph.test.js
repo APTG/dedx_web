@@ -5,8 +5,8 @@ import React from 'react'
 
 describe('JSRootGraphp', () => {  // skipcq: JS-0125
     const draw = jest.fn()
-    const createTGraph = jest.fn()
-    const createTMultiGraph = jest.fn()
+    const createTGraph = jest.fn(trace=>{})
+    const createTMultiGraph = jest.fn(traces=> createTGraph())
     window.JSROOT = {
         draw,
         createTGraph,
@@ -14,16 +14,16 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     }
 
     test('should render an empty graph', () => {
-        render(<JSRootGraph logx={0} logy={0} plotStyle={0} traces={[]} />)
+        render(<JSRootGraph xAxis={0} yAxis={0} plotStyle={0} traces={[]} />)
         expect(draw).toBeCalledTimes(1)
         expect(createTGraph).toBeCalledTimes(1)
         expect(createTGraph).toBeCalledWith(1)
     })
 
     const cases = [
-        { data: { logx: 1, logy: 0, plotStyle: 0, traces: [] }, name: 'logx' },
-        { data: { logx: 1, logy: 1, plotStyle: 0, traces: [] }, name: 'logy' },
-        { data: { logx: 1, logy: 1, plotStyle: 1, traces: [] }, name: 'plotStyle' },
+        { data: { xAxis: 1, yAxis: 0, plotStyle: 0, traces: [] }, name: 'xAxis' },
+        { data: { xAxis: 1, yAxis: 1, plotStyle: 0, traces: [] }, name: 'yAxis' },
+        { data: { xAxis: 1, yAxis: 1, plotStyle: 1, traces: [] }, name: 'plotStyle' },
     ]
 
     cases.forEach(c => {
@@ -36,7 +36,8 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
         })
     })
 
-    const traceCase = { logx: 0, logy: 0, plotStyle: 0, traces: [{ x: [1, 2, 3], y: [1, 2, 3] }] }
+    const trace = { x: [1, 2, 3], y: [1, 2, 3], isShown: true }
+    const traceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, traces: [trace] }
 
     test('should update the graph trace', () => {
         render(<JSRootGraph {...traceCase} />)
@@ -48,7 +49,7 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
         expect(createTGraph).toBeCalledWith(3, [1, 2, 3], [1, 2, 3])
     })
 
-    const multipleTraceCase = { logx: 0, logy: 0, plotStyle: 0, traces: [{ x: [1, 2, 3], y: [1, 2, 3] }, { x: [4, 5], y: [4, 5] }] }
+    const multipleTraceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, traces: [trace,trace] }
 
     test('should render multiple traces', () => {
         render(<JSRootGraph {...multipleTraceCase} />)
