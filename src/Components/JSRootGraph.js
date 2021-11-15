@@ -1,11 +1,17 @@
 import React, { createRef } from "react";
 import PropTypes from 'prop-types';
+import TraceList from "./TraceList";
 
 let JSROOT
 //#region Helper functions
 
 function createTGraphFromTrace(trace) {
-    return JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
+    const tgraph = JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
+    tgraph.fLineColor = trace.index+1
+    tgraph.fLineWidth = 2
+    tgraph.fMarkerSize = 20
+    console.log(tgraph)
+    return tgraph
 }
 
 function createMultigraphFromTraces(traces) {
@@ -56,6 +62,7 @@ export default class JSRootGraph extends React.Component {
         }
 
         JSROOT = window.JSROOT;
+        this.onTraceStateChange = this.onTraceStateChange.bind(this)
     }
 
     static getDerivedStateFromProps(props, _) {
@@ -87,10 +94,18 @@ export default class JSRootGraph extends React.Component {
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
+    onTraceStateChange(event){
+        let index = (Number)(event.target.id)
+        let traces = [...(this.state.traces)]
+        traces[index].isShown = !traces[index].isShown
+        this.setState({traces})
+    }
+
     render() {
         return (
             <div>
                 <div style={{ width: "100%", height: '40vw', minHeight:'400px' }} ref={this.graphRef}></div>
+                <TraceList traces={this.state.traces} onTraceStateChange={this.onTraceStateChange} />
             </div>
         )
     }
