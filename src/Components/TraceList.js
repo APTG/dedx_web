@@ -26,9 +26,9 @@ function TraceList({ traces, onTraceStateChange }) {
         <div className="gridish12ch">
             {
                 traces.map((trace, key) => {
-                    return (<div style={containerStyle(trace.isShown)} id={key} onClick={onTraceStateChange} key={`Trace_${key}`}>
-                        <span style={traceStyle(trace.color)} />
-                        {trace.name}
+                    return (<div style={ containerStyle(trace.isShown) } id={ key } onClick={ onTraceStateChange } key={ `Trace_${ key }` }>
+                        <span style={ traceStyle(trace.color) } />
+                        { trace.name }
                     </div>)
                 })
             }
