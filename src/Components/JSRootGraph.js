@@ -1,21 +1,32 @@
 import React, { createRef } from "react";
 import PropTypes from 'prop-types';
+import TraceList from "./TraceList";
 
 let JSROOT
 //#region Helper functions
 
 function createTGraphFromTrace(trace) {
-    return JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
+    const tgraph = JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
+    tgraph.fLineColor = trace.index + 1
+    tgraph.fLineWidth = 2
+    console.log(tgraph)
+    return tgraph
 }
 
-function createMultigraphFromProps(traces) {
-    return JSROOT.createTMultiGraph(...(traces.map(createTGraphFromTrace)));
+function createMultigraphFromTraces(traces) {
+    const filtered = traces
+                .filter(trace => trace.isShown)
+                .map(createTGraphFromTrace)
+
+    return filtered.length !== 0 
+        ? JSROOT.createTMultiGraph(...filtered) 
+        : JSROOT.createTGraph(1)
 }
 
 function drawOptFromProps(props) {
     const res = [];
-    if (props.logx === 1) res.push("logx");
-    if (props.logy === 1) res.push("logy");
+    if (props.xAxis === 1) res.push("logx");
+    if (props.yAxis === 1) res.push("logy");
     if (props.plotStyle === 1) res.push("P");
 
     return res.join(';');
@@ -27,14 +38,14 @@ function drawOptFromProps(props) {
 
 export default class JSRootGraph extends React.Component {
 
-    static traces = 0;
-
     static propTypes = {
-        logx: PropTypes.oneOf([0, 1]).isRequired,
-        logy: PropTypes.oneOf([0, 1]).isRequired,
+        xAxis: PropTypes.oneOf([0, 1]).isRequired,
+        yAxis: PropTypes.oneOf([0, 1]).isRequired,
         plotStyle: PropTypes.oneOf([0, 1]).isRequired,
         traces: PropTypes.arrayOf(
             PropTypes.shape({
+                isShown: PropTypes.bool,
+                name: PropTypes.string,
                 x: PropTypes.arrayOf(PropTypes.number),
                 y: PropTypes.arrayOf(PropTypes.number)
             })
@@ -46,55 +57,54 @@ export default class JSRootGraph extends React.Component {
         this.graphRef = createRef(null);
 
         this.state = {
-            traces: [],
-            drawn: false
+            traces: []
         }
 
         JSROOT = window.JSROOT;
+        this.onTraceStateChange = this.onTraceStateChange.bind(this)
     }
 
     static getDerivedStateFromProps(props, _) {
         return {
-            traces: props.traces,
-            drawn: props.traces.length === JSRootGraph.traces
+            traces: props.traces
         }
+    }
+
+    getSnapshotBeforeUpdate(){
+        JSROOT.cleanup(this.graphRef.current);
+        const toDraw = createMultigraphFromTraces(this.state.traces);
+        const opts = drawOptFromProps(this.props);
+
+        return {toDraw,opts}
+    }
+
+    componentDidUpdate(_,__,snapshot){
+        JSROOT.draw(this.graphRef.current, snapshot.toDraw, snapshot.opts)
+    }
+
+    refreshGraph(){
+        JSROOT.resize(this.graphRef.current)
     }
 
     componentDidMount() {
-        if (this.props.traces.length !== 0) {
-            const toDraw = createMultigraphFromProps(this.props.traces);
-            JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
-        }
-        else {
-            JSROOT.draw(this.graphRef.current, JSROOT.createTGraph(1))
-        }
+        window.addEventListener('resize', this.refreshGraph.bind(this))
+
+        const toDraw = createMultigraphFromTraces(this.props.traces);
+        JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
-    shouldComponentUpdate(nextProps, nextState) {
-        const should = !nextState.drawn
-            || ['logx', 'logy', 'plotStyle'].some(el => this.props[el] !== nextProps[el])
-
-        if (should) {
-            JSROOT.cleanup(this.graphRef.current);
-            const toDraw = createMultigraphFromProps(nextState.traces);
-            const opts = drawOptFromProps(nextProps);
-            console.log(opts);
-            JSROOT.draw(this.graphRef.current, toDraw, opts)
-                .then(_ => {
-                    JSRootGraph.traces = nextProps.traces.length;
-                    this.setState({
-                        drawn: true
-                    })
-                });
-            return true;
-        }
-        return false;
+    onTraceStateChange(event){
+        let index = (Number)(event.target.id)
+        let traces = [...(this.state.traces)]
+        traces[index].isShown = !traces[index].isShown
+        this.setState({traces})
     }
 
     render() {
         return (
             <div>
-                <div style={{ width: "100%", height: 480 }} ref={this.graphRef}></div>
+                <div style={{ width: "100%", height: '40vw', minHeight:'400px' }} ref={this.graphRef}></div>
+                <TraceList traces={this.state.traces} onTraceStateChange={this.onTraceStateChange} />
             </div>
         )
     }
