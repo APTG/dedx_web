@@ -6,6 +6,7 @@ import GraphSetting from '../GraphSettings/GraphSettings';
 import WASMWrapper from "../../Backend/WASMWrapper";
 
 import colorSequence from '../../Styles/PlotColors.json'
+import ResultTable from "../ResultTable";
 
 const AxisLayout = {
     Linear: 0,
@@ -109,6 +110,7 @@ class StoppingPowerComponent extends React.PureComponent {
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>
+                <ResultTable traces={this.state.traces}/>
             </div>
         )
     }
