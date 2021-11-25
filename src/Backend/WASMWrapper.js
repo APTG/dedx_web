@@ -124,7 +124,7 @@ export default class WASMWrapper {
 
 
         const boundStepFuntion = (x=>{
-            const res = wasm.ccall('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'], [ion,material,x,heap.byteOffset])
+            const res = stepFunction(ion,material,x,heap.byteOffset)
             const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
             if(err !== 0)console.log(err)
             return res
