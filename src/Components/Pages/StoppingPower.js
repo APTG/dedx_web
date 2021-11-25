@@ -5,6 +5,8 @@ import React from "react";
 import GraphSetting from '../GraphSettings/GraphSettings';
 import WASMWrapper from "../../Backend/WASMWrapper";
 
+import colorSequence from '../../Styles/PlotColors.json'
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -28,9 +30,11 @@ class StoppingPowerComponent extends React.PureComponent {
     }
 
     async submitHandler(message) {
-        const { name, program, ion, material, method, plotUsing } = message
+        const { name, program, ion, material, method, plotUsing, seriesNumber } = message
         const trace = Object.assign({
             isShown: true,
+            color: colorSequence[seriesNumber%colorSequence.length],
+            index: seriesNumber,
             name
         }, await this.wrapper.getTrace(program, ion, material, method, plotUsing))
 

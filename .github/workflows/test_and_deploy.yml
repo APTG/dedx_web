@@ -24,7 +24,7 @@ jobs:
         ls -al
         ls -al libdedx
 
-    - uses: mymindstorm/setup-emsdk@v10
+    - uses: mymindstorm/setup-emsdk@v11
 
     - name: Compile to wasm
       run: ./build_wasm.sh
@@ -102,7 +102,7 @@ jobs:
         if: github.ref == 'refs/heads/master'
         # You may pin to the exact commit or the version.
         # uses: webfactory/ssh-agent@5f066a372ec13036ab7cb9a8adf18c936f8d2043
-        uses: webfactory/ssh-agent@v0.5.3
+        uses: webfactory/ssh-agent@v0.5.4
         with:
           # Private SSH key to register in the SSH agent
           ssh-private-key: ${{ secrets.WEBDEV }}

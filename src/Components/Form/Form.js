@@ -77,8 +77,8 @@ export default class Form extends React.Component {
 
     handleSubmit(event) {
         event.preventDefault()
-        const { name, method, plotUsing, program, ion, material } = this.state
-        this.props.onSubmit({ name, method, plotUsing, program, ion, material })
+        const { name, method, plotUsing, program, ion, material, seriesNumber } = this.state
+        this.props.onSubmit({ name, method, plotUsing, program, ion, material, seriesNumber })
         this.setState(pervState => ({
             seriesNumber: ++pervState.seriesNumber,
             name: this.seriesMessage(pervState.seriesNumber)
