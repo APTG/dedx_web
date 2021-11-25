@@ -1,10 +1,11 @@
+import TraceFactory from './TraceFacotry.js';
 import Module from './weblibdedx.js'
 
 export default class WASMWrapper {
     #_wasm;
     #programsSize = 20
     #ionsSize = 20
-    #materialsSize = 200
+    #materialsSize = 400
 
     async wasm() {
         if (!this.#_wasm) this.#_wasm = await Module()
@@ -45,8 +46,8 @@ export default class WASMWrapper {
         const wasm = await this.wasm()
 
         const pointer = new Int32Array(new Array(this.#ionsSize))
-        const buf = this.#_wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
-        const heap = new Uint8Array(this.#_wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
+        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
 
         wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [heap.byteOffset, program])
 
@@ -64,8 +65,8 @@ export default class WASMWrapper {
         const wasm = await this.wasm()
 
         const pointer = new Int32Array(new Array(this.#materialsSize))
-        const buf = this.#_wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
-        const heap = new Uint8Array(this.#_wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
+        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
 
         wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [heap.byteOffset, program])
 
@@ -79,10 +80,56 @@ export default class WASMWrapper {
         return this.getNames(untyped, 'dedx_get_material_name')
     }
 
-    getTrace(program, ion, material) {
-        return {
-            x: [10, 20, 30, 40, 50, 60, 70, 80, 90, 100],
-            y: Array.from(new Array(10), _ => Math.random() * 100)
-        }
+    async getTrace(program, ion, material, method, plot_using){
+        if(method === 0)
+            return await this.getTraceByInterval(program,ion,material,plot_using)
+        else
+            return await this.getTraceByPoints(program,ion,material,plot_using)
+    }
+
+    async getTraceByPoints(program, ion, material, points) {
+        const wasm = await this.wasm()
+        const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
+        const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
+
+        const xs = TraceFactory.getXAxisByPoints(start,end,points)
+
+        const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
+
+        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT);
+        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
+
+
+        const boundStepFuntion = (x=>{
+            const res = stepFunction(ion,material,x,heap.byteOffset)
+            const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+            if(err !== 0)console.log(err)
+            return res
+        })
+
+        return TraceFactory.getStoppingPowerValues(xs, boundStepFuntion)
+    }
+
+    async getTraceByInterval(program, ion, material, interval){
+        const wasm = await this.wasm()
+        const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
+        const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
+
+        const xs = TraceFactory.getXAxisByInterval(start,end,interval)
+
+        const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
+
+        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT);
+        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
+
+
+        const boundStepFuntion = (x=>{
+            const res = wasm.ccall('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'], [ion,material,x,heap.byteOffset])
+            const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+            if(err !== 0)console.log(err)
+            return res
+        })
+
+        return TraceFactory.getStoppingPowerValues(xs, boundStepFuntion)
     }
 }

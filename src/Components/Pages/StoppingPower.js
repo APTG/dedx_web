@@ -27,12 +27,14 @@ class StoppingPowerComponent extends React.PureComponent {
         this.submitHandler = this.submitHandler.bind(this);
     }
 
-    submitHandler(message) {
-        const { name, program, ion, material } = message
+    async submitHandler(message) {
+        const { name, program, ion, material, method, plotUsing } = message
         const trace = Object.assign({
             isShown: true,
             name
-        }, this.wrapper.getTrace(program, ion, material))
+        }, await this.wrapper.getTrace(program, ion, material, method, plotUsing))
+
+        console.log(trace)
 
         // destruct oldState before assiging new values
         this.setState(oldState => ({

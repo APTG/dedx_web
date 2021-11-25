@@ -14,7 +14,10 @@ export default class Form extends React.Component {
                 this.wrapper.getIons(this.state.program),
                 this.wrapper.getMaterials(this.state.program)
             ])
-            this.setState({ programs, ions, materials})
+            const program = programs[0].code
+            const material = materials[0].code
+            const ion = ions[0].code
+            this.setState({ programs, ions, materials,program,material,ion})
         } catch (err) {
             console.log(err)
         }
@@ -27,7 +30,9 @@ export default class Form extends React.Component {
                 this.wrapper.getMaterials(program),
                 this.wrapper.getIons(program)]
             )
-            this.setState({ program, materials, ions })
+            const material = materials[0].code
+            const ion = ions[0].code
+            this.setState({ program, materials, ions, material, ion })
         } catch (err) {
             console.log(err)
         }
@@ -50,11 +55,11 @@ export default class Form extends React.Component {
         this.state = {
             seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber),
-            method: 0,
+            method: 1,
             plotUsing: 100,
-            program: 1,
-            ion: 2,
-            material: 2,
+            program: 0,
+            ion: 0,
+            material: 0,
             programs: [],
             ions: [],
             materials: []
@@ -83,6 +88,7 @@ export default class Form extends React.Component {
 
     render() {
         const { programs, ions, materials } = this.state
+        const { program, ion, material, method } = this.state
 
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
@@ -95,15 +101,15 @@ export default class Form extends React.Component {
                         <label htmlFor="plot_using">Plot using</label>
                         <div className="toggle-compound">
                             <input onChange={this.onPlotUsingChange} name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
-                            <Toggle name={''} onChange={this.onMethodChange}>
+                            <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Step"}
                                 {"Points"}
                             </Toggle>
                         </div>
                     </div>
-                    <Dropdown name="Program" data={programs} onchange={this.onProgramChange} />
-                    <Dropdown name="Ion" data={ions} onchange={this.onIonChange} />
-                    <Dropdown name="Material" data={materials} onchange={this.onMaterialChange} />
+                    <Dropdown value={program} name="Program" data={programs} onchange={this.onProgramChange} />
+                    <Dropdown value={ion} name="Ion" data={ions} onchange={this.onIonChange} />
+                    <Dropdown value={material} name="Material" data={materials} onchange={this.onMaterialChange} />
                 </div>
                 <button className="button" type="submit">Submit</button>
             </form>
