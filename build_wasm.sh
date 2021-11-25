@@ -6,8 +6,6 @@ WASM_LOOKUP="wasmBinaryFile = locateFile"
 
 cd ./libdedx
 
-git checkout 769af2d9fd94b15c8ea08a973f94bdfdf048a82f
-
 emcmake cmake . -B ./build
 
 cd ./build
