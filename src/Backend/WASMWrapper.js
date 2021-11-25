@@ -136,7 +136,6 @@ export default class WASMWrapper {
     //     const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
     //     const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
 
-
     //     const boundStepFuntion = (x=>{
     //         const res = stepFunction(ion,material,x,heap.byteOffset)
     //         const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]

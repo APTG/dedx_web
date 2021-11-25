@@ -12,6 +12,11 @@ const AxisLayout = {
     Logarithmic: 1
 }
 
+const PlotStyle = {
+    Line: 0,
+    Points: 1
+}
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -27,8 +32,7 @@ class StoppingPowerComponent extends React.PureComponent {
             dataSeries: [],
             xAxis: AxisLayout.Logarithmic,
             yAxis: AxisLayout.Logarithmic,
-            plotStyle: 0,
-            layout: 0,
+            plotStyle: PlotStyle.Line
         }
 
         this.submitHandler = this.submitHandler.bind(this);
@@ -94,7 +98,7 @@ class StoppingPowerComponent extends React.PureComponent {
         console.log(this.state.dataSeries)
         return (
             <div className="content gridish">
-                <Form onSubmit={this.submitHandler} layout={this.state.layout} wrapper={this.wrapper} />
+                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} />
                 <div style={{ minWidth: "70%" }}>
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {

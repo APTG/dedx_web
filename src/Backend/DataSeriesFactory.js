@@ -1,11 +1,14 @@
 export default class TraceFactory {
     static getXValuesByPoints(minValue, maxValue, numberOfPoints) {
         if(numberOfPoints === 1) return [(maxValue + minValue)/2.0]
+        
         const interval = (maxValue - minValue) / (numberOfPoints - 1)
         return Array.from(new Array(numberOfPoints), (_, key) => { return minValue + interval * key })
     }
 
     static getLogXValuesByPoints(minValue, maxValue, numberOfPoints){
+        if(numberOfPoints === 1) return [Math.sqrt(minValue*maxValue)]
+
         const values = new Array(numberOfPoints);
         const step = Math.pow(maxValue/minValue, 1/(numberOfPoints-1))
         values[0] = minValue;
