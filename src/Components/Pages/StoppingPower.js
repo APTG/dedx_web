@@ -7,6 +7,11 @@ import WASMWrapper from "../../Backend/WASMWrapper";
 
 import colorSequence from '../../Styles/PlotColors.json'
 
+const AxisLayout = {
+    Linear: 0,
+    Logarithmic: 1
+}
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -20,8 +25,8 @@ class StoppingPowerComponent extends React.PureComponent {
 
         this.state = {
             dataSeries: [],
-            xAxis: 1,
-            yAxis: 1,
+            xAxis: AxisLayout.Logarithmic,
+            yAxis: AxisLayout.Logarithmic,
             plotStyle: 0,
             layout: 0,
         }
@@ -31,7 +36,7 @@ class StoppingPowerComponent extends React.PureComponent {
 
     async submitHandler(message) {
         const { name, program, ion, material, method, plotUsing, seriesNumber } = message
-        const isLog = this.state.xAxis === 1;
+        const isLog = this.state.xAxis === AxisLayout.Logarithmic;
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
         const metadata = {
             program,
@@ -42,7 +47,7 @@ class StoppingPowerComponent extends React.PureComponent {
         }
         const data = Object.assign({
             isShown: true,
-            color: colorSequence[seriesNumber%colorSequence.length],
+            color: colorSequence[seriesNumber % colorSequence.length],
             index: seriesNumber,
             name
         }, await this.wrapper.getDataSeries(metadata, isLog))
@@ -66,17 +71,17 @@ class StoppingPowerComponent extends React.PureComponent {
         return { xAxis, yAxis, method }
     }
 
-    async onXAxisChange(xAxis){
-        const dataSeries = await Promise.all(this.state.dataSeries.map(async ({data,metadata})=>{
-            const {color, isShown, index, name} = data
+    async onXAxisChange(xAxis) {
+        const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
+            const { color, isShown, index, name } = data
             const newData = Object.assign(
-                {color, isShown, index, name}
-                , await this.wrapper.getDataSeries(metadata, xAxis===1)
+                { color, isShown, index, name }
+                , await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
             )
-            return {data: newData,metadata}
-    
+            return { data: newData, metadata }
+
         }))
-        this.setState({xAxis,dataSeries})
+        this.setState({ xAxis, dataSeries })
     }
 
     onSettingsChange = {
@@ -94,7 +99,7 @@ class StoppingPowerComponent extends React.PureComponent {
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds=>ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds => ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>
