@@ -37,7 +37,6 @@ cd ../../..
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
-cp ./libdedx/build/libdedx/$PROJECT_NAME.data ./public
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$PROJECT_NAME.wasm/$PROPER_PATH/" ${JS}

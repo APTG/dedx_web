@@ -41,15 +41,6 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: wasm data
-        path: |
-          public/weblibdedx.data
-        if-no-files-found: error
-        retention-days: 5
-
-    - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v2
-      with:
         name: wasm js
         path: |
           src/Backend/weblibdedx.js
@@ -77,11 +68,6 @@ jobs:
     - uses: actions/download-artifact@v2
       with:
         name: wasm bin
-        path: public
-
-    - uses: actions/download-artifact@v2
-      with:
-        name: wasm data
         path: public
    
     - uses: actions/download-artifact@v2
@@ -124,11 +110,6 @@ jobs:
       - uses: actions/download-artifact@v2
         with:
           name: wasm public
-          path: public
-
-      - uses: actions/download-artifact@v2
-        with:
-          name: wasm data
           path: public
 
       - uses: actions/download-artifact@v2
