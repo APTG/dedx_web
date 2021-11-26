@@ -1,5 +1,4 @@
 PROJECT_NAME=weblibdedx
-WASM_PUBLIC=./public/$PROJECT_NAME.wasm
 PROPER_PATH="\/web_dev\/$PROJECT_NAME.wasm"
 JS=./src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
@@ -36,7 +35,7 @@ cd ../../..
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
-cp ./libdedx/build/libdedx/weblibdedx.data ./public
+cp ./libdedx/build/libdedx/$PROJECT_NAME.data ./public
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
 sed -i "s/$PROJECT_NAME.wasm/$PROPER_PATH/" ${JS}
