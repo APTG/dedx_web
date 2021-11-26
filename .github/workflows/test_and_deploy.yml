@@ -109,7 +109,7 @@ jobs:
 
       - uses: actions/download-artifact@v2
         with:
-          name: wasm public
+          name: wasm bin
           path: public
 
       - uses: actions/download-artifact@v2
