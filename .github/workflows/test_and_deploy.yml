@@ -38,7 +38,7 @@ jobs:
         if-no-files-found: error
         retention-days: 5
 
-      - name: 'Upload Artifact'
+    - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
         name: wasm data
