@@ -31,6 +31,8 @@ FUNCTIONS+=']'
 # remember to use --embed-file instead of --preload-file for web based development
 emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] --embed-file ../../libdedx/data@data/
 
+ls -al
+
 cd ../../..
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
