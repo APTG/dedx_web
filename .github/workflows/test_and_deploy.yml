@@ -32,9 +32,10 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v2
       with:
-        name: wasm bin
+        name: wasm public
         path: |
           public/weblibdedx.wasm
+          public/weblibdedx.data
         if-no-files-found: error
         retention-days: 5
 
