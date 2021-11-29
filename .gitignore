@@ -26,4 +26,3 @@ src/Backend/weblibdedx.js
 .gitignore
 public/weblibdedx.wasm
 .vscode/settings.json
-public/weblibdedx.data

@@ -9,7 +9,6 @@ function createTGraphFromTrace(trace) {
     const tgraph = JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
     tgraph.fLineColor = trace.index + 1
     tgraph.fLineWidth = 2
-    console.log(tgraph)
     return tgraph
 }
 

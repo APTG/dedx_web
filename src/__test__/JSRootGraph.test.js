@@ -6,7 +6,6 @@ import React from 'react'
 describe('JSRootGraphp', () => {  // skipcq: JS-0125
     const draw = jest.fn()
     const createTGraph = jest.fn((x,y,z)=>{
-        console.log("Hello")
         return{fLineColor:0, fLineWidth:0}
     })
     const createTMultiGraph = jest.fn(traces=> createTGraph())
