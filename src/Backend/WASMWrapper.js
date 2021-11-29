@@ -1,10 +1,10 @@
-import TraceFactory from './TraceFacotry.js';
+import TraceFactory from './TraceFactory.js'
 import Module from './weblibdedx.js'
 
 export default class WASMWrapper {
-    #_wasm;
+    #_wasm
     #programsSize = 20
-    #ionsSize = 20
+    #ionsSize = 120
     #materialsSize = 400
 
     async wasm() {
@@ -26,16 +26,15 @@ export default class WASMWrapper {
     async getPrograms() {
         const wasm = await this.wasm()
 
-        const pointer = new Int32Array(new Array(this.#programsSize))
-        const buf = this.#_wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
-        const heap = new Uint8Array(this.#_wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(this.#programsSize * Int32Array.BYTES_PER_ELEMENT)
+        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#programsSize)
 
         wasm.ccall("dedx_get_program_list", null, ['number'], [heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#programsSize)
             .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
-        wasm._free(buf);
+        wasm._free(buf)
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
@@ -45,16 +44,15 @@ export default class WASMWrapper {
     async getIons(program) {
         const wasm = await this.wasm()
 
-        const pointer = new Int32Array(new Array(this.#ionsSize))
-        const buf = wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
-        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
+        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
 
-        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [heap.byteOffset, program])
+        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [program, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
             .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
-        wasm._free(buf);
+        wasm._free(buf)
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
@@ -64,16 +62,15 @@ export default class WASMWrapper {
     async getMaterials(program) {
         const wasm = await this.wasm()
 
-        const pointer = new Int32Array(new Array(this.#materialsSize))
-        const buf = wasm._malloc(pointer.length * pointer.BYTES_PER_ELEMENT);
-        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, pointer.length * pointer.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
+        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
 
-        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [heap.byteOffset, program])
+        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [program, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
             .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
-        wasm._free(buf);
+        wasm._free(buf)
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
@@ -96,7 +93,7 @@ export default class WASMWrapper {
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
-        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT);
+        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
 
 
@@ -119,7 +116,7 @@ export default class WASMWrapper {
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
-        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT);
+        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
 
 

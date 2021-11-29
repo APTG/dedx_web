@@ -29,7 +29,7 @@ FUNCTIONS+='_free'
 FUNCTIONS+=']'
 
 # remember to use --embed-file instead of --preload-file for web based development
-emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] -s SAFE_HEAP -s ALLOW_MEMORY_GROWTH=1 --embed-file ../../libdedx/data@data/
+emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] -s ALLOW_MEMORY_GROWTH=1 --embed-file ../../libdedx/data@data/
 
 ls -al
 
