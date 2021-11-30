@@ -12,15 +12,15 @@ tasks:
       . ./emsdk_env.sh &&
       cd /workspace/dedx_web/ &&
       ./build_wasm.sh &&
-      gh sync-done wasm
+      gp sync-done wasm
 
   - name: install npm deps 
     init: > 
       npm install &&
-      gh sync-done deps
+      gp sync-done deps
 
   - name: start dev server
     command: > 
-      gh await-done wasm &&
-      gh await-done deps &&
+      gp await-done wasm &&
+      gp await-done deps &&
       npm run start
