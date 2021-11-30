@@ -1,3 +1,4 @@
+# we start with custom docker image which has emsdk installed in $HOME/emsdk
 image:
   file: .gitpod.dockerfile
 
@@ -20,7 +21,7 @@ tasks:
       gp sync-done deps
 
   - name: start dev server
-    command: > 
-      gp await-done wasm &&
-      gp await-done deps &&
-      npm run start
+    init: >
+      gp sync-await wasm &&
+      gp sync-await deps
+    command: npm run start
