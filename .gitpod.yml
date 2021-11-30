@@ -6,5 +6,21 @@ ports:
     onOpen: open-preview
 
 tasks:
-  - init: npm install
-    command: npm run start
+  - name: Build wasm files
+    init:  >
+      cd $HOME/emsdk &&
+      . ./emsdk_env.sh &&
+      cd /workspace/dedx_web/ &&
+      ./build_wasm.sh &&
+      gh sync-done wasm
+
+  - name: install npm deps 
+    init: > 
+      npm install &&
+      gh sync-done deps
+
+  - name: start dev server
+    command: > 
+      gh await-done wasm &&
+      gh await-done deps &&
+      npm run start
