@@ -1,4 +1,4 @@
-DataSeriesimport { render } from '@testing-library/react'
+import { render } from '@testing-library/react'
 
 import JSRootGraph from '../Components/JSRootGraph'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029, JS-0249
 import React from 'react'
