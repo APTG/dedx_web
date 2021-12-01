@@ -1,4 +1,4 @@
-import React, { createRef } from "react";
+DataSeriesDataSeriesimport React, { createRef } from "react";
 import PropTypes from 'prop-types';
 import TraceList from "./TraceList";
 

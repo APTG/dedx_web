@@ -1,4 +1,4 @@
-const traceStyle = color => {
+DataSeriesDataSeriesconst traceStyle = color => {
     return {
         background: color,
         minWidth: 10,

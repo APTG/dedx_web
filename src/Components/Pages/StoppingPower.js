@@ -1,4 +1,4 @@
-import Form from "../Form/Form";
+DataSeriesDataSeriesimport Form from "../Form/Form";
 import JSRootGraph from "../JSRootGraph";
 import PropTypes from 'prop-types';
 import React from "react";

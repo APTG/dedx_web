@@ -1,8 +1,13 @@
-import TraceFactory from './TraceFactory.js'
+import DataSeriesFactory from './DataSeriesFactory.js'
 import Module from './weblibdedx.js'
 
 export default class WASMWrapper {
     #_wasm
+
+    // The values used here are based on array sizes in dedx_program_const.h
+    // They aren't one-to-one mapping but there's a gurentee they are always 
+    // equal to or bigger than the expected number of entities they describe
+
     #programsSize = 20
     #ionsSize = 120
     #materialsSize = 400
@@ -77,19 +82,21 @@ export default class WASMWrapper {
         return this.getNames(untyped, 'dedx_get_material_name')
     }
 
-    async getTrace(program, ion, material, method, plot_using){
+    async getDataSeries(program, ion, material, method, plot_using){
         if(method === 0)
-            return await this.getTraceByInterval(program,ion,material,plot_using)
+            return await this.getDataSeriesByInterval(program,ion,material,plot_using)
         else
-            return await this.getTraceByPoints(program,ion,material,plot_using)
+            return await this.getDataSeriesByPoints(program,ion,material,plot_using)
     }
 
-    async getTraceByPoints(program, ion, material, points) {
+    async getDataSeriesByPoints(program, ion, material, points) {
         const wasm = await this.wasm()
         const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
         const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        const xs = TraceFactory.getXAxisByPoints(start,end,points)
+        console.log(`start: ${start}\tend: ${end}`)
+
+        const xs = DataSeriesFactory.getXAxisByPoints(start,end,points)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -104,15 +111,15 @@ export default class WASMWrapper {
             return res
         })
 
-        return TraceFactory.getStoppingPowerValues(xs, boundStepFuntion)
+        return DataSeriesFactory.getStoppingPowerValues(xs, boundStepFuntion)
     }
 
-    async getTraceByInterval(program, ion, material, interval){
+    async getDataSeriesByInterval(program, ion, material, interval){
         const wasm = await this.wasm()
         const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
         const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        const xs = TraceFactory.getXAxisByInterval(start,end,interval)
+        const xs = DataSeriesFactory.getXAxisByInterval(start,end,interval)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -127,6 +134,6 @@ export default class WASMWrapper {
             return res
         })
 
-        return TraceFactory.getStoppingPowerValues(xs, boundStepFuntion)
+        return DataSeriesFactory.getStoppingPowerValues(xs, boundStepFuntion)
     }
 }

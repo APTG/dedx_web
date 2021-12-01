@@ -29,6 +29,17 @@ FUNCTIONS+='_free'
 FUNCTIONS+=']'
 
 # remember to use --embed-file instead of --preload-file for web based development
+# # Embed- as opposed to preload - embeds the data into the output .js file. 
+# They both should have the same effect - the data should be available on the site 
+# but the preload option requires the generated .js file to load the file when it sets the module up. 
+# This wasn't working correctly - it seemed to have some problems fetching the file, 
+# either caused by CORS or some other reason. 
+# On the other hand, the embed option worked flawlessly without messing with the generated code anymore. 
+# Yes, it is somewhat less efficient - the data is stored and fetched as text 
+# (whereas with preload it should be fetched as binary) 
+# but the size of our dataset isn't staggering 
+# so it doesn't cause much of a slowdown. 
+# In short it's more comfortable and reliable when using the generated file as a react module.
 emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] -s ALLOW_MEMORY_GROWTH=1 --embed-file ../../libdedx/data@data/
 
 ls -al
