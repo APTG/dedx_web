@@ -1,7 +1,27 @@
+# we start with custom docker image which has emsdk installed in $HOME/emsdk
+image:
+  file: .gitpod.dockerfile
+
 ports:
   - port: 3000
     onOpen: open-preview
 
 tasks:
-  - init: npm install
+  - name: Build wasm files
+    init:  >
+      cd $HOME/emsdk &&
+      . ./emsdk_env.sh &&
+      cd /workspace/dedx_web/ &&
+      ./build_wasm.sh &&
+      gp sync-done wasm
+
+  - name: install npm deps 
+    init: > 
+      npm install &&
+      gp sync-done deps
+
+  - name: start dev server
+    init: >
+      gp sync-await wasm &&
+      gp sync-await deps
     command: npm run start
