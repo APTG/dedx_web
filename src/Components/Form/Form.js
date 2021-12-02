@@ -103,6 +103,7 @@ export default class Form extends React.Component {
                             <input onChange={this.onPlotUsingChange} name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Points"}
+                                {"Intervals (unimplemented)"}
                             </Toggle>
                         </div>
                     </div>

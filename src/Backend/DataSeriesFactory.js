@@ -1,6 +1,6 @@
 export default class TraceFactory {
     static getXValuesByPoints(minValue, maxValue, numberOfPoints) {
-        if(numberOfPoints == 1) return [(maxValue - minValue)/2]
+        if(numberOfPoints === 1) return [(maxValue - minValue)/2]
         const interval = (maxValue - minValue) / (numberOfPoints - 1)
         return Array.from(new Array(~~numberOfPoints), (_, key) => { return minValue + interval * key })
     }
