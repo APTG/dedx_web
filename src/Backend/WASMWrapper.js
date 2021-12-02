@@ -91,12 +91,12 @@ export default class WASMWrapper {
 
     async getDataSeriesByPoints(program, ion, material, points) {
         const wasm = await this.wasm()
-        const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
-        const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
+        const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
+        const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
         console.log(`start: ${start}\tend: ${end}`)
 
-        const xs = DataSeriesFactory.getXAxisByPoints(start,end,points)
+        const xs = DataSeriesFactory.getXValuesByPoints(start,end,points)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -111,15 +111,15 @@ export default class WASMWrapper {
             return res
         })
 
-        return DataSeriesFactory.getStoppingPowerValues(xs, boundStepFuntion)
+        return DataSeriesFactory.getYValues(xs, boundStepFuntion)
     }
 
     async getDataSeriesByInterval(program, ion, material, interval){
         const wasm = await this.wasm()
-        const start = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
-        const end = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
+        const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
+        const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        const xs = DataSeriesFactory.getXAxisByInterval(start,end,interval)
+        const xs = DataSeriesFactory.getXValuesByInterval(start,end,interval)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -134,6 +134,6 @@ export default class WASMWrapper {
             return res
         })
 
-        return DataSeriesFactory.getStoppingPowerValues(xs, boundStepFuntion)
+        return DataSeriesFactory.getYValues(xs, boundStepFuntion)
     }
 }

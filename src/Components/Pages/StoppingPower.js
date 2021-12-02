@@ -36,7 +36,7 @@ class StoppingPowerComponent extends React.PureComponent {
             color: colorSequence[seriesNumber%colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getTrace(program, ion, material, method, plotUsing))
+        }, await this.wrapper.getDataSeries(program, ion, material, method, plotUsing))
 
         console.log(trace)
 
