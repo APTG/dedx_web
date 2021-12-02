@@ -94,9 +94,9 @@ export default class WASMWrapper {
         const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
         const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        console.log(`start: ${start}\tend: ${end}`)
+        console.log(`start: ${min_energy}\tend: ${max_energy}`)
 
-        const xs = DataSeriesFactory.getXValuesByPoints(start,end,points)
+        const xs = DataSeriesFactory.getXValuesByPoints(min_energy,max_energy,points)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -119,7 +119,9 @@ export default class WASMWrapper {
         const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
         const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        const xs = DataSeriesFactory.getXValuesByInterval(start,end,interval)
+        console.log(`start: ${min_energy}\tend: ${max_energy}`)
+
+        const xs = DataSeriesFactory.getXValuesByInterval(min_energy,max_energy,interval)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
