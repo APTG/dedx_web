@@ -5,8 +5,8 @@ export default class WASMWrapper {
     #_wasm
 
     // The values used here are based on array sizes in dedx_program_const.h
-    // They aren't one-to-one mapping but there's a gurentee they are always 
-    // equal to or bigger than the expected number of entities they describe
+    // They aren't one-to-one mapping but there's a guarantee they are always 
+    // greater than or equal to the expected number of entities they describe
 
     #programsSize = 20
     #ionsSize = 120
