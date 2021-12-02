@@ -55,7 +55,7 @@ export default class Form extends React.Component {
         this.state = {
             seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber),
-            method: 1,
+            method: 0,
             plotUsing: 100,
             program: 0,
             ion: 0,
@@ -102,7 +102,6 @@ export default class Form extends React.Component {
                         <div className="toggle-compound">
                             <input onChange={this.onPlotUsingChange} name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
-                                {"Step"}
                                 {"Points"}
                             </Toggle>
                         </div>

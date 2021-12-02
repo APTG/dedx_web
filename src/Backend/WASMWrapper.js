@@ -84,9 +84,9 @@ export default class WASMWrapper {
 
     async getDataSeries(program, ion, material, method, plot_using){
         if(method === 0)
-            return await this.getDataSeriesByInterval(program,ion,material,plot_using)
-        else
             return await this.getDataSeriesByPoints(program,ion,material,plot_using)
+        // else
+        //     return await this.getDataSeriesByInterval(program,ion,material,plot_using)
     }
 
     async getDataSeriesByPoints(program, ion, material, points) {
@@ -114,28 +114,28 @@ export default class WASMWrapper {
         return DataSeriesFactory.getYValues(xs, boundStepFuntion)
     }
 
-    async getDataSeriesByInterval(program, ion, material, interval){
-        const wasm = await this.wasm()
-        const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
-        const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
+    // async getDataSeriesByStep(program, ion, material, interval){
+    //     const wasm = await this.wasm()
+    //     const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
+    //     const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
-        console.log(`start: ${min_energy}\tend: ${max_energy}`)
+    //     console.log(`start: ${min_energy}\tend: ${max_energy}`)
 
-        const xs = DataSeriesFactory.getXValuesByInterval(min_energy,max_energy,interval)
+    //     const xs = DataSeriesFactory.getXValuesByInterval(min_energy,max_energy,interval)
 
-        const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
+    //     const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
-        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
+    //     const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
+    //     const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
 
 
-        const boundStepFuntion = (x=>{
-            const res = stepFunction(ion,material,x,heap.byteOffset)
-            const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
-            if(err !== 0)console.log(err)
-            return res
-        })
+    //     const boundStepFuntion = (x=>{
+    //         const res = stepFunction(ion,material,x,heap.byteOffset)
+    //         const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+    //         if(err !== 0)console.log(err)
+    //         return res
+    //     })
 
-        return DataSeriesFactory.getYValues(xs, boundStepFuntion)
-    }
+    //     return DataSeriesFactory.getYValues(xs, boundStepFuntion)
+    // }
 }
