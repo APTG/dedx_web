@@ -22,6 +22,8 @@
     padding: 0.2rem;
     cursor: pointer;
     min-width: 4rem !important;
+    max-height: 24px;
+    overflow: hidden;
     flex: 1 1 100%;
     font-weight: bold;
     transition: 0.2s background, 0.2s color ease-in-out;

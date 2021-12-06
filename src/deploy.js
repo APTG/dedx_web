@@ -1,15 +1,21 @@
 const date = new Date().toLocaleDateString()
-const commit = require('child_process')
+
+const cp = require('child_process')
+
+const commit = cp
     .execSync('git rev-parse --short HEAD')
     .toString().trim()
 
-const branch = require('child_process')
+const branch = cp
     .execSync('git describe --all')
     .toString().trim()
 
 // skipcq: JS-0002
-console.log(JSON.stringify({
+
+const command = `echo '${JSON.stringify({
     date,
     commit,
     branch
-}))
+})}' > ${process.argv[2]}`
+
+cp.execSync(command)
