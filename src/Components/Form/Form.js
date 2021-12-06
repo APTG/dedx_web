@@ -98,9 +98,9 @@ export default class Form extends React.Component {
                         <input onChange={this.onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
                     <div className="input-wrapper">
-                        <label htmlFor="plot_using">Plot using</label>
+                        <label htmlFor="plotUsing">Plot using</label>
                         <div className="toggle-compound">
-                            <input onChange={this.onPlotUsingChange} name="plot_using" id="plot_using" className="input-box" type="number" step="0.01" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
+                            <input onChange={this.onPlotUsingChange} name="plotUsing" id="plotUsing" className="input-box" type="number" step="1" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Points"}
                                 {"Intervals (unimplemented)"}

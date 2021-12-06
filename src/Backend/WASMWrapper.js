@@ -82,12 +82,12 @@ export default class WASMWrapper {
         return this.getNames(untyped, 'dedx_get_material_name')
     }
 
-    async getDataSeries(program, ion, material, method, plot_using, isLog){
+    async getDataSeries(program, ion, material, method, plotUsing, isLog){
         switch (method){
-            case 1: return this.getDataSeriesByIntervals(program, ion, material, plot_using, isLog)
+            case 1: return this.getDataSeriesByIntervals(program, ion, material, plotUsing, isLog)
 
             default: 
-            case 0: return this.getDataSeriesByPoints(program,ion,material,plot_using, isLog)
+            case 0: return this.getDataSeriesByPoints(program,ion,material,plotUsing, isLog)
         }
     }
 

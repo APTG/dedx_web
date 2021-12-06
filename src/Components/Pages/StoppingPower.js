@@ -32,6 +32,7 @@ class StoppingPowerComponent extends React.PureComponent {
     async submitHandler(message) {
         const { name, program, ion, material, method, plotUsing, seriesNumber } = message
         const isLog = this.state.xAxis === 1 || this.state.yAxis === 1
+        // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
         const trace = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber%colorSequence.length],
