@@ -20,7 +20,7 @@ class StoppingPowerComponent extends React.PureComponent {
 
         this.state = {
             traces: [],
-            xAxis: 0,
+            xAxis: 1,
             yAxis: 1,
             plotStyle: 0,
             layout: 0,
@@ -31,12 +31,13 @@ class StoppingPowerComponent extends React.PureComponent {
 
     async submitHandler(message) {
         const { name, program, ion, material, method, plotUsing, seriesNumber } = message
+        const isLog = this.state.xAxis === 1 || this.state.yAxis === 1
         const trace = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber%colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(program, ion, material, method, plotUsing))
+        }, await this.wrapper.getDataSeries(program, ion, material, method, ~~plotUsing, isLog))
 
         console.log(trace)
 

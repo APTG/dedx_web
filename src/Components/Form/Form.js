@@ -56,7 +56,7 @@ export default class Form extends React.Component {
             seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber),
             method: 0,
-            plotUsing: 100,
+            plotUsing: 10,
             program: 0,
             ion: 0,
             material: 0,
