@@ -12,9 +12,7 @@ export default class TraceFactory {
         for(let i=1;i<values.length;i++){
             values[i]=values[i-1]*step
         }
-        console.log(values)
         return values
-
     }
 
     // static getXValuesByInterval(minValue, maxValue, interval) {

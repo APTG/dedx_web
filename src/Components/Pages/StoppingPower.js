@@ -19,7 +19,7 @@ class StoppingPowerComponent extends React.PureComponent {
         this.wrapper = props.wrapper || new WASMWrapper()
 
         this.state = {
-            traces: [],
+            dataSeries: [],
             xAxis: 1,
             yAxis: 1,
             plotStyle: 0,
@@ -31,21 +31,32 @@ class StoppingPowerComponent extends React.PureComponent {
 
     async submitHandler(message) {
         const { name, program, ion, material, method, plotUsing, seriesNumber } = message
-        const isLog = this.state.xAxis === 1 || this.state.yAxis === 1
+        const isLog = this.state.xAxis === 1;
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
-        const trace = Object.assign({
+        const metadata = {
+            program,
+            ion,
+            material,
+            plotUsing: ~~plotUsing,
+            method
+        }
+        const data = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber%colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(program, ion, material, method, ~~plotUsing, isLog))
+        }, await this.wrapper.getDataSeries(metadata, isLog))
 
-        console.log(trace)
+        const dataSeries = {
+            data,
+            metadata
+        }
+        console.log(dataSeries)
 
         // destruct oldState before assiging new values
         this.setState(oldState => ({
             ...oldState,
-            traces: [...oldState.traces, trace]
+            dataSeries: [...oldState.dataSeries, dataSeries]
         }))
         this.forceUpdate();
     }
@@ -55,13 +66,27 @@ class StoppingPowerComponent extends React.PureComponent {
         return { xAxis, yAxis, method }
     }
 
+    async onXAxisChange(xAxis){
+        const dataSeries = await Promise.all(this.state.dataSeries.map(async ({data,metadata})=>{
+            const {color, isShown, index, name} = data
+            const newData = Object.assign(
+                {color, isShown, index, name}
+                , await this.wrapper.getDataSeries(metadata, xAxis===1)
+            )
+            return {data: newData,metadata}
+    
+        }))
+        this.setState({xAxis,dataSeries})
+    }
+
     onSettingsChange = {
-        xAxis: (xAxis => this.setState({ xAxis })),
+        xAxis: this.onXAxisChange.bind(this),
         yAxis: (yAxis => this.setState({ yAxis })),
         method: (plotStyle => this.setState({ plotStyle }))
     }
 
     render() {
+        console.log(this.state.dataSeries)
         return (
             <div className="content gridish">
                 <Form onSubmit={this.submitHandler} layout={this.state.layout} wrapper={this.wrapper} />
@@ -69,7 +94,7 @@ class StoppingPowerComponent extends React.PureComponent {
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph traces={this.state.traces} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds=>ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>

@@ -1,21 +1,21 @@
 import React, { createRef } from "react";
 import PropTypes from 'prop-types';
-import TraceList from "./TraceList";
+import DataSeriesList from "./DataSeriesList";
 
 let JSROOT
 //#region Helper functions
 
-function createTGraphFromTrace(trace) {
-    const tgraph = JSROOT.createTGraph(trace.y.length, trace.x, trace.y)
-    tgraph.fLineColor = trace.index + 1
+function createTGraphFromDataSeries(dataSeries) {
+    const tgraph = JSROOT.createTGraph(dataSeries.y.length, dataSeries.x, dataSeries.y)
+    tgraph.fLineColor = dataSeries.index + 1
     tgraph.fLineWidth = 2
     return tgraph
 }
 
-function createMultigraphFromTraces(traces) {
-    const filtered = traces
-                .filter(trace => trace.isShown)
-                .map(createTGraphFromTrace)
+function createMultigraphFromDataSeries(dataSeries) {
+    const filtered = dataSeries
+                .filter(dataSeries => dataSeries.isShown)
+                .map(createTGraphFromDataSeries)
 
     return filtered.length !== 0 
         ? JSROOT.createTMultiGraph(...filtered) 
@@ -41,7 +41,7 @@ export default class JSRootGraph extends React.Component {
         xAxis: PropTypes.oneOf([0, 1]).isRequired,
         yAxis: PropTypes.oneOf([0, 1]).isRequired,
         plotStyle: PropTypes.oneOf([0, 1]).isRequired,
-        traces: PropTypes.arrayOf(
+        dataSeries: PropTypes.arrayOf(
             PropTypes.shape({
                 isShown: PropTypes.bool,
                 name: PropTypes.string,
@@ -56,22 +56,22 @@ export default class JSRootGraph extends React.Component {
         this.graphRef = createRef(null);
 
         this.state = {
-            traces: []
+            dataSeries: props.dataSeries
         }
 
         JSROOT = window.JSROOT;
-        this.onTraceStateChange = this.onTraceStateChange.bind(this)
+        this.onDataSeriesStateChange = this.onDataSeriesStateChange.bind(this)
     }
 
-    static getDerivedStateFromProps(props, _) {
+    static getDerivedStateFromProps({dataSeries}, _) {
         return {
-            traces: props.traces
+            dataSeries: dataSeries
         }
     }
 
     getSnapshotBeforeUpdate(){
         JSROOT.cleanup(this.graphRef.current);
-        const toDraw = createMultigraphFromTraces(this.state.traces);
+        const toDraw = createMultigraphFromDataSeries(this.state.dataSeries);
         const opts = drawOptFromProps(this.props);
 
         return {toDraw,opts}
@@ -88,22 +88,22 @@ export default class JSRootGraph extends React.Component {
     componentDidMount() {
         window.addEventListener('resize', this.refreshGraph.bind(this))
 
-        const toDraw = createMultigraphFromTraces(this.props.traces);
+        const toDraw = createMultigraphFromDataSeries(this.props.dataSeries);
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
-    onTraceStateChange(event){
+    onDataSeriesStateChange(event){
         let index = (Number)(event.target.id)
-        let traces = [...(this.state.traces)]
-        traces[index].isShown = !traces[index].isShown
-        this.setState({traces})
+        let dataSeries = [...(this.state.dataSeries)]
+        dataSeries[index].isShown = !dataSeries[index].isShown
+        this.setState({dataSeries})
     }
 
     render() {
         return (
             <div>
                 <div style={{ width: "100%", height: '40vw', minHeight:'400px' }} ref={this.graphRef}></div>
-                <TraceList traces={this.state.traces} onTraceStateChange={this.onTraceStateChange} />
+                <DataSeriesList dataSeries={this.state.dataSeries} onDataSeriesStateChange={this.onDataSeriesStateChange} />
             </div>
         )
     }
