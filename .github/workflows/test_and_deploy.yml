@@ -26,6 +26,10 @@ jobs:
 
     - uses: mymindstorm/setup-emsdk@v11
 
+    - name: Set CPack ENV variables
+      run: |
+        CPACK_RESOURCE_FILE_README=$(PWD)/README.md
+
     - name: Compile to wasm
       run: ./build_wasm.sh
 
