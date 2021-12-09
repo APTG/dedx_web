@@ -1,4 +1,4 @@
-const traceStyle = color => {
+const dataSeriesStyle = color => {
     return {
         background: color,
         minWidth: 10,
@@ -20,15 +20,15 @@ const containerStyle = isShown => {
     }
 }
 
-function TraceList({ traces, onTraceStateChange }) {
+function DataSeriesList({ dataSeries, onDataSeriesStateChange }) {
 
     return (
         <div className="gridish12ch">
             {
-                traces.map((trace, key) => {
-                    return (<div style={ containerStyle(trace.isShown) } id={ key } onClick={ onTraceStateChange } key={ `Trace_${ key }` }>
-                        <span style={ traceStyle(trace.color) } />
-                        { trace.name }
+                dataSeries.map((dataSeries, key) => {
+                    return (<div style={ containerStyle(dataSeries.isShown) } id={ key } onClick={ onDataSeriesStateChange } key={ `Trace_${ key }` }>
+                        <span style={ dataSeriesStyle(dataSeries.color) } />
+                        { dataSeries.name }
                     </div>)
                 })
             }
@@ -36,4 +36,4 @@ function TraceList({ traces, onTraceStateChange }) {
     )
 }
 
-export default TraceList
+export default DataSeriesList

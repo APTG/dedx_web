@@ -8,7 +8,7 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     const createTGraph = jest.fn((x,y,z)=>{
         return{fLineColor:0, fLineWidth:0}
     })
-    const createTMultiGraph = jest.fn(traces=> createTGraph())
+    const createTMultiGraph = jest.fn(dataSeries=> createTGraph())
     window.JSROOT = {
         draw,
         createTGraph,
@@ -16,16 +16,16 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     }
 
     test('should render an empty graph', () => {
-        render(<JSRootGraph xAxis={0} yAxis={0} plotStyle={0} traces={[]} />)
+        render(<JSRootGraph xAxis={0} yAxis={0} plotStyle={0} dataSeries={[]} />)
         expect(draw).toBeCalledTimes(1)
         expect(createTGraph).toBeCalledTimes(1)
         expect(createTGraph).toBeCalledWith(1)
     })
 
     const cases = [
-        { data: { xAxis: 1, yAxis: 0, plotStyle: 0, traces: [] }, name: 'xAxis' },
-        { data: { xAxis: 1, yAxis: 1, plotStyle: 0, traces: [] }, name: 'yAxis' },
-        { data: { xAxis: 1, yAxis: 1, plotStyle: 1, traces: [] }, name: 'plotStyle' },
+        { data: { xAxis: 1, yAxis: 0, plotStyle: 0, dataSeries: [] }, name: 'xAxis' },
+        { data: { xAxis: 1, yAxis: 1, plotStyle: 0, dataSeries: [] }, name: 'yAxis' },
+        { data: { xAxis: 1, yAxis: 1, plotStyle: 1, dataSeries: [] }, name: 'plotStyle' },
     ]
 
     cases.forEach(c => {
@@ -39,7 +39,7 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     })
 
     const trace = { x: [1, 2, 3], y: [1, 2, 3], isShown: true }
-    const traceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, traces: [trace] }
+    const traceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, dataSeries: [trace] }
 
     // Something's wrong with mock function return values.
     // I'm working on resolving the issue, meanwhile, i've commented some tests out.
@@ -57,9 +57,9 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     //     expect(createTGraph).toBeCalledWith(3, [1, 2, 3], [1, 2, 3])
     // })
 
-    // const multipleTraceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, traces: [trace,trace] }
+    // const multipleTraceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, dataSeries: [trace,trace] }
 
-    // test('should render multiple traces', () => {
+    // test('should render multiple dataSeries', () => {
     //    render(<JSRootGraph {...multipleTraceCase} />)
 
     //     expect(draw).toBeCalledTimes(1)

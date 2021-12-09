@@ -82,21 +82,25 @@ export default class WASMWrapper {
         return this.getNames(untyped, 'dedx_get_material_name')
     }
 
-    async getDataSeries(program, ion, material, method, plot_using){
-        if(method === 0)
-            return await this.getDataSeriesByPoints(program,ion,material,plot_using)
-        // else
-        //     return await this.getDataSeriesByInterval(program,ion,material,plot_using)
+    async getDataSeries({program, ion, material, method, plotUsing}, isLog){
+        switch (method){
+            case 1: return this.getDataSeriesByIntervals(program, ion, material, plotUsing, isLog)
+
+            default: 
+            case 0: return this.getDataSeriesByPoints(program,ion,material,plotUsing, isLog)
+        }
     }
 
-    async getDataSeriesByPoints(program, ion, material, points) {
+    async getDataSeriesByPoints(program, ion, material, points, isLog) {
         const wasm = await this.wasm()
         const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
         const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
 
         console.log(`start: ${min_energy}\tend: ${max_energy}`)
 
-        const xs = DataSeriesFactory.getXValuesByPoints(min_energy,max_energy,points)
+        const xs = isLog
+            ? DataSeriesFactory.getLogXValuesByPoints(min_energy,max_energy,points) 
+            : DataSeriesFactory.getXValuesByPoints(min_energy,max_energy,points)
 
         const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
 
@@ -114,6 +118,10 @@ export default class WASMWrapper {
         return DataSeriesFactory.getYValues(xs, boundStepFuntion)
     }
 
+    async getDataSeriesByIntervals(program, ion, material, intervals, isLog){
+        return await this.getDataSeriesByPoints(program, ion, material, intervals + 1, isLog)
+    }
+
     // async getDataSeriesByStep(program, ion, material, interval){
     //     const wasm = await this.wasm()
     //     const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
@@ -127,7 +135,6 @@ export default class WASMWrapper {
 
     //     const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
     //     const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
-
 
     //     const boundStepFuntion = (x=>{
     //         const res = stepFunction(ion,material,x,heap.byteOffset)

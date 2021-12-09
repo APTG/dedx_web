@@ -7,6 +7,16 @@ import WASMWrapper from "../../Backend/WASMWrapper";
 
 import colorSequence from '../../Styles/PlotColors.json'
 
+const AxisLayout = {
+    Linear: 0,
+    Logarithmic: 1
+}
+
+const PlotStyle = {
+    Line: 0,
+    Points: 1
+}
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -19,11 +29,10 @@ class StoppingPowerComponent extends React.PureComponent {
         this.wrapper = props.wrapper || new WASMWrapper()
 
         this.state = {
-            traces: [],
-            xAxis: 0,
-            yAxis: 1,
-            plotStyle: 0,
-            layout: 0,
+            dataSeries: [],
+            xAxis: AxisLayout.Logarithmic,
+            yAxis: AxisLayout.Logarithmic,
+            plotStyle: PlotStyle.Line
         }
 
         this.submitHandler = this.submitHandler.bind(this);
@@ -31,19 +40,32 @@ class StoppingPowerComponent extends React.PureComponent {
 
     async submitHandler(message) {
         const { name, program, ion, material, method, plotUsing, seriesNumber } = message
-        const trace = Object.assign({
+        const isLog = this.state.xAxis === AxisLayout.Logarithmic;
+        // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
+        const metadata = {
+            program,
+            ion,
+            material,
+            plotUsing: ~~plotUsing,
+            method
+        }
+        const data = Object.assign({
             isShown: true,
-            color: colorSequence[seriesNumber%colorSequence.length],
+            color: colorSequence[seriesNumber % colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(program, ion, material, method, plotUsing))
+        }, await this.wrapper.getDataSeries(metadata, isLog))
 
-        console.log(trace)
+        const dataSeries = {
+            data,
+            metadata
+        }
+        console.log(dataSeries)
 
         // destruct oldState before assiging new values
         this.setState(oldState => ({
             ...oldState,
-            traces: [...oldState.traces, trace]
+            dataSeries: [...oldState.dataSeries, dataSeries]
         }))
         this.forceUpdate();
     }
@@ -53,21 +75,35 @@ class StoppingPowerComponent extends React.PureComponent {
         return { xAxis, yAxis, method }
     }
 
+    async onXAxisChange(xAxis) {
+        const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
+            const { color, isShown, index, name } = data
+            const newData = Object.assign(
+                { color, isShown, index, name }
+                , await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
+            )
+            return { data: newData, metadata }
+
+        }))
+        this.setState({ xAxis, dataSeries })
+    }
+
     onSettingsChange = {
-        xAxis: (xAxis => this.setState({ xAxis })),
+        xAxis: this.onXAxisChange.bind(this),
         yAxis: (yAxis => this.setState({ yAxis })),
         method: (plotStyle => this.setState({ plotStyle }))
     }
 
     render() {
+        console.log(this.state.dataSeries)
         return (
             <div className="content gridish">
-                <Form onSubmit={this.submitHandler} layout={this.state.layout} wrapper={this.wrapper} />
+                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} />
                 <div style={{ minWidth: "70%" }}>
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph traces={this.state.traces} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds => ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>
