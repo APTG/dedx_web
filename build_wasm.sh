@@ -2,7 +2,6 @@ PROJECT_NAME=weblibdedx
 PROPER_PATH="\/web_dev\/$PROJECT_NAME.wasm"
 JS=./src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
-CPACK_RESOURCE_FILE_README=$(pwd)/README.md
 
 cd ./libdedx
 
