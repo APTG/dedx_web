@@ -156,8 +156,11 @@ export default class WASMWrapper {
 
         const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
         
-        if(err !== 0)
-            throw new Error(`Dedx execution error ${err}`)
+        if(err !== 0){
+            console.error(`Dedx execution error ${err}`)
+            return NaN
+        }
+            
 
         return res
 

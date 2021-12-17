@@ -6,11 +6,11 @@ function dropdownRenderFunction(name){
 }
 
 function CalculatorSettings({ onChanges, inputUnits, outputUnits }) {
-    const {onHistoryChange, onInputUnitChange, onOutputUnitChange} = onChanges
+    const {onInputUnitChange, onOutputUnitChange, onOperationModeChange} = onChanges
     return (<div>
-        <Toggle name={'Use calculation history'} startValue={0} onChange={onHistoryChange}>
-            <>On</>
-            <>Off</>
+        <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>
+            <>Performance</>
+            <>Dynamic</>
         </Toggle>
 
         <Dropdown name={'Input unit'} data={inputUnits} onChange={onInputUnitChange} elementDisplayFunc={dropdownRenderFunction}/>
