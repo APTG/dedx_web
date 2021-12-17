@@ -145,4 +145,21 @@ export default class WASMWrapper {
 
     //     return DataSeriesFactory.getYValues(xs, boundStepFuntion)
     // }
+
+    async getSingleValue(program, ion, material, energy){
+        const wasm = await this.wasm()
+
+        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
+        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
+
+        const res =  wasm.ccall('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'],[ion,material,energy, heap.byteOffset])
+
+        const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+        
+        if(err !== 0)
+            throw new Error(`Dedx execution error ${err}`)
+
+        return res
+
+    }
 }
