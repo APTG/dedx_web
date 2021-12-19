@@ -10,12 +10,14 @@ import * as convert from 'convert-units'
 
 const Units = {
     Inputs: {
-        Celcius: 'C',
-        Fahrenheit: 'F',
+        MeVPerNucleum: 'MeV/nucl',
+        //        Mev: 'Mev',
     },
     Outputs: {
-        Meter: 'm',
-        ['Foot Squared Over Inch']: 'ft^2/in'
+        SmallScale: 'keV/μm',
+        LargeScale: 'MeV/cm',
+        DensityDependant: 'Mev*g/cm^2'
+
     }
 }
 
@@ -37,6 +39,7 @@ class CalculatorComponent extends React.Component {
         },
         onOutputUnitChange: (event) => {
             const outputUnit = event.target.value
+            //const result = this.enrichWithUnit(this.state.result, outputUnit)
             this.setState({ outputUnit })
         },
         onOperationModeChange: operationMode => {
@@ -46,8 +49,11 @@ class CalculatorComponent extends React.Component {
         }
     }
 
+    enrichWithUnit(results, unit = 'cm') {
+        return results.map(res => Object.assign({ unit }, res))
+    }
+
     async calculateResults(input) {
-        const { outputUnit } = this.state
 
         return await Promise.all(
             input.map(async input => {
@@ -55,8 +61,8 @@ class CalculatorComponent extends React.Component {
                 const result = await this.wrapper.getSingleValue(1, 1, 1, input)
                 return {
                     input,
-                    output: isNaN(result) ? 'Value unsupported' : result,
-                    unit: outputUnit
+                    energy: isNaN(result) ? 'Value unsupported' : result,
+                    csdaRange: 'Work in progress'
                 }
             })
         )
@@ -64,25 +70,29 @@ class CalculatorComponent extends React.Component {
 
     async onSubmit(event) {
         event.preventDefault()
-        const {splitChar} = this.state
-
 
         console.log('Unit conversion: ' + (convert(0.001).from('l').toBest().val))
 
-        const inputStr = event.target["inputValue"].value
-        const result = !inputStr
-            ? []
-            : await this.calculateResults(inputStr.split(splitChar))
+        const { separator } = this.state
+        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '')
+        const values = await this.calculateResults(input)
+        const result = this.enrichWithUnit(values)
+
         this.setState({ result })
     }
 
     async onInputChange(event) {
-        console.log(event)
-        const {splitChar} = this.state
-        const input = event.target.value.split(splitChar).filter(el => el!=='')
-        const result = await this.calculateResults(input)
-        this.setState({ result })
+        const { separator } = this.state
+        const input = event.target.value.split(separator).filter(el => el !== '')
+        const values = await this.calculateResults(input)
+        const result = this.enrichWithUnit(values)
 
+        this.setState({ result })
+    }
+
+    async generateDefaults() {
+        const { separator } = this.state
+        return (await this.wrapper.generateDefaults(this.state)).join(separator)
     }
 
     constructor(props) {
@@ -92,13 +102,14 @@ class CalculatorComponent extends React.Component {
 
         this.onSubmit = this.onSubmit.bind(this)
         this.onInputChange = this.onInputChange.bind(this)
+        this.generateDefaults = this.generateDefaults.bind(this)
 
         this.state = {
-            inputUnit: Units.Inputs.Celcius,
-            outputUnit: Units.Outputs['Foot Squared Over Inch'],
+            inputUnit: Units.Inputs.MeVPerNucleum,
+            outputUnit: Units.Outputs.SmallScale,
             result: [],
-            operationMode: OperationMode.Performance,
-            splitChar: ' '
+            operationMode: OperationMode.Dynamic,
+            separator: ' '
         }
 
     }
@@ -106,21 +117,27 @@ class CalculatorComponent extends React.Component {
     render() {
 
         const { inputUnit, outputUnit, result, operationMode } = this.state
+        const { onSubmit, onInputChange, generateDefaults, onChanges } = this
+
+        console.log(result)
         return (
             <div>
-                <CalculatorSettings onChanges={this.onChanges} inputUnits={Object.entries(Units.Inputs)} outputUnits={Object.entries(Units.Outputs)} />
+                <CalculatorSettings
+                    onChanges={onChanges}
+                    inputUnits={Object.entries(Units.Inputs)}
+                    outputUnits={Object.entries(Units.Outputs)}
+                />
                 <CalculatorInput
-                    onSubmit={this.onSubmit}
-                    onInputChange={ operationMode === OperationMode.Dynamic
-                        ? this.onInputChange
+                    onSubmit={onSubmit}
+                    onInputChange={operationMode === OperationMode.Dynamic
+                        ? onInputChange
                         : undefined
-                        
-                       
                     }
                     inputUnit={inputUnit}
                     outputUnit={outputUnit}
+                    generateDefaults={generateDefaults}
                 />
-                <CalculatorOutput result={result} />
+                <CalculatorOutput result={result} energyUnit={outputUnit}/>
 
             </div>
         );

@@ -165,4 +165,8 @@ export default class WASMWrapper {
         return res
 
     }
+
+    async generateDefaults({program, ion, material}){
+        return [1,2,5,10,20,50,100]
+    }
 }
