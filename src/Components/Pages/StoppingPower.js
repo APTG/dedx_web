@@ -39,8 +39,7 @@ class StoppingPowerComponent extends React.PureComponent {
         this.clearDataSeries = this.clearDataSeries.bind(this);
     }
 
-    async submitHandler(message) {
-        const { name, program, ion, material, method, plotUsing, seriesNumber } = message
+    async submitHandler({ name, program, ion, material, method, plotUsing, seriesNumber }) {
         const isLog = this.state.xAxis === AxisLayout.Logarithmic;
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
         const metadata = {

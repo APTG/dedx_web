@@ -16,25 +16,32 @@ export default class Form extends React.Component {
                 this.wrapper.getIons(this.state.program),
                 this.wrapper.getMaterials(this.state.program)
             ])
-            const program = programs[0].code
-            const material = materials[0].code
-            const ion = ions[0].code
-            this.setState({ programs, ions, materials, program, material, ion })
+            const program = programs[0]
+            const material = materials[0]
+            const ion = ions[0]
+            const name = this.seriesByValues(program, ion, material)
+            this.setState({ programs, ions, materials, program, material, ion, name })
         } catch (err) {
             console.log(err)
         }
     }
 
     async onProgramChange(newProgram) {
-        const program = (Number)(newProgram.target.value)
+        const programNumber = (Number)(newProgram.target.value)
         try {
             const [materials, ions] = await Promise.all([
-                this.wrapper.getMaterials(program),
-                this.wrapper.getIons(program)]
+                this.wrapper.getMaterials(programNumber),
+                this.wrapper.getIons(programNumber)]
             )
-            const material = materials[0].code
-            const ion = ions[0].code
-            this.setState({ program, materials, ions, material, ion })
+            const material = materials[0]
+            const ion = ions[0]
+            const program = this.state.programs.find(prog => prog.code === programNumber)
+            const name = this.seriesByValues(
+                program,
+                ion,
+                material
+            )
+            this.setState({ materials, ions, program, material, ion, name })
         } catch (err) {
             console.log(err)
         }
@@ -46,6 +53,9 @@ export default class Form extends React.Component {
     }
 
     seriesMessage = series => `Series ${series}`
+    seriesByValues(program, ion, material) {
+        return `${ion.name}/${material.name}@${program.name}`
+    }
 
     constructor(props) {
         super(props);
@@ -57,9 +67,9 @@ export default class Form extends React.Component {
             name: this.seriesMessage(startingSeriesNumber),
             method: 0,
             plotUsing: 10,
-            program: 0,
-            ion: 0,
-            material: 0,
+            program: {},
+            ion: {},
+            material: {},
             programs: [],
             ions: [],
             materials: []
@@ -72,8 +82,20 @@ export default class Form extends React.Component {
     onNameChange = name => this.setState({ name: name.target.value })
     onMethodChange = method => this.setState({ method: method })
     onPlotUsingChange = plotUsing => this.setState({ plotUsing: plotUsing.target.value })
-    onIonChange = ion => this.setState({ ion: (Number)(ion.target.value) })
-    onMaterialChange = material => this.setState({ material: (Number)(material.target.value) })
+    onIonChange = ({target}) => {
+        const {ions, program, material} = this.state
+        const ionNumber = ~~target.value
+        const ion = ions.find(i => i.code === ionNumber)
+        const name = this.seriesByValues(program,ion,material)
+        this.setState({ ion, name})
+    } 
+    onMaterialChange = ({target}) => {
+        const {ion, program, materials} = this.state
+        const materialNumber = ~~target.value
+        const material = materials.find(mat => mat.code === materialNumber)
+        const name = this.seriesByValues(program,ion,material)
+        this.setState({ material, name})
+    }
 
 
     handleSubmit(event) {
@@ -87,9 +109,9 @@ export default class Form extends React.Component {
         this.forceUpdate()
     }
 
-    handleClear(){
+    handleClear() {
         this.setState({
-            seriesNumber:startingSeriesNumber,
+            seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber)
         })
         this.props.clearDataSeries()
@@ -116,13 +138,13 @@ export default class Form extends React.Component {
                             </Toggle>
                         </div>
                     </div>
-                    <Dropdown value={program} name="Program" data={programs} onchange={this.onProgramChange} />
-                    <Dropdown value={ion} name="Ion" data={ions} onchange={this.onIonChange} />
-                    <Dropdown value={material} name="Material" data={materials} onchange={this.onMaterialChange} />
+                    <Dropdown value={program.code} name="Program" data={programs} onchange={this.onProgramChange} />
+                    <Dropdown value={ion.code} name="Ion" data={ions} onchange={this.onIonChange} />
+                    <Dropdown value={material.code} name="Material" data={materials} onchange={this.onMaterialChange} />
                 </div>
                 <div>
                     <button className="button" type="submit">Plot</button>
-                    <input type="button" className="button" onClick={this.handleClear} value={"Clear"}/>
+                    <input type="button" className="button" onClick={this.handleClear} value={"Clear"} />
                 </div>
             </form>
         );
