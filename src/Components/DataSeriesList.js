@@ -14,7 +14,6 @@ const containerStyle = isShown => {
         flexDirection: "row",
         gap: 5,
         alignItems: "center",
-        maxWidth: "12",
         overflowWrap: "break-word",
         overflow:"hidden"
     }

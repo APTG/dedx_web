@@ -104,7 +104,6 @@ export default class Form extends React.Component {
         this.props.onSubmit({ name, method, plotUsing, program, ion, material, seriesNumber })
         this.setState(pervState => ({
             seriesNumber: ++pervState.seriesNumber,
-            name: this.seriesMessage(pervState.seriesNumber)
         }))
         this.forceUpdate()
     }
@@ -112,7 +111,6 @@ export default class Form extends React.Component {
     handleClear() {
         this.setState({
             seriesNumber: startingSeriesNumber,
-            name: this.seriesMessage(startingSeriesNumber)
         })
         this.props.clearDataSeries()
     }

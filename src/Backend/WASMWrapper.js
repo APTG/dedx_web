@@ -84,10 +84,10 @@ export default class WASMWrapper {
 
     async getDataSeries({program, ion, material, method, plotUsing}, isLog){
         switch (method){
-            case 1: return this.getDataSeriesByIntervals(program, ion, material, plotUsing, isLog)
+            case 1: return this.getDataSeriesByIntervals(program.code, ion.code, material.code, plotUsing, isLog)
 
             default: 
-            case 0: return this.getDataSeriesByPoints(program,ion,material,plotUsing, isLog)
+            case 0: return this.getDataSeriesByPoints(program.code,ion.code,material.code,plotUsing, isLog)
         }
     }
 

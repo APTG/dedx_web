@@ -13,10 +13,10 @@ function GraphSetting({startValues, onChange}) {
                 {"Linear"}
                 {"Logarithmic"}
             </Toggle>
-            <Toggle onChange={onChange.method} name={"Plotting Method:"} startValue={startValues.method}>
+            {/* <Toggle onChange={onChange.method} name={"Plotting Method:"} startValue={startValues.method}>
                 {"Line"}
                 {"Points"}
-            </Toggle>
+            </Toggle> */}
         </div>
     )
 }
