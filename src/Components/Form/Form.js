@@ -66,7 +66,7 @@ export default class Form extends React.Component {
             seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber),
             method: 0,
-            plotUsing: 10,
+            plotUsing: 100,
             program: {},
             ion: {},
             material: {},
@@ -117,7 +117,7 @@ export default class Form extends React.Component {
 
     render() {
         const { programs, ions, materials } = this.state
-        const { program, ion, material, method } = this.state
+        const { program, ion, material } = this.state
 
         return (
             <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
@@ -126,16 +126,17 @@ export default class Form extends React.Component {
                         Name
                         <input onChange={this.onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
-                    <div className="input-wrapper">
+                    {/* <div className="input-wrapper">
                         <label htmlFor="plotUsing">Plot using</label>
                         <div className="toggle-compound">
                             <input onChange={this.onPlotUsingChange} name="plotUsing" id="plotUsing" className="input-box" type="number" step="1" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Points"}
+                                {"Points"}
                                 {"Intervals (unimplemented)"}
                             </Toggle>
                         </div>
-                    </div>
+                    </div> */}
                     <Dropdown value={program.code} name="Program" data={programs} onchange={this.onProgramChange} />
                     <Dropdown value={ion.code} name="Ion" data={ions} onchange={this.onIonChange} />
                     <Dropdown value={material.code} name="Material" data={materials} onchange={this.onMaterialChange} />

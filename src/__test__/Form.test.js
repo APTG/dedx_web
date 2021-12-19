@@ -25,7 +25,6 @@ describe('form', () => {
         const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
         const texts = [
             'Name',
-            'Plot using',
             'Material',
             'Ion',
             'Program'
@@ -79,18 +78,18 @@ describe('form', () => {
         expect(nameNode.value).toMatch('testName')
     })
 
-    test('should handle numeric input', () => {
-        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
+    // test('should handle numeric input', () => {
+    //     const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
 
-        testNumericInput(getByLabelText, 'Plot using')
-    })
+    //     testNumericInput(getByLabelText, 'Plot using')
+    // })
 })
 
-function testNumericInput(queryFunction, name) {
-    const el = queryFunction(name)
-    expect(el.value).not.toBeUndefined()
+// function testNumericInput(queryFunction, name) {
+//     const el = queryFunction(name)
+//     expect(el.value).not.toBeUndefined()
 
-    const testValue = Math.floor(Math.random() * 1000)
-    fireEvent.change(el, { target: { value: testValue } })
-    expect(el.value).toMatch(testValue + [])
-}
+//     const testValue = Math.floor(Math.random() * 1000)
+//     fireEvent.change(el, { target: { value: testValue } })
+//     expect(el.value).toMatch(testValue + [])
+// }
