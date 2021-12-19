@@ -18,9 +18,9 @@
     "identify": "node ./src/deploy.js ./src/Components/Footer/deploy.json",
     "prestart": "npm run identify",
     "prebuild": "npm run identify",
-    "start": "react-app-rewired start",
-    "build": "react-app-rewired build",
-    "test": "react-app-rewired test",
+    "start": "react-scripts start",
+    "build": "react-scripts build",
+    "test": "react-scripts test",
     "eject": "react-scripts eject",
     "predeploy": "npm run identify && npm run build",
     "deploy": "gh-pages -d build"
