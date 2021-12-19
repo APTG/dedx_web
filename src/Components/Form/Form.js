@@ -6,6 +6,8 @@ import WASMWrapper from '../../Backend/WASMWrapper';
 import '../../Styles/Form.css'
 import Dropdown from './Dropdown';
 
+const startingSeriesNumber = 0
+
 export default class Form extends React.Component {
     async componentDidMount() {
         try {
@@ -17,7 +19,7 @@ export default class Form extends React.Component {
             const program = programs[0].code
             const material = materials[0].code
             const ion = ions[0].code
-            this.setState({ programs, ions, materials,program,material,ion})
+            this.setState({ programs, ions, materials, program, material, ion })
         } catch (err) {
             console.log(err)
         }
@@ -50,8 +52,6 @@ export default class Form extends React.Component {
         this.handleSubmit = this.handleSubmit.bind(this);
         this.wrapper = props.wrapper || new WASMWrapper()
 
-        const startingSeriesNumber = 0
-
         this.state = {
             seriesNumber: startingSeriesNumber,
             name: this.seriesMessage(startingSeriesNumber),
@@ -66,6 +66,7 @@ export default class Form extends React.Component {
         }
 
         this.onProgramChange = this.onProgramChange.bind(this)
+        this.handleClear = this.handleClear.bind(this)
     }
 
     onNameChange = name => this.setState({ name: name.target.value })
@@ -84,6 +85,14 @@ export default class Form extends React.Component {
             name: this.seriesMessage(pervState.seriesNumber)
         }))
         this.forceUpdate()
+    }
+
+    handleClear(){
+        this.setState({
+            seriesNumber:startingSeriesNumber,
+            name: this.seriesMessage(startingSeriesNumber)
+        })
+        this.props.clearDataSeries()
     }
 
     render() {
@@ -111,7 +120,10 @@ export default class Form extends React.Component {
                     <Dropdown value={ion} name="Ion" data={ions} onchange={this.onIonChange} />
                     <Dropdown value={material} name="Material" data={materials} onchange={this.onMaterialChange} />
                 </div>
-                <button className="button" type="submit">Submit</button>
+                <div>
+                    <button className="button" type="submit">Plot</button>
+                    <input type="button" className="button" onClick={this.handleClear} value={"Clear"}/>
+                </div>
             </form>
         );
     }

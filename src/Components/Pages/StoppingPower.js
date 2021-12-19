@@ -36,6 +36,7 @@ class StoppingPowerComponent extends React.PureComponent {
         }
 
         this.submitHandler = this.submitHandler.bind(this);
+        this.clearDataSeries = this.clearDataSeries.bind(this);
     }
 
     async submitHandler(message) {
@@ -70,6 +71,10 @@ class StoppingPowerComponent extends React.PureComponent {
         this.forceUpdate();
     }
 
+    clearDataSeries(){
+        this.setState({dataSeries: []})
+    }
+
     startValues() {
         const { xAxis, yAxis, method } = this.state
         return { xAxis, yAxis, method }
@@ -98,7 +103,7 @@ class StoppingPowerComponent extends React.PureComponent {
         console.log(this.state.dataSeries)
         return (
             <div className="content gridish">
-                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} />
+                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} clearDataSeries={this.clearDataSeries} />
                 <div style={{ minWidth: "70%" }}>
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
