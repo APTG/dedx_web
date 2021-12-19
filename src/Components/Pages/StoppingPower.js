@@ -17,6 +17,11 @@ const PlotStyle = {
     Points: 1
 }
 
+const GridlineStyle = {
+    On: 1,
+    Off: 0
+}
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -32,7 +37,8 @@ class StoppingPowerComponent extends React.PureComponent {
             dataSeries: [],
             xAxis: AxisLayout.Logarithmic,
             yAxis: AxisLayout.Logarithmic,
-            plotStyle: PlotStyle.Line
+            plotStyle: PlotStyle.Line,
+            gridlines: GridlineStyle.On
         }
 
         this.submitHandler = this.submitHandler.bind(this);
@@ -70,13 +76,13 @@ class StoppingPowerComponent extends React.PureComponent {
         this.forceUpdate();
     }
 
-    clearDataSeries(){
-        this.setState({dataSeries: []})
+    clearDataSeries() {
+        this.setState({ dataSeries: [] })
     }
 
     startValues() {
-        const { xAxis, yAxis, method } = this.state
-        return { xAxis, yAxis, method }
+        const { xAxis, yAxis, method, gridlines } = this.state
+        return { xAxis, yAxis, method, gridlines }
     }
 
     async onXAxisChange(xAxis) {
@@ -95,11 +101,13 @@ class StoppingPowerComponent extends React.PureComponent {
     onSettingsChange = {
         xAxis: this.onXAxisChange.bind(this),
         yAxis: (yAxis => this.setState({ yAxis })),
-        method: (plotStyle => this.setState({ plotStyle }))
+        method: (plotStyle => this.setState({ plotStyle })),
+        gridlines: (gridlines => this.setState({ gridlines }))
     }
 
     render() {
-        console.log(this.state.dataSeries)
+        const {dataSeries, xAxis, yAxis, plotStyle, gridlines} = this.state
+        console.log(dataSeries)
         return (
             <div className="content gridish">
                 <Form onSubmit={this.submitHandler} wrapper={this.wrapper} clearDataSeries={this.clearDataSeries} />
@@ -107,7 +115,13 @@ class StoppingPowerComponent extends React.PureComponent {
                     <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds => ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph
+                                dataSeries={dataSeries.map(ds => ds.data)}
+                                xAxis={xAxis}
+                                yAxis={yAxis}
+                                plotStyle={plotStyle}
+                                gridlines={gridlines}
+                            />
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>

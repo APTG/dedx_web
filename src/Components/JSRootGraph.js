@@ -7,8 +7,11 @@ let JSROOT
 
 function createTGraphFromDataSeries(dataSeries) {
     const tgraph = JSROOT.createTGraph(dataSeries.y.length, dataSeries.x, dataSeries.y)
+    console.log(tgraph)
     tgraph.fLineColor = dataSeries.index + 1
     tgraph.fLineWidth = 2
+    tgraph.fMarkerSize = 1
+    tgraph.fMarkerStyle = 8
     return tgraph
 }
 
@@ -27,8 +30,9 @@ function drawOptFromProps(props) {
     if (props.xAxis === 1) res.push("logx");
     if (props.yAxis === 1) res.push("logy");
     if (props.plotStyle === 1) res.push("P");
+    if (props.gridlines === 1) res.push("gridx;gridy");
 
-    return res.join(';');
+    return res.join(';')+';tickx;ticky';
 }
 
 //#endregion Helper functions
@@ -89,6 +93,7 @@ export default class JSRootGraph extends React.Component {
         window.addEventListener('resize', this.refreshGraph.bind(this))
 
         const toDraw = createMultigraphFromDataSeries(this.props.dataSeries);
+        toDraw.fTitle = ""
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 

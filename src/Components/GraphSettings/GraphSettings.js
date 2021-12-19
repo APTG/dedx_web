@@ -17,6 +17,10 @@ function GraphSetting({startValues, onChange}) {
                 {"Line"}
                 {"Points"}
             </Toggle> */}
+            <Toggle onChange={onChange.gridlines} name={"Show gridlines:"} startValue={startValues.gridlines}>
+                {"Off"}
+                {"On"}
+            </Toggle>
         </div>
     )
 }
