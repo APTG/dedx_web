@@ -29,14 +29,12 @@ class ContentWrapper extends React.Component {
             <Router>
                 <div style={{ minHeight: "calc(100vh - 7.5em)" }}>
                     <div className="nav-menu">
-                        <Link to={'/StoppingPower'}>Stopping Power</Link>
-                        <Link to={'/Energy'}>Energy</Link>
-                        <Link to={'/Calculator'}>Single Value Calculator</Link>
+                        <Link to={'/StoppingPower'}>Plot</Link>
+                        <Link to={'/Calculator'}>Data</Link>
                     </div>
                     <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
                         <Routes>
                             <Route path={'/StoppingPower'} element={<StoppingPowerComponent ready={ready} />} />
-                            <Route path={'/Energy'} element={<EnergyComponent ready={ready} />} />
                             <Route path={'/Calculator'} element={<CalculatorComponent ready={ready} />} />
                         </Routes>
                     </div>
