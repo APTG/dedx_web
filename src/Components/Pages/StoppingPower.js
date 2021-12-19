@@ -46,26 +46,16 @@ class StoppingPowerComponent extends React.PureComponent {
     }
 
     async submitHandler({ name, program, ion, material, method, plotUsing, seriesNumber }) {
-        const isLog = this.state.xAxis === AxisLayout.Logarithmic;
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
-        const metadata = {
-            program,
-            ion,
-            material,
-            plotUsing: ~~plotUsing,
-            method
-        }
+        const metadata = { program, ion, material, plotUsing, method }
         const data = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber % colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(metadata, isLog))
+        }, await this.wrapper.getDataSeries(metadata, this.state.xAxis === AxisLayout.Logarithmic))
 
-        const dataSeries = {
-            data,
-            metadata
-        }
+        const dataSeries = { data, metadata }
         console.log(dataSeries)
 
         // destruct oldState before assiging new values
@@ -78,11 +68,6 @@ class StoppingPowerComponent extends React.PureComponent {
 
     clearDataSeries() {
         this.setState({ dataSeries: [] })
-    }
-
-    startValues() {
-        const { xAxis, yAxis, method, gridlines } = this.state
-        return { xAxis, yAxis, method, gridlines }
     }
 
     async onXAxisChange(xAxis) {
@@ -106,13 +91,12 @@ class StoppingPowerComponent extends React.PureComponent {
     }
 
     render() {
-        const {dataSeries, xAxis, yAxis, plotStyle, gridlines} = this.state
-        console.log(dataSeries)
+        const { dataSeries, xAxis, yAxis, plotStyle, gridlines, method } = this.state
         return (
             <div className="content gridish">
                 <Form onSubmit={this.submitHandler} wrapper={this.wrapper} clearDataSeries={this.clearDataSeries} />
                 <div style={{ minWidth: "70%" }}>
-                    <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
+                    <GraphSetting startValues={{ xAxis, yAxis, method, gridlines }} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
                             ? <JSRootGraph

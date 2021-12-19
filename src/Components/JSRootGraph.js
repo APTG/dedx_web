@@ -24,16 +24,16 @@ function createMultigraphFromDataSeries(dataSeries) {
         ? JSROOT.createTMultiGraph(...filtered)
         : JSROOT.createTGraph(1)
 
-    if(res) res.fTitle = ""
+    if (res) res.fTitle = ""
     return res
 }
 
-function drawOptFromProps(props) {
+function drawOptFromProps({ xAxis, yAxis, plotStyle, gridlines }) {
     const res = [];
-    if (props.xAxis === 1) res.push("logx");
-    if (props.yAxis === 1) res.push("logy");
-    if (props.plotStyle === 1) res.push("P");
-    if (props.gridlines === 1) res.push("gridx;gridy");
+    if (xAxis === 1) res.push("logx");
+    if (yAxis === 1) res.push("logy");
+    if (plotStyle === 1) res.push("P");
+    if (gridlines === 1) res.push("gridx;gridy");
 
     return res.join(';') + ';tickx;ticky';
 }
@@ -101,7 +101,7 @@ export default class JSRootGraph extends React.Component {
 
     onDataSeriesStateChange(event) {
         let index = (Number)(event.target.id)
-        let dataSeries = [...(this.state.dataSeries)]
+        let dataSeries = this.state.dataSeries.slice(0)
         dataSeries[index].isShown = !dataSeries[index].isShown
         this.setState({ dataSeries })
     }

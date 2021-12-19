@@ -1,6 +1,5 @@
 import PropTypes from 'prop-types';
 import React from 'react';
-import Toggle from '../Toggle';
 
 import WASMWrapper from '../../Backend/WASMWrapper';
 import '../../Styles/Form.css'
@@ -36,23 +35,17 @@ export default class Form extends React.Component {
             const material = materials[0]
             const ion = ions[0]
             const program = this.state.programs.find(prog => prog.code === programNumber)
-            const name = this.seriesByValues(
-                program,
-                ion,
-                material
-            )
+            const name = this.seriesByValues(program, ion, material)
             this.setState({ materials, ions, program, material, ion, name })
         } catch (err) {
             console.log(err)
         }
-
     }
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
     }
 
-    seriesMessage = series => `Series ${series}`
     seriesByValues(program, ion, material) {
         return `${ion.name}/${material.name}@${program.name}`
     }
@@ -64,7 +57,7 @@ export default class Form extends React.Component {
 
         this.state = {
             seriesNumber: startingSeriesNumber,
-            name: this.seriesMessage(startingSeriesNumber),
+            name: "",
             method: 0,
             plotUsing: 100,
             program: {},
@@ -81,27 +74,26 @@ export default class Form extends React.Component {
 
     onNameChange = name => this.setState({ name: name.target.value })
     onMethodChange = method => this.setState({ method: method })
-    onPlotUsingChange = plotUsing => this.setState({ plotUsing: plotUsing.target.value })
-    onIonChange = ({target}) => {
-        const {ions, program, material} = this.state
+    onPlotUsingChange = plotUsing => this.setState({ plotUsing: ~~plotUsing.target.value })
+    onIonChange = ({ target }) => {
+        const { ions, program, material } = this.state
         const ionNumber = ~~target.value
         const ion = ions.find(i => i.code === ionNumber)
-        const name = this.seriesByValues(program,ion,material)
-        this.setState({ ion, name})
-    } 
-    onMaterialChange = ({target}) => {
-        const {ion, program, materials} = this.state
+        const name = this.seriesByValues(program, ion, material)
+        this.setState({ ion, name })
+    }
+    onMaterialChange = ({ target }) => {
+        const { ion, program, materials } = this.state
         const materialNumber = ~~target.value
         const material = materials.find(mat => mat.code === materialNumber)
-        const name = this.seriesByValues(program,ion,material)
-        this.setState({ material, name})
+        const name = this.seriesByValues(program, ion, material)
+        this.setState({ material, name })
     }
 
 
     handleSubmit(event) {
         event.preventDefault()
-        const { name, method, plotUsing, program, ion, material, seriesNumber } = this.state
-        this.props.onSubmit({ name, method, plotUsing, program, ion, material, seriesNumber })
+        this.props.onSubmit(this.state)
         this.setState(pervState => ({
             seriesNumber: ++pervState.seriesNumber,
         }))
@@ -116,15 +108,15 @@ export default class Form extends React.Component {
     }
 
     render() {
-        const { programs, ions, materials } = this.state
-        const { program, ion, material } = this.state
+        const { programs, ions, materials, program, ion, material } = this.state
+        const { handleSubmit, onNameChange, onProgramChange, onIonChange, onMaterialChange, handleClear } = this
 
         return (
-            <form onSubmit={this.handleSubmit} data-testid="form-1" className="particle-input">
+            <form onSubmit={handleSubmit} data-testid="form-1" className="particle-input">
                 <div className="gridish250">
                     <label className="input-wrapper">
                         Name
-                        <input onChange={this.onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
+                        <input onChange={onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
                     {/* <div className="input-wrapper">
                         <label htmlFor="plotUsing">Plot using</label>
@@ -137,13 +129,13 @@ export default class Form extends React.Component {
                             </Toggle>
                         </div>
                     </div> */}
-                    <Dropdown value={program.code} name="Program" data={programs} onchange={this.onProgramChange} />
-                    <Dropdown value={ion.code} name="Ion" data={ions} onchange={this.onIonChange} />
-                    <Dropdown value={material.code} name="Material" data={materials} onchange={this.onMaterialChange} />
+                    <Dropdown value={program.code} name="Program" data={programs} onchange={onProgramChange} />
+                    <Dropdown value={ion.code} name="Ion" data={ions} onchange={onIonChange} />
+                    <Dropdown value={material.code} name="Material" data={materials} onchange={onMaterialChange} />
                 </div>
                 <div>
                     <button className="button" type="submit">Plot</button>
-                    <input type="button" className="button" onClick={this.handleClear} value={"Clear"} />
+                    <input type="button" className="button" onClick={handleClear} value={"Clear"} />
                 </div>
             </form>
         );
