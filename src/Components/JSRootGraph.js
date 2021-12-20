@@ -7,28 +7,35 @@ let JSROOT
 
 function createTGraphFromDataSeries(dataSeries) {
     const tgraph = JSROOT.createTGraph(dataSeries.y.length, dataSeries.x, dataSeries.y)
+    console.log(tgraph)
     tgraph.fLineColor = dataSeries.index + 1
     tgraph.fLineWidth = 2
+    tgraph.fMarkerSize = 1
+    //tgraph.fMarkerStyle = 8
     return tgraph
 }
 
 function createMultigraphFromDataSeries(dataSeries) {
     const filtered = dataSeries
-                .filter(dataSeries => dataSeries.isShown)
-                .map(createTGraphFromDataSeries)
+        .filter(dataSeries => dataSeries.isShown)
+        .map(createTGraphFromDataSeries)
 
-    return filtered.length !== 0 
-        ? JSROOT.createTMultiGraph(...filtered) 
+    const res = filtered.length !== 0
+        ? JSROOT.createTMultiGraph(...filtered)
         : JSROOT.createTGraph(1)
+
+    if (res) res.fTitle = ""
+    return res
 }
 
-function drawOptFromProps(props) {
+function drawOptFromProps({ xAxis, yAxis, plotStyle, gridlines }) {
     const res = [];
-    if (props.xAxis === 1) res.push("logx");
-    if (props.yAxis === 1) res.push("logy");
-    if (props.plotStyle === 1) res.push("P");
+    if (xAxis === 1) res.push("logx");
+    if (yAxis === 1) res.push("logy");
+    if (plotStyle === 1) res.push("P");
+    if (gridlines === 1) res.push("gridx;gridy");
 
-    return res.join(';');
+    return res.join(';') + ';tickx;ticky';
 }
 
 //#endregion Helper functions
@@ -63,46 +70,46 @@ export default class JSRootGraph extends React.Component {
         this.onDataSeriesStateChange = this.onDataSeriesStateChange.bind(this)
     }
 
-    static getDerivedStateFromProps({dataSeries}, _) {
+    static getDerivedStateFromProps({ dataSeries }, _) {
         return {
             dataSeries: dataSeries
         }
     }
 
-    getSnapshotBeforeUpdate(){
+    getSnapshotBeforeUpdate() {
         JSROOT.cleanup(this.graphRef.current);
         const toDraw = createMultigraphFromDataSeries(this.state.dataSeries);
         const opts = drawOptFromProps(this.props);
 
-        return {toDraw,opts}
+        return { toDraw, opts }
     }
 
-    componentDidUpdate(_,__,snapshot){
+    componentDidUpdate(_, __, snapshot) {
         JSROOT.draw(this.graphRef.current, snapshot.toDraw, snapshot.opts)
     }
 
-    refreshGraph(){
+    refreshGraph() {
         JSROOT.resize(this.graphRef.current)
     }
 
     componentDidMount() {
         window.addEventListener('resize', this.refreshGraph.bind(this))
 
-        const toDraw = createMultigraphFromDataSeries(this.props.dataSeries);
+        const toDraw = createMultigraphFromDataSeries(this.props.dataSeries)
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
-    onDataSeriesStateChange(event){
+    onDataSeriesStateChange(event) {
         let index = (Number)(event.target.id)
-        let dataSeries = [...(this.state.dataSeries)]
+        let dataSeries = this.state.dataSeries.slice(0)
         dataSeries[index].isShown = !dataSeries[index].isShown
-        this.setState({dataSeries})
+        this.setState({ dataSeries })
     }
 
     render() {
         return (
             <div>
-                <div style={{ width: "100%", height: '40vw', minHeight:'400px' }} ref={this.graphRef}></div>
+                <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
                 <DataSeriesList dataSeries={this.state.dataSeries} onDataSeriesStateChange={this.onDataSeriesStateChange} />
             </div>
         )

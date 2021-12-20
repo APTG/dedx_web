@@ -17,6 +17,11 @@ const PlotStyle = {
     Points: 1
 }
 
+const GridlineStyle = {
+    On: 1,
+    Off: 0
+}
+
 class StoppingPowerComponent extends React.PureComponent {
 
     static propTypes = {
@@ -32,34 +37,25 @@ class StoppingPowerComponent extends React.PureComponent {
             dataSeries: [],
             xAxis: AxisLayout.Logarithmic,
             yAxis: AxisLayout.Logarithmic,
-            plotStyle: PlotStyle.Line
+            plotStyle: PlotStyle.Line,
+            gridlines: GridlineStyle.On
         }
 
         this.submitHandler = this.submitHandler.bind(this);
+        this.clearDataSeries = this.clearDataSeries.bind(this);
     }
 
-    async submitHandler(message) {
-        const { name, program, ion, material, method, plotUsing, seriesNumber } = message
-        const isLog = this.state.xAxis === AxisLayout.Logarithmic;
+    async submitHandler({ name, program, ion, material, method, plotUsing, seriesNumber }) {
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
-        const metadata = {
-            program,
-            ion,
-            material,
-            plotUsing: ~~plotUsing,
-            method
-        }
+        const metadata = { program, ion, material, plotUsing, method }
         const data = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber % colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(metadata, isLog))
+        }, await this.wrapper.getDataSeries(metadata, this.state.xAxis === AxisLayout.Logarithmic))
 
-        const dataSeries = {
-            data,
-            metadata
-        }
+        const dataSeries = { data, metadata }
         console.log(dataSeries)
 
         // destruct oldState before assiging new values
@@ -70,9 +66,8 @@ class StoppingPowerComponent extends React.PureComponent {
         this.forceUpdate();
     }
 
-    startValues() {
-        const { xAxis, yAxis, method } = this.state
-        return { xAxis, yAxis, method }
+    clearDataSeries() {
+        this.setState({ dataSeries: [] })
     }
 
     async onXAxisChange(xAxis) {
@@ -91,19 +86,26 @@ class StoppingPowerComponent extends React.PureComponent {
     onSettingsChange = {
         xAxis: this.onXAxisChange.bind(this),
         yAxis: (yAxis => this.setState({ yAxis })),
-        method: (plotStyle => this.setState({ plotStyle }))
+        method: (plotStyle => this.setState({ plotStyle })),
+        gridlines: (gridlines => this.setState({ gridlines }))
     }
 
     render() {
-        console.log(this.state.dataSeries)
+        const { dataSeries, xAxis, yAxis, plotStyle, gridlines, method } = this.state
         return (
             <div className="content gridish">
-                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} />
+                <Form onSubmit={this.submitHandler} wrapper={this.wrapper} clearDataSeries={this.clearDataSeries} />
                 <div style={{ minWidth: "70%" }}>
-                    <GraphSetting startValues={this.startValues()} onChange={this.onSettingsChange} />
+                    <GraphSetting startValues={{ xAxis, yAxis, method, gridlines }} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <JSRootGraph dataSeries={this.state.dataSeries.map(ds => ds.data)} xAxis={this.state.xAxis} yAxis={this.state.yAxis} plotStyle={this.state.plotStyle} />
+                            ? <JSRootGraph
+                                dataSeries={dataSeries.map(ds => ds.data)}
+                                xAxis={xAxis}
+                                yAxis={yAxis}
+                                plotStyle={plotStyle}
+                                gridlines={gridlines}
+                            />
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>

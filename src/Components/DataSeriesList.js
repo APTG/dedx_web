@@ -3,7 +3,7 @@ const dataSeriesStyle = color => {
         background: color,
         minWidth: 10,
         height: 10,
-        marginRight:0
+        marginRight: 0
     }
 }
 
@@ -14,9 +14,8 @@ const containerStyle = isShown => {
         flexDirection: "row",
         gap: 5,
         alignItems: "center",
-        maxWidth: "12",
         overflowWrap: "break-word",
-        overflow:"hidden"
+        overflow: "hidden"
     }
 }
 
@@ -26,9 +25,9 @@ function DataSeriesList({ dataSeries, onDataSeriesStateChange }) {
         <div className="gridish12ch">
             {
                 dataSeries.map((dataSeries, key) => {
-                    return (<div style={ containerStyle(dataSeries.isShown) } id={ key } onClick={ onDataSeriesStateChange } key={ `Trace_${ key }` }>
-                        <span style={ dataSeriesStyle(dataSeries.color) } />
-                        { dataSeries.name }
+                    return (<div style={containerStyle(dataSeries.isShown)} id={key} onClick={onDataSeriesStateChange} key={`Trace_${key}`}>
+                        <span style={dataSeriesStyle(dataSeries.color)} />
+                        {dataSeries.name}
                     </div>)
                 })
             }

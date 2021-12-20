@@ -25,7 +25,8 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     const cases = [
         { data: { xAxis: 1, yAxis: 0, plotStyle: 0, dataSeries: [] }, name: 'xAxis' },
         { data: { xAxis: 1, yAxis: 1, plotStyle: 0, dataSeries: [] }, name: 'yAxis' },
-        { data: { xAxis: 1, yAxis: 1, plotStyle: 1, dataSeries: [] }, name: 'plotStyle' },
+        // { data: { xAxis: 1, yAxis: 1, plotStyle: 1, dataSeries: [] }, name: 'plotStyle' },
+        { data: { xAxis: 1, yAxis: 1, gridlines: 1, dataSeries: [] }, name: 'plotStyle' },
     ]
 
     cases.forEach(c => {
@@ -38,8 +39,8 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
         })
     })
 
-    const trace = { x: [1, 2, 3], y: [1, 2, 3], isShown: true }
-    const traceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, dataSeries: [trace] }
+    // const trace = { x: [1, 2, 3], y: [1, 2, 3], isShown: true }
+    // const traceCase = { xAxis: 0, yAxis: 0, plotStyle: 0, dataSeries: [trace] }
 
     // Something's wrong with mock function return values.
     // I'm working on resolving the issue, meanwhile, i've commented some tests out.
