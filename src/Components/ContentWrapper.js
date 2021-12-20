@@ -1,7 +1,6 @@
-import { Link, Route, BrowserRouter as Router, Switch } from 'react-router-dom';
+import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
 
 import CalculatorComponent from "./Pages/Calculator";
-import EnergyComponent from "./Pages/Energy";
 import PropTypes from 'prop-types';
 import React from "react";
 import StoppingPowerComponent from "./Pages/StoppingPower";
@@ -23,28 +22,20 @@ class ContentWrapper extends React.Component {
     }
 
     render() {
-        const ready = this.props.JSROOT?true:false
+        const ready = this.props.JSROOT ? true : false
 
         return (
             <Router>
                 <div style={{ minHeight: "calc(100vh - 7.5em)" }}>
                     <div className="nav-menu">
-                        <Link to={'/StoppingPower'}>Stopping Power</Link>
-                        <Link to={'/Energy'}>Energy</Link>
-                        <Link to={'/Calculator'}>Single Value Calculator</Link>
+                        <Link to={'/StoppingPower'}>Plot</Link>
+                        <Link to={'/Calculator'}>Data</Link>
                     </div>
                     <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
-                        <Switch>
-                            <Route path={'/StoppingPower'}>
-                                <StoppingPowerComponent ready={ready} />
-                            </Route>
-                            <Route path={'/Energy'}>
-                                <EnergyComponent ready={ready} />
-                            </Route>
-                            <Route path={'/Calculator'} >
-                                <CalculatorComponent ready={ready} />
-                            </Route>
-                        </Switch>
+                        <Routes>
+                            <Route path={'/StoppingPower'} element={<StoppingPowerComponent ready={ready} />} />
+                            <Route path={'/Calculator'} element={<CalculatorComponent ready={ready} />} />
+                        </Routes>
                     </div>
                 </div>
             </Router>
