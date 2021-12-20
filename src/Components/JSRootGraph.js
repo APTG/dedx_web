@@ -12,6 +12,8 @@ function createTGraphFromDataSeries(dataSeries) {
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
     //tgraph.fMarkerStyle = 8
+    tgraph.InvertBit(JSROOT.BIT(18)) // https://github.com/root-project/root/blob/v6-25-01/hist/hist/inc/TGraph.h#L72
+    
     return tgraph
 }
 
