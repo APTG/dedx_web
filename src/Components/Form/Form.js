@@ -15,6 +15,7 @@ export default class Form extends React.Component {
                 this.wrapper.getIons(this.state.program),
                 this.wrapper.getMaterials(this.state.program)
             ])
+            console.log(programs)
             const program = programs[0]
             const material = materials[0]
             const ion = ions[0]
@@ -34,7 +35,7 @@ export default class Form extends React.Component {
             )
             const material = materials[0]
             const ion = ions[0]
-            const program = this.state.programs.find(prog => prog.code === programNumber)
+            const program = this.state.programs.find(prog => prog.id === programNumber)
             const name = this.seriesByValues(program, ion, material)
             this.setState({ materials, ions, program, material, ion, name })
         } catch (err) {
@@ -59,7 +60,7 @@ export default class Form extends React.Component {
             seriesNumber: startingSeriesNumber,
             name: "",
             method: 0,
-            plotUsing: 100,
+            pointQuantity: 100,
             program: {},
             ion: {},
             material: {},
@@ -74,18 +75,18 @@ export default class Form extends React.Component {
 
     onNameChange = name => this.setState({ name: name.target.value })
     onMethodChange = method => this.setState({ method: method })
-    onPlotUsingChange = plotUsing => this.setState({ plotUsing: ~~plotUsing.target.value })
+    onPlotUsingChange = pointQuantity => this.setState({ pointQuantity: ~~pointQuantity.target.value })
     onIonChange = ({ target }) => {
         const { ions, program, material } = this.state
         const ionNumber = ~~target.value
-        const ion = ions.find(i => i.code === ionNumber)
+        const ion = ions.find(i => i.id === ionNumber)
         const name = this.seriesByValues(program, ion, material)
         this.setState({ ion, name })
     }
     onMaterialChange = ({ target }) => {
         const { ion, program, materials } = this.state
         const materialNumber = ~~target.value
-        const material = materials.find(mat => mat.code === materialNumber)
+        const material = materials.find(mat => mat.id === materialNumber)
         const name = this.seriesByValues(program, ion, material)
         this.setState({ material, name })
     }
@@ -100,6 +101,10 @@ export default class Form extends React.Component {
         this.forceUpdate()
     }
 
+    dropdownRenderFunction(name){
+        return (element,key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
+    }
+        
     handleClear() {
         this.setState({
             seriesNumber: startingSeriesNumber,
@@ -109,7 +114,7 @@ export default class Form extends React.Component {
 
     render() {
         const { programs, ions, materials, program, ion, material } = this.state
-        const { handleSubmit, onNameChange, onProgramChange, onIonChange, onMaterialChange, handleClear } = this
+        const { handleSubmit, onNameChange, onProgramChange, onIonChange, onMaterialChange, handleClear, dropdownRenderFunction } = this
 
         return (
             <form onSubmit={handleSubmit} data-testid="form-1" className="particle-input">
@@ -119,19 +124,22 @@ export default class Form extends React.Component {
                         <input onChange={onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
                     {/* <div className="input-wrapper">
-                        <label htmlFor="plotUsing">Plot using</label>
+                        <label htmlFor="pointQuantity">Plot using</label>
                         <div className="toggle-compound">
-                            <input onChange={this.onPlotUsingChange} name="plotUsing" id="plotUsing" className="input-box" type="number" step="1" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
+                            <input onChange={this.onPlotUsingChange} name="pointQuantity" id="pointQuantity" className="input-box" type="number" step="1" defaultValue={this.state.pointQuantity} placeholder={this.state.pointQuantity} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Points"}
                                 {"Points"}
                                 {"Intervals (unimplemented)"}
                             </Toggle>
                         </div>
-                    </div> */}
-                    <Dropdown value={program.code} name="Program" data={programs} onchange={onProgramChange} />
-                    <Dropdown value={ion.code} name="Ion" data={ions} onchange={onIonChange} />
-                    <Dropdown value={material.code} name="Material" data={materials} onchange={onMaterialChange} />
+                    </div> */}    
+
+                    <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
+                    elementDisplayFunc={dropdownRenderFunction} />
+                    <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
+                    <Dropdown value={material.id} name="Material" data={materials} onChange={onMaterialChange}
+                     elementDisplayFunc={dropdownRenderFunction} />
                 </div>
                 <div>
                     <button className="button" type="submit">Plot</button>

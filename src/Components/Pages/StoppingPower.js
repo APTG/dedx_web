@@ -45,9 +45,9 @@ class StoppingPowerComponent extends React.PureComponent {
         this.clearDataSeries = this.clearDataSeries.bind(this);
     }
 
-    async submitHandler({ name, program, ion, material, method, plotUsing, seriesNumber }) {
+    async submitHandler({ name, program, ion, material, method, pointQuantity, seriesNumber }) {
         // ~~PlotUsing - double bitwise negation is an efficient way of casting string to int in js
-        const metadata = { program, ion, material, plotUsing, method }
+        const metadata = { program, ion, material, pointQuantity, method }
         const data = Object.assign({
             isShown: true,
             color: colorSequence[seriesNumber % colorSequence.length],
@@ -74,8 +74,8 @@ class StoppingPowerComponent extends React.PureComponent {
         const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
             const { color, isShown, index, name } = data
             const newData = Object.assign(
-                { color, isShown, index, name }
-                , await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
+                { color, isShown, index, name }, 
+                await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
             )
             return { data: newData, metadata }
 
