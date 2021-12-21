@@ -26,7 +26,7 @@ const OperationMode = {
     Performance: 1,
 }
 
-const defaultValue = {code: 0, name: 'no content'}
+const defaultValue = {id: 0, name: 'no content'}
 
 class CalculatorComponent extends React.Component {
     static propTypes = {
@@ -37,8 +37,8 @@ class CalculatorComponent extends React.Component {
         try {
             const [programs, ions, materials] = await Promise.all([
                 this.wrapper.getPrograms(),
-                this.wrapper.getIons(this.state.program.code),
-                this.wrapper.getMaterials(this.state.program.code)
+                this.wrapper.getIons(this.state.program.id),
+                this.wrapper.getMaterials(this.state.program.id)
             ])
             const program = programs[0]
             const material = materials[0]
@@ -51,8 +51,8 @@ class CalculatorComponent extends React.Component {
 
     async onProgramChange(newProgram) {
         const programCode = (Number)(newProgram.target.value)
-        const ionCode = this.state.ion.code
-        const materialCode = this.state.material.code
+        const ionCode = this.state.ion.id
+        const materialCode = this.state.material.id
         try {
             const [materials, ions] = await Promise.all([
                 this.wrapper.getMaterials(programCode),
@@ -60,9 +60,9 @@ class CalculatorComponent extends React.Component {
             ])
             if(materials.length === 0) materials.push(defaultValue)
             if(ions.length === 0) ions.push(defaultValue)
-            const material = materials.find(_material => _material.code === materialCode) || materials[0]
-            const ion = materials.find(_ion => _ion.code === ionCode) || ions[0]
-            const program = this.state.programs.find(prog => prog.code === programCode)
+            const material = materials.find(_material => _material.id === materialCode) || materials[0]
+            const ion = materials.find(_ion => _ion.id === ionCode) || ions[0]
+            const program = this.state.programs.find(prog => prog.id === programCode)
             this.setState({ materials, ions, program, material, ion })
         } catch (err) {
             console.log(err)
@@ -87,13 +87,13 @@ class CalculatorComponent extends React.Component {
         onIonChange: ({ target }) => {
             const { ions } = this.state
             const ionNumber = ~~target.value
-            const ion = ions.find(i => i.code === ionNumber)
+            const ion = ions.find(i => i.id === ionNumber)
             this.setState({ ion })
         },
         onMaterialChange: ({ target }) => {
             const { materials } = this.state
             const materialNumber = ~~target.value
-            const material = materials.find(mat => mat.code === materialNumber)
+            const material = materials.find(mat => mat.id === materialNumber)
             this.setState({ material })
         }
     }
@@ -108,9 +108,9 @@ class CalculatorComponent extends React.Component {
         return await Promise.all(
             input.map(async input => {
                 const result = await this.wrapper.getSingleValue(
-                    program.code,
-                    ion.code,
-                    material.code,
+                    program.id,
+                    ion.id,
+                    material.id,
                     input
                 )
                 return {
@@ -162,7 +162,7 @@ class CalculatorComponent extends React.Component {
             result: [],
             operationMode: OperationMode.Dynamic,
             separator: ' ',
-            program: {code:1},
+            program: {id:1},
             ion: {},
             material: {},
             programs: [],

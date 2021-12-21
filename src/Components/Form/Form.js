@@ -35,7 +35,7 @@ export default class Form extends React.Component {
             )
             const material = materials[0]
             const ion = ions[0]
-            const program = this.state.programs.find(prog => prog.code === programNumber)
+            const program = this.state.programs.find(prog => prog.id === programNumber)
             const name = this.seriesByValues(program, ion, material)
             this.setState({ materials, ions, program, material, ion, name })
         } catch (err) {
@@ -79,14 +79,14 @@ export default class Form extends React.Component {
     onIonChange = ({ target }) => {
         const { ions, program, material } = this.state
         const ionNumber = ~~target.value
-        const ion = ions.find(i => i.code === ionNumber)
+        const ion = ions.find(i => i.id === ionNumber)
         const name = this.seriesByValues(program, ion, material)
         this.setState({ ion, name })
     }
     onMaterialChange = ({ target }) => {
         const { ion, program, materials } = this.state
         const materialNumber = ~~target.value
-        const material = materials.find(mat => mat.code === materialNumber)
+        const material = materials.find(mat => mat.id === materialNumber)
         const name = this.seriesByValues(program, ion, material)
         this.setState({ material, name })
     }
@@ -102,7 +102,7 @@ export default class Form extends React.Component {
     }
 
     dropdownRenderFunction(name){
-        return (element,key) => <option value={element.code} key={`${name}_${key}`}>{element.name}</option>
+        return (element,key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
     }
         
     handleClear() {
@@ -135,10 +135,10 @@ export default class Form extends React.Component {
                         </div>
                     </div> */}    
 
-                    <Dropdown value={program.code} name="Program" data={programs} onChange={onProgramChange}
+                    <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
                     elementDisplayFunc={dropdownRenderFunction} />
-                    <Dropdown value={ion.code} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
-                    <Dropdown value={material.code} name="Material" data={materials} onChange={onMaterialChange}
+                    <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
+                    <Dropdown value={material.id} name="Material" data={materials} onChange={onMaterialChange}
                      elementDisplayFunc={dropdownRenderFunction} />
                 </div>
                 <div>
