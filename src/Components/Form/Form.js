@@ -3,94 +3,41 @@ import React from 'react';
 
 import WASMWrapper from '../../Backend/WASMWrapper';
 import '../../Styles/Form.css'
+import withLibdedxEntities from '../WithLibdedxEntities';
 import Dropdown from './Dropdown';
 
 const startingSeriesNumber = 0
 
-export default class Form extends React.Component {
-    async componentDidMount() {
-        try {
-            const [programs, ions, materials] = await Promise.all([
-                this.wrapper.getPrograms(),
-                this.wrapper.getIons(this.state.program),
-                this.wrapper.getMaterials(this.state.program)
-            ])
-            console.log(programs)
-            const program = programs[0]
-            const material = materials[0]
-            const ion = ions[0]
-            const name = this.seriesByValues(program, ion, material)
-            this.setState({ programs, ions, materials, program, material, ion, name })
-        } catch (err) {
-            console.log(err)
-        }
-    }
-
-    async onProgramChange(newProgram) {
-        const programNumber = (Number)(newProgram.target.value)
-        try {
-            const [materials, ions] = await Promise.all([
-                this.wrapper.getMaterials(programNumber),
-                this.wrapper.getIons(programNumber)]
-            )
-            const material = materials[0]
-            const ion = ions[0]
-            const program = this.state.programs.find(prog => prog.id === programNumber)
-            const name = this.seriesByValues(program, ion, material)
-            this.setState({ materials, ions, program, material, ion, name })
-        } catch (err) {
-            console.log(err)
-        }
-    }
+class Form extends React.Component {
 
     static propTypes = {
         onSubmit: PropTypes.func.isRequired
     }
 
-    seriesByValues(program, ion, material) {
-        return `${ion.name}/${material.name}@${program.name}`
+    static getDerivedStateFromProps(props){
+        const {program, ion, material} = props
+        return{
+            name: `${ion.name}/${material.name}@${program.name}`
+        }
     }
 
     constructor(props) {
         super(props);
         this.handleSubmit = this.handleSubmit.bind(this);
-        this.wrapper = props.wrapper || new WASMWrapper()
 
         this.state = {
             seriesNumber: startingSeriesNumber,
             name: "",
             method: 0,
             pointQuantity: 100,
-            program: {},
-            ion: {},
-            material: {},
-            programs: [],
-            ions: [],
-            materials: []
         }
 
-        this.onProgramChange = this.onProgramChange.bind(this)
         this.handleClear = this.handleClear.bind(this)
     }
 
     onNameChange = name => this.setState({ name: name.target.value })
     onMethodChange = method => this.setState({ method: method })
     onPlotUsingChange = pointQuantity => this.setState({ pointQuantity: ~~pointQuantity.target.value })
-    onIonChange = ({ target }) => {
-        const { ions, program, material } = this.state
-        const ionNumber = ~~target.value
-        const ion = ions.find(i => i.id === ionNumber)
-        const name = this.seriesByValues(program, ion, material)
-        this.setState({ ion, name })
-    }
-    onMaterialChange = ({ target }) => {
-        const { ion, program, materials } = this.state
-        const materialNumber = ~~target.value
-        const material = materials.find(mat => mat.id === materialNumber)
-        const name = this.seriesByValues(program, ion, material)
-        this.setState({ material, name })
-    }
-
 
     handleSubmit(event) {
         event.preventDefault()
@@ -101,10 +48,10 @@ export default class Form extends React.Component {
         this.forceUpdate()
     }
 
-    dropdownRenderFunction(name){
-        return (element,key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
+    dropdownRenderFunction(name) {
+        return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
     }
-        
+
     handleClear() {
         this.setState({
             seriesNumber: startingSeriesNumber,
@@ -113,8 +60,8 @@ export default class Form extends React.Component {
     }
 
     render() {
-        const { programs, ions, materials, program, ion, material } = this.state
-        const { handleSubmit, onNameChange, onProgramChange, onIonChange, onMaterialChange, handleClear, dropdownRenderFunction } = this
+        const { programs, ions, materials, program, ion, material, onIonChange, onMaterialChange, onProgramChange } = this.props
+        const { handleSubmit, onNameChange, handleClear, dropdownRenderFunction } = this
 
         return (
             <form onSubmit={handleSubmit} data-testid="form-1" className="particle-input">
@@ -133,13 +80,13 @@ export default class Form extends React.Component {
                                 {"Intervals (unimplemented)"}
                             </Toggle>
                         </div>
-                    </div> */}    
+                    </div> */}
 
                     <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
-                    elementDisplayFunc={dropdownRenderFunction} />
-                    <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
+                        elementDisplayFunc={dropdownRenderFunction} />
+                    <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction} />
                     <Dropdown value={material.id} name="Material" data={materials} onChange={onMaterialChange}
-                     elementDisplayFunc={dropdownRenderFunction} />
+                        elementDisplayFunc={dropdownRenderFunction} />
                 </div>
                 <div>
                     <button className="button" type="submit">Plot</button>
@@ -149,3 +96,11 @@ export default class Form extends React.Component {
         );
     }
 }
+
+const defaults = {
+    programId: 4,
+    materialId: 1,
+    ionId: 1,
+}
+
+export default withLibdedxEntities(Form, defaults)

@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 import WASMWrapper from '../../Backend/WASMWrapper'
 
@@ -7,6 +6,7 @@ import CalculatorInput from '../CalculatorHelpers/CalculatorInput'
 import CalculatorOutput from '../CalculatorHelpers/CalculatorOutput'
 
 import * as convert from 'convert-units'
+import withLibdedxEntities from '../WithLibdedxEntities'
 
 const Units = {
     Inputs: {
@@ -26,48 +26,8 @@ const OperationMode = {
     Performance: 1,
 }
 
-const defaultValue = {id: 0, name: 'no content'}
-
 class CalculatorComponent extends React.Component {
-    static propTypes = {
-        ready: PropTypes.bool.isRequired
-    }
 
-    async componentDidMount() {
-        try {
-            const [programs, ions, materials] = await Promise.all([
-                this.wrapper.getPrograms(),
-                this.wrapper.getIons(this.state.program.id),
-                this.wrapper.getMaterials(this.state.program.id)
-            ])
-            const program = programs[0]
-            const material = materials[0]
-            const ion = ions[0]
-            this.setState({ programs, ions, materials, program, material, ion })
-        } catch (err) {
-            console.log(err)
-        }
-    }
-
-    async onProgramChange(newProgram) {
-        const programCode = (Number)(newProgram.target.value)
-        const ionCode = this.state.ion.id
-        const materialCode = this.state.material.id
-        try {
-            const [materials, ions] = await Promise.all([
-                this.wrapper.getMaterials(programCode),
-                this.wrapper.getIons(programCode)
-            ])
-            if(materials.length === 0) materials.push(defaultValue)
-            if(ions.length === 0) ions.push(defaultValue)
-            const material = materials.find(_material => _material.id === materialCode) || materials[0]
-            const ion = materials.find(_ion => _ion.id === ionCode) || ions[0]
-            const program = this.state.programs.find(prog => prog.id === programCode)
-            this.setState({ materials, ions, program, material, ion })
-        } catch (err) {
-            console.log(err)
-        }
-    }
 
     onChanges = {
         // onInputUnitChange: ({ target }) => {
@@ -83,19 +43,9 @@ class CalculatorComponent extends React.Component {
             this.setState({ operationMode })
             this.forceUpdate()
         },
-        onProgramChange: this.onProgramChange.bind(this),
-        onIonChange: ({ target }) => {
-            const { ions } = this.state
-            const ionNumber = ~~target.value
-            const ion = ions.find(i => i.id === ionNumber)
-            this.setState({ ion })
-        },
-        onMaterialChange: ({ target }) => {
-            const { materials } = this.state
-            const materialNumber = ~~target.value
-            const material = materials.find(mat => mat.id === materialNumber)
-            this.setState({ material })
-        }
+        onProgramChange: this.props.onProgramChange,
+        onIonChange: this.props.onIonChange,
+        onMaterialChange: this.props.onMaterialChange,
     }
 
     enrichWithUnit(results, unit = 'cm') {
@@ -162,19 +112,14 @@ class CalculatorComponent extends React.Component {
             result: [],
             operationMode: OperationMode.Dynamic,
             separator: ' ',
-            program: {id:1},
-            ion: {},
-            material: {},
-            programs: [],
-            ions: [],
-            materials: []
         }
 
     }
 
     render() {
 
-        const { outputUnit, result, operationMode, programs, ions, materials, program, ion, material } = this.state
+        const { programs, ions, materials, program, ion, material } = this.props
+        const { outputUnit, result, operationMode} = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
 
         return (
@@ -206,4 +151,10 @@ class CalculatorComponent extends React.Component {
     }
 }
 
-export default CalculatorComponent;
+const defaults = {
+    programId: 4,
+    materialId: 1,
+    ionId: 1,
+}
+
+export default withLibdedxEntities(CalculatorComponent, defaults);
