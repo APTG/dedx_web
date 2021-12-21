@@ -4,7 +4,7 @@ import Module from './weblibdedx.js'
 
 /**
  * @typedef {LibdedxEntity}
- * @property {number} code - the libdedx ID assigned to the entity
+ * @property {number} id - the libdedx ID assigned to the entity
  * @property {string} name - name of the entity read from libdedx
  */
 
@@ -34,7 +34,7 @@ export default class WASMWrapper {
         const getName = wasm.cwrap(func, 'number', ['number'])
         return values.map(val => {
             return {
-                code: val,
+                id: val,
                 name: wasm.UTF8ToString(getName(val))
             }
         })
@@ -64,16 +64,16 @@ export default class WASMWrapper {
     /**
      * Fetches a list of libdedx ions avaiable for a given program
      * and encapsulates them in the form of LibdedxEntity
-     * @param {number} programCode - a code of a libdedx program
+     * @param {number} programId - an ID of a libdedx program
      * @returns {LibdedxEntity[]} array of libdedx ions
      */
-    async getIons(programCode) {
+    async getIons(programId) {
         const wasm = await this.wasm()
 
         const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
 
-        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [programCode, heap.byteOffset])
+        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [programId, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
 
@@ -87,16 +87,16 @@ export default class WASMWrapper {
     /**
      * Fetches a list of libdedx materials avaiable for a given program
      * and encapsulates them in the form of LibdedxEntity
-     * @param {number} programCode - a code of a libdedx program
+     * @param {number} programId - an ID of a libdedx program
      * @returns {LibdedxEntity[]} array of libdedx materials
      */
-    async getMaterials(programCode) {
+    async getMaterials(programId) {
         const wasm = await this.wasm()
 
         const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
 
-        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [programCode, heap.byteOffset])
+        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [programId, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
 
@@ -114,16 +114,16 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
      * @param {number} method - data series generation method
-     * @param {number} plotUsing - number of points to generate the plot for
+     * @param {number} pointQuantity - number of points to generate the plot for
      * @param {boolean} isLog - is plot in logarithmic mode
      * @returns {DataSeries} array of libdedx materials
      */
-    async getDataSeries({ program, ion, material, method, plotUsing }, isLog) {
+    async getDataSeries({ program, ion, material, method, pointQuantity }, isLog) {
         switch (method) {
-            case 1: return this.getDataSeriesByIntervals(program.code, ion.code, material.code, plotUsing, isLog)
+            case 1: return this.getDataSeriesByIntervals(program.id, ion.id, material.id, pointQuantity, isLog)
 
             default:
-            case 0: return this.getDataSeriesByPoints(program.code, ion.code, material.code, plotUsing, isLog)
+            case 0: return this.getDataSeriesByPoints(program.id, ion.id, material.id, pointQuantity, isLog)
         }
     }
 
@@ -132,9 +132,9 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} plotUsing - number of points to generate the plot for
+     * @param {number} pointQuantity - number of points to generate the plot for
      * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {DataSeries} array of libdedx materials
+     * @returns {DataSeries} Dataseries to be plotted
      */
     async getDataSeriesByPoints(program, ion, material, points, isLog) {
         const wasm = await this.wasm()
@@ -168,9 +168,9 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} plotUsing - number of points to generate the plot for
+     * @param {number} pointQuantity - number of points to generate the plot for
      * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {DataSeries} array of libdedx materials
+     * @returns {DataSeries} Dataseries to be plotted
      */
     async getDataSeriesByIntervals(program, ion, material, intervals, isLog) {
         return await this.getDataSeriesByPoints(program, ion, material, intervals + 1, isLog)

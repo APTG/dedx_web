@@ -60,7 +60,7 @@ export default class Form extends React.Component {
             seriesNumber: startingSeriesNumber,
             name: "",
             method: 0,
-            plotUsing: 100,
+            pointQuantity: 100,
             program: {},
             ion: {},
             material: {},
@@ -75,7 +75,7 @@ export default class Form extends React.Component {
 
     onNameChange = name => this.setState({ name: name.target.value })
     onMethodChange = method => this.setState({ method: method })
-    onPlotUsingChange = plotUsing => this.setState({ plotUsing: ~~plotUsing.target.value })
+    onPlotUsingChange = pointQuantity => this.setState({ pointQuantity: ~~pointQuantity.target.value })
     onIonChange = ({ target }) => {
         const { ions, program, material } = this.state
         const ionNumber = ~~target.value
@@ -124,9 +124,9 @@ export default class Form extends React.Component {
                         <input onChange={onNameChange} name="name" type="text" className="input-box" value={this.state.name} />
                     </label>
                     {/* <div className="input-wrapper">
-                        <label htmlFor="plotUsing">Plot using</label>
+                        <label htmlFor="pointQuantity">Plot using</label>
                         <div className="toggle-compound">
-                            <input onChange={this.onPlotUsingChange} name="plotUsing" id="plotUsing" className="input-box" type="number" step="1" defaultValue={this.state.plotUsing} placeholder={this.state.plotUsing} />
+                            <input onChange={this.onPlotUsingChange} name="pointQuantity" id="pointQuantity" className="input-box" type="number" step="1" defaultValue={this.state.pointQuantity} placeholder={this.state.pointQuantity} />
                             <Toggle name={''} onChange={this.onMethodChange} startValue={method}>
                                 {"Points"}
                                 {"Points"}

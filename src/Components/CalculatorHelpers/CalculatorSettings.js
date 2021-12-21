@@ -6,7 +6,7 @@ function dropdownRenderFunction(name) {
 }
 
 function elementRenderFunction(name){
-    return (element,key) => <option value={element.code} key={`${name}_${key}`}>{element.name}</option>
+    return (element,key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
 }
 
 function CalculatorSettings({ onChanges, outputUnits, programs, ions, materials, program, ion, material }) {
@@ -19,10 +19,10 @@ function CalculatorSettings({ onChanges, outputUnits, programs, ions, materials,
 
         {/* <Dropdown name={'Input unit'} data={inputUnits} onChange={onInputUnitChange} elementDisplayFunc={dropdownRenderFunction} /> */}
         <Dropdown name={'Stopping power unit'} data={outputUnits} onChange={onOutputUnitChange} elementDisplayFunc={dropdownRenderFunction} />
-        <Dropdown value={program.code} name="Program" data={programs} onChange={onProgramChange}
+        <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
             elementDisplayFunc={elementRenderFunction} />
-        <Dropdown value={ion.code} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={elementRenderFunction} />
-        <Dropdown value={material.code} name="Material" data={materials} onChange={onMaterialChange}
+        <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={elementRenderFunction} />
+        <Dropdown value={material.id} name="Material" data={materials} onChange={onMaterialChange}
             elementDisplayFunc={elementRenderFunction} />
 
     </div>)
