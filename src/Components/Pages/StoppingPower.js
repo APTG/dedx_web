@@ -74,8 +74,8 @@ class StoppingPowerComponent extends React.PureComponent {
         const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
             const { color, isShown, index, name } = data
             const newData = Object.assign(
-                { color, isShown, index, name }
-                , await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
+                { color, isShown, index, name }, 
+                await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
             )
             return { data: newData, metadata }
 

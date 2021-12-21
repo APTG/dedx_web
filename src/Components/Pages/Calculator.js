@@ -16,14 +16,14 @@ const Units = {
     Outputs: {
         SmallScale: 'keV/μm',
         LargeScale: 'MeV/cm',
-        DensityDependant: 'Mev*g/cm^2'
+        MassStoppingPower: 'Mev*g/cm^2'
 
     }
 }
 
 const OperationMode = {
-    Performance: 0,
-    Dynamic: 1
+    Dynamic: 0,
+    Performance: 1,
 }
 
 
@@ -32,13 +32,45 @@ class CalculatorComponent extends React.Component {
         ready: PropTypes.bool.isRequired
     }
 
+    async componentDidMount() {
+        try {
+            const [programs, ions, materials] = await Promise.all([
+                this.wrapper.getPrograms(),
+                this.wrapper.getIons(this.state.program),
+                this.wrapper.getMaterials(this.state.program)
+            ])
+            const program = programs[0]
+            const material = materials[0]
+            const ion = ions[0]
+            this.setState({ programs, ions, materials, program, material, ion })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
+    async onProgramChange(newProgram) {
+        const programNumber = (Number)(newProgram.target.value)
+        try {
+            const [materials, ions] = await Promise.all([
+                this.wrapper.getMaterials(programNumber),
+                this.wrapper.getIons(programNumber)]
+            )
+            const material = materials[0]
+            const ion = ions[0]
+            const program = this.state.programs.find(prog => prog.code === programNumber)
+            this.setState({ materials, ions, program, material, ion })
+        } catch (err) {
+            console.log(err)
+        }
+    }
+
     onChanges = {
-        onInputUnitChange: (event) => {
-            const inputUnit = event.target.value
+        onInputUnitChange: ({ target }) => {
+            const inputUnit = target.value
             this.setState({ inputUnit })
         },
-        onOutputUnitChange: (event) => {
-            const outputUnit = event.target.value
+        onOutputUnitChange: ({ target }) => {
+            const outputUnit = target.value
             //const result = this.enrichWithUnit(this.state.result, outputUnit)
             this.setState({ outputUnit })
         },
@@ -46,6 +78,20 @@ class CalculatorComponent extends React.Component {
             console.log(operationMode)
             this.setState({ operationMode })
             this.forceUpdate()
+        },
+        onIonChange: ({ target }) => {
+            const { ions, program, material } = this.state
+            const ionNumber = ~~target.value
+            const ion = ions.find(i => i.code === ionNumber)
+            const name = this.seriesByValues(program, ion, material)
+            this.setState({ ion, name })
+        },
+        onMaterialChange: ({ target }) => {
+            const { ion, program, materials } = this.state
+            const materialNumber = ~~target.value
+            const material = materials.find(mat => mat.code === materialNumber)
+            const name = this.seriesByValues(program, ion, material)
+            this.setState({ material, name })
         }
     }
 
@@ -54,11 +100,16 @@ class CalculatorComponent extends React.Component {
     }
 
     async calculateResults(input) {
+        const { program, ion, material } = this.state
 
         return await Promise.all(
             input.map(async input => {
-
-                const result = await this.wrapper.getSingleValue(1, 1, 1, input)
+                const result = await this.wrapper.getSingleValue(
+                    program.code,
+                    ion.code,
+                    material.code,
+                    input
+                )
                 return {
                     input,
                     energy: isNaN(result) ? 'Value unsupported' : result,
@@ -109,15 +160,23 @@ class CalculatorComponent extends React.Component {
             outputUnit: Units.Outputs.SmallScale,
             result: [],
             operationMode: OperationMode.Dynamic,
-            separator: ' '
+            separator: ' ',
+            program: {},
+            ion: {},
+            material: {},
+            programs: [],
+            ions: [],
+            materials: []
         }
 
     }
 
     render() {
 
-        const { inputUnit, outputUnit, result, operationMode } = this.state
+        const { inputUnit, outputUnit, result, operationMode, programs, ions, materials } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
+
+        console.log(`OpMode: ${operationMode}`)
 
         console.log(result)
         return (
@@ -126,6 +185,9 @@ class CalculatorComponent extends React.Component {
                     onChanges={onChanges}
                     inputUnits={Object.entries(Units.Inputs)}
                     outputUnits={Object.entries(Units.Outputs)}
+                    programs={programs}
+                    ions={ions}
+                    materials={materials}
                 />
                 <CalculatorInput
                     onSubmit={onSubmit}
@@ -137,7 +199,7 @@ class CalculatorComponent extends React.Component {
                     outputUnit={outputUnit}
                     generateDefaults={generateDefaults}
                 />
-                <CalculatorOutput result={result} energyUnit={outputUnit}/>
+                <CalculatorOutput result={result} energyUnit={outputUnit} />
 
             </div>
         );
