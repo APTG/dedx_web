@@ -40,7 +40,6 @@ class CalculatorComponent extends React.Component {
                 this.wrapper.getIons(this.state.program.code),
                 this.wrapper.getMaterials(this.state.program.code)
             ])
-            console.log(programs)
             const program = programs[0]
             const material = materials[0]
             const ion = ions[0]
@@ -52,7 +51,6 @@ class CalculatorComponent extends React.Component {
 
     async onProgramChange(newProgram) {
         const programCode = (Number)(newProgram.target.value)
-        console.log(programCode)
         const ionCode = this.state.ion.code
         const materialCode = this.state.material.code
         try {
@@ -62,10 +60,6 @@ class CalculatorComponent extends React.Component {
             ])
             if(materials.length === 0) materials.push(defaultValue)
             if(ions.length === 0) ions.push(defaultValue)
-            console.log('materials')
-            console.log(materials)
-            console.log('ions')
-            console.log(ions)
             const material = materials.find(_material => _material.code === materialCode) || materials[0]
             const ion = materials.find(_ion => _ion.code === ionCode) || ions[0]
             const program = this.state.programs.find(prog => prog.code === programCode)
@@ -86,7 +80,6 @@ class CalculatorComponent extends React.Component {
             this.setState({ outputUnit })
         },
         onOperationModeChange: operationMode => {
-            console.log(operationMode)
             this.setState({ operationMode })
             this.forceUpdate()
         },
@@ -131,8 +124,6 @@ class CalculatorComponent extends React.Component {
 
     async onSubmit(event) {
         event.preventDefault()
-
-        console.log('Unit conversion: ' + (convert(0.001).from('l').toBest().val))
 
         const { separator } = this.state
         const input = event.target["calc-input"].value.split(separator).filter(el => el !== '')
@@ -185,8 +176,6 @@ class CalculatorComponent extends React.Component {
 
         const { outputUnit, result, operationMode, programs, ions, materials, program, ion, material } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
-
-        console.log(ion)
 
         return (
             <div>
