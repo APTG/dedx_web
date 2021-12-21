@@ -51,7 +51,7 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
 
-        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [program - 1, heap.byteOffset])
+        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [program, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
 
@@ -68,7 +68,7 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
 
-        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [program - 1, heap.byteOffset])
+        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [program, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
 

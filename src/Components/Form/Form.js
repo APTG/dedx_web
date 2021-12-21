@@ -15,6 +15,7 @@ export default class Form extends React.Component {
                 this.wrapper.getIons(this.state.program),
                 this.wrapper.getMaterials(this.state.program)
             ])
+            console.log(programs)
             const program = programs[0]
             const material = materials[0]
             const ion = ions[0]
