@@ -108,7 +108,7 @@ export default class WASMWrapper {
     }
 
     /**
-     * Creates a dataseries using data for a given program ion and material
+     * Creates a dataseries using data for a given program, ion and material
      * Chooses appropriate method of generation based on method and isLog params
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
