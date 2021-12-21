@@ -134,10 +134,10 @@ export default class Form extends React.Component {
                         </div>
                     </div> */}    
 
-                    <Dropdown value={program} name="Program" data={programs} onchange={onProgramChange}
+                    <Dropdown value={program.code} name="Program" data={programs} onChange={onProgramChange}
                     elementDisplayFunc={dropdownRenderFunction} />
-                    <Dropdown value={ion} name="Ion" data={ions} onchange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
-                    <Dropdown value={material} name="Material" data={materials} onchange={onMaterialChange}
+                    <Dropdown value={ion.code} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={dropdownRenderFunction}/>
+                    <Dropdown value={material.code} name="Material" data={materials} onChange={onMaterialChange}
                      elementDisplayFunc={dropdownRenderFunction} />
                 </div>
                 <div>

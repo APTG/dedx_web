@@ -37,7 +37,6 @@ export default class WASMWrapper {
         wasm.ccall("dedx_get_program_list", null, ['number'], [heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#programsSize)
-            .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
         wasm._free(buf)
 
@@ -52,10 +51,9 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
 
-        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [program, heap.byteOffset])
+        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [program - 1, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
-            .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
         wasm._free(buf)
 
@@ -70,10 +68,9 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
 
-        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [program, heap.byteOffset])
+        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [program - 1, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
-            .filter(x => x !== 0) // TODO: Once the new wasm is generated in the dev-precompiled delete this line
 
         wasm._free(buf)
 
@@ -167,6 +164,6 @@ export default class WASMWrapper {
     }
 
     async generateDefaults({program, ion, material}){
-        return [1,2,5,10,20,50,100]
+        return [1,2,5,10,20,50,100, 200, 500, 1000, 2000, 5000]
     }
 }
