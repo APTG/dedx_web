@@ -1,7 +1,6 @@
 import PropTypes from 'prop-types';
 import React from 'react';
 
-import WASMWrapper from '../../Backend/WASMWrapper';
 import '../../Styles/Form.css'
 import withLibdedxEntities from '../WithLibdedxEntities';
 import Dropdown from './Dropdown';
