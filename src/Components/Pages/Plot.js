@@ -22,7 +22,7 @@ const GridlineStyle = {
     Off: 0
 }
 
-class StoppingPowerComponent extends React.PureComponent {
+class PlotComponent extends React.PureComponent {
 
     static propTypes = {
         ready: PropTypes.bool.isRequired
@@ -53,7 +53,7 @@ class StoppingPowerComponent extends React.PureComponent {
             color: colorSequence[seriesNumber % colorSequence.length],
             index: seriesNumber,
             name
-        }, await this.wrapper.getDataSeries(metadata, this.state.xAxis === AxisLayout.Logarithmic))
+        }, await this.wrapper.getStpPlotData(metadata, this.state.xAxis === AxisLayout.Logarithmic))
 
         const dataSeries = { data, metadata }
         console.log(dataSeries)
@@ -75,7 +75,7 @@ class StoppingPowerComponent extends React.PureComponent {
             const { color, isShown, index, name } = data
             const newData = Object.assign(
                 { color, isShown, index, name }, 
-                await this.wrapper.getDataSeries(metadata, xAxis === AxisLayout.Logarithmic)
+                await this.wrapper.getStpPlotData(metadata, xAxis === AxisLayout.Logarithmic)
             )
             return { data: newData, metadata }
 
@@ -114,4 +114,4 @@ class StoppingPowerComponent extends React.PureComponent {
     }
 }
 
-export default StoppingPowerComponent;
+export default PlotComponent;

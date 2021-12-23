@@ -30,13 +30,8 @@ class CalculatorComponent extends React.Component {
 
 
     onChanges = {
-        // onInputUnitChange: ({ target }) => {
-        //     const inputUnit = target.value
-        //     this.setState({ inputUnit })
-        // },
         onOutputUnitChange: ({ target }) => {
             const outputUnit = target.value
-            //const result = this.enrichWithUnit(this.state.result, outputUnit)
             this.setState({ outputUnit })
         },
         onOperationModeChange: operationMode => {
@@ -48,28 +43,18 @@ class CalculatorComponent extends React.Component {
         onMaterialChange: this.props.onMaterialChange,
     }
 
-    enrichWithUnit(results, unit = 'cm') {
-        return results.map(res => Object.assign({ unit }, res))
+    calculateUnits(_csda) {
+        const units = new Array(_csda.length)
+        const csda = _csda.map((range,key) => {
+            const converted = convert(range).from('cm').toBest()
+            units[key] = converted.unit
+            return converted.val
+        })
+        return {csda, units}
     }
 
     async calculateResults(input) {
-        const { program, ion, material } = this.state
-
-        return await Promise.all(
-            input.map(async input => {
-                const result = await this.wrapper.getSingleValue(
-                    program.id,
-                    ion.id,
-                    material.id,
-                    input
-                )
-                return {
-                    input,
-                    energy: isNaN(result) ? 'Value unsupported' : result,
-                    csdaRange: 'Work in progress'
-                }
-            })
-        )
+        return await this.wrapper.getCalculatorData(this.props, input)
     }
 
     async onSubmit(event) {
@@ -77,8 +62,8 @@ class CalculatorComponent extends React.Component {
 
         const { separator } = this.state
         const input = event.target["calc-input"].value.split(separator).filter(el => el !== '')
-        const values = await this.calculateResults(input)
-        const result = this.enrichWithUnit(values)
+        const result = await this.calculateResults(input)
+        Object.assign(result,this.calculateUnits(result.csda))
 
         this.setState({ result })
     }
@@ -86,15 +71,15 @@ class CalculatorComponent extends React.Component {
     async onInputChange(event) {
         const { separator } = this.state
         const input = event.target.value.split(separator).filter(el => el !== '')
-        const values = await this.calculateResults(input)
-        const result = this.enrichWithUnit(values)
+        const result = await this.calculateResults(input)
+        Object.assign(result,this.calculateUnits(result.csda))
 
         this.setState({ result })
     }
 
     async generateDefaults() {
         const { separator } = this.state
-        return (await this.wrapper.generateDefaults(this.state)).join(separator)
+        return (await this.wrapper.generateDefaults(this.props)).join(separator)
     }
 
     constructor(props) {
@@ -121,6 +106,8 @@ class CalculatorComponent extends React.Component {
         const { programs, ions, materials, program, ion, material } = this.props
         const { outputUnit, result, operationMode} = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
+
+        console.log(result)
 
         return (
             <div>

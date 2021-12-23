@@ -40,7 +40,9 @@ class Form extends React.Component {
 
     handleSubmit(event) {
         event.preventDefault()
-        this.props.onSubmit(this.state)
+        const { name, method, pointQuantity, seriesNumber } = this.state
+        const {program,ion,material} = this.props
+        this.props.onSubmit({ name, program, ion, material, method, pointQuantity, seriesNumber })
         this.setState(pervState => ({
             seriesNumber: ++pervState.seriesNumber,
         }))

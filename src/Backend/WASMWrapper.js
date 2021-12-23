@@ -6,12 +6,15 @@ import Module from './weblibdedx.js'
  * @typedef {LibdedxEntity}
  * @property {number} id - the libdedx ID assigned to the entity
  * @property {string} name - name of the entity read from libdedx
- */
-
-/**
- * @typedef {DataSeries}
- * @property {number[]} x - values to place on the X axis
- * @property {number[]} y - values to place on the Y axis
+ * 
+ * @typedef {PlotDataSeries}
+ * @property {number[]} energies - values of energy
+ * @property {number[]} powers - values of power
+ * 
+ * @typedef {CalculatorDataSeries}
+ * @property {number[]} energies - values of energy
+ * @property {number[]} powers - values of power
+ * @property {number[]} csda - values of CSDA range
  */
 export default class WASMWrapper {
     #_wasm
@@ -29,17 +32,6 @@ export default class WASMWrapper {
         return this.#_wasm
     }
 
-    async getNames(values, func) {
-        const wasm = await this.wasm()
-        const getName = wasm.cwrap(func, 'number', ['number'])
-        return values.map(val => {
-            return {
-                id: val,
-                name: wasm.UTF8ToString(getName(val))
-            }
-        })
-    }
-
     /**
      * Fetches a list of libdedx programs and encapsulates them in the form of LibdedxEntity
      * @returns {LibdedxEntity[]} array of libdedx programs
@@ -50,7 +42,7 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#programsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#programsSize)
 
-        wasm.ccall("dedx_get_program_list", null, ['number'], [heap.byteOffset])
+        wasm.ccall("dedx_fill_program_list", null, ['number'], [heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#programsSize)
 
@@ -58,7 +50,7 @@ export default class WASMWrapper {
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
-        return this.getNames(untyped, 'dedx_get_program_name')
+        return this.getNames(untyped, 'dedx_get_program_name', wasm)
     }
 
     /**
@@ -73,7 +65,7 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
 
-        wasm.ccall("dedx_get_ion_list", null, ['number', 'number'], [programId, heap.byteOffset])
+        wasm.ccall("dedx_fill_ion_list", null, ['number', 'number'], [programId, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
 
@@ -81,7 +73,7 @@ export default class WASMWrapper {
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
-        return this.getNames(untyped, 'dedx_get_ion_name')
+        return this.getNames(untyped, 'dedx_get_ion_name', wasm)
     }
 
     /**
@@ -96,7 +88,7 @@ export default class WASMWrapper {
         const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
 
-        wasm.ccall("dedx_get_material_list", null, ['number', 'number'], [programId, heap.byteOffset])
+        wasm.ccall("dedx_fill_material_list", null, ['number', 'number'], [programId, heap.byteOffset])
 
         const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
 
@@ -104,125 +96,73 @@ export default class WASMWrapper {
 
         const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
 
-        return this.getNames(untyped, 'dedx_get_material_name')
+        return this.getNames(untyped, 'dedx_get_material_name', wasm)
     }
 
     /**
-     * Creates a dataseries using data for a given program, ion and material
+     * Creates a plotdataseries using data for a given program, ion and material
      * Chooses appropriate method of generation based on method and isLog params
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} method - data series generation method
-     * @param {number} pointQuantity - number of points to generate the plot for
      * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {DataSeries} array of libdedx materials
+     * @returns {PlotDataSeries} array of libdedx materials
      */
-    async getDataSeries({ program, ion, material, method, pointQuantity }, isLog) {
-        switch (method) {
-            case 1: return this.getDataSeriesByIntervals(program.id, ion.id, material.id, pointQuantity, isLog)
-
-            default:
-            case 0: return this.getDataSeriesByPoints(program.id, ion.id, material.id, pointQuantity, isLog)
-        }
-    }
-
-     /**
-     * Creates a dataseries by number of points
-     * @param {LibdedxEntity} program - a libdedx program object
-     * @param {LibdedxEntity} ion - a libdedx ion object
-     * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} pointQuantity - number of points to generate the plot for
-     * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {DataSeries} Dataseries to be plotted
-     */
-    async getDataSeriesByPoints(program, ion, material, points, isLog) {
+    async getStpPlotData({ program, ion, material }, isLog) {
         const wasm = await this.wasm()
-        const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [program, ion])
-        const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [program, ion])
 
-        console.log(`start: ${min_energy}\tend: ${max_energy}`)
+        const ids = [program.id, ion.id, material.id]
 
-        const xs = isLog
-            ? DataSeriesFactory.getLogXValuesByPoints(min_energy, max_energy, points)
-            : DataSeriesFactory.getXValuesByPoints(min_energy, max_energy, points)
+        const size = this.getDefaultSize(ids, wasm)
 
-        const stepFunction = wasm.cwrap('dedx_get_simple_stp', 'number', ['number', 'number', 'number', 'number'])
-
-        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
-
-
-        const boundStepFuntion = (x => {
-            const res = stepFunction(ion, material, x, heap.byteOffset)
-            const err = new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
-            if (err !== 0) console.log(err)
-            return res
-        })
-
-        return DataSeriesFactory.getYValues(xs, boundStepFuntion)
+        if (isLog) return this.getDefaultStpPlotData(ids, size, wasm)
+        else return this.getArithmeticStpPlotData(ids, size, wasm)
     }
 
     /**
-     * Creates a dataseries by number of intervals
+     * Creates a calculatordataseries using data for a given program, ion and material
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} pointQuantity - number of points to generate the plot for
-     * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {DataSeries} Dataseries to be plotted
+     * @param {number[]} energies - values of energy to calculate for
+     * @returns {CalculatorDataSeries} array of libdedx materials
      */
-    async getDataSeriesByIntervals(program, ion, material, intervals, isLog) {
-        return await this.getDataSeriesByPoints(program, ion, material, intervals + 1, isLog)
+    async getCalculatorData({ program, ion, material }, energies) {
+        const wasm = await this.wasm()
+
+        const powers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
+        const csda = this.getCSDAForEnergies([program.id, ion.id, material.id], energies, wasm)
+
+        return {
+            energies,
+            powers,
+            csda
+        }
     }
 
-    // async getDataSeriesByStep(program, ion, material, interval){
-    //     const wasm = await this.wasm()
-    //     const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number','number'],[program,ion])
-    //     const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number','number'],[program,ion])
-
-    //     console.log(`start: ${min_energy}\tend: ${max_energy}`)
-
-    //     const xs = DataSeriesFactory.getXValuesByInterval(min_energy,max_energy,interval)
-
-    //     const stepFunction = wasm.cwrap('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'])
-
-    //     const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
-    //     const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
-
-    //     const boundStepFuntion = (x=>{
-    //         const res = stepFunction(ion,material,x,heap.byteOffset)
-    //         const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
-    //         if(err !== 0)console.log(err)
-    //         return res
-    //     })
-
-    //     return DataSeriesFactory.getYValues(xs, boundStepFuntion)
-    // }
-
-     /**
-     * Calculates a single value of stopping power for a given energy value
-     * @param {LibdedxEntity} program - a libdedx program object
-     * @param {LibdedxEntity} ion - a libdedx ion object
-     * @param {LibdedxEntity} material - a libdedx material object
-     * @param {number} energy - value of energy to calculate the power for
-     * @returns {number} single value of stopping power
-     */
-    async getSingleValue(program, ion, material, energy){
+    /**
+    * Calculates a single value of stopping power for a given energy value
+    * @param {LibdedxEntity} program - a libdedx program object
+    * @param {LibdedxEntity} ion - a libdedx ion object
+    * @param {LibdedxEntity} material - a libdedx material object
+    * @param {number} energy - value of energy to calculate the power for
+    * @returns {number} single value of stopping power
+    */
+    async getSingleValue(program, ion, material, energy) {
         const wasm = await this.wasm()
 
         const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
         const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
 
-        const res =  wasm.ccall('dedx_get_simple_stp','number',['number', 'number', 'number', 'number'],[ion,material,energy, heap.byteOffset])
+        const res = wasm.ccall('dedx_get_simple_stp', 'number', ['number', 'number', 'number', 'number'], [ion, material, energy, heap.byteOffset])
 
-        const err =  new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
-        
-        if(err !== 0){
+        const err = new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+
+        if (err !== 0) {
             console.error(`Dedx execution error ${err}`)
             return NaN
         }
-            
+
         return res
     }
 
@@ -233,7 +173,141 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} material - a libdedx material object
      * @returns {number[]} default values of energy
      */
-    async generateDefaults({program, ion, material}){
-        return [1,2,5,10,20,50,100, 200, 500, 1000, 2000, 5000]
+    async generateDefaults({ program, ion, material }) {
+        const wasm = await this.wasm()
+
+        const ids = [program.id, ion.id, material.id]
+
+        const size = this.getDefaultSize(ids, wasm)
+
+        const energyPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
+        const _energies = new Float32Array(wasm.HEAP32.buffer, energyPtr, size)
+        const powerPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
+        const _powers = new Float32Array(wasm.HEAP32.buffer, powerPtr, size)
+
+        const err = wasm.ccall(
+            'dedx_fill_default_energy_stp_table',
+            'number',
+            ['number', 'number', 'number', 'number', 'number'],
+            [...ids, _energies.byteOffset, _powers.byteOffset]
+        )
+
+        const energies = !err ? Array.from(_energies) : [0]
+
+        wasm._free(energyPtr)
+        wasm._free(powerPtr)
+
+        if (err !== 0) console.log(err)
+
+        return energies
     }
+
+    //#region INTERNAL
+    getNames(values, func, wasm) {
+        const getName = wasm.cwrap(func, 'number', ['number'])
+        return values.map(val => {
+            return {
+                id: val,
+                name: wasm.UTF8ToString(getName(val))
+            }
+        })
+    }
+
+    getDefaultSize(ids, wasm) {
+        return wasm.ccall(
+            'dedx_get_stp_table_size',
+            'number',
+            ['number', 'number', 'number'],
+            ids
+        )
+    }
+
+    getDefaultStpPlotData(ids, size, wasm) {
+        console.log(size)
+        const energyPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
+        const _energies = new Float32Array(wasm.HEAP32.buffer, energyPtr, size)
+        const powerPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
+        const _powers = new Float32Array(wasm.HEAP32.buffer, powerPtr, size)
+        console.log([...ids, _energies.byteOffset, _powers.byteOffset])
+
+        const err = wasm.ccall(
+            'dedx_fill_default_energy_stp_table',
+            'number',
+            ['number', 'number', 'number', 'number', 'number'],
+            [...ids, _energies.byteOffset, _powers.byteOffset]
+        )
+
+
+        const energies = !err ? Array.from(_energies) : [0]
+        const powers = !err ? Array.from(_powers) : [0]
+
+        wasm._free(energyPtr)
+        wasm._free(powerPtr)
+
+        if (err !== 0) console.log(err)
+
+        return { energies, powers }
+    }
+
+    async getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
+        const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [programId, ionId])
+        const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [programId, ionId])
+
+        const energies = DataSeriesFactory.getXValuesByPoints(min_energy, max_energy, size)
+
+        const powers = this.getPowerForEnergy([programId, ionId, materialId], energies, wasm)
+
+        return { energies, powers }
+    }
+
+    getPowerForEnergy(ids, _energies, wasm) {
+        const energyPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
+        const energies = new Float32Array(wasm.HEAP32.buffer, energyPtr, _energies.length)
+        const powerPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
+        const powers = new Float32Array(wasm.HEAP32.buffer, powerPtr, _energies.length)
+        energies.set(_energies)
+
+        const err = wasm.ccall(
+            'dedx_get_stp_table',
+            'number',
+            ['number', 'number', 'number', 'number', 'number', 'number'],
+            [...ids, _energies.length, energies.byteOffset, powers.byteOffset]
+        )
+
+        const resultPowers = !err ? Array.from(powers) : [0]
+
+        wasm._free(energyPtr)
+        wasm._free(powerPtr)
+
+        if (err !== 0) console.log(err)
+
+        return resultPowers
+    }
+
+    getCSDAForEnergies(ids, _energies, wasm) {
+        // const energyPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
+        // const energies = new Float32Array(wasm.HEAP32.buffer, energyPtr, _energies.length)
+        // const csdaPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
+        // const csda = new Float32Array(wasm.HEAP32.buffer, csdaPtr, _energies.length)
+        // energies.set(_energies)
+
+        // const err = wasm.ccall(
+        //     'dedx_get_csda_table',
+        //     'number',
+        //     ['number', 'number', 'number', 'number', 'number', 'number'],
+        //     [...ids, _energies.length, energies.byteOffset, csda.byteOffset]
+        // )
+
+        // const resultCSDA = !err ? Array.from(energies) : [0]
+
+        // wasm._free(energyPtr)
+        // wasm._free(csdaPtr)
+
+        // if (err !== 0) console.log(err)
+
+        // return resultCSDA
+
+        return _energies
+    }
+    //#endregion INTERNAL
 }

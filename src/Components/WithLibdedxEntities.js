@@ -38,7 +38,6 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                     this.wrapper.getMaterials(defaultIds.programId)
                 ])
                 const foundEntities = this.findEntities([programs, ions, materials], defaultIds)
-                console.log(foundEntities)
                 this.setState({ programs, ions, materials, ...foundEntities })
             } catch (err) {
                 console.log(err)
@@ -83,7 +82,6 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
         render() {
             const { programs, ions, materials, program, ion, material } = this.state
             const { onProgramChange, onIonChange, onMaterialChange } = this
-            console.log(this.state)
             return (
                 <WrappedComponent
                     programs={programs}
