@@ -81,9 +81,10 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
 
         render() {
             const { programs, ions, materials, program, ion, material } = this.state
-            const { onProgramChange, onIonChange, onMaterialChange } = this
+            const { onProgramChange, onIonChange, onMaterialChange, wrapper } = this
             return (
                 <WrappedComponent
+                    wrapper = {wrapper}
                     programs={programs}
                     ions={ions}
                     materials={materials}

@@ -130,8 +130,6 @@ export default class WASMWrapper {
     async getCalculatorData({ program, ion, material }, energies) {
         const wasm = await this.wasm()
 
-        console.log(energies)
-
         const powers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
         const csda = this.getCSDAForEnergies([program.id, ion.id, material.id], energies, wasm)
 
@@ -225,12 +223,10 @@ export default class WASMWrapper {
     }
 
     getDefaultStpPlotData(ids, size, wasm) {
-        console.log(size)
         const energyPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
         const _energies = new Float32Array(wasm.HEAPF32.buffer, energyPtr, size)
         const powerPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
         const _powers = new Float32Array(wasm.HEAPF32.buffer, powerPtr, size)
-        console.log([...ids, _energies.byteOffset, _powers.byteOffset])
 
         const err = wasm.ccall(
             'dedx_fill_default_energy_stp_table',
@@ -291,7 +287,6 @@ export default class WASMWrapper {
         const csdaPtr = wasm._malloc(_energies.length * Float64Array.BYTES_PER_ELEMENT)
         const csda = new Float64Array(wasm.HEAPF64.buffer, csdaPtr, _energies.length)
         energies.set(_energies)
-        console.log(wasm)
 
         const err = wasm.ccall(
             'dedx_get_csda_range_table',
@@ -299,7 +294,7 @@ export default class WASMWrapper {
             ['number', 'number', 'number', 'number', 'number', 'number'],
             [...ids, _energies.length, energies.byteOffset, csda.byteOffset]
         )
-        
+
         const resultCSDA = !err ? Array.from(csda) : [0]
 
         wasm._free(energyPtr)
