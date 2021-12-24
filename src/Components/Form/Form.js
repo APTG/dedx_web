@@ -99,8 +99,8 @@ class Form extends React.Component {
 }
 
 const defaults = {
-    programId: 4,
-    materialId: 1,
+    programId: 2,
+    materialId: 276,
     ionId: 1,
 }
 

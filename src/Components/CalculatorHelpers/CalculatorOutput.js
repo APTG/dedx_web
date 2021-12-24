@@ -5,7 +5,7 @@ function CalculatorOutput({ result, energyUnit }) {
         <div>
             {header}
             {energies && energies.map((val, key) => {
-                return <div key={`output_${key}`}>{`${val} | ${powers[key]} | ${csda[key]} ${units[key]}`} </div>
+                return <div key={`output_${key}`}>{`${val} | ${powers[key]} | ${csda[key]} ${units[key]}ρ`} </div>
             })
             }
         </div>

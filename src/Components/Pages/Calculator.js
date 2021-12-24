@@ -61,7 +61,7 @@ class CalculatorComponent extends React.Component {
         event.preventDefault()
 
         const { separator } = this.state
-        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '')
+        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '').map(el=>Number(el))
         const result = await this.calculateResults(input)
         Object.assign(result,this.calculateUnits(result.csda))
 
@@ -70,7 +70,7 @@ class CalculatorComponent extends React.Component {
 
     async onInputChange(event) {
         const { separator } = this.state
-        const input = event.target.value.split(separator).filter(el => el !== '')
+        const input = event.target.value.split(separator).filter(el => el !== '').map(el=>Number(el))
         const result = await this.calculateResults(input)
         Object.assign(result,this.calculateUnits(result.csda))
 
@@ -139,8 +139,8 @@ class CalculatorComponent extends React.Component {
 }
 
 const defaults = {
-    programId: 4,
-    materialId: 1,
+    programId: 2,
+    materialId: 276,
     ionId: 1,
 }
 
