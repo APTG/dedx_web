@@ -10,7 +10,7 @@ function CalculatorInput({ onSubmit, onInputChange, generateDefaults }) {
         <input ref={ref} name="calc-input" id="inputvalue" className="input-box" style={{maxWidth:'50%'}} onChange={onInputChange}
             type="textarea" />{` MeV/nucl`}
         <button className="button" onClick={onDefaultGenerate}>Generate default energies</button>
-        <button className="button" type="submit">Submit</button>
+        {!onInputChange && <button className="button" type="submit">Submit</button>}
 
     </form>)
 }
