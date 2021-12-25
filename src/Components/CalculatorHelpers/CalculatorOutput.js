@@ -1,5 +1,5 @@
-function CalculatorOutput({ result, energyUnit }) {
-    const header =  <b>{`input energy | Stopping power[${energyUnit}] | CSDA Range`}</b>
+function CalculatorOutput({ result, powerUnit }) {
+    const header =  <b>{`input energy | Stopping power[${powerUnit}] | CSDA Range`}</b>
     const {energies, powers, csda, units} = result
     return (
         <div>

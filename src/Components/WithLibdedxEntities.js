@@ -1,6 +1,12 @@
 import React from 'react'
 import WASMWrapper from '../Backend/WASMWrapper'
 
+const PowerUnits = {
+    SmallScale: 'keV/μm',
+    LargeScale: 'MeV/cm',
+    MassStoppingPower: 'MeV*g/cm^2'
+}
+
 function withLibdedxEntities(WrappedComponent, defaultIds) {
     return class WithLibdedxEntities extends React.Component {
         constructor(props) {
@@ -14,13 +20,15 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                 material: {},
                 programs: [],
                 ions: [],
-                materials: []
+                materials: [],
+                powerUnit: 0
 
             }
 
             this.onProgramChange = this.onProgramChange.bind(this)
             this.onIonChange = this.onIonChange.bind(this)
             this.onMaterialChange = this.onMaterialChange.bind(this)
+            this.onPowerUnitChange = this.onPowerUnitChange.bind(this)
         }
 
         findEntities([programs, ions, materials], { programId, ionId, materialId }) {
@@ -37,6 +45,7 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                     this.wrapper.getIons(defaultIds.programId),
                     this.wrapper.getMaterials(defaultIds.programId)
                 ])
+                console.log(materials)
                 const foundEntities = this.findEntities([programs, ions, materials], defaultIds)
                 this.setState({ programs, ions, materials, ...foundEntities })
             } catch (err) {
@@ -78,22 +87,28 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
             this.setState({ material })
         }
 
+        async onPowerUnitChange({target}){
+            this.setState({powerUnit: target.value})
+        }
 
         render() {
-            const { programs, ions, materials, program, ion, material } = this.state
-            const { onProgramChange, onIonChange, onMaterialChange, wrapper } = this
+            const { programs, ions, materials, program, ion, material, powerUnit } = this.state
+            const { onProgramChange, onIonChange, onMaterialChange, onPowerUnitChange, wrapper } = this
             return (
                 <WrappedComponent
                     wrapper = {wrapper}
                     programs={programs}
                     ions={ions}
                     materials={materials}
+                    powerUnits={Object.values(PowerUnits)}
                     program={program}
                     ion={ion}
                     material={material}
+                    powerUnit = {powerUnit}
                     onProgramChange={onProgramChange}
                     onIonChange={onIonChange}
                     onMaterialChange={onMaterialChange}
+                    onPowerUnitChange={onPowerUnitChange}
                     {...this.props}
                 />
             )

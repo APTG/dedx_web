@@ -1,7 +1,6 @@
 import DataSeriesFactory from './DataSeriesFactory.js'
 import Module from './weblibdedx.js'
 
-
 /**
  * @typedef {LibdedxEntity}
  * @property {number} id - the libdedx ID assigned to the entity
@@ -39,18 +38,14 @@ export default class WASMWrapper {
     async getPrograms() {
         const wasm = await this.wasm()
 
-        const buf = wasm._malloc(this.#programsSize * Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#programsSize)
+        const [progPtr, programs] = this._allocateI32(wasm, this.#programsSize)
 
-        wasm.ccall("dedx_fill_program_list", null, ['number'], [heap.byteOffset])
+        wasm.ccall("dedx_fill_program_list", null, ['number'], [programs.byteOffset])
+        const result = Array.from(programs.subarray(0, programs.indexOf(-1)))
 
-        const result = new Int32Array(heap.buffer, heap.byteOffset, this.#programsSize)
+        this._free(wasm, progPtr)
 
-        wasm._free(buf)
-
-        const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
-
-        return this.getNames(untyped, 'dedx_get_program_name', wasm)
+        return this.getNames(result, 'dedx_get_program_name', wasm)
     }
 
     /**
@@ -62,18 +57,14 @@ export default class WASMWrapper {
     async getIons(programId) {
         const wasm = await this.wasm()
 
-        const buf = wasm._malloc(this.#ionsSize * Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#ionsSize)
+        const [ionPtr, ions] = this._allocateI32(wasm, this.#ionsSize)
 
-        wasm.ccall("dedx_fill_ion_list", null, ['number', 'number'], [programId, heap.byteOffset])
+        wasm.ccall("dedx_fill_ion_list", null, ['number', 'number'], [programId, ions.byteOffset])
+        const result = Array.from(ions.subarray(0, ions.indexOf(-1)))
 
-        const result = new Int32Array(heap.buffer, heap.byteOffset, this.#ionsSize)
+        wasm._free(ionPtr)
 
-        wasm._free(buf)
-
-        const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
-
-        return this.getNames(untyped, 'dedx_get_ion_name', wasm)
+        return this.getNames(result, 'dedx_get_ion_name', wasm)
     }
 
     /**
@@ -85,18 +76,16 @@ export default class WASMWrapper {
     async getMaterials(programId) {
         const wasm = await this.wasm()
 
-        const buf = wasm._malloc(this.#materialsSize * Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint32Array(wasm.HEAP32.buffer, buf, this.#materialsSize)
+        const [matPtr, materials] = this._allocateI32(wasm, this.#materialsSize)
 
-        wasm.ccall("dedx_fill_material_list", null, ['number', 'number'], [programId, heap.byteOffset])
+        console.log(materials)
 
-        const result = new Int32Array(heap.buffer, heap.byteOffset, this.#materialsSize)
+        wasm.ccall("dedx_fill_material_list", null, ['number', 'number'], [programId, materials.byteOffset])
+        const result = Array.from(materials.subarray(0, materials.indexOf(-1)))
 
-        wasm._free(buf)
+        wasm._free(matPtr)
 
-        const untyped = Array.from(result.subarray(0, result.indexOf(-1)))
-
-        return this.getNames(untyped, 'dedx_get_material_name', wasm)
+        return this.getNames(result, 'dedx_get_material_name', wasm)
     }
 
     /**
@@ -151,12 +140,17 @@ export default class WASMWrapper {
     async getSingleValue(program, ion, material, energy) {
         const wasm = await this.wasm()
 
-        const buf = wasm._malloc(Int32Array.BYTES_PER_ELEMENT)
-        const heap = new Uint8Array(wasm.HEAP32.buffer, buf, Int32Array.BYTES_PER_ELEMENT)
+        const buf = wasm._malloc(Uint8Array.BYTES_PER_ELEMENT)
+        const heap = new Uint8Array(wasm.HEAP8.buffer, buf, Uint8Array.BYTES_PER_ELEMENT)
 
-        const res = wasm.ccall('dedx_get_simple_stp', 'number', ['number', 'number', 'number', 'number'], [ion, material, energy, heap.byteOffset])
+        const res = wasm.ccall(
+            'dedx_get_simple_stp',
+            'number',
+            ['number', 'number', 'number', 'number'],
+            [ion, material, energy, heap.byteOffset]
+        )
 
-        const err = new Int32Array(heap.buffer, heap.byteOffset, 1)[0]
+        const err = heap[0]
 
         if (err !== 0) {
             console.error(`Dedx execution error ${err}`)
@@ -167,7 +161,7 @@ export default class WASMWrapper {
     }
 
     /**
-     * Fetches the default energy values from libdedx - placeholder
+     * Fetches the default energy values from libdedx
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
@@ -180,10 +174,8 @@ export default class WASMWrapper {
 
         const size = this.getDefaultSize(ids, wasm)
 
-        const energyPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
-        const _energies = new Float32Array(wasm.HEAPF32.buffer, energyPtr, size)
-        const powerPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
-        const _powers = new Float32Array(wasm.HEAPF32.buffer, powerPtr, size)
+        const [energyPtr, _energies] = this._allocateF32(wasm, size)
+        const [powerPtr, _powers] = this._allocateF32(wasm, size)
 
         const err = wasm.ccall(
             'dedx_fill_default_energy_stp_table',
@@ -194,12 +186,40 @@ export default class WASMWrapper {
 
         const energies = !err ? Array.from(_energies) : [0]
 
-        wasm._free(energyPtr)
-        wasm._free(powerPtr)
+        this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
 
         return energies
+    }
+
+    /**
+    * Recalculates the values of stopping powers from oldUnit to newUnit
+    * @param {number} oldUnit - code of the old unit
+    * @param {number} newUnit - code of the new unit
+    * @param {LibdedxEntity} material - a libdedx material object
+    * @param {number} oldPowers - values of stopping power in old unit
+    * @returns {number[]} values of stopping power in new unit
+    */
+    async recalcualteEnergies(oldUnit, newUnit, material, oldPowers) {
+        const wasm = await this.wasm()
+
+        const [oldVPtr, oldValues] = this._allocateF32(wasm, oldPowers.length)
+        const [newVPtr, newValues] = this._allocateF32(wasm, oldPowers.length)
+        oldValues.set(oldPowers)
+
+        const err = wasm.ccall(
+            'convert_units',
+            'number',
+            ['number', 'number', 'number', 'number', 'number', 'number'],
+            [oldUnit, newUnit, material.id, oldPowers.length, oldValues.byteOffset, newValues.byteOffset]
+        )
+
+        const result = !err ? Array.from(newValues) : [0]
+
+        this._free(wasm, oldVPtr, newVPtr)
+
+        return result
     }
 
     //#region INTERNAL
@@ -223,10 +243,8 @@ export default class WASMWrapper {
     }
 
     getDefaultStpPlotData(ids, size, wasm) {
-        const energyPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
-        const _energies = new Float32Array(wasm.HEAPF32.buffer, energyPtr, size)
-        const powerPtr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
-        const _powers = new Float32Array(wasm.HEAPF32.buffer, powerPtr, size)
+        const [energyPtr, _energies] = this._allocateF32(wasm, size)
+        const [powerPtr, _powers] = this._allocateF32(wasm, size)
 
         const err = wasm.ccall(
             'dedx_fill_default_energy_stp_table',
@@ -238,8 +256,7 @@ export default class WASMWrapper {
         const energies = !err ? Array.from(_energies) : [0]
         const powers = !err ? Array.from(_powers) : [0]
 
-        wasm._free(energyPtr)
-        wasm._free(powerPtr)
+        this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
 
@@ -258,10 +275,8 @@ export default class WASMWrapper {
     }
 
     getPowerForEnergy(ids, _energies, wasm) {
-        const energyPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
-        const energies = new Float32Array(wasm.HEAPF32.buffer, energyPtr, _energies.length)
-        const powerPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
-        const powers = new Float32Array(wasm.HEAPF32.buffer, powerPtr, _energies.length)
+        const [energyPtr, energies] = this._allocateF32(wasm, _energies.length)
+        const [powerPtr, powers] = this._allocateF32(wasm, _energies.length)
         energies.set(_energies)
 
         const err = wasm.ccall(
@@ -273,8 +288,7 @@ export default class WASMWrapper {
 
         const resultPowers = !err ? Array.from(powers) : [0]
 
-        wasm._free(energyPtr)
-        wasm._free(powerPtr)
+        this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
 
@@ -282,10 +296,8 @@ export default class WASMWrapper {
     }
 
     getCSDAForEnergies(ids, _energies, wasm) {
-        const energyPtr = wasm._malloc(_energies.length * Float32Array.BYTES_PER_ELEMENT)
-        const energies = new Float32Array(wasm.HEAPF32.buffer, energyPtr, _energies.length)
-        const csdaPtr = wasm._malloc(_energies.length * Float64Array.BYTES_PER_ELEMENT)
-        const csda = new Float64Array(wasm.HEAPF64.buffer, csdaPtr, _energies.length)
+        const [energyPtr, energies] = this._allocateF32(wasm, _energies.length)
+        const [csdaPtr, csda] = this._allocateF64(wasm, _energies.length)
         energies.set(_energies)
 
         const err = wasm.ccall(
@@ -297,12 +309,36 @@ export default class WASMWrapper {
 
         const resultCSDA = !err ? Array.from(csda) : [0]
 
-        wasm._free(energyPtr)
-        wasm._free(csdaPtr)
+        this._free(wasm, energyPtr, csdaPtr)
 
         if (err !== 0) console.log(err)
 
         return resultCSDA
+    }
+
+    _allocateI32(wasm, size) {
+        const ptr = wasm._malloc(size * Int32Array.BYTES_PER_ELEMENT)
+        const arr = new Int32Array(wasm.HEAP32.buffer, ptr, size)
+
+        return [ptr, arr]
+    }
+
+    _allocateF32(wasm, size) {
+        const ptr = wasm._malloc(size * Float32Array.BYTES_PER_ELEMENT)
+        const arr = new Float32Array(wasm.HEAPF32.buffer, ptr, size)
+
+        return [ptr, arr]
+    }
+
+    _allocateF64(wasm, size) {
+        const ptr = wasm._malloc(size * Float64Array.BYTES_PER_ELEMENT)
+        const arr = new Float64Array(wasm.HEAPF64.buffer, ptr, size)
+
+        return [ptr, arr]
+    }
+
+    _free(wasm, ...args) {
+        args.forEach(arg => wasm._free(arg))
     }
     //#endregion INTERNAL
 }

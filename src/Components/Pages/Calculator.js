@@ -13,12 +13,6 @@ const Units = {
         MeVperNucleon: 'MeV/nucl',
         //        Mev: 'Mev',
     },
-    Outputs: {
-        SmallScale: 'keV/μm',
-        LargeScale: 'MeV/cm',
-        MassStoppingPower: 'MeV*g/cm^2'
-
-    }
 }
 
 const OperationMode = {
@@ -28,32 +22,37 @@ const OperationMode = {
 
 class CalculatorComponent extends React.Component {
 
-    async componentDidUpdate(prevProps) {
-        const { program, ion, material } = prevProps
-        if (program !== this.props.program
-            || ion !== this.props.ion
-            || material !== this.props.material
+    async componentDidUpdate(prevProps, oldState) {
+        const { program, ion, material, powerUnit } = this.props
+        if (program !== prevProps.program
+            || ion !== prevProps.ion
+            || material !== prevProps.material
         ) {
-            const {energies} = this.state.result
-            if(energies){
+            const { energies } = this.state.result
+            if (energies) {
                 this.setState({
                     result: await this.calculateResults(energies)
                 })
             }
 
         }
+        else if (powerUnit !== prevProps.powerUnit) {
+            const { powers } = this.state.result
+            if (powers) {
+                const newState = oldState
+                newState.result.powers = await this.wrapper.recalcualteEnergies(prevProps.powerUnit, powerUnit, material, powers)
+                this.setState(newState)
+            }
+        }
         else return null
     }
 
     onChanges = {
-        onOutputUnitChange: ({ target }) => {
-            const outputUnit = target.value
-            this.setState({ outputUnit })
-        },
         onOperationModeChange: operationMode => {
             this.setState({ operationMode })
             this.forceUpdate()
         },
+        onPowerUnitChange:this.props.onPowerUnitChange,
         onProgramChange: this.props.onProgramChange,
         onIonChange: this.props.onIonChange,
         onMaterialChange: this.props.onMaterialChange,
@@ -109,26 +108,26 @@ class CalculatorComponent extends React.Component {
 
         this.state = {
             inputUnit: Units.Inputs.MeVPerNucleum,
-            outputUnit: Units.Outputs.SmallScale,
             result: {},
             operationMode: OperationMode.Dynamic,
             separator: ' ',
         }
-
     }
 
     render() {
 
-        const { programs, ions, materials, program, ion, material } = this.props
-        const { outputUnit, result, operationMode } = this.state
+        const { programs, ions, materials, powerUnits, program, ion, material, powerUnit } = this.props
+        const { result, operationMode } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
+
+        console.log(materials)
 
         return (
             <div>
                 <CalculatorSettings
                     onChanges={onChanges}
                     // inputUnits={Object.entries(Units.Inputs)}
-                    outputUnits={Object.entries(Units.Outputs)}
+                    powerUnits={powerUnits}
                     programs={programs}
                     ions={ions}
                     materials={materials}
@@ -143,10 +142,10 @@ class CalculatorComponent extends React.Component {
                         : undefined
                     }
                     // inputUnit={inputUnit}
-                    outputUnit={outputUnit}
+                    powerUnit={powerUnit}
                     generateDefaults={generateDefaults}
                 />
-                <CalculatorOutput result={result} energyUnit={outputUnit} />
+                <CalculatorOutput result={result} powerUnit={Object.values(powerUnits)[powerUnit]} />
             </div>
         );
     }
