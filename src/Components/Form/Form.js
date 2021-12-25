@@ -13,10 +13,15 @@ class Form extends React.Component {
         onSubmit: PropTypes.func.isRequired
     }
 
-    static getDerivedStateFromProps(props){
-        const {program, ion, material} = props
-        return{
-            name: `${ion.name}/${material.name}@${program.name}`
+    componentDidUpdate(prevProps){
+        const { program, ion, material } = this.props
+        if (program !== prevProps.program
+            || ion !== prevProps.ion
+            || material !== prevProps.material
+        ) {
+            this.setState({
+                name:`${ion.name}/${material.name}@${program.name}`
+            })
         }
     }
 
@@ -34,7 +39,10 @@ class Form extends React.Component {
         this.handleClear = this.handleClear.bind(this)
     }
 
-    onNameChange = name => this.setState({ name: name.target.value })
+    onNameChange = name =>{
+        console.log(name.target.value)
+        this.setState({ name: name.target.value })
+    } 
     onMethodChange = method => this.setState({ method: method })
     onPlotUsingChange = pointQuantity => this.setState({ pointQuantity: ~~pointQuantity.target.value })
 

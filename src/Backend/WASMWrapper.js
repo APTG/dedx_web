@@ -78,8 +78,6 @@ export default class WASMWrapper {
 
         const [matPtr, materials] = this._allocateI32(wasm, this.#materialsSize)
 
-        console.log(materials)
-
         wasm.ccall("dedx_fill_material_list", null, ['number', 'number'], [programId, materials.byteOffset])
         const result = Array.from(materials.subarray(0, materials.indexOf(-1)))
 
@@ -216,6 +214,8 @@ export default class WASMWrapper {
         )
 
         const result = !err ? Array.from(newValues) : [0]
+
+        if(err) console.log(err)
 
         this._free(wasm, oldVPtr, newVPtr)
 

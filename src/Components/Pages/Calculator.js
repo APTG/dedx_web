@@ -120,14 +120,13 @@ class CalculatorComponent extends React.Component {
         const { result, operationMode } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
 
-        console.log(materials)
-
         return (
             <div>
                 <CalculatorSettings
                     onChanges={onChanges}
                     // inputUnits={Object.entries(Units.Inputs)}
                     powerUnits={powerUnits}
+                    powerUnit={powerUnit}
                     programs={programs}
                     ions={ions}
                     materials={materials}

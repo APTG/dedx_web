@@ -56,7 +56,6 @@ class PlotComponent extends React.PureComponent {
         }, await this.wrapper.getStpPlotData(metadata, this.state.xAxis === AxisLayout.Logarithmic))
 
         const dataSeries = { data, metadata }
-        console.log(dataSeries)
 
         // destruct oldState before assiging new values
         this.setState(oldState => ({

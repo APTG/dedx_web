@@ -2,9 +2,9 @@ import React from 'react'
 import WASMWrapper from '../Backend/WASMWrapper'
 
 const PowerUnits = {
-    SmallScale: 'keV/μm',
+    MassStoppingPower: 'MeV*g/cm^2',
     LargeScale: 'MeV/cm',
-    MassStoppingPower: 'MeV*g/cm^2'
+    SmallScale: 'keV/μm'
 }
 
 function withLibdedxEntities(WrappedComponent, defaultIds) {
@@ -21,8 +21,7 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                 programs: [],
                 ions: [],
                 materials: [],
-                powerUnit: 0
-
+                powerUnit: 2
             }
 
             this.onProgramChange = this.onProgramChange.bind(this)
@@ -45,7 +44,6 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                     this.wrapper.getIons(defaultIds.programId),
                     this.wrapper.getMaterials(defaultIds.programId)
                 ])
-                console.log(materials)
                 const foundEntities = this.findEntities([programs, ions, materials], defaultIds)
                 this.setState({ programs, ions, materials, ...foundEntities })
             } catch (err) {

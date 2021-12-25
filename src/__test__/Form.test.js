@@ -1,4 +1,4 @@
-import { fireEvent, render } from '@testing-library/react'
+import { fireEvent, render, screen } from '@testing-library/react'
 
 import Form from '../Components/Form/Form'  // skipcq: JS-E1007, JS-P1003, JS-W1028, JS-W1029
 import React from 'react'
@@ -16,13 +16,13 @@ describe('form', () => {
     const mockFunction = jest.fn()
 
     test('should render form', () => {
-        const { getByTestId } = render(<Form onSubmit={mockFunction} />)
+        render(<Form onSubmit={mockFunction} />)
 
-        expect(getByTestId('form-1')).toBeInTheDocument()
+        expect(screen.getByTestId('form-1')).toBeInTheDocument()
     })
 
     test('should render all form fields', () => {
-        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
+        render(<Form onSubmit={mockFunction} />)
         const texts = [
             'Name',
             'Material',
@@ -31,7 +31,7 @@ describe('form', () => {
         ]
 
         texts.forEach(t => {
-            expect(getByLabelText(t)).toBeInTheDocument()
+            expect(screen.getByLabelText(t)).toBeInTheDocument()
         })
     })
 
@@ -69,9 +69,9 @@ describe('form', () => {
     })
 
     test('should handle text inputs', () => {
-        const { getByLabelText } = render(<Form onSubmit={mockFunction} />)
+        render(<Form onSubmit={mockFunction} />)
 
-        const nameNode = getByLabelText('Name')
+        const nameNode = screen.getByLabelText('Name')
         expect(nameNode.value).toMatch('')
 
         fireEvent.change(nameNode, { target: { value: 'testName' } })
