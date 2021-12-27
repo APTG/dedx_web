@@ -47,6 +47,9 @@ export default class WASMWrapper {
         const [progPtr, programs] = this._allocateI32(wasm, this.#programsSize)
 
         wasm.ccall("dedx_fill_program_list", null, ['number'], [programs.byteOffset])
+        // libdedx stores the list on programs in an array of much larger size than its needed
+        // list of useful program is terminated with `-1` entry
+        // we use it here to extract list of of programs (excluding `-1` terminator)
         const result = Array.from(programs.subarray(0, programs.indexOf(-1)))
 
         this._free(wasm, progPtr)
