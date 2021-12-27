@@ -107,9 +107,9 @@ class Form extends React.Component {
 }
 
 const defaults = {
-    programId: 2,
-    materialId: 276,
-    ionId: 1,
+    programId: 2, // PSTAR https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L8
+    materialId: 276, // liquid WATER https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L197
+    ionId: 1, // currently proton (HYDROGEN)  https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L244
 }
 
 export default withLibdedxEntities(Form, defaults)
