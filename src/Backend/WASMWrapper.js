@@ -1,6 +1,12 @@
 import DataSeriesFactory from './DataSeriesFactory.js'
 import Module from './weblibdedx.js'
 
+export const StoppingPowerUnits = {
+    MassStoppingPower: {name:'MeV*cm^2/g', id:0},
+    LargeScale: {name:'MeV/cm', id:1},
+    SmallScale: {name:'keV/μm', id:2}
+}
+
 /**
  * @typedef {LibdedxEntity}
  * @property {number} id - the libdedx ID assigned to the entity
@@ -114,10 +120,12 @@ export default class WASMWrapper {
      * @param {number[]} energies - values of energy to calculate for
      * @returns {CalculatorDataSeries} array of libdedx materials
      */
-    async getCalculatorData({ program, ion, material }, energies) {
+    async getCalculatorData({ program, ion, material, stoppingPowerUnit }, energies) {
         const wasm = await this.wasm()
 
-        const stoppingPowers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
+        let stoppingPowers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
+        if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
+            stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, stoppingPowers)
         const csdaRanges = this.getcsdaRangesForEnergies([program.id, ion.id, material.id], energies, wasm)
 
         return {
@@ -192,14 +200,14 @@ export default class WASMWrapper {
     }
 
     /**
-    * Recalculates the values of stopping stoppingPowers from oldUnit to newUnit
-    * @param {number} oldUnit - code of the old unit
-    * @param {number} newUnit - code of the new unit
+    * Recalculates the values of stopping powers from oldUnit to newUnit
+    * @param {LibdedxEntity} oldUnit - old stopping power unit
+    * @param {LibdedxEntity} newUnit - new stopping power unit
     * @param {LibdedxEntity} material - a libdedx material object
     * @param {number} oldstoppingPowers - values of stopping power in old unit
     * @returns {number[]} values of stopping power in new unit
     */
-    async recalcualteEnergies(oldUnit, newUnit, material, oldstoppingPowers) {
+    async recalcualteStoppingPowers(oldUnit, newUnit, material, oldstoppingPowers) {
         const wasm = await this.wasm()
 
         const [oldVPtr, oldValues] = this._allocateF32(wasm, oldstoppingPowers.length)
@@ -210,7 +218,7 @@ export default class WASMWrapper {
             'convert_units',
             'number',
             ['number', 'number', 'number', 'number', 'number', 'number'],
-            [oldUnit, newUnit, material.id, oldstoppingPowers.length, oldValues.byteOffset, newValues.byteOffset]
+            [oldUnit.id, newUnit.id, material.id, oldstoppingPowers.length, oldValues.byteOffset, newValues.byteOffset]
         )
 
         const result = !err ? Array.from(newValues) : [0]

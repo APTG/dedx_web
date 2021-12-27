@@ -1,11 +1,5 @@
 import React from 'react'
-import WASMWrapper from '../Backend/WASMWrapper'
-
-const PowerUnits = {
-    MassStoppingPower: 'MeV*g/cm^2',
-    LargeScale: 'MeV/cm',
-    SmallScale: 'keV/μm'
-}
+import WASMWrapper,{StoppingPowerUnits} from '../Backend/WASMWrapper'
 
 function withLibdedxEntities(WrappedComponent, defaultIds) {
     return class WithLibdedxEntities extends React.Component {
@@ -21,13 +15,13 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
                 programs: [],
                 ions: [],
                 materials: [],
-                powerUnit: 2
+                stoppingPowerUnit: StoppingPowerUnits.SmallScale
             }
 
             this.onProgramChange = this.onProgramChange.bind(this)
             this.onIonChange = this.onIonChange.bind(this)
             this.onMaterialChange = this.onMaterialChange.bind(this)
-            this.onPowerUnitChange = this.onPowerUnitChange.bind(this)
+            this.onStoppingPowerUnitChange = this.onStoppingPowerUnitChange.bind(this)
         }
 
         findEntities([programs, ions, materials], { programId, ionId, materialId }) {
@@ -85,35 +79,35 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
             this.setState({ material })
         }
 
-        async onPowerUnitChange({target}){
-            this.setState({powerUnit: target.value})
+        onStoppingPowerUnitChange({target}){
+            const stoppingPowerUnit = Object.values(StoppingPowerUnits)[~~target.value]
+            this.setState({stoppingPowerUnit})
         }
 
         render() {
-            const { programs, ions, materials, program, ion, material, powerUnit } = this.state
-            const { onProgramChange, onIonChange, onMaterialChange, onPowerUnitChange, wrapper } = this
+            const { programs, ions, materials, program, ion, material, stoppingPowerUnit } = this.state
+            const { onProgramChange, onIonChange, onMaterialChange, onStoppingPowerUnitChange, wrapper } = this
+
             return (
                 <WrappedComponent
                     wrapper = {wrapper}
                     programs={programs}
                     ions={ions}
                     materials={materials}
-                    powerUnits={Object.values(PowerUnits)}
+                    stoppingPowerUnits={Object.values(StoppingPowerUnits)}
                     program={program}
                     ion={ion}
                     material={material}
-                    powerUnit = {powerUnit}
+                    stoppingPowerUnit = {stoppingPowerUnit}
                     onProgramChange={onProgramChange}
                     onIonChange={onIonChange}
                     onMaterialChange={onMaterialChange}
-                    onPowerUnitChange={onPowerUnitChange}
+                    onStoppingPowerUnitChange={onStoppingPowerUnitChange}
                     {...this.props}
                 />
             )
         }
     }
-
-    
 }
 
 export default withLibdedxEntities

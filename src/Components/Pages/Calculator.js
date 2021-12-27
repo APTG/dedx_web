@@ -23,7 +23,7 @@ const OperationMode = {
 class CalculatorComponent extends React.Component {
 
     async componentDidUpdate(prevProps, oldState) {
-        const { program, ion, material, powerUnit } = this.props
+        const { program, ion, material, stoppingPowerUnit } = this.props
         if (program !== prevProps.program
             || ion !== prevProps.ion
             || material !== prevProps.material
@@ -36,11 +36,11 @@ class CalculatorComponent extends React.Component {
             }
 
         }
-        else if (powerUnit !== prevProps.powerUnit) {
+        else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
             const { stoppingPowers } = this.state.result
             if (stoppingPowers) {
                 const newState = oldState
-                newState.result.stoppingPowers = await this.wrapper.recalcualteEnergies(prevProps.powerUnit, powerUnit, material, stoppingPowers)
+                newState.result.stoppingPowers = await this.wrapper.recalcualteStoppingPowers(prevProps.stoppingPowerUnit, stoppingPowerUnit, material, stoppingPowers)
                 this.setState(newState)
             }
         }
@@ -52,7 +52,7 @@ class CalculatorComponent extends React.Component {
             this.setState({ operationMode })
             this.forceUpdate()
         },
-        onPowerUnitChange:this.props.onPowerUnitChange,
+        onStoppingPowerUnitChange:this.props.onStoppingPowerUnitChange,
         onProgramChange: this.props.onProgramChange,
         onIonChange: this.props.onIonChange,
         onMaterialChange: this.props.onMaterialChange,
@@ -116,7 +116,7 @@ class CalculatorComponent extends React.Component {
 
     render() {
 
-        const { programs, ions, materials, powerUnits, program, ion, material, powerUnit } = this.props
+        const { programs, ions, materials, stoppingPowerUnits, program, ion, material, stoppingPowerUnit } = this.props
         const { result, operationMode } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
 
@@ -125,8 +125,8 @@ class CalculatorComponent extends React.Component {
                 <CalculatorSettings
                     onChanges={onChanges}
                     // inputUnits={Object.entries(Units.Inputs)}
-                    powerUnits={powerUnits}
-                    powerUnit={powerUnit}
+                    stoppingPowerUnits={stoppingPowerUnits}
+                    stoppingPowerUnit={stoppingPowerUnit}
                     programs={programs}
                     ions={ions}
                     materials={materials}
@@ -141,19 +141,19 @@ class CalculatorComponent extends React.Component {
                         : undefined
                     }
                     // inputUnit={inputUnit}
-                    powerUnit={powerUnit}
+                    stoppingPowerUnit={stoppingPowerUnit}
                     generateDefaults={generateDefaults}
                 />
-                <CalculatorOutput result={result} powerUnit={Object.values(powerUnits)[powerUnit]} />
+                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
             </div>
         );
     }
 }
 
 const defaults = {
-    programId: 2,
-    materialId: 276,
-    ionId: 1,
+    programId: 2, // PSTAR https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L8
+    materialId: 276, // liquid WATER https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L197
+    ionId: 1, // currently proton (HYDROGEN)  https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L244
 }
 
 export default withLibdedxEntities(CalculatorComponent, defaults);

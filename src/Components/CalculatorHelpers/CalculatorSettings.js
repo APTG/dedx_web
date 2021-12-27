@@ -9,8 +9,9 @@ function elementRenderFunction(name){
     return (element,key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
 }
 
-function CalculatorSettings({ onChanges, powerUnits, programs, ions, materials, powerUnit, program, ion, material }) {
-    const { onPowerUnitChange, onOperationModeChange, onProgramChange, onIonChange, onMaterialChange } = onChanges
+function CalculatorSettings({ onChanges, stoppingPowerUnits, programs, ions, materials, stoppingPowerUnit, program, ion, material }) {
+    const { onStoppingPowerUnitChange, onOperationModeChange, onProgramChange, onIonChange, onMaterialChange } = onChanges
+
     return (<div>
         <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>
             <>Dynamic</>
@@ -18,7 +19,7 @@ function CalculatorSettings({ onChanges, powerUnits, programs, ions, materials, 
         </Toggle>
 
         {/* <Dropdown name={'Input unit'} data={inputUnits} onChange={onInputUnitChange} elementDisplayFunc={dropdownRenderFunction} /> */}
-        <Dropdown value={powerUnit} name={'Stopping power unit'} data={powerUnits} onChange={onPowerUnitChange} elementDisplayFunc={dropdownRenderFunction} />
+        <Dropdown value={stoppingPowerUnit.id} name={'Stopping power unit'} data={stoppingPowerUnits.map(u=>u.name)} onChange={onStoppingPowerUnitChange} elementDisplayFunc={dropdownRenderFunction} />
         <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
             elementDisplayFunc={elementRenderFunction} />
         <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={elementRenderFunction} />
