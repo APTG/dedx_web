@@ -9,7 +9,7 @@ function createTGraphFromDataSeries(dataSeries) {
     const tgraph = JSROOT.createTGraph(
         dataSeries.energies.length,
         dataSeries.energies,
-        dataSeries.powers
+        dataSeries.stoppingPowers
     )
     //console.log(tgraph)
     tgraph.fLineColor = dataSeries.index + 1

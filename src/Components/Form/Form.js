@@ -40,7 +40,6 @@ class Form extends React.Component {
     }
 
     onNameChange = name =>{
-        console.log(name.target.value)
         this.setState({ name: name.target.value })
     } 
     onMethodChange = method => this.setState({ method: method })

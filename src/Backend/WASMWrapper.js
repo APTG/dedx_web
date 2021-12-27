@@ -8,12 +8,12 @@ import Module from './weblibdedx.js'
  * 
  * @typedef {PlotDataSeries}
  * @property {number[]} energies - values of energy
- * @property {number[]} powers - values of power
+ * @property {number[]} stoppingPowers - values of power
  * 
  * @typedef {CalculatorDataSeries}
  * @property {number[]} energies - values of energy
- * @property {number[]} powers - values of power
- * @property {number[]} csda - values of CSDA range
+ * @property {number[]} stoppingPowers - values of power
+ * @property {number[]} csdaRanges - values of csda range
  */
 export default class WASMWrapper {
     #_wasm
@@ -117,13 +117,13 @@ export default class WASMWrapper {
     async getCalculatorData({ program, ion, material }, energies) {
         const wasm = await this.wasm()
 
-        const powers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
-        const csda = this.getCSDAForEnergies([program.id, ion.id, material.id], energies, wasm)
+        const stoppingPowers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
+        const csdaRanges = this.getcsdaRangesForEnergies([program.id, ion.id, material.id], energies, wasm)
 
         return {
             energies,
-            powers,
-            csda
+            stoppingPowers,
+            csdaRanges
         }
     }
 
@@ -173,13 +173,13 @@ export default class WASMWrapper {
         const size = this.getDefaultSize(ids, wasm)
 
         const [energyPtr, _energies] = this._allocateF32(wasm, size)
-        const [powerPtr, _powers] = this._allocateF32(wasm, size)
+        const [powerPtr, _stoppingPowers] = this._allocateF32(wasm, size)
 
         const err = wasm.ccall(
             'dedx_fill_default_energy_stp_table',
             'number',
             ['number', 'number', 'number', 'number', 'number'],
-            [...ids, _energies.byteOffset, _powers.byteOffset]
+            [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
 
         const energies = !err ? Array.from(_energies) : [0]
@@ -192,25 +192,25 @@ export default class WASMWrapper {
     }
 
     /**
-    * Recalculates the values of stopping powers from oldUnit to newUnit
+    * Recalculates the values of stopping stoppingPowers from oldUnit to newUnit
     * @param {number} oldUnit - code of the old unit
     * @param {number} newUnit - code of the new unit
     * @param {LibdedxEntity} material - a libdedx material object
-    * @param {number} oldPowers - values of stopping power in old unit
+    * @param {number} oldstoppingPowers - values of stopping power in old unit
     * @returns {number[]} values of stopping power in new unit
     */
-    async recalcualteEnergies(oldUnit, newUnit, material, oldPowers) {
+    async recalcualteEnergies(oldUnit, newUnit, material, oldstoppingPowers) {
         const wasm = await this.wasm()
 
-        const [oldVPtr, oldValues] = this._allocateF32(wasm, oldPowers.length)
-        const [newVPtr, newValues] = this._allocateF32(wasm, oldPowers.length)
-        oldValues.set(oldPowers)
+        const [oldVPtr, oldValues] = this._allocateF32(wasm, oldstoppingPowers.length)
+        const [newVPtr, newValues] = this._allocateF32(wasm, oldstoppingPowers.length)
+        oldValues.set(oldstoppingPowers)
 
         const err = wasm.ccall(
             'convert_units',
             'number',
             ['number', 'number', 'number', 'number', 'number', 'number'],
-            [oldUnit, newUnit, material.id, oldPowers.length, oldValues.byteOffset, newValues.byteOffset]
+            [oldUnit, newUnit, material.id, oldstoppingPowers.length, oldValues.byteOffset, newValues.byteOffset]
         )
 
         const result = !err ? Array.from(newValues) : [0]
@@ -244,23 +244,23 @@ export default class WASMWrapper {
 
     getDefaultStpPlotData(ids, size, wasm) {
         const [energyPtr, _energies] = this._allocateF32(wasm, size)
-        const [powerPtr, _powers] = this._allocateF32(wasm, size)
+        const [powerPtr, _stoppingPowers] = this._allocateF32(wasm, size)
 
         const err = wasm.ccall(
             'dedx_fill_default_energy_stp_table',
             'number',
             ['number', 'number', 'number', 'number', 'number'],
-            [...ids, _energies.byteOffset, _powers.byteOffset]
+            [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
 
         const energies = !err ? Array.from(_energies) : [0]
-        const powers = !err ? Array.from(_powers) : [0]
+        const stoppingPowers = !err ? Array.from(_stoppingPowers) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
 
-        return { energies, powers }
+        return { energies, stoppingPowers }
     }
 
     async getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
@@ -269,51 +269,51 @@ export default class WASMWrapper {
 
         const energies = DataSeriesFactory.getXValuesByPoints(min_energy, max_energy, size)
 
-        const powers = this.getPowerForEnergy([programId, ionId, materialId], energies, wasm)
+        const stoppingPowers = this.getPowerForEnergy([programId, ionId, materialId], energies, wasm)
 
-        return { energies, powers }
+        return { energies, stoppingPowers }
     }
 
     getPowerForEnergy(ids, _energies, wasm) {
         const [energyPtr, energies] = this._allocateF32(wasm, _energies.length)
-        const [powerPtr, powers] = this._allocateF32(wasm, _energies.length)
+        const [powerPtr, stoppingPowers] = this._allocateF32(wasm, _energies.length)
         energies.set(_energies)
 
         const err = wasm.ccall(
             'dedx_get_stp_table',
             'number',
             ['number', 'number', 'number', 'number', 'number', 'number'],
-            [...ids, _energies.length, energies.byteOffset, powers.byteOffset]
+            [...ids, _energies.length, energies.byteOffset, stoppingPowers.byteOffset]
         )
 
-        const resultPowers = !err ? Array.from(powers) : [0]
+        const resultstoppingPowers = !err ? Array.from(stoppingPowers) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
 
-        return resultPowers
+        return resultstoppingPowers
     }
 
-    getCSDAForEnergies(ids, _energies, wasm) {
+    getcsdaRangesForEnergies(ids, _energies, wasm) {
         const [energyPtr, energies] = this._allocateF32(wasm, _energies.length)
-        const [csdaPtr, csda] = this._allocateF64(wasm, _energies.length)
+        const [csdaRangesPtr, csdaRanges] = this._allocateF64(wasm, _energies.length)
         energies.set(_energies)
 
         const err = wasm.ccall(
             'dedx_get_csda_range_table',
             'number',
             ['number', 'number', 'number', 'number', 'number', 'number'],
-            [...ids, _energies.length, energies.byteOffset, csda.byteOffset]
+            [...ids, _energies.length, energies.byteOffset, csdaRanges.byteOffset]
         )
 
-        const resultCSDA = !err ? Array.from(csda) : [0]
+        const resultcsdaRanges = !err ? Array.from(csdaRanges) : [0]
 
-        this._free(wasm, energyPtr, csdaPtr)
+        this._free(wasm, energyPtr, csdaRangesPtr)
 
         if (err !== 0) console.log(err)
 
-        return resultCSDA
+        return resultcsdaRanges
     }
 
     _allocateI32(wasm, size) {

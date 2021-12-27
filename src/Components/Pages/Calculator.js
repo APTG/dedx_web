@@ -37,10 +37,10 @@ class CalculatorComponent extends React.Component {
 
         }
         else if (powerUnit !== prevProps.powerUnit) {
-            const { powers } = this.state.result
-            if (powers) {
+            const { stoppingPowers } = this.state.result
+            if (stoppingPowers) {
                 const newState = oldState
-                newState.result.powers = await this.wrapper.recalcualteEnergies(prevProps.powerUnit, powerUnit, material, powers)
+                newState.result.stoppingPowers = await this.wrapper.recalcualteEnergies(prevProps.powerUnit, powerUnit, material, stoppingPowers)
                 this.setState(newState)
             }
         }
@@ -58,19 +58,19 @@ class CalculatorComponent extends React.Component {
         onMaterialChange: this.props.onMaterialChange,
     }
 
-    calculateUnits(_csda) {
-        const units = new Array(_csda.length)
-        const csda = _csda.map((range, key) => {
+    calculateUnits(_csdaRanges) {
+        const units = new Array(_csdaRanges.length)
+        const csdaRanges = _csdaRanges.map((range, key) => {
             const converted = convert(range).from('cm').toBest()
             units[key] = converted.unit
             return converted.val
         })
-        return { csda, units }
+        return { csdaRanges, units }
     }
 
     async calculateResults(energies) {
         const result = await this.wrapper.getCalculatorData(this.props, energies)
-        Object.assign(result, this.calculateUnits(result.csda))
+        Object.assign(result, this.calculateUnits(result.csdaRanges))
         return result
     }
 
