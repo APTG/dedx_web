@@ -1,9 +1,9 @@
-import { Link, Route, BrowserRouter as Router, Routes } from 'react-router-dom';
+import { Link, Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 
 import CalculatorComponent from "./Pages/Calculator";
 import PropTypes from 'prop-types';
 import React from "react";
-import StoppingPowerComponent from "./Pages/StoppingPower";
+import PlotComponent from "./Pages/Plot";
 
 import makeAsyncScriptLoader from "react-async-script";
 
@@ -28,13 +28,14 @@ class ContentWrapper extends React.Component {
             <Router>
                 <div style={{ minHeight: "calc(100vh - 7.5em)" }}>
                     <div className="nav-menu">
-                        <Link to={'/StoppingPower'}>Plot</Link>
-                        <Link to={'/Calculator'}>Data</Link>
+                        <Link to={'web_dev/StoppingPower'}>Plot</Link>
+                        <Link to={'web_dev/Calculator'}>Data</Link>
                     </div>
                     <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
                         <Routes>
-                            <Route path={'/StoppingPower'} element={<StoppingPowerComponent ready={ready} />} />
-                            <Route path={'/Calculator'} element={<CalculatorComponent ready={ready} />} />
+                            <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"}/>} />
+                            <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
+                            <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
                         </Routes>
                     </div>
                 </div>

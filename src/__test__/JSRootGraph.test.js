@@ -23,8 +23,8 @@ describe('JSRootGraphp', () => {  // skipcq: JS-0125
     })
 
     const cases = [
-        { data: { xAxis: 1, yAxis: 0, plotStyle: 0, dataSeries: [] }, name: 'xAxis' },
-        { data: { xAxis: 1, yAxis: 1, plotStyle: 0, dataSeries: [] }, name: 'yAxis' },
+        { data: { xAxis: 1, yAxis: 0, gridlines: 0, dataSeries: [] }, name: 'xAxis' },
+        { data: { xAxis: 1, yAxis: 1, gridlines: 0, dataSeries: [] }, name: 'yAxis' },
         // { data: { xAxis: 1, yAxis: 1, plotStyle: 1, dataSeries: [] }, name: 'plotStyle' },
         { data: { xAxis: 1, yAxis: 1, gridlines: 1, dataSeries: [] }, name: 'plotStyle' },
     ]

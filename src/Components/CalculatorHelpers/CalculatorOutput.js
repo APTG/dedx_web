@@ -1,10 +1,11 @@
-function CalculatorOutput({ result, energyUnit }) {
-    const header =  <b>{`input energy | Stopping power[${energyUnit}] | CSDA Range`}</b>
+function CalculatorOutput({ result, stoppingPowerUnit }) {
+    const header =  <b>{`input energy | Stopping power[${stoppingPowerUnit.name}] | CSDA Range`}</b>
+    const {energies, stoppingPowers, csdaRanges, units} = result
     return (
         <div>
             {header}
-            {result.map((val, key) => {
-                return <div key={`output_${key}`}>{`${val.input} | ${val.energy} | ${val.csdaRange} ${val.unit}`} </div>
+            {energies && energies.map((val, key) => {
+                return <div key={`output_${key}`}>{`${val} | ${stoppingPowers[key]} | ${csdaRanges[key]} ${units[key]}ρ`} </div>
             })
             }
         </div>

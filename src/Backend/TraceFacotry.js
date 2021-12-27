@@ -10,14 +10,12 @@ export default class TraceFactory{
     }
 
     static getXAxis(start,end,points,interval){
-        console.log(points)
         const arr = Array.from(new Array(points-1),(_,key)=>{return (Number)((start + interval * (key+1).toFixed(3)))})
         arr.push(end)
         return arr
     }
 
     static getStoppingPowerValues(xs, stepFunction){
-        console.log(stepFunction)
         const ys = xs.map(stepFunction)
         return {
             x: xs,

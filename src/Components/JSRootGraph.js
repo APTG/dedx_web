@@ -6,8 +6,12 @@ let JSROOT
 //#region Helper functions
 
 function createTGraphFromDataSeries(dataSeries) {
-    const tgraph = JSROOT.createTGraph(dataSeries.y.length, dataSeries.x, dataSeries.y)
-    console.log(tgraph)
+    const tgraph = JSROOT.createTGraph(
+        dataSeries.energies.length,
+        dataSeries.energies,
+        dataSeries.stoppingPowers
+    )
+    //console.log(tgraph)
     tgraph.fLineColor = dataSeries.index + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
@@ -15,7 +19,7 @@ function createTGraphFromDataSeries(dataSeries) {
     // line below the comment sets kNotEditable bit (no 18) which disables graph dragging
     // kNotEditable is defined in TGraph class in ROOT project: https://github.com/root-project/root/blob/v6-25-01/hist/hist/inc/TGraph.h#L72
     tgraph.InvertBit(JSROOT.BIT(18))
-    
+
     return tgraph
 }
 
@@ -51,7 +55,7 @@ export default class JSRootGraph extends React.Component {
     static propTypes = {
         xAxis: PropTypes.oneOf([0, 1]).isRequired,
         yAxis: PropTypes.oneOf([0, 1]).isRequired,
-        plotStyle: PropTypes.oneOf([0, 1]).isRequired,
+        gridlines: PropTypes.oneOf([0, 1]).isRequired,
         dataSeries: PropTypes.arrayOf(
             PropTypes.shape({
                 isShown: PropTypes.bool,

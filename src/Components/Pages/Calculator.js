@@ -1,4 +1,3 @@
-import PropTypes from 'prop-types'
 import React from 'react'
 import WASMWrapper from '../../Backend/WASMWrapper'
 
@@ -7,18 +6,13 @@ import CalculatorInput from '../CalculatorHelpers/CalculatorInput'
 import CalculatorOutput from '../CalculatorHelpers/CalculatorOutput'
 
 import * as convert from 'convert-units'
+import withLibdedxEntities from '../WithLibdedxEntities'
 
 const Units = {
     Inputs: {
         MeVperNucleon: 'MeV/nucl',
         //        Mev: 'Mev',
     },
-    Outputs: {
-        SmallScale: 'keV/μm',
-        LargeScale: 'MeV/cm',
-        MassStoppingPower: 'MeV*g/cm^2'
-
-    }
 }
 
 const OperationMode = {
@@ -26,131 +20,87 @@ const OperationMode = {
     Performance: 1,
 }
 
-const defaultValue = {id: 0, name: 'no content'}
-
 class CalculatorComponent extends React.Component {
-    static propTypes = {
-        ready: PropTypes.bool.isRequired
-    }
 
-    async componentDidMount() {
-        try {
-            const [programs, ions, materials] = await Promise.all([
-                this.wrapper.getPrograms(),
-                this.wrapper.getIons(this.state.program.id),
-                this.wrapper.getMaterials(this.state.program.id)
-            ])
-            const program = programs[0]
-            const material = materials[0]
-            const ion = ions[0]
-            this.setState({ programs, ions, materials, program, material, ion })
-        } catch (err) {
-            console.log(err)
-        }
-    }
+    async componentDidUpdate(prevProps, oldState) {
+        const { program, ion, material, stoppingPowerUnit } = this.props
+        if (program !== prevProps.program
+            || ion !== prevProps.ion
+            || material !== prevProps.material
+        ) {
+            const { energies } = this.state.result
+            if (energies) {
+                this.setState({
+                    result: await this.calculateResults(energies)
+                })
+            }
 
-    async onProgramChange(newProgram) {
-        const programCode = (Number)(newProgram.target.value)
-        const ionCode = this.state.ion.id
-        const materialCode = this.state.material.id
-        try {
-            const [materials, ions] = await Promise.all([
-                this.wrapper.getMaterials(programCode),
-                this.wrapper.getIons(programCode)
-            ])
-            if(materials.length === 0) materials.push(defaultValue)
-            if(ions.length === 0) ions.push(defaultValue)
-            const material = materials.find(_material => _material.id === materialCode) || materials[0]
-            const ion = materials.find(_ion => _ion.id === ionCode) || ions[0]
-            const program = this.state.programs.find(prog => prog.id === programCode)
-            this.setState({ materials, ions, program, material, ion })
-        } catch (err) {
-            console.log(err)
         }
+        else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
+            const { stoppingPowers } = this.state.result
+            if (stoppingPowers) {
+                const newState = oldState
+                newState.result.stoppingPowers = await this.wrapper.recalcualteStoppingPowers(prevProps.stoppingPowerUnit, stoppingPowerUnit, material, stoppingPowers)
+                this.setState(newState)
+            }
+        }
+        else return null
     }
 
     onChanges = {
-        // onInputUnitChange: ({ target }) => {
-        //     const inputUnit = target.value
-        //     this.setState({ inputUnit })
-        // },
-        onOutputUnitChange: ({ target }) => {
-            const outputUnit = target.value
-            //const result = this.enrichWithUnit(this.state.result, outputUnit)
-            this.setState({ outputUnit })
-        },
         onOperationModeChange: operationMode => {
             this.setState({ operationMode })
             this.forceUpdate()
         },
-        onProgramChange: this.onProgramChange.bind(this),
-        onIonChange: ({ target }) => {
-            const { ions } = this.state
-            const ionNumber = ~~target.value
-            const ion = ions.find(i => i.id === ionNumber)
-            this.setState({ ion })
-        },
-        onMaterialChange: ({ target }) => {
-            const { materials } = this.state
-            const materialNumber = ~~target.value
-            const material = materials.find(mat => mat.id === materialNumber)
-            this.setState({ material })
-        }
+        onStoppingPowerUnitChange:this.props.onStoppingPowerUnitChange,
+        onProgramChange: this.props.onProgramChange,
+        onIonChange: this.props.onIonChange,
+        onMaterialChange: this.props.onMaterialChange,
     }
 
-    enrichWithUnit(results, unit = 'cm') {
-        return results.map(res => Object.assign({ unit }, res))
+    calculateUnits(_csdaRanges) {
+        const units = new Array(_csdaRanges.length)
+        const csdaRanges = _csdaRanges.map((range, key) => {
+            const converted = convert(range).from('cm').toBest()
+            units[key] = converted.unit
+            return converted.val
+        })
+        return { csdaRanges, units }
     }
 
-    async calculateResults(input) {
-        const { program, ion, material } = this.state
-
-        return await Promise.all(
-            input.map(async input => {
-                const result = await this.wrapper.getSingleValue(
-                    program.id,
-                    ion.id,
-                    material.id,
-                    input
-                )
-                return {
-                    input,
-                    energy: isNaN(result) ? 'Value unsupported' : result,
-                    csdaRange: 'Work in progress'
-                }
-            })
-        )
+    async calculateResults(energies) {
+        const result = await this.wrapper.getCalculatorData(this.props, energies)
+        Object.assign(result, this.calculateUnits(result.csdaRanges))
+        return result
     }
 
     async onSubmit(event) {
         event.preventDefault()
 
         const { separator } = this.state
-        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '')
-        const values = await this.calculateResults(input)
-        const result = this.enrichWithUnit(values)
+        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '').map(el => Number(el))
+        const result = await this.calculateResults(input)
 
         this.setState({ result })
     }
 
     async onInputChange(event) {
         const { separator } = this.state
-        const input = event.target.value.split(separator).filter(el => el !== '')
-        const values = await this.calculateResults(input)
-        const result = this.enrichWithUnit(values)
+        const input = event.target.value.split(separator).filter(el => el !== '').map(el => Number(el))
+        const result = await this.calculateResults(input)
 
         this.setState({ result })
     }
 
     async generateDefaults() {
         const { separator } = this.state
-        return (await this.wrapper.generateDefaults(this.state)).join(separator)
+        return (await this.wrapper.generateDefaults(this.props)).join(separator)
     }
 
     constructor(props) {
         super(props)
 
-        this.wrapper = new WASMWrapper()
+        this.wrapper = props.wrapper || new WASMWrapper()
 
         this.onSubmit = this.onSubmit.bind(this)
         this.onInputChange = this.onInputChange.bind(this)
@@ -158,23 +108,16 @@ class CalculatorComponent extends React.Component {
 
         this.state = {
             inputUnit: Units.Inputs.MeVPerNucleum,
-            outputUnit: Units.Outputs.SmallScale,
-            result: [],
+            result: {},
             operationMode: OperationMode.Dynamic,
             separator: ' ',
-            program: {id:1},
-            ion: {},
-            material: {},
-            programs: [],
-            ions: [],
-            materials: []
         }
-
     }
 
     render() {
 
-        const { outputUnit, result, operationMode, programs, ions, materials, program, ion, material } = this.state
+        const { programs, ions, materials, stoppingPowerUnits, program, ion, material, stoppingPowerUnit } = this.props
+        const { result, operationMode } = this.state
         const { onSubmit, onInputChange, generateDefaults, onChanges } = this
 
         return (
@@ -182,7 +125,8 @@ class CalculatorComponent extends React.Component {
                 <CalculatorSettings
                     onChanges={onChanges}
                     // inputUnits={Object.entries(Units.Inputs)}
-                    outputUnits={Object.entries(Units.Outputs)}
+                    stoppingPowerUnits={stoppingPowerUnits}
+                    stoppingPowerUnit={stoppingPowerUnit}
                     programs={programs}
                     ions={ions}
                     materials={materials}
@@ -197,13 +141,19 @@ class CalculatorComponent extends React.Component {
                         : undefined
                     }
                     // inputUnit={inputUnit}
-                    outputUnit={outputUnit}
+                    stoppingPowerUnit={stoppingPowerUnit}
                     generateDefaults={generateDefaults}
                 />
-                <CalculatorOutput result={result} energyUnit={outputUnit} />
+                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
             </div>
         );
     }
 }
 
-export default CalculatorComponent;
+const defaults = {
+    programId: 2, // PSTAR https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L8
+    materialId: 276, // liquid WATER https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L197
+    ionId: 1, // currently proton (HYDROGEN)  https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L244
+}
+
+export default withLibdedxEntities(CalculatorComponent, defaults);
