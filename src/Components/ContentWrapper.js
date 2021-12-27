@@ -1,4 +1,4 @@
-import { Link, Route, BrowserRouter as Router, Routes, Redirect, Navigate } from 'react-router-dom';
+import { Link, Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 
 import CalculatorComponent from "./Pages/Calculator";
 import PropTypes from 'prop-types';
