@@ -102,7 +102,7 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
      * @param {boolean} isLog - is plot in logarithmic mode
-     * @returns {PlotDataSeries} array of libdedx materials
+     * @returns {PlotDataSeries} Dataseries in format suitable for Plot usage
      */
     async getStpPlotData({ program, ion, material }, isLog) {
         const wasm = await this.wasm()
@@ -121,7 +121,7 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
      * @param {number[]} energies - values of energy to calculate for
-     * @returns {CalculatorDataSeries} array of libdedx materials
+     * @returns {CalculatorDataSeries} dataseries in a format suitable for Calculator usage
      */
     async getCalculatorData({ program, ion, material, stoppingPowerUnit }, energies) {
         const wasm = await this.wasm()
