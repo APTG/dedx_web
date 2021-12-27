@@ -7,6 +7,8 @@ export const StoppingPowerUnits = {
     SmallScale: {name:'keV/μm', id:2}
 }
 
+const terminator = -1
+
 /**
  * @typedef {LibdedxEntity}
  * @property {number} id - the libdedx ID assigned to the entity
@@ -47,10 +49,8 @@ export default class WASMWrapper {
         const [progPtr, programs] = this._allocateI32(wasm, this.#programsSize)
 
         wasm.ccall("dedx_fill_program_list", null, ['number'], [programs.byteOffset])
-        // libdedx stores the list on programs in an array of much larger size than its needed
-        // list of useful program is terminated with `-1` entry
-        // we use it here to extract list of of programs (excluding `-1` terminator)
-        const result = Array.from(programs.subarray(0, programs.indexOf(-1)))
+        // for Array.subarray startIndex is inclusive but endIndex is exclusive
+        const result = Array.from(programs.subarray(0, programs.indexOf(terminator)))
 
         this._free(wasm, progPtr)
 
@@ -69,7 +69,8 @@ export default class WASMWrapper {
         const [ionPtr, ions] = this._allocateI32(wasm, this.#ionsSize)
 
         wasm.ccall("dedx_fill_ion_list", null, ['number', 'number'], [programId, ions.byteOffset])
-        const result = Array.from(ions.subarray(0, ions.indexOf(-1)))
+        // for Array.subarray startIndex is inclusive but endIndex is exclusive
+        const result = Array.from(ions.subarray(0, ions.indexOf(terminator)))
 
         wasm._free(ionPtr)
 
@@ -88,7 +89,8 @@ export default class WASMWrapper {
         const [matPtr, materials] = this._allocateI32(wasm, this.#materialsSize)
 
         wasm.ccall("dedx_fill_material_list", null, ['number', 'number'], [programId, materials.byteOffset])
-        const result = Array.from(materials.subarray(0, materials.indexOf(-1)))
+        // for Array.subarray startIndex is inclusive but endIndex is exclusive
+        const result = Array.from(materials.subarray(0, materials.indexOf(terminator)))
 
         wasm._free(matPtr)
 
