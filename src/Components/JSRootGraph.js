@@ -55,7 +55,7 @@ export default class JSRootGraph extends React.Component {
     static propTypes = {
         xAxis: PropTypes.oneOf([0, 1]).isRequired,
         yAxis: PropTypes.oneOf([0, 1]).isRequired,
-        plotStyle: PropTypes.oneOf([0, 1]).isRequired,
+        gridlines: PropTypes.oneOf([0, 1]).isRequired,
         dataSeries: PropTypes.arrayOf(
             PropTypes.shape({
                 isShown: PropTypes.bool,
