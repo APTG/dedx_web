@@ -1,5 +1,4 @@
 import React, { createRef } from "react";
-import PropTypes from 'prop-types';
 
 let JSROOT
 //#region Helper functions

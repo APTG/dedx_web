@@ -2,6 +2,7 @@ import React, { useMemo } from 'react'
 import { useTable, useSortBy } from 'react-table'
 
 import './ResultTable.css'
+import { getCSV } from './TableUtils'
 
 function ResultTable({ energies, values, stoppingPowerUnit }) {
 
@@ -9,7 +10,7 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
         return [
             { Header: 'Energy', accessor: 'energy', sortType: 'basic' },
             {
-                Header: "Data"+(stoppingPowerUnit ? `[${stoppingPowerUnit}]` : ''),
+                Header: "Data" + (stoppingPowerUnit ? `[${stoppingPowerUnit}]` : ''),
                 columns: values.map(child => {
                     return { Header: child.name, accessor: child.accessor, sortType: 'basic' }
                 })
@@ -37,42 +38,46 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
     } = useTable({ columns, data }, useSortBy)
 
     return (
-        <table {...getTableProps()}>
-            <thead>
-                {headerGroups.map(headerGroup => (
-                    <tr {...headerGroup.getHeaderGroupProps()}>
-                        {headerGroup.headers.map(column => (
-                            <th {...column.getHeaderProps(column.getSortByToggleProps())} >
-                                {column.render('Header')}
-                                <span>
-                                    {column.isSorted
-                                        ? column.isSortedDesc
-                                            ? ' 🔽'
-                                            : ' 🔼'
-                                        : ''}
-                                </span>
-                            </th>
-                        ))}
-                    </tr>
-                ))}
-            </thead>
-            <tbody {...getTableBodyProps()}>
-                {rows.map(row => {
-                    prepareRow(row)
-                    return (
-                        <tr {...row.getRowProps()}>
-                            {row.cells.map(cell => {
-                                return (
-                                    <td {...cell.getCellProps()} >
-                                        {cell.render('Cell')}
-                                    </td>
-                                )
-                            })}
+        <div>
+            <button onClick={()=>getCSV(energies,values)}>Download me!</button>
+            <table {...getTableProps()}>
+                <thead>
+                    {headerGroups.map(headerGroup => (
+                        <tr {...headerGroup.getHeaderGroupProps()}>
+                            {headerGroup.headers.map(column => (
+                                <th {...column.getHeaderProps(column.getSortByToggleProps())} >
+                                    {column.render('Header')}
+                                    <span>
+                                        {column.isSorted
+                                            ? column.isSortedDesc
+                                                ? ' 🔽'
+                                                : ' 🔼'
+                                            : ''}
+                                    </span>
+                                </th>
+                            ))}
                         </tr>
-                    )
-                })}
-            </tbody>
-        </table>
+                    ))}
+                </thead>
+                <tbody {...getTableBodyProps()}>
+                    {rows.map(row => {
+                        prepareRow(row)
+                        return (
+                            <tr {...row.getRowProps()}>
+                                {row.cells.map(cell => {
+                                    return (
+                                        <td {...cell.getCellProps()} >
+                                            {cell.render('Cell')}
+                                        </td>
+                                    )
+                                })}
+                            </tr>
+                        )
+                    })}
+                </tbody>
+            </table>
+
+        </div>
     )
 }
 
