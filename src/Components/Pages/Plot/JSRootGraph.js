@@ -9,7 +9,6 @@ function createTGraphFromDataSeries(energies, dataSeries) {
         energies,
         dataSeries.stoppingPowers
     )
-    //console.log(tgraph)
     tgraph.fLineColor = dataSeries.seriesNumber + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
@@ -21,7 +20,7 @@ function createTGraphFromDataSeries(energies, dataSeries) {
     return tgraph
 }
 
-function createMultigraphFromDataSeries(energies, dataSeries) {
+function createMultigraphFromDataSeries(energies, dataSeries, stpUnit) {
     const filtered = dataSeries
         .filter(dataSeries => dataSeries.isShown)
         .map((ds, k) => createTGraphFromDataSeries(energies, ds, k))
@@ -30,7 +29,18 @@ function createMultigraphFromDataSeries(energies, dataSeries) {
         ? JSROOT.createTMultiGraph(...filtered)
         : JSROOT.createTGraph(1)
 
-    if (res) res.fTitle = ""
+    if (res) {
+        res.fTitle = ''
+        const hist = JSROOT.createHistogram("TH1F", 20)
+        hist.fXaxis.fTitle = 'Energy[MeV/nucl]'
+        hist.fXaxis.fXmin = 1e-3
+        hist.fXaxis.fXmax = 1e+4
+        hist.fYaxis.fTitle = `Stopping power[${stpUnit.name}]`
+        hist.fYaxis.fXmin = 1e-4
+        hist.fYaxis.fXmax = 1e+2
+        console.log(hist)
+        res.fHistogram = hist
+    }
     return res
 }
 
@@ -56,20 +66,22 @@ export default class JSRootGraph extends React.Component {
 
         JSROOT = window.JSROOT;
     }
-    
-    shouldComponentUpdate(nextProps){
+
+    shouldComponentUpdate(nextProps) {
         //prevent update when changing stopping power units. 
         //Since the stps need to be recalculated there will be another update very soon anyways
         return !(nextProps.stoppingPowerUnit.id !== this.props.stoppingPowerUnit.id)
     }
 
     componentDidUpdate(prevProps) {
+        const { stoppingPowerUnit } = this.props
         JSROOT.cleanup(this.graphRef.current)
 
         const opts = drawOptFromProps(this.props);
-        const toDraw = createMultigraphFromDataSeries(this.props.energies, this.props.dataSeries);
+        const toDraw = createMultigraphFromDataSeries(this.props.energies, this.props.dataSeries, stoppingPowerUnit);
 
         JSROOT.redraw(this.graphRef.current, toDraw, opts)
+
     }
 
     refreshGraph() {
@@ -78,15 +90,17 @@ export default class JSRootGraph extends React.Component {
 
     componentDidMount() {
         window.addEventListener('resize', this.refreshGraph.bind(this))
-        const { energies, dataSeries } = this.props
+        const { energies, dataSeries, stoppingPowerUnit } = this.props
 
-        const toDraw = createMultigraphFromDataSeries(energies, dataSeries)
+        const toDraw = createMultigraphFromDataSeries(energies, dataSeries, stoppingPowerUnit)
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
     render() {
         return (
-            <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
+            <div>
+                <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
+            </div>
         )
     }
 }
