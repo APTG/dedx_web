@@ -1,13 +1,14 @@
+import ResultTable from "../ResultTable/ResultTable"
+import { transformResultToTableData } from "../ResultTable/TableUtils"
+
 function CalculatorOutput({ result, stoppingPowerUnit }) {
-    const header =  <b>{`input energy | Stopping power[${stoppingPowerUnit.name}] | CSDA Range`}</b>
-    const {energies, stoppingPowers, csdaRanges, units} = result
+    const { energies } = result
     return (
         <div>
-            {header}
-            {energies && energies.map((val, key) => {
-                return <div key={`output_${key}`}>{`${val} | ${stoppingPowers[key]} | ${csdaRanges[key]} ${units[key]}ρ`} </div>
-            })
-            }
+            {energies && <ResultTable
+                energies={result.energies}
+                values={transformResultToTableData(result, stoppingPowerUnit)}
+            />}
         </div>
     )
 }

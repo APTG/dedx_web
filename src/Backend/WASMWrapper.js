@@ -1,11 +1,7 @@
 import DataSeriesFactory from './DataSeriesFactory.js'
 import Module from './weblibdedx.js'
 
-export const StoppingPowerUnits = {
-    MassStoppingPower: {name:'MeV*cm^2/g', id:0},
-    LargeScale: {name:'MeV/cm', id:1},
-    SmallScale: {name:'keV/μm', id:2}
-}
+import { StoppingPowerUnits } from './Utils.js'
 
 const terminator = -1
 

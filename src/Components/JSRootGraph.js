@@ -5,14 +5,14 @@ import DataSeriesList from "./DataSeriesList";
 let JSROOT
 //#region Helper functions
 
-function createTGraphFromDataSeries(dataSeries) {
+function createTGraphFromDataSeries(dataSeries, index) {
     const tgraph = JSROOT.createTGraph(
         dataSeries.energies.length,
         dataSeries.energies,
         dataSeries.stoppingPowers
     )
     //console.log(tgraph)
-    tgraph.fLineColor = dataSeries.index + 1
+    tgraph.fLineColor = index + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
     //tgraph.fMarkerStyle = 8

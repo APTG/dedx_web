@@ -1,5 +1,6 @@
 import React from 'react'
-import WASMWrapper,{StoppingPowerUnits} from '../Backend/WASMWrapper'
+import WASMWrapper from '../Backend/WASMWrapper'
+import { StoppingPowerUnits } from '../Backend/Utils'
 
 function withLibdedxEntities(WrappedComponent, defaultIds) {
     return class WithLibdedxEntities extends React.Component {

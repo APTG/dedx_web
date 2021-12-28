@@ -8,11 +8,9 @@ import CalculatorOutput from '../CalculatorHelpers/CalculatorOutput'
 import * as convert from 'convert-units'
 import withLibdedxEntities from '../WithLibdedxEntities'
 
-const Units = {
-    Inputs: {
-        MeVperNucleon: 'MeV/nucl',
-        //        Mev: 'Mev',
-    },
+const InputUnits = {
+    MeVperNucleon: 'MeV/nucl',
+    //        Mev: 'Mev',
 }
 
 const OperationMode = {
@@ -21,7 +19,29 @@ const OperationMode = {
 }
 
 class CalculatorComponent extends React.Component {
+    async generateDefaults() {
+        const { separator } = this.state
+        return (await this.wrapper.generateDefaults(this.props)).join(separator)
+    }
 
+    constructor(props) {
+        super(props)
+
+        this.wrapper = props.wrapper || new WASMWrapper()
+
+        this.onSubmit = this.onSubmit.bind(this)
+        this.onInputChange = this.onInputChange.bind(this)
+        this.generateDefaults = this.generateDefaults.bind(this)
+
+        this.state = {
+            inputUnit: InputUnits.MeVPerNucleum,
+            result: {},
+            operationMode: OperationMode.Dynamic,
+            separator: ' ',
+        }
+    }
+
+    //#region LIFECYCLE
     async componentDidUpdate(prevProps, oldState) {
         const { program, ion, material, stoppingPowerUnit } = this.props
         if (program !== prevProps.program
@@ -40,40 +60,17 @@ class CalculatorComponent extends React.Component {
             const { stoppingPowers } = this.state.result
             if (stoppingPowers) {
                 const newState = oldState
-                newState.result.stoppingPowers = await this.wrapper.recalcualteStoppingPowers(prevProps.stoppingPowerUnit, stoppingPowerUnit, material, stoppingPowers)
+                newState.result.stoppingPowers = await this.wrapper.recalcualteStoppingPowers(
+                    prevProps.stoppingPowerUnit, stoppingPowerUnit, material, stoppingPowers
+                )
                 this.setState(newState)
             }
         }
         else return null
     }
+    //#endregion LIFECYCLE
 
-    onChanges = {
-        onOperationModeChange: operationMode => {
-            this.setState({ operationMode })
-            this.forceUpdate()
-        },
-        onStoppingPowerUnitChange:this.props.onStoppingPowerUnitChange,
-        onProgramChange: this.props.onProgramChange,
-        onIonChange: this.props.onIonChange,
-        onMaterialChange: this.props.onMaterialChange,
-    }
-
-    calculateUnits(_csdaRanges) {
-        const units = new Array(_csdaRanges.length)
-        const csdaRanges = _csdaRanges.map((range, key) => {
-            const converted = convert(range).from('cm').toBest()
-            units[key] = converted.unit
-            return converted.val
-        })
-        return { csdaRanges, units }
-    }
-
-    async calculateResults(energies) {
-        const result = await this.wrapper.getCalculatorData(this.props, energies)
-        Object.assign(result, this.calculateUnits(result.csdaRanges))
-        return result
-    }
-
+    //#region HANDLERS
     async onSubmit(event) {
         event.preventDefault()
 
@@ -92,27 +89,35 @@ class CalculatorComponent extends React.Component {
         this.setState({ result })
     }
 
-    async generateDefaults() {
-        const { separator } = this.state
-        return (await this.wrapper.generateDefaults(this.props)).join(separator)
+    onChanges = {
+        onOperationModeChange: operationMode => {
+            this.setState({ operationMode })
+            this.forceUpdate()
+        },
+        onStoppingPowerUnitChange: this.props.onStoppingPowerUnitChange,
+        onProgramChange: this.props.onProgramChange,
+        onIonChange: this.props.onIonChange,
+        onMaterialChange: this.props.onMaterialChange,
+    }
+    //#endregion HANDLERS
+
+    //#region HELPERS
+    async calculateResults(energies) {
+        const result = await this.wrapper.getCalculatorData(this.props, energies)
+        Object.assign(result, this.calculateUnits(result.csdaRanges))
+        return result
     }
 
-    constructor(props) {
-        super(props)
-
-        this.wrapper = props.wrapper || new WASMWrapper()
-
-        this.onSubmit = this.onSubmit.bind(this)
-        this.onInputChange = this.onInputChange.bind(this)
-        this.generateDefaults = this.generateDefaults.bind(this)
-
-        this.state = {
-            inputUnit: Units.Inputs.MeVPerNucleum,
-            result: {},
-            operationMode: OperationMode.Dynamic,
-            separator: ' ',
-        }
+    calculateUnits(_csdaRanges) {
+        const units = new Array(_csdaRanges.length)
+        const csdaRanges = _csdaRanges.map((range, key) => {
+            const converted = convert(range).from('cm').toBest()
+            units[key] = converted.unit
+            return converted.val
+        })
+        return { csdaRanges, units }
     }
+    //#endregion HELPERS
 
     render() {
 
@@ -140,7 +145,6 @@ class CalculatorComponent extends React.Component {
                         ? onInputChange
                         : undefined
                     }
-                    // inputUnit={inputUnit}
                     stoppingPowerUnit={stoppingPowerUnit}
                     generateDefaults={generateDefaults}
                 />
