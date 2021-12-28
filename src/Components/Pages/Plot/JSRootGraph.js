@@ -1,18 +1,17 @@
 import React, { createRef } from "react";
 import PropTypes from 'prop-types';
-import DataSeriesList from "./DataSeriesList";
 
 let JSROOT
 //#region Helper functions
 
-function createTGraphFromDataSeries(dataSeries, index) {
+function createTGraphFromDataSeries(energies, dataSeries) {
     const tgraph = JSROOT.createTGraph(
-        dataSeries.energies.length,
-        dataSeries.energies,
+        energies.length,
+        energies,
         dataSeries.stoppingPowers
     )
     //console.log(tgraph)
-    tgraph.fLineColor = index + 1
+    tgraph.fLineColor = dataSeries.seriesNumber + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
     //tgraph.fMarkerStyle = 8
@@ -23,10 +22,10 @@ function createTGraphFromDataSeries(dataSeries, index) {
     return tgraph
 }
 
-function createMultigraphFromDataSeries(dataSeries) {
+function createMultigraphFromDataSeries(energies, dataSeries) {
     const filtered = dataSeries
         .filter(dataSeries => dataSeries.isShown)
-        .map(createTGraphFromDataSeries)
+        .map((ds, k) => createTGraphFromDataSeries(energies, ds, k))
 
     const res = filtered.length !== 0
         ? JSROOT.createTMultiGraph(...filtered)
@@ -52,48 +51,26 @@ function drawOptFromProps({ xAxis, yAxis, plotStyle, gridlines }) {
 
 export default class JSRootGraph extends React.Component {
 
-    static propTypes = {
-        xAxis: PropTypes.oneOf([0, 1]).isRequired,
-        yAxis: PropTypes.oneOf([0, 1]).isRequired,
-        gridlines: PropTypes.oneOf([0, 1]).isRequired,
-        dataSeries: PropTypes.arrayOf(
-            PropTypes.shape({
-                isShown: PropTypes.bool,
-                name: PropTypes.string,
-                x: PropTypes.arrayOf(PropTypes.number),
-                y: PropTypes.arrayOf(PropTypes.number)
-            })
-        ).isRequired
-    }
-
     constructor(props) {
         super(props);
         this.graphRef = createRef(null);
 
-        this.state = {
-            dataSeries: props.dataSeries
-        }
-
         JSROOT = window.JSROOT;
-        this.onDataSeriesStateChange = this.onDataSeriesStateChange.bind(this)
+    }
+    
+    shouldComponentUpdate(nextProps){
+        //prevent update when changing stopping power units. 
+        //Since the stps need to be recalculated there will be another update very soon anyways
+        return !(nextProps.stoppingPowerUnit.id !== this.props.stoppingPowerUnit.id)
     }
 
-    static getDerivedStateFromProps({ dataSeries }, _) {
-        return {
-            dataSeries: dataSeries
-        }
-    }
+    componentDidUpdate(prevProps) {
+        JSROOT.cleanup(this.graphRef.current)
 
-    getSnapshotBeforeUpdate() {
-        JSROOT.cleanup(this.graphRef.current);
-        const toDraw = createMultigraphFromDataSeries(this.state.dataSeries);
         const opts = drawOptFromProps(this.props);
+        const toDraw = createMultigraphFromDataSeries(this.props.energies, this.props.dataSeries);
 
-        return { toDraw, opts }
-    }
-
-    componentDidUpdate(_, __, snapshot) {
-        JSROOT.draw(this.graphRef.current, snapshot.toDraw, snapshot.opts)
+        JSROOT.redraw(this.graphRef.current, toDraw, opts)
     }
 
     refreshGraph() {
@@ -102,24 +79,15 @@ export default class JSRootGraph extends React.Component {
 
     componentDidMount() {
         window.addEventListener('resize', this.refreshGraph.bind(this))
+        const { energies, dataSeries } = this.props
 
-        const toDraw = createMultigraphFromDataSeries(this.props.dataSeries)
+        const toDraw = createMultigraphFromDataSeries(energies, dataSeries)
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
-    }
-
-    onDataSeriesStateChange(event) {
-        let index = (Number)(event.target.id)
-        let dataSeries = this.state.dataSeries.slice(0)
-        dataSeries[index].isShown = !dataSeries[index].isShown
-        this.setState({ dataSeries })
     }
 
     render() {
         return (
-            <div>
-                <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
-                <DataSeriesList dataSeries={this.state.dataSeries} onDataSeriesStateChange={this.onDataSeriesStateChange} />
-            </div>
+            <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
         )
     }
 }

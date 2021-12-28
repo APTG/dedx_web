@@ -1,18 +1,20 @@
 import React, { useMemo } from 'react'
 import { useTable, useSortBy } from 'react-table'
 
-function ResultTable({ energies, values, powerUnit }) {
+import './ResultTable.css'
+
+function ResultTable({ energies, values, stoppingPowerUnit }) {
 
     const columns = useMemo(() => {
         return [
             { Header: 'Energy', accessor: 'energy', sortType: 'basic' },
             {
-                Header: "Data"+(powerUnit ? `[${powerUnit}]` : ''),
+                Header: "Data"+(stoppingPowerUnit ? `[${stoppingPowerUnit}]` : ''),
                 columns: values.map(child => {
                     return { Header: child.name, accessor: child.accessor, sortType: 'basic' }
                 })
             }]
-    }, [values, powerUnit])
+    }, [values, stoppingPowerUnit])
 
     const data = useMemo(() => {
         const res = energies.map((energy, key) => {

@@ -42,7 +42,7 @@ class CalculatorComponent extends React.Component {
     }
 
     //#region LIFECYCLE
-    async componentDidUpdate(prevProps, oldState) {
+    async componentDidUpdate(prevProps, prevState) {
         const { program, ion, material, stoppingPowerUnit } = this.props
         if (program !== prevProps.program
             || ion !== prevProps.ion
@@ -55,11 +55,10 @@ class CalculatorComponent extends React.Component {
                 })
             }
 
-        }
-        else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
+        } else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
             const { stoppingPowers } = this.state.result
             if (stoppingPowers) {
-                const newState = oldState
+                const newState = prevState
                 newState.result.stoppingPowers = await this.wrapper.recalcualteStoppingPowers(
                     prevProps.stoppingPowerUnit, stoppingPowerUnit, material, stoppingPowers
                 )

@@ -20,12 +20,11 @@ const containerStyle = isShown => {
 }
 
 function DataSeriesList({ dataSeries, onDataSeriesStateChange }) {
-
     return (
-        <div className="gridish12ch">
+        <div style={{display:'flex', gap:'10px', flexDirection:'column'}}>
             {
-                dataSeries.map((dataSeries, key) => {
-                    return (<div style={containerStyle(dataSeries.isShown)} id={key} onClick={onDataSeriesStateChange} key={`Trace_${key}`}>
+                dataSeries.map((dataSeries) => {
+                    return (<div style={containerStyle(dataSeries.isShown)} id={dataSeries.seriesNumber} onClick={onDataSeriesStateChange} key={`Trace_${dataSeries.seriesNumber}`}>
                         <span style={dataSeriesStyle(dataSeries.color)} />
                         {dataSeries.name}
                     </div>)

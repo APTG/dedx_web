@@ -100,17 +100,24 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
      * @param {boolean} isLog - is plot in logarithmic mode
+     * @param {LibdedxEntity} stoppingPowerUnit - Current unit of stopping power
      * @returns {PlotDataSeries} Dataseries in format suitable for Plot usage
      */
-    async getStpPlotData({ program, ion, material }, isLog) {
+    async getStpPlotData({ program, ion, material }, isLog, stoppingPowerUnit) {
         const wasm = await this.wasm()
 
         const ids = [program.id, ion.id, material.id]
 
         const size = this.getDefaultSize(ids, wasm)
 
-        if (isLog) return this.getDefaultStpPlotData(ids, size, wasm)
-        else return this.getArithmeticStpPlotData(ids, size, wasm)
+        const result = isLog
+        ?  this.getDefaultStpPlotData(ids, size, wasm)
+        :  this.getArithmeticStpPlotData(ids, size, wasm)
+
+        if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
+            result.stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, result.stoppingPowers)
+
+        return result
     }
 
     /**
@@ -118,6 +125,7 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
+     * @param {LibdedxEntity} stoppingPowerUnit - Current unit of stopping power
      * @param {number[]} energies - values of energy to calculate for
      * @returns {CalculatorDataSeries} dataseries in a format suitable for Calculator usage
      */
