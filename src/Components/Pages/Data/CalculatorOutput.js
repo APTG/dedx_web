@@ -1,5 +1,5 @@
-import ResultTable from "../ResultTable/ResultTable"
-import { transformResultToTableData } from "../ResultTable/TableUtils"
+import ResultTable from "../../ResultTable/ResultTable"
+import { transformResultToTableData } from "../../ResultTable/TableUtils"
 
 function CalculatorOutput({ result, stoppingPowerUnit }) {
     const { energies } = result

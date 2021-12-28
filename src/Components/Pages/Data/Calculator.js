@@ -1,12 +1,12 @@
 import React from 'react'
-import WASMWrapper from '../../Backend/WASMWrapper'
+import WASMWrapper from '../../../Backend/WASMWrapper'
 
-import CalculatorSettings from '../CalculatorHelpers/CalculatorSettings'
-import CalculatorInput from '../CalculatorHelpers/CalculatorInput'
-import CalculatorOutput from '../CalculatorHelpers/CalculatorOutput'
+import CalculatorSettings from './CalculatorSettings'
+import CalculatorInput from './CalculatorInput'
+import CalculatorOutput from './CalculatorOutput'
 
 import * as convert from 'convert-units'
-import withLibdedxEntities from '../WithLibdedxEntities'
+import withLibdedxEntities from '../../WithLibdedxEntities'
 
 const InputUnits = {
     MeVperNucleon: 'MeV/nucl',

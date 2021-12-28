@@ -1,5 +1,5 @@
 import React from "react"
-import Toggle from "../Toggle";
+import Toggle from "../../Utils/Toggle";
 
 
 function GraphSetting({ startValues, onChange }) {

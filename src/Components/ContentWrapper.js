@@ -1,9 +1,9 @@
 import { Link, Route, BrowserRouter as Router, Routes, Navigate } from 'react-router-dom';
 
-import CalculatorComponent from "./Pages/Calculator";
+import CalculatorComponent from "./Pages/Data/Calculator";
 import PropTypes from 'prop-types';
 import React from "react";
-import PlotComponent from "./Pages/Plot";
+import PlotComponent from "./Pages/Plot/Plot";
 
 import makeAsyncScriptLoader from "react-async-script";
 

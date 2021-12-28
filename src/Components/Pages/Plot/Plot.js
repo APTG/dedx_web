@@ -1,14 +1,14 @@
-import Form from "../Form/Form";
-import JSRootGraph from "../JSRootGraph";
+import Form from "./Form";
+import JSRootGraph from "./JSRootGraph";
 import React from "react";
-import GraphSetting from '../GraphSettings/GraphSettings';
-import WASMWrapper from "../../Backend/WASMWrapper";
-import ResultTable from "../ResultTable/ResultTable";
+import GraphSetting from './GraphSettings';
+import WASMWrapper from "../../../Backend/WASMWrapper";
+import ResultTable from "../../ResultTable/ResultTable";
 
-import { transformDataSeriesToTableData } from "../ResultTable/TableUtils";
-import withLibdedxEntities from '../WithLibdedxEntities'
+import { transformDataSeriesToTableData } from "../../ResultTable/TableUtils";
+import withLibdedxEntities from '../../WithLibdedxEntities'
 
-import colorSequence from '../../Styles/PlotColors.json'
+import colorSequence from '../../../Styles/PlotColors.json'
 
 const AxisLayout = {
     Linear: 0,

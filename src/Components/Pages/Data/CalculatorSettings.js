@@ -1,5 +1,5 @@
-import Dropdown from '../Form/Dropdown'
-import Toggle from '../Toggle'
+import Dropdown from '../../Utils/Dropdown'
+import Toggle from '../../Utils/Toggle'
 
 function dropdownRenderFunction(name) {
     return (element,key) => <option value={key} key={`${name}_${key}`}>{element}</option>

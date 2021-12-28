@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import '../Styles/Toggle.css'
+import '../../Styles/Toggle.css'
 import PropTypes from 'prop-types'
 
 function Toggle({ name, children, startValue, onChange }) {

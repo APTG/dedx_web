@@ -1,7 +1,7 @@
 import React from 'react';
 
-import '../../Styles/Form.css'
-import Dropdown from './Dropdown';
+import '../../../Styles/Form.css'
+import Dropdown from '../../Utils/Dropdown';
 
 function dropdownRenderFunction(name) {
     return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
