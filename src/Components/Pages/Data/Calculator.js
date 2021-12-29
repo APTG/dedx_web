@@ -5,7 +5,7 @@ import CalculatorSettings from './CalculatorSettings'
 import CalculatorInput from './CalculatorInput'
 import CalculatorOutput from './CalculatorOutput'
 
-import * as convert from 'convert-units'
+import configureMeasurements, { allMeasures } from 'convert-units';
 import withLibdedxEntities from '../../WithLibdedxEntities'
 
 const InputUnits = {
@@ -39,6 +39,8 @@ class CalculatorComponent extends React.Component {
             operationMode: OperationMode.Dynamic,
             separator: ' ',
         }
+
+        this.convert = configureMeasurements(allMeasures);
     }
 
     //#region LIFECYCLE
@@ -110,7 +112,7 @@ class CalculatorComponent extends React.Component {
     calculateUnits(_csdaRanges) {
         const units = new Array(_csdaRanges.length)
         const csdaRanges = _csdaRanges.map((range, key) => {
-            const converted = convert(range).from('cm').toBest()
+            const converted = this.convert(range).from('cm').toBest()
             units[key] = converted.unit
             return converted.val
         })

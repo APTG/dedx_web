@@ -8,7 +8,7 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
 
     const columns = useMemo(() => {
         return [
-            { Header: 'Energy', accessor: 'energy', sortType: 'basic' },
+            { Header: 'Energy [MeV/nucl]', accessor: 'energy', sortType: 'basic' },
             {
                 Header: "Data" + (stoppingPowerUnit ? `[${stoppingPowerUnit}]` : ''),
                 columns: values.map(child => {
