@@ -15,7 +15,7 @@ export function transformDataSeriesToTableData(ds) {
 export function transformResultToTableData({ stoppingPowers, csdaRanges, units }, stoppingPowerUnit) {
     return [
         {
-            name: `Stopping power[${stoppingPowerUnit.name}]`,
+            name: `Stopping power [${stoppingPowerUnit.name}]`,
             data: stoppingPowers,
             accessor: uuidv4(),
             precision: 3
@@ -23,7 +23,8 @@ export function transformResultToTableData({ stoppingPowers, csdaRanges, units }
         {
             name: 'CSDA Ranges',
             data: csdaRanges,
-            accessor: uuidv4()
+            accessor: uuidv4(),
+            precision: 3
         },
         {
             name: 'Range units',
