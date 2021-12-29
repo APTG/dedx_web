@@ -114,6 +114,8 @@ export default class WASMWrapper {
         ?  this.getDefaultStpPlotData(ids, size, wasm)
         :  this.getArithmeticStpPlotData(ids, size, wasm)
 
+        console.log(result)
+
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             result.stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, result.stoppingPowers)
 
@@ -279,7 +281,7 @@ export default class WASMWrapper {
         return { energies, stoppingPowers }
     }
 
-    async getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
+    getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
         const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [programId, ionId])
         const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [programId, ionId])
 
