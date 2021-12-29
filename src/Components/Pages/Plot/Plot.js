@@ -44,8 +44,6 @@ class PlotComponent extends React.Component {
         this.submitHandler = this.submitHandler.bind(this);
         this.clearDataSeries = this.clearDataSeries.bind(this);
         this.onDataSeriesStateChange = this.onDataSeriesStateChange.bind(this)
-
-        console.log(colorSequence)
     }
 
     //#region LIFECYCLE
@@ -104,8 +102,6 @@ class PlotComponent extends React.Component {
 
         const dataSeries = { data, metadata }
 
-        console.log(dataSeries)
-
         // destruct oldState before assiging new values
         this.setState(oldState => ({
             ...oldState,
@@ -123,16 +119,18 @@ class PlotComponent extends React.Component {
     }
 
     async onXAxisChange(xAxis) {
+        let _energies = []
         const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
-            const { color, isShown, name } = data
-            const newData = Object.assign(
-                { color, isShown, name },
-                await this.wrapper.getStpPlotData(metadata, xAxis === AxisLayout.Logarithmic, this.props.stoppingPowerUnit)
-            )
+            const {energies,stoppingPowers} = await this.wrapper.getStpPlotData(metadata, xAxis === AxisLayout.Logarithmic, this.props.stoppingPowerUnit)
+            const newData = {
+                ...data,
+                stoppingPowers
+            }
+            if(_energies.length === 0) _energies = energies
             return { data: newData, metadata }
 
         }))
-        this.setState({ xAxis, dataSeries })
+        this.setState({ xAxis, dataSeries, energies: _energies })
     }
 
     onSettingsChange = {
