@@ -136,7 +136,6 @@ export default class WASMWrapper {
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, stoppingPowers)
         const csdaRanges = this.getcsdaRangesForEnergies([program.id, ion.id, material.id], energies, wasm)
-
         return {
             energies,
             stoppingPowers,
@@ -199,7 +198,7 @@ export default class WASMWrapper {
             [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
 
-        const energies = !err ? Array.from(_energies) : [0]
+        const energies = !err ? Array.from(_energies).map(energy => energy.toFixed(6)) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
@@ -229,8 +228,7 @@ export default class WASMWrapper {
             ['number', 'number', 'number', 'number', 'number', 'number'],
             [oldUnit.id, newUnit.id, material.id, oldstoppingPowers.length, oldValues.byteOffset, newValues.byteOffset]
         )
-
-        const result = !err ? Array.from(newValues) : [0]
+        const result = !err ? Array.from(newValues).map(result => result.toFixed(6)) : [0]
 
         if(err) console.log(err)
 
@@ -269,10 +267,9 @@ export default class WASMWrapper {
             ['number', 'number', 'number', 'number', 'number'],
             [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
-
-        const energies = !err ? Array.from(_energies) : [0]
-        const stoppingPowers = !err ? Array.from(_stoppingPowers) : [0]
-
+        
+        const energies = !err ? Array.from(_energies).map(energy => energy.toFixed(6)) : [0]
+        const stoppingPowers = !err ? Array.from(_stoppingPowers).map(energy => energy.toFixed(6)) : [0]
         this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
@@ -303,7 +300,7 @@ export default class WASMWrapper {
             [...ids, _energies.length, energies.byteOffset, stoppingPowers.byteOffset]
         )
 
-        const resultstoppingPowers = !err ? Array.from(stoppingPowers) : [0]
+        const resultstoppingPowers = !err ? Array.from(stoppingPowers).map(stoppingPower => stoppingPower.toFixed(6)) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
