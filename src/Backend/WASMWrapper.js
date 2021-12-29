@@ -114,8 +114,6 @@ export default class WASMWrapper {
         ?  this.getDefaultStpPlotData(ids, size, wasm)
         :  this.getArithmeticStpPlotData(ids, size, wasm)
 
-        console.log(result)
-
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             result.stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, result.stoppingPowers)
 
