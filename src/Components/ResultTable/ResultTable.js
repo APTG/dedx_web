@@ -21,7 +21,8 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
         const res = energies.map((energy, key) => {
             const row = { energy }
             values.forEach(child => {
-                row[child.accessor] = child.data[key]
+                if(child.precision)  row[child.accessor] = Number(child.data[key]).toFixed(child.precision)
+                else row[child.accessor] = child.data[key]
             })
             return row
         })

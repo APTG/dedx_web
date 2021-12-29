@@ -6,7 +6,8 @@ export function transformDataSeriesToTableData(ds) {
         return {
             name,
             data: stoppingPowers,
-            accessor: uuidv4()
+            accessor: uuidv4(),
+            precision: 3
         }
     })
 }
@@ -16,7 +17,8 @@ export function transformResultToTableData({ stoppingPowers, csdaRanges, units }
         {
             name: `Stopping power[${stoppingPowerUnit.name}]`,
             data: stoppingPowers,
-            accessor: uuidv4()
+            accessor: uuidv4(),
+            precision: 3
         },
         {
             name: 'CSDA Ranges',
@@ -35,7 +37,7 @@ export function transformResultToTableData({ stoppingPowers, csdaRanges, units }
 function transpose(valueArray) {
     if (valueArray.length < 1) return []
     const recordLength = valueArray[0].length
-    const newArray = new Array(recordLength).fill(new Array(valueArray.length))
+    const newArray = new Array(recordLength).fill().map(() => Array(valueArray.length))
     for (var i = 0; i < valueArray.length; i++) {
         for (var j = 0; j < recordLength; j++) {
             newArray[j][i] = valueArray[i][j];
@@ -54,7 +56,7 @@ export function getCSV(energies, values) {
     + energies.map((value, key) => {
         return value + ',' + (datas[key].join(','))
     }).join('\n')
-
+    
     const encodedUri = encodeURI(csvContent)
     const link = document.createElement('a')
     link.setAttribute('href', encodedUri)
