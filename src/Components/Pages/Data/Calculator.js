@@ -112,7 +112,6 @@ class CalculatorComponent extends React.Component {
     calculateUnits(_csdaRanges) {
         const units = new Array(_csdaRanges.length)
         const csdaRanges = _csdaRanges.map((range, key) => {
-            console.log(range)
             const converted = this.convert(range).from('cm').toBest()
             units[key] = converted.unit
             return converted.val
