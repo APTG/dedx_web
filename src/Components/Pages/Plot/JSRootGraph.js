@@ -31,14 +31,19 @@ function createMultigraphFromDataSeries(energies, dataSeries, stpUnit) {
 
     if (res) {
         res.fTitle = ''
+        // inspired by https://github.com/root-project/jsroot/blob/6.3.2/demo/multigraph_legend.htm#L53
+        // method described in https://github.com/root-project/jsroot/issues/225
         const hist = JSROOT.createHistogram("TH1F", 20)
-        hist.fXaxis.fTitle = 'Energy[MeV/nucl]'
+        hist.fXaxis.fTitle = 'Energy [MeV/nucl]'
         hist.fXaxis.fXmin = 1e-3
         hist.fXaxis.fXmax = 1e+4
-        hist.fYaxis.fTitle = `Stopping power[${stpUnit.name}]`
+        hist.fYaxis.fTitle = `Stopping power [${stpUnit.name}]`
         hist.fYaxis.fXmin = 1e-4
         hist.fYaxis.fXmax = 1e+2
-        console.log(hist)
+        
+        //centering axes labels
+        hist.fXaxis.InvertBit(JSROOT.BIT(12))
+        hist.fYaxis.InvertBit(JSROOT.BIT(12))
         res.fHistogram = hist
     }
     return res
