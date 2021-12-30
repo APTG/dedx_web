@@ -17,9 +17,9 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
 }
 
 .particle-input input[type="number" i], input[type="text"] {
-    width: calc(100% - 8px) !important;
+    width: 100%;
     /*Don't ask*/
-    height: 24px;
+    max-height: 3rem;
 }
 
 .particle-input input[type="number" i]:focus {
