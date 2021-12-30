@@ -104,7 +104,7 @@ export default class JSRootGraph extends React.Component {
     render() {
         return (
             <div>
-                <div style={{ width: "100%", height: '40vw', minHeight: '400px' }} ref={this.graphRef}></div>
+                <div style={{ width: "100%", height: '35vw', minHeight: '400px' }} ref={this.graphRef}></div>
             </div>
         )
     }

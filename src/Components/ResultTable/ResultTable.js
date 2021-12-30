@@ -39,7 +39,7 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
     } = useTable({ columns, data }, useSortBy)
 
     return (
-        <div>
+        <div style={{marginTop: '2em'}}>
             <table {...getTableProps()}>
                 <thead>
                     {headerGroups.map(headerGroup => (

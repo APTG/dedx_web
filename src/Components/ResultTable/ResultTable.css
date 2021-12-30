@@ -1,5 +1,6 @@
 table tr:nth-child(2n) td{
     background: #ddd;
+    margin-top: 2em;
 }
 
 th, td{
@@ -10,8 +11,13 @@ th, td{
 th{
     overflow: hidden;
     overflow-wrap: break-word;
+    text-align: center !important
 }
 
 table{
     background: #666;
+}
+
+table td, th{
+    border: 2px solid #666 !important
 }
