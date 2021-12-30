@@ -7,6 +7,7 @@ import CalculatorOutput from './CalculatorOutput'
 
 import configureMeasurements, { allMeasures } from 'convert-units';
 import withLibdedxEntities from '../../WithLibdedxEntities'
+import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
 
 const InputUnits = {
     MeVperNucleon: 'MeV/nucl',
@@ -19,10 +20,7 @@ const OperationMode = {
 }
 
 class CalculatorComponent extends React.Component {
-    async generateDefaults() {
-        const { separator } = this.state
-        return (await this.wrapper.generateDefaults(this.props)).join(separator)
-    }
+
 
     constructor(props) {
         super(props)
@@ -32,12 +30,14 @@ class CalculatorComponent extends React.Component {
         this.onSubmit = this.onSubmit.bind(this)
         this.onInputChange = this.onInputChange.bind(this)
         this.generateDefaults = this.generateDefaults.bind(this)
+        this.onOperationModeChange = this.onOperationModeChange.bind(this)
+        this.onDownloadCSV = this.onDownloadCSV.bind(this)
 
         this.state = {
             inputUnit: InputUnits.MeVPerNucleum,
             result: {},
             operationMode: OperationMode.Dynamic,
-            separator: ' ',
+            separator: '\n',
         }
 
         this.convert = configureMeasurements(allMeasures);
@@ -90,11 +90,19 @@ class CalculatorComponent extends React.Component {
         this.setState({ result })
     }
 
+    onOperationModeChange(operationMode){
+        this.setState({ operationMode })
+        this.forceUpdate()
+    }
+
+    onDownloadCSV(){
+        const {energies} = this.state.result
+        const {stoppingPowerUnit} = this.props
+
+        getCSV(energies,transformResultToTableData(this.state.result, stoppingPowerUnit))
+    }
+    
     onChanges = {
-        onOperationModeChange: operationMode => {
-            this.setState({ operationMode })
-            this.forceUpdate()
-        },
         onStoppingPowerUnitChange: this.props.onStoppingPowerUnitChange,
         onProgramChange: this.props.onProgramChange,
         onIonChange: this.props.onIonChange,
@@ -103,6 +111,11 @@ class CalculatorComponent extends React.Component {
     //#endregion HANDLERS
 
     //#region HELPERS
+    async generateDefaults() {
+        const { separator } = this.state
+        return (await this.wrapper.generateDefaults(this.props)).join(separator)
+    }
+
     async calculateResults(energies) {
         const result = await this.wrapper.getCalculatorData(this.props, energies)
         Object.assign(result, this.calculateUnits(result.csdaRanges))
@@ -124,10 +137,12 @@ class CalculatorComponent extends React.Component {
 
         const { programs, ions, materials, stoppingPowerUnits, program, ion, material, stoppingPowerUnit } = this.props
         const { result, operationMode } = this.state
-        const { onSubmit, onInputChange, generateDefaults, onChanges } = this
+        const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, onChanges } = this
 
         return (
-            <div>
+            <div className='gridish row-flex gap2' >
+                <div className='particle-input'>
+                <h2>Data Calculator</h2>
                 <CalculatorSettings
                     onChanges={onChanges}
                     // inputUnits={Object.entries(Units.Inputs)}
@@ -148,7 +163,12 @@ class CalculatorComponent extends React.Component {
                     }
                     stoppingPowerUnit={stoppingPowerUnit}
                     generateDefaults={generateDefaults}
+                    onOperationModeChange={onOperationModeChange}
+                    onDownloadCSV={onDownloadCSV}
+                    displayDownload={result.energies?.length}
                 />
+                </div>
+
                 <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
             </div>
         );

@@ -3,12 +3,11 @@
     flex-direction: column;
     flex-wrap: nowrap;
     position: relative;
-    margin-bottom: 12px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    width: 100%;
+    max-width: 100%;
     gap: 5px;
     font-size: large;
     font-weight: bold;

@@ -17,8 +17,9 @@ function Form(props) {
     } = props
 
     return (
-        <form onSubmit={onSubmit} data-testid="form-1" className="particle-input">
-            <div className="gridish250">
+        <form onSubmit={onSubmit} data-testid="form-1" className="column-flex" style={{width:'30%'}}>
+            <h2>Plotting calculator</h2>
+            <div className="gridish flex-small column-flex particle-input">
                 <label className="input-wrapper">
                     Name
                     <input onChange={onNameChange} name="name" type="text" className="input-box" value={name} />
@@ -52,12 +53,12 @@ function Form(props) {
                     onChange={onStoppingPowerUnitChange}
                     elementDisplayFunc={dropdownRenderFunction}
                 />
+                <div className='gridish row-flex flex-small gap1'>
+                    <button className="button" type="submit">Plot</button>
+                    <input type="button" className="button" onClick={onClear} value={"Clear"} />
+                </div>
+            </div>
 
-            </div>
-            <div>
-                <button className="button" type="submit">Plot</button>
-                <input type="button" className="button" onClick={onClear} value={"Clear"} />
-            </div>
         </form>
     )
 }

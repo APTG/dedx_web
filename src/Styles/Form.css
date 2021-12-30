@@ -1,21 +1,12 @@
 .particle-input {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    padding: 1rem 1rem;
+    padding: 1rem 0;
     max-height: min-content;
-}
-
-.particle-input>* {
-    display: flex;
-    gap: 2rem;
 }
 
 .particle-input .input-wrapper {
     display: flex;
     flex-direction: column;
     gap: 5px;
-    width: 100%;
     font-size: large;
     font-weight: bold;
 }
@@ -48,9 +39,8 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
 
 .particle-input .button {
     justify-content: center;
-    width: 70%;
+    width: 100%;
     margin: auto;
-    margin-top: 2rem;
     padding: 0.5em;
     border: 2px solid #666;
     background: none;

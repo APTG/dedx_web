@@ -31,12 +31,14 @@ class ContentWrapper extends React.Component {
                         <Link to={'web_dev/StoppingPower'}>Plot</Link>
                         <Link to={'web_dev/Calculator'}>Data</Link>
                     </div>
-                    <div style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
-                        <Routes>
-                            <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"}/>} />
-                            <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
-                            <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
-                        </Routes>
+                    <div className='overlay-wrapper' style={{ marginTop: "2.5em", paddingBottom: "1em" }}>
+                        <div className='content-wrapper'>
+                            <Routes>
+                                <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"} />} />
+                                <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
+                                <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
+                            </Routes>
+                        </div>
                     </div>
                 </div>
             </Router>

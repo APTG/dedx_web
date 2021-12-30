@@ -5,10 +5,10 @@ function CalculatorOutput({ result, stoppingPowerUnit }) {
     const { energies } = result
     return (
         <div>
-            {energies && <ResultTable
+            {energies?.length ? <ResultTable
                 energies={result.energies}
                 values={transformResultToTableData(result, stoppingPowerUnit)}
-            />}
+            />:<></>}
         </div>
     )
 }
