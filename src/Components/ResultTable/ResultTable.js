@@ -40,7 +40,6 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
 
     return (
         <div>
-            <button onClick={()=>getCSV(energies,values)}>Download me!</button>
             <table {...getTableProps()}>
                 <thead>
                     {headerGroups.map(headerGroup => (

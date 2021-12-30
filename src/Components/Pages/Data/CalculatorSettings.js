@@ -1,5 +1,5 @@
 import Dropdown from '../../Utils/Dropdown'
-import Toggle from '../../Utils/Toggle'
+
 
 import '../../../Styles/Form.css'
 
@@ -12,14 +12,11 @@ function elementRenderFunction(name) {
 }
 
 function CalculatorSettings({ onChanges, stoppingPowerUnits, programs, ions, materials, stoppingPowerUnit, program, ion, material }) {
-    const { onStoppingPowerUnitChange, onOperationModeChange, onProgramChange, onIonChange, onMaterialChange } = onChanges
+    const { onStoppingPowerUnitChange, onProgramChange, onIonChange, onMaterialChange } = onChanges
 
     return (
         <div className="particle-input">
-            <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>
-                <>Dynamic</>
-                <>Performance</>
-            </Toggle>
+
 
             {/* <Dropdown name={'Input unit'} data={inputUnits} onChange={onInputUnitChange} elementDisplayFunc={dropdownRenderFunction} /> */}
             <Dropdown value={stoppingPowerUnit.id} name={'Stopping power unit'} data={stoppingPowerUnits.map(u => u.name)} onChange={onStoppingPowerUnitChange} elementDisplayFunc={dropdownRenderFunction} />

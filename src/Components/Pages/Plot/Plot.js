@@ -154,7 +154,7 @@ class PlotComponent extends React.Component {
         const { stoppingPowerUnit } = this.props
 
         return (
-            <div className="content gridish">
+            <div className="gridish row-flex flex-medium gap1">
                 <Form
                     onSubmit={submitHandler}
                     onClear={clearDataSeries}
@@ -162,7 +162,7 @@ class PlotComponent extends React.Component {
                     name={name}
                     {...this.props}
                 />
-                <div style={{ minWidth: "70%" }}>
+                <div style={{minWidth:'70%'}}>
                     <GraphSetting startValues={{ xAxis, yAxis, gridlines }} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
