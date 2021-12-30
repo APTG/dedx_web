@@ -1,7 +1,7 @@
 import { fireEvent, render } from '@testing-library/react'
 
 import React from 'react'
-import Toggle from "../Components/Toggle"
+import Toggle from "../Components/Utils/Toggle"
 
 describe('Toggle element', () => {
     const testFunc = jest.fn()

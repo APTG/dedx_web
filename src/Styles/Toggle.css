@@ -3,12 +3,11 @@
     flex-direction: column;
     flex-wrap: nowrap;
     position: relative;
-    margin-bottom: 12px;
     -webkit-user-select: none;
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
-    width: 100%;
+    max-width: 100%;
     gap: 5px;
     font-size: large;
     font-weight: bold;
@@ -22,7 +21,7 @@
     padding: 0.2rem;
     cursor: pointer;
     min-width: 4rem !important;
-    max-height: 24px;
+    max-height: 3rem;
     overflow: hidden;
     flex: 1 1 100%;
     font-weight: bold;

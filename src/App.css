@@ -1,22 +1,60 @@
-.content {
-  padding: 2rem 2rem 0 2rem;
+* {
+  margin: 0;
+  padding: 0;
 }
 
-.gridish, .gridish250, .gridish12ch {
+.column-flex {
+  display: flex;
+  flex-direction: column;
+}
+
+.row-flex {
   display: flex;
   flex-direction: row;
+}
+
+.gridish {
+  display: flex;
   flex-wrap: wrap;
-  gap: 1rem;
 }
 
-.gridish>* {
-  flex: 1 1 14em;
+.flex-small > * {
+  flex: 1 1 5rem;
 }
 
-.gridish250>* {
-  flex: 1 1 250px;
+.flex-medium > * {
+  flex: 1 1 15rem;
 }
 
-.gridish12ch>*{
-  flex: 0 1 50ch;
+.flex-large > * {
+  flex: 1 1 30rem;
+}
+
+.gap1{
+  gap: 1rem
+}
+
+.gap2{
+  gap: 2rem
+}
+
+.gap10{
+  gap: 10px
+}
+
+.gap15{
+  gap: 15px
+}
+
+.overlay-wrapper {
+  padding-bottom: 1em;
+}
+
+.content-wrapper {
+  padding-top: 2rem;
+  padding: 2rem 1rem 0 1rem;
+}
+
+a{
+  text-decoration: none !important;
 }

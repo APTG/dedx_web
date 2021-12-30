@@ -1,11 +1,7 @@
 import DataSeriesFactory from './DataSeriesFactory.js'
 import Module from './weblibdedx.js'
 
-export const StoppingPowerUnits = {
-    MassStoppingPower: {name:'MeV*cm^2/g', id:0},
-    LargeScale: {name:'MeV/cm', id:1},
-    SmallScale: {name:'keV/μm', id:2}
-}
+import { StoppingPowerUnits } from './Utils.js'
 
 const terminator = -1
 
@@ -104,17 +100,24 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
      * @param {boolean} isLog - is plot in logarithmic mode
+     * @param {LibdedxEntity} stoppingPowerUnit - Current unit of stopping power
      * @returns {PlotDataSeries} Dataseries in format suitable for Plot usage
      */
-    async getStpPlotData({ program, ion, material }, isLog) {
+    async getStpPlotData({ program, ion, material }, isLog, stoppingPowerUnit) {
         const wasm = await this.wasm()
 
         const ids = [program.id, ion.id, material.id]
 
         const size = this.getDefaultSize(ids, wasm)
 
-        if (isLog) return this.getDefaultStpPlotData(ids, size, wasm)
-        else return this.getArithmeticStpPlotData(ids, size, wasm)
+        const result = isLog
+        ?  this.getDefaultStpPlotData(ids, size, wasm)
+        :  this.getArithmeticStpPlotData(ids, size, wasm)
+
+        if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
+            result.stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, result.stoppingPowers)
+
+        return result
     }
 
     /**
@@ -122,6 +125,7 @@ export default class WASMWrapper {
      * @param {LibdedxEntity} program - a libdedx program object
      * @param {LibdedxEntity} ion - a libdedx ion object
      * @param {LibdedxEntity} material - a libdedx material object
+     * @param {LibdedxEntity} stoppingPowerUnit - Current unit of stopping power
      * @param {number[]} energies - values of energy to calculate for
      * @returns {CalculatorDataSeries} dataseries in a format suitable for Calculator usage
      */
@@ -132,7 +136,6 @@ export default class WASMWrapper {
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, stoppingPowers)
         const csdaRanges = this.getcsdaRangesForEnergies([program.id, ion.id, material.id], energies, wasm)
-
         return {
             energies,
             stoppingPowers,
@@ -195,7 +198,8 @@ export default class WASMWrapper {
             [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
 
-        const energies = !err ? Array.from(_energies) : [0]
+        //energy varies from program to program, some have only 3 digits after the decimal, some have 6, regex removes trailing zeros
+        const energies = !err ? Array.from(_energies).map(energy => energy.toFixed(6).replace(/(\d)0+$/gm, '$1')) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
@@ -225,8 +229,7 @@ export default class WASMWrapper {
             ['number', 'number', 'number', 'number', 'number', 'number'],
             [oldUnit.id, newUnit.id, material.id, oldstoppingPowers.length, oldValues.byteOffset, newValues.byteOffset]
         )
-
-        const result = !err ? Array.from(newValues) : [0]
+        const result = !err ? Array.from(newValues).map(result => result.toFixed(10)) : [0]
 
         if(err) console.log(err)
 
@@ -265,10 +268,10 @@ export default class WASMWrapper {
             ['number', 'number', 'number', 'number', 'number'],
             [...ids, _energies.byteOffset, _stoppingPowers.byteOffset]
         )
-
-        const energies = !err ? Array.from(_energies) : [0]
-        const stoppingPowers = !err ? Array.from(_stoppingPowers) : [0]
-
+        
+        //energy varies from program to program, some have only 3 digits after the decimal, some have 6, regex removes trailing zeros
+        const energies = !err ? Array.from(_energies).map(energy => energy.toFixed(6).replace(/(\d)0+$/gm, '$1')) : [0]
+        const stoppingPowers = !err ? Array.from(_stoppingPowers).map(stoppingPower => stoppingPower.toFixed(10)) : [0]
         this._free(wasm, energyPtr, powerPtr)
 
         if (err !== 0) console.log(err)
@@ -276,7 +279,7 @@ export default class WASMWrapper {
         return { energies, stoppingPowers }
     }
 
-    async getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
+    getArithmeticStpPlotData([programId, ionId, materialId], size, wasm) {
         const min_energy = wasm.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [programId, ionId])
         const max_energy = wasm.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [programId, ionId])
 
@@ -299,7 +302,7 @@ export default class WASMWrapper {
             [...ids, _energies.length, energies.byteOffset, stoppingPowers.byteOffset]
         )
 
-        const resultstoppingPowers = !err ? Array.from(stoppingPowers) : [0]
+        const resultstoppingPowers = !err ? Array.from(stoppingPowers).map(stoppingPower => stoppingPower.toFixed(10)) : [0]
 
         this._free(wasm, energyPtr, powerPtr)
 
