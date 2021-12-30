@@ -231,7 +231,7 @@ export default class WASMWrapper {
         )
         const result = !err ? Array.from(newValues).map(result => result.toFixed(10)) : [0]
 
-        if(err) console.log(err)
+        if(err) throw err
 
         this._free(wasm, oldVPtr, newVPtr)
 
@@ -306,7 +306,7 @@ export default class WASMWrapper {
 
         this._free(wasm, energyPtr, powerPtr)
 
-        if (err !== 0) console.log(err)
+        if (err !== 0) throw err
 
         return resultstoppingPowers
     }
@@ -327,7 +327,7 @@ export default class WASMWrapper {
 
         this._free(wasm, energyPtr, csdaRangesPtr)
 
-        if (err !== 0) console.log(err)
+        if (err !== 0) throw err
 
         return resultcsdaRanges
     }

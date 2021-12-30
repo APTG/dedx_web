@@ -8,6 +8,7 @@ import CalculatorOutput from './CalculatorOutput'
 import configureMeasurements, { allMeasures } from 'convert-units';
 import withLibdedxEntities from '../../WithLibdedxEntities'
 import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
+import withError from '../../Error/WithError'
 
 const InputUnits = {
     MeVperNucleon: 'MeV/nucl',
@@ -90,18 +91,18 @@ class CalculatorComponent extends React.Component {
         this.setState({ result })
     }
 
-    onOperationModeChange(operationMode){
+    onOperationModeChange(operationMode) {
         this.setState({ operationMode })
         this.forceUpdate()
     }
 
-    onDownloadCSV(){
-        const {energies} = this.state.result
-        const {stoppingPowerUnit} = this.props
+    onDownloadCSV() {
+        const { energies } = this.state.result
+        const { stoppingPowerUnit } = this.props
 
-        getCSV(energies,transformResultToTableData(this.state.result, stoppingPowerUnit))
+        getCSV(energies, transformResultToTableData(this.state.result, stoppingPowerUnit))
     }
-    
+
     onChanges = {
         onStoppingPowerUnitChange: this.props.onStoppingPowerUnitChange,
         onProgramChange: this.props.onProgramChange,
@@ -117,9 +118,14 @@ class CalculatorComponent extends React.Component {
     }
 
     async calculateResults(energies) {
-        const result = await this.wrapper.getCalculatorData(this.props, energies)
-        Object.assign(result, this.calculateUnits(result.csdaRanges))
-        return result
+        try {
+            const result = await this.wrapper.getCalculatorData(this.props, energies)
+            Object.assign(result, this.calculateUnits(result.csdaRanges))
+            return result   
+        } catch (error) {
+            this.props.setError({ error, fallbackStrategy: ()=>{console.log("ehllo")} })
+            return {}
+        }
     }
 
     calculateUnits(_csdaRanges) {
@@ -142,31 +148,31 @@ class CalculatorComponent extends React.Component {
         return (
             <div className='gridish row-flex gap2' >
                 <div className='particle-input'>
-                <h2>Data Calculator</h2>
-                <CalculatorSettings
-                    onChanges={onChanges}
-                    // inputUnits={Object.entries(Units.Inputs)}
-                    stoppingPowerUnits={stoppingPowerUnits}
-                    stoppingPowerUnit={stoppingPowerUnit}
-                    programs={programs}
-                    ions={ions}
-                    materials={materials}
-                    program={program}
-                    ion={ion}
-                    material={material}
-                />
-                <CalculatorInput
-                    onSubmit={onSubmit}
-                    onInputChange={operationMode === OperationMode.Dynamic
-                        ? onInputChange
-                        : undefined
-                    }
-                    stoppingPowerUnit={stoppingPowerUnit}
-                    generateDefaults={generateDefaults}
-                    onOperationModeChange={onOperationModeChange}
-                    onDownloadCSV={onDownloadCSV}
-                    displayDownload={result.energies?.length}
-                />
+                    <h2>Data Calculator</h2>
+                    <CalculatorSettings
+                        onChanges={onChanges}
+                        // inputUnits={Object.entries(Units.Inputs)}
+                        stoppingPowerUnits={stoppingPowerUnits}
+                        stoppingPowerUnit={stoppingPowerUnit}
+                        programs={programs}
+                        ions={ions}
+                        materials={materials}
+                        program={program}
+                        ion={ion}
+                        material={material}
+                    />
+                    <CalculatorInput
+                        onSubmit={onSubmit}
+                        onInputChange={operationMode === OperationMode.Dynamic
+                            ? onInputChange
+                            : undefined
+                        }
+                        stoppingPowerUnit={stoppingPowerUnit}
+                        generateDefaults={generateDefaults}
+                        onOperationModeChange={onOperationModeChange}
+                        onDownloadCSV={onDownloadCSV}
+                        displayDownload={result.energies?.length}
+                    />
                 </div>
 
                 <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
@@ -181,4 +187,4 @@ const defaults = {
     ionId: 1, // currently proton (HYDROGEN)  https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L244
 }
 
-export default withLibdedxEntities(CalculatorComponent, defaults);
+export default withError(withLibdedxEntities(CalculatorComponent, defaults));

@@ -1,9 +1,10 @@
 import React from 'react'
 import WASMWrapper from '../Backend/WASMWrapper'
 import { StoppingPowerUnits } from '../Backend/Utils'
+import withError from './Error/WithError'
 
 function withLibdedxEntities(WrappedComponent, defaultIds) {
-    return class WithLibdedxEntities extends React.Component {
+    class WithLibdedxEntities extends React.Component {
         constructor(props) {
             super(props)
 
@@ -109,6 +110,8 @@ function withLibdedxEntities(WrappedComponent, defaultIds) {
             )
         }
     }
+
+    return WithLibdedxEntities
 }
 
 export default withLibdedxEntities

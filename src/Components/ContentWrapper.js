@@ -41,16 +41,12 @@ class ContentWrapper extends React.Component {
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
                                         <Link to={'web_dev/StoppingPower'}>
-                                            <NavLink>
                                                 Plot
-                                            </NavLink>
                                         </Link>
                                     </NavItem>
                                     <NavItem>
                                         <Link to={'web_dev/Calculator'}>
-                                            <NavLink>
                                                 Data
-                                            </NavLink>
                                         </Link>
                                     </NavItem>
                                 </Nav>
