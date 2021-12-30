@@ -50,14 +50,13 @@ class ContentWrapper extends React.Component {
                         </Collapse>
                     </Navbar>
                 </div>
-               <div className='overlay-wrapper'>
-                        <div className='content-wrapper'>
-                            <Routes>
-                                <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"} />} />
-                                <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
-                                <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
-                            </Routes>
-                        </div>
+                <div className='overlay-wrapper'>
+                    <div className='content-wrapper'>
+                        <Routes>
+                            <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"} />} />
+                            <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
+                            <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
+                        </Routes>
                     </div>
                 </div>
             </Router>
