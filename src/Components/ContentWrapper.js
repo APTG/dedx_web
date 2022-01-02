@@ -8,7 +8,7 @@ import PlotComponent from "./Pages/Plot/Plot";
 import makeAsyncScriptLoader from "react-async-script";
 
 import '../Styles/Nav.css'
-import { Navbar, NavItem, NavLink, Nav, NavbarBrand, NavbarToggler, Collapse } from 'reactstrap'
+import { Navbar, NavItem, Nav, NavbarBrand, NavbarToggler, Collapse } from 'reactstrap'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
