@@ -3,8 +3,6 @@ import { transformResultToTableData } from "../../ResultTable/TableUtils"
 
 function CalculatorOutput({ result, stoppingPowerUnit }) {
     const { energies } = result
-
-    console.log(energies)
     return (
         <ResultTable
             energies={energies}
