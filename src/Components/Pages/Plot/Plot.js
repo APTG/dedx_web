@@ -199,6 +199,7 @@ class PlotComponent extends React.Component {
                         energies={energies}
                         values={transformDataSeriesToTableData(dataSeries)}
                         stoppingPowerUnit={stoppingPowerUnit.name}
+                        shouldDisplay={dataSeries?.length !== 0}
                     />}
             </div>
         )

@@ -1,7 +1,7 @@
 import React from 'react';
 
 import '../../../Styles/Form.css'
-import { getButtonStyle } from '../../ResultTable/TableUtils';
+import { getInvisibleStyle } from '../../ResultTable/TableUtils';
 import Dropdown from '../../Utils/Dropdown';
 
 function dropdownRenderFunction(name) {
@@ -57,7 +57,7 @@ function Form(props) {
                 <div className='gridish row-flex flex-medium gap1'>
                     <button className="button" type="submit">Plot</button>
                     <input type="button" className="button" onClick={onClear} value={"Clear"} />
-                    <input type="button" style={getButtonStyle(showCSVDownload)} className="button" onClick={onDownloadCSV} value={"Download CSV data"} />
+                    <input type="button" style={getInvisibleStyle(showCSVDownload)} className="button" onClick={onDownloadCSV} value={"Download CSV data"} />
                 </div>
             </div>
 
