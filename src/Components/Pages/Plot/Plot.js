@@ -10,7 +10,6 @@ import { getCSV, transformDataSeriesToTableData } from "../../ResultTable/TableU
 import withLibdedxEntities from '../../WithLibdedxEntities'
 
 import colorSequence from '../../../Styles/PlotColors.json'
-import { energy } from "convert-units";
 
 const AxisLayout = {
     Linear: 0,
