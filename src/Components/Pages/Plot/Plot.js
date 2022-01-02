@@ -6,7 +6,7 @@ import GraphSetting from './GraphSettings';
 import WASMWrapper from "../../../Backend/WASMWrapper";
 import ResultTable from "../../ResultTable/ResultTable";
 
-import { transformDataSeriesToTableData } from "../../ResultTable/TableUtils";
+import { getCSV, transformDataSeriesToTableData } from "../../ResultTable/TableUtils";
 import withLibdedxEntities from '../../WithLibdedxEntities'
 
 import colorSequence from '../../../Styles/PlotColors.json'
@@ -44,6 +44,7 @@ class PlotComponent extends React.Component {
         this.submitHandler = this.submitHandler.bind(this);
         this.clearDataSeries = this.clearDataSeries.bind(this);
         this.onDataSeriesStateChange = this.onDataSeriesStateChange.bind(this)
+        this.onDownloadCSV = this.onDownloadCSV.bind(this)
     }
 
     //#region LIFECYCLE
@@ -113,6 +114,7 @@ class PlotComponent extends React.Component {
 
     clearDataSeries() {
         this.setState({
+            energies: [],
             dataSeries: [],
             seriesNumber: startingSeriesNumber
         })
@@ -146,11 +148,18 @@ class PlotComponent extends React.Component {
         this.setState({dataSeries})
     }
 
+    onDownloadCSV(){
+        const {energies, dataSeries} = this.state
+
+        const transformed = transformDataSeriesToTableData(dataSeries)
+        getCSV(energies, transformed)
+    }
+
     //#endregion HANDLERS
 
     render() {
         const { dataSeries, xAxis, yAxis, gridlines, energies, name } = this.state
-        const { submitHandler, clearDataSeries, onNameChange, onDataSeriesStateChange } = this
+        const { submitHandler, clearDataSeries, onNameChange, onDataSeriesStateChange, onDownloadCSV } = this
         const { stoppingPowerUnit } = this.props
 
         return (
@@ -159,6 +168,8 @@ class PlotComponent extends React.Component {
                     onSubmit={submitHandler}
                     onClear={clearDataSeries}
                     onNameChange={onNameChange}
+                    onDownloadCSV={onDownloadCSV}
+                    showCSVDownload={dataSeries?.length !== 0}
                     name={name}
                     {...this.props}
                 />

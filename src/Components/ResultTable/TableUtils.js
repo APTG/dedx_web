@@ -66,3 +66,10 @@ export function getCSV(energies, values) {
 
     link.click();
 }
+
+// Some buttons need to be hidden if, for example, there's no data to download
+export function getButtonStyle(shouldDisplay) {
+    return shouldDisplay
+        ? {}
+        : { opacity: "0", pointerEvents: "none" }
+}
