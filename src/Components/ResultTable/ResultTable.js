@@ -2,9 +2,11 @@ import React, { useMemo } from 'react'
 import { useTable, useSortBy } from 'react-table'
 
 import './ResultTable.css'
-import { getCSV } from './TableUtils'
+import { getInvisibleStyle } from './TableUtils'
 
-function ResultTable({ energies, values, stoppingPowerUnit }) {
+// Once #
+
+function ResultTable({ energies, values, stoppingPowerUnit, shouldDisplay }) {
 
     const columns = useMemo(() => {
         return [
@@ -18,16 +20,18 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
     }, [values, stoppingPowerUnit])
 
     const data = useMemo(() => {
-        const res = energies.map((energy, key) => {
-            const row = { energy }
-            values.forEach(child => {
-                if(child.precision)  row[child.accessor] = Number(child.data[key]).toFixed(child.precision)
-                else row[child.accessor] = child.data[key]
+        if (energies) {
+            const res = energies.map((energy, key) => {
+                const row = { energy }
+                values.forEach(child => {
+                    if (child.precision) row[child.accessor] = Number(child.data[key]).toFixed(child.precision)
+                    else row[child.accessor] = child.data[key]
+                })
+                return row
             })
-            return row
-        })
 
-        return res
+            return res
+        } else return []
     }, [energies, values])
 
     const {
@@ -39,8 +43,8 @@ function ResultTable({ energies, values, stoppingPowerUnit }) {
     } = useTable({ columns, data }, useSortBy)
 
     return (
-        <div style={{marginTop: '2em'}}>
-            <table {...getTableProps()}>
+        <div style={getInvisibleStyle(shouldDisplay)} className='result-table-wrapper'>
+            <table className='result-table' {...getTableProps()}>
                 <thead>
                     {headerGroups.map(headerGroup => (
                         <tr {...headerGroup.getHeaderGroupProps()}>

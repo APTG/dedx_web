@@ -1,5 +1,5 @@
 import { useRef } from "react"
-import { getButtonStyle } from "../../ResultTable/TableUtils"
+import { getInvisibleStyle } from "../../ResultTable/TableUtils"
 import Toggle from '../../Utils/Toggle'
 
 function CalculatorInput({ onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, displayDownload }) {
@@ -18,8 +18,8 @@ function CalculatorInput({ onSubmit, onInputChange, generateDefaults, onOperatio
         <div className="column-flex" style={{ padding: 10, justifyContent:'space-between' }}>
             <div className="gridish column-flex flex-xs gap1">
                 <button className="button" onClick={onDefaultGenerate} style={{ margin: 0 }}>Generate default energies</button>
-                <button style={getButtonStyle(displayDownload)} onClick={onDownloadCSV} className="button">Download table data</button>
-                <button style={getButtonStyle(!onInputChange)} className="button" type="submit">Submit</button>
+                <button style={getInvisibleStyle(displayDownload)} onClick={onDownloadCSV} className="button">Download table data</button>
+                <button style={getInvisibleStyle(!onInputChange)} className="button" type="submit">Submit</button>
 
             </div>
             <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>

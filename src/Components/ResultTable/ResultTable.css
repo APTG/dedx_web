@@ -14,8 +14,12 @@ th{
     text-align: center !important
 }
 
-table{
-    background: #666;
+.result-table{
+    width: 100% !important;
+}
+
+.result-table-wrapper{
+    margin-top: 2em;
 }
 
 table td, th{
