@@ -4,17 +4,15 @@ import { useTable, useSortBy } from 'react-table'
 import './ResultTable.css'
 import { getInvisibleStyle } from './TableUtils'
 
-// Once #
-
 function ResultTable({ energies, values, stoppingPowerUnit, shouldDisplay }) {
 
     const columns = useMemo(() => {
         return [
-            { Header: 'Energy [MeV/nucl]', accessor: 'energy', sortType: 'basic' },
+            { Header: 'Energy [MeV/nucl]', accessor: 'energy', sortType: 'number' },
             {
                 Header: "Data" + (stoppingPowerUnit ? `[${stoppingPowerUnit}]` : ''),
                 columns: values.map(child => {
-                    return { Header: child.name, accessor: child.accessor, sortType: 'basic' }
+                    return { Header: child.name, accessor: child.accessor, sortType: 'number' }
                 })
             }]
     }, [values, stoppingPowerUnit])
