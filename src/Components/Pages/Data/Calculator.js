@@ -5,7 +5,6 @@ import CalculatorSettings from './CalculatorSettings'
 import CalculatorInput from './CalculatorInput'
 import CalculatorOutput from './CalculatorOutput'
 
-import configureMeasurements, { allMeasures } from 'convert-units';
 import withLibdedxEntities from '../../WithLibdedxEntities'
 import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
 
@@ -31,6 +30,7 @@ class CalculatorComponent extends React.Component {
         this.onInputChange = this.onInputChange.bind(this)
         this.generateDefaults = this.generateDefaults.bind(this)
         this.onOperationModeChange = this.onOperationModeChange.bind(this)
+        this.onDensityUsageChange = this.onDensityUsageChange.bind(this)
         this.onDownloadCSV = this.onDownloadCSV.bind(this)
 
         this.state = {
@@ -38,9 +38,8 @@ class CalculatorComponent extends React.Component {
             result: {},
             operationMode: OperationMode.Dynamic,
             separator: '\n',
+            isRangeDensityBased: 0
         }
-
-        this.convert = configureMeasurements(allMeasures);
     }
 
     //#region LIFECYCLE
@@ -90,23 +89,29 @@ class CalculatorComponent extends React.Component {
         this.setState({ result })
     }
 
-    onOperationModeChange(operationMode){
+    onOperationModeChange(operationMode) {
         this.setState({ operationMode })
-        this.forceUpdate()
     }
 
-    onDownloadCSV(){
-        const {energies} = this.state.result
-        const {stoppingPowerUnit} = this.props
+    onDownloadCSV() {
+        const { result, isRangeDensityBased } = this.state
+        const { energies } = result
+        const { stoppingPowerUnit } = this.props
 
-        getCSV(energies,transformResultToTableData(this.state.result, stoppingPowerUnit))
+        getCSV(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased))
     }
-    
+
     onChanges = {
         onStoppingPowerUnitChange: this.props.onStoppingPowerUnitChange,
         onProgramChange: this.props.onProgramChange,
         onIonChange: this.props.onIonChange,
         onMaterialChange: this.props.onMaterialChange,
+    }
+
+    async onDensityUsageChange(isRangeDensityBased) {
+        let result = this.state.result
+        result.csdaRanges = await this.wrapper.recalcualteCSDARangeForDensity(this.props.material,result.csdaRanges,isRangeDensityBased)
+        this.setState({ isRangeDensityBased })
     }
     //#endregion HANDLERS
 
@@ -117,59 +122,51 @@ class CalculatorComponent extends React.Component {
     }
 
     async calculateResults(energies) {
-        const result = await this.wrapper.getCalculatorData(this.props, energies)
-        Object.assign(result, this.calculateUnits(result.csdaRanges))
+        const {isRangeDensityBased} = this.state
+        const result = await this.wrapper.getCalculatorData(this.props, energies, isRangeDensityBased)
         return result
     }
 
-    calculateUnits(_csdaRanges) {
-        const units = new Array(_csdaRanges.length)
-        const csdaRanges = _csdaRanges.map((range, key) => {
-            const converted = this.convert(range).from('cm').toBest()
-            units[key] = converted.unit
-            return converted.val
-        })
-        return { csdaRanges, units }
-    }
     //#endregion HELPERS
 
     render() {
 
         const { programs, ions, materials, stoppingPowerUnits, program, ion, material, stoppingPowerUnit } = this.props
-        const { result, operationMode } = this.state
-        const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, onChanges } = this
+        const { result, operationMode, isRangeDensityBased } = this.state
+        const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDensityUsageChange, onDownloadCSV, onChanges } = this
 
         return (
             <div className='gridish row-flex gap2' >
                 <div className='particle-input'>
-                <h2>Data Calculator</h2>
-                <CalculatorSettings
-                    onChanges={onChanges}
-                    // inputUnits={Object.entries(Units.Inputs)}
-                    stoppingPowerUnits={stoppingPowerUnits}
-                    stoppingPowerUnit={stoppingPowerUnit}
-                    programs={programs}
-                    ions={ions}
-                    materials={materials}
-                    program={program}
-                    ion={ion}
-                    material={material}
-                />
-                <CalculatorInput
-                    onSubmit={onSubmit}
-                    onInputChange={operationMode === OperationMode.Dynamic
-                        ? onInputChange
-                        : undefined
-                    }
-                    stoppingPowerUnit={stoppingPowerUnit}
-                    generateDefaults={generateDefaults}
-                    onOperationModeChange={onOperationModeChange}
-                    onDownloadCSV={onDownloadCSV}
-                    displayDownload={result.energies?.length}
-                />
+                    <h2>Data Calculator</h2>
+                    <CalculatorSettings
+                        onChanges={onChanges}
+                        // inputUnits={Object.entries(Units.Inputs)}
+                        stoppingPowerUnits={stoppingPowerUnits}
+                        stoppingPowerUnit={stoppingPowerUnit}
+                        programs={programs}
+                        ions={ions}
+                        materials={materials}
+                        program={program}
+                        ion={ion}
+                        material={material}
+                    />
+                    <CalculatorInput
+                        onSubmit={onSubmit}
+                        onInputChange={operationMode === OperationMode.Dynamic
+                            ? onInputChange
+                            : undefined
+                        }
+                        stoppingPowerUnit={stoppingPowerUnit}
+                        generateDefaults={generateDefaults}
+                        onOperationModeChange={onOperationModeChange}
+                        onDensityUsageChange={onDensityUsageChange}
+                        onDownloadCSV={onDownloadCSV}
+                        displayDownload={result.energies?.length}
+                    />
                 </div>
 
-                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
+                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} isRangeDensityBased={isRangeDensityBased} />
             </div>
         );
     }

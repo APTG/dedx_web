@@ -2,7 +2,7 @@ import { useRef } from "react"
 import { getButtonStyle } from "../../ResultTable/TableUtils"
 import Toggle from '../../Utils/Toggle'
 
-function CalculatorInput({ onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, displayDownload }) {
+function CalculatorInput({ onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, displayDownload, onDensityUsageChange }) {
 
     const ref = useRef(null)
 
@@ -15,17 +15,23 @@ function CalculatorInput({ onSubmit, onInputChange, generateDefaults, onOperatio
         </div>
 
 
-        <div className="column-flex" style={{ padding: 10, justifyContent:'space-between' }}>
+        <div className="column-flex" style={{ padding: 10, justifyContent: 'space-between' }}>
             <div className="gridish column-flex flex-xs gap1">
                 <button className="button" onClick={onDefaultGenerate} style={{ margin: 0 }}>Generate default energies</button>
                 <button style={getButtonStyle(displayDownload)} onClick={onDownloadCSV} className="button">Download table data</button>
                 <button style={getButtonStyle(!onInputChange)} className="button" type="submit">Submit</button>
 
             </div>
-            <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>
-                <>Dynamic</>
-                <>Performance</>
-            </Toggle>
+            <div>
+                <Toggle name='Include density [g/cm^3] in CSDA range unit' onChange={onDensityUsageChange} startValue={0}>
+                    <>No</>
+                    <>Yes</>
+                </Toggle>
+                <Toggle name='Operation mode' onChange={onOperationModeChange} startValue={0}>
+                    <>Dynamic</>
+                    <>Performance</>
+                </Toggle>
+            </div>
 
         </div>
 

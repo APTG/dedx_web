@@ -2,7 +2,6 @@ import React, { useMemo } from 'react'
 import { useTable, useSortBy } from 'react-table'
 
 import './ResultTable.css'
-import { getCSV } from './TableUtils'
 
 function ResultTable({ energies, values, stoppingPowerUnit }) {
 
