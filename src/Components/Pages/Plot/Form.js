@@ -1,6 +1,7 @@
 import React from 'react';
 
 import '../../../Styles/Form.css'
+import { getInvisibleStyle } from '../../ResultTable/TableUtils';
 import Dropdown from '../../Utils/Dropdown';
 
 function dropdownRenderFunction(name) {
@@ -13,7 +14,7 @@ function Form(props) {
         ions, ion, onIonChange, //ion
         materials, material, onMaterialChange, //material
         stoppingPowerUnit, stoppingPowerUnits, onStoppingPowerUnitChange, //stpUnit
-        onSubmit, onNameChange, onClear, name //various
+        onSubmit, onNameChange, onClear, name, showCSVDownload, onDownloadCSV //various
     } = props
 
     return (
@@ -53,9 +54,10 @@ function Form(props) {
                     onChange={onStoppingPowerUnitChange}
                     elementDisplayFunc={dropdownRenderFunction}
                 />
-                <div className='gridish row-flex flex-small gap1'>
+                <div className='gridish row-flex flex-medium gap1'>
                     <button className="button" type="submit">Plot</button>
                     <input type="button" className="button" onClick={onClear} value={"Clear"} />
+                    <input type="button" style={getInvisibleStyle(showCSVDownload)} className="button" onClick={onDownloadCSV} value={"Download CSV data"} />
                 </div>
             </div>
 

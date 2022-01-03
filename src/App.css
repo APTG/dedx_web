@@ -18,6 +18,10 @@
   flex-wrap: wrap;
 }
 
+.flex-xs > * {
+  flex: 1 1 55px;
+}
+
 .flex-small > * {
   flex: 1 1 5rem;
 }
