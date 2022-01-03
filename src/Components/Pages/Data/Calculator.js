@@ -7,7 +7,9 @@ import CalculatorOutput from './CalculatorOutput'
 
 import withLibdedxEntities from '../../WithLibdedxEntities'
 import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
+
 import withError from '../../Error/WithError'
+import {NonNumericError, ValueNotSupportedError} from '../../Error/Errors'
 
 const InputUnits = {
     MeVperNucleon: 'MeV/nucl',
@@ -38,7 +40,9 @@ function toNumericInput(inputArray, separator){
 function transformInputs(inputArray, separator){
     const numericInputs = toNumericInput(inputArray, separator)
     if(numericInputs.some(ni => isNaN(ni))){
-        throw EvalError("Some of the inputs are non-numeric.")
+        throw new NonNumericError()
+    } else if (numericInputs.some(ni => ni < 0)){
+        throw new ValueNotSupportedError()
     }
     return numericInputs.filter(input => input !== 0)
 }
@@ -127,10 +131,10 @@ class CalculatorComponent extends React.Component {
     //#endregion HANDLERS
 
     //#region FALLBACKS - if error happned - how to fix it
-    normalizeInput(target){
+    normalizeInput(target, normalizeFunc){
         const separator = this.state.separator
         const numericInputs = toNumericInput(target.value, separator)
-        target.value = numericInputs.filter(ni => !isNaN(ni)).join(separator)
+        target.value = numericInputs.filter(normalizeFunc).join(separator)
         this.calculateResults(target)
         this.props.setError(undefined)
     }
@@ -147,6 +151,7 @@ class CalculatorComponent extends React.Component {
     //#endregion
 
     //#region HELPERS
+
     async generateDefaults() {
         const { separator } = this.state
         return (await this.wrapper.generateDefaults(this.props)).join(separator)
@@ -158,10 +163,13 @@ class CalculatorComponent extends React.Component {
             const energies = transformInputs(target.value, this.state.separator)
             result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
         } catch (error) {
-            if(error instanceof EvalError){
-                this.props.setError({ error, fallbackStrategy: ()=>this.normalizeInput(target)})
+            const setError =  this.props.setError
+            if(error instanceof NonNumericError){
+                setError({ error, fallbackStrategy: ()=>this.normalizeInput(target, v => !isNaN(v))})
+            } else if (error instanceof ValueNotSupportedError){
+                setError({ error, fallbackStrategy: ()=>this.normalizeInput(target, v => v > 0)})
             }
-            else this.props.setError({ error, fallbackStrategy: ()=>this.resetInput(target)})
+            else setError({ error, fallbackStrategy: ()=>this.resetInput(target)})
             result = {}
         }
         this.setState({ result })
