@@ -6,7 +6,7 @@ export function uuidv4() {
 }
 
 export const StoppingPowerUnits = {
-    MassStoppingPower: {name:'MeV*cm^2/g', id:0},
+    MassStoppingPower: {name:'MeV*cm²/g', id:0},
     LargeScale: {name:'MeV/cm', id:1},
     SmallScale: {name:'keV/μm', id:2}
 }

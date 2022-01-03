@@ -29,6 +29,7 @@ FUNCTIONS+='_dedx_get_csda_range_table,'
 FUNCTIONS+='_dedx_get_simple_stp_for_program,'
 FUNCTIONS+='_dedx_get_stp_table_size,'
 FUNCTIONS+='_dedx_fill_default_energy_stp_table,'
+FUNCTIONS+='__dedx_read_density,'
 FUNCTIONS+='_malloc,'
 FUNCTIONS+='_free'
 

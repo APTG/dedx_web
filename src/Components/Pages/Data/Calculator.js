@@ -5,7 +5,6 @@ import CalculatorSettings from './CalculatorSettings'
 import CalculatorInput from './CalculatorInput'
 import CalculatorOutput from './CalculatorOutput'
 
-import configureMeasurements, { allMeasures } from 'convert-units';
 import withLibdedxEntities from '../../WithLibdedxEntities'
 import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
 import withError from '../../Error/WithError'
@@ -25,6 +24,7 @@ const baseState = {
     result: {},
     operationMode: OperationMode.Dynamic,
     separator: '\n',
+    isRangeDensityBased: 0
 }
 
 // Some values can't be processed by libdedx (non-numeric input)
@@ -53,14 +53,13 @@ class CalculatorComponent extends React.Component {
         this.onInputChange = this.onInputChange.bind(this)
         this.generateDefaults = this.generateDefaults.bind(this)
         this.onOperationModeChange = this.onOperationModeChange.bind(this)
+        this.onDensityUsageChange = this.onDensityUsageChange.bind(this)
         this.onDownloadCSV = this.onDownloadCSV.bind(this)
         this.normalizeInput = this.normalizeInput.bind(this)
         this.resetInput = this.resetInput.bind(this)
         this.resetComponent = this.resetComponent.bind(this)
 
         this.state = baseState
-
-        this.convert = configureMeasurements(allMeasures);
     }
 
     //#region LIFECYCLE
@@ -103,14 +102,14 @@ class CalculatorComponent extends React.Component {
 
     onOperationModeChange(operationMode) {
         this.setState({ operationMode })
-        this.forceUpdate()
     }
 
     onDownloadCSV() {
-        const { energies } = this.state.result
+        const { result, isRangeDensityBased } = this.state
+        const { energies } = result
         const { stoppingPowerUnit } = this.props
 
-        getCSV(energies, transformResultToTableData(this.state.result, stoppingPowerUnit))
+        getCSV(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased))
     }
 
     onChanges = {
@@ -118,6 +117,12 @@ class CalculatorComponent extends React.Component {
         onProgramChange: this.props.onProgramChange,
         onIonChange: this.props.onIonChange,
         onMaterialChange: this.props.onMaterialChange,
+    }
+
+    async onDensityUsageChange(isRangeDensityBased) {
+        let result = this.state.result
+        result.csdaRanges = await this.wrapper.recalcualteCSDARangeForDensity(this.props.material,result.csdaRanges,isRangeDensityBased)
+        this.setState({ isRangeDensityBased })
     }
     //#endregion HANDLERS
 
@@ -151,7 +156,7 @@ class CalculatorComponent extends React.Component {
         let result = {}
         try {
             const energies = transformInputs(target.value, this.state.separator)
-            result = await this.wrapper.getCalculatorData(this.props, energies)
+            result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
             Object.assign(result, this.calculateUnits(result.csdaRanges))
         } catch (error) {
             if(error instanceof EvalError){
@@ -172,14 +177,13 @@ class CalculatorComponent extends React.Component {
         })
         return { csdaRanges, units }
     }
-
     //#endregion HELPERS
 
     render() {
 
         const { programs, ions, materials, stoppingPowerUnits, program, ion, material, stoppingPowerUnit } = this.props
-        const { result, operationMode } = this.state
-        const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDownloadCSV, onChanges } = this
+        const { result, operationMode, isRangeDensityBased } = this.state
+        const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDensityUsageChange, onDownloadCSV, onChanges } = this
 
         return (
             <div className='gridish row-flex flex-large gap2' >
@@ -206,12 +210,13 @@ class CalculatorComponent extends React.Component {
                         stoppingPowerUnit={stoppingPowerUnit}
                         generateDefaults={generateDefaults}
                         onOperationModeChange={onOperationModeChange}
+                        onDensityUsageChange={onDensityUsageChange}
                         onDownloadCSV={onDownloadCSV}
                         displayDownload={result.energies?.length}
                     />
                 </div>
 
-                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} />
+                <CalculatorOutput result={result} stoppingPowerUnit={stoppingPowerUnit} isRangeDensityBased={isRangeDensityBased} />
             </div>
         );
     }

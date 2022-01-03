@@ -129,19 +129,59 @@ export default class WASMWrapper {
      * @param {number[]} energies - values of energy to calculate for
      * @returns {CalculatorDataSeries} dataseries in a format suitable for Calculator usage
      */
-    async getCalculatorData({ program, ion, material, stoppingPowerUnit }, energies) {
+    async getCalculatorData({ program, ion, material, stoppingPowerUnit }, energies, isNewRangeDensityBased) {
         const wasm = await this.wasm()
+        const ids = [program.id, ion.id, material.id]
 
-        let stoppingPowers = this.getPowerForEnergy([program.id, ion.id, material.id], energies, wasm)
+        let stoppingPowers = this.getPowerForEnergy(ids, energies, wasm)
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, stoppingPowers)
-        const csdaRanges = this.getcsdaRangesForEnergies([program.id, ion.id, material.id], energies, wasm)
+        let csdaRanges = this.getcsdaRangesForEnergies(ids, energies, wasm)
+        console.log(energies)
+        if(!isNewRangeDensityBased){
+            csdaRanges = await this.recalcualteCSDARangeForDensity(material, csdaRanges, isNewRangeDensityBased)
+        }
+
         return {
             energies,
             stoppingPowers,
             csdaRanges
         }
     }
+
+    
+    /**
+    * Recalculates the values of stopping powers from oldUnit to newUnit
+    * @param {LibdedxEntity} material - material of which the density should be used
+    * @param {number[]} csdaRanges - current values of csdaRange
+    * @param {boolean} isNewRangeDensityBased - should new values include density or not
+    * @returns {number[]} new values of csda range
+    */
+         async recalcualteCSDARangeForDensity(material, csdaRanges, isNewRangeDensityBased){
+            const wasm = await this.wasm()
+            const [errorPtr, errArr] = this._allocateI32(wasm, 1)
+    
+            const density = wasm.ccall(
+                '_dedx_read_density',
+                'number',
+                ['number', 'number'],
+                [material.id, errArr.byteOffset]
+            )
+    
+            const densityErr = errArr[0]
+    
+            this._free(wasm ,errorPtr)
+    
+            if (densityErr !== 0) throw densityErr
+
+            const rangeScaleFunc = isNewRangeDensityBased 
+                ? range => range*density
+                : range => range/density
+
+            const res = csdaRanges.map(rangeScaleFunc)
+
+            return res
+        }
 
     /**
     * Calculates a single value of stopping power for a given energy value
@@ -213,7 +253,7 @@ export default class WASMWrapper {
     * @param {LibdedxEntity} oldUnit - old stopping power unit
     * @param {LibdedxEntity} newUnit - new stopping power unit
     * @param {LibdedxEntity} material - a libdedx material object
-    * @param {number} oldstoppingPowers - values of stopping power in old unit
+    * @param {number[]} oldstoppingPowers - values of stopping power in old unit
     * @returns {number[]} values of stopping power in new unit
     */
     async recalcualteStoppingPowers(oldUnit, newUnit, material, oldstoppingPowers) {
