@@ -136,7 +136,7 @@ class CalculatorComponent extends React.Component {
         const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDensityUsageChange, onDownloadCSV, onChanges } = this
 
         return (
-            <div className='gridish row-flex gap2' >
+            <div className='gridish row-flex flex-large gap2' >
                 <div className='particle-input'>
                     <h2>Data Calculator</h2>
                     <CalculatorSettings

@@ -4,12 +4,11 @@ import { transformResultToTableData } from "../../ResultTable/TableUtils"
 function CalculatorOutput({ result, stoppingPowerUnit, isRangeDensityBased }) {
     const { energies } = result
     return (
-        <div>
-            {energies?.length ? <ResultTable
-                energies={result.energies}
-                values={transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased)}
-            />:<></>}
-        </div>
+        <ResultTable
+            energies={energies}
+            values={transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased)}
+            shouldDisplay={energies && energies?.length !== 0}
+        />
     )
 }
 
