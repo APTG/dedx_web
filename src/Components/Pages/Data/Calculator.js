@@ -157,7 +157,6 @@ class CalculatorComponent extends React.Component {
         try {
             const energies = transformInputs(target.value, this.state.separator)
             result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
-            Object.assign(result, this.calculateUnits(result.csdaRanges))
         } catch (error) {
             if(error instanceof EvalError){
                 this.props.setError({ error, fallbackStrategy: ()=>this.normalizeInput(target)})
@@ -166,16 +165,6 @@ class CalculatorComponent extends React.Component {
             result = {}
         }
         this.setState({ result })
-    }
-
-    calculateUnits(_csdaRanges) {
-        const units = new Array(_csdaRanges.length)
-        const csdaRanges = _csdaRanges.map((range, key) => {
-            const converted = this.convert(range).from('cm').toBest()
-            units[key] = converted.unit
-            return converted.val
-        })
-        return { csdaRanges, units }
     }
     //#endregion HELPERS
 
