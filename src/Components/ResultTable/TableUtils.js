@@ -33,7 +33,8 @@ function calculateRangeUnits(csdaRanges, isRangeDensityBased) {
 }
 
 export function transformResultToTableData({ stoppingPowers, csdaRanges }, stoppingPowerUnit, isRangeDensityBased) {
-    const {newCsdaRanges, units} = calculateRangeUnits(csdaRanges, isRangeDensityBased)
+    if(csdaRanges){
+            const {newCsdaRanges, units} = calculateRangeUnits(csdaRanges, isRangeDensityBased)
     return [
         {
             name: `Stopping power [${stoppingPowerUnit.name}]`,
@@ -53,6 +54,8 @@ export function transformResultToTableData({ stoppingPowers, csdaRanges }, stopp
             accessor: uuidv4()
         },
     ]
+    } else return []
+
 }
 
 //adapted from https://stackoverflow.com/q/17428587
