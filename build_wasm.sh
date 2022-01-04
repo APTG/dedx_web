@@ -56,6 +56,7 @@ cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
+sed -i "s/$PROJECT_NAME.wasm/.\/$PROJECT_NAME.wasm/" ${JS}
 sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
 
 #cleanup
