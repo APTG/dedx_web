@@ -3,6 +3,8 @@ name: Node.js test and deploy to github pages
 on:
   push:
     branches: [ master ]
+    tags:
+      - v*
   pull_request:
     branches: [ master ]
 
