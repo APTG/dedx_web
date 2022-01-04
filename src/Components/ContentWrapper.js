@@ -31,7 +31,7 @@ class ContentWrapper extends React.Component {
                 <div style={{ minHeight: "calc(100vh - 5em)" }}>
                     <div>
                         <Navbar style={{ height: '3.5em' }} color="light" expand="md" light>
-                            <Link style={{height:'3em'}} to={'web_dev/'}>
+                            <Link style={{height:'3em'}} to={''}>
                                 <NavbarBrand>
                                     <h1 style={{margin: 0}} className="h2">dEdx web</h1>
                                 </NavbarBrand>
@@ -40,12 +40,12 @@ class ContentWrapper extends React.Component {
                             <Collapse navbar>
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
-                                        <Link to={'web_dev/StoppingPower'}>
+                                        <Link to={'StoppingPower'}>
                                                 Plot
                                         </Link>
                                     </NavItem>
                                     <NavItem>
-                                        <Link to={'web_dev/Calculator'}>
+                                        <Link to={'Calculator'}>
                                                 Data
                                         </Link>
                                     </NavItem>
@@ -58,9 +58,9 @@ class ContentWrapper extends React.Component {
                     <div className='overlay-wrapper'>
                         <div className='content-wrapper'>
                             <Routes>
-                                <Route path="web_dev/*" element={<Navigate to={"/web_dev/StoppingPower"} />} />
-                                <Route path={'web_dev/StoppingPower'} element={<PlotComponent ready={ready} />} />
-                                <Route path={'web_dev/Calculator'} element={<CalculatorComponent ready={ready} />} />
+                                <Route path="*" element={<Navigate to={"/StoppingPower"} />} />
+                                <Route path={'StoppingPower'} element={<PlotComponent ready={ready} />} />
+                                <Route path={'Calculator'} element={<CalculatorComponent ready={ready} />} />
                             </Routes>
                         </div>
                     </div>
