@@ -1,6 +1,6 @@
 PROJECT_NAME=weblibdedx
 PROPER_PATH="\`\${process.env.PUBLIC_URL}\/$PROJECT_NAME.wasm\`"
-BROKEN_PATH="wasmBinaryFile = \'\/weblibdedx.wasm\'"
+BROKEN_PATH="wasmBinaryFile = \'weblibdedx.wasm\'"
 JS=./src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
 
