@@ -122,3 +122,18 @@ jobs:
         run: |
           git remote set-url origin git@github.com:APTG/web_dev.git
           npm run deploy -- -u "github-actions-bot <support+actions@github.com>" -r "git@github.com:APTG/web_dev.git"
+
+      - name: webfactory/ssh-agent
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+        # You may pin to the exact commit or the version.
+        # uses: webfactory/ssh-agent@5f066a372ec13036ab7cb9a8adf18c936f8d2043
+        uses: webfactory/ssh-agent@v0.5.4
+        with:
+          # Private SSH key to register in the SSH agent
+          ssh-private-key: ${{ secrets.WEBPROD }}
+
+      - name: Deploy Prod
+        if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
+        run: |
+          git remote set-url origin git@github.com:APTG/web.git
+          npm run deploy -- -u "github-actions-bot <support+actions@github.com>" -r "git@github.com:APTG/web.git"
