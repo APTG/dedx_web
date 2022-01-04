@@ -27,3 +27,4 @@ src/Backend/weblibdedx.js
 public/weblibdedx.wasm
 .vscode/settings.json
 public/weblibdedx.data
+.env

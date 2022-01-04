@@ -122,6 +122,7 @@ jobs:
       - name: Deploy
         if: github.ref == 'refs/heads/master'
         run: |
+          REACT_APP_HOST_ENV=web_dev
           git remote set-url origin git@github.com:APTG/web_dev.git
           npm run deploy -- -u "github-actions-bot <support+actions@github.com>" -r "git@github.com:APTG/web_dev.git"
 
@@ -137,5 +138,6 @@ jobs:
       - name: Deploy Prod
         if: github.event_name == 'push' && startsWith(github.event.ref, 'refs/tags/v')
         run: |
+          REACT_APP_HOST_ENV=web
           git remote set-url origin git@github.com:APTG/web.git
           npm run deploy -- -u "github-actions-bot <support+actions@github.com>" -r "git@github.com:APTG/web.git"

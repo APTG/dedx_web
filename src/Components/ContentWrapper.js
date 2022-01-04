@@ -40,12 +40,12 @@ class ContentWrapper extends React.Component {
                             <Collapse navbar>
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
-                                        <Link to={'StoppingPower'}>
+                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`}>
                                                 Plot
                                         </Link>
                                     </NavItem>
                                     <NavItem>
-                                        <Link to={'Calculator'}>
+                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/Calculator`}>
                                                 Data
                                         </Link>
                                     </NavItem>
@@ -58,9 +58,9 @@ class ContentWrapper extends React.Component {
                     <div className='overlay-wrapper'>
                         <div className='content-wrapper'>
                             <Routes>
-                                <Route path="*" element={<Navigate to={"/StoppingPower"} />} />
-                                <Route path={'StoppingPower'} element={<PlotComponent ready={ready} />} />
-                                <Route path={'Calculator'} element={<CalculatorComponent ready={ready} />} />
+                                <Route path={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} element={<PlotComponent ready={ready} />} />
+                                <Route path={`${process.env.REACT_APP_HOST_ENV}/Calculator`} element={<CalculatorComponent ready={ready} />} />
+                                <Route path="*" element={<Navigate to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} />} />
                             </Routes>
                         </div>
                     </div>
