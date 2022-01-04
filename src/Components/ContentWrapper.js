@@ -8,7 +8,7 @@ import PlotComponent from "./Pages/Plot/Plot";
 import makeAsyncScriptLoader from "react-async-script";
 
 import '../Styles/Nav.css'
-import { Navbar, NavItem, NavLink, Nav, NavbarBrand, NavbarToggler, Collapse } from 'reactstrap'
+import { Navbar, NavItem, Nav, NavbarBrand, NavbarToggler, Collapse } from 'reactstrap'
 import 'bootstrap/dist/css/bootstrap.min.css';
 
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
@@ -41,16 +41,12 @@ class ContentWrapper extends React.Component {
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
                                         <Link to={'web_dev/StoppingPower'}>
-                                            <NavLink>
                                                 Plot
-                                            </NavLink>
                                         </Link>
                                     </NavItem>
                                     <NavItem>
                                         <Link to={'web_dev/Calculator'}>
-                                            <NavLink>
                                                 Data
-                                            </NavLink>
                                         </Link>
                                     </NavItem>
                                 </Nav>

@@ -8,6 +8,9 @@ import CalculatorOutput from './CalculatorOutput'
 import withLibdedxEntities from '../../WithLibdedxEntities'
 import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
 
+import withError from '../../Error/WithError'
+import {NonNumericError, ValueNotSupportedError} from '../../Error/Errors'
+
 const InputUnits = {
     MeVperNucleon: 'MeV/nucl',
     //        Mev: 'Mev',
@@ -18,9 +21,33 @@ const OperationMode = {
     Performance: 1,
 }
 
+const baseState = {
+    inputUnit: InputUnits.MeVPerNucleum,
+    result: {},
+    operationMode: OperationMode.Dynamic,
+    separator: '\n',
+    isRangeDensityBased: 0
+}
+
+// Some values can't be processed by libdedx (non-numeric input)
+// Some other values cause errors but are part of proper input (e.g. 0)
+function toNumericInput(inputArray, separator){
+    return inputArray
+        .split(separator)
+        .map(input => Number(input))
+}
+
+function transformInputs(inputArray, separator){
+    const numericInputs = toNumericInput(inputArray, separator)
+    if(numericInputs.some(ni => isNaN(ni))){
+        throw new NonNumericError()
+    } else if (numericInputs.some(ni => ni < 0)){
+        throw new ValueNotSupportedError()
+    }
+    return numericInputs.filter(input => input !== 0)
+}
+
 class CalculatorComponent extends React.Component {
-
-
     constructor(props) {
         super(props)
 
@@ -32,14 +59,11 @@ class CalculatorComponent extends React.Component {
         this.onOperationModeChange = this.onOperationModeChange.bind(this)
         this.onDensityUsageChange = this.onDensityUsageChange.bind(this)
         this.onDownloadCSV = this.onDownloadCSV.bind(this)
+        this.normalizeInput = this.normalizeInput.bind(this)
+        this.resetInput = this.resetInput.bind(this)
+        this.resetComponent = this.resetComponent.bind(this)
 
-        this.state = {
-            inputUnit: InputUnits.MeVPerNucleum,
-            result: {},
-            operationMode: OperationMode.Dynamic,
-            separator: '\n',
-            isRangeDensityBased: 0
-        }
+        this.state = baseState
     }
 
     //#region LIFECYCLE
@@ -73,20 +97,11 @@ class CalculatorComponent extends React.Component {
     //#region HANDLERS
     async onSubmit(event) {
         event.preventDefault()
-
-        const { separator } = this.state
-        const input = event.target["calc-input"].value.split(separator).filter(el => el !== '').map(el => Number(el))
-        const result = await this.calculateResults(input)
-
-        this.setState({ result })
+        await this.calculateResults(event.target["calc-input"])
     }
 
     async onInputChange(event) {
-        const { separator } = this.state
-        const input = event.target.value.split(separator).filter(el => el !== '').map(el => Number(el))
-        const result = await this.calculateResults(input)
-
-        this.setState({ result })
+        await this.calculateResults(event.target)
     }
 
     onOperationModeChange(operationMode) {
@@ -115,18 +130,50 @@ class CalculatorComponent extends React.Component {
     }
     //#endregion HANDLERS
 
+    //#region FALLBACKS - if error happned - how to fix it
+    normalizeInput(target, normalizeFunc){
+        const separator = this.state.separator
+        const numericInputs = toNumericInput(target.value, separator)
+        target.value = numericInputs.filter(normalizeFunc).join(separator)
+        this.calculateResults(target)
+        this.props.setError(undefined)
+    }
+
+    resetInput(target){
+        target.value = ''
+        this.props.setError(undefined)
+    }
+
+    // unrecoverable error - reset whole component
+    resetComponent(){
+        this.setState(baseState)
+    }
+    //#endregion
+
     //#region HELPERS
+
     async generateDefaults() {
         const { separator } = this.state
         return (await this.wrapper.generateDefaults(this.props)).join(separator)
     }
 
-    async calculateResults(energies) {
-        const {isRangeDensityBased} = this.state
-        const result = await this.wrapper.getCalculatorData(this.props, energies, isRangeDensityBased)
-        return result
+    async calculateResults(target) {
+        let result = {}
+        try {
+            const energies = transformInputs(target.value, this.state.separator)
+            result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
+        } catch (error) {
+            const setError =  this.props.setError
+            if(error instanceof NonNumericError){
+                setError({ error, fallbackStrategy: ()=>this.normalizeInput(target, v => !isNaN(v))})
+            } else if (error instanceof ValueNotSupportedError){
+                setError({ error, fallbackStrategy: ()=>this.normalizeInput(target, v => v > 0)})
+            }
+            else setError({ error, fallbackStrategy: ()=>this.resetInput(target)})
+            result = {}
+        }
+        this.setState({ result })
     }
-
     //#endregion HELPERS
 
     render() {
@@ -178,4 +225,4 @@ const defaults = {
     ionId: 1, // currently proton (HYDROGEN)  https://github.com/APTG/libdedx/blob/v1.2.1/libdedx/dedx_program_const.h#L244
 }
 
-export default withLibdedxEntities(CalculatorComponent, defaults);
+export default withError(withLibdedxEntities(CalculatorComponent, defaults));

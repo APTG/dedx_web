@@ -37,7 +37,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     background: #eee;
 }
 
-.particle-input .button {
+.button {
     justify-content: center;
     width: 100%;
     height: 55px;
@@ -50,7 +50,7 @@ input::-webkit-outer-spin-button, input::-webkit-inner-spin-button {
     transition: 0.2s background, 0.2s color ease-in-out;
 }
 
-.particle-input .button:hover {
+.button:hover {
     color: #fff;
     background: #666;
 }
