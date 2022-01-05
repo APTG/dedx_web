@@ -33,12 +33,13 @@ class ContentWrapper extends React.Component {
         });
     }
 
-    // shouldComponentUpdate() {
-    //     return !this.props.JSROOT;
-    // }
+    shouldComponentUpdate(_, oldState) {
+        return !this.props.JSROOT || this.state.isOpen != oldState.isOpen;
+    }
 
     render() {
         const ready = this.props.JSROOT ? true : false
+        const {isOpen} = this.state
         return (
             <Router>
                 <div style={{ minHeight: "calc(100vh - 5em)" }}>
@@ -50,10 +51,10 @@ class ContentWrapper extends React.Component {
                                 </NavbarBrand>
                             </Link>
                             <NavbarToggler onClick={this.toggle} />
-                            <Collapse isOpen={this.state.isOpen} navbar >
+                            <Collapse isOpen={isOpen} navbar>
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
-                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`}>
+                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/Plot`}>
                                                 Plot
                                         </Link>
                                     </NavItem>
@@ -68,12 +69,12 @@ class ContentWrapper extends React.Component {
 
                     </div>
 
-                    <div className='overlay-wrapper'>
+                    <div className='overlay-wrapper' style={{marginTop: isOpen ? "1.5rem":"0rem"}}>
                         <div className='content-wrapper'>
                             <Routes>
-                                <Route path={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} element={<PlotComponent ready={ready} />} />
+                                <Route path={`${process.env.REACT_APP_HOST_ENV}/Plot`} element={<PlotComponent ready={ready} />} />
                                 <Route path={`${process.env.REACT_APP_HOST_ENV}/Calculator`} element={<CalculatorComponent ready={ready} />} />
-                                <Route path="*" element={<Navigate to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} />} />
+                                <Route path="*" element={<Navigate to={`${process.env.REACT_APP_HOST_ENV}/Calculator`} />} />
                             </Routes>
                         </div>
                     </div>
