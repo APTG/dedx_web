@@ -1,4 +1,6 @@
 PROJECT_NAME=weblibdedx
+PROPER_PATH="\`\${process.env.PUBLIC_URL}\/$PROJECT_NAME.wasm\`"
+BROKEN_PATH="wasmBinaryFile = \'weblibdedx.wasm\'"
 JS=./src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
 
@@ -56,6 +58,7 @@ cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
+sed -i "s/$BROKEN_PATH/$PROPER_PATH/" ${JS}
 sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
 
 #cleanup
