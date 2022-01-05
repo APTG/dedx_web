@@ -14,18 +14,31 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
 
 class ContentWrapper extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.toggle = this.toggle.bind(this);
+        this.state = {
+            isOpen: false
+        };
+    }
 
     static propTypes = {
         JSROOT: PropTypes.object
     }
 
-    shouldComponentUpdate() {
-        return !this.props.JSROOT;
+    toggle() {
+        this.setState({
+            isOpen: !this.state.isOpen
+        });
     }
+
+    // shouldComponentUpdate() {
+    //     return !this.props.JSROOT;
+    // }
 
     render() {
         const ready = this.props.JSROOT ? true : false
-
         return (
             <Router>
                 <div style={{ minHeight: "calc(100vh - 5em)" }}>
@@ -36,8 +49,8 @@ class ContentWrapper extends React.Component {
                                     <h1 style={{margin: 0}} className="h2">dEdx web</h1>
                                 </NavbarBrand>
                             </Link>
-                            <NavbarToggler onClick={function noRefCheck() { }} />
-                            <Collapse navbar>
+                            <NavbarToggler onClick={this.toggle} />
+                            <Collapse isOpen={this.state.isOpen} navbar >
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
                                         <Link to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`}>
