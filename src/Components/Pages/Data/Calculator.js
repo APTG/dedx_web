@@ -184,7 +184,7 @@ class CalculatorComponent extends React.Component {
 
         return (
             <div className='gridish row-flex flex-large gap2' >
-                <div className='particle-input'>
+                <div className='particle-input' style={{padding: 0}}>
                     <h2>Data Calculator</h2>
                     <CalculatorSettings
                         onChanges={onChanges}

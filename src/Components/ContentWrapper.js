@@ -14,18 +14,32 @@ import 'bootstrap/dist/css/bootstrap.min.css';
 const JSRootLink = 'https://root.cern.ch/js/latest/scripts/JSRoot.core.js';
 
 class ContentWrapper extends React.Component {
+    constructor(props) {
+        super(props);
+
+        this.toggle = this.toggle.bind(this);
+        this.state = {
+            isOpen: false
+        };
+    }
 
     static propTypes = {
         JSROOT: PropTypes.object
     }
 
-    shouldComponentUpdate() {
-        return !this.props.JSROOT;
+    toggle() {
+        this.setState({
+            isOpen: !this.state.isOpen
+        });
+    }
+
+    shouldComponentUpdate(_, oldState) {
+        return !this.props.JSROOT || this.state.isOpen != oldState.isOpen;
     }
 
     render() {
         const ready = this.props.JSROOT ? true : false
-
+        const {isOpen} = this.state
         return (
             <Router>
                 <div style={{ minHeight: "calc(100vh - 5em)" }}>
@@ -36,11 +50,11 @@ class ContentWrapper extends React.Component {
                                     <h1 style={{margin: 0}} className="h2">dEdx web</h1>
                                 </NavbarBrand>
                             </Link>
-                            <NavbarToggler onClick={function noRefCheck() { }} />
-                            <Collapse navbar>
+                            <NavbarToggler onClick={this.toggle} />
+                            <Collapse isOpen={isOpen} navbar>
                                 <Nav className="me-auto" navbar>
                                     <NavItem>
-                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`}>
+                                        <Link to={`${process.env.REACT_APP_HOST_ENV}/Plot`}>
                                                 Plot
                                         </Link>
                                     </NavItem>
@@ -55,12 +69,12 @@ class ContentWrapper extends React.Component {
 
                     </div>
 
-                    <div className='overlay-wrapper'>
+                    <div className='overlay-wrapper' style={{marginTop: isOpen ? "1.5rem":"0rem"}}>
                         <div className='content-wrapper'>
                             <Routes>
-                                <Route path={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} element={<PlotComponent ready={ready} />} />
+                                <Route path={`${process.env.REACT_APP_HOST_ENV}/Plot`} element={<PlotComponent ready={ready} />} />
                                 <Route path={`${process.env.REACT_APP_HOST_ENV}/Calculator`} element={<CalculatorComponent ready={ready} />} />
-                                <Route path="*" element={<Navigate to={`${process.env.REACT_APP_HOST_ENV}/StoppingPower`} />} />
+                                <Route path="*" element={<Navigate to={`${process.env.REACT_APP_HOST_ENV}/Calculator`} />} />
                             </Routes>
                         </div>
                     </div>

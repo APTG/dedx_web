@@ -52,6 +52,7 @@
 
 .overlay-wrapper {
   padding-bottom: 1em;
+  transition: 0.5s;
 }
 
 .content-wrapper {
