@@ -1,4 +1,7 @@
 PROJECT_NAME=weblibdedx
+# Fixed path doesn't try to read the process.env.PUBLIC_URL variable
+# It places the whole literal "${process.env.PUBLIC_URL}" inside the .js code 
+# to later be interpreted in react build process
 FIXED_PATH="\${process.env.PUBLIC_URL}\/$PROJECT_NAME.wasm"
 JS=./src/Backend/$PROJECT_NAME.js
 WASM_LOOKUP="wasmBinaryFile = locateFile"
