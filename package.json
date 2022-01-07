@@ -15,7 +15,7 @@
     "react-scripts": "5.0.0",
     "react-table": "^7.7.0",
     "reactstrap": "^9.0.1",
-    "web-vitals": "^2.1.2"
+    "web-vitals": "^2.1.3"
   },
   "scripts": {
     "identify": "node ./src/deploy.js ./src/Components/Footer/deploy.json",
