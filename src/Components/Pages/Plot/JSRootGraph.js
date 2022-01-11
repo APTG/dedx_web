@@ -78,7 +78,7 @@ export default class JSRootGraph extends React.Component {
 
     shouldComponentUpdate(nextProps) {
         //prevent update when changing stopping power units. 
-        //Since the stps need to be recalculated there wi   ll be another update very soon anyways
+        //Since the stps need to be recalculated there will be another update very soon anyways
         return nextProps.previewSeries !== this.props.previewSeries 
             || nextProps.dataSeries.length !== this.props.dataSeries.length
             || nextProps.visibilityFlag !== this.props.visibilityFlag
