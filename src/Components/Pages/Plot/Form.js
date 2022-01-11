@@ -49,7 +49,7 @@ function Form(props) {
                     elementDisplayFunc={renderElementName}
                 />
                 <div className='gridish row-flex flex-medium gap1'>
-                    <button className="button" type="submit">Plot</button>
+                    <button className="button" type="submit">Save</button>
                     <input type="button" className="button" onClick={onClear} value={"Clear"} />
                     <input type="button" className="button" onClick={onDownloadCSV} value={"Download CSV data"} />
                 </div>
