@@ -73,6 +73,8 @@ class PlotComponent extends React.Component {
                 previewSeries = { data, metadata }
             }
             this.setState({
+                seriesNumber: program !== prevProps.program ? startingSeriesNumber : this.state.seriesNumber,
+                dataSeries: program !== prevProps.program ? [] : this.state.dataSeries,
                 energies,
                 previewSeries,
                 name: `${ion.name} on ${material.name} (${program.name})`
@@ -143,7 +145,6 @@ class PlotComponent extends React.Component {
 
     clearDataSeries() {
         this.setState({
-            energies: [],
             dataSeries: [],
             seriesNumber: startingSeriesNumber
         })
