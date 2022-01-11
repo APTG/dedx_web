@@ -13,6 +13,7 @@ function createTGraphFromDataSeries(energies, dataSeries) {
     tgraph.fLineColor = dataSeries.seriesNumber + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
+    tgraph.fTitle = ''
     //tgraph.fMarkerStyle = 8
     // line below the comment sets kNotEditable bit (no 18) which disables graph dragging
     // kNotEditable is defined in TGraph class in ROOT project: https://github.com/root-project/root/blob/v6-25-01/hist/hist/inc/TGraph.h#L72
@@ -21,9 +22,9 @@ function createTGraphFromDataSeries(energies, dataSeries) {
     return tgraph
 }
 
-function createMultigraphFromDataSeries(energies, dataSeries, stpUnit) {
-    const filtered = dataSeries
-        .filter(dataSeries => dataSeries.isShown)
+function createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stpUnit) {
+    const filtered = [previewSeries, ...dataSeries]
+        .filter(dataSeries => dataSeries && dataSeries.isShown)
         .map((ds, k) => createTGraphFromDataSeries(energies, ds, k))
 
     const res = filtered.length !== 0
@@ -42,6 +43,7 @@ function createMultigraphFromDataSeries(energies, dataSeries, stpUnit) {
         hist.fYaxis.fTitle = `${stpType} [${stpUnit.name}]`
         hist.fYaxis.fXmin = 1e-4
         hist.fYaxis.fXmax = 1e+2
+        hist.fTitle = ''
         
         //centering axes labels
         hist.fXaxis.InvertBit(JSROOT.BIT(12))
@@ -76,16 +78,18 @@ export default class JSRootGraph extends React.Component {
 
     shouldComponentUpdate(nextProps) {
         //prevent update when changing stopping power units. 
-        //Since the stps need to be recalculated there will be another update very soon anyways
-        return !(nextProps.stoppingPowerUnit.id !== this.props.stoppingPowerUnit.id)
+        //Since the stps need to be recalculated there wi   ll be another update very soon anyways
+        return nextProps.previewSeries !== this.props.previewSeries 
+            || nextProps.dataSeries.length !== this.props.dataSeries.length
+            || nextProps.visibilityFlag !== this.props.visibilityFlag
     }
 
-    componentDidUpdate(prevProps) {
-        const { stoppingPowerUnit } = this.props
+    componentDidUpdate() {
+        const { stoppingPowerUnit, energies, dataSeries, previewSeries } = this.props
         JSROOT.cleanup(this.graphRef.current)
 
         const opts = drawOptFromProps(this.props);
-        const toDraw = createMultigraphFromDataSeries(this.props.energies, this.props.dataSeries, stoppingPowerUnit);
+        const toDraw = createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stoppingPowerUnit);
 
         JSROOT.redraw(this.graphRef.current, toDraw, opts)
 
@@ -97,9 +101,9 @@ export default class JSRootGraph extends React.Component {
 
     componentDidMount() {
         window.addEventListener('resize', this.refreshGraph.bind(this))
-        const { energies, dataSeries, stoppingPowerUnit } = this.props
+        const { energies, dataSeries, stoppingPowerUnit, previewSeries } = this.props
 
-        const toDraw = createMultigraphFromDataSeries(energies, dataSeries, stoppingPowerUnit)
+        const toDraw = createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stoppingPowerUnit)
         JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
     }
 
