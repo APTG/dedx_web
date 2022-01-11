@@ -2,11 +2,7 @@ import React from 'react';
 
 import '../../../Styles/Form.css'
 import { getInvisibleStyle } from '../../ResultTable/TableUtils';
-import Dropdown from '../../Utils/Dropdown';
-
-function dropdownRenderFunction(name) {
-    return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
-}
+import Dropdown, {renderElementName, renderElementNameAndId} from '../../Utils/Dropdown';
 
 function Form(props) {
     const {
@@ -19,7 +15,6 @@ function Form(props) {
 
     return (
         <form onSubmit={onSubmit} data-testid="form-1" className="column-flex" style={{width:'30%'}}>
-            <h2>Plotting calculator</h2>
             <div className="gridish flex-small column-flex particle-input">
                 <label className="input-wrapper">
                     Name
@@ -31,28 +26,28 @@ function Form(props) {
                     name="Program"
                     data={programs}
                     onChange={onProgramChange}
-                    elementDisplayFunc={dropdownRenderFunction}
+                    elementDisplayFunc={renderElementName}
                 />
                 <Dropdown
                     value={ion.id}
                     name="Ion"
                     data={ions}
                     onChange={onIonChange}
-                    elementDisplayFunc={dropdownRenderFunction}
+                    elementDisplayFunc={renderElementNameAndId}
                 />
                 <Dropdown
                     value={material.id}
                     name="Material"
                     data={materials}
                     onChange={onMaterialChange}
-                    elementDisplayFunc={dropdownRenderFunction}
+                    elementDisplayFunc={renderElementNameAndId}
                 />
                 <Dropdown
                     value={stoppingPowerUnit.id}
-                    name={'Stopping power unit'}
+                    name={'STP unit'}
                     data={stoppingPowerUnits}
                     onChange={onStoppingPowerUnitChange}
-                    elementDisplayFunc={dropdownRenderFunction}
+                    elementDisplayFunc={renderElementName}
                 />
                 <div className='gridish row-flex flex-medium gap1'>
                     <button className="button" type="submit">Plot</button>

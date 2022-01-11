@@ -55,7 +55,7 @@ class PlotComponent extends React.Component {
             || material !== prevProps.material
         ) {
             this.setState({
-                name: `${ion.name}/${material.name}@${program.name}`
+                name: `${ion.name} on ${material.name} (${program.name})`
             })
         } else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
             const {dataSeries} = this.state

@@ -1,4 +1,5 @@
 import React, { createRef } from "react";
+import { StoppingPowerUnits } from "../../../Backend/Utils";
 
 let JSROOT
 //#region Helper functions
@@ -37,7 +38,8 @@ function createMultigraphFromDataSeries(energies, dataSeries, stpUnit) {
         hist.fXaxis.fTitle = 'Energy [MeV/nucl]'
         hist.fXaxis.fXmin = 1e-3
         hist.fXaxis.fXmax = 1e+4
-        hist.fYaxis.fTitle = `Stopping power [${stpUnit.name}]`
+        const stpType = stpUnit.id === StoppingPowerUnits.MassStoppingPower.id ? 'Mass Stopping Power' : 'Stopping power'
+        hist.fYaxis.fTitle = `${stpType} [${stpUnit.name}]`
         hist.fYaxis.fXmin = 1e-4
         hist.fYaxis.fXmax = 1e+2
         

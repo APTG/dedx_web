@@ -46,9 +46,8 @@ class ContentWrapper extends React.Component {
                     <div>
                         <Navbar style={{ height: '3.5em' }} color="light" expand="md" light>
                             <Link style={{height:'3em'}} to={''}>
-                                <NavbarBrand>
-                                    <h1 style={{margin: 0}} className="h2">dEdx web</h1>
-                                </NavbarBrand>
+                                    <img id='logo' src={'/webdEdx_logo.svg'} alt='logo' />
+                                {/* <h1 style={{margin: 0}} className="h2">dEdx web</h1> */}
                             </Link>
                             <NavbarToggler onClick={this.toggle} />
                             <Collapse isOpen={isOpen} navbar>

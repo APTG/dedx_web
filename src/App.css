@@ -27,7 +27,7 @@
 }
 
 .flex-medium > * {
-  flex: 1 1 15rem;
+  flex: 1 1 17rem;
 }
 
 .flex-large > * {
@@ -64,4 +64,9 @@ a{
   text-decoration: none !important;
   padding: 0 2rem 0 0;
   color: #333 !important
+}
+
+#logo{
+  height: 90%;
+  margin: 3px 0
 }

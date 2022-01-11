@@ -70,7 +70,7 @@ export default class WASMWrapper {
 
         wasm._free(ionPtr)
 
-        return this.getNames(result, 'dedx_get_ion_name', wasm)
+        return this.getNames(result, 'dedx_get_ion_name', wasm, true)
     }
 
     /**
@@ -90,7 +90,7 @@ export default class WASMWrapper {
 
         wasm._free(matPtr)
 
-        return this.getNames(result, 'dedx_get_material_name', wasm)
+        return this.getNames(result, 'dedx_get_material_name', wasm, true)
     }
 
     /**
@@ -279,12 +279,13 @@ export default class WASMWrapper {
     }
 
     //#region INTERNAL
-    getNames(values, func, wasm) {
+    getNames(values, func, wasm, decapitalize) {
         const getName = wasm.cwrap(func, 'number', ['number'])
-        return values.map(val => {
+        return values.map(id => {
+            const name = wasm.UTF8ToString(getName(id))
             return {
-                id: val,
-                name: wasm.UTF8ToString(getName(val))
+                id,
+                name: decapitalize ? this.decapitalize(name) : name
             }
         })
     }
@@ -370,6 +371,10 @@ export default class WASMWrapper {
         if (err !== 0) throw err
 
         return resultcsdaRanges
+    }
+
+    decapitalize(name){
+        return name.charAt(0) + name.slice(1).toLocaleLowerCase()
     }
 
     _allocateI32(wasm, size) {
