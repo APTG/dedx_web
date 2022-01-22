@@ -137,7 +137,7 @@ export default class WASMWrapper {
         if(stoppingPowerUnit.id !== StoppingPowerUnits.MassStoppingPower.id)
             stoppingPowers = await this.recalcualteStoppingPowers(StoppingPowerUnits.MassStoppingPower, stoppingPowerUnit, material, stoppingPowers)
         let csdaRanges = this.getcsdaRangesForEnergies(ids, energies, wasm)
-        console.log(energies)
+
         if(!isNewRangeDensityBased){
             csdaRanges = await this.recalcualteCSDARangeForDensity(material, csdaRanges, isNewRangeDensityBased)
         }

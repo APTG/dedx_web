@@ -1,5 +1,5 @@
 import { uuidv4 } from '../../Backend/Utils'
-import configureMeasurements, { allMeasures, energy } from 'convert-units';
+import configureMeasurements, { allMeasures } from 'convert-units';
 
 export function transformDataSeriesToTableData(ds) {
     return ds.map(ds => {
@@ -75,11 +75,10 @@ function transpose(valueArray) {
     return newArray
 }
 
-export function getCSVForSingleProgram(values, energies, filename='dedx_data.csv'){
-    const valueArray = Array.from(Object.values(values))
-    const datas = transpose(valueArray.map(ob => ob.data))
+export function getCSVForSingleProgram(energies, values, filename='dedx_data.csv'){
+    const datas = transpose(values.map(ob => ob.data))
     const csvContent = 'data:text/csv;charset=utf-8'
-        + ',energies,' + valueArray.map(ob => ob.name).join(',') + '\n'
+        + ',energies,' + values.map(ob => ob.name).join(',') + '\n'
         + energies.map((value, key) => {
             return value + ',' + (datas[key].join(','))
         }).join('\n')
@@ -89,7 +88,6 @@ export function getCSVForSingleProgram(values, energies, filename='dedx_data.csv
     link.setAttribute('href', encodedUri)
     link.setAttribute('download', filename)
     document.body.appendChild(link); // Required for FireFox
-
     link.click();
 }
 
@@ -97,7 +95,7 @@ export function getCSVForSingleProgram(values, energies, filename='dedx_data.csv
 export function getCSV(values) {
     values.forEach(v => {
         const {energies, values} = v
-        getCSVForSingleProgram(energies, values, `dedx_data(${values.name}).csv`)
+        getCSVForSingleProgram(energies, [values], `dedx_data(${values.name}).csv`)
     })
 }
 

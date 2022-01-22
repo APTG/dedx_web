@@ -113,7 +113,7 @@ class CalculatorComponent extends React.Component {
         const { energies } = result
         const { stoppingPowerUnit } = this.props
 
-        getCSVForSingleProgram(transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased), energies)
+        getCSVForSingleProgram(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased), 'dedx_calculator_data.csv')
     }
 
     onChanges = {
