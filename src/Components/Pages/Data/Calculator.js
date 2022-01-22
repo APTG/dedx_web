@@ -6,7 +6,7 @@ import CalculatorInput from './CalculatorInput'
 import CalculatorOutput from './CalculatorOutput'
 
 import withLibdedxEntities from '../../WithLibdedxEntities'
-import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
+import { getCSVForSingleProgram, transformResultToTableData } from '../../ResultTable/TableUtils'
 
 import withError from '../../Error/WithError'
 import {NonNumericError, ValueNotSupportedError} from '../../Error/Errors'
@@ -113,7 +113,7 @@ class CalculatorComponent extends React.Component {
         const { energies } = result
         const { stoppingPowerUnit } = this.props
 
-        getCSV(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased))
+        getCSVForSingleProgram(transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased), energies)
     }
 
     onChanges = {

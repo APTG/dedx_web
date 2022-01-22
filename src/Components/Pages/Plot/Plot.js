@@ -4,7 +4,6 @@ import DataSeriesList from './DataSeriesList'
 import React from "react";
 import GraphSetting from './GraphSettings';
 import WASMWrapper from "../../../Backend/WASMWrapper";
-import ResultTable from "../../ResultTable/ResultTable";
 
 import { getCSV, transformDataSeriesToTableData } from "../../ResultTable/TableUtils";
 import withLibdedxEntities from '../../WithLibdedxEntities'
@@ -32,7 +31,6 @@ class PlotComponent extends React.Component {
         this.wrapper = props.wrapper || new WASMWrapper()
 
         this.state = {
-            energies: [],
             dataSeries: [],
             xAxis: AxisLayout.Logarithmic,
             yAxis: AxisLayout.Logarithmic,
@@ -59,7 +57,6 @@ class PlotComponent extends React.Component {
             || material !== prevProps.material
         ) {
             let previewSeries = {}
-            let energies = []
             if (program && ion && material && stoppingPowerUnit) {
                 const metadata = { program, ion, material, pointQuantity }
                 const data = Object.assign({
@@ -68,14 +65,9 @@ class PlotComponent extends React.Component {
                     name: `${ion.name} on ${material.name} (${program.name})`,
                     seriesNumber: 0
                 }, await this.wrapper.getStpPlotData(metadata, this.state.xAxis === AxisLayout.Logarithmic, stoppingPowerUnit))
-                energies = data.energies
-                data.energies = undefined
                 previewSeries = { data, metadata }
             }
             this.setState({
-                seriesNumber: program !== prevProps.program ? startingSeriesNumber : this.state.seriesNumber,
-                dataSeries: program !== prevProps.program ? [] : this.state.dataSeries,
-                energies,
                 previewSeries,
                 name: `${ion.name} on ${material.name} (${program.name})`
             })
@@ -151,18 +143,16 @@ class PlotComponent extends React.Component {
     }
 
     async onXAxisChange(xAxis) {
-        let _energies = []
         const dataSeries = await Promise.all(this.state.dataSeries.map(async ({ data, metadata }) => {
-            const { energies, stoppingPowers } = await this.wrapper.getStpPlotData(metadata, xAxis === AxisLayout.Logarithmic, this.props.stoppingPowerUnit)
+            const result = await this.wrapper.getStpPlotData(metadata, xAxis === AxisLayout.Logarithmic, this.props.stoppingPowerUnit)
             const newData = {
                 ...data,
-                stoppingPowers
+                ...result
             }
-            if (_energies.length === 0) _energies = energies
             return { data: newData, metadata }
 
         }))
-        this.setState({ xAxis, dataSeries, energies: _energies })
+        this.setState({ xAxis, dataSeries})
     }
 
     onSettingsChange = {
@@ -193,14 +183,14 @@ class PlotComponent extends React.Component {
     }
 
     onDownloadCSV() {
-        const { energies, dataSeries } = this.state
+        const { dataSeries } = this.state
 
         if (dataSeries.length !== 0) {
             const transformed = transformDataSeriesToTableData(dataSeries)
-            getCSV(energies, transformed)
+            getCSV(transformed)
         } else {
             const transformed = transformDataSeriesToTableData([this.state.previewSeries])
-            getCSV(energies, transformed)
+            getCSV(transformed)
         }
 
     }
@@ -208,7 +198,7 @@ class PlotComponent extends React.Component {
     //#endregion HANDLERS
 
     render() {
-        const { dataSeries, xAxis, yAxis, gridlines, energies, name, previewSeries, visibilityFlag } = this.state
+        const { dataSeries, xAxis, yAxis, gridlines, name, previewSeries, visibilityFlag } = this.state
         const { submitHandler, clearDataSeries, onNameChange, onDataSeriesStateChange, onDownloadCSV } = this
         const { stoppingPowerUnit } = this.props
 
@@ -226,9 +216,8 @@ class PlotComponent extends React.Component {
                     <GraphSetting startValues={{ xAxis, yAxis, gridlines }} onChange={this.onSettingsChange} />
                     {
                         this.props.ready
-                            ? <div>
+                            ? <>
                                 <JSRootGraph
-                                    energies={energies}
                                     dataSeries={dataSeries.map(ds => ds.data)}
                                     stoppingPowerUnit={stoppingPowerUnit}
                                     xAxis={xAxis}
@@ -242,17 +231,17 @@ class PlotComponent extends React.Component {
                                     dataSeries={dataSeries.map(ds => ds.data)}
                                     onDataSeriesStateChange={onDataSeriesStateChange}
                                 />
-                            </div>
+                            </>
                             : <h2>JSROOT still loading</h2>
                     }
                 </div>
-                {dataSeries.length !== 0
+                {/* {dataSeries.length !== 0
                     && <ResultTable
                         energies={energies}
                         values={transformDataSeriesToTableData(dataSeries)}
                         stoppingPowerUnit={stoppingPowerUnit.name}
                         shouldDisplay={dataSeries?.length !== 0}
-                    />}
+                    />} */}
             </div>
         )
     }

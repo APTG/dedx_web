@@ -1,16 +1,55 @@
-import React, { createRef } from "react";
-import { StoppingPowerUnits } from "../../../Backend/Utils";
+import React, { createRef } from 'react';
+import { StoppingPowerUnits } from '../../../Backend/Utils';
 
-let JSROOT
-//#region Helper functions
+function power10Max(values) {
+    return Math.pow(10, Math.ceil(Math.log10(Math.max(...values))))
+}
 
-function createTGraphFromDataSeries(energies, dataSeries) {
+function power10Min(values) {
+    return Math.pow(10, Math.floor(Math.log10(Math.min(...values))))
+}
+
+function checkBoundaries(dataSeries) {
+    if(dataSeries.length < 1) return {
+        minEnergy: 0,
+        maxEnergy: 10,
+        minValue: 0,
+        maxValue: 10,
+    }
+    // We're not handling such big energies so it's safe to assume everything will be smaller than 1e+10
+    const boundaries = {
+        minEnergy: 1e+10,
+        maxEnergy: 0,
+        minValue: 1e+10,
+        maxValue: 0,
+    }
+
+    dataSeries.forEach(ds => {
+        const newMinEnergy = power10Min(ds.energies.map(v=>Number(v)))
+        const newMaxEnergy = power10Max(ds.energies.map(v=>Number(v)))
+        const newMinValue = power10Min(ds.stoppingPowers.map(v=>Number(v)))
+        const newMaxValue = power10Max(ds.stoppingPowers.map(v=>Number(v)))
+
+        const { minEnergy, maxEnergy, minValue, maxValue } = boundaries
+
+
+        if (newMinEnergy < minEnergy) boundaries.minEnergy = newMinEnergy
+        if (newMaxEnergy > maxEnergy) boundaries.maxEnergy = newMaxEnergy
+        if (newMinValue < minValue) boundaries.minValue = newMinValue
+        if (newMaxValue > maxValue) boundaries.maxValue = newMaxValue
+    })
+
+    return boundaries
+}
+
+function createTGraphFromDataSeries(dataSeries) {
+    const { energies, stoppingPowers, seriesNumber } = dataSeries
     const tgraph = JSROOT.createTGraph(
         energies.length,
         energies,
-        dataSeries.stoppingPowers
+        stoppingPowers
     )
-    tgraph.fLineColor = dataSeries.seriesNumber + 1
+    tgraph.fLineColor = seriesNumber + 1
     tgraph.fLineWidth = 2
     tgraph.fMarkerSize = 1
     tgraph.fTitle = ''
@@ -22,48 +61,53 @@ function createTGraphFromDataSeries(energies, dataSeries) {
     return tgraph
 }
 
-function createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stpUnit) {
+function createMultigraphFromDataSeries(previewSeries, dataSeries, stpUnit) {
     const filtered = [previewSeries, ...dataSeries]
         .filter(dataSeries => dataSeries && dataSeries.isShown)
-        .map((ds, k) => createTGraphFromDataSeries(energies, ds, k))
+        
 
     const res = filtered.length !== 0
-        ? JSROOT.createTMultiGraph(...filtered)
+        ? JSROOT.createTMultiGraph(...(filtered.map((ds, k) => createTGraphFromDataSeries(ds, k))))
         : JSROOT.createTGraph(1)
 
     if (res) {
+
+        const { minEnergy, maxEnergy, minValue, maxValue } = checkBoundaries(filtered)
+
         res.fTitle = ''
         // inspired by https://github.com/root-project/jsroot/blob/6.3.2/demo/multigraph_legend.htm#L53
         // method described in https://github.com/root-project/jsroot/issues/225
         const hist = JSROOT.createHistogram("TH1F", 20)
         hist.fXaxis.fTitle = 'Energy [MeV/nucl]'
-        hist.fXaxis.fXmin = 1e-3
-        hist.fXaxis.fXmax = 1e+4
+        hist.fXaxis.fXmin = minEnergy
+        hist.fXaxis.fXmax = maxEnergy
         const stpType = stpUnit.id === StoppingPowerUnits.MassStoppingPower.id ? 'Mass Stopping Power' : 'Stopping power'
         hist.fYaxis.fTitle = `${stpType} [${stpUnit.name}]`
-        hist.fYaxis.fXmin = 1e-4
-        hist.fYaxis.fXmax = 1e+2
         hist.fTitle = ''
-        
+
         //centering axes labels
         hist.fXaxis.InvertBit(JSROOT.BIT(12))
         hist.fYaxis.InvertBit(JSROOT.BIT(12))
+
+        hist.fMinimum = minValue
+        hist.fMaximum = maxValue
+
         res.fHistogram = hist
     }
     return res
 }
 
+let JSROOT
+
 function drawOptFromProps({ xAxis, yAxis, plotStyle, gridlines }) {
     const res = [];
-    if (xAxis === 1) res.push("logx");
-    if (yAxis === 1) res.push("logy");
-    if (plotStyle === 1) res.push("P");
-    if (gridlines === 1) res.push("gridx;gridy");
+    if (xAxis === 1) res.push('logx');
+    if (yAxis === 1) res.push('logy');
+    if (plotStyle === 1) res.push('P');
+    if (gridlines === 1) res.push('gridx;gridy');
 
     return res.join(';') + ';tickx;ticky';
 }
-
-//#endregion Helper functions
 
 // COMPONENT
 
@@ -76,41 +120,48 @@ export default class JSRootGraph extends React.Component {
         JSROOT = window.JSROOT;
     }
 
+    //#region LIFECYCLE
     shouldComponentUpdate(nextProps) {
+        // Shows which fields from props have changed. Important for debugging
+        /* Object.keys(nextProps).forEach(k=>{
+            if(nextProps[k]!==this.props[k]) console.log(k)
+        }) */
+
         //prevent update when changing stopping power units. 
         //Since the stps need to be recalculated there will be another update very soon anyways
-        return nextProps.previewSeries !== this.props.previewSeries 
+        const monitoredFields = ['previewSeries', 'visibilityFlag', 'xAxis', 'yAxis', 'plotStyle', 'gridlines']
+        return monitoredFields.some(field => nextProps[field] !== this.props[field])
             || nextProps.dataSeries.length !== this.props.dataSeries.length
-            || nextProps.visibilityFlag !== this.props.visibilityFlag
     }
 
     componentDidUpdate() {
-        const { stoppingPowerUnit, energies, dataSeries, previewSeries } = this.props
+        const { stoppingPowerUnit, dataSeries, previewSeries } = this.props
         JSROOT.cleanup(this.graphRef.current)
 
         const opts = drawOptFromProps(this.props);
-        const toDraw = createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stoppingPowerUnit);
+        const toDraw = createMultigraphFromDataSeries(previewSeries, dataSeries, stoppingPowerUnit);
 
         JSROOT.redraw(this.graphRef.current, toDraw, opts)
-
     }
+
+    componentDidMount() {
+        window.addEventListener('resize', this.refreshGraph.bind(this))
+        const { dataSeries, stoppingPowerUnit, previewSeries } = this.props
+
+        const toDraw = createMultigraphFromDataSeries(previewSeries, dataSeries, stoppingPowerUnit)
+        JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
+    }
+
+    //#endregion LIFECYCLE
 
     refreshGraph() {
         JSROOT.resize(this.graphRef.current)
     }
 
-    componentDidMount() {
-        window.addEventListener('resize', this.refreshGraph.bind(this))
-        const { energies, dataSeries, stoppingPowerUnit, previewSeries } = this.props
-
-        const toDraw = createMultigraphFromDataSeries(energies, previewSeries, dataSeries, stoppingPowerUnit)
-        JSROOT.draw(this.graphRef.current, toDraw, drawOptFromProps(this.props))
-    }
-
     render() {
         return (
             <div>
-                <div style={{ width: "100%", height: '35vw', minHeight: '400px' }} ref={this.graphRef}></div>
+                <div style={{ width: '100%', height: '35em' }} ref={this.graphRef}></div>
             </div>
         )
     }
