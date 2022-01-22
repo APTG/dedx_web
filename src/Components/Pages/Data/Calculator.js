@@ -75,9 +75,13 @@ class CalculatorComponent extends React.Component {
         ) {
             const { energies } = this.state.result
             if (energies) {
-                this.setState({
-                    result: await this.calculateResults(energies)
-                })
+                try {
+                    const result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
+                    this.setState({ result })
+                } catch(error) {
+                    this.props.setError({error, fallbackStrategy:()=>this.setState(baseState)})
+                }
+        
             }
 
         } else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
@@ -90,7 +94,6 @@ class CalculatorComponent extends React.Component {
                 this.setState(newState)
             }
         }
-        else return null
     }
     //#endregion LIFECYCLE
 
@@ -182,6 +185,7 @@ class CalculatorComponent extends React.Component {
         const { result, operationMode, isRangeDensityBased } = this.state
         const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDensityUsageChange, onDownloadCSV, onChanges } = this
 
+        // console.log(result)
         return (
             <div className='gridish row-flex flex-large gap2' >
                 <div className='particle-input' style={{padding: 0}}>
