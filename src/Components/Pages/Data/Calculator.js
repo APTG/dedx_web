@@ -185,7 +185,6 @@ class CalculatorComponent extends React.Component {
         const { result, operationMode, isRangeDensityBased } = this.state
         const { onSubmit, onInputChange, generateDefaults, onOperationModeChange, onDensityUsageChange, onDownloadCSV, onChanges } = this
 
-        // console.log(result)
         return (
             <div className='gridish row-flex flex-large gap2' >
                 <div className='particle-input' style={{padding: 0}}>
