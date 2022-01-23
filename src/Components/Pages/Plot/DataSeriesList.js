@@ -19,14 +19,14 @@ const containerStyle = isShown => {
     }
 }
 
-function DataSeriesList({ dataSeries, onDataSeriesStateChange }) {
+function DataSeriesList({previewSeries, dataSeries, onDataSeriesStateChange }) {
     return (
         <div style={{display:'flex', gap:'10px', flexDirection:'column'}}>
-            {
-                dataSeries.map((dataSeries) => {
+            { previewSeries &&
+                [previewSeries, ...dataSeries].map((dataSeries, k) => {
                     return (<div style={containerStyle(dataSeries.isShown)} id={dataSeries.seriesNumber} onClick={onDataSeriesStateChange} key={`Trace_${dataSeries.seriesNumber}`}>
                         <span style={dataSeriesStyle(dataSeries.color)} />
-                        {dataSeries.name}
+                        {dataSeries.name + (k===0?' [preview]':'')}
                     </div>)
                 })
             }

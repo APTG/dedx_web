@@ -1,31 +1,23 @@
-import Dropdown from '../../Utils/Dropdown'
+import Dropdown, { renderElementName, renderElementNameAndId } from '../../Utils/Dropdown'
 
 
 import '../../../Styles/Form.css'
 
-function dropdownRenderFunction(name) {
-    return (element, key) => <option value={key} key={`${name}_${key}`}>{element}</option>
-}
 
-function elementRenderFunction(name) {
-    return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
-}
 
 function CalculatorSettings({ onChanges, stoppingPowerUnits, programs, ions, materials, stoppingPowerUnit, program, ion, material }) {
     const { onStoppingPowerUnitChange, onProgramChange, onIonChange, onMaterialChange } = onChanges
 
     return (
         <div className="particle-input">
-
-
             {/* <Dropdown name={'Input unit'} data={inputUnits} onChange={onInputUnitChange} elementDisplayFunc={dropdownRenderFunction} /> */}
-            <Dropdown value={stoppingPowerUnit.id} name={'Stopping power unit'} data={stoppingPowerUnits.map(u => u.name)} onChange={onStoppingPowerUnitChange} elementDisplayFunc={dropdownRenderFunction} />
+            <Dropdown value={stoppingPowerUnit.id} name={'STP unit'} data={stoppingPowerUnits} onChange={onStoppingPowerUnitChange}
+                elementDisplayFunc={renderElementName} />
             <Dropdown value={program.id} name="Program" data={programs} onChange={onProgramChange}
-                elementDisplayFunc={elementRenderFunction} />
-            <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={elementRenderFunction} />
+                elementDisplayFunc={renderElementName} />
+            <Dropdown value={ion.id} name="Ion" data={ions} onChange={onIonChange} elementDisplayFunc={renderElementNameAndId} />
             <Dropdown value={material.id} name="Material" data={materials} onChange={onMaterialChange}
-                elementDisplayFunc={elementRenderFunction} />
-
+                elementDisplayFunc={renderElementNameAndId} />
         </div>
     )
 }

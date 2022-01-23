@@ -2,7 +2,6 @@ import React from "react"
 
 import '../../Styles/Form.css'
 
-
 function Dropdown({ name, data, value, onChange, elementDisplayFunc }) {
     return (
         <label className="input-wrapper column-flex">
@@ -12,6 +11,14 @@ function Dropdown({ name, data, value, onChange, elementDisplayFunc }) {
             </select>
         </label>
     )
+}
+
+export function renderElementName(name) {
+    return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.name}</option>
+}
+
+export function renderElementNameAndId(name) {
+    return (element, key) => <option value={element.id} key={`${name}_${key}`}>{element.id} {element.name}</option>
 }
 
 export default Dropdown

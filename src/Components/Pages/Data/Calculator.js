@@ -6,7 +6,7 @@ import CalculatorInput from './CalculatorInput'
 import CalculatorOutput from './CalculatorOutput'
 
 import withLibdedxEntities from '../../WithLibdedxEntities'
-import { getCSV, transformResultToTableData } from '../../ResultTable/TableUtils'
+import { getCSVForSingleProgram, transformResultToTableData } from '../../ResultTable/TableUtils'
 
 import withError from '../../Error/WithError'
 import {NonNumericError, ValueNotSupportedError} from '../../Error/Errors'
@@ -75,9 +75,13 @@ class CalculatorComponent extends React.Component {
         ) {
             const { energies } = this.state.result
             if (energies) {
-                this.setState({
-                    result: await this.calculateResults(energies)
-                })
+                try {
+                    const result = await this.wrapper.getCalculatorData(this.props, energies , this.state.isRangeDensityBased)
+                    this.setState({ result })
+                } catch(error) {
+                    this.props.setError({error, fallbackStrategy:()=>this.setState(baseState)})
+                }
+        
             }
 
         } else if (stoppingPowerUnit !== prevProps.stoppingPowerUnit) {
@@ -90,7 +94,6 @@ class CalculatorComponent extends React.Component {
                 this.setState(newState)
             }
         }
-        else return null
     }
     //#endregion LIFECYCLE
 
@@ -113,7 +116,7 @@ class CalculatorComponent extends React.Component {
         const { energies } = result
         const { stoppingPowerUnit } = this.props
 
-        getCSV(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased))
+        getCSVForSingleProgram(energies, transformResultToTableData(result, stoppingPowerUnit, isRangeDensityBased), 'dedx_calculator_data.csv')
     }
 
     onChanges = {
