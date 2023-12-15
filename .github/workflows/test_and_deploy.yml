@@ -67,12 +67,12 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: wasm bin
         path: public
    
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
         name: wasm js
         path: src/Backend
@@ -109,12 +109,12 @@ jobs:
           # Private SSH key to register in the SSH agent
           ssh-private-key: ${{ secrets.WEBDEV }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wasm bin
           path: public
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
           name: wasm js
           path: src/Backend
