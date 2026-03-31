@@ -32,18 +32,18 @@ jobs:
       run: ./build_wasm.sh
 
     - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: wasm bin
+        name: wasm-bin
         path: |
           public/weblibdedx.wasm
         if-no-files-found: error
         retention-days: 5
 
     - name: 'Upload Artifact'
-      uses: actions/upload-artifact@v3
+      uses: actions/upload-artifact@v4
       with:
-        name: wasm js
+        name: wasm-js
         path: |
           src/Backend/weblibdedx.js
         if-no-files-found: error
@@ -67,14 +67,14 @@ jobs:
       with:
         node-version: ${{ matrix.node-version }}
 
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: wasm bin
+        name: wasm-bin
         path: public
    
-    - uses: actions/download-artifact@v3
+    - uses: actions/download-artifact@v4
       with:
-        name: wasm js
+        name: wasm-js
         path: src/Backend
 
     - name: Test downloaded file structure
@@ -109,14 +109,14 @@ jobs:
           # Private SSH key to register in the SSH agent
           ssh-private-key: ${{ secrets.WEBDEV }}
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: wasm bin
+          name: wasm-bin
           path: public
 
-      - uses: actions/download-artifact@v3
+      - uses: actions/download-artifact@v4
         with:
-          name: wasm js
+          name: wasm-js
           path: src/Backend
 
       - name: Deploy
