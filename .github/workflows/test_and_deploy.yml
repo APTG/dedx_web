@@ -43,9 +43,10 @@ jobs:
     - name: 'Upload Artifact'
       uses: actions/upload-artifact@v4
       with:
-        name: wasm-js
+        name: wasm-backend
         path: |
           src/Backend/weblibdedx.js
+          src/Backend/weblibdedx.wasm
         if-no-files-found: error
         retention-days: 5
 
@@ -56,8 +57,7 @@ jobs:
 
     strategy:
       matrix:
-        node-version: [12.x, 14.x, 16.x]
-        # See supported Node.js release schedule at https://nodejs.org/en/about/releases/
+        node-version: [22.x]
 
     steps:
     - uses: actions/checkout@v4
@@ -74,7 +74,7 @@ jobs:
    
     - uses: actions/download-artifact@v4
       with:
-        name: wasm-js
+        name: wasm-backend
         path: src/Backend
 
     - name: Test downloaded file structure
@@ -116,7 +116,7 @@ jobs:
 
       - uses: actions/download-artifact@v4
         with:
-          name: wasm-js
+          name: wasm-backend
           path: src/Backend
 
       - name: Deploy

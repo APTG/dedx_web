@@ -25,6 +25,7 @@ src/Components/Footer/deploy.json
 src/Backend/weblibdedx.js
 .gitignore
 public/weblibdedx.wasm
+src/Backend/weblibdedx.wasm
 .vscode/settings.json
 public/weblibdedx.data
 .env

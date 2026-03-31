@@ -1,10 +1,5 @@
 PROJECT_NAME=weblibdedx
-# Fixed path doesn't try to read the process.env.PUBLIC_URL variable
-# It places the whole literal "${process.env.PUBLIC_URL}" inside the .js code 
-# to later be interpreted in react build process
-FIXED_PATH="\${process.env.PUBLIC_URL}\/$PROJECT_NAME.wasm"
 JS=./src/Backend/$PROJECT_NAME.js
-WASM_LOOKUP="wasmBinaryFile = locateFile"
 
 cd ./libdedx
 
@@ -58,10 +53,9 @@ cd ../../..
 
 cp ./libdedx/build/libdedx/$PROJECT_NAME.js ./src/Backend
 cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./public
+cp ./libdedx/build/libdedx/$PROJECT_NAME.wasm ./src/Backend
 
 sed -i '1s;^;\/* eslint-disable *\/\n;' ${JS}
-sed -i "s/'$PROJECT_NAME.wasm'/\`$FIXED_PATH\`/g" ${JS}
-sed -i "s/$WASM_LOOKUP/\/\/$WASM_LOOKUP/" ${JS}
 
 #cleanup
 rm -r libdedx/build
