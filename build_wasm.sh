@@ -50,7 +50,7 @@ FUNCTIONS+=']'
 # but the size of our dataset isn't staggering 
 # so it doesn't cause much of a slowdown. 
 # In short it's more comfortable and reliable when using the generated file as a react module.
-emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s USE_ES6_IMPORT_META=0 -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] -s ALLOW_MEMORY_GROWTH=1 --embed-file ../../libdedx/data@data/
+emcc libdedx.a -o $PROJECT_NAME.js -s EXPORTED_FUNCTIONS="$FUNCTIONS" -s ENVIRONMENT='web' -s EXPORT_ES6=1 -s MODULARIZE=1 -s WASM=1 -s EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString"] -s ALLOW_MEMORY_GROWTH=1 --embed-file ../../libdedx/data@data/
 
 ls -al
 
