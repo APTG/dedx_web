@@ -1,12 +1,20 @@
-name: Node.js test and deploy to github pages
+name: Node.js test and deploy to github pages (DISABLED)
+
+# NOTE: This workflow is disabled. It was built for the old React/CRA app
+# and the WASM build no longer works. A new CI pipeline will be created
+# in Stage 3 of the redesign. To re-enable, restore the original triggers.
+#
+# Original triggers (disabled):
+# on:
+#   push:
+#     branches: [ master ]
+#     tags:
+#       - v*
+#   pull_request:
+#     branches: [ master ]
 
 on:
-  push:
-    branches: [ master ]
-    tags:
-      - v*
-  pull_request:
-    branches: [ master ]
+  workflow_dispatch: # manual-only trigger — effectively disabled
 
 env:
   CI: false
