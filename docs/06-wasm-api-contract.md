@@ -13,7 +13,7 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
-| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. MeV↔MeV/nucl conversion requires the ion's mass number (A), obtained from `dedx_get_ion_nucleon_number()`. Keeping this in JS avoids round-trips. |
+| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the ion's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
@@ -55,14 +55,21 @@ interface LibdedxEntity {
   name: string;
 }
 
-/** Ion entity with additional mass number for unit conversion. */
+/** Ion entity with mass data for unit conversion. */
 interface IonEntity extends LibdedxEntity {
   /**
-   * Mass number (A) — number of nucleons.
+   * Mass number (A) — integer number of nucleons.
    * Obtained from dedx_get_ion_nucleon_number() at init time.
    * Needed for MeV ↔ MeV/nucl conversion: E_per_nucl = E_total / A.
    */
   massNumber: number;
+  /**
+   * Atomic mass in unified atomic mass units (u / daltons).
+   * Obtained from dedx_get_ion_atom_mass() at init time.
+   * Needed for MeV ↔ MeV/u conversion: E_per_u = E_total / m_u.
+   * Example: proton has A=1 but m_u=1.00794.
+   */
+  atomicMass: number;
   /** Human-readable aliases for common ion names (e.g., "proton", "alpha"). */
   aliases?: string[];
 }
@@ -412,15 +419,18 @@ interface LibdedxService {
    * Convert energy values between MeV, MeV/nucl, and MeV/u.
    * Pure JS computation, no WASM call needed.
    *
-   * MeV/nucl and MeV/u are equivalent (both mean kinetic energy per nucleon).
-   * MeV is total kinetic energy: E_total = E_per_nucl × A.
+   * MeV/nucl and MeV/u are NOT equivalent:
+   * - MeV/nucl uses integer mass number A.
+   * - MeV/u uses atomic mass m in daltons.
    *
    * @param massNumber — ion mass number (A), needed for MeV ↔ MeV/nucl.
+   * @param atomicMass — ion atomic mass in u, needed for MeV ↔ MeV/u.
    */
   convertEnergy(params: {
     fromUnit: EnergyUnit;
     toUnit: EnergyUnit;
     massNumber: number;
+    atomicMass: number;
     values: number[];
   }): number[];
 
@@ -446,6 +456,13 @@ interface LibdedxService {
    * @returns Mass number for Z=1..112, or -1 if invalid.
    */
   getNucleonNumber(ionId: number): number;
+
+  /**
+   * Get the atomic mass in unified atomic mass units (u) for an ion.
+   * Calls: dedx_get_ion_atom_mass(ionId).
+   * @returns Atomic mass in u (e.g., 1.00794 for hydrogen), or -1 if invalid.
+   */
+  getAtomicMass(ionId: number): number;
 
   /**
    * Get the mean excitation potential (I-value) of a material.
@@ -532,14 +549,14 @@ These are the C functions that must be exported in the Emscripten build
 | `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()` | Compound composition |
 | `_dedx_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
 
-### 4.5 From `dedx_wrappers.h` (new public wrappers — to be added)
+### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §10)
 
-These thin wrappers around internal functions are needed for the web interface.
-See §10 for details.
+These wrappers live in this repository and are compiled alongside libdedx.
 
 | C Function | Used by | Notes |
 |------------|---------|-------|
 | `dedx_get_ion_nucleon_number(ion)` | `getNucleonNumber()`, `getIons()` | Returns mass number (A) for Z=1..112 |
+| `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getIons()` | Returns atomic mass in u for Z=1..112 |
 | `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
 | `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
 
@@ -601,22 +618,28 @@ All buffers are freed in a `finally` block to prevent leaks.
 
 ## 7. Energy Unit Conversion (JS-side)
 
-No C function is needed. The conversion is purely arithmetic:
+No C function is needed. The conversion is purely arithmetic, but
+**MeV/nucl and MeV/u are NOT the same**:
+
+- **MeV/nucl** uses the integer mass number **A** (number of nucleons).
+- **MeV/u** uses the atomic mass **m** in unified atomic mass units (daltons).
+
+For example, a proton has A = 1 but m = 1.00794 u. A 100 MeV proton beam
+has 100 MeV/nucl but 100 / 1.00794 ≈ 99.21 MeV/u. This distinction matters
+for CSDA range calculations.
 
 | From | To | Formula |
-|------|----|---------|
+|------|----|--------|
 | MeV/nucl | MeV | `E_MeV = E_per_nucl × A` |
 | MeV | MeV/nucl | `E_per_nucl = E_MeV / A` |
-| MeV/u | MeV/nucl | Identity (MeV/u ≡ MeV/nucl) |
-| MeV/nucl | MeV/u | Identity |
-| MeV | MeV/u | Same as MeV → MeV/nucl |
-| MeV/u | MeV | Same as MeV/nucl → MeV |
+| MeV/u | MeV | `E_MeV = E_per_u × m` |
+| MeV | MeV/u | `E_per_u = E_MeV / m` |
+| MeV/nucl | MeV/u | `E_per_u = E_per_nucl × A / m` |
+| MeV/u | MeV/nucl | `E_per_nucl = E_per_u × m / A` |
 
-Where **A** is the ion's mass number (number of nucleons, not atomic mass in u).
-
-**Note:** For the purposes of this library, MeV/u and MeV/nucl are treated as
-identical. The distinction between atomic mass units and nucleon count is
-negligible for stopping power calculations.
+Where:
+- **A** = ion's mass number (integer nucleon count, from `dedx_nucl[]`)
+- **m** = ion's atomic mass in u (from `dedx_amu[]`)
 
 ---
 
@@ -744,8 +767,11 @@ type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
 
 **Resolution: Expose as advanced option.** When DEDX_BETHE_EXT00 or DEDX_DEFAULT
 is selected, the user must provide:
-- `rho` (density in g/cm³) — required
-- `i_value` (mean excitation potential in eV) — optional, uses Bragg additivity if omitted
+- `rho` (density in g/cm³) — **pre-filled with the library-known density** for the
+  selected material (from `dedx_get_density()`), but editable by the user.
+- `i_value` (mean excitation potential in eV) — optional, **pre-filled with
+  the library-known I-value** (from `dedx_get_i_value()`), uses Bragg additivity
+  if omitted or cleared.
 
 This overlaps with custom compounds. In the UI, show additional input fields when
 these programs are selected.
@@ -787,17 +813,68 @@ a helper `isGasByDefault(materialId: number): boolean` (calls the to-be-exposed
 
 ---
 
-## 10. New C Functions to Add to libdedx
+## 10. Thin C Wrappers (Local to This Repository)
 
-These thin public wrappers around internal functions need to be added to
-`dedx_wrappers.h` / `dedx_wrappers.c` before the Emscripten build. They
-expose internal data that the web interface needs.
+The libdedx submodule is kept **unmodified**. Instead, thin C wrapper functions
+that expose internal libdedx data live in this repository (e.g., `wasm/dedx_extra.h`
+and `wasm/dedx_extra.c`). They are compiled alongside the libdedx sources
+during the Emscripten WASM build.
 
-| New Public Function | Wraps | Returns |
+These wrappers call internal libdedx functions that are linked but not declared
+in the public API headers. We forward-declare them in our local wrapper.
+
+### 10.1 Wrapper Functions
+
+| Function | Wraps | Returns |
 |----|----|----|
 | `int dedx_get_ion_nucleon_number(int ion)` | `dedx_internal_get_nucleon()` | Mass number (A) for Z=1..112, or -1 on error |
+| `float dedx_get_ion_atom_mass(int ion)` | `dedx_internal_get_atom_mass()` | Atomic mass in u (e.g., 1.00794 for H), or -1 on error |
 | `float dedx_get_density(int material, int *err)` | `dedx_internal_read_density()` | Density in g/cm³ |
 | `int dedx_target_is_gas(int target)` | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise |
 
-These should be contributed upstream to the libdedx submodule (or maintained
-as a patch applied during the WASM build).
+### 10.2 Example Implementation Sketch
+
+```c
+/* wasm/dedx_extra.h */
+#ifndef DEDX_EXTRA_H
+#define DEDX_EXTRA_H
+
+int   dedx_get_ion_nucleon_number(int ion);
+float dedx_get_ion_atom_mass(int ion);
+float dedx_get_density(int material, int *err);
+int   dedx_target_is_gas(int target);
+
+#endif
+```
+
+```c
+/* wasm/dedx_extra.c */
+#include "dedx_extra.h"
+
+/* Forward-declare internal libdedx functions (linked from libdedx objects) */
+extern int   dedx_internal_get_nucleon(int id, int *err);
+extern float dedx_internal_get_atom_mass(int id, int *err);
+extern float dedx_internal_read_density(int material, int *err);
+extern int   dedx_internal_target_is_gas(int target);
+
+int dedx_get_ion_nucleon_number(int ion) {
+    int err = 0;
+    return dedx_internal_get_nucleon(ion, &err);
+}
+
+float dedx_get_ion_atom_mass(int ion) {
+    int err = 0;
+    return dedx_internal_get_atom_mass(ion, &err);
+}
+
+float dedx_get_density(int material, int *err) {
+    return dedx_internal_read_density(material, err);
+}
+
+int dedx_target_is_gas(int target) {
+    return dedx_internal_target_is_gas(target);
+}
+```
+
+These files will be created during Stage 3 (WASM Build Pipeline). The Emscripten
+build script compiles them together with the libdedx `.c` sources.
