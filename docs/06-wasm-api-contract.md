@@ -1,6 +1,6 @@
 # WASM API Contract
 
-> **Status:** Draft — awaiting human review of physics semantics and edge cases.
+> **Status:** Draft v2 — all open questions resolved. Ready for final review.
 >
 > This document defines the TypeScript interface for the libdedx WebAssembly wrapper.
 > All frontend components, stores, and tests are written against these types and interfaces.
@@ -12,12 +12,16 @@
 
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
-| C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. |
-| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. MeV↔MeV/nucl conversion requires the ion's mass number (A), which we already know from the entity list. Keeping this in JS avoids adding new C functions. |
+| C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
+| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. MeV↔MeV/nucl conversion requires the ion's mass number (A), obtained from `dedx_get_ion_nucleon_number()`. Keeping this in JS avoids round-trips. |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
-| Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. |
+| Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
+| ESTAR (electrons) | **Included** | ESTAR (program 3, ion 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" ion. |
+| MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
+| Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
+| Interpolation | **Exposed** | Log-log (default) and linear. Toggle in advanced settings. |
 
 ---
 
@@ -55,10 +59,12 @@ interface LibdedxEntity {
 interface IonEntity extends LibdedxEntity {
   /**
    * Mass number (A) — number of nucleons.
-   * For elemental ions this equals the standard atomic mass number.
+   * Obtained from dedx_get_ion_nucleon_number() at init time.
    * Needed for MeV ↔ MeV/nucl conversion: E_per_nucl = E_total / A.
    */
   massNumber: number;
+  /** Human-readable aliases for common ion names (e.g., "proton", "alpha"). */
+  aliases?: string[];
 }
 
 /** Program entity with version information. */
@@ -67,14 +73,20 @@ interface ProgramEntity extends LibdedxEntity {
   version: string;
 }
 
-/** Material entity with optional density. */
+/** Material entity with optional density and gas state. */
 interface MaterialEntity extends LibdedxEntity {
   /**
-   * Material density in g/cm³. Read from _dedx_read_density().
+   * Material density in g/cm³. Read from dedx_get_density().
    * Used for stopping power unit conversion and CSDA range display.
    * Undefined for custom compounds until user provides it.
    */
   density?: number;
+  /**
+   * Whether this material is gaseous by default.
+   * True for the 29 materials in dedx_embedded_gas_targets[].
+   * Used to show an aggregate state selector in the UI.
+   */
+  isGasByDefault?: boolean;
 }
 ```
 
@@ -151,6 +163,47 @@ interface CustomCompound {
 }
 ```
 
+### 2.6 Advanced Options
+
+```typescript
+/**
+ * MSTAR calculation modes.
+ * Only relevant when programId = DEDX_MSTAR.
+ * Default is "b" (recommended by H. Paul).
+ */
+type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
+
+/**
+ * Interpolation mode for stopping power lookup.
+ * Maps to C constants: DEDX_INTERPOLATION_LOG_LOG = 0, DEDX_INTERPOLATION_LINEAR = 1.
+ * Default is "log-log".
+ */
+type InterpolationMode = "log-log" | "linear";
+
+/**
+ * Aggregate state override for a material.
+ * - "default": use the built-in state from the C library (gaseous or condensed).
+ * - "gas": force gaseous I-value for this material.
+ * - "condensed": force condensed I-value for this material.
+ * Maps to C fields: dedx_config.compound_state (0 = default, 1 = gas, 2 = condensed).
+ */
+type AggregateState = "default" | "gas" | "condensed";
+
+/** Advanced calculation options. Applied to the dedx_config before evaluation. */
+interface AdvancedOptions {
+  /** Override aggregate state of the target material. Default: "default". */
+  aggregateState?: AggregateState;
+  /** Interpolation method. Default: "log-log". */
+  interpolation?: InterpolationMode;
+  /** MSTAR mode. Only used when programId = DEDX_MSTAR. Default: "b". */
+  mstarMode?: MstarMode;
+  /** Override density in g/cm³. If set, replaces the built-in density. */
+  densityOverride?: number;
+  /** Override I-value in eV. If set, replaces the built-in I-value. */
+  iValueOverride?: number;
+}
+```
+
 ---
 
 ## 3. Service Interface
@@ -213,6 +266,9 @@ interface LibdedxService {
    * Calls: dedx_get_stp_table() for the stopping powers,
    *        dedx_get_csda_range_table() for CSDA ranges.
    *
+   * When advancedOptions are provided, falls back to the stateful
+   * dedx_config API to set compound_state, interpolation, density, etc.
+   *
    * Energies are always in MeV/nucl internally. If the user provides
    * a different unit, the caller (or a utility) must convert first
    * using `convertEnergy()`.
@@ -224,6 +280,7 @@ interface LibdedxService {
     ionId: number;
     materialId: number;
     energies: number[];       // in MeV/nucl
+    options?: AdvancedOptions;
   }): CalculationResult;
 
   /**
@@ -253,6 +310,7 @@ interface LibdedxService {
     ionId: number;
     materialId: number;
     energies: number[];       // in MeV/nucl
+    options?: AdvancedOptions;
   }): Map<number, CalculationResult | LibdedxError>;
 
   // ── Plot Data ──────────────────────────────────────────────
@@ -273,6 +331,7 @@ interface LibdedxService {
     materialId: number;
     pointCount: number;
     logScale: boolean;
+    options?: AdvancedOptions;
   }): CalculationResult;
 
   /**
@@ -369,10 +428,24 @@ interface LibdedxService {
 
   /**
    * Get material density.
-   * Calls: _dedx_read_density(materialId).
+   * Calls: dedx_get_density(materialId).
    * @returns Density in g/cm³, or undefined if not available.
    */
   getDensity(materialId: number): number | undefined;
+
+  /**
+   * Check if a material is gaseous by default.
+   * Calls: dedx_target_is_gas(materialId).
+   * @returns true if the material is in the 29-element gas list.
+   */
+  isGasByDefault(materialId: number): boolean;
+
+  /**
+   * Get the nucleon number (mass number A) for an ion.
+   * Calls: dedx_get_ion_nucleon_number(ionId).
+   * @returns Mass number for Z=1..112, or -1 if invalid.
+   */
+  getNucleonNumber(ionId: number): number;
 
   /**
    * Get the mean excitation potential (I-value) of a material.
@@ -459,7 +532,18 @@ These are the C functions that must be exported in the Emscripten build
 | `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()` | Compound composition |
 | `_dedx_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
 
-### 4.5 Emscripten Runtime Methods
+### 4.5 From `dedx_wrappers.h` (new public wrappers — to be added)
+
+These thin wrappers around internal functions are needed for the web interface.
+See §10 for details.
+
+| C Function | Used by | Notes |
+|------------|---------|-------|
+| `dedx_get_ion_nucleon_number(ion)` | `getNucleonNumber()`, `getIons()` | Returns mass number (A) for Z=1..112 |
+| `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
+| `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
+
+### 4.6 Emscripten Runtime Methods
 
 ```
 EXPORTED_RUNTIME_METHODS = ["ccall", "cwrap", "UTF8ToString"]
@@ -556,6 +640,12 @@ const PROGRAMS = {
   BETHE_EXT00: 101,
 } as const;
 
+/** Special ion IDs */
+const IONS = {
+  /** Used with ESTAR (program 3) for electron stopping powers. */
+  ELECTRON: 1001,
+} as const;
+
 /** Stopping power unit IDs — maps to C enum dedx_stp_units in dedx_tools.h */
 const STP_UNITS = {
   "MeV·cm²/g": 0,
@@ -563,38 +653,151 @@ const STP_UNITS = {
   "keV/µm": 2,
 } as const;
 
-/** Material aggregate states */
-const STATES = {
+/** Material aggregate states — maps to C dedx_config.compound_state */
+const AGGREGATE_STATES = {
   DEFAULT: 0,
   GAS: 1,
   CONDENSED: 2,
+} as const;
+
+/** Interpolation modes — maps to C dedx_config.interpolation */
+const INTERPOLATION_MODES = {
+  LOG_LOG: 0,
+  LINEAR: 1,
+} as const;
+
+/** MSTAR calculation modes — maps to C dedx_config.mstar_mode */
+const MSTAR_MODES = {
+  AUTO_CG: "a",      // condensed→c, gaseous→g
+  AUTO_DH: "b",      // condensed→d, gaseous→h (recommended)
+  CONDENSED: "c",
+  CONDENSED_SPECIAL: "d",
+  GASEOUS: "g",
+  GASEOUS_SPECIAL: "h",
 } as const;
 ```
 
 ---
 
-## 9. Open Questions
+## 9. Resolved Design Questions
 
-> Items for the human reviewer to decide:
+> Resolved during the planning session on 2 April 2026.
 
-1. **Ion mass numbers:** The C API identifies ions by atomic number (Z).
-   Where do we get mass number (A) for the MeV→MeV/nucl conversion?
-   Options:
-   - Hardcode A values for Z=1..98 in JS (simple, A is just the most common isotope).
-   - Expose `ion_a` from `dedx_config` after loading (requires stateful API for a read op).
-   - Let users specify A for exotic isotopes (future feature?).
+### Q1: Ion mass numbers (A)
 
-2. **ESTAR (electrons):** The C header lists `DEDX_ESTAR = 3` and `ion = 1001`.
-   The old wrapper didn't expose it. Should we include or exclude electrons?
+**Resolution:** Two-layer approach.
 
-3. **MSTAR modes:** MSTAR has multiple calculation modes (A, B, C, D, G, H).
-   The old app didn't expose this. Should the web interface allow mode selection?
+1. **Primary:** Expose `dedx_internal_get_nucleon()` as a new public wrapper
+   `dedx_get_ion_nucleon_number(int ion)` in the Emscripten build. This is
+   the authoritative source (uses `dedx_nucl[112]` from `dedx_periodic_table.h`).
 
-4. **Bethe extended (DEDX_BETHE_EXT00):** Requires user-provided density (`rho`)
-   and custom I-value. This overlaps with custom compounds. Expose as an advanced option?
+2. **JS alias table:** Hardcode a human-readable ion table in TypeScript with
+   display names and aliases. Used for UI labels and search, not for physics.
 
-5. **Interpolation mode:** The C API supports log-log and linear interpolation.
-   Default is log-log. Should users be able to switch?
+```typescript
+/** Ion metadata table. massNumber comes from C, aliases are JS-only. */
+const ION_ALIASES: Record<number, { name: string; aliases: string[] }> = {
+  1:  { name: "Hydrogen",  aliases: ["proton", "p", "H"] },
+  2:  { name: "Helium",    aliases: ["alpha", "α", "He"] },
+  3:  { name: "Lithium",   aliases: ["Li"] },
+  4:  { name: "Beryllium", aliases: ["Be"] },
+  5:  { name: "Boron",     aliases: ["B"] },
+  6:  { name: "Carbon",    aliases: ["C"] },
+  7:  { name: "Nitrogen",  aliases: ["N"] },
+  8:  { name: "Oxygen",    aliases: ["O"] },
+  // ... Z=9..18 for MSTAR/ICRU73 supported ions
+  12: { name: "Carbon-12", aliases: ["12C", "C-12"] },
+  // Full table to be generated from dedx_nucl[] + element names
+};
+```
 
-6. **Aggregate state:** Some materials exist as gas and condensed. Should we
-   expose the state selector?
+### Q2: ESTAR (electrons)
+
+**Resolution: Include.** ESTAR (`DEDX_ESTAR = 3`, `ion = 1001`) is listed in the
+C API. The web interface should expose it. Note:
+- ESTAR uses a special ion ID `1001` (not atomic number).
+- It covers all ~280 materials.
+- The `IonEntity` for electrons gets `massNumber = 1` (by convention; not used for
+  energy conversion since electrons don't use MeV/nucl in the usual sense).
+- UI should label it as "Electron" and handle it as a special case.
+
+### Q3: MSTAR modes
+
+**Resolution: Expose mode picker.** MSTAR has 6 calculation modes:
+
+| Mode | Description |
+|------|-------------|
+| `a` | Auto: condensed→`c`, gaseous→`g` |
+| `b` | Auto: condensed→`d`, gaseous→`h` (recommended by H. Paul) |
+| `c` | Condensed target mode |
+| `d` | Special condensed-target mode |
+| `g` | Gaseous target mode |
+| `h` | Special gaseous-target mode |
+
+Default is `b` (recommended). Show as an advanced dropdown when MSTAR is selected.
+
+```typescript
+type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
+```
+
+### Q4: Bethe extended (DEDX_BETHE_EXT00)
+
+**Resolution: Expose as advanced option.** When DEDX_BETHE_EXT00 or DEDX_DEFAULT
+is selected, the user must provide:
+- `rho` (density in g/cm³) — required
+- `i_value` (mean excitation potential in eV) — optional, uses Bragg additivity if omitted
+
+This overlaps with custom compounds. In the UI, show additional input fields when
+these programs are selected.
+
+### Q5: Interpolation mode
+
+**Resolution: Expose in advanced settings.**
+
+```typescript
+type InterpolationMode = "log-log" | "linear";
+```
+
+Default is `"log-log"` (maps to `DEDX_INTERPOLATION_LOG_LOG = 0`).
+Show as a toggle in an "Advanced" section of the settings panel.
+
+### Q6: Aggregate state
+
+**Resolution: Expose in advanced settings.** 29 materials are gaseous by default
+(listed in `dedx_embedded_gas_targets[]`). The `compound_state` field overrides
+the default phase for I-value selection.
+
+**Gaseous-by-default materials include:**
+- Noble gases: He, Ne, Ar, Kr, Xe, Rn
+- Elemental gases: H, N, O, F, Cl
+- Compounds: Air, CO₂, NH₃, CH₄, C₂H₆, C₃H₈, C₄H₁₀, C₂H₄, C₂H₂
+- Freons: Freon-12, -12B2, -13, -13B1, -13I1
+- Tissue-equivalent gases (methane-based, propane-based)
+- Water Vapor (distinct from liquid Water)
+- Nitrous Oxide
+
+```typescript
+type AggregateState = "default" | "gas" | "condensed";
+```
+
+Show a state selector only when a gaseous-default material is selected, or as
+an advanced override for any material. The TypeScript wrapper should expose
+a helper `isGasByDefault(materialId: number): boolean` (calls the to-be-exposed
+`dedx_target_is_gas()` wrapper around `dedx_internal_target_is_gas()`).
+
+---
+
+## 10. New C Functions to Add to libdedx
+
+These thin public wrappers around internal functions need to be added to
+`dedx_wrappers.h` / `dedx_wrappers.c` before the Emscripten build. They
+expose internal data that the web interface needs.
+
+| New Public Function | Wraps | Returns |
+|----|----|----|
+| `int dedx_get_ion_nucleon_number(int ion)` | `dedx_internal_get_nucleon()` | Mass number (A) for Z=1..112, or -1 on error |
+| `float dedx_get_density(int material, int *err)` | `dedx_internal_read_density()` | Density in g/cm³ |
+| `int dedx_target_is_gas(int target)` | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise |
+
+These should be contributed upstream to the libdedx submodule (or maintained
+as a patch applied during the WASM build).
