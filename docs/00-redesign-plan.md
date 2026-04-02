@@ -26,16 +26,31 @@ The goal is a **ground-up rewrite** using modern tooling, driven by AI agents
 
 | Layer              | Choice                                  |
 |--------------------|-----------------------------------------|
-| Framework          | **SvelteKit** (TypeScript)              |
+| Framework          | **SvelteKit** with **Svelte 5** (TypeScript) |
 | Plotting           | **JSROOT** (keep — physics community standard) |
 | Styling            | **Tailwind CSS**                        |
 | WASM / libdedx     | **Full redesign** (build pipeline + JS wrapper) |
 | Deployment         | **GitHub Pages**                        |
-| Language           | **TypeScript**                          |
+| Language           | **TypeScript** (strict mode)            |
+| Linting            | **ESLint** (`eslint-plugin-svelte`)     |
+| Formatting         | **Prettier** (`prettier-plugin-svelte`) |
 | Testing            | **Full coverage** — unit + integration + E2E |
 | Unit tests         | Vitest + Svelte Testing Library         |
 | E2E tests          | Playwright                              |
+| AI agent config    | **GitHub Copilot** customization files in `.github/` |
 | UX inspiration     | **ATIMA** (https://www.isotopea.com/webatima/) |
+
+> **Svelte 5 only.** This project uses Svelte 5 with runes (`$state`, `$derived`,
+> `$effect`, `$props`, `$bindable`). Do **not** use Svelte 4 patterns:
+> no `export let` for props, no `$:` reactive statements, no `createEventDispatcher()`,
+> no `onMount`/`onDestroy` from `svelte` (use `$effect` instead), no stores via
+> `$` auto-subscription (use runes-based state). The `svelte/store` module is
+> replaced by fine-grained reactivity. See https://svelte.dev/docs/svelte/v5-migration-guide.
+>
+> **Linting & formatting.** ESLint + Prettier run on every save and in CI.
+> Ruff is not applicable — it is Python-only. For TypeScript + Svelte, the
+> standard toolchain is `eslint-plugin-svelte` + `prettier-plugin-svelte`.
+> Consider `eslint-plugin-svelte` with `svelte/recommended` preset.
 
 ---
 
@@ -82,6 +97,56 @@ docs/
     ├── stage-1.md
     └── ...
 ```
+
+---
+
+## 4.1 AI Agent Configuration (`.github/`)
+
+GitHub Copilot reads customization files from `.github/` to get project
+context automatically. These are **version-controlled** and shared with
+anyone working on the repo.
+
+```
+.github/
+├── copilot-instructions.md          # Always-on project context (every interaction)
+├── instructions/
+│   ├── svelte.instructions.md       # applyTo: **/*.svelte — Svelte 5 runes patterns
+│   ├── wasm.instructions.md         # applyTo: src/lib/wasm/** — Emscripten/libdedx rules
+│   └── testing.instructions.md      # applyTo: **/*.test.ts — test conventions
+├── prompts/
+│   ├── implement-feature.prompt.md  # /implement-feature — one-shot from spec file
+│   ├── write-spec.prompt.md         # /write-spec — draft a feature spec from template
+│   └── new-component.prompt.md      # /new-component — scaffold a Svelte 5 component
+├── agents/
+│   ├── researcher.agent.md          # Read-only codebase exploration (tools: read, search)
+│   └── spec-writer.agent.md         # Feature spec authoring (tools: read, search, edit)
+└── skills/
+    └── wasm-build/
+        └── SKILL.md                 # WASM build pipeline procedure + Emscripten flags
+```
+
+**What each primitive does:**
+
+| Primitive | File | When loaded | Purpose |
+|-----------|------|-------------|---------|
+| Workspace instructions | `copilot-instructions.md` | Every interaction | Project context, Svelte 5 rules, build commands |
+| File instructions | `*.instructions.md` | When editing matching files | Framework/domain-specific rules |
+| Prompts | `*.prompt.md` | On-demand via `/` slash command | Reusable task templates |
+| Custom agents | `*.agent.md` | User picks in agent selector, or auto-delegated | Focused roles with restricted tools |
+| Skills | `SKILL.md` in subfolder | On-demand when task matches description | Multi-step workflows with bundled assets |
+
+**Key rules:**
+- `copilot-instructions.md` should be **short** (~40 lines). It loads into every request's context window.
+  Link to `docs/*.md` files rather than duplicating content.
+- File instructions use `applyTo` globs to auto-attach when relevant files are edited.
+- The `description` field is the **discovery surface** — without good keywords, the agent won't find the file.
+- Prompts replace the "start sessions with context" manual step — `/implement-feature` loads the right docs automatically.
+
+**Bootstrap order (chicken-and-egg):**
+The `copilot-instructions.md` and `write-spec.prompt.md` should be created **first**, before
+writing any design docs. This way, AI assistance for drafting `docs/01-project-vision.md`
+and feature specs already benefits from project context. The remaining file instructions,
+agents, and skills are added later alongside the code they govern (Stage 4).
 
 ---
 
@@ -208,8 +273,21 @@ As a <role>, I want to <action> so that <benefit>.
 
 ## 8. Implementation Stages
 
+### Stage 0: AI Agent Bootstrap
+- **Who:** You (human) + AI for drafting.
+- **Produce:**
+  - `.github/copilot-instructions.md` — project context, Svelte 5 rules, build commands.
+  - `.github/prompts/write-spec.prompt.md` — slash command for drafting feature specs.
+  - `.github/prompts/implement-feature.prompt.md` — slash command for implementing from a spec.
+- **Why first:** All subsequent stages use AI assistance. Having `copilot-instructions.md`
+  ensures the agent already knows this is a Svelte 5 + TypeScript + WASM project, won't
+  suggest Svelte 4 patterns, and can reference design docs. The `write-spec` prompt makes
+  Stage 1 (writing feature specs) faster and more consistent.
+- **Verify:** Start a new Copilot chat and confirm the agent mentions Svelte 5 / runes
+  without being told. Test `/write-spec` produces output following the template from §7.
+
 ### Stage 1: Requirements & Specifications
-- **Who:** You (human), AI assists with drafts.
+- **Who:** You (human), AI assists with drafts (use `/write-spec` prompt).
 - **Produce:** `docs/01-project-vision.md`, all `docs/04-feature-specs/*.md`, `docs/06-wasm-api-contract.md`.
 - **Validate:** You review all specs for physics correctness.
 
@@ -224,11 +302,18 @@ As a <role>, I want to <action> so that <benefit>.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
 - **Verify:** Wrapper loads in Node.js and returns valid program/ion/material lists.
 
-### Stage 4: Project Scaffolding
+### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.
 - **Input:** `docs/02-tech-stack.md`, `docs/03-architecture.md`.
-- **Output:** SvelteKit project with Tailwind, two routes, Vitest, Playwright, static adapter.
-- **Verify:** App builds, routes work, deploys to GitHub Pages (empty pages).
+- **Output:** SvelteKit project with Tailwind, two routes, Vitest, Playwright, static adapter,
+  ESLint + Prettier configured.
+- **Also produce** (now that the project structure exists):
+  - `.github/instructions/svelte.instructions.md` — Svelte 5 component patterns.
+  - `.github/instructions/wasm.instructions.md` — WASM wrapper rules.
+  - `.github/instructions/testing.instructions.md` — test conventions.
+  - `.github/agents/researcher.agent.md` — read-only codebase explorer.
+  - `.github/skills/wasm-build/SKILL.md` — WASM build pipeline procedure.
+- **Verify:** App builds, routes work, `eslint . && prettier --check .` pass, deploys to GitHub Pages (empty pages).
 
 ### Stage 5: Core Shared Components
 - **Who:** AI implements (one component per chat session).
@@ -260,7 +345,7 @@ As a <role>, I want to <action> so that <benefit>.
 - Error handling for WASM failures.
 
 ### Stage 8: CI/CD
-- GitHub Actions: lint → type-check → unit tests → E2E → build WASM → build SvelteKit → deploy.
+- GitHub Actions: `eslint .` → `prettier --check .` → `svelte-check` → `tsc --noEmit` → Vitest → Playwright → build WASM → build SvelteKit → deploy.
 
 ---
 
@@ -268,16 +353,19 @@ As a <role>, I want to <action> so that <benefit>.
 
 | Practice | Reason |
 |----------|--------|
+| **Create `.github/copilot-instructions.md` first** | Every AI session benefits from project context from the start. |
 | **One feature per chat session** | Agents lose context in long threads. Start fresh per feature. |
+| **Use `/implement-feature` and `/write-spec` prompts** | Consistent context loading without manual re-explanation. |
 | **Always reference spec files** | Don't re-explain — say "implement per docs/04-feature-specs/calculator.md". |
 | **Start sessions with context** | "Read docs/03-architecture.md and docs/06-wasm-api-contract.md, then implement X." |
 | **Commit after each working increment** | Rollback points if AI produces broken code. |
-| **Use `.github/copilot-instructions.md`** | Project conventions Copilot follows automatically. |
+| **Enforce Svelte 5 in instructions** | AI training data has more Svelte 4 than 5. Explicit rules prevent `export let`, `$:`, `createEventDispatcher`. |
 | **Test WASM with real module early** | Mocks hide memory management bugs. |
 | **Log decisions in `docs/decisions/`** | Future sessions need this context. |
 | **Review AI-generated tests** | AI writes tests that pass by construction — check they assert real behavior. |
 | **Be specific about JSROOT styling** | "Log-log axes, 14pt labels, legend top-right, line width 2" — not "make it pretty." |
 | **Log progress in `docs/progress/`** | So the next session knows what's done and what's next. |
+| **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce. |
 
 ---
 
@@ -286,9 +374,10 @@ As a <role>, I want to <action> so that <benefit>.
 When starting a new LLM session on any machine:
 
 1. Open the `redesign/planning` branch.
-2. Tell the agent: *"Read `docs/00-redesign-plan.md` for full project context."*
+2. `.github/copilot-instructions.md` loads automatically — no manual context needed.
 3. Check `docs/progress/` to see which stage was last completed.
-4. Point the agent to the relevant spec files for the next piece of work.
+4. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
+   *"Read `docs/00-redesign-plan.md` for full project context."*
 5. After implementing, update `docs/progress/` and commit.
 
 ---
