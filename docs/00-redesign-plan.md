@@ -188,58 +188,30 @@ This is the most critical design artifact. All frontend code and tests
 are written against this interface. The WASM implementation is swappable
 (mocked in tests, real in production).
 
-```typescript
-type EnergyUnit = 'MeV' | 'MeV/nucl' | 'MeV/u';
-type StpUnit = 'MeV·cm²/g' | 'MeV/cm' | 'keV/μm';
+> **The full contract lives in [`docs/06-wasm-api-contract.md`](06-wasm-api-contract.md).**
+> Below is a brief summary. Always refer to the full document for implementation.
 
-interface LibdedxEntity {
-  id: number;
-  name: string;
-}
+### Key types
 
-interface CalculationResult {
-  energies: number[];
-  stoppingPowers: number[];
-  csdaRanges: number[];
-}
+| Type | Purpose |
+|------|---------|
+| `LibdedxEntity` | Base: `{ id, name }` |
+| `IonEntity` | Extends base with `massNumber`, `atomicMass`, `aliases` |
+| `ProgramEntity` | Extends base with `version` |
+| `MaterialEntity` | Extends base with `density`, `isGasByDefault` |
+| `CalculationResult` | `{ energies, stoppingPowers, csdaRanges }` |
+| `AdvancedOptions` | `{ aggregateState, interpolation, mstarMode, densityOverride, iValueOverride }` |
+| `CustomCompound` | User-defined material with elemental composition |
+| `LibdedxError` | Typed error with C error code + message |
 
-interface LibdedxService {
-  init(): Promise<void>;
-  getPrograms(): LibdedxEntity[];
-  getIons(programId: number): LibdedxEntity[];
-  getMaterials(programId: number): LibdedxEntity[];
+### Key design decisions
 
-  // Single program calculation
-  calculate(params: {
-    programId: number;
-    ionId: number;
-    materialId: number;
-    energies: number[];
-    energyUnit: EnergyUnit;
-    stpUnit: StpUnit;
-  }): CalculationResult;
-
-  // Multi-program calculation (new feature)
-  calculateMulti(params: {
-    programIds: number[];
-    ionId: number;
-    materialId: number;
-    energies: number[];
-    energyUnit: EnergyUnit;
-    stpUnit: StpUnit;
-  }): Map<number, CalculationResult>;
-
-  // Plot data with auto-generated energy grid
-  getPlotData(params: {
-    programId: number;
-    ionId: number;
-    materialId: number;
-    pointCount: number;
-    logScale: boolean;
-    stpUnit: StpUnit;
-  }): CalculationResult;
-}
-```
+- **Energy units:** MeV/nucl ≠ MeV/u. The C API uses MeV/nucl; conversion is JS-side.
+- **Stateless by default:** Calls go through `dedx_wrappers.h`; stateful API only for custom compounds, inverse lookups, and advanced options.
+- **Thin C wrappers:** Local `wasm/dedx_extra.{h,c}` expose internal libdedx data (nucleon number, atomic mass, density, gas state) without modifying the libdedx submodule.
+- **ESTAR included:** Electrons via ion ID 1001.
+- **MSTAR modes exposed:** 6 modes (a/b/c/d/g/h), default "b".
+- **Aggregate state exposed:** 29 gaseous-default materials; override in advanced settings.
 
 ---
 

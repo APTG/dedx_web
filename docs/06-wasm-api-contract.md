@@ -1,6 +1,6 @@
 # WASM API Contract
 
-> **Status:** Draft v2 — all open questions resolved. Ready for final review.
+> **Status:** Final (v2, 2 April 2026) — all open questions resolved.
 >
 > This document defines the TypeScript interface for the libdedx WebAssembly wrapper.
 > All frontend components, stores, and tests are written against these types and interfaces.
