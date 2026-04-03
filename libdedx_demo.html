@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>libdedx UI Demo</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      background: #f4f6f8;
+      color: #1a1a2e;
+      line-height: 1.5;
+      padding: 1.5rem;
+    }
+
+    header {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    header h1 {
+      font-size: 1.6rem;
+      color: #0d7377;
+      margin-bottom: 0.25rem;
+    }
+
+    .subtitle {
+      color: #555;
+      font-size: 0.95rem;
+    }
+
+    .reset-link {
+      display: inline-block;
+      margin-top: 0.4rem;
+      font-size: 0.85rem;
+      color: #0d7377;
+      cursor: pointer;
+      text-decoration: underline;
+      background: none;
+      border: none;
+      font-family: inherit;
+    }
+    .reset-link:hover { color: #095456; }
+
+    .selector-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 1rem;
+      max-width: 1200px;
+      margin: 0 auto 1.5rem;
+    }
+
+    @media (max-width: 900px) {
+      .selector-grid { grid-template-columns: 1fr; }
+    }
+
+    .selector-column {
+      background: #fff;
+      border: 1px solid #dde1e6;
+      border-radius: 8px;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    .selector-column h2 {
+      font-size: 1rem;
+      padding: 0.75rem 1rem 0.5rem;
+      color: #0d7377;
+      flex-shrink: 0;
+    }
+
+    .selector-column input[type="text"] {
+      margin: 0 0.75rem 0.5rem;
+      padding: 0.45rem 0.65rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      outline: none;
+      flex-shrink: 0;
+    }
+    .selector-column input[type="text"]:focus {
+      border-color: #0d7377;
+      box-shadow: 0 0 0 2px rgba(13,115,119,0.15);
+    }
+
+    .selector-column ul {
+      list-style: none;
+      overflow-y: auto;
+      height: 400px;
+      padding: 0 0.5rem 0.5rem;
+    }
+
+    .selector-column ul li {
+      padding: 0.4rem 0.65rem;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.88rem;
+      transition: background 0.1s, color 0.1s;
+      user-select: none;
+    }
+
+    .selector-column ul li:hover:not(.disabled):not(.separator):not(.group-header) {
+      background: #e8f5f5;
+    }
+
+    .selector-column ul li.selected {
+      background: #0d7377;
+      color: #fff;
+    }
+    .selector-column ul li.selected:hover {
+      background: #095456;
+    }
+
+    .selector-column ul li.disabled {
+      color: #aaa;
+      opacity: 0.4;
+      pointer-events: none;
+    }
+
+    .selector-column ul li.separator {
+      pointer-events: none;
+      border-top: 1px solid #dde1e6;
+      margin-top: 0.4rem;
+      padding-top: 0.55rem;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #888;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      cursor: default;
+    }
+
+    .selector-column ul li.group-header {
+      pointer-events: none;
+      font-weight: 700;
+      font-size: 0.78rem;
+      color: #0d7377;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding-top: 0.6rem;
+      cursor: default;
+    }
+
+    .result-panel {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #fff;
+      border: 1px solid #dde1e6;
+      border-radius: 8px;
+      padding: 1.25rem 1.5rem;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+    }
+
+    .result-panel h2 {
+      font-size: 1.1rem;
+      color: #0d7377;
+      margin-bottom: 0.75rem;
+    }
+
+    .result-panel dl {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: 0.3rem 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .result-panel dt {
+      font-weight: 600;
+      color: #555;
+      font-size: 0.9rem;
+    }
+
+    .result-panel dd {
+      font-size: 0.9rem;
+    }
+
+    .energy-input {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      margin-bottom: 0.75rem;
+      flex-wrap: wrap;
+    }
+
+    .energy-input label {
+      font-size: 0.9rem;
+    }
+
+    .energy-input input[type="number"] {
+      width: 140px;
+      padding: 0.4rem 0.6rem;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      outline: none;
+    }
+    .energy-input input[type="number"]:focus {
+      border-color: #0d7377;
+      box-shadow: 0 0 0 2px rgba(13,115,119,0.15);
+    }
+
+    .energy-input button {
+      padding: 0.45rem 1rem;
+      border: none;
+      border-radius: 4px;
+      background: #0d7377;
+      color: #fff;
+      font-size: 0.9rem;
+      cursor: pointer;
+      font-family: inherit;
+    }
+    .energy-input button:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    .energy-input button:not(:disabled):hover {
+      background: #095456;
+    }
+
+    .demo-note {
+      font-size: 0.82rem;
+      color: #888;
+      font-style: italic;
+    }
+
+    .mock-result {
+      margin-top: 0.5rem;
+      padding: 0.6rem 0.9rem;
+      background: #e8f5f5;
+      border-radius: 4px;
+      font-size: 0.9rem;
+      color: #0d7377;
+      font-weight: 500;
+    }
+
+    footer {
+      text-align: center;
+      margin-top: 2rem;
+      font-size: 0.82rem;
+      color: #888;
+    }
+    footer a { color: #0d7377; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <h1>libdedx — Stopping Power Calculator (UI Demo)</h1>
+    <p class="subtitle">Select any combination of program, ion, and material.
+       Invalid options are greyed out automatically.</p>
+    <button class="reset-link" id="btn-reset">Reset all</button>
+  </header>
+
+  <main class="selector-grid">
+    <div class="selector-column" id="col-program">
+      <h2>&#9312; Method / Program</h2>
+      <input type="text" placeholder="Filter..." id="filter-program">
+      <ul id="list-program"></ul>
+    </div>
+
+    <div class="selector-column" id="col-ion">
+      <h2>&#9313; Ion / Particle</h2>
+      <input type="text" placeholder="Filter..." id="filter-ion">
+      <ul id="list-ion"></ul>
+    </div>
+
+    <div class="selector-column" id="col-material">
+      <h2>&#9314; Target Material</h2>
+      <input type="text" placeholder="Filter..." id="filter-material">
+      <ul id="list-material"></ul>
+    </div>
+  </main>
+
+  <section class="result-panel" id="result-panel">
+    <h2>Configuration Summary</h2>
+    <dl>
+      <dt>Program</dt><dd id="res-program">—</dd>
+      <dt>Ion</dt><dd id="res-ion">—</dd>
+      <dt>Material</dt><dd id="res-material">—</dd>
+      <dt>Energy range</dt><dd id="res-energy">—</dd>
+    </dl>
+    <div class="energy-input">
+      <label>Energy (MeV/u): <input type="number" id="input-energy" step="0.1" min="0"></label>
+      <button id="btn-calculate" disabled>Calculate (demo)</button>
+    </div>
+    <p class="demo-note">This is a UI demo — no actual calculation is performed.</p>
+    <div id="mock-result-container"></div>
+  </section>
+
+  <footer>
+    <p>Data from <a href="https://github.com/APTG/libdedx">APTG/libdedx</a>.
+       UI concept demo — not connected to the C library.</p>
+  </footer>
+
+  <script>
+    // =========================================================================
+    //  DATA
+    // =========================================================================
+
+    const PROGRAMS = [
+      { id: 1,   key: "ASTAR",       label: "ASTAR — alpha stopping powers (NIST)",      ions: [2],                                                               materialSet: "standard", energy: { min: 0.00025, max: 250 } },
+      { id: 2,   key: "PSTAR",       label: "PSTAR — proton stopping powers (NIST)",      ions: [1],                                                               materialSet: "standard", energy: { min: 0.001,   max: 10000 } },
+      { id: 4,   key: "MSTAR",       label: "MSTAR — heavier ion stopping powers",        ions: [2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],                      materialSet: "standard", energy: { min: 0.001,   max: 1000 } },
+      { id: 7,   key: "ICRU49",      label: "ICRU 49 — protons & alphas (1993)",          ions: [1,2],                                                             materialSet: "standard", energy: { min: 0.001,   max: 10000 } },
+      { id: 5,   key: "ICRU73_OLD",  label: "ICRU 73 old — heavy ions (2005)",            ions: [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],                        materialSet: "standard", energy: { min: 0.025,   max: 1000 } },
+      { id: 6,   key: "ICRU73",      label: "ICRU 73 — heavy ions (2005 revised)",        ions: [3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],                        materialSet: "standard", energy: { min: 0.025,   max: 1000 } },
+      { id: 9,   key: "ICRU",        label: "ICRU — auto-select ICRU49 / ICRU73",         ions: [1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18],                    materialSet: "standard", energy: { min: 0.001,   max: 10000 } },
+      { id: 100, key: "DEFAULT",     label: "Bethe-Bloch (default)",                      ions: makeRange(1,112),                                                  materialSet: "all",      energy: { min: 0.5,     max: 1e6 } },
+      { id: 101, key: "BETHE_EXT00", label: "Bethe-Bloch with extensions",                ions: makeRange(1,112),                                                  materialSet: "all",      energy: { min: 0.5,     max: 1e6 } },
+    ];
+
+    function makeRange(a, b) { const r = []; for (let i = a; i <= b; i++) r.push(i); return r; }
+
+    // Ion database Z=1..112
+    const ION_NAMES = [
+      "", // 0 placeholder
+      "Hydrogen","Helium","Lithium","Beryllium","Boron","Carbon",
+      "Nitrogen","Oxygen","Fluorine","Neon","Sodium","Magnesium",
+      "Aluminum","Silicon","Phosphorus","Sulfur","Chlorine","Argon",
+      "Potassium","Calcium","Scandium","Titanium","Vanadium","Chromium",
+      "Manganese","Iron","Cobalt","Nickel","Copper","Zinc","Gallium",
+      "Germanium","Arsenic","Selenium","Bromine","Krypton","Rubidium",
+      "Strontium","Yttrium","Zirconium","Niobium","Molybdenum","Technetium",
+      "Ruthenium","Rhodium","Palladium","Silver","Cadmium","Indium","Tin",
+      "Antimony","Tellurium","Iodine","Xenon","Cesium","Barium","Lanthanum",
+      "Cerium","Praseodymium","Neodymium","Promethium","Samarium","Europium",
+      "Gadolinium","Terbium","Dysprosium","Holmium","Erbium","Thulium",
+      "Ytterbium","Lutetium","Hafnium","Tantalum","Tungsten","Rhenium",
+      "Osmium","Iridium","Platinum","Gold","Mercury","Thallium","Lead",
+      "Bismuth","Polonium","Astatine","Radon","Francium","Radium","Actinium",
+      "Thorium","Protactinium","Uranium","Neptunium","Plutonium","Americium",
+      "Curium","Berkelium","Californium","Einsteinium","Fermium",
+      "Mendelevium","Nobelium","Lawrencium","Rutherfordium","Dubnium",
+      "Seaborgium","Bohrium","Hassium","Meitnerium","Darmstadtium",
+      "Roentgenium","Copernicium"
+    ];
+
+    const ION_SYMBOLS = [
+      "", // 0
+      "H","He","Li","Be","B","C","N","O","F","Ne","Na","Mg",
+      "Al","Si","P","S","Cl","Ar","K","Ca","Sc","Ti","V","Cr",
+      "Mn","Fe","Co","Ni","Cu","Zn","Ga","Ge","As","Se","Br","Kr",
+      "Rb","Sr","Y","Zr","Nb","Mo","Tc","Ru","Rh","Pd","Ag","Cd",
+      "In","Sn","Sb","Te","I","Xe","Cs","Ba","La","Ce","Pr","Nd",
+      "Pm","Sm","Eu","Gd","Tb","Dy","Ho","Er","Tm","Yb","Lu","Hf",
+      "Ta","W","Re","Os","Ir","Pt","Au","Hg","Tl","Pb","Bi","Po",
+      "At","Rn","Fr","Ra","Ac","Th","Pa","U","Np","Pu","Am","Cm",
+      "Bk","Cf","Es","Fm","Md","No","Lr","Rf","Db","Sg","Bh","Hs",
+      "Mt","Ds","Rg","Cn"
+    ];
+
+    const IONS = {};
+    for (let z = 1; z <= 112; z++) {
+      let name = ION_NAMES[z] || `Element ${z}`;
+      const sym = ION_SYMBOLS[z] || `Z${z}`;
+      // Friendly aliases
+      if (z === 1)  name = "Proton (H)";
+      else if (z === 2)  name = "Alpha (He)";
+      else if (z === 6)  name = "Carbon (C)";
+      else if (z === 26) name = "Iron (Fe)";
+      else name = `${name} (${sym})`;
+      IONS[z] = { name, symbol: sym };
+    }
+
+    // Standard material set (77 materials)
+    const STANDARD_MATERIAL_IDS = [
+      1,2,4,5,6,7,8,10,13,14,18,22,26,28,29,32,36,40,42,47,50,54,64,
+      73,74,78,79,82,92,99,101,103,104,106,111,119,120,126,130,134,138,139,
+      141,155,160,169,179,185,189,191,197,200,201,202,203,204,209,213,215,216,219,
+      221,222,223,225,226,227,232,238,245,252,255,263,264,266,276,277,906
+    ];
+
+    // Full material name table from dedx_program_const.h
+    const MATERIAL_NAME_TABLE = {
+      1: "Hydrogen", 2: "Helium", 3: "Lithium", 4: "Beryllium", 5: "Boron",
+      6: "Carbon", 7: "Nitrogen", 8: "Oxygen", 9: "Fluorine", 10: "Neon",
+      11: "Sodium", 12: "Magnesium", 13: "Aluminum", 14: "Silicon",
+      15: "Phosphorus", 16: "Sulfur", 17: "Chlorine", 18: "Argon",
+      19: "Potassium", 20: "Calcium", 21: "Scandium", 22: "Titanium",
+      23: "Vanadium", 24: "Chromium", 25: "Manganese", 26: "Iron",
+      27: "Cobalt", 28: "Nickel", 29: "Copper", 30: "Zinc", 31: "Gallium",
+      32: "Germanium", 33: "Arsenic", 34: "Selenium", 35: "Bromine",
+      36: "Krypton", 37: "Rubidium", 38: "Strontium", 39: "Yttrium",
+      40: "Zirconium", 41: "Niobium", 42: "Molybdenum", 43: "Technetium",
+      44: "Ruthenium", 45: "Rhodium", 46: "Palladium", 47: "Silver",
+      48: "Cadmium", 49: "Indium", 50: "Tin", 51: "Antimony",
+      52: "Tellurium", 53: "Iodine", 54: "Xenon", 55: "Cesium",
+      56: "Barium", 57: "Lanthanum", 58: "Cerium", 59: "Praseodymium",
+      60: "Neodymium", 61: "Promethium", 62: "Samarium", 63: "Europium",
+      64: "Gadolinium", 65: "Terbium", 66: "Dysprosium", 67: "Holmium",
+      68: "Erbium", 69: "Thulium", 70: "Ytterbium", 71: "Lutetium",
+      72: "Hafnium", 73: "Tantalum", 74: "Tungsten", 75: "Rhenium",
+      76: "Osmium", 77: "Iridium", 78: "Platinum", 79: "Gold",
+      80: "Mercury", 81: "Thallium", 82: "Lead", 83: "Bismuth",
+      84: "Polonium", 85: "Astatine", 86: "Radon", 87: "Francium",
+      88: "Radium", 89: "Actinium", 90: "Thorium", 91: "Protactinium",
+      92: "Uranium", 93: "Neptunium", 94: "Plutonium", 95: "Americium",
+      96: "Curium", 97: "Berkelium", 98: "Californium",
+      99:  "A-150 Tissue-Equivalent Plastic",
+      100: "Acetone",
+      101: "Acetylene",
+      102: "Adenine",
+      103: "Adipose Tissue (ICRP)",
+      104: "Air (dry, near sea level)",
+      105: "Alanine",
+      106: "Aluminum Oxide",
+      107: "Amber",
+      108: "Ammonia",
+      109: "Aniline",
+      110: "Anthracene",
+      111: "B-100 Bone-Equivalent Plastic",
+      112: "Bakelite",
+      113: "Barium Fluoride",
+      114: "Barium Sulfate",
+      115: "Benzene",
+      116: "Beryllium Oxide",
+      117: "Bismuth Germanium Oxide",
+      118: "Blood (ICRP)",
+      119: "Bone, Compact (ICRU)",
+      120: "Bone, Cortical (ICRP)",
+      121: "Boron Carbide",
+      122: "Boron Oxide",
+      123: "Brain (ICRP)",
+      124: "Butane",
+      125: "N-Butyl Alcohol",
+      126: "C-552 Air-Equivalent Plastic",
+      127: "Cadmium Telluride",
+      128: "Cadmium Tungstate",
+      129: "Calcium Carbonate",
+      130: "Calcium Fluoride",
+      131: "Calcium Oxide",
+      132: "Calcium Sulfate",
+      133: "Calcium Tungstate",
+      134: "Carbon Dioxide",
+      135: "Carbon Tetrachloride",
+      136: "Cellulose Acetate (Cellophane)",
+      137: "Cellulose Acetate Butyrate",
+      138: "Cellulose Nitrate",
+      139: "Ceric Sulfate Dosimeter Solution",
+      140: "Cesium Fluoride",
+      141: "Cesium Iodide",
+      142: "Chlorobenzene",
+      143: "Chloroform",
+      144: "Concrete (Portland)",
+      155: "Concrete (Portland)",
+      145: "Cyclohexane",
+      146: "1,2-Dichlorobenzene",
+      147: "Dichlorodiethyl Ether",
+      148: "1,2-Dichloroethane",
+      149: "Diethyl Ether",
+      150: "N,N-Dimethylformamide",
+      151: "Dimethyl Sulfoxide",
+      152: "Ethane",
+      153: "Ethyl Alcohol",
+      154: "Ethyl Cellulose",
+      156: "Ethylene",
+      157: "Eye Lens (ICRP)",
+      158: "Ferric Oxide",
+      159: "Ferroboride",
+      160: "Ferrous Oxide",
+      161: "Ferrous Sulfate Dosimeter Solution",
+      162: "Freon-12",
+      163: "Freon-12B2",
+      164: "Freon-13",
+      165: "Freon-13B1",
+      166: "Freon-13I1",
+      167: "Gadolinium Oxysulfide",
+      168: "Gallium Arsenide",
+      169: "Photographic Emulsion (Gel)",
+      170: "Glass, Pyrex",
+      171: "Glass, Lead",
+      172: "Glass, Plate",
+      173: "Glucose",
+      174: "Glutamine",
+      175: "Glycerol",
+      176: "Guanine",
+      177: "Gypsum (Plaster of Paris)",
+      178: "N-Heptane",
+      179: "N-Hexane",
+      180: "Kapton (Polyimide Film)",
+      181: "Lanthanum Oxybromide",
+      182: "Lanthanum Oxysulfide",
+      183: "Lead Oxide",
+      184: "Lithium Amide",
+      185: "Lithium Carbonate",
+      186: "Lithium Fluoride",
+      187: "Lithium Hydride",
+      188: "Lithium Iodide",
+      189: "Lithium Oxide",
+      190: "Lithium Tetraborate",
+      191: "Lung (ICRP)",
+      192: "M3 Wax",
+      193: "Magnesium Carbonate",
+      194: "Magnesium Fluoride",
+      195: "Magnesium Oxide",
+      196: "Magnesium Tetraborate",
+      197: "Mercuric Iodide",
+      198: "Methane",
+      199: "Methanol",
+      200: "Mix D Wax",
+      201: "MS20 Tissue Substitute",
+      202: "Muscle, Skeletal (ICRP)",
+      203: "Muscle, Striated (ICRU)",
+      204: "Muscle-Equivalent Liquid (with sucrose)",
+      205: "Muscle-Equivalent Liquid (no sucrose)",
+      206: "Naphthalene",
+      207: "Nitrobenzene",
+      208: "Nitrous Oxide",
+      209: "Nylon (DuPont Elvamide 8062)",
+      210: "Nylon, Type 6 and Type 6/6",
+      211: "Nylon, Type 6/10",
+      212: "Nylon, Type 11 (Rilsan)",
+      213: "Octane (liquid)",
+      214: "Paraffin Wax",
+      215: "N-Pentane",
+      216: "PMMA / Perspex / Lucite",
+      217: "Photographic Emulsion",
+      218: "Plastic Scintillator (Vinyltoluene)",
+      219: "Plutonium Dioxide",
+      220: "Polyacrylonitrile",
+      221: "Polycarbonate (Makrolon / Lexan)",
+      222: "Polychlorostyrene",
+      223: "Polyethylene",
+      224: "Mylar (PET)",
+      225: "Polypropylene",
+      226: "Polystyrene",
+      227: "Teflon (PTFE)",
+      228: "Polytrifluorochloroethylene",
+      229: "Polyvinyl Acetate",
+      230: "Polyvinyl Alcohol",
+      231: "Polyvinyl Butyral",
+      232: "Polyvinyl Chloride",
+      233: "Saran",
+      234: "Polyvinylidene Fluoride",
+      235: "Polyvinylpyrrolidone",
+      236: "Potassium Iodide",
+      237: "Potassium Oxide",
+      238: "Propane",
+      239: "Propane (liquid)",
+      240: "N-Propyl Alcohol",
+      241: "Pyridine",
+      242: "Rubber, Butyl",
+      243: "Rubber, Natural",
+      244: "Rubber, Neoprene",
+      245: "Silicon Dioxide",
+      246: "Silver Bromide",
+      247: "Silver Chloride",
+      248: "Silver Halides in Photographic Emulsion",
+      249: "Silver Iodide",
+      250: "Skin (ICRP)",
+      251: "Sodium Carbonate",
+      252: "Sodium Iodide",
+      253: "Sodium Monoxide",
+      254: "Sodium Nitrate",
+      255: "Stilbene",
+      256: "Sucrose",
+      257: "Terphenyl",
+      258: "Testes (ICRP)",
+      259: "Tetrachloroethylene",
+      260: "Thallium Chloride",
+      261: "Tissue, Soft (ICRP)",
+      262: "Tissue, Soft (ICRU, 4-component)",
+      263: "Tissue-Equivalent Gas (methane based)",
+      264: "Tissue-Equivalent Gas (propane based)",
+      265: "Titanium Dioxide",
+      266: "Toluene",
+      267: "Trichloroethylene",
+      268: "Triethyl Phosphate",
+      269: "Tungsten Hexafluoride",
+      270: "Uranium Dicarbide",
+      271: "Uranium Monocarbide",
+      272: "Uranium Oxide",
+      273: "Urea",
+      274: "Valine",
+      275: "Viton Fluoroelastomer",
+      276: "Water (liquid)",
+      277: "Water (vapor)",
+      278: "Xylene",
+      906: "Graphite",
+    };
+
+    // Build the "all" material set: elements 1–98 + compounds 99–278 + 906
+    const ALL_MATERIAL_IDS = [];
+    for (let i = 1; i <= 278; i++) {
+      if (MATERIAL_NAME_TABLE[i]) ALL_MATERIAL_IDS.push(i);
+    }
+    ALL_MATERIAL_IDS.push(906);
+
+    function getMaterialGroup(id) {
+      if (id >= 1 && id <= 98) return "element";
+      return "compound";
+    }
+
+    function getMaterialsForSet(setKey) {
+      return setKey === "all" ? ALL_MATERIAL_IDS : STANDARD_MATERIAL_IDS;
+    }
+
+    // Union of all materials that could appear
+    const ALL_MATERIALS = {};
+    for (const id of ALL_MATERIAL_IDS) {
+      ALL_MATERIALS[id] = {
+        name: MATERIAL_NAME_TABLE[id] || `Material ${id}`,
+        group: getMaterialGroup(id),
+      };
+    }
+
+    // =========================================================================
+    //  STATE
+    // =========================================================================
+
+    const state = {
+      selectedProgram: null,
+      selectedIon: null,
+      selectedMaterial: null,
+    };
+
+    // =========================================================================
+    //  CORE FILTERING
+    // =========================================================================
+
+    function getAvailablePrograms() {
+      const available = new Set();
+      for (const p of PROGRAMS) {
+        if (state.selectedIon !== null && !p.ions.includes(state.selectedIon)) continue;
+        if (state.selectedMaterial !== null) {
+          const mats = getMaterialsForSet(p.materialSet);
+          if (!mats.includes(state.selectedMaterial)) continue;
+        }
+        available.add(p.id);
+      }
+      return available;
+    }
+
+    function getAvailableIons() {
+      const ions = new Set();
+      for (const p of PROGRAMS) {
+        if (state.selectedProgram !== null && p.id !== state.selectedProgram) continue;
+        if (state.selectedMaterial !== null) {
+          const mats = getMaterialsForSet(p.materialSet);
+          if (!mats.includes(state.selectedMaterial)) continue;
+        }
+        for (const ion of p.ions) ions.add(ion);
+      }
+      return ions;
+    }
+
+    function getAvailableMaterials() {
+      const mats = new Set();
+      for (const p of PROGRAMS) {
+        if (state.selectedProgram !== null && p.id !== state.selectedProgram) continue;
+        if (state.selectedIon !== null && !p.ions.includes(state.selectedIon)) continue;
+        for (const m of getMaterialsForSet(p.materialSet)) mats.add(m);
+      }
+      return mats;
+    }
+
+    // =========================================================================
+    //  RENDERING
+    // =========================================================================
+
+    function render() {
+      const availProgs = getAvailablePrograms();
+      const availIons = getAvailableIons();
+      const availMats = getAvailableMaterials();
+
+      // Programs
+      for (const li of document.querySelectorAll("#list-program li[data-id]")) {
+        const id = parseInt(li.dataset.id);
+        li.classList.toggle("disabled", !availProgs.has(id));
+        li.classList.toggle("selected", state.selectedProgram === id);
+      }
+
+      // Ions
+      for (const li of document.querySelectorAll("#list-ion li[data-id]")) {
+        const id = parseInt(li.dataset.id);
+        li.classList.toggle("disabled", !availIons.has(id));
+        li.classList.toggle("selected", state.selectedIon === id);
+      }
+
+      // Materials
+      for (const li of document.querySelectorAll("#list-material li[data-id]")) {
+        const id = parseInt(li.dataset.id);
+        li.classList.toggle("disabled", !availMats.has(id));
+        li.classList.toggle("selected", state.selectedMaterial === id);
+      }
+
+      // Apply text filters
+      applyFilter("filter-program", "list-program");
+      applyFilter("filter-ion", "list-ion");
+      applyFilter("filter-material", "list-material");
+
+      // Result panel
+      updateResultPanel();
+    }
+
+    function applyFilter(inputId, listId) {
+      const query = document.getElementById(inputId).value.toLowerCase();
+      for (const li of document.getElementById(listId).children) {
+        if (li.classList.contains("separator") || li.classList.contains("group-header")) {
+          // Show group headers / separators only if no filter active
+          li.style.display = query ? "none" : "";
+          continue;
+        }
+        if (!query) {
+          li.style.display = "";
+        } else {
+          const text = li.textContent.toLowerCase();
+          li.style.display = text.includes(query) ? "" : "none";
+        }
+      }
+    }
+
+    function updateResultPanel() {
+      const resProgram = document.getElementById("res-program");
+      const resIon = document.getElementById("res-ion");
+      const resMaterial = document.getElementById("res-material");
+      const resEnergy = document.getElementById("res-energy");
+      const btnCalc = document.getElementById("btn-calculate");
+      const inputEnergy = document.getElementById("input-energy");
+      const mockContainer = document.getElementById("mock-result-container");
+
+      mockContainer.innerHTML = "";
+
+      if (state.selectedProgram !== null) {
+        const p = PROGRAMS.find(p => p.id === state.selectedProgram);
+        resProgram.textContent = p ? p.label : "—";
+      } else {
+        resProgram.textContent = "—";
+      }
+
+      if (state.selectedIon !== null) {
+        const ion = IONS[state.selectedIon];
+        resIon.textContent = ion ? `Z=${state.selectedIon} — ${ion.name}` : "—";
+      } else {
+        resIon.textContent = "—";
+      }
+
+      if (state.selectedMaterial !== null) {
+        const mat = ALL_MATERIALS[state.selectedMaterial];
+        resMaterial.textContent = mat ? `#${state.selectedMaterial} — ${mat.name}` : "—";
+      } else {
+        resMaterial.textContent = "—";
+      }
+
+      const allSelected = state.selectedProgram !== null && state.selectedIon !== null && state.selectedMaterial !== null;
+
+      if (allSelected) {
+        const p = PROGRAMS.find(p => p.id === state.selectedProgram);
+        if (p) {
+          resEnergy.textContent = `${p.energy.min} – ${p.energy.max} MeV/u`;
+          inputEnergy.min = p.energy.min;
+          inputEnergy.max = p.energy.max;
+          if (!inputEnergy.value) inputEnergy.value = "";
+        }
+        btnCalc.disabled = false;
+        inputEnergy.disabled = false;
+      } else {
+        resEnergy.textContent = "—";
+        btnCalc.disabled = true;
+        inputEnergy.disabled = true;
+      }
+    }
+
+    // =========================================================================
+    //  POPULATION
+    // =========================================================================
+
+    function populatePrograms() {
+      const ul = document.getElementById("list-program");
+
+      // Tabulated data programs (id < 100)
+      const tabulated = PROGRAMS.filter(p => p.id < 100);
+      const analytical = PROGRAMS.filter(p => p.id >= 100);
+
+      const sepTab = document.createElement("li");
+      sepTab.className = "separator";
+      sepTab.textContent = "Tabulated data";
+      ul.appendChild(sepTab);
+
+      for (const p of tabulated) {
+        const li = document.createElement("li");
+        li.dataset.id = p.id;
+        li.textContent = p.label;
+        li.addEventListener("click", () => handleClick("selectedProgram", p.id));
+        ul.appendChild(li);
+      }
+
+      const sepAnalytical = document.createElement("li");
+      sepAnalytical.className = "separator";
+      sepAnalytical.textContent = "Analytical models";
+      ul.appendChild(sepAnalytical);
+
+      for (const p of analytical) {
+        const li = document.createElement("li");
+        li.dataset.id = p.id;
+        li.textContent = p.label;
+        li.addEventListener("click", () => handleClick("selectedProgram", p.id));
+        ul.appendChild(li);
+      }
+    }
+
+    function populateIons() {
+      const ul = document.getElementById("list-ion");
+      const ionIds = Object.keys(IONS).map(Number).sort((a, b) => a - b);
+
+      for (const z of ionIds) {
+        const ion = IONS[z];
+        const li = document.createElement("li");
+        li.dataset.id = z;
+        li.textContent = `Z=${z}  ${ion.name}`;
+        li.addEventListener("click", () => handleClick("selectedIon", z));
+        ul.appendChild(li);
+      }
+    }
+
+    function populateMaterials() {
+      const ul = document.getElementById("list-material");
+      const matIds = ALL_MATERIAL_IDS.slice().sort((a, b) => a - b);
+
+      let inElements = false;
+      let inCompounds = false;
+
+      for (const id of matIds) {
+        const mat = ALL_MATERIALS[id];
+        if (!mat) continue;
+
+        if (mat.group === "element" && !inElements) {
+          const header = document.createElement("li");
+          header.className = "group-header";
+          header.textContent = "Elements";
+          ul.appendChild(header);
+          inElements = true;
+        }
+
+        if (mat.group === "compound" && !inCompounds) {
+          const header = document.createElement("li");
+          header.className = "group-header";
+          header.textContent = "Compounds";
+          ul.appendChild(header);
+          inCompounds = true;
+        }
+
+        const li = document.createElement("li");
+        li.dataset.id = id;
+        li.textContent = `${id}  ${mat.name}`;
+        li.addEventListener("click", () => handleClick("selectedMaterial", id));
+        ul.appendChild(li);
+      }
+    }
+
+    // =========================================================================
+    //  EVENT HANDLERS
+    // =========================================================================
+
+    function handleClick(stateKey, id) {
+      if (state[stateKey] === id) {
+        state[stateKey] = null;
+      } else {
+        state[stateKey] = id;
+      }
+      render();
+    }
+
+    function setupFilters() {
+      document.getElementById("filter-program").addEventListener("input", () => {
+        applyFilter("filter-program", "list-program");
+      });
+      document.getElementById("filter-ion").addEventListener("input", () => {
+        applyFilter("filter-ion", "list-ion");
+      });
+      document.getElementById("filter-material").addEventListener("input", () => {
+        applyFilter("filter-material", "list-material");
+      });
+    }
+
+    function setupReset() {
+      document.getElementById("btn-reset").addEventListener("click", () => {
+        state.selectedProgram = null;
+        state.selectedIon = null;
+        state.selectedMaterial = null;
+        document.getElementById("filter-program").value = "";
+        document.getElementById("filter-ion").value = "";
+        document.getElementById("filter-material").value = "";
+        document.getElementById("input-energy").value = "";
+        document.getElementById("mock-result-container").innerHTML = "";
+        render();
+      });
+    }
+
+    function setupCalculate() {
+      document.getElementById("btn-calculate").addEventListener("click", () => {
+        const container = document.getElementById("mock-result-container");
+        container.innerHTML = '<div class="mock-result">Stopping power: — (demo mode, not connected to libdedx)</div>';
+      });
+    }
+
+    // =========================================================================
+    //  INIT
+    // =========================================================================
+
+    document.addEventListener("DOMContentLoaded", () => {
+      populatePrograms();
+      populateIons();
+      populateMaterials();
+      setupFilters();
+      setupReset();
+      setupCalculate();
+      render();
+    });
+  </script>
+</body>
+</html>
