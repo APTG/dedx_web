@@ -40,5 +40,54 @@
 
 ## Working Process
 - Check `docs/progress/` for completed stages before starting new work
+- Check `CHANGELOG-AI.md` for recent AI session history
 - One feature per chat session — reference the spec file, don't re-explain
 - Commit after each working increment
+
+## AI Session Logging (MANDATORY)
+
+Every AI coding session MUST be logged for project continuity.
+
+### Quick Reference
+- **Changelog**: `CHANGELOG-AI.md` (repo root) — append one-line summaries at the top
+- **Detailed logs**: `docs/ai-logs/YYYY-MM-DD-<slug>.md` — one file per session
+
+### Changelog Entry Format (CHANGELOG-AI.md)
+Append to the top (below the header):
+```
+- YYYY-MM-DD | Stage N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md)
+```
+
+### Session Log Format (docs/ai-logs/)
+Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` at session start. Each log must include:
+1. **Session narrative** — what the user asked and what the AI did, preserving the
+   prompt→response history so future sessions understand the reasoning chain.
+2. **Task entries** — one per completed unit of work:
+
+```markdown
+# <Date> — <Topic>
+
+## Session Narrative
+<!-- Summarize each user prompt and AI response/action in order -->
+
+### Prompt 1: <summary of user request>
+**AI response**: <what was done, key decisions, outcome>
+
+### Prompt 2: ...
+...
+
+## Tasks
+
+### <Task title>
+- **Status**: completed | partial | blocked
+- **Stage**: (from docs/00-redesign-plan.md)
+- **Files changed**: list of paths
+- **Decision**: any non-obvious choice and why
+- **Issue**: anything unresolved
+```
+
+### Rules
+- Check `docs/progress/` and `CHANGELOG-AI.md` at session start
+- Use the slug from the feature spec filename when applicable
+- For trivial changes (< 3 files, no decisions), a changelog entry alone is sufficient — skip the detailed log
+- Commit messages still use Conventional Commits (`feat:`, `fix:`, etc.)
