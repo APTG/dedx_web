@@ -338,6 +338,7 @@ As a <role>, I want to <action> so that <benefit>.
 | **Be specific about JSROOT styling** | "Log-log axes, 14pt labels, legend top-right, line width 2" — not "make it pretty." |
 | **Log progress in `docs/progress/`** | So the next session knows what's done and what's next. |
 | **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce. |
+| **Log every AI session** | Append to `CHANGELOG-AI.md` + create `docs/ai-logs/YYYY-MM-DD-<slug>.md`. See `.github/copilot-instructions.md` for format. |
 
 ---
 
@@ -348,7 +349,8 @@ When starting a new LLM session on any machine:
 1. Open the `redesign/planning` branch.
 2. `.github/copilot-instructions.md` loads automatically — no manual context needed.
 3. Check `docs/progress/` to see which stage was last completed.
-4. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
+4. Check `CHANGELOG-AI.md` for recent AI session history.
+5. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
    *"Read `docs/00-redesign-plan.md` for full project context."*
 5. After implementing, update `docs/progress/` and commit.
 
