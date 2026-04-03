@@ -19,8 +19,8 @@
 - `libdedx/include/dedx_elements.h` — ion/material ID enums
 
 **Key decisions made during drafting:**
-1. **Auto-select is a frontend construct** — uses `DEDX_ICRU` (ID 9) for fetching ion/material lists but displays as a synthetic "Auto-select" entry with resolved name.
-2. **Cascading: Program → {Ions, Materials}** — ion and material are siblings, not cascaded from each other. This matches the old code pattern.
+1. **Auto-select is a frontend construct** — displays as a synthetic "Auto-select" entry with resolved program name (e.g., "Auto-select → ICRU 90"). `DEDX_ICRU` (ID 9) is used internally only for **resolution** (mapping ion type to concrete ICRU dataset), **not** for building the full ion/material lists.
+2. **Cascading: Program → {Ions, Materials}** (v1 design) — ion and material were siblings, not cascaded from each other. This matched the old code pattern. **Superseded in v2** by bidirectional filtering via a compatibility matrix (all programs iterated at init).
 3. **Selection preservation on program change** — if the previously selected ion/material exists in the new program's list, keep it; otherwise fall back + notify. Taken from `WithLibdedxEntities.findEntities()` pattern.
 4. **Typeahead search** — inspired by ATIMA reference from project vision §4.2. Ion aliases ("proton", "alpha") are a frontend config, not from libdedx.
 5. **Electron special case** — ion ID 1001 only available under ESTAR (program ID 3).
@@ -35,5 +35,5 @@ Wrote `docs/04-feature-specs/entity-selection.md` with all sections from the tem
 - **Status**: completed
 - **Stage**: Stage 1 (Requirements & Specifications)
 - **Files changed**: `docs/04-feature-specs/entity-selection.md` (created)
-- **Decision**: Auto-select uses DEDX_ICRU (ID 9) for list fetching; the sentinel ID is -1 (never sent to C API). Ion aliases defined as a static TS config file rather than embedded in WASM.
-- **Issue**: Three open questions at end of spec (auto-select display style, material grouping, dropdown max height) — needs user input.
+- **Decision**: Auto-select sentinel ID is -1 (never sent to C API). `DEDX_ICRU` (ID 9) is used only for **program resolution** (mapping ion→concrete ICRU dataset), not for building ion/material lists — those come from iterating all programs via the compatibility matrix (added in v2). Ion aliases defined as a static TS config file rather than embedded in WASM.
+- **Issue**: Three open questions at end of spec (auto-select display style, material grouping, dropdown max height) — needs user input. Material grouping resolved in v3 (split panel).
