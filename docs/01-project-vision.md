@@ -1,0 +1,251 @@
+# Project Vision — webdedx
+
+> **Status:** Draft v1 (3 April 2026)
+>
+> This document describes *what* webdedx is, *who* it serves, and *why* it exists.
+> It does **not** describe how individual features work — those live in
+> [`docs/04-feature-specs/`](04-feature-specs/).
+
+---
+
+## 1. Purpose
+
+**webdedx** is a browser-based calculator and plotting tool for charged-particle
+stopping powers and ranges in matter, powered by the
+[libdedx](https://github.com/libdedx/libdedx) C library compiled to WebAssembly.
+
+It replaces the broken legacy React app with a modern, fast, client-side-only
+application that requires no backend, no login, and no installation.
+
+---
+
+## 2. Audience
+
+| Persona | Typical task | Experience level |
+|---------|-------------|-----------------|
+| **Medical physicist** | "What is the range of 200 MeV protons in water?" | Expert in radiation physics, non-expert in software |
+| **Radiation physicist / researcher** | Compare stopping power curves across programs or ions | Needs publication-quality plots |
+| **Student** | Explore how stopping power varies with energy, ion, or material | Learning; needs clear labels and docs |
+| **Shielding engineer** | Look up range in a specific material for beam-stop design | Wants quick numeric answers |
+
+All personas share one trait: **they want answers fast, with minimal clicking.**
+
+---
+
+## 3. Core Use Cases (Priority Order)
+
+### 3.1 Range Calculation (80% use case)
+
+The user selects a particle, a material, and enters one or a few energy values.
+The app returns the CSDA range. This is the **default view** on first load.
+
+> Default state on launch: **auto-select (DEDX_ICRU) / proton / liquid water / 100 MeV**
+> — the user sees a result immediately without touching any control.
+
+### 3.2 Stopping Power Plotting
+
+The user builds one or more data series (program + ion + material) and views
+overlaid stopping-power-vs-energy curves on an interactive plot. Common
+comparisons:
+
+- Same ion, same material, different programs (e.g., PSTAR vs ICRU90)
+- Same material, different ions (e.g., proton vs carbon in water)
+- Same ion, different materials (e.g., proton in water vs PMMA)
+
+> Default state on the Plot page: selectors pre-filled with
+> **auto-select (DEDX_ICRU) / proton / liquid water**, but **no data plotted**
+> until the user adds the first series.
+
+### 3.3 Inverse Lookups (advanced)
+
+Given a stopping power or CSDA range value, find the corresponding energy.
+This is an advanced feature, not shown in the default UI.
+
+### 3.4 Multi-Program Comparison (advanced)
+
+Run the same query (ion + material + energy) across multiple stopping-power
+programs simultaneously to compare results.
+
+---
+
+## 4. Design Principles
+
+### 4.1 Minimum Clicks
+
+Where a choice has 2–4 options (e.g., MeV vs MeV/nucl vs MeV/u), use
+**segmented controls or radio buttons** — never dropdowns. The user should see
+all options at a glance and select with a single click.
+
+For entity selection (ions, materials), use **typeahead/autocomplete** inputs
+inspired by [ATIMA](https://www.isotopea.com/webatima/): the user types a
+fragment ("car" → Carbon-12) and sees matching results with properties
+(Z, A, atomic mass, aliases like "alpha" → He-4) displayed inline.
+
+### 4.2 Progressive Disclosure
+
+The default UI is simple: particle, material, energy → result. Advanced
+features (inverse lookups, multi-program mode, MSTAR modes, aggregate state
+override, interpolation settings, custom compounds) are hidden behind an
+"Advanced" toggle or section. They do not add visual clutter in the standard
+workflow.
+
+### 4.3 "Best Available Answer" by Default
+
+The app selects the most appropriate stopping-power program automatically
+based on the chosen ion and material. Users *can* override the program
+selection, but they shouldn't *have* to.
+
+libdedx already implements this logic via the **`DEDX_ICRU`** meta-program,
+which resolves to the best available dataset at runtime:
+
+| Ion | Resolution chain |
+|-----|-----------------|
+| Proton (Z=1) | ICRU 90 → PSTAR (ICRU 49 era) |
+| Alpha (Z=2) | ICRU 90 → ICRU 49 |
+| Carbon (Z=6) | ICRU 90 → ICRU 73 → ICRU 73 (old) |
+| Other heavy ions | ICRU 73 → ICRU 73 (old) |
+
+Additionally, `dedx_get_simple_stp()` implements a two-stage fallback:
+first tries `DEDX_ICRU`, then falls back to `DEDX_DEFAULT` (Bethe formula)
+if no tabulated data is available.
+
+webdedx should leverage this C-level resolution and display which concrete
+program was actually used (e.g., "ICRU 90 (via auto-select)") so the user
+knows the data source. The auto-select program should be the default in
+both the Calculator and Plot pages. A webdedx-level configuration entity
+may extend this logic in the future (e.g., preferring MSTAR for heavy ions
+where applicable), but v1 should rely on the libdedx `DEDX_ICRU` resolver.
+
+### 4.4 Shareability
+
+Every calculation state is encoded in the URL. A user can copy the URL from
+the browser's address bar and share it — the recipient sees the exact same
+inputs and results. No server-side state is needed.
+
+### 4.5 Export-Friendly
+
+Results (numeric tables and plots) can be exported for further analysis:
+
+- **CSV** — Windows/Excel-compatible by default (UTF-8 BOM, configurable
+  delimiter). Openable directly in Microsoft Excel.
+- **PDF** — Vector graphics for publication-quality plot output.
+
+---
+
+## 5. Application Structure
+
+The app has **three top-level pages** (routes/tabs):
+
+| Page | Purpose | Default state |
+|------|---------|---------------|
+| **Calculator** | Numeric range & stopping power lookup | Pre-filled with auto-select/proton/water/100 MeV, result shown |
+| **Plot** | Interactive stopping-power-vs-energy chart | Selectors pre-filled with auto-select/proton/water, canvas empty |
+| **Documentation** | User guide + technical reference | Static content |
+
+The Calculator page is the **landing page** (first thing the user sees).
+
+### 5.1 Documentation Page
+
+The documentation page has two tiers:
+
+- **User guide** — prominently linked from the main navigation. Covers how
+  to use the calculator, plot, and advanced features. Written for the
+  audience described in §2.
+- **Technical reference** — accessible from within the user guide or via a
+  secondary navigation section. Covers libdedx program descriptions, data
+  sources, physics background, C API details, and WASM build information.
+  Not hidden, but not competing for attention with the user guide.
+
+---
+
+## 6. Technical Constraints
+
+| Constraint | Detail |
+|-----------|--------|
+| **Client-side only** | All computation runs in the browser via WebAssembly. No backend server. |
+| **Hosted on GitHub Pages** | Static site deployment. No server-side rendering or API endpoints. |
+| **No authentication** | Public access, no user accounts, no saved sessions (URL sharing instead). |
+| **libdedx as the engine** | All stopping power and range data come from the libdedx C library. The app is a frontend for this library. |
+| **WASM module size** | The compiled WASM binary includes embedded data tables. Initial load may be several MB — must handle gracefully with a loading indicator. |
+
+---
+
+## 7. Device Support
+
+All three form factors are **first-class** targets:
+
+| Device | Considerations |
+|--------|---------------|
+| **Desktop** (≥1024px) | Full layout with side-by-side controls and results. Primary development target. |
+| **Tablet** (768–1023px) | Stacked layout. Touch-friendly controls. Usable at beamlines. |
+| **Phone** (<768px) | Single-column. Collapsible sections. Plot must be zoomable. |
+
+---
+
+## 8. Feature Roadmap
+
+Features are delivered incrementally. The architecture supports all features
+from the start (especially custom compounds), but UI surfaces are added
+progressively.
+
+### v1 — Core
+
+| Feature | Spec |
+|---------|------|
+| Entity selection (cascading, typeahead) | `04-feature-specs/entity-selection.md` |
+| Calculator (range + stopping power) | `04-feature-specs/calculator.md` |
+| Plot (multi-series, interactive) | `04-feature-specs/plot.md` |
+| Unit handling (energy, stopping power, range) | `04-feature-specs/unit-handling.md` |
+| Shareable URLs | `04-feature-specs/shareable-urls.md` |
+| CSV export | `04-feature-specs/export.md` |
+
+### v1.5 — Comparison & Export
+
+| Feature | Spec |
+|---------|------|
+| Multi-program comparison | `04-feature-specs/multi-program.md` |
+| PDF export (vector) | `04-feature-specs/export.md` |
+| Inverse lookups | `04-feature-specs/inverse-lookups.md` |
+
+### v2 — Advanced
+
+| Feature | Spec |
+|---------|------|
+| Custom compounds | `04-feature-specs/custom-compounds.md` |
+| Advanced options (MSTAR modes, aggregate state, interpolation, density/I-value override) | `04-feature-specs/advanced-options.md` |
+
+---
+
+## 9. Error Philosophy
+
+- **Standard mode:** Human-friendly messages.
+  *"Energy 10 000 MeV/nucl exceeds the maximum (1 000 MeV/nucl) for PSTAR with protons."*
+- **On demand:** A "Show details" link or expandable section reveals the
+  technical error code from libdedx (e.g., `DEDX_ERR_ENERGY_OUT_OF_RANGE = 103`).
+- Errors from one program in a multi-program query must **not** abort the
+  other programs — partial results are shown with per-program error indicators.
+
+---
+
+## 10. Visual Identity
+
+- **Style:** Scientific and minimal — clean typography, generous whitespace,
+  no decorative elements. The data is the focus.
+- **Color palette:** Neutral base with a small accent color for interactive
+  elements. Plot line colors follow a perceptually distinct, colorblind-safe
+  sequence.
+- **Dark mode:** Not required for v1, but the design should not preclude it
+  (avoid hardcoded colors).
+- **Typography:** System font stack for UI; monospace for numeric results.
+
+---
+
+## 11. Related Documents
+
+| Document | Purpose |
+|----------|---------|
+| [00-redesign-plan.md](00-redesign-plan.md) | Full implementation plan with stages |
+| [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript interface for the libdedx WASM wrapper |
+| [09-non-functional-requirements.md](09-non-functional-requirements.md) | Performance, browser support, accessibility |
+| `04-feature-specs/*.md` | Detailed per-feature specifications |
+| `03-architecture.md` | Component tree, data flow, WASM lifecycle |
