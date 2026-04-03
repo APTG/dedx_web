@@ -108,10 +108,20 @@ Where a choice has 2–4 options (e.g., MeV vs MeV/nucl vs MeV/u), use
 **segmented controls or radio buttons** — never dropdowns. The user should see
 all options at a glance and select with a single click.
 
-For entity selection (ions, materials), use **typeahead/autocomplete** inputs
-inspired by [ATIMA](https://www.isotopea.com/webatima/): the user types a
-fragment ("car" → Carbon-12) and sees matching results with properties
-(Z, A, atomic mass, aliases like "alpha" → He-4) displayed inline.
+For entity selection (ions, materials), the UI varies by page context:
+
+- **Plot page** — always-visible scrollable list panels in a sidebar,
+  with text filter inputs. Unavailable items are greyed out (not hidden)
+  so the user can see the full data landscape. Inspired by the
+  [`libdedx_demo.html`](https://github.com/APTG/libdedx/issues/79#issuecomment-4158280966)
+  prototype.
+- **Calculator page** — compact **typeahead/autocomplete** dropdowns
+  inspired by [ATIMA](https://www.isotopea.com/webatima/): the user types
+  a fragment ("car" → Carbon-12) and sees matching results with properties
+  (Z, A, symbol, aliases like "alpha" → He-4) displayed inline.
+
+Both modes use bidirectional filtering and share the same selection state.
+See `docs/04-feature-specs/entity-selection.md` for the full specification.
 
 ### 4.3 "Best Available Answer" by Default
 
