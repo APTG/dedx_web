@@ -370,7 +370,7 @@ The current (old) code has useful reference material despite being broken.
 The last commit on `master` containing this code should be tagged or noted
 before Stage 9 (legacy removal). You can find it with `git log master --oneline -1`.
 
-> **TODO:** Record the commit hash here before removing legacy code.
+> **Legacy code last commit:** `0330233` (`docs: add AI session logging system`)
 
 Reference files:
 
