@@ -4,7 +4,7 @@
 >
 > This document describes *what* webdedx is, *who* it serves, and *why* it exists.
 > It does **not** describe how individual features work — those live in
-> [`docs/04-feature-specs/`](04-feature-specs/).
+> `docs/04-feature-specs/`.
 
 ---
 
@@ -100,8 +100,8 @@ its unit — or with the wrong unit — is worse than no answer at all.
 - When the data range spans SI prefixes, axis tick labels should auto-scale
   (e.g., switch from cm to mm) and the axis label must update accordingly.
 
-> Full unit conversion logic is specified in
-> [`04-feature-specs/unit-handling.md`](04-feature-specs/unit-handling.md).
+> Full unit conversion logic is specified in TODO: `docs/04-feature-specs/unit-handling.md`
+> (add this spec file in a future PR).
 
 ### 4.2 Minimum Clicks
 
@@ -290,6 +290,6 @@ progressively.
 |----------|---------|
 | [00-redesign-plan.md](00-redesign-plan.md) | Full implementation plan with stages |
 | [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript interface for the libdedx WASM wrapper |
-| [09-non-functional-requirements.md](09-non-functional-requirements.md) | Performance, browser support, accessibility |
+| `09-non-functional-requirements.md` | Performance, browser support, accessibility |
 | `04-feature-specs/*.md` | Detailed per-feature specifications |
 | `03-architecture.md` | Component tree, data flow, WASM lifecycle |

@@ -81,8 +81,10 @@ docs/
 │   ├── calculator.md                # Calculator page with live results
 │   ├── plot.md                      # Multi-series JSROOT plotting
 │   ├── unit-handling.md             # MeV / MeV/nucl / MeV/u conversion logic
-│   ├── multi-program.md             # Calculate across multiple programs at once│   ├── inverse-lookups.md           # Energy from stopping power / CSDA range
-│   ├── advanced-options.md          # MSTAR modes, aggregate state, interpolation│   ├── export.md                    # CSV + PDF export
+│   ├── multi-program.md             # Calculate across multiple programs at once
+│   ├── inverse-lookups.md           # Energy from stopping power / CSDA range
+│   ├── advanced-options.md          # MSTAR modes, aggregate state, interpolation
+│   ├── export.md                    # CSV + PDF export
 │   └── shareable-urls.md            # URL-encoded state for sharing
 ├── 05-ui-wireframes.md              # Page-by-page layout descriptions
 ├── 06-wasm-api-contract.md          # TypeScript interface for libdedx wrapper
