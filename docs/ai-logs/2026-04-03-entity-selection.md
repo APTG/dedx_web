@@ -37,3 +37,27 @@ Wrote `docs/04-feature-specs/entity-selection.md` with all sections from the tem
 - **Files changed**: `docs/04-feature-specs/entity-selection.md` (created)
 - **Decision**: Auto-select sentinel ID is -1 (never sent to C API). `DEDX_ICRU` (ID 9) is used only for **program resolution** (mapping ion→concrete ICRU dataset), not for building ion/material lists — those come from iterating all programs via the compatibility matrix (added in v2). Ion aliases defined as a static TS config file rather than embedded in WASM.
 - **Issue**: Three open questions at end of spec (auto-select display style, material grouping, dropdown max height) — needs user input. Material grouping resolved in v3 (split panel).
+
+### Review v3 spec for consistency
+- **Status**: completed
+- **Stage**: Stage 1
+- **Files changed**: none (analysis only)
+- **Decision**: Identified 6 consistency issues: (1) ICRU 90 is not a separate program in libdedx — `DEDX_ICRU` meta-program resolves internally; (2) `DEDX_ICRU` and `DEDX_DEFAULT` overlap with Auto-select; (3) `DEDX_BETHE_EXT00` not enumerated in spec; (4) "Liquid Water" vs "Water (liquid)" naming inconsistency; (5) `IonEntity` lacks `symbol` field for display format; (6) project vision §4.2 says "typeahead/autocomplete" but v3 uses always-visible panels.
+- **Issue**: All raised as questions to user. Proposed 3 alternative layouts (A: narrower program panel, B: collapsible program, C: compact calculator mode).
+
+### Update spec to v4 with two layout modes
+- **Status**: completed
+- **Stage**: Stage 1
+- **Files changed**: `docs/04-feature-specs/entity-selection.md` (updated UI Layout section + Acceptance Criteria)
+- **Decision**: Full panels for Plot page (sidebar ~40% + canvas ~60%), compact dropdown comboboxes for Calculator page (centered form, max 720px). Program panel de-emphasized with narrower width (~180px in compact, shorter height ~150px in full panels). Both modes share same `EntitySelectionState` store. Layout mode determined by route, not user toggle. UX rationale added citing Fitt's Law, context-appropriate density (NNG), progressive disclosure, F-pattern scanning.
+
+### Prompt 4: Resolve open questions (v5)
+**User request**: (1) Use "ICRU 90" enriched name, (2) hide `DEDX_ICRU` from program panel, (3) add `symbol` to `IonEntity`, (4) update project vision §4.2.
+
+**AI response**: Applied all four changes across three files.
+
+### Update spec to v5 — resolve open questions
+- **Status**: completed
+- **Stage**: Stage 1
+- **Files changed**: `docs/04-feature-specs/entity-selection.md`, `docs/06-wasm-api-contract.md`, `docs/01-project-vision.md`
+- **Decision**: (1) Resolved label shows frontend-enriched "ICRU 90" not raw C name "ICRU". (2) `DEDX_ICRU` (ID 9) hidden from program panel — Auto-select covers its function. (3) `IonEntity.symbol: string` added to WASM API contract. (4) Project vision §4.2 updated to describe dual-mode entity selection (panels for Plot, dropdowns for Calculator).

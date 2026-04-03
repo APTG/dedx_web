@@ -70,6 +70,12 @@ interface IonEntity extends LibdedxEntity {
    * Example: proton has A=1 but m_u=1.00794.
    */
   atomicMass: number;
+  /**
+   * Chemical symbol (e.g., "H", "He", "C").
+   * Derived from the element's standard symbol. Used in display
+   * format: "Z=6  Carbon (C)". For ion ID 1001 (Electron): "e⁻".
+   */
+  symbol: string;
   /** Human-readable aliases for common ion names (e.g., "proton", "alpha"). */
   aliases?: string[];
 }

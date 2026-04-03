@@ -1,6 +1,6 @@
 # Feature: Entity Selection (Ion → Material → Program)
 
-> **Status:** Draft v3 (3 April 2026)
+> **Status:** Draft v4 (3 April 2026)
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -17,6 +17,13 @@
 > instead of dropdown comboboxes. Unavailable items are
 > greyed out rather than hidden. Material panel split into two independently
 > scrollable sub-lists (Elements / Compounds) sharing one text filter.
+>
+> **v4 changes:** Split into two layout modes: **full panel mode** (Plot page,
+> sidebar with always-visible lists) and **compact mode** (Calculator page,
+> inline dropdown comboboxes). Adopted Alternative A layout with narrower
+> de-emphasized Program panel. Added UX rationale citing progressive disclosure,
+> Fitt's Law, and context-appropriate density. Shared state persists across
+> page navigation.
 
 ---
 
@@ -96,8 +103,8 @@ program = manageable). The data is static for the lifetime of the page.
 |----------|--------|
 | Type | Always-visible scrollable list panel with text filter input |
 | Data source | Derived from `CompatibilityMatrix.allIons` |
-| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)" |
-| Search aliases | Match on `name`, `aliases` (e.g., "proton" → Hydrogen, "alpha" → Helium), atomic number Z, mass number A, chemical symbol |
+| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)". The chemical symbol comes from `IonEntity.symbol`. |
+| Search aliases | Match on `name`, `symbol`, `aliases` (e.g., "proton" → Hydrogen, "alpha" → Helium), atomic number Z, mass number A |
 | Default | **Proton** (Hydrogen, Z=1) — highlighted on page load |
 | Available / unavailable | All ions are always shown. Ions incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible ions are shown at full contrast. |
 | Selected state | The selected ion has a **dark background highlight** (accent colour) with white text. Clicking a selected ion deselects it (toggle). |
@@ -131,7 +138,8 @@ contains a split layout with two independently scrollable sub-lists.
 | Display format | `name — description` (e.g., "PSTAR — proton stopping powers (NIST)") |
 | Grouping | Two visual groups separated by a labelled divider: **"Tabulated data"** (ASTAR, PSTAR, MSTAR, ICRU family) and **"Analytical models"** (Bethe-Bloch variants). Matches demo layout. |
 | Default | **"Auto-select"** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current ion/material (see §4.3 of 01-project-vision.md) |
-| Available / unavailable | All programs are always shown. Programs incompatible with the current ion+material selection are **greyed out**. "Auto-select" is never greyed out. |
+| Hidden programs | **`DEDX_ICRU`** (ID 9) is **excluded** from the program panel. Its function is entirely covered by "Auto-select"; showing both would confuse users. The compatibility matrix still uses `DEDX_ICRU` internally for resolution, but it never appears as a selectable option. |
+| Available / unavailable | All *visible* programs are always shown. Programs incompatible with the current ion+material selection are **greyed out**. "Auto-select" is never greyed out. |
 | Selected state | Dark background highlight with white text. Toggle to deselect; deselecting any program resets to "Auto-select". |
 | Clearable | No explicit clear — deselecting returns to "Auto-select" |
 
@@ -413,7 +421,44 @@ store (architecture TBD in `docs/03-architecture.md`).
 
 ## UI Layout
 
-### Visual Order
+### Design Rationale — Two Layout Modes
+
+The entity selection component is used on both the Calculator and Plot pages,
+but the **primary activity** on each page is different:
+
+| Page | Primary activity | Entity selection role | Screen budget |
+|------|------------------|-----------------------|---------------|
+| **Calculator** | Enter energy values, read numeric results | Setup (done once, then mostly stable) | Shared with energy input + result table |
+| **Plot** | Explore data: add/compare series, inspect curves | Repeated (new series = new entity combo) | Shared with the JSROOT canvas |
+
+**UX best practices applied:**
+
+- **Context-appropriate density** (Nielsen Norman Group): exploration views
+  (Plot) benefit from persistent, always-visible controls; task-completion
+  views (Calculator) benefit from focused input→output flow.
+- **Fitt's Law**: on the Calculator page the energy input is the most frequent
+  target, so entity selectors should not dominate. On the Plot page, entity
+  selection is the frequent target (adding series), so it deserves permanent
+  real estate.
+- **Progressive disclosure** (§4.4 of project vision): the Calculator shows
+  a compact selector by default; the Plot shows full panels because
+  exploration *is* the task.
+- **F-pattern scanning**: entity selection (setup) on the left; output
+  (results/plot) on the right or center — matching the natural reading flow.
+
+The component therefore has **two layout modes** consuming the same underlying
+`EntitySelectionState` and `CompatibilityMatrix`:
+
+| Mode | Used on | Layout |
+|------|---------|--------|
+| **Full panels** | Plot page | Always-visible scrollable list panels (sidebar) |
+| **Compact** | Calculator page | Searchable dropdown comboboxes (inline form) |
+
+Both modes share all behavior described in the Behavior section above
+(bidirectional filtering, greying out, preserve/fallback, Auto-select
+resolution). Only the visual presentation differs.
+
+### Visual Order (both modes)
 
 The selectors always appear in this order, reflecting the natural physics
 workflow (beam → target → data source):
@@ -425,7 +470,15 @@ workflow (beam → target → data source):
 Users are free to interact with them in any order. The visual order is a
 hint, not an enforcement.
 
-### Panel Style (all breakpoints)
+---
+
+### Full Panel Mode (Plot Page)
+
+Used on the **Plot page** where entity selection is a repeated, exploratory
+activity. The panels live in a **left sidebar**; the JSROOT plot canvas
+occupies the remaining right-hand space.
+
+#### Panel Style
 
 Each panel is a **card** with:
 - A header: numbered label (e.g., "① Ion / Particle"), accent colour.
@@ -439,47 +492,82 @@ equivalent) with white text. Greyed-out items use `opacity: 0.4`.
 > Design reference: `libdedx_demo.html` — the card + list + filter + highlight
 > pattern from that prototype is the target aesthetic.
 
-### Desktop (≥900px)
+#### Desktop (≥900px) — Sidebar + Canvas
 
-Three panels in a **horizontal grid row**:
+The page is split into a **sidebar** (entity selection + "Add Series" button)
+and a **main area** (plot canvas + series list).
+
+The sidebar uses a **two-column layout for Ion + Material** with the
+**Program panel below, narrower** — reflecting that most users never change
+the program (Alternative A layout):
 
 ```
-┌──────────────────┐ ┌───────────────────────────────────┐ ┌──────────────────┐
-│ ① Ion / Particle │ │ ② Target Material                 │ │ ③ Method/Program │
-│ [Filter... ]     │ │ [Filter...                      ] │ │ [Filter... ]     │
-│ ┌──────────────┐ │ │ ┌───────────────┬─────────────────┐│ │ ┌──────────────┐ │
-│ │ Z=1  Proton  │ │ │ │ ELEMENTS      │ COMPOUNDS       ││ │ │ ─Tabulated─  │ │
-│ │ Z=2  Alpha   │ │ │ │ 1  Hydrogen   │ 99  A-150 Plast ││ │ │ ASTAR        │ │
-│ │ Z=3  Lithium │ │ │ │ 2  Helium     │ 101 Acetylene   ││ │ │ PSTAR        │ │
-│ │ Z=4  Beryll. │ │ │ │ ...           │ ...             ││ │ │ MSTAR        │ │
-│ │ ...          │ │ │ │ (scroll ↕)    │ (scroll ↕)      ││ │ │ ICRU 49      │ │
-│ │ (scroll ↕)   │ │ │ └───────────────┴─────────────────┘│ │ │ ...          │ │
-│ └──────────────┘ │ └───────────────────────────────────┘ │ │ ─Analytical─ │ │
-└──────────────────┘                                       │ │ Bethe-Bloch  │ │
-                                                           │ └──────────────┘ │
-                                                           └──────────────────┘
+┌─── SIDEBAR (≈40% width) ──────────────────────┐ ┌── MAIN (≈60%) ─────────┐
+│                                                │ │                        │
+│ ┌─────────────┐ ┌────────────────────────────┐ │ │                        │
+│ │ ① Ion       │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
+│ │ [Filter.. ] │ │ [Filter...               ] │ │ │                        │
+│ │ ┌─────────┐ │ │ ┌──────────┬─────────────┐ │ │ │                        │
+│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS   │ │ │ │                        │
+│ │ │ Alpha   │ │ │ │ 1  H     │ 276 Water   │ │ │ │                        │
+│ │ │ Lithium │ │ │ │ 2  He    │ 99  A-150   │ │ │ │                        │
+│ │ │ ...  ↕  │ │ │ │ ...  ↕   │ ...   ↕     │ │ │ │                        │
+│ │ └─────────┘ │ │ └──────────┴─────────────┘ │ │ ├────────────────────────┤
+│ └─────────────┘ └────────────────────────────┘ │ │ Series list / legend   │
+│                                                │ │ ● Proton Water ICRU    │
+│ ┌────────────────────────────────────────────┐ │ │ ● Carbon Water MSTAR   │
+│ │ ③ Program        Auto-select → ICRU 90    │ │ │                        │
+│ │ [Filter... ]                               │ │ │ [Export CSV] [Export…] │
+│ │ ┌────────────────────────────────────────┐ │ │ └────────────────────────┘
+│ │ │ ── Tabulated ──                        │ │ │
+│ │ │ ASTAR · PSTAR · MSTAR · ICRU49 · …    │ │ │
+│ │ │ ── Analytical ──                       │ │ │
+│ │ │ Bethe-Bloch · Bethe-Ext               │ │ │
+│ │ └────────────────────────────────────────┘ │ │
+│ └────────────────────────────────────────────┘ │
+│                                                │
+│               [ ＋ Add Series ]                 │
+│               [ Reset all ]                    │
+└────────────────────────────────────────────────┘
 ```
 
-- Grid: `grid-template-columns: 1fr 2fr 1fr` — the Material panel is **twice
-  as wide** as Ion and Program because it contains two sub-lists side by side.
-- Inside the Material panel, the two sub-lists split the space 50/50
-  horizontally, each with its own scroll position.
-- Each sub-list has a small uppercase group header ("Elements" / "Compounds")
-  that stays pinned at the top (sticky).
-- The "Auto-select → ICRU 90" resolved label appears below the program
-  panel's list (or as a subtle line inside the panel header).
+- Page grid: `grid-template-columns: minmax(360px, 2fr) 3fr`.
+- Inside the sidebar, Ion and Material are in a **sub-grid row**:
+  `grid-template-columns: 1fr 2fr` — Ion takes ~⅓, Material takes ~⅔
+  (it has two sub-lists).
+- The Program panel spans the full sidebar width below Ion+Material but
+  has a **shorter list height** (~150px) since there are only ~10 programs.
+  This de-emphasizes it visually.
+- The sidebar is scrollable if the viewport is too short for all three panels.
 
-### Tablet (600–899px)
+#### Tablet (600–899px) — Stacked sidebar above canvas
 
-Same three-panel row, but `grid-template-columns: 1fr 1.5fr 1fr`.
-The material panel's sub-lists stack narrower but remain side-by-side.
-List height reduces to ~300px.
+On tablet-width screens, the sidebar folds **above** the plot canvas:
 
-### Mobile (<600px)
+```
+┌────────────────────────────────────────────────┐
+│ ┌─────────────┐ ┌────────────────────────────┐ │
+│ │ ① Ion       │ │ ② Material                 │ │
+│ │ [Filter]    │ │ [Filter]                   │ │
+│ │ Proton ↕    │ │ Elem ↕  │  Comp ↕          │ │
+│ └─────────────┘ └────────────────────────────┘ │
+│ ┌────────────────────────────────────────────┐ │
+│ │ ③ Program   Auto → ICRU  [Filter] ↕       │ │
+│ └────────────────────────────────────────────┘ │
+│ [ ＋ Add Series ]    [ Reset all ]              │
+├────────────────────────────────────────────────┤
+│                                                │
+│              JSROOT Plot Canvas                 │
+│                                                │
+└────────────────────────────────────────────────┘
+```
 
-Three panels **stacked vertically**, full width. The material panel's
-Elements and Compounds sub-lists remain **side by side** (each taking 50% width)
-but with a reduced height (~200px each).
+List heights reduced to ~250px for Ion/Material, ~120px for Program.
+
+#### Mobile (<600px) — Stacked vertical
+
+All panels stack vertically, full width. Material sub-lists remain
+side-by-side. The plot canvas scrolls below.
 
 ```
 ┌──────────────────────────────────────┐
@@ -487,8 +575,7 @@ but with a reduced height (~200px each).
 │ [Filter...                        ]  │
 │ ┌──────────────────────────────────┐  │
 │ │ Z=1  Proton (H)                  │  │
-│ │ Z=2  Alpha (He)                  │  │
-│ │ ...                    scroll ↕  │  │
+│ │ Z=2  Alpha (He)      scroll ↕   │  │
 │ └──────────────────────────────────┘  │
 ├──────────────────────────────────────┤
 │ ② Target Material                    │
@@ -499,14 +586,139 @@ but with a reduced height (~200px each).
 │ │ ...  scroll ↕  │ ...    scroll ↕   ││
 │ └────────────────┴───────────────────┘│
 ├──────────────────────────────────────┤
-│ ③ Method / Program                   │
-│ [Filter...                        ]  │
-│ ┌──────────────────────────────────┐  │
-│ │ Auto-select → ICRU 90            │  │
-│ │ PSTAR            ...   scroll ↕  │  │
-│ └──────────────────────────────────┘  │
+│ ③ Program  Auto → ICRU              │
+│ [Filter]  PSTAR · ASTAR · …    ↕    │
+├──────────────────────────────────────┤
+│ [ ＋ Add Series ]   [ Reset all ]    │
+├──────────────────────────────────────┤
+│          JSROOT Plot Canvas          │
+│                                      │
 └──────────────────────────────────────┘
 ```
+
+---
+
+### Compact Mode (Calculator Page)
+
+Used on the **Calculator page** where the primary activity is entering
+energy values and reading results. Entity selection is a "configure once"
+step — most users pick Proton + Water and only change the energy.
+
+#### Design Principles
+
+- **Minimal vertical footprint**: entity selectors are a single horizontal
+  row of comboboxes, not tall panels.
+- **Center-stage results**: the result table and/or key numeric output
+  (e.g., CSDA range) is prominently centered, not pushed to a sidebar.
+- **Same data, different chrome**: the compact selectors use the same
+  `CompatibilityMatrix`, bidirectional filtering, and Auto-select logic.
+  Greyed-out items appear in the dropdown lists but are non-interactive.
+
+#### Selector Widgets
+
+Each entity selector is a **searchable dropdown combobox**:
+
+- A single-line input showing the current selection (e.g., "Proton (H)").
+- Clicking or focusing opens a dropdown panel with a filtered list.
+- Typing in the input filters the dropdown (same matching rules: aliases,
+  Z, A, name, ID).
+- Item styling in the dropdown matches the full panel mode: available items
+  at full contrast, unavailable items greyed out.
+- Material dropdown shows "Elements" and "Compounds" as section headers
+  within the single dropdown list (not two columns — too narrow).
+- Program dropdown shows the resolved label inline:
+  `Auto-select → ICRU 90` as the default display value.
+
+ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
+`role="listbox"` on the dropdown, `role="option"` on items,
+`aria-disabled="true"` on greyed-out items.
+
+#### Desktop (≥900px) — Centered form layout
+
+```
+┌────────────────────────────────────────────────────────────────────────┐
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │  Ion: [Proton (H)     ▾]   Material: [Water (liquid)      ▾]   │  │
+│  │  Program: [Auto-select → ICRU 90 ▾]   Energy unit: (•) MeV    │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │  Energy input                                                    │  │
+│  │  ┌────────────────────────────────────────────────────────────┐  │  │
+│  │  │  100                                                       │  │  │
+│  │  │  200                                                       │  │  │
+│  │  │  (one energy per line, or comma-separated)                 │  │  │
+│  │  └────────────────────────────────────────────────────────────┘  │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │                        RESULTS                                   │  │
+│  │  ┌──────────┬──────────────────────┬────────────────────┐       │  │
+│  │  │ Energy   │ Stopping Power       │ CSDA Range         │       │  │
+│  │  │ (MeV)    │ (MeV·cm²/g)         │ (g/cm²)            │       │  │
+│  │  ├──────────┼──────────────────────┼────────────────────┤       │  │
+│  │  │ 100      │ 4.576                │ 7.718              │       │  │
+│  │  │ 200      │ 2.749                │ 25.77              │       │  │
+│  │  └──────────┴──────────────────────┴────────────────────┘       │  │
+│  │                                                [Export CSV ↓]   │  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
+```
+
+- Max content width ~720px, centered horizontally (`mx-auto`).
+- Entity selectors in a **flex row that wraps**: Ion and Material on the
+  first line; Program and Energy unit on the second line.
+- Program combobox is **narrower** than Ion/Material (~180px vs ~240px)
+  because it is less frequently changed — visual hierarchy via width.
+- Result table is the visual centerpiece, full content width.
+- Energy input is a `<textarea>` or multi-line input between selectors
+  and results.
+
+#### Tablet (600–899px)
+
+Same as desktop but at full viewport width (no centering margin).
+All four selector items may wrap to two rows.
+
+#### Mobile (<600px)
+
+Entity selectors stack vertically, each full width:
+
+```
+┌──────────────────────────────────────┐
+│ Ion:      [Proton (H)            ▾]  │
+│ Material: [Water (liquid)        ▾]  │
+│ Program:  [Auto-select → ICRU 90 ▾] │
+│ Energy:   (•) MeV  ( ) MeV/nucl     │
+│ ┌──────────────────────────────────┐ │
+│ │ 100                              │ │
+│ │ 200                              │ │
+│ └──────────────────────────────────┘ │
+│                                      │
+│ ┌──────────────────────────────────┐ │
+│ │ RESULTS                          │ │
+│ │ Energy │ Stp Power │ CSDA Range  │ │
+│ │ 100    │ 4.576     │ 7.718       │ │
+│ │ 200    │ 2.749     │ 25.77       │ │
+│ └──────────────────────────────────┘ │
+│                       [Export CSV ↓] │
+└──────────────────────────────────────┘
+```
+
+---
+
+### Switching Between Modes
+
+The two layout modes are **not runtime-switchable** by the user. They are
+determined by the page route:
+
+- `/calculator` → compact mode
+- `/plot` → full panel mode
+
+Both modes bind to the same shared `EntitySelectionState` store. If the
+user selects "Carbon" on the Calculator page, navigates to the Plot page,
+the Plot page shows Carbon pre-selected in the full panel. Similarly,
+the URL encodes the selection identically for both pages (see
+`shareable-urls.md`).
 
 ---
 
@@ -531,12 +743,25 @@ but with a reduced height (~200px each).
 
 ## Acceptance Criteria
 
-### Layout & Panels
-- [ ] Three panels are displayed: Ion, Material, Program — in that visual order.
-- [ ] On desktop (≥900px), panels are in a horizontal grid with the Material panel taking 2× width.
-- [ ] On mobile (<600px), panels stack vertically; material sub-lists remain side-by-side.
+### Layout & Panels — Full Panel Mode (Plot Page)
+- [ ] Three panels are displayed in the sidebar: Ion, Material, Program — in that visual order.
+- [ ] On desktop (≥900px), Ion and Material are in a sub-grid row (1fr + 2fr); Program spans full sidebar width below, with shorter list height (~150px).
+- [ ] The sidebar takes ≈40% of the page width; the JSROOT canvas takes ≈60%.
+- [ ] On tablet (600–899px), the sidebar folds above the canvas; panels stack horizontally then canvas below.
+- [ ] On mobile (<600px), all panels stack vertically; material sub-lists remain side-by-side.
 - [ ] The Material panel contains two independently scrollable sub-lists: Elements (IDs 1–98) and Compounds (IDs 99+).
 - [ ] Each sub-list has a sticky group header ("Elements" / "Compounds").
+
+### Layout — Compact Mode (Calculator Page)
+- [ ] Entity selectors are searchable dropdown comboboxes in a horizontal flex row.
+- [ ] Ion and Material comboboxes are wider (~240px) than Program (~180px) — visual hierarchy.
+- [ ] On desktop, the form is centered (max-width ~720px) with the result table as visual centerpiece.
+- [ ] On mobile (<600px), comboboxes stack vertically at full width.
+- [ ] Material dropdown shows Elements and Compounds as section headers within a single dropdown list.
+
+### Shared State
+- [ ] Both modes share the same `EntitySelectionState` store; selection persists across page navigation.
+- [ ] Layout mode is determined by page route, not a user toggle.
 
 ### Defaults & Init
 - [ ] On page load, entity selectors populate from WASM data within 2 seconds (after WASM init).
@@ -574,6 +799,8 @@ but with a reduced height (~200px each).
 ### Program Panel
 - [ ] Programs are grouped into "Tabulated data" and "Analytical models" with labelled dividers.
 - [ ] "Auto-select" is always shown at the top and never greyed out.
+- [ ] `DEDX_ICRU` (ID 9) is **not** shown in the program panel; its function is covered by "Auto-select".
+- [ ] The resolved program label uses frontend-enriched names (e.g., "ICRU 90") not raw C library names (e.g., "ICRU").
 
 ### Keyboard & Accessibility
 - [ ] Each panel is keyboard-navigable (Tab to filter, Arrow keys to navigate list, Enter to select, Escape to clear filter).
