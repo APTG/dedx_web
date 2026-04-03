@@ -78,9 +78,8 @@ its unit — or with the wrong unit — is worse than no answer at all.
 **Input units — context-aware:**
 - Energy input must have an explicit, always-visible unit selector.
 - The **available options depend on the selected ion:**
-  - **A = 1** (proton, electron): show only **MeV** — MeV/nucl is numerically
-    identical to MeV for single-nucleon particles, so showing it adds clutter
-    without value.
+  - **A = 1** (proton): show only **MeV** — MeV/nucl is numerically
+    identical to MeV for single-nucleon particles, so showing it adds clutter without value.
   - **A > 1** (alpha, carbon, …): show **MeV** and **MeV/nucl**.
   - **MeV/u** is available in advanced mode only (the distinction from MeV/nucl
     matters for precision CSDA range work, but confuses most users).
