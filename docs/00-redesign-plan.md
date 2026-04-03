@@ -82,12 +82,15 @@ docs/
 │   ├── plot.md                      # Multi-series JSROOT plotting
 │   ├── unit-handling.md             # MeV / MeV/nucl / MeV/u conversion logic
 │   ├── multi-program.md             # Calculate across multiple programs at once
+│   ├── inverse-lookups.md           # Energy from stopping power / CSDA range
+│   ├── advanced-options.md          # MSTAR modes, aggregate state, interpolation
 │   ├── export.md                    # CSV + PDF export
 │   └── shareable-urls.md            # URL-encoded state for sharing
 ├── 05-ui-wireframes.md              # Page-by-page layout descriptions
 ├── 06-wasm-api-contract.md          # TypeScript interface for libdedx wrapper
 ├── 07-testing-strategy.md           # Unit/integration/E2E plan
 ├── 08-deployment.md                 # GitHub Actions → GitHub Pages
+├── 09-non-functional-requirements.md # Performance, browser support, a11y, responsive
 ├── decisions/                       # Architecture Decision Records (ADRs)
 │   ├── 001-sveltekit-over-react.md
 │   ├── 002-keep-jsroot.md
@@ -319,6 +322,13 @@ As a <role>, I want to <action> so that <benefit>.
 ### Stage 8: CI/CD
 - GitHub Actions: `eslint .` → `prettier --check .` → `svelte-check` → `tsc --noEmit` → Vitest → Playwright → build WASM → build SvelteKit → deploy.
 
+### Stage 9: Legacy Code Removal
+- Remove the old React codebase (`src/App.*`, `src/index.*`, `src/Backend/`, `src/Components/`,
+  `src/Styles/`, `src/__test__/`, `public/`), the old `build_wasm.sh`, and CRA dependencies
+  from `package.json`.
+- This should happen **after** the new app is verified working end-to-end and deployed.
+- The old code is preserved in git history; the last commit containing it is referenced in §11.
+
 ---
 
 ## 9. Best Practices for AI Agent Sessions
@@ -346,22 +356,28 @@ As a <role>, I want to <action> so that <benefit>.
 
 When starting a new LLM session on any machine:
 
-1. Open the `redesign/planning` branch.
+1. Open the working branch (check `git branch` or `CHANGELOG-AI.md` for the latest).
 2. `.github/copilot-instructions.md` loads automatically — no manual context needed.
 3. Check `docs/progress/` to see which stage was last completed.
 4. Check `CHANGELOG-AI.md` for recent AI session history.
 5. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
    *"Read `docs/00-redesign-plan.md` for full project context."*
-5. After implementing, update `docs/progress/` and commit.
+6. After implementing, update `docs/progress/` and commit.
 
 ---
 
 ## 11. Existing Codebase Reference
 
-The current (old) code has useful reference material despite being broken:
+The current (old) code has useful reference material despite being broken.
+The last commit on `master` containing this code should be tagged or noted
+before Stage 9 (legacy removal). You can find it with `git log master --oneline -1`.
 
-- **WASM function exports:** [build_wasm.sh](../build_wasm.sh) — lists all C functions exposed to JS.
-- **WASM wrapper:** [src/Backend/WASMWrapper.js](../src/Backend/WASMWrapper.js) — shows how libdedx is called via Emscripten `ccall`.
+> **Legacy code last commit:** `0330233` (`docs: add AI session logging system`)
+
+Reference files:
+
+- **WASM function exports:** [`build_wasm.sh`](../build_wasm.sh) — lists all C functions exposed to JS.
+- **WASM wrapper:** [`src/Backend/WASMWrapper.js`](../src/Backend/WASMWrapper.js) — shows how libdedx is called via Emscripten `ccall`.
 - **Entity loading:** Same file — `getPrograms()`, `getIons()`, `getMaterials()` patterns.
 - **Data generation:** [src/Backend/DataSeriesFactory.js](../src/Backend/DataSeriesFactory.js) — linear/log x-value generation.
 - **JSROOT usage:** [src/Components/Pages/Plot/JSRootGraph.js](../src/Components/Pages/Plot/JSRootGraph.js) — TGraph/TMultiGraph creation.
