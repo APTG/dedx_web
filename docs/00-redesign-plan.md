@@ -356,13 +356,13 @@ As a <role>, I want to <action> so that <benefit>.
 
 When starting a new LLM session on any machine:
 
-1. Open the `redesign/planning` branch.
+1. Open the working branch (check `git branch` or `CHANGELOG-AI.md` for the latest).
 2. `.github/copilot-instructions.md` loads automatically — no manual context needed.
 3. Check `docs/progress/` to see which stage was last completed.
 4. Check `CHANGELOG-AI.md` for recent AI session history.
 5. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
    *"Read `docs/00-redesign-plan.md` for full project context."*
-5. After implementing, update `docs/progress/` and commit.
+6. After implementing, update `docs/progress/` and commit.
 
 ---
 

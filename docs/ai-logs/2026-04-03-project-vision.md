@@ -84,7 +84,31 @@ design principles (Units → Minimum Clicks → Best Available → Progressive D
 → Shareability → Export-Friendly). Updated `00-redesign-plan.md`: added missing docs
 to §4 tree (inverse-lookups.md, advanced-options.md, 09-non-functional-requirements.md),
 added Stage 9 (Legacy Code Removal), added commit hash placeholder to §11. Created
-this session log and updated CHANGELOG-AI.md.
+session log and updated CHANGELOG-AI.md.
+
+### Prompt 9: Commit hash for legacy code reference
+**User** provided `git log master --oneline -1` output: `0330233`.
+
+**AI response**: Recorded commit hash `0330233` in redesign plan §11.
+
+### Prompt 10: Auto-select refinement and context-aware units
+**User** clarified: auto-select should not always show DEDX_ICRU — it should adapt
+per ion/material. Also: MeV/nucl should not appear for protons (A=1, it's redundant);
+MeV/u is advanced-mode only.
+
+**AI response**: Updated vision §4.1 (context-aware unit selector: A=1 → MeV only,
+A>1 → MeV + MeV/nucl, MeV/u advanced). Updated §4.3 (program auto-selection is a
+webdedx-level layer on top of libdedx DEDX_ICRU, configurable, always adapts).
+
+### Prompt 11: Cross-check, update logs, merge
+**User** asked to cross-check all docs for consistency, update AI logs, merge.
+
+**AI response**: Found and fixed 4 inconsistencies:
+1. Vision §3.1/§3.2 hardcoded "(DEDX_ICRU)" in default state → removed
+2. Redesign plan §10 referenced stale `redesign/planning` branch → made generic
+3. Redesign plan §10 had duplicate step "5" → renumbered
+4. Vision §11 linked to non-existent `09-non-functional-requirements.md` → marked "(planned)"
+Updated this session log with prompts 9–11.
 
 ## Tasks
 
@@ -99,8 +123,8 @@ this session log and updated CHANGELOG-AI.md.
 - **Decision**: Units promoted to design principle #1 (above "minimum clicks") because
   incorrect units in physics software is a showstopper. Auto-scaling output units
   (1.2 mm not 0.0012 m) is a firm UX requirement.
-- **Decision**: Default program is `DEDX_ICRU` (libdedx auto-select), not PSTAR.
-  The C library has built-in resolution logic that picks the best available dataset.
+- **Decision**: Default program uses adaptive auto-selection (webdedx layer on top
+  of libdedx DEDX_ICRU), not a fixed program. Adapts per ion/material combination.
 - **Issue**: None
 
 ### Update redesign plan
@@ -108,10 +132,19 @@ this session log and updated CHANGELOG-AI.md.
 - **Stage**: Stage 1
 - **Files changed**:
   - `docs/00-redesign-plan.md` — added missing docs to §4 tree, added Stage 9
-    (Legacy Code Removal), added commit hash placeholder to §11
+    (Legacy Code Removal), recorded commit hash `0330233` in §11, fixed §10
+    (stale branch ref, duplicate step number)
 - **Decision**: Old code removal is a separate stage (Stage 9), done after new app
-  is verified working. Last commit hash to be recorded before removal.
-- **Issue**: Commit hash needs to be filled in manually (spec-writer mode can't run git)
+  is verified working. Last commit hash recorded: `0330233`.
+- **Issue**: None
+
+### Cross-check and consistency fixes
+- **Status**: completed
+- **Stage**: Stage 1
+- **Files changed**:
+  - `docs/01-project-vision.md` — removed hardcoded DEDX_ICRU from §3.1/§3.2 defaults,
+    marked §11 NFR link as "(planned)"
+  - `docs/00-redesign-plan.md` — fixed §10 stale branch reference and step numbering
 
 ### Create AI session log
 - **Status**: completed

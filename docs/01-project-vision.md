@@ -39,7 +39,7 @@ All personas share one trait: **they want answers fast, with minimal clicking.**
 The user selects a particle, a material, and enters one or a few energy values.
 The app returns the CSDA range. This is the **default view** on first load.
 
-> Default state on launch: **auto-select (DEDX_ICRU) / proton / liquid water / 100 MeV**
+> Default state on launch: **auto-select / proton / liquid water / 100 MeV**
 > — the user sees a result immediately without touching any control.
 
 ### 3.2 Stopping Power Plotting
@@ -53,7 +53,7 @@ comparisons:
 - Same ion, different materials (e.g., proton in water vs PMMA)
 
 > Default state on the Plot page: selectors pre-filled with
-> **auto-select (DEDX_ICRU) / proton / liquid water**, but **no data plotted**
+> **auto-select / proton / liquid water**, but **no data plotted**
 > until the user adds the first series.
 
 ### 3.3 Inverse Lookups (advanced)
