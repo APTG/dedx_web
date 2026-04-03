@@ -213,7 +213,8 @@ function getAvailableIons(program?: number, material?: number): IonEntity[] {
      (e.g., "PSTAR does not support Carbon; program reset to Auto-select").
    - If the ion has `massNumber === 1` (proton), the energy unit selector
      should hide "MeV/nucl" (it is numerically identical to MeV for A=1).
-     See `unit-handling.md` for details.
+     TODO: document this fully in `docs/04-feature-specs/unit-handling.md`;
+     until that spec exists, refer to `docs/01-project-vision.md`.
 
 3. **User changes material (typical second step):**
    - Update the selected material.
