@@ -1,6 +1,6 @@
 # Feature: Entity Selection (Ion → Material → Program)
 
-> **Status:** Draft v4 (3 April 2026)
+> **Status:** Final v5 (3 April 2026)
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -24,6 +24,9 @@
 > de-emphasized Program panel. Added UX rationale citing progressive disclosure,
 > Fitt's Law, and context-appropriate density. Shared state persists across
 > page navigation.
+>
+> **v5:** Marked as final after cross-review with calculator.md,
+> 06-wasm-api-contract.md, and 01-project-vision.md. No changes needed.
 
 ---
 
