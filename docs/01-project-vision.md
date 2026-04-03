@@ -75,9 +75,15 @@ programs simultaneously to compare results.
 Units are critical in physics software. Getting a number without knowing
 its unit — or with the wrong unit — is worse than no answer at all.
 
-**Input units:**
-- Energy input must have an explicit, always-visible unit selector:
-  **MeV**, **MeV/nucl**, or **MeV/u**.
+**Input units — context-aware:**
+- Energy input must have an explicit, always-visible unit selector.
+- The **available options depend on the selected ion:**
+  - **A = 1** (proton, electron): show only **MeV** — MeV/nucl is numerically
+    identical to MeV for single-nucleon particles, so showing it adds clutter
+    without value.
+  - **A > 1** (alpha, carbon, …): show **MeV** and **MeV/nucl**.
+  - **MeV/u** is available in advanced mode only (the distinction from MeV/nucl
+    matters for precision CSDA range work, but confuses most users).
 - SI prefixes (keV, MeV, GeV) should be supported where applicable.
 - The selected unit is shown next to the input field at all times.
 
@@ -111,11 +117,12 @@ fragment ("car" → Carbon-12) and sees matching results with properties
 ### 4.3 "Best Available Answer" by Default
 
 The app selects the most appropriate stopping-power program automatically
-based on the chosen ion and material. Users *can* override the program
-selection, but they shouldn't *have* to.
+based on the chosen ion and material. The default program **adapts to the
+current ion/material combination** — it is not a fixed choice. Users *can*
+override the program selection, but they shouldn't *have* to.
 
-libdedx already implements this logic via the **`DEDX_ICRU`** meta-program,
-which resolves to the best available dataset at runtime:
+libdedx provides a starting point via the **`DEDX_ICRU`** meta-program,
+which resolves to the best available ICRU dataset at runtime:
 
 | Ion | Resolution chain |
 |-----|-----------------|
@@ -128,12 +135,22 @@ Additionally, `dedx_get_simple_stp()` implements a two-stage fallback:
 first tries `DEDX_ICRU`, then falls back to `DEDX_DEFAULT` (Bethe formula)
 if no tabulated data is available.
 
-webdedx should leverage this C-level resolution and display which concrete
-program was actually used (e.g., "ICRU 90 (via auto-select)") so the user
-knows the data source. The auto-select program should be the default in
-both the Calculator and Plot pages. A webdedx-level configuration entity
-may extend this logic in the future (e.g., preferring MSTAR for heavy ions
-where applicable), but v1 should rely on the libdedx `DEDX_ICRU` resolver.
+However, `DEDX_ICRU` is not always the best choice — for example, MSTAR
+may be preferred for certain heavy ions where ICRU 73 data is unavailable.
+webdedx should implement a **program auto-selection layer** on top of
+libdedx's resolver:
+
+1. Start with the libdedx `DEDX_ICRU` resolution as the baseline.
+2. Extend with webdedx-level rules (configurable, e.g., prefer MSTAR for
+   heavy ions on specific materials).
+3. Always display which concrete program was actually used
+   (e.g., "ICRU 90 (auto-selected)") so the user knows the data source.
+4. When the user changes ion or material, the auto-selected program
+   updates accordingly — it is never stale.
+
+The auto-select program should be the default in both the Calculator and
+Plot pages. The selection rules should be defined as a configuration entity
+so they can be tuned without code changes.
 
 ### 4.4 Progressive Disclosure
 
