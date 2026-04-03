@@ -13,7 +13,8 @@
 > for user feedback motivating this change.
 >
 > **v3 changes:** Adopted always-visible scrollable list panels (inspired by
-> `libdedx_demo.html`) instead of dropdown comboboxes. Unavailable items are
+> [`libdedx_demo.html`](https://github.com/APTG/libdedx/issues/79#issuecomment-4158280966))
+> instead of dropdown comboboxes. Unavailable items are
 > greyed out rather than hidden. Material panel split into two independently
 > scrollable sub-lists (Elements / Compounds) sharing one text filter.
 
