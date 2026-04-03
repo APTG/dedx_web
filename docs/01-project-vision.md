@@ -70,7 +70,34 @@ programs simultaneously to compare results.
 
 ## 4. Design Principles
 
-### 4.1 Minimum Clicks
+### 4.1 Correct and Clear Units
+
+Units are critical in physics software. Getting a number without knowing
+its unit — or with the wrong unit — is worse than no answer at all.
+
+**Input units:**
+- Energy input must have an explicit, always-visible unit selector:
+  **MeV**, **MeV/nucl**, or **MeV/u**.
+- SI prefixes (keV, MeV, GeV) should be supported where applicable.
+- The selected unit is shown next to the input field at all times.
+
+**Output units — auto-scaling:**
+- Numeric results must use **human-readable magnitudes**. Display `1.2 mm`,
+  not `0.0012 m`. Display `34.5 µm`, not `0.0000345 m`.
+- The app selects the best SI prefix automatically based on the value's
+  magnitude (nm, µm, mm, cm, m for lengths; eV, keV, MeV, GeV for energies).
+- Users can override the auto-scaled unit if needed.
+
+**Plot axis labels:**
+- Axis labels must include the unit in standard notation:
+  *"Stopping Power [MeV·cm²/g]"*, *"Energy [MeV/nucl]"*, *"Range [g/cm²]"*.
+- When the data range spans SI prefixes, axis tick labels should auto-scale
+  (e.g., switch from cm to mm) and the axis label must update accordingly.
+
+> Full unit conversion logic is specified in
+> [`04-feature-specs/unit-handling.md`](04-feature-specs/unit-handling.md).
+
+### 4.2 Minimum Clicks
 
 Where a choice has 2–4 options (e.g., MeV vs MeV/nucl vs MeV/u), use
 **segmented controls or radio buttons** — never dropdowns. The user should see
@@ -80,14 +107,6 @@ For entity selection (ions, materials), use **typeahead/autocomplete** inputs
 inspired by [ATIMA](https://www.isotopea.com/webatima/): the user types a
 fragment ("car" → Carbon-12) and sees matching results with properties
 (Z, A, atomic mass, aliases like "alpha" → He-4) displayed inline.
-
-### 4.2 Progressive Disclosure
-
-The default UI is simple: particle, material, energy → result. Advanced
-features (inverse lookups, multi-program mode, MSTAR modes, aggregate state
-override, interpolation settings, custom compounds) are hidden behind an
-"Advanced" toggle or section. They do not add visual clutter in the standard
-workflow.
 
 ### 4.3 "Best Available Answer" by Default
 
@@ -116,13 +135,21 @@ both the Calculator and Plot pages. A webdedx-level configuration entity
 may extend this logic in the future (e.g., preferring MSTAR for heavy ions
 where applicable), but v1 should rely on the libdedx `DEDX_ICRU` resolver.
 
-### 4.4 Shareability
+### 4.4 Progressive Disclosure
+
+The default UI is simple: particle, material, energy → result. Advanced
+features (inverse lookups, multi-program mode, MSTAR modes, aggregate state
+override, interpolation settings, custom compounds) are hidden behind an
+"Advanced" toggle or section. They do not add visual clutter in the standard
+workflow.
+
+### 4.5 Shareability
 
 Every calculation state is encoded in the URL. A user can copy the URL from
 the browser's address bar and share it — the recipient sees the exact same
 inputs and results. No server-side state is needed.
 
-### 4.5 Export-Friendly
+### 4.6 Export-Friendly
 
 Results (numeric tables and plots) can be exported for further analysis:
 
