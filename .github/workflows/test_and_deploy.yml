@@ -34,7 +34,7 @@ jobs:
         ls -al
         ls -al libdedx
 
-    - uses: mymindstorm/setup-emsdk@v14
+    - uses: mymindstorm/setup-emsdk@v15
 
     - name: Compile to wasm
       run: ./build_wasm.sh
