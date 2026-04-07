@@ -28,24 +28,34 @@
 > **v5:** Marked as final after cross-review with calculator.md,
 > 06-wasm-api-contract.md, and 01-project-vision.md. No changes needed.
 >
-> **Terminology:** In this spec and in the libdedx C API, “ion” (and the
-> `IonEntity` type) refers to any charged projectile — including protons,
-> heavy ions, and the electron (ID 1001). Where the distinction matters,
-> this spec uses “particle” to emphasise that electrons are included.
+> **Terminology:** The libdedx C library uses the term "ion" everywhere —
+> including for the electron (ID 1001) — even though calling an electron an
+> "ion" is physically incorrect. This is a legacy naming convention in the C
+> API (functions like `dedx_fill_ion_list`, `dedx_get_ion_name`, etc.).
+>
+> In **dedx_web** and in all web-app specs we use the correct term
+> **"particle"** (or "charged particle") to refer to any projectile:
+> protons, alpha particles, heavy ions, and electrons. The TypeScript type
+> is `ParticleEntity`. The C API's "ion" naming is confined to the WASM
+> wrapper layer that directly calls C functions.
+>
+> See also: TODO `docs/terminology.md` — a glossary for UI tooltips and
+> technical documentation.
 
 ---
 
 ## User Story
 
 **As a** radiation physicist,
-**I want to** first choose my projectile (ion or electron) and target (material), then see
-which stopping-power programs can serve that combination,
+**I want to** first choose my particle (like proton, alpha particle, heavy ion
+or electron) and target (material, like Silicon), then see which stopping-power
+programs can serve that combination,
 **so that** I follow the natural mental model of a physics experiment: pick the
 beam, pick the target, *then* pick the data source — rather than memorizing
 which programs exist.
 
 **As a** data quality researcher,
-**I want to** select a specific program first, then see which ions and materials
+**I want to** select a specific program first, then see which particles and materials
 it covers,
 **so that** I can audit data availability per database.
 
@@ -65,26 +75,26 @@ available. Until it is, the frontend must derive valid combinations itself.
 ### How it is built
 
 At WASM init time, the service iterates over every program returned by
-`getPrograms()` and calls `getIons(programId)` + `getMaterials(programId)`
+`getPrograms()` and calls `getParticles(programId)` + `getMaterials(programId)`
 for each. The results are stored in an in-memory compatibility matrix:
 
 ```typescript
 /**
  * Pre-computed at init. Enables O(1) lookups in any direction:
- *   "which programs support ion X?" / "which materials does program P have?"
- *   / "which programs support ion X + material Y?"
+ *   "which programs support particle X?" / "which materials does program P have?"
+ *   / "which programs support particle X + material Y?"
  */
 interface CompatibilityMatrix {
-  /** programId → Set of ion IDs supported by that program. */
-  ionsByProgram: Map<number, Set<number>>;
+  /** programId → Set of particle IDs supported by that program. */
+  particlesByProgram: Map<number, Set<number>>;
   /** programId → Set of material IDs supported by that program. */
   materialsByProgram: Map<number, Set<number>>;
-  /** ionId → Set of program IDs that support this ion. */
-  programsByIon: Map<number, Set<number>>;
+  /** particleId → Set of program IDs that support this particle. */
+  programsByParticle: Map<number, Set<number>>;
   /** materialId → Set of program IDs that support this material. */
   programsByMaterial: Map<number, Set<number>>;
-  /** All known ions (union across all programs). */
-  allIons: IonEntity[];
+  /** All known particles (union across all programs). */
+  allParticles: ParticleEntity[];
   /** All known materials (union across all programs). */
   allMaterials: MaterialEntity[];
   /** All known programs. */
@@ -92,10 +102,10 @@ interface CompatibilityMatrix {
 }
 ```
 
-The matrix is built once (< 20 programs × ~120 ions × ~280 materials per
+The matrix is built once (< 20 programs × ~120 particles × ~280 materials per
 program = manageable). The data is static for the lifetime of the page.
 
-> **Performance note**: Building the matrix requires ~20 `getIons()` +
+> **Performance note**: Building the matrix requires ~20 `getParticles()` +
 > ~20 `getMaterials()` calls at init. These are synchronous in-memory
 > lookups into the compiled WASM data tables, expected to complete in < 100 ms
 > total. If profiling shows otherwise, the matrix can be built lazily on
@@ -110,13 +120,13 @@ program = manageable). The data is static for the lifetime of the page.
 | Property | Detail |
 |----------|--------|
 | Type | Always-visible scrollable list panel with text filter input |
-| Data source | Derived from `CompatibilityMatrix.allIons` |
-| Display format | `Z=N  Name (Symbol)` — e.g., “Z=6  Carbon (C)”. The chemical symbol comes from `IonEntity.symbol`. For Electron: “e⁻”. |
+| Data source | Derived from `CompatibilityMatrix.allParticles` |
+| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "e⁻". |
 | Search aliases | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A |
 | Default | **Proton** (Hydrogen, Z=1) — highlighted on page load |
 | Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast. |
 | Selected state | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle). |
-| Special | Ion ID 1001 = Electron — only visible (not greyed out) when ESTAR (program 3) is a compatible program for the current selection |
+| Special | Particle ID 1001 = Electron — only visible (not greyed out) when ESTAR (program 3) is a compatible program for the current selection |
 | Clearable | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header |
 
 ### 2. Material Selector (second — middle)
@@ -171,10 +181,10 @@ are recomputed. The filtering logic is:
 
 ```typescript
 // Pseudocode for deriving available options:
-function getAvailablePrograms(ion?: number, material?: number): ProgramEntity[] {
+function getAvailablePrograms(particle?: number, material?: number): ProgramEntity[] {
   let candidates = matrix.allPrograms;
-  if (ion != null) {
-    const progs = matrix.programsByIon.get(ion);
+  if (particle != null) {
+    const progs = matrix.programsByParticle.get(particle);
     candidates = candidates.filter(p => progs?.has(p.id));
   }
   if (material != null) {
@@ -184,19 +194,19 @@ function getAvailablePrograms(ion?: number, material?: number): ProgramEntity[] 
   return candidates;
 }
 
-function getAvailableParticles(program?: number, material?: number): IonEntity[] {
-  let candidates = matrix.allIons;
+function getAvailableParticles(program?: number, material?: number): ParticleEntity[] {
+  let candidates = matrix.allParticles;
   if (program != null) {
-    const ions = matrix.ionsByProgram.get(program);
-    candidates = candidates.filter(i => ions?.has(i.id));
+    const particles = matrix.particlesByProgram.get(program);
+    candidates = candidates.filter(i => particles?.has(i.id));
   }
   if (material != null) {
-    // ions that share at least one program with this material
+    // particles that share at least one program with this material
     const materialProgs = matrix.programsByMaterial.get(material);
     candidates = candidates.filter(i => {
-      const ionProgs = matrix.programsByIon.get(i.id);
-      return ionProgs && materialProgs &&
-        [...ionProgs].some(p => materialProgs.has(p));
+      const particleProgs = matrix.programsByParticle.get(i.id);
+      return particleProgs && materialProgs &&
+        [...particleProgs].some(p => materialProgs.has(p));
     });
   }
   return candidates;
@@ -209,7 +219,7 @@ function getAvailableParticles(program?: number, material?: number): IonEntity[]
 
 1. **On WASM init (page load):**
    - Fetch all programs via `getPrograms()`.
-   - For each program, fetch ions and materials to build the `CompatibilityMatrix`.
+   - For each program, fetch particles and materials to build the `CompatibilityMatrix`.
    - Insert a synthetic **"Auto-select"** entry at the top of the program list
      (this is a frontend construct, not from libdedx).
    - Set defaults: Particle = Proton (ID 1), Material = Liquid Water (ID 276),
@@ -353,7 +363,7 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 | Particle | `name`, `aliases` (e.g., "proton", "alpha", "deuteron", "electron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
 | Material | `name`, `id` (as string), common aliases |
 
-For particles, the `aliases` field from `IonEntity` provides human-friendly names:
+For particles, the `aliases` field from `ParticleEntity` provides human-friendly names:
 
 | Particle ID | Name | Aliases |
 |--------|------|---------|
@@ -398,8 +408,8 @@ interface EntitySelectionState {
   program: ProgramEntity | AutoSelectProgram;
   /** The resolved program ID for C API calls (always a real program ID). */
   resolvedProgramId: number;
-  /** The selected particle (ion or electron), or null if cleared. */
-  particle: IonEntity | null;
+  /** The selected particle (proton, heavy ion, or electron), or null if cleared. */
+  particle: ParticleEntity | null;
   /** The selected material, or null if cleared. */
   material: MaterialEntity | null;
   /**
@@ -410,7 +420,7 @@ interface EntitySelectionState {
   isComplete: boolean;
   /** Available options for each selector given the current constraints. */
   availablePrograms: ProgramEntity[];
-  availableParticles: IonEntity[];
+  availableParticles: ParticleEntity[];
   availableMaterials: MaterialEntity[];
 }
 
@@ -819,7 +829,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Error state with retry is shown if WASM init fails.
 
 ### Special Cases
-- [ ] Electron (ion ID 1001) appears in the particle list only when ESTAR is a compatible program.
+- [ ] Electron (particle ID 1001) appears in the particle list only when ESTAR is a compatible program.
 - [ ] Gas-default materials are visually indicated with an icon and text badge, not colour alone.
 
 ---
@@ -827,7 +837,7 @@ the URL encodes the selection identically for both pages (see
 ## Dependencies
 
 - `LibdedxService` interface (see [docs/06-wasm-api-contract.md](../06-wasm-api-contract.md)):
-  `getPrograms()`, `getIons(programId)`, `getMaterials(programId)`
+  `getPrograms()`, `getParticles(programId)`, `getMaterials(programId)`
 - Particle alias configuration: `src/lib/config/particle-aliases.ts` (to be created)
 - Svelte 5 runes for reactive state (`$state`, `$derived`, `$effect`)
 - Tailwind CSS for layout and responsive breakpoints

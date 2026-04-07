@@ -77,7 +77,7 @@ docs/
 ├── 02-tech-stack.md                 # Technologies + rationale for each choice
 ├── 03-architecture.md               # Component tree, data flow, WASM lifecycle
 ├── 04-feature-specs/                # One spec per feature (AI implementation input)
-│   ├── entity-selection.md          # Program/ion/material cascading selection
+│   ├── entity-selection.md          # Particle/material/program cascading selection
 │   ├── calculator.md                # Calculator page with live results
 │   ├── plot.md                      # Multi-series JSROOT plotting
 │   ├── unit-handling.md             # MeV / MeV/nucl / MeV/u conversion logic
@@ -91,6 +91,9 @@ docs/
 ├── 07-testing-strategy.md           # Unit/integration/E2E plan
 ├── 08-deployment.md                 # GitHub Actions → GitHub Pages
 ├── 09-non-functional-requirements.md # Performance, browser support, a11y, responsive
+├── 10-terminology.md                # TODO: Glossary of domain terms (particle vs ion,
+│                                    #   stopping power, CSDA range, etc.) for UI
+│                                    #   tooltips and user/technical documentation
 ├── decisions/                       # Architecture Decision Records (ADRs)
 │   ├── 001-sveltekit-over-react.md
 │   ├── 002-keep-jsroot.md
@@ -168,7 +171,7 @@ src/
 │   │   ├── ResultTable.svelte
 │   │   └── JsrootPlot.svelte
 │   └── stores/                      # Svelte stores for shared state
-│       ├── entities.ts              # Programs, ions, materials
+│       ├── entities.ts              # Programs, particles, materials
 │       ├── calculation.ts           # Current calculation state
 │       └── url-sync.ts             # Sync store ↔ URL params
 ├── routes/
@@ -199,7 +202,7 @@ are written against this interface. The WASM implementation is swappable
 | Type | Purpose |
 |------|---------|
 | `LibdedxEntity` | Base: `{ id, name }` |
-| `IonEntity` | Extends base with `massNumber`, `atomicMass`, `aliases` |
+| `ParticleEntity` | Extends base with `massNumber`, `atomicMass`, `aliases` |
 | `ProgramEntity` | Extends base with `version` |
 | `MaterialEntity` | Extends base with `density`, `isGasByDefault` |
 | `CalculationResult` | `{ energies, stoppingPowers, csdaRanges }` |
@@ -212,7 +215,7 @@ are written against this interface. The WASM implementation is swappable
 - **Energy units:** MeV/nucl ≠ MeV/u. The C API uses MeV/nucl; conversion is JS-side.
 - **Stateless by default:** Calls go through `dedx_wrappers.h`; stateful API only for custom compounds, inverse lookups, and advanced options.
 - **Thin C wrappers:** Local `wasm/dedx_extra.{h,c}` expose internal libdedx data (nucleon number, atomic mass, density, gas state) without modifying the libdedx submodule.
-- **ESTAR included:** Electrons via ion ID 1001.
+- **ESTAR included:** Electrons via particle ID 1001.
 - **MSTAR modes exposed:** 6 modes (a/b/c/d/g/h), default "b".
 - **Aggregate state exposed:** 29 gaseous-default materials; override in advanced settings.
 
@@ -275,7 +278,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
-- **Verify:** Wrapper loads in Node.js and returns valid program/ion/material lists.
+- **Verify:** Wrapper loads in Node.js and returns valid program/particle/material lists.
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.

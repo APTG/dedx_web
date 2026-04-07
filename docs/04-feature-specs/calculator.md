@@ -19,7 +19,7 @@
 > **v4** (7 April 2026): Unified UI labels from "Ion" to "Particle".
 > URL query param renamed `ion` → `particle`. CSV filename uses
 > `{particle}`. `EntitySelectionState` field renamed `.ion` →
-> `.particle` (type remains `IonEntity`).
+> `.particle` (type remains `ParticleEntity`).
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
@@ -381,7 +381,7 @@ inputs and results.
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
-| `particle` | `1` | Particle ID (ion or electron) |
+| `particle` | `1` | Particle ID (proton, heavy ion, or electron) |
 | `material` | `276` | Material ID |
 | `program` | `auto` or `2` | "auto" for Auto-select, numeric for specific |
 | `energies` | `100,200,500` | Comma-separated energy values (URL encoding only) |
@@ -598,8 +598,8 @@ entitySelection changes
 - [ ] The resolved program source is shown above or inline with the table.
 
 ### Energy Unit Selector
-- [ ] Available units depend on the selected particle (read from `IonEntity.id` and `IonEntity.massNumber`).
-- [ ] For proton (A=1) and electron (ion ID 1001), only "MeV" is shown.
+- [ ] Available units depend on the selected particle (read from `ParticleEntity.id` and `ParticleEntity.massNumber`).
+- [ ] For proton (A=1) and electron (particle ID 1001), only "MeV" is shown.
 - [ ] For heavy ions (A>1), "MeV" and "MeV/nucl" are shown.
 - [ ] The selector uses segmented controls / radio buttons, not a dropdown.
 - [ ] Changing the unit does not alter the textarea content but reinterprets the values.
