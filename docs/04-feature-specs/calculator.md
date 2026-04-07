@@ -1,20 +1,20 @@
 # Feature: Calculator Page
 
-> **Status:** Draft v2 (7 April 2026)
+> **Status:** Draft v3 (7 April 2026)
 >
 > **v1** (3 April 2026): Initial draft — energy input textarea, debounced
 > live calculation, result table, compact entity selection integration,
 > per-line validation, responsive layout, URL state encoding, export button.
 >
-> **v2 changes** (7 April 2026): Fixed contradiction where energy unit
-> selector section said "does not re-trigger calculation" while the
-> recalculation triggers table listed it as immediate — clarified that
-> textarea content is unchanged but values are reinterpreted, triggering
-> immediate recalculation. Aligned per-line validation table and acceptance
-> criteria with the v1 open-question decision to use a summary below the
-> textarea (no inline red/orange highlighting in `<textarea>`). Clarified
-> that URL `energies` parameter uses commas for compact encoding, expanded
-> to newline-separated textarea content on load.
+> **v2** (7 April 2026): Fixed energy-unit recalc contradiction. Aligned
+> per-line validation with v1 summary-only approach. Clarified URL
+> comma-separated → textarea newline-separated expansion.
+>
+> **v3** (7 April 2026): Moved detailed energy unit logic to
+> [`unit-handling.md`](unit-handling.md). Calculator spec now contains a
+> brief summary referencing that spec. Added: ion-dependent unit options
+> (including electrons = MeV only), inline unit detection from typed text
+> (e.g., "100 keV" auto-switches selector). Updated acceptance criteria.
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
@@ -22,7 +22,7 @@
 >
 > **Related specs:**
 > - Entity selection (compact mode): [`entity-selection.md`](entity-selection.md)
-> - Unit handling: TODO `unit-handling.md`
+> - Unit handling (energy units, SI prefixes, inline detection): [`unit-handling.md`](unit-handling.md)
 > - Shareable URLs: TODO `shareable-urls.md`
 > - Advanced options: TODO `advanced-options.md`
 > - Export: TODO `export.md`
@@ -85,16 +85,16 @@ Calculator page. The Calculator only triggers calculation when
 |----------|--------|
 | Type | Segmented control / radio buttons (not a dropdown — ≤3 options, see §4.2 of project vision) |
 | Position | Inline with the entity selection row, after the Program combobox |
-| Options | **Context-aware** based on selected ion's mass number (A): |
-| | • A = 1 (proton): **MeV** only — MeV/nucl is numerically identical, showing it adds clutter |
-| | • A > 1 (heavy ions): **MeV** and **MeV/nucl** |
-| | • Advanced mode (future): adds **MeV/u** |
+| Options | **Ion-dependent.** The selected ion's mass number (A) is read from `IonEntity.massNumber` and determines which units are shown. Summary: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules. |
 | Default | MeV |
-| Behavior | Changing the unit **does not modify the textarea content** — the numeric text stays the same. However, the physical meaning of those numbers changes (e.g., "100" is reinterpreted from 100 MeV to 100 MeV/nucl), which **triggers an immediate recalculation** with the reinterpreted values. This is consistent with the Recalculation Triggers table below (energy unit change → immediate, no debounce). |
+| Behavior | Changing the unit **does not modify the textarea content** — the numeric text stays the same. The values are reinterpreted in the new unit, which **triggers an immediate recalculation**. See Recalculation Triggers table below. |
+| Inline unit detection | When the user types a unit suffix in the textarea (e.g., `100 keV`, `250 GeV/nucl`), the parser detects it after debounce, strips the suffix, converts the value, and auto-switches the unit selector. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
 
-> TODO: Full unit conversion logic will be specified in
-> `docs/04-feature-specs/unit-handling.md`. Until then, refer to
-> `docs/01-project-vision.md` §4.1 for design principles.
+> Full energy unit logic — ion-dependent options, SI prefix handling,
+> inline unit detection, conversion formulas — lives in
+> [`unit-handling.md`](unit-handling.md). The Calculator spec only
+> describes how the selector integrates into the page layout and
+> reactivity chain.
 
 ### 3. Energy Input
 
@@ -593,10 +593,12 @@ entitySelection changes
 - [ ] The resolved program source is shown above or inline with the table.
 
 ### Energy Unit Selector
-- [ ] For proton (A=1), only "MeV" is shown.
+- [ ] Available units depend on the selected ion (read from `IonEntity.massNumber`).
+- [ ] For proton (A=1) and electron (ion ID 1001), only "MeV" is shown.
 - [ ] For heavy ions (A>1), "MeV" and "MeV/nucl" are shown.
 - [ ] The selector uses segmented controls / radio buttons, not a dropdown.
 - [ ] Changing the unit does not alter the textarea content but reinterprets the values.
+- [ ] Typing a unit suffix in the textarea (e.g., `100 keV`) auto-switches the unit selector after debounce (see `unit-handling.md`).
 
 ### Entity Selection Integration
 - [ ] Entity selectors use compact mode (searchable dropdown comboboxes).
