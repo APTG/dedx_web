@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-07 | 1 | Plot page spec v1: multi-series JSROOT chart, preview series, smart labels, color palette, full panel entity selection, 500-point log grid, keV/µm default, axis scale controls, PNG/CSV export, URL-encoded series | — |
 | 2026-04-07 | 1 | Spec consistency fixes: fix keV/µm conversion factor (×10→/10), fix CSDA auto-scaling thresholds, fix wireframe values, fix emoji/typos, sync wireframes across specs, clarify dropdown vs suffix behavior, add cross-spec consistency rule to copilot-instructions | — |
 | 2026-04-07 | 1 | Major UX redesign: unified input/result table, keV/µm default output, SI prefix auto-scaling, per-row unit detection, material phase badge. Rewrote unit-handling.md v2 and calculator.md v5. | [log](docs/ai-logs/2026-04-07-unified-table-redesign.md) |
 | 2026-04-07 | 1 | Rename `IonEntity` → `ParticleEntity` across all specs/contract, rename `ionId` → `particleId` in `LibdedxService`, rewrite terminology note, add Terminology doc TODO | [log](docs/ai-logs/2026-04-03-calculator.md) |
