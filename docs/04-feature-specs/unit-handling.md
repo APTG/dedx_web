@@ -1,11 +1,11 @@
 # Feature: Unit Handling
 
-> **Status:** Draft v2 (7 April 2026)
+> **Status:** Final v3 (7 April 2026)
 >
 > This spec covers energy unit selection, SI prefix handling, inline unit
 > detection from typed text, and output unit conversion for stopping power
 > and CSDA range. It is referenced by [`calculator.md`](calculator.md) and
-> will be referenced by `plot.md`.
+> [`plot.md`](plot.md).
 >
 > **Origin:** Energy unit logic was initially inline in `calculator.md` v1–v2.
 > Extracted here in calculator.md v3 to give it a dedicated home.
@@ -17,6 +17,13 @@
 > auto-scaled length units (cm, mm, µm, nm). Added unrecognized unit
 > suffix error handling. Added per-row ↔ master unit mode logic.
 > Added "Reset to single unit" advanced feature.
+>
+> **v3** (7 April 2026): Stage 1 unit conversion finalization.
+> Added canonical conversion contract (internal units, defaults,
+> density usage, rounding, export behavior), completed full
+> stopping-power conversion paths, resolved per-row→master transition
+> wording, and added explicit numeric acceptance examples for all
+> conversion paths.
 
 ---
 
@@ -42,9 +49,9 @@ for overarching principles. Key points restated here for convenience:
 
 - Energy input must have an explicit, always-visible unit selector.
 - Available input unit options depend on the selected particle.
-- Output values auto-scale to human-readable SI prefixes.
+- CSDA length output auto-scales to human-readable SI prefixes.
 - MeV/nucl ≠ MeV/u — the distinction matters for precision CSDA range work.
-- Per-row output units scale independently (each row picks its own best prefix).
+- Per-row CSDA output units scale independently (each row picks its own best prefix).
 
 ---
 
@@ -86,7 +93,8 @@ The master unit selector operates in two modes:
 Transition from master → per-row: happens automatically when the user types
 a recognized unit suffix on any row (see §3).
 
-Transition from per-row → master: only via the **"Reset to single unit"**
+Transition from per-row → master: automatic when all explicit unit
+suffixes are removed from all rows, or via the **"Reset to single unit"**
 button in the Advanced section (see §7).
 
 ### Unit Preservation on Particle Change
@@ -224,6 +232,36 @@ WASM call). See `docs/06-wasm-api-contract.md` §3.
 
 ## 5. Output Unit Handling
 
+### 5.0 Canonical Conversion Contract (Stage 1)
+
+This section is normative for Calculator, Plot, and export behavior.
+
+1. **Canonical internal units**
+  - Energy for WASM calls:
+    - **Ions (A ≥ 1):** MeV/nucl
+    - **Electron / ESTAR (particle ID 1001):** MeV
+  - Stopping power from C API: **MeV·cm²/g**.
+  - CSDA range from C API: **g/cm²**.
+
+2. **Density usage**
+  - Density source: `LibdedxService.getDensity(materialId)`.
+  - Symbol and units: ρ in g/cm³.
+  - Density-dependent conversions are invalid when ρ is missing or ρ ≤ 0.
+
+3. **Default unit behavior split**
+  - Calculator: automatic phase-based default (non-gas → `keV/µm`, gas → `MeV·cm²/g`).
+  - Plot: one user-selected unit for all series, default `keV/µm` regardless of phase.
+  - Both use identical formulas and per-material density.
+
+4. **Rounding and formatting**
+  - Stopping power output: 4 significant figures, no scientific notation.
+  - CSDA output: 4 significant figures, SI auto-scaling (nm/µm/mm/cm/m).
+  - Input text remains as typed.
+
+5. **Export units**
+  - Calculator CSV headers include the active output unit symbols.
+  - Plot CSV exports stopping power in the currently selected plot unit.
+
 ### 5.1 Stopping Power — Default Unit
 
 The C API outputs mass stopping power in **MeV·cm²/g**. The default
@@ -256,7 +294,10 @@ Converting from MeV·cm²/g (mass stopping power) to linear stopping power
 |------|----|---------|
 | MeV·cm²/g | MeV/cm | S_linear = S_mass × ρ |
 | MeV·cm²/g | keV/µm | S_kevum = S_mass × ρ / 10 |
-| MeV/cm | keV/µm | S_kevum = S_linear × 1e-1 |
+| MeV/cm | keV/µm | S_kevum = S_linear / 10 |
+| MeV/cm | MeV·cm²/g | S_mass = S_linear / ρ |
+| keV/µm | MeV/cm | S_linear = S_kevum × 10 |
+| keV/µm | MeV·cm²/g | S_mass = (S_kevum × 10) / ρ |
 
 Where ρ = `LibdedxService.getDensity(materialId)`.
 
@@ -328,9 +369,9 @@ either — MeV·cm²/g is the standard unit.
 
 ### Number Formatting
 
-All output values (stopping power and CSDA range) use **4 significant
-figures** with SI prefix auto-scaling. **Scientific notation is not used
-for output** — SI prefixes replace it.
+All output values use **4 significant figures**. For CSDA range,
+SI prefix auto-scaling is used. **Scientific notation is not used
+for output**.
 
 Examples:
 - `0.0001234 cm` → `1.234 µm` (not `1.234e-4 cm`)
@@ -339,6 +380,68 @@ Examples:
 
 For **input** values, scientific notation is accepted and displayed as
 entered (e.g., `1.5E-2` stays as `1.5E-2` in the typed text).
+
+Output formatting does **not** use thousands/grouping separators.
+Normative acceptance examples in this spec follow the same rule.
+
+---
+
+## Appendix A: Acceptance Examples (Numeric)
+
+These examples are normative and should be copied into unit/integration tests.
+
+### A.1 Energy Conversion (all paths)
+
+Use particle values A = 12 and m_u = 12.011.
+
+| Path | Input | Expected output |
+|------|-------|-----------------|
+| MeV → MeV/nucl | 120 MeV | 10 MeV/nucl |
+| MeV → MeV/u | 120 MeV | 9.9908 MeV/u |
+| MeV/nucl → MeV | 10 MeV/nucl | 120 MeV |
+| MeV/nucl → MeV/u | 10 MeV/nucl | 9.9908 MeV/u |
+| MeV/u → MeV | 9.9908 MeV/u | 120 MeV |
+| MeV/u → MeV/nucl | 9.9908 MeV/u | 10 MeV/nucl |
+
+### A.2 Stopping Power Conversion (all display paths)
+
+Use S_mass = 25 MeV·cm²/g and ρ = 1.0 g/cm³.
+
+| Path | Input | Expected output |
+|------|-------|-----------------|
+| MeV·cm²/g → MeV/cm | 25 | 25 |
+| MeV·cm²/g → keV/µm | 25 | 2.5 |
+| MeV/cm → keV/µm | 25 | 2.5 |
+| MeV/cm → MeV·cm²/g | 25 | 25 |
+| keV/µm → MeV/cm | 2.5 | 25 |
+| keV/µm → MeV·cm²/g | 2.5 | 25 |
+
+Gas sanity check:
+- S_mass = 25 MeV·cm²/g and ρ = 0.0012 g/cm³
+- Expected `keV/µm` = 25 × 0.0012 / 10 = 0.003
+
+### A.3 CSDA Range Conversion
+
+Use range_mass = 0.2 g/cm² and ρ = 1.0 g/cm³.
+
+| Path | Input | Expected output |
+|------|-------|-----------------|
+| g/cm² → cm | 0.2 | 0.2 cm |
+| cm → mm | 0.2 cm | 2 mm |
+| cm → µm | 0.2 cm | 2000 µm |
+| cm → nm | 0.2 cm | 2000000 nm |
+| cm → m | 0.2 cm | 0.002 m |
+
+Auto-scaling examples from cm:
+- 0.2 cm → 2 mm
+- 0.00012 cm → 1.2 µm
+- 250 cm → 2.5 m
+
+### A.4 Default Behavior Examples
+
+- Calculator + water (non-gas): stopping power defaults to `keV/µm`.
+- Calculator + air (gas): stopping power defaults to `MeV·cm²/g`.
+- Plot (any material mix): initial selected unit is `keV/µm` until changed by user.
 
 ---
 
@@ -414,7 +517,8 @@ preserved numerically (just re-expressed in the master unit).
 
 ### Output — Number Formatting
 - [ ] Output values use 4 significant figures.
-- [ ] SI prefix auto-scaling is used instead of scientific notation for output.
+- [ ] CSDA range uses SI prefix auto-scaling instead of scientific notation.
+- [ ] Output values and acceptance fixtures use no thousands/grouping separators.
 - [ ] Input values are displayed as entered by the user (including scientific notation if typed).
 
 ### Reset to Single Unit
@@ -427,6 +531,9 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] Round-trip conversion (MeV → MeV/nucl → MeV) preserves value to float precision.
 - [ ] Stopping power keV/µm = MeV·cm²/g × ρ / 10 where ρ is material density in g/cm³.
 - [ ] CSDA range cm = g/cm² ÷ ρ.
+- [ ] Numeric fixture check (A=12, m_u=12.011): 120 MeV = 10 MeV/nucl = 9.9908 MeV/u.
+- [ ] Numeric fixture check (S_mass=25, ρ=1.0): 25 MeV·cm²/g = 25 MeV/cm = 2.5 keV/µm.
+- [ ] Numeric fixture check (range_mass=0.2, ρ=1.0): 0.2 g/cm² = 0.2 cm = 2 mm.
 
 ---
 

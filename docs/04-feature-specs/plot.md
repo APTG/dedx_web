@@ -1,6 +1,12 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Final v1 (7 April 2026)
+> **Status:** Final v2 (7 April 2026)
+>
+> **v2** (7 April 2026): Stage 1 unit-conversion finalization.
+> Clarified that Plot uses user-selected global stopping-power units
+> (not phase auto-switch) while keeping the same density-based formulas
+> as Calculator. Normalized URL unit tokens and added numeric conversion
+> acceptance examples.
 >
 > The Plot page lets users build and compare multiple stopping-power-vs-energy
 > curves on an interactive JSROOT chart. Each curve ("series") is a
@@ -115,6 +121,10 @@ The series list is scrollable if it exceeds a maximum height of ~200px.
 > keV/µm and MeV·cm²/g based on gas vs non-gas), the Plot page uses a
 > single user-chosen unit for all series. The user picks the unit that
 > makes sense for their comparison. Default is keV/µm.
+>
+> **Math consistency contract:** Plot and Calculator use the same
+> conversion formulas from [`unit-handling.md`](unit-handling.md) §5.2.
+> The only intentional difference is default behavior selection.
 >
 > **Design note:** A segmented control (not a `<select>` dropdown) is
 > used for consistency with the axis scale controls and the project's
@@ -601,7 +611,7 @@ shareability.
 | `material` | `276` | Current entity selection — material ID |
 | `program` | `auto` or `2` | Current entity selection — program |
 | `series` | `2.1.276,9.6.276,2.1.104` | Comma-separated series triplets: `programId.particleId.materialId` |
-| `stp_unit` | `keV/um` | Stopping power unit: `keV/um`, `MeV/cm`, `MeV.cm2/g` |
+| `stp_unit` | `kev-um` | Stopping power unit token: `kev-um`, `mev-cm`, `mev-cm2-g` |
 | `xscale` | `log` | X-axis scale: `log` or `lin` |
 | `yscale` | `log` | Y-axis scale: `log` or `lin` |
 
@@ -628,7 +638,10 @@ series=2.1.276,9.6.276
 3. Fetch plot data for each valid triplet via `getPlotData()`.
 4. Invalid triplets are silently ignored (partial load is OK).
 5. Set entity selection from `particle`, `material`, `program` params.
-6. Set stopping power unit from `stp_unit` (default keV/µm if missing).
+6. Set stopping power unit from `stp_unit` (default keV/µm if missing):
+  - `kev-um` → `keV/µm`
+  - `mev-cm` → `MeV/cm`
+  - `mev-cm2-g` → `MeV·cm²/g`
 7. Set axis scales from `xscale`, `yscale` (default log if missing).
 
 ### State → URL (on state change)
@@ -795,7 +808,7 @@ panels. The user taps to open entity selection when needed.
 ├──────────────────────────────────────┤
 │ [ ＋ Add Series ]   [ Reset all ]    │
 ├──────────────────────────────────────┤
-│ Stp: (•)keV/µm (○)MeV/cm (○)cm²/g   │
+│ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g│
 │ X: Log/Lin  Y: Log/Lin  [📷] [📄]   │
 │ ┌──────────────────────────────────┐ │
 │ │        JSROOT Plot Canvas        │ │
@@ -1082,6 +1095,8 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Changing the unit re-converts all series' Y-data and redraws the plot.
 - [ ] The Y-axis label updates to reflect the selected unit.
 - [ ] Conversion uses each series' own material density (per-series conversion).
+- [ ] Unit selection does not auto-switch when current entity selection changes between gas and non-gas materials.
+- [ ] Numeric fixture check: for two visible series with `stoppingPowers[i] = 25`, densities 1.0 and 0.0012, `keV/µm` values are 2.5 and 0.003 respectively.
 
 ### URL State
 - [ ] Committed series are encoded as `programId.particleId.materialId` triplets in a `series` URL parameter.
@@ -1089,6 +1104,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Loading a URL with valid `series` restores the series and renders them on the plot.
 - [ ] Invalid series triplets in the URL are silently skipped.
 - [ ] The URL updates (replaceState) on each state change.
+- [ ] `stp_unit` only accepts canonical tokens: `kev-um`, `mev-cm`, `mev-cm2-g`.
 
 ### Export
 - [ ] "Export PNG" and "Export CSV" buttons appear in the controls bar above the canvas, right-aligned.
