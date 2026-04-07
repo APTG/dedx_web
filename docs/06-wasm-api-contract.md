@@ -13,12 +13,12 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
-| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the ion's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. |
+| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
 | Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
-| ESTAR (electrons) | **Included** | ESTAR (program 3, ion 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" ion. |
+| ESTAR (electrons) | **Included** | ESTAR (program 3, particle ID 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" entry in the `ParticleEntity` list. |
 | MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
 | Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
 | Interpolation | **Exposed** | Log-log (default) and linear. Toggle in advanced settings. |
@@ -47,7 +47,7 @@ type RangeUnit = "g/cm²" | "cm";
 ### 2.2 Entities
 
 ```typescript
-/** A named entity from libdedx (program, ion, or material). */
+/** A named entity from libdedx (program, particle, or material). */
 interface LibdedxEntity {
   /** Numeric ID used in C API calls (e.g., DEDX_PSTAR = 2, DEDX_PROTON = 1). */
   id: number;
@@ -55,12 +55,17 @@ interface LibdedxEntity {
   name: string;
 }
 
-/** Ion entity with mass data for unit conversion. */
-interface IonEntity extends LibdedxEntity {
+/**
+ * Particle entity (ion or electron) with mass data for unit conversion.
+ * Named "ParticleEntity" in dedx_web; the libdedx C API uses "ion" for
+ * the same concept (including electrons), but that naming is incorrect.
+ */
+interface ParticleEntity extends LibdedxEntity {
   /**
    * Mass number (A) — integer number of nucleons.
    * Obtained from dedx_get_ion_nucleon_number() at init time.
    * Needed for MeV ↔ MeV/nucl conversion: E_per_nucl = E_total / A.
+   * **Electron (ID 1001):** value is 0 (not applicable; electron uses MeV only).
    */
   massNumber: number;
   /**
@@ -73,10 +78,10 @@ interface IonEntity extends LibdedxEntity {
   /**
    * Chemical symbol (e.g., "H", "He", "C").
    * Derived from the element's standard symbol. Used in display
-   * format: "Z=6  Carbon (C)". For ion ID 1001 (Electron): "e⁻".
+   * format: "Z=6  Carbon (C)". For particle ID 1001 (Electron): "e⁻".
    */
   symbol: string;
-  /** Human-readable aliases for common ion names (e.g., "proton", "alpha"). */
+  /** Human-readable aliases for common particle names (e.g., "proton", "alpha", "electron"). */
   aliases?: string[];
 }
 
@@ -228,7 +233,7 @@ interface LibdedxService {
   /**
    * Initialize the WASM module. Must be called once before any other method.
    * Loads the Emscripten module, waits for WASM compilation, and caches
-   * the program/ion/material lists.
+   * the program/particle/material lists.
    * @throws LibdedxError if WASM module fails to load.
    */
   init(): Promise<void>;
@@ -243,11 +248,11 @@ interface LibdedxService {
   getPrograms(): ProgramEntity[];
 
   /**
-   * Ions supported by a given program.
+   * Particles supported by a given program.
    * Calls: dedx_fill_ion_list(programId), dedx_get_ion_name(ionId).
    * @param programId — C enum value (e.g., DEDX_PSTAR = 2).
    */
-  getIons(programId: number): IonEntity[];
+  getParticles(programId: number): ParticleEntity[];
 
   /**
    * Materials supported by a given program.
@@ -259,18 +264,18 @@ interface LibdedxService {
   // ── Energy Bounds ──────────────────────────────────────────
 
   /**
-   * Minimum valid energy for a program/ion combination.
+   * Minimum valid energy for a program/particle combination.
    * Calls: dedx_get_min_energy(programId, ionId).
    * @returns Energy in MeV/nucl.
    */
-  getMinEnergy(programId: number, ionId: number): number;
+  getMinEnergy(programId: number, particleId: number): number;
 
   /**
-   * Maximum valid energy for a program/ion combination.
+   * Maximum valid energy for a program/particle combination.
    * Calls: dedx_get_max_energy(programId, ionId).
    * @returns Energy in MeV/nucl.
    */
-  getMaxEnergy(programId: number, ionId: number): number;
+  getMaxEnergy(programId: number, particleId: number): number;
 
   // ── Stopping Power ─────────────────────────────────────────
 
@@ -290,7 +295,7 @@ interface LibdedxService {
    */
   calculate(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     materialId: number;
     energies: number[];       // in MeV/nucl
     options?: AdvancedOptions;
@@ -305,13 +310,13 @@ interface LibdedxService {
    */
   calculateCustomCompound(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     compound: CustomCompound;
     energies: number[];       // in MeV/nucl
   }): CalculationResult;
 
   /**
-   * Calculate across multiple programs at once (same ion, material, energies).
+   * Calculate across multiple programs at once (same particle, material, energies).
    * Returns a Map keyed by programId.
    *
    * Internally calls calculate() for each program. Errors for individual
@@ -320,7 +325,7 @@ interface LibdedxService {
    */
   calculateMulti(params: {
     programIds: number[];
-    ionId: number;
+    particleId: number;
     materialId: number;
     energies: number[];       // in MeV/nucl
     options?: AdvancedOptions;
@@ -340,7 +345,7 @@ interface LibdedxService {
    */
   getPlotData(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     materialId: number;
     pointCount: number;
     logScale: boolean;
@@ -348,14 +353,14 @@ interface LibdedxService {
   }): CalculationResult;
 
   /**
-   * Get the built-in tabulated data points for a program/ion/material.
+   * Get the built-in tabulated data points for a program/particle/material.
    * Calls: dedx_get_stp_table_size(), dedx_fill_default_energy_stp_table().
    * These are the raw data points from the underlying database.
    * CSDA ranges are computed separately via dedx_get_csda_range_table().
    */
   getDefaultTableData(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     materialId: number;
   }): CalculationResult;
 
@@ -372,7 +377,7 @@ interface LibdedxService {
    */
   getInverseStp(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     materialId: number;
     stoppingPowers: number[];  // in MeV·cm²/g
     side: 0 | 1;
@@ -386,7 +391,7 @@ interface LibdedxService {
    */
   getInverseCsda(params: {
     programId: number;
-    ionId: number;
+    particleId: number;
     materialId: number;
     ranges: number[];          // in g/cm²
   }): InverseCsdaResult;
@@ -429,8 +434,8 @@ interface LibdedxService {
    * - MeV/nucl uses integer mass number A.
    * - MeV/u uses atomic mass m in daltons.
    *
-   * @param massNumber — ion mass number (A), needed for MeV ↔ MeV/nucl.
-   * @param atomicMass — ion atomic mass in u, needed for MeV ↔ MeV/u.
+   * @param massNumber — particle mass number (A), needed for MeV ↔ MeV/nucl.
+   * @param atomicMass — particle atomic mass in u, needed for MeV ↔ MeV/u.
    */
   convertEnergy(params: {
     fromUnit: EnergyUnit;
@@ -457,18 +462,18 @@ interface LibdedxService {
   isGasByDefault(materialId: number): boolean;
 
   /**
-   * Get the nucleon number (mass number A) for an ion.
+   * Get the nucleon number (mass number A) for a particle.
    * Calls: dedx_get_ion_nucleon_number(ionId).
    * @returns Mass number for Z=1..112, or -1 if invalid.
    */
-  getNucleonNumber(ionId: number): number;
+  getNucleonNumber(particleId: number): number;
 
   /**
-   * Get the atomic mass in unified atomic mass units (u) for an ion.
+   * Get the atomic mass in unified atomic mass units (u) for a particle.
    * Calls: dedx_get_ion_atom_mass(ionId).
    * @returns Atomic mass in u (e.g., 1.00794 for hydrogen), or -1 if invalid.
    */
-  getAtomicMass(ionId: number): number;
+  getAtomicMass(particleId: number): number;
 
   /**
    * Get the mean excitation potential (I-value) of a material.
@@ -512,7 +517,7 @@ These are the C functions that must be exported in the Emscripten build
 | C Function | Used by | Notes |
 |------------|---------|-------|
 | `dedx_fill_program_list(int*)` | `getPrograms()` | Fills array, terminated by -1 |
-| `dedx_fill_ion_list(int, int*)` | `getIons()` | Filtered by program |
+| `dedx_fill_ion_list(int, int*)` | `getParticles()` | Filtered by program |
 | `dedx_fill_material_list(int, int*)` | `getMaterials()` | Filtered by program |
 | `dedx_get_stp_table(prog, ion, target, n, energies*, stps*)` | `calculate()` | Batch stopping power |
 | `dedx_get_csda_range_table(prog, ion, target, n, energies*, ranges*)` | `calculate()` | Batch CSDA range |
@@ -526,7 +531,7 @@ These are the C functions that must be exported in the Emscripten build
 |------------|---------|-------|
 | `dedx_allocate_workspace(count, err*)` | `calculateCustomCompound()`, inverse fns | Allocate workspace |
 | `dedx_free_workspace(ws*, err*)` | cleanup | Free workspace |
-| `dedx_load_config(ws*, cfg*, err*)` | config loading | Load a program/ion/material config |
+| `dedx_load_config(ws*, cfg*, err*)` | config loading | Load a program/particle/material config |
 | `dedx_get_stp(ws*, cfg*, energy, err*)` | custom compound calc | Single-point evaluation |
 | `dedx_free_config(cfg*, err*)` | cleanup | Free config |
 
@@ -545,7 +550,7 @@ These are the C functions that must be exported in the Emscripten build
 |------------|---------|-------|
 | `dedx_get_program_name(prog)` | `getPrograms()` | Returns `const char*` |
 | `dedx_get_program_version(prog)` | `getPrograms()` | Returns `const char*` |
-| `dedx_get_ion_name(ion)` | `getIons()` | Returns `const char*` |
+| `dedx_get_ion_name(ion)` | `getParticles()` | Returns `const char*` |
 | `dedx_get_material_name(mat)` | `getMaterials()` | Returns `const char*` |
 | `dedx_get_min_energy(prog, ion)` | `getMinEnergy()` | Returns `float` (MeV/nucl) |
 | `dedx_get_max_energy(prog, ion)` | `getMaxEnergy()` | Returns `float` (MeV/nucl) |
@@ -561,8 +566,8 @@ These wrappers live in this repository and are compiled alongside libdedx.
 
 | C Function | Used by | Notes |
 |------------|---------|-------|
-| `dedx_get_ion_nucleon_number(ion)` | `getNucleonNumber()`, `getIons()` | Returns mass number (A) for Z=1..112 |
-| `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getIons()` | Returns atomic mass in u for Z=1..112 |
+| `dedx_get_ion_nucleon_number(ion)` | `getNucleonNumber()`, `getParticles()` | Returns mass number (A) for Z=1..112 |
+| `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getParticles()` | Returns atomic mass in u for Z=1..112 |
 | `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
 | `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
 
@@ -644,8 +649,8 @@ for CSDA range calculations.
 | MeV/u | MeV/nucl | `E_per_nucl = E_per_u × m / A` |
 
 Where:
-- **A** = ion's mass number (integer nucleon count, from `dedx_nucl[]`)
-- **m** = ion's atomic mass in u (from `dedx_amu[]`)
+- **A** = particle's mass number (integer nucleon count, from `dedx_nucl[]`)
+- **m** = particle's atomic mass in u (from `dedx_amu[]`)
 
 ---
 
@@ -669,8 +674,8 @@ const PROGRAMS = {
   BETHE_EXT00: 101,
 } as const;
 
-/** Special ion IDs */
-const IONS = {
+/** Special particle IDs */
+const PARTICLES = {
   /** Used with ESTAR (program 3) for electron stopping powers. */
   ELECTRON: 1001,
 } as const;
@@ -712,7 +717,7 @@ const MSTAR_MODES = {
 
 > Resolved during the planning session on 2 April 2026.
 
-### Q1: Ion mass numbers (A)
+### Q1: Particle mass numbers (A)
 
 **Resolution:** Two-layer approach.
 
@@ -720,12 +725,12 @@ const MSTAR_MODES = {
    `dedx_get_ion_nucleon_number(int ion)` in the Emscripten build. This is
    the authoritative source (uses `dedx_nucl[112]` from `dedx_periodic_table.h`).
 
-2. **JS alias table:** Hardcode a human-readable ion table in TypeScript with
+2. **JS alias table:** Hardcode a human-readable particle table in TypeScript with
    display names and aliases. Used for UI labels and search, not for physics.
 
 ```typescript
-/** Ion metadata table. massNumber comes from C, aliases are JS-only. */
-const ION_ALIASES: Record<number, { name: string; aliases: string[] }> = {
+/** Particle metadata table. massNumber comes from C, aliases are JS-only. */
+const PARTICLE_ALIASES: Record<number, { name: string; aliases: string[] }> = {
   1:  { name: "Hydrogen",  aliases: ["proton", "p", "H"] },
   2:  { name: "Helium",    aliases: ["alpha", "α", "He"] },
   3:  { name: "Lithium",   aliases: ["Li"] },
@@ -734,7 +739,7 @@ const ION_ALIASES: Record<number, { name: string; aliases: string[] }> = {
   6:  { name: "Carbon",    aliases: ["C"] },
   7:  { name: "Nitrogen",  aliases: ["N"] },
   8:  { name: "Oxygen",    aliases: ["O"] },
-  // ... Z=9..18 for MSTAR/ICRU73 supported ions
+  // ... Z=9..18 for MSTAR/ICRU73 supported particles
   12: { name: "Carbon-12", aliases: ["12C", "C-12"] },
   // Full table to be generated from dedx_nucl[] + element names
 };
@@ -742,11 +747,11 @@ const ION_ALIASES: Record<number, { name: string; aliases: string[] }> = {
 
 ### Q2: ESTAR (electrons)
 
-**Resolution: Include.** ESTAR (`DEDX_ESTAR = 3`, `ion = 1001`) is listed in the
+**Resolution: Include.** ESTAR (`DEDX_ESTAR = 3`, `particle ID = 1001`) is listed in the
 C API. The web interface should expose it. Note:
-- ESTAR uses a special ion ID `1001` (not atomic number).
+- ESTAR uses a special particle ID `1001` (not atomic number).
 - It covers all ~280 materials.
-- The `IonEntity` for electrons gets `massNumber = 1` (by convention; not used for
+- The `ParticleEntity` for electrons gets `massNumber = 1` (by convention; not used for
   energy conversion since electrons don't use MeV/nucl in the usual sense).
 - UI should label it as "Electron" and handle it as a special case.
 

@@ -1,13 +1,13 @@
-# Feature: Entity Selection (Ion → Material → Program)
+# Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** Draft v4 (3 April 2026)
+> **Status:** Final v5 (3 April 2026)
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
 > for choosing *what* to calculate.
 >
 > **v2 changes:** Reversed the visual and logical order from Program-first
-> to Ion → Material → Program. Added bidirectional filtering via a
+> to Particle → Material → Program. Added bidirectional filtering via a
 > compatibility matrix. Added support for "program-first" workflow via
 > independent unselect. See [libdedx#79](https://github.com/APTG/libdedx/issues/79)
 > for user feedback motivating this change.
@@ -24,20 +24,38 @@
 > de-emphasized Program panel. Added UX rationale citing progressive disclosure,
 > Fitt's Law, and context-appropriate density. Shared state persists across
 > page navigation.
+>
+> **v5:** Marked as final after cross-review with calculator.md,
+> 06-wasm-api-contract.md, and 01-project-vision.md. No changes needed.
+>
+> **Terminology:** The libdedx C library uses the term "ion" everywhere —
+> including for the electron (ID 1001) — even though calling an electron an
+> "ion" is physically incorrect. This is a legacy naming convention in the C
+> API (functions like `dedx_fill_ion_list`, `dedx_get_ion_name`, etc.).
+>
+> In **dedx_web** and in all web-app specs we use the correct term
+> **"particle"** (or "charged particle") to refer to any projectile:
+> protons, alpha particles, heavy ions, and electrons. The TypeScript type
+> is `ParticleEntity`. The C API's "ion" naming is confined to the WASM
+> wrapper layer that directly calls C functions.
+>
+> See also: TODO `docs/terminology.md` — a glossary for UI tooltips and
+> technical documentation.
 
 ---
 
 ## User Story
 
 **As a** radiation physicist,
-**I want to** first choose my projectile (ion) and target (material), then see
-which stopping-power programs can serve that combination,
+**I want to** first choose my particle (like proton, alpha particle, heavy ion
+or electron) and target (material, like Silicon), then see which stopping-power
+programs can serve that combination,
 **so that** I follow the natural mental model of a physics experiment: pick the
 beam, pick the target, *then* pick the data source — rather than memorizing
 which programs exist.
 
 **As a** data quality researcher,
-**I want to** select a specific program first, then see which ions and materials
+**I want to** select a specific program first, then see which particles and materials
 it covers,
 **so that** I can audit data availability per database.
 
@@ -57,26 +75,26 @@ available. Until it is, the frontend must derive valid combinations itself.
 ### How it is built
 
 At WASM init time, the service iterates over every program returned by
-`getPrograms()` and calls `getIons(programId)` + `getMaterials(programId)`
+`getPrograms()` and calls `getParticles(programId)` + `getMaterials(programId)`
 for each. The results are stored in an in-memory compatibility matrix:
 
 ```typescript
 /**
  * Pre-computed at init. Enables O(1) lookups in any direction:
- *   "which programs support ion X?" / "which materials does program P have?"
- *   / "which programs support ion X + material Y?"
+ *   "which programs support particle X?" / "which materials does program P have?"
+ *   / "which programs support particle X + material Y?"
  */
 interface CompatibilityMatrix {
-  /** programId → Set of ion IDs supported by that program. */
-  ionsByProgram: Map<number, Set<number>>;
+  /** programId → Set of particle IDs supported by that program. */
+  particlesByProgram: Map<number, Set<number>>;
   /** programId → Set of material IDs supported by that program. */
   materialsByProgram: Map<number, Set<number>>;
-  /** ionId → Set of program IDs that support this ion. */
-  programsByIon: Map<number, Set<number>>;
+  /** particleId → Set of program IDs that support this particle. */
+  programsByParticle: Map<number, Set<number>>;
   /** materialId → Set of program IDs that support this material. */
   programsByMaterial: Map<number, Set<number>>;
-  /** All known ions (union across all programs). */
-  allIons: IonEntity[];
+  /** All known particles (union across all programs). */
+  allParticles: ParticleEntity[];
   /** All known materials (union across all programs). */
   allMaterials: MaterialEntity[];
   /** All known programs. */
@@ -84,10 +102,10 @@ interface CompatibilityMatrix {
 }
 ```
 
-The matrix is built once (< 20 programs × ~120 ions × ~280 materials per
+The matrix is built once (< 20 programs × ~120 particles × ~280 materials per
 program = manageable). The data is static for the lifetime of the page.
 
-> **Performance note**: Building the matrix requires ~20 `getIons()` +
+> **Performance note**: Building the matrix requires ~20 `getParticles()` +
 > ~20 `getMaterials()` calls at init. These are synchronous in-memory
 > lookups into the compiled WASM data tables, expected to complete in < 100 ms
 > total. If profiling shows otherwise, the matrix can be built lazily on
@@ -97,18 +115,18 @@ program = manageable). The data is static for the lifetime of the page.
 
 ## Inputs
 
-### 1. Ion Selector (primary — top / left)
+### 1. Particle Selector (primary — top / left)
 
 | Property | Detail |
 |----------|--------|
 | Type | Always-visible scrollable list panel with text filter input |
-| Data source | Derived from `CompatibilityMatrix.allIons` |
-| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)". The chemical symbol comes from `IonEntity.symbol`. |
-| Search aliases | Match on `name`, `symbol`, `aliases` (e.g., "proton" → Hydrogen, "alpha" → Helium), atomic number Z, mass number A |
+| Data source | Derived from `CompatibilityMatrix.allParticles` |
+| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "e⁻". |
+| Search aliases | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A |
 | Default | **Proton** (Hydrogen, Z=1) — highlighted on page load |
-| Available / unavailable | All ions are always shown. Ions incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible ions are shown at full contrast. |
-| Selected state | The selected ion has a **dark background highlight** (accent colour) with white text. Clicking a selected ion deselects it (toggle). |
-| Special | Ion ID 1001 = Electron — only visible (not greyed out) when ESTAR (program 3) is a compatible program for the current selection |
+| Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast. |
+| Selected state | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle). |
+| Special | Particle ID 1001 = Electron — only visible (not greyed out) when ESTAR (program 3) is a compatible program for the current selection |
 | Clearable | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header |
 
 ### 2. Material Selector (second — middle)
@@ -123,8 +141,8 @@ contains a split layout with two independently scrollable sub-lists.
 | Display format | `ID  Name` — e.g., "276  Water (liquid)" |
 | Search | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID, common aliases (e.g., "water" → "Water (liquid)") |
 | Default | **Water (liquid)** (ID 276) — highlighted on page load |
-| Available / unavailable | All materials are always shown. Materials incompatible with the current ion+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast. |
-| Selected state | Dark background highlight with white text (same style as ion/program). Toggle off by clicking again. |
+| Available / unavailable | All materials are always shown. Materials incompatible with the current particle+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast. |
+| Selected state | Dark background highlight with white text (same style as particle/program). Toggle off by clicking again. |
 | Split layout | **Elements** (material IDs 1–98, i.e. pure chemical elements) in the left sub-list, sorted by ID (= atomic number). **Compounds** (IDs 99–278 + 906 Graphite, i.e. mixtures, tissues, plastics, etc.) in the right sub-list, sorted alphabetically by name. Each sub-list has its own independent scroll position. |
 | Special | Gas-default materials (29 entries) shown with a gas indicator icon/badge |
 | Clearable | Yes — click selected item to toggle off, or clear (×) button in the panel header |
@@ -137,9 +155,9 @@ contains a split layout with two independently scrollable sub-lists.
 | Data source | Derived from `CompatibilityMatrix.allPrograms` |
 | Display format | `name — description` (e.g., "PSTAR — proton stopping powers (NIST)") |
 | Grouping | Two visual groups separated by a labelled divider: **"Tabulated data"** (ASTAR, PSTAR, MSTAR, ICRU family) and **"Analytical models"** (Bethe-Bloch variants). Matches demo layout. |
-| Default | **"Auto-select"** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current ion/material (see §4.3 of 01-project-vision.md) |
+| Default | **“Auto-select”** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current particle/material (see §4.3 of 01-project-vision.md) |
 | Hidden programs | **`DEDX_ICRU`** (ID 9) is **excluded** from the program panel. Its function is entirely covered by "Auto-select"; showing both would confuse users. The compatibility matrix still uses `DEDX_ICRU` internally for resolution, but it never appears as a selectable option. |
-| Available / unavailable | All *visible* programs are always shown. Programs incompatible with the current ion+material selection are **greyed out**. "Auto-select" is never greyed out. |
+| Available / unavailable | All *visible* programs are always shown. Programs incompatible with the current particle+material selection are **greyed out**. “Auto-select” is never greyed out. |
 | Selected state | Dark background highlight with white text. Toggle to deselect; deselecting any program resets to "Auto-select". |
 | Clearable | No explicit clear — deselecting returns to "Auto-select" |
 
@@ -153,7 +171,7 @@ Unlike v1, there is **no single root selector**. All three selectors filter
 each other bidirectionally via the compatibility matrix:
 
 ```
-Ion ←→ Material ←→ Program
+Particle ←→ Material ←→ Program
  ↑                    ↑
  └────────────────────┘
 ```
@@ -163,10 +181,10 @@ are recomputed. The filtering logic is:
 
 ```typescript
 // Pseudocode for deriving available options:
-function getAvailablePrograms(ion?: number, material?: number): ProgramEntity[] {
+function getAvailablePrograms(particle?: number, material?: number): ProgramEntity[] {
   let candidates = matrix.allPrograms;
-  if (ion != null) {
-    const progs = matrix.programsByIon.get(ion);
+  if (particle != null) {
+    const progs = matrix.programsByParticle.get(particle);
     candidates = candidates.filter(p => progs?.has(p.id));
   }
   if (material != null) {
@@ -176,43 +194,43 @@ function getAvailablePrograms(ion?: number, material?: number): ProgramEntity[] 
   return candidates;
 }
 
-function getAvailableIons(program?: number, material?: number): IonEntity[] {
-  let candidates = matrix.allIons;
+function getAvailableParticles(program?: number, material?: number): ParticleEntity[] {
+  let candidates = matrix.allParticles;
   if (program != null) {
-    const ions = matrix.ionsByProgram.get(program);
-    candidates = candidates.filter(i => ions?.has(i.id));
+    const particles = matrix.particlesByProgram.get(program);
+    candidates = candidates.filter(i => particles?.has(i.id));
   }
   if (material != null) {
-    // ions that share at least one program with this material
+    // particles that share at least one program with this material
     const materialProgs = matrix.programsByMaterial.get(material);
     candidates = candidates.filter(i => {
-      const ionProgs = matrix.programsByIon.get(i.id);
-      return ionProgs && materialProgs &&
-        [...ionProgs].some(p => materialProgs.has(p));
+      const particleProgs = matrix.programsByParticle.get(i.id);
+      return particleProgs && materialProgs &&
+        [...particleProgs].some(p => materialProgs.has(p));
     });
   }
   return candidates;
 }
 
-// getAvailableMaterials is symmetric to getAvailableIons
+// getAvailableMaterials is symmetric to getAvailableParticles
 ```
 
 ### Step-by-Step Flow
 
 1. **On WASM init (page load):**
    - Fetch all programs via `getPrograms()`.
-   - For each program, fetch ions and materials to build the `CompatibilityMatrix`.
+   - For each program, fetch particles and materials to build the `CompatibilityMatrix`.
    - Insert a synthetic **"Auto-select"** entry at the top of the program list
      (this is a frontend construct, not from libdedx).
-   - Set defaults: Ion = Proton (ID 1), Material = Liquid Water (ID 276),
+   - Set defaults: Particle = Proton (ID 1), Material = Liquid Water (ID 276),
      Program = "Auto-select".
    - Compute available options for each selector based on defaults.
 
-2. **User changes ion (typical first step):**
-   - Update the selected ion.
+2. **User changes particle (typical first step):**
+   - Update the selected particle.
    - Recompute available materials: only materials that share at least one
-     program with the new ion.
-   - Recompute available programs: only programs that support the new ion
+     program with the new particle.
+   - Recompute available programs: only programs that support the new particle
      (and the current material, if one is selected).
    - **Preserve current material** if it is still in the available list.
      Otherwise, fall back to Liquid Water if available, else the first material.
@@ -220,50 +238,50 @@ function getAvailableIons(program?: number, material?: number): IonEntity[] {
      "Auto-select".
    - Show a brief notification if material or program was changed
      (e.g., "PSTAR does not support Carbon; program reset to Auto-select").
-   - If the ion has `massNumber === 1` (proton), the energy unit selector
-     should hide "MeV/nucl" (it is numerically identical to MeV for A=1).
-     TODO: document this fully in `docs/04-feature-specs/unit-handling.md`;
-     until that spec exists, refer to `docs/01-project-vision.md`.
+   - If the selected particle is a proton (`massNumber === 1`) or electron
+     (ID 1001), the energy unit selector should show only “MeV”.
+     For heavy ions (`massNumber > 1`), show “MeV” and “MeV/nucl”.
+     See `docs/04-feature-specs/unit-handling.md` for the full rules.
 
 3. **User changes material (typical second step):**
    - Update the selected material.
-   - Recompute available ions: only ions that share at least one program with
+   - Recompute available particles: only particles that share at least one program with
      the new material.
    - Recompute available programs: only programs that support the new material
-     (and the current ion, if one is selected).
-   - **Preserve current ion** if still available. Otherwise, fall back to
-     Proton if available, else the first ion.
+     (and the current particle, if one is selected).
+   - **Preserve current particle** if still available. Otherwise, fall back to
+     Proton if available, else the first particle.
    - **Preserve current program** if still compatible. Otherwise, reset to
      "Auto-select".
-   - Show notification if ion or program was auto-changed.
+   - Show notification if particle or program was auto-changed.
 
 4. **User changes program (typical third step, or "program-first" workflow):**
    - Update the selected program.
-   - Recompute available ions: only ions supported by the new program (and
+   - Recompute available particles: only particles supported by the new program (and
      compatible with the current material, if set).
    - Recompute available materials: only materials supported by the new program
-     (and compatible with the current ion, if set).
-   - **Preserve current ion** if still available. Otherwise, fall back to
-     Proton if available, else the first ion.
+     (and compatible with the current particle, if set).
+   - **Preserve current particle** if still available. Otherwise, fall back to
+     Proton if available, else the first particle.
    - **Preserve current material** if still available. Otherwise, fall back to
      Liquid Water if available, else the first material.
    - Show notification for any auto-changed selections.
 
-5. **User clears ion (unselects):**
-   - Remove the ion filter.
+5. **User clears particle (unselects):**
+   - Remove the particle filter.
    - Recompute available materials and programs based only on the remaining
      selections (material and/or program).
    - The material and program lists expand to show all compatible options.
    - The program selection is preserved. This allows the "program-first"
-     workflow: select a program, clear the ion, and see all available
-     ions/materials for that program.
+     workflow: select a program, clear the particle, and see all available
+     particles/materials for that program.
 
 6. **User clears material (unselects):**
-   - Symmetric to clearing ion. Programs and ions recalculated without
+   - Symmetric to clearing particle. Programs and particles recalculated without
      material constraint.
 
 7. **Auto-select program resolution (display):**
-   - When "Auto-select" is active, after any ion or material change, resolve
+   - When "Auto-select" is active, after any particle or material change, resolve
      the concrete program that would be used for the current combination.
    - Display the resolved program name, e.g., *"Auto-select → ICRU 90"*.
    - Resolution uses `DEDX_ICRU` internally; the resolution chain is:
@@ -271,6 +289,7 @@ function getAvailableIons(program?: number, material?: number): IonEntity[] {
      - Alpha: ICRU 90 → ICRU 49
      - Carbon: ICRU 90 → ICRU 73 → ICRU 73 (old)
      - Other heavy ions: ICRU 73 → ICRU 73 (old)
+     - Electron: ESTAR
    - Future: a webdedx-level auto-selection layer may extend this (e.g., prefer
      MSTAR for specific heavy-ion/material combos). This is out of scope for v1
      but the data model should not preclude it.
@@ -280,15 +299,15 @@ function getAvailableIons(program?: number, material?: number): IonEntity[] {
 Users may also want to explore data availability per program. This workflow
 is supported without any mode toggle:
 
-1. Clear ion and material (or start fresh).
+1. Clear particle and material (or start fresh).
 2. Select a specific program (e.g., MSTAR).
-3. The ion list shows only ions MSTAR supports. The material list shows
+3. The particle list shows only particles MSTAR supports. The material list shows
    only materials MSTAR supports.
-4. Select an ion from the filtered list → material list narrows further.
+4. Select a particle from the filtered list → material list narrows further.
 5. Select a material → ready to calculate.
 
 This is the reverse of the default flow but uses the same bidirectional
-filtering logic. The visual order (Ion → Material → Program) remains
+filtering logic. The visual order (Particle → Material → Program) remains
 constant — only the user's interaction order changes.
 
 ### Text Filter Behavior
@@ -341,12 +360,12 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 | Entity | Searchable fields |
 |--------|-------------------|
 | Program | `name`, `version` |
-| Ion | `name`, `aliases` (e.g., "proton", "alpha", "deuteron"), `Z` (atomic number as string), `A` (mass number as string) |
+| Particle | `name`, `aliases` (e.g., "proton", "alpha", "deuteron", "electron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
 | Material | `name`, `id` (as string), common aliases |
 
-For ions, the `aliases` field from `IonEntity` provides human-friendly names:
+For particles, the `aliases` field from `ParticleEntity` provides human-friendly names:
 
-| Ion ID | Name | Aliases |
+| Particle ID | Name | Aliases |
 |--------|------|---------|
 | 1 | Hydrogen | proton, p, H-1 |
 | 2 | Helium | alpha, α, He-4 |
@@ -354,7 +373,7 @@ For ions, the `aliases` field from `IonEntity` provides human-friendly names:
 | 1001 | Electron | e⁻, e-, beta |
 
 > The alias list is a frontend configuration, not from libdedx. It should be
-> defined as a static lookup table in `src/lib/config/ion-aliases.ts`.
+> defined as a static lookup table in `src/lib/config/particle-aliases.ts`.
 
 ### Loading States
 
@@ -372,8 +391,8 @@ For ions, the `aliases` field from `IonEntity` provides human-friendly names:
 | Error | Handling |
 |-------|----------|
 | WASM init failure | Error banner, all selectors disabled, retry button |
-| Compatibility matrix contains a program with zero ions or materials | Omit that program from `allPrograms` (data issue in libdedx, not actionable by user) |
-| Previously selected ion/material unavailable after a change in another selector | Auto-fall-back + notification |
+| Compatibility matrix contains a program with zero particles or materials | Omit that program from `allPrograms` (data issue in libdedx, not actionable by user) |
+| Previously selected particle/material unavailable after a change in another selector | Auto-fall-back + notification |
 | All three selectors cleared to a state with zero compatible programs | Show inline warning: "No program supports this combination" (should not happen with valid data) |
 
 ---
@@ -389,8 +408,8 @@ interface EntitySelectionState {
   program: ProgramEntity | AutoSelectProgram;
   /** The resolved program ID for C API calls (always a real program ID). */
   resolvedProgramId: number;
-  /** The selected ion, or null if cleared. */
-  ion: IonEntity | null;
+  /** The selected particle (proton, heavy ion, or electron), or null if cleared. */
+  particle: ParticleEntity | null;
   /** The selected material, or null if cleared. */
   material: MaterialEntity | null;
   /**
@@ -401,7 +420,7 @@ interface EntitySelectionState {
   isComplete: boolean;
   /** Available options for each selector given the current constraints. */
   availablePrograms: ProgramEntity[];
-  availableIons: IonEntity[];
+  availableParticles: ParticleEntity[];
   availableMaterials: MaterialEntity[];
 }
 
@@ -409,8 +428,8 @@ interface EntitySelectionState {
 interface AutoSelectProgram {
   id: -1;  // sentinel value, never sent to C API
   name: "Auto-select";
-  /** The concrete program it resolves to for the current ion/material. */
-  resolvedProgram: ProgramEntity | null;  // null when ion or material is cleared
+  /** The concrete program it resolves to for the current particle/material. */
+  resolvedProgram: ProgramEntity | null;  // null when particle or material is cleared
 }
 ```
 
@@ -463,7 +482,7 @@ resolution). Only the visual presentation differs.
 The selectors always appear in this order, reflecting the natural physics
 workflow (beam → target → data source):
 
-1. **Ion** (projectile)
+1. **Particle** (projectile)
 2. **Material** (target)
 3. **Program** (data source / database)
 
@@ -481,7 +500,7 @@ occupies the remaining right-hand space.
 #### Panel Style
 
 Each panel is a **card** with:
-- A header: numbered label (e.g., "① Ion / Particle"), accent colour.
+- A header: numbered label (e.g., “① Particle”), accent colour.
 - A text filter input below the header.
 - A scrollable list body (fixed height, ~400px on desktop, adapts on mobile).
 - A rounded border, subtle shadow, white background.
@@ -497,7 +516,7 @@ equivalent) with white text. Greyed-out items use `opacity: 0.4`.
 The page is split into a **sidebar** (entity selection + "Add Series" button)
 and a **main area** (plot canvas + series list).
 
-The sidebar uses a **two-column layout for Ion + Material** with the
+The sidebar uses a **two-column layout for Particle + Material** with the
 **Program panel below, narrower** — reflecting that most users never change
 the program (Alternative A layout):
 
@@ -505,7 +524,7 @@ the program (Alternative A layout):
 ┌─── SIDEBAR (≈40% width) ──────────────────────┐ ┌── MAIN (≈60%) ─────────┐
 │                                                │ │                        │
 │ ┌─────────────┐ ┌────────────────────────────┐ │ │                        │
-│ │ ① Ion       │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
+│ │ ① Particle  │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
 │ │ [Filter.. ] │ │ [Filter...               ] │ │ │                        │
 │ │ ┌─────────┐ │ │ ┌──────────┬─────────────┐ │ │ │                        │
 │ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS   │ │ │ │                        │
@@ -532,10 +551,10 @@ the program (Alternative A layout):
 ```
 
 - Page grid: `grid-template-columns: minmax(360px, 2fr) 3fr`.
-- Inside the sidebar, Ion and Material are in a **sub-grid row**:
-  `grid-template-columns: 1fr 2fr` — Ion takes ~⅓, Material takes ~⅔
+- Inside the sidebar, Particle and Material are in a **sub-grid row**:
+  `grid-template-columns: 1fr 2fr` — Particle takes ~⅓, Material takes ~⅔
   (it has two sub-lists).
-- The Program panel spans the full sidebar width below Ion+Material but
+- The Program panel spans the full sidebar width below Particle+Material but
   has a **shorter list height** (~150px) since there are only ~10 programs.
   This de-emphasizes it visually.
 - The sidebar is scrollable if the viewport is too short for all three panels.
@@ -547,7 +566,7 @@ On tablet-width screens, the sidebar folds **above** the plot canvas:
 ```
 ┌────────────────────────────────────────────────┐
 │ ┌─────────────┐ ┌────────────────────────────┐ │
-│ │ ① Ion       │ │ ② Material                 │ │
+│ │ ① Particle  │ │ ② Material                 │ │
 │ │ [Filter]    │ │ [Filter]                   │ │
 │ │ Proton ↕    │ │ Elem ↕  │  Comp ↕          │ │
 │ └─────────────┘ └────────────────────────────┘ │
@@ -562,7 +581,7 @@ On tablet-width screens, the sidebar folds **above** the plot canvas:
 └────────────────────────────────────────────────┘
 ```
 
-List heights reduced to ~250px for Ion/Material, ~120px for Program.
+List heights reduced to ~250px for Particle/Material, ~120px for Program.
 
 #### Mobile (<600px) — Stacked vertical
 
@@ -571,7 +590,7 @@ side-by-side. The plot canvas scrolls below.
 
 ```
 ┌──────────────────────────────────────┐
-│ ① Ion / Particle                     │
+│ ① Particle                           │
 │ [Filter...                        ]  │
 │ ┌──────────────────────────────────┐  │
 │ │ Z=1  Proton (H)                  │  │
@@ -638,41 +657,28 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Ion: [Proton (H)     ▾]   Material: [Water (liquid)      ▾]   │  │
-│  │  Program: [Auto-select → ICRU 90 ▾]   Energy unit: (•) MeV    │  │
+│  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
+│  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV         │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Energy input                                                    │  │
-│  │  ┌────────────────────────────────────────────────────────────┐  │  │
-│  │  │  100                                                       │  │  │
-│  │  │  200                                                       │  │  │
-│  │  │  (one energy per line, or comma-separated)                 │  │  │
-│  │  └────────────────────────────────────────────────────────────┘  │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                        RESULTS                                   │  │
-│  │  ┌──────────┬──────────────────────┬────────────────────┐       │  │
-│  │  │ Energy   │ Stopping Power       │ CSDA Range         │       │  │
-│  │  │ (MeV)    │ (MeV·cm²/g)         │ (g/cm²)            │       │  │
-│  │  ├──────────┼──────────────────────┼────────────────────┤       │  │
-│  │  │ 100      │ 4.576                │ 7.718              │       │  │
-│  │  │ 200      │ 2.749                │ 25.77              │       │  │
-│  │  └──────────┴──────────────────────┴────────────────────┘       │  │
-│  │                                                [Export CSV ↓]   │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
+│  │ Energy (MeV) │→ MeV/nucl│ Unit │Stp Power (keV/µm)│ CSDA Range  │  │
+│  ├──────────────┼──────────┼──────┼──────────────────┼──────────────┤  │
+│  │ 100          │ 100      │ MeV  │ 45.76            │ 7.718 cm    │  │
+│  │ 200          │ 200      │ MeV  │ 27.34            │ 26.27 cm    │  │
+│  │ ░░░░░░░░░░░░ │          │      │                  │             │  │
+│  └──────────────┴──────────┴──────┴──────────────────┴──────────────┘  │
+│  Valid range: 0.001–10000 MeV                          [Export CSV ↓] │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
 - Max content width ~720px, centered horizontally (`mx-auto`).
-- Entity selectors in a **flex row that wraps**: Ion and Material on the
+- Entity selectors in a **flex row that wraps**: Particle and Material on the
   first line; Program and Energy unit on the second line.
-- Program combobox is **narrower** than Ion/Material (~180px vs ~240px)
+- Program combobox is **narrower** than Particle/Material (~180px vs ~240px)
   because it is less frequently changed — visual hierarchy via width.
-- Result table is the visual centerpiece, full content width.
-- Energy input is a `<textarea>` or multi-line input between selectors
-  and results.
+- The unified input/result table is the visual centerpiece, full content width.
+  Energy is typed in the first column; results appear inline in the same row.
 
 #### Tablet (600–899px)
 
@@ -685,21 +691,18 @@ Entity selectors stack vertically, each full width:
 
 ```
 ┌──────────────────────────────────────┐
-│ Ion:      [Proton (H)            ▾]  │
+│ Particle: [Proton (H)            ▾]  │
 │ Material: [Water (liquid)        ▾]  │
 │ Program:  [Auto-select → ICRU 90 ▾] │
 │ Energy:   (•) MeV  ( ) MeV/nucl     │
-│ ┌──────────────────────────────────┐ │
-│ │ 100                              │ │
-│ │ 200                              │ │
-│ └──────────────────────────────────┘ │
 │                                      │
-│ ┌──────────────────────────────────┐ │
-│ │ RESULTS                          │ │
-│ │ Energy │ Stp Power │ CSDA Range  │ │
-│ │ 100    │ 4.576     │ 7.718       │ │
-│ │ 200    │ 2.749     │ 25.77       │ │
-│ └──────────────────────────────────┘ │
+│ ← scroll →                          │
+│ ┌───────┬────────┬─────┬──────┬─────┐│
+│ │Energy │→MeV/n  │Unit │StpPwr│Range ││
+│ │(MeV)  │        │     │keV/µm│      ││
+│ │ 100   │ 100    │ MeV │45.76 │7.7cm ││
+│ │ 200   │ 200    │ MeV │27.34 │26 cm ││
+│ └───────┴────────┴─────┴──────┴─────┘│
 │                       [Export CSV ↓] │
 └──────────────────────────────────────┘
 ```
@@ -734,7 +737,7 @@ the URL encodes the selection identically for both pages (see
 - Arrow keys navigate the visible (non-hidden) items within a focused list;
   Enter selects; Escape clears the filter text.
 - Screen readers announce the number of available (non-greyed) results
-  (e.g., "3 of 12 ions available").
+  (e.g., "3 of 12 particles available").
 - Color is not the sole indicator for gas-default materials (icon + text badge).
 - Greyed-out state is communicated via both opacity and `aria-disabled`,
   not colour alone.
@@ -744,8 +747,8 @@ the URL encodes the selection identically for both pages (see
 ## Acceptance Criteria
 
 ### Layout & Panels — Full Panel Mode (Plot Page)
-- [ ] Three panels are displayed in the sidebar: Ion, Material, Program — in that visual order.
-- [ ] On desktop (≥900px), Ion and Material are in a sub-grid row (1fr + 2fr); Program spans full sidebar width below, with shorter list height (~150px).
+- [ ] Three panels are displayed in the sidebar: Particle, Material, Program — in that visual order.
+- [ ] On desktop (≥900px), Particle and Material are in a sub-grid row (1fr + 2fr); Program spans full sidebar width below, with shorter list height (~150px).
 - [ ] The sidebar takes ≈40% of the page width; the JSROOT canvas takes ≈60%.
 - [ ] On tablet (600–899px), the sidebar folds above the canvas; panels stack horizontally then canvas below.
 - [ ] On mobile (<600px), all panels stack vertically; material sub-lists remain side-by-side.
@@ -754,7 +757,7 @@ the URL encodes the selection identically for both pages (see
 
 ### Layout — Compact Mode (Calculator Page)
 - [ ] Entity selectors are searchable dropdown comboboxes in a horizontal flex row.
-- [ ] Ion and Material comboboxes are wider (~240px) than Program (~180px) — visual hierarchy.
+- [ ] Particle and Material comboboxes are wider (~240px) than Program (~180px) — visual hierarchy.
 - [ ] On desktop, the form is centered (max-width ~720px) with the result table as visual centerpiece.
 - [ ] On mobile (<600px), comboboxes stack vertically at full width.
 - [ ] Material dropdown shows Elements and Compounds as section headers within a single dropdown list.
@@ -766,24 +769,24 @@ the URL encodes the selection identically for both pages (see
 ### Defaults & Init
 - [ ] On page load, entity selectors populate from WASM data within 2 seconds (after WASM init).
 - [ ] Default state is Proton / Water (liquid) / Auto-select with no user interaction required.
-- [ ] The compatibility matrix is built at init from all programs' ion/material lists.
+- [ ] The compatibility matrix is built at init from all programs' particle/material lists.
 
 ### Bidirectional Filtering
-- [ ] Selecting an ion greys out incompatible materials and programs.
-- [ ] Selecting a material greys out incompatible ions and programs.
-- [ ] Selecting a program greys out incompatible ions and materials.
+- [ ] Selecting a particle greys out incompatible materials and programs.
+- [ ] Selecting a material greys out incompatible particles and programs.
+- [ ] Selecting a program greys out incompatible particles and materials.
 - [ ] Greyed-out items have reduced opacity (~0.4) and are non-interactive (`pointer-events: none`).
 - [ ] Greyed-out items remain in their original list position (no layout shift).
 - [ ] Deselecting (toggling off) an entity removes its filtering constraint; other panels update immediately.
 
 ### Preserve / Fallback
 - [ ] Changing a selector preserves the current selections in other panels if they remain compatible.
-- [ ] If a previously selected ion or material becomes incompatible, the selector falls back to the default (Proton / Water) if available, else the first available entry, and a notification is shown.
+- [ ] If a previously selected particle or material becomes incompatible, the selector falls back to the default (Proton / Water) if available, else the first available entry, and a notification is shown.
 
 ### Text Filter
 - [ ] Typing in any panel's filter input filters that panel's list with case-insensitive substring matching.
 - [ ] The Material panel's single filter input filters both Elements and Compounds sub-lists simultaneously.
-- [ ] Ion filter matches on name, aliases ("proton", "alpha"), Z, A, and chemical symbol.
+- [ ] Particle filter matches on name, aliases ("proton", "alpha"), Z, A, and chemical symbol.
 - [ ] Material filter matches on name and numeric ID.
 - [ ] Greyed-out items that match the filter remain visible (greyed out, not hidden).
 - [ ] Non-matching items are hidden from view.
@@ -793,7 +796,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Clicking the selected item again deselects it (toggle).
 - [ ] Clicking a greyed-out item does nothing.
 - [ ] The "Auto-select" program displays the resolved concrete program name (e.g., "Auto-select → ICRU 90").
-- [ ] Resolved program updates when ion or material changes while "Auto-select" is active.
+- [ ] Resolved program updates when particle or material changes while "Auto-select" is active.
 - [ ] A "Reset all" link restores defaults (Proton / Water / Auto-select).
 
 ### Program Panel
@@ -810,7 +813,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Error state with retry is shown if WASM init fails.
 
 ### Special Cases
-- [ ] Electron (ion ID 1001) appears in the ion list only when ESTAR is a compatible program.
+- [ ] Electron (particle ID 1001) appears in the particle list only when ESTAR is a compatible program.
 - [ ] Gas-default materials are visually indicated with an icon and text badge, not colour alone.
 
 ---
@@ -818,8 +821,8 @@ the URL encodes the selection identically for both pages (see
 ## Dependencies
 
 - `LibdedxService` interface (see [docs/06-wasm-api-contract.md](../06-wasm-api-contract.md)):
-  `getPrograms()`, `getIons(programId)`, `getMaterials(programId)`
-- Ion alias configuration: `src/lib/config/ion-aliases.ts` (to be created)
+  `getPrograms()`, `getParticles(programId)`, `getMaterials(programId)`
+- Particle alias configuration: `src/lib/config/particle-aliases.ts` (to be created)
 - Svelte 5 runes for reactive state (`$state`, `$derived`, `$effect`)
 - Tailwind CSS for layout and responsive breakpoints
 

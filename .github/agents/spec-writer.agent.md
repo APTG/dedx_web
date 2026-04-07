@@ -21,7 +21,7 @@ API contracts, and decision records.
 
 ## Approach
 1. Read existing docs to avoid contradictions or duplication.
-2. Study old code to understand the domain (stopping power, ions, materials, programs).
+2. Study old code to understand the domain (stopping power, particles, materials, programs).
 3. Ask the user clarifying questions about physics or UX before writing.
 4. Write the document following the appropriate template.
 5. Cross-reference the WASM API contract for data types when describing behavior.

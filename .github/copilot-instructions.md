@@ -44,6 +44,14 @@
 - One feature per chat session — reference the spec file, don't re-explain
 - Commit after each working increment
 
+## Cross-Spec Consistency
+- When editing a spec, check all related specs for consistency (especially
+  wireframes, unit names, type definitions, and conversion formulas)
+- Key files that must stay in sync: `entity-selection.md`, `calculator.md`,
+  `unit-handling.md`, `06-wasm-api-contract.md`
+- Wireframes in entity-selection.md compact mode must match calculator.md layout
+- Unit types, conversion factors, and dropdown options must match across all specs
+
 ## AI Session Logging (MANDATORY)
 
 Every AI coding session MUST be logged for project continuity.
@@ -53,9 +61,10 @@ Every AI coding session MUST be logged for project continuity.
 - **Detailed logs**: `docs/ai-logs/YYYY-MM-DD-<slug>.md` — one file per session
 
 ### Changelog Entry Format (CHANGELOG-AI.md)
-Append to the top (below the header):
+The changelog uses a markdown table. Append a new row at the top of the table body
+(below the header row and separator):
 ```
-- YYYY-MM-DD | Stage N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md)
+| YYYY-MM-DD | N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
 ```
 
 ### Session Log Format (docs/ai-logs/)
@@ -91,3 +100,9 @@ Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` at session start. Each log must inclu
 - Use the slug from the feature spec filename when applicable
 - For trivial changes (< 3 files, no decisions), a changelog entry alone is sufficient — skip the detailed log
 - Commit messages still use Conventional Commits (`feat:`, `fix:`, etc.)
+
+### README Maintenance
+When adding or renaming docs, keep these index files in sync:
+- `docs/README.md` — top-level document index
+- `docs/04-feature-specs/README.md` — spec status table and planned specs
+- `docs/ai-logs/README.md` — session log listing

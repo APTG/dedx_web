@@ -24,8 +24,8 @@ application that requires no backend, no login, and no installation.
 | Persona | Typical task | Experience level |
 |---------|-------------|-----------------|
 | **Medical physicist** | "What is the range of 200 MeV protons in water?" | Expert in radiation physics, non-expert in software |
-| **Radiation physicist / researcher** | Compare stopping power curves across programs or ions | Needs publication-quality plots |
-| **Student** | Explore how stopping power varies with energy, ion, or material | Learning; needs clear labels and docs |
+| **Radiation physicist / researcher** | Compare stopping power curves across programs or particles | Needs publication-quality plots |
+| **Student** | Explore how stopping power varies with energy, particle, or material | Learning; needs clear labels and docs |
 | **Shielding engineer** | Look up range in a specific material for beam-stop design | Wants quick numeric answers |
 
 All personas share one trait: **they want answers fast, with minimal clicking.**
@@ -44,13 +44,13 @@ The app returns the CSDA range. This is the **default view** on first load.
 
 ### 3.2 Stopping Power Plotting
 
-The user builds one or more data series (program + ion + material) and views
+The user builds one or more data series (program + particle + material) and views
 overlaid stopping-power-vs-energy curves on an interactive plot. Common
 comparisons:
 
-- Same ion, same material, different programs (e.g., PSTAR vs ICRU90)
-- Same material, different ions (e.g., proton vs carbon in water)
-- Same ion, different materials (e.g., proton in water vs PMMA)
+- Same particle, same material, different programs (e.g., PSTAR vs ICRU90)
+- Same material, different particles (e.g., proton vs carbon in water)
+- Same particle, different materials (e.g., proton in water vs PMMA)
 
 > Default state on the Plot page: selectors pre-filled with
 > **auto-select / proton / liquid water**, but **no data plotted**
@@ -63,7 +63,7 @@ This is an advanced feature, not shown in the default UI.
 
 ### 3.4 Multi-Program Comparison (advanced)
 
-Run the same query (ion + material + energy) across multiple stopping-power
+Run the same query (particle + material + energy) across multiple stopping-power
 programs simultaneously to compare results.
 
 ---
@@ -77,10 +77,12 @@ its unit — or with the wrong unit — is worse than no answer at all.
 
 **Input units — context-aware:**
 - Energy input must have an explicit, always-visible unit selector.
-- The **available options depend on the selected ion:**
+- The **available options depend on the selected particle:**
   - **A = 1** (proton): show only **MeV** — MeV/nucl is numerically
     identical to MeV for single-nucleon particles, so showing it adds clutter without value.
   - **A > 1** (alpha, carbon, …): show **MeV** and **MeV/nucl**.
+  - **Electron** (ID 1001): show only **MeV** — per-nucleon units
+    (MeV/nucl, MeV/u) are meaningless for leptons.
   - **MeV/u** is available in advanced mode only (the distinction from MeV/nucl
     matters for precision CSDA range work, but confuses most users).
 - SI prefixes (keV, MeV, GeV) should be supported where applicable.
@@ -108,7 +110,7 @@ Where a choice has 2–4 options (e.g., MeV vs MeV/nucl vs MeV/u), use
 **segmented controls or radio buttons** — never dropdowns. The user should see
 all options at a glance and select with a single click.
 
-For entity selection (ions, materials), the UI varies by page context:
+For entity selection (particles, materials), the UI varies by page context:
 
 - **Plot page** — always-visible scrollable list panels in a sidebar,
   with text filter inputs. Unavailable items are greyed out (not hidden)
@@ -126,19 +128,20 @@ See `docs/04-feature-specs/entity-selection.md` for the full specification.
 ### 4.3 "Best Available Answer" by Default
 
 The app selects the most appropriate stopping-power program automatically
-based on the chosen ion and material. The default program **adapts to the
-current ion/material combination** — it is not a fixed choice. Users *can*
+based on the chosen particle and material. The default program **adapts to the
+current particle/material combination** — it is not a fixed choice. Users *can*
 override the program selection, but they shouldn't *have* to.
 
 libdedx provides a starting point via the **`DEDX_ICRU`** meta-program,
 which resolves to the best available ICRU dataset at runtime:
 
-| Ion | Resolution chain |
-|-----|-----------------|
+| Particle | Resolution chain |
+|----------|------------------|
 | Proton (Z=1) | ICRU 90 → PSTAR (ICRU 49 era) |
 | Alpha (Z=2) | ICRU 90 → ICRU 49 |
 | Carbon (Z=6) | ICRU 90 → ICRU 73 → ICRU 73 (old) |
 | Other heavy ions | ICRU 73 → ICRU 73 (old) |
+| Electron (ID 1001) | ESTAR |
 
 Additionally, `dedx_get_simple_stp()` implements a two-stage fallback:
 first tries `DEDX_ICRU`, then falls back to `DEDX_DEFAULT` (Bethe formula)
@@ -154,7 +157,7 @@ libdedx's resolver:
    heavy ions on specific materials).
 3. Always display which concrete program was actually used
    (e.g., "ICRU 90 (auto-selected)") so the user knows the data source.
-4. When the user changes ion or material, the auto-selected program
+4. When the user changes particle or material, the auto-selected program
    updates accordingly — it is never stale.
 
 The auto-select program should be the default in both the Calculator and
