@@ -13,7 +13,7 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
-| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
+| Energy units | **JS-side conversion** | For ions (A ≥ 1), C calls use MeV/nucl. For ESTAR electron (particle ID 1001), C calls use MeV. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
@@ -30,7 +30,7 @@
 ### 2.1 Units
 
 ```typescript
-/** Energy units accepted by the frontend. Internally converted to MeV/nucl for C calls. */
+/** Energy units accepted by the frontend. Internally normalized per C-call context: MeV/nucl for ions, MeV for electron (ESTAR). */
 type EnergyUnit = "MeV" | "MeV/nucl" | "MeV/u";
 
 /**

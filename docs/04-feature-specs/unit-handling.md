@@ -237,7 +237,9 @@ WASM call). See `docs/06-wasm-api-contract.md` §3.
 This section is normative for Calculator, Plot, and export behavior.
 
 1. **Canonical internal units**
-  - Energy for all WASM calls: **MeV/nucl**.
+  - Energy for WASM calls:
+    - **Ions (A ≥ 1):** MeV/nucl
+    - **Electron / ESTAR (particle ID 1001):** MeV
   - Stopping power from C API: **MeV·cm²/g**.
   - CSDA range from C API: **g/cm²**.
 
@@ -379,6 +381,9 @@ Examples:
 For **input** values, scientific notation is accepted and displayed as
 entered (e.g., `1.5E-2` stays as `1.5E-2` in the typed text).
 
+Output formatting does **not** use thousands/grouping separators.
+Normative acceptance examples in this spec follow the same rule.
+
 ---
 
 ## Appendix A: Acceptance Examples (Numeric)
@@ -424,7 +429,7 @@ Use range_mass = 0.2 g/cm² and ρ = 1.0 g/cm³.
 | g/cm² → cm | 0.2 | 0.2 cm |
 | cm → mm | 0.2 cm | 2 mm |
 | cm → µm | 0.2 cm | 2000 µm |
-| cm → nm | 0.2 cm | 2,000,000 nm |
+| cm → nm | 0.2 cm | 2000000 nm |
 | cm → m | 0.2 cm | 0.002 m |
 
 Auto-scaling examples from cm:
@@ -513,6 +518,7 @@ preserved numerically (just re-expressed in the master unit).
 ### Output — Number Formatting
 - [ ] Output values use 4 significant figures.
 - [ ] CSDA range uses SI prefix auto-scaling instead of scientific notation.
+- [ ] Output values and acceptance fixtures use no thousands/grouping separators.
 - [ ] Input values are displayed as entered by the user (including scientific notation if typed).
 
 ### Reset to Single Unit

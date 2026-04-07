@@ -408,8 +408,6 @@ displayed. Clicking it downloads the current table content as a CSV file.
 - Filename: `dedx_calculator_{particle}_{material}_{program}.csv`
   (e.g., `dedx_calculator_proton_water_icru90.csv`)
 - Format: UTF-8 with BOM, comma delimiter (per project vision §4.6).
-- Columns match the result table: Energy, Stopping Power, CSDA Range,
-  with units in the header row.
 - Exported columns are exactly the 5 unified table columns:
   `Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
   `Stopping Power ({active unit})`, `CSDA Range`.
