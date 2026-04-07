@@ -147,21 +147,24 @@ When the Plot page loads for the first time (no URL parameters):
 
 1. WASM initializes and builds the compatibility matrix.
 2. Entity selection defaults to: **Proton / Water (liquid) / Auto-select**.
-3. The JSROOT canvas is rendered **empty** — no data series plotted.
-4. A **preview series** appears on the canvas as a dashed line (see
-   § Preview Series), showing the stopping-power curve for the default
-   entity selection.
-5. The preview series also appears at the top of the series list
+3. The JSROOT canvas renders with axes, gridlines, and labels — but
+   **no committed series**. A **preview series** (dashed black line)
+   appears on the canvas showing the stopping-power curve for the
+   default entity selection. The preview is a transient hint, not a
+   committed data series.
+4. The preview series also appears at the top of the series list
    (labelled "Preview" in italics, no remove button).
-6. The stopping power unit selector defaults to **keV/µm**.
-7. The axis scale controls default to **Log / Log**.
-8. The user sees a preview of what they'd get by clicking "Add Series"
+5. The stopping power unit selector defaults to **keV/µm**.
+6. The axis scale controls default to **Log / Log**.
+7. The user sees a preview of what they'd get by clicking "Add Series"
    — but the canvas has no committed series until the user acts.
 
 > This matches the project vision §3.2: "selectors pre-filled with
-> auto-select / proton / liquid water, but no data plotted until the user
-> adds the first series." The preview series provides immediate visual
-> feedback without committing a series.
+> auto-select / proton / liquid water, but **no data plotted** until the
+> user adds the first series." The preview series is intentionally
+> excluded from this definition — it is an ephemeral visual hint, not
+> "plotted data." The first true data series appears only when the user
+> clicks "Add Series."
 
 ### Preview Series
 
@@ -172,7 +175,7 @@ selection on the plot canvas, before the user commits it as a series.
 |----------|--------|
 | When shown | Whenever `EntitySelectionState.isComplete === true` |
 | When hidden | When entity selection is incomplete (any selector cleared) |
-| Visual style | **Dashed line**, black color (`#000`), line width 1.5 |
+| Visual style | **Dashed line**, black color (`#000`), line width 1 |
 | Updates | Recalculates whenever the entity selection changes (program, particle, or material). No debounce — entity changes are discrete events. |
 | Series list entry | Shown at the top of the series list in *italics*: "Preview — {label}". No remove button. Visibility toggle available. |
 | Data | Fetched via `LibdedxService.getPlotData()` with `pointCount: 500`, `logScale: true` |
@@ -226,7 +229,8 @@ Clicking the eye icon on a series entry:
 3. If shown: the line reappears on the canvas; the list entry returns
    to full opacity.
 4. Hidden series are excluded from CSV export but remain in the series
-   list and URL encoding.
+   list. Visibility state is **not** persisted in the URL — a shared
+   URL always restores all series as visible.
 
 ### Entity Selection Changes
 
