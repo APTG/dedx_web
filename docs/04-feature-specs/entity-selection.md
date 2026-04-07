@@ -658,29 +658,17 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
-│  │  Program: [Auto-select → ICRU 90 ▾]   Energy unit: (•) MeV    │  │
+│  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV         │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Energy input                                                    │  │
-│  │  ┌────────────────────────────────────────────────────────────┐  │  │
-│  │  │  100                                                       │  │  │
-│  │  │  200                                                       │  │  │
-│  │  │  (one energy per line, or comma-separated)                 │  │  │
-│  │  └────────────────────────────────────────────────────────────┘  │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │                        RESULTS                                   │  │
-│  │  ┌──────────┬──────────────────────┬────────────────────┐       │  │
-│  │  │ Energy   │ Stopping Power       │ CSDA Range         │       │  │
-│  │  │ (MeV)    │ (MeV·cm²/g)         │ (g/cm²)            │       │  │
-│  │  ├──────────┼──────────────────────┼────────────────────┤       │  │
-│  │  │ 100      │ 4.576                │ 7.718              │       │  │
-│  │  │ 200      │ 2.749                │ 25.77              │       │  │
-│  │  └──────────┴──────────────────────┴────────────────────┘       │  │
-│  │                                                [Export CSV ↓]   │  │
-│  └──────────────────────────────────────────────────────────────────┘  │
+│  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
+│  │ Energy (MeV) │→ MeV/nucl│ Unit │Stp Power (keV/µm)│ CSDA Range  │  │
+│  ├──────────────┼──────────┼──────┼──────────────────┼──────────────┤  │
+│  │ 100          │ 100      │ MeV  │ 45.76            │ 7.718 cm    │  │
+│  │ 200          │ 200      │ MeV  │ 27.34            │ 26.27 cm    │  │
+│  │ ░░░░░░░░░░░░ │          │      │                  │             │  │
+│  └──────────────┴──────────┴──────┴──────────────────┴──────────────┘  │
+│  Valid range: 0.001–10000 MeV                          [Export CSV ↓] │
 └────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -689,9 +677,8 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
   first line; Program and Energy unit on the second line.
 - Program combobox is **narrower** than Particle/Material (~180px vs ~240px)
   because it is less frequently changed — visual hierarchy via width.
-- Result table is the visual centerpiece, full content width.
-- Energy input is a `<textarea>` or multi-line input between selectors
-  and results.
+- The unified input/result table is the visual centerpiece, full content width.
+  Energy is typed in the first column; results appear inline in the same row.
 
 #### Tablet (600–899px)
 
@@ -708,17 +695,14 @@ Entity selectors stack vertically, each full width:
 │ Material: [Water (liquid)        ▾]  │
 │ Program:  [Auto-select → ICRU 90 ▾] │
 │ Energy:   (•) MeV  ( ) MeV/nucl     │
-│ ┌──────────────────────────────────┐ │
-│ │ 100                              │ │
-│ │ 200                              │ │
-│ └──────────────────────────────────┘ │
 │                                      │
-│ ┌──────────────────────────────────┐ │
-│ │ RESULTS                          │ │
-│ │ Energy │ Stp Power │ CSDA Range  │ │
-│ │ 100    │ 4.576     │ 7.718       │ │
-│ │ 200    │ 2.749     │ 25.77       │ │
-│ └──────────────────────────────────┘ │
+│ ← scroll →                          │
+│ ┌───────┬────────┬─────┬──────┬─────┐│
+│ │Energy │→MeV/n  │Unit │StpPwr│Range ││
+│ │(MeV)  │        │     │keV/µm│      ││
+│ │ 100   │ 100    │ MeV │45.76 │7.7cm ││
+│ │ 200   │ 200    │ MeV │27.34 │26 cm ││
+│ └───────┴────────┴─────┴──────┴─────┘│
 │                       [Export CSV ↓] │
 └──────────────────────────────────────┘
 ```

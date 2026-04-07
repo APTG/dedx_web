@@ -270,7 +270,7 @@ The result table recalculates when **any** of these inputs change:
 | Program change | No (immediate) | May change energy bounds |
 | Advanced options change (future) | No (immediate) | |
 
-For entity/unit changes (non-debounced): if the textarea already contains
+For entity/unit changes (non-debounced): if the table already contains
 valid energies, recalculate immediately using the new parameters.
 
 ### Per-Row Validation
@@ -424,7 +424,7 @@ Errors from the C library (e.g., `DEDX_ERR_ENERGY_OUT_OF_RANGE`) during
 a `calculate()` call:
 
 - If the error applies to specific energy values: those values are marked
-  as out-of-range (reported in the validation summary below the textarea,
+  as out-of-range (reported in the validation summary below the table,
   excluded from results). Remaining valid values still produce results.
 - If the error is fatal (unexpected C error): show an error message below
   the result table with the human-readable message. Include a "Show details"
@@ -540,7 +540,7 @@ The `░░░` row is the always-empty-row at the bottom for new input.
 │  │ Energy       │→ MeV/nucl│ Unit     │Stp Pwr (keV/µm) │ CSDA Range  │  │
 │  ├──────────────┼──────────┼──────────┼─────────────────┼──────────────┤  │
 │  │ 10 MeV       │ 0.8333   │[MeV   ▾]│ 2876             │ 4.521 µm   │  │
-│  │ 500 keV/nucl │ 500      │[MeV/n ▾]│ 22.45            │ 1.234 mm   │  │
+│  │ 500 keV/nucl │ 0.5000   │[MeV/n ▾]│ 22.45            │ 1.234 mm   │  │
 │  │ 100          │ 8.333    │[MeV   ▾]│ 1543             │ 123.4 nm   │  │
 │  │ ░░░░░░░░░░░░ │          │[MeV   ▾]│                  │             │  │
 │  └──────────────┴──────────┴──────────┴─────────────────┴──────────────┘  │
@@ -580,8 +580,7 @@ scroll or collapsed:
 ```
 
 - Entity selectors stack vertically, each full width.
-- Energy input is full width.
-- Result table scrolls horizontally if needed (unlikely with 3 columns).
+- Result table scrolls horizontally if needed (5 columns may require scrolling).
 - Export button right-aligned below the table.
 
 ---

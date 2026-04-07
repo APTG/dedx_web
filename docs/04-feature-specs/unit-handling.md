@@ -168,7 +168,11 @@ suffixes **per row** and assigns each row its own unit.
 
 8. **Per-row unit dropdown changes:**
    - In per-row mode, each row shows a small unit dropdown next to the
-     parsed value. Changing the dropdown reinterprets that row's numeric
+     parsed value. The dropdown options are the **base units only**:
+     MeV, MeV/nucl, MeV/u (same as the `EnergyUnit` type). SI-prefixed
+     variants (keV, GeV, etc.) are not dropdown options — they are only
+     recognized as typed suffixes and normalized to the base unit.
+   - Changing the dropdown reinterprets that row's numeric
      value in the new unit.
    - This is a dropdown (not segmented control) since per-row space is
      limited and the minimum-clicks principle does not apply to this
@@ -176,8 +180,9 @@ suffixes **per row** and assigns each row its own unit.
 
 9. **Editing a suffix in an existing row:**
    - If the user changes `10 MeV` to `10 keV` (by editing the text),
-     the parser re-detects the suffix on debounce and updates the row's
-     unit dropdown to keV automatically.
+     the parser re-detects the suffix on debounce and normalizes the
+     value (10 keV → 0.01 MeV). The per-row dropdown still shows the
+     **base unit** (MeV), not the SI-prefixed variant.
    - If the user removes the suffix entirely (e.g., `10 MeV` → `10`),
      the row reverts to the inherited master unit.
    - If this was the last row with an explicit suffix, the system
@@ -234,7 +239,7 @@ The material phase is determined from `MaterialEntity.isGasByDefault`:
 - `false` or `undefined` → solid/liquid → keV/µm default.
 
 **Phase notification:** When a material is selected, show a subtle
-indicator next to the material name: "💧 liquid", "ite solid", or
+indicator next to the material name: "💧 liquid", "🧊 solid", or
 "💨 gas". This informs the user at a glance and explains why the stopping
 power unit may change when switching materials.
 
@@ -250,20 +255,20 @@ Converting from MeV·cm²/g (mass stopping power) to linear stopping power
 | From | To | Formula |
 |------|----|---------|
 | MeV·cm²/g | MeV/cm | S_linear = S_mass × ρ |
-| MeV·cm²/g | keV/µm | S_kevum = S_mass × ρ × 10 |
+| MeV·cm²/g | keV/µm | S_kevum = S_mass × ρ / 10 |
 | MeV/cm | keV/µm | S_kevum = S_linear × 1e-1 |
 
 Where ρ = `LibdedxService.getDensity(materialId)`.
 
 The conversion is pure JS — multiply each `CalculationResult.stoppingPowers[i]`
-by ρ × 10 (for keV/µm) or by ρ (for MeV/cm).
+by ρ / 10 (for keV/µm) or by ρ (for MeV/cm).
 
 ### 5.3 CSDA Range — Default Unit
 
 The C API outputs CSDA range in **g/cm²** (mass-thickness). The default
 display unit is **length** — converted from g/cm² using material density:
 
-$$\text{range\_cm} = \frac{\text{range\_gcm2}}{\rho}$$
+$$\mathrm{range_{cm}} = \frac{\mathrm{range_{g/cm^2}}}{\rho}$$
 
 The resulting length is then auto-scaled to the best SI prefix (see §6).
 This applies to **all materials, including gases** — the user always sees
@@ -300,10 +305,10 @@ After converting from g/cm² to cm (§5.4), select the best prefix:
 | Value range (cm) | Display unit | Example |
 |-------------------|-------------|---------|
 | ≥ 100 | m | 1.234 m |
-| ≥ 0.1 | cm | 1.234 cm |
-| ≥ 0.01 | mm | 1.234 mm |
-| ≥ 1e-5 | µm | 1.234 µm |
-| < 1e-5 | nm | 1.234 nm |
+| ≥ 1 | cm | 1.234 cm |
+| ≥ 0.1 | mm | 1.234 mm |
+| ≥ 1e-4 | µm | 1.234 µm |
+| < 1e-4 | nm | 1.234 nm |
 
 The rule: choose the prefix where the displayed number is in the range
 **1.000 – 9999** (i.e., 1 to 4 digits before the decimal point).
@@ -363,10 +368,10 @@ preserved numerically (just re-expressed in the master unit).
   WASM API contract (`docs/06-wasm-api-contract.md`)
 - **`MaterialEntity.isGasByDefault`** and **`MaterialEntity.density`** from the
   WASM API contract — needed for output unit defaults and conversions
-- **`LibdedxService.convertEnergy()`** for energy unit conversions
+- **`LibdedxService.convertEnergy()`** for energy unit conversions (pure JS)
 - **`LibdedxService.getDensity()`** for stopping power and range conversion
-- **`LibdedxService.convertStpUnits()`** for stopping power unit conversion
-  (via C library `convert_units()`)
+- Stopping power unit conversion (MeV·cm²/g → keV/µm, MeV/cm) is **pure JS**
+  arithmetic (× ρ / 10). No C library call needed.
 - **`EnergyUnit`**, **`StpUnit`**, **`RangeUnit`** types from the API contract
 - Energy unit selector widget in calculator and plot pages
 
@@ -389,8 +394,8 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] Changing a row's dropdown reinterprets that row's value in the new unit.
 
 ### Inline Unit Detection
-- [ ] Typing `10 MeV` on row 1 and `10 keV` on row 2 results in per-row mode. Row 1 shows "MeV" in its dropdown, row 2 shows "keV". The "→ MeV/nucl" column shows 10 and 0.01 respectively.
-- [ ] Editing `10 MeV` to `10 keV` on a row updates that row's dropdown to keV automatically after debounce.
+- [ ] Typing `10 MeV` on row 1 and `10 keV` on row 2 results in per-row mode. Row 1 shows "MeV" in its dropdown, row 2 shows "MeV" with normalized value 0.01. The "→ MeV/nucl" column shows 10 and 0.01 respectively. (Per-row dropdowns show base units only: MeV, MeV/nucl, MeV/u. SI-prefixed variants like keV, GeV are parsed from typed text and normalized.)
+- [ ] Editing `10 MeV` to `10 keV` on a row updates that row's normalized value (0.01 MeV) and the "→ MeV/nucl" column after debounce.
 - [ ] Typing `100 bebok` marks the row as invalid: "Line N: unrecognized unit 'bebok'". The row is excluded from calculation.
 - [ ] A line with only a unit suffix and no number (e.g., "MeV") is treated as invalid input.
 - [ ] A row with a per-nucleon unit (e.g., "10 MeV/nucl") for a proton or electron shows a validation error.
@@ -420,7 +425,7 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] MeV ↔ MeV/nucl conversion uses integer mass number A.
 - [ ] MeV ↔ MeV/u conversion uses atomic mass m_u in daltons.
 - [ ] Round-trip conversion (MeV → MeV/nucl → MeV) preserves value to float precision.
-- [ ] Stopping power keV/µm = MeV·cm²/g × ρ × 10 where ρ is material density in g/cm³.
+- [ ] Stopping power keV/µm = MeV·cm²/g × ρ / 10 where ρ is material density in g/cm³.
 - [ ] CSDA range cm = g/cm² ÷ ρ.
 
 ---

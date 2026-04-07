@@ -44,6 +44,14 @@
 - One feature per chat session — reference the spec file, don't re-explain
 - Commit after each working increment
 
+## Cross-Spec Consistency
+- When editing a spec, check all related specs for consistency (especially
+  wireframes, unit names, type definitions, and conversion formulas)
+- Key files that must stay in sync: `entity-selection.md`, `calculator.md`,
+  `unit-handling.md`, `06-wasm-api-contract.md`
+- Wireframes in entity-selection.md compact mode must match calculator.md layout
+- Unit types, conversion factors, and dropdown options must match across all specs
+
 ## AI Session Logging (MANDATORY)
 
 Every AI coding session MUST be logged for project continuity.
