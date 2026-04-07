@@ -521,7 +521,7 @@ The sidebar uses a **two-column layout for Particle + Material** with the
 the program (Alternative A layout):
 
 ```
-┌─── SIDEBAR (≈40% width) ──────────────────────┐ ┌── MAIN (≈60%) ─────────┐
+┌─── SIDEBAR (≈30%) ───────────────────────────┐ ┌── MAIN (≈70%) ─────────┐
 │                                                │ │                        │
 │ ┌─────────────┐ ┌────────────────────────────┐ │ │                        │
 │ │ ① Particle  │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
@@ -550,7 +550,7 @@ the program (Alternative A layout):
 └────────────────────────────────────────────────┘
 ```
 
-- Page grid: `grid-template-columns: minmax(360px, 2fr) 3fr`.
+- Page grid: `grid-template-columns: minmax(320px, 3fr) 7fr`.
 - Inside the sidebar, Particle and Material are in a **sub-grid row**:
   `grid-template-columns: 1fr 2fr` — Particle takes ~⅓, Material takes ~⅔
   (it has two sub-lists).
@@ -749,7 +749,7 @@ the URL encodes the selection identically for both pages (see
 ### Layout & Panels — Full Panel Mode (Plot Page)
 - [ ] Three panels are displayed in the sidebar: Particle, Material, Program — in that visual order.
 - [ ] On desktop (≥900px), Particle and Material are in a sub-grid row (1fr + 2fr); Program spans full sidebar width below, with shorter list height (~150px).
-- [ ] The sidebar takes ≈40% of the page width; the JSROOT canvas takes ≈60%.
+- [ ] The sidebar takes ≈30% of the page width; the JSROOT canvas takes ≈70%.
 - [ ] On tablet (600–899px), the sidebar folds above the canvas; panels stack horizontally then canvas below.
 - [ ] On mobile (<600px), all panels stack vertically; material sub-lists remain side-by-side.
 - [ ] The Material panel contains two independently scrollable sub-lists: Elements (IDs 1–98) and Compounds (IDs 99+).

@@ -42,8 +42,8 @@ The page is split into two regions:
 
 | Region | Content | Width (desktop) |
 |--------|---------|-----------------|
-| **Sidebar** (left) | Entity selection panels (Particle, Material, Program) + "Add Series" button + series list | ~40% (`minmax(360px, 2fr)`) |
-| **Main area** (right) | Axis controls + JSROOT plot canvas + export buttons | ~60% (`3fr`) |
+| **Sidebar** (left) | Entity selection panels (Particle, Material, Program) + "Add Series" button + series list | ~30% (`minmax(320px, 3fr)`) |
+| **Main area** (right) | Axis controls + JSROOT plot canvas + export buttons | ~70% (`7fr`) |
 
 On tablet and mobile, the sidebar folds above the main area (see
 Responsive Layout).
@@ -518,8 +518,24 @@ JSROOT provides built-in interactivity:
 - **Reset zoom:** Double-click to reset to the auto-computed axis ranges.
 - **Tooltip:** Hovering over a line shows the (x, y) value at that point.
 
-These are enabled by default in JSROOT and require no additional
-configuration.
+Zoom and pan are enabled via click-drag interactions on the canvas.
+
+### Disabled Interactions
+
+- **Mouse wheel zoom: disabled.** Scrolling the mouse wheel over the
+  plot must **not** zoom the axes — it should scroll the page normally.
+  JSROOT's wheel-zoom feature must be explicitly disabled to prevent
+  the plot from hijacking page scroll.
+- **Touch interactions on mobile/tablet: disabled.** On touch devices
+  (< 900px or `pointer: coarse`), JSROOT's touch-based zoom/pan must
+  be disabled to ensure normal page scrolling. Pinch-to-zoom and
+  touch-drag on the canvas must pass through to the browser's native
+  scroll/zoom behavior. Users can still interact with the plot via
+  the axis scale controls and the JSROOT toolbar (if available).
+
+These restrictions ensure the plot never traps the user's scroll or
+touch gestures. On desktop, click-drag zoom and shift-drag pan remain
+available as deliberate interactions.
 
 ---
 
@@ -666,7 +682,7 @@ Hidden (toggled-off) series are excluded from the CSV.
 ### Desktop (≥900px) — Sidebar + Canvas
 
 ```
-┌─── SIDEBAR (≈40% width) ──────────────────────┐ ┌── MAIN (≈60%) ──────────────┐
+┌─── SIDEBAR (≈30%) ─────────────────────┐ ┌── MAIN (≈70%) ──────────────────────────┐
 │                                                │ │                              │
 │ ┌─────────────┐ ┌────────────────────────────┐ │ │ Stp Unit: [keV/µm ▾]        │
 │ │ ① Particle  │ │ ② Target Material          │ │ │ X: (•)Log ( )Lin             │
@@ -701,7 +717,7 @@ Hidden (toggled-off) series are excluded from the CSV.
 └────────────────────────────────────────────────┘
 ```
 
-- Page grid: `grid-template-columns: minmax(360px, 2fr) 3fr`.
+- Page grid: `grid-template-columns: minmax(320px, 3fr) 7fr`.
 - Entity panel layout within the sidebar follows
   [`entity-selection.md` § Desktop wireframe](entity-selection.md#desktop-900px--sidebar--canvas).
 - The JSROOT canvas has `min-height: 400px; height: min(60vh, 600px)`.
@@ -1025,7 +1041,10 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] X-axis label: "Energy [MeV/nucl]".
 - [ ] Y-axis label: "Stopping Power [{unit}]" — updates when unit changes.
 - [ ] Axis ranges auto-compute from visible data, rounded to powers of 10.
-- [ ] Zoom (click-drag), pan (shift-drag), and reset (double-click) work.
+- [ ] Zoom (click-drag) and pan (shift-drag) work on desktop.
+- [ ] Double-click resets zoom to auto-computed axis ranges.
+- [ ] Mouse wheel scrolling over the plot scrolls the page, not the plot axes.
+- [ ] On mobile/tablet (touch devices), touch gestures on the canvas scroll the page — JSROOT touch zoom/pan is disabled.
 - [ ] The canvas resizes correctly when the browser window is resized.
 - [ ] No JSROOT-rendered legend on the canvas (the sidebar series list serves as the legend).
 
@@ -1057,7 +1076,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Hidden series are excluded from CSV export.
 
 ### Responsive
-- [ ] On desktop (≥900px), sidebar (~40%) and canvas (~60%) are side-by-side.
+- [ ] On desktop (≥900px), sidebar (~30%) and canvas (~70%) are side-by-side.
 - [ ] On tablet (600–899px), sidebar folds above the canvas.
 - [ ] On mobile (<600px), all elements stack vertically; the canvas is at least 300px tall.
 - [ ] The series list is visible on all breakpoints (acts as the legend).
@@ -1112,9 +1131,9 @@ When entity selection is incomplete (`isComplete === false`):
    With 500 points × 10 series, Canvas may be preferred.
    *Deferred to implementation — test both.*
 
-3. **Touch interactions on mobile:** JSROOT's built-in zoom/pan uses
-   mouse events. Touch support may need explicit configuration or a
-   JSROOT option. *Verify during implementation.*
+3. ~~**Touch interactions on mobile:**~~ Resolved — touch zoom/pan
+   disabled on mobile/tablet to preserve native page scrolling.
+   Mouse wheel zoom also disabled on all devices.
 
 4. **Series persistence across page navigation:** Should the series list
    survive navigating away from the Plot page and back? Current design
