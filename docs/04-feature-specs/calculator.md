@@ -1,6 +1,11 @@
 # Feature: Calculator Page
 
-> **Status:** Draft v1 (3 April 2026)
+> **Status:** Draft v2 (7 April 2026)
+>
+> **v2 changes:** Clarified energy unit change triggers recalculation (not
+> "does not re-trigger"). Aligned per-line validation with v1 summary-only
+> approach (no inline textarea highlighting). Clarified URL comma-separated
+> energies are expanded to newline-separated textarea content on load.
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
@@ -76,7 +81,7 @@ Calculator page. The Calculator only triggers calculation when
 | | • A > 1 (heavy ions): **MeV** and **MeV/nucl** |
 | | • Advanced mode (future): adds **MeV/u** |
 | Default | MeV |
-| Behavior | Changing the unit **does not re-trigger calculation**. Energy values are reinterpreted in the new unit: the numbers in the textarea stay the same, but their physical meaning changes (e.g., "100" changes from 100 MeV to 100 MeV/nucl). Results update reactively after the reinterpretation. |
+| Behavior | Changing the unit **does not modify the textarea content** — the numeric text stays the same. However, the physical meaning of those numbers changes (e.g., "100" is reinterpreted from 100 MeV to 100 MeV/nucl), which **triggers an immediate recalculation** with the reinterpreted values. This is consistent with the Recalculation Triggers table below (energy unit change → immediate, no debounce). |
 
 > TODO: Full unit conversion logic will be specified in
 > `docs/04-feature-specs/unit-handling.md`. Until then, refer to
@@ -170,15 +175,21 @@ valid energies, recalculate immediately using the new parameters.
 
 Each line in the energy textarea is validated independently:
 
-| Condition | Line status | Visual indicator |
-|-----------|-----------|-----------------|
-| Valid positive number | ✅ Valid | No indicator (default) |
-| Empty or whitespace-only | ⏭️ Skipped | Ignored, no indicator |
-| Non-numeric text (e.g., "abc") | ❌ Invalid | Red highlight on that line |
-| Negative number | ❌ Invalid | Red highlight + tooltip "Energy must be positive" |
-| Zero | ❌ Invalid | Red highlight + tooltip "Energy must be greater than zero" |
-| Exceeds max energy for program/ion | ⚠️ Out of range | Orange highlight + tooltip showing the valid range |
-| Below min energy for program/ion | ⚠️ Out of range | Orange highlight + tooltip showing the valid range |
+| Condition | Line status | v1 reporting |
+|-----------|-----------|------------------|
+| Valid positive number | ✅ Valid | Included in results (no indicator) |
+| Empty or whitespace-only | ⏭️ Skipped | Ignored silently |
+| Non-numeric text (e.g., "abc") | ❌ Invalid | Listed in summary below textarea (line number + reason) |
+| Negative number | ❌ Invalid | Listed in summary: "Energy must be positive" |
+| Zero | ❌ Invalid | Listed in summary: "Energy must be greater than zero" |
+| Exceeds max energy for program/ion | ⚠️ Out of range | Listed in summary with valid range |
+| Below min energy for program/ion | ⚠️ Out of range | Listed in summary with valid range |
+
+> **v1 implementation note:** Validation feedback is shown as a **summary
+> message below the textarea**, not as per-line inline highlighting inside
+> the `<textarea>` element. The summary lists problematic line numbers and
+> reasons. Per-line inline highlighting (via an overlay or `contenteditable`)
+> is deferred to a future iteration — see Open Questions §3.
 
 **Key rules:**
 - Invalid lines are **excluded** from the calculation but do **not** block
@@ -325,8 +336,8 @@ Errors from the C library (e.g., `DEDX_ERR_ENERGY_OUT_OF_RANGE`) during
 a `calculate()` call:
 
 - If the error applies to specific energy values: those values are marked
-  as out-of-range (orange highlight in textarea, excluded from results).
-  Remaining valid values still produce results.
+  as out-of-range (reported in the validation summary below the textarea,
+  excluded from results). Remaining valid values still produce results.
 - If the error is fatal (unexpected C error): show an error message below
   the result table with the human-readable message. Include a "Show details"
   toggle that reveals the C error code (e.g., `LibdedxError code: 103`).
@@ -359,14 +370,23 @@ inputs and results.
 | `ion` | `1` | Ion ID |
 | `material` | `276` | Material ID |
 | `program` | `auto` or `2` | "auto" for Auto-select, numeric for specific |
-| `energies` | `100,200,500` | Comma-separated energy values |
+| `energies` | `100,200,500` | Comma-separated energy values (URL encoding only) |
 | `eunit` | `MeV` | Energy unit |
+
+**URL ↔ textarea format:** The `energies` parameter uses commas as a
+delimiter because commas are URL-safe and compact. On page load, the
+comma-separated values are expanded into **newline-separated lines** in
+the textarea (one value per line). Conversely, when encoding the URL
+from the current textarea state, newline-separated values are joined
+with commas. The textarea itself never accepts commas as separators
+during interactive editing — only newlines.
 
 On page load with URL parameters:
 1. Parse parameters and set entity selection + energy input.
-2. Validate the combination via the compatibility matrix.
-3. Calculate and display results.
-4. If any parameter is invalid, ignore it and fall back to the default.
+2. Expand `energies` comma-separated string into newline-separated textarea content.
+3. Validate the combination via the compatibility matrix.
+4. Calculate and display results.
+5. If any parameter is invalid, ignore it and fall back to the default.
 
 > Full URL encoding spec in TODO `docs/04-feature-specs/shareable-urls.md`.
 
@@ -545,8 +565,8 @@ entitySelection changes
 - [ ] A valid energy range label is shown below the textarea, derived from `getMinEnergy()` / `getMaxEnergy()`.
 
 ### Per-Line Validation
-- [ ] Invalid lines (non-numeric, negative, zero) are highlighted in red.
-- [ ] Out-of-range lines are highlighted in orange with a tooltip showing the valid range.
+- [ ] Invalid lines (non-numeric, negative, zero) are reported in a summary below the textarea with line numbers and reasons.
+- [ ] Out-of-range lines are reported in the summary with the valid range shown.
 - [ ] Invalid and out-of-range lines are excluded from the calculation; valid lines still produce results.
 - [ ] A summary message shows the count of excluded values (e.g., "2 of 5 values out of range").
 
