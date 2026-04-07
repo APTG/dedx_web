@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-07 | 1 | Mark unit-conversion specs final: set unit-handling.md to Final v3 and sync docs/04-feature-specs/README.md status table | — |
 | 2026-04-07 | 1 | Unit-contract clarification follow-up: ion vs electron WASM energy-call rule, calculator CSV schema wording cleanup, explicit no-thousands-separator formatting for normative fixtures | — |
 | 2026-04-07 | 1 | Stage 1 unit conversion finalization: canonical conversion contract across unit-handling/calculator/plot/WASM docs, fixed formula/default/export inconsistencies, added numeric acceptance fixtures | [log](docs/ai-logs/2026-04-07-unit-handling.md) |
 | 2026-04-07 | 1 | Plot page spec Final v1: fix 6 issues (README status, typo, resolvedProgramId→programId, mobile wireframe unit, acceptance criteria wording, a11y swatch) and mark as final | [log](docs/ai-logs/2026-04-07-plot.md) |

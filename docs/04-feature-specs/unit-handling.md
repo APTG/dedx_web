@@ -1,6 +1,6 @@
 # Feature: Unit Handling
 
-> **Status:** Draft v3 (7 April 2026)
+> **Status:** Final v3 (7 April 2026)
 >
 > This spec covers energy unit selection, SI prefix handling, inline unit
 > detection from typed text, and output unit conversion for stopping power
