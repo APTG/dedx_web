@@ -1,6 +1,6 @@
 # Feature: Calculator Page
 
-> **Status:** Draft v5 (7 April 2026)
+> **Status:** Final v5 (7 April 2026)
 >
 > **v1** (3 April 2026): Initial draft — energy input textarea, debounced
 > live calculation, result table, compact entity selection integration,
