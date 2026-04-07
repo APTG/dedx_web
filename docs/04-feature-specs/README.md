@@ -11,10 +11,9 @@ Each spec follows the template defined in
 | [entity-selection.md](entity-selection.md) | Final v5 | Particle → Material → Program selection with bidirectional filtering, compatibility matrix, two layout modes (full panels / compact comboboxes), greyed-out items, Auto-select |
 | [calculator.md](calculator.md) | Final v5 | Landing page: unified input/result table, debounced live calculation, per-row unit detection, compact entity selection, responsive layout, URL state, CSV export |
 | [unit-handling.md](unit-handling.md) | Draft v2 | Energy unit selector (particle-dependent), inline unit detection from typed text, SI prefix handling, conversion formulas, output unit defaults (keV/µm vs MeV·cm²/g), CSDA range auto-scaling |
+| [plot.md](plot.md) | Final v1 | Plot page: multi-series JSROOT chart, preview series, smart labels, color palette (red-first), series list below canvas, collapsed mobile panels, segmented controls, full panel entity selection, 500-point log grid, keV/µm default, PNG/CSV export, URL-encoded series |
 
 ## Planned Specs (not yet written)
-
-- `plot.md` — Interactive stopping-power-vs-energy chart (JSROOT)
 - `multi-program.md` — Compare results across multiple programs
 - `inverse-lookups.md` — Find energy from stopping power or range
 - `advanced-options.md` — MSTAR modes, aggregate state, interpolation, density/I-value override
