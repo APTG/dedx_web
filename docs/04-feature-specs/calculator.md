@@ -12,7 +12,7 @@
 >
 > **v3** (7 April 2026): Moved detailed energy unit logic to
 > [`unit-handling.md`](unit-handling.md). Calculator spec now contains a
-> brief summary referencing that spec. Added: ion-dependent unit options
+> brief summary referencing that spec. Added: particle-dependent unit options
 > (including electrons = MeV only), inline unit detection from typed text
 > (e.g., "100 keV" auto-switches selector). Updated acceptance criteria.
 >
@@ -85,12 +85,12 @@ Calculator page. The Calculator only triggers calculation when
 |----------|--------|
 | Type | Segmented control / radio buttons (not a dropdown — ≤3 options, see §4.2 of project vision) |
 | Position | Inline with the entity selection row, after the Program combobox |
-| Options | **Ion-dependent.** The selected ion's mass number (A) is read from `IonEntity.massNumber` and determines which units are shown. Summary: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules. |
+| Options | **Particle-dependent.** The selected particle type determines which units are shown: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules. |
 | Default | MeV |
 | Behavior | Changing the unit **does not modify the textarea content** — the numeric text stays the same. The values are reinterpreted in the new unit, which **triggers an immediate recalculation**. See Recalculation Triggers table below. |
 | Inline unit detection | When the user types a unit suffix in the textarea (e.g., `100 keV`, `250 GeV/nucl`), the parser detects it after debounce, strips the suffix, converts the value, and auto-switches the unit selector. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
 
-> Full energy unit logic — ion-dependent options, SI prefix handling,
+> Full energy unit logic — particle-dependent options, SI prefix handling,
 > inline unit detection, conversion formulas — lives in
 > [`unit-handling.md`](unit-handling.md). The Calculator spec only
 > describes how the selector integrates into the page layout and
@@ -162,7 +162,7 @@ button. The mechanism:
    - Display results in the table.
 4. **If no valid energies exist**: clear the result table (show empty state).
 5. **If entity selection is incomplete**: show a message in the result area
-   ("Select an ion and material to calculate").
+   ("Select a particle and material to calculate").
 
 ### Recalculation Triggers
 
@@ -172,7 +172,7 @@ The result table recalculates when **any** of these inputs change:
 |---------|-----------|-------|
 | Energy textarea input | Yes (300ms) | Per-keystroke with debounce |
 | Energy unit change | No (immediate) | Energy values reinterpreted in new unit |
-| Ion change | No (immediate) | May also change available energy units |
+| Particle change | No (immediate) | May also change available energy units |
 | Material change | No (immediate) | |
 | Program change | No (immediate) | May change energy bounds |
 | Advanced options change (future) | No (immediate) | |
@@ -191,8 +191,8 @@ Each line in the energy textarea is validated independently:
 | Non-numeric text (e.g., "abc") | ❌ Invalid | Listed in summary below textarea (line number + reason) |
 | Negative number | ❌ Invalid | Listed in summary: "Energy must be positive" |
 | Zero | ❌ Invalid | Listed in summary: "Energy must be greater than zero" |
-| Exceeds max energy for program/ion | ⚠️ Out of range | Listed in summary with valid range |
-| Below min energy for program/ion | ⚠️ Out of range | Listed in summary with valid range |
+| Exceeds max energy for program/particle | ⚠️ Out of range | Listed in summary with valid range |
+| Below min energy for program/particle | ⚠️ Out of range | Listed in summary with valid range |
 
 > **v1 implementation note:** Validation feedback is shown as a **summary
 > message below the textarea**, not as per-line inline highlighting inside
@@ -209,7 +209,7 @@ Each line in the energy textarea is validated independently:
   (valid range: 0.001–10000 MeV/nucl for PSTAR + Proton)".
 - The valid energy range is obtained from `LibdedxService.getMinEnergy()`
   and `LibdedxService.getMaxEnergy()` using the resolved program and
-  selected ion.
+  selected particle.
 - Range validation happens **after** unit conversion to MeV/nucl (since
   the C API bounds are in MeV/nucl).
 
@@ -221,13 +221,13 @@ Below the textarea, show the valid energy range for the current selection:
 Valid range: 0.001 – 10000 MeV/nucl (PSTAR, Proton)
 ```
 
-This updates when the program, ion, or energy unit changes. The range
+This updates when the program, particle, or energy unit changes. The range
 values are displayed in the user's selected energy unit (converted from
 the C API's MeV/nucl).
 
 ### Handling Entity Selection Changes
 
-When the user changes ion, material, or program via the compact selectors:
+When the user changes particle, material, or program via the compact selectors:
 
 1. The entity selection component handles bidirectional filtering,
    preserve/fallback logic, and Auto-select resolution (per
@@ -300,7 +300,7 @@ Invalid and out-of-range lines are **not** shown in the result table.
 |-----------|---------|
 | No energies entered | "Enter energy values above to see results" |
 | All entered values are invalid | "No valid energy values. Enter positive numbers, one per line." |
-| Entity selection incomplete | "Select an ion and material to calculate" |
+| Entity selection incomplete | "Select a particle and material to calculate" |
 | WASM not yet loaded | Loading spinner with "Initializing calculation engine…" |
 | WASM load failed | Error message with retry button |
 
@@ -355,7 +355,7 @@ a `calculate()` call:
 ### Invalid Entity State
 
 - If `EntitySelectionState.isComplete` is `false` (e.g., user cleared the
-  ion), the result table shows the empty state: "Select an ion and material
+  particle selection), the result table shows the empty state: "Select a particle and material
   to calculate."
 - Calculation does not fire. No WASM calls are made.
 
@@ -376,7 +376,7 @@ inputs and results.
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
-| `ion` | `1` | Ion ID |
+| `ion` | `1` | Particle ID (ion or electron) |
 | `material` | `276` | Material ID |
 | `program` | `auto` or `2` | "auto" for Auto-select, numeric for specific |
 | `energies` | `100,200,500` | Comma-separated energy values (URL encoding only) |
@@ -497,7 +497,7 @@ interface CalculatorState {
   /** Currently selected energy unit. */
   energyUnit: EnergyUnit;
 
-  /** Valid energy range for the current program/ion (in MeV/nucl). */
+  /** Valid energy range for the current program/particle (in MeV/nucl). */
   minEnergy: number;
   maxEnergy: number;
 
@@ -581,7 +581,7 @@ entitySelection changes
 
 ### Live Calculation
 - [ ] Results update reactively as the user types in the textarea (debounced at 300ms).
-- [ ] Changing ion, material, or program triggers immediate recalculation (no debounce).
+- [ ] Changing particle, material, or program triggers immediate recalculation (no debounce).
 - [ ] Changing the energy unit triggers immediate reinterpretation and recalculation.
 - [ ] A subtle loading indicator appears on the result table during calculation.
 
@@ -593,7 +593,7 @@ entitySelection changes
 - [ ] The resolved program source is shown above or inline with the table.
 
 ### Energy Unit Selector
-- [ ] Available units depend on the selected ion (read from `IonEntity.massNumber`).
+- [ ] Available units depend on the selected particle (read from `IonEntity.id` and `IonEntity.massNumber`).
 - [ ] For proton (A=1) and electron (ion ID 1001), only "MeV" is shown.
 - [ ] For heavy ions (A>1), "MeV" and "MeV/nucl" are shown.
 - [ ] The selector uses segmented controls / radio buttons, not a dropdown.
@@ -608,7 +608,7 @@ entitySelection changes
 ### Error Handling
 - [ ] WASM init failure shows an error banner with a retry button; all controls are disabled.
 - [ ] C library errors show a human-readable message with an expandable "Show details" section.
-- [ ] When entity selection is incomplete, the result area shows "Select an ion and material to calculate."
+- [ ] When entity selection is incomplete, the result area shows "Select a particle and material to calculate."
 
 ### Responsive
 - [ ] On desktop (≥900px), content is centered with max-width ~720px.

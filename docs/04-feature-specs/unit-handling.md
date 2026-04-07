@@ -33,39 +33,41 @@ Refer to `docs/01-project-vision.md` §4.1 ("Correct and Clear Units")
 for overarching principles. Key points restated here for convenience:
 
 - Energy input must have an explicit, always-visible unit selector.
-- Available input unit options depend on the selected ion.
+- Available input unit options depend on the selected particle (ion or electron).
 - Output values auto-scale to human-readable SI prefixes.
 - MeV/nucl ≠ MeV/u — the distinction matters for precision CSDA range work.
 
 ---
 
-## 2. Energy Unit Selector — Ion-Dependent Options
+## 2. Energy Unit Selector — Particle-Dependent Options
 
 The energy unit selector (segmented control / radio buttons) shows
-different options depending on the **selected ion's mass number** (A),
-read from `IonEntity.massNumber`.
+different options depending on the **selected particle type**. For ions,
+the mass number (A) from `IonEntity.massNumber` determines the options;
+for the electron (ID 1001), only MeV is available (per-nucleon units are
+meaningless for leptons).
 
 The derivation chain is:
 
 ```
-EntitySelectionState.ion
-  → ion.massNumber (A) and ion.id
-  → determine available energy units
+EntitySelectionState.ion          // IonEntity — covers ions and electron
+  → particle.id + particle.massNumber (A)
+  → determine available energy units (see Rules table)
   → update segmented control options
 ```
 
 ### Rules
 
-| Ion condition | Available units | Rationale |
+| Particle type | Available units | Rationale |
 |--------------|----------------|-----------|
 | **Proton** (A = 1) | **MeV** only | MeV/nucl is numerically identical to MeV when A=1; showing it adds clutter without value. |
 | **Electron** (ion ID 1001) | **MeV** only | MeV/nucl and MeV/u are meaningless for leptons (nucleon count is undefined). |
 | **Heavy ions** (A > 1) | **MeV**, **MeV/nucl** | Both are commonly used. MeV/nucl = E_total / A. |
 | **Heavy ions, advanced mode** | **MeV**, **MeV/nucl**, **MeV/u** | MeV/u = E_total / m_u (atomic mass in daltons). Matters for precision CSDA range. Advanced-mode toggle TBD. |
 
-### Unit Preservation on Ion Change
+### Unit Preservation on Particle Change
 
-When the user changes ion and the previously selected unit is no longer
+When the user changes the selected particle and the previously selected unit is no longer
 available (e.g., switching from Carbon with "MeV/nucl" selected to
 Proton where only "MeV" is available):
 
@@ -109,7 +111,7 @@ parser should detect these suffixes and auto-switch the unit selector.
    selector."
 4. If all suffixed lines agree:
    - Auto-switch the unit selector to the detected base unit (if available
-     for the current ion; otherwise warn).
+     for the current particle; otherwise warn).
    - **Strip the suffix** from each line and replace with the converted
      numeric value. E.g., `100 keV` → `0.1` (when selector is MeV).
    - Lines without a suffix are left as-is (assumed to already be in the
@@ -122,7 +124,7 @@ parser should detect these suffixes and auto-switch the unit selector.
 
 - A line containing only a unit suffix with no number (e.g., "MeV") is
   treated as invalid input, not a unit detection trigger.
-- If the detected base unit is not available for the current ion (e.g.,
+- If the detected base unit is not available for the current particle (e.g.,
   user types "100 MeV/nucl" with Proton selected), show a validation
   message: "MeV/nucl is not available for Proton (A=1). Values
   interpreted as MeV."
@@ -134,8 +136,9 @@ parser should detect these suffixes and auto-switch the unit selector.
 
 ## 4. Conversion Formulas
 
-All conversions use the ion's `massNumber` (A) and `atomicMass` (m_u)
-from `IonEntity`.
+All conversions use the particle's `massNumber` (A) and `atomicMass` (m_u)
+from `IonEntity`. **Note:** These conversions apply only to ions (A ≥ 1);
+electrons use MeV exclusively, so no per-nucleon conversion is needed.
 
 | From | To | Formula |
 |------|----|---------|
@@ -180,12 +183,12 @@ WASM call). See `docs/06-wasm-api-contract.md` §3.
 
 ## Acceptance Criteria
 
-### Energy Unit Selector (ion-dependent)
-- [ ] Available units depend on the selected ion's mass number (from `IonEntity.massNumber`).
+### Energy Unit Selector (particle-dependent)
+- [ ] Available units depend on the selected particle type (from `IonEntity.id` and `IonEntity.massNumber`).
 - [ ] Proton (A=1): only MeV shown.
 - [ ] Electron (ion ID 1001): only MeV shown.
 - [ ] Heavy ions (A>1): MeV and MeV/nucl shown.
-- [ ] Changing ion resets unit to MeV if the previous unit is no longer available.
+- [ ] Changing particle resets unit to MeV if the previous unit is no longer available.
 
 ### Inline Unit Detection
 - [ ] Typing `100 keV` in the textarea auto-switches the selector to MeV and replaces text with `0.1` after debounce.

@@ -13,12 +13,12 @@
 | Decision | Choice | Rationale |
 |----------|--------|-----------|
 | C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
-| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the ion's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. |
+| Energy units | **JS-side conversion** | The C API uses MeV/nucl everywhere. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
 | Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
-| ESTAR (electrons) | **Included** | ESTAR (program 3, ion 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" ion. |
+| ESTAR (electrons) | **Included** | ESTAR (program 3, ion 1001) covers all ~280 materials. Exposed in the UI as a special “Electron” entry in the `IonEntity` list. |
 | MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
 | Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
 | Interpolation | **Exposed** | Log-log (default) and linear. Toggle in advanced settings. |
@@ -55,12 +55,13 @@ interface LibdedxEntity {
   name: string;
 }
 
-/** Ion entity with mass data for unit conversion. */
+/** Particle entity (ion or electron) with mass data for unit conversion. */
 interface IonEntity extends LibdedxEntity {
   /**
    * Mass number (A) — integer number of nucleons.
    * Obtained from dedx_get_ion_nucleon_number() at init time.
    * Needed for MeV ↔ MeV/nucl conversion: E_per_nucl = E_total / A.
+   * **Electron (ID 1001):** value is 0 (not applicable; electron uses MeV only).
    */
   massNumber: number;
   /**
@@ -76,7 +77,7 @@ interface IonEntity extends LibdedxEntity {
    * format: "Z=6  Carbon (C)". For ion ID 1001 (Electron): "e⁻".
    */
   symbol: string;
-  /** Human-readable aliases for common ion names (e.g., "proton", "alpha"). */
+  /** Human-readable aliases for common particle names (e.g., "proton", "alpha", "electron"). */
   aliases?: string[];
 }
 
