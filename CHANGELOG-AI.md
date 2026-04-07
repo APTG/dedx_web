@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-07 | 1 | Major UX redesign: unified input/result table, keV/µm default output, SI prefix auto-scaling, per-row unit detection, material phase badge. Rewrote unit-handling.md v2 and calculator.md v5. | [log](docs/ai-logs/2026-04-07-unified-table-redesign.md) |
 | 2026-04-07 | 1 | Rename `IonEntity` → `ParticleEntity` across all specs/contract, rename `ionId` → `particleId` in `LibdedxService`, rewrite terminology note, add Terminology doc TODO | [log](docs/ai-logs/2026-04-03-calculator.md) |
 | 2026-04-07 | 1 | Spec cleanup: rename state fields/URL params/wireframe labels `ion`→`particle`, add docs READMEs, migrate changelog to table | [log](docs/ai-logs/2026-04-03-calculator.md) |
 | 2026-04-07 | 1 | Cross-spec terminology fix: "ion" → "particle" across all specs for electron/proton/heavy-ion inclusivity | [log](docs/ai-logs/2026-04-03-calculator.md) |
