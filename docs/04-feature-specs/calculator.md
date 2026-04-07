@@ -2,10 +2,19 @@
 
 > **Status:** Draft v2 (7 April 2026)
 >
-> **v2 changes:** Clarified energy unit change triggers recalculation (not
-> "does not re-trigger"). Aligned per-line validation with v1 summary-only
-> approach (no inline textarea highlighting). Clarified URL comma-separated
-> energies are expanded to newline-separated textarea content on load.
+> **v1** (3 April 2026): Initial draft — energy input textarea, debounced
+> live calculation, result table, compact entity selection integration,
+> per-line validation, responsive layout, URL state encoding, export button.
+>
+> **v2 changes** (7 April 2026): Fixed contradiction where energy unit
+> selector section said "does not re-trigger calculation" while the
+> recalculation triggers table listed it as immediate — clarified that
+> textarea content is unchanged but values are reinterpreted, triggering
+> immediate recalculation. Aligned per-line validation table and acceptance
+> criteria with the v1 open-question decision to use a summary below the
+> textarea (no inline red/orange highlighting in `<textarea>`). Clarified
+> that URL `energies` parameter uses commas for compact encoding, expanded
+> to newline-separated textarea content on load.
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
