@@ -1,6 +1,6 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Draft v2 (7 April 2026)
+> **Status:** Final v1 (7 April 2026)
 >
 > The Plot page lets users build and compare multiple stopping-power-vs-energy
 > curves on an interactive JSROOT chart. Each curve ("series") is a
@@ -353,7 +353,7 @@ Each series' data is generated via `LibdedxService.getPlotData()`:
 
 ```typescript
 const result: CalculationResult = service.getPlotData({
-  programId: series.resolvedProgramId,
+  programId: series.programId,
   particleId: series.particleId,
   materialId: series.materialId,
   pointCount: 500,
@@ -795,7 +795,7 @@ panels. The user taps to open entity selection when needed.
 ├──────────────────────────────────────┤
 │ [ ＋ Add Series ]   [ Reset all ]    │
 ├──────────────────────────────────────┤
-│ Stp: (•)keV/µm (○)MeV/cm (○)MeV·g  │
+│ Stp: (•)keV/µm (○)MeV/cm (○)cm²/g   │
 │ X: Log/Lin  Y: Log/Lin  [📷] [📄]   │
 │ ┌──────────────────────────────────┐ │
 │ │        JSROOT Plot Canvas        │ │
@@ -993,8 +993,9 @@ When entity selection is incomplete (`isComplete === false`):
   `role="radio"` items.
 - The stopping power unit segmented control uses `role="radiogroup"` with
   `role="radio"` items, matching the axis scale controls.
-- Color swatches have a `title` attribute with the color name for
-  screen readers.
+- Color swatches have an `aria-label` (e.g., "Red, solid line") and a
+  visually-hidden text span describing the series color and line style.
+  Do **not** rely solely on `title` for accessibility.
 - Export buttons describe their action: "Export plot as PNG image",
   "Export visible series data as CSV".
 
@@ -1004,8 +1005,8 @@ When entity selection is incomplete (`isComplete === false`):
 
 ### Default State
 - [ ] On first load (no URL params), entity selection shows Proton / Water (liquid) / Auto-select.
-- [ ] The JSROOT canvas renders with empty axes (log-log, gridlines on).
-- [ ] A preview series (dashed black line) appears showing Proton in Water stopping power.
+- [ ] The JSROOT canvas renders with log-log axes and gridlines even though no committed series exist.
+- [ ] A preview series (dashed black line) appears on the canvas showing Proton in Water stopping power.
 - [ ] The preview series appears in the series list in italics with "Preview — " prefix.
 - [ ] The stopping power unit selector defaults to keV/µm.
 - [ ] The axis scale controls default to Log / Log and are always visible.
