@@ -184,7 +184,7 @@ function getAvailablePrograms(ion?: number, material?: number): ProgramEntity[] 
   return candidates;
 }
 
-function getAvailableIons(program?: number, material?: number): IonEntity[] {
+function getAvailableParticles(program?: number, material?: number): IonEntity[] {
   let candidates = matrix.allIons;
   if (program != null) {
     const ions = matrix.ionsByProgram.get(program);
@@ -202,7 +202,7 @@ function getAvailableIons(program?: number, material?: number): IonEntity[] {
   return candidates;
 }
 
-// getAvailableMaterials is symmetric to getAvailableIons
+// getAvailableMaterials is symmetric to getAvailableParticles
 ```
 
 ### Step-by-Step Flow
@@ -350,12 +350,12 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 | Entity | Searchable fields |
 |--------|-------------------|
 | Program | `name`, `version` |
-| Ion | `name`, `aliases` (e.g., "proton", "alpha", "deuteron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
+| Particle | `name`, `aliases` (e.g., "proton", "alpha", "deuteron", "electron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
 | Material | `name`, `id` (as string), common aliases |
 
 For particles, the `aliases` field from `IonEntity` provides human-friendly names:
 
-| Ion ID | Name | Aliases |
+| Particle ID | Name | Aliases |
 |--------|------|---------|
 | 1 | Hydrogen | proton, p, H-1 |
 | 2 | Helium | alpha, α, He-4 |
@@ -363,7 +363,7 @@ For particles, the `aliases` field from `IonEntity` provides human-friendly name
 | 1001 | Electron | e⁻, e-, beta |
 
 > The alias list is a frontend configuration, not from libdedx. It should be
-> defined as a static lookup table in `src/lib/config/ion-aliases.ts`.
+> defined as a static lookup table in `src/lib/config/particle-aliases.ts`.
 
 ### Loading States
 
@@ -399,7 +399,7 @@ interface EntitySelectionState {
   /** The resolved program ID for C API calls (always a real program ID). */
   resolvedProgramId: number;
   /** The selected particle (ion or electron), or null if cleared. */
-  ion: IonEntity | null;
+  particle: IonEntity | null;
   /** The selected material, or null if cleared. */
   material: MaterialEntity | null;
   /**
@@ -410,7 +410,7 @@ interface EntitySelectionState {
   isComplete: boolean;
   /** Available options for each selector given the current constraints. */
   availablePrograms: ProgramEntity[];
-  availableIons: IonEntity[];
+  availableParticles: IonEntity[];
   availableMaterials: MaterialEntity[];
 }
 
@@ -647,7 +647,7 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Ion: [Proton (H)     ▾]   Material: [Water (liquid)      ▾]   │  │
+│  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
 │  │  Program: [Auto-select → ICRU 90 ▾]   Energy unit: (•) MeV    │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
@@ -694,7 +694,7 @@ Entity selectors stack vertically, each full width:
 
 ```
 ┌──────────────────────────────────────┐
-│ Ion:      [Proton (H)            ▾]  │
+│ Particle: [Proton (H)            ▾]  │
 │ Material: [Water (liquid)        ▾]  │
 │ Program:  [Auto-select → ICRU 90 ▾] │
 │ Energy:   (•) MeV  ( ) MeV/nucl     │
@@ -775,7 +775,7 @@ the URL encodes the selection identically for both pages (see
 ### Defaults & Init
 - [ ] On page load, entity selectors populate from WASM data within 2 seconds (after WASM init).
 - [ ] Default state is Proton / Water (liquid) / Auto-select with no user interaction required.
-- [ ] The compatibility matrix is built at init from all programs' ion/material lists.
+- [ ] The compatibility matrix is built at init from all programs' particle/material lists.
 
 ### Bidirectional Filtering
 - [ ] Selecting a particle greys out incompatible materials and programs.
@@ -828,7 +828,7 @@ the URL encodes the selection identically for both pages (see
 
 - `LibdedxService` interface (see [docs/06-wasm-api-contract.md](../06-wasm-api-contract.md)):
   `getPrograms()`, `getIons(programId)`, `getMaterials(programId)`
-- Ion alias configuration: `src/lib/config/ion-aliases.ts` (to be created)
+- Particle alias configuration: `src/lib/config/particle-aliases.ts` (to be created)
 - Svelte 5 runes for reactive state (`$state`, `$derived`, `$effect`)
 - Tailwind CSS for layout and responsive breakpoints
 

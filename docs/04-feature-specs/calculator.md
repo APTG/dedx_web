@@ -1,6 +1,6 @@
 # Feature: Calculator Page
 
-> **Status:** Draft v3 (7 April 2026)
+> **Status:** Draft v4 (7 April 2026)
 >
 > **v1** (3 April 2026): Initial draft — energy input textarea, debounced
 > live calculation, result table, compact entity selection integration,
@@ -15,6 +15,11 @@
 > brief summary referencing that spec. Added: particle-dependent unit options
 > (including electrons = MeV only), inline unit detection from typed text
 > (e.g., "100 keV" auto-switches selector). Updated acceptance criteria.
+>
+> **v4** (7 April 2026): Unified UI labels from "Ion" to "Particle".
+> URL query param renamed `ion` → `particle`. CSV filename uses
+> `{particle}`. `EntitySelectionState` field renamed `.ion` →
+> `.particle` (type remains `IonEntity`).
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
@@ -52,7 +57,7 @@ The Calculator page uses the **compact mode** entity selection layout
 The page is a single centered column with three visual sections stacked
 vertically:
 
-1. **Entity selection row** — Ion, Material, Program comboboxes + energy
+1. **Entity selection row** — Particle, Material, Program comboboxes + energy
    unit selector.
 2. **Energy input** — multi-line textarea.
 3. **Result table** — energies × stopping power × CSDA range.
@@ -71,7 +76,7 @@ Calculator page renders the compact mode variant:
 
 | Selector | Default | Notes |
 |----------|---------|-------|
-| Ion | Proton (H) | Searchable combobox, ~240px on desktop |
+| Particle | Proton (H) | Searchable combobox, ~240px on desktop |
 | Material | Water (liquid) | Searchable combobox, ~240px on desktop |
 | Program | Auto-select → resolved | Searchable combobox, ~180px on desktop |
 
@@ -320,7 +325,7 @@ This ensures the user always knows the data source, per project vision §4.3.
 A **"Export CSV"** button appears below the result table when results are
 displayed. Clicking it downloads the current table content as a CSV file.
 
-- Filename: `dedx_calculator_{ion}_{material}_{program}.csv`
+- Filename: `dedx_calculator_{particle}_{material}_{program}.csv`
   (e.g., `dedx_calculator_proton_water_icru90.csv`)
 - Format: UTF-8 with BOM, comma delimiter (per project vision §4.6).
 - Columns match the result table: Energy, Stopping Power, CSDA Range,
@@ -376,7 +381,7 @@ inputs and results.
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
-| `ion` | `1` | Particle ID (ion or electron) |
+| `particle` | `1` | Particle ID (ion or electron) |
 | `material` | `276` | Material ID |
 | `program` | `auto` or `2` | "auto" for Auto-select, numeric for specific |
 | `energies` | `100,200,500` | Comma-separated energy values (URL encoding only) |
@@ -411,7 +416,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Ion: [Proton (H)     ▾]   Material: [Water (liquid)      ▾]   │  │
+│  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
 │  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV         │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
@@ -449,7 +454,7 @@ Single column, full width:
 
 ```
 ┌──────────────────────────────────────┐
-│ Ion:      [Proton (H)            ▾]  │
+│ Particle: [Proton (H)            ▾]  │
 │ Material: [Water (liquid)        ▾]  │
 │ Program:  [Auto-select → ICRU 90 ▾] │
 │ Energy:   (•) MeV                    │
@@ -616,7 +621,7 @@ entitySelection changes
 - [ ] On mobile (<600px), all elements stack vertically; comboboxes are full-width.
 
 ### URL State
-- [ ] The full calculator state (ion, material, program, energies, unit) is encoded in URL query parameters.
+- [ ] The full calculator state (particle, material, program, energies, unit) is encoded in URL query parameters.
 - [ ] Loading a URL with valid parameters restores the exact state and shows results.
 - [ ] Invalid URL parameters fall back to defaults silently.
 

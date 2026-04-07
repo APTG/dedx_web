@@ -9,6 +9,19 @@ Thanks to WebAssembly technology as well as clean and simple UI it will allow us
 
 Part of the project is similar to the PSTAR program of the National Institue of Standards and Technology, but we aim to add more options to the queries, make the plots dynamically generated, create a fluent user interface and - by focusing on responsivenes of the web layout - enable researchers from around the world to gather the necessery data on their mobile phones in lab enviroment.
 
+## Documentation
+
+Design documents for the ongoing redesign live in [`docs/`](docs/):
+
+| Document | Description |
+|----------|-------------|
+| [Redesign Plan](docs/00-redesign-plan.md) | Implementation stages, tech stack, spec template |
+| [Project Vision](docs/01-project-vision.md) | Audience, core use cases, design principles |
+| [WASM API Contract](docs/06-wasm-api-contract.md) | TypeScript ↔ libdedx WebAssembly interface |
+| [Feature Specs](docs/04-feature-specs/) | Per-feature specs (entity selection, calculator, unit handling) |
+| [AI Session Logs](docs/ai-logs/) | Detailed AI coding session logs |
+| [AI Changelog](CHANGELOG-AI.md) | Summary table of all AI-assisted sessions |
+
 ## Related projects
 - PSTAR project https://physics.nist.gov/PhysRefData/Star/Text/PSTAR.html
 - ATIMA project https://www.isotopea.com/webatima/

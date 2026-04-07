@@ -53,9 +53,10 @@ Every AI coding session MUST be logged for project continuity.
 - **Detailed logs**: `docs/ai-logs/YYYY-MM-DD-<slug>.md` — one file per session
 
 ### Changelog Entry Format (CHANGELOG-AI.md)
-Append to the top (below the header):
+The changelog uses a markdown table. Append a new row at the top of the table body
+(below the header row and separator):
 ```
-- YYYY-MM-DD | Stage N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md)
+| YYYY-MM-DD | N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
 ```
 
 ### Session Log Format (docs/ai-logs/)
@@ -91,3 +92,9 @@ Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` at session start. Each log must inclu
 - Use the slug from the feature spec filename when applicable
 - For trivial changes (< 3 files, no decisions), a changelog entry alone is sufficient — skip the detailed log
 - Commit messages still use Conventional Commits (`feat:`, `fix:`, etc.)
+
+### README Maintenance
+When adding or renaming docs, keep these index files in sync:
+- `docs/README.md` — top-level document index
+- `docs/04-feature-specs/README.md` — spec status table and planned specs
+- `docs/ai-logs/README.md` — session log listing

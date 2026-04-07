@@ -50,7 +50,7 @@ meaningless for leptons).
 The derivation chain is:
 
 ```
-EntitySelectionState.ion          // IonEntity — covers ions and electron
+EntitySelectionState.particle      // IonEntity — covers ions and electron
   → particle.id + particle.massNumber (A)
   → determine available energy units (see Rules table)
   → update segmented control options
