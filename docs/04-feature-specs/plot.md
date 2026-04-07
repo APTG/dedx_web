@@ -1,6 +1,6 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Draft v1 (7 April 2026)
+> **Status:** Draft v2 (7 April 2026)
 >
 > The Plot page lets users build and compare multiple stopping-power-vs-energy
 > curves on an interactive JSROOT chart. Each curve ("series") is a
@@ -42,8 +42,8 @@ The page is split into two regions:
 
 | Region | Content | Width (desktop) |
 |--------|---------|-----------------|
-| **Sidebar** (left) | Entity selection panels (Particle, Material, Program) + "Add Series" button + series list | ~30% (`minmax(320px, 3fr)`) |
-| **Main area** (right) | Axis controls + JSROOT plot canvas + export buttons | ~70% (`7fr`) |
+| **Sidebar** (left) | Entity selection panels (Particle, Material, Program) + "Add Series" button | ~30% (`minmax(360px, 3fr)`) |
+| **Main area** (right) | Controls bar (unit + axis controls + export) + JSROOT plot canvas + series list | ~70% (`7fr`) |
 
 On tablet and mobile, the sidebar folds above the main area (see
 Responsive Layout).
@@ -79,29 +79,33 @@ Plot page. The "Add Series" button is enabled only when
 | Disabled state | Greyed out with tooltip: "Select a particle and material to add a series" |
 | Behavior | Adds the current (resolvedProgramId, particle, material) triplet as a new series to the plot. See § Add Series Flow. |
 | Soft limit | When 10 series already exist, show an inline warning below the button: "10 series displayed. Adding more may reduce readability." The button remains enabled. |
+| Post-add hint | After the first 1–2 "Add Series" clicks (tracked across sessions via `localStorage`), show a brief inline hint below the button: _"Change particle, material, or program to compare."_ The hint dismisses on the next user interaction with any entity selector. Suppressed permanently after 2 showings. |
 
 ### 3. Series List
 
-The series list appears in the sidebar, below the "Add Series" button.
-It displays all added series and the preview series (if any).
+The series list appears in the **main area, below the JSROOT canvas**.
+It displays all added series and the preview series (if any). Placing
+it below the canvas keeps it spatially close to the plot it describes
+and always visible alongside the chart. The sidebar stays focused on
+entity selection + "Add Series".
 
 Each series entry shows:
 
 | Element | Detail |
 |---------|--------|
-| **Color swatch** | Small square (12×12px) filled with the series' assigned color |
+| **Color swatch** | 16×16px square filled with the series' assigned color, followed by a short line sample (~24px) in the series' line style (solid for committed, dashed for preview) |
 | **Label** | Auto-generated context-aware label (see § Smart Series Labels) |
 | **Visibility toggle** | Eye icon button — toggles the series on/off on the plot. Hidden series have reduced opacity (~0.4) in the list. |
 | **Remove button** | × icon button — removes the series from the plot and list. Not shown for the preview series. |
 
-The series list is scrollable if it exceeds the available sidebar height.
+The series list is scrollable if it exceeds a maximum height of ~200px.
 
 ### 4. Stopping Power Unit Selector
 
 | Property | Detail |
 |----------|--------|
-| Type | Dropdown (`<select>`) in the main area, above the plot canvas |
-| Position | Top-left of the main area, inline with axis controls |
+| Type | Segmented control (3 options) in the controls bar, above the plot canvas |
+| Position | Left side of the controls bar, inline with axis controls |
 | Options | `keV/µm`, `MeV/cm`, `MeV·cm²/g` |
 | Default | `keV/µm` |
 | Behavior | Changing the unit re-converts all series' Y-axis data and updates the plot. The Y-axis label updates to reflect the chosen unit. |
@@ -111,6 +115,11 @@ The series list is scrollable if it exceeds the available sidebar height.
 > keV/µm and MeV·cm²/g based on gas vs non-gas), the Plot page uses a
 > single user-chosen unit for all series. The user picks the unit that
 > makes sense for their comparison. Default is keV/µm.
+>
+> **Design note:** A segmented control (not a `<select>` dropdown) is
+> used for consistency with the axis scale controls and the project's
+> own design principle (§4.2 in the project vision): prefer segmented
+> controls when there are 2–5 mutually exclusive options.
 
 ### 5. Axis Scale Controls
 
@@ -132,10 +141,16 @@ scale. For log scale, JSROOT uses `logx` / `logy` draw options.
 
 ### 6. "Reset All" Link
 
-A small text link below the "Add Series" button: "Reset all". Clicking it:
+A small text link below the "Add Series" button: "Reset all".
+
+**When 0–1 committed series exist:** Executes immediately:
 1. Clears all series from the plot and series list.
 2. Resets entity selection to defaults (Proton / Water / Auto-select).
 3. The preview series regenerates for the new default selection.
+
+**When ≥2 committed series exist:** Shows a confirmation dialog first:
+"Remove all _N_ series and reset selections?" with **Cancel** and
+**Reset** buttons. Only proceeds on "Reset" confirmation.
 
 ---
 
@@ -309,26 +324,26 @@ uses common, easily distinguishable colors:
 
 | Index | Color | Hex |
 |-------|-------|-----|
-| 0 | Black | `#000000` |
-| 1 | Red | `#e41a1c` |
-| 2 | Blue | `#377eb8` |
-| 3 | Green | `#4daf4a` |
-| 4 | Purple | `#984ea3` |
-| 5 | Orange | `#ff7f00` |
-| 6 | Brown | `#a65628` |
-| 7 | Pink | `#f781bf` |
-| 8 | Grey | `#999999` |
-| 9 | Cyan | `#17becf` |
+| 0 | Red | `#e41a1c` |
+| 1 | Blue | `#377eb8` |
+| 2 | Green | `#4daf4a` |
+| 3 | Purple | `#984ea3` |
+| 4 | Orange | `#ff7f00` |
+| 5 | Brown | `#a65628` |
+| 6 | Pink | `#f781bf` |
+| 7 | Grey | `#999999` |
+| 8 | Cyan | `#17becf` |
 
-After index 9, wrap around to index 0 (colors may repeat for >10 series).
+After index 8, wrap around to index 0 (colors may repeat for >9 series).
 
 When a series is removed, its color index is released. The next added
 series takes the lowest available color index.
 
-> **Note:** The preview series always uses black (`#000`) with a dashed
-> line style, independent of the palette. Committed series index 0 also
-> uses black but with a solid line — the dashed vs solid distinction
-> prevents confusion.
+> **Note:** Black (`#000`) is reserved exclusively for the preview series
+> (dashed line). Committed series always start at index 0 (red), so
+> every "Add Series" click produces an immediately obvious visual change
+> — the new solid red/blue/green line is clearly distinct from the
+> dashed black preview.
 
 ---
 
@@ -631,7 +646,9 @@ The preview series is not encoded in the URL.
 
 ## Export
 
-Two export buttons appear in the main area, below the JSROOT canvas:
+Two export buttons appear in the **controls bar** above the JSROOT
+canvas, **right-aligned** (opposite the unit/axis controls). They use
+compact icon+label buttons to keep the controls bar concise:
 
 ### Export PNG
 
@@ -686,52 +703,51 @@ Hidden (toggled-off) series are excluded from the CSV.
 ### Desktop (≥900px) — Sidebar + Canvas
 
 ```
-┌─── SIDEBAR (≈30%) ─────────────────────┐ ┌── MAIN (≈70%) ──────────────────────────┐
-│                                                │ │                              │
-│ ┌─────────────┐ ┌────────────────────────────┐ │ │ Stp Unit: [keV/µm ▾]        │
-│ │ ① Particle  │ │ ② Target Material          │ │ │ X: (•)Log ( )Lin             │
-│ │ [Filter.. ] │ │ [Filter...               ] │ │ │ Y: (•)Log ( )Lin             │
-│ │ ┌─────────┐ │ │ ┌──────────┬─────────────┐ │ │ │                              │
-│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS   │ │ │ │ ┌──────────────────────────┐ │
-│ │ │ Alpha   │ │ │ │ 1  H     │ 276 Water   │ │ │ │ │                          │ │
-│ │ │ Lithium │ │ │ │ 2  He    │ 99  A-150   │ │ │ │ │    JSROOT Plot Canvas    │ │
-│ │ │ ...  ↕  │ │ │ │ ...  ↕   │ ...   ↕     │ │ │ │ │                          │ │
-│ │ └─────────┘ │ │ └──────────┴─────────────┘ │ │ │ │                          │ │
-│ └─────────────┘ └────────────────────────────┘ │ │ │                          │ │
-│                                                │ │ └──────────────────────────┘ │
-│ ┌────────────────────────────────────────────┐ │ │                              │
-│ │ ③ Program        Auto-select → ICRU 90    │ │ │ [Export PNG]  [Export CSV]   │
-│ │ [Filter... ]                               │ │ └──────────────────────────────┘
-│ │ ┌────────────────────────────────────────┐ │ │
-│ │ │ ── Tabulated ──                        │ │ │
-│ │ │ ASTAR · PSTAR · MSTAR · ICRU49 · …    │ │ │
-│ │ │ ── Analytical ──                       │ │ │
-│ │ │ Bethe-Bloch · Bethe-Ext               │ │ │
-│ │ └────────────────────────────────────────┘ │ │
-│ └────────────────────────────────────────────┘ │
-│                                                │
-│               [ ＋ Add Series ]                 │
-│               [ Reset all ]                    │
-│                                                │
-│ ┌─ Series ─────────────────────────────────┐  │
-│ │ - - Preview — Proton in Water       👁   │  │
-│ │ ■ ICRU 90 — Proton in Water     👁  ×   │  │
-│ │ ■ PSTAR — Proton in Water       👁  ×   │  │
-│ └──────────────────────────────────────────┘  │
-└────────────────────────────────────────────────┘
+┌── SIDEBAR (≈30%) ────────────────────┐ ┌── MAIN (≈70%) ────────────────────────────────┐
+│                                      │ │                                                │
+│ ┌───────────┐ ┌────────────────────┐ │ │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
+│ │ ① Particle│ │ ② Target Material  │ │ │ X: (•)Log (○)Lin   Y: (•)Log (○)Lin  [📷][📄] │
+│ │ [Filter ] │ │ [Filter...       ] │ │ │                                                │
+│ │ ┌───────┐ │ │ ┌────────┬───────┐ │ │ │ ┌──────────────────────────────────────────┐   │
+│ │ │Proton │ │ │ │ELEMENTS│COMPNDS│ │ │ │ │                                          │   │
+│ │ │Alpha  │ │ │ │ 1 H    │276 H₂O│ │ │ │ │          JSROOT Plot Canvas              │   │
+│ │ │Lithium│ │ │ │ 2 He   │99 A150│ │ │ │ │                                          │   │
+│ │ │...  ↕ │ │ │ │...  ↕  │...  ↕ │ │ │ │ │                                          │   │
+│ │ └───────┘ │ │ └────────┴───────┘ │ │ │ └──────────────────────────────────────────┘   │
+│ └───────────┘ └────────────────────┘ │ │                                                │
+│                                      │ │ ┌─ Series ──────────────────────────────────┐   │
+│ ┌──────────────────────────────────┐ │ │ │ ── Preview — Proton in Water         👁   │   │
+│ │ ③ Program  Auto-select → ICRU 90│ │ │ │ ■ ICRU 90 — Proton in Water      👁  ×   │   │
+│ │ [Filter... ]                     │ │ │ │ ■ PSTAR — Proton in Water        👁  ×   │   │
+│ │ ┌──────────────────────────────┐ │ │ │ └──────────────────────────────────────────┘   │
+│ │ │ ── Tabulated ──              │ │ │ └────────────────────────────────────────────────┘
+│ │ │ ASTAR · PSTAR · ICRU49 · …  │ │ │
+│ │ │ ── Analytical ──             │ │ │
+│ │ │ Bethe-Bloch · Bethe-Ext     │ │ │
+│ │ └──────────────────────────────┘ │ │
+│ └──────────────────────────────────┘ │
+│                                      │
+│         [ ＋ Add Series ]             │
+│         [ Reset all ]                │
+└──────────────────────────────────────┘
 ```
 
-- Page grid: `grid-template-columns: minmax(320px, 3fr) 7fr`.
+- Page grid: `grid-template-columns: minmax(360px, 3fr) 7fr`.
 - Entity panel layout within the sidebar follows
   [`entity-selection.md` § Desktop wireframe](entity-selection.md#desktop-900px--sidebar--canvas).
 - The JSROOT canvas has `min-height: 400px; height: min(60vh, 600px)`.
-- Export buttons are right-aligned below the canvas.
+- The controls bar above the canvas contains: stopping power unit
+  segmented control (left), axis scale controls (center-left), and
+  export icon buttons (right-aligned).
+- The series list sits below the canvas in the main area, acting as the
+  plot legend.
 
 ### Tablet (600–899px) — Stacked
 
 The sidebar folds **above** the main area. Entity panels remain in their
 sub-grid layout (Particle + Material side-by-side, Program below). The
-series list sits between the panels and the canvas:
+"Add Series" button and "Reset all" link sit between the panels and the
+canvas:
 
 ```
 ┌────────────────────────────────────────────────┐
@@ -744,62 +760,59 @@ series list sits between the panels and the canvas:
 │ │ ③ Program   Auto → ICRU  [Filter] ↕       │ │
 │ └────────────────────────────────────────────┘ │
 │ [ ＋ Add Series ]    [ Reset all ]              │
-│ ┌─ Series ─────────────────────────────────┐  │
-│ │ ■ ICRU 90 — Proton in Water  👁  ×       │  │
-│ └──────────────────────────────────────────┘  │
 ├────────────────────────────────────────────────┤
-│ Stp: [keV/µm ▾]   X: (•)Log ( )Lin           │
-│                    Y: (•)Log ( )Lin           │
+│ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
+│ X: (•)Log (○)Lin  Y: (•)Log (○)Lin   [📷][📄] │
 │ ┌────────────────────────────────────────────┐ │
 │ │            JSROOT Plot Canvas               │ │
 │ └────────────────────────────────────────────┘ │
-│              [Export PNG]  [Export CSV]         │
+│ ┌─ Series ─────────────────────────────────┐  │
+│ │ ■ ICRU 90 — Proton in Water  👁  ×       │  │
+│ └──────────────────────────────────────────┘  │
 └────────────────────────────────────────────────┘
 ```
 
 Entity panel list heights reduced to ~250px for Particle/Material,
 ~120px for Program.
 
-### Mobile (<600px) — Fully Stacked
+### Mobile (<600px) — Fully Stacked, Collapsed Panels
 
-All panels stack vertically. The series list acts as the legend (no
-JSROOT-rendered legend needed). The plot canvas becomes touch-zoomable.
+On mobile, entity selection panels are **collapsed by default** behind
+an expandable accordion or a "Select entities" button that opens a
+bottom sheet. This ensures the series list, controls, and canvas are
+visible in the initial viewport without scrolling past ~800px of entity
+panels. The user taps to open entity selection when needed.
 
 ```
 ┌──────────────────────────────────────┐
-│ ① Particle                           │
-│ [Filter...                        ]  │
-│ ┌──────────────────────────────────┐ │
-│ │ Proton · Alpha · Carbon  ↕       │ │
-│ └──────────────────────────────────┘ │
-├──────────────────────────────────────┤
-│ ② Target Material                    │
-│ [Filter...                        ]  │
-│ ┌────────────┬───────────────────┐   │
-│ │ ELEMENTS   │ COMPOUNDS         │   │
-│ │ ...  ↕     │ ...    ↕          │   │
-│ └────────────┴───────────────────┘   │
-├──────────────────────────────────────┤
-│ ③ Program  Auto → ICRU              │
-│ [Filter]  PSTAR · ASTAR ↕           │
+│ ▶ Select Entities                    │
+│   (Proton / Water / Auto-select)     │
+│ ┌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┐ │
+│ ╎ (collapsed — tap to expand)      ╎ │
+│ ╎ ① Particle  ② Material          ╎ │
+│ ╎ ③ Program                        ╎ │
+│ └╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌╌┘ │
 ├──────────────────────────────────────┤
 │ [ ＋ Add Series ]   [ Reset all ]    │
 ├──────────────────────────────────────┤
+│ Stp: (•)keV/µm (○)MeV/cm (○)MeV·g  │
+│ X: Log/Lin  Y: Log/Lin  [📷] [📄]   │
+│ ┌──────────────────────────────────┐ │
+│ │        JSROOT Plot Canvas        │ │
+│ │    (touch zoom/pan disabled)     │ │
+│ └──────────────────────────────────┘ │
 │ Series:                              │
 │ ■ ICRU 90 — Proton in Water  👁 ×   │
 │ ■ PSTAR — Proton in Water    👁 ×   │
-├──────────────────────────────────────┤
-│ Stp: [keV/µm ▾]  X: Log/Lin        │
-│                   Y: Log/Lin        │
-│ ┌──────────────────────────────────┐ │
-│ │        JSROOT Plot Canvas        │ │
-│ │      (touch zoom/pan enabled)    │ │
-│ └──────────────────────────────────┘ │
-│       [Export PNG] [Export CSV]      │
 └──────────────────────────────────────┘
 ```
 
 On mobile, the JSROOT canvas uses `height: 50vh` (at least 300px).
+
+The collapsed entity header shows the current selection summary
+(e.g., "Proton / Water / Auto-select") so the user can see what's
+selected without expanding. When expanded, the panels stack vertically
+as full-width sections (same as before but inside the accordion/sheet).
 
 ---
 
@@ -978,7 +991,8 @@ When entity selection is incomplete (`isComplete === false`):
   a descriptive `aria-label`.
 - Axis scale segmented controls use `role="radiogroup"` with
   `role="radio"` items.
-- The stopping power unit selector has an associated `<label>`.
+- The stopping power unit segmented control uses `role="radiogroup"` with
+  `role="radio"` items, matching the axis scale controls.
 - Color swatches have a `title` attribute with the color name for
   screen readers.
 - Export buttons describe their action: "Export plot as PNG image",
@@ -1016,9 +1030,11 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Adding a duplicate (same program + particle + material) shows a toast and does not add.
 - [ ] At 10 series, a soft warning is shown but the button remains enabled.
 - [ ] Each new series receives the next available color from the palette.
+- [ ] After the first 1–2 "Add Series" clicks (tracked via `localStorage`), a brief inline hint appears: "Change particle, material, or program to compare." Dismissed on next entity interaction. Suppressed after 2 showings.
 
 ### Series List
-- [ ] Each series entry shows: color swatch, auto-generated label, visibility toggle, remove button.
+- [ ] The series list appears in the main area, below the JSROOT canvas.
+- [ ] Each series entry shows: 16×16px color swatch with line sample, auto-generated label, visibility toggle, remove button.
 - [ ] Clicking the visibility toggle hides/shows the series line on the canvas.
 - [ ] Hidden series show at reduced opacity in the list.
 - [ ] Clicking remove (×) removes the series from the list and canvas.
@@ -1032,7 +1048,8 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Labels recompute when series are added or removed.
 
 ### Color Palette
-- [ ] Series colors are assigned sequentially: black, red, blue, green, purple, orange, brown, pink, grey, cyan.
+- [ ] Series colors are assigned sequentially: red, blue, green, purple, orange, brown, pink, grey, cyan.
+- [ ] Black is reserved exclusively for the preview series.
 - [ ] When a series is removed, its color index becomes available for reuse.
 - [ ] The preview series always uses black dashed regardless of the palette state.
 
@@ -1050,7 +1067,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Mouse wheel scrolling over the plot scrolls the page, not the plot axes.
 - [ ] On mobile/tablet (touch devices), touch gestures on the canvas scroll the page — JSROOT touch zoom/pan is disabled.
 - [ ] The canvas resizes correctly when the browser window is resized.
-- [ ] No JSROOT-rendered legend on the canvas (the sidebar series list serves as the legend).
+- [ ] No JSROOT-rendered legend on the canvas (the series list below the canvas serves as the legend).
 
 ### Axis Scale Controls
 - [ ] X- and Y-axis scale controls are always visible (not collapsed).
@@ -1059,7 +1076,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Controls use segmented control style (not toggles or checkboxes).
 
 ### Stopping Power Unit
-- [ ] A dropdown selector offers keV/µm, MeV/cm, MeV·cm²/g.
+- [ ] A segmented control offers keV/µm, MeV/cm, MeV·cm²/g.
 - [ ] Default is keV/µm.
 - [ ] Changing the unit re-converts all series' Y-data and redraws the plot.
 - [ ] The Y-axis label updates to reflect the selected unit.
@@ -1073,6 +1090,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] The URL updates (replaceState) on each state change.
 
 ### Export
+- [ ] "Export PNG" and "Export CSV" buttons appear in the controls bar above the canvas, right-aligned.
 - [ ] "Export PNG" captures the JSROOT canvas as a PNG image.
 - [ ] "Export CSV" exports all visible series data with energy and stopping power columns.
 - [ ] CSV uses UTF-8 with BOM, comma delimiter.
@@ -1080,10 +1098,15 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Hidden series are excluded from CSV export.
 
 ### Responsive
-- [ ] On desktop (≥900px), sidebar (~30%) and canvas (~70%) are side-by-side.
+- [ ] On desktop (≥900px), sidebar (~30%, min 360px) and canvas (~70%) are side-by-side.
 - [ ] On tablet (600–899px), sidebar folds above the canvas.
-- [ ] On mobile (<600px), all elements stack vertically; the canvas is at least 300px tall.
+- [ ] On mobile (<600px), entity panels are collapsed by default (accordion / bottom sheet); canvas, controls, and series list are visible without scrolling past panels.
 - [ ] The series list is visible on all breakpoints (acts as the legend).
+
+### Reset All
+- [ ] "Reset all" with 0–1 series executes immediately (no confirmation).
+- [ ] "Reset all" with ≥2 series shows a confirmation dialog before proceeding.
+- [ ] Confirmation dialog text: "Remove all N series and reset selections?" with Cancel / Reset buttons.
 
 ### Error Handling
 - [ ] WASM init failure shows an error banner with retry; all controls disabled.
@@ -1101,6 +1124,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] Series list uses proper list roles.
 - [ ] All buttons have descriptive `aria-label` attributes.
 - [ ] Axis scale controls use `role="radiogroup"`.
+- [ ] Stopping power unit segmented control uses `role="radiogroup"`.
 - [ ] Export buttons describe their action.
 
 ---

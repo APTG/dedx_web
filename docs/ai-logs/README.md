@@ -15,3 +15,4 @@ summary table of all sessions.
 | [2026-04-03-entity-selection.md](2026-04-03-entity-selection.md) | 3 Apr 2026 | Entity-selection spec v2–v5: selection order, greyed-out items, two layout modes, open question resolution |
 | [2026-04-03-calculator.md](2026-04-03-calculator.md) | 3–7 Apr 2026 | Calculator spec v1–v4, entity-selection Final v5, unit-handling stub v1, cross-spec terminology fixes |
 | [2026-04-07-unified-table-redesign.md](2026-04-07-unified-table-redesign.md) | 7 Apr 2026 | Major UX redesign: unified input/result table, keV/µm output default, SI prefix auto-scaling, per-row unit detection, material phase badge. unit-handling.md v2, calculator.md v5. |
+| [2026-04-07-plot.md](2026-04-07-plot.md) | 7 Apr 2026 | Plot page feature spec v1–v2: multi-series JSROOT chart, UX evaluation, 9 UX improvements (palette, series list, mobile layout, segmented controls, export, etc.) |

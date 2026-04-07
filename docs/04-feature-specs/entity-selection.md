@@ -550,7 +550,7 @@ the program (Alternative A layout):
 └────────────────────────────────────────────────┘
 ```
 
-- Page grid: `grid-template-columns: minmax(320px, 3fr) 7fr`.
+- Page grid: `grid-template-columns: minmax(360px, 3fr) 7fr`.
 - Inside the sidebar, Particle and Material are in a **sub-grid row**:
   `grid-template-columns: 1fr 2fr` — Particle takes ~⅓, Material takes ~⅔
   (it has two sub-lists).
