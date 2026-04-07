@@ -10,6 +10,7 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-07-unit-handling.md](2026-04-07-unit-handling.md) | 7 Apr 2026 | Stage 1 unit conversion finalization across specs: canonical conversion contract, mismatch audit, density/default/export consistency fixes, numeric acceptance fixtures |
 | [2026-04-03-ai-changelog-setup.md](2026-04-03-ai-changelog-setup.md) | 3 Apr 2026 | Set up AI session logging infrastructure (CHANGELOG-AI.md, session log format, copilot-instructions) |
 | [2026-04-03-project-vision.md](2026-04-03-project-vision.md) | 3 Apr 2026 | Draft project vision (01-project-vision.md), units design principle, redesign plan updates |
 | [2026-04-03-entity-selection.md](2026-04-03-entity-selection.md) | 3 Apr 2026 | Entity-selection spec v2–v5: selection order, greyed-out items, two layout modes, open question resolution |

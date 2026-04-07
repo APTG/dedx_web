@@ -1,6 +1,6 @@
 # Feature: Calculator Page
 
-> **Status:** Final v5 (7 April 2026)
+> **Status:** Final v6 (7 April 2026)
 >
 > **v1** (3 April 2026): Initial draft — energy input textarea, debounced
 > live calculation, result table, compact entity selection integration,
@@ -31,6 +31,12 @@
 > detection (mixed units across rows supported). Material phase indicator
 > added. URL encoding updated for mixed per-row units. Updated all
 > wireframes, state management types, and acceptance criteria.
+>
+> **v6** (7 April 2026): Stage 1 unit-conversion finalization.
+> Aligned with canonical conversion contract in `unit-handling.md`:
+> clarified that stopping power does not use SI auto-scaling, tightened
+> calculator-vs-plot default-unit split, and made CSV export unit behavior
+> explicit and table-consistent.
 >
 > The Calculator page is the **landing page** and primary use case (~80%
 > of users). It provides numeric stopping power and CSDA range lookup for
@@ -345,9 +351,9 @@ for column layout.
 #### Number Formatting
 
 - **Stopping power** values use **4 significant figures** with SI prefix
-  auto-scaling as described in [`unit-handling.md`](unit-handling.md) §6.
-  In practice, keV/µm and MeV·cm²/g values are typically in the 1–999
-  range and need no additional scaling.
+  auto-scaling disabled. Calculator shows the selected stopping-power unit
+  directly (`keV/µm` for non-gas, `MeV·cm²/g` for gas) as defined in
+  [`unit-handling.md`](unit-handling.md) §5.0 and §6.
 - **CSDA range** values use **4 significant figures** with per-row
   independent SI prefix auto-scaling to the best length unit (nm, µm, mm,
   cm, m). The unit is displayed inline with each value (e.g., "1.234 µm").
@@ -404,6 +410,10 @@ displayed. Clicking it downloads the current table content as a CSV file.
 - Format: UTF-8 with BOM, comma delimiter (per project vision §4.6).
 - Columns match the result table: Energy, Stopping Power, CSDA Range,
   with units in the header row.
+- Exported columns are exactly the 5 unified table columns:
+  `Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
+  `Stopping Power ({active unit})`, `CSDA Range`.
+- `CSDA Range` values include unit suffix per cell (e.g., `2.500 mm`).
 
 > Full export spec in TODO `docs/04-feature-specs/export.md`.
 
@@ -740,12 +750,14 @@ entitySelection changes
 - [ ] Default stopping power unit is MeV·cm²/g for gas materials.
 - [ ] Switching from a non-gas to a gas material changes the stopping power column header and recalculates.
 - [ ] Stopping power values use 4 significant figures with no scientific notation.
+- [ ] Numeric fixture check: for a row where backend `stoppingPowers[i] = 25` and `materialDensity = 1.0`, displayed value is `2.5 keV/µm` in non-gas mode and `25 MeV·cm²/g` in gas mode.
 
 ### Output Units — CSDA Range
 - [ ] CSDA range is displayed in auto-scaled length units (nm, µm, mm, cm, m).
 - [ ] Each row independently auto-scales to the best SI prefix.
 - [ ] The unit is displayed inline with each cell value (e.g., "1.234 µm").
 - [ ] CSDA range values use 4 significant figures.
+- [ ] Numeric fixture check: for a row where backend `csdaRanges[i] = 0.2` and `materialDensity = 1.0`, displayed value is `2 mm`.
 
 ### Material Phase Badge
 - [ ] A phase indicator (gas/solid/liquid) appears next to the material combobox.
@@ -784,6 +796,7 @@ entitySelection changes
 ### Export
 - [ ] An "Export CSV" button appears when results are displayed.
 - [ ] The CSV file contains the same columns as the unified table, with units in headers.
+- [ ] `Stopping Power` header unit in CSV matches current calculator unit mode (`keV/µm` for non-gas, `MeV·cm²/g` for gas).
 
 ### Performance
 - [ ] Debounce interval is 300ms for input.

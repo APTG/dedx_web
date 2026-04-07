@@ -751,8 +751,8 @@ const PARTICLE_ALIASES: Record<number, { name: string; aliases: string[] }> = {
 C API. The web interface should expose it. Note:
 - ESTAR uses a special particle ID `1001` (not atomic number).
 - It covers all ~280 materials.
-- The `ParticleEntity` for electrons gets `massNumber = 1` (by convention; not used for
-  energy conversion since electrons don't use MeV/nucl in the usual sense).
+- The `ParticleEntity` for electrons gets `massNumber = 0` (not applicable;
+  electrons use MeV only, and no per-nucleon conversion is allowed).
 - UI should label it as "Electron" and handle it as a special case.
 
 ### Q3: MSTAR modes
