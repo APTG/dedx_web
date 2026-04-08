@@ -79,7 +79,7 @@ EntitySelectionState.particle      // ParticleEntity — covers ions and electro
 | **Proton** (A = 1) | **MeV** only | MeV/nucl is numerically identical to MeV when A=1; showing it adds clutter without value. |
 | **Electron** (particle ID 1001) | **MeV** only | MeV/nucl and MeV/u are meaningless for leptons (nucleon count is undefined). |
 | **Heavy ions** (A > 1) | **MeV**, **MeV/nucl** | Both are commonly used. MeV/nucl = E_total / A. |
-| **Heavy ions, advanced mode** | **MeV**, **MeV/nucl**, **MeV/u** | MeV/u = E_total / m_u (atomic mass in daltons). Matters for precision CSDA range. Advanced-mode toggle TBD. |
+| **Heavy ions, advanced mode** | **MeV**, **MeV/nucl**, **MeV/u** | MeV/u = E_total / m_u (atomic mass in daltons). Matters for precision CSDA range. MeV/u is unlocked by the app-wide Basic/Advanced toggle defined in [`01-project-vision.md`](../01-project-vision.md) §4.4. |
 
 ### Master vs. Per-Row Mode
 

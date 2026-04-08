@@ -12,9 +12,9 @@ Each spec follows the template defined in
 | [calculator.md](calculator.md) | Final v6 | Landing page: unified input/result table, debounced live calculation, per-row unit detection, compact entity selection, responsive layout, URL state, CSV export; aligned to canonical unit conversion contract |
 | [unit-handling.md](unit-handling.md) | Final v3 | Canonical conversion contract: internal units, density usage, conversion formulas, default behavior split (Calculator vs Plot), output formatting, export-unit rules, and numeric fixtures |
 | [plot.md](plot.md) | Final v2 | Plot page: multi-series JSROOT chart with canonical per-series density conversion, explicit calculator-vs-plot default split, normalized URL unit tokens, PNG/CSV export |
+| [multi-program.md](multi-program.md) | Final v3 | Advanced-mode multi-program comparison: columns grouped by quantity (all stopping powers, then all CSDA ranges), quantity-focus toggle (Both/STP-only/CSDA-only), drag-and-drop column reordering synced across groups, Excel-style show/hide, default program highlighting, delta/% tooltip on hover, onboarding hint, `calculateMulti()`, partial failure, responsive horizontal scroll with sticky columns, URL-encoded mode/programs/visibility/qfocus |
 
 ## Planned Specs (not yet written)
-- `multi-program.md` — Compare results across multiple programs
 - `inverse-lookups.md` — Find energy from stopping power or range
 - `advanced-options.md` — MSTAR modes, aggregate state, interpolation, density/I-value override
 - `export.md` — CSV/PDF export details

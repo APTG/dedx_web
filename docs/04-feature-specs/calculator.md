@@ -45,6 +45,7 @@
 > **Related specs:**
 > - Entity selection (compact mode): [`entity-selection.md`](entity-selection.md)
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
+> - Multi-program advanced behavior (program multi-select, grouped comparison columns, quantity focus): [`multi-program.md`](multi-program.md)
 > - Shareable URLs: TODO `shareable-urls.md`
 > - Advanced options: TODO `advanced-options.md`
 > - Export: TODO `export.md`
@@ -203,7 +204,12 @@ Each input cell in the "Typed Value" column is an inline `<input>` element:
 
 ### 4. Advanced Options (future)
 
-An "Advanced" toggle/disclosure section below the energy input will expose:
+Advanced functionality is controlled by the app-wide Basic/Advanced
+toggle in the top-right action bar (see
+[`../01-project-vision.md`](../01-project-vision.md) §4.4), not by a
+local disclosure below the energy input.
+
+When Advanced mode is active, additional calculator controls may expose:
 - Aggregate state override (gas / condensed / default)
 - Interpolation mode (log-log / linear)
 - MSTAR mode (a–h)
@@ -458,9 +464,13 @@ a `calculate()` call:
 
 ## URL State Encoding
 
-The Calculator page state is fully encoded in URL query parameters for
-shareability. When a user shares a URL, the recipient sees the exact same
-inputs and results.
+This section defines the **basic-mode** Calculator URL contract.
+Advanced-mode extensions (`mode`, `programs`, `hidden_programs`,
+`qfocus`) are specified in [`multi-program.md`](multi-program.md).
+
+The Calculator page state is encoded in URL query parameters for
+shareability. When a user shares a URL, the recipient sees the same
+inputs and results for this basic-mode contract.
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
@@ -503,6 +513,8 @@ On page load with URL parameters:
    (the units are already explicit in the URL encoding).
 
 > Full URL encoding spec in TODO `docs/04-feature-specs/shareable-urls.md`.
+> Advanced-mode URL extensions are defined in
+> [`multi-program.md`](multi-program.md).
 
 ---
 
@@ -786,10 +798,11 @@ entitySelection changes
 - [ ] On mobile (<600px), all elements stack vertically; the table scrolls horizontally if needed.
 
 ### URL State
-- [ ] The full calculator state (particle, material, program, energies, unit) is encoded in URL query parameters.
+- [ ] In basic mode, the calculator state (particle, material, program, energies, unit) is encoded in URL query parameters.
 - [ ] Mixed-unit state is encoded using `value:unit` syntax in the `energies` parameter.
 - [ ] Loading a URL with valid parameters restores the exact state and shows results.
 - [ ] Invalid URL parameters fall back to defaults silently.
+- [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
 - [ ] An "Export CSV" button appears when results are displayed.
