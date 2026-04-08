@@ -192,7 +192,7 @@ advanced mode on.
 The toggle state is encoded in the URL (`mode=advanced`) so shared links
 preserve the user's context. Opening a URL with `mode=advanced` activates
 advanced mode for the recipient. The mode is also stored in
-`localStorage` so it persists across navigation within the same session.
+`localStorage` so it persists across browser sessions until the user clears site storage or explicitly switches back to Basic. This means a returning user who last used Advanced mode will resume in Advanced mode.
 
 **What Advanced mode reveals per page:**
 

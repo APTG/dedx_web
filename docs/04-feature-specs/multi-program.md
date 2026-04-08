@@ -518,7 +518,7 @@ screen space is limited. Entity selectors may wrap to two rows.
 | State | Display |
 |-------|---------|
 | No valid rows | All result columns empty. Standard Calculator validation messaging. |
-| No additional programs selected | Table shows only the default program column in each group (identical to basic mode). |
+| No additional programs selected | Table shows only the default program column in each group, still under the grouped-header structure ("Stopping Power" / "CSDA Range" group headers remain visible). This is visually distinct from basic mode even though no comparison is active yet. |
 | Calculation in progress | Subtle shimmer/skeleton animation on result cells. Input cells remain editable. |
 | Some programs still loading | Show results for completed programs; show skeleton for pending ones. |
 | All programs failed | All result cells show "—". Banner above table. |
