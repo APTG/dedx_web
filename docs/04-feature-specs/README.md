@@ -12,7 +12,7 @@ Each spec follows the template defined in
 | [calculator.md](calculator.md) | Final v6 | Landing page: unified input/result table, debounced live calculation, per-row unit detection, compact entity selection, responsive layout, URL state, CSV export; aligned to canonical unit conversion contract |
 | [unit-handling.md](unit-handling.md) | Final v3 | Canonical conversion contract: internal units, density usage, conversion formulas, default behavior split (Calculator vs Plot), output formatting, export-unit rules, and numeric fixtures |
 | [plot.md](plot.md) | Final v2 | Plot page: multi-series JSROOT chart with canonical per-series density conversion, explicit calculator-vs-plot default split, normalized URL unit tokens, PNG/CSV export |
-| [multi-program.md](multi-program.md) | Draft skeleton | Calculator-page comparison mode outline: multi-program selection, `calculateMulti()` flow, partial-failure handling, responsive comparison layout, URL/export integration points |
+| [multi-program.md](multi-program.md) | Draft v1 | Advanced-mode multi-program comparison: per-program columns with Excel-style show/hide, default program highlighting, `calculateMulti()`, partial failure, responsive horizontal scroll with sticky columns, URL-encoded mode/programs/visibility |
 
 ## Planned Specs (not yet written)
 - `inverse-lookups.md` — Find energy from stopping power or range

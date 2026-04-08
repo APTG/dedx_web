@@ -164,13 +164,32 @@ The auto-select program should be the default in both the Calculator and
 Plot pages. The selection rules should be defined as a configuration entity
 so they can be tuned without code changes.
 
-### 4.4 Progressive Disclosure
+### 4.4 Progressive Disclosure — Basic / Advanced Mode
 
-The default UI is simple: particle, material, energy → result. Advanced
-features (inverse lookups, multi-program mode, MSTAR modes, aggregate state
-override, interpolation settings, custom compounds) are hidden behind an
-"Advanced" toggle or section. They do not add visual clutter in the standard
-workflow.
+The default UI is simple: particle, material, energy → result. The app
+operates in two modes:
+
+| Mode | Who uses it | What is visible |
+|------|-------------|-----------------|
+| **Basic** (default) | 80% of users — quick lookups | Single program, core energy/unit selectors, unified result table |
+| **Advanced** | Power users comparing programs, overriding density/state, using inverse lookups | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, interpolation settings, density/I-value overrides, MeV/u energy unit, custom compounds, inverse lookups |
+
+**Metaphor:** Like the "mode" button on an old handheld scientific
+calculator — pressing it reveals extra keys, but the basic keypad stays
+the same. A clearly labelled **"Advanced"** toggle (persistent, stored in
+the URL) switches between modes. Advanced features do not add visual
+clutter in the standard workflow; they appear *only* when the toggle is
+on.
+
+The toggle state is encoded in the URL (`mode=advanced`) so shared links
+preserve the user's context. Opening a URL with `mode=advanced` activates
+advanced mode for the recipient.
+
+Advanced mode is specified per-feature in the respective feature specs:
+- Multi-program comparison columns: [`multi-program.md`](04-feature-specs/multi-program.md)
+- MSTAR modes, aggregate state, density/I-value overrides: TODO `advanced-options.md`
+- Inverse lookups: TODO `inverse-lookups.md`
+- Custom compounds: TODO `custom-compounds.md`
 
 ### 4.5 Shareability
 
