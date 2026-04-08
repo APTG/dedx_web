@@ -24,7 +24,34 @@
 
 Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expanded product vision §4.4 to define the Basic/Advanced mode concept as a project-wide principle.
 
+### Prompt 6: Draft v2 refinements
+**AI response**: User provided 9 specific feedback items. Applied all changes:
+1. Advanced toggle moved to app-wide top-right action bar (updated product vision §4.4 first)
+2. Columns grouped by quantity (all Stp Powers → all CSDA Ranges) instead of by program
+3. Drag-and-drop column reordering within groups, synced across groups
+4. Onboarding hint on first entry into advanced mode
+5. Delta/% difference shown as tooltip on hover (resolved Open Question #1)
+6. `phide` renamed to `hidden_programs` throughout
+7. Wireframe examples use ICRU 90 / PSTAR / Bethe (not MSTAR)
+8. Explicitly scoped as Calculator page advanced feature
+9. Drag-and-drop supported, synced between groups (resolved Open Question #4)
+
 ## Tasks
+
+### Multi-Program Spec Draft v2
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/multi-program.md` (full rewrite to Draft v2)
+  - `docs/04-feature-specs/README.md` (status updated to Draft v2)
+  - `docs/01-project-vision.md` (§4.4 rewritten to app-wide Advanced mode with action bar)
+  - `CHANGELOG-AI.md` (new entry)
+  - `docs/ai-logs/2026-04-08-multi-program.md` (narrative updated)
+- **Decision**: Columns grouped by quantity (not by program) for easier side-by-side comparison of the same physical quantity across programs.
+- **Decision**: Delta/% shown as tooltip on hover (not separate columns) to keep table width manageable.
+- **Decision**: Drag-and-drop reorder syncs across both column groups to maintain consistency.
+- **Decision**: Onboarding hint shown first 2 times via localStorage counter.
+- **Issue**: None — all v1 open questions resolved except #2 (incompatible programs) and #3 (non-program column hiding).
 
 ### Multi-Program Spec Draft v1
 - **Status**: completed

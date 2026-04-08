@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-08 | 1 | Multi-program spec Draft v2: columns grouped by quantity, drag-and-drop reorder, delta tooltip, onboarding hint, app-wide action bar toggle, `hidden_programs` URL param; product vision §4.4 updated to app-wide Advanced mode | [log](docs/ai-logs/2026-04-08-multi-program.md) |
 | 2026-04-08 | 1 | Multi-program spec Draft v1: advanced-mode toggle, per-program comparison columns with show/hide, default program highlighting, URL state, CSV export, product vision §4.4 expanded to Basic/Advanced mode | [log](docs/ai-logs/2026-04-08-multi-program.md) |
 | 2026-04-07 | 1 | Mark unit-conversion specs final: set unit-handling.md to Final v3 and sync docs/04-feature-specs/README.md status table | — |
 | 2026-04-07 | 1 | Unit-contract clarification follow-up: ion vs electron WASM energy-call rule, calculator CSV schema wording cleanup, explicit no-thousands-separator formatting for normative fixtures | — |
