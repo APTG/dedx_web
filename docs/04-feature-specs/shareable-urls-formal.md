@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Draft v1 (8 April 2026)
+> **Status:** Draft v2 (8 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
@@ -8,6 +8,13 @@
 > - semantic validation/default/precedence rules
 > - canonicalization algorithm
 > - conformance test vectors
+>
+> **v1** (8 April 2026): Initial formal grammar, parse pipeline, canonicalization
+> algorithm, and conformance vectors.
+>
+> **v2** (8 April 2026): ABNF allows trailing `&`/empty segments, `unknown-pair`
+> value widened to any char except `&`/`=`, `series` canonicalization rule added,
+> parse pipeline refined for per-component percent-decoding.
 >
 > **Normative relationship:**
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
@@ -34,7 +41,7 @@ first, then each key/value component is percent-decoded individually (or parsed 
 tokenization, because encoded delimiters such as `%26` and `%3D` belong to values.
 
 ```abnf
-query               = [pair *("&" pair)]
+query               = [pair *("&" [pair])]
 
 pair                = urlv-pair
                     / particle-pair
@@ -103,7 +110,9 @@ signless-sci        = (signless-int / signless-float) ("e" / "E") ["+" / "-"] 1*
 
 unknown-pair        = key ["=" value]
 key                 = 1*(ALPHA / DIGIT / "_" / "-")
-value               = *(ALPHA / DIGIT / "." / "/" / ":" / "_" / "-" / ",")
+value               = *(%x20-25 / %x27-3C / %x3E-FF)
+                    ; any char except '&' (%x26) and '=' (%x3D)
+                    ; after per-component percent-decoding
 
 nz-digit            = %x31-39
 sign                = "+" / "-"

@@ -30,6 +30,17 @@
 ### Prompt 6: Fix remaining canonical-ordering and parsing ambiguities in the URL contract
 **AI response**: Tightened the canonical contract in both specs by aligning the advanced-mode example with the canonical ordering rules, clarifying that advanced canonical emission always includes `mode=advanced` and `qfocus` while omitting `hidden_programs` only when empty, and making plot `series` explicitly numeric-only after auto resolution. Updated the formal grammar and parse pipeline to allow empty queries, tolerate bare unknown keys, and require percent-decoding per key/value component after raw `&`/`=` tokenization so encoded delimiters are parsed safely.
 
+### Prompt 7: Seven-item consistency pass across URL contract and related specs
+**AI response**: Applied seven targeted fixes:
+1. Reordered §5 advanced-mode snippet to canonical order (page params before `mode`/`hidden_programs`/`qfocus`).
+2. Reordered §10.2 hidden-programs example URL and added `qfocus=both`.
+3. Made §7.2 energy normalization conditional on particle type (ions → MeV/nucl, electron → MeV), deferring to unit-handling.md.
+4. Aligned §10.5 Scenario 4 with unit-handling.md: proton + MeV/nucl is now invalid (unit not available for proton), not silently accepted.
+5. Reconciled multi-program.md qfocus "When present" column and §URL Persistence table to say qfocus is always emitted in advanced mode for canonical consistency.
+6. Relaxed ABNF `query` rule to allow trailing `&` / empty segments via `[pair *("&" [pair])]`.
+7. Widened `unknown-pair` value character set to any decoded char except `&` and `=` for forward-compatibility robustness.
+Also reordered the multi-program.md inline URL example to canonical order and added `urlv=1`.
+
 ## Tasks
 
 ### Shareable URLs Spec Draft v1
@@ -100,4 +111,20 @@
 - **Decision**: Canonical advanced-mode URLs must place page-specific params before `mode=advanced`, with `qfocus` emitted explicitly for stable round-trips and `hidden_programs` omitted only when empty.
 - **Decision**: Percent-decoding is defined per query component after raw tokenization to avoid corrupting values containing encoded delimiters.
 - **Decision**: `series` remains a numeric-triplet contract only; any auto-selected program is resolved before encoding.
+- **Issue**: None.
+
+### Shareable URLs v4 Consistency Pass (7 items)
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/shareable-urls.md`
+  - `docs/04-feature-specs/shareable-urls-formal.md`
+  - `docs/04-feature-specs/multi-program.md`
+  - `CHANGELOG-AI.md`
+  - `docs/ai-logs/2026-04-08-shareable-urls.md`
+- **Decision**: §5 and §10.2 URL snippets must follow the same canonical ordering as §7.3 (page params before advanced params).
+- **Decision**: Energy normalization in §7.2 is conditional: ions use MeV/nucl, electrons use MeV only — matching unit-handling.md §2.
+- **Decision**: Scenario 4 (proton + MeV/nucl) is now treated as invalid per unit-handling.md; MeV/nucl is not in the proton's available-unit set.
+- **Decision**: `qfocus` is always emitted in advanced-mode canonical URLs, even when it equals the default `both`. Updated both multi-program.md tables to match.
+- **Decision**: ABNF `query` allows empty `&`-segments for robustness; `unknown-pair` value widened to any char except `&`/`=` after per-component decoding.
 - **Issue**: None.

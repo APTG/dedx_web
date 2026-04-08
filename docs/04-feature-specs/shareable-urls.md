@@ -1,6 +1,6 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** Draft v3 (8 April 2026)
+> **Status:** Draft v4 (8 April 2026)
 >
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
@@ -20,6 +20,11 @@
 > **v3** (8 April 2026): Added explicit URL-contract versioning via `urlv` query
 > parameter, including major-version compatibility rules, migration behavior, and
 > user-warning requirements for incompatible/legacy URL formats.
+>
+> **v4** (8 April 2026): Seven-item consistency pass. Reordered §5 and §10.2 snippets
+> to canonical param order, made energy normalization conditional on particle type
+> (ions → MeV/nucl, electron → MeV), aligned Scenario 4 with unit-availability
+> contract, and reconciled qfocus always-emit rule with multi-program.md.
 
 ---
 
@@ -324,15 +329,18 @@ See [`multi-program.md`](multi-program.md) § URL Persistence for the full contr
 **Summary:** Advanced-mode parameters extend basic mode:
 
 ```
-?urlv={major}&particle={id}&material={id}&programs={ids}&hidden_programs={ids}&qfocus={focus}&energies={csv}&eunit={unit}&mode=advanced
+?urlv={major}&particle={id}&material={id}&programs={ids}&energies={csv}&eunit={unit}&mode=advanced&hidden_programs={ids}&qfocus={focus}
 ```
+
+Canonical ordering places page-specific params (`energies`, `eunit`) before the
+advanced-mode params (`mode`, `hidden_programs`, `qfocus`), matching §7.3.
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
-| `mode` | `advanced` | Presence of this param activates advanced mode. Absence or `basic` → single-program mode. |
+| `mode` | `advanced` | Always emitted in advanced mode. Absence or `basic` → single-program mode. |
 | `programs` | `9,2,101` | Comma-separated program IDs in display order. First is always the auto-selected default. Replaces `program`. |
-| `hidden_programs` | `2` | Comma-separated program IDs (subset of `programs`) whose columns are currently hidden. Optional. |
-| `qfocus` | `stp`, `csda`, `both` | Quantity focus (which column groups visible). Optional; default `both`. |
+| `hidden_programs` | `2` | Comma-separated program IDs (subset of `programs`) whose columns are currently hidden. Omitted when empty. |
+| `qfocus` | `stp`, `csda`, `both` | Quantity focus (which column groups visible). Always emitted in advanced mode for canonical consistency, even when `both` (the default). |
 
 Validation:
 - Invalid program IDs → silently drop; show toast if any dropped.
@@ -452,7 +460,10 @@ For each energy value in `energies`:
 3. Parse unit_str (if present):
    - Match against supported unit tokens (MeV, keV, GeV, MeV/nucl, keV/nucl, MeV/u, keV/u, GeV/u).
    - Unknown → treat as invalid row.
-4. Normalize value to MeV/nucl (using particle mass number A and atomic mass m_u).
+4. Normalize value to the particle's internal energy unit:
+   - **Ions (A ≥ 1):** convert to MeV/nucl (using particle mass number A).
+   - **Electron (particle ID 1001, A = 0):** convert to MeV only.
+   See [`unit-handling.md`](unit-handling.md) § 2 and [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) for the conditional rule.
 5. Check bounds: 0 < E ≤ max_energy for the program.
    - Out of bounds → mark as out-of-range (row excluded, validation message shown).
 
@@ -766,13 +777,14 @@ mode is active (selector greyed out).
 **Input state:**
 - Selected programs: ICRU 90 (default, ID 9), PSTAR (ID 2), Bethe-Ext00 (ID 101)
 - Hidden: PSTAR (ID 2)
+- Quantity focus: Both (default)
 
 **URL:**
 ```
-/calculator?urlv=1&particle=1&material=276&programs=9,2,101&hidden_programs=2&energies=100&eunit=MeV&mode=advanced
+/calculator?urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both
 ```
 
-**Expected output:** Columns for ICRU 90 (visible) and Bethe-Ext00 (visible); PSTAR column is hidden (users can toggle via eye icon).
+**Expected output:** Columns for ICRU 90 (visible) and Bethe-Ext00 (visible); PSTAR column is hidden (users can toggle via eye icon). Both stopping-power and CSDA-range quantity groups visible.
 
 ### 10.3 Plot Page URL Examples
 
@@ -902,13 +914,14 @@ URL:
 /calculator?urlv=1&particle=1&energies=100:MeV/nucl
 ```
 
-(Proton A=1; MeV/nucl is numerically identical to MeV but technically unavailable in selector — though per-row parsing accepts it.)
+(Proton A=1; per [`unit-handling.md`](unit-handling.md) § 2, only MeV is available for protons.
+MeV/nucl is not a valid unit for this particle.)
 
 Expected:
-- Parse the value as 100 MeV/nucl.
-- Normalize to 100 MeV (same value).
-- Per-row mode is active (one row with a per-row unit).
-- Results shown. ✓
+- Row treated as invalid (unit `MeV/nucl` not in the proton's available-unit set).
+- Row excluded from calculation; validation message shown:
+  "Unit 'MeV/nucl' is not available for Proton."
+- Canonical URL rewrites the page with the invalid row excluded.
 
 ---
 
