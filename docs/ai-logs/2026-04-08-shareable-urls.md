@@ -27,6 +27,9 @@
 ### Prompt 5: Draft a first concrete formal syntax version usable for implementation/validation
 **AI response**: Added a dedicated formal companion spec (`shareable-urls-formal.md`) with ABNF grammar, semantic parse/precedence/default rules, canonicalization ordering algorithm, and conformance vectors for valid/invalid/migration cases. Also fixed residual consistency gaps in `shareable-urls.md` (stale section reference, missing `urlv` in sections 5/6, stale advanced program-ID examples), then synced spec index and AI/changelog metadata.
 
+### Prompt 6: Fix remaining canonical-ordering and parsing ambiguities in the URL contract
+**AI response**: Tightened the canonical contract in both specs by aligning the advanced-mode example with the canonical ordering rules, clarifying that advanced canonical emission always includes `mode=advanced` and `qfocus` while omitting `hidden_programs` only when empty, and making plot `series` explicitly numeric-only after auto resolution. Updated the formal grammar and parse pipeline to allow empty queries, tolerate bare unknown keys, and require percent-decoding per key/value component after raw `&`/`=` tokenization so encoded delimiters are parsed safely.
+
 ## Tasks
 
 ### Shareable URLs Spec Draft v1
@@ -84,4 +87,17 @@
   - `docs/ai-logs/2026-04-08-shareable-urls.md`
 - **Decision**: Keep syntax and semantics separated: ABNF + parser pipeline in formal spec, UX behavior in main shareable-urls spec.
 - **Decision**: Treat unknown params as ignored and dropped during canonicalization for deterministic output.
+- **Issue**: None.
+
+### Shareable URLs Contract Follow-up Clarifications
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/shareable-urls.md`
+  - `docs/04-feature-specs/shareable-urls-formal.md`
+  - `CHANGELOG-AI.md`
+  - `docs/ai-logs/2026-04-08-shareable-urls.md`
+- **Decision**: Canonical advanced-mode URLs must place page-specific params before `mode=advanced`, with `qfocus` emitted explicitly for stable round-trips and `hidden_programs` omitted only when empty.
+- **Decision**: Percent-decoding is defined per query component after raw tokenization to avoid corrupting values containing encoded delimiters.
+- **Decision**: `series` remains a numeric-triplet contract only; any auto-selected program is resolved before encoding.
 - **Issue**: None.

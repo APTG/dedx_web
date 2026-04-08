@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-08 | 1 | Shareable URLs contract follow-up: aligned advanced example with canonical ordering, clarified advanced-param emission rules, made `series` strictly numeric, and fixed formal parsing grammar for empty queries and per-component percent-decoding | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
 | 2026-04-08 | 1 | Formal URL contract draft: added `shareable-urls-formal.md` with ABNF grammar, semantic rules, canonicalization algorithm, and conformance vectors; synced cross-spec references and consistency fixes in shareable-urls.md | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
 | 2026-04-08 | 1 | Shareable URLs spec Draft v3: added explicit `urlv` contract version parameter, canonical inclusion rules, migration negotiation, and required user warning/recovery flow for major-version mismatch | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
 | 2026-04-08 | 1 | Shareable URLs spec Draft v2: completed canonical URL contract (calculator/plot/basic/advanced), fixed consistency issues (explicit `mode=advanced`, canonical defaults policy, WASM-aligned program IDs), aligned lingering multi-program ID examples, and synced doc indexes/logs | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |

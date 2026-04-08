@@ -135,7 +135,7 @@ They display in single-program mode using only `particle`, `material`, `program`
 When `mode=advanced` is present:
 
 ```
-?urlv={major}&particle={id}&material={id}&programs={ids}&hidden_programs={ids}&qfocus={focus}&mode=advanced&...rest...
+?urlv={major}&particle={id}&material={id}&programs={ids}&...page-specific params...&mode=advanced&hidden_programs={ids}&qfocus={focus}
 ```
 
 - `particle`, `material` remain (shared entity selection).
@@ -373,9 +373,10 @@ Multiple series are comma-separated:
 → Series 2: program 9, particle 6 (carbon), material 276
 → Series 3: program 2, particle 6, material 276
 
-**Auto-select resolution:** If a series uses `programId = auto`, resolve it at
-encoding time to the actual numeric program ID. The URL is self-contained and does
-not require dynamic resolution.
+**Auto-select resolution:** If the UI state currently uses auto-select, resolve it
+at encoding time to the actual numeric program ID before constructing each series
+triplet. `series` always encodes numeric `programId.particleId.materialId` triplets;
+the literal token `auto` never appears inside `series`.
 
 **Validation on load:**
 1. Parse each triplet.
@@ -472,7 +473,7 @@ When writing the URL (state → URL), normalize to this form:
 1. Version param first: `urlv`.
 2. Path-specific params: `particle`, `material`, `program` (or `programs`).
 3. Page-specific params: `energies`, `eunit` (calc); `series`, `stp_unit`, `xscale`, `yscale` (plot).
-4. Conditional params: `mode`, `hidden_programs`, `qfocus` (only if present).
+4. Advanced-mode params after page params: always emit `mode=advanced` in advanced mode, emit `qfocus` explicitly in advanced mode even when it equals the default `both`, and emit `hidden_programs` only when non-empty.
 
 **Example canonical forms:**
 
@@ -496,8 +497,7 @@ Plot:
 - Whitespace in values → inconsistent. Avoid.
 - Canonical URLs always include explicit defaulted page-state params (e.g., `eunit=MeV`, `xscale=log`, `yscale=log`) for deterministic sharing and round-trip stability.
 
-**Whitespace:** URLs must not contain unencoded spaces. All user input is URL-encoded
-before being inserted into the URL (`encodeURIComponent`).
+**Whitespace:** URLs must not contain unencoded spaces. Query tokenization splits on raw `&` and the first raw `=` in each pair, then percent-decoding is applied to each key/value component (or an equivalent `URLSearchParams` implementation is used). Do not percent-decode the full query string before splitting, because encoded delimiters such as `%26` must remain inside a value until after tokenization.
 
 ### 7.4 URL Normalization on Page Load
 

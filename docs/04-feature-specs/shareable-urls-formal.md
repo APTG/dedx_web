@@ -28,11 +28,13 @@ It does not encode route path itself (`/calculator`, `/plot`) in ABNF rules belo
 
 ## 2. ABNF Grammar
 
-ABNF notation follows RFC 5234. Query strings are treated as already URL-decoded
-before parsing (percent-decoding step occurs first).
+ABNF notation follows RFC 5234. Query strings are tokenized on raw `&` and raw `=`
+first, then each key/value component is percent-decoded individually (or parsed via
+`URLSearchParams`). The full raw query string must not be percent-decoded before
+tokenization, because encoded delimiters such as `%26` and `%3D` belong to values.
 
 ```abnf
-query               = pair *("&" pair)
+query               = [pair *("&" pair)]
 
 pair                = urlv-pair
                     / particle-pair
@@ -99,7 +101,7 @@ signless-int        = 1*digit
 signless-float      = 1*digit "." 1*digit
 signless-sci        = (signless-int / signless-float) ("e" / "E") ["+" / "-"] 1*digit
 
-unknown-pair        = key "=" value
+unknown-pair        = key ["=" value]
 key                 = 1*(ALPHA / DIGIT / "_" / "-")
 value               = *(ALPHA / DIGIT / "." / "/" / ":" / "_" / "-" / ",")
 
@@ -118,15 +120,17 @@ Notes:
 ## 3.1 Parse Pipeline
 
 1. Parse route (`/calculator` or `/plot`).
-2. Percent-decode query.
-3. Parse ABNF tokens.
-4. Apply duplicate resolution.
-5. Apply version negotiation.
-6. Apply defaults.
-7. Apply conditional enablement/precedence.
-8. Validate against compatibility matrix and unit rules.
-9. Produce normalized canonical state.
-10. Emit canonical URL via `replaceState`.
+2. Split raw query on `&` into pairs, ignoring empty segments.
+3. For each pair, split on the first raw `=` into key/value components; a bare key is treated as an empty-string value.
+4. Percent-decode each key/value component individually, or rely on equivalent `URLSearchParams` behavior.
+5. Parse ABNF tokens.
+6. Apply duplicate resolution.
+7. Apply version negotiation.
+8. Apply defaults.
+9. Apply conditional enablement/precedence.
+10. Validate against compatibility matrix and unit rules.
+11. Produce normalized canonical state.
+12. Emit canonical URL via `replaceState`.
 
 ## 3.2 Duplicate Parameter Resolution
 
@@ -227,6 +231,7 @@ Normalization rules:
 - Emit `mode=advanced` only when advanced mode is active.
 - Emit `qfocus` only in advanced mode (emit default `both` explicitly for canonical consistency).
 - Emit `program=auto` in basic mode unless explicit valid program is selected.
+- In `series`, always emit resolved numeric triplets; never emit `auto`.
 
 ---
 
