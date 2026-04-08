@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-08 | 1 | Add multi-program feature spec skeleton and sync spec/log indexes | [log](docs/ai-logs/2026-04-08-multi-program.md) |
 | 2026-04-07 | 1 | Mark unit-conversion specs final: set unit-handling.md to Final v3 and sync docs/04-feature-specs/README.md status table | — |
 | 2026-04-07 | 1 | Unit-contract clarification follow-up: ion vs electron WASM energy-call rule, calculator CSV schema wording cleanup, explicit no-thousands-separator formatting for normative fixtures | — |
 | 2026-04-07 | 1 | Stage 1 unit conversion finalization: canonical conversion contract across unit-handling/calculator/plot/WASM docs, fixed formula/default/export inconsistencies, added numeric acceptance fixtures | [log](docs/ai-logs/2026-04-07-unit-handling.md) |
