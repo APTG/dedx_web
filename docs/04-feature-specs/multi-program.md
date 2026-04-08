@@ -268,8 +268,11 @@ the top-right action bar.
 3. The Program combobox transforms into a multi-select picker.
 4. The auto-selected program is pre-checked and highlighted as the
    default.
-5. The unified table remains unchanged until the user checks additional
-   programs.
+5. The unified table immediately adopts the grouped-header structure:
+   a "Stopping Power" group header and a "CSDA Range" group header span
+   the respective columns — even though only one column exists in each
+   group at this point. This signals to the user that additional program
+   columns can be added to each group.
 
 ### Adding Comparison Programs
 
@@ -403,8 +406,9 @@ picker if they want to remove them.
 2. Its column is removed from both groups immediately.
 3. Remaining columns shift left.
 4. If only the default program remains, the table shows one stopping
-   power column and one CSDA range column (identical to basic mode,
-   but grouped headers still visible while advanced mode is on).
+   power column and one CSDA range column under the grouped-header
+   structure (not visually identical to basic mode — the group headers
+   remain visible as long as advanced mode is on).
 
 ---
 
@@ -610,18 +614,25 @@ by quantity, matching the on-screen layout.
 CSV schema — **wide table** format (one row per energy, grouped columns):
 
 ```csv
-"Energy (MeV)","MeV/nucl","Unit","Stp Power ICRU 90 (keV/µm)","Stp Power PSTAR (keV/µm)","Stp Power Bethe (keV/µm)","CSDA Range ICRU 90 (cm)","CSDA Range PSTAR (cm)","CSDA Range Bethe (cm)"
-100,100,MeV,45.76,44.92,46.01,7.718,7.651,7.740
-200,200,MeV,27.34,26.88,27.51,26.27,26.01,26.39
+"Energy (MeV)","MeV/nucl","Unit","Stp Power ICRU 90 (keV/µm)","Stp Power PSTAR (keV/µm)","Stp Power Bethe (keV/µm)","CSDA Range ICRU 90","CSDA Range PSTAR","CSDA Range Bethe"
+100,100,MeV,45.76,44.92,46.01,7.718 cm,7.651 cm,7.740 cm
+200,200,MeV,27.34,26.88,27.51,26.27 cm,26.01 cm,26.39 cm
 ```
 
 Rules:
-- Column headers include the program name and unit.
+- Stopping power column headers include the program name and the active
+  display unit (e.g., `"Stp Power ICRU 90 (keV/µm)"`).
+- CSDA range column headers include the program name but **no fixed unit**
+  (e.g., `"CSDA Range ICRU 90"`), because units vary per cell.
+  This matches the Calculator export contract from
+  [`calculator.md`](calculator.md) §Export.
+- Each CSDA range cell includes a per-cell unit suffix, auto-scaled
+  identically to the on-screen value (e.g., `7.718 cm`, `823.4 µm`).
+  The SI prefix is chosen per the same row-level rule used for display:
+  the prefix is determined by the default program's value for that row,
+  and all programs in that row use the same prefix.
 - Column order matches on-screen order (including drag-and-drop
   reordering).
-- CSDA range is exported in cm (not auto-scaled) for machine readability.
-  This matches the Calculator export convention from
-  [`calculator.md`](calculator.md).
 - Stopping power unit matches the current display unit.
 - Hidden program columns are **not** exported.
 - Filename pattern: `dedx_{particle}_{material}_{N}programs.csv`
@@ -647,10 +658,19 @@ Unchanged from Calculator — single program, five-column CSV.
 - Hidden columns are announced: when a column is hidden, a brief
   `aria-live="polite"` announcement: "{Program} columns hidden."
   When shown: "{Program} columns shown."
-- Drag-and-drop reordering: column headers are focusable with
-  `aria-grabbed` / `aria-dropeffect` attributes. Keyboard reordering
-  via Alt+Arrow keys. Screen reader announcement: "{Program} moved to
-  position {N}."
+- Drag-and-drop reordering: `aria-grabbed` and `aria-dropeffect` are
+  deprecated in WAI-ARIA 1.2 and must not be used. The accessible
+  reordering pattern is instead:
+  - Each draggable column header has `role="columnheader"` and is
+    keyboard-focusable (`tabindex="0"`).
+  - Keyboard reordering: Alt+← / Alt+→ move the focused column one
+    position left or right within its group.
+  - After each move, an `aria-live="polite"` region announces:
+    "{Program name} moved to position {N} of {total}."
+  - For pointer drag, no ARIA drag attributes are set on the element;
+    the move is confirmed on drop via the same `aria-live` announcement.
+  - The default program column header has `aria-disabled="true"` to
+    communicate it cannot be reordered.
 - Delta tooltips are accessible via keyboard focus on comparison cells
   (not hover-only). The tooltip content is exposed via `aria-describedby`.
 - Per-program error tooltips are accessible via focus (not hover-only).
