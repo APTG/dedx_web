@@ -1,6 +1,6 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Draft v1 (8 April 2026)
+> **Status:** Draft v2 (8 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.
@@ -64,9 +64,16 @@ installing any software or downloading files.
 
 ## 2. Data Distribution Format
 
-External data is served as a **directory of static files** accessed via HTTP
-Range Requests from a single binary container (see §2.2). This enables partial
-fetching of individual tables without downloading the entire dataset.
+External data is served as an **Apache Parquet** file with the
+`.webdedx.parquet` extension. Parquet is a columnar storage format with
+built-in support for row-group-level partial reads via HTTP Range Requests,
+self-describing schema, and rich metadata. This avoids inventing a custom
+binary format and gives users access to mature tooling (Pandas, Polars,
+DuckDB, PyArrow) for inspection and generation.
+
+The JS reader is [`hyparquet`](https://github.com/hyparam/hyparquet) —
+a pure-JS, zero-WASM Parquet reader (~15 KB) with native Range Request
+support for remote files.
 
 ### 2.1 Logical Data Model
 
@@ -81,137 +88,209 @@ An external dataset defines:
    - Array of stopping-power values with declared unit.
    - Array of CSDA-range values with declared unit.
 
-### 2.2 File Structure — Binary Container with Index
+### 2.2 Parquet Schema
 
-The dataset is a single binary file with a JSON index header followed by
-binary table data. This design enables HTTP Range Requests for partial reads.
+#### 2.2.1 File-Level Key-Value Metadata
 
-```
-┌──────────────────────────────────────┐
-│  Header (JSON, UTF-8)                │  ← Fetched first (small, fixed-offset)
-│  - magic + format version            │
-│  - metadata (name, author, …)        │
-│  - programs[]                        │
-│  - particles[]                       │
-│  - materials[]                       │
-│  - tables[] with byte offsets/sizes  │
-├──────────────────────────────────────┤
-│  Table data (binary, IEEE 754)       │  ← Fetched on demand via Range Requests
-│  - table 0: energies + stp + csda   │
-│  - table 1: …                        │
-│  - …                                 │
-└──────────────────────────────────────┘
-```
+Dataset-wide information is stored in the Parquet file's **key-value metadata**
+(accessible without reading any row groups):
 
-#### 2.2.1 Header
+| Key | Type | Required | Example |
+|-----|------|----------|---------|
+| `webdedx.magic` | string | yes | `"webdedx-extdata"` |
+| `webdedx.formatVersion` | string (integer) | yes | `"1"` |
+| `webdedx.metadata.name` | string | yes | `"SRIM 2013 tables"` |
+| `webdedx.metadata.version` | string | no | `"1.0.0"` |
+| `webdedx.metadata.author` | string | no | `"J. Ziegler"` |
+| `webdedx.metadata.description` | string | no | `"SRIM-2013 stopping powers for selected ions and materials"` |
+| `webdedx.metadata.license` | string | no | `"CC-BY-4.0"` |
+| `webdedx.metadata.generatedBy` | string | no | `"srim2webdedx v0.1.0"` |
+| `webdedx.metadata.generatedAt` | string (ISO 8601) | no | `"2026-04-08T12:00:00Z"` |
+| `webdedx.units.energy` | string | yes | `"MeV"` |
+| `webdedx.units.stoppingPower` | string | yes | `"MeV·cm²/g"` |
+| `webdedx.units.csdaRange` | string | yes | `"g/cm²"` |
+| `webdedx.programs` | string (JSON array) | yes | see below |
+| `webdedx.particles` | string (JSON array) | yes | see below |
+| `webdedx.materials` | string (JSON array) | yes | see below |
 
-The first 4 bytes encode the header length as a big-endian unsigned 32-bit
-integer. The next `headerLength` bytes are a UTF-8 JSON object:
+JSON array values (stored as strings in Parquet key-value metadata):
 
 ```json
-{
-  "magic": "webdedx-extdata",
-  "formatVersion": 1,
-  "metadata": {
-    "name": "SRIM 2013 tables",
-    "version": "1.0.0",
-    "author": "J. Ziegler",
-    "description": "SRIM-2013 stopping powers for selected ions and materials",
-    "license": "CC-BY-4.0",
-    "generatedBy": "srim2webdedx v0.1.0",
-    "generatedAt": "2026-04-08T12:00:00Z"
-  },
-  "programs": [
-    { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
-  ],
-  "particles": [
-    { "id": "p", "name": "Proton", "symbol": "H", "Z": 1, "A": 1, "atomicMass": 1.00794 },
-    { "id": "C12", "name": "Carbon-12", "symbol": "C", "Z": 6, "A": 12, "atomicMass": 12.0 }
-  ],
-  "materials": [
-    { "id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid" },
-    { "id": "si", "name": "Silicon", "density": 2.329, "phase": "solid" }
-  ],
-  "units": {
-    "energy": "MeV",
-    "stoppingPower": "MeV·cm²/g",
-    "csdaRange": "g/cm²"
-  },
-  "tables": [
-    {
-      "program": "srim-2013",
-      "particle": "p",
-      "material": "water",
-      "nPoints": 200,
-      "byteOffset": 0,
-      "byteLength": 4800,
-      "energyBounds": [0.001, 10000.0]
-    },
-    {
-      "program": "srim-2013",
-      "particle": "p",
-      "material": "si",
-      "nPoints": 200,
-      "byteOffset": 4800,
-      "byteLength": 4800,
-      "energyBounds": [0.001, 10000.0]
-    }
-  ]
-}
+// webdedx.programs
+[
+  { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
+]
+
+// webdedx.particles
+[
+  { "id": "p", "name": "Proton", "symbol": "H", "Z": 1, "A": 1, "atomicMass": 1.00794 },
+  { "id": "C12", "name": "Carbon-12", "symbol": "C", "Z": 6, "A": 12, "atomicMass": 12.0 }
+]
+
+// webdedx.materials
+[
+  { "id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid" },
+  { "id": "si", "name": "Silicon", "density": 2.329, "phase": "solid" }
+]
 ```
 
 **Key constraints:**
-- `magic` must be `"webdedx-extdata"`.
-- `formatVersion` must be a positive integer. The app rejects unknown major versions.
-- IDs (`programs[].id`, `particles[].id`, `materials[].id`) are strings, not numbers.
-  This avoids collisions with libdedx numeric IDs. They must match `[a-zA-Z0-9_-]+`.
-- `units.energy` must be one of: `"MeV"`, `"MeV/nucl"`, `"MeV/u"`, `"keV"`, `"GeV"`.
-- `units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`, `"keV/µm"`.
-- `units.csdaRange` must be one of: `"g/cm²"`, `"cm"`.
-- `tables[].byteOffset` is relative to the start of the binary data section
-  (i.e., offset 0 = first byte after the JSON header).
-- `tables[].byteLength` = `nPoints * 3 * 8` (three float64 arrays: energy,
-  stopping power, CSDA range — each value is an IEEE 754 double, 8 bytes).
+- `webdedx.magic` must be `"webdedx-extdata"`.
+- `webdedx.formatVersion` must be a positive integer (as string). The app
+  rejects unknown major versions.
+- IDs (`programs[].id`, `particles[].id`, `materials[].id`) are strings, not
+  numbers. They must match `[a-zA-Z0-9_-]+`.
+- `webdedx.units.energy` must be one of: `"MeV"`, `"MeV/nucl"`, `"MeV/u"`, `"keV"`, `"GeV"`.
+- `webdedx.units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`, `"keV/µm"`.
+- `webdedx.units.csdaRange` must be one of: `"g/cm²"`, `"cm"`.
 
-#### 2.2.2 Binary Table Data
+#### 2.2.2 Row Groups — One Per Table
 
-Each table is a contiguous block of `nPoints * 3` IEEE 754 double-precision
-floats (little-endian), laid out as:
+Each Parquet **row group** contains the data for exactly one
+(program, particle, material) triplet. Row groups are the unit of partial
+fetch — `hyparquet` reads only the requested row groups via Range Requests.
 
+Row-group-level key-value metadata identifies the triplet:
+
+| Key | Type | Example |
+|-----|------|---------|
+| `webdedx.program` | string | `"srim-2013"` |
+| `webdedx.particle` | string | `"p"` |
+| `webdedx.material` | string | `"water"` |
+
+> **Note:** Parquet row-group metadata is not universally supported by all
+> writers. As a robust fallback, the triplet is also encoded as columns in the
+> data (§2.2.3). The app prefers row-group metadata if present; otherwise it
+> reads the first row's `program`/`particle`/`material` column values.
+
+#### 2.2.3 Columns
+
+Each row in the Parquet file represents one energy point. All rows within a
+row group share the same (program, particle, material) triplet.
+
+| Column | Parquet type | Nullable | Description |
+|--------|-------------|----------|-------------|
+| `program` | `BYTE_ARRAY` (UTF-8) | no | Program ID (e.g., `"srim-2013"`) |
+| `particle` | `BYTE_ARRAY` (UTF-8) | no | Particle ID (e.g., `"p"`) |
+| `material` | `BYTE_ARRAY` (UTF-8) | no | Material ID (e.g., `"water"`) |
+| `energy` | `DOUBLE` | no | Energy value in declared unit |
+| `stopping_power` | `DOUBLE` | no | Stopping power in declared unit |
+| `csda_range` | `DOUBLE` | no | CSDA range in declared unit |
+
+- Rows within a row group must be sorted by `energy` in strictly ascending order.
+- The `program`, `particle`, `material` columns are constant within a row group
+  (they enable triplet identification even without row-group metadata, and allow
+  querying with standard Parquet tools like DuckDB).
+
+#### 2.2.4 Example: Creating a File with Python
+
+```python
+import pandas as pd
+import pyarrow as pa
+import pyarrow.parquet as pq
+import json
+
+# One DataFrame per table (row group)
+tables = []
+for program, particle, material, energies, stp, csda in data_triplets:
+    df = pd.DataFrame({
+        "program": program,
+        "particle": particle,
+        "material": material,
+        "energy": energies,
+        "stopping_power": stp,
+        "csda_range": csda,
+    })
+    tables.append(pa.Table.from_pandas(df))
+
+# Combine into one table (each original table becomes a row group)
+combined = pa.concat_tables(tables)
+
+# File-level metadata
+file_metadata = {
+    b"webdedx.magic": b"webdedx-extdata",
+    b"webdedx.formatVersion": b"1",
+    b"webdedx.metadata.name": b"SRIM 2013 tables",
+    b"webdedx.metadata.author": b"J. Ziegler",
+    b"webdedx.units.energy": b"MeV",
+    b"webdedx.units.stoppingPower": b"MeV\xc2\xb7cm\xc2\xb2/g",
+    b"webdedx.units.csdaRange": b"g/cm\xc2\xb2",
+    b"webdedx.programs": json.dumps([
+        {"id": "srim-2013", "name": "SRIM 2013", "version": "2013.00"}
+    ]).encode(),
+    b"webdedx.particles": json.dumps([
+        {"id": "p", "name": "Proton", "symbol": "H", "Z": 1, "A": 1, "atomicMass": 1.00794}
+    ]).encode(),
+    b"webdedx.materials": json.dumps([
+        {"id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid"}
+    ]).encode(),
+}
+
+# Write with one row group per triplet
+schema = combined.schema.with_metadata({
+    **combined.schema.metadata or {},
+    **file_metadata,
+})
+combined = combined.replace_schema_metadata(schema.metadata)
+
+writer = pq.ParquetWriter("srim-data.webdedx.parquet", combined.schema)
+for tbl in tables:
+    tbl = tbl.replace_schema_metadata(schema.metadata)
+    writer.write_table(tbl)  # Each write_table call creates one row group
+writer.close()
 ```
-[energy_0, energy_1, …, energy_{n-1},
- stp_0,    stp_1,    …, stp_{n-1},
- csda_0,   csda_1,   …, csda_{n-1}]
+
+#### 2.2.5 Example: Inspecting with Standard Tools
+
+```bash
+# DuckDB — query the file like a database
+duckdb -c "SELECT program, particle, material, count(*) as points
+           FROM 'srim-data.webdedx.parquet'
+           GROUP BY ALL"
+
+# PyArrow — read metadata without loading data
+python -c "
+import pyarrow.parquet as pq
+f = pq.ParquetFile('srim-data.webdedx.parquet')
+print(f.schema_arrow.metadata)
+print(f'Row groups: {f.metadata.num_row_groups}')
+"
+
+# Pandas — read all data
+python -c "
+import pandas as pd
+df = pd.read_parquet('srim-data.webdedx.parquet')
+print(df.head())
+"
 ```
 
-Energy values must be in strictly ascending order. This layout enables
-efficient typed-array construction via `Float64Array` on the fetched
-`ArrayBuffer`.
+#### 2.2.6 File Extension & MIME Type
 
-#### 2.2.3 MIME Type & File Extension
-
-- Recommended file extension: `.webdedx`
-- Recommended MIME type for serving: `application/octet-stream`
-- The file may also be served as `application/x-webdedx` if the host supports
-  custom MIME types (not required).
+- Required file extension: `.webdedx.parquet`
+- Recommended MIME type for serving: `application/vnd.apache.parquet`
+  (or `application/octet-stream` if the host doesn't support custom types).
 
 ### 2.3 Partial Fetch Protocol
 
-1. **Fetch header:** `GET` with `Range: bytes=0-3` to read the 4-byte header
-   length, then `Range: bytes=4-{4+headerLength-1}` to read the JSON header.
-   (May be combined into a single request with a generous initial range, e.g.,
-   `Range: bytes=0-65535`, if the header is expected to be < 64 KB.)
-2. **Parse header.** Validate magic, format version, and schema. Build the
-   index of available tables.
-3. **Fetch table on demand.** When the user requests data for a specific
-   (program, particle, material) triplet, fetch `Range: bytes={dataStart+byteOffset}-{dataStart+byteOffset+byteLength-1}`
-   where `dataStart = 4 + headerLength`.
-4. **Decode binary.** Wrap the response `ArrayBuffer` in a `Float64Array` and
-   split into energy, stopping-power, and CSDA-range arrays.
+`hyparquet` handles Range Requests internally. The app-level protocol:
+
+1. **Open remote file.** Pass the `extdata` URL to `hyparquet`'s async reader
+   (which fetches the Parquet footer via Range Request to learn the schema,
+   metadata, and row group locations).
+2. **Read file-level metadata.** Extract `webdedx.*` keys from the schema
+   metadata. Validate magic, format version, and required fields. Build the
+   index of available (program, particle, material) triplets from
+   `webdedx.programs`, `webdedx.particles`, `webdedx.materials`, and the
+   row group structure.
+3. **Fetch row group on demand.** When the user requests data for a specific
+   triplet, read the corresponding row group via `hyparquet`
+   (which issues a targeted Range Request for that row group's byte range).
+4. **Decode columns.** Extract `energy`, `stopping_power`, and `csda_range`
+   columns as typed arrays.
 
 If the server does not support Range Requests (returns `200` instead of `206`),
-the app falls back to downloading the entire file and slicing locally. A console
-warning is emitted: "Server does not support Range Requests; downloading full file."
+`hyparquet` falls back to downloading the entire file. A console warning is
+emitted: "Server does not support Range Requests; downloading full file."
 
 ### 2.4 Hosting Requirements
 
@@ -220,7 +299,7 @@ warning is emitted: "Server does not support Range Requests; downloading full fi
 | **CORS** | The server must set `Access-Control-Allow-Origin: *` (or the specific origin of the webdedx instance). Without this, the browser blocks the fetch. S3, GitHub Pages, and most CDNs support CORS configuration. See technical docs for setup guides. |
 | **Range Requests** | Recommended for performance. Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively. |
 | **HTTPS** | Required when the webdedx app is served over HTTPS (mixed-content blocking). `localhost` HTTP is exempt. |
-| **Static hosting** | No server-side logic needed. The file is a static binary blob. |
+| **Static hosting** | No server-side logic needed. The file is a static Parquet file. |
 
 ---
 
@@ -236,7 +315,7 @@ External data sources are specified via one or more `extdata` URL parameters:
 
 | Parameter | Type | Required? | Notes |
 |-----------|------|-----------|-------|
-| `extdata` | URL (percent-encoded) | Optional | Absolute URL to a `.webdedx` file. May appear multiple times for multiple sources. |
+| `extdata` | URL (percent-encoded) | Optional | Absolute URL to a `.webdedx.parquet` file. May appear multiple times for multiple sources. |
 
 **Canonical ordering:** `extdata` parameters appear **before** all other
 parameters in the canonical URL form (after `urlv`):
@@ -263,12 +342,12 @@ extdata=https%3A%2F%2Fexample.com%2Fdata%2Fsrim.webdedx
 
 Single external source:
 ```
-/calculator?urlv=1&extdata=https%3A%2F%2Fexample.com%2Fsrim.webdedx&particle=1&material=276&program=auto&energies=100&eunit=MeV
+/calculator?urlv=1&extdata=https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&energies=100&eunit=MeV
 ```
 
 Multiple external sources:
 ```
-/plot?urlv=1&extdata=https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx&extdata=https%3A%2F%2Fother.org%2Fgeant4.webdedx&particle=1&material=276&program=auto&series=srim-2013.p.water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
+/plot?urlv=1&extdata=https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx.parquet&extdata=https%3A%2F%2Fother.org%2Fgeant4.webdedx.parquet&particle=1&material=276&program=auto&series=srim-2013.p.water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
 ```
 
 ### 3.4 Persistence & Shareability
@@ -369,9 +448,10 @@ On page load, if `extdata` parameter(s) are present:
 2. **Show loading indicator.** Display a non-dismissible banner:
    "Loading external data from {n} source(s)…" with a spinner.
    Block all calculation and entity interaction until loading completes.
-3. **Fetch headers in parallel.** For each `extdata` URL, fetch the header
-   (first 4 bytes + JSON header) using Range Requests.
-4. **Validate headers.** Per §6 (Validation).
+3. **Fetch metadata in parallel.** For each `extdata` URL, open the Parquet
+   file via `hyparquet` (which fetches the footer and schema metadata via
+   Range Requests).
+4. **Validate metadata.** Per §6 (Validation).
 5. **Merge entities.** Extend the compatibility matrix with external
    programs, particles, and materials.
 6. **Remove loading indicator.** Enable entity interaction and calculation.
@@ -389,7 +469,7 @@ with the external data. Errors are displayed prominently.
 | Network error (timeout, DNS, refused) | "Could not reach external data source: {url}. Check the URL and your network connection." | **Retry** button + **Load without external data** button |
 | HTTP error (4xx, 5xx) | "External data source returned error {status}: {url}" | **Load without external data** button |
 | CORS blocked | "External data source blocked by browser security policy (CORS). The hosting server must allow cross-origin requests." | **Load without external data** button |
-| Invalid format (bad magic, unsupported version, schema error) | "External data file is invalid: {detail}. Expected webdedx format v1." | **Load without external data** button |
+| Invalid format (not Parquet, missing magic, unsupported version, schema error) | "External data file is invalid: {detail}. Expected a .webdedx.parquet file with webdedx format v1." | **Load without external data** button |
 | Validation failure (physics checks) | "External data contains invalid values: {detail}" | **Load without external data** button |
 
 **"Load without external data"** removes the `extdata` parameters from the URL
@@ -400,16 +480,17 @@ with the external data. Errors are displayed prominently.
 Individual table data is fetched when the user requests a calculation or plot
 series involving an external triplet:
 
-1. Look up the table's byte offset and length from the header index.
-2. Fetch using `Range: bytes={start}-{end}`.
-3. Decode the `Float64Array`.
+1. Identify the row group corresponding to the requested (program, particle,
+   material) triplet (from the index built during header parse).
+2. Read the row group via `hyparquet` (which issues a targeted Range Request).
+3. Extract `energy`, `stopping_power`, and `csda_range` columns as typed arrays.
 4. Convert units to the app's internal units (MeV/nucl + MeV·cm²/g + g/cm²)
-   using the declared `units` from the header.
+   using the declared `webdedx.units.*` metadata from the file.
 5. Cache the decoded table in memory for the duration of the page session
    (no persistent cache across page loads).
 
-If the table fetch fails (network error, Range Request not supported and full
-file already attempted):
+If the row group fetch fails (network error, Range Request not supported and
+full file already attempted):
 - Show a toast: "Could not load data for {program} / {particle} / {material}."
 - The series or calculation row is marked as failed (not silently omitted).
 
@@ -417,38 +498,40 @@ file already attempted):
 
 ## 6. Validation
 
-### 6.1 Structural Validation (on header parse)
+### 6.1 Structural Validation (on file open)
 
 | Check | Failure action |
 |-------|---------------|
-| `magic !== "webdedx-extdata"` | Reject file; blocking error |
-| `formatVersion` unsupported | Reject file; blocking error |
-| Missing required fields (`metadata.name`, `programs`, `particles`, `materials`, `units`, `tables`) | Reject file; blocking error |
+| File is not valid Parquet (footer parse fails) | Reject file; blocking error |
+| `webdedx.magic` missing or `!== "webdedx-extdata"` | Reject file; blocking error |
+| `webdedx.formatVersion` unsupported | Reject file; blocking error |
+| Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
+| JSON arrays in metadata keys fail to parse | Reject file; blocking error |
 | ID format invalid (not `[a-zA-Z0-9_-]+`) | Reject file; blocking error |
-| `units.energy` / `units.stoppingPower` / `units.csdaRange` not in allowed set | Reject file; blocking error |
-| `tables[].byteLength !== nPoints * 3 * 8` | Reject file; blocking error |
+| `webdedx.units.energy` / `.stoppingPower` / `.csdaRange` not in allowed set | Reject file; blocking error |
+| Missing required columns (`program`, `particle`, `material`, `energy`, `stopping_power`, `csda_range`) | Reject file; blocking error |
 | Duplicate IDs within same entity type | Reject file; blocking error |
-| `tables[].program` / `particle` / `material` reference non-existent ID | Reject file; blocking error |
-| Duplicate (program, particle, material) triplets across tables | Reject file; blocking error |
+| Row group references a program/particle/material ID not declared in file metadata | Reject file; blocking error |
+| Duplicate (program, particle, material) triplets across row groups | Reject file; blocking error |
 
 ### 6.2 Size Limits (DoS prevention)
 
 | Limit | Value | Rationale |
 |-------|-------|-----------|
-| Max header size | 1 MB | Prevents excessive JSON parsing |
+| Max Parquet footer + metadata size | 1 MB | Prevents excessive metadata parsing |
 | Max programs per source | 100 | Reasonable upper bound |
 | Max particles per source | 200 | Covers all ions up to Uranium |
 | Max materials per source | 1000 | Generous for compound libraries |
-| Max tables per source | 50,000 | 100 programs × 200 particles × ~2.5 materials avg |
+| Max tables (row groups) per source | 50,000 | 100 programs × 200 particles × ~2.5 materials avg |
 | Max points per table | 10,000 | Far exceeds typical energy grid density |
 | Max total file size (computed from header) | 100 MB | Prevents accidental multi-GB fetches |
 | Max `extdata` sources | 5 | Prevents URL abuse |
 
 Exceeding any limit → reject the source with a clear error message.
 
-### 6.3 Physics Validation (on table decode)
+### 6.3 Physics Validation (on row group decode)
 
-Applied to each decoded table after unit conversion:
+Applied to each decoded row group after unit conversion:
 
 | Check | Failure action |
 |-------|---------------|
@@ -565,16 +648,14 @@ series uses the external table data (fetched on demand).
 
 ### 10.1 No Code Execution
 
-External data files contain only:
-- A JSON header (parsed with `JSON.parse()` — no `eval()`).
-- Binary IEEE 754 floating-point arrays.
-
-No executable code, no scripts, no HTML. The format is intentionally
-inert.
+External data files are Apache Parquet — a columnar data format that contains
+only typed column data and key-value string metadata. Metadata values containing
+JSON are parsed with `JSON.parse()` (no `eval()`). No executable code, no
+scripts, no HTML. Parquet is intentionally inert.
 
 ### 10.2 Input Sanitization
 
-- All string fields from the JSON header (`name`, `author`, `description`,
+- All string fields from the Parquet metadata (`name`, `author`, `description`,
   etc.) are treated as plain text. They are **never** inserted into the DOM
   via `innerHTML`. Use `textContent` or framework-level text interpolation
   only.
@@ -605,12 +686,14 @@ inert.
 
 ### 11.1 Purpose
 
-A command-line tool to convert stopping-power data from common formats
-(SRIM, CSV, etc.) into the `.webdedx` binary format.
+Command-line tools to convert stopping-power data from common formats
+(SRIM, CSV, etc.) into `.webdedx.parquet` files. Because the output is
+standard Parquet, these tools are thin wrappers around PyArrow that
+primarily handle source-format parsing and metadata embedding.
 
 ### 11.2 Tool: `srim2webdedx`
 
-Converts SRIM text output files into `.webdedx` format.
+Converts SRIM text output files into `.webdedx.parquet` format.
 
 **Input:** A directory of SRIM output files + a manifest file describing
 the dataset metadata, particle/material mappings, and file locations.
@@ -624,6 +707,11 @@ metadata:
   author: "J. Ziegler"
   description: "SRIM-2013 stopping powers for selected ions and materials"
   license: "CC-BY-4.0"
+
+units:
+  energy: "MeV"
+  stoppingPower: "MeV·cm²/g"
+  csdaRange: "g/cm²"
 
 programs:
   - id: srim-2013
@@ -670,36 +758,41 @@ tables:
     format: srim
 ```
 
-**Output:** A single `.webdedx` binary file.
+**Output:** A single `.webdedx.parquet` file (one row group per table).
 
 **Usage:**
 ```bash
-srim2webdedx manifest.yaml --output my-srim-data.webdedx
+srim2webdedx manifest.yaml --output my-srim-data.webdedx.parquet
 ```
 
 ### 11.3 Tool: `csv2webdedx`
 
 Converts generic CSV files (energy, stopping power, CSDA range columns)
-into `.webdedx` format. Uses the same manifest format as `srim2webdedx`
-but with `format: csv` and additional column-mapping fields.
+into `.webdedx.parquet` format. Uses the same manifest format as
+`srim2webdedx` but with `format: csv` and additional column-mapping fields.
 
 ### 11.4 Tool: `webdedx-inspect`
 
-A diagnostic tool that reads a `.webdedx` file and prints:
-- Header metadata (JSON, pretty-printed).
-- Summary statistics: number of programs, particles, materials, tables.
-- Per-table info: triplet, nPoints, energy bounds, min/max stopping power.
+A diagnostic/validation tool for `.webdedx.parquet` files. Since the
+format is standard Parquet, users can also use DuckDB, Pandas, or PyArrow
+directly (see §2.2.5). This tool adds webdedx-specific validation.
+
+Prints:
+- `webdedx.*` metadata (pretty-printed).
+- Summary statistics: number of programs, particles, materials, row groups.
+- Per-row-group info: triplet, nPoints, energy bounds, min/max stopping power.
 - Validates the file against all structural and physics checks from §6.
 
 **Usage:**
 ```bash
-webdedx-inspect my-srim-data.webdedx
+webdedx-inspect my-srim-data.webdedx.parquet
 ```
 
 ### 11.5 Implementation Language
 
 Tooling is implemented in **Python** (matching the existing `libdedx/python/`
-ecosystem). Packaged as a pip-installable CLI tool.
+ecosystem). Depends on `pyarrow` and `pyyaml`. Packaged as a pip-installable
+CLI tool.
 
 ---
 
@@ -707,8 +800,8 @@ ecosystem). Packaged as a pip-installable CLI tool.
 
 ### 12.1 External Data Loading
 
-- [ ] App with `extdata` URL parameter fetches the header via Range Request.
-- [ ] App validates the header (magic, version, schema, size limits).
+- [ ] App with `extdata` URL parameter fetches the Parquet footer & metadata via Range Request.
+- [ ] App validates Parquet metadata (`webdedx.magic`, version, required keys, size limits).
 - [ ] App displays a loading indicator while fetching.
 - [ ] On success, external programs/particles/materials appear in selectors.
 - [ ] On network error, a blocking error is shown with "Retry" and "Load without external data" options.
@@ -744,16 +837,17 @@ ecosystem). Packaged as a pip-installable CLI tool.
 
 ### 12.6 Security
 
-- [ ] JSON header parsed with `JSON.parse()` only (no `eval`).
+- [ ] Parquet metadata JSON values parsed with `JSON.parse()` only (no `eval`).
 - [ ] String values rendered as `textContent` only (no `innerHTML`).
 - [ ] Size limits enforced; oversized files rejected.
 - [ ] IDs validated against `[a-zA-Z0-9_-]+`.
 
 ### 12.7 Tooling
 
-- [ ] `srim2webdedx` reads SRIM output + manifest → produces valid `.webdedx` file.
-- [ ] `webdedx-inspect` validates and summarizes a `.webdedx` file.
-- [ ] Generated `.webdedx` file passes all app-side validation checks.
+- [ ] `srim2webdedx` reads SRIM output + manifest → produces valid `.webdedx.parquet` file.
+- [ ] `webdedx-inspect` validates and summarizes a `.webdedx.parquet` file.
+- [ ] Generated `.webdedx.parquet` file passes all app-side validation checks.
+- [ ] Generated file is readable by standard Parquet tools (DuckDB, Pandas, PyArrow).
 
 ---
 
@@ -775,11 +869,12 @@ ecosystem). Packaged as a pip-installable CLI tool.
    that only provide stopping power)? *Recommendation: defer to a future
    version. v1 requires both stopping power and CSDA range in the file.*
 
-4. **Offline / local file support:** Should the app support loading `.webdedx`
+4. **Offline / local file support:** Should the app support loading `.webdedx.parquet`
    files from the local filesystem (via `<input type="file">`)? This would
    enable fully offline use without even a localhost server.
    *Recommendation: consider for a future version; keep v1 focused on URL-based
-   loading.*
+   loading. With standard Parquet format, the same file works both locally and
+   remotely.*
 
 ---
 

@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-08 | 1 | External data spec Draft v1→v2: replaced custom binary format with Apache Parquet (`.webdedx.parquet`), `hyparquet` JS reader, row-group-per-table layout, PyArrow creation examples, DuckDB/Pandas inspection examples | [log](docs/ai-logs/2026-04-08-external-data.md) |
 | 2026-04-08 | 1 | External data spec Draft v1: `.webdedx` binary format with Range Requests, `extdata` URL param, entity merging/namespacing, validation (structural + physics + DoS), visual distinction, converter tooling spec, project vision §4.7 | [log](docs/ai-logs/2026-04-08-external-data.md) |
 | 2026-04-08 | 1 | Shareable URLs v4 consistency pass: reordered §5 and hidden-programs example to canonical order, made energy normalization conditional on particle type, aligned Scenario 4 with unit-availability contract, reconciled qfocus emission rule in multi-program.md, loosened ABNF for trailing `&` and widened unknown-pair value set | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
 | 2026-04-08 | 1 | Shareable URLs contract follow-up: aligned advanced example with canonical ordering, clarified advanced-param emission rules, made `series` strictly numeric, and fixed formal parsing grammar for empty queries and per-component percent-decoding | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |

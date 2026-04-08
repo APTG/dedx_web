@@ -232,8 +232,8 @@ from tools like **SRIM**, **Geant4**, **FLUKA**, or custom Monte-Carlo codes
   file-upload dialogs are needed.
 - **Hosting:** The data file can be hosted privately (localhost) or publicly
   (S3, GitHub Pages, any static web server with CORS enabled).
-- **Partial reads:** The binary format supports HTTP Range Requests so only
-  the requested (program, particle, material) table is downloaded.
+- **Partial reads:** The Parquet format supports row-group-level partial
+  reads via HTTP Range Requests, so only the requested table is downloaded.
 - **Additive:** External programs, particles, and materials are merged with
   the built-in lists — they never replace or override built-in data.
 - **Shareable:** The `extdata` URL is persisted in shared links, so

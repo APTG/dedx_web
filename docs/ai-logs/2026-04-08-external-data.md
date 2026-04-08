@@ -58,3 +58,16 @@ Also updated:
 - **Decision**: Auto-select never resolves to external programs — users must explicitly choose external data.
 - **Decision**: External series rendered as dashed lines; external entities marked with 🔗 icon in selectors.
 - **Issue**: Material matching heuristic (exact name vs formula vs density) left as open question for future refinement.
+
+### External Data: Custom Format → Apache Parquet (Draft v2)
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/external-data.md`
+  - `docs/01-project-vision.md`
+  - `docs/04-feature-specs/README.md`
+  - `CHANGELOG-AI.md`
+  - `docs/ai-logs/2026-04-08-external-data.md`
+- **Decision**: Replaced the custom binary container (4-byte length prefix + JSON header + Float64 arrays) with standard Apache Parquet. Rationale: avoids reinventing a binary format, gives users free inspection via DuckDB/Pandas/PyArrow, simplifies converter tooling (thin PyArrow wrappers), and `hyparquet` provides ~15 KB pure-JS reader with native Range Request support.
+- **Decision**: Chose `hyparquet` over Apache Arrow JS (~200 KB) and h5wasm (~1 MB WASM) for minimal bundle size in a browser-first app.
+- **Decision**: File extension `.webdedx.parquet` — keeps project branding while being recognizable as standard Parquet.

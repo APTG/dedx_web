@@ -26,4 +26,4 @@ Each spec follows the template defined in
 
 | File | Status | Summary |
 |------|--------|---------|
-| [external-data.md](external-data.md) | Draft v1 | User-hosted stopping-power/range data: `.webdedx` binary format with HTTP Range Requests, `extdata` URL parameter, entity merging, visual distinction, validation, and converter tooling spec |
+| [external-data.md](external-data.md) | Draft v2 | User-hosted stopping-power/range data: `.webdedx.parquet` (Apache Parquet) format with row-group-level Range Requests, `extdata` URL parameter, entity merging, visual distinction, validation, and converter tooling spec |
