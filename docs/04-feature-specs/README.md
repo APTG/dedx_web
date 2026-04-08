@@ -21,3 +21,9 @@ Each spec follows the template defined in
 - `advanced-options.md` — MSTAR modes, aggregate state, interpolation, density/I-value override
 - `export.md` — CSV/PDF export details
 - `custom-compounds.md` — User-defined materials
+
+## Later-Stage Specs (specified now, implementation deferred)
+
+| File | Status | Summary |
+|------|--------|---------|
+| [external-data.md](external-data.md) | Draft v1 | User-hosted stopping-power/range data: `.webdedx` binary format with HTTP Range Requests, `extdata` URL parameter, entity merging, visual distinction, validation, and converter tooling spec |
