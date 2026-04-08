@@ -47,6 +47,12 @@ ones I care about,
 **so that** I can explore differences between models without being
 overwhelmed by a wide table.
 
+**As a** researcher comparing models,
+**I want to** quickly switch between viewing only stopping-power
+columns, only CSDA-range columns, or both,
+**so that** I can focus on one physical quantity at a time without
+manually hiding many columns.
+
 ---
 
 ## Related Specs / Dependencies
@@ -72,6 +78,8 @@ overwhelmed by a wide table.
   advanced mode.
 - Multi-select program picker in advanced mode.
 - Columns grouped by quantity (stopping power group, CSDA range group).
+- Quantity-focus toggle for group visibility: `Both`, `STP only`,
+  `CSDA only`.
 - Drag-and-drop column reordering within groups, synced across groups.
 - Excel-style show/hide column mechanism.
 - Visual highlighting of the default (auto-selected) program.
@@ -343,6 +351,19 @@ many programs are selected.
 | Scope | Hiding a program hides its column in **both** the stopping power group and the CSDA range group simultaneously. |
 | Keyboard | The "Columns…" button is focusable and opens the checklist on Enter/Space. Arrow keys navigate the checklist. |
 | URL persistence | Hidden program IDs are listed in the `hidden_programs` URL parameter. |
+
+### Quantity Focus Toggle
+
+Users can quickly focus the table on one quantity group without changing
+program selection.
+
+| Property | Detail |
+|----------|--------|
+| Type | Segmented control: `Both` · `STP only` · `CSDA only` |
+| Position | In the table toolbar, next to the `Columns…` button |
+| Default | `Both` |
+| Behavior | `STP only` hides the full CSDA group; `CSDA only` hides the full stopping power group; `Both` shows both groups. Input columns always remain visible. |
+| Interaction with program hide/show | Program visibility state is preserved while a group is hidden. Restoring `Both` brings back the prior per-program visibility within each group. |
 
 ### Delta / % Difference Tooltip
 
@@ -721,6 +742,12 @@ Unchanged from Calculator — single program, five-column CSV.
 - [ ] Hidden columns show a thin collapsed indicator within each group.
 - [ ] Clicking the collapsed indicator re-shows the hidden columns in both groups.
 - [ ] Column visibility is encoded in the URL as `hidden_programs=...`.
+
+### Quantity Focus
+- [ ] A quantity-focus control is available with options `Both`, `STP only`, and `CSDA only`.
+- [ ] `STP only` hides the entire CSDA group while keeping input columns visible.
+- [ ] `CSDA only` hides the entire stopping power group while keeping input columns visible.
+- [ ] Returning to `Both` restores the previous per-program visibility state for each group.
 
 ### Delta Tooltip
 - [ ] Hovering a non-default program's result cell shows a tooltip with absolute and percentage difference from the default program.
