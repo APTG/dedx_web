@@ -24,6 +24,9 @@
 ### Prompt 4: Add URL parameter spec versioning with user warning for incompatible versions
 **AI response**: Extended `shareable-urls.md` to Draft v3 with an explicit versioned URL contract using `urlv` (major version), canonical inclusion of `urlv=1`, version negotiation rules (`CURRENT_URL_MAJOR`, `MIN_SUPPORTED_URL_MAJOR`), migration-chain behavior for older supported majors, and mandatory warning/recovery UX for unsupported major mismatches. Updated canonical examples, acceptance criteria, changelog, and spec indexes accordingly.
 
+### Prompt 5: Draft a first concrete formal syntax version usable for implementation/validation
+**AI response**: Added a dedicated formal companion spec (`shareable-urls-formal.md`) with ABNF grammar, semantic parse/precedence/default rules, canonicalization ordering algorithm, and conformance vectors for valid/invalid/migration cases. Also fixed residual consistency gaps in `shareable-urls.md` (stale section reference, missing `urlv` in sections 5/6, stale advanced program-ID examples), then synced spec index and AI/changelog metadata.
+
 ## Tasks
 
 ### Shareable URLs Spec Draft v1
@@ -67,4 +70,18 @@
   - `docs/ai-logs/2026-04-08-shareable-urls.md`
 - **Decision**: Introduce `urlv` as a URL-contract major version and require it in canonical URLs.
 - **Decision**: On unsupported major mismatch, do not silently parse; show warning with explicit recovery actions.
+- **Issue**: None.
+
+### Formal URL Contract Draft v1 (ABNF + Semantics)
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/shareable-urls-formal.md`
+  - `docs/04-feature-specs/shareable-urls.md`
+  - `docs/04-feature-specs/README.md`
+  - `CHANGELOG-AI.md`
+  - `docs/ai-logs/README.md`
+  - `docs/ai-logs/2026-04-08-shareable-urls.md`
+- **Decision**: Keep syntax and semantics separated: ABNF + parser pipeline in formal spec, UX behavior in main shareable-urls spec.
+- **Decision**: Treat unknown params as ignored and dropped during canonicalization for deterministic output.
 - **Issue**: None.

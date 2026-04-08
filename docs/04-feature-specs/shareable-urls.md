@@ -32,6 +32,7 @@
 - [`unit-handling.md`](unit-handling.md) — Energy and stopping-power unit conversion, SI prefixes.
 - [`entity-selection.md`](entity-selection.md) — Particle, material, program selectors.
 - [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) — Entity and result types.
+- [`shareable-urls-formal.md`](shareable-urls-formal.md) — Formal ABNF grammar + semantic validation/canonicalization contract.
 
 ---
 
@@ -57,7 +58,7 @@ URLs are the primary mechanism for **state sharing** in dEdx Web:
 - **Canonical form:** URLs are normalized to a single canonical representation.
   Equivalent URLs (logically identical state) produce identical canonical strings.
 - **Backward-compatible:** If parameter names or semantics change, old URLs still
-  work (via migration rules in §5.5).
+  work (via migration rules in §8.2).
 - **Safe:** The URL is safe to share publicly (no sensitive data, no executable
   payloads). Safe to decode without risk of code injection.
 - **Compact:** URLs are kept short to be shareable in tweets, Slack, etc. Avoid
@@ -323,14 +324,14 @@ See [`multi-program.md`](multi-program.md) § URL Persistence for the full contr
 **Summary:** Advanced-mode parameters extend basic mode:
 
 ```
-?particle={id}&material={id}&programs={ids}&hidden_programs={ids}&qfocus={focus}&energies={csv}&eunit={unit}&mode=advanced
+?urlv={major}&particle={id}&material={id}&programs={ids}&hidden_programs={ids}&qfocus={focus}&energies={csv}&eunit={unit}&mode=advanced
 ```
 
 | Parameter | Example | Notes |
 |-----------|---------|-------|
 | `mode` | `advanced` | Presence of this param activates advanced mode. Absence or `basic` → single-program mode. |
-| `programs` | `2,7,4` | Comma-separated program IDs in display order. First is always the auto-selected default. Replaces `program`. |
-| `hidden_programs` | `7` | Comma-separated program IDs (subset of `programs`) whose columns are currently hidden. Optional. |
+| `programs` | `9,2,101` | Comma-separated program IDs in display order. First is always the auto-selected default. Replaces `program`. |
+| `hidden_programs` | `2` | Comma-separated program IDs (subset of `programs`) whose columns are currently hidden. Optional. |
 | `qfocus` | `stp`, `csda`, `both` | Quantity focus (which column groups visible). Optional; default `both`. |
 
 Validation:
@@ -345,11 +346,12 @@ Validation:
 ### 6.1 Plot-Page Parameters
 
 ```
-?particle={id}&material={id}&program={id|"auto"}&series={triplets}&stp_unit={token}&xscale={scale}&yscale={scale}
+?urlv={major}&particle={id}&material={id}&program={id|"auto"}&series={triplets}&stp_unit={token}&xscale={scale}&yscale={scale}
 ```
 
 | Parameter | Example | Type | Required? | Notes |
 |-----------|---------|------|-----------|-------|
+| `urlv` | `1` | Integer | Implicit | URL contract major version. Canonical URLs include `urlv=1` in Stage 1. |
 | `particle` | `1` | Numeric | Implicit | Current entity selection (shared with Calculator) |
 | `material` | `276` | Numeric | Implicit | Current entity selection |
 | `program` | `auto`, `2` | String or numeric | Implicit | Current entity selection (selector in sidebar) |
@@ -654,7 +656,7 @@ All examples assume (matching [`06-wasm-api-contract.md`](../06-wasm-api-contrac
 - ICRU 90 (program ID 9)
 - PSTAR (program ID 2)
 - Bethe-Ext00 (program ID 101)
-- URL contract version `urlv=1` (omitted in some fixture URLs only for readability)
+- URL contract version `urlv=1`
 
 ### 10.1 Basic Calculator URL Examples
 
