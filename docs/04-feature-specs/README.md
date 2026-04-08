@@ -13,10 +13,10 @@ Each spec follows the template defined in
 | [unit-handling.md](unit-handling.md) | Final v3 | Canonical conversion contract: internal units, density usage, conversion formulas, default behavior split (Calculator vs Plot), output formatting, export-unit rules, and numeric fixtures |
 | [plot.md](plot.md) | Final v2 | Plot page: multi-series JSROOT chart with canonical per-series density conversion, explicit calculator-vs-plot default split, normalized URL unit tokens, PNG/CSV export |
 | [multi-program.md](multi-program.md) | Final v3 | Advanced-mode multi-program comparison: columns grouped by quantity (all stopping powers, then all CSDA ranges), quantity-focus toggle (Both/STP-only/CSDA-only), drag-and-drop column reordering synced across groups, Excel-style show/hide, default program highlighting, delta/% tooltip on hover, onboarding hint, `calculateMulti()`, partial failure, responsive horizontal scroll with sticky columns, URL-encoded mode/programs/visibility/qfocus |
+| [shareable-urls.md](shareable-urls.md) | Draft v3 | Canonical URL state contract across Calculator and Plot: explicit `urlv` versioning, basic vs advanced precedence, mixed-unit energy/series encoding, normalization policy, deep-link guarantees, and major-version mismatch warning/migration behavior |
 
 ## Planned Specs (not yet written)
 - `inverse-lookups.md` — Find energy from stopping power or range
 - `advanced-options.md` — MSTAR modes, aggregate state, interpolation, density/I-value override
 - `export.md` — CSV/PDF export details
-- `shareable-urls.md` — Full URL encoding contract
 - `custom-compounds.md` — User-defined materials

@@ -10,6 +10,8 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-08 | 1 | Shareable URLs spec Draft v3: added explicit `urlv` contract version parameter, canonical inclusion rules, migration negotiation, and required user warning/recovery flow for major-version mismatch | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
+| 2026-04-08 | 1 | Shareable URLs spec Draft v2: completed canonical URL contract (calculator/plot/basic/advanced), fixed consistency issues (explicit `mode=advanced`, canonical defaults policy, WASM-aligned program IDs), aligned lingering multi-program ID examples, and synced doc indexes/logs | [log](docs/ai-logs/2026-04-08-shareable-urls.md) |
 | 2026-04-08 | 1 | Multi-program spec Final v3: finalized quantity-focus workflow (Both/STP-only/CSDA-only), synced qfocus URL/export/a11y/state model, and completed cross-spec consistency alignment for merge readiness | [log](docs/ai-logs/2026-04-08-multi-program.md) |
 | 2026-04-08 | 1 | Cross-spec sync after quantity-focus addition: aligned calculator advanced-toggle wording to app-wide action bar model, clarified basic-vs-advanced URL contract, and updated spec index summary to include `qfocus` | [log](docs/ai-logs/2026-04-08-multi-program.md) |
 | 2026-04-08 | 1 | Multi-program spec Draft v2: columns grouped by quantity, drag-and-drop reorder, delta tooltip, onboarding hint, app-wide action bar toggle, `hidden_programs` URL param; product vision §4.4 updated to app-wide Advanced mode | [log](docs/ai-logs/2026-04-08-multi-program.md) |

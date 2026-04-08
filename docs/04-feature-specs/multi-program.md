@@ -249,8 +249,8 @@ const showCsdaRangeGroup: boolean = $derived(
 | Parameter | Example | Notes |
 |-----------|---------|-------|
 | `mode` | `advanced` | Present only when advanced mode is on. Absent = basic. |
-| `programs` | `2,7,12` | Comma-separated program IDs in display order. First is always the default. Present only in advanced mode. |
-| `hidden_programs` | `7,12` | Comma-separated program IDs whose columns are hidden. Absent = all visible. |
+| `programs` | `9,2,101` | Comma-separated program IDs in display order. First is always the default. Present only in advanced mode. |
+| `hidden_programs` | `101` | Comma-separated program IDs whose columns are hidden. Absent = all visible. |
 | `qfocus` | `stp` | Quantity-focus mode. Allowed: `both`, `stp`, `csda`. Absent = `both`. |
 
 These extend the existing Calculator URL parameters (`particle`,
@@ -259,11 +259,11 @@ is replaced by `programs`. The order of IDs in `programs` encodes the
 user's drag-and-drop column order. Example:
 
 ```
-?particle=1&material=276&programs=2,7,4&hidden_programs=4&qfocus=stp&energies=100,200&eunit=MeV&mode=advanced
+?particle=1&material=276&programs=9,2,101&hidden_programs=101&qfocus=stp&energies=100,200&eunit=MeV&mode=advanced
 ```
 
-This example: Proton in Water, comparing ICRU 90 (default, ID 2),
-PSTAR (ID 7), and Bethe (ID 4, hidden). Energy 100 and 200 MeV.
+This example: Proton in Water, comparing ICRU 90 (default, ID 9),
+PSTAR (ID 2), and Bethe-Ext00 (ID 101, hidden). Energy 100 and 200 MeV.
 
 Restoration rules:
 - If `mode=advanced` is present but `programs` is absent, use only the
@@ -631,8 +631,8 @@ URL contract:
 | Parameter | When present | Format | Example |
 |-----------|-------------|--------|---------|
 | `mode` | Advanced mode is on | `advanced` | `mode=advanced` |
-| `programs` | Advanced mode is on | Comma-separated program IDs in display order | `programs=2,7,4` |
-| `hidden_programs` | Any columns are hidden | Comma-separated hidden program IDs | `hidden_programs=4` |
+| `programs` | Advanced mode is on | Comma-separated program IDs in display order | `programs=9,2,101` |
+| `hidden_programs` | Any columns are hidden | Comma-separated hidden program IDs | `hidden_programs=101` |
 | `qfocus` | Quantity-focus differs from default | `both` \| `stp` \| `csda` | `qfocus=csda` |
 
 In basic mode, the standard `program` parameter is used (single ID or
