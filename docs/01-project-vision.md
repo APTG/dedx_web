@@ -171,22 +171,38 @@ operates in two modes:
 
 | Mode | Who uses it | What is visible |
 |------|-------------|-----------------|
-| **Basic** (default) | 80% of users — quick lookups | Single program, core energy/unit selectors, unified result table |
+| **Basic** (default) | 80% of users — quick lookups | Single program, core energy/unit selectors, unified result table (Calculator) or single-series workflow (Plot) |
 | **Advanced** | Power users comparing programs, overriding density/state, using inverse lookups | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, interpolation settings, density/I-value overrides, MeV/u energy unit, custom compounds, inverse lookups |
 
 **Metaphor:** Like the "mode" button on an old handheld scientific
 calculator — pressing it reveals extra keys, but the basic keypad stays
-the same. A clearly labelled **"Advanced"** toggle (persistent, stored in
-the URL) switches between modes. Advanced features do not add visual
-clutter in the standard workflow; they appear *only* when the toggle is
-on.
+the same.
+
+**Toggle placement:** The Advanced toggle lives in the **top-right action
+bar** of every page, alongside the Share and Export buttons. This makes
+it uniformly accessible across Calculator and Plot without taking space
+from entity selectors. The same toggle controls advanced mode app-wide —
+switching to Advanced on Calculator and then navigating to Plot keeps
+advanced mode on.
+
+| Position element | Left | Center | Right |
+|------------------|------|--------|-------|
+| **Action bar** | *(page-specific controls)* | | **Basic · Advanced** · Share · Export |
 
 The toggle state is encoded in the URL (`mode=advanced`) so shared links
 preserve the user's context. Opening a URL with `mode=advanced` activates
-advanced mode for the recipient.
+advanced mode for the recipient. The mode is also stored in
+`localStorage` so it persists across navigation within the same session.
+
+**What Advanced mode reveals per page:**
+
+| Page | Basic mode | Advanced mode additions |
+|------|-----------|------------------------|
+| **Calculator** | Single program, five-column unified table | Multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups |
+| **Plot** | Standard series workflow | (Future: additional series metadata, batch operations, custom compounds) |
 
 Advanced mode is specified per-feature in the respective feature specs:
-- Multi-program comparison columns: [`multi-program.md`](04-feature-specs/multi-program.md)
+- Multi-program comparison columns (Calculator): [`multi-program.md`](04-feature-specs/multi-program.md)
 - MSTAR modes, aggregate state, density/I-value overrides: TODO `advanced-options.md`
 - Inverse lookups: TODO `inverse-lookups.md`
 - Custom compounds: TODO `custom-compounds.md`
