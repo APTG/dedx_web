@@ -22,6 +22,7 @@
 > - URL parameter `phide` renamed to `hidden_programs`.
 > - Wireframe examples use ICRU 90 / PSTAR / Bethe (not MSTAR).
 > - Explicitly scoped as a **Calculator page** advanced feature.
+> - Added quantity-focus control: `Both`, `STP only`, `CSDA only`.
 >
 > **Related specs:**
 > - Calculator page: [`calculator.md`](calculator.md)
@@ -87,7 +88,7 @@ manually hiding many columns.
 - Onboarding hint when entering advanced mode.
 - Partial-success/partial-failure rendering.
 - URL encoding for advanced mode, selected programs, column visibility,
-  and column order.
+  column order, and quantity focus.
 - CSV export with comparison columns.
 - Responsive behavior for the wider comparison table.
 
@@ -119,7 +120,7 @@ specific to the Calculator — the same toggle appears on every page.
 | Type | Segmented control: **Basic** · **Advanced** |
 | Position | Top-right action bar, before Share / Export buttons |
 | Default | **Basic** (off) |
-| Persistence | URL parameter `mode=advanced`. Also stored in `localStorage` so the mode persists when navigating between pages. |
+| Persistence | URL parameter `mode=advanced`. Also stored in `localStorage`, so mode persists across navigation and across browser sessions until changed or storage is cleared. |
 | Behavior | Switching to Advanced on any page activates advanced features app-wide. On the Calculator page, this reveals the multi-select program picker and comparison columns. |
 
 ### 2. Onboarding Hint
@@ -176,6 +177,9 @@ interface MultiProgramState {
   /** Whether advanced mode is active (app-wide, from the action bar toggle). */
   advancedMode: boolean;
 
+  /** Which result quantity groups are visible in the table. */
+  quantityFocus: "both" | "stp" | "csda";
+
   /**
    * Selected program IDs in advanced mode.
    * In basic mode this is always [resolvedProgramId].
@@ -221,6 +225,16 @@ const defaultProgramId: number = $derived(selectedProgramIds[0]);
 const hasAnyFailedProgram: boolean = $derived(
   [...comparisonResults.values()].some(r => r instanceof LibdedxError)
 );
+
+/** Whether the stopping-power group is currently visible. */
+const showStoppingPowerGroup: boolean = $derived(
+  quantityFocus === "both" || quantityFocus === "stp"
+);
+
+/** Whether the CSDA-range group is currently visible. */
+const showCsdaRangeGroup: boolean = $derived(
+  quantityFocus === "both" || quantityFocus === "csda"
+);
 ```
 
 ### URL Persistence
@@ -230,6 +244,7 @@ const hasAnyFailedProgram: boolean = $derived(
 | `mode` | `advanced` | Present only when advanced mode is on. Absent = basic. |
 | `programs` | `2,7,12` | Comma-separated program IDs in display order. First is always the default. Present only in advanced mode. |
 | `hidden_programs` | `7,12` | Comma-separated program IDs whose columns are hidden. Absent = all visible. |
+| `qfocus` | `stp` | Quantity-focus mode. Allowed: `both`, `stp`, `csda`. Absent = `both`. |
 
 These extend the existing Calculator URL parameters (`particle`,
 `material`, `program`, `energies`, `eunit`). In advanced mode, `program`
@@ -237,7 +252,7 @@ is replaced by `programs`. The order of IDs in `programs` encodes the
 user's drag-and-drop column order. Example:
 
 ```
-?particle=1&material=276&programs=2,7,4&hidden_programs=4&energies=100,200&eunit=MeV&mode=advanced
+?particle=1&material=276&programs=2,7,4&hidden_programs=4&qfocus=stp&energies=100,200&eunit=MeV&mode=advanced
 ```
 
 This example: Proton in Water, comparing ICRU 90 (default, ID 2),
@@ -251,8 +266,9 @@ Restoration rules:
 - If all program IDs are invalid, fall back to auto-select only.
 - `hidden_programs` references a program not in `programs` → ignored
   silently.
+- `qfocus` missing or invalid → default to `both`.
 - Missing `mode` or `mode=basic` → ignore `programs` and
-  `hidden_programs` entirely and display standard single-program
+  `hidden_programs` and `qfocus` entirely and display standard single-program
   Calculator.
 
 ---
@@ -364,6 +380,8 @@ program selection.
 | Default | `Both` |
 | Behavior | `STP only` hides the full CSDA group; `CSDA only` hides the full stopping power group; `Both` shows both groups. Input columns always remain visible. |
 | Interaction with program hide/show | Program visibility state is preserved while a group is hidden. Restoring `Both` brings back the prior per-program visibility within each group. |
+| URL persistence | Encoded as `qfocus=both|stp|csda` in advanced mode. |
+| Calculation behavior | Presentation-only filter: all selected programs are still calculated; toggling focus does not trigger recalculation. |
 
 ### Delta / % Difference Tooltip
 
@@ -478,7 +496,7 @@ normal-weight header text).
 │                                                                                                      │
 │  ℹ Advanced mode enabled. You can now select multiple programs to compare.                     [×]   │
 │                                                                                                      │
-│  [Columns…]                                                                                          │
+│  [Columns…]  [Both · STP only · CSDA only]                                                           │
 │  ┌────────┬────────┬─────┬══════════════════════════════════════════┬═══════════════════════════════┐  │
 │  │        │        │     │     Stopping Power (keV/µm)             │      CSDA Range               │  │
 │  │Energy  │→MeV/n  │Unit ├──────────────┬──────────┬──────────────┼───────────┬─────────┬─────────┤  │
@@ -518,7 +536,9 @@ Clicking it restores the Bethe column in both groups.
 
 Same layout at full viewport width. The table scrolls horizontally.
 The "Columns…" button becomes essential for managing visibility because
-screen space is limited. Entity selectors may wrap to two rows.
+screen space is limited. The quantity-focus control remains in the
+table toolbar and may wrap to a second toolbar row on narrower tablets.
+Entity selectors may wrap to two rows.
 
 ### Mobile (<600px)
 
@@ -529,7 +549,8 @@ screen space is limited. Entity selectors may wrap to two rows.
   sticky.
 - The "→ MeV/nucl" and "Unit" columns may be hidden by default on
   mobile to save space — only the Typed Value and result columns show.
-- The "Columns…" button is prominently placed above the table.
+- The "Columns…" button and quantity-focus control are prominently
+  placed above the table.
 - If more than 2 programs are visible, a hint suggests: "Hide some
   program columns for a better mobile experience."
 - Drag-and-drop reordering is available on touch via long-press + drag.
@@ -605,6 +626,7 @@ URL contract:
 | `mode` | Advanced mode is on | `advanced` | `mode=advanced` |
 | `programs` | Advanced mode is on | Comma-separated program IDs in display order | `programs=2,7,4` |
 | `hidden_programs` | Any columns are hidden | Comma-separated hidden program IDs | `hidden_programs=4` |
+| `qfocus` | Quantity-focus differs from default | `both` \| `stp` \| `csda` | `qfocus=csda` |
 
 In basic mode, the standard `program` parameter is used (single ID or
 `auto`). In advanced mode, `program` is replaced by `programs`.
@@ -616,8 +638,9 @@ Restoration rules:
 - All IDs invalid → fall back to default program only.
 - `hidden_programs` references a program not in `programs` → ignored
   silently.
+- `qfocus` missing or invalid → default to `both`.
 - Missing `mode` or `mode=basic` → ignore `programs` and
-  `hidden_programs` entirely and display standard single-program
+  `hidden_programs` and `qfocus` entirely and display standard single-program
   Calculator.
 - The order of IDs in `programs` is the display order (reflecting any
   drag-and-drop reordering). The first ID is always the default.
@@ -656,6 +679,9 @@ Rules:
   reordering).
 - Stopping power unit matches the current display unit.
 - Hidden program columns are **not** exported.
+- Quantity focus affects export visibility: `STP only` exports only
+  stopping-power columns; `CSDA only` exports only CSDA-range columns;
+  `Both` exports both groups.
 - Filename pattern: `dedx_{particle}_{material}_{N}programs.csv`
   (e.g., `dedx_Proton_Water_3programs.csv`).
 
@@ -679,6 +705,10 @@ Unchanged from Calculator — single program, five-column CSV.
 - Hidden columns are announced: when a column is hidden, a brief
   `aria-live="polite"` announcement: "{Program} columns hidden."
   When shown: "{Program} columns shown."
+- Quantity-focus segmented control uses proper toggle semantics
+  (`role="radiogroup"` + `role="radio"` with `aria-checked`), with
+  `aria-live="polite"` announcement when focus mode changes
+  (e.g., "Viewing stopping power columns only").
 - Drag-and-drop reordering: `aria-grabbed` and `aria-dropeffect` are
   deprecated in WAI-ARIA 1.2 and must not be used. The accessible
   reordering pattern is instead:
@@ -699,7 +729,8 @@ Unchanged from Calculator — single program, five-column CSV.
 - Sticky columns during horizontal scroll maintain proper header
   associations.
 - Tab order in advanced mode: Action bar (Advanced toggle) → Programs
-  picker → energy unit selector → table rows → Columns button.
+  picker → energy unit selector → table rows → Columns button →
+  Quantity-focus control.
 
 ---
 
@@ -748,6 +779,8 @@ Unchanged from Calculator — single program, five-column CSV.
 - [ ] `STP only` hides the entire CSDA group while keeping input columns visible.
 - [ ] `CSDA only` hides the entire stopping power group while keeping input columns visible.
 - [ ] Returning to `Both` restores the previous per-program visibility state for each group.
+- [ ] Switching quantity focus is presentation-only and does not trigger recalculation.
+- [ ] Quantity focus is encoded in the URL as `qfocus=both|stp|csda`.
 
 ### Delta Tooltip
 - [ ] Hovering a non-default program's result cell shows a tooltip with absolute and percentage difference from the default program.
@@ -767,7 +800,7 @@ Unchanged from Calculator — single program, five-column CSV.
 - [ ] If all programs fail, a banner appears above the table.
 
 ### URL State
-- [ ] Advanced mode, selected programs (in display order), and hidden columns are all encoded in the URL.
+- [ ] Advanced mode, selected programs (in display order), hidden columns, and quantity focus are all encoded in the URL.
 - [ ] Loading a URL with `mode=advanced` restores the full comparison state.
 - [ ] Invalid program IDs are silently dropped.
 - [ ] A URL without `mode` or with `mode=basic` ignores multi-program parameters.
@@ -775,6 +808,7 @@ Unchanged from Calculator — single program, five-column CSV.
 ### Export
 - [ ] In advanced mode, CSV columns are grouped by quantity (all stopping powers, then all CSDA ranges).
 - [ ] Hidden program columns are excluded from CSV export.
+- [ ] Quantity focus mode affects export: only currently visible quantity groups are exported.
 - [ ] Column headers include program names and units.
 - [ ] Column order in CSV matches on-screen order.
 - [ ] Filename includes program count.
