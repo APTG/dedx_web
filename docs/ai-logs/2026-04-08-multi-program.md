@@ -36,6 +36,9 @@ Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expan
 8. Explicitly scoped as Calculator page advanced feature
 9. Drag-and-drop supported, synced between groups (resolved Open Question #4)
 
+### Prompt 7: Add quantity-focus user story, then cross-spec consistency pass, then mark spec final
+**AI response**: Added a new user story and implemented a concrete quantity-focus control (`Both`, `STP only`, `CSDA only`) with behavior and acceptance criteria. Then performed a full consistency sweep and integrated quantity focus across state model, URL contract (`qfocus`), export visibility rules, wireframes, accessibility semantics, and calculator cross-references. Finalized `multi-program.md` as **Final v3** and synced index/changelog metadata.
+
 ## Tasks
 
 ### Multi-Program Spec Draft v2
@@ -52,6 +55,20 @@ Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expan
 - **Decision**: Drag-and-drop reorder syncs across both column groups to maintain consistency.
 - **Decision**: Onboarding hint shown first 2 times via localStorage counter.
 - **Issue**: None — all v1 open questions resolved except #2 (incompatible programs) and #3 (non-program column hiding).
+
+### Multi-Program Spec Final v3
+- **Status**: completed
+- **Stage**: Stage 1 — Requirements & Specifications
+- **Files changed**:
+  - `docs/04-feature-specs/multi-program.md` (status set to Final v3 + consistency updates)
+  - `docs/04-feature-specs/calculator.md` (aligned advanced-mode and URL-contract references)
+  - `docs/04-feature-specs/README.md` (status updated to Final v3)
+  - `docs/ai-logs/README.md` (topic updated)
+  - `CHANGELOG-AI.md` (new finalization entry)
+  - `docs/ai-logs/2026-04-08-multi-program.md` (narrative updated)
+- **Decision**: Keep grouped headers visible in advanced mode even with only one selected program, and support quantity-level focus switching to match real user workflow (STP-only vs CSDA-only).
+- **Decision**: Persist quantity focus in URL (`qfocus`) and apply it to export visibility so shared links and CSV outputs match the current analytical view.
+- **Issue**: Remaining deferred questions are explicitly documented in spec Open Questions (#2 and #3).
 
 ### Multi-Program Spec Draft v1
 - **Status**: completed

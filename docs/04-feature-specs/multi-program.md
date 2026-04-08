@@ -1,6 +1,6 @@
 # Feature: Multi-Program Comparison Mode (Calculator — Advanced)
 
-> **Status:** Draft v2 (8 April 2026)
+> **Status:** Final v3 (8 April 2026)
 >
 > **v1** (8 April 2026): Full draft. Multi-program comparison is an
 > advanced-mode feature that adds per-program columns to the Calculator's
@@ -23,6 +23,13 @@
 > - Wireframe examples use ICRU 90 / PSTAR / Bethe (not MSTAR).
 > - Explicitly scoped as a **Calculator page** advanced feature.
 > - Added quantity-focus control: `Both`, `STP only`, `CSDA only`.
+>
+> **v3** (8 April 2026): Finalization and cross-spec consistency pass.
+> - Integrated quantity-focus across state model, URL (`qfocus`),
+>   accessibility, export visibility rules, wireframes, and acceptance
+>   criteria.
+> - Synced calculator/basic-vs-advanced URL contract references.
+> - Marked spec as Final for merge readiness.
 >
 > **Related specs:**
 > - Calculator page: [`calculator.md`](calculator.md)
