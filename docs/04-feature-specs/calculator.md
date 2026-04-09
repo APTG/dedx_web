@@ -46,7 +46,7 @@
 > - Entity selection (compact mode): [`entity-selection.md`](entity-selection.md)
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
 > - Multi-program advanced behavior (program multi-select, grouped comparison columns, quantity focus): [`multi-program.md`](multi-program.md)
-> - Shareable URLs: TODO `shareable-urls.md`
+> - Shareable URLs: [`shareable-urls.md`](shareable-urls.md)
 > - Advanced options: TODO `advanced-options.md`
 > - Export: TODO `export.md`
 
@@ -512,7 +512,7 @@ On page load with URL parameters:
 7. Unit detection from typed text does **not** fire on URL-populated input
    (the units are already explicit in the URL encoding).
 
-> Full URL encoding spec in TODO `docs/04-feature-specs/shareable-urls.md`.
+> Full URL encoding spec in [`shareable-urls.md`](shareable-urls.md).
 > Advanced-mode URL extensions are defined in
 > [`multi-program.md`](multi-program.md).
 
