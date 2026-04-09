@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Draft v3 (9 April 2026)
+> **Status:** Final v3 (9 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:

@@ -10,6 +10,7 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-09-shareable-urls-external-data.md](2026-04-09-shareable-urls-external-data.md) | 9 Apr 2026 | Finalization pass: ABNF overhaul (entity-id grammar, extdata integration, url-value charset), PDG/ICRU merge keys, size limits, interpolation policy, Share button spec, all three specs marked Final |
 | [2026-04-08-external-data.md](2026-04-08-external-data.md) | 8 Apr 2026 | External data spec Draft v1: user-hosted stopping-power/range data via `.webdedx` binary format, `extdata` URL parameter, entity merging, validation, converter tooling |
 | [2026-04-08-shareable-urls.md](2026-04-08-shareable-urls.md) | 8 Apr 2026 | Shareable URLs spec Draft v1→v3 plus formal companion Draft v1: canonical URL contract, `urlv` versioning/warnings, ABNF grammar, semantic rules, canonicalization algorithm, and conformance vectors |
 | [2026-04-08-multi-program.md](2026-04-08-multi-program.md) | 8 Apr 2026 | Multi-program spec Final v3: grouped-by-quantity comparison with quantity-focus toggle, drag-and-drop reorder, delta tooltip, onboarding hint, app-wide Advanced toggle alignment, and cross-spec consistency sync |

@@ -1,6 +1,6 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Draft v4 (9 April 2026)
+> **Status:** Final v4 (9 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.

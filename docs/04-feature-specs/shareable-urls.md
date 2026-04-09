@@ -1,6 +1,6 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** Draft v6 (9 April 2026)
+> **Status:** Final v6 (9 April 2026)
 >
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
