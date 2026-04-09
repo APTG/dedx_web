@@ -1,6 +1,6 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Draft v3 (9 April 2026)
+> **Status:** Draft v4 (9 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.
@@ -16,8 +16,16 @@
 > **v3** (9 April 2026): `extdata` parameter format changed from positional index
 > to explicit user-assigned label (`extdata={label}:{url}`). All entity references
 > updated from `ext:{index}:{id}` to `ext:{label}:{id}`. §3.5 ABNF extension
-> updated to match `shareable-urls-formal.md` v3. Rationale: label-based references
-> are stable when sources are added or removed.
+> updated to match `shareable-urls-formal.md` v3.
+>
+> **v4** (9 April 2026): Particle merge key upgraded from (Z, A) to PDG Monte Carlo
+> code (`pdgCode`) with (Z, A) as fallback; this correctly handles electrons
+> (PDG 11) and named aliases (alpha, proton). Material merge key upgraded: external
+> materials may declare `icruId` (ICRU/NIST number matching built-in libdedx IDs)
+> or `atomicNumber` (pure-element matching) before falling back to name. These
+> structured keys guarantee unambiguous dataset compatibility for scientific
+> comparisons. Size limits raised: particles 1000, materials 10000, file size 1 GB.
+> Q2 (interpolation) and Q4 (offline) resolved in §13.
 >
 > **Related specs:**
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
@@ -135,14 +143,15 @@ JSON array values (stored as strings in Parquet key-value metadata):
 
 // webdedx.particles
 [
-  { "id": "p", "name": "Proton", "symbol": "H", "Z": 1, "A": 1, "atomicMass": 1.00794 },
-  { "id": "C12", "name": "Carbon-12", "symbol": "C", "Z": 6, "A": 12, "atomicMass": 12.0 }
+  { "id": "p",   "name": "Proton",     "symbol": "H",  "Z": 1, "A": 1,  "atomicMass": 1.00794, "pdgCode": 2212       },
+  { "id": "C12", "name": "Carbon-12",  "symbol": "C",  "Z": 6, "A": 12, "atomicMass": 12.0,    "pdgCode": 1000060120 },
+  { "id": "e-",  "name": "Electron",   "symbol": "e⁻", "Z": 0, "A": 0,  "atomicMass": 0.000511,"pdgCode": 11         }
 ]
 
 // webdedx.materials
 [
-  { "id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid" },
-  { "id": "si", "name": "Silicon", "density": 2.329, "phase": "solid" }
+  { "id": "water", "name": "Water (liquid)", "density": 1.0,   "phase": "liquid", "icruId": 276      },
+  { "id": "si",    "name": "Silicon",        "density": 2.329, "phase": "solid",  "atomicNumber": 14 }
 ]
 ```
 
@@ -155,6 +164,29 @@ JSON array values (stored as strings in Parquet key-value metadata):
 - `webdedx.units.energy` must be one of: `"MeV"`, `"MeV/nucl"`, `"MeV/u"`, `"keV"`, `"GeV"`.
 - `webdedx.units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`, `"keV/µm"`.
 - `webdedx.units.csdaRange` must be one of: `"g/cm²"`, `"cm"`.
+
+**Particle merge-key fields (`particles[]`):**
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `id` | string | yes | Internal ID within this file. Matches `[a-zA-Z0-9_-]+`. |
+| `name` | string | yes | Human-readable name. |
+| `symbol` | string | yes | Chemical symbol or `"e⁻"` for electrons. |
+| `Z` | integer | yes | Atomic number. 0 for electrons. |
+| `A` | integer | yes | Mass number (nucleons). 0 for electrons. |
+| `atomicMass` | number | yes | Atomic mass in u (daltons). Used for MeV/u conversion. |
+| `pdgCode` | integer | **recommended** | PDG Monte Carlo particle number. Used as the primary merge key with built-in particles. Common values: proton = 2212, electron = 11, alpha (He-4) = 1000020040, C-12 = 1000060120. Ion convention: 1000 × Z × 10000 + A × 10. |
+
+**Material merge-key fields (`materials[]`):**
+
+| Field | Type | Required | Notes |
+|-------|------|----------|-------|
+| `id` | string | yes | Internal ID within this file. Matches `[a-zA-Z0-9_-]+`. |
+| `name` | string | yes | Human-readable name. |
+| `density` | number | yes | Material density in g/cm³. |
+| `phase` | string | no | `"solid"`, `"liquid"`, or `"gas"`. |
+| `icruId` | integer | **recommended** | ICRU/NIST material number. Built-in libdedx material IDs are ICRU numbers, so `icruId: 276` matches built-in material 276 (water liquid) exactly. Use this for any standard ICRU/NIST material. |
+| `atomicNumber` | integer | recommended for elements | Atomic number Z. Used as merge key for pure elemental targets (e.g., `atomicNumber: 14` for silicon). Takes effect only when `icruId` is absent. |
 
 #### 2.2.2 Row Groups — One Per Table
 
@@ -433,16 +465,38 @@ When external data is loaded, external programs, particles, and materials are
 appended to the built-in lists:
 
 - **Programs:** External programs appear in the program selector below built-in
-  programs, in a visually separated "External" group.
-- **Particles:** External particles are merged by matching on (Z, A). If an
-  external particle has the same (Z, A) as a built-in particle, they are
-  treated as the **same particle** — the external source simply provides
-  additional program coverage for that particle. If no match exists, the
-  external particle is added to the particle list in the "External" group.
-- **Materials:** External materials are merged by name similarity heuristic
-  (case-insensitive exact match on `name`). If a match exists, the external
-  source provides additional program coverage for that material. If no match,
-  the material is added to the list in the "External" group.
+  programs, in a visually separated "External" group. Programs are never merged
+  — each external program is always a distinct entry.
+
+- **Particles:** Merged by the following priority chain:
+  1. **PDG code (primary):** If the external particle declares `pdgCode` and a
+     built-in `ParticleEntity` has a matching `pdgCode`, they are the **same
+     particle**. This correctly handles electrons (PDG 11) and named aliases
+     (alpha = PDG 1000020040 = same as libdedx particle 3, regardless of naming).
+  2. **(Z, A) fallback:** If `pdgCode` is absent or unmatched, match on
+     `(Z, A)`. A = 0 is used for electrons; ions use their nucleon count.
+  3. **No match:** The external particle is added as a new entry in the
+     "External" group with a 🔗 icon.
+
+  A matched particle is the **same entity** in both sources — the external
+  program simply provides additional coverage for that particle. The
+  particle selector shows no special icon for matched particles.
+
+- **Materials:** Merged by the following priority chain:
+  1. **ICRU/NIST ID (primary):** If the external material declares `icruId`
+     and a built-in material has the same numeric ID, they are the **same
+     material**. Because libdedx material IDs are ICRU numbers, this is an
+     exact, unambiguous match (e.g., `icruId: 276` = water liquid).
+  2. **Atomic number (elements):** If `icruId` is absent, and the external
+     material declares `atomicNumber`, match against the built-in pure-element
+     material with that atomic number Z.
+  3. **Name fallback:** If neither merge key is present, match by
+     case-insensitive exact `name` string.
+  4. **No match:** The external material is added as a new entry in the
+     "External" group with a 🔗 icon.
+
+  A matched material is the **same entity** — the material selector shows
+  no special icon for matched materials.
 
 ### 4.3 Compatibility Matrix Extension
 
@@ -548,6 +602,11 @@ full file already attempted):
 | Duplicate IDs within same entity type | Reject file; blocking error |
 | Row group references a program/particle/material ID not declared in file metadata | Reject file; blocking error |
 | Duplicate (program, particle, material) triplets across row groups | Reject file; blocking error |
+| `particles[].pdgCode` present but not a positive integer | Reject file; blocking error |
+| `particles[].pdgCode` duplicated within `webdedx.particles` array | Reject file; blocking error |
+| `materials[].icruId` present but not a positive integer | Reject file; blocking error |
+| `materials[].atomicNumber` present but not an integer in range 1–118 | Reject file; blocking error |
+| `materials[].icruId` and `materials[].atomicNumber` both present on the same entry | Reject file; blocking error (use exactly one merge key) |
 
 ### 6.2 Size Limits (DoS prevention)
 
@@ -555,11 +614,11 @@ full file already attempted):
 |-------|-------|-----------|
 | Max Parquet footer + metadata size | 1 MB | Prevents excessive metadata parsing |
 | Max programs per source | 100 | Reasonable upper bound |
-| Max particles per source | 200 | Covers all ions up to Uranium |
-| Max materials per source | 1000 | Generous for compound libraries |
-| Max tables (row groups) per source | 50,000 | 100 programs × 200 particles × ~2.5 materials avg |
+| Max particles per source | 1000 | Covers all ions up to Uranium plus isotopes and exotic particles |
+| Max materials per source | 10000 | Supports large compound libraries (FLUKA, Geant4 material databases) |
+| Max tables (row groups) per source | 1,000,000 | 100 programs × 1000 particles × 10 materials avg |
 | Max points per table | 10,000 | Far exceeds typical energy grid density |
-| Max total file size (computed from header) | 100 MB | Prevents accidental multi-GB fetches |
+| Max total file size (computed from header) | 1 GB | Partial Range Requests are used; full file is never downloaded |
 | Max `extdata` sources | 5 | Prevents URL abuse |
 
 Exceeding any limit → reject the source with a clear error message.
@@ -647,11 +706,20 @@ When an external program is selected:
 - Instead of calling the WASM API, the app performs a **lookup + interpolation**
   on the external table:
   - For each user-requested energy value, interpolate the stopping power and
-    CSDA range from the external table using log-log interpolation (matching
-    libdedx's default interpolation behavior).
+    CSDA range from the external table using **log-log interpolation**. This
+    matches libdedx's default (`InterpolationMode = "log-log"`), ensuring
+    that built-in and external series are directly comparable.
   - If the requested energy is outside the external table's energy bounds,
     mark the row as out-of-range.
 - Results are displayed in the same unified table format as built-in data.
+
+**Interpolation mode and future configurability:** When `advanced-options.md`
+is implemented, the global interpolation toggle (`InterpolationMode`) must
+apply to both WASM calls and external data JS interpolation. This is required
+for scientific validity: comparing a built-in curve (log-log) against an
+external curve (linear) on the same plot would be misleading. The interpolation
+method is therefore not configurable per-dataset; it is a session-level setting
+that applies consistently to all data sources.
 
 ### 8.3 Multi-Program (Advanced Mode)
 
@@ -894,22 +962,23 @@ CLI tool.
    *Recommendation: start with exact case-insensitive name match; add formula
    matching in a future iteration.*
 
-2. **Interpolation method for external data:** Log-log interpolation matches
-   libdedx defaults. Should we allow the external dataset to declare a
-   preferred interpolation method? *Recommendation: default to log-log; defer
-   configurable interpolation to a future version.*
+2. **Interpolation method for external data:** ✅ **Resolved.** Log-log
+   interpolation is fixed for v1 (matches libdedx default). Configurable
+   interpolation mode (`log-log` / `linear`) will be introduced as a global
+   session toggle when `advanced-options.md` is implemented. That toggle will
+   apply consistently to both WASM calculations and external data JS
+   interpolation. Per-dataset interpolation declaration is not supported —
+   doing so would make side-by-side comparisons scientifically unreliable.
+   See §8.2.
 
 3. **CSDA range from stopping power:** Should the app offer an option to
    compute CSDA range by integrating the stopping-power table (for sources
    that only provide stopping power)? *Recommendation: defer to a future
    version. v1 requires both stopping power and CSDA range in the file.*
 
-4. **Offline / local file support:** Should the app support loading `.webdedx.parquet`
-   files from the local filesystem (via `<input type="file">`)? This would
-   enable fully offline use without even a localhost server.
-   *Recommendation: consider for a future version; keep v1 focused on URL-based
-   loading. With standard Parquet format, the same file works both locally and
-   remotely.*
+4. **Offline / local file support:** ✅ **Resolved.** v1 supports URL-based
+   loading only (`extdata={label}:{url}`). Local file loading via
+   `<input type="file">` is not in scope.
 
 ---
 

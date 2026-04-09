@@ -83,6 +83,15 @@ interface ParticleEntity extends LibdedxEntity {
   symbol: string;
   /** Human-readable aliases for common particle names (e.g., "proton", "alpha", "electron"). */
   aliases?: string[];
+  /**
+   * PDG Monte Carlo particle number (Particle Data Group standard numbering).
+   * Used as the primary merge key when matching built-in particles against
+   * external data sources (see `external-data.md` §4.2).
+   * Common values: proton = 2212, electron = 11, alpha (He-4) = 1000020040,
+   * C-12 = 1000060120. Ion convention: Z × 10000 + A × 10 + isomer + 1000000000.
+   * Undefined for particles that have no standard PDG assignment.
+   */
+  pdgCode?: number;
 }
 
 /** Program entity with version information. */
@@ -105,7 +114,22 @@ interface MaterialEntity extends LibdedxEntity {
    * Used to show an aggregate state selector in the UI.
    */
   isGasByDefault?: boolean;
+  /**
+   * For pure elemental targets: the atomic number Z of the element.
+   * Used as a merge key when matching built-in materials against external
+   * data sources that declare `atomicNumber` (see `external-data.md` §4.2).
+   * Undefined for compound materials.
+   */
+  atomicNumber?: number;
 }
+
+/**
+ * Note on material IDs:
+ * Built-in libdedx material IDs correspond to ICRU/NIST material numbers
+ * (e.g., material ID 276 = water liquid per NIST PSTAR/ESTAR databases).
+ * External data sources that declare `icruId` in their material definition
+ * are matched against built-in materials by this numeric ID.
+ */
 ```
 
 ### 2.3 Calculation Results
