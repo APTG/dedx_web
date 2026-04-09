@@ -1,6 +1,6 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** Draft v5 (9 April 2026)
+> **Status:** Draft v6 (9 April 2026)
 >
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
@@ -30,6 +30,11 @@
 > canonicalization ordering clarified: explicit `program` vs `programs` by mode,
 > advanced-mode param sub-order (`mode` → `hidden_programs` → `qfocus`), `extdata`
 > placement. Added canonical example showing `hidden_programs` when non-empty.
+>
+> **v6** (9 April 2026): Added §8.4 Share Button specification: placement, button
+> states (ready/copied/updated), clipboard interaction, and discrete URL-change
+> notification. Renamed "social sharing" to "sharing via communicators" throughout
+> to reflect scientific usage context.
 
 ---
 
@@ -59,7 +64,9 @@ URLs are the primary mechanism for **state sharing** in dEdx Web:
    clicking it 6 months later restores the full calculation state.
 3. **Publication & documentation:** A plot URL is embedded in supplementary material.
    Readers can click and compare multiple curves interactively without installing software.
-4. **Social sharing (future):** Users may share results on Slack, email, or other media.
+4. **Sharing via communicators:** A researcher pastes a link in email, Slack, Teams,
+   or Mattermost. The recipient clicks it and immediately sees the exact same
+   calculation or plot — no setup, no file transfer required.
 
 ### 1.2 Design Principles
 
@@ -71,8 +78,8 @@ URLs are the primary mechanism for **state sharing** in dEdx Web:
   work (via migration rules in §8.2).
 - **Safe:** The URL is safe to share publicly (no sensitive data, no executable
   payloads). Safe to decode without risk of code injection.
-- **Compact:** URLs are kept short to be shareable in tweets, Slack, etc. Avoid
-  extraneous parameters or base-64-encoded blobs.
+- **Compact:** URLs are kept short to be shareable in email, Slack, Teams, and
+  similar communicators. Avoid extraneous parameters or base-64-encoded blobs.
 
 ---
 
@@ -630,8 +637,78 @@ this:
 
 **Behavior if URL exceeds limit:**
 - Not truncated by the app. The full URL is sent.
-- If the URL is too long for certain channels (email, Slack), users will see
-  truncation at the channel level. No app-level warning is needed.
+- If the URL is too long for certain communicators (email clients, Slack), users will
+  see truncation at the channel level. No app-level warning is needed.
+
+### 8.4 Share Button
+
+The Share button provides a one-click mechanism for copying the current canonical URL
+to the clipboard. It is the primary entry point for sharing links via communicators
+(email, Slack, Teams, Mattermost, etc.).
+
+#### 8.4.1 Placement
+
+- Displayed in the **upper-right corner** of the page toolbar, present on both the
+  Calculator and the Plot pages.
+- Placement and appearance are consistent across both pages.
+
+#### 8.4.2 Button States
+
+The button has three named states, driven by two signals: (1) whether a copy action
+has just occurred, and (2) whether the URL has changed since the last copy.
+
+| State | Visual appearance | Condition |
+|-------|-------------------|-----------|
+| **Ready** | Standard label (e.g., "Copy link") with a link/chain icon; default styling | No recent copy, or `copied` timeout has elapsed |
+| **Copied** | Success color (e.g., green), label changes to "Copied" | Immediately after the user clicks the button and the clipboard write succeeds |
+| **Updated** | Accent color or small badge/dot on the icon; label reads "Copy updated link" | URL changed while button was in **Copied** state (the previously copied URL is now stale) |
+
+State transitions:
+```
+Ready ──[click → clipboard success]──► Copied
+Copied ──[~2 s timeout]──────────────► Ready
+Copied ──[URL changes]───────────────► Updated
+Updated ──[click → clipboard success]─► Copied
+Updated ──[~2 s timeout (no action)]──► Ready
+```
+
+#### 8.4.3 Clipboard Interaction
+
+1. On click, call the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText):
+   ```js
+   await navigator.clipboard.writeText(window.location.href);
+   ```
+2. On success → transition to **Copied** state; start 2-second revert timer.
+3. On failure (e.g., insecure context, permission denied) → fall back to:
+   - Create a temporary `<input>` with the URL, select all, execute `document.execCommand('copy')`.
+   - If that also fails → show an inline tooltip: "Press Ctrl+C to copy" pointing at the input.
+   - Do **not** show a popup/modal; keep feedback inline.
+
+#### 8.4.4 URL-Change Notification (Discrete)
+
+When the user modifies any input (entity selection, energies, series, units, axis
+scales), the URL is updated via `replaceState`. If the button is currently in the
+**Copied** state (the user has already copied a link), it silently transitions to
+**Updated** to signal that the previously copied URL is now stale.
+
+Rules:
+- The notification is **inline and non-intrusive** — no toast, no modal, no banner.
+  Only the button appearance changes.
+- If the button is in **Ready** state when the URL changes, no extra notification is
+  shown — the user has not copied yet, so there is nothing to invalidate.
+- If the user ignores the **Updated** state and the 2-second timer elapses, the button
+  returns to **Ready** silently.
+- On the next click in **Updated** state, the fresh URL is copied and the button
+  enters **Copied** again.
+
+#### 8.4.5 Accessibility
+
+- The button must have an accessible label that reflects its current state:
+  - Ready: `aria-label="Copy link to this page"`
+  - Copied: `aria-label="Link copied to clipboard"`
+  - Updated: `aria-label="Link updated — copy new link"`
+- The state change must be announced to screen readers via `aria-live="polite"` on
+  the button region or a visually-hidden status element.
 
 ---
 
@@ -1001,6 +1078,11 @@ Expected:
 - [ ] **Entity validation:** Invalid entity IDs (e.g., particle=999) cause fallback to defaults with a brief toast message. Incompatible combinations fall back to auto-select.
 - [ ] **URL normalization:** On page load, the URL is normalized to canonical form via `replaceState`. Subsequent bookmarks and shares use the canonical form.
 - [ ] **Versioned URL contract:** Canonical URLs include `urlv={CURRENT_URL_MAJOR}`. Missing `urlv` is interpreted as legacy v1 only.
+- [ ] **Share button placement:** Button present in the upper-right corner on both Calculator and Plot pages; appearance is visually consistent.
+- [ ] **Copy to clipboard:** Clicking the button in **Ready** or **Updated** state copies the current canonical URL. Button transitions to **Copied** state (success color, "Copied" label) for ~2 seconds, then reverts to **Ready**.
+- [ ] **Stale-copy notification:** If the user modifies state after copying, the button transitions from **Copied** to **Updated** ("Copy updated link") without showing any popup or toast.
+- [ ] **Clipboard fallback:** If `navigator.clipboard.writeText` fails, a fallback copy mechanism is attempted; if both fail, an inline tooltip instructs the user to copy manually.
+- [ ] **Accessibility:** Button `aria-label` reflects current state; state changes are announced via `aria-live`.
 - [ ] **Major mismatch warning:** If `urlv` is outside supported range, the app warns the user and requires explicit recovery action (`Try migration` or `Load defaults`) before calculating.
 - [ ] **Forward/back navigation:** Switching pages via navigation preserves browser history. State changes on the same page use `replaceState` (no history pollution). Back button returns to previous page/state.
 - [ ] **Shareability:** Two users with identical URLs see identical results (deterministic rendering). No `localStorage` state affects visible output.
