@@ -1,11 +1,23 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Draft v2 (8 April 2026)
+> **Status:** Draft v3 (9 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.
 >
 > **Stage:** Specified in Stage 1; implementation deferred to a later stage.
+>
+> **v1** (8 April 2026): Initial draft. Parquet format, URL parameter contract,
+> entity merging, loading lifecycle, validation, UI treatment, and tooling spec.
+>
+> **v2** (8 April 2026): Consistency pass. Added Calculator and Plot integration
+> sections, security considerations, and acceptance criteria.
+>
+> **v3** (9 April 2026): `extdata` parameter format changed from positional index
+> to explicit user-assigned label (`extdata={label}:{url}`). All entity references
+> updated from `ext:{index}:{id}` to `ext:{label}:{id}`. §3.5 ABNF extension
+> updated to match `shareable-urls-formal.md` v3. Rationale: label-based references
+> are stable when sources are added or removed.
 >
 > **Related specs:**
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
@@ -307,21 +319,27 @@ emitted: "Server does not support Range Requests; downloading full file."
 
 ### 3.1 Parameter Definition
 
-External data sources are specified via one or more `extdata` URL parameters:
+External data sources are specified via one or more `extdata` URL parameters.
+Each `extdata` value encodes a **stable user-assigned label** and the source URL,
+separated by a literal colon:
 
 ```
-?extdata={url1}&extdata={url2}&...existing params...
+?extdata={label}:{url1}&extdata={label}:{url2}&...existing params...
 ```
 
 | Parameter | Type | Required? | Notes |
 |-----------|------|-----------|-------|
-| `extdata` | URL (percent-encoded) | Optional | Absolute URL to a `.webdedx.parquet` file. May appear multiple times for multiple sources. |
+| `extdata` | `{label}:{percent-encoded-url}` | Optional | `label` is a user-assigned stable identifier matching `[a-zA-Z0-9_-]+`. `url` is the absolute percent-encoded URL to a `.webdedx.parquet` file. May appear multiple times for multiple sources. Labels must be unique within a URL. |
+
+The label is **stable across edits** — it does not depend on the position of the
+`extdata` parameter in the URL. All entity references (`ext:{label}:{id}`) remain
+valid even if other `extdata` sources are added or removed.
 
 **Canonical ordering:** `extdata` parameters appear **before** all other
 parameters in the canonical URL form (after `urlv`):
 
 ```
-?urlv=1&extdata={url1}&extdata={url2}&particle=...&material=...
+?urlv=1&extdata={label1}:{url1}&extdata={label2}:{url2}&particle=...&material=...
 ```
 
 When `extdata` is absent, the app behaves identically to today (no external
@@ -329,26 +347,33 @@ data loaded).
 
 ### 3.2 URL Encoding
 
-The URL value must be percent-encoded per standard URL rules. Special characters
-in the external URL (especially `&`, `=`, `?`) are encoded:
+The URL portion of the `extdata` value must be percent-encoded per standard URL
+rules. Special characters in the external URL (especially `&`, `=`, `?`, `:`) are
+encoded so that the first literal `:` in the parameter value is always the
+label/URL separator:
 
 ```
-extdata=https%3A%2F%2Fexample.com%2Fdata%2Fsrim.webdedx
+extdata=srim:https%3A%2F%2Fexample.com%2Fdata%2Fsrim.webdedx.parquet
 ```
 
-`URLSearchParams` handles this automatically.
+`URLSearchParams` handles percent-encoding of the full value automatically when
+constructing URLs programmatically. When assembling manually, encode the URL
+portion only; the label and separator colon are written literally.
 
 ### 3.3 Examples
 
-Single external source:
+Single external source (label `srim`):
 ```
-/calculator?urlv=1&extdata=https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&energies=100&eunit=MeV
+/calculator?urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&energies=100&eunit=MeV
 ```
 
-Multiple external sources:
+Multiple external sources (labels `srim` and `g4`):
 ```
-/plot?urlv=1&extdata=https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx.parquet&extdata=https%3A%2F%2Fother.org%2Fgeant4.webdedx.parquet&particle=1&material=276&program=auto&series=srim-2013.p.water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
+/plot?urlv=1&extdata=srim:https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx.parquet&extdata=g4:https%3A%2F%2Fother.org%2Fgeant4.webdedx.parquet&particle=1&material=276&program=auto&series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
 ```
+
+If the user later removes the `g4` source, the `srim` label and all `ext:srim:*`
+references remain valid without renaming.
 
 ### 3.4 Persistence & Shareability
 
@@ -362,15 +387,18 @@ Multiple external sources:
 
 ### 3.5 ABNF Extension
 
-Add to the formal grammar in `shareable-urls-formal.md`:
+The formal grammar in [`shareable-urls-formal.md`](shareable-urls-formal.md) (v3+)
+defines `extdata-pair` and the related lexical rules:
 
 ```abnf
-extdata-pair        = "extdata=" url-value
-url-value           = 1*(%x21-7E)   ; percent-encoded URL (no spaces)
+extdata-pair        = "extdata=" ext-label ":" url-value
+ext-label           = 1*(ALPHA / DIGIT / "_" / "-")
+url-value           = 1*(%x21-25 / %x27-39 / %x3B-3C / %x3E-FF)
+                    ; excludes space, '&', '=', ':' — all must be percent-encoded
 ```
 
-`extdata-pair` is added to the `pair` alternatives and may appear multiple
-times. Canonical ordering: after `urlv`, before `particle`.
+`extdata-pair` appears in the `pair` alternatives and may appear multiple times.
+Canonical ordering: after `urlv`, before `particle`.
 
 ---
 
@@ -384,15 +412,20 @@ and enable unambiguous references in URL parameters and series triplets:
 
 - **Built-in entities** continue to use numeric IDs everywhere.
 - **External entities** use **prefixed string IDs** in URL parameters:
-  `ext:{sourceIndex}:{entityId}`
+  `ext:{label}:{entityId}`
 
-  Where `sourceIndex` is the 0-based index of the `extdata` parameter in the URL
-  (stable within a given URL).
+  Where `label` is the stable user-assigned label declared in the corresponding
+  `extdata` parameter (see §3.1). Using the label rather than a positional index
+  means references remain valid when sources are added or removed.
 
-  Examples:
-  - `ext:0:srim-2013` — program "srim-2013" from the first external source.
-  - `ext:0:p` — particle "p" from the first external source.
-  - `ext:1:water` — material "water" from the second external source.
+  Examples (assuming `extdata=srim:https://...` and `extdata=g4:https://...`):
+  - `ext:srim:srim-2013` — program "srim-2013" from the source labeled `srim`.
+  - `ext:srim:p` — particle "p" from the source labeled `srim`.
+  - `ext:g4:water` — material "water" from the source labeled `g4`.
+
+  If an `ext:{label}:...` reference appears in the URL but no `extdata` parameter
+  with that label exists, the reference is treated as invalid and silently dropped
+  (same as an unknown entity ID).
 
 ### 4.2 Merging into Entity Lists
 
@@ -424,17 +457,19 @@ The compatibility matrix is extended with external triplets:
 
 ### 4.4 Series Triplet Encoding (Plot Page)
 
-Plot series using external entities encode the prefixed IDs:
+Plot series using external entities encode the prefixed IDs using the source label:
 
 ```
-series=ext:0:srim-2013.ext:0:p.ext:0:water,9.1.276
+series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276
 ```
 
-This encodes two series:
-1. External: program "srim-2013", particle "p", material "water" from source 0.
+Assuming `extdata=srim:https://...`, this encodes two series:
+1. External: program "srim-2013", particle "p", material "water" from source `srim`.
 2. Built-in: program 9 (ICRU 90), particle 1 (proton), material 276 (water).
 
-Mixed external + built-in series are fully supported.
+Mixed external + built-in series are fully supported. The label-based reference
+remains stable: removing an unrelated source does not renumber or invalidate this
+series.
 
 ---
 

@@ -1,6 +1,6 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** Draft v4 (8 April 2026)
+> **Status:** Draft v5 (9 April 2026)
 >
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
@@ -25,6 +25,11 @@
 > to canonical param order, made energy normalization conditional on particle type
 > (ions → MeV/nucl, electron → MeV), aligned Scenario 4 with unit-availability
 > contract, and reconciled qfocus always-emit rule with multi-program.md.
+>
+> **v5** (9 April 2026): §7.2 unit token list corrected to include `GeV/nucl`. §7.3
+> canonicalization ordering clarified: explicit `program` vs `programs` by mode,
+> advanced-mode param sub-order (`mode` → `hidden_programs` → `qfocus`), `extdata`
+> placement. Added canonical example showing `hidden_programs` when non-empty.
 
 ---
 
@@ -458,7 +463,7 @@ For each energy value in `energies`:
    - Invalid → treat as invalid row.
    - Negative or zero → treat as out-of-range.
 3. Parse unit_str (if present):
-   - Match against supported unit tokens (MeV, keV, GeV, MeV/nucl, keV/nucl, MeV/u, keV/u, GeV/u).
+   - Match against supported unit tokens (MeV, keV, GeV, MeV/nucl, keV/nucl, GeV/nucl, MeV/u, keV/u, GeV/u).
    - Unknown → treat as invalid row.
 4. Normalize value to the particle's internal energy unit:
    - **Ions (A ≥ 1):** convert to MeV/nucl (using particle mass number A).
@@ -481,10 +486,16 @@ When writing the URL (state → URL), normalize to this form:
 ```
 
 **Ordering of parameters:**
-1. Version param first: `urlv`.
-2. Path-specific params: `particle`, `material`, `program` (or `programs`).
-3. Page-specific params: `energies`, `eunit` (calc); `series`, `stp_unit`, `xscale`, `yscale` (plot).
-4. Advanced-mode params after page params: always emit `mode=advanced` in advanced mode, emit `qfocus` explicitly in advanced mode even when it equals the default `both`, and emit `hidden_programs` only when non-empty.
+1. `urlv`.
+2. `extdata` (one per source, label-declaration order) — omitted when absent.
+3. `particle`, `material`.
+4. Exactly one program param, depending on mode:
+   - Basic mode: `program` (always present; value `auto` or numeric ID).
+   - Advanced mode: `programs` (always present; `program` never emitted).
+5. Page-specific params: `energies`, `eunit` (calc); `series`, `stp_unit`, `xscale`, `yscale` (plot).
+6. Advanced-mode params, in sub-order: `mode=advanced`, then `hidden_programs` (omit if empty), then `qfocus` (always emit in advanced mode, even when `both`).
+
+See [`shareable-urls-formal.md`](shareable-urls-formal.md) §4 for the normative canonicalization algorithm.
 
 **Example canonical forms:**
 
@@ -493,9 +504,14 @@ Calculator basic mode:
 /calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200,500&eunit=MeV
 ```
 
-Calculator advanced mode:
+Calculator advanced mode — no hidden programs:
 ```
 /calculator?urlv=1&particle=1&material=276&programs=9,2&energies=100,200&eunit=MeV&mode=advanced&qfocus=both
+```
+
+Calculator advanced mode — with hidden programs:
+```
+/calculator?urlv=1&particle=1&material=276&programs=9,2,101&energies=100,200&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both
 ```
 
 Plot:

@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Draft v2 (8 April 2026)
+> **Status:** Draft v3 (9 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
@@ -15,6 +15,14 @@
 > **v2** (8 April 2026): ABNF allows trailing `&`/empty segments, `unknown-pair`
 > value widened to any char except `&`/`=`, `series` canonicalization rule added,
 > parse pipeline refined for per-component percent-decoding.
+>
+> **v3** (9 April 2026): Integrated `extdata` (external data sources) into grammar
+> and parse pipeline. `url-value` charset tightened to exclude `&`, `=`, and `:`.
+> `series-item` extended to support `ext:{label}:{id}` triplet components for
+> external entities. `programs` and `hidden_programs` updated to accept `entity-id`
+> (built-in int or `ext-ref`). Canonicalization §4 rewritten to unambiguously
+> specify `program` vs `programs` by mode, sub-ordering within advanced-mode params,
+> and `extdata` placement.
 >
 > **Normative relationship:**
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
@@ -44,6 +52,7 @@ tokenization, because encoded delimiters such as `%26` and `%3D` belong to value
 query               = [pair *("&" [pair])]
 
 pair                = urlv-pair
+                    / extdata-pair
                     / particle-pair
                     / material-pair
                     / program-pair
@@ -63,9 +72,14 @@ pair                = urlv-pair
 ; shared core params
 ; -----------------------------
 urlv-pair           = "urlv=" int-pos
+extdata-pair        = "extdata=" ext-label ":" url-value
+                    ; ext-label is the stable source label assigned by the user.
+                    ; url-value is the percent-encoded URL of the .webdedx.parquet
+                    ; file. The first literal ':' in the raw parameter value is
+                    ; unambiguously the label/URL separator (url-value excludes ':').
 particle-pair       = "particle=" int-pos
 material-pair       = "material=" int-pos
-program-pair        = "program=" ("auto" / int-pos)
+program-pair        = "program=" ("auto" / int-pos)    ; basic mode only
 
 ; -----------------------------
 ; calculator params
@@ -86,18 +100,28 @@ energy-unit-token   = "MeV"
                     / "GeV/u"
 
 mode-pair           = "mode=" ("basic" / "advanced")
-programs-pair       = "programs=" int-pos *("," int-pos)
-hidden-programs-pair= "hidden_programs=" int-pos *("," int-pos)
+programs-pair       = "programs=" entity-id *("," entity-id)   ; advanced mode only
+hidden-programs-pair= "hidden_programs=" entity-id *("," entity-id)
 qfocus-pair         = "qfocus=" ("both" / "stp" / "csda")
 
 ; -----------------------------
 ; plot params
 ; -----------------------------
 series-pair         = "series=" series-item *("," series-item)
-series-item         = int-pos "." int-pos "." int-pos
+series-item         = entity-id "." entity-id "." entity-id
+                    ; components are programId.particleId.materialId
+                    ; each may be a built-in int-pos or an ext-ref
 stp-unit-pair       = "stp_unit=" ("kev-um" / "mev-cm" / "mev-cm2-g")
 xscale-pair         = "xscale=" ("log" / "lin")
 yscale-pair         = "yscale=" ("log" / "lin")
+
+; -----------------------------
+; entity ID (built-in or external)
+; -----------------------------
+entity-id           = int-pos / ext-ref
+ext-ref             = "ext:" ext-label ":" entity-local-id
+ext-label           = 1*(ALPHA / DIGIT / "_" / "-")
+entity-local-id     = 1*(ALPHA / DIGIT / "_" / "-")
 
 ; -----------------------------
 ; lexical rules
@@ -114,13 +138,22 @@ value               = *(%x20-25 / %x27-3C / %x3E-FF)
                     ; any char except '&' (%x26) and '=' (%x3D)
                     ; after per-component percent-decoding
 
+url-value           = 1*(%x21-25 / %x27-39 / %x3B-3C / %x3E-FF)
+                    ; printable ASCII excluding:
+                    ;   space (%x20), '&' (%x26), '=' (%x3D), ':' (%x3A)
+                    ; Ranges: %x21-25 = '!'-'%', %x27-39 = '''-'9' (excl. ':'),
+                    ;         %x3B-3C = ';'-'<', %x3E-FF = '>'-high.
+                    ; The external URL must be percent-encoded so that its own
+                    ; ':' characters (e.g. in 'https:') never appear literally.
+
 nz-digit            = %x31-39
-sign                = "+" / "-"
 ```
 
 Notes:
 - Grammar permits duplicates syntactically; semantics define resolution.
 - `unknown-pair` preserves forward compatibility.
+- `extdata-pair` may appear multiple times (one per external source).
+- `ext-ref` uses the stable label assigned in `extdata-pair`, not a positional index.
 
 ---
 
@@ -132,14 +165,16 @@ Notes:
 2. Split raw query on `&` into pairs, ignoring empty segments.
 3. For each pair, split on the first raw `=` into key/value components; a bare key is treated as an empty-string value.
 4. Percent-decode each key/value component individually, or rely on equivalent `URLSearchParams` behavior.
-5. Parse ABNF tokens.
-6. Apply duplicate resolution.
-7. Apply version negotiation.
-8. Apply defaults.
-9. Apply conditional enablement/precedence.
-10. Validate against compatibility matrix and unit rules.
-11. Produce normalized canonical state.
-12. Emit canonical URL via `replaceState`.
+5. For each `extdata` value, split on the first literal `:` to extract the label and the percent-encoded URL. Validate label matches `ext-label` rule. Collect ordered list of `(label, url)` pairs. Labels must be unique across all `extdata` occurrences; duplicate labels are a parse error (treat as unknown param).
+6. Parse ABNF tokens.
+7. Apply duplicate resolution.
+8. Apply version negotiation.
+9. Resolve external data sources: fetch and validate each `extdata` source; merge external entities into compatibility matrix (see `external-data.md` §5).
+10. Apply defaults.
+11. Apply conditional enablement/precedence.
+12. Validate against compatibility matrix and unit rules.
+13. Produce normalized canonical state.
+14. Emit canonical URL via `replaceState`.
 
 ## 3.2 Duplicate Parameter Resolution
 
@@ -207,7 +242,7 @@ Entity constraints:
 
 Advanced constraints:
 - `programs` list after validation must be non-empty; otherwise fallback to auto-selected single program.
-- `hidden_programs` must be subset of selected `programs`.
+- `hidden_programs` must be a subset of selected `programs`. Both lists accept `entity-id` (built-in `int-pos` or `ext-ref`); mixed built-in and external programs are allowed in both lists.
 
 Energy constraints:
 - Value parse must succeed.
@@ -224,23 +259,39 @@ Plot constraints:
 ## 4. Canonicalization Algorithm
 
 Canonical parameter order:
+
 1. `urlv`
-2. `particle`, `material`, `program` OR `programs`
-3. page params
-  - calculator: `energies`, `eunit`
-  - plot: `series`, `stp_unit`, `xscale`, `yscale`
-4. conditional advanced params: `mode`, `hidden_programs`, `qfocus`
+2. `extdata` — one occurrence per external source, in label-declaration order.
+   **Omitted entirely when no external sources are present.**
+3. `particle`, `material`
+4. Program param — **exactly one** of the following, depending on mode:
+   - **Basic mode:** `program` (always emitted; value is `auto` or a built-in numeric
+     program ID). `programs` is never emitted in basic mode.
+   - **Advanced mode:** `programs` (always emitted; value is a comma-separated list
+     of `entity-id` in display order). `program` is never emitted in advanced mode.
+5. Page-specific params:
+   - Calculator: `energies`, `eunit`
+   - Plot: `series`, `stp_unit`, `xscale`, `yscale`
+6. Advanced-mode params — present **only** when `mode=advanced`, in this sub-order:
+   a. `mode=advanced` (always first among the advanced group)
+   b. `hidden_programs` — omitted when the set is empty; otherwise emitted as a
+      comma-separated list of `entity-id`
+   c. `qfocus` — **always** emitted in advanced mode, even when the value equals
+      the default `both`
 
 Normalization rules:
 - Always emit `urlv`.
-- Always emit explicit defaulted page-state params.
+- Always emit `particle`, `material`, and the mode-appropriate program param.
+- Always emit explicit defaulted page-state params (`eunit=MeV`, `xscale=log`,
+  `yscale=log`, `stp_unit=kev-um`) for deterministic round-trip stability.
 - Emit comma-separated ID lists without spaces.
-- Preserve order of `programs` as display order.
+- Preserve declared order of `programs` as display order.
 - Emit `hidden_programs` only when non-empty.
-- Emit `mode=advanced` only when advanced mode is active.
-- Emit `qfocus` only in advanced mode (emit default `both` explicitly for canonical consistency).
-- Emit `program=auto` in basic mode unless explicit valid program is selected.
-- In `series`, always emit resolved numeric triplets; never emit `auto`.
+- Emit `mode=advanced` only when advanced mode is active; never emit `mode=basic`.
+- Emit `qfocus` only in advanced mode (always emit, including when value is `both`).
+- Emit `program=auto` in basic mode when no explicit program is selected.
+- In `series`, always emit resolved `int-pos` or `ext-ref` triplets; never emit `auto`.
+- Emit `extdata={label}:{url}` for each external source using its assigned label.
 
 ---
 
@@ -252,13 +303,25 @@ Normalization rules:
 - Input: `urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV`
 - Result: valid, canonical unchanged.
 
-2. Advanced calculator:
+2. Advanced calculator (no hidden programs):
 - Input: `urlv=1&particle=1&material=276&programs=9,2&mode=advanced&qfocus=stp&energies=100&eunit=MeV`
-- Result: valid, canonical adds/removes only defaults per algorithm.
+- Canonical: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=stp`
+- Note: `hidden_programs` omitted (empty set); `mode` precedes `qfocus`.
 
-3. Plot:
+3. Advanced calculator (with hidden programs):
+- Input: `urlv=1&particle=1&material=276&programs=9,2,101&mode=advanced&hidden_programs=2&qfocus=both&energies=100&eunit=MeV`
+- Canonical: `urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both`
+- Note: `mode`, then `hidden_programs`, then `qfocus`; `qfocus=both` always emitted.
+
+4. Plot:
 - Input: `urlv=1&particle=1&material=276&program=auto&series=9.1.276,2.1.276&stp_unit=kev-um&xscale=log&yscale=log`
-- Result: valid.
+- Result: valid, canonical unchanged.
+
+5. External data source (labeled):
+- Input: `urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&series=ext%3Asrim%3Asrim-2013.ext%3Asrim%3Ap.ext%3Asrim%3Awater,9.1.276&stp_unit=kev-um&xscale=log&yscale=log`
+- Result: label `srim` assigned to the external source; series mixes one external
+  triplet (`ext:srim:srim-2013` / `ext:srim:p` / `ext:srim:water`) and one built-in
+  triplet (`9` / `1` / `276`). Canonical form unchanged.
 
 ### 5.2 Invalid / Recovery
 
