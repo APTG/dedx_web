@@ -11,8 +11,9 @@
 > - Calculator page (forward lookup, unified table, entity selection): [`calculator.md`](calculator.md)
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
 > - WASM API contract (service methods, result types): [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md) §§2.3, 3
-> - Advanced options overrides: TODO `advanced-options.md`
-> - Shareable URLs: [`shareable-urls.md`](shareable-urls.md)
+> - Advanced Options panel (overrides, placement, gating): [`advanced-options.md`](advanced-options.md)
+> - Shareable URLs (canonical ordering): [`shareable-urls.md`](shareable-urls.md) §7.3
+> - Formal URL grammar: [`shareable-urls-formal.md`](shareable-urls-formal.md)
 
 ---
 
@@ -71,11 +72,19 @@ page. Switching tabs only replaces the table area below.
 │  Particle: [Proton (H) ▾]   Material: [Water (liquid) ▾] 💧liquid         │
 │  Program:  [Auto → ICRU 90 ▾]           Energy: (•) MeV                   │
 ├────────────────────────────────────────────────────────────────────────────┤
-│  [ Forward ]  [ Inverse STP ]  [ Inverse CSDA ]          ← Advanced only  │
+│  ▶ Advanced Options                              ← Advanced mode only      │
+├────────────────────────────────────────────────────────────────────────────┤
+│  [ Forward ]  [ Inverse STP ]  [ Inverse CSDA ]  ← Advanced mode only     │
 ├────────────────────────────────────────────────────────────────────────────┤
 │  (active tab content)                                                      │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
+
+The Advanced Options accordion is positioned between the entity row and the
+tab switcher, per [`advanced-options.md`](advanced-options.md) §1 ("below
+entity selection row, above primary content"). The tab switcher is the top
+of the primary content area and is therefore below the accordion. Both the
+accordion and the tab switcher are only visible in Advanced mode.
 
 ---
 
@@ -90,13 +99,13 @@ tab immediately affects all three. A lookup only runs when
 
 ### Advanced Options
 
-When Advanced mode is active and Advanced Options are set (see TODO
-`advanced-options.md`), the same `AdvancedOptions` object — all six
-overrides: `aggregateState`, `interpolationScale`, `interpolationMethod`,
-`mstarMode`, `densityOverride`, `iValueOverride` — is passed to the
-inverse WASM calls (`getInverseStp`, `getInverseCsda`) in the same way it
-is passed to `calculate()` on the Forward tab. This ensures that forward
-and inverse results are consistent when overrides are active.
+When Advanced mode is active and Advanced Options are set (see
+[`advanced-options.md`](advanced-options.md)), the same `AdvancedOptions`
+object — all six overrides: `aggregateState`, `interpolationScale`,
+`interpolationMethod`, `mstarMode`, `densityOverride`, `iValueOverride` —
+is passed to the inverse WASM calls (`getInverseStp`, `getInverseCsda`) in
+the same way it is passed to `calculate()` on the Forward tab. This ensures
+that forward and inverse results are consistent when overrides are active.
 
 The same program-specific restrictions apply: `mstarMode` is only
 meaningful when the selected program is MSTAR; it is ignored otherwise.
@@ -121,8 +130,10 @@ the Bragg peak), each input value maps to **two distinct energies** — one
 on the low-energy branch (ascending side of the Bragg peak) and one on the
 high-energy branch (descending side). Both are returned simultaneously.
 
-WASM call: `LibdedxService.getInverseStp()` with `side = 0` (low) and
-`side = 1` (high) — called twice per batch of input values.
+WASM call: [`LibdedxService.getInverseStp()`](../06-wasm-api-contract.md#3-service-interface)
+with `side = 0` (low) and `side = 1` (high) — called twice per batch of
+input values. Result type: [`InverseStpResult`](../06-wasm-api-contract.md#23-calculation-results)
+(energies in MeV/nucl).
 
 ### 4.2 Table Columns
 
@@ -215,7 +226,9 @@ produces each range in the current material. CSDA range is strictly
 monotonic in energy, so the inverse is **always unique** — there is no
 branch-selection problem.
 
-WASM call: `LibdedxService.getInverseCsda()`.
+WASM call: [`LibdedxService.getInverseCsda()`](../06-wasm-api-contract.md#3-service-interface).
+Result type: [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-results)
+(energies in MeV/nucl).
 
 ### 5.2 Table Columns
 
@@ -313,12 +326,17 @@ rule as CSDA range length auto-scaling
 
 ### Prefix Ladder (applied after unit conversion)
 
-| Value range (in MeV/nucl equivalent) | Display prefix | Example |
+Thresholds are applied to the numeric value **after** conversion from
+MeV/nucl (WASM output) to the active display unit (MeV, MeV/nucl, or
+MeV/u). Since all three units are in the MeV magnitude family, the same
+cutoffs apply regardless of which unit is selected.
+
+| Value range (in active display unit) | Display prefix | Example |
 |--------------------------------------|---------------|---------|
-| ≥ 1000 MeV | GeV | 1.200 GeV |
-| ≥ 1 MeV | MeV | 100.0 MeV |
-| ≥ 0.001 MeV | keV | 1.000 keV |
-| < 0.001 MeV | eV | 500.0 eV |
+| ≥ 1000 | GeV | 1.200 GeV/nucl |
+| ≥ 1 | MeV | 100.0 MeV |
+| ≥ 0.001 | keV | 1.000 keV |
+| < 0.001 | eV | 500.0 eV/nucl |
 
 The rule: choose the prefix such that the displayed numeric value falls
 in the range **1.000 – 9999**.
@@ -438,7 +456,12 @@ On page load with `imode` present:
    default pre-filled row.
 
 > Full URL encoding rules and percent-encoding requirements are in
-> [`shareable-urls.md`](shareable-urls.md).
+> [`shareable-urls.md`](shareable-urls.md). Inverse-lookup params form
+> **step 8** of the canonical ordering defined in
+> [`shareable-urls.md` §7.3](shareable-urls.md#73-canonical-url-form),
+> after the Advanced Options params (step 7): `imode`, then `ivalues`,
+> then `iunit`. Each is omitted when absent (i.e., when the Forward tab
+> is active). Silently dropped in Basic mode.
 
 ---
 
@@ -455,7 +478,7 @@ Errors from `getInverseStp()` or `getInverseCsda()` (C-level
   highlight the row with a valid-range hint below the table.
 - **Unexpected C error**: show an error message below the table with a
   "Show details" toggle revealing the error code (same pattern as the
-  Forward tab, per project vision §9).
+  Forward tab, per [project vision §9](../01-project-vision.md#9-error-philosophy)).
 
 ### Density Unavailable
 
@@ -468,16 +491,23 @@ marked invalid: "Density not available for this material."
 
 ## Dependencies
 
-- **`LibdedxService.getInverseStp()`** — requires stateful workspace API.
+- **[`LibdedxService.getInverseStp()`](../06-wasm-api-contract.md#3-service-interface)** — requires stateful workspace API.
   Called twice per batch (once with `side = 0`, once with `side = 1`).
-- **`LibdedxService.getInverseCsda()`** — requires stateful workspace API.
-- **`LibdedxService.getDensity(materialId)`** — for STP unit conversion
-  (keV/µm ↔ MeV·cm²/g) and CSDA unit conversion (cm ↔ g/cm²).
-- **`LibdedxService.convertEnergy()`** — for output energy unit conversion
-  (MeV/nucl → MeV / MeV/nucl / MeV/u per master selector).
-- **`MaterialEntity.isGasByDefault`** — determines default STP input unit.
-- **`AdvancedOptions`** type — passed unchanged to both inverse calls.
+  Returns [`InverseStpResult`](../06-wasm-api-contract.md#23-calculation-results) with energies in MeV/nucl.
+- **[`LibdedxService.getInverseCsda()`](../06-wasm-api-contract.md#3-service-interface)** — requires stateful workspace API.
+  Returns [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-results) with energies in MeV/nucl.
+- **[`LibdedxService.getDensity(materialId)`](../06-wasm-api-contract.md#3-service-interface)** — for STP unit
+  conversion (keV/µm ↔ MeV·cm²/g) and CSDA unit conversion (cm → g/cm²).
+  See [`unit-handling.md`](unit-handling.md) §§5.2, 5.4.
+- **[`LibdedxService.convertEnergy()`](../06-wasm-api-contract.md#3-service-interface)** — for output energy unit
+  conversion (MeV/nucl → MeV / MeV/nucl / MeV/u per master selector).
+  See [`unit-handling.md`](unit-handling.md) §4.
+- **[`MaterialEntity.isGasByDefault`](../06-wasm-api-contract.md#22-entities)** — determines default STP input unit
+  (keV/µm for non-gas, MeV·cm²/g for gas). See [`unit-handling.md`](unit-handling.md) §5.1.
+- **[`AdvancedOptions`](../06-wasm-api-contract.md#26-advanced-options)** type — passed unchanged to both inverse calls.
+  See [`advanced-options.md`](advanced-options.md).
 - **`EntitySelectionState`** — shared with the Forward tab.
+  See [`calculator.md`](calculator.md) §1.
 
 ---
 
@@ -571,13 +601,14 @@ marked invalid: "Density not available for this material."
 ## Open Questions
 
 1. **AdvancedOptions pass-through to inverse WASM calls:** The
-   `getInverseStp()` and `getInverseCsda()` signatures in
-   `docs/06-wasm-api-contract.md` §3 do not include an `options?`
-   parameter (unlike `calculate()`). The C stateful API applies config
-   settings before evaluation, so the options must be set on the workspace
-   before calling the inverse function. Confirm that the service
-   implementation handles this correctly, or update the service interface
-   to accept `options?` explicitly.
+   [`getInverseStp()`](../06-wasm-api-contract.md#3-service-interface) and
+   [`getInverseCsda()`](../06-wasm-api-contract.md#3-service-interface)
+   signatures in [`06-wasm-api-contract.md` §3](../06-wasm-api-contract.md#3-service-interface)
+   do not include an `options?` parameter (unlike `calculate()`). The C
+   stateful API applies config settings before evaluation, so the options
+   must be set on the workspace before calling the inverse function.
+   Confirm that the service implementation handles this correctly, or
+   update the service interface to accept `options?` explicitly.
 
 2. **Bragg peak maximum query:** The UI should ideally warn when an STP
    input value is above the Bragg peak. The C library returns an error
@@ -585,9 +616,3 @@ marked invalid: "Density not available for this material."
    `getBraggPeakStp()` helper (or deriving it from the tabulated data) so
    the valid STP input range can be shown below the table, analogous to
    the energy range display on the Forward tab.
-
-3. **Advanced Options availability on inverse tabs:** The Advanced Options
-   panel (TODO `advanced-options.md`) will need to be accessible from the
-   inverse tabs, not just the Forward tab. Confirm that the panel is
-   global (visible regardless of which tab is active) rather than
-   tab-local.
