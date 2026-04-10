@@ -1,6 +1,6 @@
 # Feature: Advanced Options Panel
 
-> **Status:** Draft v3 (10 April 2026)
+> **Status:** Draft v4 (10 April 2026)
 >
 > **v1** (10 April 2026): Initial draft — aggregate state override,
 > interpolation mode, MSTAR mode, density override, I-value override.
@@ -24,6 +24,13 @@
 > `InterpolationScale` + `InterpolationMethod`. URL param `interp` split
 > into `interp_scale` and `interp_method`. localStorage keys updated.
 > Wireframes, reactivity table, TypeScript snippet, and AC updated.
+>
+> **v4** (10 April 2026): Density override value surfaced inline in Plot
+> series labels (not just accordion header), enabling users to distinguish
+> two series with different densities at a glance. Series label format
+> table and AC-12 updated. MSTAR mode A–H physical descriptions added
+> (sourced from `libdedx/include/dedx.h`). All three Open Questions
+> resolved. ABNF grammar in `shareable-urls-formal.md` updated to v4.
 >
 > This spec closes the open loops deferred from:
 > - [`unit-handling.md`](unit-handling.md) §8 Q3 (aggregate state → display unit)
@@ -296,11 +303,30 @@ MSTAR program (`programId = DEDX_MSTAR`).
 | Property | Detail |
 |----------|--------|
 | Type | Segmented control with 6 options |
-| Options | **A**, **B** (recommended), **C**, **D**, **G**, **H** |
+| Options | **A**, **B** (recommended), **C**, **D**, **G**, **H** — see table below |
 | Default | **B** |
 | Non-MSTAR program | Visible but disabled; tooltip: "Only applies to MSTAR" |
 | MSTAR active | Enabled |
 | Reset on program switch | Resets to **B** when switching away from MSTAR |
+
+#### Mode descriptions
+
+Sourced from `libdedx/include/dedx.h` (`DEDX_MSTAR_MODE_*` constants):
+
+| Mode | `DEDX_MSTAR_MODE_*` | Description |
+|------|---------------------|-------------|
+| **A** | `AUTO_CG` | **Auto — base modes.** Automatically selects C for condensed targets, G for gaseous targets. |
+| **B** | `AUTO_DH` | **Auto — special modes.** Automatically selects D for condensed targets, H for gaseous targets. *Recommended by H. Paul.* Default. |
+| **C** | `CONDENSED` | **Condensed — standard.** Direct condensed-phase calculation using the base formulation. |
+| **D** | `CONDENSED_SPECIAL` | **Condensed — special.** Enhanced condensed-phase mode; automatically downgrades to C for target Z ≤ 3. |
+| **G** | `GASEOUS` | **Gas — standard.** Direct gaseous-phase calculation using the base formulation. |
+| **H** | `GASEOUS_SPECIAL` | **Gas — special.** Enhanced gaseous-phase mode; hardcoded parameters only for projectile Z = 3–11 and 16–18. Automatically downgrades to G for Z < 3. |
+
+**Practical guidance:** Modes A and B are the auto-select modes — they
+inspect the target's aggregate state and delegate to C/G (mode A) or D/H
+(mode B). Mode B is recommended because the special modes (D, H) give
+better accuracy where supported. Use C/D/G/H directly only when forcing a
+specific treatment regardless of the target's built-in phase.
 
 **Multi-program mode:** When MSTAR is among multiple active programs,
 the control is enabled and applies to MSTAR's calculation only.
@@ -409,7 +435,7 @@ selection area and above the "Add Series" button (see [`plot.md`](plot.md)):
 │  [ + Add Series ]                        │
 │                                          │
 │  Series:                                 │
-│  ● Proton / Air / ICRU 90  ⚙            │
+│  ● Proton / Air / ICRU 90  ρ = 1.1e-3 g/cm³  ⚙ │
 └──────────────────────────────────────────┘
 ```
 
@@ -659,12 +685,52 @@ interface SeriesAdvancedOptions {
 }
 ```
 
-This metadata is used to:
-1. Display an override indicator icon (⚙) on the series entry in the
-   series list.
-2. Show a tooltip: "Calculated with: ρ = 1.1 g/cm³, aggregate state =
-   condensed" (listing only the active non-default options).
-3. Inform future URL encoding extensions (v2 — see Open Questions).
+This metadata drives the series label and tooltip in the series list.
+
+#### Series label format
+
+The series entry in the series list shows the density override value
+**inline** so that two series calculated with different densities are
+immediately distinguishable without hovering:
+
+| Active overrides | Series label |
+|-----------------|--------------|
+| None | `Proton / Air / ICRU 90` |
+| Density only | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³` |
+| Density + other(s) | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³  ⚙` |
+| Other(s) only (no density) | `Proton / Air / ICRU 90  ⚙` |
+
+The inline `ρ = …` suffix is always formatted using the same
+auto-format rules as the accordion header (decimal for ≥ 0.01; sci
+notation for < 0.01). The `⚙` icon signals additional non-density
+overrides are active; hovering it shows the tooltip.
+
+#### Series tooltip
+
+The tooltip on the `⚙` icon (or on the density suffix when no ⚙ is
+present) lists all active non-default options at commit time:
+
+> "Calculated with: ρ = 1.1 g/cm³, aggregate state = condensed"
+
+Only non-default values are listed; the tooltip is omitted entirely
+when no overrides were active at commit time.
+
+#### Wireframe (two series with different densities)
+
+```
+Series:
+  ● Proton / Air / ICRU 90  ρ = 1.1e-3 g/cm³      ← density visible inline
+  ● Proton / Air / ICRU 90  ρ = 2.5e-3 g/cm³  ⚙   ← density + agg state override
+  ● Proton / Water                                  ← no override; no suffix
+```
+
+This fulfils the primary motivation: when two series are committed with
+different density overrides the user can see the difference at a glance.
+
+#### Inform future URL encoding
+
+Per-series metadata informs future URL encoding extensions (v2 — see
+Open Questions).
 
 ### URL Encoding for Plot Series with Per-Series Options
 
@@ -895,14 +961,22 @@ On page load with Advanced Options URL params:
   previous overrides.
 - [ ] URL params take precedence over localStorage on load.
 
-### AC-12: Plot series metadata
+### AC-12: Plot series label and metadata
 
-- [ ] Series committed with active density override shows ⚙ icon in series
-  list.
-- [ ] Series tooltip lists active non-default options (e.g. "Calculated
-  with: ρ = 1.1 g/cm³").
+- [ ] Series committed with no overrides: label shows `Particle / Material / Program`
+  with no suffix.
+- [ ] Series committed with density override only: label shows
+  `Particle / Material / Program  ρ = {value} g/cm³` (auto-formatted).
+- [ ] Series committed with density + other overrides: label shows density
+  suffix followed by ⚙ icon.
+- [ ] Series committed with non-density overrides only: label shows ⚙ icon
+  (no density suffix).
+- [ ] Two series with different density overrides are visually distinguishable
+  in the series list without hovering (density visible inline).
+- [ ] ⚙ icon tooltip lists all active non-default options at commit time.
+- [ ] No tooltip rendered when no overrides were active at commit time.
 - [ ] Changing density after committing a series does not alter the committed
-  series' curve.
+  series' curve or label.
 
 ---
 
@@ -914,12 +988,12 @@ On page load with Advanced Options URL params:
    `series` parameter be extended to encode per-series options? Deferred
    to v2 — see [Output § URL Encoding for Plot Series](#url-encoding-for-plot-series-with-per-series-options).
 
-2. **`shareable-urls-formal.md` grammar update:** The ABNF grammar must be
-   updated to include the six new parameters (`agg_state`, `interp_scale`,
-   `interp_method`, `mstar_mode`, `density`, `ival`) and their value sets.
-   Deferred as a follow-on to this spec.
+2. **`shareable-urls-formal.md` grammar update:** ✅ **Resolved.** ABNF
+   grammar updated to v4 including all six parameters (`agg_state`,
+   `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`),
+   semantic rules, canonicalization step 7, and 7 new conformance vectors.
 
-3. **MSTAR mode descriptions:** The physical meaning of modes A–H is not
-   documented here. Implementation should consult the libdedx source and
-   H. Paul's MSTAR documentation to determine whether short descriptions
-   are available and useful in the UI.
+3. **MSTAR mode descriptions:** ✅ **Resolved.** Physical meaning of
+   modes A–H sourced from `libdedx/include/dedx.h` (`DEDX_MSTAR_MODE_*`
+   constants). Full descriptions added to [§5 MSTAR Mode](#5-mstar-mode)
+   and to the WASM API contract type comment.

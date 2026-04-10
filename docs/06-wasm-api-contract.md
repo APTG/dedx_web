@@ -209,9 +209,16 @@ interface CustomCompound {
 
 ```typescript
 /**
- * MSTAR calculation modes.
- * Only relevant when programId = DEDX_MSTAR.
+ * MSTAR calculation modes. Only relevant when programId = DEDX_MSTAR.
+ * Maps to C enum DEDX_MSTAR_MODE_* in libdedx/include/dedx.h.
  * Default is "b" (recommended by H. Paul).
+ *
+ * "a" — Auto base:    selects "c" for condensed targets, "g" for gaseous.
+ * "b" — Auto special: selects "d" for condensed targets, "h" for gaseous. (default)
+ * "c" — Condensed standard.
+ * "d" — Condensed special (downgrades to "c" for target Z ≤ 3).
+ * "g" — Gas standard.
+ * "h" — Gas special (hardcoded for projectile Z=3–11 and 16–18; downgrades to "g" otherwise).
  */
 type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
 
@@ -742,14 +749,14 @@ const INTERPOLATION_METHODS = {
   SPLINE: "spline",  // cubic spline
 } as const;
 
-/** MSTAR calculation modes — maps to C dedx_config.mstar_mode */
+/** MSTAR calculation modes — maps to C dedx_config.mstar_mode (DEDX_MSTAR_MODE_*) */
 const MSTAR_MODES = {
-  AUTO_CG: "a",      // condensed→c, gaseous→g
-  AUTO_DH: "b",      // condensed→d, gaseous→h (recommended)
-  CONDENSED: "c",
-  CONDENSED_SPECIAL: "d",
-  GASEOUS: "g",
-  GASEOUS_SPECIAL: "h",
+  AUTO_CG:           "a",  // Auto base:    condensed→c, gaseous→g
+  AUTO_DH:           "b",  // Auto special: condensed→d, gaseous→h (recommended default)
+  CONDENSED:         "c",  // Condensed standard
+  CONDENSED_SPECIAL: "d",  // Condensed special (downgrades to c for Z ≤ 3)
+  GASEOUS:           "g",  // Gas standard
+  GASEOUS_SPECIAL:   "h",  // Gas special (Z=3–11 and 16–18; downgrades to g otherwise)
 } as const;
 ```
 
