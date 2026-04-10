@@ -34,9 +34,9 @@
 
 ## User Stories
 
-**As a** researcher with a non-standard material sample whose density
-differs from the library's built-in value (e.g., a compressed gas or a
-custom alloy),
+**As a** researcher working with a material sample whose density differs
+from the library's built-in value (e.g., PMMA machined to a non-standard
+density, or LiF in powder form),
 **I want to** enter my measured density and have it applied consistently
 to both the WASM stopping-power calculation and the keV/µm display
 conversion,
