@@ -234,8 +234,10 @@ type InterpolationScale = "log-log" | "lin-lin";
 /**
  * Interpolation fitting method. Applied within the chosen axis scale.
  * - "linear": piecewise linear interpolation between tabulated points. Default.
- *   For WASM: C library handles interpolation natively (dedx_get_stp_table /
- *   dedx_get_csda_range_table via adaptive integration of 1/S(E)).
+ *   For WASM STP: C library interpolates the native stopping-power table directly
+ *   via dedx_get_stp_table.
+ *   For WASM CSDA range: C library computes the range natively via
+ *   dedx_get_csda_range_table, using adaptive integration of 1/S(E).
  * - "spline": cubic spline interpolation (smoother curve; may overshoot sparse data).
  *   For WASM STP: JS reads back native tabulated points, fits spline, evaluates.
  *   For WASM CSDA range: JS numerically integrates 1/spline_stp(E) — replaces

@@ -142,22 +142,44 @@ Updated spec to Draft v2 with all changes applied.
 - `docs/04-feature-specs/README.md`: summary updated to Draft v3.
 - `CHANGELOG-AI.md`: v3 entry prepended.
 
+### Prompt 19: Follow-up documentation alignment for Draft v4 and v5
+**AI response**: Extended the session log to cover the remaining follow-on
+documentation work that landed as Draft v4 and Draft v5 so the narrative
+matches the published spec history. Completed the previously deferred
+`shareable-urls-formal.md` ABNF update for the six advanced-option
+URL parameters (`agg_state`, `interp_scale`, `interp_method`,
+`mstar_mode`, `density`, `ival`), added the MSTAR mode A, B, C, D, G, H
+descriptions to the Advanced Options spec, and clarified CSDA interpolation
+behavior so the interpolation wording stays consistent across the
+advanced-options, external-data, and WASM contract docs. Updated the
+feature-spec index and changelog to reflect Draft v4 / Draft v5 completion
+rather than leaving the work marked as deferred here.
+
+**Additional cross-spec updates for Draft v4 / Draft v5:**
+- `docs/04-feature-specs/advanced-options.md`: updated to Draft v4 and
+  Draft v5; added MSTAR mode A/B/C/D/G/H physical descriptions; clarified
+  CSDA interpolation text; density shown inline in Plot series labels.
+- `docs/04-feature-specs/shareable-urls-formal.md`: promoted to Final v4;
+  ABNF grammar updated for the six advanced-options query parameters;
+  semantic rules, canonicalization step, and conformance vectors added.
+- `docs/04-feature-specs/README.md`: shareable-urls-formal.md entry updated
+  to Final v4; advanced-options.md summary updated to Draft v5 with
+  corrected MSTAR mode set (A/B/C/D/G/H).
+- `CHANGELOG-AI.md`: Draft v4/v5 entries aligned with this log.
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1; updated to Draft v2; updated to Draft v3 |
-| `docs/06-wasm-api-contract.md` | Updated — `InterpolationMode` → `InterpolationScale` + `InterpolationMethod` |
-| `docs/04-feature-specs/external-data.md` | Updated — §8.2 + §13 Q2 interpolation references |
-| `docs/04-feature-specs/README.md` | Updated — advanced-options summary to Draft v3 |
-| `CHANGELOG-AI.md` | Updated with this session (v1, v2, v3 entries) |
-| `docs/ai-logs/2026-04-10-advanced-options.md` | **Created** — this log |
+| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1; updated to Draft v2; updated to Draft v3; extended in Draft v4 and Draft v5 with MSTAR mode A/B/C/D/G/H descriptions and CSDA interpolation clarification |
+| `docs/06-wasm-api-contract.md` | Updated — `InterpolationMode` → `InterpolationScale` + `InterpolationMethod`; interpolation terminology aligned with advanced options; STP vs CSDA comments clarified |
+| `docs/04-feature-specs/external-data.md` | Updated — §8.2 + §13 Q2 interpolation references; CSDA interpolation wording aligned |
+| `docs/04-feature-specs/shareable-urls-formal.md` | Updated — promoted to Final v4; ABNF grammar for `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, and `ival`; semantic rules; canonicalization step 7; 7 new conformance vectors |
+| `docs/04-feature-specs/README.md` | Updated — shareable-urls-formal.md version to Final v4; advanced-options.md summary through Draft v5 with corrected MSTAR mode list |
+| `CHANGELOG-AI.md` | Updated with this session (v1, v2, v3, v4, v5 alignment) |
+| `docs/ai-logs/2026-04-10-advanced-options.md` | **Created** — this log; extended to include Draft v4 / Draft v5 follow-up work |
 
 ## Open Questions Raised
 
-1. Plot series URL encoding for per-series advanced options (deferred v2).
-2. `shareable-urls-formal.md` ABNF grammar update for 6 new params
-   (`agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`,
-   `ival`) — deferred follow-on.
-3. MSTAR mode A–H physical descriptions — consult libdedx source at
-   implementation time.
+1. Plot series URL encoding for per-series advanced options (still deferred
+   from v2; no change in Draft v4 / Draft v5).

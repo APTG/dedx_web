@@ -28,9 +28,10 @@
 > **v4** (10 April 2026): Density override value surfaced inline in Plot
 > series labels (not just accordion header), enabling users to distinguish
 > two series with different densities at a glance. Series label format
-> table and AC-12 updated. MSTAR mode A–H physical descriptions added
-> (sourced from `libdedx/include/dedx.h`). All three Open Questions
-> resolved. ABNF grammar in `shareable-urls-formal.md` updated to v4.
+> table and AC-12 updated. MSTAR mode physical descriptions added for
+> modes A, B, C, D, G, and H (sourced from `libdedx/include/dedx.h`).
+> All three Open Questions resolved. ABNF grammar in
+> `shareable-urls-formal.md` updated to v4.
 >
 > **v5** (10 April 2026): Clarified how `interpolationScale` and
 > `interpolationMethod` apply to CSDA range. CSDA range is computed by
@@ -52,7 +53,7 @@
 > - App-wide Basic/Advanced toggle: [`multi-program.md`](multi-program.md) §2
 > - External data interpolation coupling: [`external-data.md`](external-data.md) §8.2
 > - URL canonical ordering: [`shareable-urls.md`](shareable-urls.md) §7.3
-> - Formal URL grammar (to be updated as follow-on): [`shareable-urls-formal.md`](shareable-urls-formal.md)
+> - Formal URL grammar (includes Advanced Options): [`shareable-urls-formal.md`](shareable-urls-formal.md)
 > - Plot page (Advanced Options panel placement): [`plot.md`](plot.md)
 
 ---
@@ -83,8 +84,10 @@ update simultaneously,
 interpolation scheme or compare interpolation artefacts directly.
 
 **As a** user of the MSTAR program,
-**I want to** select from MSTAR's calculation modes (A–H),
-**so that** I can reproduce specific results from H. Paul's MSTAR tables.
+**I want to** select from MSTAR's calculation modes (A, B, C, D, G, H;
+E/F are not supported by the current spec/WASM contract),
+**so that** I can reproduce specific results from H. Paul's MSTAR tables
+for the modes the application supports.
 
 ---
 
@@ -637,7 +640,7 @@ wrong results.
 | Mechanism | Scope |
 |-----------|-------|
 | URL query parameters | Non-default values only; present in Advanced mode URLs. See [URL State Encoding](#url-state-encoding). |
-| `localStorage` | All five option values + accordion open/collapsed state. |
+| `localStorage` | All six option values + accordion open/collapsed state. |
 
 **localStorage keys:**
 
@@ -675,7 +678,7 @@ mode key are not cleared on material switch.
 
 ### Effect on Calculations
 
-All five `AdvancedOptions` fields are forwarded to the WASM API when
+All non-default `AdvancedOptions` fields are forwarded to the WASM API when
 non-default:
 
 ```typescript
@@ -813,14 +816,14 @@ Advanced Options state is encoded as query parameters appended **after
 | `ival` | positive number | not set | `ival=75.0` |
 
 **Number serialization for `density`:** Use JavaScript's default
-`Number.prototype.toString()`. Very small values that JS represents in
-scientific notation (< 5×10⁻⁷) will appear as e.g. `density=1e-10`;
-values in the typical range appear as decimal (e.g. `density=0.0000899`).
+`Number.prototype.toString()`. Very small values may appear in
+scientific notation (e.g. `density=1e-10`); values in the typical range
+appear as decimal (e.g. `density=0.0000899`).
 
-**Omit-when-default rule:** All five parameters are omitted when at
+**Omit-when-default rule:** All six parameters are omitted when at
 default values, keeping the URL minimal.
 
-**Basic mode:** All five parameters are silently dropped when mode=basic.
+**Basic mode:** All six parameters are silently dropped when mode=basic.
 They survive in `localStorage` and are restored when Advanced mode is re-enabled.
 
 ### Canonical URL Examples
@@ -835,13 +838,13 @@ aggregate state override:
 Calculator — advanced mode, lin-lin scale + spline method:
 
 ```
-/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline
+/calculator?urlv=1&particle=1&material=276&programs=9&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline
 ```
 
 Calculator — advanced mode, density override for condensed material:
 
 ```
-/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&density=1.100
+/calculator?urlv=1&particle=1&material=276&programs=9&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&density=1.100
 ```
 
 Plot — advanced mode, MSTAR mode C:
@@ -860,11 +863,11 @@ The full canonical parameter order (with all Advanced Options params):
 4. `program` (basic) or `programs` (advanced)
 5. Page-specific: `energies`, `eunit` (Calculator) — or `series`, `stp_unit`, `xscale`, `yscale` (Plot)
 6. `mode=advanced`, `hidden_programs` (omit if empty), `qfocus`
-7. **Advanced Options (new):** `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`
+7. **Advanced Options:** `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`
    (each omitted when at default value)
 
 > The formal ABNF grammar in [`shareable-urls-formal.md`](shareable-urls-formal.md)
-> must be updated as a follow-on to include these five parameters.
+> includes all six Advanced Options parameters.
 
 ### Round-trip Stability
 
@@ -877,7 +880,7 @@ On page load with Advanced Options URL params:
    it differs, apply the override.
 4. Apply all options to the Advanced Options panel state.
 5. Update localStorage to match.
-6. If `mode` param is absent or `mode=basic`, ignore all five params.
+6. If `mode` param is absent or `mode=basic`, ignore all six params.
 7. Recalculate.
 
 ---
@@ -1043,6 +1046,7 @@ On page load with Advanced Options URL params:
    semantic rules, canonicalization step 7, and 7 new conformance vectors.
 
 3. **MSTAR mode descriptions:** ✅ **Resolved.** Physical meaning of
-   modes A–H sourced from `libdedx/include/dedx.h` (`DEDX_MSTAR_MODE_*`
-   constants). Full descriptions added to [§5 MSTAR Mode](#5-mstar-mode)
-   and to the WASM API contract type comment.
+   modes A, B, C, D, G, and H sourced from `libdedx/include/dedx.h`
+   (`DEDX_MSTAR_MODE_*` constants). Full descriptions added to
+   [§5 MSTAR Mode](#5-mstar-mode) and to the WASM API contract type
+   comment.

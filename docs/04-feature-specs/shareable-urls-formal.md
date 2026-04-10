@@ -351,7 +351,7 @@ Canonical parameter order:
    c. `interp_method` — omitted when value = `"linear"`
    d. `mstar_mode` — omitted when value = `"b"`
    e. `density` — omitted when not set; serialized via JS `Number.prototype.toString()`
-      (decimal for normal range; scientific notation for values < 5×10⁻⁷)
+      (output may be decimal or scientific notation per ECMAScript number formatting rules)
    f. `ival` — omitted when not set; serialized as decimal number
 
 Normalization rules:
@@ -424,7 +424,7 @@ Normalization rules:
 - Canonical: same (all params in canonical order; both at non-default values so neither omitted).
 
 6. Advanced Options — lin-lin scale + spline method:
-- Input: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline`
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline`
 - Canonical: same.
 
 7. Advanced Options — MSTAR mode, non-default:
