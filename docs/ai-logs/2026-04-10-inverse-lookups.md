@@ -219,7 +219,51 @@ consistency everywhere; update formal grammar.
 18. §5 conformance vectors: 6 new vectors added (12–17) covering Range tab,
     Inverse STP, default omission, basic-mode strip, and error cases.
 
-**Changes to `CHANGELOG-AI.md`:** one entry prepended.
+**Changes to `CHANGELOG-AI.md`:** one entry prepended (Draft v2).
+
+### Prompt 9: Q&A rounds → Draft v3
+
+**User directive:** Ask more questions, split long ones, then update spec.
+
+Four rounds of button-based Q&A (16 questions total). Decisions captured:
+
+- Multi-program: all selected programs used in inverse tabs
+- Default tab on Advanced enable: Forward (unchanged — inverse tabs appear but view stays)
+- Tab state: rows preserved across switches (restored on return)
+- Electron: supported; output energy in MeV (no per-nucleon)
+- `→ g/cm²` column: hidden (internal detail)
+- Multi-program layout (Range): one column per program
+- `getBraggPeakStp()` failure: hint omitted silently
+- `options?` param: yes — add to `getInverseStp()` and `getInverseCsda()`
+- Multi-program layout (Inverse STP): sub-rows per program
+- `qfocus`: does not gate inverse tabs (unaffected)
+- Multi-program export: one file, all programs
+- Sub-row program label: inline in E low cell
+- `hidden_programs`: same visibility governs inverse tabs
+- Unsupported program: shows `—` (same as no-solution, no highlight)
+
+**Changes to `inverse-lookups.md` (Draft v2 → v3):**
+1. Status header and v3 changelog added.
+2. §1: `qfocus` note added.
+3. §3: three new sub-sections — Programs and Multi-Program Mode,
+   Electron (ESTAR) Support, Tab State Persistence.
+4. §4.2: `→ g/cm²` column removed; multi-program column layout documented.
+5. §4.5: wireframe updated — g/cm² removed from single-program;
+   multi-program wireframe added.
+6. §5.2: multi-program sub-row layout documented with inline program label.
+7. §5.5: multi-program Inverse STP wireframe added.
+8. §8: export updated for multi-program (one file; `Program` column for STP;
+   filename pattern without program segment for multi-program).
+9. §10: `getBraggPeakStp()` silent failure and unsupported-program `—` added.
+10. Dependencies: `options?` noted; `getBraggPeakStp()` multi-program note added.
+11. Acceptance criteria: 13 new checks (tab switching, multi-program,
+    electron, export, `qfocus`, hidden_programs, getBraggPeakStp failure).
+12. Open Questions: all resolved — section now empty.
+
+**Changes to `06-wasm-api-contract.md`:**
+13. `options?: AdvancedOptions` added to `getInverseStp()` and `getInverseCsda()`.
+
+**Changes to `CHANGELOG-AI.md`:** Draft v3 entry prepended.
 
 ## Files Changed
 

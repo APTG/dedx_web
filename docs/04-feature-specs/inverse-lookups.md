@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Draft v2 (10 April 2026)
+> **Status:** Draft v3 (10 April 2026)
 >
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
@@ -11,12 +11,21 @@
 > Inverse CSDA (inline length-suffix detection), energy output auto-scaling, shared
 > entity selection and Advanced Options, URL canonical step 8.
 >
-> **v2** (10 April 2026): Renamed "Inverse CSDA" tab to **Range** (reflecting primary
-> usage: enter a range, get energy); Range given §4 priority position before Inverse STP
-> (§5); tab-bar order updated to `[ Forward ] [ Range ] [ Inverse STP ]`; export
-> filename updated to `dedx_range_`; `imode=csda` mapping documented explicitly for
-> the Range URL param; `getBraggPeakStp()` WASM helper added (Open Question #2 resolved
-> and removed).
+> **v2** (10 April 2026): Renamed "Inverse CSDA" tab to **Range**; Range given §4
+> priority position before Inverse STP (§5); tab-bar order updated to
+> `[ Forward ] [ Range ] [ Inverse STP ]`; export filename `dedx_range_`;
+> `imode=csda` mapping documented; `getBraggPeakStp()` WASM helper added;
+> Open Question #2 removed.
+>
+> **v3** (10 April 2026): Multi-program support — Range tab: one energy column per
+> program; Inverse STP tab: sub-rows per program with inline program label in E low
+> cell; `hidden_programs` governs inverse-tab visibility too; unsupported program →
+> `—`; `→ g/cm²` intermediate column removed from Range tab; tab state preserved
+> across switches (rows restored on return); electron (ESTAR) supported in both
+> inverse tabs (output energy in MeV, no per-nucleon conversion); `qfocus` does not
+> gate inverse tabs; `getBraggPeakStp()` failure → hint omitted silently; `options?`
+> added to `getInverseStp()` and `getInverseCsda()` WASM signatures; Open
+> Question #1 resolved and removed.
 >
 > **Related specs:**
 > - Calculator page (forward lookup, unified table, entity selection): [`calculator.md`](calculator.md)
@@ -75,6 +84,12 @@ the Forward tab automatically.
 > "locked" icon and no upsell prompt — the feature simply does not exist
 > in the standard experience.
 
+> **Note on `qfocus`:** The quantity-focus setting (`qfocus=stp`,
+> `qfocus=csda`, `qfocus=both`) controls which forward result columns are
+> shown in multi-program mode. It does **not** gate or hide the inverse
+> tabs — both inverse tabs are always available when Advanced mode is on,
+> regardless of the current `qfocus` value.
+
 ---
 
 ## 2. Tab Layout
@@ -129,6 +144,39 @@ that forward and inverse results are consistent when overrides are active.
 The same program-specific restrictions apply: `mstarMode` is only
 meaningful when the selected program is MSTAR; it is ignored otherwise.
 
+### Programs and Multi-Program Mode
+
+In single-program (basic) mode, inverse tabs use the single selected
+program. In multi-program (advanced) mode, **all selected programs** are
+used simultaneously:
+
+- **Range tab:** one result column per program (e.g., `ICRU 90 (MeV)`,
+  `PSTAR (MeV)`). Layout mirrors the multi-program forward table.
+- **Inverse STP tab:** one sub-row per program per input value (see §5).
+
+Programs hidden via `hidden_programs` are also excluded from inverse
+results — the same visibility setting governs both the forward and inverse
+views. A program that does not support the current particle/material
+combination shows `—` in its result cell(s), identical to the no-solution
+case (no highlight, no error message).
+
+### Electron (ESTAR) Support
+
+Both inverse tabs support the electron particle (ESTAR program, particle
+ID 1001). When the selected particle is the electron:
+- Output energy is in **MeV** (no per-nucleon conversion; electron has
+  no mass-number equivalent).
+- The energy unit selector shows only the MeV-family options; per-nucleon
+  units (MeV/nucl, MeV/u) are not applicable.
+- Auto-scaling still applies: eV / keV / MeV / GeV.
+
+### Tab State Persistence
+
+Input rows on each inverse tab are **preserved in memory** while the user
+is on a different tab. Switching Forward → Range → Forward → Range restores
+the previously typed range values and their detected units. Rows are only
+cleared when the entity selection changes (particle, material, or program).
+
 ### Energy Unit Selector
 
 The master energy unit selector (MeV / MeV/nucl / MeV/u) in the entity
@@ -153,12 +201,20 @@ Result type: [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-res
 
 ### 4.2 Table Columns
 
+**Single-program mode:**
+
 | # | Column | Header | Editable? | Content |
 |---|--------|--------|-----------|---------|
 | 1 | **Typed Value** | "Range" | **Yes** | User types a range value with an optional length suffix (e.g., `7.718 cm`, `45 µm`). Inline suffix detection applies (see §4.3). |
-| 2 | **Normalized** | "→ g/cm²" | No | The typed value converted to g/cm² (the WASM input unit). 4 significant figures. Scientific notation for very small/large values. |
-| 3 | **Unit** | "Unit" | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode. |
-| 4 | **Energy** | "→ Energy (auto)" | No | Resulting energy, auto-scaled to the best SI prefix (see §6). |
+| 2 | **Unit** | "Unit" | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode. |
+| 3 | **Energy** | "→ Energy (auto)" | No | Resulting energy, auto-scaled to the best SI prefix (see §6). |
+
+The intermediate g/cm² normalized value is an internal computation step
+and is not shown in the table.
+
+**Multi-program mode:** one additional energy column replaces (or extends)
+column 3 for each selected program. Column header: `{ProgramName} ({unit})`.
+Hidden programs (per `hidden_programs`) are not rendered.
 
 ### 4.3 Input Unit — Inline Suffix Detection
 
@@ -220,16 +276,29 @@ Conversion is invalid (row marked invalid) when ρ is missing or ρ ≤ 0.
 
 ### 4.5 Wireframe (Advanced mode)
 
+Single-program:
 ```
-  ┌─────────────────────┬──────────┬──────┬─────────────────┐
-  │ Range               │ → g/cm²  │ Unit │ → Energy (auto) │
-  ├─────────────────────┼──────────┼──────┼─────────────────┤
-  │ 7.718 cm            │ 0.7718   │ cm   │ 100.0 MeV       │
-  │ 45 µm               │ 4.500e-6 │ µm   │ 1.234 keV       │
-  │ 1.5 mm              │ 0.01500  │ mm   │ 12.34 MeV       │
-  │ 0.2                 │ 0.02000  │ cm   │ 14.81 MeV       │
-  │ ░░░░░               │          │      │                 │
-  └─────────────────────┴──────────┴──────┴─────────────────┘
+  ┌─────────────────────┬──────┬─────────────────┐
+  │ Range               │ Unit │ → Energy (auto) │
+  ├─────────────────────┼──────┼─────────────────┤
+  │ 7.718 cm            │ cm   │ 100.0 MeV       │
+  │ 45 µm               │ µm   │ 1.234 keV       │
+  │ 1.5 mm              │ mm   │ 12.34 MeV       │
+  │ 0.2                 │ cm   │ 14.81 MeV       │
+  │ ░░░░░               │      │                 │
+  └─────────────────────┴──────┴─────────────────┘
+  Valid range: 0.001–10000 MeV/nucl (ICRU 90, Proton)  [Export CSV ↓]
+```
+
+Multi-program (two programs, ICRU 90 + PSTAR):
+```
+  ┌─────────────────────┬──────┬─────────────────┬─────────────────┐
+  │ Range               │ Unit │ ICRU 90 (MeV)   │ PSTAR (MeV)     │
+  ├─────────────────────┼──────┼─────────────────┼─────────────────┤
+  │ 7.718 cm            │ cm   │ 100.0 MeV       │ 99.87 MeV       │
+  │ 45 µm               │ µm   │ 1.234 keV       │ 1.231 keV       │
+  │ ░░░░░               │      │                 │                 │
+  └─────────────────────┴──────┴─────────────────┴─────────────────┘
   Valid range: 0.001–10000 MeV/nucl (ICRU 90, Proton)  [Export CSV ↓]
 ```
 
@@ -255,6 +324,8 @@ input values. Result type: [`InverseStpResult`](../06-wasm-api-contract.md#23-ca
 
 ### 5.2 Table Columns
 
+**Single-program mode:**
+
 | # | Column | Header | Editable? | Content |
 |---|--------|--------|-----------|---------|
 | 1 | **Typed Value** | "Stopping Power ({unit})" | **Yes** | User types a stopping power value. No inline suffix detection — unit is set via the unit dropdown (see §5.3). |
@@ -265,6 +336,15 @@ input values. Result type: [`InverseStpResult`](../06-wasm-api-contract.md#23-ca
 The header labels for **E low** and **E high** include the active display
 unit after auto-scaling is applied to the first valid row; if rows
 auto-scale to different units, both columns use the unit string `"(auto)"`.
+
+**Multi-program mode:** columns remain the same (E low, E high). Each
+input row expands into **one sub-row per selected program**. The program
+name is shown as an inline label at the start of the E low cell for each
+sub-row (e.g., `ICRU 90  100.0 MeV`). The Typed Value and Unit cells span
+all sub-rows of the same input. Programs hidden via `hidden_programs` are
+excluded. A program that does not support the particle/material shows `—`
+in both E low and E high (same visual treatment as no-solution, no
+highlight).
 
 > **Note:** Unlike the Range tab, the STP input column does **not** use
 > inline suffix detection. Stopping power unit names (keV/µm, MeV·cm²/g,
@@ -325,6 +405,7 @@ Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)
 
 ### 5.5 Wireframe (Advanced mode, non-gas material)
 
+Single-program:
 ```
   Branch note: two energies are shown per row because the same stopping
   power occurs at two different energies — one below and one above the
@@ -339,6 +420,21 @@ Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)
   │ 999.99             │keV/µm▾ │ —            │ —            │
   │ ░░░░░░             │        │              │              │
   └────────────────────┴────────┴──────────────┴──────────────┘
+  Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)  [Export CSV ↓]
+```
+
+Multi-program (two programs, ICRU 90 + PSTAR):
+```
+  ┌────────────────────┬────────┬──────────────────────┬──────────────┐
+  │ Stopping Power     │ Unit   │ E low (auto)         │ E high (auto)│
+  ├────────────────────┼────────┼──────────────────────┼──────────────┤
+  │ 45.76              │keV/µm▾ │ ICRU 90  100.0 MeV   │ 312.4 MeV    │
+  │                    │        │ PSTAR    100.1 MeV   │ 311.8 MeV    │
+  ├────────────────────┼────────┼──────────────────────┼──────────────┤
+  │ 10.00              │keV/µm▾ │ ICRU 90  287.1 MeV   │ 891.0 MeV    │
+  │                    │        │ PSTAR    286.5 MeV   │ 890.1 MeV    │
+  │ ░░░░░░             │        │                      │              │
+  └────────────────────┴────────┴──────────────────────┴──────────────┘
   Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)  [Export CSV ↓]
 ```
 
@@ -432,18 +528,27 @@ table when results are present. The format follows the same conventions as
 the Forward tab export (UTF-8 with BOM, comma delimiter, 4 significant
 figures).
 
-**Range columns:**
-`Typed Value`, `→ g/cm²`, `Unit`, `→ Energy ({unit})`
+**Range — single-program columns:**
+`Typed Value`, `Unit`, `→ Energy ({unit})`
 
-**Inverse STP columns:**
+**Range — multi-program columns:**
+`Typed Value`, `Unit`, `{ProgramName} ({unit})` … (one column per visible program)
+
+**Inverse STP — single-program columns:**
 `Typed Value`, `Unit`, `E low ({unit})`, `E high ({unit})`
+
+**Inverse STP — multi-program columns:**
+`Typed Value`, `Unit`, `Program`, `E low ({unit})`, `E high ({unit})`
+— one data row per program per input value; hidden programs are excluded.
 
 `{unit}` in the headers is the auto-scaled unit applied to the first
 valid row (or `auto` if rows use mixed prefixes).
 
 **Filenames:**
-- `dedx_range_{particle}_{material}_{program}.csv`
-- `dedx_inverse_stp_{particle}_{material}_{program}.csv`
+- `dedx_range_{particle}_{material}.csv` (multi-program: omits program segment)
+- `dedx_range_{particle}_{material}_{program}.csv` (single-program)
+- `dedx_inverse_stp_{particle}_{material}.csv` (multi-program)
+- `dedx_inverse_stp_{particle}_{material}_{program}.csv` (single-program)
 
 ---
 
@@ -508,10 +613,13 @@ On page load with `imode` present:
 Errors from `getInverseStp()` or `getInverseCsda()` (C-level
 `LibdedxError`) are handled per-row where possible:
 
-- **No-solution error** (STP above Bragg peak): show `—` in the affected
-  energy cell(s). Not highlighted — this is a physically valid outcome.
+- **No-solution error** (STP above Bragg peak, or unsupported program):
+  show `—` in the affected energy cell(s). Not highlighted — this is a
+  physically valid outcome or a compatibility issue, not a user error.
 - **Out-of-range error** (value outside the tabulated energy bounds):
   highlight the row with a valid-range hint below the table.
+- **`getBraggPeakStp()` failure:** silently omit the valid STP range hint
+  line below the Inverse STP table. The table continues to work normally.
 - **Unexpected C error**: show an error message below the table with a
   "Show details" toggle revealing the error code (same pattern as the
   Forward tab, per [project vision §9](../01-project-vision.md#9-error-philosophy)).
@@ -528,13 +636,17 @@ marked invalid: "Density not available for this material."
 ## Dependencies
 
 - **[`LibdedxService.getInverseCsda()`](../06-wasm-api-contract.md#3-service-interface)** — requires stateful workspace API.
-  Returns [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-results) with energies in MeV/nucl.
+  Accepts `options?: AdvancedOptions`. Returns
+  [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-results) with energies in MeV/nucl.
+  Called once per program per batch in multi-program mode.
 - **[`LibdedxService.getInverseStp()`](../06-wasm-api-contract.md#3-service-interface)** — requires stateful workspace API.
-  Called twice per batch (once with `side = 0`, once with `side = 1`).
+  Accepts `options?: AdvancedOptions`. Called twice per program per batch
+  (once with `side = 0`, once with `side = 1`).
   Returns [`InverseStpResult`](../06-wasm-api-contract.md#23-calculation-results) with energies in MeV/nucl.
 - **[`LibdedxService.getBraggPeakStp()`](../06-wasm-api-contract.md#3-service-interface)** — returns the Bragg peak
   stopping power in MeV·cm²/g for the current particle/material/program.
-  Used to show the valid STP input range hint below the Inverse STP table.
+  Accepts `options?: AdvancedOptions`. Called once per visible program in
+  multi-program mode. Failure → hint omitted silently (no error shown).
 - **[`LibdedxService.getDensity(materialId)`](../06-wasm-api-contract.md#3-service-interface)** — for STP unit
   conversion (keV/µm ↔ MeV·cm²/g) and range unit conversion (cm → g/cm²).
   See [`unit-handling.md`](unit-handling.md) §§5.2, 5.4.
@@ -563,7 +675,9 @@ marked invalid: "Density not available for this material."
 
 - [ ] Switching tabs preserves the entity selection (Particle, Material, Program).
 - [ ] Switching tabs preserves the master energy unit selector state.
-- [ ] Each tab maintains its own input rows independently (switching Forward → Range → Forward does not clear the Forward rows).
+- [ ] Each tab maintains its own input rows independently; returning to an inverse tab restores previously typed values and units.
+- [ ] Enabling Advanced mode shows both inverse tabs in the tab bar without changing the active tab (stays on Forward).
+- [ ] `qfocus` setting does not hide or disable either inverse tab.
 
 ### Range — Input
 
@@ -595,7 +709,21 @@ marked invalid: "Density not available for this material."
 - [ ] When `side = 1` returns an error (no high-energy solution), E high shows `—`.
 - [ ] A stopping power value above the Bragg peak maximum shows `—` in both columns with no row highlight.
 - [ ] The valid STP range hint below the table shows the Bragg peak value from `getBraggPeakStp()`.
+- [ ] If `getBraggPeakStp()` fails, the hint line is omitted silently.
 - [ ] Negative or zero input is rejected with an inline validation message.
+
+### Multi-Program
+
+- [ ] In multi-program mode, Range tab shows one result column per visible program.
+- [ ] In multi-program mode, Inverse STP tab shows one sub-row per visible program per input value; the program name appears inline at the start of the E low cell.
+- [ ] Programs hidden via `hidden_programs` are excluded from both inverse tabs.
+- [ ] A program that does not support the current particle/material shows `—` in its result cell(s), with no row highlight.
+
+### Electron (ESTAR)
+
+- [ ] When the electron particle is selected, both inverse tabs are available.
+- [ ] Output energy for electron is displayed in MeV (not MeV/nucl or MeV/u).
+- [ ] Energy auto-scaling (eV / keV / MeV / GeV) applies to electron output.
 
 ### Energy Output Auto-Scaling (both tabs)
 
@@ -632,21 +760,16 @@ marked invalid: "Density not available for this material."
 ### Export
 
 - [ ] "Export CSV" button appears below the table when at least one valid result is present.
-- [ ] Range CSV columns: `Typed Value`, `→ g/cm²`, `Unit`, `→ Energy ({unit})`.
-- [ ] Inverse STP CSV columns: `Typed Value`, `Unit`, `E low ({unit})`, `E high ({unit})`.
-- [ ] Range filename: `dedx_range_{particle}_{material}_{program}.csv`.
-- [ ] Inverse STP filename: `dedx_inverse_stp_{particle}_{material}_{program}.csv`.
+- [ ] Range single-program CSV columns: `Typed Value`, `Unit`, `→ Energy ({unit})`.
+- [ ] Range multi-program CSV columns: `Typed Value`, `Unit`, `{ProgramName} ({unit})` per visible program.
+- [ ] Inverse STP single-program CSV columns: `Typed Value`, `Unit`, `E low ({unit})`, `E high ({unit})`.
+- [ ] Inverse STP multi-program CSV columns: `Typed Value`, `Unit`, `Program`, `E low ({unit})`, `E high ({unit})`; one row per program per input value.
+- [ ] Hidden programs are excluded from all CSV exports.
+- [ ] Single-program filenames: `dedx_range_{particle}_{material}_{program}.csv` / `dedx_inverse_stp_{particle}_{material}_{program}.csv`.
+- [ ] Multi-program filenames omit the program segment: `dedx_range_{particle}_{material}.csv` / `dedx_inverse_stp_{particle}_{material}.csv`.
 
 ---
 
 ## Open Questions
 
-1. **AdvancedOptions pass-through to inverse WASM calls:** The
-   [`getInverseStp()`](../06-wasm-api-contract.md#3-service-interface) and
-   [`getInverseCsda()`](../06-wasm-api-contract.md#3-service-interface)
-   signatures in [`06-wasm-api-contract.md` §3](../06-wasm-api-contract.md#3-service-interface)
-   do not include an `options?` parameter (unlike `calculate()`). The C
-   stateful API applies config settings before evaluation, so the options
-   must be set on the workspace before calling the inverse function.
-   Confirm that the service implementation handles this correctly, or
-   update the service interface to accept `options?` explicitly.
+None at this time. All design questions resolved in v1–v3.

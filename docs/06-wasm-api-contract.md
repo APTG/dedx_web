@@ -441,6 +441,7 @@ interface LibdedxService {
     materialId: number;
     stoppingPowers: number[];  // in MeV·cm²/g
     side: 0 | 1;
+    options?: AdvancedOptions;
   }): InverseStpResult;
 
   /**
@@ -454,6 +455,7 @@ interface LibdedxService {
     particleId: number;
     materialId: number;
     ranges: number[];          // in g/cm²
+    options?: AdvancedOptions;
   }): InverseCsdaResult;
 
   /**
