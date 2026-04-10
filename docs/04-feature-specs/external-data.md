@@ -706,20 +706,22 @@ When an external program is selected:
 - Instead of calling the WASM API, the app performs a **lookup + interpolation**
   on the external table:
   - For each user-requested energy value, interpolate the stopping power and
-    CSDA range from the external table using **log-log interpolation**. This
-    matches libdedx's default (`InterpolationMode = "log-log"`), ensuring
-    that built-in and external series are directly comparable.
+    CSDA range from the external table using the session-level interpolation
+    settings (`interpolationScale` + `interpolationMethod` from
+    `AdvancedOptions`). The default combination (Log-log + Linear) matches
+    libdedx's built-in behaviour, ensuring that built-in and external series
+    are directly comparable.
   - If the requested energy is outside the external table's energy bounds,
     mark the row as out-of-range.
 - Results are displayed in the same unified table format as built-in data.
 
-**Interpolation mode and future configurability:** When `advanced-options.md`
-is implemented, the global interpolation toggle (`InterpolationMode`) must
-apply to both WASM calls and external data JS interpolation. This is required
-for scientific validity: comparing a built-in curve (log-log) against an
-external curve (linear) on the same plot would be misleading. The interpolation
-method is therefore not configurable per-dataset; it is a session-level setting
-that applies consistently to all data sources.
+**Interpolation configurability:** Both interpolation settings — axis scale
+(Log-log / Lin-lin) and fitting method (Linear / Spline) — are session-level
+and apply uniformly to WASM calculations and external data JS interpolation.
+Mixing interpolation settings across series is not supported. This is required
+for scientific validity: comparing a built-in curve using one interpolation
+scheme against an external curve using another would be misleading. See
+[`advanced-options.md`](advanced-options.md) §4.
 
 ### 8.3 Multi-Program (Advanced Mode)
 
@@ -962,14 +964,15 @@ CLI tool.
    *Recommendation: start with exact case-insensitive name match; add formula
    matching in a future iteration.*
 
-2. **Interpolation method for external data:** ✅ **Resolved.** Log-log
-   interpolation is fixed for v1 (matches libdedx default). Configurable
-   interpolation mode (`log-log` / `linear`) will be introduced as a global
-   session toggle when `advanced-options.md` is implemented. That toggle will
-   apply consistently to both WASM calculations and external data JS
+2. **Interpolation method for external data:** ✅ **Resolved.** Log-log +
+   Linear (piecewise linear in log-log space) is the default, matching the
+   libdedx C library default. Configurable interpolation is exposed via two
+   independent session-level controls in `advanced-options.md` §4: **Axis
+   scale** (Log-log / Lin-lin) and **Method** (Linear / Spline). Both
+   controls apply consistently to WASM calculations and external data JS
    interpolation. Per-dataset interpolation declaration is not supported —
    doing so would make side-by-side comparisons scientifically unreliable.
-   See §8.2.
+   See §8.2 and [`advanced-options.md`](advanced-options.md) §4.
 
 3. **CSDA range from stopping power:** Should the app offer an option to
    compute CSDA range by integrating the stopping-power table (for sources

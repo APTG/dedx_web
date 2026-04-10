@@ -21,7 +21,7 @@
 | ESTAR (electrons) | **Included** | ESTAR (program 3, particle ID 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" entry in the `ParticleEntity` list. |
 | MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
 | Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
-| Interpolation | **Exposed** | Log-log (default) and linear. Toggle in advanced settings. |
+| Interpolation | **Exposed** | Two orthogonal controls: axis scale (Log-log / Lin-lin) and fitting method (Linear / Spline). Both in the Advanced Options panel. `InterpolationScale` maps to C `DEDX_INTERPOLATION_*`; spline method is JS-only and requires JS-level CSDA integration. |
 
 ---
 
@@ -209,18 +209,42 @@ interface CustomCompound {
 
 ```typescript
 /**
- * MSTAR calculation modes.
- * Only relevant when programId = DEDX_MSTAR.
+ * MSTAR calculation modes. Only relevant when programId = DEDX_MSTAR.
+ * Maps to C enum DEDX_MSTAR_MODE_* in libdedx/include/dedx.h.
  * Default is "b" (recommended by H. Paul).
+ *
+ * "a" — Auto base:    selects "c" for condensed targets, "g" for gaseous.
+ * "b" — Auto special: selects "d" for condensed targets, "h" for gaseous. (default)
+ * "c" — Condensed standard.
+ * "d" — Condensed special (downgrades to "c" for target Z ≤ 3).
+ * "g" — Gas standard.
+ * "h" — Gas special (hardcoded for projectile Z=3–11 and 16–18; downgrades to "g" otherwise).
  */
 type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
 
 /**
- * Interpolation mode for stopping power lookup.
- * Maps to C constants: DEDX_INTERPOLATION_LOG_LOG = 0, DEDX_INTERPOLATION_LINEAR = 1.
- * Default is "log-log".
+ * Axis scale for interpolation. Controls the transformation space.
+ * - "log-log": transform both energy and stopping-power axes to log scale before fitting.
+ *   Maps to C constant DEDX_INTERPOLATION_LOG_LOG = 0. Default.
+ * - "lin-lin": fit in the original (untransformed) linear space.
+ *   Maps to C constant DEDX_INTERPOLATION_LINEAR = 1.
  */
-type InterpolationMode = "log-log" | "linear";
+type InterpolationScale = "log-log" | "lin-lin";
+
+/**
+ * Interpolation fitting method. Applied within the chosen axis scale.
+ * - "linear": piecewise linear interpolation between tabulated points. Default.
+ *   For WASM STP: C library interpolates the native stopping-power table directly
+ *   via dedx_get_stp_table.
+ *   For WASM CSDA range: C library computes the range natively via
+ *   dedx_get_csda_range_table, using adaptive integration of 1/S(E).
+ * - "spline": cubic spline interpolation (smoother curve; may overshoot sparse data).
+ *   For WASM STP: JS reads back native tabulated points, fits spline, evaluates.
+ *   For WASM CSDA range: JS numerically integrates 1/spline_stp(E) — replaces
+ *   the WASM CSDA call. The C integrator cannot be patched with a JS-level spline.
+ *   For external data: JS fits spline through loaded table points.
+ */
+type InterpolationMethod = "linear" | "spline";
 
 /**
  * Aggregate state override for a material.
@@ -235,8 +259,10 @@ type AggregateState = "default" | "gas" | "condensed";
 interface AdvancedOptions {
   /** Override aggregate state of the target material. Default: "default". */
   aggregateState?: AggregateState;
-  /** Interpolation method. Default: "log-log". */
-  interpolation?: InterpolationMode;
+  /** Interpolation axis scale. Default: "log-log". */
+  interpolationScale?: InterpolationScale;
+  /** Interpolation fitting method. Default: "linear". */
+  interpolationMethod?: InterpolationMethod;
   /** MSTAR mode. Only used when programId = DEDX_MSTAR. Default: "b". */
   mstarMode?: MstarMode;
   /** Override density in g/cm³. If set, replaces the built-in density. */
@@ -304,12 +330,22 @@ interface LibdedxService {
   // ── Stopping Power ─────────────────────────────────────────
 
   /**
-   * Evaluate stopping power at user-provided energy points.
-   * Calls: dedx_get_stp_table() for the stopping powers,
-   *        dedx_get_csda_range_table() for CSDA ranges.
+   * Evaluate stopping power and CSDA range at user-provided energy points.
+   *
+   * Default path (no AdvancedOptions, or only interpolationScale):
+   *   - STP:        dedx_get_stp_table() — C library interpolates tabulated data.
+   *   - CSDA range: dedx_get_csda_range_table() — C library numerically integrates
+   *                 1/S(E) via adaptive Gaussian quadrature (dedx_tools.c:adapt).
+   *                 The interpolationScale setting affects every S(E) evaluation
+   *                 inside the integrator.
+   *
+   * Spline path (interpolationMethod = "spline"):
+   *   - STP:        JS reads native tabulated data, fits spline, evaluates at query E.
+   *   - CSDA range: JS numerically integrates 1/spline_stp(E) over [E_min, E].
+   *                 dedx_get_csda_range_table() is NOT called in this path.
    *
    * When advancedOptions are provided, falls back to the stateful
-   * dedx_config API to set compound_state, interpolation, density, etc.
+   * dedx_config API to set compound_state, interpolation scale, density, etc.
    *
    * Energies are always in MeV/nucl internally. If the user provides
    * a different unit, the caller (or a utility) must convert first
@@ -718,20 +754,26 @@ const AGGREGATE_STATES = {
   CONDENSED: 2,
 } as const;
 
-/** Interpolation modes — maps to C dedx_config.interpolation */
-const INTERPOLATION_MODES = {
-  LOG_LOG: 0,
-  LINEAR: 1,
+/** Interpolation axis scales — maps to C dedx_config.interpolation */
+const INTERPOLATION_SCALES = {
+  LOG_LOG: 0,   // log-log space (default)
+  LIN_LIN: 1,   // linear space
 } as const;
 
-/** MSTAR calculation modes — maps to C dedx_config.mstar_mode */
+/** Interpolation fitting methods (JS-level; applied after axis transform) */
+const INTERPOLATION_METHODS = {
+  LINEAR: "linear",  // piecewise linear (default)
+  SPLINE: "spline",  // cubic spline
+} as const;
+
+/** MSTAR calculation modes — maps to C dedx_config.mstar_mode (DEDX_MSTAR_MODE_*) */
 const MSTAR_MODES = {
-  AUTO_CG: "a",      // condensed→c, gaseous→g
-  AUTO_DH: "b",      // condensed→d, gaseous→h (recommended)
-  CONDENSED: "c",
-  CONDENSED_SPECIAL: "d",
-  GASEOUS: "g",
-  GASEOUS_SPECIAL: "h",
+  AUTO_CG:           "a",  // Auto base:    condensed→c, gaseous→g
+  AUTO_DH:           "b",  // Auto special: condensed→d, gaseous→h (recommended default)
+  CONDENSED:         "c",  // Condensed standard
+  CONDENSED_SPECIAL: "d",  // Condensed special (downgrades to c for Z ≤ 3)
+  GASEOUS:           "g",  // Gas standard
+  GASEOUS_SPECIAL:   "h",  // Gas special (Z=3–11 and 16–18; downgrades to g otherwise)
 } as const;
 ```
 
@@ -813,14 +855,24 @@ these programs are selected.
 
 ### Q5: Interpolation mode
 
-**Resolution: Expose in advanced settings.**
+**Resolution: Expose in advanced settings as two orthogonal controls.**
 
 ```typescript
-type InterpolationMode = "log-log" | "linear";
+type InterpolationScale  = "log-log" | "lin-lin";
+type InterpolationMethod = "linear"  | "spline";
 ```
 
-Default is `"log-log"` (maps to `DEDX_INTERPOLATION_LOG_LOG = 0`).
-Show as a toggle in an "Advanced" section of the settings panel.
+Two separate segmented controls in the Advanced Options accordion:
+- **Axis scale** — Log-log (default) / Lin-lin. Log-log maps to
+  `DEDX_INTERPOLATION_LOG_LOG = 0`; Lin-lin maps to
+  `DEDX_INTERPOLATION_LINEAR = 1`.
+- **Method** — Linear (default) / Spline. Piecewise linear or cubic
+  spline applied within the chosen axis scale. Both WASM table readback
+  and external-data JS interpolation use the same method.
+
+Default combination: Log-log + Linear (matching the original libdedx C
+library default and the v1/v2 `"log-log"` behaviour).
+See [`advanced-options.md`](04-feature-specs/advanced-options.md) §4.
 
 ### Q6: Aggregate state
 

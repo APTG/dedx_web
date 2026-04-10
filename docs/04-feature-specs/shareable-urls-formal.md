@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Final v3 (9 April 2026)
+> **Status:** Final v4 (10 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
@@ -23,6 +23,11 @@
 > (built-in int or `ext-ref`). Canonicalization §4 rewritten to unambiguously
 > specify `program` vs `programs` by mode, sub-ordering within advanced-mode params,
 > and `extdata` placement.
+>
+> **v4** (10 April 2026): Added Advanced Options parameters (`agg_state`,
+> `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`) to ABNF
+> grammar (§2), semantic rules §3.5–§3.7, canonicalization §4 (step 7), and
+> conformance vectors §5. Sourced from `advanced-options.md`.
 >
 > **Normative relationship:**
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
@@ -66,6 +71,12 @@ pair                = urlv-pair
                     / stp-unit-pair
                     / xscale-pair
                     / yscale-pair
+                    / agg-state-pair
+                    / interp-scale-pair
+                    / interp-method-pair
+                    / mstar-mode-pair
+                    / density-pair
+                    / ival-pair
                     / unknown-pair
 
 ; -----------------------------
@@ -114,6 +125,33 @@ series-item         = entity-id "." entity-id "." entity-id
 stp-unit-pair       = "stp_unit=" ("kev-um" / "mev-cm" / "mev-cm2-g")
 xscale-pair         = "xscale=" ("log" / "lin")
 yscale-pair         = "yscale=" ("log" / "lin")
+
+; -----------------------------
+; advanced options params (Advanced mode only; omitted at default values)
+; -----------------------------
+agg-state-pair      = "agg_state=" agg-state-token
+agg-state-token     = "gas" / "condensed"
+                    ; emitted only when selected state ≠ material built-in phase
+                    ; (i.e. an override is active)
+
+interp-scale-pair   = "interp_scale=" interp-scale-token
+interp-scale-token  = "lin-lin"
+                    ; only non-default value emitted; omitted when "log-log"
+
+interp-method-pair  = "interp_method=" interp-method-token
+interp-method-token = "spline"
+                    ; only non-default value emitted; omitted when "linear"
+
+mstar-mode-pair     = "mstar_mode=" mstar-mode-token
+mstar-mode-token    = "a" / "b" / "c" / "d" / "g" / "h"
+                    ; omitted when value = "b" (default)
+
+density-pair        = "density=" number
+                    ; number must parse as positive (> 0); omitted when not set
+                    ; very small values may use scientific notation: e.g. 8.99e-5
+
+ival-pair           = "ival=" number
+                    ; number must parse as positive and ≤ 10000; omitted when not set
 
 ; -----------------------------
 ; entity ID (built-in or external)
@@ -206,11 +244,14 @@ Rules:
 - If `mode != advanced`:
   - ignore `programs`, `hidden_programs`, `qfocus`
   - use `program`
+  - **ignore all Advanced Options params**: `agg_state`, `interp_scale`,
+    `interp_method`, `mstar_mode`, `density`, `ival` are silently dropped
 - If `mode == advanced`:
   - use `programs`
   - ignore `program`
   - validate `hidden_programs` subset of `programs`
   - default `qfocus=both`
+  - Advanced Options params are parsed and applied (see §3.6, §3.7)
 
 Energy precedence:
 - In `energies`, per-row suffix (`value:unit`) overrides `eunit` for that row.
@@ -227,6 +268,14 @@ Global:
 Calculator:
 - `eunit=MeV`
 - `energies=100` if missing/empty
+
+Advanced Options (when `mode=advanced`; all omit-when-default):
+- `agg_state` — absent = no override (toggle lands on material built-in phase)
+- `interp_scale` — absent = `"log-log"`
+- `interp_method` — absent = `"linear"`
+- `mstar_mode` — absent = `"b"`
+- `density` — absent = no override (built-in density used)
+- `ival` — absent = no override (built-in I-value used)
 
 Plot:
 - `stp_unit=kev-um`
@@ -254,6 +303,22 @@ Plot constraints:
 - Each `series` triplet must be valid; invalid triplets are dropped.
 - Partial success is allowed.
 
+Advanced Options constraints (applied only when `mode=advanced`):
+- `agg_state`: value must be `"gas"` or `"condensed"`. If the value equals the
+  material's built-in phase, treat as no override (same as absent).
+  Invalid values → silently ignored (no override applied).
+- `interp_scale`: value must be `"lin-lin"`. Any other value → silently ignored
+  (default `"log-log"` used).
+- `interp_method`: value must be `"spline"`. Any other value → silently ignored
+  (default `"linear"` used).
+- `mstar_mode`: value must be one of `"a"` `"b"` `"c"` `"d"` `"g"` `"h"`.
+  Invalid values → silently ignored (default `"b"` used).
+- `density`: must parse as a finite positive number (> 0). Scientific notation
+  (e.g. `8.99e-5`) is valid. Zero, negative, non-numeric, or non-finite → silently
+  ignored (no override applied).
+- `ival`: must parse as a positive number > 0 and ≤ 10 000. Out-of-range or
+  non-numeric → silently ignored (no override applied).
+
 ---
 
 ## 4. Canonicalization Algorithm
@@ -279,6 +344,16 @@ Canonical parameter order:
    c. `qfocus` — **always** emitted in advanced mode, even when the value equals
       the default `both`
 
+7. Advanced Options params — present **only** when `mode=advanced`; each
+   omitted when at its default value, in this sub-order:
+   a. `agg_state` — omitted when no override is active (selected phase = built-in)
+   b. `interp_scale` — omitted when value = `"log-log"`
+   c. `interp_method` — omitted when value = `"linear"`
+   d. `mstar_mode` — omitted when value = `"b"`
+   e. `density` — omitted when not set; serialized via JS `Number.prototype.toString()`
+      (output may be decimal or scientific notation per ECMAScript number formatting rules)
+   f. `ival` — omitted when not set; serialized as decimal number
+
 Normalization rules:
 - Always emit `urlv`.
 - Always emit `particle`, `material`, and the mode-appropriate program param.
@@ -292,6 +367,9 @@ Normalization rules:
 - Emit `program=auto` in basic mode when no explicit program is selected.
 - In `series`, always emit resolved `int-pos` or `ext-ref` triplets; never emit `auto`.
 - Emit `extdata={label}:{url}` for each external source using its assigned label.
+- Never emit Advanced Options params in basic mode, even if present in localStorage.
+- Omit each Advanced Options param individually when at its default (do not emit
+  zero-length values or explicit default values like `interp_scale=log-log`).
 
 ---
 
@@ -341,6 +419,39 @@ Normalization rules:
 - Input: `urlv=1&particle=1&material=276&mode=basic&programs=9,2&qfocus=stp`
 - Result: ignore advanced params; parse as basic.
 
+5. Advanced Options — density + aggregate state override:
+- Input: `urlv=1&particle=1&material=3&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=both&agg_state=condensed&density=8.99e-5`
+- Canonical: same (all params in canonical order; both at non-default values so neither omitted).
+
+6. Advanced Options — lin-lin scale + spline method:
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline`
+- Canonical: same.
+
+7. Advanced Options — MSTAR mode, non-default:
+- Input: `urlv=1&particle=1&material=276&programs=101&energies=100&eunit=MeV&mode=advanced&qfocus=both&mstar_mode=c`
+- Canonical: same.
+
+8. Advanced Options — default values are omitted:
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=log-log&mstar_mode=b`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+- Note: both params equal their defaults → omitted in canonical output.
+
+9. Advanced Options in basic mode — silently dropped:
+- Input: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&density=1.2&agg_state=condensed`
+- Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
+- Note: no `mode=advanced` → Advanced Options params stripped.
+
+10. Advanced Options — invalid density silently ignored:
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&density=-1`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+- Note: negative density invalid → treated as absent.
+
+11. Advanced Options — `agg_state` equals material built-in → no override:
+- Input: `urlv=1&particle=1&material=3&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&agg_state=gas`
+  (material 3 is a gas by default)
+- Canonical: `urlv=1&particle=1&material=3&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+- Note: `agg_state=gas` matches built-in → no override active → param omitted.
+
 ---
 
 ## 6. Implementation Guidance
@@ -363,3 +474,4 @@ Validation should be deterministic and side-effect free.
 - Plot series semantics: [`plot.md`](plot.md)
 - Entity compatibility rules: [`entity-selection.md`](entity-selection.md)
 - Type and ID source of truth: [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md)
+- Advanced Options semantics and defaults: [`advanced-options.md`](advanced-options.md)
