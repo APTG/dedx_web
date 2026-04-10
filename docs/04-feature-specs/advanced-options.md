@@ -1,6 +1,6 @@
 # Feature: Advanced Options Panel
 
-> **Status:** Draft v5 (10 April 2026)
+> **Status:** Final v5 (10 April 2026)
 >
 > **v1** (10 April 2026): Initial draft — aggregate state override,
 > interpolation mode, MSTAR mode, density override, I-value override.

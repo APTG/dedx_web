@@ -21,7 +21,7 @@
 | ESTAR (electrons) | **Included** | ESTAR (program 3, particle ID 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" entry in the `ParticleEntity` list. |
 | MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
 | Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
-| Interpolation | **Exposed** | Log-log (default) and linear. Toggle in advanced settings. |
+| Interpolation | **Exposed** | Two orthogonal controls: axis scale (Log-log / Lin-lin) and fitting method (Linear / Spline). Both in the Advanced Options panel. `InterpolationScale` maps to C `DEDX_INTERPOLATION_*`; spline method is JS-only and requires JS-level CSDA integration. |
 
 ---
 

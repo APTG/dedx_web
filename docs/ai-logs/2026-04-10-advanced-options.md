@@ -142,7 +142,7 @@ Updated spec to Draft v2 with all changes applied.
 - `docs/04-feature-specs/README.md`: summary updated to Draft v3.
 - `CHANGELOG-AI.md`: v3 entry prepended.
 
-### Prompt 19: Follow-up documentation alignment for Draft v4 and v5
+### Prompts 23–25: Follow-up documentation alignment for Draft v4 and v5
 **AI response**: Extended the session log to cover the remaining follow-on
 documentation work that landed as Draft v4 and Draft v5 so the narrative
 matches the published spec history. Completed the previously deferred
@@ -167,17 +167,38 @@ rather than leaving the work marked as deferred here.
   corrected MSTAR mode set (A/B/C/D/G/H).
 - `CHANGELOG-AI.md`: Draft v4/v5 entries aligned with this log.
 
+### Prompt 26: Final review and promotion to Final v5
+**AI response**: Performed a cross-spec consistency review of all files
+changed in the branch. Found two inconsistencies and one log error:
+
+1. **`docs/06-wasm-api-contract.md` §1 Design Decisions** — Interpolation
+   row read "Log-log (default) and linear. Toggle in advanced settings."
+   Updated to describe two orthogonal controls (axis scale + fitting method)
+   and note that spline method is JS-only with JS-level CSDA integration.
+
+2. **`docs/04-feature-specs/shareable-urls.md` §7.3** — Canonical ordering
+   list stopped at step 6 (`mode`, `hidden_programs`, `qfocus`). Added
+   step 7 for all six Advanced Options params (`agg_state`, `interp_scale`,
+   `interp_method`, `mstar_mode`, `density`, `ival`).
+
+3. **AI log** — duplicate "Prompt 19" heading at the Draft v4/v5 entry
+   renumbered to "Prompts 23–25".
+
+After applying fixes, promoted `advanced-options.md` from Draft v5 to
+**Final v5** and updated `docs/04-feature-specs/README.md` accordingly.
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1; updated to Draft v2; updated to Draft v3; extended in Draft v4 and Draft v5 with MSTAR mode A/B/C/D/G/H descriptions and CSDA interpolation clarification |
-| `docs/06-wasm-api-contract.md` | Updated — `InterpolationMode` → `InterpolationScale` + `InterpolationMethod`; interpolation terminology aligned with advanced options; STP vs CSDA comments clarified |
+| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1; updated to Draft v2; updated to Draft v3; extended in Draft v4 and Draft v5 with MSTAR mode A/B/C/D/G/H descriptions and CSDA interpolation clarification; promoted to **Final v5** |
+| `docs/06-wasm-api-contract.md` | Updated — `InterpolationMode` → `InterpolationScale` + `InterpolationMethod`; interpolation terminology aligned with advanced options; STP vs CSDA comments clarified; §1 Design Decisions Interpolation row updated for two-control design |
 | `docs/04-feature-specs/external-data.md` | Updated — §8.2 + §13 Q2 interpolation references; CSDA interpolation wording aligned |
+| `docs/04-feature-specs/shareable-urls.md` | Updated — §7.3 canonical ordering extended with step 7 for Advanced Options params |
 | `docs/04-feature-specs/shareable-urls-formal.md` | Updated — promoted to Final v4; ABNF grammar for `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, and `ival`; semantic rules; canonicalization step 7; 7 new conformance vectors |
-| `docs/04-feature-specs/README.md` | Updated — shareable-urls-formal.md version to Final v4; advanced-options.md summary through Draft v5 with corrected MSTAR mode list |
-| `CHANGELOG-AI.md` | Updated with this session (v1, v2, v3, v4, v5 alignment) |
-| `docs/ai-logs/2026-04-10-advanced-options.md` | **Created** — this log; extended to include Draft v4 / Draft v5 follow-up work |
+| `docs/04-feature-specs/README.md` | Updated — shareable-urls-formal.md version to Final v4; advanced-options.md promoted to Final v5 |
+| `CHANGELOG-AI.md` | Updated with this session (v1, v2, v3, v4, v5, and final review entries) |
+| `docs/ai-logs/2026-04-10-advanced-options.md` | **Created** — this log; extended to include Draft v4 / Draft v5 follow-up work and final review |
 
 ## Open Questions Raised
 
