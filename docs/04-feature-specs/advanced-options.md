@@ -1,6 +1,6 @@
 # Feature: Advanced Options Panel
 
-> **Status:** Draft v4 (10 April 2026)
+> **Status:** Draft v5 (10 April 2026)
 >
 > **v1** (10 April 2026): Initial draft — aggregate state override,
 > interpolation mode, MSTAR mode, density override, I-value override.
@@ -31,6 +31,15 @@
 > table and AC-12 updated. MSTAR mode A–H physical descriptions added
 > (sourced from `libdedx/include/dedx.h`). All three Open Questions
 > resolved. ABNF grammar in `shareable-urls-formal.md` updated to v4.
+>
+> **v5** (10 April 2026): Clarified how `interpolationScale` and
+> `interpolationMethod` apply to CSDA range. CSDA range is computed by
+> adaptive numerical integration of 1/S(E) (not table interpolation).
+> `interpolationScale` propagates to the C integrator and has a compound
+> effect. `interpolationMethod=spline` requires JS-level numerical
+> integration of the spline for CSDA (WASM CSDA call bypassed). Added
+> CSDA background §4, per-setting scope tables, and 4-row implementation
+> matrix. WASM contract type comments and `calculate()` JSDoc updated.
 >
 > This spec closes the open loops deferred from:
 > - [`unit-handling.md`](unit-handling.md) §8 Q3 (aggregate state → display unit)
@@ -235,6 +244,30 @@ transformation space (axis scale) and the fitting method. Both are
 calculations and JS-side external-data interpolation). See
 [`external-data.md`](external-data.md) §8.2.
 
+#### How CSDA range is computed — background
+
+Understanding how the C library computes CSDA range is essential for
+understanding what "interpolation" means for range values.
+
+**CSDA range is computed by numerical integration**, not by interpolating
+a pre-computed range table. The C function `dedx_get_csda`
+(`libdedx/src/dedx_tools.c`) uses an adaptive Gaussian quadrature
+integrator (`adapt`) that numerically integrates `1/S(E)` from `E_min`
+to the requested energy `E`:
+
+```
+R(E) = ∫_{E_min}^{E} 1/S(E') dE'
+```
+
+where `S(E')` is evaluated by calling `dedx_get_stp` at each intermediate
+energy point the integrator samples. The `interpolationScale` setting
+(`dedx_config.interpolation` = log-log or lin-lin) controls how
+`dedx_get_stp` interpolates between tabulated data points during that
+integration. Because the integrator calls `S(E')` at hundreds of
+intermediate points, the interpolation setting has a **compound effect**
+on range accuracy — any bias in `S(E')` accumulates across the entire
+integration interval.
+
 #### 4a. Axis Scale
 
 Controls the `interpolationScale` field of `AdvancedOptions`.
@@ -246,6 +279,9 @@ Controls the `interpolationScale` field of `AdvancedOptions`.
 | Default | **Log-log** |
 | Label | "Axis scale" |
 | Scope | Global — applies to all programs, all series, and external data |
+| WASM STP | Sets `dedx_config.interpolation` (C library) before calling `dedx_get_stp_table` |
+| WASM CSDA range | Sets `dedx_config.interpolation` (C library) before calling `dedx_get_csda_range_table`; affects every `dedx_get_stp` call inside the adaptive integrator |
+| External data | Chooses the transformation space for JS-level table lookup |
 
 **Log-log** transforms both the energy axis and the stopping-power axis
 to logarithmic scale before fitting. This is the standard approach for
@@ -263,23 +299,36 @@ Controls the `interpolationMethod` field of `AdvancedOptions`.
 | Default | **Linear** |
 | Label | "Method" |
 | Scope | Global — applies to all programs, all series, and external data |
+| WASM STP | JS reads back the native tabulated data points (`dedx_fill_default_energy_stp_table`), fits a spline in the chosen axis scale, then evaluates at the requested energies |
+| WASM CSDA range | **See note below** |
+| External data | JS fits a spline through the loaded table points in the chosen axis scale |
 
 **Linear** uses piecewise linear interpolation between tabulated points.
 **Spline** uses cubic spline interpolation, which produces a smoother
 curve but may introduce overshoot between sparse tabulated points.
 
+**WASM CSDA range + spline note:** The C library's adaptive integrator
+calls `dedx_get_stp` internally — a JS-level spline cannot be substituted
+directly into that loop. When `interpolationMethod=spline` is selected,
+the CSDA range is computed by a JS-level numerical integration of the
+JS-spline function `1/spline_stp(E)` over `[E_min, E]`. This replaces
+the WASM call to `dedx_get_csda_range_table`. The axis scale
+(`interpolationScale`) is still applied to the spline. This is more
+computationally expensive than the C integrator path; results should be
+numerically equivalent when the spline is an accurate representation of
+the STP curve.
+
 #### Default combination
 
 The default is **Log-log + Linear** (log-log piecewise linear), which
-matches the libdedx C library default and the behavior of v1/v2 of this
-spec.
+matches the libdedx C library default.
 
-| `interpolationScale` | `interpolationMethod` | Meaning |
-|----------------------|----------------------|---------|
-| `"log-log"` (default) | `"linear"` (default) | Log-log piecewise linear — matches libdedx default |
-| `"lin-lin"` | `"linear"` | Lin-lin piecewise linear |
-| `"log-log"` | `"spline"` | Log-log cubic spline |
-| `"lin-lin"` | `"spline"` | Lin-lin cubic spline |
+| `interpolationScale` | `interpolationMethod` | STP source | CSDA range source |
+|----------------------|----------------------|-----------|------------------|
+| `"log-log"` (default) | `"linear"` (default) | WASM C (log-log linear) | WASM C integrator (log-log linear) |
+| `"lin-lin"` | `"linear"` | WASM C (lin-lin linear) | WASM C integrator (lin-lin linear) |
+| `"log-log"` | `"spline"` | JS spline (log-log) | JS integration of log-log spline |
+| `"lin-lin"` | `"spline"` | JS spline (lin-lin) | JS integration of lin-lin spline |
 
 **Retroactive on Plot:** Changing either interpolation setting on the
 Plot page **redraws all existing committed series**. These are the only

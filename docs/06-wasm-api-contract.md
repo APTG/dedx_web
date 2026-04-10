@@ -234,8 +234,13 @@ type InterpolationScale = "log-log" | "lin-lin";
 /**
  * Interpolation fitting method. Applied within the chosen axis scale.
  * - "linear": piecewise linear interpolation between tabulated points. Default.
+ *   For WASM: C library handles interpolation natively (dedx_get_stp_table /
+ *   dedx_get_csda_range_table via adaptive integration of 1/S(E)).
  * - "spline": cubic spline interpolation (smoother curve; may overshoot sparse data).
- * Note: spline is applied in JS for both WASM table readback and external-data lookup.
+ *   For WASM STP: JS reads back native tabulated points, fits spline, evaluates.
+ *   For WASM CSDA range: JS numerically integrates 1/spline_stp(E) — replaces
+ *   the WASM CSDA call. The C integrator cannot be patched with a JS-level spline.
+ *   For external data: JS fits spline through loaded table points.
  */
 type InterpolationMethod = "linear" | "spline";
 
@@ -323,9 +328,19 @@ interface LibdedxService {
   // ── Stopping Power ─────────────────────────────────────────
 
   /**
-   * Evaluate stopping power at user-provided energy points.
-   * Calls: dedx_get_stp_table() for the stopping powers,
-   *        dedx_get_csda_range_table() for CSDA ranges.
+   * Evaluate stopping power and CSDA range at user-provided energy points.
+   *
+   * Default path (no AdvancedOptions, or only interpolationScale):
+   *   - STP:        dedx_get_stp_table() — C library interpolates tabulated data.
+   *   - CSDA range: dedx_get_csda_range_table() — C library numerically integrates
+   *                 1/S(E) via adaptive Gaussian quadrature (dedx_tools.c:adapt).
+   *                 The interpolationScale setting affects every S(E) evaluation
+   *                 inside the integrator.
+   *
+   * Spline path (interpolationMethod = "spline"):
+   *   - STP:        JS reads native tabulated data, fits spline, evaluates at query E.
+   *   - CSDA range: JS numerically integrates 1/spline_stp(E) over [E_min, E].
+   *                 dedx_get_csda_range_table() is NOT called in this path.
    *
    * When advancedOptions are provided, falls back to the stateful
    * dedx_config API to set compound_state, interpolation scale, density, etc.
