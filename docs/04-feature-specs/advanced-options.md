@@ -1,6 +1,6 @@
 # Feature: Advanced Options Panel
 
-> **Status:** Draft v2 (10 April 2026)
+> **Status:** Draft v3 (10 April 2026)
 >
 > **v1** (10 April 2026): Initial draft — aggregate state override,
 > interpolation mode, MSTAR mode, density override, I-value override.
@@ -15,6 +15,15 @@
 > lower bound (ρ > 0 only). Density override value surfaced in accordion
 > header for visual prominence. Added `plot.md` to related specs. Updated
 > wireframes, validation tables, AC, and localStorage schema accordingly.
+>
+> **v3** (10 April 2026): Density override explicitly available for all
+> material types (gas, solid, liquid); ⓘ tooltip shown for every material
+> with type-specific wording. Interpolation redesigned from one toggle into
+> two orthogonal controls: **Axis scale** (Log-log / Lin-lin) and
+> **Method** (Linear / Spline). `InterpolationMode` type replaced by
+> `InterpolationScale` + `InterpolationMethod`. URL param `interp` split
+> into `interp_scale` and `interp_method`. localStorage keys updated.
+> Wireframes, reactivity table, TypeScript snippet, and AC updated.
 >
 > This spec closes the open loops deferred from:
 > - [`unit-handling.md`](unit-handling.md) §8 Q3 (aggregate state → display unit)
@@ -51,10 +60,11 @@ and see the stopping power recalculate accordingly,
 switching to a different material entry.
 
 **As a** researcher validating libdedx against tabulated data,
-**I want to** switch from the default log-log interpolation to linear
-interpolation and see all curves update simultaneously,
-**so that** I can reproduce published results that were calculated with
-linear interpolation.
+**I want to** independently control the interpolation axis scale (log-log
+vs lin-lin) and the fitting method (linear vs spline) and see all curves
+update simultaneously,
+**so that** I can reproduce published results that used a specific
+interpolation scheme or compare interpolation artefacts directly.
 
 **As a** user of the MSTAR program,
 **I want to** select from MSTAR's calculation modes (A–H),
@@ -106,7 +116,7 @@ range-to-cm formulas).
 | Unit label | "g/cm³" (right of input) |
 | Placeholder | Built-in density from `getDensity(materialId)`. Auto-formatted: values ≥ 0.01 shown as decimal (e.g. `1.205`); values < 0.01 shown in scientific notation (e.g. `8.99e-5`). Updated when material changes. If `getDensity` returns `undefined`, shows "—". |
 | Input format | Accepts both decimal (`0.00009`) and scientific notation (`9e-5`). Value is kept exactly as typed. |
-| Label tooltip | For gas materials (`isGasByDefault = true`), the "Density" label shows an info icon ⓘ with tooltip: "For gas materials, density depends on pressure and temperature. The built-in value is at standard conditions." |
+| Label tooltip | The "Density" label always shows an info icon ⓘ. Tooltip text is material-type-specific: **Gas** (`isGasByDefault = true`): "Gas density depends on pressure and temperature. The built-in value is at standard conditions (STP). Override for non-standard conditions." **Solid / Liquid** (`isGasByDefault = false`): "The built-in density is for bulk material at standard conditions. Override for non-standard forms (e.g. powder, pressed pellets, or machined samples)." |
 | Validation | `ρ > 0`. Any positive number is accepted; no upper bound enforced. See [Behavior §5](#5-input-validation). |
 | Debounce | 300 ms before recalculation is triggered |
 | Clear action | Clearing the field removes the override and reverts to built-in density |
@@ -119,11 +129,13 @@ range-to-cm formulas).
 This ensures internal consistency between the WASM-computed stopping power
 and the displayed linear unit values. See [Behavior §4](#4-density-override--unit-conversion-scope).
 
-**Gas density context:** Gas materials have very small densities — for
-example, hydrogen gas ≈ 8.99×10⁻⁵ g/cm³, air ≈ 1.205×10⁻³ g/cm³. The
-field handles such values via scientific notation input and auto-formatted
-placeholder. The ⓘ tooltip only appears for gas materials to avoid
-cluttering the UI for solids and liquids.
+**Density override for all material types:** The density field is
+available for every material — gas, solid, and liquid. Gas materials have
+very small densities (e.g. hydrogen ≈ 8.99×10⁻⁵ g/cm³, air ≈ 1.205×10⁻³
+g/cm³) that require scientific notation. Solid and liquid overrides are
+equally valid (e.g. PMMA machined to a non-standard density, LiF in
+powder form). The ⓘ tooltip is shown for all material types with
+context-appropriate wording.
 
 **URL encoding:** `density=1.205` or `density=0.0000899` (JavaScript
 default number serialization). Omitted when not set.
@@ -208,29 +220,71 @@ the selected option matches the built-in (no override).
 
 ---
 
-### 4. Interpolation Mode
+### 4. Interpolation
 
-Controls the `interpolation` field of `AdvancedOptions`. This is a
-**session-level** setting — it applies uniformly to all data sources:
-both WASM calculations and JS-side external-data interpolation. See
+Interpolation is controlled by **two orthogonal settings** — the
+transformation space (axis scale) and the fitting method. Both are
+**session-level**: they apply uniformly to all data sources (WASM
+calculations and JS-side external-data interpolation). See
 [`external-data.md`](external-data.md) §8.2.
+
+#### 4a. Axis Scale
+
+Controls the `interpolationScale` field of `AdvancedOptions`.
 
 | Property | Detail |
 |----------|--------|
 | Type | Segmented control with 2 options |
-| Options | **Log-log** (default), **Linear** |
+| Options | **Log-log** (default), **Lin-lin** |
 | Default | **Log-log** |
-| Scope | Global — applies to all programs, all series, and external data simultaneously |
+| Label | "Axis scale" |
+| Scope | Global — applies to all programs, all series, and external data |
 
-**Retroactive on Plot:** Changing interpolation mode on the Plot page
-**redraws all existing committed series**. This is the only Advanced
-Option that is retroactive; all others are forward-only on the Plot page
-(see [Behavior §2](#2-reactivity--recalculation-triggers)).
+**Log-log** transforms both the energy axis and the stopping-power axis
+to logarithmic scale before fitting. This is the standard approach for
+stopping-power data, which spans many decades and follows power-law
+trends. **Lin-lin** fits in the original (untransformed) space.
 
-**In-panel note:** A subtle note below the control reads: "Applies to all
-data sources. Mixing interpolation methods across series is not supported."
+#### 4b. Interpolation Method
 
-**URL encoding:** `interp=linear`. Omitted when value is "log-log".
+Controls the `interpolationMethod` field of `AdvancedOptions`.
+
+| Property | Detail |
+|----------|--------|
+| Type | Segmented control with 2 options |
+| Options | **Linear** (default), **Spline** |
+| Default | **Linear** |
+| Label | "Method" |
+| Scope | Global — applies to all programs, all series, and external data |
+
+**Linear** uses piecewise linear interpolation between tabulated points.
+**Spline** uses cubic spline interpolation, which produces a smoother
+curve but may introduce overshoot between sparse tabulated points.
+
+#### Default combination
+
+The default is **Log-log + Linear** (log-log piecewise linear), which
+matches the libdedx C library default and the behavior of v1/v2 of this
+spec.
+
+| `interpolationScale` | `interpolationMethod` | Meaning |
+|----------------------|----------------------|---------|
+| `"log-log"` (default) | `"linear"` (default) | Log-log piecewise linear — matches libdedx default |
+| `"lin-lin"` | `"linear"` | Lin-lin piecewise linear |
+| `"log-log"` | `"spline"` | Log-log cubic spline |
+| `"lin-lin"` | `"spline"` | Lin-lin cubic spline |
+
+**Retroactive on Plot:** Changing either interpolation setting on the
+Plot page **redraws all existing committed series**. These are the only
+Advanced Options that are retroactive; all others are forward-only on the
+Plot page (see [Behavior §2](#2-reactivity--recalculation-triggers)).
+
+**In-panel note:** A subtle note below both controls reads: "Applies to
+all data sources. Mixing interpolation settings across series is not
+supported."
+
+**URL encoding:** `interp_scale=lin-lin` (omitted when log-log);
+`interp_method=spline` (omitted when linear). Both omitted at defaults.
 
 ---
 
@@ -265,7 +319,8 @@ simultaneously:
 | Density override | Cleared (empty field) |
 | I-value override | Cleared (empty field) |
 | Aggregate state | Built-in option re-selected (no override) |
-| Interpolation mode | Log-log |
+| Axis scale | Log-log |
+| Method | Linear |
 | MSTAR mode | B |
 
 The reset triggers an immediate recalculation. The button is **disabled**
@@ -289,7 +344,7 @@ collapsed (see [Output § Active-Override Indicator](#active-override-indicator)
 
 ▼ Advanced Options  ρ = 1.1 g/cm³        ← density shown in header
 ─────────────────────────────────────────────────────────────────
-  Density:   [ 1.1_____ ] g/cm³  ⓘ       ← ⓘ only for gas materials
+  Density:   [ 1.1_____ ] g/cm³  ⓘ       ← ⓘ always shown; tooltip: solid/liquid wording
   I-value:   [ ________ ] eV             ← placeholder: 75.00
 
   ── ── ── ── ── ── ── ── ── ── ── ── ──
@@ -298,9 +353,10 @@ collapsed (see [Output § Active-Override Indicator](#active-override-indicator)
     [ Gas ]  [ Condensed ]               ← Condensed selected (no override)
 
   ── ── ── ── ── ── ── ── ── ── ── ── ──
-  Interpolation:  [ Log-log ] [ Linear ]
-  MSTAR mode:     [ A ] [●B] [ C ] [ D ] [ G ] [ H ]  (disabled)
-                                                 [ Reset ]
+  Axis scale:   [ Log-log ] [ Lin-lin ]
+  Method:       [ Linear  ] [ Spline  ]
+  MSTAR mode:   [ A ] [●B] [ C ] [ D ] [ G ] [ H ]  (disabled)
+                                               [ Reset ]
 ─────────────────────────────────────────────────────────────────
 ┌────────────────────────────────────────────────────────────────┐
 │ Energy (MeV) │ → MeV/nucl │ Unit │ Stp Power (keV/µm) │ CSDA  │
@@ -316,7 +372,7 @@ placeholder shows auto-formatted scientific notation:
 ```
 ▼ Advanced Options  ρ = 9e-5 g/cm³
 ─────────────────────────────────────────────────────────────────
-  Density:   [ 9e-5____ ] g/cm³  ⓘ       ← typed by user; placeholder was 8.99e-5
+  Density:   [ 9e-5____ ] g/cm³  ⓘ       ← ⓘ always shown; tooltip: gas-specific wording
   I-value:   [ ________ ] eV
 
   Aggregate state:
@@ -345,7 +401,8 @@ selection area and above the "Add Series" button (see [`plot.md`](plot.md)):
 │    Built-in: Gas                         │
 │    [●Gas ]  [ Condensed ]               │
 │                                          │
-│  Interpolation: [ Log-log ] [ Linear ]   │
+│  Axis scale:  [ Log-log ] [ Lin-lin ]    │
+│  Method:      [ Linear  ] [ Spline  ]   │
 │  MSTAR mode: [ A ][●B][ C ][ D ][ G ][ H ]  (disabled) │
 │                              [ Reset ]   │
 │  ┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄┄  │
@@ -365,18 +422,20 @@ selection area and above the "Add Series" button (see [`plot.md`](plot.md)):
 | Density override | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged |
 | I-value override | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged |
 | Aggregate state | Immediate recalculation | Applies to next series added; committed series unchanged |
-| Interpolation mode | Immediate recalculation | **Retroactive** — all committed series and preview curve are redrawn |
+| Axis scale (Log-log / Lin-lin) | Immediate recalculation | **Retroactive** — all committed series and preview curve are redrawn |
+| Method (Linear / Spline) | Immediate recalculation | **Retroactive** — all committed series and preview curve are redrawn |
 | MSTAR mode | Immediate recalculation (if MSTAR active) | Applies to next series added; committed series unchanged |
-| Reset | Immediate recalculation | Interpolation change redraws all series; other resets apply only to next series |
+| Reset | Immediate recalculation | Interpolation changes redraw all series; other resets apply only to next series |
 
 **Plot series immutability (non-interpolation options):** When a series is
 committed to the Plot, the density, I-value, aggregate state, and MSTAR
 mode that were active at commit time are frozen in the series metadata.
 Changing these options afterwards does not modify committed series.
 
-**Interpolation mode exception:** Interpolation is the single retroactive
-option. Scientific validity requires consistent interpolation across all
-data sources — see [`external-data.md`](external-data.md) §8.2.
+**Interpolation exception:** Both interpolation settings (axis scale and
+method) are retroactive. Scientific validity requires consistent
+interpolation across all data sources — see
+[`external-data.md`](external-data.md) §8.2.
 
 ---
 
@@ -510,7 +569,8 @@ wrong results.
 | Key | Type | Default |
 |-----|------|---------|
 | `advancedOptions.aggregateState` | `"default"` \| `"gas"` \| `"condensed"` | `"default"` |
-| `advancedOptions.interpolation` | `"log-log"` \| `"linear"` | `"log-log"` |
+| `advancedOptions.interpScale` | `"log-log"` \| `"lin-lin"` | `"log-log"` |
+| `advancedOptions.interpMethod` | `"linear"` \| `"spline"` | `"linear"` |
 | `advancedOptions.mstarMode` | `"a"` \| `"b"` \| `"c"` \| `"d"` \| `"g"` \| `"h"` | `"b"` |
 | `advancedOptions.density` | `number` \| `null` | `null` |
 | `advancedOptions.ival` | `number` \| `null` | `null` |
@@ -524,14 +584,15 @@ is active.
 **Priority:** URL parameters take precedence over localStorage on load.
 When a URL param is present, it sets the value and updates localStorage.
 
-**Basic mode:** The five Advanced Options params are not written to the
+**Basic mode:** The six Advanced Options params are not written to the
 URL when mode=basic. On switching Basic → Advanced, params are re-added
 from localStorage. On switching Advanced → Basic, params are stripped
 from the URL but kept in localStorage.
 
 **Material switch:** Clears `advancedOptions.density`, `advancedOptions.ival`,
-and `advancedOptions.aggregateState` in localStorage. Interpolation and
-MSTAR mode keys are not cleared on material switch.
+and `advancedOptions.aggregateState` in localStorage. Interpolation keys
+(`advancedOptions.interpScale`, `advancedOptions.interpMethod`) and MSTAR
+mode key are not cleared on material switch.
 
 ---
 
@@ -546,11 +607,12 @@ non-default:
 LibdedxService.calculate({
   programId, particleId, materialId, energies,
   options: {
-    aggregateState,      // omitted when "default" (toggle on built-in option)
-    interpolation,       // omitted when "log-log"
-    mstarMode,           // omitted when "b" or non-MSTAR program
-    densityOverride,     // omitted when not set
-    iValueOverride,      // omitted when not set
+    aggregateState,       // omitted when "default" (toggle on built-in option)
+    interpolationScale,   // omitted when "log-log"
+    interpolationMethod,  // omitted when "linear"
+    mstarMode,            // omitted when "b" or non-MSTAR program
+    densityOverride,      // omitted when not set
+    iValueOverride,       // omitted when not set
   }
 })
 ```
@@ -629,7 +691,8 @@ Advanced Options state is encoded as query parameters appended **after
 | Parameter | Type | Omit when | Example |
 |-----------|------|-----------|---------|
 | `agg_state` | `gas` \| `condensed` | selected option = built-in (no override) | `agg_state=condensed` |
-| `interp` | `linear` | value = "log-log" | `interp=linear` |
+| `interp_scale` | `lin-lin` | value = "log-log" | `interp_scale=lin-lin` |
+| `interp_method` | `spline` | value = "linear" | `interp_method=spline` |
 | `mstar_mode` | `a`\|`b`\|`c`\|`d`\|`g`\|`h` | value = "b" | `mstar_mode=c` |
 | `density` | positive number | not set | `density=0.0000899` |
 | `ival` | positive number | not set | `ival=75.0` |
@@ -654,10 +717,10 @@ aggregate state override:
 /calculator?urlv=1&particle=1&material=3&programs=9,2&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&agg_state=condensed&density=0.0000899
 ```
 
-Calculator — advanced mode, linear interpolation only:
+Calculator — advanced mode, lin-lin scale + spline method:
 
 ```
-/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&interp=linear
+/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline
 ```
 
 Calculator — advanced mode, density override for condensed material:
@@ -682,7 +745,7 @@ The full canonical parameter order (with all Advanced Options params):
 4. `program` (basic) or `programs` (advanced)
 5. Page-specific: `energies`, `eunit` (Calculator) — or `series`, `stp_unit`, `xscale`, `yscale` (Plot)
 6. `mode=advanced`, `hidden_programs` (omit if empty), `qfocus`
-7. **Advanced Options (new):** `agg_state`, `interp`, `mstar_mode`, `density`, `ival`
+7. **Advanced Options (new):** `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`
    (each omitted when at default value)
 
 > The formal ABNF grammar in [`shareable-urls-formal.md`](shareable-urls-formal.md)
@@ -692,7 +755,7 @@ The full canonical parameter order (with all Advanced Options params):
 
 On page load with Advanced Options URL params:
 
-1. Parse `agg_state`, `interp`, `mstar_mode`, `density`, `ival`.
+1. Parse `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`.
 2. Validate each value. Invalid values are silently ignored; default is used.
 3. For `agg_state`: compare against current material's built-in phase. If
    the param value matches built-in, treat as "no override" (default). If
@@ -739,13 +802,17 @@ On page load with Advanced Options URL params:
   display unit reverts to material's natural default.
 - [ ] The "Built-in: …" label updates when the material changes.
 
-### AC-4: Interpolation mode
+### AC-4: Interpolation (axis scale and method)
 
-- [ ] Switching to "Linear" on the Calculator triggers an immediate
+- [ ] "Axis scale" control has exactly two options: Log-log and Lin-lin.
+- [ ] "Method" control has exactly two options: Linear and Spline.
+- [ ] Default state: Log-log + Linear selected.
+- [ ] Changing either control on the Calculator triggers an immediate
   recalculation.
-- [ ] Switching to "Linear" on the Plot page redraws all committed series.
-- [ ] Switching back to "Log-log" redraws all series again.
-- [ ] External data series use the same interpolation mode as WASM series.
+- [ ] Changing either control on the Plot page redraws all committed series
+  and the preview curve.
+- [ ] External data series use the same axis scale and method as WASM series.
+- [ ] Both controls are retroactive on Plot (not just axis scale).
 
 ### AC-5: MSTAR mode
 
@@ -759,10 +826,13 @@ On page load with Advanced Options URL params:
 ### AC-6: Density override
 
 - [ ] Empty field → no override; placeholder shows built-in density.
-- [ ] For gas materials, the "Density" label shows a ⓘ icon; hover tooltip
-  reads "For gas materials, density depends on pressure and temperature.
-  The built-in value is at standard conditions."
-- [ ] For non-gas materials, no ⓘ icon is shown.
+- [ ] The "Density" label shows a ⓘ icon for **all** material types.
+- [ ] For gas materials, hover tooltip reads "Gas density depends on
+  pressure and temperature. The built-in value is at standard conditions
+  (STP). Override for non-standard conditions."
+- [ ] For solid/liquid materials, hover tooltip reads "The built-in density
+  is for bulk material at standard conditions. Override for non-standard
+  forms (e.g. powder, pressed pellets, or machined samples)."
 - [ ] Built-in density ≥ 0.01 g/cm³ → placeholder in decimal (e.g. `1.205`).
 - [ ] Built-in density < 0.01 g/cm³ → placeholder in scientific notation
   (e.g. `8.99e-5`).
@@ -806,18 +876,21 @@ On page load with Advanced Options URL params:
 - [ ] `agg_state=condensed` → aggregate state set to Condensed on load.
 - [ ] `agg_state=gas` when material built-in is also gas → treated as no
   override (toggle lands on Gas, no active override).
-- [ ] `interp=linear` → interpolation set to Linear.
+- [ ] `interp_scale=lin-lin` → axis scale set to Lin-lin.
+- [ ] `interp_method=spline` → method set to Spline.
 - [ ] `mstar_mode=c` → MSTAR mode set to C.
 - [ ] `density=0.0000899` → density override active at 8.99×10⁻⁵ g/cm³.
 - [ ] `ival=75.0` → I-value override at 75 eV.
-- [ ] All five params omitted when at default values.
-- [ ] All five params stripped from URL when mode=basic.
-- [ ] Invalid param values (e.g. `density=-1`) silently ignored; default used.
-- [ ] Five params appear after `qfocus` in canonical order.
+- [ ] All six params omitted when at default values.
+- [ ] All six params stripped from URL when mode=basic.
+- [ ] Invalid param values (e.g. `density=-1`, `interp_scale=foo`) silently ignored; default used.
+- [ ] Six params (`agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`) appear after `qfocus` in canonical order.
 
 ### AC-11: localStorage persistence
 
 - [ ] Setting density=1.2, navigating away and back → density=1.2 restored.
+- [ ] Setting interp_scale=lin-lin, navigating away and back → lin-lin restored.
+- [ ] Setting interp_method=spline, navigating away and back → spline restored.
 - [ ] After Reset → localStorage cleared; navigation does not restore
   previous overrides.
 - [ ] URL params take precedence over localStorage on load.
@@ -842,9 +915,9 @@ On page load with Advanced Options URL params:
    to v2 — see [Output § URL Encoding for Plot Series](#url-encoding-for-plot-series-with-per-series-options).
 
 2. **`shareable-urls-formal.md` grammar update:** The ABNF grammar must be
-   updated to include the five new parameters (`agg_state`, `interp`,
-   `mstar_mode`, `density`, `ival`) and their value sets. Deferred as a
-   follow-on to this spec.
+   updated to include the six new parameters (`agg_state`, `interp_scale`,
+   `interp_method`, `mstar_mode`, `density`, `ival`) and their value sets.
+   Deferred as a follow-on to this spec.
 
 3. **MSTAR mode descriptions:** The physical meaning of modes A–H is not
    documented here. Implementation should consult the libdedx source and
