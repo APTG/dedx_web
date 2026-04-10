@@ -10,6 +10,7 @@
 
 | Date | Stage | Description | Log |
 |------|-------|-------------|-----|
+| 2026-04-10 | 1 | Advanced Options spec Draft v2: density as primary use case (first input, value surfaced in accordion header); aggregate state redesigned to 2-option Gas/Condensed toggle with read-only "Built-in: …" label; gas density UX (sci notation input, auto-format placeholder, ⓘ tooltip, ρ > 0 only); inputs reordered; plot.md added to related specs | [log](docs/ai-logs/2026-04-10-advanced-options.md) |
 | 2026-04-10 | 1 | Advanced Options spec Draft v1: accordion gated by Advanced mode, collapsible, all pages; aggregate state / interpolation / MSTAR mode / density / I-value overrides; aggregate-state→unit coupling (both directions); density override feeds WASM + display conversion; physics-informed validation bounds; material-switch clears overrides; interpolation retroactive on Plot, others forward-only; URL params agg_state/interp/mstar_mode/density/ival after qfocus; localStorage persistence; 12 AC groups | [log](docs/ai-logs/2026-04-10-advanced-options.md) |
 | 2026-04-09 | 1 | Mark shareable-urls.md (Final v6), shareable-urls-formal.md (Final v3), external-data.md (Final v4) ready; AI log created | [log](docs/ai-logs/2026-04-09-shareable-urls-external-data.md) |
 | 2026-04-09 | 1 | shareable-urls.md Final v6: Share button spec (placement, three states Ready/Copied/Updated, clipboard interaction, discrete URL-change notification, a11y); rename "social sharing" → "sharing via communicators" | [log](docs/ai-logs/2026-04-09-shareable-urls-external-data.md) |

@@ -75,12 +75,33 @@ User answered all 16 questions. Key decisions captured:
 - 3 open questions (plot series URL encoding v2, formal grammar update,
   MSTAR mode descriptions)
 
+### Prompt 20: Consistency review + v2 changes
+**AI response**: Read the full spec, checked all cross-spec links (found
+`plot.md` missing from related specs — added). Identified four categories
+of requested changes:
+
+1. **Density as primary use case** — moved density user story to first;
+   density moved to §1 in Inputs; visual prominence via value in accordion
+   header when collapsed.
+2. **Aggregate state redesign** — removed "Default" option; replaced with
+   2-option Gas/Condensed toggle plus a read-only "Built-in: Gas/Condensed"
+   label above the toggle. Override is active when selected option differs
+   from built-in.
+3. **Gas density handling** — asked 5 interactive questions. Decisions:
+   accept scientific notation (keep as typed); auto-format placeholder
+   (sci notation below 0.01); ⓘ tooltip on label for gas materials only;
+   lower bound removed (ρ > 0 only).
+4. **Input reordering** — Density → I-value → Aggregate state →
+   Interpolation → MSTAR mode.
+
+Updated spec to Draft v2 with all changes applied.
+
 ## Files Changed
 
 | File | Change |
 |------|--------|
-| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1 |
-| `CHANGELOG-AI.md` | Updated with this session |
+| `docs/04-feature-specs/advanced-options.md` | **Created** — Draft v1; updated to Draft v2 |
+| `CHANGELOG-AI.md` | Updated with this session (v1 and v2 entries) |
 | `docs/ai-logs/2026-04-10-advanced-options.md` | **Created** — this log |
 
 ## Open Questions Raised
