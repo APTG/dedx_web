@@ -1,4 +1,4 @@
-# 2026-04-10 — Inverse Lookups Spec Draft v1
+# 2026-04-10 — Inverse Lookups Spec Draft v1 → v2
 
 ## Session Narrative
 
@@ -170,11 +170,69 @@ and fixed the following:
 | `CHANGELOG-AI.md` | Updated with this session entries |
 | `docs/ai-logs/2026-04-10-inverse-lookups.md` | **Created** — this log |
 
+### Prompt 8: Draft v2 — priority, rename, getBraggPeakStp, formal grammar
+
+**User directive:** Range tab (Inverse CSDA) gets priority; rename it "Range"
+in the menu; resolve Open Question #2 by adding a helper function; check
+consistency everywhere; update formal grammar.
+
+**AI response:**
+
+**Changes to `inverse-lookups.md` (Draft v1 → Draft v2):**
+
+1. Renamed "Inverse CSDA" tab to **Range** throughout the spec (tab labels,
+   section headings, user story, acceptance criteria, export filename).
+2. Moved Range section to §4 (was §5) and Inverse STP to §5 (was §4) —
+   Range is the primary use case ("enter a range, get energy").
+3. Tab bar order updated: `[ Forward ] [ Range ] [ Inverse STP ]`.
+4. Export filename: `dedx_range_{particle}_{material}_{program}.csv`.
+5. §9 URL state: added explicit note that the Range tab maps to `imode=csda`
+   (the URL param uses the technical name for stability).
+6. §9 URL example: updated `iunit` to use canonical token `kev-um` (not
+   percent-encoded `keV/µm`) for consistency with `stp-unit-pair` tokens.
+7. §5.4 (Inverse STP row validation): added reference to `getBraggPeakStp()`
+   for the valid STP range hint below the table; updated wireframe to show
+   `Valid STP range: 0–847.3 keV/µm (...)` line.
+8. Open Question #2 removed (resolved by `getBraggPeakStp()` addition).
+9. Dependencies section: `getBraggPeakStp()` added.
+
+**Changes to `06-wasm-api-contract.md`:**
+
+10. Added `getBraggPeakStp()` method to the service interface (§3), after
+    `getInverseCsda()`. Returns the Bragg peak STP in MeV·cm²/g. Accepts
+    `options?: AdvancedOptions` so the peak is computed under the same
+    config as the inverse lookup. Calls `dedx_get_bragg_peak_stp()` from
+    `dedx_tools.h` (new C function — to be added to the WASM wrapper).
+
+**Changes to `shareable-urls-formal.md` (v4 → v5):**
+
+11. Added `imode-pair`, `ivalues-pair`, `iunit-pair` to the `pair` production.
+12. Added ABNF rules: `imode-token`, `ivalues-list`, `ivalue-item`,
+    `ivalue-unit-token`, `stp-iunit-token`, `length-unit-token`.
+13. §3.5 conditional enablement: inverse params silently dropped in basic mode;
+    `imode`/`ivalues`/`iunit` parse rules for advanced mode added.
+14. §3.6 defaults: inverse-lookup defaults documented.
+15. §3.7 validation: inverse-lookup constraints documented (type checking,
+    mismatch handling, `ivalues` without `imode` → ignored).
+16. §4 canonicalization: step 8 added for inverse params.
+17. §4 normalization rules: 5 new rules for inverse param emission.
+18. §5 conformance vectors: 6 new vectors added (12–17) covering Range tab,
+    Inverse STP, default omission, basic-mode strip, and error cases.
+
+**Changes to `CHANGELOG-AI.md`:** one entry prepended.
+
+## Files Changed
+
+| File | Change |
+|------|--------|
+| `docs/04-feature-specs/inverse-lookups.md` | **Updated** — Draft v1 → Draft v2 (rename, reorder, getBraggPeakStp, URL token fix) |
+| `docs/06-wasm-api-contract.md` | **Updated** — `getBraggPeakStp()` added to §3 service interface |
+| `docs/04-feature-specs/shareable-urls-formal.md` | **Updated** — v4 → v5 (imode/ivalues/iunit ABNF, semantic rules, canonicalization step 8, 6 conformance vectors) |
+| `CHANGELOG-AI.md` | Updated with Draft v2 entry |
+| `docs/ai-logs/2026-04-10-inverse-lookups.md` | **Updated** — this log |
+
 ## Open Questions Remaining
 
 1. **AdvancedOptions pass-through contract** — `getInverseStp()` and
    `getInverseCsda()` do not declare `options?` in the current WASM
    contract. Needs implementation confirmation or service interface update.
-2. **Bragg peak maximum query** — no C API to expose the peak STP value;
-   consider `getBraggPeakStp()` helper for a valid-range hint below the
-   Inverse STP table.

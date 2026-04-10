@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Final v4 (10 April 2026)
+> **Status:** Final v5 (10 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
@@ -28,6 +28,11 @@
 > `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`) to ABNF
 > grammar (§2), semantic rules §3.5–§3.7, canonicalization §4 (step 7), and
 > conformance vectors §5. Sourced from `advanced-options.md`.
+>
+> **v5** (10 April 2026): Added inverse-lookup parameters (`imode`, `ivalues`,
+> `iunit`) to ABNF grammar (§2), semantic rules §3.5, canonicalization §4 (step 8),
+> and conformance vectors §5. `stp-iunit-token` and `length-unit-token` rules
+> added. Sourced from `inverse-lookups.md` §9.
 >
 > **Normative relationship:**
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
@@ -77,6 +82,9 @@ pair                = urlv-pair
                     / mstar-mode-pair
                     / density-pair
                     / ival-pair
+                    / imode-pair
+                    / ivalues-pair
+                    / iunit-pair
                     / unknown-pair
 
 ; -----------------------------
@@ -152,6 +160,40 @@ density-pair        = "density=" number
 
 ival-pair           = "ival=" number
                     ; number must parse as positive and ≤ 10000; omitted when not set
+
+; -----------------------------
+; inverse-lookup params (Calculator only; Advanced mode only)
+; omitted entirely when the Forward tab is active; silently dropped in Basic mode
+; -----------------------------
+imode-pair          = "imode=" imode-token
+imode-token         = "stp" / "csda"
+                    ; "csda" = Range tab (energy from CSDA range)
+                    ; "stp"  = Inverse STP tab (energy from stopping power)
+
+ivalues-pair        = "ivalues=" ivalues-list
+ivalues-list        = ivalue-item *("," ivalue-item)
+ivalue-item         = number [":" ivalue-unit-token]
+                    ; per-value unit suffix overrides iunit for that row
+                    ; when imode=stp: must be stp-iunit-token
+                    ; when imode=csda: must be length-unit-token
+
+iunit-pair          = "iunit=" ivalue-unit-token
+                    ; master unit for all rows without a per-value suffix
+                    ; when imode=stp:  one of stp-iunit-token (default: kev-um for
+                    ;   non-gas, mev-cm2-g for gas — omit when equal to default)
+                    ; when imode=csda: one of length-unit-token (default: cm —
+                    ;   omit when equal to default)
+
+ivalue-unit-token   = stp-iunit-token / length-unit-token
+
+stp-iunit-token     = "kev-um" / "mev-cm" / "mev-cm2-g"
+                    ; URL-safe kebab tokens; same mapping as stp-unit-pair:
+                    ;   kev-um    → keV/µm
+                    ;   mev-cm    → MeV/cm
+                    ;   mev-cm2-g → MeV·cm²/g
+
+length-unit-token   = "nm" / "um" / "mm" / "cm" / "m"
+                    ; "um" is the canonical URL token for µm
 
 ; -----------------------------
 ; entity ID (built-in or external)
@@ -246,12 +288,16 @@ Rules:
   - use `program`
   - **ignore all Advanced Options params**: `agg_state`, `interp_scale`,
     `interp_method`, `mstar_mode`, `density`, `ival` are silently dropped
+  - **ignore all inverse-lookup params**: `imode`, `ivalues`, `iunit` are
+    silently dropped (inverse tabs are hidden in Basic mode)
 - If `mode == advanced`:
   - use `programs`
   - ignore `program`
   - validate `hidden_programs` subset of `programs`
   - default `qfocus=both`
   - Advanced Options params are parsed and applied (see §3.6, §3.7)
+  - `imode` activates the indicated inverse tab; absent → Forward tab active
+  - `ivalues` and `iunit` are parsed and applied only when `imode` is present
 
 Energy precedence:
 - In `energies`, per-row suffix (`value:unit`) overrides `eunit` for that row.
@@ -276,6 +322,14 @@ Advanced Options (when `mode=advanced`; all omit-when-default):
 - `mstar_mode` — absent = `"b"`
 - `density` — absent = no override (built-in density used)
 - `ival` — absent = no override (built-in I-value used)
+
+Inverse-lookup (when `mode=advanced`; only parsed when `imode` is present):
+- `imode` — absent = Forward tab active (no inverse tab)
+- `ivalues` — absent = tab opens with default pre-filled row
+- `iunit` — absent = default for active imode and material phase:
+  - `imode=stp`, non-gas material → `kev-um`
+  - `imode=stp`, gas material → `mev-cm2-g`
+  - `imode=csda` → `cm`
 
 Plot:
 - `stp_unit=kev-um`
@@ -302,6 +356,20 @@ Energy constraints:
 Plot constraints:
 - Each `series` triplet must be valid; invalid triplets are dropped.
 - Partial success is allowed.
+
+Inverse-lookup constraints (applied only when `mode=advanced` and `imode` present):
+- `imode`: value must be `"stp"` or `"csda"`. Invalid value → silently ignored
+  (Forward tab loads).
+- `ivalues`: each item is parsed as `number[":" ivalue-unit-token]`. Items where
+  the number fails to parse are silently dropped. Items with an unrecognized unit
+  token are silently dropped. Empty list → tab opens with default pre-filled row.
+- `iunit`: value must be a valid `stp-iunit-token` (for `imode=stp`) or
+  `length-unit-token` (for `imode=csda`). Type mismatch or unknown value →
+  silently ignored (default unit used).
+- `ivalues` per-value suffixes override `iunit` for that row. Suffixes must match
+  the expected type for the active `imode`; mismatched suffixes → row invalid on
+  load (same as unrecognized suffix typed by user).
+- `ivalues` and `iunit` without `imode` → silently ignored.
 
 Advanced Options constraints (applied only when `mode=advanced`):
 - `agg_state`: value must be `"gas"` or `"condensed"`. If the value equals the
@@ -354,6 +422,15 @@ Canonical parameter order:
       (output may be decimal or scientific notation per ECMAScript number formatting rules)
    f. `ival` — omitted when not set; serialized as decimal number
 
+8. Inverse-lookup params — present **only** when `mode=advanced` and an inverse
+   tab is active, in this sub-order:
+   a. `imode` — always emitted when an inverse tab is active (`"stp"` or `"csda"`)
+   b. `ivalues` — omitted when no input rows have data; per-value suffix uses
+      the canonical token form (`stp-iunit-token` or `length-unit-token`)
+   c. `iunit` — omitted when equal to the default for the active `imode` and
+      material phase (see §3.6); otherwise serialized as a canonical token
+      (`stp-iunit-token` or `length-unit-token`)
+
 Normalization rules:
 - Always emit `urlv`.
 - Always emit `particle`, `material`, and the mode-appropriate program param.
@@ -370,6 +447,12 @@ Normalization rules:
 - Never emit Advanced Options params in basic mode, even if present in localStorage.
 - Omit each Advanced Options param individually when at its default (do not emit
   zero-length values or explicit default values like `interp_scale=log-log`).
+- Never emit `imode`, `ivalues`, or `iunit` in basic mode.
+- Never emit `ivalues` or `iunit` without `imode`.
+- Omit `iunit` when equal to the default for the active `imode`/material-phase pair.
+- In `ivalues`, per-value unit suffixes use canonical token form (e.g., `cm`, `um`,
+  `kev-um`); never emit raw Unicode unit strings in the canonical URL.
+- Emit `imode` first among the inverse params; `ivalues` second; `iunit` last.
 
 ---
 
@@ -451,6 +534,36 @@ Normalization rules:
   (material 3 is a gas by default)
 - Canonical: `urlv=1&particle=1&material=3&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: `agg_state=gas` matches built-in → no override active → param omitted.
+
+12. Range tab (imode=csda), mixed units, iunit=cm (default — omitted):
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm&iunit=cm`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm`
+- Note: `iunit=cm` equals the default for `imode=csda` (non-gas material) → omitted.
+  Per-value suffixes are retained; all are canonical `length-unit-token` values.
+
+13. Range tab (imode=csda), no suffixes, non-default master unit:
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718,1.5&iunit=mm`
+- Canonical: same (unchanged; `iunit=mm` is non-default so it is emitted).
+
+14. Inverse STP tab (imode=stp), non-gas material, iunit=kev-um (default — omitted):
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00`
+- Note: `iunit=kev-um` equals the default for `imode=stp` non-gas → omitted.
+
+15. Inverse params in basic mode — silently dropped:
+- Input: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&imode=csda&ivalues=7.718&iunit=cm`
+- Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
+- Note: no `mode=advanced` → inverse params stripped.
+
+16. `ivalues` without `imode` — silently ignored:
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&ivalues=7.718`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+- Note: `ivalues` without `imode` → dropped.
+
+17. Invalid `imode` value — silently ignored (Forward tab loads):
+- Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=foo&ivalues=7.718`
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+- Note: `imode=foo` is not a valid `imode-token` → dropped; `ivalues` without `imode` also dropped.
 
 ---
 
