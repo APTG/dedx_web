@@ -256,11 +256,11 @@ Before calling `getInverseCsda()`, each row's value is converted to
 **g/cm²** (the WASM native input unit):
 
 ```
-range_gcm2 = range_cm / ρ
+range_gcm2 = range_cm × ρ
 ```
 
-where ρ = `LibdedxService.getDensity(materialId)` in g/cm³.
-Conversion is invalid (row marked invalid) when ρ is missing or ρ ≤ 0.
+where ρ = `densityOverride ?? LibdedxService.getDensity(materialId)` in g/cm³.
+Conversion is invalid (row marked invalid) when neither source yields a valid ρ > 0.
 
 ### 4.4 Row Validation
 
@@ -626,10 +626,16 @@ Errors from `getInverseStp()` or `getInverseCsda()` (C-level
 
 ### Density Unavailable
 
-If `LibdedxService.getDensity(materialId)` returns `null`, `0`, or a
-negative value, any row that requires a density-dependent unit conversion
-(Inverse STP: keV/µm → MeV·cm²/g; Range: cm → g/cm²) is
-marked invalid: "Density not available for this material."
+The effective density used for all unit conversions is:
+
+```
+ρ_eff = densityOverride ?? LibdedxService.getDensity(materialId)
+```
+
+If neither source yields a valid `ρ_eff > 0`, any row that requires a
+density-dependent unit conversion (Inverse STP: keV/µm → MeV·cm²/g;
+Range: cm → g/cm²) is marked invalid: "Density not available for
+this material."
 
 ---
 
@@ -686,7 +692,7 @@ marked invalid: "Density not available for this material."
 - [ ] Mixed suffixes across rows activate per-row mode; the master selector is greyed out.
 - [ ] Removing all suffixes reverts to master mode.
 - [ ] An unrecognized suffix (e.g., `1.5 furlongs`) marks the row invalid: "Unrecognized unit 'furlongs'".
-- [ ] Each row's value is converted to g/cm² via `range_gcm2 = range_cm / ρ` before calling `getInverseCsda()`.
+- [ ] Each row's value is converted to g/cm² via `range_gcm2 = range_cm × ρ` before calling `getInverseCsda()`.
 - [ ] If ρ is missing or ≤ 0, the row is marked invalid: "Density not available for this material."
 
 ### Range — Results

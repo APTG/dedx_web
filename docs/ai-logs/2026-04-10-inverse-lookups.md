@@ -277,6 +277,4 @@ Four rounds of button-based Q&A (16 questions total). Decisions captured:
 
 ## Open Questions Remaining
 
-1. **AdvancedOptions pass-through contract** — `getInverseStp()` and
-   `getInverseCsda()` do not declare `options?` in the current WASM
-   contract. Needs implementation confirmation or service interface update.
+_None — all open questions from this session have been resolved._
