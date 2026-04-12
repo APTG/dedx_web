@@ -203,8 +203,8 @@ advanced mode for the recipient. The mode is also stored in
 
 Advanced mode is specified per-feature in the respective feature specs:
 - Multi-program comparison columns (Calculator): [`multi-program.md`](04-feature-specs/multi-program.md)
-- MSTAR modes, aggregate state, density/I-value overrides: TODO `advanced-options.md`
-- Inverse lookups: TODO `inverse-lookups.md`
+- MSTAR modes, aggregate state, density/I-value overrides: [`advanced-options.md`](04-feature-specs/advanced-options.md)
+- Inverse lookups: [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md)
 - Custom compounds: TODO `custom-compounds.md`
 
 ### 4.5 Shareability

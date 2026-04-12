@@ -502,6 +502,7 @@ When writing the URL (state → URL), normalize to this form:
 5. Page-specific params: `energies`, `eunit` (calc); `series`, `stp_unit`, `xscale`, `yscale` (plot).
 6. Advanced-mode params, in sub-order: `mode=advanced`, then `hidden_programs` (omit if empty), then `qfocus` (always emit in advanced mode, even when `both`).
 7. Advanced Options params: `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival` — each omitted when at default value; silently dropped in Basic mode. See [`advanced-options.md`](advanced-options.md) §URL State Encoding.
+8. Inverse-lookup params (Calculator only): `imode`, `ivalues`, `iunit` — omitted when the Forward tab is active; silently dropped in Basic mode. See [`inverse-lookups.md`](inverse-lookups.md) §9.
 
 See [`shareable-urls-formal.md`](shareable-urls-formal.md) §4 for the normative canonicalization algorithm.
 

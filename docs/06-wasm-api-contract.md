@@ -441,6 +441,7 @@ interface LibdedxService {
     materialId: number;
     stoppingPowers: number[];  // in MeV·cm²/g
     side: 0 | 1;
+    options?: AdvancedOptions;
   }): InverseStpResult;
 
   /**
@@ -454,7 +455,31 @@ interface LibdedxService {
     particleId: number;
     materialId: number;
     ranges: number[];          // in g/cm²
+    options?: AdvancedOptions;
   }): InverseCsdaResult;
+
+  /**
+   * Return the Bragg peak stopping power for a given particle/material/program
+   * combination. The Bragg peak is the maximum of the stopping power curve —
+   * the highest STP value reachable on the tabulated energy grid. Any STP input
+   * value above this threshold has no solution on either branch of the inverse
+   * lookup (getInverseStp will return an error for both side=0 and side=1).
+   *
+   * Used by the Inverse STP tab to display a valid input range hint below the
+   * table (see `inverse-lookups.md` §5.4).
+   *
+   * Calls: dedx_get_bragg_peak_stp() from dedx_tools.h (requires stateful
+   * workspace API to apply AdvancedOptions).
+   *
+   * @returns Bragg peak stopping power in MeV·cm²/g.
+   * @throws LibdedxError if the computation fails.
+   */
+  getBraggPeakStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    options?: AdvancedOptions;
+  }): number;
 
   // ── Unit Conversion Utilities ──────────────────────────────
 
