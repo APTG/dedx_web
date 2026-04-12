@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Draft v3 (10 April 2026)
+> **Status:** Draft v4 (12 April 2026)
 >
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
@@ -26,6 +26,12 @@
 > gate inverse tabs; `getBraggPeakStp()` failure → hint omitted silently; `options?`
 > added to `getInverseStp()` and `getInverseCsda()` WASM signatures; Open
 > Question #1 resolved and removed.
+>
+> **v4** (12 April 2026): Inverse STP multi-program layout changed from sub-rows to
+> **one column pair per program** (mirroring the Range tab column-per-program
+> approach): each program gets an `{ProgramName} E low` and `{ProgramName} E high`
+> column; sub-row expansion removed; §3 "Programs and Multi-Program Mode", §5.2
+> Table Columns, §5.5 Wireframe, and §8 Export updated accordingly.
 >
 > **Related specs:**
 > - Calculator page (forward lookup, unified table, entity selection): [`calculator.md`](calculator.md)
@@ -152,7 +158,10 @@ used simultaneously:
 
 - **Range tab:** one result column per program (e.g., `ICRU 90 (MeV)`,
   `PSTAR (MeV)`). Layout mirrors the multi-program forward table.
-- **Inverse STP tab:** one sub-row per program per input value (see §5).
+- **Inverse STP tab:** one **E low** column and one **E high** column per
+  program (e.g., `ICRU 90 E low (MeV)`, `ICRU 90 E high (MeV)`, `PSTAR E low
+  (MeV)`, `PSTAR E high (MeV)`). This mirrors the Range tab column-per-program
+  layout, keeping the two branches together for each program (see §5).
 
 Programs hidden via `hidden_programs` are also excluded from inverse
 results — the same visibility setting governs both the forward and inverse
@@ -337,14 +346,15 @@ The header labels for **E low** and **E high** include the active display
 unit after auto-scaling is applied to the first valid row; if rows
 auto-scale to different units, both columns use the unit string `"(auto)"`.
 
-**Multi-program mode:** columns remain the same (E low, E high). Each
-input row expands into **one sub-row per selected program**. The program
-name is shown as an inline label at the start of the E low cell for each
-sub-row (e.g., `ICRU 90  100.0 MeV`). The Typed Value and Unit cells span
-all sub-rows of the same input. Programs hidden via `hidden_programs` are
-excluded. A program that does not support the particle/material shows `—`
-in both E low and E high (same visual treatment as no-solution, no
-highlight).
+**Multi-program mode:** the single E low / E high column pair is replaced by
+**one E low column and one E high column per selected program**. Column
+headers: `{ProgramName} E low ({unit})` and `{ProgramName} E high ({unit})`.
+Programs are ordered left-to-right in their selected order, matching the
+Range tab and the multi-program forward table. Programs hidden via
+`hidden_programs` are excluded. A program that does not support the
+particle/material shows `—` in both its E low and E high cells (same visual
+treatment as no-solution, no highlight). Each input value stays on **one
+row** (no sub-row expansion).
 
 > **Note:** Unlike the Range tab, the STP input column does **not** use
 > inline suffix detection. Stopping power unit names (keV/µm, MeV·cm²/g,
@@ -425,16 +435,15 @@ Single-program:
 
 Multi-program (two programs, ICRU 90 + PSTAR):
 ```
-  ┌────────────────────┬────────┬──────────────────────┬──────────────┐
-  │ Stopping Power     │ Unit   │ E low (auto)         │ E high (auto)│
-  ├────────────────────┼────────┼──────────────────────┼──────────────┤
-  │ 45.76              │keV/µm▾ │ ICRU 90  100.0 MeV   │ 312.4 MeV    │
-  │                    │        │ PSTAR    100.1 MeV   │ 311.8 MeV    │
-  ├────────────────────┼────────┼──────────────────────┼──────────────┤
-  │ 10.00              │keV/µm▾ │ ICRU 90  287.1 MeV   │ 891.0 MeV    │
-  │                    │        │ PSTAR    286.5 MeV   │ 890.1 MeV    │
-  │ ░░░░░░             │        │                      │              │
-  └────────────────────┴────────┴──────────────────────┴──────────────┘
+  ┌────────────────────┬────────┬────────────────┬────────────────┬────────────────┬────────────────┐
+  │ Stopping Power     │ Unit   │ ICRU 90 E low  │ ICRU 90 E high │ PSTAR E low    │ PSTAR E high   │
+  │ (keV/µm)           │        │ (auto)         │ (auto)         │ (auto)         │ (auto)         │
+  ├────────────────────┼────────┼────────────────┼────────────────┼────────────────┼────────────────┤
+  │ 45.76              │keV/µm▾ │ 100.0 MeV      │ 312.4 MeV      │ 100.1 MeV      │ 311.8 MeV      │
+  │ 10.00              │keV/µm▾ │ 287.1 MeV      │ 891.0 MeV      │ 286.5 MeV      │ 890.1 MeV      │
+  │ 999.99             │keV/µm▾ │ —              │ —              │ —              │ —              │
+  │ ░░░░░░             │        │                │                │                │                │
+  └────────────────────┴────────┴────────────────┴────────────────┴────────────────┴────────────────┘
   Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)  [Export CSV ↓]
 ```
 
@@ -538,8 +547,8 @@ figures).
 `Typed Value`, `Unit`, `E low ({unit})`, `E high ({unit})`
 
 **Inverse STP — multi-program columns:**
-`Typed Value`, `Unit`, `Program`, `E low ({unit})`, `E high ({unit})`
-— one data row per program per input value; hidden programs are excluded.
+`Typed Value`, `Unit`, `{ProgramName} E low ({unit})`, `{ProgramName} E high ({unit})` … (one E low + E high column pair per visible program)
+— one data row per input value; hidden programs are excluded.
 
 `{unit}` in the headers is the auto-scaled unit applied to the first
 valid row (or `auto` if rows use mixed prefixes).
