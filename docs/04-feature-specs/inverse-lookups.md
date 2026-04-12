@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Draft v4 (12 April 2026)
+> **Status:** Final v4 (12 April 2026)
 >
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
@@ -730,7 +730,7 @@ this material."
 ### Multi-Program
 
 - [ ] In multi-program mode, Range tab shows one result column per visible program.
-- [ ] In multi-program mode, Inverse STP tab shows one sub-row per visible program per input value; the program name appears inline at the start of the E low cell.
+- [ ] In multi-program mode, Inverse STP tab shows one E low column and one E high column per visible program; column headers read `{ProgramName} E low ({unit})` / `{ProgramName} E high ({unit})`; each input value stays on one row (no sub-row expansion).
 - [ ] Programs hidden via `hidden_programs` are excluded from both inverse tabs.
 - [ ] A program that does not support the current particle/material shows `—` in its result cell(s), with no row highlight.
 
@@ -778,7 +778,7 @@ this material."
 - [ ] Range single-program CSV columns: `Typed Value`, `Unit`, `→ Energy ({unit})`.
 - [ ] Range multi-program CSV columns: `Typed Value`, `Unit`, `{ProgramName} ({unit})` per visible program.
 - [ ] Inverse STP single-program CSV columns: `Typed Value`, `Unit`, `E low ({unit})`, `E high ({unit})`.
-- [ ] Inverse STP multi-program CSV columns: `Typed Value`, `Unit`, `Program`, `E low ({unit})`, `E high ({unit})`; one row per program per input value.
+- [ ] Inverse STP multi-program CSV columns: `Typed Value`, `Unit`, `{ProgramName} E low ({unit})`, `{ProgramName} E high ({unit})` … per visible program; one row per input value.
 - [ ] Hidden programs are excluded from all CSV exports.
 - [ ] Single-program filenames: `dedx_range_{particle}_{material}_{program}.csv` / `dedx_inverse_stp_{particle}_{material}_{program}.csv`.
 - [ ] Multi-program filenames omit the program segment: `dedx_range_{particle}_{material}.csv` / `dedx_inverse_stp_{particle}_{material}.csv`.
@@ -787,4 +787,4 @@ this material."
 
 ## Open Questions
 
-None at this time. All design questions resolved in v1–v3.
+None at this time. All design questions resolved in v1–v4.
