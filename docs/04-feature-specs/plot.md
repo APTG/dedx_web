@@ -1,6 +1,13 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Final v4 (13 April 2026)
+> **Status:** Final v5 (13 April 2026)
+>
+> **v5** (13 April 2026): Export layout updated per `export.md` v3 §0.
+> "Export PDF" and "Export CSV ↓" moved from controls bar to the **app
+> toolbar** (upper-right, right of "Share URL"). Controls bar now contains
+> only the image export control ("Export image ▾" dropdown). Wireframes
+> and Export section and AC updated. "Export image ▾" stays adjacent to
+> the canvas it exports.
 >
 > **v4** (13 April 2026): Controls bar updated — "Export PDF" button added
 > between "Export image ▾" and "Export CSV ↓". Export section updated to
@@ -670,14 +677,17 @@ The preview series is not encoded in the URL.
 
 ## Export
 
-Three controls appear in the **controls bar** above the JSROOT canvas,
-**right-aligned** (opposite the unit/axis controls):
+Export controls are split between two locations:
 
-| Control | Type | Label |
-|---------|------|-------|
-| Image export | Dropdown button | "Export image ▾" |
-| PDF export | Button | "Export PDF" |
-| CSV export | Button | "Export CSV ↓" |
+| Control | Location | Type | Label |
+|---------|----------|------|-------|
+| Image export | Controls bar, right-aligned | Dropdown button | "Export image ▾" |
+| PDF export | App toolbar, upper-right | Button | "Export PDF" |
+| CSV export | App toolbar, upper-right | Button | "Export CSV ↓" |
+
+The image export sits next to the canvas it captures. PDF and CSV are
+sharing/archiving actions and live in the toolbar beside "Share URL"
+(see [`export.md`](export.md) §0).
 
 ### Export image ▾
 
@@ -737,7 +747,7 @@ Exports all **visible** series data as a wide-format CSV file
 ┌── SIDEBAR (≈30%) ────────────────────┐ ┌── MAIN (≈70%) ────────────────────────────────┐
 │                                      │ │                                                │
 │ ┌───────────┐ ┌────────────────────┐ │ │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
-│ │ ① Particle│ │ ② Target Material  │ │ │ X: (•)Log (○)Lin   Y: (•)Log (○)Lin  [img▾] [PDF] [CSV↓] │
+│ │ ① Particle│ │ ② Target Material  │ │ │ X: (•)Log (○)Lin   Y: (•)Log (○)Lin                [img▾] │
 │ │ [Filter ] │ │ [Filter...       ] │ │ │                                                │
 │ │ ┌───────┐ │ │ ┌────────┬───────┐ │ │ │ ┌──────────────────────────────────────────┐   │
 │ │ │Proton │ │ │ │ELEMENTS│COMPNDS│ │ │ │ │                                          │   │
@@ -768,9 +778,10 @@ Exports all **visible** series data as a wide-format CSV file
   [`entity-selection.md` § Desktop wireframe](entity-selection.md#desktop-900px--sidebar--canvas).
 - The JSROOT canvas has `min-height: 400px; height: min(60vh, 600px)`.
 - The controls bar above the canvas contains: stopping power unit
-  segmented control (left), axis scale controls (center-left), and
-  export controls right-aligned ("Export image ▾" dropdown, then
-  "Export PDF" button, then "Export CSV ↓" button).
+  segmented control (left), axis scale controls (center-left), and the
+  image export control right-aligned ("Export image ▾" dropdown). "Export
+  PDF" and "Export CSV ↓" are in the app toolbar (upper-right), not in
+  the controls bar.
 - The series list sits below the canvas in the main area, acting as the
   plot legend.
 
@@ -794,7 +805,7 @@ canvas:
 │ [ ＋ Add Series ]    [ Reset all ]              │
 ├────────────────────────────────────────────────┤
 │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
-│ X: (•)Log (○)Lin  Y: (•)Log (○)Lin   [img▾] [PDF] [CSV↓] │
+│ X: (•)Log (○)Lin  Y: (•)Log (○)Lin                 [img▾] │
 │ ┌────────────────────────────────────────────┐ │
 │ │            JSROOT Plot Canvas               │ │
 │ └────────────────────────────────────────────┘ │
@@ -828,7 +839,7 @@ panels. The user taps to open entity selection when needed.
 │ [ ＋ Add Series ]   [ Reset all ]    │
 ├──────────────────────────────────────┤
 │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g│
-│ X: Log/Lin  Y: Log/Lin  [📷] [📄]   │
+│ X: Log/Lin  Y: Log/Lin  [img▾]       │
 │ ┌──────────────────────────────────┐ │
 │ │        JSROOT Plot Canvas        │ │
 │ │    (touch zoom/pan disabled)     │ │
@@ -1029,7 +1040,8 @@ When entity selection is incomplete (`isComplete === false`):
   visually-hidden text span describing the series color and line style.
   Do **not** rely solely on `title` for accessibility.
 - Export controls have descriptive `aria-label` attributes per
-  [`export.md`](export.md) §6: "Export plot as image" (dropdown),
+  [`export.md`](export.md) §9: "Export plot as image" (dropdown),
+  "Export plot report as PDF" (PDF button),
   "Export visible series data as CSV" (CSV button).
 
 ---
@@ -1127,7 +1139,8 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] `stp_unit` only accepts canonical tokens: `kev-um`, `mev-cm`, `mev-cm2-g`.
 
 ### Export
-- [ ] "Export image ▾" dropdown, "Export PDF", and "Export CSV ↓" appear in the controls bar, right-aligned, in that order.
+- [ ] "Export image ▾" dropdown appears in the controls bar, right-aligned — the only export control in the controls bar.
+- [ ] "Export PDF" and "Export CSV ↓" appear in the app toolbar (upper-right, right of "Share URL"), consistent with the Calculator page.
 - [ ] "Export image ▾" offers "PNG image" and "SVG vector" (see [`export.md`](export.md) §4.1).
 - [ ] Selecting "PNG image" downloads `dedx_plot.png` at 2× canvas resolution.
 - [ ] Selecting "SVG vector" downloads `dedx_plot.svg` via JSROOT `makeSVG()`.
@@ -1167,7 +1180,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] All buttons have descriptive `aria-label` attributes.
 - [ ] Axis scale controls use `role="radiogroup"`.
 - [ ] Stopping power unit segmented control uses `role="radiogroup"`.
-- [ ] Export controls have descriptive `aria-label` attributes (see [`export.md`](export.md) §6).
+- [ ] Export controls have descriptive `aria-label` attributes (see [`export.md`](export.md) §9).
 
 ---
 

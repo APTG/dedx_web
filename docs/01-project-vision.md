@@ -361,6 +361,6 @@ progressively.
 |----------|---------|
 | [00-redesign-plan.md](00-redesign-plan.md) | Full implementation plan with stages |
 | [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript interface for the libdedx WASM wrapper |
-| `09-non-functional-requirements.md` | Performance, browser support, accessibility |
+| [`09-non-functional-requirements.md`](09-non-functional-requirements.md) | WCAG 2.1 AA accessibility, performance budgets, browser support matrix, responsive breakpoints, security |
 | `04-feature-specs/*.md` | Detailed per-feature specifications |
 | `03-architecture.md` | Component tree, data flow, WASM lifecycle |

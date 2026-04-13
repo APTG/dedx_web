@@ -1,6 +1,26 @@
 # Feature: Export
 
-> **Status:** Final v2 (13 April 2026)
+> **Status:** Final v4 (13 April 2026)
+>
+> **v4** (13 April 2026): Advanced mode PDF layout changed — chart/table
+> is now the **first content** after the header (both Plot and Calculator).
+> The extended metadata block (BUILD, PARTICLE, MATERIAL, PROGRAMS,
+> SETTINGS, SYSTEM) moves to **after** the chart+legend (Plot) or
+> after the results table (Calculator). Rationale: users open the PDF to
+> see results first; provenance metadata is a reference appendix.
+> Fixed leftover bug: Calculator PDF §6.1 button position still said
+> "below table" — corrected to app toolbar.
+>
+> **v3** (13 April 2026): Unified export button placement across pages.
+> "Export PDF" and "Export CSV ↓" moved from below-table / controls bar
+> to the **app toolbar upper-right**, immediately right of "Share URL"
+> (same row on both Calculator and Plot). Rationale: PDF and CSV are
+> sharing/archiving actions — the same spirit as Share URL. Image export
+> ("Export image ▾" dropdown) stays in the Plot controls bar, adjacent to
+> the canvas it exports. Both toolbar buttons are **disabled** (not hidden)
+> when no results are available. New §0 documents the shared toolbar. All
+> button position tables, wireframes, and acceptance criteria updated.
+> `calculator.md` Final v8, `plot.md` Final v5.
 >
 > **v2** (13 April 2026): Added PDF export for Plot and Calculator (both
 > basic and advanced modes). Added external-data CSV rules: always Case B
@@ -47,6 +67,32 @@ normative detail.
 
 ---
 
+## 0. Export Toolbar — Shared (Both Pages)
+
+**"Export PDF"** and **"Export CSV ↓"** are permanent toolbar buttons in
+the **upper-right corner** of the page, immediately right of the
+**"Share URL"** button. They appear on both the Calculator and the Plot
+pages in identical positions.
+
+```
+┌──────────────────────────────────────────────────────────────────────────┐
+│  dEdx Web                    [Share URL]  [Export PDF]  [Export CSV ↓]  │
+└──────────────────────────────────────────────────────────────────────────┘
+```
+
+| Button | No-results state | Results available |
+|--------|-----------------|-------------------|
+| "Export PDF" | Disabled (greyed out) | Active |
+| "Export CSV ↓" | Disabled (greyed out) | Active |
+
+**Rationale:** PDF and CSV export are *sharing and archiving* actions —
+the same intent as "Share URL". Grouping them in the toolbar keeps the
+content area clean and makes the sharing cluster discoverable in one place.
+The image export ("Export image ▾") is the exception: it is plot-specific
+and lives in the Plot controls bar, adjacent to the canvas it captures.
+
+---
+
 ## 1. Common CSV Conventions
 
 All exported CSV files share these rules:
@@ -69,11 +115,14 @@ All exported CSV files share these rules:
 
 ### Button
 
+Both buttons are in the **app toolbar** (see §0). No buttons appear below
+the unified table.
+
 | Property | Detail |
 |----------|--------|
-| "Export CSV ↓" | Right-aligned below the unified input/result table |
-| "Export PDF" | Left of "Export CSV ↓", same row |
-| Visibility | Both buttons shown when at least one row has a computed result; hidden otherwise |
+| "Export PDF" | App toolbar, upper-right — immediately right of "Share URL" |
+| "Export CSV ↓" | App toolbar, upper-right — right of "Export PDF" |
+| Availability | Both **disabled** (greyed out) until at least one row has a computed result; always visible in the toolbar |
 
 ### CSV Schema
 
@@ -123,8 +172,9 @@ Example: `dedx_calculator_proton_water_icru90.csv`
 
 ### Button
 
-Same "Export PDF" and "Export CSV ↓" buttons, right-aligned below the
-comparison table, in identical positions to basic mode.
+Same "Export PDF" and "Export CSV ↓" buttons in the app toolbar (§0),
+identical positions to basic mode. No buttons appear below the comparison
+table.
 
 ### CSV Schema
 
@@ -182,15 +232,15 @@ Where `{N}` is the count of visible (non-hidden) programs.
 |----------|--------|
 | Label | "Export image ▾" |
 | Type | Dropdown button |
-| Position | Controls bar above the JSROOT canvas, **right-aligned** — leftmost of the three export controls |
+| Position | Controls bar above the JSROOT canvas, **right-aligned** — the only export control in the controls bar; PDF and CSV are in the app toolbar (§0) |
 | Options | "PNG image" / "SVG vector" |
 
 Wireframe (controls bar):
 
 ```
-┌───────────────────────────────────────────────────────────────────────────────┐
-│ [keV/µm · MeV·cm²/g · MeV/cm]  [Log-log · Lin-lin]  [img ▾] [PDF] [CSV ↓]  │
-└───────────────────────────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────┐
+│ [keV/µm · MeV·cm²/g · MeV/cm]  [Log-log · Lin-lin]             [img ▾] │
+└──────────────────────────────────────────────────────────────────────────┘
 ```
 
 Dropdown (open):
@@ -233,7 +283,7 @@ Selecting an option triggers the download immediately and closes the dropdown.
 | Property | Detail |
 |----------|--------|
 | Label | "Export CSV ↓" |
-| Position | Controls bar, **right-aligned** — rightmost of the three export controls |
+| Position | App toolbar, upper-right — right of "Export PDF" (see §0) |
 
 #### CSV Schema
 
@@ -357,7 +407,7 @@ dedx_plot.svg
 | Property | Detail |
 |----------|--------|
 | Label | "Export PDF" |
-| Position | Controls bar, **right-aligned** — between "Export image ▾" and "Export CSV ↓" |
+| Position | App toolbar, upper-right — immediately right of "Share URL" (see §0) |
 | Mechanism | jsPDF (client-side) with embedded SVG (via JSROOT `makeSVG()`) |
 
 ### 5.2 Content — Basic Mode
@@ -390,14 +440,26 @@ The Plot PDF in basic mode is a single-page document containing:
 
 ### 5.3 Content — Advanced Mode
 
-Advanced mode PDF includes everything in §5.2 **plus** a metadata block
-between the header and the chart:
+Advanced mode PDF has the same header and chart as §5.2, with an
+**extended metadata block appended after the legend** (not before the
+chart). The chart is always the first content the reader sees.
 
 ```
 ┌─────────────────────────────────────────────────────────┐
 │  dEdx Web — Advanced Mode                               │
 │  Generated: 2026-04-13T14:32:00Z                        │
-│  URL: https://dedx.example.org/?mode=advanced&...       │
+│  URL: https://dedx.example.org/?mode=advanced&...       │ ← clickable
+├─────────────────────────────────────────────────────────┤
+│                                                         │
+│  [Chart SVG — full width]                               │
+│                                                         │
+├─────────────────────────────────────────────────────────┤
+│  Legend                                                 │
+│  ■  ICRU 90 — Proton in Water                           │
+│  ■  PSTAR — Proton in Water                             │
+│  ■  NIST — Proton in Water (ext)                        │
+├─────────────────────────────────────────────────────────┤
+│  ── Advanced Mode Details ─────────────────────────     │
 │                                                         │
 │  BUILD                                                  │
 │  Commit: a1b2c3d · 2026-04-13 · main                   │
@@ -420,33 +482,34 @@ between the header and the chart:
 │                                                         │
 │  SYSTEM                                                 │
 │  Chrome 124 / macOS 14.0  (from navigator.userAgent)    │
-├─────────────────────────────────────────────────────────┤
-│  [Chart SVG]                                            │
-├─────────────────────────────────────────────────────────┤
-│  Legend                                                 │
-│  ■  ICRU 90 — Proton in Water                           │
-│  ■  PSTAR — Proton in Water                             │
-│  ■  NIST — Proton in Water (ext)                        │
 └─────────────────────────────────────────────────────────┘
 ```
 
+The "Advanced Mode Details" section begins with a horizontal rule and
+heading so it reads as a reference appendix, not as content competing
+with the chart.
+
 Metadata block rules:
 
-| Section | Content | Mode |
-|---------|---------|------|
-| App name + mode | "dEdx Web" / "dEdx Web — Advanced Mode" | both |
-| Generated timestamp | ISO 8601 UTC | both |
-| URL | Full shareable URL — clickable hyperlink | both |
-| **BUILD** | Commit hash · ISO date · branch/tag (from `deploy.json` per `build-info.md`) | advanced only |
-| **PARTICLE** | Name, Z (atomic number), A (mass number) | advanced only |
-| **MATERIAL** | Name, phase, density ρ in g/cm³ (override value if set, otherwise built-in) | advanced only |
-| **PROGRAMS** | One row per visible series: label + "(built-in)" or "(external) {url}" | advanced only |
-| **SETTINGS** | Active Advanced Options: interpolation axis/method, aggregate state, density override, I-value override (only if non-default values are active) | advanced only |
-| **SYSTEM** | Browser and OS parsed from `navigator.userAgent` | advanced only |
+| Section | Position | Mode |
+|---------|----------|------|
+| App name + mode | Header (top) | both |
+| Generated timestamp | Header (top) | both |
+| URL | Header (top) — clickable hyperlink | both |
+| Chart SVG | After header | both |
+| Legend | After chart | both |
+| **"Advanced Mode Details" divider** | After legend | advanced only |
+| **BUILD** | Details block — commit hash · ISO date · branch/tag (from `deploy.json` per `build-info.md`) | advanced only |
+| **PARTICLE** | Details block — Name, Z (atomic number), A (mass number) | advanced only |
+| **MATERIAL** | Details block — Name, phase, density ρ in g/cm³ (override if set) | advanced only |
+| **PROGRAMS** | Details block — one row per visible series: label + "(built-in)" or "(external) {url}" | advanced only |
+| **SETTINGS** | Details block — active Advanced Options (only non-default values shown) | advanced only |
+| **SYSTEM** | Details block — browser and OS from `navigator.userAgent` | advanced only |
 
 If `deploy.json` is absent (local dev), the BUILD section is omitted silently.
 
-The legend may overflow to a second page if there are many series.
+The legend may overflow to a second page if there are many series. The
+"Advanced Mode Details" block starts on whichever page follows the legend.
 
 ### 5.4 Filename
 
@@ -463,7 +526,7 @@ dedx_plot_report.pdf
 | Property | Detail |
 |----------|--------|
 | Label | "Export PDF" |
-| Position | Below the unified table (basic) or comparison table (advanced), left of "Export CSV ↓" |
+| Position | App toolbar, upper-right — immediately right of "Share URL" (see §0) |
 | Mechanism | jsPDF + `jspdf-autotable` plugin (client-side, portrait orientation) |
 
 ### 6.2 Content — Basic Mode
@@ -487,9 +550,34 @@ The five-column table mirrors the unified table exactly.
 
 ### 6.3 Content — Advanced Mode
 
-Advanced mode PDF includes the same extended metadata block as the Plot
-PDF (§5.3) — build info, particle Z/A, material density, programs list,
-settings, system info — above the comparison table.
+The results table comes immediately after the header — the reader sees
+data first. The extended metadata block (same fields as §5.3) is appended
+**after the table**, beginning with an "Advanced Mode Details" divider.
+
+```
+┌────────────────────────────────────────────────────────┐
+│  dEdx Web — Calculator (Advanced Mode)                 │
+│  Generated: 2026-04-13T14:32:00Z                       │
+│  URL: https://dedx.example.org/?mode=advanced&...      │ ← clickable
+│                                                        │
+│  Proton in Water (liquid) — ICRU 90 / PSTAR / NIST     │
+│                                                        │
+│  Energy │ MeV/n │ Unit │ Stp ICRU90 │ Stp PSTAR │ …   │
+│  ───────┼───────┼──────┼────────────┼───────────┼──── │
+│  100    │ 100   │ MeV  │ 13.92      │ 14.01     │ …   │
+│  500    │ 500   │ MeV  │ 7.834      │ 7.912     │ …   │
+├────────────────────────────────────────────────────────┤
+│  ── Advanced Mode Details ───────────────────────────  │
+│                                                        │
+│  BUILD    a1b2c3d · 2026-04-13 · main                  │
+│  PARTICLE Proton  Z=1  A=1                             │
+│  MATERIAL Water (liquid)  ρ = 1.000 g/cm³              │
+│  PROGRAMS ICRU 90 (built-in) / PSTAR (built-in) /      │
+│           NIST (external) https://…                    │
+│  SETTINGS Interpolation: Log-log / Spline              │
+│  SYSTEM   Chrome 124 / macOS 14.0                      │
+└────────────────────────────────────────────────────────┘
+```
 
 **Table layout for wide tables** — the advanced comparison table (many
 program columns) is split across pages by quantity group:
@@ -535,13 +623,12 @@ ASCII-safe filename rules applied to `{particle}` and `{material}`:
 
 | Element | Requirement |
 |---------|-------------|
-| Calculator "Export CSV ↓" button | `aria-label="Download results as CSV"` |
-| Calculator "Export PDF" button | `aria-label="Download results as PDF"` |
+| Toolbar "Export PDF" button (both pages) | `aria-label="Download results as PDF"` when on Calculator; `aria-label="Export plot report as PDF"` when on Plot |
+| Toolbar "Export CSV ↓" button (both pages) | `aria-label="Download results as CSV"` when on Calculator; `aria-label="Export visible series data as CSV"` when on Plot |
+| Both toolbar export buttons (disabled state) | `aria-disabled="true"` when no results available |
 | Plot "Export image ▾" dropdown | `aria-label="Export plot as image"`, `aria-haspopup="true"`, `aria-expanded` toggled |
 | Dropdown menu | `role="menu"` |
 | Dropdown items ("PNG image", "SVG vector") | `role="menuitem"` |
-| Plot "Export PDF" button | `aria-label="Export plot report as PDF"` |
-| Plot "Export CSV ↓" button | `aria-label="Export visible series data as CSV"` |
 
 Keyboard behaviour for the "Export image ▾" dropdown:
 
@@ -556,8 +643,13 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 
 ## 9. Acceptance Checklist
 
+### Export Toolbar
+- [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right) on both Calculator and Plot pages, immediately right of "Share URL".
+- [ ] Both buttons are **disabled** (greyed out, `aria-disabled="true"`) when no results are available; they become active as soon as at least one result row is present.
+- [ ] Button states are independent: disabling/enabling one does not affect the other.
+
 ### Calculator — Basic Mode CSV
-- [ ] "Export CSV ↓" button appears below the unified table when at least one result row is present; hidden otherwise.
+- [ ] "Export CSV ↓" toolbar button becomes active when at least one result row is present.
 - [ ] CSV contains exactly five columns: `Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`, `Stopping Power ({unit})`, `CSDA Range`.
 - [ ] Stopping Power column header includes the active unit (e.g., `Stopping Power (keV/µm)`).
 - [ ] Stopping Power values are numeric only — no unit suffix in cells.
@@ -568,7 +660,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_calculator_{particle}_{material}_{program}.csv`.
 
 ### Calculator — Basic Mode PDF
-- [ ] "Export PDF" button appears to the left of "Export CSV ↓" when results are present; hidden otherwise.
+- [ ] "Export PDF" toolbar button becomes active when results are present.
 - [ ] PDF contains: app name, generated timestamp (ISO 8601 UTC), clickable page URL, entity summary line, and the five-column table.
 - [ ] Table rows match the on-screen unified table (same values, same units).
 - [ ] Error/validation rows are omitted from the table.
@@ -595,7 +687,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_{particle}_{material}_{N}programs.pdf`.
 
 ### Plot — Image Export
-- [ ] "Export image ▾" dropdown button appears in the controls bar, leftmost of the three export controls.
+- [ ] "Export image ▾" dropdown button appears in the controls bar, right-aligned — the only export control in the controls bar.
 - [ ] Dropdown offers exactly two items: "PNG image" and "SVG vector".
 - [ ] Selecting "PNG image" downloads `dedx_plot.png` at 2× canvas resolution.
 - [ ] Selecting "SVG vector" downloads `dedx_plot.svg` via JSROOT `makeSVG()`.
@@ -605,7 +697,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] `aria-expanded` is correctly toggled on the trigger button.
 
 ### Plot — PDF Export
-- [ ] "Export PDF" button appears in the controls bar, between "Export image ▾" and "Export CSV ↓".
+- [ ] "Export PDF" toolbar button is active on the Plot page (always — the plot canvas is always present).
 - [ ] Basic mode PDF contains: app name, generated timestamp (ISO UTC), clickable page URL, chart SVG, legend.
 - [ ] Advanced mode PDF additionally contains: BUILD block, PARTICLE (Z, A), MATERIAL (density), PROGRAMS list with ext URLs, SETTINGS (non-default advanced options), SYSTEM (browser/OS).
 - [ ] External program entries in PROGRAMS list show their source URL.
@@ -615,7 +707,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename is `dedx_plot_report.pdf`.
 
 ### Plot — CSV Export
-- [ ] "Export CSV ↓" button appears in the controls bar, rightmost of the three export controls.
+- [ ] "Export CSV ↓" toolbar button is active on the Plot page when at least one committed (non-preview) series is present.
 - [ ] When no external series are present and all internal series share the same energy grid: single `Energy (MeV)` column.
 - [ ] When any `ext:` series is present (regardless of libdedx grid): always Case B — every series gets its own `Energy {program} (MeV)` column.
 - [ ] When internal series have different grids (no ext): Case B applies.

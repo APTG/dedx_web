@@ -1,6 +1,11 @@
 # Feature: Calculator Page
 
-> **Status:** Final v7 (13 April 2026)
+> **Status:** Final v8 (13 April 2026)
+>
+> **v8** (13 April 2026): Export buttons moved from below the unified table
+> to the **app toolbar** (upper-right, right of "Share URL"), consistent
+> with Plot page and `export.md` v3 §0. Buttons are disabled when no
+> results are present (not hidden). Wireframes and Export AC updated.
 >
 > **v7** (13 April 2026): Export section updated — "Export PDF" button
 > added to the left of "Export CSV ↓"; PDF content is mode-sensitive
@@ -413,9 +418,11 @@ This ensures the user always knows the data source, per project vision §4.3.
 
 ### Export
 
-Two buttons appear below the result table when results are displayed:
-**"Export PDF"** (left) and **"Export CSV ↓"** (right). Both are hidden
-when no results are available.
+**"Export PDF"** and **"Export CSV ↓"** are in the **app toolbar**
+(upper-right, immediately right of "Share URL"), present on all pages.
+Both buttons are **disabled** (greyed out) when no results are available
+and become active as soon as at least one result row is computed. No
+export buttons appear below the table.
 
 **CSV** — 5 columns matching the unified table:
 `Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
@@ -551,7 +558,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 │  │ 500          │ 500      │ MeV  │ 13.92            │ 116.1 cm        │  │
 │  │ ░░░░░░░░░░░░ │          │      │                  │                  │  │
 │  └──────────────┴──────────┴──────┴──────────────────┴──────────────────┘  │
-│  Valid range: 0.001–10000 MeV               [Export PDF]  [Export CSV ↓] │
+│  Valid range: 0.001–10000 MeV                                              │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -605,13 +612,12 @@ scroll or collapsed:
 │ │(MeV)  │        │     │keV/µm│      ││
 │ │ 100   │ 100    │ MeV │45.76 │7.7cm ││
 │ └───────┴────────┴─────┴──────┴─────┘│
-│          [Export PDF]  [Export CSV ↓] │
 └──────────────────────────────────────┘
 ```
 
 - Entity selectors stack vertically, each full width.
 - Result table scrolls horizontally if needed (5 columns may require scrolling).
-- Export button right-aligned below the table.
+- Export buttons ("Export PDF", "Export CSV ↓") are in the app toolbar, not below the table.
 
 ---
 
@@ -815,7 +821,7 @@ entitySelection changes
 - [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
-- [ ] "Export PDF" and "Export CSV ↓" buttons appear below the unified table when results are present; both hidden otherwise.
+- [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right, right of "Share URL") on all pages; both disabled until at least one result row is present.
 - [ ] CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2).
 - [ ] `Stopping Power` header unit in CSV matches the active display unit (e.g., `keV/µm` for non-gas, `MeV·cm²/g` for gas).
 - [ ] Error/validation rows are omitted from the CSV.
