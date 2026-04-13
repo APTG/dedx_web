@@ -3,7 +3,7 @@
 > **Status:** Final v8 (13 April 2026)
 >
 > **v8** (13 April 2026): Export buttons moved from below the unified table
-> to the **app toolbar** (upper-right, right of "Share URL"), consistent
+> to the **app toolbar** (upper-right, left of "Share URL"), consistent
 > with Plot page and `export.md` v3 §0. Buttons are disabled when no
 > results are present (not hidden). Wireframes and Export AC updated.
 >
