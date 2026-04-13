@@ -90,7 +90,7 @@ docs/
 ├── 06-wasm-api-contract.md          # TypeScript interface for libdedx wrapper
 ├── 07-testing-strategy.md           # Unit/integration/E2E plan
 ├── 08-deployment.md                 # GitHub Actions → GitHub Pages
-├── 09-non-functional-requirements.md # Performance, browser support, a11y, responsive
+├── 09-non-functional-requirements.md # WCAG 2.1 AA, performance budgets, browser support, responsive, security
 ├── 10-terminology.md                # TODO: Glossary of domain terms (particle vs ion,
 │                                    #   stopping power, CSDA range, etc.) for UI
 │                                    #   tooltips and user/technical documentation
