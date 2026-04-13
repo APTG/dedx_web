@@ -721,9 +721,9 @@ A jsPDF-generated report containing the chart SVG and metadata.
 Exports all **visible** series data as a wide-format CSV file
 (`dedx_plot_data.csv`, UTF-8 with BOM, comma-delimited).
 
-- A single `Energy (MeV)` column appears first when all series share the
+- A single `Energy [MeV/nucl]` column appears first when all series share the
   same energy grid **and no external (`ext:`) series are present**;
-  otherwise each series gets its own `Energy {program} (MeV)` column
+  otherwise each series gets its own `Energy {program} [MeV/nucl]` column
   immediately before its stopping-power column.
 - When any external series is present, **always** uses the per-series
   energy column layout (Case B), regardless of whether internal series
@@ -1040,7 +1040,7 @@ When entity selection is incomplete (`isComplete === false`):
   visually-hidden text span describing the series color and line style.
   Do **not** rely solely on `title` for accessibility.
 - Export controls have descriptive `aria-label` attributes per
-  [`export.md`](export.md) §9: "Export plot as image" (dropdown),
+  [`export.md`](export.md) §8: "Export plot as image" (dropdown),
   "Export plot report as PDF" (PDF button),
   "Export visible series data as CSV" (CSV button).
 

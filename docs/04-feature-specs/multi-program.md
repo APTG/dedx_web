@@ -109,7 +109,9 @@ manually hiding many columns.
   in [`01-project-vision.md`](../01-project-vision.md) §4.4. This spec
   only defines what happens on the Calculator page when advanced mode
   is on.
-- PDF export (not in scope for Stage 1; CSV export is specified in [`export.md`](export.md) §3).
+- Export format details are defined in [`export.md`](export.md),
+  including CSV export (§3) and Calculator PDF export (§6) for advanced /
+  multi-program mode.
 
 ---
 

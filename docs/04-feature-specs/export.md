@@ -85,6 +85,10 @@ pages in identical positions.
 | "Export PDF" | Disabled (greyed out) | Active |
 | "Export CSV ↓" | Disabled (greyed out) | Active |
 
+**"No results"** means: no committed (non-preview) rows/series exist yet.
+On the Calculator page this means no row has a computed result; on the
+Plot page this means no committed series has been added.
+
 **Rationale:** PDF and CSV export are *sharing and archiving* actions —
 the same intent as "Share URL". Grouping them in the toolbar keeps the
 content area clean and makes the sharing cluster discoverable in one place.
@@ -102,7 +106,7 @@ All exported CSV files share these rules:
 | Encoding | UTF-8 **with BOM** (ensures correct rendering in Windows Excel) |
 | Delimiter | Comma (`,`) |
 | Line endings | CRLF |
-| Quoting | Values containing commas or `"` are double-quoted; all other values unquoted |
+| Quoting | RFC 4180-style: values containing commas, `"`, CR, or LF are wrapped in double quotes; internal `"` characters are escaped by doubling them (`""`); all other values are unquoted |
 | First row | Column headers (immediately after any `#` comment rows — see §4.3) |
 | Numeric precision | 4 significant figures, matching on-screen display |
 | Thousands separator | None (`13920` not `13,920`) |
@@ -148,6 +152,14 @@ Column 4 substitutes `{unit}` with the active stopping-power unit:
 - `keV/µm` for non-gas materials (default)
 - `MeV·cm²/g` for gas materials (default)
 - Or the user-selected unit if overridden
+
+> **CSV injection note:** The `Typed Value` column stores the raw text the
+> user entered. To prevent spreadsheet formula injection (values starting
+> with `=`, `+`, `-`, or `@` being evaluated as formulas in Excel/Sheets),
+> any such value **must** be prefixed with a single-quote character (`'`)
+> before being written to the cell, so it is treated as a text literal.
+> The single-quote is not visible after import and does not affect the
+> displayed value in compliant spreadsheet applications.
 
 Error/invalid rows (validation failures, out-of-range energies) are
 **omitted** — only successfully computed rows appear in the CSV.
@@ -299,12 +311,12 @@ Applies only when **no external (`ext:`) series are present** and all
 libdedx series happen to share the same tabulated energy points.
 
 ```csv
-"Energy (MeV)","Stp ICRU 90 — p in Water (keV/µm)","Stp PSTAR — p in Water (keV/µm)"
+"Energy [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Stp PSTAR — p in Water (keV/µm)"
 0.001,84.30,81.55
 0.002,65.10,63.20
 ```
 
-- A single `Energy (MeV)` column appears first.
+- A single `Energy [MeV/nucl]` column appears first.
 - Each subsequent column is one series' stopping-power values.
 
 ---
@@ -316,12 +328,12 @@ bounds, different point counts, or when any external-data series is
 included (see §4.3).
 
 ```csv
-"Energy ICRU 90 (MeV)","Stp ICRU 90 — p in Water (keV/µm)","Energy PSTAR (MeV)","Stp PSTAR — α in Al (keV/µm)"
+"Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy PSTAR [MeV/nucl]","Stp PSTAR — α in Al (keV/µm)"
 0.001,84.30,0.001,92.14
 0.002,65.10,0.002,71.30
 ```
 
-- Each series gets its own `Energy {program} (MeV)` column immediately
+- Each series gets its own `Energy {program} [MeV/nucl]` column immediately
   before its stopping-power column.
 - Rows are aligned by index position. If grids differ in length, the shorter
   series' columns are padded with empty cells in the trailing rows.
@@ -697,7 +709,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] `aria-expanded` is correctly toggled on the trigger button.
 
 ### Plot — PDF Export
-- [ ] "Export PDF" toolbar button is active on the Plot page (always — the plot canvas is always present).
+- [ ] "Export PDF" toolbar button is active on the Plot page when at least one committed (non-preview) series is present; disabled otherwise.
 - [ ] Basic mode PDF contains: app name, generated timestamp (ISO UTC), clickable page URL, chart SVG, legend.
 - [ ] Advanced mode PDF additionally contains: BUILD block, PARTICLE (Z, A), MATERIAL (density), PROGRAMS list with ext URLs, SETTINGS (non-default advanced options), SYSTEM (browser/OS).
 - [ ] External program entries in PROGRAMS list show their source URL.
@@ -708,8 +720,8 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 
 ### Plot — CSV Export
 - [ ] "Export CSV ↓" toolbar button is active on the Plot page when at least one committed (non-preview) series is present.
-- [ ] When no external series are present and all internal series share the same energy grid: single `Energy (MeV)` column.
-- [ ] When any `ext:` series is present (regardless of libdedx grid): always Case B — every series gets its own `Energy {program} (MeV)` column.
+- [ ] When no external series are present and all internal series share the same energy grid: single `Energy [MeV/nucl]` column.
+- [ ] When any `ext:` series is present (regardless of libdedx grid): always Case B — every series gets its own `Energy {program} [MeV/nucl]` column.
 - [ ] When internal series have different grids (no ext): Case B applies.
 - [ ] One `# External source: {label} at {url}` comment row per distinct external source, appearing before the column header row.
 - [ ] External series column labels use the user-assigned `{label}` directly (no `[ext]` annotation).

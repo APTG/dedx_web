@@ -35,7 +35,7 @@ error states, loading states).
 | 1.3.1 | Info and relationships | Table headers correctly associated via `<th scope>`; form controls labelled |
 | 1.3.3 | Sensory characteristics | Instructions must not rely on colour or shape alone (e.g., error states must have text, not just red border) |
 | 1.4.1 | Use of colour | Series distinguishability must not rely on colour alone — use distinct line styles (`solid`, `dashed`, `dotted`) as a second channel |
-| 1.4.3 | Contrast (minimum) | Normal text: ≥ 4.5:1; Large text/UI components: ≥ 3:1 against background |
+| 1.4.3 | Contrast (minimum) | Normal text: ≥ 4.5:1; Large text: ≥ 3:1 against background |
 | 1.4.4 | Resize text | UI usable at 200% zoom without loss of content or functionality |
 | 1.4.10 | Reflow | Single-column content at 320 CSS px width (no horizontal scroll, except data tables which are exempt) |
 | 1.4.11 | Non-text contrast | UI components (buttons, inputs, focus indicators): ≥ 3:1 |
@@ -178,5 +178,5 @@ Requirements:
 | No server-side state | App is purely client-side (SvelteKit static adapter → GitHub Pages); no auth, no sessions, no server APIs |
 | URL safety | Shareable URLs carry no executable payloads; all parameters are validated before use (see `shareable-urls.md` §2) |
 | External data URLs | `extdata` URL parameter values are fetched client-side via `fetch()`; CORS must be set by the data provider; the app validates Parquet format and physics bounds before rendering |
-| CSP | `Content-Security-Policy` header restricts script sources to `'self'` and the CDN for JSROOT/jsPDF |
+| CSP | Because the production build is deployed to GitHub Pages/static hosting, CSP must be enforced via `<meta http-equiv="Content-Security-Policy">` in the app HTML template (or by an external hosting layer if one is added later), restricting script sources to `'self'` and the approved CDN origins for JSROOT/jsPDF |
 | No sensitive data | No user PII is collected, stored, or transmitted; `navigator.userAgent` appears only in user-triggered PDF exports |

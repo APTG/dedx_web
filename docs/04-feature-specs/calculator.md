@@ -57,7 +57,7 @@
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
 > - Multi-program advanced behavior (program multi-select, grouped comparison columns, quantity focus): [`multi-program.md`](multi-program.md)
 > - Shareable URLs: [`shareable-urls.md`](shareable-urls.md)
-> - Advanced options: TODO `advanced-options.md`
+> - Advanced options: [`advanced-options.md`](advanced-options.md)
 > - Export (CSV schema, filename convention, button placement): [`export.md`](export.md)
 
 ---
