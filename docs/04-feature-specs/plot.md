@@ -4,7 +4,7 @@
 >
 > **v5** (13 April 2026): Export layout updated per `export.md` v3 §0.
 > "Export PDF" and "Export CSV ↓" moved from controls bar to the **app
-> toolbar** (upper-right, right of "Share URL"). Controls bar now contains
+> toolbar** (upper-right, left of "Share URL"). Controls bar now contains
 > only the image export control ("Export image ▾" dropdown). Wireframes
 > and Export section and AC updated. "Export image ▾" stays adjacent to
 > the canvas it exports.
