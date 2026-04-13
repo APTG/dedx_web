@@ -419,7 +419,8 @@ This ensures the user always knows the data source, per project vision §4.3.
 ### Export
 
 **"Export PDF"** and **"Export CSV ↓"** are in the **app toolbar**
-(upper-right, immediately right of "Share URL"), present on all pages.
+(upper-right, immediately left of "Share URL" — which is always the
+rightmost button), present on all pages.
 Both buttons are **disabled** (greyed out) when no results are available
 and become active as soon as at least one result row is computed. No
 export buttons appear below the table.
