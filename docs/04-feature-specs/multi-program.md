@@ -109,7 +109,7 @@ manually hiding many columns.
   in [`01-project-vision.md`](../01-project-vision.md) §4.4. This spec
   only defines what happens on the Calculator page when advanced mode
   is on.
-- PDF export specifics (deferred to the future `export.md` spec).
+- PDF export (not in scope for Stage 1; CSV export is specified in [`export.md`](export.md) §3).
 
 ---
 
@@ -656,13 +656,17 @@ Restoration rules:
 
 ## Interaction With Export
 
+> The normative CSV schema and filename convention are in
+> [`export.md`](export.md) §3. This section summarises the
+> advanced-mode–specific rules.
+
 ### CSV Export (Advanced Mode)
 
-The "Export CSV" button exports the **visible** columns only (hidden
-columns are excluded, matching the visual table). Columns are grouped
-by quantity, matching the on-screen layout.
+The "Export CSV ↓" button exports the **visible** columns only.
+Columns are grouped by quantity (all stopping-power columns first, then
+all CSDA-range columns), matching the on-screen layout.
 
-CSV schema — **wide table** format (one row per energy, grouped columns):
+Example schema (wide table, one row per energy):
 
 ```csv
 "Energy (MeV)","MeV/nucl","Unit","Stp Power ICRU 90 (keV/µm)","Stp Power PSTAR (keV/µm)","Stp Power Bethe (keV/µm)","CSDA Range ICRU 90","CSDA Range PSTAR","CSDA Range Bethe"
@@ -670,31 +674,19 @@ CSV schema — **wide table** format (one row per energy, grouped columns):
 200,200,MeV,27.34,26.88,27.51,26.27 cm,26.01 cm,26.39 cm
 ```
 
-Rules:
-- Stopping power column headers include the program name and the active
-  display unit (e.g., `"Stp Power ICRU 90 (keV/µm)"`).
-- CSDA range column headers include the program name but **no fixed unit**
-  (e.g., `"CSDA Range ICRU 90"`), because units vary per cell.
-  This matches the Calculator export contract from
-  [`calculator.md`](calculator.md) §Export.
-- Each CSDA range cell includes a per-cell unit suffix, auto-scaled
-  identically to the on-screen value (e.g., `7.718 cm`, `823.4 µm`).
-  The SI prefix is chosen per the same row-level rule used for display:
-  the prefix is determined by the default program's value for that row,
-  and all programs in that row use the same prefix.
-- Column order matches on-screen order (including drag-and-drop
-  reordering).
-- Stopping power unit matches the current display unit.
+Key rules:
+- CSDA range column headers carry no fixed unit; unit is per-cell.
+- Column order follows on-screen order (including drag-and-drop reordering).
 - Hidden program columns are **not** exported.
-- Quantity focus affects export visibility: `STP only` exports only
-  stopping-power columns; `CSDA only` exports only CSDA-range columns;
-  `Both` exports both groups.
-- Filename pattern: `dedx_{particle}_{material}_{N}programs.csv`
-  (e.g., `dedx_Proton_Water_3programs.csv`).
+- Quantity focus affects export: `STP only` → stopping-power columns only;
+  `CSDA only` → CSDA-range columns only; `Both` → both groups.
+- Delta / % columns are **not** exported.
+- Filename: `dedx_{particle}_{material}_{N}programs.csv`.
 
 ### Basic Mode Export
 
-Unchanged from Calculator — single program, five-column CSV.
+Unchanged from Calculator — single program, five-column CSV
+(see [`export.md`](export.md) §2).
 
 ---
 

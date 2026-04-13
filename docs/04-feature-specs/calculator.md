@@ -48,7 +48,7 @@
 > - Multi-program advanced behavior (program multi-select, grouped comparison columns, quantity focus): [`multi-program.md`](multi-program.md)
 > - Shareable URLs: [`shareable-urls.md`](shareable-urls.md)
 > - Advanced options: TODO `advanced-options.md`
-> - Export: TODO `export.md`
+> - Export (CSV schema, filename convention, button placement): [`export.md`](export.md)
 
 ---
 
@@ -419,7 +419,7 @@ displayed. Clicking it downloads the current table content as a CSV file.
   `Stopping Power ({active unit})`, `CSDA Range`.
 - `CSDA Range` values include unit suffix per cell (e.g., `2.500 mm`).
 
-> Full export spec in TODO `docs/04-feature-specs/export.md`.
+> Full export spec (CSV schema, filename convention, accessibility): [`export.md`](export.md).
 
 ---
 
@@ -805,9 +805,10 @@ entitySelection changes
 - [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
-- [ ] An "Export CSV" button appears when results are displayed.
-- [ ] The CSV file contains the same columns as the unified table, with units in headers.
-- [ ] `Stopping Power` header unit in CSV matches current calculator unit mode (`keV/µm` for non-gas, `MeV·cm²/g` for gas).
+- [ ] An "Export CSV ↓" button appears below the unified table when results are displayed; hidden otherwise.
+- [ ] The CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2 for schema).
+- [ ] `Stopping Power` header unit in CSV matches the active display unit (e.g., `keV/µm` for non-gas, `MeV·cm²/g` for gas).
+- [ ] Error/validation rows are omitted from the CSV.
 
 ### Performance
 - [ ] Debounce interval is 300ms for input.

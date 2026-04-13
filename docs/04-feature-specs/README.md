@@ -18,9 +18,9 @@ Each spec follows the template defined in
 | [advanced-options.md](advanced-options.md) | Final v5 | Advanced Options accordion (density override, I-value override, aggregate state Gas/Condensed toggle, interpolation axis scale + method, MSTAR mode): density override for all material types (gas/solid/liquid), density shown inline in Plot series labels, MSTAR modes A/B/C/D/G/H descriptions, interpolation split into Axis scale (Log-log/Lin-lin) + Method (Linear/Spline), CSDA range via adaptive JS integration when spline active, URL params agg_state/interp_scale/interp_method/mstar_mode/density/ival |
 | [inverse-lookups.md](inverse-lookups.md) | Final v4 | Advanced-mode inverse lookups on Calculator page: **Range** tab (energy from CSDA range — primary use case, listed first; inline length-suffix detection nm/µm/mm/cm/m; `imode=csda`) and **Inverse STP** tab (both branches E low / E high; no-solution `—`; `getBraggPeakStp()` for valid-range hint); multi-program mode: one column per program for Range tab, one E-low + E-high column pair per program for Inverse STP tab (no sub-rows); energy output auto-scaled eV/keV/MeV/GeV; shared entity selection and Advanced Options; URL params imode/ivalues/iunit at canonical step 8; formal ABNF in shareable-urls-formal.md v5 |
 | [build-info.md](build-info.md) | Final v1 | Build info badge in the app footer (lower-left): short commit hash as a GitHub hyperlink, ISO date, and branch/tag name; injected at build time via `deploy.js` → `deploy.json`; silently omitted if `deploy.json` is missing |
+| [export.md](export.md) | Final v1 | Authoritative export spec across all three pages: Calculator basic (5-column CSV matching unified table), Calculator advanced/multi-program (wide CSV grouped by quantity, visibility rules, no delta columns), Plot (PNG/SVG via "Export image ▾" dropdown + wide-format CSV); filename conventions, common CSV conventions (UTF-8 BOM, CRLF, 4 sig figs), accessibility contract for export buttons |
 
 ## Planned Specs (not yet written)
-- `export.md` — CSV/PDF export details
 - `custom-compounds.md` — User-defined materials
 
 ## Later-Stage Specs (specified now, implementation deferred)
