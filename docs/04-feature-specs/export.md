@@ -1,6 +1,12 @@
 # Feature: Export
 
-> **Status:** Final v5 (13 April 2026)
+> **Status:** Final v6 (13 April 2026)
+>
+> **v6** (13 April 2026): Added `## User Stories` section (four personas:
+> researcher → CSV for analysis, student → PDF for lab report, data
+> analyst → CSV config modal for locale compatibility, physicist → SVG
+> for publication). Removed "authoritative reference" and "normative
+> detail" language from `## Scope`.
 >
 > **v5** (13 April 2026): Seven changes:
 > (1) Toolbar order reversed — Share URL is now **rightmost**; PDF and
@@ -67,13 +73,35 @@
 
 ---
 
+## User Stories
+
+**As a** researcher,
+**I want to** download my stopping-power and range results as a CSV file,
+**so that** I can import them directly into Python, R, or Excel for further
+analysis without manually transcribing values.
+
+**As a** student preparing a lab report,
+**I want to** export a PDF of my calculator results or plot,
+**so that** I can include a clean, self-contained document with all the
+relevant metadata (particle, material, program, settings) in my submission.
+
+**As a** data analyst working in a non-English locale,
+**I want to** choose the CSV separator and line endings before downloading,
+**so that** the file opens correctly in my regional spreadsheet application
+without needing a manual import-wizard workaround.
+
+**As a** physicist publishing a figure,
+**I want to** export the stopping-power plot as an SVG vector file,
+**so that** I can embed it in my paper at any resolution without quality loss.
+
+---
+
 ## Scope
 
-This spec is the **authoritative reference** for all CSV, image, and PDF
-export across the dEdx Web redesign. The export sections in
-[`calculator.md`](calculator.md), [`multi-program.md`](multi-program.md),
-and [`plot.md`](plot.md) contain brief summaries that point here for
-normative detail.
+This spec covers all CSV, image, and PDF export across the dEdx Web
+redesign. The export sections in [`calculator.md`](calculator.md),
+[`multi-program.md`](multi-program.md), and [`plot.md`](plot.md) contain
+brief summaries that point here for the full detail.
 
 | Page / Mode | Export formats |
 |-------------|---------------|
