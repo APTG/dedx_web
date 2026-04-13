@@ -20,8 +20,7 @@ Each spec follows the template defined in
 | [build-info.md](build-info.md) | Final v1 | Build info badge in the app footer (lower-left): short commit hash as a GitHub hyperlink, ISO date, and branch/tag name; injected at build time via `deploy.js` → `deploy.json`; silently omitted if `deploy.json` is missing |
 | [export.md](export.md) | Final v6 | Authoritative export spec across all three pages: shared toolbar (§0) order `[Export PDF][Export CSV ↓][Share URL]` (Share URL rightmost) on all pages; image export ("Export image ▾") stays in Plot controls bar — PNG advanced-mode only, SVG both modes; advanced-mode CSV opens a configuration modal (separator/line-endings/filename, §1.1); Calculator CSV column order: Normalized Energy, Typed Value, Unit, CSDA Range, Stopping Power; advanced PDF metadata block order: PARTICLE, MATERIAL, PROGRAMS, SETTINGS, SYSTEM, BUILD (BUILD last); `Page n / N` footer on all PDFs; accessibility contract |
 
-## Planned Specs (not yet written)
-- `custom-compounds.md` — User-defined materials
+| [custom-compounds.md](custom-compounds.md) | Draft v1 | Advanced-mode user-defined compound materials: compound library (localStorage), modal editor (formula mode + weight-fraction mode with conversion), entity-selection integration ("Custom Compounds" group), `calculateCustomCompound()` wiring, Advanced Options interaction (density/I-value/aggregate-state controls disabled for custom compounds), URL encoding (`material=custom` + `ccomp_name/density/elements/ival/phase`, canonicalization step 9), round-trip "from URL" banner, export metadata |
 
 ## Later-Stage Specs (specified now, implementation deferred)
 
