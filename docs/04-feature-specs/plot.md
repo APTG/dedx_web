@@ -1140,9 +1140,10 @@ When entity selection is incomplete (`isComplete === false`):
 
 ### Export
 - [ ] "Export image ▾" dropdown appears in the controls bar, right-aligned — the only export control in the controls bar.
-- [ ] "Export PDF" and "Export CSV ↓" appear in the app toolbar (upper-right, right of "Share URL"), consistent with the Calculator page.
-- [ ] "Export image ▾" offers "PNG image" and "SVG vector" (see [`export.md`](export.md) §4.1).
-- [ ] Selecting "PNG image" downloads `dedx_plot.png` at 2× canvas resolution.
+- [ ] "Export PDF" and "Export CSV ↓" appear in the app toolbar (upper-right, left of "Share URL"), with "Share URL" as the rightmost toolbar item, consistent with the Calculator page.
+- [ ] In basic mode, "Export image ▾" offers only "SVG vector" (see [`export.md`](export.md) §4.1).
+- [ ] In advanced mode, "Export image ▾" offers "PNG image" and "SVG vector" (see [`export.md`](export.md) §4.1).
+- [ ] In advanced mode, selecting "PNG image" downloads `dedx_plot.png` at 2× canvas resolution.
 - [ ] Selecting "SVG vector" downloads `dedx_plot.svg` via JSROOT `makeSVG()`.
 - [ ] Both image formats exclude hidden series, preview series, sidebar, and series list.
 - [ ] "Export PDF" downloads `dedx_plot_report.pdf` via jsPDF with mode-appropriate metadata (see [`export.md`](export.md) §5).

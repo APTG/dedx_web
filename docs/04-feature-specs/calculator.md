@@ -426,8 +426,8 @@ and become active as soon as at least one result row is computed. No
 export buttons appear below the table.
 
 **CSV** — 5 columns matching the unified table:
-`Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
-`Stopping Power ({active unit})`, `CSDA Range`.
+`Normalized Energy (MeV/nucl)`, `Typed Value`, `Unit`,
+`CSDA Range`, `Stopping Power ({active unit})`.
 Filename: `dedx_calculator_{particle}_{material}_{program}.csv`.
 
 **PDF** — jsPDF-generated report:
@@ -822,7 +822,7 @@ entitySelection changes
 - [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
-- [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right, right of "Share URL") on all pages; both disabled until at least one result row is present.
+- [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right, left of "Share URL") on all pages; both disabled until at least one result row is present.
 - [ ] CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2).
 - [ ] `Stopping Power` header unit in CSV matches the active display unit (e.g., `keV/µm` for non-gas, `MeV·cm²/g` for gas).
 - [ ] Error/validation rows are omitted from the CSV.

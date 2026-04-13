@@ -488,7 +488,7 @@ URL parameter as the program name in column headers — no `[ext]` tag or
 other annotation. The label is user-chosen and self-describing.
 
 ```csv
-"Energy ICRU 90 (MeV)","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST (MeV)","Stp NIST — p in Water (keV/µm)"
+"Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST [MeV/nucl]","Stp NIST — p in Water (keV/µm)"
 0.001,84.30,0.001,84.11
 0.002,65.10,0.005,60.44
 ```
@@ -507,7 +507,7 @@ Full example with two external sources:
 ```csv
 # External source: NIST at https://example.com/nist.webdedx.parquet
 # External source: SRIM at https://example.com/srim.webdedx.parquet
-"Energy ICRU 90 (MeV)","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST (MeV)","Stp NIST — p in Water (keV/µm)","Energy SRIM (MeV)","Stp SRIM — p in Water (keV/µm)"
+"Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST [MeV/nucl]","Stp NIST — p in Water (keV/µm)","Energy SRIM [MeV/nucl]","Stp SRIM — p in Water (keV/µm)"
 0.001,84.30,0.001,84.11,0.001,83.95
 ```
 
