@@ -1,6 +1,11 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Final v3 (13 April 2026)
+> **Status:** Final v4 (13 April 2026)
+>
+> **v4** (13 April 2026): Controls bar updated — "Export PDF" button added
+> between "Export image ▾" and "Export CSV ↓". Export section updated to
+> document external-data CSV rules (always Case B with ext series; `#`
+> comment rows) per [`export.md`](export.md) v2.
 >
 > **v3** (13 April 2026): Export section updated to align with
 > [`export.md`](export.md) Final v1. "Export PNG" single button replaced
@@ -665,12 +670,13 @@ The preview series is not encoded in the URL.
 
 ## Export
 
-Two controls appear in the **controls bar** above the JSROOT canvas,
+Three controls appear in the **controls bar** above the JSROOT canvas,
 **right-aligned** (opposite the unit/axis controls):
 
 | Control | Type | Label |
 |---------|------|-------|
 | Image export | Dropdown button | "Export image ▾" |
+| PDF export | Button | "Export PDF" |
 | CSV export | Button | "Export CSV ↓" |
 
 ### Export image ▾
@@ -689,20 +695,37 @@ and the series list below the canvas.
 > Full image export spec (keyboard behaviour, `aria-*` contract):
 > [`export.md`](export.md) §4.1.
 
+### Export PDF
+
+A jsPDF-generated report containing the chart SVG and metadata.
+
+- **Basic mode:** app name, generated timestamp, clickable page URL, chart image, legend.
+- **Advanced mode:** additionally includes build info (commit hash · date · branch),
+  particle (Z, A), material (density), programs list with external source URLs,
+  active Advanced Options settings, and system info (browser + OS from `navigator.userAgent`).
+
+> Full PDF content spec and layout: [`export.md`](export.md) §5.
+
 ### Export CSV ↓
 
 Exports all **visible** series data as a wide-format CSV file
 (`dedx_plot_data.csv`, UTF-8 with BOM, comma-delimited).
 
 - A single `Energy (MeV)` column appears first when all series share the
-  same energy grid; otherwise each series gets its own
-  `Energy {program} (MeV)` column immediately before its stopping-power
-  column.
+  same energy grid **and no external (`ext:`) series are present**;
+  otherwise each series gets its own `Energy {program} (MeV)` column
+  immediately before its stopping-power column.
+- When any external series is present, **always** uses the per-series
+  energy column layout (Case B), regardless of whether internal series
+  share a grid.
+- One `# External source: {label} at {url}` comment row per distinct
+  external source appears before the column header row.
 - Stopping-power column header pattern:
   `Stp {program} — {particle} in {material} ({unit})`
 - Hidden series and the preview series are excluded.
 
-> Full CSV schema and column rules: [`export.md`](export.md) §4.2.
+> Full CSV schema, external-data rules, and comment-row format:
+> [`export.md`](export.md) §4.2–§4.3.
 
 ---
 
@@ -714,7 +737,7 @@ Exports all **visible** series data as a wide-format CSV file
 ┌── SIDEBAR (≈30%) ────────────────────┐ ┌── MAIN (≈70%) ────────────────────────────────┐
 │                                      │ │                                                │
 │ ┌───────────┐ ┌────────────────────┐ │ │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
-│ │ ① Particle│ │ ② Target Material  │ │ │ X: (•)Log (○)Lin   Y: (•)Log (○)Lin  [img▾][CSV↓] │
+│ │ ① Particle│ │ ② Target Material  │ │ │ X: (•)Log (○)Lin   Y: (•)Log (○)Lin  [img▾] [PDF] [CSV↓] │
 │ │ [Filter ] │ │ [Filter...       ] │ │ │                                                │
 │ │ ┌───────┐ │ │ ┌────────┬───────┐ │ │ │ ┌──────────────────────────────────────────┐   │
 │ │ │Proton │ │ │ │ELEMENTS│COMPNDS│ │ │ │ │                                          │   │
@@ -746,8 +769,8 @@ Exports all **visible** series data as a wide-format CSV file
 - The JSROOT canvas has `min-height: 400px; height: min(60vh, 600px)`.
 - The controls bar above the canvas contains: stopping power unit
   segmented control (left), axis scale controls (center-left), and
-  export controls right-aligned ("Export image ▾" dropdown then
-  "Export CSV ↓" button).
+  export controls right-aligned ("Export image ▾" dropdown, then
+  "Export PDF" button, then "Export CSV ↓" button).
 - The series list sits below the canvas in the main area, acting as the
   plot legend.
 
@@ -771,7 +794,7 @@ canvas:
 │ [ ＋ Add Series ]    [ Reset all ]              │
 ├────────────────────────────────────────────────┤
 │ Stp: (•)keV/µm (○)MeV/cm (○)MeV·cm²/g        │
-│ X: (•)Log (○)Lin  Y: (•)Log (○)Lin   [img▾][CSV↓] │
+│ X: (•)Log (○)Lin  Y: (•)Log (○)Lin   [img▾] [PDF] [CSV↓] │
 │ ┌────────────────────────────────────────────┐ │
 │ │            JSROOT Plot Canvas               │ │
 │ └────────────────────────────────────────────┘ │
@@ -1104,15 +1127,17 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] `stp_unit` only accepts canonical tokens: `kev-um`, `mev-cm`, `mev-cm2-g`.
 
 ### Export
-- [ ] "Export image ▾" dropdown and "Export CSV ↓" button appear in the controls bar, right-aligned.
-- [ ] "Export image ▾" dropdown offers "PNG image" and "SVG vector" options (see [`export.md`](export.md) §4.1).
+- [ ] "Export image ▾" dropdown, "Export PDF", and "Export CSV ↓" appear in the controls bar, right-aligned, in that order.
+- [ ] "Export image ▾" offers "PNG image" and "SVG vector" (see [`export.md`](export.md) §4.1).
 - [ ] Selecting "PNG image" downloads `dedx_plot.png` at 2× canvas resolution.
 - [ ] Selecting "SVG vector" downloads `dedx_plot.svg` via JSROOT `makeSVG()`.
 - [ ] Both image formats exclude hidden series, preview series, sidebar, and series list.
-- [ ] "Export CSV ↓" exports all visible series as wide-format CSV (`dedx_plot_data.csv`) — see [`export.md`](export.md) §4.2.
-- [ ] CSV uses UTF-8 with BOM, comma delimiter.
-- [ ] CSV column headers include program name, particle, material, and unit.
-- [ ] Hidden series and preview series are excluded from CSV export.
+- [ ] "Export PDF" downloads `dedx_plot_report.pdf` via jsPDF with mode-appropriate metadata (see [`export.md`](export.md) §5).
+- [ ] "Export CSV ↓" exports all visible series as wide-format CSV (`dedx_plot_data.csv`) — see [`export.md`](export.md) §4.2–§4.3.
+- [ ] CSV uses UTF-8 with BOM, comma delimiter, CRLF.
+- [ ] When any `ext:` series is present, all series use per-series energy columns (Case B).
+- [ ] `# External source:` comment rows appear before the column header row for each ext source.
+- [ ] Hidden series and preview series are excluded from CSV and PDF exports.
 
 ### Responsive
 - [ ] On desktop (≥900px), sidebar (~30%, min 360px) and canvas (~70%) are side-by-side.

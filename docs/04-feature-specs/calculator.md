@@ -1,6 +1,11 @@
 # Feature: Calculator Page
 
-> **Status:** Final v6 (7 April 2026)
+> **Status:** Final v7 (13 April 2026)
+>
+> **v7** (13 April 2026): Export section updated — "Export PDF" button
+> added to the left of "Export CSV ↓"; PDF content is mode-sensitive
+> (basic: date + URL; advanced: full metadata block). Export AC updated.
+> References [`export.md`](export.md) v2 for normative detail.
 >
 > **v1** (3 April 2026): Initial draft — energy input textarea, debounced
 > live calculation, result table, compact entity selection integration,
@@ -408,18 +413,23 @@ This ensures the user always knows the data source, per project vision §4.3.
 
 ### Export
 
-A **"Export CSV"** button appears below the result table when results are
-displayed. Clicking it downloads the current table content as a CSV file.
+Two buttons appear below the result table when results are displayed:
+**"Export PDF"** (left) and **"Export CSV ↓"** (right). Both are hidden
+when no results are available.
 
-- Filename: `dedx_calculator_{particle}_{material}_{program}.csv`
-  (e.g., `dedx_calculator_proton_water_icru90.csv`)
-- Format: UTF-8 with BOM, comma delimiter (per project vision §4.6).
-- Exported columns are exactly the 5 unified table columns:
-  `Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
-  `Stopping Power ({active unit})`, `CSDA Range`.
-- `CSDA Range` values include unit suffix per cell (e.g., `2.500 mm`).
+**CSV** — 5 columns matching the unified table:
+`Typed Value`, `Normalized Energy (MeV/nucl)`, `Unit`,
+`Stopping Power ({active unit})`, `CSDA Range`.
+Filename: `dedx_calculator_{particle}_{material}_{program}.csv`.
 
-> Full export spec (CSV schema, filename convention, accessibility): [`export.md`](export.md).
+**PDF** — jsPDF-generated report:
+- Both modes: app name, generated timestamp (ISO UTC), clickable page URL.
+- Advanced mode additionally: build info, particle (Z, A), material density,
+  programs list, active Advanced Options, system info (browser + OS).
+- Wide advanced tables are split across pages by quantity group.
+
+> Full export spec (CSV schema, PDF content, filename, accessibility):
+> [`export.md`](export.md) §2–§3, §6.
 
 ---
 
@@ -541,7 +551,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 │  │ 500          │ 500      │ MeV  │ 13.92            │ 116.1 cm        │  │
 │  │ ░░░░░░░░░░░░ │          │      │                  │                  │  │
 │  └──────────────┴──────────┴──────┴──────────────────┴──────────────────┘  │
-│  Valid range: 0.001–10000 MeV                              [Export CSV ↓] │
+│  Valid range: 0.001–10000 MeV               [Export PDF]  [Export CSV ↓] │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -595,7 +605,7 @@ scroll or collapsed:
 │ │(MeV)  │        │     │keV/µm│      ││
 │ │ 100   │ 100    │ MeV │45.76 │7.7cm ││
 │ └───────┴────────┴─────┴──────┴─────┘│
-│                       [Export CSV ↓] │
+│          [Export PDF]  [Export CSV ↓] │
 └──────────────────────────────────────┘
 ```
 
@@ -805,10 +815,11 @@ entitySelection changes
 - [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
-- [ ] An "Export CSV ↓" button appears below the unified table when results are displayed; hidden otherwise.
-- [ ] The CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2 for schema).
+- [ ] "Export PDF" and "Export CSV ↓" buttons appear below the unified table when results are present; both hidden otherwise.
+- [ ] CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2).
 - [ ] `Stopping Power` header unit in CSV matches the active display unit (e.g., `keV/µm` for non-gas, `MeV·cm²/g` for gas).
 - [ ] Error/validation rows are omitted from the CSV.
+- [ ] PDF is mode-sensitive: basic includes date + URL; advanced adds build info, particle Z/A, material density, programs, settings, system info (see [`export.md`](export.md) §6).
 
 ### Performance
 - [ ] Debounce interval is 300ms for input.
