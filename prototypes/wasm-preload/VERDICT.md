@@ -61,12 +61,14 @@ with files at `/tmp/ghpages/dedx_web/`.
 
 ## Acceptance Criteria
 
-PASS: 1 — Dev server loads — Status "OK — 10 programs loaded"; 10 program names visible
-PASS: 2 — Static build (root path) loads — Same result, served by Python http.server on port 4000
-PASS: 3 — Static build (sub-path) loads — Same result, served at /dedx_web/ sub-path
-PASS: 4 — .data file fetched — DevTools Network shows libdedx.data with HTTP 200 in all three scenarios
-PASS: 5 — No CORS errors — No CORS-related console errors in any scenario
-PASS: 6 — locateFile paths correct — .wasm and .data URLs correctly include the base path (/dedx_web/ in Scenario C)
+| # | Criterion | Result |
+|---|-----------|--------|
+| 1 | Dev server loads — status "OK — 10 programs loaded"; 10 program names visible | **PASS** |
+| 2 | Static build (root path) loads — same result, served by Python http.server on port 4000 | **PASS** |
+| 3 | Static build (sub-path) loads — same result, served at `/dedx_web/` sub-path | **PASS** |
+| 4 | `.data` file fetched — `libdedx.data` returned HTTP 200 in all three scenarios | **PASS** |
+| 5 | No CORS errors — no CORS-related console errors in any scenario | **PASS** |
+| 6 | `locateFile` paths correct — `.wasm` and `.data` URLs correctly include the base path (`/dedx_web/` in Scenario C) | **PASS** |
 
 ## Conclusion
 
