@@ -20,10 +20,11 @@
     const sel = selectedValue.value;
 
     const timer = setTimeout(() => {
-      // Simulate a WASM call
-      console.log(
-        `[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`,
-      );
+      if (import.meta.env.DEV) {
+        console.log(
+          `[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`,
+        );
+      }
       computationCount.value += 1;
     }, 300);
 

@@ -27,9 +27,9 @@
   <h2>InputPanel (writer)</h2>
 
   <div>
-    <button onclick={decrement}>-</button>
+    <button onclick={decrement} aria-label="Decrement selected value">-</button>
     <span>Selected: {selectedValue.value}</span>
-    <button onclick={increment}>+</button>
+    <button onclick={increment} aria-label="Increment selected value">+</button>
   </div>
 
   <div>
