@@ -809,8 +809,9 @@ Architectural consequences:
 - All SvelteKit routes must declare `export const prerender = true`.
 - No server-side logic. All computation is WASM (client-side).
 - The `browser` guard in `+layout.ts` is **required** — without it,
-  `getService()` would try to initialize the WASM module during the SSG
-  prerender pass (a Node.js environment where `WebAssembly` is absent).
+  `getService()` would try to initialize the browser-targeted WASM module
+  during the SSG prerender pass, where browser globals and the runtime support
+  expected by the Emscripten `ENVIRONMENT='web'` glue are unavailable.
 - URL state is encoded in the query string; no server-side routing is available
   to parse clean paths.
 

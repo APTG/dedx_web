@@ -287,7 +287,7 @@ CI runs `prettier --check .`; the commit hook runs `prettier --write`.
 
 ```json
 {
-  "singleQuote": true,
+  "singleQuote": false,
   "semi": true,
   "printWidth": 100,
   "plugins": ["prettier-plugin-svelte"],
@@ -355,24 +355,22 @@ it. npm is the default for GitHub Actions' Node.js setup action.
 
 | Item | Value |
 |------|-------|
-| Version | `25` (Current release line) |
-| Engine field | `package.json` `"engines": { "node": "^25" }` |
-| Migration target | `^26` — planned when Node.js 26 ships (even-numbered, future LTS candidate) |
+| Version | `24 LTS` (even-numbered, Long Term Support line) |
+| Engine field | `package.json` `"engines": { "node": "^24" }` |
+| Migration target | `^26` — planned when Node.js 26 reaches LTS status |
 
-Node.js 25 is the current active release. Notable features in use:
+Node.js 24 is the current LTS release line, ensuring long-term support and
+stability for CI and contributor environments. Notable features in use:
 
 - **Built-in `fetch` + `WebSocket`** — no polyfill needed in tests or scripts.
-- **Native `--experimental-strip-types`** — not used directly (Vite handles TS
-  compilation), but useful for one-off utility scripts outside the Vite context.
-- **V8 13.x** — ships `using` / `await using` (Explicit Resource Management
+- **V8 12.x** — ships `using` / `await using` (Explicit Resource Management
   proposal); usable in TypeScript 5.2+ with `"useDefineForClassFields": true`.
 - **Improved `node:test` runner** — considered for fast isolated unit tests
   outside Vitest where WASM mocking is not required.
 
-**Migration note:** When Node.js 26 is released, update `"engines"` to
-`"^25 || ^26"` first (validate CI), then drop `^25` once the team has
-confirmed no regressions. No API changes are required beyond the engine bump
-unless Node.js 26 removes a Node.js 25 API marked experimental.
+**Migration note:** When Node.js 26 reaches LTS status, update `"engines"` to
+`"^24 || ^26"` first (validate CI), then drop `^24` once the team has
+confirmed no regressions.
 
 ---
 
@@ -398,7 +396,7 @@ unless Node.js 26 removes a Node.js 25 API marked experimental.
 | `prettier-plugin-svelte` | latest compat | Svelte formatter |
 | `svelte-check` | `^4.x` | Component type checking |
 | Emscripten | `5.x` | WASM compiler (system tool) |
-| Node.js | `25` | Runtime |
+| Node.js | `24 LTS` | Runtime |
 
 ---
 

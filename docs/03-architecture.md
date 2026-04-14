@@ -223,13 +223,15 @@ export type { LibdedxService } from './contract';
 #### `src/lib/wasm/loader.ts`
 
 ```ts
+import { base } from '$app/paths';
+
 let service: LibdedxService | null = null;
 
 export async function getService(): Promise<LibdedxService> {
   if (service) return service;
-  const factory = await import('/wasm/libdedx.mjs');
+  const factory = await import(`${base}/wasm/libdedx.mjs`);
   const module = await factory.default({
-    locateFile: (f: string) => `/wasm/${f}`
+    locateFile: (f: string) => `${base}/wasm/${f}`
   });
   service = new LibdedxServiceImpl(module);
   await service.init();
@@ -238,8 +240,9 @@ export async function getService(): Promise<LibdedxService> {
 ```
 
 The `locateFile` override tells Emscripten where to find `libdedx.wasm`
-relative to the site root — required when the `.mjs` and `.wasm` files are
-not served from the same URL directory as the requesting page.
+relative to the deployment base path. Using `$app/paths.base` rather than a
+hardcoded `/wasm/…` prefix ensures the loader works correctly under sub-path
+hosting (e.g. GitHub Pages at `/dedx_web/`).
 
 #### `src/lib/wasm/libdedx.ts`
 
@@ -305,14 +308,14 @@ Holds the user's current entity selection. Shared between Calculator and
 Plot pages — navigating between them preserves the selection.
 
 ```ts
-export let selectedProgramId = $state<number | null>(null);
-export let selectedParticleId = $state<number | null>(null);
-export let selectedMaterialId = $state<number | null>(null);
+export const selectedProgramId = $state<{ value: number | null }>({ value: null });
+export const selectedParticleId = $state<{ value: number | null }>({ value: null });
+export const selectedMaterialId = $state<{ value: number | null }>({ value: null });
 
 // Derived: the resolved program for the current particle/material combo.
 // Implements the "auto-select best program" rule (01-project-vision.md §4.3).
 export const resolvedProgramId = $derived(
-  autoSelectProgram(selectedProgramId, selectedParticleId, selectedMaterialId, compatMatrix)
+  autoSelectProgram(selectedProgramId.value, selectedParticleId.value, selectedMaterialId.value, compatMatrix)
 );
 ```
 
@@ -321,15 +324,15 @@ export const resolvedProgramId = $derived(
 Holds the energy input state, active unit, and the latest calculation result.
 
 ```ts
-export let energyInputText = $state('');           // raw textarea content
-export let energyUnit = $state<EnergyUnit>('MeV');
-export let advancedOptions = $state<AdvancedOptions>({});
-export let result = $state<CalculationResult | null>(null);
-export let error = $state<LibdedxError | null>(null);
-export let calculating = $state(false);
+export const energyInputText = $state({ value: '' });    // raw textarea content
+export const energyUnit = $state<{ value: EnergyUnit }>({ value: 'MeV' });
+export const advancedOptions = $state<{ value: AdvancedOptions }>({ value: {} });
+export const result = $state<{ value: CalculationResult | null }>({ value: null });
+export const error = $state<{ value: LibdedxError | null }>({ value: null });
+export const calculating = $state({ value: false });
 
 // Derived: parsed energy array (valid lines only)
-export const parsedEnergies = $derived(parseEnergyInput(energyInputText, energyUnit));
+export const parsedEnergies = $derived(parseEnergyInput(energyInputText.value, energyUnit.value));
 ```
 
 Live calculation is triggered by an `$effect` in the Calculator page that
@@ -340,9 +343,9 @@ watches `parsedEnergies`, `resolvedProgramId`, `selectedParticleId`,
 ### 4.4 `ui.svelte.ts`
 
 ```ts
-export let isAdvancedMode = $state(false);       // persisted to localStorage + URL
-export let wasmReady = $state(false);            // set true after WASM init
-export let wasmError = $state<Error | null>(null);
+export const isAdvancedMode = $state({ value: false });  // persisted to localStorage + URL
+export const wasmReady = $state({ value: false });       // set true after WASM init
+export const wasmError = $state<{ value: Error | null }>({ value: null });
 ```
 
 `isAdvancedMode` is initialized from `localStorage` (if present) or the URL
@@ -420,7 +423,7 @@ reconcile or re-render the contents of this element.
 
 ```svelte
 <script lang="ts">
-  import { onMount } from 'svelte';   // exception: onMount permitted here
+  import { untrack } from 'svelte';
   let container: HTMLDivElement;
   let painter: any = null;
 
@@ -442,11 +445,9 @@ reconcile or re-render the contents of this element.
 `untrack()` prevents the cleanup call from registering `painter` as a reactive
 dependency (which would create a re-run loop). The `drawPlot` function is a
 pure async function in `src/lib/components/jsroot-helpers.ts` that constructs
-`TMultiGraph` and calls `JSROOT.draw()`.
-
-> **Note:** `onMount` is permitted exclusively in `JsrootPlot.svelte` and
-> only when needed for initial DOM readiness checks. All other components
-> use `$effect` instead.
+`TMultiGraph` and calls `JSROOT.draw()`. No `onMount` is needed — `$effect`
+runs after the DOM is mounted and handles both the initial draw and subsequent
+re-draws when `series` changes.
 
 ---
 

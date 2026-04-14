@@ -141,8 +141,10 @@ src/lib/wasm/
 
 `loader.ts` exports a `getService(): Promise<LibdedxService>` function.
 The first call compiles and initializes the WASM module; subsequent calls
-return the cached singleton. This lazy pattern ensures WASM is not loaded
-on the Documentation page or during SSG prerendering.
+return the cached singleton. This lazy pattern prevents WASM from being
+loaded during SSG prerendering (where browser APIs are unavailable), and
+means the first WASM call is deferred until the user actually triggers a
+calculation or plot — avoiding unnecessary load for SSG build passes.
 
 ### Test mock
 
@@ -164,13 +166,18 @@ no network or WASM load occurs in unit tests.
 - **TypeScript wrapper** makes `LibdedxService` mockable; all unit tests run
   without a real WASM module.
 - **Lazy initialization** means the WASM binary is not parsed until the user
-  navigates to Calculator or Plot — the Documentation page loads instantly.
+  triggers a calculation or plot. The root layout load function calls
+  `getService()` with a `browser` guard so the WASM module is never
+  initialized during SSG prerendering.
 
 ### Negative / risks
 
-- **`preload-file` embeds data in the module** at Emscripten build time.
-  If libdedx data tables change, the WASM binary must be rebuilt and
-  re-deployed. This is expected behavior for a data-heavy C library.
+- **`--preload-file` produces a separate `.data` payload** at Emscripten build
+  time (e.g. `static/wasm/libdedx.data`). This file is fetched at runtime and
+  mounted into the Emscripten virtual file system — it is a distinct deployment
+  artifact separate from the `.wasm` binary. If libdedx data tables change,
+  both the `.wasm` and `.data` files must be rebuilt and re-deployed. This is
+  expected behavior for a data-heavy C library.
 - **`dedx_extra` internal coupling** means `dedx_extra.c` will break if
   libdedx's internal struct layout changes. Mitigated by the test suite:
   `loader.ts` integration tests verify entity lists and density values against

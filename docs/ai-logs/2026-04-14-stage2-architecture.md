@@ -23,8 +23,8 @@ Produced all Stage 2 deliverables from `docs/00-redesign-plan.md §8`:
    Vitest mock pattern.
 4. **`docs/02-tech-stack.md`** — Full library inventory with version pins and
    rationale: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7,
-   jsPDF 2, hyparquet 1, Vitest 2, Svelte Testing Library 5, Playwright 1,
-   ESLint 9, Prettier 3, svelte-check 4, Emscripten 3.1.x, Node.js ≥20.
+   jsPDF 2, hyparquet 1, Vitest 4, Svelte Testing Library 5, Playwright 1,
+   ESLint 9, Prettier 3, svelte-check 4, Emscripten 5.x, Node.js 24 LTS.
 5. **`docs/03-architecture.md`** — Full project directory layout; route map;
    static adapter constraints; WASM init lifecycle (layout load → loader
    singleton → `LibdedxServiceImpl.init()` → entity population); reactive
