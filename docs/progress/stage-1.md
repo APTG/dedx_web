@@ -65,39 +65,3 @@ without creating a new spec version and CHANGELOG entry.
 | **StoredCompound ≠ CustomCompound**: localStorage type has UUID/phase/timestamp; WASM type is stripped | `custom-compounds.md` §1.1 |
 | **MSTAR default mode is "b"** (auto-special: condensed → D, gaseous → H) | `06-wasm-api-contract.md` §2.6, `advanced-options.md` §5 |
 | **Default display unit**: condensed materials → keV/µm; gaseous materials → MeV·cm²/g | `unit-handling.md`, `advanced-options.md` §3 |
-
----
-
-## Stage 1 Consistency Pass (14 April 2026)
-
-Stale TODO stub references fixed at Stage 1 close:
-
-| File | Fix |
-|------|-----|
-| `docs/01-project-vision.md` §4.1 | `TODO: unit-handling.md` → active link |
-| `docs/01-project-vision.md` §4.4 | `TODO custom-compounds.md` → active link |
-| `docs/04-feature-specs/entity-selection.md` §0 | `TODO docs/terminology.md` → active link to `10-terminology.md` |
-| `docs/04-feature-specs/calculator.md` §advanced-options | `TODO advanced-options.md` → active link |
-
-No open design questions remain in any Final spec.
-
----
-
-## What Stage 2 Needs
-
-Stage 2 produces `docs/02-tech-stack.md`, `docs/03-architecture.md`, and ADRs
-in `docs/decisions/`. The key inputs from Stage 1 are:
-
-1. **`docs/06-wasm-api-contract.md`** — the WASM TypeScript interface that
-   `docs/03-architecture.md` must describe the loading, caching, and service layer for.
-2. **`docs/00-redesign-plan.md` §5** — target directory structure for the
-   SvelteKit project.
-3. **`docs/00-redesign-plan.md` §2** — technology choices already locked (SvelteKit,
-   Svelte 5 runes, Tailwind, Vitest, Playwright, static adapter, GitHub Pages).
-4. ADRs to write at minimum:
-   - `001-sveltekit-over-react.md` — why SvelteKit over the legacy React codebase
-   - `002-keep-jsroot.md` — why JSROOT for plotting
-   - `003-wasm-build-pipeline.md` — ES module output, Emscripten flags, `dedx_extra.{h,c}` rationale
-
-**Start a new session for Stage 2.** Read this file and
-`docs/00-redesign-plan.md` §8 Stage 2 at the beginning.
