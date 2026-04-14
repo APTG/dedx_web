@@ -335,7 +335,7 @@ throughout the web application and all TypeScript types (`ParticleEntity`).
 an electron an "ion" is physically incorrect. In dedx_web the C API's "ion"
 naming is confined to the WASM wrapper layer that calls C functions directly.
 
-→ see also: [MeV/nucl vs MeV/u](#mevnucl-vs-mevu), [ESTAR](#pstar--estar--astar)
+→ see also: [MeV/nucl vs MeV/u](#mevnucl-vs-mevu), [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)
 
 Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) (preamble
 terminology note), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2

@@ -61,7 +61,7 @@ without creating a new spec version and CHANGELOG entry.
 | **Electron (particle ID 1001)** uses MeV only; MeV/nucl and MeV/u are undefined for leptons | `06-wasm-api-contract.md` §1, `unit-handling.md` |
 | **Compatibility matrix** is pre-computed at init; there is no native libdedx reverse-lookup | `entity-selection.md` §2 |
 | **URL contract version `urlv=1`** is the current major version; schema changes must increment it | `shareable-urls.md` §3.1 |
-| **Canonicalization is a 9-step pipeline** (step 9 = custom compounds, step 10 = param ordering) | `shareable-urls-formal.md` §4 |
+| **Canonicalization is a 10-step pipeline** (step 9 = custom compounds, step 10 = param ordering) | `shareable-urls-formal.md` §4 |
 | **StoredCompound ≠ CustomCompound**: localStorage type has UUID/phase/timestamp; WASM type is stripped | `custom-compounds.md` §1.1 |
 | **MSTAR default mode is "b"** (auto-special: condensed → D, gaseous → H) | `06-wasm-api-contract.md` §2.6, `advanced-options.md` §5 |
 | **Default display unit**: condensed materials → keV/µm; gaseous materials → MeV·cm²/g | `unit-handling.md`, `advanced-options.md` §3 |
