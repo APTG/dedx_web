@@ -14,6 +14,11 @@ The old app already used **JSROOT** — the JavaScript port of CERN ROOT's
 visualization layer, maintained by the ROOT team. The question is whether to
 keep it or replace it with a general-purpose charting library.
 
+The project has **direct contact with the JSROOT developer team** at GSI
+Darmstadt — a unique advantage over general-purpose charting libraries where
+physics-specific issues would be filed into a large open-source issue tracker
+with no priority guarantees.
+
 ### Plotting requirements (from `docs/04-feature-specs/plot.md`)
 
 | Requirement | Detail |
@@ -68,6 +73,11 @@ JSROOT is loaded as an ES module import; version-pinned in `package.json`.
   vector output with correct axis labels and legend in one call.
 - **Maintained.** The ROOT team ships regular JSROOT updates alongside ROOT
   releases.
+- **Developer access.** Direct contact with the JSROOT maintainers provides
+  a fast escalation path for bugs, API questions, and feature requests.
+  Physics-specific edge cases (e.g., log-axis tick behaviour at sub-unity
+  scales, `TMultiGraph` legend alignment) can be resolved upstream rather than
+  worked around client-side.
 - **Legacy code reference.** The old `JSRootGraph.js` shows the TGraph creation
   pattern already working against this codebase's data shape.
 

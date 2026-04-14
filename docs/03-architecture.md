@@ -64,7 +64,10 @@ dedx_web/
 │   ├── wasm/
 │   │   ├── libdedx.mjs                 # Emscripten ES module glue (built artifact)
 │   │   └── libdedx.wasm                # WASM binary (built artifact)
-│   └── favicon.svg
+│   ├── favicon.svg                     # Vector icon — modern browsers; scales to any size
+│   ├── favicon.ico                     # Legacy fallback (combined 16×16 + 32×32 ICO)
+│   ├── apple-touch-icon.png            # iOS home screen shortcut (180×180 px)
+│   └── site.webmanifest                # Web App Manifest — name, theme color, icon list
 ├── wasm/
 │   ├── dedx_extra.h                    # Thin shim: exposes internal libdedx data
 │   ├── dedx_extra.c                    # Implementation of dedx_extra shims
@@ -81,6 +84,30 @@ dedx_web/
 ├── eslint.config.js
 └── .prettierrc
 ```
+
+### Icons and Web App Manifest
+
+All icon files live in `static/` so SvelteKit serves them as static assets.
+They are referenced in `src/app.html` via static `<link>` tags — not through
+Svelte components, because they must be present in the `<head>` on the first
+HTML response before any JavaScript runs:
+
+```html
+<!-- src/app.html — inside <head>, before %sveltekit.head% -->
+<link rel="icon" href="%sveltekit.assets%/favicon.ico" sizes="32x32">
+<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png">
+<link rel="manifest" href="%sveltekit.assets%/site.webmanifest">
+```
+
+`%sveltekit.assets%` resolves to the correct base path at build time —
+required because GitHub Pages may serve the app from a sub-path
+(e.g., `/dedx_web/`). Hardcoding `/favicon.ico` would break sub-path deployments.
+
+`site.webmanifest` declares the app name, `theme_color`, `background_color`,
+and icon references for Android home screen and PWA install prompts.
+
+---
 
 ### Naming conventions
 

@@ -1,6 +1,6 @@
 # Technology Stack — webdedx
 
-> **Status:** Draft v1 (14 April 2026)
+> **Status:** Draft v2 (14 April 2026)
 >
 > Documents every library and tool in the stack, the version pin, and the
 > rationale for choosing it. Rationale summaries refer to the relevant ADR
@@ -181,12 +181,12 @@ pair) is downloaded.
 
 ## 7. WebAssembly Toolchain
 
-### Emscripten 3.1.x
+### Emscripten 5.x
 
 | Item | Value |
 |------|-------|
 | Tool | `emscripten` (system install or Docker) |
-| Pin | `3.1.x` (latest stable 3.1 series) |
+| Pin | `5.x` (latest stable 5 series) |
 | ADR | [ADR 003](decisions/003-wasm-build-pipeline.md) |
 
 Compiles `libdedx.a` + `wasm/dedx_extra.c` to `libdedx.mjs` + `libdedx.wasm`.
@@ -198,19 +198,21 @@ via `wasm/build.sh`. CI installs Emscripten from the
 [emsdk](https://github.com/emscripten-core/emsdk) Docker image.
 
 The exact Emscripten version is pinned in `wasm/build.sh` and in the GitHub
-Actions workflow (`docs/08-deployment.md`). Breaking changes in Emscripten's
-JS glue code require a wrapper update.
+Actions workflow (`docs/08-deployment.md`). Emscripten 5.x dropped several
+legacy flags (`LEGACY_RUNTIME`, old `FS` API paths) and tightened the ES module
+output — the `build.sh` flags are written against 5.x. Breaking changes in
+Emscripten's JS glue code require a wrapper update.
 
 ---
 
 ## 8. Testing
 
-### Vitest 2
+### Vitest 4
 
 | Item | Value |
 |------|-------|
 | Package | `vitest` |
-| Pin | `^2.x` |
+| Pin | `^4.x` |
 
 Unit and integration tests. Vitest is Vite-native — it reuses the Vite
 transform pipeline, so Svelte components and TypeScript are tested without
@@ -353,8 +355,24 @@ it. npm is the default for GitHub Actions' Node.js setup action.
 
 | Item | Value |
 |------|-------|
-| Version | `>=20` (LTS) |
-| Engine field | `package.json` `"engines": { "node": ">=20" }` |
+| Version | `25` (Current release line) |
+| Engine field | `package.json` `"engines": { "node": "^25" }` |
+| Migration target | `^26` — planned when Node.js 26 ships (even-numbered, future LTS candidate) |
+
+Node.js 25 is the current active release. Notable features in use:
+
+- **Built-in `fetch` + `WebSocket`** — no polyfill needed in tests or scripts.
+- **Native `--experimental-strip-types`** — not used directly (Vite handles TS
+  compilation), but useful for one-off utility scripts outside the Vite context.
+- **V8 13.x** — ships `using` / `await using` (Explicit Resource Management
+  proposal); usable in TypeScript 5.2+ with `"useDefineForClassFields": true`.
+- **Improved `node:test` runner** — considered for fast isolated unit tests
+  outside Vitest where WASM mocking is not required.
+
+**Migration note:** When Node.js 26 is released, update `"engines"` to
+`"^25 || ^26"` first (validate CI), then drop `^25` once the team has
+confirmed no regressions. No API changes are required beyond the engine bump
+unless Node.js 26 removes a Node.js 25 API marked experimental.
 
 ---
 
@@ -370,7 +388,7 @@ it. npm is the default for GitHub Actions' Node.js setup action.
 | `jsroot` | `^7.x` | Physics plotting |
 | `jspdf` | `^2.x` | PDF export |
 | `hyparquet` | `^1.x` | Parquet reader (external data) |
-| `vitest` | `^2.x` | Unit/integration tests |
+| `vitest` | `^4.x` | Unit/integration tests |
 | `@testing-library/svelte` | `^5.x` | Component tests |
 | `@playwright/test` | `^1.x` | E2E tests |
 | `eslint` | `^9.x` | Linting |
@@ -379,8 +397,8 @@ it. npm is the default for GitHub Actions' Node.js setup action.
 | `prettier` | `^3.x` | Formatting |
 | `prettier-plugin-svelte` | latest compat | Svelte formatter |
 | `svelte-check` | `^4.x` | Component type checking |
-| Emscripten | `3.1.x` | WASM compiler (system tool) |
-| Node.js | `>=20` | Runtime |
+| Emscripten | `5.x` | WASM compiler (system tool) |
+| Node.js | `25` | Runtime |
 
 ---
 

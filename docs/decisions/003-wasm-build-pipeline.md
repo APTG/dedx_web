@@ -6,8 +6,8 @@
 
 ## Context
 
-The libdedx C library must be compiled to WebAssembly via **Emscripten** and
-consumed by the SvelteKit application. The legacy `build_wasm.sh` script
+The libdedx C library must be compiled to WebAssembly via **Emscripten 5.x**
+and consumed by the SvelteKit application. The legacy `build_wasm.sh` script
 established a working baseline but has several problems that need to be
 redesigned for the new stack.
 
