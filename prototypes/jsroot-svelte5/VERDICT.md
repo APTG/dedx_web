@@ -30,7 +30,7 @@ The architecture specified in [`03-architecture.md §5`](../../docs/03-architect
 ## How to Test (for verification)
 
 1. Start dev server: `cd prototypes/jsroot-svelte5 && pnpm dev`
-2. Open http://localhost:5174 in browser
+2. Open the URL printed by `pnpm dev` in your browser
 3. **Criterion 1:** Observe two curves on log-log axes immediately
 4. **Criterion 2:** Click "Add series" button → observe 3rd curve appear
 5. **Criterion 3:** Click "Remove all" → plot clears, no console errors

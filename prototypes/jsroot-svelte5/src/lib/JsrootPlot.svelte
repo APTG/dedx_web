@@ -1,42 +1,61 @@
 <script lang="ts">
-  import { untrack } from "svelte";
-
   interface SeriesData {
     x: number[];
     y: number[];
     label: string;
   }
 
+  /** Minimal interface for the object returned by JSROOT.draw(). */
+  interface JsrootPainter {
+    cleanup?: () => void;
+  }
+
   let { series }: { series: SeriesData[] } = $props();
 
   let container: HTMLDivElement;
-  let currentPainter: unknown = null;
+  let currentPainter: JsrootPainter | null = null;
 
   $effect(() => {
     // `series` is tracked here — $effect re-runs when it changes.
     const seriesSnapshot = series;
 
-    // Cleanup previous draw without tracking `currentPainter`.
-    untrack(() => {
-      cleanupPlot();
-    });
+    // Per-run cancellation flag: set to true by the disposer so that a
+    // slow async draw from a superseded run does not overwrite currentPainter.
+    let cancelled = false;
+    // Holds a restore callback returned by drawPlot once it resolves.
+    let restoreSettings: (() => void) | null = null;
 
     if (seriesSnapshot.length === 0) return;
 
-    drawPlot(container, seriesSnapshot).then((painter) => {
-      currentPainter = painter;
-    });
+    drawPlot(container, seriesSnapshot)
+      .then(({ painter, restore }) => {
+        if (cancelled) {
+          // This run was superseded (or the component unmounted) before the
+          // draw resolved. Clean up the stale painter and restore globals.
+          painter.cleanup?.();
+          restore();
+          return;
+        }
+        currentPainter = painter;
+        restoreSettings = restore;
+      })
+      .catch((err) => {
+        if (!cancelled) console.error("drawPlot failed:", err);
+      });
 
-    // Cleanup on effect disposal (component unmount or next re-run).
+    // Cleanup on effect disposal (component unmount or before next re-run).
+    // Svelte 5 calls this before re-running the effect, so we rely on it
+    // exclusively — no manual cleanupPlot() call at the start of the effect.
     return () => {
+      cancelled = true;
       cleanupPlot();
+      restoreSettings?.();
+      restoreSettings = null;
     };
   });
 
   function cleanupPlot() {
-    if (currentPainter && typeof (currentPainter as any).cleanup === "function") {
-      (currentPainter as any).cleanup();
-    }
+    currentPainter?.cleanup?.();
     currentPainter = null;
     // Also clear the container's innerHTML as a fallback.
     if (container) container.innerHTML = "";
@@ -45,11 +64,17 @@
   async function drawPlot(
     el: HTMLDivElement,
     data: SeriesData[],
-  ): Promise<unknown> {
+  ): Promise<{ painter: JsrootPainter; restore: () => void }> {
     const JSROOT = await import("jsroot");
 
-    // Disable wheel zoom so page scrolls normally.
+    // Save the previous value and disable wheel zoom so page scrolls normally.
+    // The caller restores it via the returned `restore` callback so that other
+    // plots/pages are not affected by this component's preference.
+    const prevZoomWheel = JSROOT.settings.ZoomWheel;
     JSROOT.settings.ZoomWheel = false;
+    const restore = () => {
+      JSROOT.settings.ZoomWheel = prevZoomWheel;
+    };
 
     const mg = JSROOT.createTMultiGraph();
 
@@ -63,7 +88,8 @@
     mg.fTitle = "Spike: JSROOT in Svelte 5";
 
     // 'AP' = axes + polyline. 'logx logy' for log-log axes.
-    return JSROOT.draw(el, mg, "AP logx logy");
+    const painter = (await JSROOT.draw(el, mg, "AP logx logy")) as JsrootPainter;
+    return { painter, restore };
   }
 </script>
 
