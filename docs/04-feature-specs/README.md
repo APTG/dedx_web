@@ -25,7 +25,7 @@ Each spec follows the template defined in
 
 | File | Status | Summary |
 |------|--------|---------|
-| [../10-terminology.md](../10-terminology.md) | Final v1 | Two-section glossary: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, MeV/nucl vs MeV/u, particle, aggregate state, MSTAR, PSTAR/ESTAR/ASTAR, ICRU 73/90, normalized energy, custom compound); §2 developer/stack terms (libdedx, Emscripten/WASM, dedx_config, dedx_wrappers.h, dedx_extra.{h,c}, Entity, CompatibilityMatrix, Series, StoredCompound, Runes, urlv, Canonicalization, Advanced/Basic mode, qfocus, extdata) |
+| [../10-terminology.md](../10-terminology.md) | Final v2 | Two-section glossary: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, MeV/nucl vs MeV/u, particle, aggregate state, MSTAR, PSTAR/ESTAR/ASTAR, ICRU 73/90, normalized energy, custom compound); §2 developer/stack terms (libdedx, Emscripten/WASM, dedx_config, dedx_wrappers.h, dedx_extra.{h,c}, Entity, CompatibilityMatrix, Series, StoredCompound, Runes, urlv, Canonicalization, Advanced/Basic mode, qfocus, extdata) |
 
 ## Later-Stage Specs (specified now, implementation deferred)
 

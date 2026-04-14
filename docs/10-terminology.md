@@ -1,6 +1,9 @@
 # Terminology Glossary
 
-> **Status:** Final v1 (14 April 2026)
+> **Status:** Final v2 (14 April 2026)
+>
+> **v2:** Terms sorted alphabetically within each section; term index added at top of page.
+> **v1:** Initial glossary — two-section structure, 29 terms.
 
 This glossary has two sections:
 
@@ -15,81 +18,73 @@ Cross-references between terms are marked with "→ see also".
 
 ---
 
+## Index
+
+### §1 Physics & End-User Terms
+
+| Term | One-line summary |
+|------|-----------------|
+| [Aggregate State](#aggregate-state) | Gas vs condensed treatment of a material for I-value selection |
+| [Bragg Additivity Rule](#bragg-additivity-rule) | Compound stopping power as weighted sum of elemental contributions |
+| [Bragg Peak](#bragg-peak) | Sharp dose maximum near the end of a charged particle's track |
+| [CSDA Range](#csda-range) | Path length to rest; integral of reciprocal stopping power |
+| [Custom Compound](#custom-compound) | User-defined material by elemental composition + density |
+| [ICRU 73 / ICRU 90](#icru-73--icru-90) | ICRU tabulated stopping-power reports for heavy ions and protons |
+| [Mass Stopping Power](#mass-stopping-power) | Stopping power divided by density; unit MeV·cm²/g |
+| [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value) | Material constant in Bethe formula; unit eV |
+| [MeV/nucl vs MeV/u](#mevnucl-vs-mevu) | Energy per integer nucleon vs per actual atomic mass unit |
+| [MSTAR](#mstar) | Stopping-power program for heavy ions; 6 calculation modes |
+| [Normalized Energy](#normalized-energy) | Kinetic energy expressed per unit particle mass |
+| [Particle](#particle) | Any charged projectile (proton, ion, electron); preferred over "ion" |
+| [PSTAR / ESTAR / ASTAR](#pstar--estar--astar) | NIST stopping-power programs for protons, electrons, alphas |
+| [Stopping Power](#stopping-power) | Rate of energy loss per unit path length; electronic + nuclear components |
+
+### §2 Developer & Stack Terms
+
+| Term | One-line summary |
+|------|-----------------|
+| [Advanced Mode / Basic Mode](#advanced-mode--basic-mode) | App-wide toggle controlling advanced-feature visibility |
+| [Canonicalization](#canonicalization) | Algorithm normalizing URL state to a single deterministic form |
+| [Compatibility Matrix](#compatibility-matrix) | Pre-computed bidirectional program ↔ particle ↔ material lookup |
+| [dedx_config](#dedx_config) | Stateful C config struct; required for overrides and custom compounds |
+| [dedx_extra.{h,c}](#dedx_extrahc) | Local C files exposing internal libdedx data and custom-compound wrappers |
+| [dedx_wrappers.h](#dedx_wrappersh) | Local C header providing stateless wrappers for Emscripten export |
+| [Emscripten / WASM](#emscripten--wasm) | Compiler toolchain producing .wasm + .mjs from libdedx C source |
+| [Entity](#entity) | Union type: `ParticleEntity \| MaterialEntity \| ProgramEntity` |
+| [extdata](#extdata) | URL param pointing to user-hosted external stopping-power data |
+| [libdedx](#libdedx) | C library (git submodule) providing all stopping-power tables |
+| [qfocus](#qfocus) | URL param selecting quantity columns: `both` / `stp` / `csda` |
+| [Runes](#runes) | Svelte 5 reactive primitives: `$state`, `$derived`, `$effect`, `$props`, `$bindable` |
+| [Series](#series) | A (particle, material, program) triplet producing one plot curve |
+| [StoredCompound](#storedcompound) | localStorage type for user compounds; distinct from WASM `CustomCompound` |
+| [urlv](#urlv) | URL contract major-version sentinel parameter |
+
+---
+
 ## Section 1 — Physics & End-User Terms
 
 ---
 
-### Stopping Power
+### Aggregate State
 
-The rate at which a charged particle loses energy per unit path length as it
-traverses a material. Expressed as a positive quantity (energy lost per distance
-or per areal density).
+Whether a material is treated as a **gas** or **condensed matter** (solid or
+liquid) for the purpose of selecting the mean excitation energy I. The same
+chemical substance (e.g., water vapour vs. liquid water) has a different I-value
+in gas vs. condensed phase, which affects stopping power at intermediate energies
+by a few percent.
 
-**Three components:**
+libdedx marks 29 materials as gaseous by default (`isGasByDefault = true` in
+`MaterialEntity`). The default phase is passed to the C library via
+`dedx_config.compound_state`. In Advanced mode, the user can override the
+phase with a Gas / Condensed toggle.
 
-- **Electronic stopping power** — energy loss via inelastic collisions with target
-  electrons (excitation and ionisation). Dominant from ~keV/nucl to ~GeV/nucl.
-- **Nuclear stopping power** — energy loss via elastic Coulomb collisions with
-  target nuclei. Dominant at very low energies (below ~10 keV/nucl for protons).
-- **Total stopping power** — sum of electronic and nuclear contributions.
-  `S_total = S_electronic + S_nuclear`.
+The effective phase also sets the default stopping-power display unit:
+gas → MeV·cm²/g, condensed → keV/µm.
 
-The C library returns total stopping power via `dedx_get_stp_table()`.
+→ see also: [Stopping Power](#stopping-power), [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value)
 
-**Unit:** MeV·cm²/g (mass stopping power, geometry-independent);
-alternatively keV/µm or MeV/cm (linear stopping power, requires material
-density for conversion).
-
-→ see also: [CSDA Range](#csda-range), [Aggregate State](#aggregate-state),
-[Normalized Energy](#normalized-energy)
-
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.1,
-[`unit-handling.md`](04-feature-specs/unit-handling.md),
-[`calculator.md`](04-feature-specs/calculator.md)
-
----
-
-### Mass Stopping Power
-
-The stopping power divided by the density of the target material:
-`S_mass = S_linear / ρ`. Expressed in MeV·cm²/g. This unit is preferred in
-databases because it is geometry-independent and approximately constant across
-materials with similar atomic composition.
-
-**Unit:** MeV·cm²/g
-
-→ see also: [Stopping Power](#stopping-power), [Aggregate State](#aggregate-state)
-
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.1,
-[`unit-handling.md`](04-feature-specs/unit-handling.md)
-
----
-
-### CSDA Range
-
-*Continuous Slowing Down Approximation range.* The total path length a charged
-particle travels before coming to rest, under the assumption that energy loss is
-continuous and equal to the mean stopping power at each point. Calculated by
-integrating the reciprocal stopping power from the minimum tabulated energy to
-the particle's initial energy:
-
-```
-R(E) = ∫_{E_min}^{E} 1/S(E') dE'
-```
-
-The C library computes CSDA range via adaptive Gaussian quadrature in
-`dedx_tools.c`. CSDA range is not table-interpolated — it is an integral of the
-stopping power function. The interpolation axis-scale setting affects accuracy
-because it controls how S(E') is evaluated at each integration point.
-
-**Unit:** g/cm² (mass range, geometry-independent); alternatively cm (requires
-density for conversion: `R_cm = R_gcm2 / ρ`).
-
-→ see also: [Stopping Power](#stopping-power), [Bragg Peak](#bragg-peak)
-
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.3,
-[`inverse-lookups.md`](04-feature-specs/inverse-lookups.md),
-[`advanced-options.md`](04-feature-specs/advanced-options.md) §4
+Used in: [`advanced-options.md`](04-feature-specs/advanced-options.md) §3,
+[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.6
 
 ---
 
@@ -135,6 +130,100 @@ for each branch.
 
 Used in: [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) §5,
 [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §3
+
+---
+
+### CSDA Range
+
+*Continuous Slowing Down Approximation range.* The total path length a charged
+particle travels before coming to rest, under the assumption that energy loss is
+continuous and equal to the mean stopping power at each point. Calculated by
+integrating the reciprocal stopping power from the minimum tabulated energy to
+the particle's initial energy:
+
+```
+R(E) = ∫_{E_min}^{E} 1/S(E') dE'
+```
+
+The C library computes CSDA range via adaptive Gaussian quadrature in
+`dedx_tools.c`. CSDA range is not table-interpolated — it is an integral of the
+stopping power function. The interpolation axis-scale setting affects accuracy
+because it controls how S(E') is evaluated at each integration point.
+
+**Unit:** g/cm² (mass range, geometry-independent); alternatively cm (requires
+density for conversion: `R_cm = R_gcm2 / ρ`).
+
+→ see also: [Stopping Power](#stopping-power), [Bragg Peak](#bragg-peak)
+
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.3,
+[`inverse-lookups.md`](04-feature-specs/inverse-lookups.md),
+[`advanced-options.md`](04-feature-specs/advanced-options.md) §4
+
+---
+
+### Custom Compound
+
+A user-defined compound material, specified by:
+1. A display name
+2. Elemental composition: atomic numbers Z + atom count per formula unit
+   (or weight fractions converted to atom counts via `n_i = w_i / M_i`)
+3. Material density in g/cm³
+4. Optional mean excitation potential (I-value) in eV
+5. Aggregate phase (Gas / Condensed) for display-unit defaulting
+
+Stopping powers for custom compounds are computed via the Bragg additivity rule
+using the elemental data available to the selected program. Programs that lack
+elemental data for any constituent element are greyed out in the program selector.
+
+Custom compounds are stored in `localStorage` as `StoredCompound` objects and
+appear in the material selector alongside built-in materials when Advanced mode
+is active. The WASM layer uses the stateful `dedx_config` API path for custom
+compound calculations.
+
+→ see also: [Bragg Additivity Rule](#bragg-additivity-rule),
+[Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value),
+[Aggregate State](#aggregate-state)
+
+Used in: [`custom-compounds.md`](04-feature-specs/custom-compounds.md),
+[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.5, §3
+
+---
+
+### ICRU 73 / ICRU 90
+
+Two ICRU (International Commission on Radiation Units and Measurements) reports
+providing tabulated stopping powers for heavy ions and protons:
+
+| Report | Coverage | Notes |
+|--------|----------|-------|
+| **ICRU 73** | Heavy ions (Z > 2) in many materials | Available as a program in libdedx |
+| **ICRU 90** | Protons and alpha particles, updated I-values | Preferred over ICRU 49 (PSTAR) when available |
+
+libdedx exposes a meta-program `DEDX_ICRU` that resolves at runtime to the best
+available ICRU dataset for the selected particle. The webdedx auto-select layer
+starts from this resolver and may extend it with app-level rules (e.g., prefer
+MSTAR for heavy ions lacking ICRU 73 coverage).
+
+→ see also: [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)
+
+Used in: [`01-project-vision.md`](01-project-vision.md) §4.3,
+[`entity-selection.md`](04-feature-specs/entity-selection.md)
+
+---
+
+### Mass Stopping Power
+
+The stopping power divided by the density of the target material:
+`S_mass = S_linear / ρ`. Expressed in MeV·cm²/g. This unit is preferred in
+databases because it is geometry-independent and approximately constant across
+materials with similar atomic composition.
+
+**Unit:** MeV·cm²/g
+
+→ see also: [Stopping Power](#stopping-power), [Aggregate State](#aggregate-state)
+
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.1,
+[`unit-handling.md`](04-feature-specs/unit-handling.md)
 
 ---
 
@@ -189,6 +278,33 @@ Decisions (Energy units), [`unit-handling.md`](04-feature-specs/unit-handling.md
 
 ---
 
+### MSTAR
+
+A stopping-power calculation program for heavy ions (Z > 2) in various materials,
+written by H. Paul. Implements several empirical and semi-empirical models. In
+webdedx it is accessible as one of the selectable programs when the selected
+particle is a heavy ion.
+
+**MSTAR modes** (selected in Advanced Options when MSTAR is the active program):
+
+| Mode | Meaning |
+|------|---------|
+| **A** | Auto base: selects C for condensed targets, G for gaseous |
+| **B** | Auto special: selects D for condensed targets, H for gaseous. **Default** |
+| **C** | Condensed standard |
+| **D** | Condensed special (downgrades to C for target Z ≤ 3) |
+| **G** | Gas standard |
+| **H** | Gas special (hardcoded for projectile Z = 3–11 and 16–18; downgrades to G otherwise) |
+
+Modes E and F are not supported by the current WASM contract.
+
+→ see also: [Aggregate State](#aggregate-state)
+
+Used in: [`advanced-options.md`](04-feature-specs/advanced-options.md) §5,
+[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.6
+
+---
+
 ### Normalized Energy
 
 Kinetic energy expressed per unit of particle mass, typically MeV/nucl or MeV/u.
@@ -226,56 +342,6 @@ terminology note), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
 
 ---
 
-### Aggregate State
-
-Whether a material is treated as a **gas** or **condensed matter** (solid or
-liquid) for the purpose of selecting the mean excitation energy I. The same
-chemical substance (e.g., water vapour vs. liquid water) has a different I-value
-in gas vs. condensed phase, which affects stopping power at intermediate energies
-by a few percent.
-
-libdedx marks 29 materials as gaseous by default (`isGasByDefault = true` in
-`MaterialEntity`). The default phase is passed to the C library via
-`dedx_config.compound_state`. In Advanced mode, the user can override the
-phase with a Gas / Condensed toggle.
-
-The effective phase also sets the default stopping-power display unit:
-gas → MeV·cm²/g, condensed → keV/µm.
-
-→ see also: [Stopping Power](#stopping-power), [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value)
-
-Used in: [`advanced-options.md`](04-feature-specs/advanced-options.md) §3,
-[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.6
-
----
-
-### MSTAR
-
-A stopping-power calculation program for heavy ions (Z > 2) in various materials,
-written by H. Paul. Implements several empirical and semi-empirical models. In
-webdedx it is accessible as one of the selectable programs when the selected
-particle is a heavy ion.
-
-**MSTAR modes** (selected in Advanced Options when MSTAR is the active program):
-
-| Mode | Meaning |
-|------|---------|
-| **A** | Auto base: selects C for condensed targets, G for gaseous |
-| **B** | Auto special: selects D for condensed targets, H for gaseous. **Default** |
-| **C** | Condensed standard |
-| **D** | Condensed special (downgrades to C for target Z ≤ 3) |
-| **G** | Gas standard |
-| **H** | Gas special (hardcoded for projectile Z = 3–11 and 16–18; downgrades to G otherwise) |
-
-Modes E and F are not supported by the current WASM contract.
-
-→ see also: [Aggregate State](#aggregate-state)
-
-Used in: [`advanced-options.md`](04-feature-specs/advanced-options.md) §5,
-[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.6
-
----
-
 ### PSTAR / ESTAR / ASTAR
 
 Three NIST stopping-power programs included in libdedx:
@@ -298,53 +364,33 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
 
 ---
 
-### ICRU 73 / ICRU 90
+### Stopping Power
 
-Two ICRU (International Commission on Radiation Units and Measurements) reports
-providing tabulated stopping powers for heavy ions and protons:
+The rate at which a charged particle loses energy per unit path length as it
+traverses a material. Expressed as a positive quantity (energy lost per distance
+or per areal density).
 
-| Report | Coverage | Notes |
-|--------|----------|-------|
-| **ICRU 73** | Heavy ions (Z > 2) in many materials | Available as a program in libdedx |
-| **ICRU 90** | Protons and alpha particles, updated I-values | Preferred over ICRU 49 (PSTAR) when available |
+**Three components:**
 
-libdedx exposes a meta-program `DEDX_ICRU` that resolves at runtime to the best
-available ICRU dataset for the selected particle. The webdedx auto-select layer
-starts from this resolver and may extend it with app-level rules (e.g., prefer
-MSTAR for heavy ions lacking ICRU 73 coverage).
+- **Electronic stopping power** — energy loss via inelastic collisions with target
+  electrons (excitation and ionisation). Dominant from ~keV/nucl to ~GeV/nucl.
+- **Nuclear stopping power** — energy loss via elastic Coulomb collisions with
+  target nuclei. Dominant at very low energies (below ~10 keV/nucl for protons).
+- **Total stopping power** — sum of electronic and nuclear contributions.
+  `S_total = S_electronic + S_nuclear`.
 
-→ see also: [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)
+The C library returns total stopping power via `dedx_get_stp_table()`.
 
-Used in: [`01-project-vision.md`](01-project-vision.md) §4.3,
-[`entity-selection.md`](04-feature-specs/entity-selection.md)
+**Unit:** MeV·cm²/g (mass stopping power, geometry-independent);
+alternatively keV/µm or MeV/cm (linear stopping power, requires material
+density for conversion).
 
----
+→ see also: [CSDA Range](#csda-range), [Aggregate State](#aggregate-state),
+[Normalized Energy](#normalized-energy)
 
-### Custom Compound
-
-A user-defined compound material, specified by:
-1. A display name
-2. Elemental composition: atomic numbers Z + atom count per formula unit
-   (or weight fractions converted to atom counts via `n_i = w_i / M_i`)
-3. Material density in g/cm³
-4. Optional mean excitation potential (I-value) in eV
-5. Aggregate phase (Gas / Condensed) for display-unit defaulting
-
-Stopping powers for custom compounds are computed via the Bragg additivity rule
-using the elemental data available to the selected program. Programs that lack
-elemental data for any constituent element are greyed out in the program selector.
-
-Custom compounds are stored in `localStorage` as `StoredCompound` objects and
-appear in the material selector alongside built-in materials when Advanced mode
-is active. The WASM layer uses the stateful `dedx_config` API path for custom
-compound calculations.
-
-→ see also: [Bragg Additivity Rule](#bragg-additivity-rule),
-[Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value),
-[Aggregate State](#aggregate-state)
-
-Used in: [`custom-compounds.md`](04-feature-specs/custom-compounds.md),
-[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.5, §3
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.1,
+[`unit-handling.md`](04-feature-specs/unit-handling.md),
+[`calculator.md`](04-feature-specs/calculator.md)
 
 ---
 
@@ -352,49 +398,86 @@ Used in: [`custom-compounds.md`](04-feature-specs/custom-compounds.md),
 
 ---
 
-### libdedx
+### Advanced Mode / Basic Mode
 
-The C library that provides all stopping-power tables and calculation routines.
-Included in the repository as a Git submodule at `libdedx/`. Compiled to
-WebAssembly via Emscripten. All stopping-power and CSDA range data in the app
-originates from this library.
+An app-wide toggle that controls which features are visible. Stored in
+`localStorage` and reflected in the URL parameter `mode=advanced`.
 
-**Type/file:** `libdedx/` (submodule), `libdedx/include/dedx.h` (public API),
-`libdedx/src/dedx_tools.c` (CSDA integrator)
+| Mode | Visible features |
+|------|-----------------|
+| **Basic** (default) | Entity selection, single program, energy input, forward stopping power + CSDA range table, CSV/PDF export, Share URL |
+| **Advanced** | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups (Range + Inverse STP tabs), custom compounds |
 
-→ see also: [Emscripten / WASM](#emscripten--wasm), [dedx_wrappers.h](#dedx_wrappersh),
-[dedx_extra.{h,c}](#dedx_extrahc)
+The toggle is placed in the top-right action bar on every page, alongside Share
+and Export buttons. Enabling Advanced mode on one page enables it app-wide.
 
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
-[`00-redesign-plan.md`](00-redesign-plan.md) §11
+**Type/file:** `mode` URL param; `advancedMode` Svelte `$state` in the root
+layout or shared store
+
+→ see also: [qfocus](#qfocus)
+
+Used in: [`01-project-vision.md`](01-project-vision.md) §4.4,
+[`multi-program.md`](04-feature-specs/multi-program.md) §2,
+[`advanced-options.md`](04-feature-specs/advanced-options.md) Panel Overview
 
 ---
 
-### Emscripten / WASM
+### Canonicalization
 
-**Emscripten** is the compiler toolchain (`emcc`) that cross-compiles libdedx C
-source to WebAssembly. It produces two output artefacts:
+The algorithm that normalizes a URL query string to a single deterministic
+**canonical form**, so that logically identical states always produce identical
+URL strings. Implemented on every state change before writing to the browser's
+address bar.
 
-- **`.wasm`** — the binary WebAssembly module containing compiled libdedx code
-  and embedded data tables (stopping power tables, material/particle lists).
-- **`.mjs`** — the Emscripten-generated JavaScript ES module that bootstraps the
-  WASM runtime, exposes `ccall`/`cwrap` for calling C functions from JavaScript,
-  and manages the linear memory heap.
+The algorithm runs as a multi-step pipeline:
 
-**WebAssembly (WASM)** is the binary instruction format executed by the browser's
-WASM runtime at near-native speed. The `.wasm` module is loaded once at app
-startup and remains resident in browser memory.
+1. Parse raw query string into key/value pairs.
+2. Apply semantic defaults (fill in omitted params with their default values).
+3. Drop params that equal their default value (unless explicitly required).
+4. Validate each param; replace invalid values with defaults silently.
+5. Resolve `mode` (`basic` / `advanced`) and select the correct set of
+   mode-specific params.
+6. Encode entity selection (particle, material, program/programs).
+7. Encode Advanced Options params (agg_state, interp_scale, interp_method,
+   mstar_mode, density, ival).
+8. Encode inverse-lookup params (imode, ivalues, iunit) if applicable.
+9. Encode custom compound params (material=custom, mat_name, mat_density,
+   mat_elements, mat_ival, mat_phase) if applicable.
+10. Emit params in the specified canonical order (urlv first, extdata last within
+    its group, unknown params stripped).
 
-The WASM module size is several MB because it includes embedded stopping-power
-tables. A loading indicator is required.
+The full formal algorithm is in
+[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §4.
 
-**Type/file:** `build_wasm.sh` (build script), `src/lib/wasm/libdedx.ts`
-(TypeScript wrapper), `src/lib/wasm/loader.ts` (lazy init)
+**Type/file:** `src/lib/stores/url-sync.ts` (planned)
 
-→ see also: [libdedx](#libdedx), [dedx_wrappers.h](#dedx_wrappersh)
+→ see also: [urlv](#urlv)
 
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
-[`00-redesign-plan.md`](00-redesign-plan.md) §6
+Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §4,
+[`shareable-urls.md`](04-feature-specs/shareable-urls.md) §7
+
+---
+
+### Compatibility Matrix
+
+An in-memory data structure pre-computed at WASM init time by iterating over
+every program and calling `getParticles(programId)` + `getMaterials(programId)`
+for each. Stores bidirectional maps (program ↔ particles, program ↔ materials)
+enabling O(1) lookups in any direction without per-interaction C API calls.
+
+The compatibility matrix is the backbone of the bidirectional filtering in entity
+selection: when a particle is selected, only compatible programs are shown active;
+when a program is selected, only its supported materials appear. There is no
+native libdedx reverse-lookup function (as of the time of writing), so this
+JS-side matrix is the only source of truth for cross-entity compatibility.
+
+**Type/file:** `src/lib/wasm/types.ts` — `CompatibilityMatrix` interface;
+`src/lib/wasm/libdedx.ts` — populated during `init()`
+
+→ see also: [Entity](#entity)
+
+Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) §2,
+[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
 
 ---
 
@@ -418,23 +501,6 @@ the decision tree between stateless and stateful paths.
 → see also: [dedx_wrappers.h](#dedx_wrappersh), [Custom Compound](#custom-compound)
 
 Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1, §3
-
----
-
-### dedx_wrappers.h
-
-A local C header (not part of the libdedx submodule) providing **stateless
-wrapper functions** around libdedx's internal APIs. These functions expose the
-core stopping-power and entity-list queries as simple C functions suitable for
-Emscripten `ccall`/`cwrap` export, without requiring the caller to manage a
-`dedx_config` lifecycle. Used as the primary call path when no `AdvancedOptions`
-override is active.
-
-**Type/file:** `wasm/dedx_wrappers.h` (C header, local to the repo)
-
-→ see also: [dedx_config](#dedx_config), [dedx_extra.{h,c}](#dedx_extrahc)
-
-Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1
 
 ---
 
@@ -466,6 +532,51 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
 
 ---
 
+### dedx_wrappers.h
+
+A local C header (not part of the libdedx submodule) providing **stateless
+wrapper functions** around libdedx's internal APIs. These functions expose the
+core stopping-power and entity-list queries as simple C functions suitable for
+Emscripten `ccall`/`cwrap` export, without requiring the caller to manage a
+`dedx_config` lifecycle. Used as the primary call path when no `AdvancedOptions`
+override is active.
+
+**Type/file:** `wasm/dedx_wrappers.h` (C header, local to the repo)
+
+→ see also: [dedx_config](#dedx_config), [dedx_extra.{h,c}](#dedx_extrahc)
+
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1
+
+---
+
+### Emscripten / WASM
+
+**Emscripten** is the compiler toolchain (`emcc`) that cross-compiles libdedx C
+source to WebAssembly. It produces two output artefacts:
+
+- **`.wasm`** — the binary WebAssembly module containing compiled libdedx code
+  and embedded data tables (stopping power tables, material/particle lists).
+- **`.mjs`** — the Emscripten-generated JavaScript ES module that bootstraps the
+  WASM runtime, exposes `ccall`/`cwrap` for calling C functions from JavaScript,
+  and manages the linear memory heap.
+
+**WebAssembly (WASM)** is the binary instruction format executed by the browser's
+WASM runtime at near-native speed. The `.wasm` module is loaded once at app
+startup and remains resident in browser memory.
+
+The WASM module size is several MB because it includes embedded stopping-power
+tables. A loading indicator is required.
+
+**Type/file:** `build_wasm.sh` (build script), `src/lib/wasm/libdedx.ts`
+(TypeScript wrapper), `src/lib/wasm/loader.ts` (lazy init)
+
+→ see also: [libdedx](#libdedx), [dedx_wrappers.h](#dedx_wrappersh)
+
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
+[`00-redesign-plan.md`](00-redesign-plan.md) §6
+
+---
+
 ### Entity
 
 In dedx_web TypeScript code, an **entity** is any of the three principal libdedx
@@ -490,26 +601,97 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2,
 
 ---
 
-### Compatibility Matrix
+### extdata
 
-An in-memory data structure pre-computed at WASM init time by iterating over
-every program and calling `getParticles(programId)` + `getMaterials(programId)`
-for each. Stores bidirectional maps (program ↔ particles, program ↔ materials)
-enabling O(1) lookups in any direction without per-interaction C API calls.
+The `extdata` URL parameter activates the **external data** feature: it points
+to a user-hosted stopping-power/range file in `.webdedx.parquet` (Apache Parquet)
+format. The parameter format is `extdata={label}:{url}` where `{label}` is a
+short user-visible name and `{url}` is the HTTPS URL of the Parquet file.
 
-The compatibility matrix is the backbone of the bidirectional filtering in entity
-selection: when a particle is selected, only compatible programs are shown active;
-when a program is selected, only its supported materials appear. There is no
-native libdedx reverse-lookup function (as of the time of writing), so this
-JS-side matrix is the only source of truth for cross-entity compatibility.
+External entities (particles, materials, programs) from the file are merged with
+the built-in libdedx lists and visually distinguished in selectors, tables, and
+plot legends. The `extdata` parameter is preserved in shared URLs so recipients
+see the same external data overlaid on built-in curves.
 
-**Type/file:** `src/lib/wasm/types.ts` — `CompatibilityMatrix` interface;
-`src/lib/wasm/libdedx.ts` — populated during `init()`
+**Type/file:** URL query param; defined in
+[`external-data.md`](04-feature-specs/external-data.md),
+[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2
 
-→ see also: [Entity](#entity)
+→ see also: [Series](#series)
 
-Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) §2,
-[`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
+Used in: [`external-data.md`](04-feature-specs/external-data.md),
+[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2,
+[`01-project-vision.md`](01-project-vision.md) §4.7
+
+---
+
+### libdedx
+
+The C library that provides all stopping-power tables and calculation routines.
+Included in the repository as a Git submodule at `libdedx/`. Compiled to
+WebAssembly via Emscripten. All stopping-power and CSDA range data in the app
+originates from this library.
+
+**Type/file:** `libdedx/` (submodule), `libdedx/include/dedx.h` (public API),
+`libdedx/src/dedx_tools.c` (CSDA integrator)
+
+→ see also: [Emscripten / WASM](#emscripten--wasm), [dedx_wrappers.h](#dedx_wrappersh),
+[dedx_extra.{h,c}](#dedx_extrahc)
+
+Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
+[`00-redesign-plan.md`](00-redesign-plan.md) §11
+
+---
+
+### qfocus
+
+The `qfocus` URL parameter controls which **quantity columns** are shown in the
+multi-program comparison table on the Calculator page (Advanced mode only).
+
+| Value | Columns shown |
+|-------|--------------|
+| `both` | All stopping power columns + all CSDA range columns (default) |
+| `stp` | Stopping power columns only |
+| `csda` | CSDA range columns only |
+
+`qfocus` is emitted in every canonical Advanced-mode Calculator URL, even when
+set to the default `both`, to make the URL self-describing. It does not gate the
+Inverse STP or Range tabs — those depend solely on Advanced mode being active.
+
+**Type/file:** URL query param; defined in
+[`multi-program.md`](04-feature-specs/multi-program.md) §4,
+[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2
+
+→ see also: [Advanced Mode / Basic Mode](#advanced-mode--basic-mode)
+
+Used in: [`multi-program.md`](04-feature-specs/multi-program.md),
+[`shareable-urls.md`](04-feature-specs/shareable-urls.md) §3.3,
+[`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) §1
+
+---
+
+### Runes
+
+Svelte 5's **reactive primitives**, replacing Svelte 4 stores and reactive
+statements. This project uses **Svelte 5 only** — Svelte 4 patterns are
+prohibited.
+
+| Rune | Purpose |
+|------|---------|
+| `$state` | Declares reactive mutable state (replaces `let` + `$:`) |
+| `$derived` | Declares a value computed from reactive state (replaces `$:` assignments) |
+| `$effect` | Runs a side-effect when reactive dependencies change (replaces `onMount`/`onDestroy` + `$:`) |
+| `$props` | Declares component props (replaces `export let`) |
+| `$bindable` | Declares a prop that the parent can bind to |
+
+The `svelte/store` module and `$` auto-subscription syntax are replaced by
+runes-based fine-grained reactivity.
+
+**Type/file:** Any `.svelte` file; authoritative guidance in
+[`00-redesign-plan.md`](00-redesign-plan.md) §2,
+`.github/instructions/svelte.instructions.md`
+
+Used in: [`00-redesign-plan.md`](00-redesign-plan.md) §2
 
 ---
 
@@ -559,31 +741,6 @@ Used in: [`custom-compounds.md`](04-feature-specs/custom-compounds.md) §1.1,
 
 ---
 
-### Runes
-
-Svelte 5's **reactive primitives**, replacing Svelte 4 stores and reactive
-statements. This project uses **Svelte 5 only** — Svelte 4 patterns are
-prohibited.
-
-| Rune | Purpose |
-|------|---------|
-| `$state` | Declares reactive mutable state (replaces `let` + `$:`) |
-| `$derived` | Declares a value computed from reactive state (replaces `$:` assignments) |
-| `$effect` | Runs a side-effect when reactive dependencies change (replaces `onMount`/`onDestroy` + `$:`) |
-| `$props` | Declares component props (replaces `export let`) |
-| `$bindable` | Declares a prop that the parent can bind to |
-
-The `svelte/store` module and `$` auto-subscription syntax are replaced by
-runes-based fine-grained reactivity.
-
-**Type/file:** Any `.svelte` file; authoritative guidance in
-[`00-redesign-plan.md`](00-redesign-plan.md) §2,
-`.github/instructions/svelte.instructions.md`
-
-Used in: [`00-redesign-plan.md`](00-redesign-plan.md) §2
-
----
-
 ### urlv
 
 The `urlv` URL query parameter is the **URL contract major version sentinel**.
@@ -605,114 +762,3 @@ Example: `?urlv=1&particle=1&material=276&…`
 
 Used in: [`shareable-urls.md`](04-feature-specs/shareable-urls.md) §3.1,
 [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
-
----
-
-### Canonicalization
-
-The algorithm that normalizes a URL query string to a single deterministic
-**canonical form**, so that logically identical states always produce identical
-URL strings. Implemented on every state change before writing to the browser's
-address bar.
-
-The algorithm runs as a multi-step pipeline:
-
-1. Parse raw query string into key/value pairs.
-2. Apply semantic defaults (fill in omitted params with their default values).
-3. Drop params that equal their default value (unless explicitly required).
-4. Validate each param; replace invalid values with defaults silently.
-5. Resolve `mode` (`basic` / `advanced`) and select the correct set of
-   mode-specific params.
-6. Encode entity selection (particle, material, program/programs).
-7. Encode Advanced Options params (agg_state, interp_scale, interp_method,
-   mstar_mode, density, ival).
-8. Encode inverse-lookup params (imode, ivalues, iunit) if applicable.
-9. Encode custom compound params (material=custom, mat_name, mat_density,
-   mat_elements, mat_ival, mat_phase) if applicable.
-10. Emit params in the specified canonical order (urlv first, extdata last within
-    its group, unknown params stripped).
-
-The full formal algorithm is in
-[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §4.
-
-**Type/file:** `src/lib/stores/url-sync.ts` (planned)
-
-→ see also: [urlv](#urlv)
-
-Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §4,
-[`shareable-urls.md`](04-feature-specs/shareable-urls.md) §7
-
----
-
-### Advanced Mode / Basic Mode
-
-An app-wide toggle that controls which features are visible. Stored in
-`localStorage` and reflected in the URL parameter `mode=advanced`.
-
-| Mode | Visible features |
-|------|-----------------|
-| **Basic** (default) | Entity selection, single program, energy input, forward stopping power + CSDA range table, CSV/PDF export, Share URL |
-| **Advanced** | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups (Range + Inverse STP tabs), custom compounds |
-
-The toggle is placed in the top-right action bar on every page, alongside Share
-and Export buttons. Enabling Advanced mode on one page enables it app-wide.
-
-**Type/file:** `mode` URL param; `advancedMode` Svelte `$state` in the root
-layout or shared store
-
-→ see also: [qfocus](#qfocus)
-
-Used in: [`01-project-vision.md`](01-project-vision.md) §4.4,
-[`multi-program.md`](04-feature-specs/multi-program.md) §2,
-[`advanced-options.md`](04-feature-specs/advanced-options.md) Panel Overview
-
----
-
-### qfocus
-
-The `qfocus` URL parameter controls which **quantity columns** are shown in the
-multi-program comparison table on the Calculator page (Advanced mode only).
-
-| Value | Columns shown |
-|-------|--------------|
-| `both` | All stopping power columns + all CSDA range columns (default) |
-| `stp` | Stopping power columns only |
-| `csda` | CSDA range columns only |
-
-`qfocus` is emitted in every canonical Advanced-mode Calculator URL, even when
-set to the default `both`, to make the URL self-describing. It does not gate the
-Inverse STP or Range tabs — those depend solely on Advanced mode being active.
-
-**Type/file:** URL query param; defined in
-[`multi-program.md`](04-feature-specs/multi-program.md) §4,
-[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2
-
-→ see also: [Advanced Mode / Basic Mode](#advanced-mode--basic-mode)
-
-Used in: [`multi-program.md`](04-feature-specs/multi-program.md),
-[`shareable-urls.md`](04-feature-specs/shareable-urls.md) §3.3,
-[`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) §1
-
----
-
-### extdata
-
-The `extdata` URL parameter activates the **external data** feature: it points
-to a user-hosted stopping-power/range file in `.webdedx.parquet` (Apache Parquet)
-format. The parameter format is `extdata={label}:{url}` where `{label}` is a
-short user-visible name and `{url}` is the HTTPS URL of the Parquet file.
-
-External entities (particles, materials, programs) from the file are merged with
-the built-in libdedx lists and visually distinguished in selectors, tables, and
-plot legends. The `extdata` parameter is preserved in shared URLs so recipients
-see the same external data overlaid on built-in curves.
-
-**Type/file:** URL query param; defined in
-[`external-data.md`](04-feature-specs/external-data.md),
-[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2
-
-→ see also: [Series](#series)
-
-Used in: [`external-data.md`](04-feature-specs/external-data.md),
-[`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2,
-[`01-project-vision.md`](01-project-vision.md) §4.7
