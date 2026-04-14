@@ -140,7 +140,7 @@ const JSROOT = await import('jsroot');
 
 JSROOT is not Svelte-aware; a dedicated `JsrootPlot.svelte` wrapper component
 owns the container `<div>` and manages the JSROOT lifecycle through `$effect`.
-See [`03-architecture.md` §4](03-architecture.md#4-reactive-state-topology).
+See [`03-architecture.md` §5](03-architecture.md#5-component-tree).
 
 ---
 

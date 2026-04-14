@@ -45,8 +45,8 @@ dedx_web/
 │   │       ├── stopping-power.ts       # MeV·cm²/g ↔ MeV/cm ↔ keV/µm (density-aware)
 │   │       └── range.ts                # g/cm² ↔ cm (density-aware)
 │   └── routes/                         # SvelteKit file-based routes (§2)
-│       ├── +layout.svelte              # Shell: nav bar, Advanced toggle, footer
-│       ├── +layout.ts                  # WASM init (load-once for all pages)
+│       ├── +layout.svelte              # Shell: nav bar, Advanced toggle, footer; starts WASM via $effect
+│       ├── +layout.ts                  # Synchronous layout load; returns {} without blocking on WASM
 │       ├── +page.svelte                # Redirect → /calculator
 │       ├── +error.svelte               # Top-level error boundary (unexpected JS errors)
 │       ├── calculator/
@@ -66,6 +66,7 @@ dedx_web/
 ├── static/
 │   ├── wasm/
 │   │   ├── libdedx.mjs                 # Emscripten ES module glue (built artifact)
+│   │   ├── libdedx.data                # Emscripten preloaded filesystem/data sidecar (built artifact)
 │   │   └── libdedx.wasm                # WASM binary (built artifact)
 │   ├── favicon.svg                     # Vector icon — modern browsers; scales to any size
 │   ├── favicon.ico                     # Legacy fallback (combined 16×16 + 32×32 ICO)

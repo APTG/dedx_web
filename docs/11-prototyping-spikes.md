@@ -41,8 +41,9 @@ session with no human intervention beyond reviewing the output.
 3. **Pass/fail verdicts.** Each spike has explicit acceptance criteria.
    The agent must print a summary at the end:
    `PASS: <criterion>` or `FAIL: <criterion> — <reason>`.
-4. **No production code changes.** Do not modify anything under `src/`,
-   `static/`, `docs/`, or `wasm/`.
+4. **No production code changes.** Do not modify the production `src/`,
+   `static/`, `docs/`, or `wasm/` directories at the repository root. All
+   prototype changes must be confined to `prototypes/`.
 5. **Commit the prototype.** The agent should commit each spike separately
    with `chore: prototype — <spike-name>`.
 
@@ -331,6 +332,7 @@ docker run --rm -v "$(pwd)/../../libdedx:/src/libdedx" \
   -w /src/output \
   emscripten/emsdk:3.1.64 \
   bash -c '
+    mkdir -p preload embed
     emcc libdedx.a \
       -I /src/libdedx/include \
       -o preload/libdedx.mjs \

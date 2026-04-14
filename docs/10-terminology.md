@@ -487,16 +487,18 @@ Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
 
 ### CI/CD
 
-**Continuous Integration / Continuous Deployment** — the automated pipeline
-that runs on every push or pull request via **GitHub Actions**.
+**Continuous Integration / Continuous Deployment** — the planned Stage 8
+automated pipeline for this project, intended to run via **GitHub Actions**.
 
-| Phase | Trigger | Steps |
-|-------|---------|-------|
-| **CI** | Every PR / push | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
-| **CD** | Merge to `master` | `npm run build` → deploy `build/` to GitHub Pages |
+| Phase | Planned trigger | Planned steps |
+|-------|-----------------|---------------|
+| **CI** | On PRs / pushes (planned) | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
+| **CD** | On merge to `master` (planned) | `npm run build` → deploy `build/` to GitHub Pages |
 
-The CI phase catches regressions before merge; CD publishes the rebuilt static
-site automatically within minutes of a merge.
+When implemented, the CI phase will catch regressions before merge, and the CD
+phase will publish the rebuilt static site automatically. See
+[`08-deployment.md`](08-deployment.md) for the planned workflow specification
+and current source of truth.
 
 **Type/file:** `.github/workflows/` (GitHub Actions YAML);
 `08-deployment.md` (planned — full workflow specification)

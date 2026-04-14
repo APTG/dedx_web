@@ -43,7 +43,7 @@ Produced all Stage 2 deliverables from `docs/00-redesign-plan.md §8`:
 | JSROOT 7 (lazy import, `JsrootPlot.svelte` wrapper with `untrack`) | ADR 002 |
 | `EXPORT_ES6=1 MODULARIZE=1`; `dedx_extra.{h,c}` shim | ADR 003 |
 | `*.svelte.ts` naming for state modules (rune-aware linting) | `03-architecture.md` §1 |
-| WASM init in root `+layout.ts` with `browser` guard | `03-architecture.md` §10 |
+| Non-blocking WASM init in root `+layout.svelte` `$effect`; `+layout.ts` returns `{}` | `03-architecture.md` §10 |
 | Compatibility matrix pre-built at init from entity lists | `03-architecture.md` §3 |
 | Custom compounds route via `CUSTOM_MATERIAL_ID = -1` sentinel | `03-architecture.md` §8 |
 | URL sync via `history.replaceState` in root `$effect` | `03-architecture.md` §9 |
