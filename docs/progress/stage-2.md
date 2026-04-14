@@ -53,11 +53,15 @@ specifications.
 | Spike | Validates | Architecture section | Status |
 |-------|-----------|---------------------|--------|
 | JSROOT 7 + Svelte 5 `$effect` | Plot page DOM ownership, cleanup, re-draw | [03-architecture.md §5](../03-architecture.md#5-component-tree) | ✅ PASS ([log](../ai-logs/2026-04-14-spike1-jsroot-svelte5.md)) |
-| WASM `--preload-file` on static hosting | Build pipeline + sub-path deployment | [ADR 003](../decisions/003-wasm-build-pipeline.md) | ⬜ pending |
-| Module-level `$state` reactivity | Shared state topology across components | [03-architecture.md §4](../03-architecture.md#4-reactive-state-topology) | ⬜ pending |
+| WASM `--preload-file` on static hosting | Build pipeline + sub-path deployment | [ADR 003](../decisions/003-wasm-build-pipeline.md) | ✅ PASS ([log](../ai-logs/2026-04-14-spike2-wasm-preload.md)) |
+| Module-level `$state` reactivity | Shared state topology across components | [03-architecture.md §4](../03-architecture.md#4-reactive-state-topology) | ✅ PASS¹ ([log](../ai-logs/2026-04-14-spike3-svelte5-state.md)) |
 
-**Gate:** All spikes must pass (or architecture docs amended) before
-Stage 3 begins.
+¹ Criteria 2–3 (`$derived` at module scope) FAIL — Svelte 5 prohibits exporting
+`$derived` from `.svelte.ts` modules. Validated alternative: export compute
+functions wrapped in component-level `$derived`. `03-architecture.md §4` amended
+(`computeParsedEnergies()`, `computeResolvedProgram()`).
+
+**Gate:** All spikes passed (with §4 amendment applied). Stage 3 may begin.
 
 ---
 

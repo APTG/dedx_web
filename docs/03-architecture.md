@@ -395,9 +395,23 @@ pattern is inconsistent with primitives, makes bulk replacement awkward
 (`splice(0, arr.length, ...items)`), and obscures intent. Using `{ value: T }`
 uniformly means every state field is replaced the same way: `x.value = newVal`.
 
-**`$derived` at module scope.** `$derived` follows the same proxy mechanics —
-it is reactive as long as it reads from `$state`-tracked values. It does NOT
-need a wrapper because it is read-only by definition.
+**Compute functions instead of `$derived` exports.** Svelte 5 prohibits
+exporting `$derived` values directly from `.svelte.ts` modules (compiler error:
+`Cannot export derived state from a module`). Instead, export a plain compute
+function that reads `$state` values. Each component that needs the computed
+value wraps the call in a local `$derived`:
+
+```ts
+// .svelte.ts module — export a compute function
+export function computeX(): T { return someState.value + otherState.value; }
+
+// Component — local $derived wraps the call; tracks $state deps automatically
+const x = $derived(computeX());
+```
+
+Calling a compute function inside `$derived` or `$effect` registers its `$state`
+dependencies with Svelte's tracker exactly as if the `$state` were read directly.
+This pattern was validated in Spike 3 (see `prototypes/svelte5-state/`).
 
 ### 4.1 `entities.svelte.ts`
 
@@ -421,11 +435,12 @@ export const selectedProgramId = $state<{ value: number | null }>({ value: null 
 export const selectedParticleId = $state<{ value: number | null }>({ value: null });
 export const selectedMaterialId = $state<{ value: number | null }>({ value: null });
 
-// Derived: the resolved program for the current particle/material combo.
+// Compute function: resolves the best program for the current selection.
 // Implements the "auto-select best program" rule (01-project-vision.md §4.3).
-export const resolvedProgramId = $derived(
-  autoSelectProgram(selectedProgramId.value, selectedParticleId.value, selectedMaterialId.value, compatMatrix)
-);
+// Call inside component-level $derived — cannot export $derived from a module.
+export function computeResolvedProgram(): number | null {
+  return autoSelectProgram(selectedProgramId.value, selectedParticleId.value, selectedMaterialId.value, compatMatrix);
+}
 ```
 
 ### 4.3 `calculation.svelte.ts`
@@ -440,20 +455,23 @@ export const result = $state<{ value: CalculationResult | null }>({ value: null 
 export const error = $state<{ value: LibdedxError | null }>({ value: null });
 export const calculating = $state({ value: false });
 
-// Derived: parsed energy array (valid lines only)
-export const parsedEnergies = $derived(parseEnergyInput(energyInputText.value, energyUnit.value));
+// Compute function: parsed energy array (valid lines only).
+// Call inside component-level $derived — cannot export $derived from a module.
+export function computeParsedEnergies(): number[] {
+  return parseEnergyInput(energyInputText.value, energyUnit.value);
+}
 ```
 
 Live calculation is triggered by an `$effect` in the Calculator page that
-watches `parsedEnergies`, `resolvedProgramId`, `selectedParticleId`,
-`selectedMaterialId`, and `advancedOptions`. The effect uses `setTimeout` +
-the cleanup return to implement debouncing:
+watches the outputs of `computeParsedEnergies()`, `computeResolvedProgram()`,
+`selectedParticleId`, `selectedMaterialId`, and `advancedOptions`. The effect
+uses `setTimeout` + the cleanup return to implement debouncing:
 
 ```ts
 $effect(() => {
-  // Read all dependencies (registers them with Svelte's tracker)
-  const energies  = parsedEnergies;
-  const programId = resolvedProgramId;
+  // Call compute functions — Svelte tracks the $state deps they read
+  const energies  = computeParsedEnergies();
+  const programId = computeResolvedProgram();
   const particle  = selectedParticleId.value;
   const material  = selectedMaterialId.value;
   const options   = advancedOptions.value;
@@ -469,10 +487,11 @@ $effect(() => {
 **Why this is correct debounce behavior.** When any dependency changes,
 Svelte runs the cleanup (`clearTimeout`) before re-running the effect. Only
 the last timer survives to fire. Multiple rapid changes — user typing, or
-`resolvedProgramId` and `parsedEnergies` both updating in separate ticks —
-each restart the 300 ms window; the WASM call runs only after a 300 ms quiet
-period. If both values change in the **same** reactive tick, Svelte batches
-them and the effect runs once with the combined new values — correct.
+`computeResolvedProgram()` and `computeParsedEnergies()` returning new values
+in separate ticks — each restart the 300 ms window; the WASM call runs only
+after a 300 ms quiet period. If both values change in the **same** reactive
+tick, Svelte batches them and the effect runs once with the combined new
+values — correct.
 
 **Why the debounce is NOT a utility function created inside the effect.** A
 `debounce()` call inside the effect creates a NEW debounced function on every
@@ -653,13 +672,13 @@ User types energy
         ▼
 EnergyInput.svelte  →  energyInputText (calculation.svelte.ts)
                                 │
-                         $derived parsedEnergies
+                       computeParsedEnergies()
                                 │
                          $effect (debounced 300ms)
                                 │
                     ┌───────────┴───────────────────────┐
                     │ selection.svelte.ts                │
-                    │  resolvedProgramId                 │
+                    │  computeResolvedProgram()          │
                     │  selectedParticleId               │
                     │  selectedMaterialId               │
                     └───────────────────────────────────┘

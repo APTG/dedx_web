@@ -288,6 +288,28 @@ As a <role>, I want to <action> so that <benefit>.
   validated alternatives) before Stage 3 begins.
 - **Verify:** Each spike produces a `VERDICT.md` with pass/fail per criterion.
 
+### Stage 2.6: libdedx Data Source Investigation (pre-Stage 3 gate)
+- **Who:** Human reviews; AI assists if needed.
+- **Question:** Does the production libdedx WASM binary need the external `data/` directory
+  at runtime, or is all stopping-power data compiled in via `src/data/embedded/*.h`?
+- **Background:** Spike 2 preloaded `libdedx/data@/data` with `--preload-file`. However,
+  `libdedx/src/data/embedded/` contains full stopping-power tables as C headers
+  (`dedx_astar.h`, `dedx_pstar.h`, `dedx_mstar.h`, etc.) that are compiled into the binary.
+  If libdedx compiles with embedded data, the `.data` sidecar file served in Spike 2 may
+  have been loaded but never read — making `--preload-file` unnecessary and the `.data`
+  bundle wasteful.
+- **Check:**
+  1. Read `libdedx/src/dedx_data_access.c` and `dedx_embedded_data.c` to determine whether
+     the production build path reads from the virtual filesystem or from compiled-in arrays.
+  2. Check `libdedx/CMakeLists.txt` for any `DEDX_USE_EMBEDDED_DATA` / `DEDX_DATA_DIR` flags.
+  3. (Optional) Build with `--preload-file` omitted and verify 10 programs still load.
+- **Outcome A — data is fully embedded:** Remove `--preload-file` from ADR 003. The WASM
+  build produces only `.mjs` + `.wasm`; no `.data` sidecar. Stage 3 build script is simpler.
+- **Outcome B — data is read from the virtual filesystem at runtime:** Keep `--preload-file`
+  as validated in Spike 2. No change to ADR 003.
+- **Gate:** Outcome determined and documented before Stage 3 begins (add a note to
+  `docs/decisions/003-wasm-build-pipeline.md` §Build Flags with the finding).
+
 ### Stage 3: WASM Build Pipeline Redesign
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
