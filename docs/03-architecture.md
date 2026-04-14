@@ -48,12 +48,15 @@ dedx_web/
 │       ├── +layout.svelte              # Shell: nav bar, Advanced toggle, footer
 │       ├── +layout.ts                  # WASM init (load-once for all pages)
 │       ├── +page.svelte                # Redirect → /calculator
+│       ├── +error.svelte               # Top-level error boundary (unexpected JS errors)
 │       ├── calculator/
 │       │   ├── +page.svelte            # Calculator page
-│       │   └── +page.ts                # Prerender: export const prerender = true
+│       │   ├── +page.ts                # Prerender: export const prerender = true
+│       │   └── +error.svelte           # Calculator error boundary (nav bar stays visible)
 │       ├── plot/
 │       │   ├── +page.svelte            # Plot page
-│       │   └── +page.ts                # Prerender: export const prerender = true
+│       │   ├── +page.ts                # Prerender: export const prerender = true
+│       │   └── +error.svelte           # Plot error boundary (nav bar stays visible)
 │       └── docs/
 │           ├── +page.svelte            # Documentation landing
 │           ├── user-guide/
@@ -167,41 +170,64 @@ Because the site is purely static:
 
 ### Initialization lifecycle
 
+WASM init is **non-blocking**: the root layout renders immediately; WASM
+loads in the background via `$effect` in `+layout.svelte`. A blocking `load()`
+in `+layout.ts` was explicitly rejected — it would force every route, including
+the Documentation page, to wait for a multi-MB WASM download before rendering
+any content.
+
 ```
 Browser load
     │
-    ▼
-+layout.ts: load()
-    │   ← runs once for all routes (SvelteKit layout load)
+    ├─► +layout.ts: load()          ← returns {} synchronously (no WASM here)
+    │        │
+    │        ▼
+    │   SvelteKit renders all routes immediately
+    │   (entity dropdowns empty; Calculator/Plot show loading state)
     │
-    ▼
-loader.ts: getService()
-    │   ← returns cached singleton on subsequent calls
-    │
-    ├─► static/wasm/libdedx.mjs  (fetch by Emscripten factory)
-    └─► static/wasm/libdedx.wasm (fetch in parallel by browser)
-            │
-            ▼
-        Module compiled and instantiated
-            │
-            ▼
-        libdedx.ts: LibdedxServiceImpl.init()
-            │   ← calls dedx_fill_program_list(), caches entities
-            ▼
-        entities.svelte.ts: loadEntities()
-            │   ← populates programs, particles, materials, compat matrix
-            ▼
-        WASM ready — Calculator/Plot pages reactive
+    └─► +layout.svelte: $effect()   ← runs after DOM mount, browser-only
+              │
+              ▼
+         loader.ts: getService()    ← async, non-blocking
+              │
+              ├─► static/wasm/libdedx.mjs   (fetch)
+              └─► static/wasm/libdedx.wasm  (fetch in parallel)
+                        │
+                        ▼
+                  Module compiled and instantiated
+                        │
+                        ▼
+                  libdedx.ts: LibdedxServiceImpl.init()
+                        │   ← dedx_fill_program_list(), build compat matrix
+                        ▼
+                  entities populated → wasmReady.value = true
+                        │
+                        ▼
+                  Calculator/Plot become fully reactive
 ```
 
-The WASM module is initialized in the **root layout load** function, which runs
-once and is shared across all routes. This means:
+Consequences of the non-blocking model:
 
-- The Documentation page incurs the WASM load cost on first visit — acceptable
-  because it shares the same layout as Calculator and Plot.
-- Navigating between Calculator and Plot does not re-initialize WASM.
-- The loading state is held in `ui.svelte.ts` (`wasmReady: boolean`);
-  Calculator and Plot gate their rendering on this flag.
+- **Documentation page** renders immediately without any WASM cost.
+- **Calculator/Plot** render their UI shell (navigation, layout, empty dropdowns)
+  immediately, then populate once `wasmReady.value` becomes `true`.
+- **Navigating between Calculator and Plot** after first load does not
+  re-initialize WASM — `getService()` returns the cached singleton.
+- **`$effect` is inherently browser-only** — it never runs during SSG
+  prerendering, so no `browser` guard is needed in `+layout.svelte`.
+- **Error handling**: if `getService()` rejects, the `$effect` catches the
+  error and sets `wasmError.value`; `+layout.svelte` renders an inline error
+  banner rather than a full-page crash (see §Error boundaries below).
+
+The `+layout.svelte` init block:
+
+```svelte
+$effect(() => {
+  getService()
+    .then(() => { wasmReady.value = true; })
+    .catch((e) => { wasmError.value = e; });
+});
+```
 
 ### Module files
 
@@ -261,24 +287,35 @@ Implements `LibdedxService`. Key design points:
 
 ### Compatibility matrix
 
-The `CompatibilityMatrix` is built at init time by iterating all
-program/particle/material combinations and noting which (program, particle)
-pairs exist in the entity lists returned by `dedx_fill_ion_list(programId)`:
+The `CompatibilityMatrix` is built at init time by querying the WASM module
+once per program for its particle list and once per program for its material
+list, then recording which `(program, particle)` keys are valid:
 
 ```ts
 // Populated once in entities.svelte.ts after WASM init
+// WASM calls: 1× getParticles + 1× getMaterials per program = 2P total
 const compat: CompatibilityMatrix = new Map();
-for (const prog of programs) {
-  const particles = service.getParticles(prog.id);
+for (const prog of programs.value) {
+  const particles = service.getParticles(prog.id);   // one WASM call
+  const materials = service.getMaterials(prog.id);   // one WASM call — hoisted outside particle loop
   for (const p of particles) {
-    const materials = service.getMaterials(prog.id);
     compat.set(`${prog.id}:${p.id}`, materials.map(m => m.id));
   }
 }
+compatMatrix.value = compat;
 ```
 
+`getMaterials` is hoisted outside the inner particle loop — it does not vary
+per particle, only per program. Placing it inside the inner loop would make
+`P × N` WASM calls instead of `P`.
+
+**Init cost.** libdedx has ~10 programs; each `getParticles` / `getMaterials`
+call is a synchronous C function that fills a pre-allocated buffer and returns.
+Total: ~20 WASM calls at startup, each completing in < 1 ms. The matrix
+construction is negligible compared to the WASM module compilation time.
+
 This is referenced by `EntityDropdown.svelte` / `EntityPanel.svelte` for
-greying-out incompatible combinations without additional WASM calls.
+greying-out incompatible combinations without additional WASM calls per render.
 
 ---
 
@@ -289,17 +326,42 @@ These are plain TypeScript files that use Svelte 5 runes (`$state`, `$derived`).
 They are **not** Svelte components — they are shared state singletons imported
 by any component that needs them.
 
-### 4.1 `entities.svelte.ts`
+### Module-level state pattern
 
-Holds the immutable entity lists and compatibility matrix. Populated once
-during WASM init.
+Every exported state value uses the `{ value: T }` wrapper:
 
 ```ts
-// Read-only after init
-export const programs = $state<ProgramEntity[]>([]);
-export const allParticles = $state<Map<number, ParticleEntity[]>>(new Map());
-export const allMaterials = $state<Map<number, MaterialEntity[]>>(new Map());
-export const compatMatrix = $state<CompatibilityMatrix>(new Map());
+export const x = $state<{ value: T }>({ value: defaultValue });
+// consumers read:  x.value
+// setters write:   x.value = newValue   ← reactive ✓
+```
+
+**Why the wrapper is required.** Module-level `export const` cannot be
+reassigned — it is a JavaScript constant. Without the wrapper, writing
+`programs = loadedPrograms` is both a TypeScript error and silently
+non-reactive. Wrapping in an object makes `.value` a property mutation,
+which Svelte 5's proxy-based reactivity tracks correctly.
+
+**Arrays and Maps.** The same rule applies even though arrays and Maps can
+be mutated in place (`push`, `set`). In-place mutation IS reactive, but the
+pattern is inconsistent with primitives, makes bulk replacement awkward
+(`splice(0, arr.length, ...items)`), and obscures intent. Using `{ value: T }`
+uniformly means every state field is replaced the same way: `x.value = newVal`.
+
+**`$derived` at module scope.** `$derived` follows the same proxy mechanics —
+it is reactive as long as it reads from `$state`-tracked values. It does NOT
+need a wrapper because it is read-only by definition.
+
+### 4.1 `entities.svelte.ts`
+
+Holds the entity lists and compatibility matrix. Set once during WASM init,
+read-only thereafter.
+
+```ts
+export const programs = $state<{ value: ProgramEntity[] }>({ value: [] });
+export const allParticles = $state<{ value: Map<number, ParticleEntity[]> }>({ value: new Map() });
+export const allMaterials = $state<{ value: Map<number, MaterialEntity[]> }>({ value: new Map() });
+export const compatMatrix = $state<{ value: CompatibilityMatrix }>({ value: new Map() });
 ```
 
 ### 4.2 `selection.svelte.ts`
@@ -337,8 +399,38 @@ export const parsedEnergies = $derived(parseEnergyInput(energyInputText.value, e
 
 Live calculation is triggered by an `$effect` in the Calculator page that
 watches `parsedEnergies`, `resolvedProgramId`, `selectedParticleId`,
-`selectedMaterialId`, and `advancedOptions`. The effect is debounced
-(300 ms) to avoid firing on every keystroke.
+`selectedMaterialId`, and `advancedOptions`. The effect uses `setTimeout` +
+the cleanup return to implement debouncing:
+
+```ts
+$effect(() => {
+  // Read all dependencies (registers them with Svelte's tracker)
+  const energies  = parsedEnergies;
+  const programId = resolvedProgramId;
+  const particle  = selectedParticleId.value;
+  const material  = selectedMaterialId.value;
+  const options   = advancedOptions.value;
+
+  const timer = setTimeout(() => {
+    runCalculation(energies, programId, particle, material, options);
+  }, 300);
+
+  return () => clearTimeout(timer);  // cancel on next dependency change
+});
+```
+
+**Why this is correct debounce behavior.** When any dependency changes,
+Svelte runs the cleanup (`clearTimeout`) before re-running the effect. Only
+the last timer survives to fire. Multiple rapid changes — user typing, or
+`resolvedProgramId` and `parsedEnergies` both updating in separate ticks —
+each restart the 300 ms window; the WASM call runs only after a 300 ms quiet
+period. If both values change in the **same** reactive tick, Svelte batches
+them and the effect runs once with the combined new values — correct.
+
+**Why the debounce is NOT a utility function created inside the effect.** A
+`debounce()` call inside the effect creates a NEW debounced function on every
+run, discarding the previous timer state. The `setTimeout` + cleanup pattern
+above does not have this problem.
 
 ### 4.4 `ui.svelte.ts`
 
@@ -373,14 +465,31 @@ URL sync is wired in `+layout.svelte` via a `$effect`:
 
 ```svelte
 $effect(() => {
-  // On state change: push new URL without reload
+  // Read all URL-relevant state (registers reactive dependencies)
   const params = stateToUrl(currentState);
-  history.replaceState(null, '', `?${params}`);
+  const newSearch = `?${params}`;
+
+  // Guard: skip replaceState if the URL would not change.
+  // This avoids unnecessary browser history manipulation and prevents
+  // any edge case where a URL write could be mistaken for a navigation event.
+  if (newSearch !== location.search) {
+    history.replaceState(null, '', newSearch);
+  }
 });
 ```
 
+**Why there is no infinite loop.** `history.replaceState` is a browser API
+call — it does NOT mutate any Svelte reactive state, so it cannot re-trigger
+the `$effect`. The effect re-runs only when the reactive state it reads
+changes. The cycle `replaceState → popstate → state change → effect` does not
+occur because (a) `replaceState` does not fire a `popstate` event (only
+`pushState` + the browser back button do), and (b) URL hydration runs once in
+`+layout.ts` before the effect is wired, so the effect's first run sees already-
+hydrated state and writes a canonical URL that is at most a normalization of
+the incoming URL (e.g., canonicalizing parameter order).
+
 On page load, `urlToState` is called once in `+layout.ts` to hydrate state
-from the URL.
+from the URL before any component mounts.
 
 ---
 
@@ -642,9 +751,27 @@ without aborting the other programs.
 
 ### WASM module load failure
 
-Caught in `+layout.ts` load function and stored in `ui.svelte.ts`
-`wasmError`. The layout renders a full-page error message with instructions
-to reload or check browser compatibility.
+Caught in the `$effect` in `+layout.svelte` (not `+layout.ts load()` — see
+§3 Initialization lifecycle) and stored in `wasmError.value`. The layout
+renders an inline error banner with instructions to reload or check browser
+compatibility. The Documentation page remains fully functional; Calculator and
+Plot display the banner in place of their interactive content.
+
+### Component rendering errors (Svelte error boundaries)
+
+When a Svelte component throws during rendering, SvelteKit catches the error
+and renders the nearest `+error.svelte` file. The error boundary hierarchy:
+
+| File | Catches |
+|------|---------|
+| `src/routes/+error.svelte` | Top-level unhandled errors — displays a generic "something went wrong" page with a reload button |
+| `src/routes/calculator/+error.svelte` | Calculator-specific errors — allows the nav bar to remain visible |
+| `src/routes/plot/+error.svelte` | Plot-specific errors — allows the nav bar to remain visible |
+
+WASM errors and input validation errors are handled in-component (see above)
+and do NOT reach the `+error.svelte` boundary. The boundary only fires for
+unexpected JavaScript exceptions (bugs, null dereferences, type errors) that
+escape component `try/catch` blocks.
 
 ### Input validation errors
 
