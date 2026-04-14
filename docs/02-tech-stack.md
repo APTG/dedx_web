@@ -110,7 +110,7 @@ Utility-first CSS. Chosen because:
 - Dark-mode support via `dark:` variant (not required for v1, but the
   design must not preclude it — hardcoded colors are forbidden).
 - Responsive utilities (`sm:`, `md:`, `lg:`) map cleanly to the three
-  breakpoints specified in `docs/09-non-functional-requirements.md`.
+  breakpoints specified in [`09-non-functional-requirements.md`](09-non-functional-requirements.md).
 - No design-system lock-in; webdedx uses a custom scientific-minimal visual
   identity.
 
@@ -140,7 +140,7 @@ const JSROOT = await import('jsroot');
 
 JSROOT is not Svelte-aware; a dedicated `JsrootPlot.svelte` wrapper component
 owns the container `<div>` and manages the JSROOT lifecycle through `$effect`.
-See `docs/03-architecture.md` §4.
+See [`03-architecture.md` §4](03-architecture.md#4-reactive-state-topology).
 
 ---
 
@@ -153,7 +153,7 @@ See `docs/03-architecture.md` §4.
 | Package | `jspdf` |
 | Pin | `^2.x` |
 
-Used for Calculator and Plot PDF export (see `docs/04-feature-specs/export.md`).
+Used for Calculator and Plot PDF export (see [`04-feature-specs/export.md`](04-feature-specs/export.md)).
 `jsPDF` produces PDF programmatically from JS — no server, no headless browser.
 The PDF content (metadata block, table, chart SVG embedded as image) is
 assembled in a utility module (`src/lib/export/pdf.ts`).
@@ -170,7 +170,7 @@ assembled in a utility module (`src/lib/export/pdf.ts`).
 | Pin | `^1.x` |
 
 Pure-JS Apache Parquet reader for the `.webdedx.parquet` external data format
-(see `docs/04-feature-specs/external-data.md`). Supports HTTP Range Request
+(see [`04-feature-specs/external-data.md`](04-feature-specs/external-data.md)). Supports HTTP Range Request
 partial reads — only the requested row group (one table per particle-material
 pair) is downloaded.
 
@@ -198,12 +198,12 @@ via `wasm/build.sh`. CI installs Emscripten from the
 [emsdk](https://github.com/emscripten-core/emsdk) Docker image.
 
 The exact Emscripten version is pinned in `wasm/build.sh` and in the GitHub
-Actions workflow (`docs/08-deployment.md`). Emscripten 5.x dropped several
+Actions workflow (`08-deployment.md` — planned). Emscripten 5.x dropped several
 legacy flags (`LEGACY_RUNTIME`, old `FS` API paths) and tightened the ES module
 output — the `build.sh` flags are written against 5.x. Breaking changes in
 Emscripten's JS glue code require a wrapper update.
 
-**Changelog notes relevant to this project** (from `docs/resources/emscripten-changelog.md`):
+**Changelog notes relevant to this project** (from [`resources/emscripten-changelog.md`](resources/emscripten-changelog.md)):
 
 | Version | Change | Impact |
 |---------|--------|--------|
@@ -259,7 +259,7 @@ queries).
 | Pin | `^1.x` |
 
 End-to-end tests against a built static site served locally. Tests the real
-WASM module — no mocks. See `docs/07-testing-strategy.md` for the test plan.
+WASM module — no mocks. See `07-testing-strategy.md` (planned) for the test plan.
 
 ---
 
@@ -345,7 +345,7 @@ All CI runs in GitHub-hosted runners. The pipeline (Stage 8) will execute:
 7. `npm run build` — SvelteKit static build
 8. Deploy `build/` to GitHub Pages
 
-See `docs/08-deployment.md` for the full workflow YAML.
+See `08-deployment.md` (planned) for the full workflow YAML.
 
 ---
 

@@ -149,7 +149,7 @@ The layout (`+layout.svelte`) renders the persistent navigation bar:
 ```
 
 The `Basic · Advanced` toggle is an app-wide control (see
-`docs/01-project-vision.md §4.4`). It lives in `src/lib/state/ui.svelte.ts`
+[`01-project-vision.md` §4.4](01-project-vision.md)). It lives in `src/lib/state/ui.svelte.ts`
 and is persisted to `localStorage` and the URL (`mode=advanced`).
 
 ### Static adapter constraints
@@ -233,7 +233,7 @@ $effect(() => {
 
 #### `src/lib/wasm/types.ts`
 
-Re-exports all types from `docs/06-wasm-api-contract.md`:
+Re-exports all types from [`06-wasm-api-contract.md`](06-wasm-api-contract.md):
 
 ```ts
 export type { EnergyUnit, StpUnit, RangeUnit } from './contract';
@@ -306,7 +306,7 @@ user input so WASM is never called on every keystroke.
 
 For the current workload the main-thread blocking is within the 300 ms
 threshold at which jank becomes perceptible, and within the 500 ms target for
-plot re-render (see `docs/09-non-functional-requirements.md §3`). **Web Worker
+plot re-render (see [`09-non-functional-requirements.md` §3](09-non-functional-requirements.md#3-performance)). **Web Worker
 offloading is deferred to a future stage.**
 
 **Migration path (deferred).** When a Web Worker becomes necessary:
@@ -504,7 +504,7 @@ export function urlToState(params: URLSearchParams): Partial<AppState>;
 ```
 
 The URL ↔ state round-trip follows the canonical ordering and versioning rules
-specified in `docs/04-feature-specs/shareable-urls-formal.md`. The `urlv=1`
+specified in [`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md). The `urlv=1`
 sentinel is always included when emitting a shareable URL.
 
 URL sync is wired in `+layout.svelte` via a `$effect`:
@@ -614,7 +614,7 @@ use explicit types.
 JSROOT's default wheel handler calls `evnt.preventDefault()` unconditionally,
 which consumes scroll events and zooms the plot axes when the user intends to
 scroll the page. Per
-[`docs/04-feature-specs/plot.md` §Disabled Interactions](../docs/04-feature-specs/plot.md),
+[`04-feature-specs/plot.md` §Disabled Interactions](04-feature-specs/plot.md),
 wheel zoom and touch zoom must be disabled.
 
 `jsroot-helpers.ts` sets the relevant JSROOT settings **before** calling
@@ -721,7 +721,7 @@ Custom compounds require the stateful `dedx_config` WASM API path. The flow:
 
 1. User defines a compound in the `CustomCompoundEditor.svelte` modal.
 2. The compound is stored in `localStorage` as a `StoredCompound`
-   (with UUID, phase, timestamp — see `docs/04-feature-specs/custom-compounds.md`).
+   (with UUID, phase, timestamp — see [`04-feature-specs/custom-compounds.md`](04-feature-specs/custom-compounds.md)).
 3. When selected as the active material, `selectedMaterialId` is set to the
    special sentinel `CUSTOM_MATERIAL_ID = -1`.
 4. `calculation.svelte.ts` detects `selectedMaterialId === CUSTOM_MATERIAL_ID`
@@ -735,7 +735,7 @@ Custom compounds require the stateful `dedx_config` WASM API path. The flow:
 ## 9. URL State Synchronization
 
 URL sync follows the canonical 10-step algorithm in
-`docs/04-feature-specs/shareable-urls-formal.md`. Key points:
+[`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md). Key points:
 
 - **Read on load**: `urlToState()` runs once in `+layout.ts` before any
   component mounts. State is hydrated before the first render.
@@ -746,7 +746,7 @@ URL sync follows the canonical 10-step algorithm in
   contains all state — no additional serialization is needed.
 - **`urlv=1` sentinel**: Always included in the emitted URL. If a future
   breaking change increments `urlv`, the parser in `urlToState()` issues a
-  warning banner per `docs/04-feature-specs/shareable-urls.md §3.1`.
+  warning banner per [`04-feature-specs/shareable-urls.md` §3.1](04-feature-specs/shareable-urls.md).
 
 ---
 
@@ -835,7 +835,7 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 
 | Area | Strategy |
 |------|----------|
-| WASM binary size | `libdedx.wasm` ~1–3 MB + `libdedx.data` ~2–4 MB — served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See `docs/09-non-functional-requirements.md §3.1`. |
+| WASM binary size | `libdedx.wasm` ~1–3 MB + `libdedx.data` ~2–4 MB — served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See [`09-non-functional-requirements.md` §3.1](09-non-functional-requirements.md#31-browser-caching). |
 | JSROOT bundle | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`). |
 | Main-thread computation | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy). |
 | Calculation debounce | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke. |
@@ -859,7 +859,7 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 - Focus management: `EntityDropdown.svelte` uses `combobox` role with
   `aria-expanded` and `aria-activedescendant` for typeahead accessibility.
 
-See `docs/09-non-functional-requirements.md` for the full WCAG 2.1 AA checklist.
+See [`09-non-functional-requirements.md`](09-non-functional-requirements.md) for the full WCAG 2.1 AA checklist.
 
 ---
 

@@ -126,7 +126,7 @@ JSROOT is loaded as an ES module import; version-pinned in `package.json`.
   is imported. Mitigated by loading JSROOT lazily (only on the Plot page).
 - **Styling constraints.** JSROOT's visual style is ROOT-derived; customizing
   fonts, line widths, and color palettes requires JSROOT-specific APIs, not
-  CSS. The implementation spec (`docs/04-feature-specs/plot.md`) is explicit
+  CSS. The implementation spec ([`04-feature-specs/plot.md`](../04-feature-specs/plot.md)) is explicit
   about required style parameters to avoid ambiguity when implementing.
 - **Accessibility — accepted conformance gap.** JSROOT renders to SVG without
   semantic ARIA structure; interactive elements (zoom handles, hover tooltips,

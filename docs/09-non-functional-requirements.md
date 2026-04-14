@@ -211,7 +211,7 @@ Requirements:
 | Requirement | Detail |
 |-------------|--------|
 | No server-side state | App is purely client-side (SvelteKit static adapter → GitHub Pages); no auth, no sessions, no server APIs |
-| URL safety | Shareable URLs carry no executable payloads; all parameters are validated before use (see `shareable-urls.md` §2) |
+| URL safety | Shareable URLs carry no executable payloads; all parameters are validated before use (see [`04-feature-specs/shareable-urls.md` §2](04-feature-specs/shareable-urls.md)) |
 | External data URLs | `extdata` URL parameter values are fetched client-side via `fetch()`; CORS must be set by the data provider; the app validates Parquet format and physics bounds before rendering |
 | CSP | Because the production build is deployed to GitHub Pages/static hosting, CSP must be enforced via `<meta http-equiv="Content-Security-Policy">` in the app HTML template (or by an external hosting layer if one is added later), restricting script sources to `'self'` and the approved CDN origins for JSROOT/jsPDF |
 | No sensitive data | No user PII is collected, stored, or transmitted; `navigator.userAgent` appears only in user-triggered PDF exports |

@@ -130,7 +130,7 @@ is correct for all Emscripten 5.x releases.
 that runs in both page and Worker contexts is `-sENVIRONMENT=web,worker`.
 The current build uses `-sENVIRONMENT=web`, which is correct for the
 main-thread-only model. If Web Worker offloading is added in a future stage
-(see `docs/03-architecture.md §3`), the flag must change to `web,worker`.
+(see [`03-architecture.md` §3](../03-architecture.md#3-wasm-service-layer)), the flag must change to `web,worker`.
 
 **Minimum Node.js for generated code bumped to v18.3.0 (5.0.6, in development).**
 Emscripten 5.0.6 raises the minimum Node.js version that can execute the

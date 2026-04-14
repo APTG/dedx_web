@@ -499,12 +499,12 @@ The CI phase catches regressions before merge; CD publishes the rebuilt static
 site automatically within minutes of a merge.
 
 **Type/file:** `.github/workflows/` (GitHub Actions YAML);
-`docs/08-deployment.md` (full workflow specification)
+`08-deployment.md` (planned — full workflow specification)
 
 → see also: [SSG](#ssg)
 
 Used in: [`02-tech-stack.md`](02-tech-stack.md) §11,
-[`08-deployment.md`](08-deployment.md)
+`08-deployment.md` (planned)
 
 ---
 
