@@ -1,13 +1,24 @@
 # Feature: Custom Compounds
 
-> **Status:** Draft v1 (13 April 2026)
+> **Status:** Final v1 (14 April 2026)
 >
 > **v1** (13 April 2026): Initial draft — compound library (localStorage),
 > compound editor (formula mode + weight-fraction mode), entity-selection
 > integration, WASM `calculateCustomCompound()` wiring, Advanced Options
 > interaction rules, URL encoding contract (`material=custom` + `mat_*`
 > params, step 9 in canonicalization), round-trip URL guarantee, export
-> metadata, validation rules, and acceptance checklist.
+> metadata, validation rules, and acceptance checklist. Revised same day:
+> PMMA user story (density 1.20 g/cm³); LiF pellets user story (5 MeV
+> alpha, pellet vs bulk density); Bragg additivity program filter (greyed
+> out + tooltip); URL params renamed `ccomp_*` → `mat_*`; inverse lookup
+> methods via `dedx_extra.{h,c}` C wrappers; PDF composition table
+> (Element, Z, Atom count, Weight %); `shareable-urls-formal.md` updated
+> to v6; `06-wasm-api-contract.md` updated with 4 new service methods.
+>
+> **Finalized** (14 April 2026): Consistency pass — PDF MATERIAL row
+> format aligned to `export.md` convention (`ρ =` separator). Promoted
+> Draft v1 → Final v1. All design questions resolved; one Stage 3
+> implementation note retained (MSTAR runtime verification).
 >
 > **Related specs:**
 > - WASM API contract (`CustomCompound` type, `calculateCustomCompound()`):
@@ -680,11 +691,11 @@ The `MATERIAL` row shows the compound name, "(custom)" marker, density,
 and phase (phase shown only when gas):
 
 ```
-MATERIAL:   PMMA (custom) — 1.19 g/cm³
+MATERIAL  PMMA (custom)  ρ = 1.19 g/cm³
 ```
 
 ```
-MATERIAL:   Custom Water (custom, gas) — 8.99e-5 g/cm³
+MATERIAL  Custom Water (custom, gas)  ρ = 8.99e-5 g/cm³
 ```
 
 Immediately below the `MATERIAL` row, in the metadata block, an
