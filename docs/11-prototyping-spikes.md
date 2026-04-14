@@ -319,7 +319,7 @@ cd prototypes/wasm-preload
 docker run --rm -v "$(pwd)/../../libdedx:/src/libdedx" \
   -v "$(pwd):/src/output" \
   -w /src/libdedx \
-  emscripten/emsdk:3.1.64 \
+  emscripten/emsdk:5.0.5 \
   bash -c '
     emcmake cmake . -B build-wasm
     cmake --build build-wasm
@@ -330,7 +330,7 @@ docker run --rm -v "$(pwd)/../../libdedx:/src/libdedx" \
 docker run --rm -v "$(pwd)/../../libdedx:/src/libdedx" \
   -v "$(pwd):/src/output" \
   -w /src/output \
-  emscripten/emsdk:3.1.64 \
+  emscripten/emsdk:5.0.5 \
   bash -c '
     mkdir -p preload embed
     emcc libdedx.a \

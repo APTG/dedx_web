@@ -756,7 +756,7 @@ URL sync follows the canonical 10-step algorithm in
 | Constraint | Implication |
 |-----------|-------------|
 | All routes are pre-rendered | No `load()` functions may call a network API. Data comes from WASM only. |
-| WASM not available at build time | The `+page.ts` `load()` functions must not call `getService()`. WASM init happens client-side in `+layout.ts` `load()` with `browser` guard. |
+| WASM not available at build time | `+page.ts` and `+layout.ts` `load()` functions must not call `getService()`. `+layout.ts` should return `{}` during prerender; WASM init happens client-side in `+layout.svelte` via a non-blocking `$effect`. |
 | `export const prerender = true` | Every route file must set this. If omitted, the static adapter will not output an `index.html` for that route. |
 | No `fetch()` to same-origin API routes | GitHub Pages has no server. Do not rely on SvelteKit's server fetch hook. |
 | `localStorage` access | Only safe inside `$effect` or event handlers — not in `+page.ts` load functions that run during SSG prerender. |

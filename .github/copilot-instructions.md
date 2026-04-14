@@ -25,6 +25,8 @@
 - Architecture: `docs/03-architecture.md`
 
 ## Build Commands
+> These commands apply to the **new SvelteKit project** (scaffolded in Stage 4).
+> The legacy CRA app in the current `src/` uses npm; it is being replaced.
 - `pnpm dev` — start dev server
 - `pnpm build` — production build (static adapter for GitHub Pages)
 - `pnpm test` — Vitest unit/integration tests

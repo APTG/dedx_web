@@ -126,7 +126,7 @@ Tailwind is configured in `tailwind.config.js`. The content glob covers
 | Item | Value |
 |------|-------|
 | Package | `jsroot` |
-| Pin | `^7.x` |
+| Pin | `~7.x.y` (pin to a validated minor/patch release; avoid `^7.x`) |
 | ADR | [ADR 002](decisions/002-keep-jsroot.md) |
 
 The physics-community standard for ROOT-style interactive plots. Loaded
@@ -350,6 +350,10 @@ See `08-deployment.md` (planned) for the full workflow YAML.
 ---
 
 ## 12. Package Manager
+
+> **Note:** The legacy CRA application in the current `src/` tree uses npm
+> (`package-lock.json`). The new SvelteKit application (scaffolded in Stage 4)
+> replaces it entirely and uses **pnpm** from day one.
 
 ### pnpm
 
