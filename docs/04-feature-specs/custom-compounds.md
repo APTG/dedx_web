@@ -508,7 +508,7 @@ getBraggPeakStpCustomCompound(params: {
 > together with libdedx. `getPlotDataCustomCompound()` is a pure JS wrapper
 > over repeated `calculateCustomCompound()` calls — no C changes needed.
 
-### 5.4 Default display unit
+### 5.6 Default display unit
 
 The custom compound's `phase` field drives the default stopping-power
 display unit, exactly as the built-in `isGasByDefault` flag does:
@@ -534,8 +534,7 @@ The grammar fragments below extend
 alongside this spec).
 
 > **Prefix choice:** `mat_` (material). Short, readable, and unambiguous
-> in context because `material=custom` acts as the gate. **(Provisional —
-> confirm with Q1 above.)**
+> in context because `material=custom` acts as the gate.
 
 ```abnf
 ; material-pair extended to accept "custom" sentinel
@@ -630,36 +629,32 @@ When a URL contains `material=custom` with all required `mat_*` params:
 ## 7. localStorage Schema
 
 ```json
-{
-  "customCompounds": [
-    {
-      "id": "550e8400-e29b-41d4-a716-446655440000",
-      "name": "PMMA",
-      "elements": [
-        { "atomicNumber": 1, "atomCount": 8 },
-        { "atomicNumber": 6, "atomCount": 5 },
-        { "atomicNumber": 8, "atomCount": 2 }
-      ],
-      "density": 1.19,
-      "iValue": null,
-      "phase": "condensed",
-      "createdAt": "2026-04-13T10:00:00Z"
-    },
-    {
-      "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-      "name": "Borated PE",
-      "elements": [
-        { "atomicNumber": 1, "atomCount": 2.0 },
-        { "atomicNumber": 5, "atomCount": 0.0435 },
-        { "atomicNumber": 6, "atomCount": 1.0 }
-      ],
-      "density": 0.95,
-      "iValue": null,
-      "phase": "condensed",
-      "createdAt": "2026-04-13T11:30:00Z"
-    }
-  ]
-}
+[
+  {
+    "id": "550e8400-e29b-41d4-a716-446655440000",
+    "name": "PMMA",
+    "elements": [
+      { "atomicNumber": 1, "atomCount": 8 },
+      { "atomicNumber": 6, "atomCount": 5 },
+      { "atomicNumber": 8, "atomCount": 2 }
+    ],
+    "density": 1.19,
+    "phase": "condensed",
+    "createdAt": "2026-04-13T10:00:00Z"
+  },
+  {
+    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+    "name": "Borated PE",
+    "elements": [
+      { "atomicNumber": 1, "atomCount": 2.0 },
+      { "atomicNumber": 5, "atomCount": 0.0435 },
+      { "atomicNumber": 6, "atomCount": 1.0 }
+    ],
+    "density": 0.95,
+    "phase": "condensed",
+    "createdAt": "2026-04-13T11:30:00Z"
+  }
+]
 ```
 
 Elements are stored in ascending Z order. Fractional atom counts (from
@@ -758,7 +753,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 ### AC-1: Visibility gating
 - [ ] "Custom Compounds" group is absent from the DOM in Basic mode
 - [ ] "+ Add compound" button is absent from the DOM in Basic mode
-- [ ] Switching Basic → Advanced mode does not restore the custom compound group if Advanced mode had never been activated
+- [ ] Switching Basic → Advanced mode renders/restores the custom compound group, even if Advanced mode had not previously been activated
 - [ ] Switching Advanced → Basic mode when a custom compound is active reverts the active material to liquid water and clears `material=custom` from the URL
 
 ### AC-2: Compound editor — create

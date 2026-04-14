@@ -38,7 +38,7 @@
 > `mat_density`, `mat_elements`, `mat_ival`, `mat_phase`) to ABNF grammar (§2),
 > `material-pair` extended to accept `"custom"` sentinel, semantic rules §3.5
 > and §3.8 (custom compound enablement and validation), canonicalization §4
-> (step 9), and conformance vectors §5 (vectors 18–20). Sourced from
+> (step 9), and conformance vectors §5 (vectors 18–21). Sourced from
 > `custom-compounds.md`.
 >
 > **Normative relationship:**
@@ -649,12 +649,11 @@ Normalization rules:
 - Canonical: same (all params in canonical order; `mat_phase` omitted because condensed is default; `mat_ival` omitted because absent).
 - Note: elements in ascending Z (H=1, C=6, O=8) ✓.
 
-19. Custom compound — LiF pellets, gas phase, with iValue:
+19. Custom compound — LiF pellets, condensed (explicitly specified), with iValue:
 - Input: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94.0&mat_phase=condensed`
-- Canonical: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94&mat_phase=condensed`
-- Note: `mat_phase=condensed` is the default but here the input explicitly included it — still omitted in canonical output (condensed is default). Wait — re-read §4 step 9e: `mat_phase` is omitted when `"condensed"`. Canonical therefore drops it.
-- Corrected canonical: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94`
-- Note: elements in ascending Z (Li=3, F=9) ✓; `mat_phase` omitted (condensed default); `mat_ival=94` (ECMAScript drops trailing .0).
+- Canonical: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94`
+- Note: `mat_phase=condensed` was explicitly provided in input, but canonicalization omits it because condensed is the default phase (§4 step 9e).
+- Note: elements in ascending Z (Li=3, F=9) ✓; `mat_ival=94` (ECMAScript drops trailing .0).
 
 20. Custom compound — `mat_*` params in basic mode — silently dropped:
 - Input: `urlv=1&particle=1&material=custom&program=auto&energies=100&eunit=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`

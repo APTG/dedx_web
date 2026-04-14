@@ -49,13 +49,15 @@ Write the feature specification for user-defined custom compound materials
 The existing `material-pair` in the ABNF grammar uses a numeric material ID.
 Custom compounds have no stable numeric ID (they are user-defined). The
 approach taken: extend `material-pair` to accept the sentinel value `"custom"`,
-then emit separate `ccomp_name`, `ccomp_density`, `ccomp_elements`,
-`ccomp_ival` (optional), and `ccomp_phase` (optional, omit-when-condensed)
+then emit separate `mat_name`, `mat_density`, `mat_elements`,
+`mat_ival` (optional), and `mat_phase` (optional, omit-when-condensed)
 parameters at a new **step 9** in the canonicalization algorithm.
 
 This keeps the material parameter as the single dispatch point and avoids
 encoding compound data into a single opaque value. The `shareable-urls-formal.md`
-ABNF update to v6 is deferred until this spec is finalized.
+ABNF was updated to **v6** in this same session (material-pair extended,
+mat_* ABNF rules, §3.8 semantic constraints, step 9 canonicalization,
+conformance vectors 18–21).
 
 ### Round-trip guarantee without auto-save
 
@@ -84,11 +86,17 @@ compound is active.
 
 ### Compatibility filtering
 
-Custom compounds are shown as selectable for all programs — no pre-filtering
-is applied. If a program does not support the stateful `dedx_config` path
-at runtime, the resulting `LibdedxError` is displayed inline using the
-standard error handling rules. This is consistent with how external data
-sources are handled.
+**Note (superseded by later revision):** this session originally recorded a
+runtime-only fallback design in which custom compounds were shown as selectable
+for all programs with no pre-filtering, and any unsupported stateful
+`dedx_config` path surfaced a `LibdedxError` inline using the standard error
+handling rules.
+
+**Current design:** the spec was revised to apply a Bragg-additivity
+compatibility filter in the UI, so incompatible programs are **greyed out**
+with a tooltip listing missing Z values rather than presented as fully
+selectable. Runtime error handling still remains the fallback for unexpected
+failures or unsupported cases not caught by that filter.
 
 ---
 
@@ -103,11 +111,15 @@ sources are handled.
    `elements_id` / `elements_atoms` is unverified at spec time. Runtime error
    handling covers the failure case gracefully.
 
-3. **Inverse lookups + custom compound** — `getInverseStp()` and
-   `getInverseCsda()` take a numeric `materialId`, not a `CustomCompound`.
-   Custom compound support for the inverse tabs is deferred. The spec
-   documents that the inverse tabs show "Not available for custom compounds"
-   when a custom compound is active.
+3. **Inverse lookups + custom compound** — At the time of this draft,
+   `getInverseStp()` and `getInverseCsda()` only accepted a numeric
+   `materialId`, not a `CustomCompound`, so inverse-tab support was noted as
+   deferred in the draft spec. **Note:** this log entry is now historical
+   only; the current WASM contract/spec has since added custom-compound
+   inverse methods (`getInverseStpCustomCompound()`,
+   `getInverseCsdaCustomCompound()`, `getBraggPeakStpCustomCompound()`), so
+   the "Not available for custom compounds" note is no longer the current
+   contract position.
 
 ---
 
