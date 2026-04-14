@@ -19,12 +19,12 @@ redesigned for the new stack.
 | Embedded data | `--embed-file` bakes the libdedx data tables into the JS file as base64; inflates the JS bundle and prevents browser caching of the WASM binary separately |
 | No TypeScript | The wrapper is plain JS (`WASMWrapper.js`); no types, no IDE support, no `tsc` validation |
 | Copy-based deployment | Built files are manually copied to `src/Backend/` and `public/`; no integration with the Vite build graph |
-| Missing functions | Does not export `dedx_get_density()`, `dedx_get_ion_nucleon_number()`, `dedx_get_ion_atom_mass()`, `dedx_get_program_version()`, or any inverse / custom compound functions required by the new API contract (`docs/06-wasm-api-contract.md`) |
+| Missing functions | Does not export `dedx_get_density()`, `dedx_get_ion_nucleon_number()`, `dedx_get_ion_atom_mass()`, `dedx_get_program_version()`, or any inverse / custom compound functions required by the new API contract ([`docs/06-wasm-api-contract.md`](../06-wasm-api-contract.md)) |
 | Modifies libdedx submodule would be required | To expose internal data (nucleon number, density, etc.) the legacy approach would require patching `libdedx/` — which is a tracked submodule and should not be modified |
 
 ### New requirements
 
-From `docs/06-wasm-api-contract.md`:
+From [`docs/06-wasm-api-contract.md`](../06-wasm-api-contract.md):
 
 1. **ES module output** — SvelteKit imports the WASM wrapper as a standard ES
    module; Vite optimizes and bundles it. Requires `EXPORT_ES6=1 MODULARIZE=1`.
@@ -110,7 +110,7 @@ Key flag decisions:
 | `WASM=1` | on | Produce separate `.wasm` binary (not asm.js) |
 | `ALLOW_MEMORY_GROWTH=1` | on | libdedx allocates variable-length arrays; static heap too small for large energy tables |
 | `ENVIRONMENT='web'` | web | Strips Node.js I/O shims; reduces bundle size |
-| `--preload-file` | data | Bundles the libdedx data directory into a virtual filesystem accessible to C code; uses `preload` (binary) rather than the legacy `embed` (base64 text) for correct memory layout |
+| `--preload-file` | data | Bundles the libdedx data directory into a virtual filesystem accessible to C code; uses `preload` (binary) rather than the legacy `embed` (base64 text) for correct memory layout. The legacy `build_wasm.sh` used `--embed-file` due to unresolved fetch errors with `--preload-file` in local development; this is resolved here by the `locateFile` override in `loader.ts` (see §TypeScript wrapper structure) which ensures the `.data` file is fetched from the correct same-origin path in both dev and production. |
 | `-o *.mjs` | `.mjs` extension | Signals ES module to Node.js and bundlers; Vite treats it correctly |
 
 ### `dedx_extra` rationale
@@ -178,24 +178,57 @@ no network or WASM load occurs in unit tests.
   artifact separate from the `.wasm` binary. If libdedx data tables change,
   both the `.wasm` and `.data` files must be rebuilt and re-deployed. This is
   expected behavior for a data-heavy C library.
+
+  The legacy `build_wasm.sh` used `--embed-file` to avoid fetch failures
+  encountered during local development (attributed to CORS or path issues in
+  the comment at [`build_wasm.sh` line 36](../../build_wasm.sh)). The new
+  build uses `--preload-file` and resolves the fetch path via `locateFile` in
+  `loader.ts`: both `libdedx.wasm` and `libdedx.data` are placed in
+  `static/wasm/` and served from the same origin as the app (GitHub Pages or
+  `localhost:5173` in dev), so no CORS policy applies. The `locateFile`
+  callback returns `${base}/wasm/${f}`, ensuring the correct path under both
+  root and sub-path deployments.
 - **`dedx_extra` internal coupling** means `dedx_extra.c` will break if
   libdedx's internal struct layout changes. Mitigated by the test suite:
   `loader.ts` integration tests verify entity lists and density values against
   known fixtures on each build.
+- **WASM binary size budget.** The build must stay within: `libdedx.wasm`
+  ≤ 3 MB, `libdedx.data` ≤ 5 MB. These ceilings are consistent with the TTI
+  ≤ 3.5 s target on 3G Fast (see
+  [`docs/09-non-functional-requirements.md` §3](../09-non-functional-requirements.md#3-performance)).
+  CI should report artifact sizes after each WASM build; adding exported
+  functions or debug symbols that push past these thresholds requires explicit
+  sign-off against the performance budget.
+- **Exported function list drift.** The `EXPORTED_FUNCTIONS` list in
+  `wasm/build.sh` and the `LibdedxService` interface in `src/lib/wasm/libdedx.ts`
+  must stay in sync. A mismatch causes a silent `undefined` at the call site
+  or a link-time error. The integration test (calls every public service method
+  on startup) catches runtime failures but not link-time omissions — a missing
+  underscore-prefixed symbol is not detected until the first call. Stronger
+  mitigation: `wasm/build.sh` should be generated or validated by a script that
+  reads the exported method names from `libdedx.ts` and cross-checks them
+  against the C headers. Until that script exists, every change to
+  `LibdedxService` must be accompanied by a manual update to the
+  `EXPORTED_FUNCTIONS` list and a WASM rebuild before merging.
+- **`locateFile` and URL-encoded base paths.** `loader.ts` constructs the
+  `.wasm` and `.data` paths as `` `${base}/wasm/${f}` `` where `base` comes
+  from `$app/paths`. GitHub Pages repository names are restricted to
+  alphanumeric characters and hyphens (e.g. `dedx_web`) — URL-safe by
+  construction. If the deployment base path ever includes characters that need
+  percent-encoding (spaces, `#`, `?`), the template-literal concatenation will
+  produce an invalid URL. This is an unlikely edge case for the current
+  deployment target but should be noted if the app is ever hosted under a
+  non-standard path.
 - **`ALLOW_MEMORY_GROWTH=1`** can cause performance hiccups on first growth.
   Acceptable for a calculator app where response latency is dominated by
   user think-time, not computation.
-- **Build script maintenance.** The exported function list in `build.sh` must
-  be kept in sync with `libdedx.ts`. A mismatch causes a runtime error on
-  first use. Mitigated by the integration test that calls every public service
-  method at startup.
 
 ---
 
 ## References
 
-- `docs/06-wasm-api-contract.md` — full TypeScript types and service interface
-- `build_wasm.sh` — legacy build script (reference; will be replaced in Stage 3)
-- `src/Backend/WASMWrapper.js` — legacy wrapper (reference; will be replaced)
-- `docs/03-architecture.md` §3 — WASM service layer design
-- `docs/02-tech-stack.md` — Emscripten version pin
+- [`docs/06-wasm-api-contract.md`](../06-wasm-api-contract.md) — full TypeScript types and service interface
+- [`build_wasm.sh`](../../build_wasm.sh) — legacy build script (reference; will be replaced in Stage 3)
+- [`src/Backend/WASMWrapper.js`](../../src/Backend/WASMWrapper.js) — legacy wrapper (reference; will be replaced)
+- [`docs/03-architecture.md` §3](../03-architecture.md#3-wasm-service-layer) — WASM service layer design
+- [`docs/02-tech-stack.md` §7](../02-tech-stack.md#7-webassembly-toolchain) — Emscripten version pin

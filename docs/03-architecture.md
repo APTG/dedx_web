@@ -449,6 +449,44 @@ pure async function in `src/lib/components/jsroot-helpers.ts` that constructs
 runs after the DOM is mounted and handles both the initial draw and subsequent
 re-draws when `series` changes.
 
+`painter` is typed `any` — a deliberate compromise. JSROOT ships TypeScript
+declarations for its public draw API but not for internal frame-painter methods.
+The type boundary is contained to `jsroot-helpers.ts`; all exported functions
+use explicit types.
+
+### Scroll and touch behavior
+
+JSROOT's default wheel handler calls `evnt.preventDefault()` unconditionally,
+which consumes scroll events and zooms the plot axes when the user intends to
+scroll the page. Per
+[`docs/04-feature-specs/plot.md` §Disabled Interactions](../docs/04-feature-specs/plot.md),
+wheel zoom and touch zoom must be disabled.
+
+`jsroot-helpers.ts` sets the relevant JSROOT settings **before** calling
+`JSROOT.draw()`:
+
+```ts
+import JSROOT from 'jsroot';
+
+export async function drawPlot(container: HTMLDivElement, series: Series[]): Promise<unknown> {
+  // Disable wheel zoom: plain scroll must scroll the page, not zoom the plot.
+  // See docs/decisions/002-keep-jsroot.md — Disabled Interactions.
+  JSROOT.settings.ZoomWheel = false;
+
+  // Disable touch zoom on coarse-pointer devices so swipe scrolls the page.
+  if (window.matchMedia('(pointer: coarse)').matches) {
+    JSROOT.settings.ZoomTouch = false;
+  }
+
+  // ... build TMultiGraph, call JSROOT.draw() ...
+}
+```
+
+`JSROOT.settings` is a global object; these flags are set once before the
+first draw and do not need to be reset per-render. Click-drag zoom (controlled
+by `settings.ZoomMouse`, which remains `true`) is the intended zoom interaction
+on desktop.
+
 ---
 
 ## 6. Data Flow: Calculator Page
