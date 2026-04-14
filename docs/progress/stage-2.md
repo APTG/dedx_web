@@ -50,11 +50,11 @@ high-risk architecture assumptions. See
 [`docs/11-prototyping-spikes.md`](../11-prototyping-spikes.md) for full
 specifications.
 
-| Spike | Validates | Architecture section |
-|-------|-----------|---------------------|
-| JSROOT 7 + Svelte 5 `$effect` | Plot page DOM ownership, cleanup, re-draw | [03-architecture.md §5](../03-architecture.md#5-component-tree) |
-| WASM `--preload-file` on static hosting | Build pipeline + sub-path deployment | [ADR 003](../decisions/003-wasm-build-pipeline.md) |
-| Module-level `$state` reactivity | Shared state topology across components | [03-architecture.md §4](../03-architecture.md#4-reactive-state-topology) |
+| Spike | Validates | Architecture section | Status |
+|-------|-----------|---------------------|--------|
+| JSROOT 7 + Svelte 5 `$effect` | Plot page DOM ownership, cleanup, re-draw | [03-architecture.md §5](../03-architecture.md#5-component-tree) | ✅ PASS ([log](../ai-logs/2026-04-14-spike1-jsroot-svelte5.md)) |
+| WASM `--preload-file` on static hosting | Build pipeline + sub-path deployment | [ADR 003](../decisions/003-wasm-build-pipeline.md) | ⬜ pending |
+| Module-level `$state` reactivity | Shared state topology across components | [03-architecture.md §4](../03-architecture.md#4-reactive-state-topology) | ⬜ pending |
 
 **Gate:** All spikes must pass (or architecture docs amended) before
 Stage 3 begins.
