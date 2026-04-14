@@ -285,6 +285,52 @@ Implements `LibdedxService`. Key design points:
 - **String handling**: C strings are read via `UTF8ToString()`. C strings
   written from JS use `stringToUTF8()` + `lengthBytesUTF8()`.
 
+### WASM on the main thread — Web Worker strategy
+
+All WASM calls in Emscripten's default `ENVIRONMENT='web'` mode run
+**synchronously on the main thread**. `libdedx` functions fill pre-allocated
+C arrays and return; there is no async C API.
+
+**Current workload.** The hot paths and their blocking estimates:
+
+| Operation | WASM calls | Estimated block |
+|-----------|-----------|-----------------|
+| Calculator: single calculation | 1 × `get_stp_table(500 pts)` | < 20 ms |
+| Plot: add 1 series | 1 × `get_stp_table(500 pts)` | < 20 ms |
+| Plot: 8-series re-render | 8 × `get_stp_table(500 pts)` | < 160 ms |
+| Init (compat matrix) | ~20 synchronous calls | < 5 ms total |
+
+At 500 points per call, each `get_stp_table` is a single WASM call that fills a
+buffer — not 500 individual calls. The 300 ms debounce (§4.3) absorbs rapid
+user input so WASM is never called on every keystroke.
+
+For the current workload the main-thread blocking is within the 300 ms
+threshold at which jank becomes perceptible, and within the 500 ms target for
+plot re-render (see `docs/09-non-functional-requirements.md §3`). **Web Worker
+offloading is deferred to a future stage.**
+
+**Migration path (deferred).** When a Web Worker becomes necessary:
+
+1. Change `ENVIRONMENT` in `wasm/build.sh` from `'web'` to `'web,worker'`
+   (Emscripten 4.0.17+ — `'worker'` alone is disallowed; must specify both).
+2. Instantiate the WASM module inside the Worker: `new Worker(...)` with a
+   separate `getService()` call inside the Worker thread. No `SharedArrayBuffer`
+   is required — Worker and main thread communicate by value copy via
+   `postMessage`. This also means GitHub Pages' lack of COOP/COEP headers
+   (required for `SharedArrayBuffer`) is not an obstacle.
+3. Update the `LibdedxService` interface — `calculate()`, `getPlotData()`, and
+   related methods must return `Promise<T>` instead of `T`. All callers need to
+   await the result. The interface is otherwise Worker-compatible: `getService()`
+   already returns `Promise<LibdedxService>`, and the mock in
+   `__mocks__/libdedx.ts` can trivially wrap returns in `Promise.resolve()`.
+4. Update `loader.ts` to proxy calls to the Worker via a structured-clone
+   round-trip. Comlink (`comlink` npm package) reduces this to boilerplate.
+
+The current synchronous interface (`calculate()` returns `CalculationResult`)
+is intentional for v1 simplicity. **Do not pre-emptively make it async** — the
+extra `.then()` / `await` at every call site costs readability for a benefit
+that does not yet exist.
+
 ### Compatibility matrix
 
 The `CompatibilityMatrix` is built at init time by querying the WASM module
@@ -715,22 +761,26 @@ URL sync follows the canonical 10-step algorithm in
 | `localStorage` access | Only safe inside `$effect` or event handlers — not in `+page.ts` load functions that run during SSG prerender. |
 | CORS for external data | User-hosted `.webdedx.parquet` files must be served with `Access-Control-Allow-Origin: *`. This is documented in the user guide, not enforced by the app. |
 
-### WASM init guard
+### SSG safety — why no `browser` guard is needed
+
+`$effect` in `+layout.svelte` is inherently browser-only. SvelteKit's SSG
+prerender pass evaluates `.ts` `load()` functions in Node.js, but it never
+runs Svelte effects — those only execute inside a mounted component in a real
+browser context. Therefore `+layout.ts` needs no browser guard and no WASM
+call:
 
 ```ts
 // +layout.ts
-import { browser } from '$app/environment';
-import { getService } from '$lib/wasm/loader';
-
-export async function load() {
-  if (!browser) return;   // Skip during SSG prerender
-  await getService();
+export function load() {
+  return {};   // Nothing. WASM init happens in +layout.svelte $effect.
 }
 ```
 
-Without the `browser` guard, SvelteKit's prerender pass would attempt to load
-the WASM module in Node.js — which fails because Emscripten's `web` environment
-is browser-only.
+A `browser`-guarded `await getService()` in `+layout.ts` was explicitly
+considered and rejected (see §3 Initialization lifecycle): even with the guard,
+the `load()` function would block SvelteKit's client-side routing until WASM
+finished loading, forcing the Documentation page (which needs no WASM) to wait
+behind a multi-MB download.
 
 ---
 
@@ -785,8 +835,9 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 
 | Area | Strategy |
 |------|----------|
-| WASM binary size | Several MB — served from `static/wasm/`; cached by browser HTTP cache. Progress spinner shown while loading. |
+| WASM binary size | `libdedx.wasm` ~1–3 MB + `libdedx.data` ~2–4 MB — served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See `docs/09-non-functional-requirements.md §3.1`. |
 | JSROOT bundle | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`). |
+| Main-thread computation | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy). |
 | Calculation debounce | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke. |
 | Entity list caching | Programs / particles / materials fetched once at init; stored in `entities.svelte.ts`. No per-render WASM calls. |
 | Plot data points | 500 points per series is the default; computed once per series add. Re-rendered by JSROOT — no JS-side re-computation on zoom/pan. |

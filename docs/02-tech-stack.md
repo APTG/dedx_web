@@ -186,7 +186,7 @@ pair) is downloaded.
 | Item | Value |
 |------|-------|
 | Tool | `emscripten` (system install or Docker) |
-| Pin | `5.x` (latest stable 5 series) |
+| Pin | `5.x` — current stable: **5.0.5** (03 April 2026) |
 | ADR | [ADR 003](decisions/003-wasm-build-pipeline.md) |
 
 Compiles `libdedx.a` + `wasm/dedx_extra.c` to `libdedx.mjs` + `libdedx.wasm`.
@@ -202,6 +202,14 @@ Actions workflow (`docs/08-deployment.md`). Emscripten 5.x dropped several
 legacy flags (`LEGACY_RUNTIME`, old `FS` API paths) and tightened the ES module
 output — the `build.sh` flags are written against 5.x. Breaking changes in
 Emscripten's JS glue code require a wrapper update.
+
+**Changelog notes relevant to this project** (from `docs/resources/emscripten-changelog.md`):
+
+| Version | Change | Impact |
+|---------|--------|--------|
+| 4.0.12 / 5.0.0 | `MODULARIZE=1` factory always returns a `Promise`, even when `WASM_ASYNC_COMPILATION=0` | `loader.ts` uses `await factory.default({...})` — correct |
+| 4.0.17 | `-sENVIRONMENT=worker` alone is disallowed; must use `web,worker` | If Web Worker support is ever added (see `03-architecture.md §3`), change `ENVIRONMENT='web'` to `ENVIRONMENT='web,worker'` |
+| 5.0.6 (dev) | Minimum Node.js for generated code bumped to v18.3.0 | Node 24 used in CI and tests is well within limits |
 
 ---
 

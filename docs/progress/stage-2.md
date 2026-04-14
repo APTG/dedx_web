@@ -16,7 +16,7 @@ All Stage 2 deliverables from `docs/00-redesign-plan.md §8` are complete.
 | [`docs/decisions/001-sveltekit-over-react.md`](../decisions/001-sveltekit-over-react.md) | Accepted | Full evaluation of React 18/Vite, Vue 3/Nuxt, Vanilla TS; chose SvelteKit 2 + Svelte 5 |
 | [`docs/decisions/002-keep-jsroot.md`](../decisions/002-keep-jsroot.md) | Accepted | Full evaluation of Plotly, Chart.js, D3, Vega-Lite, Observable Plot; kept JSROOT 7 |
 | [`docs/decisions/003-wasm-build-pipeline.md`](../decisions/003-wasm-build-pipeline.md) | Accepted | ES module output, `dedx_extra.{h,c}` shim, TypeScript wrapper, Emscripten flags |
-| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v2 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, hyparquet 1, Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 25 |
+| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v2 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, hyparquet 1, Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 24 LTS (24.14) |
 | [`docs/03-architecture.md`](../03-architecture.md) | Draft v1 | Project directory layout, routing, WASM service layer, state topology, component tree, data flows, URL sync, SSG constraints, error handling, accessibility |
 
 ---
@@ -32,7 +32,7 @@ without creating a new ADR version or spec revision.
 | **JSROOT 7** — loaded lazily per-page; `JsrootPlot.svelte` owns its container `<div>` | [ADR 002](../decisions/002-keep-jsroot.md), [03-architecture.md §5](../03-architecture.md#5-component-tree) |
 | **ES module WASM** — `EXPORT_ES6=1 MODULARIZE=1`; separate `.wasm` binary in `static/wasm/` | [ADR 003](../decisions/003-wasm-build-pipeline.md) |
 | **`dedx_extra.{h,c}`** — thin shim for internal libdedx data; avoids modifying the submodule | [ADR 003](../decisions/003-wasm-build-pipeline.md) |
-| **WASM init in root layout** — `+layout.ts` with `browser` guard; lazy singleton in `loader.ts` | [03-architecture.md §3](../03-architecture.md#3-wasm-service-layer), [§10](../03-architecture.md#10-ssg--static-adapter-constraints) |
+| **WASM init in root layout** — non-blocking `$effect` in `+layout.svelte`; `+layout.ts` returns `{}` synchronously; lazy singleton in `loader.ts` | [03-architecture.md §3](../03-architecture.md#3-wasm-service-layer), [§10](../03-architecture.md#10-ssg--static-adapter-constraints) |
 | **`*.svelte.ts` state modules** — rune-aware linting via naming convention | [03-architecture.md §1](../03-architecture.md#1-project-structure) |
 | **Compatibility matrix pre-built at init** — no WASM calls per render | [03-architecture.md §3](../03-architecture.md#3-wasm-service-layer) |
 | **Custom material sentinel `CUSTOM_MATERIAL_ID = -1`** — routes to `calculateCustomCompound()` | [03-architecture.md §8](../03-architecture.md#8-custom-compounds) |

@@ -131,6 +131,41 @@ that competes with the results.
 Performance is measured against Lighthouse in CI on a simulated 3G Fast
 network throttling profile.
 
+### 3.1 Browser caching
+
+The largest assets are `libdedx.wasm` (~1–3 MB) and `libdedx.data` (~2–4 MB).
+These live in `static/wasm/` and are served as **un-hashed filenames** — unlike
+SvelteKit's `_app/immutable/` assets (which use content hashes and receive
+`max-age=31536000`), the WASM files cannot be given long-lived cache headers
+safely unless the filename embeds a hash.
+
+GitHub Pages applies `Cache-Control: max-age=600, must-revalidate` to all
+files it serves. The practical impact:
+
+| Visit | Network behavior |
+|-------|-----------------|
+| First load (cold) | Full download: ~3–7 MB total payload |
+| Repeat visit within 10 min | Served from browser cache — no network request |
+| Repeat visit after 10 min | Conditional request (ETag); 304 Not Modified if unchanged → loaded from cache, no re-download |
+| After a new deployment | New ETag → full re-download of changed files only |
+
+**Re-validation is cheap** (the 304 round-trip is a few ms on fast connections)
+but adds a network hop on every session restart after the 10-minute window.
+For a scientific tool that is not used in rapid-session bursts, this is
+acceptable.
+
+**Service Worker — not implemented in v1.** A Service Worker with a
+cache-first strategy for `static/wasm/` assets would eliminate the re-validation
+hop entirely and enable offline use. Implementing one is deferred: offline
+support is not a v1 requirement, and a buggy SW can serve stale WASM after a
+data-table update (physics data changes between libdedx releases). If a SW is
+added in a future stage, it must include a versioned cache key that is
+invalidated on every deployment.
+
+`site.webmanifest` is present (used for Android home-screen and PWA install
+prompts) but without a SW the app is not a full installable PWA in the Service
+Worker sense.
+
 ---
 
 ## 4. Browser Support
