@@ -227,7 +227,7 @@ When Advanced mode is active, additional calculator controls may expose:
 - I-value override (eV)
 
 These map to the `AdvancedOptions` type in the WASM API contract.
-Not included in v1 — see TODO `docs/04-feature-specs/advanced-options.md`.
+Not included in v1 — see [`advanced-options.md`](advanced-options.md).
 
 ---
 

@@ -39,8 +39,7 @@
 > is `ParticleEntity`. The C API's "ion" naming is confined to the WASM
 > wrapper layer that directly calls C functions.
 >
-> See also: TODO `docs/terminology.md` — a glossary for UI tooltips and
-> technical documentation.
+> See also: [`docs/10-terminology.md`](../10-terminology.md) — glossary of physics and developer terms.
 
 ---
 

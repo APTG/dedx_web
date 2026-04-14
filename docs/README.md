@@ -16,4 +16,5 @@ Design documents and specifications for the dEdx Web redesign.
 | Directory | Purpose |
 |-----------|---------|
 | [04-feature-specs/](04-feature-specs/) | Per-feature detailed specs (entity selection, calculator, unit handling, …) |
+| [progress/](progress/) | Stage completion logs — what was produced, key decisions, and what each next stage needs |
 | [ai-logs/](ai-logs/) | Detailed AI session logs — prompt→response narratives for project continuity |
