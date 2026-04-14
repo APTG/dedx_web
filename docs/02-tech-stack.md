@@ -314,9 +314,9 @@ CI runs `prettier --check .`; the commit hook runs `prettier --write`.
 SvelteKit uses Vite as its underlying bundler. No direct Vite configuration is
 required beyond what `svelte.config.js` and `vite.config.ts` expose.
 
-Dev server: `npm run dev` (HMR enabled).
-Production build: `npm run build` (static bundle in `build/`).
-Type check: `npm run check` (runs `svelte-check` + `tsc --noEmit`).
+Dev server: `pnpm dev` (HMR enabled).
+Production build: `pnpm build` (static bundle in `build/`).
+Type check: `pnpm check` (runs `svelte-check` + `tsc --noEmit`).
 
 ### `svelte-check`
 
@@ -325,7 +325,7 @@ Type check: `npm run check` (runs `svelte-check` + `tsc --noEmit`).
 | Package | `svelte-check` |
 | Pin | `^4.x` |
 
-Validates TypeScript types inside `.svelte` files. Runs as part of `npm run
+Validates TypeScript types inside `.svelte` files. Runs as part of `pnpm
 check` and in CI before the build step.
 
 ---
@@ -338,11 +338,11 @@ All CI runs in GitHub-hosted runners. The pipeline (Stage 8) will execute:
 
 1. `eslint .` — lint
 2. `prettier --check .` — format check
-3. `npm run check` — `svelte-check` + `tsc --noEmit`
+3. `pnpm check` — `svelte-check` + `tsc --noEmit`
 4. `vitest run` — unit + integration tests
 5. `playwright test` — E2E tests (against local `vite preview`)
 6. `wasm/build.sh` — compile WASM (only on WASM-relevant file changes)
-7. `npm run build` — SvelteKit static build
+7. `pnpm build` — SvelteKit static build
 8. Deploy `build/` to GitHub Pages
 
 See `08-deployment.md` (planned) for the full workflow YAML.
@@ -351,11 +351,39 @@ See `08-deployment.md` (planned) for the full workflow YAML.
 
 ## 12. Package Manager
 
-### npm
+### pnpm
 
-The project uses `npm` with a committed `package-lock.json`. `pnpm` or `yarn`
-are not prohibited, but the lock file must not be mixed — pick one and commit
-it. npm is the default for GitHub Actions' Node.js setup action.
+| Item | Value |
+|------|-------|
+| Tool | `pnpm` |
+| Pin | `^10.x` (latest stable as of April 2026) |
+| Lock file | `pnpm-lock.yaml` (committed) |
+| Activation | `corepack enable && corepack use pnpm@latest` — Node 24 ships corepack |
+
+pnpm is used over npm for three reasons:
+
+1. **Strict dependency resolution.** pnpm's `node_modules` layout does not
+   hoist transitive dependencies. If a package is not in `package.json`, it
+   cannot be imported — catching phantom dependency bugs early (npm silently
+   allows this).
+2. **Speed and disk efficiency.** pnpm uses a content-addressable global store
+   with hard links. Installs are 2–3× faster than npm; the prototype spikes
+   (each with its own `node_modules`) benefit especially.
+3. **Compatibility.** Unlike Yarn Berry's PnP mode, pnpm uses a standard
+   `node_modules` directory. JSROOT, Emscripten's generated `.mjs` glue, and
+   Playwright all work without configuration.
+
+`package.json` declares the package manager via the `packageManager` field
+(consumed by corepack):
+
+```json
+{
+  "packageManager": "pnpm@10.x.x"
+}
+```
+
+CI uses `pnpm/action-setup` before `actions/setup-node` with
+`cache: 'pnpm'`.
 
 ---
 

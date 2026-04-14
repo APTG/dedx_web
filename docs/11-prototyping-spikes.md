@@ -89,10 +89,10 @@ Create a minimal SvelteKit app that:
 ```
 1. mkdir -p prototypes/jsroot-svelte5
 2. cd prototypes/jsroot-svelte5
-3. npm create svelte@latest . -- --template minimal --types ts
-4. npm install
-5. npm install jsroot@^7
-6. npm install -D tailwindcss @tailwindcss/vite
+3. pnpm create svelte@latest . -- --template minimal --types ts
+4. pnpm install
+5. pnpm add jsroot@^7
+6. pnpm add -D tailwindcss @tailwindcss/vite
 ```
 
 Create the following files:
@@ -242,7 +242,7 @@ Implement the wrapper following the pattern from
 
 ### Acceptance Criteria
 
-Run the dev server (`npm run dev`) and manually verify in the browser.
+Run the dev server (`pnpm dev`) and manually verify in the browser.
 Print verdict for each criterion:
 
 | # | Criterion | How to test |
@@ -364,10 +364,10 @@ docker run --rm -v "$(pwd)/../../libdedx:/src/libdedx" \
 
 ```bash
 cd prototypes/wasm-preload
-npm create svelte@latest app -- --template minimal --types ts
+pnpm create svelte@latest app -- --template minimal --types ts
 cd app
-npm install
-npm install -D @sveltejs/adapter-static
+pnpm install
+pnpm add -D @sveltejs/adapter-static
 ```
 
 Configure `svelte.config.js` for static adapter with a configurable base path:
@@ -480,20 +480,20 @@ Create `app/src/routes/+page.svelte`:
 cd app
 
 # Scenario A: Dev server (root path)
-npm run dev
+pnpm dev
 # → Open http://localhost:5173, verify programs load
 
 # Scenario B: Static build, root path
-npm run build
-npx serve build -l 4000
+pnpm build
+pnpm dlx serve build -l 4000
 # → Open http://localhost:4000, verify programs load
 
 # Scenario C: Static build, sub-path (simulating GitHub Pages /dedx_web/)
-BASE_PATH=/dedx_web npm run build
+BASE_PATH=/dedx_web pnpm build
 # Serve from a subdirectory:
 mkdir -p /tmp/ghpages/dedx_web
 cp -r build/* /tmp/ghpages/dedx_web/
-npx serve /tmp/ghpages -l 4001
+pnpm dlx serve /tmp/ghpages -l 4001
 # → Open http://localhost:4001/dedx_web/, verify programs load
 ```
 
@@ -514,7 +514,7 @@ no `.data` file) and repeat Scenarios B and C.
 | # | Criterion | Pass condition |
 |---|-----------|---------------|
 | 1 | **Dev server loads** | Status shows "OK — N programs loaded" (N ≥ 5); program names visible |
-| 2 | **Static build (root path) loads** | Same as above, served by `npx serve build` |
+| 2 | **Static build (root path) loads** | Same as above, served by `pnpm dlx serve build` |
 | 3 | **Static build (sub-path) loads** | Same as above, served at `/dedx_web/` sub-path |
 | 4 | **`.data` file fetched** | DevTools Network shows `libdedx.data` request with 200 status in all scenarios |
 | 5 | **No CORS errors** | DevTools Console has no CORS-related errors |
@@ -585,8 +585,8 @@ ResultPanel.svelte       — reads state and $derived (simulates ResultTable)
 ```bash
 mkdir -p prototypes/svelte5-state
 cd prototypes/svelte5-state
-npm create svelte@latest . -- --template minimal --types ts
-npm install
+pnpm create svelte@latest . -- --template minimal --types ts
+pnpm install
 ```
 
 Create the following files:
@@ -777,7 +777,7 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
 | 6 | **Array bulk replacement:** "Replace all items" replaces the entire array; ResultPanel shows ["Replaced A", "Replaced B", "Replaced C"] | Click button, observe |
 | 7 | **Array append:** "Add item" appends to the array; ResultPanel shows the new item | Click button, observe |
 | 8 | **No console errors:** DevTools Console has no runtime errors or warnings related to reactivity | Check console throughout all tests |
-| 9 | **SSG prerender works:** `npm run build` completes without error (static adapter) | Run build |
+| 9 | **SSG prerender works:** `pnpm build` completes without error (static adapter) | Run build |
 
 ### What to Do if a Criterion Fails
 
@@ -811,7 +811,7 @@ agent is doing them sequentially, the recommended order is:
 | Order | Spike | Reason |
 |-------|-------|--------|
 | 1 | **Spike 3** (Svelte 5 `$state`) | Fastest to complete (no Docker, no WASM). Validates the most fundamental architecture assumption (shared reactive state). |
-| 2 | **Spike 1** (JSROOT + Svelte 5) | Requires only `npm install jsroot`. Validates the Plot page's core dependency. |
+| 2 | **Spike 1** (JSROOT + Svelte 5) | Requires only `pnpm add jsroot`. Validates the Plot page's core dependency. |
 | 3 | **Spike 2** (WASM `--preload-file`) | Requires Docker + libdedx submodule. Validates the build pipeline. |
 
 ---

@@ -493,7 +493,7 @@ automated pipeline for this project, intended to run via **GitHub Actions**.
 | Phase | Planned trigger | Planned steps |
 |-------|-----------------|---------------|
 | **CI** | On PRs / pushes (planned) | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
-| **CD** | On merge to `master` (planned) | `npm run build` → deploy `build/` to GitHub Pages |
+| **CD** | On merge to `master` (planned) | `pnpm build` → deploy `build/` to GitHub Pages |
 
 When implemented, the CI phase will catch regressions before merge, and the CD
 phase will publish the rebuilt static site automatically. See
@@ -802,7 +802,7 @@ Used in: [`plot.md`](04-feature-specs/plot.md),
 
 **Static Site Generation** — a build strategy where all pages are pre-rendered
 to plain HTML files at build time, rather than rendered per-request on a server.
-webdedx uses SSG via `@sveltejs/adapter-static`: `npm run build` produces a
+webdedx uses SSG via `@sveltejs/adapter-static`: `pnpm build` produces a
 `build/` directory of static HTML + JS + CSS that can be served by any static
 host — GitHub Pages in this project.
 

@@ -25,12 +25,12 @@
 - Architecture: `docs/03-architecture.md`
 
 ## Build Commands
-- `npm run dev` — start dev server
-- `npm run build` — production build (static adapter for GitHub Pages)
-- `npm run test` — Vitest unit/integration tests
-- `npx playwright test` — E2E tests
-- `npm run lint` — ESLint
-- `npm run format` — Prettier
+- `pnpm dev` — start dev server
+- `pnpm build` — production build (static adapter for GitHub Pages)
+- `pnpm test` — Vitest unit/integration tests
+- `pnpm exec playwright test` — E2E tests
+- `pnpm lint` — ESLint
+- `pnpm format` — Prettier
 
 ## WASM
 - libdedx is a git submodule in `libdedx/`
