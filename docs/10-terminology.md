@@ -1,7 +1,8 @@
 # Terminology Glossary
 
-> **Status:** Final v2 (14 April 2026)
+> **Status:** Final v3 (14 April 2026)
 >
+> **v3:** Developer/stack section expanded with four new terms: ADR, CI/CD, CORS, SSG.
 > **v2:** Terms sorted alphabetically within each section; term index added at top of page.
 > **v1:** Initial glossary — two-section structure, 29 terms.
 
@@ -43,9 +44,12 @@ Cross-references between terms are marked with "→ see also".
 
 | Term | One-line summary |
 |------|-----------------|
+| [ADR](#adr) | Short document recording one significant architectural choice with context and rationale |
 | [Advanced Mode / Basic Mode](#advanced-mode--basic-mode) | App-wide toggle controlling advanced-feature visibility |
 | [Canonicalization](#canonicalization) | Algorithm normalizing URL state to a single deterministic form |
+| [CI/CD](#cicd) | Automated lint → test → build → deploy pipeline running on GitHub Actions |
 | [Compatibility Matrix](#compatibility-matrix) | Pre-computed bidirectional program ↔ particle ↔ material lookup |
+| [CORS](#cors) | Browser policy blocking cross-origin fetches; relevant for user-hosted `extdata` files |
 | [dedx_config](#dedx_config) | Stateful C config struct; required for overrides and custom compounds |
 | [dedx_extra.{h,c}](#dedx_extrahc) | Local C files exposing internal libdedx data and custom-compound wrappers |
 | [dedx_wrappers.h](#dedx_wrappersh) | Local C header providing stateless wrappers for Emscripten export |
@@ -56,6 +60,7 @@ Cross-references between terms are marked with "→ see also".
 | [qfocus](#qfocus) | URL param selecting quantity columns: `both` / `stp` / `csda` |
 | [Runes](#runes) | Svelte 5 reactive primitives: `$state`, `$derived`, `$effect`, `$props`, `$bindable` |
 | [Series](#series) | A (particle, material, program) triplet producing one plot curve |
+| [SSG](#ssg) | Build strategy pre-rendering all pages to static HTML at build time; enables GitHub Pages |
 | [StoredCompound](#storedcompound) | localStorage type for user compounds; distinct from WASM `CustomCompound` |
 | [urlv](#urlv) | URL contract major-version sentinel parameter |
 
@@ -398,6 +403,28 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.1,
 
 ---
 
+### ADR
+
+An **Architecture Decision Record** — a short document that captures the
+context, decision, and consequences for one significant, hard-to-reverse
+architectural choice. Each ADR is numbered sequentially and stored in
+`docs/decisions/`. ADRs are written before implementation begins so that
+future contributors understand *why* a choice was made, not just what was
+chosen.
+
+Once an ADR is accepted it constrains future work — a change requires a new
+superseding ADR, not a silent edit to the existing one.
+
+**Format used in this project:** Title / Status / Context / Decision /
+Consequences.
+
+**Type/file:** `docs/decisions/` — all ADR files
+
+Used in: [`00-redesign-plan.md`](00-redesign-plan.md) §8,
+[`progress/stage-2.md`](progress/stage-2.md)
+
+---
+
 ### Advanced Mode / Basic Mode
 
 An app-wide toggle that controls which features are visible. Stored in
@@ -458,6 +485,31 @@ Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
 
 ---
 
+### CI/CD
+
+**Continuous Integration / Continuous Deployment** — the planned Stage 8
+automated pipeline for this project, intended to run via **GitHub Actions**.
+
+| Phase | Planned trigger | Planned steps |
+|-------|-----------------|---------------|
+| **CI** | On PRs / pushes (planned) | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
+| **CD** | On merge to `master` (planned) | `pnpm build` → deploy `build/` to GitHub Pages |
+
+When implemented, the CI phase will catch regressions before merge, and the CD
+phase will publish the rebuilt static site automatically. See
+[`08-deployment.md`](08-deployment.md) for the planned workflow specification
+and current source of truth.
+
+**Type/file:** `.github/workflows/` (GitHub Actions YAML);
+`08-deployment.md` (planned — full workflow specification)
+
+→ see also: [SSG](#ssg)
+
+Used in: [`02-tech-stack.md`](02-tech-stack.md) §11,
+`08-deployment.md` (planned)
+
+---
+
 ### Compatibility Matrix
 
 An in-memory data structure pre-computed at WASM init time by iterating over
@@ -478,6 +530,36 @@ JS-side matrix is the only source of truth for cross-entity compatibility.
 
 Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) §2,
 [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
+
+---
+
+### CORS
+
+**Cross-Origin Resource Sharing** — a browser security policy that blocks
+JavaScript from fetching a resource from a different **origin** (scheme + host
++ port combination) unless the server explicitly opts in via an
+`Access-Control-Allow-Origin` response header.
+
+Relevant to webdedx in the **extdata** feature: when a user supplies a URL to
+a `.webdedx.parquet` file hosted on their own server, that server must respond
+with:
+
+```
+Access-Control-Allow-Origin: *
+```
+
+Without this header the browser blocks the fetch silently — the app cannot
+work around CORS because it is enforced at the browser networking layer, not in
+application code. The external-data documentation must instruct users who host
+their own data files to enable CORS on their server.
+
+The WASM binary (`libdedx.wasm`) is loaded via `fetch()` from the same origin
+as the app (`/wasm/libdedx.wasm`), so CORS does not apply to it.
+
+→ see also: [extdata](#extdata), [SSG](#ssg)
+
+Used in: [`external-data.md`](04-feature-specs/external-data.md) §4 (hosting
+requirements)
 
 ---
 
@@ -713,6 +795,36 @@ External-data entities use the `ext:{label}:{id}` notation within a triplet.
 Used in: [`plot.md`](04-feature-specs/plot.md),
 [`shareable-urls.md`](04-feature-specs/shareable-urls.md) §3.2,
 [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) §2
+
+---
+
+### SSG
+
+**Static Site Generation** — a build strategy where all pages are pre-rendered
+to plain HTML files at build time, rather than rendered per-request on a server.
+webdedx uses SSG via `@sveltejs/adapter-static`: `pnpm build` produces a
+`build/` directory of static HTML + JS + CSS that can be served by any static
+host — GitHub Pages in this project.
+
+Architectural consequences:
+
+- All SvelteKit routes must declare `export const prerender = true`.
+- No server-side logic. All computation is WASM (client-side).
+- WASM initialization must **not** run in `+layout.ts` during prerender.
+  Instead, browser-targeted startup is deferred to browser-only code in
+  `+layout.svelte` (via a `$effect`), so the SSG prerender pass does not
+  execute the Emscripten `ENVIRONMENT='web'` module where browser globals
+  and runtime support are unavailable.
+- URL state is encoded in the query string; no server-side routing is available
+  to parse clean paths.
+
+**Type/file:** `svelte.config.js` (`adapter-static` config),
+`src/routes/*/+page.ts` (`prerender = true` exports)
+
+→ see also: [CI/CD](#cicd), [CORS](#cors)
+
+Used in: [`03-architecture.md`](03-architecture.md) §10,
+[`02-tech-stack.md`](02-tech-stack.md) §1
 
 ---
 

@@ -11,6 +11,9 @@
 # production
 /build
 
+# SvelteKit
+.svelte-kit/
+
 # misc
 .DS_Store
 .env.local
@@ -23,9 +26,18 @@ yarn-debug.log*
 yarn-error.log*
 src/Components/Footer/deploy.json
 src/Backend/weblibdedx.js
-.gitignore
 public/weblibdedx.wasm
 src/Backend/weblibdedx.wasm
 .vscode/settings.json
 public/weblibdedx.data
 .env
+
+# Prototypes — throwaway spike code (Stage 2.5)
+# Each spike has its own dependencies, build artifacts, etc.
+prototypes/*/node_modules/
+prototypes/*/.svelte-kit/
+prototypes/*/build/
+prototypes/*/libdedx.a
+prototypes/*/preload/
+prototypes/*/embed/
+prototypes/*/pnpm-lock.yaml

@@ -277,6 +277,17 @@ As a <role>, I want to <action> so that <benefit>.
 - **Produce:** `docs/02-tech-stack.md`, `docs/03-architecture.md`, ADRs in `docs/decisions/`.
 - **Key:** Document *why* SvelteKit, *why* keep JSROOT, WASM module format (ES module).
 
+### Stage 2.5: Prototyping Spikes (Risk Reduction)
+- **Who:** AI implements autonomously (one spike per session).
+- **Input:** [`docs/11-prototyping-spikes.md`](11-prototyping-spikes.md).
+- **Produce:** Three throwaway prototypes in `prototypes/` that validate:
+  1. JSROOT 7 rendering inside a Svelte 5 `$effect` (DOM ownership, cleanup, re-draw).
+  2. Emscripten `--preload-file` served by SvelteKit static adapter and sub-path hosting.
+  3. Module-level `$state` with `{ value: T }` wrapper reactive across components.
+- **Gate:** All three spikes must pass (or architecture docs amended to reflect
+  validated alternatives) before Stage 3 begins.
+- **Verify:** Each spike produces a `VERDICT.md` with pass/fail per criterion.
+
 ### Stage 3: WASM Build Pipeline Redesign
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
