@@ -2,15 +2,16 @@
 
 **Date:** 14 April 2026
 **Stage:** 1 — Requirements & Specifications
-**Output:** `docs/10-terminology.md` Final v1
+**Output:** `docs/10-terminology.md` Final v2 (promoted from Final v1 after the original write-up)
 
 ---
 
 ## Session Summary
 
-Wrote the Stage 1 terminology glossary (`docs/10-terminology.md`) — a
-two-section reference document covering physics/end-user vocabulary and
-developer/stack vocabulary for the dEdx Web redesign project.
+Wrote the Stage 1 terminology glossary (`docs/10-terminology.md`) — later
+promoted from Final v1 to Final v2 — as a two-section reference document
+covering physics/end-user vocabulary and developer/stack vocabulary for the
+dEdx Web redesign project.
 
 ---
 

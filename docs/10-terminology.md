@@ -688,8 +688,8 @@ The `svelte/store` module and `$` auto-subscription syntax are replaced by
 runes-based fine-grained reactivity.
 
 **Type/file:** Any `.svelte` file; authoritative guidance in
-[`00-redesign-plan.md`](00-redesign-plan.md) §2,
-`.github/instructions/svelte.instructions.md`
+[`00-redesign-plan.md`](00-redesign-plan.md) §2 and
+[`.github/copilot-instructions.md`](../.github/copilot-instructions.md)
 
 Used in: [`00-redesign-plan.md`](00-redesign-plan.md) §2
 
