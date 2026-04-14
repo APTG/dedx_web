@@ -101,8 +101,7 @@ its unit — or with the wrong unit — is worse than no answer at all.
 - When the data range spans SI prefixes, axis tick labels should auto-scale
   (e.g., switch from cm to mm) and the axis label must update accordingly.
 
-> Full unit conversion logic is specified in TODO: `docs/04-feature-specs/unit-handling.md`
-> (add this spec file in a future PR).
+> Full unit conversion logic is specified in [`docs/04-feature-specs/unit-handling.md`](04-feature-specs/unit-handling.md).
 
 ### 4.2 Minimum Clicks
 
@@ -205,7 +204,7 @@ Advanced mode is specified per-feature in the respective feature specs:
 - Multi-program comparison columns (Calculator): [`multi-program.md`](04-feature-specs/multi-program.md)
 - MSTAR modes, aggregate state, density/I-value overrides: [`advanced-options.md`](04-feature-specs/advanced-options.md)
 - Inverse lookups: [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md)
-- Custom compounds: TODO `custom-compounds.md`
+- Custom compounds: [`custom-compounds.md`](04-feature-specs/custom-compounds.md)
 
 ### 4.5 Shareability
 

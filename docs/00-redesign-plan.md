@@ -91,9 +91,11 @@ docs/
 ├── 07-testing-strategy.md           # Unit/integration/E2E plan
 ├── 08-deployment.md                 # GitHub Actions → GitHub Pages
 ├── 09-non-functional-requirements.md # WCAG 2.1 AA, performance budgets, browser support, responsive, security
-├── 10-terminology.md                # TODO: Glossary of domain terms (particle vs ion,
-│                                    #   stopping power, CSDA range, etc.) for UI
-│                                    #   tooltips and user/technical documentation
+├── 10-terminology.md                # Glossary — two sections: physics/end-user terms
+│                                    #   (stopping power, CSDA range, Bragg additivity, I-value,
+│                                    #   particle vs ion, MeV/nucl vs MeV/u, etc.) and
+│                                    #   developer/stack terms (WASM, Emscripten, runes,
+│                                    #   dedx_config, entity, series, StoredCompound, etc.)
 ├── decisions/                       # Architecture Decision Records (ADRs)
 │   ├── 001-sveltekit-over-react.md
 │   ├── 002-keep-jsroot.md
@@ -266,8 +268,9 @@ As a <role>, I want to <action> so that <benefit>.
 
 ### Stage 1: Requirements & Specifications
 - **Who:** You (human), AI assists with drafts (use `/write-spec` prompt).
-- **Produce:** `docs/01-project-vision.md`, all `docs/04-feature-specs/*.md`, `docs/06-wasm-api-contract.md`.
+- **Produce:** `docs/01-project-vision.md`, all `docs/04-feature-specs/*.md`, `docs/06-wasm-api-contract.md`, `docs/10-terminology.md`.
 - **Validate:** You review all specs for physics correctness.
+- **Terminology scope:** Two audiences — (1) *physics / end-user*: domain terms used in the UI, tooltips, and user documentation (stopping power, CSDA range, Bragg additivity, mean excitation energy, etc.); (2) *developer*: technical-stack terms used in code, commit messages, and internal docs (WASM, Emscripten, runes, dedx_config, entity, series, etc.).
 
 ### Stage 2: Technical Architecture
 - **Who:** You + AI.

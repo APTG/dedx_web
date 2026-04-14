@@ -21,6 +21,12 @@ Each spec follows the template defined in
 | [export.md](export.md) | Final v6 | Authoritative export spec across all three pages: shared toolbar (§0) order `[Export PDF][Export CSV ↓][Share URL]` (Share URL rightmost) on all pages; image export ("Export image ▾") stays in Plot controls bar — PNG advanced-mode only, SVG both modes; advanced-mode CSV opens a configuration modal (separator/line-endings/filename, §1.1); Calculator CSV column order: Normalized Energy, Typed Value, Unit, CSDA Range, Stopping Power; advanced PDF metadata block order: PARTICLE, MATERIAL, PROGRAMS, SETTINGS, SYSTEM, BUILD (BUILD last); `Page n / N` footer on all PDFs; accessibility contract |
 | [custom-compounds.md](custom-compounds.md) | Final v1 | Advanced-mode user-defined compound materials: compound library (localStorage, `StoredCompound` type); modal editor (formula mode + weight-fraction mode, `n_i = w_i / M_i` conversion, live sum indicator); program compatibility filter (Bragg additivity — programs greyed out when missing elemental data for any compound element, Z-based check via `MaterialEntity.atomicNumber`); entity-selection integration (Custom Compounds group, custom badge); WASM integration: forward `calculateCustomCompound()`, inverse `getInverseStpCustomCompound()` / `getInverseCsdaCustomCompound()` / `getBraggPeakStpCustomCompound()` via `dedx_extra.{h,c}` C wrappers, plot `getPlotDataCustomCompound()` (JS-side); Advanced Options: density/I-value/aggregate-state disabled, interpolation + MSTAR active; URL encoding (`material=custom` + `mat_name/mat_density/mat_elements/mat_ival/mat_phase`, step 9 canonicalization); `shareable-urls-formal.md` updated to v6; PDF composition table (Element, Z, Atom count, Weight %) in advanced mode |
 
+## Supporting Documents (Stage 1, not feature specs)
+
+| File | Status | Summary |
+|------|--------|---------|
+| [../10-terminology.md](../10-terminology.md) | Final v2 | Two-section glossary: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, MeV/nucl vs MeV/u, particle, aggregate state, MSTAR, PSTAR/ESTAR/ASTAR, ICRU 73/90, normalized energy, custom compound); §2 developer/stack terms (libdedx, Emscripten/WASM, dedx_config, dedx_wrappers.h, dedx_extra.{h,c}, Entity, CompatibilityMatrix, Series, StoredCompound, Runes, urlv, Canonicalization, Advanced/Basic mode, qfocus, extdata) |
+
 ## Later-Stage Specs (specified now, implementation deferred)
 
 | File | Status | Summary |
