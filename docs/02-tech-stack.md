@@ -355,12 +355,17 @@ it. npm is the default for GitHub Actions' Node.js setup action.
 
 | Item | Value |
 |------|-------|
-| Version | `24 LTS` (even-numbered, Long Term Support line) |
+| Version | `24 LTS` — current patch: **24.14** |
 | Engine field | `package.json` `"engines": { "node": "^24" }` |
-| Migration target | `^26` — planned when Node.js 26 reaches LTS status |
+| Current "Current" release | 25.9 (odd-numbered, no LTS; not used) |
+| Migration target | `^26` — Node.js 26 released April 2026; enters Active LTS October 2026 |
 
-Node.js 24 is the current LTS release line, ensuring long-term support and
-stability for CI and contributor environments. Notable features in use:
+Node.js 24 (currently at 24.14) is the Active LTS line used for all CI and
+contributor environments. Node.js 25.9 is the current "Current" release —
+odd-numbered, no long-term support guarantee, not used here. Node.js 26 was
+released in April 2026 and will enter Active LTS in October 2026.
+
+Notable features in use:
 
 - **Built-in `fetch` + `WebSocket`** — no polyfill needed in tests or scripts.
 - **V8 12.x** — ships `using` / `await using` (Explicit Resource Management
@@ -368,9 +373,9 @@ stability for CI and contributor environments. Notable features in use:
 - **Improved `node:test` runner** — considered for fast isolated unit tests
   outside Vitest where WASM mocking is not required.
 
-**Migration note:** When Node.js 26 reaches LTS status, update `"engines"` to
-`"^24 || ^26"` first (validate CI), then drop `^24` once the team has
-confirmed no regressions.
+**Migration note:** Node.js 26 enters Active LTS in October 2026. At that
+point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
+`^24` once the team has confirmed no regressions.
 
 ---
 
@@ -396,7 +401,7 @@ confirmed no regressions.
 | `prettier-plugin-svelte` | latest compat | Svelte formatter |
 | `svelte-check` | `^4.x` | Component type checking |
 | Emscripten | `5.x` | WASM compiler (system tool) |
-| Node.js | `24 LTS` | Runtime |
+| Node.js | `24 LTS` (24.14) | Runtime |
 
 ---
 
