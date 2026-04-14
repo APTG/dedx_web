@@ -10,6 +10,7 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-14-prototyping-spikes.md](2026-04-14-prototyping-spikes.md) | 14 Apr 2026 | Prototyping Spikes: three spike specs (JSROOT+Svelte 5, WASM --preload-file, module-level $state) as Stage 2.5 gate; 00-redesign-plan.md and progress/stage-2.md updated |
 | [2026-04-14-stage2-review.md](2026-04-14-stage2-review.md) | 14 Apr 2026 | Stage 2 review: five weak points resolved — Node.js version inconsistency (stage-2.md "25" → "24 LTS 24.14"); §10 contradiction (blocking +layout.ts code replaced with correct empty load()); Web Worker strategy section added to §3 + §12; browser caching §3.1 added to NFR; Emscripten 5.0.5 pinned + changelog notes (MODULARIZE→Promise, ENVIRONMENT=web,worker, Node v18.3 min) added to tech stack and ADR 003 |
 | [2026-04-14-stage2-architecture.md](2026-04-14-stage2-architecture.md) | 14 Apr 2026 | Stage 2 complete: ADR 001 (SvelteKit over React), ADR 002 (keep JSROOT), ADR 003 (WASM build pipeline); 02-tech-stack.md Draft v2 (full library inventory with version pins); 03-architecture.md Draft v1 (project layout, WASM service layer, state topology, component tree, Calculator/Plot data flows, URL sync, SSG constraints, accessibility) |
 | [2026-04-14-stage1-complete.md](2026-04-14-stage1-complete.md) | 14 Apr 2026 | Stage 1 completion: docs/progress/stage-1.md created; 4 stale TODO links resolved (01-project-vision.md ×2, entity-selection.md, calculator.md); docs/README.md updated with progress/ directory |
