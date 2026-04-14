@@ -1067,7 +1067,7 @@ Expected:
 
 **Future enhancements (not blocking v1):**
 - Short URL storage (database) for very long plot URLs — to be defined in a future spec.
-- User-defined custom compounds in URL state — requires enhancement to entity encoding.
+- User-defined custom compounds in URL state — **specified** in `custom-compounds.md` §6 and `shareable-urls-formal.md` v6 (`material=custom` sentinel + `mat_*` params, canonicalization step 9).
 
 ---
 

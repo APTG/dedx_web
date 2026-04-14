@@ -15,7 +15,7 @@
 | C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
 | Energy units | **JS-side conversion** | For ions (A ≥ 1), C calls use MeV/nucl. For ESTAR electron (particle ID 1001), C calls use MeV. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
 | Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
-| Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API for this path only. |
+| Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API. `calculateCustomCompound()` covers the forward path. Inverse and Bragg-peak variants (`getInverseStpCustomCompound`, `getInverseCsdaCustomCompound`, `getBraggPeakStpCustomCompound`) are added via thin C wrappers in `wasm/dedx_extra.{h,c}`. Plot-data generation (`getPlotDataCustomCompound`) is JS-side only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
 | Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
 | ESTAR (electrons) | **Included** | ESTAR (program 3, particle ID 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" entry in the `ParticleEntity` list. |
@@ -374,6 +374,71 @@ interface LibdedxService {
     compound: CustomCompound;
     energies: number[];       // in MeV/nucl
   }): CalculationResult;
+
+  /**
+   * Generate a dense energy grid and evaluate stopping power + CSDA range
+   * for a custom compound. Implemented JS-side: generates a log-spaced (or
+   * linear) energy grid using getMinEnergy() / getMaxEnergy() and calls
+   * calculateCustomCompound() for each point. No additional C code required.
+   *
+   * @throws LibdedxError if the energy bounds query or any calculateCustomCompound call fails.
+   */
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    compound: CustomCompound;
+    pointCount: number;
+    logScale: boolean;
+  }): CalculationResult;
+
+  /**
+   * Find the energy corresponding to a given stopping power for a custom compound.
+   *
+   * Implemented via a thin C wrapper in wasm/dedx_extra.{h,c} that allocates
+   * a dedx_config workspace with the compound's elements_id / elements_atoms
+   * arrays and calls dedx_get_inverse_stp(). Follows the same workspace
+   * lifecycle as calculateCustomCompound().
+   *
+   * @param side — 0 = low-energy branch, 1 = high-energy branch.
+   * @throws LibdedxError on C-level errors.
+   */
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    compound: CustomCompound;
+    stoppingPowers: number[];  // in MeV·cm²/g
+    side: 0 | 1;
+  }): InverseStpResult;
+
+  /**
+   * Find the energy corresponding to a given CSDA range for a custom compound.
+   *
+   * Implemented via a thin C wrapper in wasm/dedx_extra.{h,c} (same pattern
+   * as getInverseStpCustomCompound).
+   *
+   * @throws LibdedxError on C-level errors.
+   */
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    compound: CustomCompound;
+    ranges: number[];          // in g/cm²
+  }): InverseCsdaResult;
+
+  /**
+   * Return the Bragg peak stopping power for a custom compound.
+   * Used by the Inverse STP tab as a valid-range hint (see inverse-lookups.md §5.4).
+   *
+   * Implemented via a thin C wrapper in wasm/dedx_extra.{h,c}.
+   *
+   * @returns Bragg peak stopping power in MeV·cm²/g.
+   * @throws LibdedxError if the computation fails.
+   */
+  getBraggPeakStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    compound: CustomCompound;
+  }): number;
 
   /**
    * Calculate across multiple programs at once (same particle, material, energies).

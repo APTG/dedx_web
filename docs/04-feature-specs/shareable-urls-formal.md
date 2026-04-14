@@ -1,6 +1,6 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** Final v5 (10 April 2026)
+> **Status:** Final v6 (13 April 2026)
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
@@ -33,6 +33,13 @@
 > `iunit`) to ABNF grammar (§2), semantic rules §3.5, canonicalization §4 (step 8),
 > and conformance vectors §5. `stp-iunit-token` and `length-unit-token` rules
 > added. Sourced from `inverse-lookups.md` §9.
+>
+> **v6** (13 April 2026): Added custom compound parameters (`mat_name`,
+> `mat_density`, `mat_elements`, `mat_ival`, `mat_phase`) to ABNF grammar (§2),
+> `material-pair` extended to accept `"custom"` sentinel, semantic rules §3.5
+> and §3.8 (custom compound enablement and validation), canonicalization §4
+> (step 9), and conformance vectors §5 (vectors 18–21). Sourced from
+> `custom-compounds.md`.
 >
 > **Normative relationship:**
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
@@ -85,6 +92,11 @@ pair                = urlv-pair
                     / imode-pair
                     / ivalues-pair
                     / iunit-pair
+                    / mat-name-pair
+                    / mat-density-pair
+                    / mat-elements-pair
+                    / mat-ival-pair
+                    / mat-phase-pair
                     / unknown-pair
 
 ; -----------------------------
@@ -97,7 +109,8 @@ extdata-pair        = "extdata=" ext-label ":" url-value
                     ; file. The first literal ':' in the raw parameter value is
                     ; unambiguously the label/URL separator (url-value excludes ':').
 particle-pair       = "particle=" int-pos
-material-pair       = "material=" int-pos
+material-pair       = "material=" (int-pos / "custom")
+                    ; "custom" sentinel used when a user-defined compound is active
 program-pair        = "program=" ("auto" / int-pos)    ; basic mode only
 
 ; -----------------------------
@@ -194,6 +207,24 @@ stp-iunit-token     = "kev-um" / "mev-cm" / "mev-cm2-g"
 
 length-unit-token   = "nm" / "um" / "mm" / "cm" / "m"
                     ; "um" is the canonical URL token for µm
+
+; -----------------------------
+; custom compound params (Advanced mode only; only when material=custom)
+; -----------------------------
+mat-name-pair       = "mat_name=" value
+                    ; compound name; percent-decoded (URLSearchParams behavior)
+mat-density-pair    = "mat_density=" number
+                    ; material density in g/cm³; must be > 0; scientific notation allowed
+mat-elements-pair   = "mat_elements=" mat-element *("," mat-element)
+                    ; comma-separated list; elements in ascending Z order (canonical)
+mat-element         = int-pos ":" number
+                    ; int-pos = atomic number Z ∈ [1, 118]
+                    ; number = atom count > 0 (may be fractional)
+mat-ival-pair       = "mat_ival=" number
+                    ; mean excitation potential in eV; must be > 0 and ≤ 10000
+                    ; omitted when compound has no iValue
+mat-phase-pair      = "mat_phase=" ("gas" / "condensed")
+                    ; omitted when "condensed" (default)
 
 ; -----------------------------
 ; entity ID (built-in or external)
@@ -371,6 +402,34 @@ Inverse-lookup constraints (applied only when `mode=advanced` and `imode` presen
   load (same as unrecognized suffix typed by user).
 - `ivalues` and `iunit` without `imode` → silently ignored.
 
+## 3.8 Custom Compound Constraints
+
+Applied only when `mode=advanced` AND `material=custom`. All `mat_*`
+params are silently ignored when either condition is false.
+
+- `mat_name`: must be non-empty after percent-decoding and trimming.
+  Missing or blank → fall back to default material (liquid water, ID 276);
+  show warning banner.
+- `mat_density`: must parse as a finite positive number (> 0). Scientific
+  notation valid. Missing, zero, negative, or non-numeric → fall back to
+  default material; show warning banner.
+- `mat_elements`: must be present with at least one valid element token.
+  Missing entirely → fall back to default material; show warning banner.
+  Individual token errors:
+  - Z outside [1, 118] → silently drop that element
+  - atom count ≤ 0 or non-numeric → silently drop that element
+  - duplicate Z → collapse by summing counts
+  - If all tokens are invalid → fall back to default material; show warning
+- `mat_ival`: must parse as a positive number > 0 and ≤ 10 000. Out of
+  range or non-numeric → silently ignored (compound proceeds without
+  iValue override).
+- `mat_phase`: must be `"gas"` or `"condensed"`. Unknown value → silently
+  ignored; defaults to `"condensed"`.
+
+Receiving `material=custom` does **not** automatically save the compound
+to `localStorage`. A dismissible "Compound from shared URL" banner is
+shown (see `custom-compounds.md` §6.4).
+
 Advanced Options constraints (applied only when `mode=advanced`):
 - `agg_state`: value must be `"gas"` or `"condensed"`. If the value equals the
   material's built-in phase, treat as no override (same as absent).
@@ -431,6 +490,17 @@ Canonical parameter order:
       material phase (see §3.6); otherwise serialized as a canonical token
       (`stp-iunit-token` or `length-unit-token`)
 
+9. Custom compound params — present **only** when `mode=advanced` AND
+   `material=custom`, in this sub-order:
+   a. `mat_name` — always emitted (percent-encoded via `encodeURIComponent`)
+   b. `mat_density` — always emitted; serialized via `Number.prototype.toString()`
+   c. `mat_elements` — always emitted; elements ordered by **ascending Z**;
+      atom counts serialized via `Number.prototype.toString()`
+   d. `mat_ival` — omitted when compound has no iValue; otherwise emitted as
+      decimal number
+   e. `mat_phase` — omitted when `"condensed"` (default); emitted as `"gas"`
+      otherwise
+
 Normalization rules:
 - Always emit `urlv`.
 - Always emit `particle`, `material`, and the mode-appropriate program param.
@@ -453,6 +523,15 @@ Normalization rules:
 - In `ivalues`, per-value unit suffixes use canonical token form (e.g., `cm`, `um`,
   `kev-um`); never emit raw Unicode unit strings in the canonical URL.
 - Emit `imode` first among the inverse params; `ivalues` second; `iunit` last.
+- When `material=custom`, always emit all required `mat_*` params (`mat_name`,
+  `mat_density`, `mat_elements`) in step 9; omit `mat_ival` when absent; omit
+  `mat_phase` when condensed.
+- Never emit any `mat_*` param when `material` is a built-in integer ID.
+- Never emit `mat_*` params in basic mode, even if a custom compound is in memory.
+- In `mat_elements`, always emit elements in ascending Z order.
+- `mat_name` is always percent-encoded; never emit raw non-ASCII characters.
+- `mat_density` and `mat_elements` atom counts are serialized with
+  `Number.prototype.toString()` (decimal or scientific notation per ECMAScript rules).
 
 ---
 
@@ -565,6 +644,27 @@ Normalization rules:
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: `imode=foo` is not a valid `imode-token` → dropped; `ivalues` without `imode` also dropped.
 
+18. Custom compound — PMMA, condensed (phase omitted), no iValue:
+- Input: `urlv=1&particle=1&material=custom&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+- Canonical: same (all params in canonical order; `mat_phase` omitted because condensed is default; `mat_ival` omitted because absent).
+- Note: elements in ascending Z (H=1, C=6, O=8) ✓.
+
+19. Custom compound — LiF pellets, condensed (explicitly specified), with iValue:
+- Input: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94.0&mat_phase=condensed`
+- Canonical: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94`
+- Note: `mat_phase=condensed` was explicitly provided in input, but canonicalization omits it because condensed is the default phase (§4 step 9e).
+- Note: elements in ascending Z (Li=3, F=9) ✓; `mat_ival=94` (ECMAScript drops trailing .0).
+
+20. Custom compound — `mat_*` params in basic mode — silently dropped:
+- Input: `urlv=1&particle=1&material=custom&program=auto&energies=100&eunit=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+- Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
+- Note: no `mode=advanced` → `material=custom` and `mat_*` params silently dropped; material defaults to liquid water (276).
+
+21. Custom compound — `mat_name` missing → fall back:
+- Input: `urlv=1&particle=1&material=custom&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+- Result: `mat_name` absent → fall back to default material (276); show warning banner.
+- Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
+
 ---
 
 ## 6. Implementation Guidance
@@ -584,6 +684,7 @@ Validation should be deterministic and side-effect free.
 - Primary product behavior: [`shareable-urls.md`](shareable-urls.md)
 - Multi-program semantics: [`multi-program.md`](multi-program.md)
 - Energy units and conversion: [`unit-handling.md`](unit-handling.md)
+- Custom compounds (mat_* params, §6 URL contract): [`custom-compounds.md`](custom-compounds.md)
 - Plot series semantics: [`plot.md`](plot.md)
 - Entity compatibility rules: [`entity-selection.md`](entity-selection.md)
 - Type and ID source of truth: [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md)
