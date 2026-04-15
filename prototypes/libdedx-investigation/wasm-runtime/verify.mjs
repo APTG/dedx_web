@@ -9,12 +9,14 @@
  *   node verify.mjs
  *
  * Prerequisites: run ./build.sh first to populate output/
+ *
+ * Outputs: ../data/wasm_runtime_stats.json (machine-readable runtime data)
  */
 
 import { pathToFileURL } from 'url';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync } from 'fs';
+import { existsSync, writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outputDir = resolve(__dirname, 'output');
@@ -36,6 +38,28 @@ const m = await createModule({
     printErr: () => {},  // suppress libdedx internal stderr during init
 });
 console.log('OK\n');
+
+// ─── JSON data collector ─────────────────────────────────────────────────────
+
+const runtimeStats = {
+  metadata: {
+    generated_at: new Date().toISOString(),
+    analysis_type: "wasm_runtime_verification_phase2",
+    wasm_environment: "node",
+    build_script: "wasm-runtime/build.sh",
+  },
+  library_version: null,
+  programs: [],
+  material_counts: {},
+  ion_lists: {},
+  mstar_ion_list: [],
+  reference_checks: {},
+  i_value_checks: [],
+  density_checks: [],
+  composition_checks: [],
+  estar_status: null,
+  build_artifacts: {},
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -81,6 +105,7 @@ console.log('=== 1. Library version ===');
 const version = getStr('dedx_get_version_string');
 console.log(`  libdedx: ${version}`);
 check('Version string non-empty', version.length > 0, version);
+runtimeStats.library_version = version;
 console.log();
 
 // ─── 2. Program list ─────────────────────────────────────────────────────────
@@ -92,10 +117,16 @@ const programIds = readIntList(progListPtr, 30);
 console.log(`  Programs returned by dedx_get_program_list(): ${programIds.length}`);
 for (const id of programIds) {
     const name = getStr('dedx_get_program_name', id);
+    const ver = getStr('dedx_get_program_version', id);
     const minE = m.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [id, 1]);
     const maxE = m.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [id, 1]);
     const eRange = `${minE.toExponential(2)} – ${maxE.toExponential(2)} MeV/nucl`;
-    console.log(`    [${String(id).padStart(3)}] ${name.padEnd(20)} ${eRange}`);
+    console.log(`    [${String(id).padStart(3)}] ${name.padEnd(20)} v${ver.padEnd(10)} ${eRange}`);
+    runtimeStats.programs.push({
+        id, name, version: ver,
+        min_energy_MeV_nucl_ion1: minE,
+        max_energy_MeV_nucl_ion1: maxE,
+    });
 }
 check('Program list has ≥ 5 programs', programIds.length >= 5, `${programIds.length} programs`);
 check('ASTAR (id=1) in program list',  programIds.includes(1));
@@ -136,6 +167,13 @@ console.log('    (min/max return hardcoded switch-case values even though data i
 
 console.log('  Conclusion: ESTAR is NOT implemented in libdedx v1.4.0.');
 console.log('  --preload-file is irrelevant; ESTAR needs a code implementation, not .dat files.');
+runtimeStats.estar_status = {
+    implemented: false,
+    table_size_result: estarTableSize,
+    min_energy_MeV: estarMinE,
+    max_energy_MeV: estarMaxE,
+    error: "DEDX_ERR_ESTAR_NOT_IMPL",
+};
 console.log();
 
 // ─── 4. MSTAR ion list (max Z bound) ─────────────────────────────────────────
@@ -160,6 +198,7 @@ if (mstarIons.length > 0) {
     // in dedx_get_ion_list(). The list starts at Z=2 (alpha), not Z=1 (proton).
     check('MSTAR ion list starts at Z=2 (alpha)', minZ === 2, `min Z = ${minZ}`);
     check('MSTAR ion list ends at Z=18 (Ar)', maxZ === 18, `max Z = ${maxZ}`);
+    runtimeStats.mstar_ion_list = mstarIons;
 } else {
     console.log('  MSTAR ion list: EMPTY or pointer is null');
     check('MSTAR has ions', false, 'ion list is empty');
@@ -177,6 +216,12 @@ for (const prog of programsForMats) {
     const name = getStr('dedx_get_program_name', prog);
     console.log(`  [${String(prog).padStart(3)}] ${name.padEnd(20)} ${mats.length} materials`);
     matCounts[prog] = mats.length;
+    runtimeStats.material_counts[prog] = { name, count: mats.length };
+
+    // Also collect ion list for each program
+    const ionPtr = m.ccall('dedx_get_ion_list', 'number', ['number'], [prog]);
+    const ions = readIntList(ionPtr, 200);
+    runtimeStats.ion_lists[prog] = { name, ions, count: ions.length };
 }
 check('DEFAULT (100) covers ≥ 270 materials', (matCounts[100] ?? 0) >= 270,
     `${matCounts[100] ?? 0} materials`);
@@ -245,9 +290,120 @@ const stpOk = Math.abs(stp - 7.3) / 7.3 < 0.05;  // within 5%
 check('PSTAR H₂O 100 MeV/nucl — error code = 0', errCode === 0, `errCode = ${errCode}`);
 check('PSTAR H₂O 100 MeV/nucl — within 5% of 7.3 MeV·cm²/g', stpOk,
     `${stp.toFixed(5)} MeV·cm²/g (Δ = ${((stp - 7.3) / 7.3 * 100).toFixed(2)}%)`);
+runtimeStats.reference_checks.pstar_water_100MeV = {
+    program: "PSTAR", ion: "H (Z=1)", target: "Water (ID=276)",
+    energy_MeV_nucl: 100.0,
+    result_MeV_cm2_g: stp,
+    expected_MeV_cm2_g: 7.3,
+    delta_percent: (stp - 7.3) / 7.3 * 100,
+    error_code: errCode,
+    pass: stpOk,
+};
 console.log();
 
-// ─── 9. Summary ──────────────────────────────────────────────────────────────
+// ─── 9. I-value spot-checks (Task 2.9) ───────────────────────────────────────
+
+console.log('=== 9. I-value spot-checks ===');
+const iValueMaterials = [
+    { id: 1,   name: 'Hydrogen',  expected_eV: 19.2 },
+    { id: 6,   name: 'Carbon',    expected_eV: 78.0 },
+    { id: 13,  name: 'Aluminum',  expected_eV: 166.0 },
+    { id: 29,  name: 'Copper',    expected_eV: 322.0 },
+    { id: 79,  name: 'Gold',      expected_eV: 790.0 },
+    { id: 82,  name: 'Lead',      expected_eV: 823.0 },
+    { id: 276, name: 'Water',     expected_eV: 75.0 },
+    { id: 104, name: 'Air',       expected_eV: 85.7 },
+];
+for (const { id, name, expected_eV } of iValueMaterials) {
+    const iErrPtr = m._malloc(4);
+    const iVal = m.ccall('dedx_get_i_value', 'number', ['number', 'number'], [id, iErrPtr]);
+    const iErr = m.HEAP32[iErrPtr >> 2];
+    m._free(iErrPtr);
+    const delta = expected_eV > 0 ? ((iVal - expected_eV) / expected_eV * 100).toFixed(1) : 'N/A';
+    const pass = iErr === 0 && iVal > 0;
+    console.log(`  ${name.padEnd(12)} (id=${String(id).padStart(3)}): ${iVal.toFixed(1)} eV  (expected ~${expected_eV} eV, Δ=${delta}%, err=${iErr})`);
+    check(`I-value ${name} returns valid value`, pass, `${iVal.toFixed(1)} eV`);
+    runtimeStats.i_value_checks.push({ material_id: id, name, value_eV: iVal, expected_eV, delta_percent: parseFloat(delta), error_code: iErr });
+}
+console.log();
+
+// ─── 10. Density spot-checks (Task 2.10) ─────────────────────────────────────
+
+console.log('=== 10. Density spot-checks ===');
+const densityMaterials = [
+    { id: 1,   name: 'Hydrogen',  expected_g_cm3: 8.375e-5 },
+    { id: 13,  name: 'Aluminum',  expected_g_cm3: 2.699 },
+    { id: 29,  name: 'Copper',    expected_g_cm3: 8.96 },
+    { id: 79,  name: 'Gold',      expected_g_cm3: 19.32 },
+    { id: 276, name: 'Water',     expected_g_cm3: 1.0 },
+    { id: 104, name: 'Air',       expected_g_cm3: 1.205e-3 },
+];
+for (const { id, name, expected_g_cm3 } of densityMaterials) {
+    const dErrPtr = m._malloc(4);
+    const density = m.ccall('dedx_internal_read_density', 'number', ['number', 'number'], [id, dErrPtr]);
+    const dErr = m.HEAP32[dErrPtr >> 2];
+    m._free(dErrPtr);
+    const pass = dErr === 0 && density > 0;
+    console.log(`  ${name.padEnd(12)} (id=${String(id).padStart(3)}): ${density.toExponential(4)} g/cm³  (expected ~${expected_g_cm3}, err=${dErr})`);
+    check(`Density ${name} returns valid value`, pass, `${density.toExponential(4)} g/cm³`);
+    runtimeStats.density_checks.push({ material_id: id, name, value_g_cm3: density, expected_g_cm3, error_code: dErr });
+}
+console.log();
+
+// ─── 11. Composition spot-checks (Task 2.11) ─────────────────────────────────
+
+console.log('=== 11. Composition spot-checks ===');
+const compMaterials = [
+    { id: 276, name: 'Water',    expected_elements: [1, 8] },
+    { id: 104, name: 'Air',      expected_elements: [6, 7, 8, 18] },
+    { id: 223, name: 'PMMA',     expected_elements: [1, 6, 8] },
+];
+for (const { id, name, expected_elements } of compMaterials) {
+    // dedx_get_composition(target, composition[][2], &comp_len, &err)
+    // Allocate space: max 20 elements × 2 floats × 4 bytes = 160 bytes
+    const compPtr = m._malloc(20 * 2 * 4);
+    const compLenPtr = m._malloc(4);
+    const compErrPtr = m._malloc(4);
+    m.HEAP32[compLenPtr >> 2] = 0;
+    m.HEAP32[compErrPtr >> 2] = 0;
+
+    m.ccall('dedx_get_composition', null,
+        ['number', 'number', 'number', 'number'],
+        [id, compPtr, compLenPtr, compErrPtr]);
+
+    const compLen = m.HEAP32[compLenPtr >> 2];
+    const compErr = m.HEAP32[compErrPtr >> 2];
+    const composition = [];
+    for (let i = 0; i < compLen; i++) {
+        const z = m.HEAPF32[(compPtr >> 2) + i * 2];
+        const frac = m.HEAPF32[(compPtr >> 2) + i * 2 + 1];
+        composition.push({ Z: Math.round(z), mass_fraction: frac });
+    }
+
+    m._free(compPtr);
+    m._free(compLenPtr);
+    m._free(compErrPtr);
+
+    const zValues = composition.map(c => c.Z);
+    const hasExpected = expected_elements.every(z => zValues.includes(z));
+    const fracSum = composition.reduce((s, c) => s + c.mass_fraction, 0);
+    const fracOk = Math.abs(fracSum - 1.0) < 0.01;
+
+    console.log(`  ${name} (id=${id}): ${compLen} elements, Z=[${zValues.join(',')}], Σfrac=${fracSum.toFixed(4)}, err=${compErr}`);
+    for (const c of composition) {
+        console.log(`    Z=${c.Z}, mass_fraction=${c.mass_fraction.toFixed(6)}`);
+    }
+    check(`Composition ${name} has expected elements`, hasExpected && compErr === 0,
+        `Z=[${zValues.join(',')}]`);
+    check(`Composition ${name} fractions sum ≈ 1.0`, fracOk, `sum=${fracSum.toFixed(4)}`);
+    runtimeStats.composition_checks.push({
+        material_id: id, name, elements: composition,
+        element_count: compLen, fraction_sum: fracSum, error_code: compErr,
+    });
+}
+console.log();
+
+// ─── 12. Summary ─────────────────────────────────────────────────────────────
 
 const passed = results.filter(r => r.pass).length;
 const failed = results.filter(r => !r.pass).length;
@@ -267,5 +423,26 @@ console.log(`  ESTAR status : NOT IMPLEMENTED in libdedx v1.4.0 (code returns DE
 console.log(`  --preload-file needed : NO (data is compiled in as C arrays)`);
 console.log(`  MSTAR max Z  : ${mstarIons.length > 0 ? Math.max(...mstarIons) : 'unknown'}`);
 console.log(`  PSTAR ref STP: ${stp.toFixed(5)} MeV·cm²/g @ 100 MeV/nucl H on Water`);
+
+// ─── 13. Write JSON output ───────────────────────────────────────────────────
+
+// Collect build artifact sizes
+import { statSync } from 'fs';
+const wasmPath = join(outputDir, 'libdedx.wasm');
+const mjsStat = statSync(mjsPath);
+const wasmStat = statSync(wasmPath);
+runtimeStats.build_artifacts = {
+    mjs_bytes: mjsStat.size,
+    wasm_bytes: wasmStat.size,
+    data_sidecar: "not present (unnecessary)",
+};
+runtimeStats.metadata.checks_passed = passed;
+runtimeStats.metadata.checks_failed = failed;
+runtimeStats.metadata.checks_total = results.length;
+
+const jsonPath = resolve(__dirname, '..', 'data', 'wasm_runtime_stats.json');
+writeFileSync(jsonPath, JSON.stringify(runtimeStats, null, 2) + '\n');
+console.log();
+console.log(`JSON output written to: ${jsonPath}`);
 
 process.exit(failed > 0 ? 1 : 0);

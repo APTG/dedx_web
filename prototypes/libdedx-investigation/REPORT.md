@@ -3,7 +3,7 @@
 > **Phase 1 date:** 2026-04-15 — Static C header inspection (`inspect_headers.py`)
 > **Phase 2 date:** 2026-04-15 — WASM runtime verification (`wasm-runtime/verify.mjs`)
 > **Phase 1 script output:** [`data/headers_stats.json`](data/headers_stats.json)
-> **Status:** Both phases complete. 24/24 runtime checks passed.
+> **Status:** Both phases complete. 44/44 runtime checks passed.
 
 ---
 
@@ -150,21 +150,21 @@ for any projectile ion.
 The `entity-selection.md` spec mentions approximately 240 particles. This cannot be satisfied
 by tabulated data alone (19 tabulated ions). The ~240 figure is best understood as:
 
-- All **elemental ions Z=1–98** available via the Bethe (`DEDX_DEFAULT`) parametric path.
-- **Electron** (ID 1001) via ESTAR.
+- All **ions Z=1–112** available via the Bethe (`DEDX_DEFAULT`) parametric path
+  (confirmed by Phase 2: `dedx_get_ion_list(DEFAULT)` returns 112 ions).
+- **Electron** (ID 1001) via ESTAR (though ESTAR is unimplemented in v1.4.0).
 - Plus special particles defined in `dedx_elements.h`: positron (1002), π⁻ (1003), π⁺ (1004),
   π⁰ (1005), antiproton (1006).
 
-Total: 98 elemental + 1 electron + 5 special = **104 particles** via Bethe path alone,
-or ~239 if Z=1–98 includes all isotopes enumerated in the UI.
+Total: 112 elemental (Z=1–112) + 1 electron + 5 special = **118 particles** via Bethe path.
+MSTAR covers Z=2–18 (17 ions) at runtime.
 
-**Verdict:** The spec claim is approximately correct only when counting all Z=1–98
-ions as available through the Bethe/MSTAR parametric path. The tabulated databases
-cover a much smaller subset. The entity-selection UI compatibility matrix must accurately
-reflect which programs support which ions.
+**Verdict:** The spec claim of ~240 particles is overstated. The actual count is 112 ions
+via DEFAULT, 17 via MSTAR, and far fewer per tabulated program. The entity-selection UI
+compatibility matrix must accurately reflect which programs support which ions.
 
 **Action:** `entity-selection.md` should clarify that "available particles" is a function
-of the selected program; the ~240 figure applies to `DEDX_DEFAULT` / `DEDX_MSTAR` only.
+of the selected program; the ~112 figure applies to `DEDX_DEFAULT` only.
 
 ---
 
@@ -323,7 +323,7 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 | ~280 materials | 279 in `dedx_elements.h` | 279 via DEFAULT | **MATCH** |
 | 29 gas targets | 29 in `dedx_embedded_gas_targets` | — (not runtime-tested) | **MATCH** |
 | Energy 10 eV – 10 GeV | 250 eV/nucl – 10 GeV/nucl tabulated | Min 2.5×10⁻⁴ MeV/nucl; max 10 GeV | **MATCH with note** |
-| ~240 particles | 19 tabulated; ~100–240 parametric | MSTAR list: Z=2–18 only | **NEEDS CLARIFICATION** |
+| ~240 particles | 19 tabulated; DEFAULT: 112 (Z=1–112) | MSTAR: Z=2–18; DEFAULT: Z=1–112 | **NEEDS CLARIFICATION** |
 | MSTAR modes A/B/C/D/G/H | All 6 confirmed in `dedx.h` | — (not runtime-tested) | **MATCH** |
 | ESTAR support | Header present but not compiled | Returns `DEDX_ERR_ESTAR_NOT_IMPL` | **NOT IMPLEMENTED** |
 | Density g/cm³ | Confirmed in `dedx_metadata.h` | — | **MATCH** |
@@ -350,14 +350,14 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 > build compiled without `--preload-file` or `--embed-file`.
 > **Script:** [`wasm-runtime/verify.mjs`](wasm-runtime/verify.mjs)
 > **Build:** [`wasm-runtime/build.sh`](wasm-runtime/build.sh) — Docker, `emscripten/emsdk:5.0.5`
-> **Result:** 24/24 checks PASS.
+> **Result:** 44/44 checks PASS.
 
 ### 10.1 Build artifacts (no .data sidecar)
 
 | File | Size | Notes |
 |------|------|-------|
 | `libdedx.mjs` | 13 KB | Emscripten module loader |
-| `libdedx.wasm` | 456 KB | Compiled C + 412 KB static arrays |
+| `libdedx.wasm` | 457 KB | Compiled C + 412 KB static arrays |
 | ~~`libdedx.data`~~ | — | **Not present** — confirmed unnecessary |
 
 **Emscripten note (build fix):** Emscripten 5.0.5 requires JSON-quoted function names in
@@ -496,7 +496,74 @@ The Phase 1 amendment list from §9 is updated with these new findings:
 
 | Document | Amendment |
 |----------|-----------|
-| `docs/decisions/003-wasm-build-pipeline.md` | Already listed in §9. Add Phase 2 build note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`; actual WASM size 456 KB. |
+| `docs/decisions/003-wasm-build-pipeline.md` | Already listed in §9. Add Phase 2 build note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`; actual WASM size 457 KB. |
 | `docs/04-feature-specs/entity-selection.md` | ESTAR must be treated as incompatible for all particle/material combinations (grey out in UI). |
-| `docs/06-wasm-api-contract.md` | ESTAR: program ID 3 is present in program list but returns `DEDX_ERR_ESTAR_NOT_IMPL`. MSTAR: `dedx_get_ion_list()` returns Z=2–18 only; wrapper must expose Z=1–98 from spec knowledge. Material names: all-caps from C API; display formatting required in wrapper. Electron (1001): name not available from C API; hard-code `"Electron"` in wrapper. |
-| `docs/04-feature-specs/entity-selection.md` | MSTAR ion coverage for Z>18 is supported via parametric path but not discoverable from `dedx_get_ion_list()`. |
+| `docs/06-wasm-api-contract.md` | ESTAR: program ID 3 is present in program list but returns `DEDX_ERR_ESTAR_NOT_IMPL`. MSTAR: `dedx_get_ion_list()` returns Z=2–18 only; wrapper must expose Z=1–98 from spec knowledge. Material names: all-caps from C API; display formatting required in wrapper. Electron (1001): name not available from C API; hard-code `"Electron"` in wrapper. DEFAULT: `dedx_get_ion_list()` returns Z=1–112 (not Z=1–98 as previously assumed). |
+| `docs/04-feature-specs/entity-selection.md` | MSTAR ion coverage for Z>18 is supported via parametric path but not discoverable from `dedx_get_ion_list()`. DEFAULT covers Z=1–112, not Z=1–98. |
+
+### 10.9 I-value spot-checks (Task 2.9)
+
+8 materials tested. All return valid I-values in eV with error code 0:
+
+| Material | ID | I-value (eV) | Expected (eV) | Note |
+|----------|----|-------------|---------------|------|
+| Hydrogen | 1 | 19.2 | 19.2 | ✓ Exact match |
+| Carbon | 6 | 81.0 | 78.0 | ~4% higher (ICRU adjustment) |
+| Aluminum | 13 | 166.0 | 166.0 | ✓ Exact match |
+| Copper | 29 | 322.0 | 322.0 | ✓ Exact match |
+| Gold | 79 | 790.0 | 790.0 | ✓ Exact match |
+| Lead | 82 | 823.0 | 823.0 | ✓ Exact match |
+| Water | 276 | 75.0 | 75.0 | ✓ Exact match |
+| Air | 104 | 85.7 | 85.7 | ✓ Exact match |
+
+**Unit confirmed:** eV (matches `06-wasm-api-contract.md` and `dedx_metadata.h`).
+
+### 10.10 Density spot-checks (Task 2.10)
+
+6 materials tested via `dedx_internal_read_density()`. All return valid densities:
+
+| Material | ID | Density (g/cm³) | Expected (g/cm³) | Note |
+|----------|----|----------------|------------------|------|
+| Hydrogen | 1 | 8.375×10⁻⁵ | 8.375×10⁻⁵ | Gas at STP |
+| Aluminum | 13 | 2.699 | 2.699 | ✓ |
+| Copper | 29 | 8.960 | 8.96 | ✓ |
+| Gold | 79 | 19.32 | 19.32 | ✓ |
+| Water | 276 | 1.000 | 1.0 | ✓ |
+| Air | 104 | 1.205×10⁻³ | 1.205×10⁻³ | Gas at STP |
+
+**Unit confirmed:** g/cm³ (matches `06-wasm-api-contract.md` and `dedx_metadata.h`).
+
+**Note:** There is no public `dedx_get_density()` function in libdedx v1.4.0.
+The internal `dedx_internal_read_density()` must be exported in the WASM build
+and wrapped by `dedx_extra.c` as the public `dedx_get_density()` for Stage 3.
+
+### 10.11 Composition spot-checks (Task 2.11)
+
+3 compounds tested via `dedx_get_composition()`:
+
+**Water (id=276):** 2 elements
+| Z | Mass fraction |
+|---|--------------|
+| 1 (H) | 0.111894 |
+| 8 (O) | 0.888106 |
+| **Sum** | **1.000000** |
+
+**Air (id=104):** 4 elements
+| Z | Mass fraction |
+|---|--------------|
+| 6 (C) | 0.000124 |
+| 7 (N) | 0.755267 |
+| 8 (O) | 0.231781 |
+| 18 (Ar) | 0.012827 |
+| **Sum** | **0.999999** |
+
+**PMMA (id=223):** 3 elements
+| Z | Mass fraction |
+|---|--------------|
+| 1 (H) | 0.080538 |
+| 6 (C) | 0.599848 |
+| 8 (O) | 0.319614 |
+| **Sum** | **1.000000** |
+
+**Format confirmed:** `[Z, mass_fraction]` float pairs (matches `06-wasm-api-contract.md`
+and `custom-compounds.md`). Mass fractions sum to 1.0 within float precision.

@@ -56,7 +56,7 @@ emcc "$LIBDEDX_A" \
     -s MODULARIZE=1 \
     -s WASM=1 \
     -s ENVIRONMENT=node \
-    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_malloc","_free"]' \
+    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_malloc","_free"]' \
     -s 'EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString","HEAP32","HEAPF32"]' \
     -s ALLOW_MEMORY_GROWTH=1 \
     -O2
