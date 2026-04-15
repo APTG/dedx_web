@@ -2,8 +2,8 @@
   "metadata": {
     "generated_at": "2026-04-15T13:29:30.702996+00:00",
     "analysis_type": "static_header_inspection_phase1",
-    "libdedx_root": "/home/leszekgrzanka/workspace/dedx_web/libdedx",
-    "embedded_dir": "/home/leszekgrzanka/workspace/dedx_web/libdedx/src/data/embedded"
+    "libdedx_root": "libdedx",
+    "embedded_dir": "libdedx/src/data/embedded"
   },
   "special_particles": {},
   "programs": {

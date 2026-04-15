@@ -300,16 +300,17 @@ As a <role>, I want to <action> so that <benefit>.
   - **Data fully embedded** — `dedx_data_access.c` has zero `fopen()` calls; all
     stopping-power tables are compiled-in static arrays. The Spike 2 `.data` sidecar
     was never read at runtime. **Outcome A confirmed.**
-  - **`--preload-file` removed** — ADR 003 updated. Stage 3 WASM build: `.mjs` + `.wasm` only.
+  - **`--preload-file` unnecessary for runtime** — investigation confirmed the Stage 3
+    WASM build target is `.mjs` + `.wasm` only; ADR 003 must stay in sync with this decision.
   - **ESTAR open** — `dedx_estar.h` not compiled by `dedx_embedded_data.c`; resolved in Phase 2.
   - **19 tabulated ions** (Z=1, 2, 3–18, electron); ~240-particle claim applies to parametric path.
   - **279 materials** (spec ~280 — CLOSE); 29 gas targets (exact match).
   - **Units confirmed** — density g/cm³, I-value eV, STP MeV·cm²/g, CSDA g/cm².
   - **412 KB raw float data** across unique tables; estimated Stage 3 WASM: ~650–860 KB.
-- **Phase 2 (planned):** WASM runtime verification — resolve ESTAR question, confirm
-  `dedx_fill_program_list()` / `dedx_fill_ion_list()` outputs, spot-check STP value.
-- **Gate:** Phase 1 findings documented. Stage 3 may begin once ADR 003 is updated
-  and the ESTAR question is resolved (Phase 2 or safe fallback).
+- **Phase 2 complete:** WASM runtime verification resolved the ESTAR question, confirmed
+  `dedx_fill_program_list()` / `dedx_fill_ion_list()` outputs, and spot-checked representative STP values.
+- **Gate:** Investigation complete. Stage 3 may proceed on the verified `.mjs` + `.wasm`
+  build path; remaining follow-up is to keep ADR 003/documentation aligned with the implemented build.
 
 ### Stage 3: WASM Build Pipeline Redesign
 - **Who:** AI implements.

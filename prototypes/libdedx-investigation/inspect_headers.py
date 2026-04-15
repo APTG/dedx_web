@@ -980,8 +980,8 @@ def main() -> None:
         "metadata": {
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "analysis_type": "static_header_inspection_phase1",
-            "libdedx_root": str(LIBDEDX_ROOT),
-            "embedded_dir": str(EMBEDDED_DIR),
+            "libdedx_root": str(LIBDEDX_ROOT.relative_to(REPO_ROOT)),
+            "embedded_dir": str(EMBEDDED_DIR.relative_to(REPO_ROOT)),
         },
         "special_particles": special_particles,
         "programs": {str(p["id"]): p for p in program_records},

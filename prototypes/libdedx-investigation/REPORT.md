@@ -508,7 +508,7 @@ The Phase 1 amendment list from §9 is updated with these new findings:
 | Material | ID | I-value (eV) | Expected (eV) | Note |
 |----------|----|-------------|---------------|------|
 | Hydrogen | 1 | 19.2 | 19.2 | ✓ Exact match |
-| Carbon | 6 | 81.0 | 78.0 | ~4% higher (ICRU adjustment) |
+| Carbon | 6 | 70.0 | 78.0 | ~10.3% lower |
 | Aluminum | 13 | 166.0 | 166.0 | ✓ Exact match |
 | Copper | 29 | 322.0 | 322.0 | ✓ Exact match |
 | Gold | 79 | 790.0 | 790.0 | ✓ Exact match |

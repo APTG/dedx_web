@@ -304,6 +304,7 @@ console.log();
 // ─── 9. I-value spot-checks (Task 2.9) ───────────────────────────────────────
 
 console.log('=== 9. I-value spot-checks ===');
+const I_VALUE_TOLERANCE_PERCENT = 15.0;
 const iValueMaterials = [
     { id: 1,   name: 'Hydrogen',  expected_eV: 19.2 },
     { id: 6,   name: 'Carbon',    expected_eV: 78.0 },
@@ -319,11 +320,17 @@ for (const { id, name, expected_eV } of iValueMaterials) {
     const iVal = m.ccall('dedx_get_i_value', 'number', ['number', 'number'], [id, iErrPtr]);
     const iErr = m.HEAP32[iErrPtr >> 2];
     m._free(iErrPtr);
-    const delta = expected_eV > 0 ? ((iVal - expected_eV) / expected_eV * 100).toFixed(1) : 'N/A';
-    const pass = iErr === 0 && iVal > 0;
+    const deltaPercent = expected_eV > 0 ? ((iVal - expected_eV) / expected_eV * 100) : Number.NaN;
+    const delta = Number.isFinite(deltaPercent) ? deltaPercent.toFixed(1) : 'N/A';
+    const withinTolerance = !Number.isFinite(deltaPercent) || Math.abs(deltaPercent) <= I_VALUE_TOLERANCE_PERCENT;
+    const pass = iErr === 0 && iVal > 0 && withinTolerance;
     console.log(`  ${name.padEnd(12)} (id=${String(id).padStart(3)}): ${iVal.toFixed(1)} eV  (expected ~${expected_eV} eV, Δ=${delta}%, err=${iErr})`);
-    check(`I-value ${name} returns valid value`, pass, `${iVal.toFixed(1)} eV`);
-    runtimeStats.i_value_checks.push({ material_id: id, name, value_eV: iVal, expected_eV, delta_percent: parseFloat(delta), error_code: iErr });
+    check(
+        `I-value ${name} within ±${I_VALUE_TOLERANCE_PERCENT}%`,
+        pass,
+        `${iVal.toFixed(1)} eV (Δ=${delta}%, err=${iErr})`,
+    );
+    runtimeStats.i_value_checks.push({ material_id: id, name, value_eV: iVal, expected_eV, delta_percent: Number.isFinite(deltaPercent) ? parseFloat(delta) : null, error_code: iErr });
 }
 console.log();
 

@@ -85,11 +85,11 @@ for full findings. Summary:
 | Units | All confirmed: density g/cm³, I-value eV, STP MeV·cm²/g, CSDA g/cm², energy MeV/nucl (ions) / MeV (electron) |
 | Raw data volume | 412.3 KB across unique tables |
 
-### Phase 2 — WASM runtime verification (24/24 checks PASS)
+### Phase 2 — WASM runtime verification (44/44 checks PASS)
 
 | Finding | Result |
 |---------|--------|
-| `--preload-file` needed? | **No** — confirmed at runtime; 456 KB `.wasm` + 13 KB `.mjs`, no `.data` |
+| `--preload-file` needed? | **No** — confirmed at runtime; 457 KB `.wasm` + 13 KB `.mjs`, no `.data` |
 | ESTAR status | **NOT IMPLEMENTED** — `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL`; not a `.dat` file issue |
 | Programs at runtime | 10 via `dedx_get_program_list()` (IDs 1–7, 9, 100, 101); ID 9 (ICRU auto-select) IS in list |
 | MSTAR runtime ion list | Z=2–18 (17 ions enumerated); Z>18 supported via polynomial scaling but not listed |

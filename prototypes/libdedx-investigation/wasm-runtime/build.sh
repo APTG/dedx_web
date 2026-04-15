@@ -26,6 +26,10 @@ mkdir -p "$OUTPUT_DIR"
 # Using a mounted script avoids all shell-quoting issues when passing JSON
 # arrays to emcc -s flags inside docker run.
 INNER_SCRIPT=$(mktemp /tmp/libdedx-phase2-build-XXXXXX.sh)
+cleanup() {
+    rm -f "$INNER_SCRIPT"
+}
+trap cleanup EXIT
 # Single-quote the heredoc delimiter → no variable expansion inside
 cat > "$INNER_SCRIPT" << 'INNEREOF'
 #!/usr/bin/env bash
@@ -80,8 +84,6 @@ docker run --rm \
     -v "$INNER_SCRIPT:/build-inner.sh:ro" \
     emscripten/emsdk:5.0.5 \
     bash /build-inner.sh
-
-rm -f "$INNER_SCRIPT"
 
 echo ""
 echo "=== Build complete ==="
