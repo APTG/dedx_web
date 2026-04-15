@@ -1,9 +1,9 @@
 # Stage 2.6: libdedx Data Source Investigation — Phase 1 Report
 
-> **Date:** 2026-04-15
-> **Method:** Static C header inspection (`inspect_headers.py` — no compilation required)
-> **Script output:** [`data/headers_stats.json`](data/headers_stats.json)
-> **Phase 2** (WASM runtime verification) is planned but not yet executed.
+> **Phase 1 date:** 2026-04-15 — Static C header inspection (`inspect_headers.py`)
+> **Phase 2 date:** 2026-04-15 — WASM runtime verification (`wasm-runtime/verify.mjs`)
+> **Phase 1 script output:** [`data/headers_stats.json`](data/headers_stats.json)
+> **Status:** Both phases complete. 24/24 runtime checks passed.
 
 ---
 
@@ -315,16 +315,20 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 
 ## 8. Spec Cross-check Summary
 
-| Spec claim | Actual | Status |
-|------------|--------|--------|
-| ~10 programs | 9 real + 1 auto-select + 1 reserved + 2 parametric Bethe | **MATCH** |
-| ~280 materials | 279 defined in `dedx_elements.h` | **CLOSE** |
-| 29 gas targets | 29 exactly in `dedx_embedded_gas_targets` | **MATCH** |
-| Energy 10 eV – 10 GeV | 250 eV/nucl – 10 GeV/nucl tabulated | **MATCH with note** |
-| ~240 particles | 19 tabulated; ~100–240 via parametric path | **NEEDS CLARIFICATION** |
-| MSTAR modes A/B/C/D/G/H | All 6 confirmed in `dedx.h` enum | **MATCH** |
-| Density in g/cm³ | Confirmed in `dedx_metadata.h` | **MATCH** |
-| I-value in eV | Confirmed in `dedx_metadata.h` | **MATCH** |
+*Updated after Phase 2 (2026-04-15) with runtime-confirmed values.*
+
+| Spec claim | Phase 1 (static) | Phase 2 (runtime) | Status |
+|------------|------------------|--------------------|--------|
+| ~10 programs | 9 real + 1 auto + 1 reserved + 2 Bethe | 10 returned by `dedx_get_program_list()` | **MATCH** |
+| ~280 materials | 279 in `dedx_elements.h` | 279 via DEFAULT | **MATCH** |
+| 29 gas targets | 29 in `dedx_embedded_gas_targets` | — (not runtime-tested) | **MATCH** |
+| Energy 10 eV – 10 GeV | 250 eV/nucl – 10 GeV/nucl tabulated | Min 2.5×10⁻⁴ MeV/nucl; max 10 GeV | **MATCH with note** |
+| ~240 particles | 19 tabulated; ~100–240 parametric | MSTAR list: Z=2–18 only | **NEEDS CLARIFICATION** |
+| MSTAR modes A/B/C/D/G/H | All 6 confirmed in `dedx.h` | — (not runtime-tested) | **MATCH** |
+| ESTAR support | Header present but not compiled | Returns `DEDX_ERR_ESTAR_NOT_IMPL` | **NOT IMPLEMENTED** |
+| Density g/cm³ | Confirmed in `dedx_metadata.h` | — | **MATCH** |
+| I-value eV | Confirmed in `dedx_metadata.h` | — | **MATCH** |
+| PSTAR H₂O ref STP | 7.3 MeV·cm²/g (NIST) | 7.28614 MeV·cm²/g (Δ −0.19%) | **MATCH** |
 
 ---
 
@@ -339,17 +343,160 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 
 ---
 
-## 10. Phase 2 Plan
+## 10. Phase 2 — WASM Runtime Verification
 
-Phase 2 uses the existing Spike 2 WASM build (in `prototypes/wasm-preload/preload/`)
-loaded **without** `--preload-file` to verify:
+> **Date:** 2026-04-15
+> **Method:** Node.js ESM test runner (`wasm-runtime/verify.mjs`) loading a fresh WASM
+> build compiled without `--preload-file` or `--embed-file`.
+> **Script:** [`wasm-runtime/verify.mjs`](wasm-runtime/verify.mjs)
+> **Build:** [`wasm-runtime/build.sh`](wasm-runtime/build.sh) — Docker, `emscripten/emsdk:5.0.5`
+> **Result:** 24/24 checks PASS.
 
-| Check | API call | Validates |
-|-------|----------|-----------|
-| ESTAR without `.data` | `dedx_get_stp_table_size(3, 1001, 276)` | Whether ESTAR data is embedded |
-| Runtime program list | `dedx_fill_program_list()` | Matches static header enum |
-| MSTAR ion range | `dedx_fill_ion_list(4)` | Parametric coverage upper Z bound |
-| Known STP value | `dedx_get_simple_stp_for_program(2, 1, 276, 100.0)` | PSTAR H₂O at 100 MeV/nucl ≈ 7.3 MeV·cm²/g |
-| Material name spot-check | `dedx_get_material_name(276)` | ID 276 = "Water, Liquid" |
+### 10.1 Build artifacts (no .data sidecar)
 
-Phase 2 conclusion feeds the final bundle strategy and closes the ESTAR open question.
+| File | Size | Notes |
+|------|------|-------|
+| `libdedx.mjs` | 13 KB | Emscripten module loader |
+| `libdedx.wasm` | 456 KB | Compiled C + 412 KB static arrays |
+| ~~`libdedx.data`~~ | — | **Not present** — confirmed unnecessary |
+
+**Emscripten note (build fix):** Emscripten 5.0.5 requires JSON-quoted function names in
+`EXPORTED_FUNCTIONS`: `["_func1","_func2"]` rather than the old bracket-only format
+`[_func1,_func2]`. Using the old format silently produced a 241-byte empty WASM.
+The `build.sh` uses a mounted inner script (heredoc with single-quoted delimiter) to
+avoid shell-quoting issues when passing JSON arrays inside `docker run`.
+
+### 10.2 ESTAR critical finding — **NOT IMPLEMENTED**
+
+This was the open question from Phase 1. The answer is more definitive than expected:
+
+**ESTAR is explicitly unimplemented in libdedx v1.4.0.** It is not a `.dat` file access
+problem at all.
+
+Evidence from static analysis (`dedx.c` lines 587–589):
+```c
+} else if (prog == DEDX_ESTAR) {
+    *err = DEDX_ERR_ESTAR_NOT_IMPL;
+    return -1;
+}
+```
+
+Runtime confirmation:
+```
+dedx_get_stp_table_size(ESTAR=3, electron=1001, Water=276) = -1
+```
+
+The `DEDX_ERR_ESTAR_NOT_IMPL` error is defined with the message `"ESTAR is not implemented yet."`.
+The `dedx_estar.h` header exists and contains the full tabulated data (132 energy points,
+76 targets) but is never compiled in by `dedx_embedded_data.c` and never used.
+
+**Implication for ADR 003:** `--preload-file` is doubly unnecessary for ESTAR:
+1. The raw `.dat` files are never read anyway (Phase 1 finding: zero `fopen()` calls).
+2. ESTAR implementation is missing in the calculation path (`find_data()` early-returns).
+
+**Implication for Stage 3:** The WASM service layer must document ESTAR as
+"not available in libdedx v1.4.0" and either exclude it from the compatibility matrix
+or show it as greyed out. The `dedx_estar.h` data and code path exist and could be
+wired up in a future libdedx version; no API changes are needed.
+
+**Implication for the spec:** `entity-selection.md` and `06-wasm-api-contract.md`
+must note that ESTAR (program ID 3) is present in `dedx_get_program_list()` output
+but returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculation requests.
+The UI must treat ESTAR as an incompatible program for all particle/material combinations.
+
+### 10.3 Runtime program list
+
+10 programs returned by `dedx_get_program_list()`:
+
+| ID | Name | Min energy (ion=1) | Max energy (ion=1) |
+|----|------|-----------|---------|
+| 1 | ASTAR | 2.50×10⁻⁴ MeV/nucl | 2.50×10² MeV/nucl |
+| 2 | PSTAR | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
+| 3 | ESTAR | 1.00×10⁻³ MeV *(hardcoded — unimplemented)* | 1.00×10⁴ MeV |
+| 4 | MSTAR | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
+| 5 | ICRU73\_OLD | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
+| 6 | ICRU73 | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
+| 7 | ICRU49 | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
+| 9 | ICRU | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
+| 100 | DEFAULT | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
+| 101 | BETHE\_EXT00 | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
+
+Note: energy range queried with `ion=1` (proton). For programs that don't support proton
+(ICRU73: Z=3–18), the switch-case default values are returned rather than the actual
+program limits. The energy ranges for specific ion types must be queried with the
+correct ion ID.
+
+**Matches static header enum:** IDs 1–7, 9, 100, 101 — all accounted for. ID 8 is
+reserved and not returned. ID 9 (ICRU auto-select) IS in the program list, which
+**contradicts the Phase 1 recommendation** to exclude it. This must be handled in the
+TypeScript wrapper (exclude ID 9 from the UI program picker even though it appears
+in `dedx_get_program_list()`).
+
+### 10.4 MSTAR ion list (runtime)
+
+`dedx_get_ion_list(MSTAR=4)` returns **17 ions: Z = 2–18**.
+
+```
+[2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18]
+```
+
+- The list starts at Z=2 (alpha), **not** Z=1 (proton). PSTAR handles protons.
+- The list ends at Z=18 (argon). Higher-Z ions (Z=19–98) are supported via the general
+  polynomial scaling formula in `dedx_mpaul.c` (`pow(ion, n)` for n=0.5–4.5) but are
+  not enumerated in the runtime ion list.
+- **Implication:** The UI cannot use `dedx_get_ion_list(MSTAR)` to discover the full
+  MSTAR ion coverage. The TypeScript wrapper must know that MSTAR supports Z=1–98
+  and expose this range based on the spec/docs, not from the runtime list.
+
+### 10.5 Runtime material counts
+
+| Program | Materials (runtime) | Notes |
+|---------|-------------------|-------|
+| ASTAR | 78 | Phase 1 static: 74 (target_ids array size) |
+| PSTAR | 78 | Phase 1 static: 74 |
+| ESTAR | 0 | Unimplemented |
+| MSTAR | 78 | Phase 1 static: 78 ✓ |
+| ICRU73\_OLD | 78 | Phase 1 static: 56 |
+| ICRU73 | 78 | Phase 1 static: 56 |
+| ICRU49 | 78 | Phase 1 static: 74 |
+| DEFAULT | 279 | Parametric — all materials |
+
+**Discrepancy with Phase 1:** `dedx_get_material_list()` returns 78 for all tabulated
+programs regardless of actual tabulated coverage. The function appears to return the set
+of materials that *have density/metadata* (ICRU-relevant subset) rather than strictly
+those with tabulated stopping power data. When an ICRU73 calculation is requested for
+a material not in its 56-target tabulation, libdedx likely falls back to PSTAR or
+Bethe internally. The runtime value (78) is authoritative for what the API exposes.
+
+### 10.6 Material and ion names
+
+Material names are returned in **ALL CAPS** by `dedx_get_material_name()`:
+`"WATER"`, `"HYDROGEN"`, `"GRAPHITE"`, etc. The TypeScript wrapper in Stage 3 will
+need to apply title-case or a display-name mapping for UI presentation.
+
+Ion names for Z=1–98 are returned correctly (e.g., `"HYDROGEN"`, `"HELIUM"`, `"CARBON"`).
+Ion ID 1001 (electron) has **no name entry** — `dedx_get_ion_name(1001)` returns `""`.
+The TypeScript wrapper must hard-code the display name `"Electron"` for ID 1001.
+
+### 10.7 Reference STP value
+
+```
+PSTAR, H (Z=1), Water (ID=276), E = 100.0 MeV/nucl
+Result: 7.28614 MeV·cm²/g  (error code = 0)
+Expected: ≈ 7.3 MeV·cm²/g  (NIST PSTAR)
+Delta: −0.19%  ✓
+```
+
+The reference value matches within 0.2%. The data pipeline (static C arrays → WASM →
+Node.js float) introduces no significant precision loss.
+
+### 10.8 Additional amendments required (Phase 2)
+
+The Phase 1 amendment list from §9 is updated with these new findings:
+
+| Document | Amendment |
+|----------|-----------|
+| `docs/decisions/003-wasm-build-pipeline.md` | Already listed in §9. Add Phase 2 build note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`; actual WASM size 456 KB. |
+| `docs/04-feature-specs/entity-selection.md` | ESTAR must be treated as incompatible for all particle/material combinations (grey out in UI). |
+| `docs/06-wasm-api-contract.md` | ESTAR: program ID 3 is present in program list but returns `DEDX_ERR_ESTAR_NOT_IMPL`. MSTAR: `dedx_get_ion_list()` returns Z=2–18 only; wrapper must expose Z=1–98 from spec knowledge. Material names: all-caps from C API; display formatting required in wrapper. Electron (1001): name not available from C API; hard-code `"Electron"` in wrapper. |
+| `docs/04-feature-specs/entity-selection.md` | MSTAR ion coverage for Z>18 is supported via parametric path but not discoverable from `dedx_get_ion_list()`. |
