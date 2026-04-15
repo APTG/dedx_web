@@ -65,9 +65,8 @@ dedx_web/
 │               └── +page.svelte        # Technical reference
 ├── static/
 │   ├── wasm/
-│   │   ├── libdedx.mjs                 # Emscripten ES module glue (built artifact)
-│   │   ├── libdedx.data                # Emscripten preloaded filesystem/data sidecar (built artifact)
-│   │   └── libdedx.wasm                # WASM binary (built artifact)
+│   │   ├── libdedx.mjs                 # Emscripten ES module glue (built artifact, ~13 KB)
+│   │   └── libdedx.wasm                # WASM binary (built artifact, ~457 KB — data compiled in, no .data sidecar)
 │   ├── favicon.svg                     # Vector icon — modern browsers; scales to any size
 │   ├── favicon.ico                     # Legacy fallback (combined 16×16 + 32×32 ICO)
 │   ├── apple-touch-icon.png            # iOS home screen shortcut (180×180 px)
@@ -191,8 +190,8 @@ Browser load
               ▼
          loader.ts: getService()    ← async, non-blocking
               │
-              ├─► static/wasm/libdedx.mjs   (fetch)
-              └─► static/wasm/libdedx.wasm  (fetch in parallel)
+              ├─► static/wasm/libdedx.mjs   (fetch, ~13 KB)
+              └─► static/wasm/libdedx.wasm  (fetch in parallel, ~457 KB — no .data sidecar)
                         │
                         ▼
                   Module compiled and instantiated
@@ -269,7 +268,9 @@ export async function getService(): Promise<LibdedxService> {
 The `locateFile` override tells Emscripten where to find `libdedx.wasm`
 relative to the deployment base path. Using `$app/paths.base` rather than a
 hardcoded `/wasm/…` prefix ensures the loader works correctly under sub-path
-hosting (e.g. GitHub Pages at `/dedx_web/`).
+hosting (e.g. GitHub Pages at `/dedx_web/`). No `.data` sidecar exists —
+all stopping-power tables are compiled into `libdedx.wasm` as static C arrays
+(confirmed by Stage 2.6 Phase 2: 44/44 checks PASS with no `--preload-file`).
 
 #### `src/lib/wasm/libdedx.ts`
 
@@ -855,7 +856,7 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 
 | Area | Strategy |
 |------|----------|
-| WASM binary size | `libdedx.wasm` ~1–3 MB + `libdedx.data` ~2–4 MB — served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See [`09-non-functional-requirements.md` §3.1](09-non-functional-requirements.md#31-browser-caching). |
+| WASM binary size | `libdedx.wasm` **457 KB** + `libdedx.mjs` 13 KB (~200 KB gzip total) — no `.data` sidecar (all data compiled in). Served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See [`09-non-functional-requirements.md` §3.1](09-non-functional-requirements.md#31-browser-caching). |
 | JSROOT bundle | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`). |
 | Main-thread computation | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy). |
 | Calculation debounce | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke. |

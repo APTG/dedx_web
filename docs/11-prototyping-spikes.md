@@ -23,7 +23,7 @@ architectural rework:
 | Risk | Specified in | What could go wrong |
 |------|-------------|---------------------|
 | JSROOT 7 inside Svelte 5 `$effect` | [03-architecture.md §5](03-architecture.md#5-component-tree), [ADR 002](decisions/002-keep-jsroot.md) | DOM ownership conflict; `untrack` pattern insufficient; JSROOT cleanup not idempotent; memory leaks on re-draw |
-| Emscripten `--preload-file` on GitHub Pages | [ADR 003](decisions/003-wasm-build-pipeline.md), [03-architecture.md §3](03-architecture.md#3-wasm-service-layer) | `.data` file not served with correct MIME type; CORS or path resolution errors; regression from legacy `--embed-file` |
+| Emscripten `--preload-file` on GitHub Pages | [ADR 003](decisions/003-wasm-build-pipeline.md), [03-architecture.md §3](03-architecture.md#3-wasm-service-layer) | `.data` file not served with correct MIME type; CORS or path resolution errors; regression from legacy `--embed-file`. **Stage 2.6 supersedes: `--preload-file` is unnecessary — all data compiled into WASM.** |
 | Module-level `$state` in `.svelte.ts` files | [03-architecture.md §4](03-architecture.md#4-reactive-state-topology) | Reactivity lost across module boundaries; `{ value: T }` wrapper pattern not tracked by Svelte's proxy; `$derived` at module scope not re-evaluated |
 
 Each spike is designed to be completable by an AI coding agent in a single
@@ -836,6 +836,47 @@ have been amended to reflect the validated alternative approach.
 
 After all spikes pass, the `prototypes/` directory should be deleted
 (or `.gitignore`'d) before Stage 3 begins.
+
+---
+
+## Stage 2.6: libdedx Data Source Investigation (Gate)
+
+> Added 15 April 2026 after Phase 1 + Phase 2 completion.
+
+**Status:** Complete. Stage 3 gate: **OPEN.**
+
+| Phase | Status | Key findings |
+|-------|--------|-------------|
+| Phase 1 — static C header analysis | ✅ Complete | Data fully embedded (`dedx_data_access.c` has zero `fopen()` calls); `--preload-file` unnecessary; `dedx_estar.h` exists but not compiled in; 279 materials; 29 gas targets confirmed |
+| Phase 2 — WASM runtime (44/44 PASS) | ✅ Complete | ESTAR NOT IMPLEMENTED (`DEDX_ERR_ESTAR_NOT_IMPL`); 457 KB `.wasm` + 13 KB `.mjs`; no `.data`; material names ALL-CAPS; `dedx_get_ion_name(1001)` returns `""`; DEFAULT covers Z=1–112; MSTAR runtime list Z=2–18 |
+| Phase 3 — bundle size | Covered in REPORT.md | Monolithic build recommended (457 KB — well within budget). Per-program splitting not worth the complexity. |
+| Phase 4 — spec cross-check | ✅ Complete | Amendments applied to ADR 003, `06-wasm-api-contract.md`, `entity-selection.md`, `03-architecture.md` |
+
+### Gate rule amendment for Stage 3
+
+The **Spike 2** gate validated `--preload-file` on static hosting. **Stage 2.6
+supersedes this**: the correct Stage 3 build target is `.mjs` + `.wasm` only —
+`--preload-file` is unnecessary because all stopping-power data is compiled into
+the WASM binary. The `wasm/build.sh` script in Stage 3 must **omit**
+`--preload-file`. See `prototypes/libdedx-investigation/REPORT.md` §7.
+
+### ESTAR implications for Stage 3
+
+Electron stopping powers via ESTAR are not available in libdedx v1.4.0.
+The Stage 3 TypeScript wrapper must:
+- Include ESTAR (ID=3) in the program list but never call it for calculations.
+- Include Electron (ID=1001) in the particle list, hard-coded name `"Electron"`,
+  always greyed out.
+- No changes to `LibdedxService` interface or `dedx_extra.h` needed for ESTAR.
+
+### References
+
+- `prototypes/libdedx-investigation/VERDICT.md` — go/no-go decision record
+- `prototypes/libdedx-investigation/REPORT.md` — full findings
+- `prototypes/libdedx-investigation/data/wasm_runtime_stats.json` — machine-readable runtime data
+- `docs/ai-logs/2026-04-15-libdedx-investigation-phase1.md`
+- `docs/ai-logs/2026-04-15-libdedx-investigation-phase2.md`
+- `docs/ai-logs/2026-04-15-libdedx-investigation-completion.md`
 
 ---
 

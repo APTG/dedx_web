@@ -1,6 +1,8 @@
 # WASM API Contract
 
-> **Status:** Final (v2, 2 April 2026) — all open questions resolved.
+> **Status:** Final (v3, 15 April 2026) — Stage 2.6 amendments applied.
+> ESTAR marked not-implemented, material names ALL-CAPS, DEFAULT Z=1–112,
+> MSTAR runtime list Z=2–18, EXPORTED_FUNCTIONS JSON format, no data sidecar.
 >
 > This document defines the TypeScript interface for the libdedx WebAssembly wrapper.
 > All frontend components, stores, and tests are written against these types and interfaces.
@@ -18,7 +20,7 @@
 | Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API. `calculateCustomCompound()` covers the forward path. Inverse and Bragg-peak variants (`getInverseStpCustomCompound`, `getInverseCsdaCustomCompound`, `getBraggPeakStpCustomCompound`) are added via thin C wrappers in `wasm/dedx_extra.{h,c}`. Plot-data generation (`getPlotDataCustomCompound`) is JS-side only. |
 | Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
 | Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
-| ESTAR (electrons) | **Included** | ESTAR (program 3, particle ID 1001) covers all ~280 materials. Exposed in the UI as a special "Electron" entry in the `ParticleEntity` list. |
+| ESTAR (electrons) | **Not available (libdedx v1.4.0)** | ESTAR (program 3) is returned by `dedx_get_program_list()` but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL` for every calculation. The `dedx_estar.h` tabulated data exists but is compiled out. The TypeScript wrapper exposes ESTAR in the program list so it can be shown in the UI — but must mark it as incompatible for all particle/material combinations (no valid calculations). Electron (particle ID 1001) is included in the particle list but only with ESTAR as its sole program; it must therefore be greyed out at all times until a future libdedx release enables ESTAR. Hard-code `"Electron"` as its display name since `dedx_get_ion_name(1001)` returns `""`. |
 | MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
 | Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
 | Interpolation | **Exposed** | Two orthogonal controls: axis scale (Log-log / Lin-lin) and fitting method (Linear / Spline). Both in the Advanced Options panel. `InterpolationScale` maps to C `DEDX_INTERPOLATION_*`; spline method is JS-only and requires JS-level CSDA integration. |
@@ -710,7 +712,7 @@ These are the C functions that must be exported in the Emscripten build
 | `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()` | Compound composition |
 | `_dedx_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
 
-### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §10)
+### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §11)
 
 These wrappers live in this repository and are compiled alongside libdedx.
 
@@ -738,9 +740,10 @@ Also export `_malloc` and `_free` for heap allocation from JS.
 | Module format | **ES module** (`EXPORT_ES6=1`, `MODULARIZE=1`) | Native import in Vite/SvelteKit |
 | Environment | `ENVIRONMENT='web'` | Browser-only target |
 | Memory growth | `ALLOW_MEMORY_GROWTH=1` | Large material lists and batch calculations |
-| Data embedding | `--embed-file data@data/` | Embeds libdedx data tables into the .js module |
-| Build tool | **Docker** (`emscripten/emsdk`) | Reproducible builds without local Emscripten install |
-| Output files | `libdedx.mjs` + `libdedx.wasm` | ES module naming convention |
+| Data embedding | **(none)** | All stopping-power tables are compiled into the WASM binary as static C arrays (`dedx_embedded_data.c`). `dedx_data_access.c` has zero `fopen()` calls. No `--preload-file` or `--embed-file` needed. Stage 2.6 confirmed: 457 KB `.wasm` + 13 KB `.mjs`, no `.data` sidecar. |
+| Build tool | **Docker** (`emscripten/emsdk:5.0.5`) | Reproducible builds without local Emscripten install |
+| Output files | `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB) | ES module naming convention; no `.data` sidecar |
+| EXPORTED_FUNCTIONS format | JSON-quoted strings | Emscripten 5.x requires `'["_func1","_func2"]'`; unquoted format compiles silently but produces an empty 241-byte WASM with no exports |
 
 ---
 
@@ -903,13 +906,30 @@ const PARTICLE_ALIASES: Record<number, { name: string; aliases: string[] }> = {
 
 ### Q2: ESTAR (electrons)
 
-**Resolution: Include.** ESTAR (`DEDX_ESTAR = 3`, `particle ID = 1001`) is listed in the
-C API. The web interface should expose it. Note:
-- ESTAR uses a special particle ID `1001` (not atomic number).
-- It covers all ~280 materials.
-- The `ParticleEntity` for electrons gets `massNumber = 0` (not applicable;
-  electrons use MeV only, and no per-nucleon conversion is allowed).
-- UI should label it as "Electron" and handle it as a special case.
+**Resolution (revised, Stage 2.6): NOT IMPLEMENTED in libdedx v1.4.0.**
+
+`dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL` for every ESTAR
+calculation. `dedx_estar.h` contains tabulated data but it is never compiled in
+by `dedx_embedded_data.c`. This is not a build or file-access issue — the
+code path is intentionally disabled in the current release.
+
+Runtime observations:
+- `dedx_get_stp_table_size(3, 1001, 276)` returns `-1` (error).
+- `dedx_get_material_list(ESTAR)` returns an empty list (0 materials).
+- `dedx_get_ion_name(1001)` returns `""` — hard-code `"Electron"` in the wrapper.
+
+**UI handling:**
+- ESTAR (ID=3) appears in `dedx_get_program_list()` output — include it in the
+  `ProgramEntity` list but add a `disabled` flag or equivalent.
+- Electron (ID=1001) appears in the `ParticleEntity` list but its only
+  associated program is ESTAR. It must be greyed out at all times in v1.
+- When ESTAR or Electron is selected, show a tooltip: *"Electron stopping powers
+  not available in libdedx v1.4.0."*
+- The `ParticleEntity` for electrons still gets `massNumber = 0` (no
+  per-nucleon conversion for electrons; they use MeV only).
+
+A future libdedx release could enable ESTAR without any TypeScript API changes —
+the data and code path both exist; only the guard at `dedx.c:587` needs removing.
 
 ### Q3: MSTAR modes
 
@@ -990,7 +1010,81 @@ a helper `isGasByDefault(materialId: number): boolean` (calls the to-be-exposed
 
 ---
 
-## 10. Thin C Wrappers (Local to This Repository)
+## 10. Runtime API Behaviour — Stage 2.6 Findings
+
+The following were confirmed by WASM runtime verification (44/44 checks PASS,
+`prototypes/libdedx-investigation/wasm-runtime/verify.mjs`). They affect
+TypeScript wrapper implementation.
+
+### 10.1 Material names are ALL-CAPS
+
+`dedx_get_material_name()` and `dedx_get_ion_name()` return ALL-CAPS strings
+(e.g., `"WATER"`, `"GRAPHITE"`, `"HYDROGEN"`). The TypeScript wrapper must
+apply title-case formatting before storing them in `MaterialEntity.name` /
+`ParticleEntity.name`.
+
+### 10.2 Electron (ID=1001) has no name
+
+`dedx_get_ion_name(1001)` returns `""`. Hard-code `"Electron"` in the wrapper:
+
+```typescript
+const name = module.ccall('dedx_get_ion_name', 'string', ['number'], [ionId]);
+const displayName = ionId === 1001 ? 'Electron' : toTitleCase(name);
+```
+
+### 10.3 Program list includes ICRU auto-selector (ID=9)
+
+`dedx_get_program_list()` returns 10 program IDs: 1–7, 9, 100, 101.
+ID=9 (`DEDX_ICRU`) is the internal auto-selector used by the "Auto-select"
+virtual entry in the UI. It must **not** appear as a selectable program in the
+program picker — filter it from `getPrograms()` output:
+
+```typescript
+const EXCLUDED_FROM_UI = new Set([9]);  // DEDX_ICRU — internal auto-selector
+```
+
+### 10.4 MSTAR ion list: Z=2–18 only from the C API
+
+`dedx_get_ion_list(MSTAR)` returns only 17 ions: Z=2–18 (the special-cased
+ions with polynomial coefficients in `dedx_mpaul.c`). However, MSTAR analytically
+supports any Z ≥ 1 via general polynomial scaling. The TypeScript wrapper must
+**not** rely on the runtime ion list to bound MSTAR coverage — expose Z=1–98
+for the MSTAR program, consistent with `DEDX_DEFAULT`/Bethe-ext range.
+
+```typescript
+// MSTAR runtime list is a subset; use known parametric range instead
+const MSTAR_FULL_Z_RANGE = { min: 1, max: 98 };
+```
+
+### 10.5 DEFAULT and Bethe-ext ion coverage: Z=1–112
+
+`dedx_get_ion_list(DEFAULT)` returns 112 ions (Z=1–112). Earlier specs stated
+Z=1–98; the runtime value is authoritative. Update any documentation or UI
+labels that reference "~240 particles" to clarify:
+- Tabulated programs: 1–19 specific ions (program-dependent).
+- MSTAR: Z=2–18 from API; Z=1–98 via parametric extension.
+- DEFAULT/Bethe-ext: Z=1–112.
+
+### 10.6 Material counts per program (runtime-authoritative)
+
+| Program | `dedx_get_material_list()` count |
+|---------|----------------------------------|
+| DEFAULT / Bethe-ext | 279 |
+| ASTAR, PSTAR, MSTAR, ICRU family (all tabulated) | 78 each |
+| ESTAR | 0 (NOT IMPLEMENTED) |
+
+The function returns materials with density metadata, not strictly those with
+tabulated STP data. These runtime counts are authoritative for the API.
+
+### 10.7 PSTAR H₂O reference STP confirmed
+
+`dedx_get_simple_stp_for_program(PSTAR, 1, 276, 100.0)` = **7.28614 MeV·cm²/g**
+at 100 MeV/nucl (Δ −0.19% vs NIST 7.3 MeV·cm²/g). The data pipeline from C
+arrays through WASM to JavaScript introduces no significant precision loss.
+
+---
+
+## 11. Thin C Wrappers (Local to This Repository)
 
 The libdedx submodule is kept **unmodified**. Instead, thin C wrapper functions
 that expose internal libdedx data live in this repository (e.g., `wasm/dedx_extra.h`
@@ -1000,7 +1094,7 @@ during the Emscripten WASM build.
 These wrappers call internal libdedx functions that are linked but not declared
 in the public API headers. We forward-declare them in our local wrapper.
 
-### 10.1 Wrapper Functions
+### 11.1 Wrapper Functions
 
 | Function | Wraps | Returns |
 |----|----|----|
@@ -1009,7 +1103,7 @@ in the public API headers. We forward-declare them in our local wrapper.
 | `float dedx_get_density(int material, int *err)` | `dedx_internal_read_density()` | Density in g/cm³ |
 | `int dedx_target_is_gas(int target)` | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise |
 
-### 10.2 Example Implementation Sketch
+### 11.2 Example Implementation Sketch
 
 ```c
 /* wasm/dedx_extra.h */

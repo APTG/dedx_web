@@ -140,7 +140,7 @@ which resolves to the best available ICRU dataset at runtime:
 | Alpha (Z=2) | ICRU 90 → ICRU 49 |
 | Carbon (Z=6) | ICRU 90 → ICRU 73 → ICRU 73 (old) |
 | Other heavy ions | ICRU 73 → ICRU 73 (old) |
-| Electron (ID 1001) | ESTAR |
+| Electron (ID 1001) | ESTAR — **not available in libdedx v1.4.0** (greyed out in UI) |
 
 Additionally, `dedx_get_simple_stp()` implements a two-stage fallback:
 first tries `DEDX_ICRU`, then falls back to `DEDX_DEFAULT` (Bethe formula)
