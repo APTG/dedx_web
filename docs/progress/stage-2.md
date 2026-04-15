@@ -65,6 +65,39 @@ functions wrapped in component-level `$derived`. `03-architecture.md §4` amende
 
 ---
 
+## Stage 2.6 — libdedx Data Source Investigation
+
+Pre-Stage 3 gate. Phase 1 (static C header analysis) complete on 15 April 2026.
+Phase 2 (WASM runtime verification) planned but not yet executed.
+
+See [`prototypes/libdedx-investigation/REPORT.md`](../../prototypes/libdedx-investigation/REPORT.md)
+for full findings. Summary:
+
+| Finding | Result |
+|---------|--------|
+| Data access method | **Fully embedded** — zero `fopen()` in `dedx_data_access.c`; all tables compiled in as static C arrays |
+| `--preload-file` needed? | **No** — the `.data` sidecar contained only source `.dat` files never read at runtime; remove from ADR 003 |
+| ESTAR status | **Open** — `dedx_estar.h` exists but not `#include`d by `dedx_embedded_data.c`; Phase 2 required |
+| Tabulated ion coverage | 19 unique ions (Z=1, Z=2, Z=3–18, electron); ~240-particle spec claim applies to parametric Bethe/MSTAR only |
+| Material count | 279 (spec ~280 — CLOSE); 98 elemental, 180 compound, 1 special (Graphite=906) |
+| Gas targets | 29 exactly — confirmed |
+| Units | All confirmed: density g/cm³, I-value eV, STP MeV·cm²/g, CSDA g/cm², energy MeV/nucl (ions) / MeV (electron) |
+| Raw data volume | 412.3 KB across unique tables; Stage 3 WASM output: `.mjs`+`.wasm` only (~650–860 KB total) |
+
+**Required amendments before Stage 3:**
+
+| Document | Amendment |
+|----------|-----------|
+| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`; add Phase 1 finding |
+| `docs/04-feature-specs/entity-selection.md` | Clarify particle count is program-dependent (tabulated vs parametric) |
+| `docs/06-wasm-api-contract.md` | Note `DEDX_ICRU` (id=9) excluded from program enumeration |
+
+**Gate:** Stage 3 may begin after ADR 003 is updated and the ESTAR question is resolved
+(either in Phase 2, or by assuming ESTAR needs `--preload-file` as a safe fallback
+and verifying post-implementation).
+
+---
+
 ## Stage 3 Inputs
 
 Stage 3 (WASM Build Pipeline Redesign) reads:

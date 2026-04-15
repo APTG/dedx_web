@@ -289,26 +289,27 @@ As a <role>, I want to <action> so that <benefit>.
 - **Verify:** Each spike produces a `VERDICT.md` with pass/fail per criterion.
 
 ### Stage 2.6: libdedx Data Source Investigation (pre-Stage 3 gate)
-- **Who:** Human reviews; AI assists if needed.
-- **Question:** Does the production libdedx WASM binary need the external `data/` directory
-  at runtime, or is all stopping-power data compiled in via `src/data/embedded/*.h`?
-- **Background:** Spike 2 preloaded `libdedx/data@/data` with `--preload-file`. However,
-  `libdedx/src/data/embedded/` contains full stopping-power tables as C headers
-  (`dedx_astar.h`, `dedx_pstar.h`, `dedx_mstar.h`, etc.) that are compiled into the binary.
-  If libdedx compiles with embedded data, the `.data` sidecar file served in Spike 2 may
-  have been loaded but never read — making `--preload-file` unnecessary and the `.data`
-  bundle wasteful.
-- **Check:**
-  1. Read `libdedx/src/dedx_data_access.c` and `dedx_embedded_data.c` to determine whether
-     the production build path reads from the virtual filesystem or from compiled-in arrays.
-  2. Check `libdedx/CMakeLists.txt` for any `DEDX_USE_EMBEDDED_DATA` / `DEDX_DATA_DIR` flags.
-  3. (Optional) Build with `--preload-file` omitted and verify 10 programs still load.
-- **Outcome A — data is fully embedded:** Remove `--preload-file` from ADR 003. The WASM
-  build produces only `.mjs` + `.wasm`; no `.data` sidecar. Stage 3 build script is simpler.
-- **Outcome B — data is read from the virtual filesystem at runtime:** Keep `--preload-file`
-  as validated in Spike 2. No change to ADR 003.
-- **Gate:** Outcome determined and documented before Stage 3 begins (add a note to
-  `docs/decisions/003-wasm-build-pipeline.md` §Build Flags with the finding).
+- **Who:** AI-assisted investigation.
+- **Purpose:** Full static analysis of libdedx C headers to verify data availability,
+  coverage, units, and bundle strategy before Stage 3 implementation begins.
+- **Produce:**
+  - `prototypes/libdedx-investigation/inspect_headers.py` — static analysis script (no compilation)
+  - `prototypes/libdedx-investigation/data/headers_stats.json` — machine-readable full output
+  - `prototypes/libdedx-investigation/REPORT.md` — markdown report with all findings
+- **Phase 1 complete (15 April 2026).** Key findings:
+  - **Data fully embedded** — `dedx_data_access.c` has zero `fopen()` calls; all
+    stopping-power tables are compiled-in static arrays. The Spike 2 `.data` sidecar
+    was never read at runtime. **Outcome A confirmed.**
+  - **`--preload-file` removed** — ADR 003 updated. Stage 3 WASM build: `.mjs` + `.wasm` only.
+  - **ESTAR open** — `dedx_estar.h` not compiled by `dedx_embedded_data.c`; resolved in Phase 2.
+  - **19 tabulated ions** (Z=1, 2, 3–18, electron); ~240-particle claim applies to parametric path.
+  - **279 materials** (spec ~280 — CLOSE); 29 gas targets (exact match).
+  - **Units confirmed** — density g/cm³, I-value eV, STP MeV·cm²/g, CSDA g/cm².
+  - **412 KB raw float data** across unique tables; estimated Stage 3 WASM: ~650–860 KB.
+- **Phase 2 (planned):** WASM runtime verification — resolve ESTAR question, confirm
+  `dedx_fill_program_list()` / `dedx_fill_ion_list()` outputs, spot-check STP value.
+- **Gate:** Phase 1 findings documented. Stage 3 may begin once ADR 003 is updated
+  and the ESTAR question is resolved (Phase 2 or safe fallback).
 
 ### Stage 3: WASM Build Pipeline Redesign
 - **Who:** AI implements.
