@@ -290,15 +290,16 @@ from its compiled-in static arrays the whole time.
 
 ### 7.3 Revised WASM build output
 
-With `--preload-file` removed, the Stage 3 WASM build produces:
+With `--preload-file` removed, the Stage 3 WASM build produces the following measured
+artifacts:
 
-| File | Estimated size | Purpose |
+| File | Measured size | Purpose |
 |------|---------------|---------|
-| `libdedx.mjs` | ~130–160 KB | Emscripten module + loader JS |
-| `libdedx.wasm` | ~500–700 KB | Compiled C code + 412 KB static arrays |
+| `libdedx.mjs` | 13 KB | Emscripten module + loader JS |
+| `libdedx.wasm` | 457 KB | Compiled C code + 412 KB static arrays |
 | ~~`libdedx.data`~~ | ~~1.5 MB~~ | **Not needed** |
 
-The total download is reduced from ~1.65 MB to ~650–860 KB (before gzip compression).
+The total download is reduced from ~1.65 MB to ~470 KB (before gzip compression).
 
 ### 7.4 Per-program splitting — not recommended
 

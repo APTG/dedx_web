@@ -116,14 +116,14 @@ program = manageable). The data is static for the lifetime of the page.
 > |---------|--------------------------------------|-------|
 > | ASTAR | 1 (alpha, Z=2) | Tabulated helium only |
 > | PSTAR | 1 (proton, Z=1) | Tabulated proton only |
-> | ESTAR | 0 | NOT IMPLEMENTED — `DEDX_ERR_ESTAR_NOT_IMPL` |
+> | ESTAR | 1 (electron, ID=1001) | Runtime ion list contains electron, but ESTAR calculations are disabled/unimplemented (`DEDX_ERR_ESTAR_NOT_IMPL`) |
 > | MSTAR | 17 (Z=2–18) | Runtime list only; parametric polynomial extends to Z≥1; use Z=1–98 for the UI |
 > | ICRU 49, 73, 73new, 90 | varies (4–16) | Tabulated specific ions |
 > | DEFAULT / Bethe-ext | **112** (Z=1–112) | Bethe parametric path covers Z=1–112 |
 >
 > The "~240 particles" figure cited in earlier specs applies to the combined
 > union of all programs (including MSTAR parametric extension). The actual
-> `allParticles` union in the `CompatibilityMatrix` is 112 entries (Z=1–112
+> `allParticles` union in the `CompatibilityMatrix` is 113 entries (Z=1–112
 > from DEFAULT, plus electron ID=1001).
 >
 > **MSTAR special case:** `dedx_get_ion_list(MSTAR)` returns only Z=2–18 (17

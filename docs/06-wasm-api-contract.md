@@ -710,7 +710,7 @@ These are the C functions that must be exported in the Emscripten build
 | `dedx_get_version_string()` | `getVersion()` | Returns `const char*` |
 | `dedx_get_i_value(target, err*)` | `getIValue()` | Returns `float` (eV) |
 | `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()` | Compound composition |
-| `_dedx_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
+| `dedx_internal_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
 
 ### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §11)
 
@@ -726,7 +726,14 @@ These wrappers live in this repository and are compiled alongside libdedx.
 ### 4.6 Emscripten Runtime Methods
 
 ```
-EXPORTED_RUNTIME_METHODS = ["ccall", "cwrap", "UTF8ToString"]
+EXPORTED_RUNTIME_METHODS = [
+  "ccall",
+  "cwrap",
+  "UTF8ToString",
+  "HEAP32",
+  "HEAPF32",
+  "HEAPF64"
+]
 ```
 
 Also export `_malloc` and `_free` for heap allocation from JS.
@@ -744,6 +751,7 @@ Also export `_malloc` and `_free` for heap allocation from JS.
 | Build tool | **Docker** (`emscripten/emsdk:5.0.5`) | Reproducible builds without local Emscripten install |
 | Output files | `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB) | ES module naming convention; no `.data` sidecar |
 | EXPORTED_FUNCTIONS format | JSON-quoted strings | Emscripten 5.x requires `'["_func1","_func2"]'`; unquoted format compiles silently but produces an empty 241-byte WASM with no exports |
+| EXPORTED_RUNTIME_METHODS | Must include `HEAP32`, `HEAPF32`, `HEAPF64` (plus `ccall`, `cwrap`, `UTF8ToString`) | Required for JS/WASM buffer reads used by the wrapper and verification tooling |
 
 ---
 

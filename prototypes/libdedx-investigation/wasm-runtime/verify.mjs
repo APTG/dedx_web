@@ -16,7 +16,7 @@
 import { pathToFileURL } from 'url';
 import { dirname, join, resolve } from 'path';
 import { fileURLToPath } from 'url';
-import { existsSync, writeFileSync } from 'fs';
+import { existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outputDir = resolve(__dirname, 'output');
@@ -83,7 +83,7 @@ function readIntList(ptr, maxLen = 600) {
 /** Call a function that returns a char* and convert to JS string. */
 function getStr(fnName, ...args) {
     const ptr = m.ccall(fnName, 'number', args.map(() => 'number'), args);
-    return ptr === 0 ? '(null)' : m.UTF8ToString(ptr);
+    return ptr === 0 ? '' : m.UTF8ToString(ptr);
 }
 
 // PASS/FAIL tracking
@@ -434,7 +434,6 @@ console.log(`  PSTAR ref STP: ${stp.toFixed(5)} MeV·cm²/g @ 100 MeV/nucl H on 
 // ─── 13. Write JSON output ───────────────────────────────────────────────────
 
 // Collect build artifact sizes
-import { statSync } from 'fs';
 const wasmPath = join(outputDir, 'libdedx.wasm');
 const mjsStat = statSync(mjsPath);
 const wasmStat = statSync(wasmPath);
@@ -448,6 +447,7 @@ runtimeStats.metadata.checks_failed = failed;
 runtimeStats.metadata.checks_total = results.length;
 
 const jsonPath = resolve(__dirname, '..', 'data', 'wasm_runtime_stats.json');
+mkdirSync(dirname(jsonPath), { recursive: true });
 writeFileSync(jsonPath, JSON.stringify(runtimeStats, null, 2) + '\n');
 console.log();
 console.log(`JSON output written to: ${jsonPath}`);

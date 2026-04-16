@@ -61,7 +61,7 @@ emcc libdedx.a wasm/dedx_extra.c \
   -I wasm/ \
   -o static/wasm/libdedx.mjs \
   -s EXPORTED_FUNCTIONS='["_dedx_fill_program_list","_dedx_fill_material_list","_dedx_fill_ion_list","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_program_name","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_get_stp_table_size","_dedx_fill_default_energy_stp_table","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_dedx_get_bragg_peak_stp","_dedx_create_config","_dedx_free_config","_dedx_get_simple_stp","_dedx_get_simple_stp_for_program","_convert_units","_dedx_extra_get_ion_nucleon_number","_dedx_extra_get_ion_atom_mass","_dedx_extra_get_density","_dedx_extra_get_program_version","_dedx_extra_is_gas_default","_dedx_extra_inverse_stp_custom","_dedx_extra_inverse_csda_custom","_dedx_extra_bragg_peak_stp_custom","_malloc","_free"]' \
-  -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","lengthBytesUTF8","stringToUTF8"]' \
+  -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","lengthBytesUTF8","stringToUTF8","HEAP32","HEAPF32","HEAPF64"]' \
   -s ENVIRONMENT='web' \
   -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \

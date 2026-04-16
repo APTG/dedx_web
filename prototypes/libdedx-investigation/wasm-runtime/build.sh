@@ -48,6 +48,13 @@ emmake cmake --build /build --parallel
 
 # Find the static library (cmake may name it differently under WASM toolchain)
 LIBDEDX_A=$(find /build -name "libdedx.a" | head -1)
+if [[ -z "$LIBDEDX_A" || ! -f "$LIBDEDX_A" ]]; then
+    echo "ERROR: Could not find libdedx static archive under /build." >&2
+    echo "Expected a file named libdedx.a, but CMake may have changed the output name or layout." >&2
+    echo "Available static archives under /build:" >&2
+    find /build -name "*.a" -print >&2 || true
+    exit 1
+fi
 echo ""
 echo "Static library: $LIBDEDX_A  ($(wc -c < "$LIBDEDX_A") bytes)"
 
