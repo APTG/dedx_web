@@ -106,21 +106,20 @@ JSROOT is loaded as an ES module import; version-pinned in `package.json`.
   interception. See [docs/03-architecture.md §5](../03-architecture.md#5-component-tree)
   for the implementation.
 - **Bundle size — total payload audit.** JSROOT (~500 KB minified+gzipped) is
-  additive, not substitutive. Conservative payload estimates: `libdedx.wasm`
-  ~1–3 MB, `libdedx.data` (preloaded data tables) ~2–4 MB, JSROOT ~500 KB,
-  SvelteKit framework + app code ~100 KB. Total: ~4–8 MB cold load. At 3G
-  Fast (~375 KB/s), this is 10–20 seconds of transfer — which appears to
-  violate the FCP ≤ 1.5 s and TTI ≤ 3.5 s budgets in
+  additive, not substitutive. Measured payload (Stage 2.6): `libdedx.wasm`
+  **457 KB** + `libdedx.mjs` 13 KB (no `.data` sidecar — data compiled in),
+  JSROOT ~500 KB, SvelteKit framework + app code ~100 KB. Total: ~1.1 MB cold
+  load. At 3G Fast (~375 KB/s), this is ~3 s of transfer — within the TTI ≤
+  3.5 s budget in
   [`docs/09-non-functional-requirements.md` §3](../09-non-functional-requirements.md#3-performance).
   In practice, the loading model decouples these metrics: the UI shell (HTML +
   CSS + minimal framework JS, ~100 KB) loads first and satisfies the FCP
-  target; WASM is lazy-initialized in the root layout load (not at parse time),
-  so TTI measures only the `.wasm` binary (~1–3 MB, ≤ ~8 s on 3G); JSROOT is
-  loaded only when the Plot page is first visited and does not affect
+  target; WASM is lazy-initialized in the root layout `$effect` (not at parse
+  time), so TTI measures only the `.wasm` binary (457 KB, ~1.2 s on 3G);
+  JSROOT is loaded only when the Plot page is first visited and does not affect
   Calculator TTI. **After the first visit all artifacts are browser-cached** —
-  the 3G penalty applies only once per deploy. The performance budget is
-  consistent with this model but the ADR acknowledges the payload is large
-  and any addition to the function export list or data tables must be evaluated
+  the 3G penalty applies only once per deploy. The performance budget is well
+  within this model. Any addition to the function export list must be evaluated
   against the size budget in ADR 003.
 - **Not tree-shakeable** in the same way Chart.js is. The entire JSROOT module
   is imported. Mitigated by loading JSROOT lazily (only on the Plot page).

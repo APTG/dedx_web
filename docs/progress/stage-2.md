@@ -65,6 +65,51 @@ functions wrapped in component-level `$derived`. `03-architecture.md §4` amende
 
 ---
 
+## Stage 2.6 — libdedx Data Source Investigation
+
+Pre-Stage 3 gate. **Both phases complete** (15 April 2026).
+
+See [`prototypes/libdedx-investigation/REPORT.md`](../../prototypes/libdedx-investigation/REPORT.md)
+for full findings. Summary:
+
+### Phase 1 — Static C header analysis
+
+| Finding | Result |
+|---------|--------|
+| Data access method | **Fully embedded** — zero `fopen()` in `dedx_data_access.c`; all tables compiled in as static C arrays |
+| `--preload-file` needed? | **No** — the `.data` sidecar contained only source `.dat` files never read at runtime |
+| ESTAR status | **Open at Phase 1** — `dedx_estar.h` exists but not `#include`d by `dedx_embedded_data.c` |
+| Tabulated ion coverage | 19 unique ions (Z=1, Z=2, Z=3–18, electron); ~240-particle spec claim applies to parametric Bethe/MSTAR only |
+| Material count | 279 (spec ~280 — CLOSE); 98 elemental, 180 compound, 1 special (Graphite=906) |
+| Gas targets | 29 exactly — confirmed |
+| Units | All confirmed: density g/cm³, I-value eV, STP MeV·cm²/g, CSDA g/cm², energy MeV/nucl (ions) / MeV (electron) |
+| Raw data volume | 412.3 KB across unique tables |
+
+### Phase 2 — WASM runtime verification (44/44 checks PASS)
+
+| Finding | Result |
+|---------|--------|
+| `--preload-file` needed? | **No** — confirmed at runtime; 457 KB `.wasm` + 13 KB `.mjs`, no `.data` |
+| ESTAR status | **NOT IMPLEMENTED** — `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL`; not a `.dat` file issue |
+| Programs at runtime | 10 via `dedx_get_program_list()` (IDs 1–7, 9, 100, 101); ID 9 (ICRU auto-select) IS in list |
+| MSTAR runtime ion list | Z=2–18 (17 ions enumerated); Z>18 supported via polynomial scaling but not listed |
+| Material count (runtime) | DEFAULT/Bethe: 279; tabulated programs: 78 each; ESTAR: 0 |
+| PSTAR H₂O reference STP | 7.28614 MeV·cm²/g at 100 MeV/nucl (Δ −0.19% vs NIST 7.3) |
+| Material names from C API | All-caps (e.g., `"WATER"`, `"GRAPHITE"`); TypeScript wrapper must format for display |
+| Electron (ID=1001) name | `dedx_get_ion_name(1001)` returns `""` — hard-code `"Electron"` in TypeScript wrapper |
+
+**Required amendments before Stage 3:**
+
+| Document | Amendment |
+|----------|-----------|
+| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`; add Phase 1+2 finding; note Emscripten 5.x EXPORTED_FUNCTIONS JSON format requirement |
+| `docs/04-feature-specs/entity-selection.md` | ESTAR: treat as incompatible for all combinations (grey out, tooltip); MSTAR: Z>18 available but not in ion list |
+| `docs/06-wasm-api-contract.md` | ESTAR: present in program list but returns error; MSTAR ion list: Z=2–18 only from API; material names: all-caps; electron name: empty |
+
+**Gate:** All Phase 1 and Phase 2 checks complete. Stage 3 may begin.
+
+---
+
 ## Stage 3 Inputs
 
 Stage 3 (WASM Build Pipeline Redesign) reads:

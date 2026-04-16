@@ -1,6 +1,6 @@
 # Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** Final v5 (3 April 2026)
+> **Status:** Final v6 (15 April 2026 — Stage 2.6 amendments)
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -110,6 +110,27 @@ program = manageable). The data is static for the lifetime of the page.
 > total. If profiling shows otherwise, the matrix can be built lazily on
 > first use of each program.
 
+> **Stage 2.6 particle-count clarification (runtime-verified):**
+>
+> | Program | Particles via `dedx_get_ion_list()` | Notes |
+> |---------|--------------------------------------|-------|
+> | ASTAR | 1 (alpha, Z=2) | Tabulated helium only |
+> | PSTAR | 1 (proton, Z=1) | Tabulated proton only |
+> | ESTAR | 1 (electron, ID=1001) | Runtime ion list contains electron, but ESTAR calculations are disabled/unimplemented (`DEDX_ERR_ESTAR_NOT_IMPL`) |
+> | MSTAR | 17 (Z=2–18) | Runtime list only; parametric polynomial extends to Z≥1; use Z=1–98 for the UI |
+> | ICRU 49, 73, 73new, 90 | varies (4–16) | Tabulated specific ions |
+> | DEFAULT / Bethe-ext | **112** (Z=1–112) | Bethe parametric path covers Z=1–112 |
+>
+> The "~240 particles" figure cited in earlier specs applies to the combined
+> union of all programs (including MSTAR parametric extension). The actual
+> `allParticles` union in the `CompatibilityMatrix` is 113 entries (Z=1–112
+> from DEFAULT, plus electron ID=1001).
+>
+> **MSTAR special case:** `dedx_get_ion_list(MSTAR)` returns only Z=2–18 (17
+> ions with hardcoded polynomial coefficients). The TypeScript wrapper must
+> supplement this with the full Z=1–98 range — any Z not in the runtime list
+> still works via the general polynomial in `dedx_mpaul.c`.
+
 ---
 
 ## Inputs
@@ -125,7 +146,7 @@ program = manageable). The data is static for the lifetime of the page.
 | Default | **Proton** (Hydrogen, Z=1) — highlighted on page load |
 | Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast. |
 | Selected state | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle). |
-| Special | Particle ID 1001 = Electron — only visible (not greyed out) when ESTAR (program 3) is a compatible program for the current selection |
+| Special | Particle ID 1001 = Electron — always present in the particle list but **always greyed out** (ESTAR is not implemented in libdedx v1.4.0; `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations). Show a tooltip on hover: *"Electron stopping powers not available in libdedx v1.4.0."* |
 | Clearable | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header |
 
 ### 2. Material Selector (second — middle)
@@ -288,7 +309,8 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
      - Alpha: ICRU 90 → ICRU 49
      - Carbon: ICRU 90 → ICRU 73 → ICRU 73 (old)
      - Other heavy ions: ICRU 73 → ICRU 73 (old)
-     - Electron: ESTAR
+     - Electron (ID 1001): N/A — ESTAR not implemented in libdedx v1.4.0;
+       Electron is permanently greyed out and cannot be used in calculations
    - Future: a webdedx-level auto-selection layer may extend this (e.g., prefer
      MSTAR for specific heavy-ion/material combos). This is out of scope for v1
      but the data model should not preclude it.
@@ -812,7 +834,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Error state with retry is shown if WASM init fails.
 
 ### Special Cases
-- [ ] Electron (particle ID 1001) appears in the particle list only when ESTAR is a compatible program.
+- [ ] Electron (particle ID 1001) appears in the particle list but is always greyed out (ESTAR not implemented in libdedx v1.4.0). A tooltip on hover reads "Electron stopping powers not available in libdedx v1.4.0."
 - [ ] Gas-default materials are visually indicated with an icon and text badge, not colour alone.
 
 ---

@@ -133,9 +133,11 @@ network throttling profile.
 
 ### 3.1 Browser caching
 
-The largest assets are `libdedx.wasm` (~1–3 MB) and `libdedx.data` (~2–4 MB).
-These live in `static/wasm/` and are served as **un-hashed filenames** — unlike
-SvelteKit's `_app/immutable/` assets (which use content hashes and receive
+The largest assets are `libdedx.wasm` (457 KB measured) and `libdedx.mjs`
+(13 KB). No `.data` sidecar — all stopping-power tables are compiled into
+`libdedx.wasm` as static C arrays (confirmed Stage 2.6). These live in
+`static/wasm/` and are served as **un-hashed filenames** — unlike SvelteKit's
+`_app/immutable/` assets (which use content hashes and receive
 `max-age=31536000`), the WASM files cannot be given long-lived cache headers
 safely unless the filename embeds a hash.
 
@@ -144,7 +146,7 @@ files it serves. The practical impact:
 
 | Visit | Network behavior |
 |-------|-----------------|
-| First load (cold) | Full download: ~3–7 MB total payload |
+| First load (cold) | Full download: ~470 KB WASM + JSROOT + app (~1 MB total) |
 | Repeat visit within 10 min | Served from browser cache — no network request |
 | Repeat visit after 10 min | Conditional request (ETag); 304 Not Modified if unchanged → loaded from cache, no re-download |
 | After a new deployment | New ETag → full re-download of changed files only |
