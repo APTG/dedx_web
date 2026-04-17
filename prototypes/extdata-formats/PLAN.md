@@ -287,10 +287,32 @@ elemental materials (§2.5), and `w_i` is the weight fraction of element `Z_i`.
 
 ### 2.5 Energy Grid
 
-100 log-spaced points covering the full range of all libdedx programs:
+165 points taken verbatim from the real SRIM-2013 dataset. The real file
+has 86 (particle, material) pairs with fewer points (136–164), but those
+pairs are omitted from the synthetic data — all synthetic pairs use the
+full 165-point grid. This keeps the 3D array shape uniform with no NaN
+padding required.
 
 ```python
-ENERGIES = np.geomspace(0.001, 10000, 100)   # MeV/u for ions; MeV for electron
+ENERGIES = np.array([
+    0.0011, 0.0012, 0.0013, 0.0014, 0.0015, 0.0016, 0.0017, 0.0018,
+    0.002, 0.00225, 0.0025, 0.00275, 0.003, 0.00325, 0.0035, 0.00375,
+    0.004, 0.0045, 0.005, 0.0055, 0.006, 0.0065, 0.007, 0.008, 0.009,
+    0.01, 0.011, 0.012, 0.013, 0.014, 0.015, 0.016, 0.017, 0.018,
+    0.02, 0.0225, 0.025, 0.0275, 0.03, 0.0325, 0.035, 0.0375, 0.04,
+    0.045, 0.05, 0.055, 0.06, 0.065, 0.07, 0.08, 0.09, 0.1, 0.11,
+    0.12, 0.13, 0.14, 0.15, 0.16, 0.17, 0.18, 0.2, 0.225, 0.25,
+    0.275, 0.3, 0.325, 0.35, 0.375, 0.4, 0.45, 0.5, 0.55, 0.6,
+    0.65, 0.7, 0.8, 0.9, 1.0, 1.1, 1.2, 1.3, 1.4, 1.5, 1.6, 1.7,
+    1.8, 2.0, 2.25, 2.5, 2.75, 3.0, 3.25, 3.5, 3.75, 4.0, 4.5, 5.0,
+    5.5, 6.0, 6.5, 7.0, 8.0, 9.0, 10.0, 11.0, 12.0, 13.0, 14.0, 15.0,
+    16.0, 17.0, 18.0, 20.0, 22.5, 25.0, 27.5, 30.0, 32.5, 35.0, 37.5,
+    40.0, 45.0, 50.0, 55.0, 60.0, 65.0, 70.0, 80.0, 90.0, 100.0, 110.0,
+    120.0, 130.0, 140.0, 150.0, 160.0, 170.0, 180.0, 200.0, 225.0, 250.0,
+    275.0, 300.0, 325.0, 350.0, 375.0, 400.0, 450.0, 500.0, 550.0, 600.0,
+    650.0, 700.0, 800.0, 900.0, 1000.0, 1100.0, 1200.0, 1300.0, 1400.0,
+    1500.0, 1600.0, 1700.0, 1800.0, 2000.0,
+])  # 165 values, MeV/u for ions; MeV for electron
 ```
 
 For nuclear ions the axis is kinetic energy per nucleon (MeV/u).
@@ -369,39 +391,49 @@ physically sensible.
 ```
 n_particles = 287    # 286 stable isotopes + 1 electron
 n_materials = 379    # 279 libdedx DEFAULT + 100 custom
-n_energy    = 100    # log-spaced grid points
+n_energy    = 165    # exact SRIM-2013 grid points (0.0011–2000 MeV/u)
 n_programs  = 1      # synthetic "srim-2013"
+n_quantities = 2     # stp + csda_range (separate arrays in Zarr; separate columns in Parquet)
 
-Array shape (per program): (287, 379, 100)   float32
-Uncompressed:  287 × 379 × 100 × 4 = 43.5 MB per program
-Est. zstd-5:   ~12–15 MB  (smooth float arrays compress ~3:1)
+Array shape (per program, per quantity): (287, 379, 165)   float32
+Uncompressed per quantity: 287 × 379 × 165 × 4 = 71.8 MB
+Uncompressed total (stp + csda_range): ~143.6 MB
+Est. zstd-5:   ~20–30 MB total (smooth float arrays compress ~3:1 to 5:1)
 
-Per-ion inner chunk (Zarr v3):  379 × 100 × 4 bytes = 151,600 bytes ≈ 148 KB uncompressed
-Per-ion row group (Parquet):    379 × 100 rows × ~28 bytes/row ≈ 1,063,200 bytes ≈ 1.0 MB uncompressed
-                                (program + particle + material strings + energy float + stp float)
+Per-ion inner chunk (Zarr v3):  379 × 165 × 4 bytes = 250,260 bytes ≈ 244 KB uncompressed (per quantity)
+Per-ion row group (Parquet):    379 × 165 rows × ~35 bytes/row ≈ 2.18 MB uncompressed
+                                (program + particle + material strings + energy + stp + csda_range floats)
 Shard index overhead (Zarr):    287 inner chunks × 2 × 8 bytes = 4,592 bytes (negligible)
-Expected compression ratio for Parquet:  ~4–6:1 (strings compress well)
+Expected compression ratio:  ~3–5:1 (float arrays); ~5–8:1 (Parquet with string columns)
 Expected compressed per-ion:
-  Zarr inner chunk:  ~40–60 KB
-  Parquet row group: ~180–260 KB
+  Zarr inner chunk (per quantity):  ~55–85 KB
+  Parquet row group:                ~250–400 KB
 
-Zarr v3 — single-shard store (shards=(287,379,100)):
+Zarr v3 — single-shard store (shards=(287,379,165)):
   data/srim_synthetic_single.zarr/
   ├── zarr.json                        # root group metadata
-  └── srim-2013/stp/
-      ├── zarr.json                    # array metadata (sharding config)
-      └── c/0/0/0                      # single shard file (~12–15 MB compressed)
-                                       # tail: shard index (287×2×8 = 4,592 bytes)
+  └── srim-2013/
+      ├── stp/
+      │   ├── zarr.json                # array metadata (sharding config)
+      │   └── c/0/0/0                  # single shard (~20–30 MB compressed)
+      │                                # tail: shard index (287×2×8 = 4,592 bytes)
+      └── csda_range/
+          ├── zarr.json
+          └── c/0/0/0                  # same layout as stp
 
-Zarr v3 — per-ion shard store (shards=(1,379,100)):
+Zarr v3 — per-ion shard store (shards=(1,379,165)):
   data/srim_synthetic_per_ion.zarr/
   ├── zarr.json                        # root group metadata
-  └── srim-2013/stp/
-      ├── zarr.json                    # array metadata
-      ├── c/0/0/0                      # H-1 shard (~40–60 KB compressed)
-      ├── c/1/0/0                      # H-2 shard
-      │   ...
-      └── c/286/0/0                    # electron shard
+  └── srim-2013/
+      ├── stp/
+      │   ├── zarr.json                # array metadata
+      │   ├── c/0/0/0                  # H-1 shard (~55–85 KB compressed)
+      │   ├── c/1/0/0                  # H-2 shard
+      │   │   ...
+      │   └── c/286/0/0               # electron shard
+      └── csda_range/
+          ├── zarr.json
+          ├── c/0/0/0  …  c/286/0/0   # same structure as stp
 ```
 
 ---
@@ -478,16 +510,25 @@ CUSTOM_MATERIALS: list[dict]
 
 MATERIALS: list[dict]   # LIBDEDX_MATERIALS + CUSTOM_MATERIALS, length 379
 
-ENERGIES: np.ndarray   # shape (100,), float64, geomspace(0.001, 10000, 100)
+ENERGIES: np.ndarray   # shape (165,), float64, exact SRIM-2013 values (0.0011–2000 MeV/u)
 
 def compute_stp_array() -> np.ndarray:
     """
-    Returns float32 array, shape (287, 379, 100).
+    Returns float32 array, shape (287, 379, 165).
     Axis 0: PARTICLES order (isotopes first, electron last).
     Axis 1: MATERIALS order (libdedx first, custom last).
     Axis 2: ENERGIES order.
     Heavy ions: stp_heavy_ion() with Bragg I_eff.
     Electron:   stp_electron() using electron formula.
+    """
+
+def compute_csda_range_array(stp: np.ndarray) -> np.ndarray:
+    """
+    Returns float32 array, shape (287, 379, 165).
+    Approximate CSDA range via trapezoidal integration:
+      csda_range[i, j, k] = trapz(1 / stp[i, j, :k+1], ENERGIES[:k+1])
+    Units: MeV·cm²/g integrated over MeV/u → g/cm².
+    Uses np.cumulative_trapezoid (numpy ≥ 2.0) or np.trapz loop for compat.
     """
 ```
 
@@ -505,18 +546,19 @@ exact values do not matter, so approximate compositions are acceptable.
 Implements the schema from `external-data.md §2` with extensions for
 the extended particle list and custom materials.
 
-**Row structure (unchanged from spec):**
+**Row structure (matches real SRIM-2013 file, with `stopping_power` renamed `stp`):**
 
 | Column | Parquet type | Example value |
 |--------|-------------|---------------|
 | `program` | `BYTE_ARRAY UTF-8` | `"srim-2013"` |
 | `particle` | `BYTE_ARRAY UTF-8` | `"H-1"`, `"e-"` |
 | `material` | `BYTE_ARRAY UTF-8` | `"WATER"`, `"SS316L"` |
-| `energy` | `FLOAT` | 1.0 (MeV/u or MeV for electron) |
-| `stp` | `FLOAT` | 2.34 (MeV·cm²/g) |
+| `energy` | `DOUBLE` | 1.0 (MeV/u or MeV for electron) |
+| `stopping_power` | `DOUBLE` | 2.34 (MeV·cm²/g) |
+| `csda_range` | `DOUBLE` | 1.22e-3 (g/cm²) |
 
 **Row group layout:** One row group per particle (287 row groups).
-Each row group: `379 materials × 100 energy points = 37,900 rows`.
+Each row group: `379 materials × 165 energy points = 62,535 rows`.
 
 **File metadata key-value additions:**
 - `webdedx.particles` — 287 entries including electron
@@ -541,7 +583,8 @@ Request for the specific ion's inner chunk.
 import zarr
 from generate_data import PARTICLES, MATERIALS, ENERGIES, compute_stp_array
 
-stp_array = compute_stp_array()   # shape (287, 379, 100), float32
+stp_array = compute_stp_array()       # shape (287, 379, 165), float32
+csda_array = compute_csda_range_array(stp_array)  # shape (287, 379, 165), float32
 
 root = zarr.open_group("data/srim_synthetic_single.zarr", mode="w")
 root.attrs.update({
@@ -553,27 +596,29 @@ root.attrs.update({
 })
 
 grp = root.require_group("srim-2013")
-arr = grp.create_array(
-    name="stp",
-    shape=(287, 379, 100),
-    dtype="float32",
-    shards=(287, 379, 100),         # ← one shard file for the whole array
-    chunks=(1, 379, 100),           # ← per-ion inner chunk
-    compressors=zarr.codecs.BloscCodec(
-        cname="zstd", clevel=5,
-        shuffle=zarr.codecs.BloscShuffle.bitshuffle,
-    ),
-    fill_value=float("nan"),
-)
-arr[:] = stp_array
+for name, data in [("stp", stp_array), ("csda_range", csda_array)]:
+    arr = grp.create_array(
+        name=name,
+        shape=(287, 379, 165),
+        dtype="float32",
+        shards=(287, 379, 165),     # ← one shard file for the whole array
+        chunks=(1, 379, 165),       # ← per-ion inner chunk
+        compressors=zarr.codecs.BloscCodec(
+            cname="zstd", clevel=5,
+            shuffle=zarr.codecs.BloscShuffle.bitshuffle,
+        ),
+        fill_value=float("nan"),
+    )
+    arr[:] = data
 ```
 
-**Shard file:** `data/srim_synthetic_single.zarr/srim-2013/stp/c/0/0/0`
-One binary file containing all 287 inner chunks, each compressed
-independently, with a 4,592-byte index at the tail.
+**Shard files:** `srim-2013/stp/c/0/0/0` and `srim-2013/csda_range/c/0/0/0`.
+Each contains all 287 inner chunks, each compressed independently, with a
+4,592-byte index at the tail.
 
-**Cold HTTP cost on S3:** 3 requests — `zarr.json` GET + shard index
-Range + ion inner-chunk Range.
+**Cold HTTP cost on S3:** 3 requests per quantity — `zarr.json` GET + shard
+index Range + ion inner-chunk Range. Both quantities can be fetched in
+parallel (2 Range requests simultaneously after shard index reads).
 
 ---
 
@@ -587,7 +632,8 @@ fetch is needed — the browser GETs the file directly.
 import zarr
 from generate_data import PARTICLES, MATERIALS, ENERGIES, compute_stp_array
 
-stp_array = compute_stp_array()   # shape (287, 379, 100), float32
+stp_array = compute_stp_array()       # shape (287, 379, 165), float32
+csda_array = compute_csda_range_array(stp_array)  # shape (287, 379, 165), float32
 
 root = zarr.open_group("data/srim_synthetic_per_ion.zarr", mode="w")
 root.attrs.update({
@@ -599,24 +645,25 @@ root.attrs.update({
 })
 
 grp = root.require_group("srim-2013")
-arr = grp.create_array(
-    name="stp",
-    shape=(287, 379, 100),
-    dtype="float32",
-    shards=(1, 379, 100),           # ← one shard file per ion
-    chunks=(1, 379, 100),           # ← inner chunk = entire shard (no sub-index)
-    compressors=zarr.codecs.BloscCodec(
-        cname="zstd", clevel=5,
-        shuffle=zarr.codecs.BloscShuffle.bitshuffle,
-    ),
-    fill_value=float("nan"),
-)
-arr[:] = stp_array
+for name, data in [("stp", stp_array), ("csda_range", csda_array)]:
+    arr = grp.create_array(
+        name=name,
+        shape=(287, 379, 165),
+        dtype="float32",
+        shards=(1, 379, 165),       # ← one shard file per ion
+        chunks=(1, 379, 165),       # ← inner chunk = entire shard (no sub-index)
+        compressors=zarr.codecs.BloscCodec(
+            cname="zstd", clevel=5,
+            shuffle=zarr.codecs.BloscShuffle.bitshuffle,
+        ),
+        fill_value=float("nan"),
+    )
+    arr[:] = data
 ```
 
-**Shard files:** `c/0/0/0` … `c/286/0/0` — 287 files, each ~40–60 KB
-compressed. Each shard contains exactly one inner chunk; the shard index
-is trivially small (1 entry) and may be elided by zarr-python.
+**Shard files:** `stp/c/0/0/0` … `stp/c/286/0/0` and `csda_range/c/0/0/0` … `csda_range/c/286/0/0`
+— 574 files total (287 per quantity), each ~55–85 KB compressed.
+Each shard contains exactly one inner chunk; no shard index fetch needed.
 
 **Cold HTTP cost on S3:** 2 requests — `zarr.json` GET + `c/{i}/0/0` GET.
 No Range requests needed: the ion's file is fetched in full.
@@ -802,7 +849,7 @@ pnpm install    # or npm install
 
 | # | Criterion | Pass condition |
 |---|-----------|---------------|
-| 1 | `generate_data.py` runs without error | Prints "287 particles, 379 materials, 100 energy points"; exits 0 |
+| 1 | `generate_data.py` runs without error | Prints "287 particles, 379 materials, 165 energy points"; exits 0 |
 | 2 | Zarr single round-trip | Values read back match within `float32` epsilon |
 | 3 | Zarr per-ion round-trip | Same |
 | 4 | Parquet round-trip | Same |
