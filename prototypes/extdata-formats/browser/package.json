@@ -1,0 +1,8 @@
+{
+  "name": "zarrita-benchmark",
+  "version": "1.0.0",
+  "type": "module",
+  "dependencies": {
+    "zarrita": "^0.7.1"
+  }
+}
