@@ -880,6 +880,104 @@ The Stage 3 TypeScript wrapper must:
 
 ---
 
+## Spike 4: External Data Storage Format
+
+> Added 17 April 2026. Branch: `prototypes/srim-parquet`.
+> Directory: `prototypes/extdata-formats/`.
+
+**Status:** Plan complete. Implementation not yet started.
+
+### Goal
+
+Decide whether **Zarr v2 with per-ion chunking** is a better fit than
+**Apache Parquet with per-ion row groups** for the `.webdedx` external
+data format, before any production code for the external-data feature
+(`docs/04-feature-specs/external-data.md`) is written.
+
+The current spec mandates Parquet + `hyparquet`. This spike measures
+the format difference with realistic data dimensions (287 particles ×
+379 materials × 100 energy points) and a heterogeneous material mix
+(libdedx DEFAULT + 100 user-defined custom materials with Bragg-additivity
+compositions + electron as a non-nuclear particle).
+
+### Background
+
+- [`docs/04-feature-specs/external-data.md §2`](04-feature-specs/external-data.md)
+  specifies `.webdedx.parquet` as the distribution format, with one Parquet
+  row group per `(program, ion)` pair read via HTTP Range Requests.
+- The key access pattern is: user selects one ion → fetch only that ion's
+  row group. Zarr v2 with `chunks=(1, n_materials, n_energy)` maps this
+  pattern directly onto chunk files.
+- The Parquet format repeats the 100-point energy grid as a column in every
+  row (27,900× per ion). Zarr stores it once in `.zattrs` metadata.
+- Decision affects: `docs/02-tech-stack.md` (`hyparquet` vs `zarrita`
+  JS bundle), `external-data.md` schema, converter tooling spec.
+
+### Dataset
+
+| Dimension | Count | Source |
+|-----------|-------|--------|
+| Particles | 287 | 286 stable isotopes (AME2020) + 1 electron |
+| Materials | 379 | 279 libdedx DEFAULT + 100 user-defined custom |
+| Energy points | 100 | log-spaced 0.001–10,000 MeV/u |
+| Programs | 1 | Synthetic "srim-2013" |
+| Array shape | (287, 379, 100) float32 | ~43.5 MB uncompressed |
+
+Custom materials include: metal alloys (SS316L, Inconel 718, Ti-6Al-4V…),
+scintillators (LYSO, LaBr₃, GAGG, PbWO₄…), semiconductors (CZT, GaN…),
+biological tissues not in libdedx (liver, kidney, red bone marrow…),
+detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
+
+### Acceptance Criteria
+
+| # | Criterion | Pass condition |
+|---|-----------|---------------|
+| 1 | `generate_data.py` produces correct shape | Prints "287 particles, 379 materials"; exits 0 |
+| 2 | Zarr data round-trips | Read-back values match within `float32` epsilon |
+| 3 | Parquet data round-trips | Same |
+| 4 | Electron chunk present and non-zero | `stp_array[286, :, :]` finite, distinct from H-1 |
+| 5 | Custom material Bragg additivity works | `SS316L` STP ≠ `IRON` STP and is a plausible mix |
+| 6 | Per-particle Zarr chunk < Parquet row group | Compressed bytes: Zarr chunk < Parquet RG |
+| 7 | `run_benchmark.py` prints full table | No exceptions; all metrics reported |
+| 8 | Browser: values match between formats | `max|zarr - parquet| < 1e-5` for H-1, electron, SS316L |
+| 9 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
+| 10 | No CORS errors from Vite dev server | DevTools console clean |
+
+### Deliverables
+
+| File | Description |
+|------|-------------|
+| `prototypes/extdata-formats/PLAN.md` | Full spike specification (complete) |
+| `prototypes/extdata-formats/generate_data.py` | Isotope list, materials, STP arrays |
+| `prototypes/extdata-formats/write_parquet.py` | Parquet writer (per-ion row groups) |
+| `prototypes/extdata-formats/write_zarr_v2.py` | Zarr v2 writer (per-ion chunks) |
+| `prototypes/extdata-formats/run_benchmark.py` | Size + HTTP-cost comparison table |
+| `prototypes/extdata-formats/browser/` | Vite app: fetch one ion from each format |
+| `prototypes/extdata-formats/REPORT.md` | Benchmark results (to be written) |
+| `prototypes/extdata-formats/VERDICT.md` | Go/no-go decision (to be written) |
+
+### Gate rule for external-data implementation
+
+The external-data feature (`docs/04-feature-specs/external-data.md`) must
+not be implemented until `VERDICT.md` is written and one of the following
+holds:
+
+- **Keep Parquet**: per-particle size difference < 15% OR `zarrita` bundle
+  significantly larger than `hyparquet`.
+- **Switch to Zarr v2**: per-particle Zarr chunk ≤ 60% of Parquet row group
+  AND `zarrita` bundle is comparable to `hyparquet`.
+- **Use Zarr v3 + sharding**: Zarr v2 wins on size but multi-file deployment
+  is impractical; `zarrita` v0.4+ sharding confirmed stable in the browser.
+
+### References
+
+- `prototypes/extdata-formats/PLAN.md` — full specification
+- `docs/04-feature-specs/external-data.md` — spec being validated
+- `docs/02-tech-stack.md §hyparquet` — current Parquet reader choice
+- `docs/ai-logs/2026-04-17-extdata-formats.md` — session log
+
+---
+
 ## Related Documents
 
 | Document | Relevance |
@@ -890,3 +988,4 @@ The Stage 3 TypeScript wrapper must:
 | [06-wasm-api-contract.md](06-wasm-api-contract.md) | LibdedxService types — Spike 2 uses a minimal subset |
 | [02-tech-stack.md](02-tech-stack.md) | Version pins — all spikes must use the pinned versions |
 | [00-redesign-plan.md](00-redesign-plan.md) | Stage plan — spikes are Stage 2.5 |
+| [04-feature-specs/external-data.md](04-feature-specs/external-data.md) | External data spec — Spike 4 validates §2 format choice |

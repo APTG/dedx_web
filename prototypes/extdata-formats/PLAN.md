@@ -1,7 +1,7 @@
-# Prototype: Zarr Per-Ion Sharding vs Apache Parquet
+# Spike 4: External Data Storage Format — Zarr vs Apache Parquet
 
 > **Status:** Plan (2026-04-17)
-> **Branch:** `prototypes/srim-parquet`
+> **Branch:** `prototypes/srim-parquet` (branch name fixed at creation; prototype lives in `prototypes/extdata-formats/`)
 > **Goal:** Decide whether Zarr v2 with per-ion chunking is a better fit than
 > Apache Parquet for the `.webdedx` external data format before committing to
 > the Parquet spec in `docs/04-feature-specs/external-data.md`.
@@ -369,7 +369,7 @@ Expected compressed per-ion:
 ## 4. File / Directory Structure
 
 ```
-prototypes/srim-parquet/
+prototypes/extdata-formats/
 ├── PLAN.md                    ← this file
 ├── requirements.txt           ← zarr, pyarrow, numcodecs, numpy
 ├── .gitignore
@@ -572,7 +572,7 @@ from `browser/public/` (symlinked from `data/`).
 ## 6. Environment Setup
 
 ```bash
-cd prototypes/srim-parquet
+cd prototypes/extdata-formats
 
 python3 -m venv venv
 source venv/bin/activate
