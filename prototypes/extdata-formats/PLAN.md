@@ -2,10 +2,13 @@
 
 > **Status:** Plan (2026-04-17)
 > **Branch:** `prototypes/srim-parquet` (branch name fixed at creation; prototype lives in `prototypes/extdata-formats/`)
-> **Goal:** Decide whether Zarr v3 with the sharding codec (per-ion inner
-> chunks, single shard file) is a better fit than Apache Parquet for the
-> `.webdedx` external data format before committing to the Parquet spec in
-> `docs/04-feature-specs/external-data.md`.
+> **Goal:** Decide which storage format is best for the `.webdedx` external
+> data format before committing to the Parquet spec in
+> `docs/04-feature-specs/external-data.md`. Three candidates are evaluated:
+> (A) Apache Parquet with one row group per ion; (B) Zarr v3 — **single shard**
+> covering the whole array; (C) Zarr v3 — **per-ion shards** (one shard file
+> per ion). Candidates B and C are both tested on a real S3 bucket to measure
+> actual HTTP Round-Trip Times under the Range-request access pattern.
 
 ---
 
@@ -16,17 +19,27 @@ row group per `(program, ion)` pair, read via `hyparquet` in the browser.
 The key access pattern is: user selects **one ion** → browser fetches only
 that ion's STP values for all materials via an HTTP Range Request.
 
-Zarr v3 with the **sharding codec** maps this pattern onto a **single file**:
-the array uses one outer shard covering the entire dataset `(287, 379, 100)`,
-with inner chunk shape `(1, n_materials, n_energy)` — one inner chunk per ion.
-The shard index (a few KB at the tail of the file) tells the byte range of
-each ion's inner chunk. A browser fetches the index via one HTTP Range
-Request, then fetches the specific ion's inner chunk via a second Range
-Request — the same 2-request cold-start as Parquet.
+Two Zarr v3 configurations are evaluated against the Parquet baseline:
 
-This avoids both the Parquet row-format overhead (repeated string columns,
-energy column duplicated across all rows) AND the Zarr v2 multi-file
-deployment problem (287 separate chunk files).
+**Zarr v3 — single shard** (`shards=(287,379,100)`, `chunks=(1,379,100)`):
+One outer shard file holds all 287 ions. Its 4.6 KB shard index (stored at
+the file's tail) maps each ion to its byte range. Browser: fetch `zarr.json`
+(1 request) + Range for shard index (1 request) + Range for ion's inner
+chunk (1 request) = **3 cold requests**. Avoids Zarr v2's 287-file problem.
+
+**Zarr v3 — per-ion shards** (`shards=(1,379,100)`, `chunks=(1,379,100)`):
+Each ion gets its own shard file (`c/{i}/0/0`), i.e. 287 files. No shard
+index fetch is needed — each file IS the ion's data. Browser: fetch
+`zarr.json` (1 request) + fetch `c/{i}/0/0` (1 request) = **2 cold
+requests**. Identical RTT budget to Parquet. Each S3 object is small
+(~40–60 KB compressed), so S3 GET latency dominates more than Range
+overhead. File count (287 + metadata) is manageable on S3 but inconvenient
+for GitHub Pages.
+
+Both Zarr configurations are uploaded to a real S3 bucket and tested in
+the browser to measure actual wall-clock RTT under the Range-request
+(single-shard) and direct-GET (per-ion) patterns. Local benchmarks measure
+sizes only; S3 tests measure latency.
 
 This prototype measures the difference with realistic data dimensions before
 any production code is written. The dataset is deliberately large and
@@ -372,12 +385,23 @@ Expected compressed per-ion:
   Zarr inner chunk:  ~40–60 KB
   Parquet row group: ~180–260 KB
 
-Zarr v3 shard structure (1 outer shard covering entire array):
-  data/srim_synthetic.zarr/
+Zarr v3 — single-shard store (shards=(287,379,100)):
+  data/srim_synthetic_single.zarr/
   ├── zarr.json                        # root group metadata
   └── srim-2013/stp/
       ├── zarr.json                    # array metadata (sharding config)
       └── c/0/0/0                      # single shard file (~12–15 MB compressed)
+                                       # tail: shard index (287×2×8 = 4,592 bytes)
+
+Zarr v3 — per-ion shard store (shards=(1,379,100)):
+  data/srim_synthetic_per_ion.zarr/
+  ├── zarr.json                        # root group metadata
+  └── srim-2013/stp/
+      ├── zarr.json                    # array metadata
+      ├── c/0/0/0                      # H-1 shard (~40–60 KB compressed)
+      ├── c/1/0/0                      # H-2 shard
+      │   ...
+      └── c/286/0/0                    # electron shard
 ```
 
 ---
@@ -386,23 +410,26 @@ Zarr v3 shard structure (1 outer shard covering entire array):
 
 ```
 prototypes/extdata-formats/
-├── PLAN.md                    ← this file
-├── requirements.txt           ← zarr, pyarrow, numcodecs, numpy
+├── PLAN.md                      ← this file
+├── requirements.txt             ← zarr, pyarrow, numcodecs, numpy, boto3
 ├── .gitignore
-├── venv/                      ← Python venv (gitignored)
-├── generate_data.py           ← single source of truth: isotopes, materials, STP arrays
-├── write_parquet.py           ← write .webdedx.parquet per current spec
-├── write_zarr_v3.py           ← write Zarr v3 + sharding: shard=(287,379,100), inner=(1,379,100)
-├── run_benchmark.py           ← sizes, HTTP cost simulation, comparison table
+├── venv/                        ← Python venv (gitignored)
+├── generate_data.py             ← single source of truth: isotopes, materials, STP arrays
+├── write_parquet.py             ← write .webdedx.parquet per current spec
+├── write_zarr_v3_single.py      ← Zarr v3 single-shard: shards=(287,379,100), chunks=(1,379,100)
+├── write_zarr_v3_per_ion.py     ← Zarr v3 per-ion shards: shards=(1,379,100), chunks=(1,379,100)
+├── upload_to_s3.py              ← upload all three datasets to S3 bucket
+├── run_benchmark.py             ← local sizes + HTTP cost simulation, comparison table
 ├── browser/
-│   ├── package.json           ← zarrita, hyparquet, vite, typescript
+│   ├── package.json             ← zarrita, hyparquet, vite, typescript
 │   ├── vite.config.ts
 │   └── src/
-│       ├── main.ts
+│       ├── main.ts              ← local + S3 fetch panels for all three formats
 │       └── index.html
-├── data/                      ← generated output (gitignored)
+├── data/                        ← generated output (gitignored)
 │   ├── srim_synthetic.webdedx.parquet
-│   └── srim_synthetic.zarr/           # Zarr v3 store directory
+│   ├── srim_synthetic_single.zarr/    # Zarr v3 single-shard store
+│   └── srim_synthetic_per_ion.zarr/   # Zarr v3 per-ion shard store
 ├── REPORT.md
 └── VERDICT.md
 ```
@@ -503,33 +530,29 @@ Each row group: `379 materials × 100 energy points = 37,900 rows`.
 
 ---
 
-### 5.3 `write_zarr_v3.py`
+### 5.3 `write_zarr_v3_single.py`
 
-Uses the **zarr v3 sharding codec**: one outer shard covers the entire
-array; inner chunks provide per-ion granularity. The browser fetches the
-shard index (trailing bytes of the shard file) to locate an ion's inner
-chunk, then issues one HTTP Range Request for that chunk.
+Uses the **zarr v3 sharding codec** with **one outer shard covering the
+entire array**: all 287 ions are stored in a single file. The browser
+fetches the 4.6 KB shard index at the tail, then issues one HTTP Range
+Request for the specific ion's inner chunk.
 
 ```python
 import zarr
-import json
 from generate_data import PARTICLES, MATERIALS, ENERGIES, compute_stp_array
 
 stp_array = compute_stp_array()   # shape (287, 379, 100), float32
 
-# Open/create the root group
-root = zarr.open_group("data/srim_synthetic.zarr", mode="w")
+root = zarr.open_group("data/srim_synthetic_single.zarr", mode="w")
 root.attrs.update({
     "webdedx.formatVersion": "1",
     "webdedx.programs": ["srim-2013"],
-    "webdedx.particles": PARTICLES,          # 287 entries (electron last)
-    "webdedx.materials": MATERIALS,          # 379 entries (custom last)
-    "webdedx.energyGrid_MeV_u": ENERGIES.tolist(),   # stored ONCE
+    "webdedx.particles": PARTICLES,
+    "webdedx.materials": MATERIALS,
+    "webdedx.energyGrid_MeV_u": ENERGIES.tolist(),
 })
 
 grp = root.require_group("srim-2013")
-
-# Zarr v3 sharding: outer shard = whole array (1 file), inner chunk = per-ion
 arr = grp.create_array(
     name="stp",
     shape=(287, 379, 100),
@@ -537,8 +560,7 @@ arr = grp.create_array(
     shards=(287, 379, 100),         # ← one shard file for the whole array
     chunks=(1, 379, 100),           # ← per-ion inner chunk
     compressors=zarr.codecs.BloscCodec(
-        cname="zstd",
-        clevel=5,
+        cname="zstd", clevel=5,
         shuffle=zarr.codecs.BloscShuffle.bitshuffle,
     ),
     fill_value=float("nan"),
@@ -546,40 +568,90 @@ arr = grp.create_array(
 arr[:] = stp_array
 ```
 
-**Shard file:** `data/srim_synthetic.zarr/srim-2013/stp/c/0/0/0`
+**Shard file:** `data/srim_synthetic_single.zarr/srim-2013/stp/c/0/0/0`
 One binary file containing all 287 inner chunks, each compressed
-independently, with a 4,592-byte index at the tail listing each
-inner chunk's byte offset and length.
+independently, with a 4,592-byte index at the tail.
 
-**Electron inner chunk:** Ion index 286 (last). The browser requests
-`index_entry[286]` → `{offset, nbytes}` → Range `offset..offset+nbytes`.
+**Cold HTTP cost on S3:** 3 requests — `zarr.json` GET + shard index
+Range + ion inner-chunk Range.
 
-**Output:** `data/srim_synthetic.zarr/` (directory; the data lives in
-the single file `c/0/0/0` plus small `zarr.json` metadata files).
+---
+
+### 5.3b `write_zarr_v3_per_ion.py`
+
+Uses Zarr v3 sharding with **one shard per ion** (`shards=(1,379,100)`).
+Each ion is stored as its own file (`c/{i}/0/0`), so no shard index
+fetch is needed — the browser GETs the file directly.
+
+```python
+import zarr
+from generate_data import PARTICLES, MATERIALS, ENERGIES, compute_stp_array
+
+stp_array = compute_stp_array()   # shape (287, 379, 100), float32
+
+root = zarr.open_group("data/srim_synthetic_per_ion.zarr", mode="w")
+root.attrs.update({
+    "webdedx.formatVersion": "1",
+    "webdedx.programs": ["srim-2013"],
+    "webdedx.particles": PARTICLES,
+    "webdedx.materials": MATERIALS,
+    "webdedx.energyGrid_MeV_u": ENERGIES.tolist(),
+})
+
+grp = root.require_group("srim-2013")
+arr = grp.create_array(
+    name="stp",
+    shape=(287, 379, 100),
+    dtype="float32",
+    shards=(1, 379, 100),           # ← one shard file per ion
+    chunks=(1, 379, 100),           # ← inner chunk = entire shard (no sub-index)
+    compressors=zarr.codecs.BloscCodec(
+        cname="zstd", clevel=5,
+        shuffle=zarr.codecs.BloscShuffle.bitshuffle,
+    ),
+    fill_value=float("nan"),
+)
+arr[:] = stp_array
+```
+
+**Shard files:** `c/0/0/0` … `c/286/0/0` — 287 files, each ~40–60 KB
+compressed. Each shard contains exactly one inner chunk; the shard index
+is trivially small (1 entry) and may be elided by zarr-python.
+
+**Cold HTTP cost on S3:** 2 requests — `zarr.json` GET + `c/{i}/0/0` GET.
+No Range requests needed: the ion's file is fetched in full.
+
+**Note on S3 vs GitHub Pages:** 287 + metadata files is practical on S3
+(no per-file cost limitation); it is inconvenient for GitHub Pages due to
+the large number of objects but not impossible.
 
 ---
 
 ### 5.4 `run_benchmark.py`
 
-Measures sizes and simulates HTTP cost from local file sizes. No server needed.
+Measures sizes and simulates HTTP cost from local file sizes. No server
+needed for size metrics; S3 timing is covered in §5.6 / browser.
+
+**Local size metrics:**
 
 | Metric | Method |
 |--------|--------|
 | Total Parquet size | `os.path.getsize()` |
-| Total Zarr size | `sum(getsize(f) for f in Path(...).rglob("*") if f.is_file())` |
+| Total Zarr single size | `sum(getsize(f) for f in Path(...).rglob("*") if f.is_file())` |
+| Total Zarr per-ion size | same, on `srim_synthetic_per_ion.zarr/` |
 | Parquet footer size | Parse last 8 bytes for footer length (Parquet magic) |
-| Zarr root metadata size | `getsize("zarr.json") + getsize("srim-2013/zarr.json")` |
-| Zarr array metadata size | `getsize("srim-2013/stp/zarr.json")` |
-| Zarr shard index size | 287 inner chunks × 2 × 8 bytes = 4,592 bytes (in shard tail) |
+| Zarr single — shard index size | 287 × 2 × 8 = 4,592 bytes (in shard tail) |
 | Per-particle Parquet RG (row group 0) | Row group byte range from footer metadata |
-| Per-particle Zarr inner chunk | Bytes at index_entry[0] (`offset`, `nbytes`) in shard index |
+| Per-particle Zarr single inner chunk | Bytes at `index_entry[0]` in shard tail |
+| Per-particle Zarr per-ion shard file | `getsize("c/0/0/0")` in per-ion store |
 | Per-electron Parquet RG | Row group byte range for last row group |
-| Per-electron Zarr inner chunk | Bytes at index_entry[286] in shard index |
-| Per-custom-material query cost | Not applicable: inner chunk covers ALL materials |
-| Zarr file count | `len(list(Path(...).rglob("*")))` — expect ~5 files (zarr.jsons + shard) |
-| HTTP requests cold | Parquet: 2 (footer + RG). Zarr: 3 (array zarr.json + shard index range + inner chunk range) |
-| HTTP requests warm | Parquet: 1. Zarr: 1 (shard index cached by zarrita). |
-| Compression ratio | uncompressed / compressed, both formats |
+| Per-electron Zarr single inner chunk | `index_entry[286]` in shard tail |
+| Per-electron Zarr per-ion shard | `getsize("c/286/0/0")` in per-ion store |
+| Zarr single file count | expect ~5 (zarr.jsons + 1 shard) |
+| Zarr per-ion file count | expect ~290 (zarr.jsons + 287 shards) |
+| HTTP requests cold | Parquet: 2. Zarr single: 3. Zarr per-ion: 2. |
+| HTTP requests warm | Parquet: 1. Zarr single: 1 (shard index cached). Zarr per-ion: 1. |
+| Compression ratio | uncompressed / compressed, all three formats |
 
 **Output:** Prints Markdown table; writes `REPORT.md`.
 
@@ -587,27 +659,85 @@ Measures sizes and simulates HTTP cost from local file sizes. No server needed.
 
 ### 5.5 `browser/` — In-Browser Fetch Test
 
-A Vite + TypeScript SPA. Both format files are served via `vite dev`
-from `browser/public/` (symlinked from `data/`).
+A Vite + TypeScript SPA with two modes: **local** (files served by Vite)
+and **S3** (files served from a real S3 bucket).
 
 **Libraries:**
 - `zarrita` (v0.4.x) — Zarr v2/v3 + ZEP2 sharding JS reader, zero dependencies
 - `hyparquet` (v1.x) — Parquet reader
 
-**Three-panel page:**
-1. **Ion selector panel** — `<select>` with all 287 particles
-   (isotopes sorted by Z/A; electron listed separately)
-2. **Zarr panel** — fetch button, wall time, bytes transferred, first 5 STP values
-3. **Parquet panel** — same, using `hyparquet`
+**Five-panel layout:**
 
-**Correctness check:** After both fetches, assert `max|zarr_stp - parquet_stp| < 1e-5`.
+| # | Panel | Source | Transport |
+|---|-------|--------|-----------|
+| 1 | **Ion selector** | — | — |
+| 2 | **Parquet** (local) | Vite dev server | HTTP GET (full file) |
+| 3 | **Zarr single shard** (local) | Vite dev server | HTTP Range requests |
+| 4 | **Zarr single shard** (S3) | S3 bucket | HTTP Range requests |
+| 5 | **Zarr per-ion shard** (S3) | S3 bucket | HTTP GET (whole shard file) |
+
+Each panel shows: fetch button, wall-clock time (ms), bytes transferred,
+first 5 STP values for the selected ion.
+
+**S3 base URL:** read from `browser/.env.local` — `VITE_S3_BASE_URL=https://...` —
+not committed. The upload script (`upload_to_s3.py`) prints the URL after upload.
+
+**S3 CORS requirement:** the S3 bucket must have a CORS rule allowing:
+- `AllowedOrigins: ["http://localhost:5173"]`
+- `AllowedMethods: ["GET", "HEAD"]`
+- `AllowedHeaders: ["Range"]`
+- `ExposeHeaders: ["Content-Range", "Accept-Ranges"]`
+
+**Correctness check:** After all fetches, assert `max|stp_A - stp_B| < 1e-5`
+across all format pairs.
 
 **Acceptance criteria:**
-- Both panels show identical STP values (±float32 round-trip error).
-- Electron row works in both formats.
+- All five panels show identical STP values (±float32 round-trip error).
+- Electron row works in all formats.
 - Custom material rows (`SS316L`, `LYSO`) are present and non-zero.
-- No CORS or MIME errors from Vite dev server.
+- No CORS or MIME errors from Vite dev server or S3.
 - `zarrita` bundle contribution ≤ 50 KB minified (`vite build --report`).
+- S3 panels record wall-clock time for at least H-1, U-238, and electron.
+
+---
+
+### 5.6 `upload_to_s3.py`
+
+Uploads all three datasets to a user-supplied S3 bucket. Requires `boto3`
+and standard AWS credentials (env vars or `~/.aws/credentials`).
+
+```bash
+python upload_to_s3.py --bucket my-dedx-test --prefix extdata-spike4
+```
+
+**What it uploads:**
+
+| Local path | S3 key | Content-Type |
+|-----------|--------|--------------|
+| `data/srim_synthetic.webdedx.parquet` | `{prefix}/srim_synthetic.webdedx.parquet` | `application/octet-stream` |
+| `data/srim_synthetic_single.zarr/**` | `{prefix}/srim_synthetic_single.zarr/…` | `application/octet-stream` |
+| `data/srim_synthetic_per_ion.zarr/**` | `{prefix}/srim_synthetic_per_ion.zarr/…` | `application/octet-stream` |
+
+All objects are uploaded with `ACL=public-read` (or a bucket policy grants
+public read — whichever the bucket uses).
+
+**CORS setup reminder:** The script prints the CORS JSON that must be
+applied to the bucket:
+
+```json
+[{
+  "AllowedOrigins": ["http://localhost:5173"],
+  "AllowedMethods": ["GET", "HEAD"],
+  "AllowedHeaders": ["Range"],
+  "ExposeHeaders": ["Content-Range", "Accept-Ranges"],
+  "MaxAgeSeconds": 3000
+}]
+```
+
+Apply via: `aws s3api put-bucket-cors --bucket my-dedx-test --cors-configuration file://cors.json`
+
+**Output:** Prints `VITE_S3_BASE_URL=https://{bucket}.s3.{region}.amazonaws.com/{prefix}`
+— copy this into `browser/.env.local`.
 
 ---
 
@@ -628,6 +758,7 @@ zarr>=3.0
 pyarrow>=15
 numcodecs>=0.12
 numpy>=1.26
+boto3>=1.34
 ```
 
 No `periodictable` package needed — isotope list is hardcoded.
@@ -655,12 +786,15 @@ pnpm install    # or npm install
 | 1 | Is Zarr total size ≤ Parquet total size? | Yes — no repeated string columns |
 | 2 | Is per-ion Zarr inner chunk ≤ Parquet row group? | Yes — float array vs tabular rows |
 | 3 | How much does the energy grid repetition cost Parquet? | 379 × 100 energy values repeated per row group |
-| 4 | Are HTTP round trips comparable? | Parquet: 2 cold. Zarr: 3 cold (zarr.json + shard index + inner chunk). 1 warm both. |
+| 4 | Are HTTP cold-start round trips comparable? | Parquet: 2. Zarr single: 3 (zarr.json + shard index Range + chunk Range). Zarr per-ion: 2 (zarr.json + GET). |
 | 5 | Is `zarrita` JS bundle ≤ `hyparquet`? | Unknown — measure it |
 | 6 | Does electron inner chunk differ meaningfully in size from ion chunks? | Electron STP values may compress differently |
 | 7 | Do custom materials affect inner chunk size vs libdedx materials? | No — all 379 materials are in every inner chunk |
-| 8 | Does the Zarr v3 store deploy without friction to Vite/GitHub Pages? | Expect yes — only ~5 files (zarr.jsons + shard) |
+| 8 | Does the Zarr single store deploy without friction to Vite/GitHub Pages? | Expect yes — only ~5 files (zarr.jsons + 1 shard) |
 | 9 | Does Zarr handle variable energy grids per ion? | Not without jagged arrays — Parquet can |
+| 10 | What is the wall-clock RTT for single-shard vs per-ion on S3? | Per-ion likely faster (no Range overhead) but more S3 objects |
+| 11 | Does per-ion shard eliminate the shard index fetch entirely on S3? | Yes — each `c/{i}/0/0` is fetched in full; no Range request |
+| 12 | Is per-ion usable on GitHub Pages (287 files)? | Possible but inconvenient; S3 is the natural fit |
 
 ---
 
@@ -669,33 +803,50 @@ pnpm install    # or npm install
 | # | Criterion | Pass condition |
 |---|-----------|---------------|
 | 1 | `generate_data.py` runs without error | Prints "287 particles, 379 materials, 100 energy points"; exits 0 |
-| 2 | Zarr round-trip | Values read back match within `float32` epsilon |
-| 3 | Parquet round-trip | Same |
-| 4 | Electron chunk present and non-zero | `stp_array[286, :, :]` has no NaN/inf; differs from ion values |
-| 5 | Custom material STP uses Bragg additivity | `SS316L` STP ≠ `IRON` STP; plausible interpolation |
-| 6 | Per-particle Zarr inner chunk < Parquet row group | `zarr_inner_chunk_bytes < parquet_rg_bytes` after compression |
-| 7 | `run_benchmark.py` completes | Prints table with all metrics |
-| 8 | Browser: values match between formats | `max_diff < 1e-5` for H-1, electron, and SS316L |
-| 9 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
-| 10 | No CORS errors from Vite dev server | DevTools console clean |
+| 2 | Zarr single round-trip | Values read back match within `float32` epsilon |
+| 3 | Zarr per-ion round-trip | Same |
+| 4 | Parquet round-trip | Same |
+| 5 | Electron chunk present and non-zero | `stp_array[286, :, :]` has no NaN/inf; differs from ion values |
+| 6 | Custom material STP uses Bragg additivity | `SS316L` STP ≠ `IRON` STP; plausible interpolation |
+| 7 | Per-particle Zarr inner chunk < Parquet row group | `zarr_inner_chunk_bytes < parquet_rg_bytes` (compressed) |
+| 8 | `run_benchmark.py` completes | Prints table with all metrics |
+| 9 | Browser local panels: values match across all formats | `max_diff < 1e-5` for H-1, electron, SS316L |
+| 10 | Browser S3 single-shard panel: reads successfully | Wall-clock time recorded; values match local |
+| 11 | Browser S3 per-ion panel: reads successfully | Wall-clock time recorded; values match local; no Range request in DevTools |
+| 12 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
+| 13 | No CORS errors from Vite dev server or S3 | DevTools console clean for all panels |
 
 ---
 
 ## 9. Execution Order
 
 ```
+# Phase 1 — local data generation
 1.  source venv/bin/activate
-2.  python generate_data.py          # verify 287 particles, 379 materials
-3.  python write_zarr_v3.py          # write data/srim_synthetic.zarr/
-4.  python write_parquet.py          # write data/srim_synthetic.webdedx.parquet
-5.  python run_benchmark.py          # print comparison table
-6.  cd browser && pnpm install
-7.  ln -sf ../data browser/public    # serve data/ from Vite static root
-8.  pnpm dev                         # open http://localhost:5173
-    # test H-1, U-238, electron, SS316L, LYSO in both panels
-9.  pnpm build --report              # check zarrita bundle size
-10. write REPORT.md
-11. write VERDICT.md
+2.  python generate_data.py             # verify 287 particles, 379 materials
+3.  python write_zarr_v3_single.py      # write data/srim_synthetic_single.zarr/
+4.  python write_zarr_v3_per_ion.py     # write data/srim_synthetic_per_ion.zarr/
+5.  python write_parquet.py             # write data/srim_synthetic.webdedx.parquet
+6.  python run_benchmark.py             # print local size comparison table
+
+# Phase 2 — S3 upload (requires AWS credentials)
+7.  python upload_to_s3.py \
+        --bucket <your-bucket> \
+        --prefix extdata-spike4
+    # copy VITE_S3_BASE_URL=... output into browser/.env.local
+
+# Phase 3 — browser tests
+8.  cd browser && pnpm install
+9.  ln -sf ../data browser/public       # serve data/ from Vite static root
+10. pnpm dev                            # open http://localhost:5173
+    # test all 5 panels: H-1, U-238, electron, SS316L, LYSO
+    # verify DevTools: single-shard S3 shows Range requests;
+    #                  per-ion S3 shows plain GET, no Range
+11. pnpm build --report                 # check zarrita bundle size
+
+# Phase 4 — write outputs
+12. write REPORT.md
+13. write VERDICT.md
 ```
 
 ---
@@ -705,19 +856,26 @@ pnpm install    # or npm install
 **Keep Parquet if any of:**
 - `zarrita` bundle > 50 KB minified and significantly larger than `hyparquet`
 - Per-ion size difference < 15% (not worth switching toolchain)
-- Zarr v3 store deployment causes CORS or MIME friction on GitHub Pages
-- zarrita's ZEP2 sharding is not stable enough in the browser
+- Zarr v3 CORS or MIME friction on GitHub Pages cannot be resolved
+- zarrita ZEP2 sharding unstable in browser (Range reads via `FetchStore`)
 
-**Switch to Zarr v3 + sharding if all of:**
+**Switch to Zarr v3 single-shard (GitHub Pages / S3) if all of:**
 - Per-ion Zarr inner chunk ≤ 60% of Parquet row group (after compression)
 - `zarrita` bundle comparable to `hyparquet` (within 2×)
-- zarrita ZEP2 sharding confirmed working in browser (Range reads via `FetchStore`)
-- GitHub Pages static deploy test passes (only ~5 files to serve)
+- zarrita ZEP2 sharding confirmed working in browser
+- GitHub Pages deploy passes (~5 files)
+- S3 single-shard RTT comparable to Parquet (≤ 1.5× wall-clock for cold fetch)
+
+**Switch to Zarr v3 per-ion shards (S3-only deployment) if:**
+- S3 per-ion wall-clock RTT is meaningfully faster than single-shard (> 20% gain)
+- Application is S3-deployed (not GitHub Pages)
+- zarrita reads `c/{i}/0/0` directly as a whole-file GET (confirmed in DevTools)
+- File count (287 + metadata) acceptable for the target deployment
 
 **Fallback — plain Zarr v3 (no sharding) if:**
 - Zarr v3 + sharding wins on size but zarrita sharding is unstable
-- Acceptable compromise: 287 chunk files (v3 without sharding) — larger file count
-  but simpler deployment if GitHub Pages CDN pre-compresses well
+- Acceptable compromise: 287 chunk files (v3 without sharding) — simpler if
+  the CDN pre-compresses well and file-count limit is not a concern
 
 ---
 

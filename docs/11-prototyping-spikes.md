@@ -889,21 +889,22 @@ The Stage 3 TypeScript wrapper must:
 
 ### Goal
 
-Decide whether **Zarr v3 with the sharding codec** (one outer shard,
-per-ion inner chunks — effectively a single data file with per-ion HTTP
-Range reads) is a better fit than **Apache Parquet with per-ion row groups**
-for the `.webdedx` external data format, before any production code for the
-external-data feature (`docs/04-feature-specs/external-data.md`) is written.
+Decide which storage format is best for the `.webdedx` external data format
+before any production code for the external-data feature
+(`docs/04-feature-specs/external-data.md`) is written. Three candidates:
+
+| Candidate | Format | HTTP access pattern | Files |
+|-----------|--------|---------------------|-------|
+| A | Apache Parquet (per-ion row groups) | 2 cold Range requests | 1 |
+| B | Zarr v3 — single shard (`shards=(287,379,100)`) | 3 cold requests (zarr.json + shard index Range + chunk Range) | ~5 |
+| C | Zarr v3 — per-ion shards (`shards=(1,379,100)`) | 2 cold requests (zarr.json + full file GET) | ~290 |
 
 The current spec mandates Parquet + `hyparquet`. This spike measures
 the format difference with realistic data dimensions (287 particles ×
-379 materials × 100 energy points) and a heterogeneous material mix
-(libdedx DEFAULT + 100 user-defined custom materials with Bragg-additivity
-compositions + electron as a non-nuclear particle).
-
-Zarr v3 with sharding addresses the two main weaknesses of the alternatives:
-Parquet's repeated string column overhead, and Zarr v2's 287-file deployment
-problem. The JS reader is `zarrita`, which supports v3 + ZEP2 sharding.
+379 materials × 100 energy points). Candidates B and C are both uploaded
+to a real S3 bucket to measure actual wall-clock RTT under their respective
+access patterns (Range vs GET). The JS reader is `zarrita`, which supports
+v3 + ZEP2 sharding.
 
 ### Background
 
@@ -941,15 +942,18 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 | # | Criterion | Pass condition |
 |---|-----------|---------------|
 | 1 | `generate_data.py` produces correct shape | Prints "287 particles, 379 materials"; exits 0 |
-| 2 | Zarr data round-trips | Read-back values match within `float32` epsilon |
-| 3 | Parquet data round-trips | Same |
-| 4 | Electron chunk present and non-zero | `stp_array[286, :, :]` finite, distinct from H-1 |
-| 5 | Custom material Bragg additivity works | `SS316L` STP ≠ `IRON` STP and is a plausible mix |
-| 6 | Per-particle Zarr chunk < Parquet row group | Compressed bytes: Zarr chunk < Parquet RG |
-| 7 | `run_benchmark.py` prints full table | No exceptions; all metrics reported |
-| 8 | Browser: values match between formats | `max|zarr - parquet| < 1e-5` for H-1, electron, SS316L |
-| 9 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
-| 10 | No CORS errors from Vite dev server | DevTools console clean |
+| 2 | Zarr single-shard round-trip | Read-back values match within `float32` epsilon |
+| 3 | Zarr per-ion round-trip | Same |
+| 4 | Parquet round-trip | Same |
+| 5 | Electron chunk present and non-zero | `stp_array[286, :, :]` finite, distinct from H-1 |
+| 6 | Custom material Bragg additivity works | `SS316L` STP ≠ `IRON` STP and is a plausible mix |
+| 7 | Per-particle Zarr chunk < Parquet row group | Compressed bytes: Zarr chunk < Parquet RG |
+| 8 | `run_benchmark.py` prints full table | No exceptions; all metrics reported |
+| 9 | Browser local panels: values match | `max|zarr - parquet| < 1e-5` for H-1, electron, SS316L |
+| 10 | Browser S3 single-shard panel: reads correctly | Wall-clock time recorded; DevTools shows Range requests |
+| 11 | Browser S3 per-ion panel: reads correctly | Wall-clock time recorded; DevTools shows plain GET (no Range) |
+| 12 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
+| 13 | No CORS errors from Vite dev server or S3 | DevTools console clean for all panels |
 
 ### Deliverables
 
@@ -958,9 +962,11 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 | `prototypes/extdata-formats/PLAN.md` | Full spike specification (complete) |
 | `prototypes/extdata-formats/generate_data.py` | Isotope list, materials, STP arrays |
 | `prototypes/extdata-formats/write_parquet.py` | Parquet writer (per-ion row groups) |
-| `prototypes/extdata-formats/write_zarr_v3.py` | Zarr v3 writer (sharding: shard=full array, inner chunk=per-ion) |
-| `prototypes/extdata-formats/run_benchmark.py` | Size + HTTP-cost comparison table |
-| `prototypes/extdata-formats/browser/` | Vite app: fetch one ion from each format |
+| `prototypes/extdata-formats/write_zarr_v3_single.py` | Zarr v3 single-shard writer (`shards=(287,379,100)`) |
+| `prototypes/extdata-formats/write_zarr_v3_per_ion.py` | Zarr v3 per-ion writer (`shards=(1,379,100)`) |
+| `prototypes/extdata-formats/upload_to_s3.py` | S3 upload script for all three datasets |
+| `prototypes/extdata-formats/run_benchmark.py` | Local size + HTTP-cost comparison table |
+| `prototypes/extdata-formats/browser/` | Vite app: 5 panels (local + S3 tests) |
 | `prototypes/extdata-formats/REPORT.md` | Benchmark results (to be written) |
 | `prototypes/extdata-formats/VERDICT.md` | Go/no-go decision (to be written) |
 
@@ -972,9 +978,11 @@ holds:
 
 - **Keep Parquet**: per-ion size difference < 15% OR `zarrita` bundle
   significantly larger than `hyparquet` OR zarrita ZEP2 sharding unstable.
-- **Switch to Zarr v3 + sharding**: per-ion Zarr inner chunk ≤ 60% of
-  Parquet row group AND `zarrita` bundle comparable to `hyparquet` AND
-  ZEP2 sharding confirmed working via `FetchStore` in the browser.
+- **Switch to Zarr v3 single-shard**: per-ion Zarr chunk ≤ 60% of Parquet
+  row group AND `zarrita` comparable to `hyparquet` AND ZEP2 sharding
+  confirmed in browser AND S3 RTT ≤ 1.5× Parquet cold-start.
+- **Switch to Zarr v3 per-ion shards**: as above, plus S3 per-ion RTT
+  measurably faster than single-shard (> 20% gain) and deployment is S3.
 - **Fallback — Zarr v3 without sharding**: Zarr wins on size but zarrita
   sharding is unstable; accept 287 chunk files.
 

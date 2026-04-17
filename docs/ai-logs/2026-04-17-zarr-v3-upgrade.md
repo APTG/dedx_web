@@ -92,6 +92,29 @@ the external-data feature is implemented in Stage 6.
   - `docs/ai-logs/README.md` (new entry added)
   - `CHANGELOG-AI.md` (new row; prior Stage 2.7 row updated to Stage 2.5)
 
+### S3 two-shard-variant expansion
+
+- **Status:** Plan updated; implementation not yet started
+- **Stage:** 2.5 (Spike 4)
+- **Files changed:**
+  - `prototypes/extdata-formats/PLAN.md`:
+    - Goal header: now lists 3 candidates (A=Parquet, B=single-shard, C=per-ion)
+    - §1 Motivation: rewritten to describe both Zarr configurations
+    - §3: added per-ion shard store diagram
+    - §4: directory adds `write_zarr_v3_single.py`, `write_zarr_v3_per_ion.py`, `upload_to_s3.py`
+    - §5.3 renamed to `write_zarr_v3_single.py`; §5.3b added for per-ion
+    - §5.4 benchmark: added per-ion size rows
+    - §5.5 browser: extended to 5 panels with S3 mode + CORS config
+    - §5.6 `upload_to_s3.py` added (boto3, CORS reminder, VITE_S3_BASE_URL output)
+    - §6 `requirements.txt` block updated with `boto3>=1.34`
+    - §7 Q10–12: S3 RTT questions added
+    - §8 AC 10–13: S3 browser criteria added
+    - §9: phased execution order (Phase 1–4)
+    - §10: per-ion S3 decision path added
+  - `prototypes/extdata-formats/requirements.txt` — added `boto3>=1.34`
+  - `docs/11-prototyping-spikes.md` — Spike 4 goal table, AC, deliverables, gate rule updated
+  - `CHANGELOG-AI.md` — new row for this session
+
 ### Key design decisions
 
 1. **Zarr v3 + sharding over Zarr v2**: The multi-file problem (287 chunk
@@ -114,3 +137,11 @@ the external-data feature is implemented in Stage 6.
    feature (Stage 6 feature), not Stage 3 (WASM build pipeline). The Stage 3
    gate (Spikes 1–3) is already open. This preserves the existing
    Stage 3 gate semantics.
+
+5. **Per-ion shards (`shards=(1,379,100)`) as a second S3 variant**: With
+   one shard file per ion, the browser can directly GET `c/{i}/0/0` without
+   any Range requests — the shard IS the ion's data. This reduces cold-start
+   to 2 HTTP requests (same as Parquet) but produces 287 S3 objects.
+   S3 handles this trivially; GitHub Pages does not. The S3 RTT comparison
+   between single-shard (Range) and per-ion (GET) quantifies the real-world
+   cost of Range vs GET latency under a CDN.
