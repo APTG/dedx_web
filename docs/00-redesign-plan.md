@@ -280,12 +280,15 @@ As a <role>, I want to <action> so that <benefit>.
 ### Stage 2.5: Prototyping Spikes (Risk Reduction)
 - **Who:** AI implements autonomously (one spike per session).
 - **Input:** [`docs/11-prototyping-spikes.md`](11-prototyping-spikes.md).
-- **Produce:** Three throwaway prototypes in `prototypes/` that validate:
-  1. JSROOT 7 rendering inside a Svelte 5 `$effect` (DOM ownership, cleanup, re-draw).
-  2. Emscripten `--preload-file` served by SvelteKit static adapter and sub-path hosting.
-  3. Module-level `$state` with `{ value: T }` wrapper reactive across components.
-- **Gate:** All three spikes must pass (or architecture docs amended to reflect
-  validated alternatives) before Stage 3 begins.
+- **Produce:** Four throwaway prototypes in `prototypes/` that validate:
+  1. JSROOT 7 rendering inside a Svelte 5 `$effect` (DOM ownership, cleanup, re-draw). ✅
+  2. Emscripten `--preload-file` served by SvelteKit static adapter and sub-path hosting. ✅
+  3. Module-level `$state` with `{ value: T }` wrapper reactive across components. ✅
+  4. External data format: Zarr v3 + sharding vs Apache Parquet — file size, per-ion
+     HTTP Range reads, and `zarrita` vs `hyparquet` JS bundle size.
+- **Gate (Stage 3):** Spikes 1–3 must pass before Stage 3 begins. ✅ Gate open.
+- **Gate (external-data feature):** Spike 4 must produce `VERDICT.md` before
+  `docs/04-feature-specs/external-data.md` is implemented.
 - **Verify:** Each spike produces a `VERDICT.md` with pass/fail per criterion.
 
 ### Stage 2.6: libdedx Data Source Investigation (pre-Stage 3 gate)

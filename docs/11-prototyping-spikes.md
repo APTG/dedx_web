@@ -889,10 +889,11 @@ The Stage 3 TypeScript wrapper must:
 
 ### Goal
 
-Decide whether **Zarr v2 with per-ion chunking** is a better fit than
-**Apache Parquet with per-ion row groups** for the `.webdedx` external
-data format, before any production code for the external-data feature
-(`docs/04-feature-specs/external-data.md`) is written.
+Decide whether **Zarr v3 with the sharding codec** (one outer shard,
+per-ion inner chunks — effectively a single data file with per-ion HTTP
+Range reads) is a better fit than **Apache Parquet with per-ion row groups**
+for the `.webdedx` external data format, before any production code for the
+external-data feature (`docs/04-feature-specs/external-data.md`) is written.
 
 The current spec mandates Parquet + `hyparquet`. This spike measures
 the format difference with realistic data dimensions (287 particles ×
@@ -900,16 +901,23 @@ the format difference with realistic data dimensions (287 particles ×
 (libdedx DEFAULT + 100 user-defined custom materials with Bragg-additivity
 compositions + electron as a non-nuclear particle).
 
+Zarr v3 with sharding addresses the two main weaknesses of the alternatives:
+Parquet's repeated string column overhead, and Zarr v2's 287-file deployment
+problem. The JS reader is `zarrita`, which supports v3 + ZEP2 sharding.
+
 ### Background
 
 - [`docs/04-feature-specs/external-data.md §2`](04-feature-specs/external-data.md)
   specifies `.webdedx.parquet` as the distribution format, with one Parquet
   row group per `(program, ion)` pair read via HTTP Range Requests.
 - The key access pattern is: user selects one ion → fetch only that ion's
-  row group. Zarr v2 with `chunks=(1, n_materials, n_energy)` maps this
-  pattern directly onto chunk files.
+  data. Zarr v3 with sharding maps this onto inner chunks: one shard file
+  holds the whole array; the shard index is fetched first (HTTP Range),
+  then the specific ion's inner chunk (second Range request).
 - The Parquet format repeats the 100-point energy grid as a column in every
-  row (27,900× per ion). Zarr stores it once in `.zattrs` metadata.
+  row (27,900× per ion). Zarr stores it once in `zarr.json` metadata.
+- Zarr v3 + sharding avoids the Zarr v2 deployment problem (287 chunk files)
+  by placing all ions in a single outer shard.
 - Decision affects: `docs/02-tech-stack.md` (`hyparquet` vs `zarrita`
   JS bundle), `external-data.md` schema, converter tooling spec.
 
@@ -950,7 +958,7 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 | `prototypes/extdata-formats/PLAN.md` | Full spike specification (complete) |
 | `prototypes/extdata-formats/generate_data.py` | Isotope list, materials, STP arrays |
 | `prototypes/extdata-formats/write_parquet.py` | Parquet writer (per-ion row groups) |
-| `prototypes/extdata-formats/write_zarr_v2.py` | Zarr v2 writer (per-ion chunks) |
+| `prototypes/extdata-formats/write_zarr_v3.py` | Zarr v3 writer (sharding: shard=full array, inner chunk=per-ion) |
 | `prototypes/extdata-formats/run_benchmark.py` | Size + HTTP-cost comparison table |
 | `prototypes/extdata-formats/browser/` | Vite app: fetch one ion from each format |
 | `prototypes/extdata-formats/REPORT.md` | Benchmark results (to be written) |
@@ -962,12 +970,13 @@ The external-data feature (`docs/04-feature-specs/external-data.md`) must
 not be implemented until `VERDICT.md` is written and one of the following
 holds:
 
-- **Keep Parquet**: per-particle size difference < 15% OR `zarrita` bundle
-  significantly larger than `hyparquet`.
-- **Switch to Zarr v2**: per-particle Zarr chunk ≤ 60% of Parquet row group
-  AND `zarrita` bundle is comparable to `hyparquet`.
-- **Use Zarr v3 + sharding**: Zarr v2 wins on size but multi-file deployment
-  is impractical; `zarrita` v0.4+ sharding confirmed stable in the browser.
+- **Keep Parquet**: per-ion size difference < 15% OR `zarrita` bundle
+  significantly larger than `hyparquet` OR zarrita ZEP2 sharding unstable.
+- **Switch to Zarr v3 + sharding**: per-ion Zarr inner chunk ≤ 60% of
+  Parquet row group AND `zarrita` bundle comparable to `hyparquet` AND
+  ZEP2 sharding confirmed working via `FetchStore` in the browser.
+- **Fallback — Zarr v3 without sharding**: Zarr wins on size but zarrita
+  sharding is unstable; accept 287 chunk files.
 
 ### References
 

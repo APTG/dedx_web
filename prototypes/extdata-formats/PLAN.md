@@ -2,9 +2,10 @@
 
 > **Status:** Plan (2026-04-17)
 > **Branch:** `prototypes/srim-parquet` (branch name fixed at creation; prototype lives in `prototypes/extdata-formats/`)
-> **Goal:** Decide whether Zarr v2 with per-ion chunking is a better fit than
-> Apache Parquet for the `.webdedx` external data format before committing to
-> the Parquet spec in `docs/04-feature-specs/external-data.md`.
+> **Goal:** Decide whether Zarr v3 with the sharding codec (per-ion inner
+> chunks, single shard file) is a better fit than Apache Parquet for the
+> `.webdedx` external data format before committing to the Parquet spec in
+> `docs/04-feature-specs/external-data.md`.
 
 ---
 
@@ -15,10 +16,17 @@ row group per `(program, ion)` pair, read via `hyparquet` in the browser.
 The key access pattern is: user selects **one ion** → browser fetches only
 that ion's STP values for all materials via an HTTP Range Request.
 
-Zarr v2 with chunk shape `(1, n_materials, n_energy)` maps this pattern
-directly onto the file format: each ion is a separate chunk file. This
-avoids the Parquet row format overhead (repeated string columns, energy
-column duplicated across all rows) and may yield a smaller per-ion payload.
+Zarr v3 with the **sharding codec** maps this pattern onto a **single file**:
+the array uses one outer shard covering the entire dataset `(287, 379, 100)`,
+with inner chunk shape `(1, n_materials, n_energy)` — one inner chunk per ion.
+The shard index (a few KB at the tail of the file) tells the byte range of
+each ion's inner chunk. A browser fetches the index via one HTTP Range
+Request, then fetches the specific ion's inner chunk via a second Range
+Request — the same 2-request cold-start as Parquet.
+
+This avoids both the Parquet row-format overhead (repeated string columns,
+energy column duplicated across all rows) AND the Zarr v2 multi-file
+deployment problem (287 separate chunk files).
 
 This prototype measures the difference with realistic data dimensions before
 any production code is written. The dataset is deliberately large and
@@ -355,13 +363,21 @@ Array shape (per program): (287, 379, 100)   float32
 Uncompressed:  287 × 379 × 100 × 4 = 43.5 MB per program
 Est. zstd-5:   ~12–15 MB  (smooth float arrays compress ~3:1)
 
-Per-ion chunk (Zarr):     379 × 100 × 4 bytes = 151,600 bytes ≈ 148 KB uncompressed
-Per-ion chunk (Parquet):  379 × 100 rows × ~28 bytes/row ≈ 1,063,200 bytes ≈ 1.0 MB uncompressed
-                          (program + particle + material strings + energy float + stp float)
+Per-ion inner chunk (Zarr v3):  379 × 100 × 4 bytes = 151,600 bytes ≈ 148 KB uncompressed
+Per-ion row group (Parquet):    379 × 100 rows × ~28 bytes/row ≈ 1,063,200 bytes ≈ 1.0 MB uncompressed
+                                (program + particle + material strings + energy float + stp float)
+Shard index overhead (Zarr):    287 inner chunks × 2 × 8 bytes = 4,592 bytes (negligible)
 Expected compression ratio for Parquet:  ~4–6:1 (strings compress well)
 Expected compressed per-ion:
-  Zarr chunk:     ~40–60 KB
-  Parquet rg:     ~180–260 KB
+  Zarr inner chunk:  ~40–60 KB
+  Parquet row group: ~180–260 KB
+
+Zarr v3 shard structure (1 outer shard covering entire array):
+  data/srim_synthetic.zarr/
+  ├── zarr.json                        # root group metadata
+  └── srim-2013/stp/
+      ├── zarr.json                    # array metadata (sharding config)
+      └── c/0/0/0                      # single shard file (~12–15 MB compressed)
 ```
 
 ---
@@ -376,7 +392,7 @@ prototypes/extdata-formats/
 ├── venv/                      ← Python venv (gitignored)
 ├── generate_data.py           ← single source of truth: isotopes, materials, STP arrays
 ├── write_parquet.py           ← write .webdedx.parquet per current spec
-├── write_zarr_v2.py           ← write Zarr v2, chunk=(1, n_mat, n_e)
+├── write_zarr_v3.py           ← write Zarr v3 + sharding: shard=(287,379,100), inner=(1,379,100)
 ├── run_benchmark.py           ← sizes, HTTP cost simulation, comparison table
 ├── browser/
 │   ├── package.json           ← zarrita, hyparquet, vite, typescript
@@ -386,7 +402,7 @@ prototypes/extdata-formats/
 │       └── index.html
 ├── data/                      ← generated output (gitignored)
 │   ├── srim_synthetic.webdedx.parquet
-│   └── srim_synthetic.zarr/
+│   └── srim_synthetic.zarr/           # Zarr v3 store directory
 ├── REPORT.md
 └── VERDICT.md
 ```
@@ -487,34 +503,59 @@ Each row group: `379 materials × 100 energy points = 37,900 rows`.
 
 ---
 
-### 5.3 `write_zarr_v2.py`
+### 5.3 `write_zarr_v3.py`
+
+Uses the **zarr v3 sharding codec**: one outer shard covers the entire
+array; inner chunks provide per-ion granularity. The browser fetches the
+shard index (trailing bytes of the shard file) to locate an ion's inner
+chunk, then issues one HTTP Range Request for that chunk.
 
 ```python
-root = zarr.open_group("data/srim_synthetic.zarr/", mode="w")
+import zarr
+import json
+from generate_data import PARTICLES, MATERIALS, ENERGIES, compute_stp_array
+
+stp_array = compute_stp_array()   # shape (287, 379, 100), float32
+
+# Open/create the root group
+root = zarr.open_group("data/srim_synthetic.zarr", mode="w")
 root.attrs.update({
     "webdedx.formatVersion": "1",
-    "webdedx.programs": [...],
-    "webdedx.particles": [...],         # 287 entries (electron last)
-    "webdedx.materials": [...],         # 379 entries (custom materials last)
+    "webdedx.programs": ["srim-2013"],
+    "webdedx.particles": PARTICLES,          # 287 entries (electron last)
+    "webdedx.materials": MATERIALS,          # 379 entries (custom last)
     "webdedx.energyGrid_MeV_u": ENERGIES.tolist(),   # stored ONCE
 })
 
 grp = root.require_group("srim-2013")
-grp.create_dataset(
-    "stp",
-    data=stp_array,                     # shape (287, 379, 100), float32
-    chunks=(1, 379, 100),               # ← per-particle sharding
+
+# Zarr v3 sharding: outer shard = whole array (1 file), inner chunk = per-ion
+arr = grp.create_array(
+    name="stp",
+    shape=(287, 379, 100),
     dtype="float32",
-    compressor=numcodecs.Blosc(
-        cname="zstd", clevel=5, shuffle=numcodecs.Blosc.BITSHUFFLE
+    shards=(287, 379, 100),         # ← one shard file for the whole array
+    chunks=(1, 379, 100),           # ← per-ion inner chunk
+    compressors=zarr.codecs.BloscCodec(
+        cname="zstd",
+        clevel=5,
+        shuffle=zarr.codecs.BloscShuffle.bitshuffle,
     ),
+    fill_value=float("nan"),
 )
+arr[:] = stp_array
 ```
 
-**Electron chunk:** Ion index 286 (last). The chunk `srim-2013/stp/286.0.0`
-contains the electron STP for all 379 materials × 100 energies.
+**Shard file:** `data/srim_synthetic.zarr/srim-2013/stp/c/0/0/0`
+One binary file containing all 287 inner chunks, each compressed
+independently, with a 4,592-byte index at the tail listing each
+inner chunk's byte offset and length.
 
-**Output:** `data/srim_synthetic.zarr/`
+**Electron inner chunk:** Ion index 286 (last). The browser requests
+`index_entry[286]` → `{offset, nbytes}` → Range `offset..offset+nbytes`.
+
+**Output:** `data/srim_synthetic.zarr/` (directory; the data lives in
+the single file `c/0/0/0` plus small `zarr.json` metadata files).
 
 ---
 
@@ -527,16 +568,17 @@ Measures sizes and simulates HTTP cost from local file sizes. No server needed.
 | Total Parquet size | `os.path.getsize()` |
 | Total Zarr size | `sum(getsize(f) for f in Path(...).rglob("*") if f.is_file())` |
 | Parquet footer size | Parse last 8 bytes for footer length (Parquet magic) |
-| Zarr root metadata size | `getsize(".zattrs") + getsize(".zgroup")` |
-| Zarr array metadata size | `getsize("srim-2013/stp/.zarray")` |
+| Zarr root metadata size | `getsize("zarr.json") + getsize("srim-2013/zarr.json")` |
+| Zarr array metadata size | `getsize("srim-2013/stp/zarr.json")` |
+| Zarr shard index size | 287 inner chunks × 2 × 8 bytes = 4,592 bytes (in shard tail) |
 | Per-particle Parquet RG (row group 0) | Row group byte range from footer metadata |
-| Per-particle Zarr chunk | `getsize("srim-2013/stp/0.0.0")` |
+| Per-particle Zarr inner chunk | Bytes at index_entry[0] (`offset`, `nbytes`) in shard index |
 | Per-electron Parquet RG | Row group byte range for last row group |
-| Per-electron Zarr chunk | `getsize("srim-2013/stp/286.0.0")` |
-| Per-custom-material query cost | Not applicable: chunk covers ALL materials |
-| Zarr chunk file count | `len(list(Path(...).rglob("*")))` |
-| HTTP requests cold | Parquet: 2 (footer + RG). Zarr: 2 (`.zattrs` + chunk) |
-| HTTP requests warm | Parquet: 1. Zarr: 1. |
+| Per-electron Zarr inner chunk | Bytes at index_entry[286] in shard index |
+| Per-custom-material query cost | Not applicable: inner chunk covers ALL materials |
+| Zarr file count | `len(list(Path(...).rglob("*")))` — expect ~5 files (zarr.jsons + shard) |
+| HTTP requests cold | Parquet: 2 (footer + RG). Zarr: 3 (array zarr.json + shard index range + inner chunk range) |
+| HTTP requests warm | Parquet: 1. Zarr: 1 (shard index cached by zarrita). |
 | Compression ratio | uncompressed / compressed, both formats |
 
 **Output:** Prints Markdown table; writes `REPORT.md`.
@@ -549,7 +591,7 @@ A Vite + TypeScript SPA. Both format files are served via `vite dev`
 from `browser/public/` (symlinked from `data/`).
 
 **Libraries:**
-- `zarrita` (v0.4.x) — Zarr v2/v3 JS reader
+- `zarrita` (v0.4.x) — Zarr v2/v3 + ZEP2 sharding JS reader, zero dependencies
 - `hyparquet` (v1.x) — Parquet reader
 
 **Three-panel page:**
@@ -582,7 +624,7 @@ pip install -r requirements.txt
 
 `requirements.txt`:
 ```
-zarr==2.18.*
+zarr>=3.0
 pyarrow>=15
 numcodecs>=0.12
 numpy>=1.26
@@ -611,13 +653,13 @@ pnpm install    # or npm install
 | # | Question | Expected answer |
 |---|----------|----------------|
 | 1 | Is Zarr total size ≤ Parquet total size? | Yes — no repeated string columns |
-| 2 | Is per-particle Zarr chunk ≤ Parquet row group? | Yes — float array vs tabular rows |
+| 2 | Is per-ion Zarr inner chunk ≤ Parquet row group? | Yes — float array vs tabular rows |
 | 3 | How much does the energy grid repetition cost Parquet? | 379 × 100 energy values repeated per row group |
-| 4 | Are HTTP round trips equal (2 cold, 1 warm for both)? | Yes — structural parity |
+| 4 | Are HTTP round trips comparable? | Parquet: 2 cold. Zarr: 3 cold (zarr.json + shard index + inner chunk). 1 warm both. |
 | 5 | Is `zarrita` JS bundle ≤ `hyparquet`? | Unknown — measure it |
-| 6 | Does electron chunk differ meaningfully in size from ion chunks? | Electron STP values may compress differently |
-| 7 | Do custom materials affect chunk size vs libdedx materials? | No — all 379 materials are in every chunk |
-| 8 | Does `.zarr/` directory deploy without friction to Vite/GitHub Pages? | Yes, but 288+ files vs 1 file |
+| 6 | Does electron inner chunk differ meaningfully in size from ion chunks? | Electron STP values may compress differently |
+| 7 | Do custom materials affect inner chunk size vs libdedx materials? | No — all 379 materials are in every inner chunk |
+| 8 | Does the Zarr v3 store deploy without friction to Vite/GitHub Pages? | Expect yes — only ~5 files (zarr.jsons + shard) |
 | 9 | Does Zarr handle variable energy grids per ion? | Not without jagged arrays — Parquet can |
 
 ---
@@ -631,7 +673,7 @@ pnpm install    # or npm install
 | 3 | Parquet round-trip | Same |
 | 4 | Electron chunk present and non-zero | `stp_array[286, :, :]` has no NaN/inf; differs from ion values |
 | 5 | Custom material STP uses Bragg additivity | `SS316L` STP ≠ `IRON` STP; plausible interpolation |
-| 6 | Per-particle Zarr chunk < Parquet row group | `zarr_chunk_bytes < parquet_rg_bytes` after compression |
+| 6 | Per-particle Zarr inner chunk < Parquet row group | `zarr_inner_chunk_bytes < parquet_rg_bytes` after compression |
 | 7 | `run_benchmark.py` completes | Prints table with all metrics |
 | 8 | Browser: values match between formats | `max_diff < 1e-5` for H-1, electron, and SS316L |
 | 9 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
@@ -644,7 +686,7 @@ pnpm install    # or npm install
 ```
 1.  source venv/bin/activate
 2.  python generate_data.py          # verify 287 particles, 379 materials
-3.  python write_zarr_v2.py          # write data/srim_synthetic.zarr/
+3.  python write_zarr_v3.py          # write data/srim_synthetic.zarr/
 4.  python write_parquet.py          # write data/srim_synthetic.webdedx.parquet
 5.  python run_benchmark.py          # print comparison table
 6.  cd browser && pnpm install
@@ -661,18 +703,21 @@ pnpm install    # or npm install
 ## 10. Decision Criteria for VERDICT.md
 
 **Keep Parquet if any of:**
-- `zarrita` bundle > 50 KB minified and larger than `hyparquet`
-- Per-particle size difference < 15% (not worth switching toolchain)
-- `.zarr/` directory deployment causes CORS or MIME friction on GitHub Pages
+- `zarrita` bundle > 50 KB minified and significantly larger than `hyparquet`
+- Per-ion size difference < 15% (not worth switching toolchain)
+- Zarr v3 store deployment causes CORS or MIME friction on GitHub Pages
+- zarrita's ZEP2 sharding is not stable enough in the browser
 
-**Switch to Zarr v2 if all of:**
-- Per-particle Zarr chunk ≤ 60% of Parquet row group (after compression)
+**Switch to Zarr v3 + sharding if all of:**
+- Per-ion Zarr inner chunk ≤ 60% of Parquet row group (after compression)
 - `zarrita` bundle comparable to `hyparquet` (within 2×)
-- GitHub Pages static deploy test passes
+- zarrita ZEP2 sharding confirmed working in browser (Range reads via `FetchStore`)
+- GitHub Pages static deploy test passes (only ~5 files to serve)
 
-**Consider Zarr v3 + sharding if:**
-- Zarr v2 wins on size but the multi-file directory is impractical for URL sharing
-- `zarrita` v0.4+ sharding codec is confirmed stable in the browser
+**Fallback — plain Zarr v3 (no sharding) if:**
+- Zarr v3 + sharding wins on size but zarrita sharding is unstable
+- Acceptable compromise: 287 chunk files (v3 without sharding) — larger file count
+  but simpler deployment if GitHub Pages CDN pre-compresses well
 
 ---
 
