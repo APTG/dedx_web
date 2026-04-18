@@ -1,6 +1,6 @@
 # Spike 4: External Data Storage Format — Zarr vs Apache Parquet
 
-> **Status:** Plan (2026-04-17)
+> **Status:** Complete (2026-04-18)
 > **Branch:** `prototypes/srim-parquet` (branch name fixed at creation; prototype lives in `prototypes/extdata-formats/`)
 > **Goal:** Decide which storage format is best for the `.webdedx` external
 > data format before committing to the Parquet spec in
@@ -21,18 +21,18 @@ that ion's STP values for all materials via an HTTP Range Request.
 
 Two Zarr v3 configurations are evaluated against the Parquet baseline:
 
-**Zarr v3 — single shard** (`shards=(287,379,100)`, `chunks=(1,379,100)`):
+**Zarr v3 — single shard** (`shards=(287,379,165)`, `chunks=(1,379,165)`):
 One outer shard file holds all 287 ions. Its 4.6 KB shard index (stored at
 the file's tail) maps each ion to its byte range. Browser: fetch `zarr.json`
 (1 request) + Range for shard index (1 request) + Range for ion's inner
 chunk (1 request) = **3 cold requests**. Avoids Zarr v2's 287-file problem.
 
-**Zarr v3 — per-ion shards** (`shards=(1,379,100)`, `chunks=(1,379,100)`):
+**Zarr v3 — per-ion shards** (`shards=(1,379,165)`, `chunks=(1,379,165)`):
 Each ion gets its own shard file (`c/{i}/0/0`), i.e. 287 files. No shard
 index fetch is needed — each file IS the ion's data. Browser: fetch
 `zarr.json` (1 request) + fetch `c/{i}/0/0` (1 request) = **2 cold
 requests**. Identical RTT budget to Parquet. Each S3 object is small
-(~40–60 KB compressed), so S3 GET latency dominates more than Range
+(~140–220 KB compressed), so S3 GET latency dominates more than Range
 overhead. File count (287 + metadata) is manageable on S3 but inconvenient
 for GitHub Pages.
 
@@ -406,7 +406,7 @@ Per-ion row group (Parquet):    379 × 165 rows × ~35 bytes/row ≈ 2.18 MB unc
 Shard index overhead (Zarr):    287 inner chunks × 2 × 8 bytes = 4,592 bytes (negligible)
 Expected compression ratio:  ~3–5:1 (float arrays); ~5–8:1 (Parquet with string columns)
 Expected compressed per-ion:
-  Zarr inner chunk (per quantity):  ~55–85 KB
+  Zarr inner chunk (per quantity):  ~140–220 KB (measured: H-1 137.5 KB, e⁻ 217.7 KB)
   Parquet row group:                ~250–400 KB
 
 Zarr v3 — single-shard store (shards=(287,379,165)):
@@ -427,7 +427,7 @@ Zarr v3 — per-ion shard store (shards=(1,379,165)):
   └── srim-2013/
       ├── stp/
       │   ├── zarr.json                # array metadata
-      │   ├── c/0/0/0                  # H-1 shard (~55–85 KB compressed)
+      │   ├── c/0/0/0                  # H-1 shard (~138 KB compressed)
       │   ├── c/1/0/0                  # H-2 shard
       │   │   ...
       │   └── c/286/0/0               # electron shard
@@ -448,8 +448,8 @@ prototypes/extdata-formats/
 ├── venv/                        ← Python venv (gitignored)
 ├── generate_data.py             ← single source of truth: isotopes, materials, STP arrays
 ├── write_parquet.py             ← write .webdedx.parquet per current spec
-├── write_zarr_v3_single.py      ← Zarr v3 single-shard: shards=(287,379,100), chunks=(1,379,100)
-├── write_zarr_v3_per_ion.py     ← Zarr v3 per-ion shards: shards=(1,379,100), chunks=(1,379,100)
+├── write_zarr_v3_single.py      ← Zarr v3 single-shard: shards=(287,379,165), chunks=(1,379,165)
+├── write_zarr_v3_per_ion.py     ← Zarr v3 per-ion shards: shards=(1,379,165), chunks=(1,379,165)
 ├── upload_to_s3.py              ← upload all three datasets to S3 bucket
 ├── run_benchmark.py             ← local sizes + HTTP cost simulation, comparison table
 ├── browser/
@@ -624,7 +624,7 @@ parallel (2 Range requests simultaneously after shard index reads).
 
 ### 5.3b `write_zarr_v3_per_ion.py`
 
-Uses Zarr v3 sharding with **one shard per ion** (`shards=(1,379,100)`).
+Uses Zarr v3 sharding with **one shard per ion** (`shards=(1,379,165)`).
 Each ion is stored as its own file (`c/{i}/0/0`), so no shard index
 fetch is needed — the browser GETs the file directly.
 
@@ -662,7 +662,7 @@ for name, data in [("stp", stp_array), ("csda_range", csda_array)]:
 ```
 
 **Shard files:** `stp/c/0/0/0` … `stp/c/286/0/0` and `csda_range/c/0/0/0` … `csda_range/c/286/0/0`
-— 574 files total (287 per quantity), each ~55–85 KB compressed.
+— 574 files total (287 per quantity), each ~140–220 KB compressed (measured).
 Each shard contains exactly one inner chunk; no shard index fetch needed.
 
 **Cold HTTP cost on S3:** 2 requests — `zarr.json` GET + `c/{i}/0/0` GET.
@@ -832,7 +832,7 @@ pnpm install    # or npm install
 |---|----------|----------------|
 | 1 | Is Zarr total size ≤ Parquet total size? | Yes — no repeated string columns |
 | 2 | Is per-ion Zarr inner chunk ≤ Parquet row group? | Yes — float array vs tabular rows |
-| 3 | How much does the energy grid repetition cost Parquet? | 379 × 100 energy values repeated per row group |
+| 3 | How much does the energy grid repetition cost Parquet? | 379 × 165 energy values repeated per row group |
 | 4 | Are HTTP cold-start round trips comparable? | Parquet: 2. Zarr single: 3 (zarr.json + shard index Range + chunk Range). Zarr per-ion: 2 (zarr.json + GET). |
 | 5 | Is `zarrita` JS bundle ≤ `hyparquet`? | Unknown — measure it |
 | 6 | Does electron inner chunk differ meaningfully in size from ion chunks? | Electron STP values may compress differently |

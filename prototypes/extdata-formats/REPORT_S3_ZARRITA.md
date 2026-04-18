@@ -1,6 +1,6 @@
 # Spike 4 — S3 Zarrita Benchmark
 
-**Date:** Fri, 17 Apr 2026 19:50:41 GMT  
+**Date:** Sat, 18 Apr 2026 07:31:27 GMT  
 **Runtime:** Bun (Node-compatible JS)  
 **Base URL:** `https://s3p.cloud.cyfronet.pl/webdedx`  
 **Zarrita version:** 0.7.1
@@ -9,26 +9,26 @@
 
 | Request | Size | Latency | Notes |
 |---------|------|---------|-------|
-| zarr-per-ion / zarr.json (root) | 86.9 KB | 1372 ms | particles + materials + energy grid |
-| zarr-per-ion / stp/zarr.json | 1.3 KB | 219 ms | array metadata |
-| zarr-per-ion / H-1 shard → water STP | 137.5 KB | 633 ms | downloads c/0/0/0 (full ion shard) |
-| zarr-per-ion / C-12 shard → PMMA STP | 137.3 KB | 967 ms | downloads c/9/0/0 (full ion shard) |
+| zarr-per-ion / zarr.json (root) | 86.9 KB | 106 ms | particles + materials + energy grid |
+| zarr-per-ion / stp/zarr.json | 1.3 KB | 13 ms | array metadata |
+| zarr-per-ion / H-1 shard → water STP | 137.5 KB | 66 ms | downloads c/0/0/0 (full ion shard) |
+| zarr-per-ion / C-12 shard → PMMA STP | 137.3 KB | 70 ms | downloads c/9/0/0 (full ion shard) |
 
 ## Single-shard Zarr
 
 | Request | Size | Latency | Notes |
 |---------|------|---------|-------|
-| zarr-single / zarr.json (root) | 86.9 KB | 463 ms | particles + materials + energy grid |
-| zarr-single / stp/zarr.json | 1.3 KB | 423 ms | array metadata |
-| zarr-single / H-1 inner chunk → water STP | 142.0 KB | 604 ms | shard-index Range + inner-chunk Range |
-| zarr-single / C-12 inner chunk → PMMA STP | 137.3 KB | 518 ms | shard-index cached + inner-chunk Range |
+| zarr-single / zarr.json (root) | 86.9 KB | 77 ms | particles + materials + energy grid |
+| zarr-single / stp/zarr.json | 1.3 KB | 13 ms | array metadata |
+| zarr-single / H-1 inner chunk → water STP | 142.0 KB | 81 ms | shard-index Range + inner-chunk Range |
+| zarr-single / C-12 inner chunk → PMMA STP | 137.3 KB | 16 ms | shard-index cached + inner-chunk Range |
 
 ## Cold-start budget — first H-1 STP fetch (zarr.json + data)
 
 | Format | Total KB | Total ms |
 |--------|----------|----------|
-| Zarr per-ion | 224.4 KB | 2006 ms |
-| Zarr single  | 228.9 KB | 1067 ms |
+| Zarr per-ion | 224.4 KB | 171 ms |
+| Zarr single  | 228.9 KB | 157 ms |
 
 ## STP values
 
