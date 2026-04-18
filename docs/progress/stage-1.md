@@ -42,7 +42,7 @@ All Stage 1 deliverables from `docs/00-redesign-plan.md §8` are complete.
 
 | File | Final version | Notes |
 |------|--------------|-------|
-| [`external-data.md`](../04-feature-specs/external-data.md) | v5 | User-hosted `.webdedx` Zarr v3 data (format updated by Spike 4, 2026-04-18: Zarr v3 per-ion shards adopted over Parquet), `extdata` URL param, entity merging. Implementation deferred to a later stage but specified now because URL grammar depends on it. |
+| [`external-data.md`](../04-feature-specs/external-data.md) | v6 | User-hosted `.webdedx` Zarr v3 data (Zarr v3 per-ion shards, Spike 4, 2026-04-18); `csda_range` optional; material `density` optional; `ival` field added; `extdata` URL param, entity merging. See [ADR 004](../decisions/004-zarr-v3-external-format.md). Implementation deferred to a later stage. |
 
 ---
 

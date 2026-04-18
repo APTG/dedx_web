@@ -1,6 +1,6 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Final v5 (18 April 2026)
+> **Status:** Final v6 (18 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.
@@ -35,6 +35,16 @@
 > 38.62 kB. JS reader changed from `hyparquet` to `zarrita`. §2 rewritten;
 > §2.3 partial fetch protocol updated to document the 7-request cold-start;
 > §2.4 hosting requirements updated; §11 tooling examples updated.
+>
+> **v6** (18 April 2026): `csda_range` Zarr array made optional — stores that
+> provide only stopping-power data are valid; CSDA columns show "—" when absent.
+> Material `density` field changed from required to recommended — if absent, only
+> MeV·cm²/g display is available for that material; keV/µm and MeV/cm are disabled.
+> New optional material field `ival` (mean excitation energy in eV) added for
+> reference. `webdedx.units.csdaRange` made optional (required only when a
+> `csda_range` array is present, defaults to `"g/cm²"`). Stale Parquet-era
+> "columns" / "row groups" validation language in §6.1 corrected to Zarr terms.
+> [ADR 004](../decisions/004-zarr-v3-external-format.md) cross-reference added.
 >
 > **Related specs:**
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
@@ -112,7 +122,7 @@ Spike 4): zarrita core 38.62 kB minified (gzip 12.89 kB), LZ4 codec chunk
 - zarrita core bundle (38.62 kB) comparable to hyparquet (~20 kB).
 - Zarr per-ion ZEP2 shard index = 20 bytes (1 inner chunk × 16 + 4 CRC),
   vs 4.5 KB for single-shard (287 inner chunks). The overhead is negligible.
-- See `prototypes/extdata-formats/VERDICT.md §5` for full decision rationale.
+- See `prototypes/extdata-formats/VERDICT.md §5` for full decision rationale and [ADR 004](../decisions/004-zarr-v3-external-format.md) for the formal decision record.
 
 ### 2.1 Logical Data Model
 
@@ -123,8 +133,10 @@ An external dataset defines:
 3. **Particles** — particle definitions with mass data.
 4. **Materials** — material definitions with density.
 5. **Arrays** — per program: a 3-D `float32` array of shape
-   `(n_particles, n_materials, n_energies)` for STP and CSDA-range, with
-   a 1-D energy coordinate shared across all materials.
+   `(n_particles, n_materials, n_energies)` for STP; an identically-shaped
+   optional array for CSDA-range; and a 1-D energy coordinate shared across
+   all materials. The `csda_range` array is optional — stores that provide
+   only stopping-power data are valid.
 
 ### 2.2 Zarr v3 Store Schema
 
@@ -138,8 +150,8 @@ store contains:
 {root}/{program}/zarr.json              ← program group: per-program metadata
 {root}/{program}/stp/zarr.json          ← STP array metadata (shape, chunks, codec)
 {root}/{program}/stp/c/{i}/0/0          ← per-ion shard (one file per particle)
-{root}/{program}/csda_range/zarr.json   ← CSDA range array metadata
-{root}/{program}/csda_range/c/{i}/0/0   ← per-ion shard
+{root}/{program}/csda_range/zarr.json   ← CSDA range array metadata (optional)
+{root}/{program}/csda_range/c/{i}/0/0   ← per-ion shard (optional)
 {root}/{program}/energy/zarr.json       ← 1-D energy array metadata (shape n_energies)
 {root}/{program}/energy/c/0             ← single energy chunk (shared across materials)
 ```
@@ -233,7 +245,8 @@ object (inside `zarr.json` at the store root):
 |-------|------|----------|-------|
 | `id` | string | yes | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`. |
 | `name` | string | yes | Human-readable name. |
-| `density` | number | yes | Material density in g/cm³. |
+| `density` | number | **recommended** | Material density in g/cm³. If absent, linear unit display (keV/µm, MeV/cm) is disabled for that material; only mass stopping power (MeV·cm²/g) is available. |
+| `ival` | number | no | Mean excitation energy in eV (I-value). Informational only — not used in calculations; external STP values are used directly. |
 | `phase` | string | no | `"solid"`, `"liquid"`, or `"gas"`. |
 | `icruId` | integer | **recommended** | ICRU/NIST material number. Built-in libdedx material IDs are ICRU numbers, so `icruId: 276` matches built-in material 276 (water liquid) exactly. Use this for any standard ICRU/NIST material. |
 | `atomicNumber` | integer | recommended for elements | Atomic number Z. Used as merge key for pure elemental targets (e.g., `atomicNumber: 14` for silicon). Takes effect only when `icruId` is absent. |
@@ -275,6 +288,7 @@ import json
 n_particles, n_materials, n_energies = 3, 2, 165
 energies = np.geomspace(0.0011, 2000.0, n_energies, dtype="float32")
 stp = np.random.rand(n_particles, n_materials, n_energies).astype("float32")
+# csda_range is optional — omit prog.array("csda_range", ...) if your source does not provide range data
 csda = np.random.rand(n_particles, n_materials, n_energies).astype("float32")
 
 store = zarr.storage.LocalStore("my-dataset.webdedx")
@@ -658,11 +672,16 @@ full file already attempted):
 | Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
 | JSON arrays in metadata keys fail to parse | Reject file; blocking error |
 | ID format invalid (not `[a-zA-Z0-9_-]+`) | Reject file; blocking error |
-| `webdedx.units.energy` / `.stoppingPower` / `.csdaRange` not in allowed set | Reject file; blocking error |
-| Missing required columns (`program`, `particle`, `material`, `energy`, `stopping_power`, `csda_range`) | Reject file; blocking error |
+| `webdedx.units.energy` or `.stoppingPower` not in allowed set | Reject file; blocking error |
+| `webdedx.units.csdaRange` present but not in allowed set (`"g/cm²"`, `"cm"`) | Reject file; blocking error |
+| `webdedx.units.csdaRange` absent and a `csda_range` array is present in the store | Reject source; blocking error |
+| `{program}/stp/zarr.json` or `{program}/energy/zarr.json` missing for a declared program | Reject source; blocking error |
+| `{program}/csda_range/zarr.json` missing for a declared program | Accept; CSDA features disabled for that source |
+| `stp` array shape does not match `[len(particles), len(materials), n_energies]` | Reject source; blocking error |
 | Duplicate IDs within same entity type | Reject file; blocking error |
-| Row group references a program/particle/material ID not declared in file metadata | Reject file; blocking error |
-| Duplicate (program, particle, material) triplets across row groups | Reject file; blocking error |
+| A Zarr group name in the store matches a program not declared in `webdedx.programs` | Ignore silently |
+| `materials[].density` present but ≤ 0 or not finite | Reject file; blocking error |
+| `materials[].ival` present but ≤ 0 or not finite | Reject file; blocking error |
 | `particles[].pdgCode` present but not a positive integer | Reject file; blocking error |
 | `particles[].pdgCode` duplicated within `webdedx.particles` array | Reject file; blocking error |
 | `materials[].icruId` present but not a positive integer | Reject file; blocking error |
@@ -693,7 +712,7 @@ Applied to each decoded row group after unit conversion:
 | Energies not in strictly ascending order | Reject table; mark series as failed |
 | Any energy ≤ 0 | Reject table |
 | Any stopping power ≤ 0 | Reject table |
-| Any CSDA range ≤ 0 | Reject table |
+| Any CSDA range ≤ 0 *(when `csda_range` array present)* | Reject table |
 | Any value is `NaN` or `Infinity` | Reject table |
 | `nPoints < 2` | Reject table (need at least 2 points for a curve) |
 | Energy range implausible (min > 1 GeV/nucl or max < 1 eV) | Warning (toast), but allow |
@@ -784,6 +803,15 @@ for scientific validity: comparing a built-in curve using one interpolation
 scheme against an external curve using another would be misleading. See
 [`advanced-options.md`](advanced-options.md) §4.
 
+**CSDA data absent:** If the external source contains no `csda_range` array,
+the CSDA range column for all rows under that program shows "—". The STP
+column is unaffected.
+
+**Density absent:** If a material in the external source has no `density` field,
+linear unit display (keV/µm, MeV/cm) is disabled for that material. The unit
+selector defaults to and is locked to MeV·cm²/g for calculations involving
+that material.
+
 ### 8.3 Multi-Program (Advanced Mode)
 
 External programs participate in multi-program comparison identically to
@@ -800,6 +828,8 @@ External (program, particle, material) triplets can be added as plot series:
 - The series uses the external table's native energy grid (no resampling to
   a common grid). Each series is plotted on its own grid.
 - Line style: dashed (to distinguish from solid built-in series).
+- If the external source has no `csda_range` array, the CSDA plot quantity is
+  unavailable for that source (grayed out in the quantity selector).
 - Color assignment: same palette rotation as built-in series.
 - Series label: includes 🔗 icon + external program name.
 
@@ -976,6 +1006,8 @@ pip-installable CLI tool.
 - [ ] On network error, a blocking error is shown with "Retry" and "Load without external data" options.
 - [ ] On validation error, a blocking error is shown with details.
 - [ ] "Load without external data" removes `extdata` from URL and reloads.
+- [ ] Store without `csda_range` array loads successfully; CSDA column shows "—"; CSDA plot quantity grayed out for that source.
+- [ ] Store with a material missing `density` loads successfully; keV/µm and MeV/cm units are disabled for that material.
 
 ### 12.2 Entity Integration
 
@@ -1038,10 +1070,11 @@ pip-installable CLI tool.
    doing so would make side-by-side comparisons scientifically unreliable.
    See §8.2 and [`advanced-options.md`](advanced-options.md) §4.
 
-3. **CSDA range from stopping power:** Should the app offer an option to
-   compute CSDA range by integrating the stopping-power table (for sources
-   that only provide stopping power)? *Recommendation: defer to a future
-   version. v1 requires both stopping power and CSDA range in the file.*
+3. **CSDA range from stopping power:** ✅ **Resolved (v6).** The `csda_range`
+   Zarr array is optional. Stores that contain only stopping-power data are
+   valid — CSDA columns in the Calculator and the CSDA plot quantity show "—"
+   for that source. Computing CSDA by integrating the external stopping-power
+   table remains deferred to a future version.
 
 4. **Offline / local file support:** ✅ **Resolved.** v1 supports URL-based
    loading only (`extdata={label}:{url}`). Local file loading via

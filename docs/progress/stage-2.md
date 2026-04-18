@@ -64,8 +64,10 @@ functions wrapped in component-level `$derived`. `03-architecture.md §4` amende
 
 ² All 13 acceptance criteria PASS. Decision: Zarr v3 per-ion shards
 (`shards=(1, n_materials, n_energies)`), zarrita reader. Cold-start: 225.7 KB /
-7 requests vs 466 KB Parquet. `external-data.md` v5 and `02-tech-stack.md §6`
-amended. See `prototypes/extdata-formats/VERDICT.md`.
+7 requests vs 466 KB Parquet. `external-data.md` amended (v5: Zarr adoption;
+v6: optional `csda_range` + optional `density` + `ival` field). `02-tech-stack.md §6`
+amended. See `prototypes/extdata-formats/VERDICT.md` and
+[ADR 004](../decisions/004-zarr-v3-external-format.md).
 
 **Gate:** All spikes passed (with §4 amendment applied). Stage 3 may begin.
 
