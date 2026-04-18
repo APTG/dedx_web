@@ -43,7 +43,7 @@ def shard_size(zarr_path: str, quantity: str, ion_index: int) -> int:
 
 
 def shard_index_size(n_inner_chunks: int = 287) -> int:
-    return n_inner_chunks * 2 * 8
+    return n_inner_chunks * 2 * 8 + 4
 
 
 def round_trip_check():
@@ -72,8 +72,6 @@ def round_trip_check():
 
 
 def main():
-    rows = []
-
     # --- Sizes ---
     pq_total  = os.path.getsize(PARQUET_PATH)
     zs_total  = dir_size(ZARR_SINGLE)
@@ -125,17 +123,17 @@ def main():
         f"| Zarr single — stp | shard index | {kb(zs_idx)} | 1 Range |",
         f"| Zarr single — stp | stp shard file | {mb(zs_stp_shard)} | (full shard) |",
         f"| Zarr single — csda | csda shard file | {mb(zs_csda_shard)} | (full shard) |",
-        f"| Zarr per-ion — stp | H-1 shard c/0/0/0 | {kb(zp_stp_ion0)} | 1 GET |",
-        f"| Zarr per-ion — stp | electron shard c/286/0/0 | {kb(zp_stp_ione)} | 1 GET |",
-        f"| Zarr per-ion — csda | H-1 shard c/0/0/0 | {kb(zp_csda_ion0)} | 1 GET |",
+        f"| Zarr per-ion — stp | H-1 shard c/0/0/0 | {kb(zp_stp_ion0)} | 1 HEAD + 1 Range |",
+        f"| Zarr per-ion — stp | electron shard c/286/0/0 | {kb(zp_stp_ione)} | 1 HEAD + 1 Range |",
+        f"| Zarr per-ion — csda | H-1 shard c/0/0/0 | {kb(zp_csda_ion0)} | 1 HEAD + 1 Range |",
         "",
         "## Cold HTTP Request Budget",
         "",
         "| Format | Requests | What |",
         "|--------|----------|------|",
-        "| Parquet | 2 | zarr.json/footer + ion row group Range |",
+        "| Parquet | 2 | footer tail Range + ion row group Range |",
         "| Zarr single shard | 3 per quantity | zarr.json + shard-index Range + ion-chunk Range |",
-        "| Zarr per-ion | 2 per quantity | zarr.json + c/{i}/0/0 GET |",
+        "| Zarr per-ion | 2 per quantity | HEAD + c/{i}/0/0 Range |",
         "",
         "## Round-Trip Consistency",
     ]

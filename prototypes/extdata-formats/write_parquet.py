@@ -50,7 +50,7 @@ def main():
             }
             for m in MATERIALS
         ]),
-        "webdedx.energyGrid_MeV_u": "null",  # energy is a column
+        "webdedx.energyGrid_MeV_u": json.dumps(None),  # energy is a column
     }
 
     schema = pa.schema([
@@ -70,8 +70,7 @@ def main():
         use_dictionary=["program", "particle", "material"],
     )
 
-    mat_ids   = [m["id"]   for m in MATERIALS]
-    mat_names = [m["name"] for m in MATERIALS]
+    mat_ids = [m["id"] for m in MATERIALS]
 
     for pi, particle in enumerate(PARTICLES):
         # Tile: each material × each energy

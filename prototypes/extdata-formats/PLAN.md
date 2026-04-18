@@ -28,18 +28,20 @@ the file's tail) maps each ion to its byte range. Browser: fetch `zarr.json`
 chunk (1 request) = **3 cold requests**. Avoids Zarr v2's 287-file problem.
 
 **Zarr v3 — per-ion shards** (`shards=(1,379,165)`, `chunks=(1,379,165)`):
-Each ion gets its own shard file (`c/{i}/0/0`), i.e. 287 files. No shard
-index fetch is needed — each file IS the ion's data. Browser: fetch
-`zarr.json` (1 request) + fetch `c/{i}/0/0` (1 request) = **2 cold
-requests**. Identical RTT budget to Parquet. Each S3 object is small
-(~140–220 KB compressed), so S3 GET latency dominates more than Range
-overhead. File count (287 + metadata) is manageable on S3 but inconvenient
-for GitHub Pages.
+Each ion gets its own shard file (`c/{i}/0/0`), i.e. 287 files. Although
+the layout avoids a cross-ion lookup in principle, the current zarrita
+browser access pattern on S3 still performs a probe and shard reads for
+each ion object: fetch `zarr.json` (1 request) + `HEAD c/{i}/0/0`
+(1 request) + Range for the shard index (1 request) + Range for the ion's
+data chunk (1 request) = **4 cold requests**. So the measured RTT budget is
+not identical to Parquet even though each S3 object is small
+(~140–220 KB compressed). File count (287 + metadata) is manageable on S3
+but inconvenient for GitHub Pages.
 
 Both Zarr configurations are uploaded to a real S3 bucket and tested in
-the browser to measure actual wall-clock RTT under the Range-request
-(single-shard) and direct-GET (per-ion) patterns. Local benchmarks measure
-sizes only; S3 tests measure latency.
+the browser to measure actual wall-clock RTT under their observed zarrita
+access patterns. Local benchmarks measure sizes only; S3 tests measure
+latency.
 
 This prototype measures the difference with realistic data dimensions before
 any production code is written. The dataset is deliberately large and

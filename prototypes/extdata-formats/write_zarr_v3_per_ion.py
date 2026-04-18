@@ -7,7 +7,6 @@ Output: data/srim_synthetic_per_ion.zarr/
 
 import os
 import zarr
-import numpy as np
 
 from generate_data import (
     PARTICLES, MATERIALS, ENERGIES,

@@ -99,9 +99,13 @@ const opLog: OpRow[] = [];
 async function timedOp(label: string, note: string, fn: () => Promise<void>): Promise<void> {
   trackOn(label);
   const t0 = performance.now();
-  await fn();
-  const ms    = performance.now() - t0;
-  const bytes = trackOff();
+  let bytes = 0;
+  try {
+    await fn();
+  } finally {
+    bytes = trackOff();
+  }
+  const ms = performance.now() - t0;
   opLog.push({ label, bytes, ms, note });
   appendLog(`  ${kbStr(bytes).padEnd(10)} ${ms.toFixed(0).padStart(5)} ms   ${label}`);
 }
@@ -131,8 +135,8 @@ async function benchPerIon(): Promise<Pair> {
     }
   );
   await timedOp(
-    "per-ion / H-1  GET stp/c/0/0/0",
-    "plain GET — 379 materials × 165 energies for proton (no Range header)",
+    "per-ion / H-1  HEAD + Range stp/c/0/0/0",
+    "zarrita performs a shard probe + Range reads for proton data",
     async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const v = await get(piStp as any, [ION_PROTON, MAT_WATER, null]) as { data: Float32Array };
@@ -140,8 +144,8 @@ async function benchPerIon(): Promise<Pair> {
     }
   );
   await timedOp(
-    "per-ion / C-12 GET stp/c/9/0/0",
-    "plain GET — 379 materials × 165 energies for C-12 (no Range header)",
+    "per-ion / C-12 HEAD + Range stp/c/9/0/0",
+    "zarrita performs a shard probe + Range reads for C-12 data",
     async () => {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const v = await get(piStp as any, [ION_CARBON, MAT_PMMA, null]) as { data: Float32Array };
@@ -257,10 +261,10 @@ function renderAll(pi: Pair, s: Pair) {
     [
       [
         "Zarr per-ion",
-        "3 (root zarr.json + stp zarr.json + shard GET)",
+        "5 core (root zarr.json + stp zarr.json + HEAD + 2 Range)",
         kbStr(piColdKB),
         `${piColdMS.toFixed(0)} ms`,
-        "No Range headers needed",
+        "Observed in browser; additional v2-compat probes may appear",
       ],
       [
         "Zarr single-shard",

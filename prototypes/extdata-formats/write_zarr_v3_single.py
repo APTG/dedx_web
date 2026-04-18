@@ -5,10 +5,8 @@ chunks=(1, 379, 165)   → per-ion inner chunks.
 Output: data/srim_synthetic_single.zarr/
 """
 
-import json
 import os
 import zarr
-import numpy as np
 
 from generate_data import (
     PARTICLES, MATERIALS, ENERGIES,
