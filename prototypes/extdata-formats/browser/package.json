@@ -2,7 +2,16 @@
   "name": "zarrita-benchmark",
   "version": "1.0.0",
   "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
   "dependencies": {
     "zarrita": "^0.7.1"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.5",
+    "vite": "^5.2.0"
   }
 }

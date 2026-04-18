@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Spike 4 — Zarr S3 Browser Benchmark</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #0f1117;
+      color: #e0e0e0;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 1.5rem;
+      line-height: 1.5;
+    }
+
+    h1 { font-size: 1.35rem; color: #fff; margin-bottom: 0.2rem; }
+    .subtitle { color: #666; font-size: 0.82rem; margin-bottom: 1.25rem; }
+    h2 {
+      font-size: 1rem;
+      color: #7ab4f8;
+      margin: 1.6rem 0 0.6rem;
+      padding-bottom: 0.25rem;
+      border-bottom: 1px solid #1e2030;
+    }
+
+    .controls {
+      display: flex;
+      gap: 0.75rem;
+      align-items: center;
+      margin-bottom: 1rem;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 0.45rem 1.1rem;
+      border: none; border-radius: 5px;
+      font-size: 0.875rem; cursor: pointer;
+      transition: background 0.12s;
+      font-weight: 500;
+    }
+    #run-btn     { background: #2563eb; color: #fff; }
+    #run-btn:hover:not(:disabled)     { background: #1d4ed8; }
+    #export-btn  { background: #16a34a; color: #fff; }
+    #export-btn:hover:not(:disabled)  { background: #15803d; }
+    button:disabled { opacity: 0.38; cursor: not-allowed; }
+
+    .hint {
+      font-size: 0.78rem;
+      color: #555;
+    }
+
+    #log {
+      background: #080b10;
+      border: 1px solid #1e2030;
+      border-radius: 6px;
+      padding: 0.7rem 1rem;
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 0.76rem;
+      max-height: 260px;
+      overflow-y: auto;
+      white-space: pre;
+      color: #9de89d;
+      margin-bottom: 1.5rem;
+      line-height: 1.55;
+    }
+
+    section { margin-bottom: 2rem; }
+
+    .note {
+      font-size: 0.8rem;
+      color: #7a8899;
+      background: #131825;
+      border-left: 3px solid #2563eb;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0 4px 4px 0;
+      margin-bottom: 0.75rem;
+    }
+    .note strong { color: #a0b8d8; }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.81rem;
+    }
+    th {
+      text-align: left;
+      background: #131825;
+      color: #8ab4f8;
+      padding: 0.4rem 0.65rem;
+      font-weight: 600;
+      border: 1px solid #1e2030;
+      white-space: nowrap;
+    }
+    td {
+      padding: 0.33rem 0.65rem;
+      border: 1px solid #1e2030;
+      vertical-align: top;
+    }
+    tr:nth-child(even) td { background: #0c0f18; }
+
+    code {
+      font-family: monospace;
+      background: #1a1e2e;
+      padding: 0.1em 0.3em;
+      border-radius: 3px;
+      font-size: 0.85em;
+      color: #ffd580;
+    }
+
+    .match-yes { color: #4ade80; }
+    .match-no  { color: #f87171; }
+    .error     { color: #f87171; margin-top: 0.5rem; }
+  </style>
+</head>
+<body>
+  <h1>Spike 4 — Zarr v3 S3 Browser Benchmark</h1>
+  <p class="subtitle">
+    zarrita 0.7.1 &nbsp;·&nbsp; per-ion &amp; single-shard variants &nbsp;·&nbsp;
+    H-1 → Water &nbsp;&amp;&nbsp; C-12 → PMMA &nbsp;·&nbsp;
+    CORS + bundle-size gate verification
+  </p>
+
+  <div class="controls">
+    <button id="run-btn">▶ Run Benchmark</button>
+    <button id="export-btn" disabled>⬇ Export HAR JSON</button>
+    <span class="hint">
+      For full request/response headers and detailed timing phases (DNS, TLS, TTFB):
+      <strong>DevTools → Network → right-click → Save all as HAR with content</strong>
+    </span>
+  </div>
+
+  <pre id="log">Press "Run Benchmark" to start.</pre>
+
+  <div id="results"></div>
+
+  <script type="module" src="/src/main.ts"></script>
+</body>
+</html>
