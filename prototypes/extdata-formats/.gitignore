@@ -1,0 +1,6 @@
+venv/
+data/
+browser/node_modules/
+browser/dist/
+__pycache__/
+*.pyc
