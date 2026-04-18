@@ -896,8 +896,8 @@ before any production code for the external-data feature
 | Candidate | Format | HTTP access pattern | Files |
 |-----------|--------|---------------------|-------|
 | A | Apache Parquet (per-ion row groups) | 2 cold Range requests | 1 |
-| B | Zarr v3 — single shard (`shards=(287,379,165)`) | 3 cold requests (zarr.json + shard index Range + chunk Range) | ~5 |
-| C | Zarr v3 — per-ion shards (`shards=(1,379,165)`) | 4 cold requests (zarr.json + HEAD + shard-index Range + data Range) | ~290 |
+| B | Zarr v3 — single shard (`shards=(287,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 6 |
+| C | Zarr v3 — per-ion shards (`shards=(1,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 578 |
 
 **At the time this spike was designed**, the spec mandated Parquet + `hyparquet`. This spike measures
 the format difference with realistic data dimensions (287 particles ×
@@ -982,7 +982,7 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 | Cold-start bytes | 225.7 KB vs 466 KB Parquet — 52% less |
 | S3 per-ion RTT | 287 ms browser, 171 ms Bun |
 
-Spec amendments applied (see [`docs/04-feature-specs/external-data.md`](04-feature-specs/external-data.md) v5):
+Spec amendments applied (see [`docs/04-feature-specs/external-data.md`](04-feature-specs/external-data.md) Final v6):
 - §2 rewritten: Zarr v3 per-ion format, zarrita reader, 7-request cold-start
 - `hyparquet` removed from `docs/02-tech-stack.md §6`, replaced by `zarrita ^0.7.x`
 - CORS note in `docs/03-architecture.md §10` updated

@@ -134,9 +134,9 @@ An external dataset defines:
 4. **Materials** — material definitions with density.
 5. **Arrays** — per program: a 3-D `float32` array of shape
    `(n_particles, n_materials, n_energies)` for STP; an identically-shaped
-   optional array for CSDA-range; and a 1-D energy coordinate shared across
-   all materials. The `csda_range` array is optional — stores that provide
-   only stopping-power data are valid.
+   optional array for CSDA-range; and a shared 1-D energy grid in root
+   attributes (`webdedx.energyGrid`). The `csda_range` array is optional —
+   stores that provide only stopping-power data are valid.
 
 ### 2.2 Zarr v3 Store Schema
 
@@ -152,8 +152,6 @@ store contains:
 {root}/{program}/stp/c/{i}/0/0          ← per-ion shard (one file per particle)
 {root}/{program}/csda_range/zarr.json   ← CSDA range array metadata (optional)
 {root}/{program}/csda_range/c/{i}/0/0   ← per-ion shard (optional)
-{root}/{program}/energy/zarr.json       ← 1-D energy array metadata (shape n_energies)
-{root}/{program}/energy/c/0             ← single energy chunk (shared across materials)
 ```
 
 - **`{root}` = the URL supplied in the `extdata` parameter** (without trailing slash).
@@ -169,7 +167,6 @@ Array shapes and shard dimensions:
 |-------|-------|--------|-------|
 | `stp` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
 | `csda_range` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
-| `energy` | `(n_energies,)` | `(n_energies,)` | Single chunk; shared across materials |
 
 #### 2.2.2 Root `zarr.json` Attributes
 
@@ -197,6 +194,7 @@ object (inside `zarr.json` at the store root):
       "stoppingPower": "MeV·cm²/g",
       "csdaRange": "g/cm²"
     },
+    "webdedx.energyGrid": [0.001, 0.001259, 0.001585, "...", 1000.0],
     "webdedx.programs": [
       { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
     ],
@@ -224,6 +222,8 @@ object (inside `zarr.json` at the store root):
 - `webdedx.units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`,
   `"keV/µm"`.
 - `webdedx.units.csdaRange` must be one of: `"g/cm²"`, `"cm"`.
+- `webdedx.energyGrid` must be a strictly increasing numeric array with all
+  values > 0.
 - The particle ordering in `webdedx.particles` is the canonical ordering — index
   `i` in the array corresponds to shard file `c/{i}/0/0`.
 
@@ -308,6 +308,7 @@ root.attrs.update({
         "stoppingPower": "MeV·cm²/g",
         "csdaRange": "g/cm²",
     },
+    "webdedx.energyGrid": energies.tolist(),
     "webdedx.programs": [
         {"id": "srim-2013", "name": "SRIM 2013", "version": "2013.00"}
     ],
@@ -333,9 +334,8 @@ sharding_codec = zarr.codecs.ShardingCodec(
     index_location="end",
 )
 
-prog.array("stp",        data=stp,  codecs=[sharding_codec], chunks=(n_particles, n_materials, n_energies), dimension_names=["particle","material","energy"])
-prog.array("csda_range", data=csda, codecs=[sharding_codec], chunks=(n_particles, n_materials, n_energies), dimension_names=["particle","material","energy"])
-prog.array("energy",     data=energies, chunks=(n_energies,))
+prog.array("stp",        data=stp,  codecs=[sharding_codec], chunks=(1, n_materials, n_energies), dimension_names=["particle","material","energy"])
+prog.array("csda_range", data=csda, codecs=[sharding_codec], chunks=(1, n_materials, n_energies), dimension_names=["particle","material","energy"])
 ```
 
 Upload the resulting `my-dataset.webdedx/` directory tree to your static host
@@ -350,6 +350,7 @@ store = zarr.open_group("my-dataset.webdedx", mode="r")
 meta = store.attrs.asdict()
 print(meta["webdedx.metadata"]["name"])
 print(meta["webdedx.particles"])
+print(len(meta["webdedx.energyGrid"]))
 
 # Read STP for particle index 0 (proton), all materials, all energies
 stp = store["srim-2013/stp"]
@@ -393,16 +394,18 @@ Total cold start: **7 requests, ~225 KB** (S3/wifi, measured). Steps 1–2 retur
 
 **App-level steps:**
 
-1. **Open store.** Call `zarrita.open(zarrita.root(extdataUrl))`. zarrita fetches
-   root metadata (steps 1–3).
+1. **Create store and open root group.** Construct
+   `const store = new FetchStore(extdataUrl)`, then call
+   `open(root(store), { kind: "group" })`. zarrita fetches root metadata
+   (steps 1–3).
 2. **Read root attributes.** Extract `webdedx.*` keys. Validate magic, format
    version, and required fields. Build the entity index from
    `webdedx.programs`, `webdedx.particles`, `webdedx.materials`.
-3. **Open array.** Call `zarrita.open(store["{program}/stp"])`. zarrita fetches
-   array metadata (step 4).
+3. **Open array.** Call `open(root(store).resolve("{program}/stp"), { kind: "array" })`.
+   zarrita fetches array metadata (step 4).
 4. **Fetch shard on demand.** When the user requests data for particle index `i`,
-   call `arr.get([i, null, null])`. zarrita issues the HEAD probe + ZEP2 index
-   Range + data Range (steps 5–7).
+   call `get(array, [i, null, null])`. zarrita issues the HEAD probe + ZEP2
+   index Range + data Range (steps 5–7).
 5. **Decode values.** Extract the `(n_materials, n_energies)` slice and apply
    unit conversion to the app's internal units (MeV/nucl, MeV·cm²/g, g/cm²).
 
@@ -417,7 +420,7 @@ shard file (browser HTTP cache; zarrita does not maintain an in-process cache).
 | **Range Requests** | **Required** for shard reads (ZEP2 index + data fetches both use `Range`). Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively. |
 | **HTTPS** | Required when the webdedx app is served over HTTPS (mixed-content blocking). `localhost` HTTP is exempt. |
 | **Static hosting** | No server-side logic needed. The store is a directory of static files. |
-| **File count** | Per-ion stores have ~2 + n_programs × (2 × n_particles + 2) files. For a single-program dataset with 287 particles, this is ~578 files. GitHub Pages and S3 handle this without friction (confirmed in Spike 4). |
+| **File count** | Per-ion stores have `1 + n_programs × (2 × n_particles + 3)` files (`1` root metadata file + per-program group metadata + 2 array metadata files + per-ion shard files). For a single-program dataset with 287 particles, this is 578 files. GitHub Pages and S3 handle this without friction (confirmed in Spike 4). |
 
 ---
 
@@ -669,13 +672,13 @@ full file already attempted):
 | Store root `zarr.json` is absent or not valid JSON | Reject store; blocking error |
 | `webdedx.magic` missing or `!== "webdedx-extdata"` | Reject file; blocking error |
 | `webdedx.formatVersion` unsupported | Reject file; blocking error |
-| Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
+| Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.energyGrid`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
 | JSON arrays in metadata keys fail to parse | Reject file; blocking error |
 | ID format invalid (not `[a-zA-Z0-9_-]+`) | Reject file; blocking error |
 | `webdedx.units.energy` or `.stoppingPower` not in allowed set | Reject file; blocking error |
 | `webdedx.units.csdaRange` present but not in allowed set (`"g/cm²"`, `"cm"`) | Reject file; blocking error |
 | `webdedx.units.csdaRange` absent and a `csda_range` array is present in the store | Reject source; blocking error |
-| `{program}/stp/zarr.json` or `{program}/energy/zarr.json` missing for a declared program | Reject source; blocking error |
+| `{program}/stp/zarr.json` missing for a declared program | Reject source; blocking error |
 | `{program}/csda_range/zarr.json` missing for a declared program | Accept; CSDA features disabled for that source |
 | `stp` array shape does not match `[len(particles), len(materials), n_energies]` | Reject source; blocking error |
 | Duplicate IDs within same entity type | Reject file; blocking error |

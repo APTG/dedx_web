@@ -148,4 +148,4 @@ investigation is a post-gate work item.
 - [`docs/04-feature-specs/external-data.md`](../04-feature-specs/external-data.md) — full format specification
 - [`prototypes/extdata-formats/VERDICT.md`](../../prototypes/extdata-formats/VERDICT.md) — benchmark results and acceptance criteria
 - [`docs/11-prototyping-spikes.md`](../11-prototyping-spikes.md) — Spike 4 gate record
-- [`docs/02-tech-stack.md` §6](../02-tech-stack.md#6-external-data-reader) — zarrita version pin
+- [`docs/02-tech-stack.md` §6](../02-tech-stack.md#6-external-data-parsing) — zarrita version pin

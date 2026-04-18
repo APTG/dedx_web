@@ -16,7 +16,7 @@ All Stage 2 deliverables from `docs/00-redesign-plan.md §8` are complete.
 | [`docs/decisions/001-sveltekit-over-react.md`](../decisions/001-sveltekit-over-react.md) | Accepted | Full evaluation of React 18/Vite, Vue 3/Nuxt, Vanilla TS; chose SvelteKit 2 + Svelte 5 |
 | [`docs/decisions/002-keep-jsroot.md`](../decisions/002-keep-jsroot.md) | Accepted | Full evaluation of Plotly, Chart.js, D3, Vega-Lite, Observable Plot; kept JSROOT 7 |
 | [`docs/decisions/003-wasm-build-pipeline.md`](../decisions/003-wasm-build-pipeline.md) | Accepted | ES module output, `dedx_extra.{h,c}` shim, TypeScript wrapper, Emscripten flags |
-| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v3 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, zarrita 0.7.x (replaces hyparquet — Spike 4), Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 24 LTS (24.14) |
+| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v2 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, zarrita 0.7.x (replaces hyparquet — Spike 4), Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 24 LTS (24.14) |
 | [`docs/03-architecture.md`](../03-architecture.md) | Draft v1 | Project directory layout, routing, WASM service layer, state topology, component tree, data flows, URL sync, SSG constraints, error handling, accessibility |
 
 ---
