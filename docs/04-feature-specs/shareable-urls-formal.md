@@ -105,8 +105,8 @@ pair                = urlv-pair
 urlv-pair           = "urlv=" int-pos
 extdata-pair        = "extdata=" ext-label ":" url-value
                     ; ext-label is the stable source label assigned by the user.
-                    ; url-value is the percent-encoded URL of the .webdedx.parquet
-                    ; file. The first literal ':' in the raw parameter value is
+                    ; url-value is the percent-encoded URL of the .webdedx
+                    ; Zarr v3 store root. The first literal ':' in the raw parameter value is
                     ; unambiguously the label/URL separator (url-value excludes ':').
 particle-pair       = "particle=" int-pos
 material-pair       = "material=" (int-pos / "custom")
@@ -558,7 +558,7 @@ Normalization rules:
 - Result: valid, canonical unchanged.
 
 5. External data source (labeled):
-- Input: `urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&series=ext%3Asrim%3Asrim-2013.ext%3Asrim%3Ap.ext%3Asrim%3Awater,9.1.276&stp_unit=kev-um&xscale=log&yscale=log`
+- Input: `urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx&particle=1&material=276&program=auto&series=ext%3Asrim%3Asrim-2013.ext%3Asrim%3Ap.ext%3Asrim%3Awater,9.1.276&stp_unit=kev-um&xscale=log&yscale=log`
 - Result: label `srim` assigned to the external source; series mixes one external
   triplet (`ext:srim:srim-2013` / `ext:srim:p` / `ext:srim:water`) and one built-in
   triplet (`9` / `1` / `276`). Canonical form unchanged.

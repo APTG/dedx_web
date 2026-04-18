@@ -162,20 +162,33 @@ assembled in a utility module (`src/lib/export/pdf.ts`).
 
 ## 6. External Data Parsing
 
-### hyparquet
+### zarrita
 
 | Item | Value |
 |------|-------|
-| Package | `hyparquet` |
-| Pin | `^1.x` |
+| Package | `zarrita` |
+| Pin | `^0.7.x` (validated: 0.7.1) |
+| ADR | Spike 4 verdict — `prototypes/extdata-formats/VERDICT.md` |
 
-Pure-JS Apache Parquet reader for the `.webdedx.parquet` external data format
-(see [`04-feature-specs/external-data.md`](04-feature-specs/external-data.md)). Supports HTTP Range Request
-partial reads — only the requested row group (one table per particle-material
-pair) is downloaded.
+Pure-JS Zarr v3 reader for the `.webdedx` external data format
+(see [`04-feature-specs/external-data.md`](04-feature-specs/external-data.md)). Supports Zarr v3 with ZEP2
+sharding — per-ion shard files enable partial reads via HTTP Range Requests.
+Bundle size: zarrita core 38.62 kB minified (gzip 12.89 kB); LZ4 codec chunk
+36.59 kB (required for reading LZ4-compressed `.webdedx` stores).
 
-> External data loading is a later-stage feature. `hyparquet` is listed here
+Spike 4 validated zarrita 0.7.1 against a real S3 bucket with 287 particles ×
+379 materials × 165 energy points. Cold-start sequence: 7 HTTP requests
+(2 × Zarr v2 compat probe 404, zarr.json root 86.5 KB, array zarr.json 1.3 KB,
+HEAD probe, 20-byte ZEP2 shard index Range, 137.5 KB data Range). See
+[`prototypes/extdata-formats/VERDICT.md §2.5`](../prototypes/extdata-formats/VERDICT.md)
+for measured request sequence.
+
+> External data loading is a later-stage feature. `zarrita` is listed here
 > for completeness; the Stage 3–4 scaffolding does not need to install it yet.
+
+> **Note:** `vite build` bundles blosc (603 kB) and zstd (747 kB) codec chunks
+> alongside the lz4 codec. These are expected to be lazy-loaded and not eagerly
+> included for LZ4-only `.webdedx` stores — verify before production build.
 
 ---
 
@@ -430,7 +443,7 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 | `tailwindcss` | `^4.x` | Styling |
 | `jsroot` | `^7.x` | Physics plotting |
 | `jspdf` | `^2.x` | PDF export |
-| `hyparquet` | `^1.x` | Parquet reader (external data) |
+| `zarrita` | `^0.7.x` | Zarr v3 reader (external data) |
 | `vitest` | `^4.x` | Unit/integration tests |
 | `@testing-library/svelte` | `^5.x` | Component tests |
 | `@playwright/test` | `^1.x` | E2E tests |

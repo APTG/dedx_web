@@ -16,7 +16,7 @@ All Stage 2 deliverables from `docs/00-redesign-plan.md §8` are complete.
 | [`docs/decisions/001-sveltekit-over-react.md`](../decisions/001-sveltekit-over-react.md) | Accepted | Full evaluation of React 18/Vite, Vue 3/Nuxt, Vanilla TS; chose SvelteKit 2 + Svelte 5 |
 | [`docs/decisions/002-keep-jsroot.md`](../decisions/002-keep-jsroot.md) | Accepted | Full evaluation of Plotly, Chart.js, D3, Vega-Lite, Observable Plot; kept JSROOT 7 |
 | [`docs/decisions/003-wasm-build-pipeline.md`](../decisions/003-wasm-build-pipeline.md) | Accepted | ES module output, `dedx_extra.{h,c}` shim, TypeScript wrapper, Emscripten flags |
-| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v2 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, hyparquet 1, Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 24 LTS (24.14) |
+| [`docs/02-tech-stack.md`](../02-tech-stack.md) | Draft v2 | Full library inventory: SvelteKit 2, Svelte 5, TypeScript 5, Tailwind 4, JSROOT 7, jsPDF 2, zarrita 0.7.x (replaces hyparquet — Spike 4), Vitest 4, Playwright 1, ESLint 9, Prettier 3, Emscripten 5.x, Node.js 24 LTS (24.14) |
 | [`docs/03-architecture.md`](../03-architecture.md) | Draft v1 | Project directory layout, routing, WASM service layer, state topology, component tree, data flows, URL sync, SSG constraints, error handling, accessibility |
 
 ---
@@ -55,11 +55,19 @@ specifications.
 | JSROOT 7 + Svelte 5 `$effect` | Plot page DOM ownership, cleanup, re-draw | [03-architecture.md §5](../03-architecture.md#5-component-tree) | ✅ PASS ([log](../ai-logs/2026-04-14-spike1-jsroot-svelte5.md)) |
 | WASM `--preload-file` on static hosting | Build pipeline + sub-path deployment | [ADR 003](../decisions/003-wasm-build-pipeline.md) | ✅ PASS ([log](../ai-logs/2026-04-14-spike2-wasm-preload.md)) |
 | Module-level `$state` reactivity | Shared state topology across components | [03-architecture.md §4](../03-architecture.md#4-reactive-state-topology) | ✅ PASS¹ ([log](../ai-logs/2026-04-14-spike3-svelte5-state.md)) |
+| External data storage format | `.webdedx` format choice: Parquet vs Zarr v3 | [04-feature-specs/external-data.md §2](../04-feature-specs/external-data.md) | ✅ PASS² — Zarr v3 per-ion adopted (2026-04-18) |
 
 ¹ Criteria 2–3 (`$derived` at module scope) FAIL — Svelte 5 prohibits exporting
 `$derived` from `.svelte.ts` modules. Validated alternative: export compute
 functions wrapped in component-level `$derived`. `03-architecture.md §4` amended
 (`computeParsedEnergies()`, `computeResolvedProgram()`).
+
+² All 13 acceptance criteria PASS. Decision: Zarr v3 per-ion shards
+(`shards=(1, n_materials, n_energies)`), zarrita reader. Cold-start: 225.7 KB /
+7 requests vs 466 KB Parquet. `external-data.md` amended (v5: Zarr adoption;
+v6: optional `csda_range` + optional `density` + `ival` field). `02-tech-stack.md §6`
+amended. See `prototypes/extdata-formats/VERDICT.md` and
+[ADR 004](../decisions/004-zarr-v3-external-format.md).
 
 **Gate:** All spikes passed (with §4 amendment applied). Stage 3 may begin.
 
