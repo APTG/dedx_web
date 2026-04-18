@@ -42,7 +42,7 @@ All Stage 1 deliverables from `docs/00-redesign-plan.md §8` are complete.
 
 | File | Final version | Notes |
 |------|--------------|-------|
-| [`external-data.md`](../04-feature-specs/external-data.md) | v4 | User-hosted `.webdedx.parquet` data, `extdata` URL param, entity merging. Implementation deferred to a later stage but specified now because URL grammar depends on it. |
+| [`external-data.md`](../04-feature-specs/external-data.md) | v5 | User-hosted `.webdedx` Zarr v3 data (format updated by Spike 4, 2026-04-18: Zarr v3 per-ion shards adopted over Parquet), `extdata` URL param, entity merging. Implementation deferred to a later stage but specified now because URL grammar depends on it. |
 
 ---
 

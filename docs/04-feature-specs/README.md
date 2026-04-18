@@ -31,4 +31,4 @@ Each spec follows the template defined in
 
 | File | Status | Summary |
 |------|--------|---------|
-| [external-data.md](external-data.md) | Final v4 | User-hosted stopping-power/range data: `.webdedx.parquet` (Apache Parquet) format with row-group-level Range Requests, `extdata={label}:{url}` parameter, PDG-code + ICRU-ID entity merging, visual distinction, validation, and converter tooling spec |
+| [external-data.md](external-data.md) | Final v5 | User-hosted stopping-power/range data: `.webdedx` (Zarr v3 per-ion shards, zarrita reader) format with shard-level Range Requests, `extdata={label}:{url}` parameter, PDG-code + ICRU-ID entity merging, visual distinction, validation, and converter tooling spec |

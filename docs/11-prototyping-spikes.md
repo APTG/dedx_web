@@ -899,7 +899,7 @@ before any production code for the external-data feature
 | B | Zarr v3 — single shard (`shards=(287,379,165)`) | 3 cold requests (zarr.json + shard index Range + chunk Range) | ~5 |
 | C | Zarr v3 — per-ion shards (`shards=(1,379,165)`) | 4 cold requests (zarr.json + HEAD + shard-index Range + data Range) | ~290 |
 
-The current spec mandates Parquet + `hyparquet`. This spike measures
+**At the time this spike was designed**, the spec mandated Parquet + `hyparquet`. This spike measures
 the format difference with realistic data dimensions (287 particles ×
 379 materials × 165 energy points). Candidates B and C are both uploaded
 to a real S3 bucket to measure actual wall-clock RTT under their respective
@@ -909,8 +909,8 @@ v3 + ZEP2 sharding.
 ### Background
 
 - [`docs/04-feature-specs/external-data.md §2`](04-feature-specs/external-data.md)
-  specifies `.webdedx.parquet` as the distribution format, with one Parquet
-  row group per `(program, ion)` pair read via HTTP Range Requests.
+  **at spike design time** specified `.webdedx.parquet` as the distribution format, with one Parquet
+  row group per `(program, ion)` pair read via HTTP Range Requests. **Verdict: replaced by Zarr v3 per-ion — see gate decision above.**
 - The key access pattern is: user selects one ion → fetch only that ion's
   data. Zarr v3 with sharding maps this onto inner chunks: one shard file
   holds the whole array; the shard index is fetched first (HTTP Range),
@@ -970,27 +970,36 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 | `prototypes/extdata-formats/REPORT.md` | Benchmark results |
 | `prototypes/extdata-formats/VERDICT.md` | Go/no-go decision |
 
-### Gate rule for external-data implementation
+### Gate decision (2026-04-18): **GATE OPEN — Zarr v3 per-ion adopted**
 
-The external-data feature (`docs/04-feature-specs/external-data.md`) must
-not be implemented until `VERDICT.md` is written and one of the following
-holds:
+`VERDICT.md` written. Decision: **Zarr v3 per-ion shards** (`shards=(1, n_materials, n_energies)`).
 
-- **Keep Parquet**: per-ion size difference < 15% OR `zarrita` bundle
-  significantly larger than `hyparquet` OR zarrita ZEP2 sharding unstable.
-- **Switch to Zarr v3 single-shard**: per-ion Zarr chunk ≤ 60% of Parquet
-  row group AND `zarrita` comparable to `hyparquet` AND ZEP2 sharding
-  confirmed in browser AND S3 RTT ≤ 1.5× Parquet cold-start.
-- **Switch to Zarr v3 per-ion shards**: as above, plus S3 per-ion RTT
-  measurably faster than single-shard (> 20% gain) and deployment is S3.
-- **Fallback — Zarr v3 without sharding**: Zarr wins on size but zarrita
-  sharding is unstable; accept 287 chunk files.
+| Criterion | Result |
+|-----------|--------|
+| All 13 acceptance criteria | ✅ PASS |
+| zarrita bundle ≤ 50 kB | ✅ PASS — core 38.62 kB (gzip 12.89 kB) |
+| No CORS errors | ✅ PASS — S3 + browser |
+| Cold-start bytes | 225.7 KB vs 466 KB Parquet — 52% less |
+| S3 per-ion RTT | 287 ms browser, 171 ms Bun |
+
+Spec amendments applied (see [`docs/04-feature-specs/external-data.md`](04-feature-specs/external-data.md) v5):
+- §2 rewritten: Zarr v3 per-ion format, zarrita reader, 7-request cold-start
+- `hyparquet` removed from `docs/02-tech-stack.md §6`, replaced by `zarrita ^0.7.x`
+- CORS note in `docs/03-architecture.md §10` updated
+
+### Post-gate work items (non-blocking for implementation)
+
+| Item | Notes |
+|------|-------|
+| Investigate zarrita codec lazy-loading | `vite build` bundles blosc (603 kB) + zstd (747 kB); verify not eagerly loaded for LZ4-only data |
+| Investigate zarrita v2 compat probe | `.zattrs` + `.zgroup` fetched on every `open(root(...))` — 2 extra 404 requests; check if disableable in a future zarrita release |
+| `upload_to_s3.py` implementation | Used rclone manually in spike; script useful for automation in converter tooling |
 
 ### References
 
 - `prototypes/extdata-formats/PLAN.md` — full specification
 - `docs/04-feature-specs/external-data.md` — spec being validated
-- `docs/02-tech-stack.md §hyparquet` — current Parquet reader choice
+- `docs/02-tech-stack.md §zarrita` — Zarr v3 reader (replaced hyparquet after Spike 4)
 - `docs/ai-logs/2026-04-17-extdata-formats.md` — session log
 
 ---

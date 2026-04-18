@@ -1,6 +1,6 @@
 # Feature: External Stopping-Power / Range Data
 
-> **Status:** Final v4 (9 April 2026)
+> **Status:** Final v5 (18 April 2026)
 >
 > This spec defines how webdedx loads, validates, and displays user-hosted
 > stopping-power and CSDA-range datasets alongside the built-in libdedx data.
@@ -26,6 +26,15 @@
 > structured keys guarantee unambiguous dataset compatibility for scientific
 > comparisons. Size limits raised: particles 1000, materials 10000, file size 1 GB.
 > Q2 (interpolation) and Q4 (offline) resolved in §13.
+>
+> **v5** (18 April 2026): **Format changed from Apache Parquet to Zarr v3 per-ion
+> shards.** Spike 4 (`prototypes/extdata-formats/VERDICT.md`, 2026-04-18) measured
+> all three candidates (Parquet, Zarr v3 single-shard, Zarr v3 per-ion) on a real
+> S3 bucket. Zarr v3 per-ion (`shards=(1, n_materials, n_energies)`) was adopted:
+> cold-start bytes 225.7 KB vs 466 KB for Parquet (52% less), zarrita core bundle
+> 38.62 kB. JS reader changed from `hyparquet` to `zarrita`. §2 rewritten;
+> §2.3 partial fetch protocol updated to document the 7-request cold-start;
+> §2.4 hosting requirements updated; §11 tooling examples updated.
 >
 > **Related specs:**
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
@@ -84,16 +93,26 @@ installing any software or downloading files.
 
 ## 2. Data Distribution Format
 
-External data is served as an **Apache Parquet** file with the
-`.webdedx.parquet` extension. Parquet is a columnar storage format with
-built-in support for row-group-level partial reads via HTTP Range Requests,
-self-describing schema, and rich metadata. This avoids inventing a custom
-binary format and gives users access to mature tooling (Pandas, Polars,
-DuckDB, PyArrow) for inspection and generation.
+External data is served as a **Zarr v3 per-ion shard store** hosted at a URL
+prefix (a "Zarr directory store"). Zarr v3 is a cloud-native array format with
+built-in sharding (ZEP2) that maps each particle to a separate shard file —
+enabling per-ion partial reads via HTTP Range Requests without fetching
+unrelated data. The store is a set of files under a common URL prefix, not a
+single file.
 
-The JS reader is [`hyparquet`](https://github.com/hyparam/hyparquet) —
-a pure-JS, zero-WASM Parquet reader (~15 KB) with native Range Request
-support for remote files.
+The JS reader is [`zarrita`](https://github.com/manzt/zarrita) —
+a pure-JS Zarr v3 reader with ZEP2 sharding support. Bundle sizes (validated
+Spike 4): zarrita core 38.62 kB minified (gzip 12.89 kB), LZ4 codec chunk
+36.59 kB.
+
+**Why Zarr v3 over Parquet** (Spike 4 decision, 2026-04-18):
+- Cold-start bytes: 225.7 KB (Zarr per-ion) vs 466 KB (Parquet) — **52% less**,
+  dominated by Parquet's 320 KB footer.
+- Per-ion shard size: 137.5 KB vs 145.2 KB Parquet row group (5.5% smaller).
+- zarrita core bundle (38.62 kB) comparable to hyparquet (~20 kB).
+- Zarr per-ion ZEP2 shard index = 20 bytes (1 inner chunk × 16 + 4 CRC),
+  vs 4.5 KB for single-shard (287 inner chunks). The overhead is negligible.
+- See `prototypes/extdata-formats/VERDICT.md §5` for full decision rationale.
 
 ### 2.1 Logical Data Model
 
@@ -103,73 +122,104 @@ An external dataset defines:
 2. **Programs** — one or more named programs (e.g., "SRIM-2013", "Geant4-11.2").
 3. **Particles** — particle definitions with mass data.
 4. **Materials** — material definitions with density.
-5. **Tables** — per (program, particle, material) triplet:
-   - Array of energy values with declared unit.
-   - Array of stopping-power values with declared unit.
-   - Array of CSDA-range values with declared unit.
+5. **Arrays** — per program: a 3-D `float32` array of shape
+   `(n_particles, n_materials, n_energies)` for STP and CSDA-range, with
+   a 1-D energy coordinate shared across all materials.
 
-### 2.2 Parquet Schema
+### 2.2 Zarr v3 Store Schema
 
-#### 2.2.1 File-Level Key-Value Metadata
+#### 2.2.1 Store Layout
 
-Dataset-wide information is stored in the Parquet file's **key-value metadata**
-(accessible without reading any row groups):
+A `.webdedx` Zarr store is hosted under a URL prefix (the store root). The
+store contains:
 
-| Key | Type | Required | Example |
-|-----|------|----------|---------|
-| `webdedx.magic` | string | yes | `"webdedx-extdata"` |
-| `webdedx.formatVersion` | string (integer) | yes | `"1"` |
-| `webdedx.metadata.name` | string | yes | `"SRIM 2013 tables"` |
-| `webdedx.metadata.version` | string | no | `"1.0.0"` |
-| `webdedx.metadata.author` | string | no | `"J. Ziegler"` |
-| `webdedx.metadata.description` | string | no | `"SRIM-2013 stopping powers for selected ions and materials"` |
-| `webdedx.metadata.license` | string | no | `"CC-BY-4.0"` |
-| `webdedx.metadata.generatedBy` | string | no | `"srim2webdedx v0.1.0"` |
-| `webdedx.metadata.generatedAt` | string (ISO 8601) | no | `"2026-04-08T12:00:00Z"` |
-| `webdedx.units.energy` | string | yes | `"MeV"` |
-| `webdedx.units.stoppingPower` | string | yes | `"MeV·cm²/g"` |
-| `webdedx.units.csdaRange` | string | yes | `"g/cm²"` |
-| `webdedx.programs` | string (JSON array) | yes | see below |
-| `webdedx.particles` | string (JSON array) | yes | see below |
-| `webdedx.materials` | string (JSON array) | yes | see below |
+```
+{root}/zarr.json                        ← root group: dataset metadata (JSON, ~86 KB)
+{root}/{program}/zarr.json              ← program group: per-program metadata
+{root}/{program}/stp/zarr.json          ← STP array metadata (shape, chunks, codec)
+{root}/{program}/stp/c/{i}/0/0          ← per-ion shard (one file per particle)
+{root}/{program}/csda_range/zarr.json   ← CSDA range array metadata
+{root}/{program}/csda_range/c/{i}/0/0   ← per-ion shard
+{root}/{program}/energy/zarr.json       ← 1-D energy array metadata (shape n_energies)
+{root}/{program}/energy/c/0             ← single energy chunk (shared across materials)
+```
 
-JSON array values (stored as strings in Parquet key-value metadata):
+- **`{root}` = the URL supplied in the `extdata` parameter** (without trailing slash).
+- **`{program}` = program ID** as declared in `zarr.json` attributes.
+- **`{i}` = particle index** in the ordered particle list (0-based).
+- One shard file per particle: `c/{i}/0/0` where `i` ∈ `[0, n_particles)`.
+
+Array codec: **LZ4** (requires zarrita lz4 codec chunk, 36.59 kB).
+
+Array shapes and shard dimensions:
+
+| Array | Shape | Shards | Notes |
+|-------|-------|--------|-------|
+| `stp` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
+| `csda_range` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
+| `energy` | `(n_energies,)` | `(n_energies,)` | Single chunk; shared across materials |
+
+#### 2.2.2 Root `zarr.json` Attributes
+
+Dataset-wide metadata is stored in the root group's Zarr v3 `attributes`
+object (inside `zarr.json` at the store root):
 
 ```json
-// webdedx.programs
-[
-  { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
-]
-
-// webdedx.particles
-[
-  { "id": "p",   "name": "Proton",     "symbol": "H",  "Z": 1, "A": 1,  "atomicMass": 1.00794, "pdgCode": 2212       },
-  { "id": "C12", "name": "Carbon-12",  "symbol": "C",  "Z": 6, "A": 12, "atomicMass": 12.0,    "pdgCode": 1000060120 },
-  { "id": "e-",  "name": "Electron",   "symbol": "e⁻", "Z": 0, "A": 0,  "atomicMass": 0.000511,"pdgCode": 11         }
-]
-
-// webdedx.materials
-[
-  { "id": "water", "name": "Water (liquid)", "density": 1.0,   "phase": "liquid", "icruId": 276      },
-  { "id": "si",    "name": "Silicon",        "density": 2.329, "phase": "solid",  "atomicNumber": 14 }
-]
+{
+  "zarr_format": 3,
+  "node_type": "group",
+  "attributes": {
+    "webdedx.magic": "webdedx-extdata",
+    "webdedx.formatVersion": 1,
+    "webdedx.metadata": {
+      "name": "SRIM 2013 tables",
+      "version": "1.0.0",
+      "author": "J. Ziegler",
+      "description": "SRIM-2013 stopping powers for selected ions and materials",
+      "license": "CC-BY-4.0",
+      "generatedBy": "srim2webdedx v0.1.0",
+      "generatedAt": "2026-04-18T12:00:00Z"
+    },
+    "webdedx.units": {
+      "energy": "MeV",
+      "stoppingPower": "MeV·cm²/g",
+      "csdaRange": "g/cm²"
+    },
+    "webdedx.programs": [
+      { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
+    ],
+    "webdedx.particles": [
+      { "id": "p",   "name": "Proton",    "symbol": "H",  "Z": 1, "A": 1,  "atomicMass": 1.00794, "pdgCode": 2212       },
+      { "id": "C12", "name": "Carbon-12", "symbol": "C",  "Z": 6, "A": 12, "atomicMass": 12.0,    "pdgCode": 1000060120 },
+      { "id": "e-",  "name": "Electron",  "symbol": "e⁻", "Z": 0, "A": 0,  "atomicMass": 0.000511,"pdgCode": 11         }
+    ],
+    "webdedx.materials": [
+      { "id": "water", "name": "Water (liquid)", "density": 1.0,   "phase": "liquid", "icruId": 276      },
+      { "id": "si",    "name": "Silicon",        "density": 2.329, "phase": "solid",  "atomicNumber": 14 }
+    ]
+  }
+}
 ```
 
 **Key constraints:**
 - `webdedx.magic` must be `"webdedx-extdata"`.
-- `webdedx.formatVersion` must be a positive integer (as string). The app
-  rejects unknown major versions.
-- IDs (`programs[].id`, `particles[].id`, `materials[].id`) are strings, not
-  numbers. They must match `[a-zA-Z0-9_-]+`.
-- `webdedx.units.energy` must be one of: `"MeV"`, `"MeV/nucl"`, `"MeV/u"`, `"keV"`, `"GeV"`.
-- `webdedx.units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`, `"keV/µm"`.
+- `webdedx.formatVersion` must be a positive integer. The app rejects unknown
+  major versions.
+- IDs (`programs[].id`, `particles[].id`, `materials[].id`) must match
+  `[a-zA-Z0-9_-]+`.
+- `webdedx.units.energy` must be one of: `"MeV"`, `"MeV/nucl"`, `"MeV/u"`,
+  `"keV"`, `"GeV"`.
+- `webdedx.units.stoppingPower` must be one of: `"MeV·cm²/g"`, `"MeV/cm"`,
+  `"keV/µm"`.
 - `webdedx.units.csdaRange` must be one of: `"g/cm²"`, `"cm"`.
+- The particle ordering in `webdedx.particles` is the canonical ordering — index
+  `i` in the array corresponds to shard file `c/{i}/0/0`.
 
 **Particle merge-key fields (`particles[]`):**
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `id` | string | yes | Internal ID within this file. Matches `[a-zA-Z0-9_-]+`. |
+| `id` | string | yes | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`. |
 | `name` | string | yes | Human-readable name. |
 | `symbol` | string | yes | Chemical symbol or `"e⁻"` for electrons. |
 | `Z` | integer | yes | Atomic number. 0 for electrons. |
@@ -181,169 +231,179 @@ JSON array values (stored as strings in Parquet key-value metadata):
 
 | Field | Type | Required | Notes |
 |-------|------|----------|-------|
-| `id` | string | yes | Internal ID within this file. Matches `[a-zA-Z0-9_-]+`. |
+| `id` | string | yes | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`. |
 | `name` | string | yes | Human-readable name. |
 | `density` | number | yes | Material density in g/cm³. |
 | `phase` | string | no | `"solid"`, `"liquid"`, or `"gas"`. |
 | `icruId` | integer | **recommended** | ICRU/NIST material number. Built-in libdedx material IDs are ICRU numbers, so `icruId: 276` matches built-in material 276 (water liquid) exactly. Use this for any standard ICRU/NIST material. |
 | `atomicNumber` | integer | recommended for elements | Atomic number Z. Used as merge key for pure elemental targets (e.g., `atomicNumber: 14` for silicon). Takes effect only when `icruId` is absent. |
 
-#### 2.2.2 Row Groups — One Per Table
+#### 2.2.3 Array `zarr.json` Metadata
 
-Each Parquet **row group** contains the data for exactly one
-(program, particle, material) triplet. Row groups are the unit of partial
-fetch — `hyparquet` reads only the requested row groups via Range Requests.
+Each `{program}/stp/zarr.json` follows Zarr v3 array format. Example:
 
-Row-group-level key-value metadata identifies the triplet:
+```json
+{
+  "zarr_format": 3,
+  "node_type": "array",
+  "shape": [287, 379, 165],
+  "data_type": "float32",
+  "chunk_grid": {
+    "name": "sharding_indexed",
+    "configuration": {
+      "chunk_shape": [1, 379, 165],
+      "codecs": [{ "name": "bytes", "configuration": { "endian": "little" } }, { "name": "lz4" }],
+      "index_codecs": [{ "name": "bytes", "configuration": { "endian": "little" } }, { "name": "crc32c" }],
+      "index_location": "end"
+    }
+  },
+  "fill_value": 0.0,
+  "chunk_key_encoding": { "name": "default", "separator": "/" },
+  "dimension_names": ["particle", "material", "energy"]
+}
+```
 
-| Key | Type | Example |
-|-----|------|---------|
-| `webdedx.program` | string | `"srim-2013"` |
-| `webdedx.particle` | string | `"p"` |
-| `webdedx.material` | string | `"water"` |
-
-> **Note:** Parquet row-group metadata is not universally supported by all
-> writers. As a robust fallback, the triplet is also encoded as columns in the
-> data (§2.2.3). The app prefers row-group metadata if present; otherwise it
-> reads the first row's `program`/`particle`/`material` column values.
-
-#### 2.2.3 Columns
-
-Each row in the Parquet file represents one energy point. All rows within a
-row group share the same (program, particle, material) triplet.
-
-| Column | Parquet type | Nullable | Description |
-|--------|-------------|----------|-------------|
-| `program` | `BYTE_ARRAY` (UTF-8) | no | Program ID (e.g., `"srim-2013"`) |
-| `particle` | `BYTE_ARRAY` (UTF-8) | no | Particle ID (e.g., `"p"`) |
-| `material` | `BYTE_ARRAY` (UTF-8) | no | Material ID (e.g., `"water"`) |
-| `energy` | `DOUBLE` | no | Energy value in declared unit |
-| `stopping_power` | `DOUBLE` | no | Stopping power in declared unit |
-| `csda_range` | `DOUBLE` | no | CSDA range in declared unit |
-
-- Rows within a row group must be sorted by `energy` in strictly ascending order.
-- The `program`, `particle`, `material` columns are constant within a row group
-  (they enable triplet identification even without row-group metadata, and allow
-  querying with standard Parquet tools like DuckDB).
-
-#### 2.2.4 Example: Creating a File with Python
+#### 2.2.4 Example: Creating a Store with Python
 
 ```python
-import pandas as pd
-import pyarrow as pa
-import pyarrow.parquet as pq
+import zarr
+import zarr.codecs
+import numpy as np
 import json
 
-# One DataFrame per table (row group)
-tables = []
-for program, particle, material, energies, stp, csda in data_triplets:
-    df = pd.DataFrame({
-        "program": program,
-        "particle": particle,
-        "material": material,
-        "energy": energies,
-        "stopping_power": stp,
-        "csda_range": csda,
-    })
-    tables.append(pa.Table.from_pandas(df))
+# Synthetic data: shape (n_particles, n_materials, n_energies)
+n_particles, n_materials, n_energies = 3, 2, 165
+energies = np.geomspace(0.0011, 2000.0, n_energies, dtype="float32")
+stp = np.random.rand(n_particles, n_materials, n_energies).astype("float32")
+csda = np.random.rand(n_particles, n_materials, n_energies).astype("float32")
 
-# Combine into one table (each original table becomes a row group)
-combined = pa.concat_tables(tables)
+store = zarr.storage.LocalStore("my-dataset.webdedx")
+root = zarr.open_group(store, mode="w", zarr_format=3)
 
-# File-level metadata
-file_metadata = {
-    b"webdedx.magic": b"webdedx-extdata",
-    b"webdedx.formatVersion": b"1",
-    b"webdedx.metadata.name": b"SRIM 2013 tables",
-    b"webdedx.metadata.author": b"J. Ziegler",
-    b"webdedx.units.energy": b"MeV",
-    b"webdedx.units.stoppingPower": b"MeV\xc2\xb7cm\xc2\xb2/g",
-    b"webdedx.units.csdaRange": b"g/cm\xc2\xb2",
-    b"webdedx.programs": json.dumps([
+# Write dataset metadata to root attributes
+root.attrs.update({
+    "webdedx.magic": "webdedx-extdata",
+    "webdedx.formatVersion": 1,
+    "webdedx.metadata": {
+        "name": "My SRIM tables",
+        "author": "J. Ziegler",
+        "generatedAt": "2026-04-18T12:00:00Z",
+    },
+    "webdedx.units": {
+        "energy": "MeV",
+        "stoppingPower": "MeV·cm²/g",
+        "csdaRange": "g/cm²",
+    },
+    "webdedx.programs": [
         {"id": "srim-2013", "name": "SRIM 2013", "version": "2013.00"}
-    ]).encode(),
-    b"webdedx.particles": json.dumps([
-        {"id": "p", "name": "Proton", "symbol": "H", "Z": 1, "A": 1, "atomicMass": 1.00794}
-    ]).encode(),
-    b"webdedx.materials": json.dumps([
-        {"id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid"}
-    ]).encode(),
-}
-
-# Write with one row group per triplet
-schema = combined.schema.with_metadata({
-    **combined.schema.metadata or {},
-    **file_metadata,
+    ],
+    "webdedx.particles": [
+        {"id": "p",   "name": "Proton",    "symbol": "H", "Z": 1, "A": 1,  "atomicMass": 1.00794,  "pdgCode": 2212       },
+        {"id": "C12", "name": "Carbon-12", "symbol": "C", "Z": 6, "A": 12, "atomicMass": 12.0,     "pdgCode": 1000060120 },
+        {"id": "e-",  "name": "Electron",  "symbol": "e⁻","Z": 0, "A": 0,  "atomicMass": 0.000511, "pdgCode": 11         },
+    ],
+    "webdedx.materials": [
+        {"id": "water", "name": "Water (liquid)", "density": 1.0,   "phase": "liquid", "icruId": 276      },
+        {"id": "si",    "name": "Silicon",        "density": 2.329, "phase": "solid",  "atomicNumber": 14 },
+    ],
 })
-combined = combined.replace_schema_metadata(schema.metadata)
 
-writer = pq.ParquetWriter("srim-data.webdedx.parquet", combined.schema)
-for tbl in tables:
-    tbl = tbl.replace_schema_metadata(schema.metadata)
-    writer.write_table(tbl)  # Each write_table call creates one row group
-writer.close()
+# Per-program group
+prog = root.require_group("srim-2013")
+
+# Shard codec: LZ4, one shard per particle
+sharding_codec = zarr.codecs.ShardingCodec(
+    chunk_shape=(1, n_materials, n_energies),
+    codecs=[zarr.codecs.BytesCodec(endian="little"), zarr.codecs.LZ4Codec()],
+    index_codecs=[zarr.codecs.BytesCodec(endian="little"), zarr.codecs.Crc32cCodec()],
+    index_location="end",
+)
+
+prog.array("stp",        data=stp,  codecs=[sharding_codec], chunks=(n_particles, n_materials, n_energies), dimension_names=["particle","material","energy"])
+prog.array("csda_range", data=csda, codecs=[sharding_codec], chunks=(n_particles, n_materials, n_energies), dimension_names=["particle","material","energy"])
+prog.array("energy",     data=energies, chunks=(n_energies,))
 ```
+
+Upload the resulting `my-dataset.webdedx/` directory tree to your static host
+(S3, GitHub Pages, nginx), preserving the directory structure.
 
 #### 2.2.5 Example: Inspecting with Standard Tools
 
-```bash
-# DuckDB — query the file like a database
-duckdb -c "SELECT program, particle, material, count(*) as points
-           FROM 'srim-data.webdedx.parquet'
-           GROUP BY ALL"
+```python
+import zarr
 
-# PyArrow — read metadata without loading data
-python -c "
-import pyarrow.parquet as pq
-f = pq.ParquetFile('srim-data.webdedx.parquet')
-print(f.schema_arrow.metadata)
-print(f'Row groups: {f.metadata.num_row_groups}')
-"
+store = zarr.open_group("my-dataset.webdedx", mode="r")
+meta = store.attrs.asdict()
+print(meta["webdedx.metadata"]["name"])
+print(meta["webdedx.particles"])
 
-# Pandas — read all data
-python -c "
-import pandas as pd
-df = pd.read_parquet('srim-data.webdedx.parquet')
-print(df.head())
-"
+# Read STP for particle index 0 (proton), all materials, all energies
+stp = store["srim-2013/stp"]
+proton_stp = stp[0, :, :]  # shape: (n_materials, n_energies)
 ```
 
-#### 2.2.6 File Extension & MIME Type
+```bash
+# zarr-python CLI
+python -c "import zarr; z = zarr.open('my-dataset.webdedx'); print(z.tree())"
+```
 
-- Required file extension: `.webdedx.parquet`
-- Recommended MIME type for serving: `application/vnd.apache.parquet`
-  (or `application/octet-stream` if the host doesn't support custom types).
+#### 2.2.6 Store URL & Extension
+
+- Canonical URL suffix: `.webdedx` (a directory, not a file)
+- The `extdata` URL parameter points to the **store root** — the URL at which
+  `zarr.json` is accessible as `{url}/zarr.json`.
+- **No single-file MIME type.** Each file in the store is served as
+  `application/json` (`zarr.json` metadata) or `application/octet-stream`
+  (shard files). Static hosts typically serve both types automatically.
 
 ### 2.3 Partial Fetch Protocol
 
-`hyparquet` handles Range Requests internally. The app-level protocol:
+zarrita handles Zarr v3 shard reads internally via HTTP Range Requests. The
+app-level protocol for a **cold start** (no prior cache):
 
-1. **Open remote file.** Pass the `extdata` URL to `hyparquet`'s async reader
-   (which fetches the Parquet footer via Range Request to learn the schema,
-   metadata, and row group locations).
-2. **Read file-level metadata.** Extract `webdedx.*` keys from the schema
-   metadata. Validate magic, format version, and required fields. Build the
-   index of available (program, particle, material) triplets from
-   `webdedx.programs`, `webdedx.particles`, `webdedx.materials`, and the
-   row group structure.
-3. **Fetch row group on demand.** When the user requests data for a specific
-   triplet, read the corresponding row group via `hyparquet`
-   (which issues a targeted Range Request for that row group's byte range).
-4. **Decode columns.** Extract `energy`, `stopping_power`, and `csda_range`
-   columns as typed arrays.
+**Measured cold-start sequence (zarrita 0.7.1, browser, Spike 4 §2.5):**
 
-If the server does not support Range Requests (returns `200` instead of `206`),
-`hyparquet` falls back to downloading the entire file. A console warning is
-emitted: "Server does not support Range Requests; downloading full file."
+| Step | Request | Range | Bytes | Notes |
+|------|---------|-------|-------|-------|
+| 1 | `{root}/.zattrs` | — | 0.2 KB | zarrita v2 compat probe — expected 404 |
+| 2 | `{root}/.zgroup` | — | 0.2 KB | zarrita v2 compat probe — expected 404 |
+| 3 | `{root}/zarr.json` | — | ~86 KB | Root group metadata (dataset + entity lists) |
+| 4 | `{root}/{program}/stp/zarr.json` | — | 1.3 KB | Array metadata (shape, codec, shard config) |
+| 5 | `{root}/{program}/stp/c/{i}/0/0` | — | 0 B | HEAD probe (gets Content-Length) |
+| 6 | `{root}/{program}/stp/c/{i}/0/0` | `bytes=last-20` | 20 B | ZEP2 shard index (1 inner chunk × 16 B + 4 B CRC) |
+| 7 | `{root}/{program}/stp/c/{i}/0/0` | `bytes=0-{end}` | ~137 KB | Compressed ion data |
+
+Total cold start: **7 requests, ~225 KB** (S3/wifi, measured). Steps 1–2 return
+404 — zarrita handles these silently and proceeds to `zarr.json`. The store is
+**valid Zarr v3** (uses only `zarr.json`, never `.zattrs`/`.zgroup`).
+
+**App-level steps:**
+
+1. **Open store.** Call `zarrita.open(zarrita.root(extdataUrl))`. zarrita fetches
+   root metadata (steps 1–3).
+2. **Read root attributes.** Extract `webdedx.*` keys. Validate magic, format
+   version, and required fields. Build the entity index from
+   `webdedx.programs`, `webdedx.particles`, `webdedx.materials`.
+3. **Open array.** Call `zarrita.open(store["{program}/stp"])`. zarrita fetches
+   array metadata (step 4).
+4. **Fetch shard on demand.** When the user requests data for particle index `i`,
+   call `arr.get([i, null, null])`. zarrita issues the HEAD probe + ZEP2 index
+   Range + data Range (steps 5–7).
+5. **Decode values.** Extract the `(n_materials, n_energies)` slice and apply
+   unit conversion to the app's internal units (MeV/nucl, MeV·cm²/g, g/cm²).
+
+Subsequent requests for the same particle shard reuse the already-fetched
+shard file (browser HTTP cache; zarrita does not maintain an in-process cache).
 
 ### 2.4 Hosting Requirements
 
 | Requirement | Details |
 |-------------|---------|
-| **CORS** | The server must set `Access-Control-Allow-Origin: *` (or the specific origin of the webdedx instance). Without this, the browser blocks the fetch. S3, GitHub Pages, and most CDNs support CORS configuration. See technical docs for setup guides. |
-| **Range Requests** | Recommended for performance. Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively. |
+| **CORS** | The server must set `Access-Control-Allow-Origin: *` (or the specific webdedx origin) for **all files** in the store (`zarr.json`, shard files, array metadata). Without this, the browser blocks every request in the cold-start sequence. S3, GitHub Pages, and most CDNs support CORS configuration. |
+| **Range Requests** | **Required** for shard reads (ZEP2 index + data fetches both use `Range`). Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively. |
 | **HTTPS** | Required when the webdedx app is served over HTTPS (mixed-content blocking). `localhost` HTTP is exempt. |
-| **Static hosting** | No server-side logic needed. The file is a static Parquet file. |
+| **Static hosting** | No server-side logic needed. The store is a directory of static files. |
+| **File count** | Per-ion stores have ~2 + n_programs × (2 × n_particles + 2) files. For a single-program dataset with 287 particles, this is ~578 files. GitHub Pages and S3 handle this without friction (confirmed in Spike 4). |
 
 ---
 
@@ -361,7 +421,7 @@ separated by a literal colon:
 
 | Parameter | Type | Required? | Notes |
 |-----------|------|-----------|-------|
-| `extdata` | `{label}:{percent-encoded-url}` | Optional | `label` is a user-assigned stable identifier matching `[a-zA-Z0-9_-]+`. `url` is the absolute percent-encoded URL to a `.webdedx.parquet` file. May appear multiple times for multiple sources. Labels must be unique within a URL. |
+| `extdata` | `{label}:{percent-encoded-url}` | Optional | `label` is a user-assigned stable identifier matching `[a-zA-Z0-9_-]+`. `url` is the absolute percent-encoded URL to the **root of a `.webdedx` Zarr store** (the URL at which `zarr.json` is served as `{url}/zarr.json`). May appear multiple times for multiple sources. Labels must be unique within a URL. |
 
 The label is **stable across edits** — it does not depend on the position of the
 `extdata` parameter in the URL. All entity references (`ext:{label}:{id}`) remain
@@ -385,7 +445,7 @@ encoded so that the first literal `:` in the parameter value is always the
 label/URL separator:
 
 ```
-extdata=srim:https%3A%2F%2Fexample.com%2Fdata%2Fsrim.webdedx.parquet
+extdata=srim:https%3A%2F%2Fexample.com%2Fdata%2Fsrim.webdedx
 ```
 
 `URLSearchParams` handles percent-encoding of the full value automatically when
@@ -396,12 +456,12 @@ portion only; the label and separator colon are written literally.
 
 Single external source (label `srim`):
 ```
-/calculator?urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx.parquet&particle=1&material=276&program=auto&energies=100&eunit=MeV
+/calculator?urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx&particle=1&material=276&program=auto&energies=100&eunit=MeV
 ```
 
 Multiple external sources (labels `srim` and `g4`):
 ```
-/plot?urlv=1&extdata=srim:https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx.parquet&extdata=g4:https%3A%2F%2Fother.org%2Fgeant4.webdedx.parquet&particle=1&material=276&program=auto&series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
+/plot?urlv=1&extdata=srim:https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx&extdata=g4:https%3A%2F%2Fother.org%2Fgeant4.webdedx&particle=1&material=276&program=auto&series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
 ```
 
 If the user later removes the `g4` source, the `srim` label and all `ext:srim:*`
@@ -537,9 +597,9 @@ On page load, if `extdata` parameter(s) are present:
 2. **Show loading indicator.** Display a non-dismissible banner:
    "Loading external data from {n} source(s)…" with a spinner.
    Block all calculation and entity interaction until loading completes.
-3. **Fetch metadata in parallel.** For each `extdata` URL, open the Parquet
-   file via `hyparquet` (which fetches the footer and schema metadata via
-   Range Requests).
+3. **Fetch metadata in parallel.** For each `extdata` URL, open the Zarr
+   store via zarrita (which fetches root `zarr.json` and handles the Zarr v2
+   compat probe 404s — see §2.3).
 4. **Validate metadata.** Per §6 (Validation).
 5. **Merge entities.** Extend the compatibility matrix with external
    programs, particles, and materials.
@@ -558,7 +618,7 @@ with the external data. Errors are displayed prominently.
 | Network error (timeout, DNS, refused) | "Could not reach external data source: {url}. Check the URL and your network connection." | **Retry** button + **Load without external data** button |
 | HTTP error (4xx, 5xx) | "External data source returned error {status}: {url}" | **Load without external data** button |
 | CORS blocked | "External data source blocked by browser security policy (CORS). The hosting server must allow cross-origin requests." | **Load without external data** button |
-| Invalid format (not Parquet, missing magic, unsupported version, schema error) | "External data file is invalid: {detail}. Expected a .webdedx.parquet file with webdedx format v1." | **Load without external data** button |
+| Invalid format (not a valid Zarr store, missing magic, unsupported version, schema error) | "External data store is invalid: {detail}. Expected a .webdedx Zarr v3 store with webdedx format v1." | **Load without external data** button |
 | Validation failure (physics checks) | "External data contains invalid values: {detail}" | **Load without external data** button |
 
 **"Load without external data"** removes the `extdata` parameters from the URL
@@ -569,10 +629,11 @@ with the external data. Errors are displayed prominently.
 Individual table data is fetched when the user requests a calculation or plot
 series involving an external triplet:
 
-1. Identify the row group corresponding to the requested (program, particle,
-   material) triplet (from the index built during header parse).
-2. Read the row group via `hyparquet` (which issues a targeted Range Request).
-3. Extract `energy`, `stopping_power`, and `csda_range` columns as typed arrays.
+1. Identify the particle index `i` for the requested particle (from the ordered
+   particle list in root `zarr.json` attributes).
+2. Read the shard for particle `i` via zarrita (issues HEAD probe + ZEP2 index
+   Range + data Range — steps 5–7 of the §2.3 cold-start sequence).
+3. Extract the `(n_materials, n_energies)` slice for the target material index.
 4. Convert units to the app's internal units (MeV/nucl + MeV·cm²/g + g/cm²)
    using the declared `webdedx.units.*` metadata from the file.
 5. Cache the decoded table in memory for the duration of the page session
@@ -591,7 +652,7 @@ full file already attempted):
 
 | Check | Failure action |
 |-------|---------------|
-| File is not valid Parquet (footer parse fails) | Reject file; blocking error |
+| Store root `zarr.json` is absent or not valid JSON | Reject store; blocking error |
 | `webdedx.magic` missing or `!== "webdedx-extdata"` | Reject file; blocking error |
 | `webdedx.formatVersion` unsupported | Reject file; blocking error |
 | Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
@@ -612,7 +673,7 @@ full file already attempted):
 
 | Limit | Value | Rationale |
 |-------|-------|-----------|
-| Max Parquet footer + metadata size | 1 MB | Prevents excessive metadata parsing |
+| Max root `zarr.json` size | 1 MB | Prevents excessive metadata parsing |
 | Max programs per source | 100 | Reasonable upper bound |
 | Max particles per source | 1000 | Covers all ions up to Uranium plus isotopes and exotic particles |
 | Max materials per source | 10000 | Supports large compound libraries (FLUKA, Geant4 material databases) |
@@ -753,14 +814,15 @@ series uses the external table data (fetched on demand).
 
 ### 10.1 No Code Execution
 
-External data files are Apache Parquet — a columnar data format that contains
-only typed column data and key-value string metadata. Metadata values containing
-JSON are parsed with `JSON.parse()` (no `eval()`). No executable code, no
-scripts, no HTML. Parquet is intentionally inert.
+External data stores are Zarr v3 — binary array shards plus JSON metadata
+files (`zarr.json`). Metadata attributes are plain JSON objects parsed with
+`JSON.parse()` (no `eval()`). Shard files are typed binary arrays decoded as
+`float32` by zarrita — no executable code, no scripts, no HTML. The format is
+intentionally inert.
 
 ### 10.2 Input Sanitization
 
-- All string fields from the Parquet metadata (`name`, `author`, `description`,
+- All string fields from the Zarr root attributes (`name`, `author`, `description`,
   etc.) are treated as plain text. They are **never** inserted into the DOM
   via `innerHTML`. Use `textContent` or framework-level text interpolation
   only.
@@ -792,13 +854,13 @@ scripts, no HTML. Parquet is intentionally inert.
 ### 11.1 Purpose
 
 Command-line tools to convert stopping-power data from common formats
-(SRIM, CSV, etc.) into `.webdedx.parquet` files. Because the output is
-standard Parquet, these tools are thin wrappers around PyArrow that
-primarily handle source-format parsing and metadata embedding.
+(SRIM, CSV, etc.) into `.webdedx` Zarr v3 stores. Because the output is
+standard Zarr v3, these tools are thin wrappers around the Python `zarr`
+library that primarily handle source-format parsing and metadata embedding.
 
 ### 11.2 Tool: `srim2webdedx`
 
-Converts SRIM text output files into `.webdedx.parquet` format.
+Converts SRIM text output files into `.webdedx` Zarr v3 store format.
 
 **Input:** A directory of SRIM output files + a manifest file describing
 the dataset metadata, particle/material mappings, and file locations.
@@ -863,41 +925,43 @@ tables:
     format: srim
 ```
 
-**Output:** A single `.webdedx.parquet` file (one row group per table).
+**Output:** A `.webdedx` Zarr v3 store directory (one shard file per particle
+per program, plus `zarr.json` metadata files).
 
 **Usage:**
 ```bash
-srim2webdedx manifest.yaml --output my-srim-data.webdedx.parquet
+srim2webdedx manifest.yaml --output my-srim-data.webdedx
 ```
 
 ### 11.3 Tool: `csv2webdedx`
 
 Converts generic CSV files (energy, stopping power, CSDA range columns)
-into `.webdedx.parquet` format. Uses the same manifest format as
+into `.webdedx` Zarr v3 store format. Uses the same manifest format as
 `srim2webdedx` but with `format: csv` and additional column-mapping fields.
 
 ### 11.4 Tool: `webdedx-inspect`
 
-A diagnostic/validation tool for `.webdedx.parquet` files. Since the
-format is standard Parquet, users can also use DuckDB, Pandas, or PyArrow
-directly (see §2.2.5). This tool adds webdedx-specific validation.
+A diagnostic/validation tool for `.webdedx` Zarr v3 stores. Since the
+format is standard Zarr v3, users can also use the Python `zarr` library or
+`zarr-python` CLI directly (see §2.2.5). This tool adds webdedx-specific
+validation.
 
 Prints:
 - `webdedx.*` metadata (pretty-printed).
-- Summary statistics: number of programs, particles, materials, row groups.
-- Per-row-group info: triplet, nPoints, energy bounds, min/max stopping power.
-- Validates the file against all structural and physics checks from §6.
+- Summary statistics: number of programs, particles, materials, shard files.
+- Per-particle info: particle ID, nMaterials, nEnergies, energy bounds, min/max STP.
+- Validates the store against all structural and physics checks from §6.
 
 **Usage:**
 ```bash
-webdedx-inspect my-srim-data.webdedx.parquet
+webdedx-inspect my-srim-data.webdedx
 ```
 
 ### 11.5 Implementation Language
 
 Tooling is implemented in **Python** (matching the existing `libdedx/python/`
-ecosystem). Depends on `pyarrow` and `pyyaml`. Packaged as a pip-installable
-CLI tool.
+ecosystem). Depends on `zarr`, `numcodecs`, and `pyyaml`. Packaged as a
+pip-installable CLI tool.
 
 ---
 
@@ -905,8 +969,8 @@ CLI tool.
 
 ### 12.1 External Data Loading
 
-- [ ] App with `extdata` URL parameter fetches the Parquet footer & metadata via Range Request.
-- [ ] App validates Parquet metadata (`webdedx.magic`, version, required keys, size limits).
+- [ ] App with `extdata` URL parameter fetches root `zarr.json` via zarrita (cold-start: ≤ 7 requests).
+- [ ] App validates Zarr root attributes (`webdedx.magic`, version, required keys, size limits).
 - [ ] App displays a loading indicator while fetching.
 - [ ] On success, external programs/particles/materials appear in selectors.
 - [ ] On network error, a blocking error is shown with "Retry" and "Load without external data" options.
@@ -942,17 +1006,17 @@ CLI tool.
 
 ### 12.6 Security
 
-- [ ] Parquet metadata JSON values parsed with `JSON.parse()` only (no `eval`).
+- [ ] Zarr root attribute values parsed with `JSON.parse()` only (no `eval`).
 - [ ] String values rendered as `textContent` only (no `innerHTML`).
 - [ ] Size limits enforced; oversized files rejected.
 - [ ] IDs validated against `[a-zA-Z0-9_-]+`.
 
 ### 12.7 Tooling
 
-- [ ] `srim2webdedx` reads SRIM output + manifest → produces valid `.webdedx.parquet` file.
-- [ ] `webdedx-inspect` validates and summarizes a `.webdedx.parquet` file.
-- [ ] Generated `.webdedx.parquet` file passes all app-side validation checks.
-- [ ] Generated file is readable by standard Parquet tools (DuckDB, Pandas, PyArrow).
+- [ ] `srim2webdedx` reads SRIM output + manifest → produces valid `.webdedx` Zarr v3 store.
+- [ ] `webdedx-inspect` validates and summarizes a `.webdedx` Zarr v3 store.
+- [ ] Generated `.webdedx` store passes all app-side validation checks.
+- [ ] Generated store is readable by standard Zarr tools (zarr-python, zarrita).
 
 ---
 

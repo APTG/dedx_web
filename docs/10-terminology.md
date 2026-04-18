@@ -541,8 +541,8 @@ JavaScript from fetching a resource from a different **origin** (scheme + host
 `Access-Control-Allow-Origin` response header.
 
 Relevant to webdedx in the **extdata** feature: when a user supplies a URL to
-a `.webdedx.parquet` file hosted on their own server, that server must respond
-with:
+a `.webdedx` Zarr v3 store hosted on their own server, all files in the store
+(`zarr.json`, shard files) must be served with:
 
 ```
 Access-Control-Allow-Origin: *
@@ -686,9 +686,11 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2,
 ### extdata
 
 The `extdata` URL parameter activates the **external data** feature: it points
-to a user-hosted stopping-power/range file in `.webdedx.parquet` (Apache Parquet)
-format. The parameter format is `extdata={label}:{url}` where `{label}` is a
-short user-visible name and `{url}` is the HTTPS URL of the Parquet file.
+to the root of a user-hosted `.webdedx` Zarr v3 store (a directory of files
+containing stopping-power and CSDA-range arrays). The parameter format is
+`extdata={label}:{url}` where `{label}` is a short user-visible name and
+`{url}` is the HTTPS URL of the store root (the URL at which `zarr.json` is
+served as `{url}/zarr.json`).
 
 External entities (particles, materials, programs) from the file are merged with
 the built-in libdedx lists and visually distinguished in selectors, tables, and

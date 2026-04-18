@@ -472,8 +472,8 @@ Visibility rules:
 
 ### 4.3 External Data in Plot CSV
 
-When the plot contains one or more series from an external `.webdedx.parquet`
-source (identified by the `ext:{label}` program prefix in URL state):
+When the plot contains one or more series from an external `.webdedx` Zarr
+store source (identified by the `ext:{label}` program prefix in URL state):
 
 #### Energy column rule
 
@@ -505,8 +505,8 @@ column header row. Format:
 Full example with two external sources:
 
 ```csv
-# External source: NIST at https://example.com/nist.webdedx.parquet
-# External source: SRIM at https://example.com/srim.webdedx.parquet
+# External source: NIST at https://example.com/nist.webdedx
+# External source: SRIM at https://example.com/srim.webdedx
 "Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST [MeV/nucl]","Stp NIST — p in Water (keV/µm)","Energy SRIM [MeV/nucl]","Stp SRIM — p in Water (keV/µm)"
 0.001,84.30,0.001,84.11,0.001,83.95
 ```
