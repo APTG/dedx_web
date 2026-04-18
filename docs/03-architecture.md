@@ -780,7 +780,7 @@ URL sync follows the canonical 10-step algorithm in
 | `export const prerender = true` | Every route file must set this. If omitted, the static adapter will not output an `index.html` for that route. |
 | No `fetch()` to same-origin API routes | GitHub Pages has no server. Do not rely on SvelteKit's server fetch hook. |
 | `localStorage` access | Only safe inside `$effect` or event handlers — not in `+page.ts` load functions that run during SSG prerender. |
-| CORS for external data | User-hosted `.webdedx.parquet` files must be served with `Access-Control-Allow-Origin: *`. This is documented in the user guide, not enforced by the app. |
+| CORS for external data | User-hosted `.webdedx` Zarr stores must be served with `Access-Control-Allow-Origin: *`. All files in the store (zarr.json, shard files) must be CORS-accessible. This is documented in the user guide, not enforced by the app. |
 
 ### SSG safety — why no `browser` guard is needed
 
