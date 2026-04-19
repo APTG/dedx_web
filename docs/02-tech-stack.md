@@ -1,6 +1,6 @@
 # Technology Stack — webdedx
 
-> **Status:** Draft v2 (14 April 2026)
+> **Status:** Draft v3 (19 April 2026)
 >
 > Documents every library and tool in the stack, the version pin, and the
 > rationale for choosing it. Rationale summaries refer to the relevant ADR
@@ -116,6 +116,41 @@ Utility-first CSS. Chosen because:
 
 Tailwind is configured in `tailwind.config.js`. The content glob covers
 `./src/**/*.{svelte,ts}`.
+
+### shadcn-svelte + Bits UI
+
+| Item | Value |
+|------|-------|
+| CLI package | `shadcn-svelte` (via `pnpm dlx shadcn-svelte@latest`) |
+| Runtime package | `bits-ui` |
+| Runtime pin | `^1.x` |
+| ADR | [ADR 005](decisions/005-shadcn-svelte-components.md) |
+
+shadcn-svelte is the UI component library for dEdx Web. The CLI copies component
+source into `src/lib/components/ui/` — the project owns the code and can
+customise it. Only **Bits UI** (the headless primitive layer) is a runtime
+dependency.
+
+Bits UI provides WCAG 2.1 AA-compliant focus management, keyboard navigation,
+and ARIA attributes for every interactive component (combobox, dialog, accordion,
+table, toast). Components are tree-shaken; only imported primitives enter the
+bundle.
+
+shadcn-svelte is Tailwind-first (no extra styling system) and fully supports
+Svelte 5 runes and Tailwind v4.
+
+Initialise once during Stage 4 scaffold:
+
+```sh
+pnpm dlx shadcn-svelte@latest init
+```
+
+Add components per feature (see [ADR 005](decisions/005-shadcn-svelte-components.md)
+integration plan):
+
+```sh
+pnpm dlx shadcn-svelte@latest add combobox accordion dialog table
+```
 
 ---
 
@@ -272,7 +307,7 @@ queries).
 | Pin | `^1.x` |
 
 End-to-end tests against a built static site served locally. Tests the real
-WASM module — no mocks. See `07-testing-strategy.md` (planned) for the test plan.
+WASM module — no mocks. See [`07-testing-strategy.md`](07-testing-strategy.md) for the test plan.
 
 ---
 
@@ -358,7 +393,7 @@ All CI runs in GitHub-hosted runners. The pipeline (Stage 8) will execute:
 7. `pnpm build` — SvelteKit static build
 8. Deploy `build/` to GitHub Pages
 
-See `08-deployment.md` (planned) for the full workflow YAML.
+See [`08-deployment.md`](08-deployment.md) for the full workflow YAML.
 
 ---
 
@@ -441,6 +476,8 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 | `@sveltejs/adapter-static` | `^3.x` | Static site output |
 | `typescript` | `^5.x` | Language |
 | `tailwindcss` | `^4.x` | Styling |
+| `shadcn-svelte` CLI | `@latest` (via `pnpm dlx`) | UI component scaffolding (source copied) |
+| `bits-ui` | `^1.x` | Headless UI primitives (runtime) |
 | `jsroot` | `^7.x` | Physics plotting |
 | `jspdf` | `^2.x` | PDF export |
 | `zarrita` | `^0.7.x` | Zarr v3 reader (external data) |
@@ -465,6 +502,7 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 | [decisions/001-sveltekit-over-react.md](decisions/001-sveltekit-over-react.md) | Full rationale for SvelteKit |
 | [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md) | Full rationale for JSROOT |
 | [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md) | WASM build flags and dedx_extra rationale |
+| [decisions/005-shadcn-svelte-components.md](decisions/005-shadcn-svelte-components.md) | UI component library decision (shadcn-svelte + Bits UI) |
 | [03-architecture.md](03-architecture.md) | Project structure, store topology, routing |
 | [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript types for the WASM wrapper |
 | [08-deployment.md](08-deployment.md) | GitHub Actions workflow |

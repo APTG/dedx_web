@@ -29,6 +29,7 @@ The goal is a **ground-up rewrite** using modern tooling, driven by AI agents
 | Framework          | **SvelteKit** with **Svelte 5** (TypeScript) |
 | Plotting           | **JSROOT** (keep — physics community standard) |
 | Styling            | **Tailwind CSS**                        |
+| UI components      | **shadcn-svelte** + Bits UI ([ADR 005](decisions/005-shadcn-svelte-components.md)) |
 | WASM / libdedx     | **Full redesign** (build pipeline + JS wrapper) |
 | Deployment         | **GitHub Pages**                        |
 | Language           | **TypeScript** (strict mode)            |

@@ -501,12 +501,12 @@ phase will publish the rebuilt static site automatically. See
 and current source of truth.
 
 **Type/file:** `.github/workflows/` (GitHub Actions YAML);
-`08-deployment.md` (planned — full workflow specification)
+[`08-deployment.md`](08-deployment.md) (full workflow specification)
 
 → see also: [SSG](#ssg)
 
 Used in: [`02-tech-stack.md`](02-tech-stack.md) §11,
-`08-deployment.md` (planned)
+[`08-deployment.md`](08-deployment.md)
 
 ---
 

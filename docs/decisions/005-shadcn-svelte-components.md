@@ -13,14 +13,14 @@ needed across the feature specs are:
 
 | Component need | Feature spec |
 |---------------|-------------|
-| Typeahead combobox (Particle / Material / Program dropdowns) | `entity-selection.md` |
-| Scrollable list panels with keyboard selection | `entity-selection.md` |
-| Collapsible accordion (Advanced Options) | `advanced-options.md` |
-| Modal dialog / sheet (Custom Compounds builder) | `custom-compounds.md` |
-| Dropdown menu (Export button with PDF / CSV options) | `export.md` |
-| Data table (Results grid, sortable columns) | `calculator.md` |
-| Toast / notification (URL copied, export done, WASM error) | `shareable-urls.md`, `export.md` |
-| Checkbox, radio group (Advanced Options form controls) | `advanced-options.md` |
+| Typeahead combobox (Particle / Material / Program dropdowns) | [`entity-selection.md`](../04-feature-specs/entity-selection.md) |
+| Scrollable list panels with keyboard selection | [`entity-selection.md`](../04-feature-specs/entity-selection.md) |
+| Collapsible accordion (Advanced Options) | [`advanced-options.md`](../04-feature-specs/advanced-options.md) |
+| Modal dialog / sheet (Custom Compounds builder) | [`custom-compounds.md`](../04-feature-specs/custom-compounds.md) |
+| Dropdown menu (Export button with PDF / CSV options) | [`export.md`](../04-feature-specs/export.md) |
+| Data table (Results grid, sortable columns) | [`calculator.md`](../04-feature-specs/calculator.md) |
+| Toast / notification (URL copied, export done, WASM error) | [`shareable-urls.md`](../04-feature-specs/shareable-urls.md), [`export.md`](../04-feature-specs/export.md) |
+| Checkbox, radio group (Advanced Options form controls) | [`advanced-options.md`](../04-feature-specs/advanced-options.md) |
 
 Building each of these from scratch with raw Tailwind + ARIA attributes is a
 significant undertaking and a recurring source of subtle accessibility bugs
@@ -163,8 +163,8 @@ to this project.
 
 ## References
 
-- `vendor/shadcn-svelte/` — local submodule (component templates + CLI source)
-- `vendor/bits-ui/` — local submodule (headless primitive source)
+- [`vendor/shadcn-svelte/`](../../vendor/shadcn-svelte/) — local submodule (component templates + CLI source)
+- [`vendor/bits-ui/`](../../vendor/bits-ui/) — local submodule (headless primitive source)
 - [shadcn-svelte docs](https://www.shadcn-svelte.com/)
 - [Bits UI docs](https://bits-ui.com/docs)
 - [`docs/09-non-functional-requirements.md §1`](../09-non-functional-requirements.md) — WCAG 2.1 AA requirement

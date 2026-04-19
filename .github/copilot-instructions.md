@@ -3,6 +3,7 @@
 ## Stack
 - **SvelteKit** with **Svelte 5** (runes only) + **TypeScript** (strict)
 - **Tailwind CSS** for styling
+- **shadcn-svelte + Bits UI** for UI components ([ADR 005](../docs/decisions/005-shadcn-svelte-components.md))
 - **JSROOT** for physics plots
 - **libdedx** C library compiled to **WebAssembly** via Emscripten (Docker-based build)
 - **Vitest** + Playwright for testing
