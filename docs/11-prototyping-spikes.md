@@ -1,6 +1,6 @@
 # Prototyping Spikes — Risk Reduction Before Stage 3
 
-> **Status:** Draft v1 (14 April 2026)
+> **Status:** Final v1 (19 April 2026) — all four spikes complete, Stage 3 gate open
 >
 > Defines three time-boxed prototyping spikes that must be completed before
 > full implementation begins. Each spike validates a high-risk architectural

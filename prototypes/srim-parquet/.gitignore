@@ -1,0 +1,5 @@
+node_modules/
+
+# Cached / downloaded Parquet files (URL is in .env, file must not be committed)
+*.parquet
+*.webdedx.parquet

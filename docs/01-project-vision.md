@@ -1,6 +1,6 @@
 # Project Vision — webdedx
 
-> **Status:** Draft v1 (3 April 2026)
+> **Status:** Final v1 (19 April 2026)
 >
 > This document describes *what* webdedx is, *who* it serves, and *why* it exists.
 > It does **not** describe how individual features work — those live in

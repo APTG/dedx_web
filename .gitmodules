@@ -4,3 +4,27 @@
 	url = https://github.com/APTG/libdedx.git
 	branch = master
 	shallow = true
+[submodule "vendor/jsroot"]
+	path = vendor/jsroot
+	url = https://github.com/root-project/jsroot.git
+	shallow = true
+[submodule "vendor/zarrita"]
+	path = vendor/zarrita
+	url = https://github.com/manzt/zarrita.js.git
+	shallow = true
+[submodule "vendor/svelte-ai-tools"]
+	path = vendor/svelte-ai-tools
+	url = https://github.com/sveltejs/ai-tools.git
+	shallow = true
+[submodule "vendor/svelte"]
+	path = vendor/svelte
+	url = https://github.com/sveltejs/svelte.git
+	shallow = true
+[submodule "vendor/shadcn-svelte"]
+	path = vendor/shadcn-svelte
+	url = https://github.com/huntabyte/shadcn-svelte.git
+	shallow = true
+[submodule "vendor/bits-ui"]
+	path = vendor/bits-ui
+	url = https://github.com/huntabyte/bits-ui.git
+	shallow = true
