@@ -1,6 +1,6 @@
 # Architecture — webdedx
 
-> **Status:** Draft v1 (14 April 2026)
+> **Status:** Final v1 (19 April 2026)
 >
 > Describes the SvelteKit project structure, WASM service layer, reactive
 > state topology, routing, and static adapter constraints.

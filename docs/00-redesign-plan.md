@@ -414,7 +414,9 @@ As a <role>, I want to <action> so that <benefit>.
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
-- **Verify:** Wrapper loads in Node.js and returns valid program/particle/material lists.
+- **CI (first PR gate):** Delete `.github/workflows/test_and_deploy.yml` (legacy CRA);
+  add `.github/workflows/ci.yml` triggering on every push/PR to `master` — runs `node wasm/verify.mjs`.
+- **Verify:** `node wasm/verify.mjs` passes; TypeScript wrapper returns valid program/particle/material lists.
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.
@@ -427,6 +429,8 @@ As a <role>, I want to <action> so that <benefit>.
   - `.github/instructions/testing.instructions.md` — test conventions.
   - `.github/agents/researcher.agent.md` — read-only codebase explorer.
   - `.github/skills/wasm-build/SKILL.md` — WASM build pipeline procedure.
+- **Expand CI:** add `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc),
+  `pnpm build` to `ci.yml` — every PR now gets a full type-check and build gate.
 - **Verify:** App builds, routes work, `eslint . && prettier --check .` pass, deploys to GitHub Pages (empty pages).
 
 ### Stage 5: Core Shared Components
@@ -437,6 +441,8 @@ As a <role>, I want to <action> so that <benefit>.
   3. Unit selector — radio/segmented control
   4. Result table — reactive rendering
   5. JSROOT plot wrapper — Svelte component managing JSROOT lifecycle
+- **Expand CI:** add `pnpm test` (Vitest) to `ci.yml` — first unit tests are written
+  in this stage; every PR's test suite must pass before merge.
 
 ### Stage 6: Feature Pages (one at a time)
 - **Who:** AI implements per feature spec.
@@ -457,9 +463,14 @@ As a <role>, I want to <action> so that <benefit>.
 - Mobile responsive testing.
 - JSROOT plot styling (be extremely specific: axis labels, fonts, colors, legend placement).
 - Error handling for WASM failures.
+- **Expand CI:** add `pnpm exec playwright install --with-deps` + `pnpm exec playwright test`
+  to `ci.yml`.
 
-### Stage 8: CI/CD
-- GitHub Actions: `eslint .` → `prettier --check .` → `svelte-check` → `tsc --noEmit` → Vitest → Playwright → build WASM → build SvelteKit → deploy.
+### Stage 8: CI/CD — Deploy job
+- `ci.yml` already has lint, type-check, Vitest, Playwright, and build from Stages 3–7.
+- This stage adds the **deploy job**: push `build/` to `APTG/web_dev` on `master`,
+  to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
+  for the full workflow YAML.
 
 ### Stage 9: Legacy Code Removal
 - Remove the old React codebase (`src/App.*`, `src/index.*`, `src/Backend/`, `src/Components/`,

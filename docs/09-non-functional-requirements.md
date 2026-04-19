@@ -1,6 +1,6 @@
 # Non-Functional Requirements
 
-> **Status:** Draft v1 (13 April 2026)
+> **Status:** Final v1 (19 April 2026)
 >
 > Covers the system-wide quality attributes for the dEdx Web redesign.
 > Feature-level acceptance criteria (specific `aria-label` values,

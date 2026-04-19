@@ -5,8 +5,9 @@
 > This document gives the big-picture deployment architecture for dEdx Web.
 > The authoritative technical decisions live in the ADRs and the redesign plan
 > stage definitions listed below. The legacy CI workflow
-> (`.github/workflows/test_and_deploy.yml`) is **disabled** — it was written
-> for the old React/CRA app and will be replaced in Stage 8.
+> (`.github/workflows/test_and_deploy.yml`) is **deleted at the start of
+> Stage 3** — it was written for the old React/CRA app. The replacement
+> `ci.yml` is added in Stage 3 and expanded through Stage 8 (see §5).
 
 ---
 
@@ -49,9 +50,12 @@ pre-renders all routes at build time.
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│ Stage 8 — CI/CD (GitHub Actions)                                │
-│   lint → test (Vitest) → E2E (Playwright) → build → deploy     │
-│   gh-pages push to APTG/web_dev (master) / APTG/web (tag)      │
+│ Stages 3–8 — CI (GitHub Actions, phased — see §5)              │
+│   Stage 3: node wasm/verify.mjs                                 │
+│   Stage 4: + lint + check + build                               │
+│   Stage 5: + pnpm test (Vitest)                                 │
+│   Stage 7: + pnpm exec playwright test                          │
+│   Stage 8: + deploy → APTG/web_dev (master) / APTG/web (tag)   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -74,7 +78,7 @@ A thin C shim (`wasm/dedx_extra.{h,c}`) exposes functions not in the public
 libdedx API without modifying the submodule. The TypeScript contract is in
 [06-wasm-api-contract.md](06-wasm-api-contract.md).
 
-Build verification: `node verify.mjs` calls exported functions and checks
+Build verification: `node wasm/verify.mjs` calls exported functions and checks
 physically plausible return values.
 
 ---
@@ -93,39 +97,61 @@ See [03-architecture.md](03-architecture.md) for the Vite config details.
 
 ---
 
-## 5. CI / CD (Stage 8 — planned)
+## 5. CI (phased — starts Stage 3)
 
-The current CI workflow (`.github/workflows/test_and_deploy.yml`) is
-**disabled** — it was written for the legacy React/CRA app. The new pipeline
-will be created in Stage 8 and will follow this structure:
+`.github/workflows/test_and_deploy.yml` (legacy React/CRA) is **deleted at the
+start of Stage 3**. A new `ci.yml` is added in its place and expanded at each
+stage so that every PR has a gate matching the current scope of the project:
+
+| Stage | New steps added to `ci.yml` |
+|-------|-----------------------------|
+| **3** | Create workflow; `node wasm/verify.mjs` (WASM artifact smoke-test) |
+| **4** | `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc), `pnpm build` |
+| **5** | `pnpm test` (Vitest — first unit tests written in this stage) |
+| **7** | `pnpm exec playwright install --with-deps`, `pnpm exec playwright test` |
+| **8** | Deploy job: push `build/` → `APTG/web_dev` (master) / `APTG/web` (v* tag) |
+
+Every PR triggers the full `ci` job at whatever steps the current stage has added.
+The deploy job runs only on `master` push or `v*` tag — never on PRs.
+
+### Final pipeline (Stage 8)
 
 ```yaml
 on:
   push:
     branches: [master]
+    tags: ['v*']
   pull_request:
     branches: [master]
 
 jobs:
   ci:
+    runs-on: ubuntu-latest
     steps:
-      - checkout (with submodules: recursive)
-      - setup Node 24 LTS + pnpm
-      - pnpm install
-      - pnpm lint
-      - pnpm test           # Vitest
-      - pnpm exec playwright install --with-deps
-      - pnpm exec playwright test   # E2E + axe-core
-      - pnpm build
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: pnpm
+      - run: node wasm/verify.mjs                       # Stage 3
+      - run: pnpm install                               # Stage 4
+      - run: pnpm lint                                  # Stage 4
+      - run: pnpm check                                 # Stage 4
+      - run: pnpm build                                 # Stage 4
+      - run: pnpm test                                  # Stage 5
+      - run: pnpm exec playwright install --with-deps   # Stage 7
+      - run: pnpm exec playwright test                  # Stage 7
 
   deploy:
     needs: ci
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' || startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
     steps:
-      - deploy build/ to APTG/web_dev via gh-pages
+      - deploy build/ to APTG/web_dev (master) or APTG/web (v* tag) via gh-pages
 ```
-
-Production deploy (to `APTG/web`) is triggered by a `v*` tag on `master`.
 
 ---
 
@@ -157,4 +183,4 @@ for the reasoning.
 | Browser caching details | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md) |
 | Browser support matrix | [09-non-functional-requirements.md §4](09-non-functional-requirements.md) |
 | Stage 8 scope | [00-redesign-plan.md §8](00-redesign-plan.md) |
-| Legacy CI workflow (disabled) | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |
+| Legacy CI workflow (deleted in Stage 3) | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |

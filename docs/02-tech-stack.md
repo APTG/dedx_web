@@ -1,6 +1,6 @@
 # Technology Stack — webdedx
 
-> **Status:** Draft v3 (19 April 2026)
+> **Status:** Final v3 (19 April 2026)
 >
 > Documents every library and tool in the stack, the version pin, and the
 > rationale for choosing it. Rationale summaries refer to the relevant ADR
