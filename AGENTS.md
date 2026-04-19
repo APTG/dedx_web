@@ -27,6 +27,11 @@ Read these two files first, in order:
 | `$effect` for lifecycle | `onMount` / `onDestroy` from `svelte` |
 | Module-level fine-grained reactivity | `svelte/store` auto-subscriptions |
 
+If you have the Svelte MCP server available, call `svelte-autofixer` on any
+`.svelte` file you write to catch Svelte 4 regressions before committing.
+When offline (PLGrid), read [`vendor/svelte/documentation/docs/02-runes/`](vendor/svelte/documentation/docs/02-runes/)
+and [`vendor/svelte/documentation/docs/99-legacy/`](vendor/svelte/documentation/docs/99-legacy/).
+
 ---
 
 ## 3. Key docs index
@@ -50,22 +55,45 @@ Read these two files first, in order:
 
 ## 4. Vendor library docs (local, no web access needed)
 
-Third-party library source and docs are available as git submodules in
-[`vendor/`](vendor/). See [`vendor/LIBRARIES.md`](vendor/LIBRARIES.md) for
-the full index. Quick reference:
+Third-party library source and docs are in [`vendor/`](vendor/) as shallow git
+submodules. Full index: [`vendor/README.md`](vendor/README.md).
 
-| Library | Role | Key file |
-|---------|------|----------|
-| JSROOT 7 | Physics plotting (`TGraph`, `TMultiGraph`) | [`vendor/jsroot/types.d.ts`](vendor/jsroot/types.d.ts) |
-| JSROOT docs | API narrative | [`vendor/jsroot/docs/JSROOT.md`](vendor/jsroot/docs/JSROOT.md) |
-| zarrita 0.7.x | Zarr v3 browser reader | [`vendor/zarrita/packages/zarrita/src/index.ts`](vendor/zarrita/packages/zarrita/src/index.ts) |
-| Emscripten | WASM build tool (no submodule — too large) | [`docs/resources/emscripten-changelog.md`](docs/resources/emscripten-changelog.md) |
-
-Emscripten key flags reference: [`vendor/LIBRARIES.md § Emscripten`](vendor/LIBRARIES.md).
+| Library | Role | Key resource |
+|---------|------|--------------|
+| JSROOT 7 | Physics plotting (`TGraph`, `TMultiGraph`) | [`vendor/jsroot/types.d.ts`](vendor/jsroot/types.d.ts), [`vendor/jsroot/docs/JSROOT.md`](vendor/jsroot/docs/JSROOT.md) |
+| zarrita 0.7.x | Zarr v3 browser reader | [`vendor/zarrita/packages/zarrita/src/open.ts`](vendor/zarrita/packages/zarrita/src/open.ts) |
+| **Svelte 5** | Framework source + docs | [`vendor/svelte/documentation/docs/`](vendor/svelte/documentation/docs/) |
+| svelte-ai-tools | MCP server / opencode plugin | [`vendor/svelte-ai-tools/packages/opencode/README.md`](vendor/svelte-ai-tools/packages/opencode/README.md) |
+| Emscripten | (no submodule — too large) | [`docs/decisions/003-wasm-build-pipeline.md`](docs/decisions/003-wasm-build-pipeline.md) |
 
 ---
 
-## 5. Working process
+## 5. MCP servers (opencode.json)
+
+[`opencode.json`](opencode.json) configures three MCP servers and the PLGrid
+provider. All servers require internet except local tools started via npx.
+
+| MCP | Availability | What it provides |
+|-----|-------------|-----------------|
+| **Svelte** (`@sveltejs/opencode` plugin) | Internet (`mcp.svelte.dev`) | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
+| **Tailwind** (`tailwindcss-mcp-server`) | npx (needs internet first run) | Tailwind v4 class reference |
+| **Playwright** (`@playwright/mcp`) | npx (needs internet first run) | Browser automation, E2E test generation |
+
+**PLGrid / offline sessions:** MCP servers requiring `mcp.svelte.dev` are
+unavailable. Use [`vendor/svelte/`](vendor/svelte/) docs directly instead.
+Tailwind and Playwright MCP servers will also fail if npx has no cached packages.
+
+Provider credentials must be set as env vars before starting opencode:
+```sh
+export PLGRID_LLMLAB_BASE_URL=https://...   # PLGrid llmlab endpoint
+export PLGRID_LLMLAB_API_KEY=...            # never commit this
+```
+See [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md) for the full
+setup procedure and egress notes.
+
+---
+
+## 6. Working process
 
 - **Check progress first:** [`docs/progress/`](docs/progress/) lists completed stages.
 - **One feature per session** — reference the spec file, do not re-explain.
@@ -79,7 +107,7 @@ Emscripten key flags reference: [`vendor/LIBRARIES.md § Emscripten`](vendor/LIB
 
 ---
 
-## 6. Copilot agent files (`.github/agents/`)
+## 7. Copilot agent files (`.github/agents/`)
 
 These are available for Copilot agent sessions (not opencode):
 

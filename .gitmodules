@@ -12,3 +12,11 @@
 	path = vendor/zarrita
 	url = https://github.com/manzt/zarrita.js.git
 	shallow = true
+[submodule "vendor/svelte-ai-tools"]
+	path = vendor/svelte-ai-tools
+	url = https://github.com/sveltejs/ai-tools.git
+	shallow = true
+[submodule "vendor/svelte"]
+	path = vendor/svelte
+	url = https://github.com/sveltejs/svelte.git
+	shallow = true

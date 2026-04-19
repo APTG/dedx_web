@@ -33,8 +33,9 @@ public/weblibdedx.data
 .env
 .env.*
 
-# AI tooling — local agent configs and credentials
+# AI tooling — local agent session state and credentials
 .opencode/
+!.opencode/svelte.json
 *.key
 
 # Prototypes — throwaway spike code (Stage 2.5)

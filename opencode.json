@@ -1,0 +1,30 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+
+  "plugin": ["@sveltejs/opencode"],
+
+  "provider": {
+    "plgrid": {
+      "name": "PLGrid llmlab (Qwen)",
+      "api": "openai",
+      "models": ["Qwen/Qwen3.5-397B-A17B-FP8"],
+      "options": {
+        "base_url": "${PLGRID_LLMLAB_BASE_URL}",
+        "api_key": "${PLGRID_LLMLAB_API_KEY}"
+      }
+    }
+  },
+
+  "mcp": {
+    "tailwind": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "tailwindcss-mcp-server"]
+    },
+    "playwright": {
+      "type": "local",
+      "command": "npx",
+      "args": ["-y", "@playwright/mcp@latest"]
+    }
+  }
+}

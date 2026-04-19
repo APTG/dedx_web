@@ -198,20 +198,22 @@ Copilot for now.
 1. **opencode** installed locally. opencode reads its config from
    `opencode.json` at the repo root or `~/.config/opencode/config.json`.
    Per-repo config is preferred so Qwen has the same defaults for every
-   contributor.
+   contributor. ✅ Created 19 April 2026: [`opencode.json`](../opencode.json) —
+   PLGrid provider (env-var credentials), `@sveltejs/opencode` plugin,
+   Tailwind MCP, Playwright MCP. Fill in `PLGRID_LLMLAB_BASE_URL` env var
+   before first use.
 2. **AGENTS.md** at the repo root acting as the opencode context-loading
    counterpart of `.github/copilot-instructions.md`. Keep it tiny and
    delegate to existing docs (do not duplicate content). ✅ Created
    19 April 2026: [`AGENTS.md`](../AGENTS.md) — points at copilot-instructions,
-   docs index, vendor library docs, and Svelte 5 rules.
+   docs index, vendor library docs, MCP setup, and Svelte 5 rules.
 3. **PLGrid llmlab credentials** — exported as an environment variable
    (e.g. `PLGRID_LLMLAB_API_KEY`). Never commit the key. `.gitignore`
-   covers `.env`, `.env.*`, `.opencode/`, and `*.key`.
-4. **opencode provider config** — define a custom OpenAI-compatible
-   provider whose `baseURL` points at the PLGrid llmlab endpoint and
-   whose `apiKey` reads the env var above. Set the model id to whatever
-   PLGrid exposes for Qwen 3.5 (e.g. the value used in the Spike 1/3
-   logs: `Qwen3.5-397B` or successor).
+   covers `.env`, `.env.*`, `.opencode/` (except `.opencode/svelte.json`),
+   and `*.key`.
+4. **opencode provider config** ✅ Done — see `opencode.json` above.
+   Model id: `Qwen/Qwen3.5-397B-A17B-FP8` (as used in Spike 1/3 logs;
+   verify against PLGrid's current model list before first use).
 5. **Egress note** — PLGrid llmlab is reachable from your laptop, but
    **not** from GitHub Actions runners or the Copilot cloud agent. Qwen
    sessions are therefore human-driven from a developer machine; CI runs
