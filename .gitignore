@@ -31,6 +31,11 @@ src/Backend/weblibdedx.wasm
 .vscode/settings.json
 public/weblibdedx.data
 .env
+.env.*
+
+# AI tooling — local agent configs and credentials
+.opencode/
+*.key
 
 # Prototypes — throwaway spike code (Stage 2.5)
 # Each spike has its own dependencies, build artifacts, etc.

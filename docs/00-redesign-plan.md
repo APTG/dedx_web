@@ -85,26 +85,36 @@ docs/
 │   ├── inverse-lookups.md           # Energy from stopping power / CSDA range
 │   ├── advanced-options.md          # MSTAR modes, aggregate state, interpolation
 │   ├── export.md                    # CSV + PDF export
-│   └── shareable-urls.md            # URL-encoded state for sharing
-├── 05-ui-wireframes.md              # Page-by-page layout descriptions
+│   ├── shareable-urls.md            # URL-encoded state for sharing
+│   ├── shareable-urls-formal.md     # Formal ABNF + canonicalization companion
+│   ├── custom-compounds.md          # User-defined compound materials
+│   ├── external-data.md             # User-hosted .webdedx (Zarr v3) data
+│   └── build-info.md                # Build info badge in footer
 ├── 06-wasm-api-contract.md          # TypeScript interface for libdedx wrapper
-├── 07-testing-strategy.md           # Unit/integration/E2E plan
-├── 08-deployment.md                 # GitHub Actions → GitHub Pages
 ├── 09-non-functional-requirements.md # WCAG 2.1 AA, performance budgets, browser support, responsive, security
-├── 10-terminology.md                # Glossary — two sections: physics/end-user terms
-│                                    #   (stopping power, CSDA range, Bragg additivity, I-value,
-│                                    #   particle vs ion, MeV/nucl vs MeV/u, etc.) and
-│                                    #   developer/stack terms (WASM, Emscripten, runes,
-│                                    #   dedx_config, entity, series, StoredCompound, etc.)
+├── 10-terminology.md                # Glossary — physics/end-user terms and developer/stack terms
+├── 11-prototyping-spikes.md         # Stage 2.5 spike specs (JSROOT, WASM, $state, extdata format)
 ├── decisions/                       # Architecture Decision Records (ADRs)
 │   ├── 001-sveltekit-over-react.md
 │   ├── 002-keep-jsroot.md
 │   ├── 003-wasm-build-pipeline.md
-│   └── ...
-└── progress/                        # Stage completion logs
-    ├── stage-1.md
-    └── ...
+│   └── 004-zarr-v3-external-format.md
+├── progress/                        # Stage completion logs
+│   ├── stage-1.md
+│   └── stage-2.md
+└── ai-logs/                         # Detailed AI session logs
 ```
+
+> **Docs not (yet) created.** Earlier drafts of this plan listed
+> `05-ui-wireframes.md`, `07-testing-strategy.md`, and `08-deployment.md` as
+> separate files. In practice their content has been folded into other
+> documents and stays in sync there: wireframes live inside each
+> `04-feature-specs/*.md`; the testing strategy is captured by per-spec
+> Acceptance Criteria plus the tooling pin in `02-tech-stack.md` (Vitest +
+> Playwright) and will be expanded as Stage 7 begins; deployment is captured
+> by Stage 8 in §8 and the GitHub Pages decision in `02-tech-stack.md`. They
+> may be promoted into standalone files later if the indirection becomes
+> painful.
 
 ---
 
@@ -155,6 +165,87 @@ The `copilot-instructions.md` and `write-spec.prompt.md` should be created **fir
 writing any design docs. This way, AI assistance for drafting `docs/01-project-vision.md`
 and feature specs already benefits from project context. The remaining file instructions,
 agents, and skills are added later alongside the code they govern (Stage 4).
+
+---
+
+## 4.2 Multiple AI tools (opencode + Qwen via PLGrid llmlab)
+
+The default driver for implementation sessions is **GitHub Copilot** (per
+§4.1). However, Spike 1 and Spike 3 were already implemented successfully
+with **opencode + Qwen3.5-397B**, so the project supports a parallel
+multi-tool workflow. This section documents how to run an implementation
+stage with opencode + Qwen against the PLGrid **llmlab** OpenAI-compatible
+endpoint, and how to fall back to Copilot on `master` if the experiment
+does not converge.
+
+### When to consider Qwen / opencode
+
+A stage or feature is a good Qwen candidate when it is:
+
+- **Self-contained** — minimal cross-file context (e.g., the WASM wrapper
+  in Stage 3, a single feature page in Stage 6).
+- **Well-specified** — has a Final spec or ADR with explicit acceptance
+  criteria (the AI's job is execution, not design).
+- **Independently testable** — `pnpm lint && pnpm test && pnpm build`
+  (or, for Stage 3, `node verify.mjs`) gives an unambiguous pass/fail.
+
+Tightly coupled, design-heavy, or cross-cutting work should stay on
+Copilot for now.
+
+### Local setup (one-time)
+
+1. **opencode** installed locally. opencode reads its config from
+   `opencode.json` at the repo root or `~/.config/opencode/config.json`.
+   Per-repo config is preferred so Qwen has the same defaults for every
+   contributor.
+2. **AGENTS.md** at the repo root acting as the opencode context-loading
+   counterpart of `.github/copilot-instructions.md`. Keep it tiny and
+   delegate to existing docs (do not duplicate content). Suggested body:
+   point at `.github/copilot-instructions.md` and `docs/00-redesign-plan.md`,
+   plus a one-line reminder of the Svelte 5 rules.
+3. **PLGrid llmlab credentials** — exported as an environment variable
+   (e.g. `PLGRID_LLMLAB_API_KEY`). Never commit the key. `.gitignore`
+   covers `.env`, `.env.*`, `.opencode/`, and `*.key`.
+4. **opencode provider config** — define a custom OpenAI-compatible
+   provider whose `baseURL` points at the PLGrid llmlab endpoint and
+   whose `apiKey` reads the env var above. Set the model id to whatever
+   PLGrid exposes for Qwen 3.5 (e.g. the value used in the Spike 1/3
+   logs: `Qwen3.5-397B` or successor).
+5. **Egress note** — PLGrid llmlab is reachable from your laptop, but
+   **not** from GitHub Actions runners or the Copilot cloud agent. Qwen
+   sessions are therefore human-driven from a developer machine; CI runs
+   the same lint/test/build matrix regardless of which AI authored the
+   commit.
+
+### Branching, attribution, and fall-back
+
+- **Branch name**: `qwen/<stage-or-feature>` (e.g. `qwen/stage-3-wasm`,
+  `qwen/feature-calculator`). The prefix flags the branch as an
+  experiment.
+- **PR title**: prefix with `[qwen]` so reviewers know to expect a
+  different style.
+- **Attribution**: every `CHANGELOG-AI.md` row and every
+  `docs/ai-logs/...` session log MUST record the model and tool, e.g.
+  `(opencode + Qwen3.5-397B)` — already the convention for the Qwen
+  spikes; now mandatory (see §9).
+- **Fall-back rule**: time-box each Qwen attempt (suggested: one working
+  day per stage, two for Stage 3). If the branch does not pass
+  `pnpm lint && pnpm test && pnpm build` and the spec's Acceptance
+  Criteria within the time-box, **do not merge**. File a closing log
+  entry under `docs/ai-logs/YYYY-MM-DD-qwen-<stage>-attempt.md` with
+  what worked, what failed, and any reusable artifacts; abandon the
+  branch; resume the same stage on `master` with Copilot.
+- **Merge gate** (when Qwen does succeed): same CI as Copilot work, plus
+  a human or Copilot review pass. Squash-merge so the `master` history
+  stays linear regardless of authorship.
+
+### What you do **not** need
+
+- No new MCP servers, Skills, or prompt files. opencode + Qwen reads the
+  existing `docs/` tree directly — this is the spec-driven payoff.
+- No spec rewrites. Specs are tool-agnostic.
+- No Copilot-specific tools (`parallel_validation`, `report_progress`)
+  on the Qwen side. Substitute manual `pnpm` commands and `git push`.
 
 ---
 
@@ -393,6 +484,7 @@ As a <role>, I want to <action> so that <benefit>.
 | **Log progress in `docs/progress/`** | So the next session knows what's done and what's next. |
 | **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce. |
 | **Log every AI session** | Append to `CHANGELOG-AI.md` + create `docs/ai-logs/YYYY-MM-DD-<slug>.md`. See `.github/copilot-instructions.md` for format. |
+| **Record model + tool in every log entry** | Both `CHANGELOG-AI.md` rows and session logs must include `(<model> via <tool>)` — e.g. `(Claude Sonnet 4.6)` for Copilot, `(opencode + Qwen3.5-397B)` for opencode/PLGrid. Required for multi-tool workflows (see §4.2). |
 
 ---
 

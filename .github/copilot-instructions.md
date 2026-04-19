@@ -66,8 +66,12 @@ Every AI coding session MUST be logged for project continuity.
 The changelog uses a markdown table. Append a new row at the top of the table body
 (below the header row and separator):
 ```
-| YYYY-MM-DD | N | <what was done> | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
+| YYYY-MM-DD | N | <what was done> (<model> via <tool>) | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
 ```
+
+The `(<model> via <tool>)` attribution is **mandatory** so multi-tool history stays
+traceable. Examples: `(Claude Sonnet 4.6)` for Copilot, `(opencode + Qwen3.5-397B)`
+for opencode against PLGrid llmlab. See `docs/00-redesign-plan.md` §4.2.
 
 ### Session Log Format (docs/ai-logs/)
 Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` at session start. Each log must include:
