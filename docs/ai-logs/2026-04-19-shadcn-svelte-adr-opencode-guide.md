@@ -21,11 +21,12 @@ server locally, not connect to `mcp.svelte.dev`).
 
 ## What was done
 
-### `.opencode/svelte.json` updated
+### Local Svelte MCP mode documented
 
-Changed `"mcp": { "type": "remote" }` → `"type": "local"`. The
-`@sveltejs/opencode` plugin now runs `npx @sveltejs/mcp@latest` as a local
-stdio process — no internet connection required for the Svelte MCP.
+Documented that Svelte MCP should be configured with `"mcp": { "type": "local" }`
+in each developer's local, untracked `.opencode/svelte.json`. The
+`@sveltejs/opencode` plugin can then run `npx @sveltejs/mcp@latest` as a local
+stdio process instead of using the remote `mcp.svelte.dev` endpoint.
 
 ### New submodules added (`shallow = true`)
 

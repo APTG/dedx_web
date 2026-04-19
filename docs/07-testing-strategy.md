@@ -26,8 +26,10 @@
 ```
 
 The project uses **Vitest** for unit and integration tests and **Playwright**
-for end-to-end tests. CI coverage for all three layers is planned for Stage 8;
-at present, these tests are not configured to run automatically on every pull
+for end-to-end tests. Automated test gating is planned as a staged rollout:
+`pnpm test` in Stage 5 for unit/integration coverage, Playwright in Stage 7
+for E2E coverage, and Stage 8 for deploy-focused CI/CD work. Until those
+stages land, these tests are not configured to run automatically on every pull
 request.
 
 ---
@@ -108,11 +110,15 @@ The WASM module (`libdedx.wasm` + `libdedx.mjs`) has its own verification
 step independent of the SvelteKit build:
 
 ```
-node verify.mjs    ← runs in Node.js, calls key exported functions,
-                     checks return values are physically plausible
+node wasm/verify.mjs    ← runs in Node.js, calls key exported functions,
+                          checks return values are physically plausible
 ```
 
-This script is the acceptance gate for Stage 3 (WASM build pipeline).
+This script is the acceptance gate for Stage 3 (WASM build pipeline). The
+target location for Stage 3 is `wasm/verify.mjs` in the new SvelteKit project;
+the working prototype currently lives at
+`prototypes/libdedx-investigation/wasm-runtime/verify.mjs` (run as
+`node verify.mjs` from that directory).
 See [ADR 003](decisions/003-wasm-build-pipeline.md) and
 [06-wasm-api-contract.md](06-wasm-api-contract.md).
 

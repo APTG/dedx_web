@@ -72,21 +72,23 @@ submodules. Full index: [`vendor/README.md`](vendor/README.md).
 
 ## 5. MCP servers (opencode.json)
 
-[`opencode.json`](opencode.json) configures three MCP servers and the PLGrid
-provider. The Svelte MCP runs as a local stdio process via the
-`@sveltejs/opencode` plugin (no remote endpoint); Tailwind and Playwright are
-started via `npx`.
+[`opencode.json`](opencode.json) configures the MCP/tooling setup and the
+PLGrid provider. Tailwind and Playwright are started via `npx`. The Svelte MCP
+is provided through the `@sveltejs/opencode` plugin, but its exact transport /
+mode depends on the local opencode configuration rather than this file alone.
 
 | MCP | Availability | What it provides |
 |-----|-------------|-----------------|
-| **Svelte** (`@sveltejs/opencode` plugin) | Local stdio via `npx @sveltejs/mcp@latest` (works offline once cached) | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
+| **Svelte** (`@sveltejs/opencode` plugin) | Plugin-managed; check local opencode/Svelte MCP configuration for transport and offline behavior | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
 | **Tailwind** (`tailwindcss-mcp-server`) | npx (needs internet first run) | Tailwind v4 class reference |
 | **Playwright** (`@playwright/mcp`) | npx (needs internet first run) | Browser automation, E2E test generation |
 
-**PLGrid / offline sessions:** all three MCP servers will fail offline on the
-very first run if `npx` cannot reach npm. Once their packages are cached they
-work offline. As an additional fallback, read Svelte 5 docs directly from
-[`vendor/svelte/`](vendor/svelte/) (committed as a shallow submodule).
+**PLGrid / offline sessions:** the Tailwind and Playwright MCP servers will
+fail offline on the very first run if `npx` cannot reach npm. Once their
+packages are cached they work offline. For Svelte, verify the local plugin/MCP
+setup in your environment. As an additional fallback, read Svelte 5 docs
+directly from [`vendor/svelte/`](vendor/svelte/) (committed as a shallow
+submodule).
 
 Provider credentials must be set as env vars before starting opencode:
 ```sh

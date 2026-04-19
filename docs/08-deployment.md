@@ -87,9 +87,9 @@ physically plausible return values.
 
 SvelteKit with `@sveltejs/adapter-static` generates a `build/` directory of
 static HTML, JS (content-hashed), and CSS files. The WASM artifacts in
-`static/wasm/` are passed through un-hashed (they are too large for inline
-embedding and their cache behaviour is acceptable — see
-[09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)).
+`static/wasm/` are passed through un-hashed — they are too large for inline
+embedding and their cache behaviour is acceptable. See
+[09-non-functional-requirements.md §3.1](09-non-functional-requirements.md).
 
 **Base path:** The app is served from a sub-path on GitHub Pages
 (`/web_dev/` or `/web/`). `%sveltekit.assets%` resolves this at build time.

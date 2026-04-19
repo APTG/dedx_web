@@ -59,6 +59,12 @@ running opencode locally so the apiKey reference is correct for their environmen
 and PLGrid model id. Once tested, a sanitized `opencode.json` + minimal `AGENTS.md`
 can be committed in a follow-up.
 
+> **Addendum (later same day):** the follow-up session
+> [`2026-04-19-vendor-submodules-opencode.md`](2026-04-19-vendor-submodules-opencode.md)
+> did commit both `opencode.json` (PLGrid provider via env vars, no secrets) and
+> `AGENTS.md` to this same PR. The plan-only stance recorded above was superseded
+> within the same PR.
+
 ## Tasks
 
 ### Critical review of docs and Stage 3 readiness

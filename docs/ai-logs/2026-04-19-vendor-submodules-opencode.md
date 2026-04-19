@@ -44,15 +44,17 @@ depth=1. Key flags already documented in ADR 003; changelog already in
 | `vendor/README.md` | Full index of vendor submodules (renamed from LIBRARIES.md) |
 | `AGENTS.md` | opencode/Qwen entry point: docs index, Svelte 5 rules, vendor reference, MCP guide, provider setup |
 | `opencode.json` | Per-repo opencode config: PLGrid provider (env vars), `@sveltejs/opencode` plugin, Tailwind + Playwright MCPs |
-| `.opencode/svelte.json` | Svelte plugin config: remote MCP, subagent enabled, both skills |
 | `docs/05-ui-wireframes.md` | Big-picture UI layout with links to per-spec wireframes |
 | `docs/07-testing-strategy.md` | Test pyramid (Vitest + Playwright + axe-core) with links to per-spec AC |
 | `docs/08-deployment.md` | Deployment pipeline (GitHub Pages, WASM build, CI) with links to ADRs |
 
-### `.gitignore` updated
+### `.gitignore`
 
-Added `!.opencode/svelte.json` exception — session state in `.opencode/`
-stays ignored, but the committed svelte plugin config is tracked.
+No `.gitignore` exception for `.opencode/svelte.json` was committed in this
+branch, so `.opencode/` remains ignored. The Svelte MCP/plugin setup is
+documented via `opencode.json` and `AGENTS.md` rather than a tracked
+`.opencode/svelte.json` file. Each developer keeps their own untracked
+`.opencode/svelte.json` if they want to override the plugin defaults.
 
 ### `docs/00-redesign-plan.md` updated
 
