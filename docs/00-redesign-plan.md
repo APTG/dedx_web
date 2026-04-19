@@ -90,7 +90,10 @@ docs/
 │   ├── custom-compounds.md          # User-defined compound materials
 │   ├── external-data.md             # User-hosted .webdedx (Zarr v3) data
 │   └── build-info.md                # Build info badge in footer
+├── 05-ui-wireframes.md              # Big-picture layout overview; links to per-spec wireframes
 ├── 06-wasm-api-contract.md          # TypeScript interface for libdedx wrapper
+├── 07-testing-strategy.md           # Test pyramid, Vitest + Playwright strategy; links to per-spec AC
+├── 08-deployment.md                 # GitHub Pages pipeline, WASM build, CI; links to ADRs
 ├── 09-non-functional-requirements.md # WCAG 2.1 AA, performance budgets, browser support, responsive, security
 ├── 10-terminology.md                # Glossary — physics/end-user terms and developer/stack terms
 ├── 11-prototyping-spikes.md         # Stage 2.5 spike specs (JSROOT, WASM, $state, extdata format)
@@ -105,16 +108,14 @@ docs/
 └── ai-logs/                         # Detailed AI session logs
 ```
 
-> **Docs not (yet) created.** Earlier drafts of this plan listed
-> `05-ui-wireframes.md`, `07-testing-strategy.md`, and `08-deployment.md` as
-> separate files. In practice their content has been folded into other
-> documents and stays in sync there: wireframes live inside each
-> `04-feature-specs/*.md`; the testing strategy is captured by per-spec
-> Acceptance Criteria plus the tooling pin in `02-tech-stack.md` (Vitest +
-> Playwright) and will be expanded as Stage 7 begins; deployment is captured
-> by Stage 8 in §8 and the GitHub Pages decision in `02-tech-stack.md`. They
-> may be promoted into standalone files later if the indirection becomes
-> painful.
+> **Vendor library docs** are in `vendor/` at the repo root.
+> `vendor/jsroot/` and `vendor/zarrita/` are shallow git submodules containing
+> source, TypeScript types, and docs for the key third-party libraries — so AI
+> agents can read them locally without web access. See `vendor/LIBRARIES.md`.
+
+> **AGENTS.md** at the repo root is the opencode/Qwen context-loading entry
+> point — the counterpart to `.github/copilot-instructions.md`. It is small
+> and delegates to this plan and the docs index above.
 
 ---
 
@@ -200,9 +201,9 @@ Copilot for now.
    contributor.
 2. **AGENTS.md** at the repo root acting as the opencode context-loading
    counterpart of `.github/copilot-instructions.md`. Keep it tiny and
-   delegate to existing docs (do not duplicate content). Suggested body:
-   point at `.github/copilot-instructions.md` and `docs/00-redesign-plan.md`,
-   plus a one-line reminder of the Svelte 5 rules.
+   delegate to existing docs (do not duplicate content). ✅ Created
+   19 April 2026: [`AGENTS.md`](../AGENTS.md) — points at copilot-instructions,
+   docs index, vendor library docs, and Svelte 5 rules.
 3. **PLGrid llmlab credentials** — exported as an environment variable
    (e.g. `PLGRID_LLMLAB_API_KEY`). Never commit the key. `.gitignore`
    covers `.env`, `.env.*`, `.opencode/`, and `*.key`.

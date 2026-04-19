@@ -4,3 +4,11 @@
 	url = https://github.com/APTG/libdedx.git
 	branch = master
 	shallow = true
+[submodule "vendor/jsroot"]
+	path = vendor/jsroot
+	url = https://github.com/root-project/jsroot.git
+	shallow = true
+[submodule "vendor/zarrita"]
+	path = vendor/zarrita
+	url = https://github.com/manzt/zarrita.js.git
+	shallow = true
