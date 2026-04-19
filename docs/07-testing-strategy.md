@@ -16,17 +16,19 @@
                     ┌───────────────┐
                     │  E2E (Playwright)  │  ← few, slow, high-confidence
                     │  axe-core a11y     │
-                    ├───────────────────-┤
+                    ├────────────────────┤
                     │  Integration       │  ← WASM wrapper, data flows
                     │  (Vitest)          │
                     ├────────────────────┤
                     │  Unit              │  ← components, pure logic
-                    │  (Vitest + SvelteTL)│  ← most tests, fast
+                    │  (Vitest + STL)   │  ← most tests, fast
                     └────────────────────┘
 ```
 
 The project uses **Vitest** for unit and integration tests and **Playwright**
-for end-to-end tests. All three layers run in CI on every pull request.
+for end-to-end tests. CI coverage for all three layers is planned for Stage 8;
+at present, these tests are not configured to run automatically on every pull
+request.
 
 ---
 
@@ -77,9 +79,14 @@ for end-to-end tests. All three layers run in CI on every pull request.
 
 ---
 
-## 4. CI matrix
+## 4. CI matrix (target — Stage 8)
 
-Every pull request must pass:
+There is currently **no active CI** running these checks (the legacy
+`.github/workflows/test_and_deploy.yml` workflow is `workflow_dispatch`-only
+and marked DISABLED). CI/CD is planned for Stage 8 — see
+[`08-deployment.md`](08-deployment.md). Until then, the matrix below is the
+**local pre-push checklist** every contributor (human or AI) is expected to
+run before opening a pull request:
 
 ```
 pnpm lint          ← ESLint + Prettier check
@@ -88,9 +95,10 @@ pnpm exec playwright test   ← E2E + axe-core
 pnpm build         ← SvelteKit static build (must not fail)
 ```
 
-Lighthouse performance budget is run in CI on a simulated 3G Fast profile.
-Targets: FCP ≤ 1.5 s, TTI ≤ 3.5 s. See
-[09-non-functional-requirements.md §3](09-non-functional-requirements.md).
+A Lighthouse performance budget on a simulated 3G Fast profile (targets:
+FCP ≤ 1.5 s, TTI ≤ 3.5 s — see
+[09-non-functional-requirements.md §3](09-non-functional-requirements.md))
+is also planned for the Stage 8 CI matrix; not currently enforced.
 
 ---
 

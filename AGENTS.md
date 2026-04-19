@@ -73,17 +73,20 @@ submodules. Full index: [`vendor/README.md`](vendor/README.md).
 ## 5. MCP servers (opencode.json)
 
 [`opencode.json`](opencode.json) configures three MCP servers and the PLGrid
-provider. All servers require internet except local tools started via npx.
+provider. The Svelte MCP runs as a local stdio process via the
+`@sveltejs/opencode` plugin (no remote endpoint); Tailwind and Playwright are
+started via `npx`.
 
 | MCP | Availability | What it provides |
 |-----|-------------|-----------------|
-| **Svelte** (`@sveltejs/opencode` plugin) | Internet (`mcp.svelte.dev`) | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
+| **Svelte** (`@sveltejs/opencode` plugin) | Local stdio via `npx @sveltejs/mcp@latest` (works offline once cached) | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
 | **Tailwind** (`tailwindcss-mcp-server`) | npx (needs internet first run) | Tailwind v4 class reference |
 | **Playwright** (`@playwright/mcp`) | npx (needs internet first run) | Browser automation, E2E test generation |
 
-**PLGrid / offline sessions:** MCP servers requiring `mcp.svelte.dev` are
-unavailable. Use [`vendor/svelte/`](vendor/svelte/) docs directly instead.
-Tailwind and Playwright MCP servers will also fail if npx has no cached packages.
+**PLGrid / offline sessions:** all three MCP servers will fail offline on the
+very first run if `npx` cannot reach npm. Once their packages are cached they
+work offline. As an additional fallback, read Svelte 5 docs directly from
+[`vendor/svelte/`](vendor/svelte/) (committed as a shallow submodule).
 
 Provider credentials must be set as env vars before starting opencode:
 ```sh

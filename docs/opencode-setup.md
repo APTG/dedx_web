@@ -76,10 +76,9 @@ automatically. You do not need to edit it for standard use.
 
 ### 3.1 Svelte MCP (local, via `@sveltejs/opencode` plugin)
 
-The `@sveltejs/opencode` plugin is declared in `opencode.json` and configured
-in `.opencode/svelte.json` with `"type": "local"`. opencode runs the Svelte MCP
-server as a local stdio process via `npx @sveltejs/mcp@latest` — no external
-connection required.
+The `@sveltejs/opencode` plugin is declared in `opencode.json`. For standard
+use, opencode runs the Svelte MCP server as a local stdio process via
+`npx @sveltejs/mcp@latest` — no external connection required.
 
 **What it provides:**
 - `list-sections` — find Svelte 5 documentation sections
@@ -201,8 +200,8 @@ manually or add to your shell profile (`~/.bashrc`, `~/.zshrc`).
 ### `@sveltejs/mcp` npx download fails
 
 Check internet connectivity. On PLGrid compute nodes, npm registry may be
-blocked — use `vendor/svelte/documentation/` as the offline fallback and set
-`"mcp": { "enabled": false }` in `.opencode/svelte.json` temporarily.
+blocked — use `vendor/svelte/documentation/` as the offline fallback and
+remove the `@sveltejs/opencode` plugin from `opencode.json` temporarily.
 
 ### Playwright MCP errors: browsers not installed
 

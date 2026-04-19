@@ -110,9 +110,9 @@ docs/
 ```
 
 > **Vendor library docs** are in `vendor/` at the repo root.
-> `vendor/jsroot/` and `vendor/zarrita/` are shallow git submodules containing
-> source, TypeScript types, and docs for the key third-party libraries — so AI
-> agents can read them locally without web access. See `vendor/LIBRARIES.md`.
+> The vendor subdirectories are shallow git submodules containing source,
+> TypeScript types, and docs for third-party libraries used by the project — so
+> AI agents can read them locally without web access. See `vendor/README.md`.
 
 > **AGENTS.md** at the repo root is the opencode/Qwen context-loading entry
 > point — the counterpart to `.github/copilot-instructions.md`. It is small
@@ -210,8 +210,7 @@ Copilot for now.
    docs index, vendor library docs, MCP setup, and Svelte 5 rules.
 3. **PLGrid llmlab credentials** — exported as an environment variable
    (e.g. `PLGRID_LLMLAB_API_KEY`). Never commit the key. `.gitignore`
-   covers `.env`, `.env.*`, `.opencode/` (except `.opencode/svelte.json`),
-   and `*.key`.
+   covers `.env`, `.env.*`, `.opencode/`, and `*.key`.
 4. **opencode provider config** ✅ Done — see `opencode.json` above.
    Model id: `Qwen/Qwen3.5-397B-A17B-FP8` (as used in Spike 1/3 logs;
    verify against PLGrid's current model list before first use).
