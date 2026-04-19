@@ -64,6 +64,8 @@ submodules. Full index: [`vendor/README.md`](vendor/README.md).
 | zarrita 0.7.x | Zarr v3 browser reader | [`vendor/zarrita/packages/zarrita/src/open.ts`](vendor/zarrita/packages/zarrita/src/open.ts) |
 | **Svelte 5** | Framework source + docs | [`vendor/svelte/documentation/docs/`](vendor/svelte/documentation/docs/) |
 | svelte-ai-tools | MCP server / opencode plugin | [`vendor/svelte-ai-tools/packages/opencode/README.md`](vendor/svelte-ai-tools/packages/opencode/README.md) |
+| **shadcn-svelte** | UI components (ADR 005) | [`vendor/shadcn-svelte/packages/registry/`](vendor/shadcn-svelte/packages/registry/) |
+| **Bits UI** | Headless primitives under shadcn-svelte | [`vendor/bits-ui/packages/bits-ui/src/lib/bits/`](vendor/bits-ui/packages/bits-ui/src/lib/bits/) |
 | Emscripten | (no submodule — too large) | [`docs/decisions/003-wasm-build-pipeline.md`](docs/decisions/003-wasm-build-pipeline.md) |
 
 ---
@@ -107,7 +109,16 @@ setup procedure and egress notes.
 
 ---
 
-## 7. Copilot agent files (`.github/agents/`)
+## 7. opencode full setup guide
+
+See [`docs/opencode-setup.md`](docs/opencode-setup.md) for step-by-step
+instructions covering: prerequisites, submodule init, env var setup, all MCP
+servers, selecting the Qwen model, branch naming, session logging, and
+troubleshooting.
+
+---
+
+## 8. Copilot agent files (`.github/agents/`)
 
 These are available for Copilot agent sessions (not opencode):
 

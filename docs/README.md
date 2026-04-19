@@ -14,6 +14,7 @@ Design documents and specifications for the dEdx Web redesign.
 | [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript interface to libdedx via WebAssembly — type definitions, `LibdedxService` API, C function mapping |
 | [07-testing-strategy.md](07-testing-strategy.md) | Test pyramid overview (Vitest unit/integration + Playwright E2E + axe-core a11y) with links to per-spec acceptance criteria |
 | [08-deployment.md](08-deployment.md) | Deployment architecture — GitHub Pages, WASM build pipeline, CI/CD plan, browser caching |
+| [opencode-setup.md](opencode-setup.md) | opencode + Qwen (PLGrid) setup guide — MCP servers, env vars, session logging, troubleshooting |
 | [10-terminology.md](10-terminology.md) | **Final v3** — Glossary of domain terms: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, particle vs ion, MeV/nucl vs MeV/u, etc.); §2 developer/stack terms (WASM, Emscripten, runes, dedx_config, Entity, Series, StoredCompound, etc.) |
 | [11-prototyping-spikes.md](11-prototyping-spikes.md) | **Draft v1** — Three time-boxed prototyping spikes (JSROOT+Svelte 5, WASM --preload-file, module-level $state) to validate high-risk architecture assumptions before Stage 3 |
 

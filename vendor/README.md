@@ -119,6 +119,52 @@ Key compiler flags used in this project: `EXPORT_ES6=1`, `MODULARIZE=1`,
 
 ---
 
+## shadcn-svelte — `vendor/shadcn-svelte/`
+
+**What:** shadcn-svelte (Huntabyte) — the Svelte port of shadcn/ui. Provides
+accessible, Tailwind-styled UI components built on Bits UI primitives.
+Components are **copied** into the project (`pnpm dlx shadcn-svelte@latest add …`)
+rather than imported as a package — the project owns the source.
+
+| Resource | Path |
+|----------|------|
+| README | [shadcn-svelte/README.md](shadcn-svelte/README.md) |
+| CLI source | [shadcn-svelte/packages/cli/](shadcn-svelte/packages/cli/) |
+| Registry (all components) | [shadcn-svelte/packages/registry/](shadcn-svelte/packages/registry/) |
+
+**Decision:** [ADR 005](../docs/decisions/005-shadcn-svelte-components.md).
+**Install:** `pnpm dlx shadcn-svelte@latest init` (during Stage 4 scaffold).
+
+> **Note:** The main `shadcn` MCP server (`ui.shadcn.com/docs/mcp`) is
+> React-only and is **not** used in this project. See ADR 005 §Alternatives.
+
+---
+
+## bits-ui — `vendor/bits-ui/`
+
+**What:** Bits UI — the headless, unstyled, accessible Svelte 5 component
+primitives that shadcn-svelte is built on. 44 components including Accordion,
+Combobox, Dialog, DropdownMenu, Popover, Select, Table, Toast.
+
+| Resource | Path |
+|----------|------|
+| README | [bits-ui/README.md](bits-ui/README.md) |
+| All primitive components | [bits-ui/packages/bits-ui/src/lib/bits/](bits-ui/packages/bits-ui/src/lib/bits/) |
+| TypeScript index | [bits-ui/packages/bits-ui/src/lib/index.ts](bits-ui/packages/bits-ui/src/lib/index.ts) |
+
+**Key primitive components for this project:**
+
+| Component | Path | Used in |
+|-----------|------|---------|
+| `combobox` | `bits/combobox/` | Entity selection dropdowns |
+| `accordion` | `bits/accordion/` | Advanced Options |
+| `dialog` | `bits/dialog/` | Custom Compounds builder |
+| `dropdown-menu` | `bits/dropdown-menu/` | Export button |
+| `popover` | `bits/popover/` | Combobox anchor |
+| `command` | `bits/command/` | Search-in-list (entity panels) |
+
+---
+
 ## MCP servers (no submodule — run via npx)
 
 Configured in [`opencode.json`](../opencode.json):

@@ -101,7 +101,8 @@ docs/
 │   ├── 001-sveltekit-over-react.md
 │   ├── 002-keep-jsroot.md
 │   ├── 003-wasm-build-pipeline.md
-│   └── 004-zarr-v3-external-format.md
+│   ├── 004-zarr-v3-external-format.md
+│   └── 005-shadcn-svelte-components.md  # UI component library decision
 ├── progress/                        # Stage completion logs
 │   ├── stage-1.md
 │   └── stage-2.md

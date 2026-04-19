@@ -20,3 +20,11 @@
 	path = vendor/svelte
 	url = https://github.com/sveltejs/svelte.git
 	shallow = true
+[submodule "vendor/shadcn-svelte"]
+	path = vendor/shadcn-svelte
+	url = https://github.com/huntabyte/shadcn-svelte.git
+	shallow = true
+[submodule "vendor/bits-ui"]
+	path = vendor/bits-ui
+	url = https://github.com/huntabyte/bits-ui.git
+	shallow = true
