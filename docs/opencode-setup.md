@@ -107,8 +107,9 @@ class lookup and configuration reference.
 Configured in `opencode.json` as an `npx` invocation. Provides browser
 automation and E2E test generation.
 
-**First-time setup** (install Playwright browsers):
+**First-time setup** (install Playwright and its browsers):
 ```sh
+pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps chromium
 ```
 
@@ -125,10 +126,6 @@ already give AI agents the component context they need.
 
 ```sh
 cd /path/to/dedx_web
-# Export credentials if not in shell profile
-export PLGRID_LLMLAB_BASE_URL="..."
-export PLGRID_LLMLAB_API_KEY="..."
-
 opencode
 ```
 
@@ -136,9 +133,8 @@ opencode reads `opencode.json` automatically and loads `AGENTS.md` as context.
 
 ### Selecting the Qwen model
 
-In the opencode UI, select the **PLGrid llmlab (Qwen)** provider and the
-`Qwen/Qwen3.5-397B-A17B-FP8` model. If the provider is not listed, verify that
-both env vars are set and the `opencode.json` provider block is present.
+In the opencode UI, select the **PLGrid** provider and the
+`Qwen/Qwen3.5-397B-A17B-FP8` model. 
 
 ---
 
@@ -191,12 +187,6 @@ The most common mistake is writing Svelte 4 patterns (`export let`, `$:`,
 
 ## 8. Troubleshooting
 
-### `PLGRID_LLMLAB_BASE_URL` not set / provider not shown
-
-Ensure env vars are exported in the same shell where you run `opencode`.
-Env vars in `.env.local` are **not** auto-loaded by opencode — export them
-manually or add to your shell profile (`~/.bashrc`, `~/.zshrc`).
-
 ### `@sveltejs/mcp` npx download fails
 
 Check internet connectivity. On PLGrid compute nodes, npm registry may be
@@ -205,9 +195,20 @@ remove the `@sveltejs/opencode` plugin from `opencode.json` temporarily.
 
 ### Playwright MCP errors: browsers not installed
 
+`@playwright/test` must be installed before the browsers can be downloaded:
+
 ```sh
+pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps chromium
 ```
+
+If `--with-deps` fails with exit code 100 (common on Linux Mint due to an unrelated apt repo GPG issue), skip it — Playwright's bundled Chromium is self-contained:
+
+```sh
+pnpm exec playwright install chromium
+```
+
+On Linux Mint 22.x the installer prints `BEWARE: your OS is not officially supported … ubuntu24.04-x64 fallback` — this is expected and harmless; Mint 22 is based on Ubuntu 24.04.
 
 ### Submodules missing / empty
 
