@@ -13,7 +13,7 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
+REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 OUTPUT_DIR="$SCRIPT_DIR/output"
 
 if [[ "${1:-}" == "--clean" ]]; then
@@ -36,7 +36,8 @@ cat > "$INNER_SCRIPT" << 'INNEREOF'
 set -euo pipefail
 
 echo "--- [1/3] cmake configure ---"
-emcmake cmake /src/libdedx \
+cd /src/libdedx
+emcmake cmake . \
     -B /build \
     -DDEDX_BUILD_EXAMPLES=OFF \
     -DDEDX_BUILD_TESTS=OFF \
@@ -74,7 +75,7 @@ emcc "$LIBDEDX_A" /src/wasm/dedx_extra.c \
     -s MODULARIZE=1 \
     -s WASM=1 \
     -s ENVIRONMENT=node \
-    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_dedx_get_ion_nucleon_number","_dedx_get_ion_atom_mass","_dedx_target_is_gas","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_free_config","_dedx_get_csda","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_convert_units","_dedx_get_bragg_peak_stp","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_fill_program_list","_dedx_fill_ion_list","_dedx_fill_material_list","_dedx_get_error_code","_dedx_get_density","_malloc","_free"]' \
+    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_dedx_get_ion_nucleon_number","_dedx_get_ion_atom_mass","_dedx_target_is_gas","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_free_config","_dedx_get_csda","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_convert_units","_dedx_get_stp","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_fill_program_list","_dedx_fill_ion_list","_dedx_fill_material_list","_dedx_fill_default_energy_stp_table","_dedx_get_error_code","_dedx_get_density","_malloc","_free"]' \
     -s 'EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString","HEAP32","HEAPF32","HEAPF64"]' \
     -s ALLOW_MEMORY_GROWTH=1 \
     -O2
@@ -94,6 +95,7 @@ echo ""
 
 docker run --rm \
     -v "$REPO_ROOT/libdedx:/src/libdedx:ro" \
+    -v "$SCRIPT_DIR:/src/wasm:ro" \
     -v "$OUTPUT_DIR:/src/output" \
     -v "$INNER_SCRIPT:/build-inner.sh:ro" \
     emscripten/emsdk:5.0.5 \

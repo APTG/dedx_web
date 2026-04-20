@@ -1,0 +1,390 @@
+{
+  "metadata": {
+    "generated_at": "2026-04-20T20:06:49.484Z",
+    "analysis_type": "typescript_wrapper_contract_verification_stage3",
+    "wasm_environment": "node",
+    "build_script": "wasm/build.sh",
+    "contract_version": "Final v3 (docs/06-wasm-api-contract.md)",
+    "checks_passed": 67,
+    "checks_failed": 0,
+    "checks_total": 67
+  },
+  "exported_functions": {
+    "dedx_fill_program_list": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_fill_ion_list": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_fill_material_list": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_get_stp_table": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_get_csda_range_table": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_get_simple_stp_for_program": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_get_stp_table_size": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_fill_default_energy_stp_table": {
+      "category": "dedx_wrappers.h",
+      "exported": true
+    },
+    "dedx_allocate_workspace": {
+      "category": "dedx.h (stateful)",
+      "exported": true
+    },
+    "dedx_free_workspace": {
+      "category": "dedx.h (stateful)",
+      "exported": true
+    },
+    "dedx_load_config": {
+      "category": "dedx.h (stateful)",
+      "exported": true
+    },
+    "dedx_get_stp": {
+      "category": "dedx.h (stateful)",
+      "exported": true
+    },
+    "dedx_free_config": {
+      "category": "dedx.h (stateful)",
+      "exported": true
+    },
+    "convert_units": {
+      "category": "dedx_tools.h",
+      "exported": true
+    },
+    "dedx_get_csda": {
+      "category": "dedx_tools.h",
+      "exported": true
+    },
+    "dedx_get_inverse_stp": {
+      "category": "dedx_tools.h",
+      "exported": true
+    },
+    "dedx_get_inverse_csda": {
+      "category": "dedx_tools.h",
+      "exported": true
+    },
+    "dedx_get_program_name": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_program_version": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_ion_name": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_material_name": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_min_energy": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "number"
+    },
+    "dedx_get_max_energy": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "number"
+    },
+    "dedx_get_error_code": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_version_string": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "string"
+    },
+    "dedx_get_i_value": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "number"
+    },
+    "dedx_get_composition": {
+      "category": "dedx.h (metadata)",
+      "exported": true,
+      "expected_return": "number"
+    },
+    "dedx_get_ion_nucleon_number": {
+      "category": "wasm/dedx_extra.h",
+      "exported": true
+    },
+    "dedx_get_ion_atom_mass": {
+      "category": "wasm/dedx_extra.h",
+      "exported": true
+    },
+    "dedx_get_density": {
+      "category": "wasm/dedx_extra.h",
+      "exported": true
+    },
+    "dedx_target_is_gas": {
+      "category": "wasm/dedx_extra.h",
+      "exported": true
+    }
+  },
+  "runtime_methods": {
+    "ccall": {
+      "available": true
+    },
+    "cwrap": {
+      "available": true
+    },
+    "UTF8ToString": {
+      "available": true
+    },
+    "HEAP32": {
+      "available": true
+    },
+    "HEAPF32": {
+      "available": true
+    },
+    "HEAPF64": {
+      "available": true
+    },
+    "_malloc": {
+      "available": true
+    },
+    "_free": {
+      "available": true
+    }
+  },
+  "libdedx_service_coverage": {
+    "getPrograms": {
+      "category": "Entity Lists",
+      "c_functions": [
+        "dedx_fill_program_list",
+        "dedx_get_program_name",
+        "dedx_get_program_version"
+      ],
+      "c_functions_available": true
+    },
+    "getParticles": {
+      "category": "Entity Lists",
+      "c_functions": [
+        "dedx_fill_ion_list",
+        "dedx_get_ion_name",
+        "dedx_get_ion_nucleon_number",
+        "dedx_get_ion_atom_mass"
+      ],
+      "c_functions_available": true
+    },
+    "getMaterials": {
+      "category": "Entity Lists",
+      "c_functions": [
+        "dedx_fill_material_list",
+        "dedx_get_material_name",
+        "dedx_get_density",
+        "dedx_target_is_gas"
+      ],
+      "c_functions_available": true
+    },
+    "getMinEnergy": {
+      "category": "Energy Bounds",
+      "c_functions": [
+        "dedx_get_min_energy"
+      ],
+      "c_functions_available": true
+    },
+    "getMaxEnergy": {
+      "category": "Energy Bounds",
+      "c_functions": [
+        "dedx_get_max_energy"
+      ],
+      "c_functions_available": true
+    },
+    "calculate": {
+      "category": "Stopping Power",
+      "c_functions": [
+        "dedx_get_stp_table",
+        "dedx_get_csda_range_table"
+      ],
+      "c_functions_available": true
+    },
+    "calculateCustomCompound": {
+      "category": "Stopping Power",
+      "c_functions": [
+        "dedx_allocate_workspace",
+        "dedx_load_config",
+        "dedx_get_stp",
+        "dedx_get_csda",
+        "dedx_free_config",
+        "dedx_free_workspace"
+      ],
+      "c_functions_available": true
+    },
+    "getInverseStp": {
+      "category": "Inverse Lookups",
+      "c_functions": [
+        "dedx_allocate_workspace",
+        "dedx_load_config",
+        "dedx_get_inverse_stp",
+        "dedx_free_config",
+        "dedx_free_workspace"
+      ],
+      "c_functions_available": true
+    },
+    "getInverseCsda": {
+      "category": "Inverse Lookups",
+      "c_functions": [
+        "dedx_allocate_workspace",
+        "dedx_load_config",
+        "dedx_get_inverse_csda",
+        "dedx_free_config",
+        "dedx_free_workspace"
+      ],
+      "c_functions_available": true
+    },
+    "convertStpUnits": {
+      "category": "Unit Conversion",
+      "c_functions": [
+        "convert_units"
+      ],
+      "c_functions_available": true
+    },
+    "getDensity": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_get_density"
+      ],
+      "c_functions_available": true
+    },
+    "isGasByDefault": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_target_is_gas"
+      ],
+      "c_functions_available": true
+    },
+    "getNucleonNumber": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_get_ion_nucleon_number"
+      ],
+      "c_functions_available": true
+    },
+    "getAtomicMass": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_get_ion_atom_mass"
+      ],
+      "c_functions_available": true
+    },
+    "getIValue": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_get_i_value"
+      ],
+      "c_functions_available": true
+    },
+    "getComposition": {
+      "category": "Material Properties",
+      "c_functions": [
+        "dedx_get_composition"
+      ],
+      "c_functions_available": true
+    },
+    "getVersion": {
+      "category": "Library Metadata",
+      "c_functions": [
+        "dedx_get_version_string"
+      ],
+      "c_functions_available": true
+    }
+  },
+  "method_signature_checks": [
+    {
+      "function": "dedx_fill_program_list",
+      "test": "fills program list array",
+      "pass": true,
+      "result": 1
+    },
+    {
+      "function": "dedx_get_ion_nucleon_number",
+      "test": "returns positive integer",
+      "pass": true,
+      "result": 1
+    },
+    {
+      "function": "dedx_get_ion_atom_mass",
+      "test": "returns float in expected range",
+      "pass": true,
+      "result": 1.0079400539398193
+    },
+    {
+      "function": "dedx_get_density",
+      "test": "returns positive density with err=0",
+      "pass": true,
+      "result": 1,
+      "error_code": 0
+    },
+    {
+      "function": "dedx_target_is_gas",
+      "test": "returns 1 for gas, 0 for condensed",
+      "pass": true,
+      "result_hydrogen": 1,
+      "result_water": 0
+    }
+  ],
+  "error_handling_checks": [
+    {
+      "test": "dedx_get_error_code returns string",
+      "pass": true,
+      "message": "No error."
+    },
+    {
+      "test": "out-of-range energy triggers error",
+      "pass": true,
+      "error_code": 101
+    }
+  ],
+  "energy_unit_checks": [
+    {
+      "test": "energy bounds in MeV/nucl",
+      "pass": true,
+      "min_MeV_nucl": 0.0010000000474974513,
+      "max_MeV_nucl": 10000
+    },
+    {
+      "test": "electron energy bounds in MeV",
+      "pass": true,
+      "min_MeV": 0.0010000000474974513,
+      "max_MeV": 10000
+    }
+  ],
+  "advanced_options_checks": [
+    {
+      "test": "stateful workspace API for AdvancedOptions",
+      "pass": true,
+      "allocate": true,
+      "load": true,
+      "free": true
+    },
+    {
+      "test": "MSTAR program with mode support",
+      "pass": true
+    }
+  ]
+}

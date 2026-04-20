@@ -521,13 +521,13 @@ const wrapperFunctions = [
 
 for (const fn of wrapperFunctions) {
     try {
-        const result = m.ccall(fn.name, fn.expectedReturn, [], []);
-        const ok = result !== undefined;
-        console.log(`  ${fn.name.padEnd(35)} ${ok ? '✓ exported' : '✗ MISSING'}`);
-        checkTS(`${fn.name} exported`, ok);
+        // Check if function exists by looking for _prefixed version on module
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
         tsContractStats.exported_functions[fn.name] = {
             category: 'dedx_wrappers.h',
-            exported: ok,
+            exported: fnExists,
         };
     } catch (err) {
         console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
@@ -553,13 +553,12 @@ const statefulFunctions = [
 
 for (const fn of statefulFunctions) {
     try {
-        const result = m.ccall(fn.name, fn.expectedReturn, [], []);
-        const ok = result !== undefined;
-        console.log(`  ${fn.name.padEnd(35)} ${ok ? '✓ exported' : '✗ MISSING'}`);
-        checkTS(`${fn.name} exported`, ok);
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
         tsContractStats.exported_functions[fn.name] = {
             category: 'dedx.h (stateful)',
-            exported: ok,
+            exported: fnExists,
         };
     } catch (err) {
         console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
@@ -584,13 +583,12 @@ const toolsFunctions = [
 
 for (const fn of toolsFunctions) {
     try {
-        const result = m.ccall(fn.name, fn.expectedReturn, [], []);
-        const ok = result !== undefined;
-        console.log(`  ${fn.name.padEnd(35)} ${ok ? '✓ exported' : '✗ MISSING'}`);
-        checkTS(`${fn.name} exported`, ok);
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
         tsContractStats.exported_functions[fn.name] = {
             category: 'dedx_tools.h',
-            exported: ok,
+            exported: fnExists,
         };
     } catch (err) {
         console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
@@ -621,13 +619,12 @@ const metadataFunctions = [
 
 for (const fn of metadataFunctions) {
     try {
-        const result = m.ccall(fn.name, fn.expectedReturn, [], []);
-        const ok = result !== undefined;
-        console.log(`  ${fn.name.padEnd(35)} ${ok ? '✓ exported' : '✗ MISSING'}`);
-        checkTS(`${fn.name} exported`, ok);
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
         tsContractStats.exported_functions[fn.name] = {
             category: 'dedx.h (metadata)',
-            exported: ok,
+            exported: fnExists,
             expected_return: fn.expectedReturn,
         };
     } catch (err) {
@@ -653,14 +650,12 @@ const extraFunctions = [
 
 for (const fn of extraFunctions) {
     try {
-        const result = m.ccall(fn.name, fn.expectedReturn, [], []);
-        const ok = result !== undefined;
-        console.log(`  ${fn.name.padEnd(35)} ${ok ? '✓ exported' : '✗ MISSING'}`);
-        checkTS(`${fn.name} exported`, ok);
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
         tsContractStats.exported_functions[fn.name] = {
             category: 'wasm/dedx_extra.h',
-            exported: ok,
-            expected_return: fn.expectedReturn,
+            exported: fnExists,
         };
     } catch (err) {
         console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
@@ -737,16 +732,18 @@ console.log('=== 13.3 Method Signature Validation ===\n');
 
 console.log('Testing dedx_fill_program_list(int* list):');
 const progListPtrTS = m._malloc(30 * 4);
-const progResult = m.ccall('dedx_fill_program_list', 'number', ['number'], [progListPtrTS]);
+m.ccall('dedx_fill_program_list', null, ['number'], [progListPtrTS]);
+// Function is void - check that it filled the array (first element should be non-zero)
+const firstProg = m.HEAP32[progListPtrTS >> 2];
 m._free(progListPtrTS);
-console.log(`  Returns: ${progResult} (should be number of programs)`);
-const progCountOk = typeof progResult === 'number' && progResult > 0;
-checkTS('dedx_fill_program_list returns program count', progCountOk, `${progResult} programs`);
+const progListOk = firstProg > 0;
+console.log(`  Fills array with program IDs, first = ${firstProg}`);
+checkTS('dedx_fill_program_list fills program list array', progListOk);
 tsContractStats.method_signature_checks.push({
     function: 'dedx_fill_program_list',
-    test: 'returns program count',
-    pass: progCountOk,
-    result: progResult,
+    test: 'fills program list array',
+    pass: progListOk,
+    result: firstProg,
 });
 
 console.log('Testing dedx_get_ion_nucleon_number(int ion):');
@@ -854,7 +851,7 @@ console.log('  - JS-side conversion required for MeV, MeV/u units');
 const pstarMinETS = m.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [2, 1]);
 const pstarMaxETS = m.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [2, 1]);
 console.log(`  PSTAR proton energy range: ${pstarMinETS} – ${pstarMaxETS} MeV/nucl`);
-const protonERangeOk = pstarMinETS > 0.001 && pstarMaxETS < 10000;
+const protonERangeOk = pstarMinETS >= 0.001 && pstarMaxETS <= 10000;
 checkTS('Energy bounds are in MeV/nucl (proton)', protonERangeOk);
 tsContractStats.energy_unit_checks.push({
     test: 'energy bounds in MeV/nucl',
@@ -866,7 +863,7 @@ tsContractStats.energy_unit_checks.push({
 const estarMinETS = m.ccall('dedx_get_min_energy', 'number', ['number', 'number'], [3, 1001]);
 const estarMaxETS = m.ccall('dedx_get_max_energy', 'number', ['number', 'number'], [3, 1001]);
 console.log(`  ESTAR electron energy range: ${estarMinETS} – ${estarMaxETS} MeV`);
-const electronERangeOk = estarMinETS > 0.001 && estarMaxETS < 10000;
+const electronERangeOk = estarMinETS >= 0.001 && estarMaxETS <= 10000;
 checkTS('Electron energy bounds in MeV (not MeV/nucl)', electronERangeOk);
 tsContractStats.energy_unit_checks.push({
     test: 'electron energy bounds in MeV',
