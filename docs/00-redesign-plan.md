@@ -416,7 +416,8 @@ As a <role>, I want to <action> so that <benefit>.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
 - **Test-driven principle:** For each Stage 3 increment, add or tighten
   `node wasm/verify.mjs` assertions first (RED), then implement wrapper/build
-  changes until checks pass (GREEN), then refactor without changing behavior.
+  changes until checks pass (GREEN), then refactor without changing behavior
+  and re-run the same verification checks after refactor.
 - **CI (first PR gate):** Delete `.github/workflows/test_and_deploy.yml` (legacy CRA);
   add `.github/workflows/ci.yml` triggering on every push/PR to `master` — runs `node wasm/verify.mjs`.
 - **Verify:** `node wasm/verify.mjs` passes; TypeScript wrapper returns valid program/particle/material lists.
