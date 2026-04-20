@@ -454,16 +454,6 @@ runtimeStats.metadata.checks_passed = passed;
 runtimeStats.metadata.checks_failed = failed;
 runtimeStats.metadata.checks_total = results.length;
 
-// Collect build artifact sizes (Phase 2)
-const wasmPathPh2 = join(outputDir, 'libdedx.wasm');
-const mjsStatPh2 = statSync(mjsPath);
-const wasmStatPh2 = statSync(wasmPathPh2);
-runtimeStats.build_artifacts = {
-    mjs_bytes: mjsStatPh2.size,
-    wasm_bytes: wasmStatPh2.size,
-    data_sidecar: "not present (unnecessary)",
-};
-
 // Write Phase 2 JSON (will be overwritten at the end with final counts)
 const jsonPathPh2 = resolve(__dirname, '..', 'data', 'wasm_runtime_stats.json');
 mkdirSync(dirname(jsonPathPh2), { recursive: true });
@@ -808,7 +798,7 @@ console.log('=== 13.4 Error Handling Contract ===\n');
 
 console.log('Testing error code retrieval (dedx_get_error_code):');
 const errBufPtr = m._malloc(256);
-const errTest = m.ccall('dedx_get_error_code', 'number', ['number', 'number'], [errBufPtr]);
+m.ccall('dedx_get_error_code', null, ['number', 'number'], [errBufPtr, 0]);
 const errMsg = m.UTF8ToString(errBufPtr);
 m._free(errBufPtr);
 console.log(`  dedx_get_error_code(buf, 0) = "${errMsg}"`);
