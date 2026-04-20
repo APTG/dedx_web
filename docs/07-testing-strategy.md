@@ -32,6 +32,19 @@ for E2E coverage, and Stage 8 for deploy-focused CI/CD work. Until those
 stages land, these tests are not configured to run automatically on every pull
 request.
 
+### 1.1 Test-driven principles for migration work
+
+- Treat each migration step as a small RED → GREEN → REFACTOR loop.
+- Convert acceptance criteria into executable checks before implementation
+  changes whenever feasible.
+- For **Stage 3 (WASM build pipeline)** specifically: add or tighten
+  `wasm/verify.mjs` checks first. Until that target file exists, make initial
+  RED changes in `prototypes/libdedx-investigation/wasm-runtime/verify.mjs`
+  (see §5), then implement `wasm/build.sh` and `src/lib/wasm/` changes until
+  all checks pass.
+- Keep refactors behavior-preserving by re-running the same verification set
+  after cleanup.
+
 ---
 
 ## 2. Unit & integration tests — Vitest
