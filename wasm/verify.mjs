@@ -17,8 +17,8 @@
  * Prerequisites: run ./build.sh first to populate output/
  *
  * Outputs:
- * - ../data/wasm_runtime_stats.json (Phase 2 runtime data)
- * - ../data/wasm_ts_contract_stats.json (Stage 3 contract verification)
+ * - data/wasm_runtime_stats.json (Phase 2 runtime data)
+ * - data/wasm_ts_contract_stats.json (Stage 3 contract verification)
  */
 
 import { pathToFileURL } from 'url';
@@ -54,7 +54,7 @@ const runtimeStats = {
     generated_at: new Date().toISOString(),
     analysis_type: "wasm_runtime_verification_phase2",
     wasm_environment: "node",
-    build_script: "wasm-runtime/build.sh",
+    build_script: "wasm/build.sh",
   },
   library_version: null,
   programs: [],
@@ -454,6 +454,20 @@ runtimeStats.metadata.checks_passed = passed;
 runtimeStats.metadata.checks_failed = failed;
 runtimeStats.metadata.checks_total = results.length;
 
+// Collect build artifact sizes (Phase 2)
+const wasmPathPh2 = join(outputDir, 'libdedx.wasm');
+const mjsStatPh2 = statSync(mjsPath);
+const wasmStatPh2 = statSync(wasmPathPh2);
+runtimeStats.build_artifacts = {
+    mjs_bytes: mjsStatPh2.size,
+    wasm_bytes: wasmStatPh2.size,
+    data_sidecar: "not present (unnecessary)",
+};
+
+// Write Phase 2 JSON (will be overwritten at the end with final counts)
+const jsonPathPh2 = resolve(__dirname, '..', 'data', 'wasm_runtime_stats.json');
+mkdirSync(dirname(jsonPathPh2), { recursive: true });
+
 // ─── 13. TypeScript Wrapper Contract Verification (Stage 3) ──────────────────
 
 console.log('\n');
@@ -466,7 +480,7 @@ const tsContractStats = {
         generated_at: new Date().toISOString(),
         analysis_type: "typescript_wrapper_contract_verification_stage3",
         wasm_environment: "node",
-        build_script: "wasm-runtime/build.sh",
+        build_script: "wasm/build.sh",
         contract_version: "Final v3 (docs/06-wasm-api-contract.md)",
     },
     exported_functions: {},
@@ -924,6 +938,14 @@ tsContractStats.metadata.checks_failed = tsFailed;
 tsContractStats.metadata.checks_total = tsResults.length;
 
 // ─── 14. Write JSON output ───────────────────────────────────────────────────
+
+// Write Phase 2 JSON with final metadata
+runtimeStats.metadata.checks_passed = passed;
+runtimeStats.metadata.checks_failed = failed;
+runtimeStats.metadata.checks_total = results.length;
+writeFileSync(jsonPathPh2, JSON.stringify(runtimeStats, null, 2) + '\n');
+console.log();
+console.log(`Phase 2 JSON written to: ${jsonPathPh2}`);
 
 // Write TS contract stats
 const tsJsonPath = resolve(__dirname, '..', 'data', 'wasm_ts_contract_stats.json');
