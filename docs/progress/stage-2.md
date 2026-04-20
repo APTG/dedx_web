@@ -126,3 +126,4 @@ Stage 3 (WASM Build Pipeline Redesign) reads:
 2. [`docs/decisions/003-wasm-build-pipeline.md`](../decisions/003-wasm-build-pipeline.md) — Emscripten flags, `dedx_extra` rationale, output file locations
 3. [`docs/03-architecture.md`](../03-architecture.md) §3 — WASM service layer design (`loader.ts`, `libdedx.ts`, mock)
 4. [`docs/02-tech-stack.md`](../02-tech-stack.md) §7 — Emscripten version pin
+5. [`docs/07-testing-strategy.md`](../07-testing-strategy.md) §1.1, §5 — Stage 3 RED → GREEN → REFACTOR workflow and `wasm/verify.mjs` acceptance gate

@@ -414,6 +414,9 @@ As a <role>, I want to <action> so that <benefit>.
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
+- **Test-driven principle:** For each Stage 3 increment, add or tighten
+  `node wasm/verify.mjs` assertions first (RED), then implement wrapper/build
+  changes until checks pass (GREEN), then refactor without changing behavior.
 - **CI (first PR gate):** Delete `.github/workflows/test_and_deploy.yml` (legacy CRA);
   add `.github/workflows/ci.yml` triggering on every push/PR to `master` — runs `node wasm/verify.mjs`.
 - **Verify:** `node wasm/verify.mjs` passes; TypeScript wrapper returns valid program/particle/material lists.
@@ -495,6 +498,7 @@ As a <role>, I want to <action> so that <benefit>.
 | **Test WASM with real module early** | Mocks hide memory management bugs. |
 | **Log decisions in `docs/decisions/`** | Future sessions need this context. |
 | **Review AI-generated tests** | AI writes tests that pass by construction — check they assert real behavior. |
+| **Use RED → GREEN → REFACTOR in migration stages** | Keeps implementation tied to executable acceptance criteria and reduces regressions during rewrites. |
 | **Be specific about JSROOT styling** | "Log-log axes, 14pt labels, legend top-right, line width 2" — not "make it pretty." |
 | **Log progress in `docs/progress/`** | So the next session knows what's done and what's next. |
 | **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce. |
