@@ -415,12 +415,20 @@ As a <role>, I want to <action> so that <benefit>.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
 - **Test-driven principle:** For each Stage 3 increment, add or tighten
-  `node wasm/verify.mjs` assertions first (RED), then implement wrapper/build
-  changes until checks pass (GREEN), then refactor without changing behavior
-  and re-run the same verification checks after refactor.
+  verification assertions first (RED). Until `wasm/verify.mjs` is relocated in
+  Stage 3, start from
+  `prototypes/libdedx-investigation/wasm-runtime/verify.mjs` (see
+  `docs/07-testing-strategy.md` §5), then implement wrapper/build changes until
+  checks pass (GREEN), then refactor without changing behavior and re-run the
+  same verification checks after refactor.
 - **CI (first PR gate):** Delete `.github/workflows/test_and_deploy.yml` (legacy CRA);
-  add `.github/workflows/ci.yml` triggering on every push/PR to `master` — runs `node wasm/verify.mjs`.
-- **Verify:** `node wasm/verify.mjs` passes; TypeScript wrapper returns valid program/particle/material lists.
+  add `.github/workflows/ci.yml` triggering on every push/PR to `master` — runs
+  the verification script from its current location first, then `node wasm/verify.mjs`
+  after relocation.
+- **Verify:** The verification script passes from
+  `prototypes/libdedx-investigation/wasm-runtime/verify.mjs` during transition
+  and, after relocation, from `wasm/verify.mjs`; TypeScript wrapper returns
+  valid program/particle/material lists.
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.

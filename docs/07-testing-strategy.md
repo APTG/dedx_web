@@ -38,8 +38,10 @@ request.
 - Convert acceptance criteria into executable checks before implementation
   changes whenever feasible.
 - For **Stage 3 (WASM build pipeline)** specifically: add or tighten
-  `wasm/verify.mjs` checks first, then implement `wasm/build.sh` and
-  `src/lib/wasm/` changes until all checks pass.
+  `wasm/verify.mjs` checks first. Until that target file exists, make initial
+  RED changes in `prototypes/libdedx-investigation/wasm-runtime/verify.mjs`
+  (see §5), then implement `wasm/build.sh` and `src/lib/wasm/` changes until
+  all checks pass.
 - Keep refactors behavior-preserving by re-running the same verification set
   after cleanup.
 
