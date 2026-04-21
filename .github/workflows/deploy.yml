@@ -1,0 +1,96 @@
+name: Deploy
+
+# Phase 1 (pre-Stage 4): deploys a static placeholder from `develop`.
+# Phase 2 (Stage 8): switch trigger to `master` + `tags: ['v*']`,
+#   replace the "Build placeholder site" step with the real pnpm build,
+#   and add the production deploy conditional (APTG/web on v* tag).
+
+on:
+  push:
+    branches: [develop]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy-dev:
+    name: Deploy placeholder to web_dev
+    runs-on: ubuntu-latest
+    environment:
+      name: dev
+      url: https://aptg.github.io/web_dev/
+
+    steps:
+      - name: Build placeholder site
+        env:
+          PLAN_URL: "${{ github.server_url }}/${{ github.repository }}/blob/${{ github.ref_name }}/docs/00-redesign-plan.md"
+          REF_NAME: "${{ github.ref_name }}"
+          COMMIT_SHA: "${{ github.sha }}"
+        run: |
+          mkdir -p dist
+          cat > dist/index.html << HTMLEOF
+          <!DOCTYPE html>
+          <html lang="en">
+          <head>
+            <meta charset="UTF-8">
+            <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>dEdX — Under Construction</title>
+            <style>
+              body {
+                font-family: system-ui, -apple-system, sans-serif;
+                max-width: 640px;
+                margin: 4rem auto;
+                padding: 1rem 2rem;
+                color: #222;
+              }
+              h1 { margin-bottom: 0.5rem; }
+              p { margin: 0.75rem 0; line-height: 1.5; }
+              a { color: #0066cc; }
+              code { background: #f0f0f0; padding: 0.1em 0.4em; border-radius: 3px; font-size: 0.875em; }
+              .badge {
+                display: inline-block;
+                background: #e8a000;
+                color: #fff;
+                font-size: 0.7rem;
+                font-weight: 700;
+                padding: 0.2em 0.6em;
+                border-radius: 4px;
+                text-transform: uppercase;
+                letter-spacing: 0.06em;
+                vertical-align: middle;
+                margin-left: 0.5rem;
+              }
+              .meta {
+                color: #888;
+                font-size: 0.875rem;
+                margin-top: 2rem;
+                border-top: 1px solid #eee;
+                padding-top: 1rem;
+              }
+            </style>
+          </head>
+          <body>
+            <h1>dEdX Web Application <span class="badge">Under Construction</span></h1>
+            <p>
+              The dEdX web interface for charged-particle stopping power calculations
+              is being rebuilt from scratch with a modern SvelteKit + WebAssembly architecture.
+            </p>
+            <p>
+              See the <a href="$PLAN_URL">development plan</a>
+              for the full stage-by-stage roadmap.
+            </p>
+            <p class="meta">
+              Branch: <code>$REF_NAME</code> &nbsp;&middot;&nbsp; Commit: <code>$COMMIT_SHA</code>
+            </p>
+          </body>
+          </html>
+          HTMLEOF
+
+      - name: Deploy to APTG/web_dev
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          personal_token: ${{ secrets.WEB_DEV_DEPLOY_TOKEN }}
+          external_repository: APTG/web_dev
+          publish_branch: gh-pages
+          publish_dir: ./dist
+          commit_message: "deploy: ${{ github.sha }} from ${{ github.ref_name }}"
