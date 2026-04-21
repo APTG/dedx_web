@@ -410,7 +410,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Gate:** Investigation complete. Stage 3 may proceed on the verified `.mjs` + `.wasm`
   build path; remaining follow-up is to keep ADR 003/documentation aligned with the implemented build.
 
-### Stage 3: WASM Build Pipeline Redesign
+### Stage 3: WASM Build Pipeline Redesign ✅
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
@@ -429,6 +429,34 @@ As a <role>, I want to <action> so that <benefit>.
   `prototypes/libdedx-investigation/wasm-runtime/verify.mjs` during transition
   and, after relocation, from `wasm/verify.mjs`; TypeScript wrapper returns
   valid program/particle/material lists.
+- **Status:** GREEN phase complete (21 April 2026). All 67 contract checks pass.
+  See `docs/progress/stage-3.md`.
+
+> **WASM output location (transition note):** `wasm/build.sh` currently outputs to
+> `wasm/output/libdedx.{mjs,wasm}` — the right place during Stage 3 while `static/`
+> does not yet exist. In Stage 4 the `static/wasm/` directory is created by SvelteKit
+> scaffolding; at that point `build.sh` must be updated to output there instead, and
+> `ENVIRONMENT` must be changed from `node` → `web` (the current `node` flag is
+> required for `verify.mjs` to load the module under Node.js). See
+> `docs/decisions/003-wasm-build-pipeline.md` for the target flag set.
+
+### Stage 3.7: Legacy Code Removal ✅ (21 April 2026)
+- **Rationale:** Moved forward from Stage 9. The old React codebase conflicts with
+  Stage 3 work (wrong `src/` structure, broken `package.json` scripts, CRA artefacts
+  in `public/`). The new SvelteKit project cannot coexist with these files.
+- **Removed:**
+  - `src/` — entire legacy React codebase (App.js, Backend/, Components/, Styles/,
+    `__test__/`, index.js, reportWebVitals.js, setupTests.js, logo.svg)
+  - `public/index.html`, `public/logo192.png`, `public/logo512.png`,
+    `public/manifest.json`, `public/robots.txt` — CRA public artefacts
+  - `build_wasm.sh` — superseded by `wasm/build.sh`
+- **Kept:**
+  - `public/favicon.ico` — project favicon (to be copied to SvelteKit `static/`)
+  - `public/webdEdx_logo.svg` — project logo (to be copied to SvelteKit `static/`)
+- **Note:** `package.json` has already been reduced to the temporary WASM-only
+  scripts needed before scaffolding; Stage 4 replaces it with the SvelteKit project
+  manifest.
+- **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.
@@ -484,11 +512,12 @@ As a <role>, I want to <action> so that <benefit>.
   to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
   for the full workflow YAML.
 
-### Stage 9: Legacy Code Removal
-- Remove the old React codebase (`src/App.*`, `src/index.*`, `src/Backend/`, `src/Components/`,
-  `src/Styles/`, `src/__test__/`, `public/`), the old `build_wasm.sh`, and CRA dependencies
-  from `package.json`.
-- This should happen **after** the new app is verified working end-to-end and deployed.
+### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
+- Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on
+  21 April 2026 as Stage 3.7, ahead of the originally planned post-deployment window.
+  See §8 Stage 3.7 for the complete file list and rationale.
+- No separate Stage 9 cleanup remains in `package.json`; Stage 4 replaces it wholesale
+  when the SvelteKit app is scaffolded.
 - The old code is preserved in git history; the last commit containing it is referenced in §11.
 
 ---
