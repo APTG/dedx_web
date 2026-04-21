@@ -5,5 +5,8 @@
   "scripts": {
     "wasm:build": "cd wasm && ./build.sh",
     "wasm:verify": "node wasm/verify.mjs"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.59.1"
   }
 }
