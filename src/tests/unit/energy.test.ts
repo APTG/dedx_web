@@ -116,4 +116,20 @@ describe("convertEnergy", () => {
   test("returns input unchanged when atomicMass is zero", () => {
     expect(convertEnergy(100, "MeV", "MeV/u", 1, 0)).toBe(100);
   });
+
+  test("MeV → MeV/nucl ignores atomicMass when massNumber is valid", () => {
+    expect(convertEnergy(400, "MeV", "MeV/nucl", 4, 0)).toBeCloseTo(100);
+  });
+
+  test("MeV/nucl → MeV ignores atomicMass when massNumber is valid", () => {
+    expect(convertEnergy(100, "MeV/nucl", "MeV", 4, 0)).toBeCloseTo(400);
+  });
+
+  test("MeV → MeV/u ignores massNumber when atomicMass is valid", () => {
+    expect(convertEnergy(4.002, "MeV", "MeV/u", 0, 4.002)).toBeCloseTo(1.0);
+  });
+
+  test("MeV/u → MeV ignores massNumber when atomicMass is valid", () => {
+    expect(convertEnergy(1.0, "MeV/u", "MeV", 0, 1.007)).toBeCloseTo(1.007);
+  });
 });

@@ -1,11 +1,15 @@
 <script lang="ts">
-  import '../app.css';
+  import "../app.css";
   import { page } from "$app/stores";
-  import { getService } from '$lib/wasm/loader';
-  import { wasmReady, wasmError } from '$lib/state/ui.svelte';
+  import { base } from "$app/paths";
+  import { getService } from "$lib/wasm/loader";
+  import { wasmReady, wasmError } from "$lib/state/ui.svelte";
 
   let { children } = $props();
   let pathname = $derived($page.url.pathname);
+  let routePath = $derived(
+    pathname.startsWith(base) ? pathname.slice(base.length) || "/" : pathname,
+  );
 
   $effect(() => {
     getService()
@@ -23,32 +27,32 @@
     <div class="container mx-auto px-4">
       <div class="flex h-14 items-center justify-between">
         <div class="flex items-center gap-6">
-          <a href="/" class="flex items-center gap-2 font-bold text-xl">
-            <img src="/favicon.svg" alt="" class="h-6 w-6" />
+          <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl">
+            <img src={`${base}/favicon.svg`} alt="" class="h-6 w-6" />
             webdedx
           </a>
           <div class="flex items-center gap-4 text-sm">
             <a
-              href="/calculator"
+              href={`${base}/calculator`}
               class="transition-colors hover:text-foreground/80"
-              class:text-foreground={pathname === '/calculator'}
-              class:text-muted-foreground={pathname !== '/calculator'}
+              class:text-foreground={routePath === "/calculator"}
+              class:text-muted-foreground={routePath !== "/calculator"}
             >
               Calculator
             </a>
             <a
-              href="/plot"
+              href={`${base}/plot`}
               class="transition-colors hover:text-foreground/80"
-              class:text-foreground={pathname === '/plot'}
-              class:text-muted-foreground={pathname !== '/plot'}
+              class:text-foreground={routePath === "/plot"}
+              class:text-muted-foreground={routePath !== "/plot"}
             >
               Plot
             </a>
             <a
-              href="/docs"
+              href={`${base}/docs`}
               class="transition-colors hover:text-foreground/80"
-              class:text-foreground={pathname.startsWith('/docs')}
-              class:text-muted-foreground={!pathname.startsWith('/docs')}
+              class:text-foreground={routePath.startsWith("/docs")}
+              class:text-muted-foreground={!routePath.startsWith("/docs")}
             >
               Docs
             </a>
@@ -62,7 +66,8 @@
     <div class="bg-destructive/15 border-b border-destructive/20 px-4 py-3">
       <div class="container mx-auto">
         <p class="text-destructive text-sm">
-          <strong>WASM load error:</strong> {wasmError.value.message}
+          <strong>WASM load error:</strong>
+          {wasmError.value.message}
           <button
             onclick={() => window.location.reload()}
             class="ml-2 underline hover:no-underline"
