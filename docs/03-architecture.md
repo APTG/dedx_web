@@ -74,7 +74,9 @@ dedx_web/
 ├── wasm/
 │   ├── dedx_extra.h                    # Thin shim: exposes internal libdedx data
 │   ├── dedx_extra.c                    # Implementation of dedx_extra shims
-│   └── build.sh                        # Emscripten build script (Stage 3)
+│   ├── build.sh                        # Emscripten build script; outputs to wasm/output/ (dev) → static/wasm/ (Stage 4+)
+│   ├── verify.mjs                      # 67-check contract verification script (node wasm/verify.mjs)
+│   └── output/                         # gitignored — build artifacts consumed by verify.mjs
 ├── libdedx/                            # Git submodule — upstream C library
 ├── tests/
 │   ├── unit/                           # Vitest unit tests
