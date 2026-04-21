@@ -14,8 +14,8 @@ export function computeResolvedProgram(): number | null {
 
     for (const [key, materials] of compatMatrix) {
       const [progId, partId] = key.split(':').map(Number);
-      if (partId === particleId && (materialId === null || materials.includes(materialId))) {
-        return progId;
+      if (materialId !== null && partId === particleId && materials.includes(materialId)) {
+        return progId ?? null;
       }
     }
     return null;

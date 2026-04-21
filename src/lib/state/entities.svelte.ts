@@ -1,4 +1,4 @@
-import type { ProgramEntity, ParticleEntity, MaterialEntity, CompatibilityMatrix } from './types';
+import type { ProgramEntity, ParticleEntity, MaterialEntity, CompatibilityMatrix } from '../wasm/types';
 
 export const programs = $state<{ value: ProgramEntity[] }>({ value: [] });
 export const allParticles = $state<{ value: Map<number, ParticleEntity[]> }>({ value: new Map() });

@@ -4,7 +4,7 @@ import type {
   ParticleEntity,
   MaterialEntity,
   CalculationResult
-} from './types';
+} from '../types';
 
 const mockPrograms: ProgramEntity[] = [
   { id: 1, name: 'PSTAR', version: '1.0' },

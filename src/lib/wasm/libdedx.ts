@@ -4,9 +4,9 @@ import type {
   ParticleEntity,
   MaterialEntity,
   CalculationResult,
-  AdvancedOptions,
-  LibdedxError
+  AdvancedOptions
 } from './types';
+import { LibdedxError } from './types';
 
 interface EmscriptenModule {
   _dedx_get_programs_list(): number;
@@ -47,7 +47,7 @@ export class LibdedxServiceImpl implements LibdedxService {
   }
 
   async init(): Promise<void> {
-    const programsPtr = this.module._dedx_get_programs_list();
+    this.module._dedx_get_programs_list();
     const heapU32 = this.module.getHeapU32();
 
     let i = 0;
@@ -56,7 +56,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       const namePtr = heapU32[i + 1];
       const versionPtr = heapU32[i + 2];
       this.programs.push({
-        id,
+        id: id ?? 0,
         name: this.module.UTF8ToString(namePtr),
         version: this.module.UTF8ToString(versionPtr)
       });
@@ -71,13 +71,11 @@ export class LibdedxServiceImpl implements LibdedxService {
         const id = heapU32[particlesPtr / 4 + j];
         const namePtr = heapU32[particlesPtr / 4 + j + 1];
         const massNumber = heapU32[particlesPtr / 4 + j + 2];
-        const atomicMass = heapU32[particlesPtr / 4 + j + 3];
-        const aliasesPtr = heapU32[particlesPtr / 4 + j + 4];
         particles.push({
-          id,
+          id: id ?? 0,
           name: this.module.UTF8ToString(namePtr),
-          massNumber,
-          atomicMass: heapU32[particlesPtr / 4 + j + 3],
+          massNumber: massNumber ?? 0,
+          atomicMass: heapU32[particlesPtr / 4 + j + 3] ?? 0,
           aliases: []
         });
         j += 5;
@@ -93,9 +91,9 @@ export class LibdedxServiceImpl implements LibdedxService {
         const density = heapU32[materialsPtr / 4 + k + 2];
         const isGasByDefault = heapU32[materialsPtr / 4 + k + 3] !== 0;
         materials.push({
-          id,
+          id: id ?? 0,
           name: this.module.UTF8ToString(namePtr),
-          density,
+          density: density ?? 0,
           isGasByDefault
         });
         k += 4;
@@ -131,7 +129,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     try {
       const heapF64 = this.module.getHeapF64();
       for (let i = 0; i < numEnergies; i++) {
-        heapF64[energiesPtr / 8 + i] = energies[i];
+        heapF64[energiesPtr / 8 + i] = energies[i] ?? 0;
       }
 
       const errorCode = this.module._dedx_get_stp_table(
@@ -151,8 +149,8 @@ export class LibdedxServiceImpl implements LibdedxService {
       const stoppingPowers: number[] = [];
       const csdaRanges: number[] = [];
       for (let i = 0; i < numEnergies; i++) {
-        stoppingPowers.push(heapF64[stpPtr / 8 + i]);
-        csdaRanges.push(heapF64[csdaPtr / 8 + i]);
+        stoppingPowers.push(heapF64[stpPtr / 8 + i] ?? 0);
+        csdaRanges.push(heapF64[csdaPtr / 8 + i] ?? 0);
       }
 
       return {

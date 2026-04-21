@@ -1,4 +1,4 @@
-import type { EnergyUnit, AdvancedOptions, CalculationResult, LibdedxError } from './types';
+import type { EnergyUnit, AdvancedOptions, CalculationResult, LibdedxError } from '../wasm/types';
 
 export const energyInputText = $state({ value: '' });
 export const energyUnit = $state<{ value: EnergyUnit }>({ value: 'MeV' });

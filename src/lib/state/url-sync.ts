@@ -1,4 +1,4 @@
-import type { EnergyUnit } from './types';
+import type { EnergyUnit } from '../wasm/types';
 
 export interface AppState {
   programId: number | null;
