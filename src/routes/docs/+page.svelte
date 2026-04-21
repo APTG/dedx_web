@@ -1,6 +1,4 @@
-<script lang="ts">
-  import { wasmReady } from '$lib/state/ui.svelte';
-</script>
+<script lang="ts"></script>
 
 <svelte:head>
   <title>Documentation - webdedx</title>
