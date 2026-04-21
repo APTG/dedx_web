@@ -453,8 +453,9 @@ As a <role>, I want to <action> so that <benefit>.
 - **Kept:**
   - `public/favicon.ico` — project favicon (to be copied to SvelteKit `static/`)
   - `public/webdEdx_logo.svg` — project logo (to be copied to SvelteKit `static/`)
-- **Note:** `package.json` still contains CRA dependencies; these are replaced in
-  Stage 4 when SvelteKit is scaffolded.
+- **Note:** `package.json` has already been reduced to the temporary WASM-only
+  scripts needed before scaffolding; Stage 4 replaces it with the SvelteKit project
+  manifest.
 - **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
 ### Stage 4: Project Scaffolding + Full AI Config
@@ -515,8 +516,8 @@ As a <role>, I want to <action> so that <benefit>.
 - Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on
   21 April 2026 as Stage 3.7, ahead of the originally planned post-deployment window.
   See §8 Stage 3.7 for the complete file list and rationale.
-- **Remaining:** `package.json` CRA dependencies — replaced wholesale in Stage 4
-  when SvelteKit is scaffolded.
+- No separate Stage 9 cleanup remains in `package.json`; Stage 4 replaces it wholesale
+  when the SvelteKit app is scaffolded.
 - The old code is preserved in git history; the last commit containing it is referenced in §11.
 
 ---

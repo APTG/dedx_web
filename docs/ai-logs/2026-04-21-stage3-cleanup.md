@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-21
 **Stage:** 3.7 (Legacy Cleanup — moved forward from Stage 9)
-**Model:** Claude Sonnet 4.6 via Claude Code
+**Model:** (Claude Sonnet 4.6 via Claude Code)
 
 ---
 

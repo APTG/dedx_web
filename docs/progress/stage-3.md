@@ -1,12 +1,9 @@
----
 # Stage 3 — WASM Build Pipeline Redesign
 
 > **Status:** Complete (21 April 2026)
 >
 > Stage 3 established the new Emscripten build pipeline, the `wasm/` directory
 > structure, and the CI verification workflow. All 67 TypeScript contract checks pass.
-
----
 
 ## Deliverables
 
