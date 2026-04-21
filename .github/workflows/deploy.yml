@@ -1,9 +1,12 @@
 name: Deploy
 
-# Phase 1 (pre-Stage 4): deploys static/index.html placeholder from `develop`.
+# Phase 1 (Stage 4+): builds the SvelteKit scaffold and deploys to APTG/web_dev
+#   on every push to develop. WASM is not bundled yet; the app shows an error
+#   banner until Stage 5 wires up the real wasm/output/ files.
+#
 # Phase 2 (Stage 8): switch trigger to `master` + `tags: ['v*']`,
-#   replace publish_dir with ./build (output of pnpm build),
-#   remove static/index.html, and add production deploy job for APTG/web.
+#   add pnpm build step for APTG/web with production domain (no BASE_PATH),
+#   and add the production deploy job.
 
 on:
   push:
@@ -14,7 +17,7 @@ permissions:
 
 jobs:
   deploy-dev:
-    name: Deploy placeholder to web_dev
+    name: Build & deploy to web_dev
     runs-on: ubuntu-latest
     environment:
       name: dev
@@ -24,11 +27,29 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build SvelteKit app
+        run: pnpm build
+        env:
+          # GitHub Pages serves APTG/web_dev at /web_dev/ sub-path
+          BASE_PATH: /web_dev
+
       - name: Deploy to APTG/web_dev
         uses: peaceiris/actions-gh-pages@v4
         with:
           personal_token: ${{ secrets.WEB_DEV_DEPLOY_TOKEN }}
           external_repository: APTG/web_dev
           publish_branch: gh-pages
-          publish_dir: ./static
+          publish_dir: ./build
           commit_message: "deploy: ${{ github.sha }} from ${{ github.ref_name }}"
