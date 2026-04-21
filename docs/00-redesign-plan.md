@@ -432,13 +432,11 @@ As a <role>, I want to <action> so that <benefit>.
 - **Status:** GREEN phase complete (21 April 2026). All 67 contract checks pass.
   See `docs/progress/stage-3.md`.
 
-> **WASM output location (transition note):** `wasm/build.sh` currently outputs to
-> `wasm/output/libdedx.{mjs,wasm}` — the right place during Stage 3 while `static/`
-> does not yet exist. In Stage 4 the `static/wasm/` directory is created by SvelteKit
-> scaffolding; at that point `build.sh` must be updated to output there instead, and
-> `ENVIRONMENT` must be changed from `node` → `web` (the current `node` flag is
-> required for `verify.mjs` to load the module under Node.js). See
-> `docs/decisions/003-wasm-build-pipeline.md` for the target flag set.
+> **WASM output location (resolved):** `wasm/build.sh` now outputs to
+> `static/wasm/libdedx.{mjs,wasm}` with `ENVIRONMENT=web,node`. The `node` component
+> preserves `verify.mjs` Node.js compatibility without a separate build. CI uploads
+> `static/wasm/` as an artifact from the `wasm-verify` job; the `e2e-tests` job
+> downloads it before `pnpm build`. Resolved on branch `fix/wasm-web-ci`.
 
 ### Stage 3.7: Legacy Code Removal ✅ (21 April 2026)
 - **Rationale:** Moved forward from Stage 9. The old React codebase conflicts with

@@ -1,8 +1,8 @@
 {
   "metadata": {
-    "generated_at": "2026-04-20T20:06:49.480Z",
+    "generated_at": "2026-04-21T19:13:18.846Z",
     "analysis_type": "wasm_runtime_verification_phase2",
-    "wasm_environment": "node",
+    "wasm_environment": "web,node",
     "build_script": "wasm/build.sh",
     "checks_passed": 44,
     "checks_failed": 0,
@@ -546,7 +546,7 @@
     "error": "DEDX_ERR_ESTAR_NOT_IMPL"
   },
   "build_artifacts": {
-    "mjs_bytes": 15350,
+    "mjs_bytes": 15807,
     "wasm_bytes": 473954,
     "data_sidecar": "not present (unnecessary)"
   }

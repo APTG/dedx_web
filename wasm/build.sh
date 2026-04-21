@@ -1,20 +1,24 @@
 #!/usr/bin/env bash
-# Stage 2.6 Phase 2: Build libdedx WASM without --preload-file or --embed-file.
+# Build libdedx WASM without --preload-file or --embed-file.
 #
 # The resulting libdedx.{mjs,wasm} pair relies entirely on the static C arrays
 # compiled into dedx_embedded_data.c — no .data sidecar, no virtual filesystem.
 #
-# Usage:
-#   ./build.sh          # build (incremental if output/ already exists)
-#   ./build.sh --clean  # wipe output/ before building
+# ENVIRONMENT=web,node: runs in both browser (SvelteKit app) and Node.js
+# (wasm/verify.mjs contract checks). ADR 003 target is ENVIRONMENT=web; the
+# added 'node' keeps verify.mjs working without a separate Node-only build.
 #
-# Output: output/libdedx.{mjs,wasm}
+# Usage:
+#   ./build.sh          # build (incremental if static/wasm/ already exists)
+#   ./build.sh --clean  # wipe static/wasm/ before building
+#
+# Output: ../static/wasm/libdedx.{mjs,wasm}
 # Requires: Docker, emscripten/emsdk:5.0.5 image
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
-OUTPUT_DIR="$SCRIPT_DIR/output"
+OUTPUT_DIR="$REPO_ROOT/static/wasm"
 
 if [[ "${1:-}" == "--clean" ]]; then
     echo "Cleaning $OUTPUT_DIR ..."
@@ -74,7 +78,7 @@ emcc "$LIBDEDX_A" /src/wasm/dedx_extra.c \
     -s EXPORT_ES6=1 \
     -s MODULARIZE=1 \
     -s WASM=1 \
-    -s ENVIRONMENT=node \
+    -s ENVIRONMENT='web,node' \
     -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_dedx_get_ion_nucleon_number","_dedx_get_ion_atom_mass","_dedx_target_is_gas","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_free_config","_dedx_get_csda","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_convert_units","_dedx_get_stp","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_fill_program_list","_dedx_fill_ion_list","_dedx_fill_material_list","_dedx_fill_default_energy_stp_table","_dedx_get_error_code","_dedx_get_density","_malloc","_free"]' \
     -s 'EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString","HEAP32","HEAPF32","HEAPF64"]' \
     -s ALLOW_MEMORY_GROWTH=1 \

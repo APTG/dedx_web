@@ -13,14 +13,14 @@ redesigned for the new stack.
 
 ### Problems with the legacy build
 
-| Problem | Detail |
-|---------|--------|
-| Non-modular JS output | `EXPORT_ES6=0` — outputs a CommonJS/global module; incompatible with ES module imports in SvelteKit / Vite |
-| Embedded data | `--embed-file` bakes the libdedx data tables into the JS file as base64; inflates the JS bundle and prevents browser caching of the WASM binary separately |
-| No TypeScript | The wrapper is plain JS (`WASMWrapper.js`); no types, no IDE support, no `tsc` validation |
-| Copy-based deployment | Built files are manually copied to `src/Backend/` and `public/`; no integration with the Vite build graph |
-| Missing functions | Does not export `dedx_get_density()`, `dedx_get_ion_nucleon_number()`, `dedx_get_ion_atom_mass()`, `dedx_get_program_version()`, or any inverse / custom compound functions required by the new API contract ([`docs/06-wasm-api-contract.md`](../06-wasm-api-contract.md)) |
-| Modifies libdedx submodule would be required | To expose internal data (nucleon number, density, etc.) the legacy approach would require patching `libdedx/` — which is a tracked submodule and should not be modified |
+| Problem                                      | Detail                                                                                                                                                                                                                                                                      |
+| -------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Non-modular JS output                        | `EXPORT_ES6=0` — outputs a CommonJS/global module; incompatible with ES module imports in SvelteKit / Vite                                                                                                                                                                  |
+| Embedded data                                | `--embed-file` bakes the libdedx data tables into the JS file as base64; inflates the JS bundle and prevents browser caching of the WASM binary separately                                                                                                                  |
+| No TypeScript                                | The wrapper is plain JS (`WASMWrapper.js`); no types, no IDE support, no `tsc` validation                                                                                                                                                                                   |
+| Copy-based deployment                        | Built files are manually copied to `src/Backend/` and `public/`; no integration with the Vite build graph                                                                                                                                                                   |
+| Missing functions                            | Does not export `dedx_get_density()`, `dedx_get_ion_nucleon_number()`, `dedx_get_ion_atom_mass()`, `dedx_get_program_version()`, or any inverse / custom compound functions required by the new API contract ([`docs/06-wasm-api-contract.md`](../06-wasm-api-contract.md)) |
+| Modifies libdedx submodule would be required | To expose internal data (nucleon number, density, etc.) the legacy approach would require patching `libdedx/` — which is a tracked submodule and should not be modified                                                                                                     |
 
 ### New requirements
 
@@ -62,7 +62,7 @@ emcc libdedx.a wasm/dedx_extra.c \
   -o static/wasm/libdedx.mjs \
   -s EXPORTED_FUNCTIONS='["_dedx_fill_program_list","_dedx_fill_material_list","_dedx_fill_ion_list","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_program_name","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_get_stp_table_size","_dedx_fill_default_energy_stp_table","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_dedx_get_bragg_peak_stp","_dedx_create_config","_dedx_free_config","_dedx_get_simple_stp","_dedx_get_simple_stp_for_program","_convert_units","_dedx_extra_get_ion_nucleon_number","_dedx_extra_get_ion_atom_mass","_dedx_extra_get_density","_dedx_extra_get_program_version","_dedx_extra_is_gas_default","_dedx_extra_inverse_stp_custom","_dedx_extra_inverse_csda_custom","_dedx_extra_bragg_peak_stp_custom","_malloc","_free"]' \
   -s EXPORTED_RUNTIME_METHODS='["ccall","cwrap","UTF8ToString","lengthBytesUTF8","stringToUTF8","HEAP32","HEAPF32","HEAPF64"]' \
-  -s ENVIRONMENT='web' \
+  -s ENVIRONMENT='web,node' \
   -s EXPORT_ES6=1 \
   -s MODULARIZE=1 \
   -s WASM=1 \
@@ -79,14 +79,14 @@ emcc libdedx.a wasm/dedx_extra.c \
 
 Key flag decisions:
 
-| Flag | Value | Reason |
-|------|-------|--------|
-| `EXPORT_ES6=1` | on | Required for SvelteKit/Vite ES module import |
-| `MODULARIZE=1` | on | Wraps module in an async factory function; enables lazy init |
-| `WASM=1` | on | Produce separate `.wasm` binary (not asm.js) |
-| `ALLOW_MEMORY_GROWTH=1` | on | libdedx allocates variable-length arrays; static heap too small for large energy tables |
-| `ENVIRONMENT='web'` | web | Strips Node.js I/O shims; reduces bundle size |
-| `-o *.mjs` | `.mjs` extension | Signals ES module to Node.js and bundlers; Vite treats it correctly |
+| Flag                     | Value            | Reason                                                                                                                            |
+| ------------------------ | ---------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `EXPORT_ES6=1`           | on               | Required for SvelteKit/Vite ES module import                                                                                      |
+| `MODULARIZE=1`           | on               | Wraps module in an async factory function; enables lazy init                                                                      |
+| `WASM=1`                 | on               | Produce separate `.wasm` binary (not asm.js)                                                                                      |
+| `ALLOW_MEMORY_GROWTH=1`  | on               | libdedx allocates variable-length arrays; static heap too small for large energy tables                                           |
+| `ENVIRONMENT='web,node'` | web,node         | Single build works in browser runtime and Node.js verification (`wasm/verify.mjs`), at the cost of a slightly larger JS glue file |
+| `-o *.mjs`               | `.mjs` extension | Signals ES module to Node.js and bundlers; Vite treats it correctly                                                               |
 
 ### Emscripten changelog — notes affecting this build
 
@@ -106,16 +106,16 @@ must use the same pattern. Verified in Stage 2.6 Phase 2.
 **`MODULARIZE=1` factory always returns a Promise (4.0.12 / 5.0.0).**
 Starting with 4.0.12, the factory function generated by `-sMODULARIZE=1`
 unconditionally returns a `Promise`, even when `WASM_ASYNC_COMPILATION` is
-disabled. This is because other features (network file loading, `addRunDependency`) 
-may also make module creation async. The `loader.ts` pattern `await factory.default({...})` 
+disabled. This is because other features (network file loading, `addRunDependency`)
+may also make module creation async. The `loader.ts` pattern `await factory.default({...})`
 is correct for all Emscripten 5.x releases.
 
 **`ENVIRONMENT='worker'` is disallowed (4.0.17).**
 `-sENVIRONMENT=worker` alone is now an error; the correct flag for a build
 that runs in both page and Worker contexts is `-sENVIRONMENT=web,worker`.
-The current build uses `-sENVIRONMENT=web`, which is correct for the
-main-thread-only model. If Web Worker offloading is added in a future stage
-(see [`03-architecture.md` §3](../03-architecture.md#3-wasm-service-layer)), the flag must change to `web,worker`.
+The current build uses `-sENVIRONMENT=web,node` to support both browser runtime
+and Node.js verification in CI. If Web Worker offloading is added in a future stage
+(see [`03-architecture.md` §3](../03-architecture.md#3-wasm-service-layer)), the flag must change to `web,worker,node` (or use split targets).
 
 **Minimum Node.js for generated code bumped to v18.3.0 (5.0.6, in development).**
 Emscripten 5.0.6 raises the minimum Node.js version that can execute the

@@ -27,12 +27,12 @@ import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outputDir = resolve(__dirname, 'output');
+const outputDir = resolve(__dirname, '..', 'static', 'wasm');
 const mjsPath = join(outputDir, 'libdedx.mjs');
 
 if (!existsSync(mjsPath)) {
     console.error(`ERROR: ${mjsPath} not found.`);
-    console.error('Run ./build.sh first to build the WASM module.');
+    console.error('Run wasm/build.sh first to build the WASM module.');
     process.exit(1);
 }
 
@@ -53,7 +53,7 @@ const runtimeStats = {
   metadata: {
     generated_at: new Date().toISOString(),
     analysis_type: "wasm_runtime_verification_phase2",
-    wasm_environment: "node",
+    wasm_environment: "web,node",
     build_script: "wasm/build.sh",
   },
   library_version: null,
@@ -469,7 +469,7 @@ const tsContractStats = {
     metadata: {
         generated_at: new Date().toISOString(),
         analysis_type: "typescript_wrapper_contract_verification_stage3",
-        wasm_environment: "node",
+        wasm_environment: "web,node",
         build_script: "wasm/build.sh",
         contract_version: "Final v3 (docs/06-wasm-api-contract.md)",
     },
