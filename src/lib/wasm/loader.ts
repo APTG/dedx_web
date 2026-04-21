@@ -7,7 +7,7 @@ export async function getService(): Promise<LibdedxService> {
   if (service) return service;
 
   try {
-    const factory = await import(`${base}/wasm/libdedx.mjs`);
+    const factory = await import(/* @vite-ignore */ `${base}/wasm/libdedx.mjs`);
     const module = await factory.default({
       locateFile: (f: string) => `${base}/wasm/${f}`
     });

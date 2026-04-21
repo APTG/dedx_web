@@ -1,7 +1,5 @@
 <script lang="ts">
   import { wasmReady } from '$lib/state/ui.svelte';
-
-  export const prerender = true;
 </script>
 
 <svelte:head>
