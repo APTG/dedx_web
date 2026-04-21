@@ -2,10 +2,7 @@ import { test, expect } from '@playwright/test';
 
 test('homepage redirects to calculator', async ({ page }) => {
   await page.goto('/');
-  await page.waitForLoadState('networkidle');
-  await page.waitForTimeout(1000);
-  const currentUrl = page.url();
-  expect(currentUrl).toContain('calculator');
+  await expect(page).toHaveURL(/\/calculator$/);
 });
 
 test('calculator page loads', async ({ page }) => {

@@ -4,6 +4,39 @@ export interface CsvOptions {
   program?: string;
   particle?: string;
   material?: string;
+  csdaUnitSuffix?: string;
+}
+
+function quoteCsvCell(value: string): string {
+  return `"${value.replaceAll('"', '""')}"`;
+}
+
+function formatSignificant(value: number, significantFigures = 4): string {
+  const precise = value.toPrecision(significantFigures);
+  if (!/[eE]/.test(precise)) {
+    return precise.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+  }
+
+  const [mantissa = "0", exponentText = "0"] = precise.split(/[eE]/);
+  const exponent = Number.parseInt(exponentText, 10);
+  const isNegative = mantissa.startsWith("-");
+  const sign = isNegative ? "-" : "";
+  const absoluteMantissa = isNegative ? mantissa.slice(1) : mantissa;
+  const decimalIndex = absoluteMantissa.indexOf(".");
+  const digits = absoluteMantissa.replace(".", "");
+  const pivot = decimalIndex + exponent;
+
+  if (pivot <= 0) {
+    return `${sign}0.${"0".repeat(-pivot)}${digits}`.replace(/(\.\d*?)0+$/, "$1").replace(/\.$/, "");
+  }
+
+  if (pivot >= digits.length) {
+    return `${sign}${digits}${"0".repeat(pivot - digits.length)}`;
+  }
+
+  return `${sign}${digits.slice(0, pivot)}.${digits.slice(pivot)}`
+    .replace(/(\.\d*?)0+$/, "$1")
+    .replace(/\.$/, "");
 }
 
 export function generateCsv(
@@ -13,17 +46,24 @@ export function generateCsv(
   options?: CsvOptions
 ): string {
   const lines: string[] = [];
+  const csdaUnitSuffix = options?.csdaUnitSuffix ?? "g/cm²";
 
   if (options?.includeMetadata && options.program) {
-    lines.push(`# Program: ${options.program}`);
-    lines.push(`# Particle: ${options.particle || 'N/A'}`);
-    lines.push(`# Material: ${options.material || 'N/A'}`);
-    lines.push(`# Generated: ${new Date().toISOString()}`);
-    lines.push('');
+    lines.push(quoteCsvCell(`# Program: ${options.program}`));
+    lines.push(quoteCsvCell(`# Particle: ${options.particle || "N/A"}`));
+    lines.push(quoteCsvCell(`# Material: ${options.material || "N/A"}`));
+    lines.push(quoteCsvCell(`# Generated: ${new Date().toISOString()}`));
+    lines.push("");
   }
 
   if (options?.includeHeader !== false) {
-    lines.push('Energy (MeV/nucl),Stopping Power (MeV·cm²/g),CSDA Range (g/cm²)');
+    lines.push(
+      [
+        quoteCsvCell("Energy (MeV/nucl)"),
+        quoteCsvCell("Stopping Power (MeV·cm²/g)"),
+        quoteCsvCell("CSDA Range")
+      ].join(",")
+    );
   }
 
   for (let i = 0; i < energies.length; i++) {
@@ -31,11 +71,17 @@ export function generateCsv(
     const s = stoppingPowers[i];
     const r = csdaRanges[i];
     if (e !== undefined && s !== undefined && r !== undefined) {
-      lines.push(`${e.toPrecision(4)},${s.toPrecision(4)},${r.toPrecision(4)}`);
+      lines.push(
+        [
+          quoteCsvCell(formatSignificant(e)),
+          quoteCsvCell(formatSignificant(s)),
+          quoteCsvCell(`${formatSignificant(r)} ${csdaUnitSuffix}`)
+        ].join(",")
+      );
     }
   }
 
-  return lines.join('\n');
+  return lines.join("\r\n");
 }
 
 export function downloadCsv(content: string, filename: string): void {

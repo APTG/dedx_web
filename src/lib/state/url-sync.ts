@@ -12,40 +12,47 @@ export interface AppState {
 export function stateToUrl(state: AppState): URLSearchParams {
   const params = new URLSearchParams();
 
-  if (state.programId !== null) params.set('p', state.programId.toString());
-  if (state.particleId !== null) params.set('i', state.particleId.toString());
-  if (state.materialId !== null) params.set('m', state.materialId.toString());
-  if (state.energies) params.set('e', state.energies);
-  if (state.energyUnit !== 'MeV') params.set('u', state.energyUnit);
-  if (state.advancedMode) params.set('mode', 'advanced');
-
-  params.set('urlv', '1');
+  params.set("urlv", "1");
+  if (state.particleId !== null) params.set("particle", state.particleId.toString());
+  if (state.materialId !== null) params.set("material", state.materialId.toString());
+  params.set("program", state.programId === null ? "auto" : state.programId.toString());
+  if (state.energies) params.set("energies", state.energies);
+  params.set("eunit", state.energyUnit);
+  if (state.advancedMode) params.set("mode", "advanced");
 
   return params;
 }
 
 export function urlToState(params: URLSearchParams): Partial<AppState> {
   const state: Partial<AppState> = {};
+  const parseId = (value: string | null): number | null => {
+    if (value === null) return null;
+    const parsed = Number.parseInt(value, 10);
+    return Number.isFinite(parsed) ? parsed : null;
+  };
 
-  const programId = params.get('p');
-  if (programId) state.programId = parseInt(programId, 10);
+  const particleId = parseId(params.get("particle") ?? params.get("i"));
+  if (particleId !== null) state.particleId = particleId;
 
-  const particleId = params.get('i');
-  if (particleId) state.particleId = parseInt(particleId, 10);
+  const materialId = parseId(params.get("material") ?? params.get("m"));
+  if (materialId !== null) state.materialId = materialId;
 
-  const materialId = params.get('m');
-  if (materialId) state.materialId = parseInt(materialId, 10);
+  const programParam = params.get("program") ?? params.get("p");
+  if (programParam && programParam !== "auto") {
+    const programId = parseId(programParam);
+    if (programId !== null) state.programId = programId;
+  }
 
-  const energies = params.get('e');
+  const energies = params.get("energies") ?? params.get("e");
   if (energies) state.energies = energies;
 
-  const energyUnit = params.get('u') as EnergyUnit | null;
-  if (energyUnit && ['MeV', 'MeV/nucl', 'MeV/u'].includes(energyUnit)) {
+  const energyUnit = (params.get("eunit") ?? params.get("u")) as EnergyUnit | null;
+  if (energyUnit && ["MeV", "MeV/nucl", "MeV/u"].includes(energyUnit)) {
     state.energyUnit = energyUnit;
   }
 
-  const mode = params.get('mode');
-  if (mode === 'advanced') state.advancedMode = true;
+  const mode = params.get("mode");
+  if (mode === "advanced") state.advancedMode = true;
 
   return state;
 }

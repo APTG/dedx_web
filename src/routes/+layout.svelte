@@ -1,11 +1,11 @@
 <script lang="ts">
   import '../app.css';
-  import { page } from '$app/stores';
+  import { page } from "$app/stores";
   import { getService } from '$lib/wasm/loader';
   import { wasmReady, wasmError } from '$lib/state/ui.svelte';
 
   let { children } = $props();
-  let pathname = $derived(page.url?.pathname || '');
+  let pathname = $derived($page.url.pathname);
 
   $effect(() => {
     getService()

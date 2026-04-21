@@ -1,5 +1,7 @@
-export function parseEnergyInput(text: string, _unit?: string): number[] {
-  const lines = text.split('\n').filter((line) => line.trim() !== '');
+import type { EnergyUnit } from "../wasm/types";
+
+export function parseEnergyInput(text: string, _unit?: EnergyUnit): number[] {
+  const lines = text.split("\n").filter((line) => line.trim() !== "");
   const energies: number[] = [];
 
   for (const line of lines) {
@@ -12,21 +14,28 @@ export function parseEnergyInput(text: string, _unit?: string): number[] {
   return energies;
 }
 
-export function convertEnergy(value: number, fromUnit: string, toUnit: string, massNumber: number): number {
+export function convertEnergy(
+  value: number,
+  fromUnit: EnergyUnit,
+  toUnit: EnergyUnit,
+  massNumber: number,
+  atomicMass: number
+): number {
   if (fromUnit === toUnit) return value;
+  if (massNumber <= 0 || atomicMass <= 0) return value;
 
-  const toMeVPerNucl = {
-    'MeV': (v: number) => v,
-    'MeV/nucl': (v: number) => v,
-    'MeV/u': (v: number) => v * massNumber
+  const toMeV = {
+    MeV: (v: number) => v,
+    "MeV/nucl": (v: number) => v * massNumber,
+    "MeV/u": (v: number) => v * atomicMass
   };
 
-  const fromMeVPerNucl = {
-    'MeV': (v: number) => v,
-    'MeV/nucl': (v: number) => v,
-    'MeV/u': (v: number) => v / massNumber
+  const fromMeV = {
+    MeV: (v: number) => v,
+    "MeV/nucl": (v: number) => v / massNumber,
+    "MeV/u": (v: number) => v / atomicMass
   };
 
-  const mevPerNucl = toMeVPerNucl[fromUnit as keyof typeof toMeVPerNucl](value);
-  return fromMeVPerNucl[toUnit as keyof typeof fromMeVPerNucl](mevPerNucl);
+  const mev = toMeV[fromUnit](value);
+  return fromMeV[toUnit](mev);
 }

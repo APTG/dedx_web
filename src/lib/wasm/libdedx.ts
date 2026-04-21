@@ -12,6 +12,9 @@ interface EmscriptenModule {
   _dedx_get_programs_list(): number;
   _dedx_get_particles_list(program_id: number): number;
   _dedx_get_materials_list(program_id: number): number;
+  _dedx_get_ion_atom_mass(ion_id: number, err_ptr: number): number;
+  _dedx_get_density(material_id: number, err_ptr: number): number;
+  _dedx_target_is_gas(material_id: number): number;
   _dedx_get_stp_table(
     program_id: number,
     particle_id: number,
@@ -32,8 +35,8 @@ interface EmscriptenModule {
   _malloc(size: number): number;
   _free(ptr: number): void;
   UTF8ToString(ptr: number): string;
-  getHeapU32(): Uint32Array;
-  getHeapF64(): Float64Array;
+  HEAP32: Int32Array;
+  HEAPF64: Float64Array;
 }
 
 export class LibdedxServiceImpl implements LibdedxService {
@@ -47,16 +50,16 @@ export class LibdedxServiceImpl implements LibdedxService {
   }
 
   async init(): Promise<void> {
-    this.module._dedx_get_programs_list();
-    const heapU32 = this.module.getHeapU32();
+    const heapI32 = this.module.HEAP32;
+    const programsPtr = this.module._dedx_get_programs_list();
 
-    let i = 0;
-    while (heapU32[i] !== 0) {
-      const id = heapU32[i];
-      const namePtr = heapU32[i + 1];
-      const versionPtr = heapU32[i + 2];
+    let i = programsPtr / 4;
+    while (heapI32[i] !== 0) {
+      const id = heapI32[i] ?? 0;
+      const namePtr = heapI32[i + 1] ?? 0;
+      const versionPtr = heapI32[i + 2] ?? 0;
       this.programs.push({
-        id: id ?? 0,
+        id,
         name: this.module.UTF8ToString(namePtr),
         version: this.module.UTF8ToString(versionPtr)
       });
@@ -66,16 +69,16 @@ export class LibdedxServiceImpl implements LibdedxService {
     for (const prog of this.programs) {
       const particlesPtr = this.module._dedx_get_particles_list(prog.id);
       const particles: ParticleEntity[] = [];
-      let j = 0;
-      while (heapU32[particlesPtr / 4 + j] !== 0) {
-        const id = heapU32[particlesPtr / 4 + j];
-        const namePtr = heapU32[particlesPtr / 4 + j + 1];
-        const massNumber = heapU32[particlesPtr / 4 + j + 2];
+      let j = particlesPtr / 4;
+      while (heapI32[j] !== 0) {
+        const id = heapI32[j] ?? 0;
+        const namePtr = heapI32[j + 1] ?? 0;
+        const massNumber = heapI32[j + 2] ?? 0;
         particles.push({
-          id: id ?? 0,
+          id,
           name: this.module.UTF8ToString(namePtr),
-          massNumber: massNumber ?? 0,
-          atomicMass: heapU32[particlesPtr / 4 + j + 3] ?? 0,
+          massNumber,
+          atomicMass: this.module._dedx_get_ion_atom_mass(id, 0),
           aliases: []
         });
         j += 5;
@@ -84,14 +87,14 @@ export class LibdedxServiceImpl implements LibdedxService {
 
       const materialsPtr = this.module._dedx_get_materials_list(prog.id);
       const materials: MaterialEntity[] = [];
-      let k = 0;
-      while (heapU32[materialsPtr / 4 + k] !== 0) {
-        const id = heapU32[materialsPtr / 4 + k];
-        const namePtr = heapU32[materialsPtr / 4 + k + 1];
-        const density = heapU32[materialsPtr / 4 + k + 2];
-        const isGasByDefault = heapU32[materialsPtr / 4 + k + 3] !== 0;
+      let k = materialsPtr / 4;
+      while (heapI32[k] !== 0) {
+        const id = heapI32[k] ?? 0;
+        const namePtr = heapI32[k + 1] ?? 0;
+        const density = this.module._dedx_get_density(id, 0);
+        const isGasByDefault = this.module._dedx_target_is_gas(id) !== 0;
         materials.push({
-          id: id ?? 0,
+          id,
           name: this.module.UTF8ToString(namePtr),
           density: density ?? 0,
           isGasByDefault
@@ -127,7 +130,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     const csdaPtr = this.module._malloc(numEnergies * 8);
 
     try {
-      const heapF64 = this.module.getHeapF64();
+      const heapF64 = this.module.HEAPF64;
       for (let i = 0; i < numEnergies; i++) {
         heapF64[energiesPtr / 8 + i] = energies[i] ?? 0;
       }

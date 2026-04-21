@@ -1,3 +1,5 @@
+import { compatMatrix } from "./entities.svelte";
+
 export const selectedProgramId = $state<{ value: number | null }>({ value: null });
 export const selectedParticleId = $state<{ value: number | null }>({ value: null });
 export const selectedMaterialId = $state<{ value: number | null }>({ value: null });
@@ -25,6 +27,6 @@ export function computeResolvedProgram(): number | null {
     selectedProgramId.value,
     selectedParticleId.value,
     selectedMaterialId.value,
-    new Map()
+    compatMatrix.value
   );
 }
