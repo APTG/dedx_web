@@ -10,6 +10,7 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-21-early-deploy-web-dev.md](2026-04-21-early-deploy-web-dev.md) | 21 Apr 2026 | Stage 3.8 early deploy: new `deploy.yml` workflow — static placeholder from `develop` → `APTG/web_dev`; updated `08-deployment.md` (§5.1 early deploy phase + setup checklist); updated `00-redesign-plan.md` (Stage 3.8 block) |
 | [2026-04-21-stage37-review-fixes.md](2026-04-21-stage37-review-fixes.md) | 21 Apr 2026 | PR #360 Stage 3.7 review-thread fixes: aligned changelog wording with `.deepsource.toml` dialect change, removed stale `package-lock.json`, corrected Stage 3.7/Stage 9 plan notes, removed frontmatter-like separators from `docs/progress/stage-3.md`, fixed session-log attribution format, and indexed missing 2026-04-21 cleanup log |
 | [2026-04-21-stage3-cleanup.md](2026-04-21-stage3-cleanup.md) | 21 Apr 2026 | Stage 3.7 legacy cleanup: removed old React/CRA tree and artifacts, marked Stage 3 complete and Stage 9 complete-early, documented WASM transition notes (`wasm/output/` temporary and `ENVIRONMENT=node` for Node verification before Stage 4) |
 | [2026-04-20-tdd-migration-plan.md](2026-04-20-tdd-migration-plan.md) | 20 Apr 2026 | Added test-driven migration guidance: explicit RED→GREEN→REFACTOR principles in redesign/testing docs, plus Stage 3 input update to make `wasm/verify.mjs`-first workflow explicit |

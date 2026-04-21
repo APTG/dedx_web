@@ -22,8 +22,12 @@ preserved in the redesign):
 
 | Environment | Repository | Trigger |
 |-------------|-----------|---------|
-| Development (`web_dev`) | `APTG/web_dev` | Push to `master` |
+| Development (`web_dev`) | `APTG/web_dev` | Push to `master` (see note ¹) |
 | Production (`web`) | `APTG/web` | Git tag `v*` |
+
+> **¹ Early deploy phase (pre-Stage 4):** Until Stage 8, the `web_dev` deploy
+> triggers on `develop` instead of `master` and pushes a placeholder page.
+> See §5.1 for details.
 
 **Decision rationale:** [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)
 chose SvelteKit with its static adapter precisely because GitHub Pages
@@ -112,7 +116,45 @@ stage so that every PR has a gate matching the current scope of the project:
 | **8** | Deploy job: push `build/` → `APTG/web_dev` (master) / `APTG/web` (v* tag) |
 
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
-The deploy job runs only on `master` push or `v*` tag — never on PRs.
+The Stage 8 deploy job in `ci.yml` runs only on `master` push or `v*` tag —
+never on PRs. The earlier `develop`-triggered placeholder deploy is a separate
+workflow described in §5.1.
+
+### §5.1 Early deploy phase (develop branch, through Stage 7)
+
+Before the Stage 8 deploy job exists (Stages 3.8 through end of Stage 7), a
+separate workflow `.github/workflows/deploy.yml` deploys a static
+"Under Construction" placeholder from the `develop` branch.
+
+**Rationale:**
+- Establishes the `dedx_web → web_dev` pipeline early so it is well-tested
+  before Stage 8 makes it load-bearing.
+- Makes the `web_dev` site immediately visible to collaborators.
+- Confirms PAT, GitHub Pages, and `gh-pages` branch configuration before the
+  real build is available.
+
+**Trigger:** push to `develop`.
+**Content:** static `index.html` with a link to `docs/00-redesign-plan.md`.
+**Authentication:** PAT stored as `WEB_DEV_DEPLOY_TOKEN` secret in the
+`dedx_web` repo (fine-grained, `Contents: Read and write` on `APTG/web_dev`).
+**Environment:** GitHub Environment `dev` (created in `dedx_web` repo settings)
+provides deployment tracking and the live URL `https://aptg.github.io/web_dev/`
+in the GitHub UI.
+
+**One-time repo setup:**
+
+1. Create a fine-grained PAT with `Contents: Read and write` scoped to
+   `APTG/web_dev`. In `dedx_web` repo: Settings → Secrets and variables →
+   Actions → New repository secret → name `WEB_DEV_DEPLOY_TOKEN`.
+2. In `APTG/web_dev` repo: Settings → Pages → Source: Deploy from branch →
+   Branch: `gh-pages`, folder: `/ (root)`.
+3. In `dedx_web` repo: Settings → Environments → New environment → name `dev`.
+   Protection rules are optional at this stage.
+
+**Stage 8 migration:** change the trigger from `develop` to `master` + `v*`
+tags, replace the placeholder build step with `pnpm build`, and add the
+production deploy job targeting `APTG/web`. The `deploy.yml` file contains
+a Phase 1 / Phase 2 comment header with the exact diff to apply.
 
 ### Final pipeline (Stage 8)
 
