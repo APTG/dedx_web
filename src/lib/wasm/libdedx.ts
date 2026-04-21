@@ -9,12 +9,22 @@ import type {
 import { LibdedxError } from './types';
 
 interface EmscriptenModule {
-  _dedx_get_programs_list(): number;
-  _dedx_get_particles_list(program_id: number): number;
-  _dedx_get_materials_list(program_id: number): number;
-  _dedx_get_ion_atom_mass(ion_id: number, err_ptr: number): number;
+  // List functions — return pointer to sentinel-terminated int32 array of IDs
+  _dedx_get_program_list(): number;
+  _dedx_get_ion_list(program_id: number): number;
+  _dedx_get_material_list(program_id: number): number;
+  // Name/version lookups — return char*
+  _dedx_get_program_name(program_id: number): number;
+  _dedx_get_program_version(program_id: number): number;
+  _dedx_get_ion_name(ion_id: number): number;
+  _dedx_get_material_name(material_id: number): number;
+  // Ion properties (dedx_extra.h — single-argument wrappers)
+  _dedx_get_ion_nucleon_number(ion_id: number): number;
+  _dedx_get_ion_atom_mass(ion_id: number): number;
+  // Material properties
   _dedx_get_density(material_id: number, err_ptr: number): number;
   _dedx_target_is_gas(material_id: number): number;
+  // Calculation
   _dedx_get_stp_table(
     program_id: number,
     particle_id: number,
@@ -39,6 +49,19 @@ interface EmscriptenModule {
   HEAPF64: Float64Array;
 }
 
+/** Read a sentinel-terminated int32 array from WASM heap. Stops at 0 or negative. */
+function readIdList(heap: Int32Array, ptr: number, maxLen = 600): number[] {
+  if (ptr === 0) return [];
+  const result: number[] = [];
+  const idx0 = ptr >>> 2;
+  for (let i = 0; i < maxLen; i++) {
+    const v = heap[idx0 + i];
+    if (v === undefined || v <= 0) break;
+    result.push(v);
+  }
+  return result;
+}
+
 export class LibdedxServiceImpl implements LibdedxService {
   private module: EmscriptenModule;
   private programs: ProgramEntity[] = [];
@@ -50,58 +73,52 @@ export class LibdedxServiceImpl implements LibdedxService {
   }
 
   async init(): Promise<void> {
-    const heapI32 = this.module.HEAP32;
-    const programsPtr = this.module._dedx_get_programs_list();
+    const heap = this.module.HEAP32;
 
-    let i = programsPtr / 4;
-    while (heapI32[i] !== 0) {
-      const id = heapI32[i] ?? 0;
-      const namePtr = heapI32[i + 1] ?? 0;
-      const versionPtr = heapI32[i + 2] ?? 0;
+    // Programs
+    const programIds = readIdList(heap, this.module._dedx_get_program_list());
+    for (const id of programIds) {
       this.programs.push({
         id,
-        name: this.module.UTF8ToString(namePtr),
-        version: this.module.UTF8ToString(versionPtr)
+        name: this.module.UTF8ToString(this.module._dedx_get_program_name(id)),
+        version: this.module.UTF8ToString(this.module._dedx_get_program_version(id))
       });
-      i += 3;
     }
 
-    for (const prog of this.programs) {
-      const particlesPtr = this.module._dedx_get_particles_list(prog.id);
-      const particles: ParticleEntity[] = [];
-      let j = particlesPtr / 4;
-      while (heapI32[j] !== 0) {
-        const id = heapI32[j] ?? 0;
-        const namePtr = heapI32[j + 1] ?? 0;
-        const massNumber = heapI32[j + 2] ?? 0;
-        particles.push({
-          id,
-          name: this.module.UTF8ToString(namePtr),
-          massNumber,
-          atomicMass: this.module._dedx_get_ion_atom_mass(id, 0),
-          aliases: []
-        });
-        j += 5;
-      }
-      this.particles.set(prog.id, particles);
+    // Reuse a single errPtr allocation across all density reads
+    const errPtr = this.module._malloc(4);
+    try {
+      for (const prog of this.programs) {
+        // Ions for this program
+        const ionIds = readIdList(heap, this.module._dedx_get_ion_list(prog.id));
+        const particles: ParticleEntity[] = [];
+        for (const id of ionIds) {
+          particles.push({
+            id,
+            name: this.module.UTF8ToString(this.module._dedx_get_ion_name(id)),
+            massNumber: this.module._dedx_get_ion_nucleon_number(id),
+            atomicMass: this.module._dedx_get_ion_atom_mass(id),
+            aliases: []
+          });
+        }
+        this.particles.set(prog.id, particles);
 
-      const materialsPtr = this.module._dedx_get_materials_list(prog.id);
-      const materials: MaterialEntity[] = [];
-      let k = materialsPtr / 4;
-      while (heapI32[k] !== 0) {
-        const id = heapI32[k] ?? 0;
-        const namePtr = heapI32[k + 1] ?? 0;
-        const density = this.module._dedx_get_density(id, 0);
-        const isGasByDefault = this.module._dedx_target_is_gas(id) !== 0;
-        materials.push({
-          id,
-          name: this.module.UTF8ToString(namePtr),
-          density: density ?? 0,
-          isGasByDefault
-        });
-        k += 4;
+        // Materials for this program
+        const matIds = readIdList(heap, this.module._dedx_get_material_list(prog.id));
+        const materials: MaterialEntity[] = [];
+        for (const id of matIds) {
+          const density = this.module._dedx_get_density(id, errPtr);
+          materials.push({
+            id,
+            name: this.module.UTF8ToString(this.module._dedx_get_material_name(id)),
+            density,
+            isGasByDefault: this.module._dedx_target_is_gas(id) !== 0
+          });
+        }
+        this.materials.set(prog.id, materials);
       }
-      this.materials.set(prog.id, materials);
+    } finally {
+      this.module._free(errPtr);
     }
   }
 

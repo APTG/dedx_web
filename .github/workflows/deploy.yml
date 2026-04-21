@@ -1,8 +1,7 @@
 name: Deploy
 
-# Phase 1 (Stage 4+): builds the SvelteKit scaffold and deploys to APTG/web_dev
-#   on every push to develop. WASM is not bundled yet; the app shows an error
-#   banner until Stage 5 wires up the real wasm/output/ files.
+# Phase 1 (Stage 4+): builds WASM + SvelteKit app and deploys to APTG/web_dev
+#   on every push to develop.
 #
 # Phase 2 (Stage 8): switch trigger to `master` + `tags: ['v*']`,
 #   add pnpm build step for APTG/web with production domain (no BASE_PATH),
@@ -26,6 +25,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
       - name: Set up pnpm
         uses: pnpm/action-setup@v4
@@ -36,8 +37,16 @@ jobs:
           node-version: '24'
           cache: 'pnpm'
 
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
+
+      - name: Build WASM module
+        run: |
+          mkdir -p static/wasm
+          cd wasm && chmod +x build.sh && ./build.sh
 
       - name: Build SvelteKit app
         run: pnpm build
