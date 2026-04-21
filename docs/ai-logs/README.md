@@ -10,6 +10,7 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-21-stage4-scaffold-qwen-session.md](2026-04-21-stage4-scaffold-qwen-session.md) | 21 Apr 2026 | Stage 4 scaffolding raw opencode session dump (Qwen3.5-397B): full SvelteKit scaffold — homepage redirect, E2E test de-flaking with `waitForURL`, playwright test runs |
 | [2026-04-21-stage4-review-thread-followup.md](2026-04-21-stage4-review-thread-followup.md) | 21 Apr 2026 | Stage 4 review-thread follow-up: strengthened E2E nav/docs route assertions, removed duplicated route-load tests, enabled CI coverage artifact generation via Vitest coverage provider, wired SvelteKit base-path handling for `/web_dev` deployment, and fixed energy conversion validation/tests for mixed `A`/`m_u` edge cases |
 | [2026-04-21-stage4-review-thread.md](2026-04-21-stage4-review-thread.md) | 21 Apr 2026 | Stage 4 PR review-thread fixes: route page-store usage corrected, root prerender file added, canonical shareable URL keys + safe parsing, energy conversion/parsing consistency, WASM heap/list handling fixes, redirect test de-flaked, CSV export formatting hardened, and touch icon replaced with real PNG |
 | [2026-04-21-stage4-dev-fixes.md](2026-04-21-stage4-dev-fixes.md) | 21 Apr 2026 | Stage 4 dev server fixes: `/* @vite-ignore */` for WASM dynamic import; moved `export const prerender` from 5× `.svelte` files to 3× new `+page.ts` files (docs routes); app loads cleanly on `pnpm dev` (WASM 404s expected) |

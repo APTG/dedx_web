@@ -34,14 +34,23 @@ Build output sizes: `libdedx.wasm` 463 KB · `libdedx.mjs` 15 KB.
 
 ---
 
-## Known Transition Items (resolved in Stage 4)
+## Transition Items (resolved post-Stage 4)
 
-| Item | Current state | Target (Stage 4) |
-|------|--------------|-----------------|
-| WASM output location | `wasm/output/` | `static/wasm/` (after SvelteKit scaffolding) |
-| Emscripten `ENVIRONMENT` flag | `node` (required for verify.mjs in Node.js) | `web` (production SvelteKit build) |
+Both items were resolved on branch `fix/wasm-web-ci` after Stage 4 scaffolding was complete:
 
-See `docs/decisions/003-wasm-build-pipeline.md` for the full flag rationale.
+| Item | Was | Now |
+|------|-----|-----|
+| WASM output location | `wasm/output/` (gitignored) | `static/wasm/` (served by SvelteKit) |
+| Emscripten `ENVIRONMENT` flag | `node` | `web,node` (browser + Node.js for verify.mjs) |
+
+`ENVIRONMENT=web,node` rather than `web`-only preserves `verify.mjs` Node.js
+compatibility without a second build. See `docs/decisions/003-wasm-build-pipeline.md`
+for the full flag rationale.
+
+CI (`ci.yml`) was updated at the same time:
+- `wasm-verify` uploads `static/wasm/` as a build artifact after verification.
+- `e2e-tests` (which `needs: [wasm-verify]`) downloads the artifact so `pnpm build`
+  can embed the real WASM files and Playwright tests have a functional app.
 
 ---
 

@@ -27,12 +27,12 @@ import { fileURLToPath } from 'url';
 import { existsSync, mkdirSync, statSync, writeFileSync } from 'fs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
-const outputDir = resolve(__dirname, 'output');
+const outputDir = resolve(__dirname, '..', 'static', 'wasm');
 const mjsPath = join(outputDir, 'libdedx.mjs');
 
 if (!existsSync(mjsPath)) {
     console.error(`ERROR: ${mjsPath} not found.`);
-    console.error('Run ./build.sh first to build the WASM module.');
+    console.error('Run wasm/build.sh first to build the WASM module.');
     process.exit(1);
 }
 

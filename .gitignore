@@ -18,8 +18,9 @@ npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 
-# WASM build artifacts (Stage 3+)
-wasm/output/
+# WASM build artifacts — build.sh outputs here; never commit built binaries
+/static/wasm/libdedx.mjs
+/static/wasm/libdedx.wasm
 
 # AI tooling — local agent session state and credentials
 .opencode/
