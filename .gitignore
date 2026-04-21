@@ -33,6 +33,9 @@ public/weblibdedx.data
 .env
 .env.*
 
+# WASM build artifacts (Stage 3)
+wasm/output/
+
 # AI tooling — local agent session state and credentials
 .opencode/
 *.key
