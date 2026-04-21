@@ -8,6 +8,5 @@ enabled = true
 name = "javascript"
 enabled = true
 
-[[analyzers]]
-name = "typescript"
-enabled = true
+  [analyzers.meta]
+  dialect = "typescript"
