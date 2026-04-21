@@ -458,6 +458,27 @@ As a <role>, I want to <action> so that <benefit>.
   manifest.
 - **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
+### Stage 3.8: Early development deploy ✅ (21 April 2026)
+- **Rationale:** Before the SvelteKit app exists, establish the `develop →
+  APTG/web_dev` deployment pipeline so it is exercised and confirmed working
+  well before Stage 8 makes it load-bearing. Makes the dev site immediately
+  visible to collaborators with a placeholder page.
+- **Deliverables:**
+  - `.github/workflows/deploy.yml` — triggers on push to `develop`; builds a
+    static "Under Construction" `index.html` (with link to this plan) and
+    deploys to `APTG/web_dev` via `peaceiris/actions-gh-pages@v4`.
+  - `docs/08-deployment.md §5.1` — documents early deploy phase, one-time
+    repo setup, and Stage 8 migration path.
+- **One-time repo setup (human step):** Create a fine-grained PAT with
+  `Contents: Read and write` on `APTG/web_dev`, store as
+  `WEB_DEV_DEPLOY_TOKEN` secret; enable GitHub Pages on `APTG/web_dev`
+  (source: `gh-pages` branch); create `dev` environment in `dedx_web` repo
+  settings. See [`docs/08-deployment.md §5.1`](08-deployment.md) for the
+  full checklist.
+- **Stage 8 migration:** switch trigger to `master` + `v*` tags, replace
+  placeholder with `pnpm build`, add production deploy job for `APTG/web`.
+  The workflow file has a Phase 1/Phase 2 comment header with the exact diff.
+
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.
 - **Input:** `docs/02-tech-stack.md`, `docs/03-architecture.md`.
