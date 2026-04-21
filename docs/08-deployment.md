@@ -74,8 +74,9 @@ a Docker container (`emscripten/emsdk`). The build produces two artifacts:
 - `static/wasm/libdedx.wasm` — WebAssembly binary (~457 KB). All stopping-power
   data tables are compiled in as static C arrays — no `.data` sidecar file.
 
-Key Emscripten flags: `EXPORT_ES6=1`, `MODULARIZE=1`, `ENVIRONMENT=web`,
-`-sFILESYSTEM=0`. See [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md)
+Key Emscripten flags: `EXPORT_ES6=1`, `MODULARIZE=1`, `ENVIRONMENT=web,node`,
+`-sFILESYSTEM=0`. The `node` component preserves `verify.mjs` Node.js
+compatibility without a separate build. See [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md)
 for the full flag set and rationale.
 
 A thin C shim (`wasm/dedx_extra.{h,c}`) exposes functions not in the public

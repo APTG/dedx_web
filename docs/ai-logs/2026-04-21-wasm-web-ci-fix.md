@@ -67,3 +67,47 @@ Local verification of `verify.mjs` path change requires a WASM build (Docker).
 CI will verify on the next push to `fix/wasm-web-ci`.
 
 The `unit-tests` job is unaffected — Vitest mocks bypass WASM entirely.
+
+---
+
+## Follow-up: WASM wrapper runtime error + deploy.yml fix
+
+After building WASM locally (`wasm/build.sh --clean`, producing 16 KB `.mjs` + 463 KB `.wasm`)
+and running `pnpm dev`, the browser reported:
+
+> `WASM load error: Failed to load WASM module: this.module._dedx_get_programs_list is not a function`
+
+### Root causes in `src/lib/wasm/libdedx.ts`
+
+Three bugs:
+
+1. **Wrong function names** — the wrapper used pluralised names (`_dedx_get_programs_list`,
+   `_dedx_get_particles_list`, `_dedx_get_materials_list`) but the C exports use singular
+   forms: `_dedx_get_program_list`, `_dedx_get_ion_list`, `_dedx_get_material_list`.
+
+2. **Wrong data structure** — `init()` treated the list return values as struct arrays
+   (reading id + namePtr + versionPtr with stride 3), but the C functions return a
+   sentinel-terminated flat `int[]` of IDs. Names must be fetched via separate calls
+   (`_dedx_get_program_name(id)`, `_dedx_get_ion_name(id)`, etc.).
+
+3. **Wrong arity on `_dedx_get_ion_atom_mass`** — was called as `(id, 0)` (2 args) but
+   `wasm/dedx_extra.h` declares `float dedx_get_ion_atom_mass(int ion)` (1 arg).
+
+### Fixes
+
+- Added `readIdList(heap, ptr)` helper — reads sentinel-terminated `int32[]` from WASM heap.
+- Corrected all three function names in the `EmscriptenModule` interface and all call sites.
+- Fixed `_dedx_get_ion_atom_mass` to single-arg call.
+- `init()` now: gets flat ID lists → fetches names/versions via separate calls → allocates
+  a single `errPtr` for all density reads (freed in `finally`).
+
+### `deploy.yml` (WASM build inclusion)
+
+The deploy workflow was also missing a WASM build step, so `pnpm build` in the deploy job
+had no `static/wasm/` files to include. Fixed by adding:
+
+- `submodules: recursive` to the Checkout step (already present in original — confirmed).
+- `Set up Docker` step (`docker/setup-buildx-action@v3`).
+- `Build WASM module` step (`mkdir -p static/wasm && cd wasm && chmod +x build.sh && ./build.sh`).
+
+Both fixes were committed together as `3bcee2f`.
