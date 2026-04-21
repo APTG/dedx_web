@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json.schemastore.org/web-manifest-combo.json",
+  "name": "webdedx",
+  "short_name": "webdedx",
+  "description": "Stopping power calculations with libdedx WASM",
+  "start_url": "/calculator",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#000000",
+  "icons": [
+    {
+      "src": "/favicon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png"
+    }
+  ]
+}
