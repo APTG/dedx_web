@@ -10,6 +10,11 @@
 
 Successfully scaffolded a new SvelteKit 2 + Svelte 5 + TypeScript + Tailwind CSS 4 project to replace the legacy React codebase. All development tooling, configuration files, core routes, state management, and WASM API stubs are in place.
 
+See also:
+- [Stage 4 entry in 00-redesign-plan.md](../00-redesign-plan.md) — Original stage requirements
+- [Architecture overview](../03-architecture.md) — Component tree and state topology
+- [Tech stack](../02-tech-stack.md) — Library versions and rationale
+
 ---
 
 ## Completed Items
@@ -24,17 +29,17 @@ Successfully scaffolded a new SvelteKit 2 + Svelte 5 + TypeScript + Tailwind CSS
    - ESLint 9.x (flat config), Prettier
    - Optional: bits-ui, JSROOT, jsPDF, zarrita
 
-2. **SvelteKit Configuration** (`svelte.config.js`):
+2. **SvelteKit Configuration** ([`svelte.config.js`](../../svelte.config.js)):
    - Static adapter with 404 fallback
    - GitHub Pages deployment ready
    - Prerendering enabled for all routes
 
 3. **Build Tooling**:
-   - `vite.config.ts` — Tailwind plugin, Vitest integration
-   - `tsconfig.json` — Strict TypeScript (`noUncheckedIndexedAccess`, etc.)
-   - `eslint.config.js` — TypeScript + Svelte flat config
-   - `.prettierrc` — 100 char width, Svelte plugin
-   - `playwright.config.ts` — Multi-browser E2E testing
+   - [`vite.config.ts`](../../vite.config.ts) — Tailwind plugin, Vitest integration
+   - [`tsconfig.json`](../../tsconfig.json) — Strict TypeScript (`noUncheckedIndexedAccess`, etc.)
+   - [`eslint.config.js`](../../eslint.config.js) — TypeScript + Svelte flat config
+   - [`.prettierrc`](../../.prettierrc) — 100 char width, Svelte plugin
+   - [`playwright.config.ts`](../../playwright.config.ts) — Multi-browser E2E testing
 
 ### ✅ Directory Structure
 
@@ -92,26 +97,26 @@ static/
 
 ### ✅ State Management
 
-All state modules use **Svelte 5 `.svelte.ts` runes patterns**:
+All state modules use **Svelte 5 `.svelte.ts` runes patterns** (see [`src/lib/state/`](../../src/lib/state/)):
 
-- `entities.svelte.ts` — Entity lists and compatibility matrix
-- `selection.svelte.ts` — Selected program/particle/material IDs
-- `calculation.svelte.ts` — Energy input, advanced options, results
-- `ui.svelte.ts` — `wasmReady`, `wasmError`, `isAdvancedMode` flags
-- `url-sync.ts` — URL serialization/deserialization utilities
+- [`entities.svelte.ts`](../../src/lib/state/entities.svelte.ts) — Entity lists and compatibility matrix
+- [`selection.svelte.ts`](../../src/lib/state/selection.svelte.ts) — Selected program/particle/material IDs
+- [`calculation.svelte.ts`](../../src/lib/state/calculation.svelte.ts) — Energy input, advanced options, results
+- [`ui.svelte.ts`](../../src/lib/state/ui.svelte.ts) — `wasmReady`, `wasmError`, `isAdvancedMode` flags
+- [`url-sync.ts`](../../src/lib/state/url-sync.ts) — URL serialization/deserialization utilities
 
-### ✅ WASM API Stubs
+### ✅ WASM API Stubs (see [`src/lib/wasm/`](../../src/lib/wasm/))
 
-- `types.ts` — Complete TypeScript API contract (re-exported from docs)
-- `loader.ts` — Lazy singleton WASM initialization with `$effect`
-- `libdedx.ts` — `LibdedxServiceImpl` with malloc/free patterns (stub)
-- `__mocks__/libdedx.ts` — Vitest mock with fixture data
+- [`types.ts`](../../src/lib/wasm/types.ts) — Complete TypeScript API contract (re-exported from docs)
+- [`loader.ts`](../../src/lib/wasm/loader.ts) — Lazy singleton WASM initialization with `$effect`
+- [`libdedx.ts`](../../src/lib/wasm/libdedx.ts) — `LibdedxServiceImpl` with malloc/free patterns (stub)
+- [`__mocks__/libdedx.ts`](../../src/lib/wasm/__mocks__/libdedx.ts) — Vitest mock with fixture data
 
-### ✅ Utility Modules
+### ✅ Utility Modules (see [`src/lib/`](../../src/lib/))
 
-- `energy.ts` — Unit conversion (MeV, MeV/u, MeV/nucl)
-- `csv.ts` — CSV generation for export
-- `jsroot-helpers.ts` — JSROOT plot wrapper utilities
+- [`energy.ts`](../../src/lib/units/energy.ts) — Unit conversion (MeV, MeV/u, MeV/nucl)
+- [`csv.ts`](../../src/lib/export/csv.ts) — CSV generation for export
+- [`jsroot-helpers.ts`](../../src/lib/components/jsroot-helpers.ts) — JSROOT plot wrapper utilities
 
 ### ✅ Routes
 
@@ -128,10 +133,10 @@ All routes configured with `export const prerender = true` via `+page.ts` files:
 ### ✅ Tests
 
 **Unit Tests (Vitest)**:
-- ✅ `energy-parser.test.ts` — 3 tests passing
+- ✅ [`energy-parser.test.ts`](../../src/tests/unit/energy-parser.test.ts) — 3 tests passing
 
 **E2E Tests (Playwright)**:
-- ✅ `basic.spec.ts` — 4 tests passing (Chromium only):
+- ✅ [`basic.spec.ts`](../../tests/e2e/basic.spec.ts) — 4 tests passing (Chromium only):
   - Homepage redirects to calculator
   - Calculator page loads
   - Plot page loads
@@ -150,7 +155,7 @@ All routes configured with `export const prerender = true` via `+page.ts` files:
 
 ## Known Issues / Notes
 
-1. **svelte-check vendor noise** — `pnpm check` shows errors from vendor/ and prototypes/ submodules but src/ code is valid. This is expected and documented.
+1. **svelte-check vendor noise** — `pnpm check` shows errors from `vendor/` and `prototypes/` submodules but `src/` code is valid. This is expected and documented (see [Testing Strategy](../07-testing-strategy.md) §4.2).
 
 2. **WASM module 404** — E2E tests show 404 errors for `/wasm/libdedx.mjs` because the actual WASM file doesn't exist yet (Stage 6). The mock handles unit tests.
 
@@ -178,31 +183,35 @@ pnpm lint           # ✅ 0 errors
 
 **Stage 5: Core Shared Components** — Implement shadcn-svelte components (Button, Select, Card, etc.), energy input form, entity selector dropdowns, and results table with CSV export.
 
+See [Stage 5 requirements](../00-redesign-plan.md) and [Feature Specs](../04-feature-specs/README.md) for details.
+
 ---
 
 ## Files Modified/Created
 
 **Configuration:**
-- `package.json`
-- `svelte.config.js`
-- `vite.config.ts`
-- `tsconfig.json`
-- `eslint.config.js`
-- `.prettierrc`
-- `playwright.config.ts`
+- [`package.json`](../../package.json)
+- [`svelte.config.js`](../../svelte.config.js)
+- [`vite.config.ts`](../../vite.config.ts)
+- [`tsconfig.json`](../../tsconfig.json)
+- [`eslint.config.js`](../../eslint.config.js)
+- [`.prettierrc`](../../.prettierrc)
+- [`playwright.config.ts`](../../playwright.config.ts)
 
 **Source Files:** 20+ files across `src/`
 
 **Tests:**
-- `src/tests/setup.ts`
-- `src/tests/unit/energy-parser.test.ts`
-- `tests/e2e/basic.spec.ts`
+- [`src/tests/setup.ts`](../../src/tests/setup.ts)
+- [`src/tests/unit/energy-parser.test.ts`](../../src/tests/unit/energy-parser.test.ts)
+- [`tests/e2e/basic.spec.ts`](../../tests/e2e/basic.spec.ts)
 
 **Static Assets:**
-- `static/favicon.ico`
-- `static/favicon.svg`
-- `static/site.webmanifest`
+- [`static/favicon.ico`](../../static/favicon.ico)
+- [`static/favicon.svg`](../../static/favicon.svg)
+- [`static/site.webmanifest`](../../static/site.webmanifest)
 
 ---
 
-**Session Log:** See `docs/ai-logs/2026-04-21-stage-4-scaffolding.md` for detailed AI session notes.
+**Session Logs:**
+- [2026-04-21-stage4-dev-fixes.md](../ai-logs/2026-04-21-stage4-dev-fixes.md) — Dev server fixes (prerender directive, Vite warnings)
+- See also [CHANGELOG-AI.md](../../CHANGELOG-AI.md) for full Stage 4 session history
