@@ -116,11 +116,13 @@ stage so that every PR has a gate matching the current scope of the project:
 | **8** | Deploy job: push `build/` → `APTG/web_dev` (master) / `APTG/web` (v* tag) |
 
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
-The deploy job runs only on `master` push or `v*` tag — never on PRs.
+The Stage 8 deploy job in `ci.yml` runs only on `master` push or `v*` tag —
+never on PRs. The earlier `develop`-triggered placeholder deploy is a separate
+workflow described in §5.1.
 
-### §5.1 Early deploy phase (develop branch, pre-Stage 4)
+### §5.1 Early deploy phase (develop branch, through Stage 7)
 
-Before the SvelteKit app exists (Stages 3.8 through end of Stage 7), a
+Before the Stage 8 deploy job exists (Stages 3.8 through end of Stage 7), a
 separate workflow `.github/workflows/deploy.yml` deploys a static
 "Under Construction" placeholder from the `develop` branch.
 
