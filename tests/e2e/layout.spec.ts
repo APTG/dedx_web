@@ -78,6 +78,6 @@ test.describe('WASM loading state', () => {
     // the WASM integration wiring is in place.
     const loadingBanner = page.getByText('Loading WASM module...');
     const errorBanner = page.getByText('WASM load error:');
-    await expect(loadingBanner.or(errorBanner)).toBeVisible({ timeout: 5000 });
+    await expect(loadingBanner.or(errorBanner).first()).toBeVisible({ timeout: 5000 });
   });
 });
