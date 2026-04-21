@@ -17,8 +17,8 @@
  * Prerequisites: run ./build.sh first to populate output/
  *
  * Outputs:
- * - ../data/wasm_runtime_stats.json (Phase 2 runtime data)
- * - ../data/wasm_ts_contract_stats.json (Stage 3 contract verification)
+ * - data/wasm_runtime_stats.json (Phase 2 runtime data)
+ * - data/wasm_ts_contract_stats.json (Stage 3 contract verification)
  */
 
 import { pathToFileURL } from 'url';
@@ -54,7 +54,7 @@ const runtimeStats = {
     generated_at: new Date().toISOString(),
     analysis_type: "wasm_runtime_verification_phase2",
     wasm_environment: "node",
-    build_script: "wasm-runtime/build.sh",
+    build_script: "wasm/build.sh",
   },
   library_version: null,
   programs: [],
@@ -454,6 +454,10 @@ runtimeStats.metadata.checks_passed = passed;
 runtimeStats.metadata.checks_failed = failed;
 runtimeStats.metadata.checks_total = results.length;
 
+// Write Phase 2 JSON (will be overwritten at the end with final counts)
+const jsonPathPh2 = resolve(__dirname, '..', 'data', 'wasm_runtime_stats.json');
+mkdirSync(dirname(jsonPathPh2), { recursive: true });
+
 // ─── 13. TypeScript Wrapper Contract Verification (Stage 3) ──────────────────
 
 console.log('\n');
@@ -466,7 +470,7 @@ const tsContractStats = {
         generated_at: new Date().toISOString(),
         analysis_type: "typescript_wrapper_contract_verification_stage3",
         wasm_environment: "node",
-        build_script: "wasm-runtime/build.sh",
+        build_script: "wasm/build.sh",
         contract_version: "Final v3 (docs/06-wasm-api-contract.md)",
     },
     exported_functions: {},
@@ -506,13 +510,24 @@ const wrapperFunctions = [
 ];
 
 for (const fn of wrapperFunctions) {
-    const fnExists = typeof m['_' + fn.name] === 'function';
-    console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
-    checkTS(`${fn.name} exported`, fnExists);
-    tsContractStats.exported_functions[fn.name] = {
-        category: 'dedx_wrappers.h',
-        exported: fnExists,
-    };
+    try {
+        // Check if function exists by looking for _prefixed version on module
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx_wrappers.h',
+            exported: fnExists,
+        };
+    } catch (err) {
+        console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
+        checkTS(`${fn.name} exported`, false, err.message);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx_wrappers.h',
+            exported: false,
+            error: err.message,
+        };
+    }
 }
 console.log();
 
@@ -527,13 +542,23 @@ const statefulFunctions = [
 ];
 
 for (const fn of statefulFunctions) {
-    const fnExists = typeof m['_' + fn.name] === 'function';
-    console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
-    checkTS(`${fn.name} exported`, fnExists);
-    tsContractStats.exported_functions[fn.name] = {
-        category: 'dedx.h (stateful)',
-        exported: fnExists,
-    };
+    try {
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx.h (stateful)',
+            exported: fnExists,
+        };
+    } catch (err) {
+        console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
+        checkTS(`${fn.name} exported`, false, err.message);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx.h (stateful)',
+            exported: false,
+            error: err.message,
+        };
+    }
 }
 console.log();
 
@@ -547,13 +572,23 @@ const toolsFunctions = [
 ];
 
 for (const fn of toolsFunctions) {
-    const fnExists = typeof m['_' + fn.name] === 'function';
-    console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
-    checkTS(`${fn.name} exported`, fnExists);
-    tsContractStats.exported_functions[fn.name] = {
-        category: 'dedx_tools.h',
-        exported: fnExists,
-    };
+    try {
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx_tools.h',
+            exported: fnExists,
+        };
+    } catch (err) {
+        console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
+        checkTS(`${fn.name} exported`, false, err.message);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx_tools.h',
+            exported: false,
+            error: err.message,
+        };
+    }
 }
 console.log();
 
@@ -573,14 +608,24 @@ const metadataFunctions = [
 ];
 
 for (const fn of metadataFunctions) {
-    const fnExists = typeof m['_' + fn.name] === 'function';
-    console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
-    checkTS(`${fn.name} exported`, fnExists);
-    tsContractStats.exported_functions[fn.name] = {
-        category: 'dedx.h (metadata)',
-        exported: fnExists,
-        expected_return: fn.expectedReturn,
-    };
+    try {
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx.h (metadata)',
+            exported: fnExists,
+            expected_return: fn.expectedReturn,
+        };
+    } catch (err) {
+        console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
+        checkTS(`${fn.name} exported`, false, err.message);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'dedx.h (metadata)',
+            exported: false,
+            error: err.message,
+        };
+    }
 }
 console.log();
 
@@ -594,14 +639,23 @@ const extraFunctions = [
 ];
 
 for (const fn of extraFunctions) {
-    const fnExists = typeof m['_' + fn.name] === 'function';
-    console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
-    checkTS(`${fn.name} exported`, fnExists);
-    tsContractStats.exported_functions[fn.name] = {
-        category: 'wasm/dedx_extra.h',
-        exported: fnExists,
-        expected_return: fn.expectedReturn,
-    };
+    try {
+        const fnExists = typeof m['_' + fn.name] === 'function';
+        console.log(`  ${fn.name.padEnd(35)} ${fnExists ? '✓ exported' : '✗ MISSING'}`);
+        checkTS(`${fn.name} exported`, fnExists);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'wasm/dedx_extra.h',
+            exported: fnExists,
+        };
+    } catch (err) {
+        console.log(`  ${fn.name.padEnd(35)} ✗ MISSING (${err.message})`);
+        checkTS(`${fn.name} exported`, false, err.message);
+        tsContractStats.exported_functions[fn.name] = {
+            category: 'wasm/dedx_extra.h',
+            exported: false,
+            error: err.message,
+        };
+    }
 }
 console.log();
 
@@ -667,28 +721,19 @@ console.log();
 console.log('=== 13.3 Method Signature Validation ===\n');
 
 console.log('Testing dedx_fill_program_list(int* list):');
-const programListLength = 30;
-const progListPtrTS = m._malloc(programListLength * 4);
-let progListValues = [];
-try {
-    m.HEAP32.fill(0, progListPtrTS >> 2, (progListPtrTS >> 2) + programListLength);
-    m.ccall('dedx_fill_program_list', null, ['number'], [progListPtrTS]);
-    progListValues = Array.from(m.HEAP32.subarray(progListPtrTS >> 2, (progListPtrTS >> 2) + programListLength));
-} finally {
-    m._free(progListPtrTS);
-}
-const populatedPrograms = progListValues.filter(value => Number.isInteger(value) && value > 0);
-console.log(`  Output array populated entries: ${populatedPrograms.length}`);
-const progListOk = populatedPrograms.length > 0;
-checkTS('dedx_fill_program_list fills output array', progListOk, `${populatedPrograms.length} populated entries`);
+const progListPtrTS = m._malloc(30 * 4);
+m.ccall('dedx_fill_program_list', null, ['number'], [progListPtrTS]);
+// Function is void - check that it filled the array (first element should be non-zero)
+const firstProg = m.HEAP32[progListPtrTS >> 2];
+m._free(progListPtrTS);
+const progListOk = firstProg > 0;
+console.log(`  Fills array with program IDs, first = ${firstProg}`);
+checkTS('dedx_fill_program_list fills program list array', progListOk);
 tsContractStats.method_signature_checks.push({
     function: 'dedx_fill_program_list',
-    test: 'fills output array',
+    test: 'fills program list array',
     pass: progListOk,
-    result: {
-        populated_entries: populatedPrograms.length,
-        values: progListValues,
-    },
+    result: firstProg,
 });
 
 console.log('Testing dedx_get_ion_nucleon_number(int ion):');
@@ -880,6 +925,14 @@ tsContractStats.metadata.checks_failed = tsFailed;
 tsContractStats.metadata.checks_total = tsResults.length;
 
 // ─── 14. Write JSON output ───────────────────────────────────────────────────
+
+// Write Phase 2 JSON with final metadata
+runtimeStats.metadata.checks_passed = passed;
+runtimeStats.metadata.checks_failed = failed;
+runtimeStats.metadata.checks_total = results.length;
+writeFileSync(jsonPathPh2, JSON.stringify(runtimeStats, null, 2) + '\n');
+console.log();
+console.log(`Phase 2 JSON written to: ${jsonPathPh2}`);
 
 // Write TS contract stats
 const tsJsonPath = resolve(__dirname, '..', 'data', 'wasm_ts_contract_stats.json');

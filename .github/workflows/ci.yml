@@ -1,0 +1,45 @@
+name: CI
+
+on:
+  push:
+    branches: [master, qwen/**]
+  pull_request:
+    branches: [master]
+
+jobs:
+  wasm-verify:
+    name: Stage 3 WASM Verification
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build WASM module
+        run: |
+          cd wasm
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Verify WASM contract
+        run: node wasm/verify.mjs
+
+      - name: Upload verification stats
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: wasm-verification-stats
+          path: |
+            data/wasm_runtime_stats.json
+            data/wasm_ts_contract_stats.json
+          retention-days: 7
