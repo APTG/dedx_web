@@ -60,7 +60,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     logScale: boolean
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
-      logScale ? Math.exp(i * 0.1) : i * 10
+      logScale ? Math.exp(i * 0.1) : (i + 1) * 10
     );
     return this.calculate(programId, particleId, materialId, energies);
   }

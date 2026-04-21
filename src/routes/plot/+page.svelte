@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { wasmReady } from '$lib/state/ui.svelte';
+  import { base } from "$app/paths";
+  import { wasmReady } from "$lib/state/ui.svelte";
 </script>
 
 <svelte:head>
@@ -21,7 +22,7 @@
       <p class="text-muted-foreground">Plot page coming soon...</p>
       <p class="mt-2 text-sm">
         This is a placeholder. The Plot page will be implemented in Stage 6 per
-        <a href="/docs" class="underline hover:no-underline">feature specs</a>.
+        <a href={`${base}/docs`} class="underline hover:no-underline">feature specs</a>.
       </p>
     </div>
   {/if}
