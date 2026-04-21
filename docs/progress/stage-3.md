@@ -7,28 +7,28 @@
 
 ## Deliverables
 
-| Artifact | Status | Notes |
-|----------|--------|-------|
-| `wasm/build.sh` | ✅ | Emscripten 5.0.5 Docker build; outputs `wasm/output/libdedx.{mjs,wasm}` |
-| `wasm/dedx_extra.h` | ✅ | Thin shim exposing 4 internal libdedx functions |
-| `wasm/dedx_extra.c` | ✅ | Implementation; avoids modifying the libdedx submodule |
-| `wasm/verify.mjs` | ✅ | 67-check contract verification script (RED→GREEN gate) |
-| `.github/workflows/ci.yml` | ✅ | CI job: build WASM + run verify.mjs on push/PR to master |
-| `.github/workflows/test_and_deploy.yml` | ✅ deleted | Legacy CRA workflow removed |
+| Artifact                                | Status     | Notes                                                                   |
+| --------------------------------------- | ---------- | ----------------------------------------------------------------------- |
+| `wasm/build.sh`                         | ✅         | Emscripten 5.0.5 Docker build; outputs `static/wasm/libdedx.{mjs,wasm}` |
+| `wasm/dedx_extra.h`                     | ✅         | Thin shim exposing 4 internal libdedx functions                         |
+| `wasm/dedx_extra.c`                     | ✅         | Implementation; avoids modifying the libdedx submodule                  |
+| `wasm/verify.mjs`                       | ✅         | 67-check contract verification script (RED→GREEN gate)                  |
+| `.github/workflows/ci.yml`              | ✅         | CI job: build WASM + run verify.mjs on push/PR to master                |
+| `.github/workflows/test_and_deploy.yml` | ✅ deleted | Legacy CRA workflow removed                                             |
 
 ---
 
 ## Verification Results (GREEN phase)
 
-| Category | Checks |
-|----------|--------|
-| Exported C functions | 31/31 ✓ |
-| Emscripten runtime methods | 8/8 ✓ |
-| LibdedxService method coverage | 17/17 ✓ |
-| Method signature validation | 5/5 ✓ |
-| Error handling contract | 2/2 ✓ |
-| Energy unit conversion | 2/2 ✓ |
-| Advanced options (stateful API) | 2/2 ✓ |
+| Category                        | Checks  |
+| ------------------------------- | ------- |
+| Exported C functions            | 31/31 ✓ |
+| Emscripten runtime methods      | 8/8 ✓   |
+| LibdedxService method coverage  | 17/17 ✓ |
+| Method signature validation     | 5/5 ✓   |
+| Error handling contract         | 2/2 ✓   |
+| Energy unit conversion          | 2/2 ✓   |
+| Advanced options (stateful API) | 2/2 ✓   |
 
 Build output sizes: `libdedx.wasm` 463 KB · `libdedx.mjs` 15 KB.
 
@@ -38,16 +38,17 @@ Build output sizes: `libdedx.wasm` 463 KB · `libdedx.mjs` 15 KB.
 
 Both items were resolved on branch `fix/wasm-web-ci` after Stage 4 scaffolding was complete:
 
-| Item | Was | Now |
-|------|-----|-----|
-| WASM output location | `wasm/output/` (gitignored) | `static/wasm/` (served by SvelteKit) |
-| Emscripten `ENVIRONMENT` flag | `node` | `web,node` (browser + Node.js for verify.mjs) |
+| Item                          | Was                         | Now                                           |
+| ----------------------------- | --------------------------- | --------------------------------------------- |
+| WASM output location          | `wasm/output/` (gitignored) | `static/wasm/` (served by SvelteKit)          |
+| Emscripten `ENVIRONMENT` flag | `node`                      | `web,node` (browser + Node.js for verify.mjs) |
 
 `ENVIRONMENT=web,node` rather than `web`-only preserves `verify.mjs` Node.js
 compatibility without a second build. See `docs/decisions/003-wasm-build-pipeline.md`
 for the full flag rationale.
 
 CI (`ci.yml`) was updated at the same time:
+
 - `wasm-verify` uploads `static/wasm/` as a build artifact after verification.
 - `e2e-tests` (which `needs: [wasm-verify]`) downloads the artifact so `pnpm build`
   can embed the real WASM files and Playwright tests have a functional app.

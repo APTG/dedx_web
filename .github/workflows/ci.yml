@@ -39,9 +39,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: wasm-binaries
-          path: |
-            static/wasm/libdedx.mjs
-            static/wasm/libdedx.wasm
+          path: static/wasm/libdedx.*
           retention-days: 1
 
       - name: Upload verification stats

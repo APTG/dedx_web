@@ -2,7 +2,7 @@
 
 **Date:** 21 April 2026  
 **Branch:** `fix/wasm-web-ci`  
-**Model:** Claude Sonnet 4.6 via Claude Code
+**Model:** (Claude Sonnet 4.6 via Claude Code)
 
 ---
 
@@ -16,7 +16,7 @@ After Stage 4 scaffolding was merged, two Stage 3→4 transition items remained 
 3. `ci.yml` `e2e-tests` job ran `pnpm build` + Playwright without WASM files present;
    the two CI jobs were fully independent (no artifact sharing).
 
-The user observed the gap from the Stage 3 plan: *"Output: ES module `.mjs` + `.wasm`"*
+The user observed the gap from the Stage 3 plan: _"Output: ES module `.mjs` + `.wasm`"_
 and asked whether it was included in GitHub Actions.
 
 ---
@@ -24,6 +24,7 @@ and asked whether it was included in GitHub Actions.
 ## Changes
 
 ### `wasm/build.sh`
+
 - `ENVIRONMENT=node` → `ENVIRONMENT='web,node'`
   - `web` satisfies ADR 003 (browser-compatible ES module)
   - `node` preserves `verify.mjs` Node.js compatibility without a second build
@@ -31,15 +32,18 @@ and asked whether it was included in GitHub Actions.
 - Comments updated to reflect the new output path and rationale for `web,node`
 
 ### `wasm/verify.mjs`
+
 - `outputDir` updated from `resolve(__dirname, 'output')` to
   `resolve(__dirname, '..', 'static', 'wasm')`
 - Error message updated: `Run wasm/build.sh first` (was `./build.sh`)
 
 ### `.gitignore`
+
 - Replaced `wasm/output/` (no longer created) with
   `/static/wasm/libdedx.mjs` and `/static/wasm/libdedx.wasm`
 
 ### `.github/workflows/ci.yml`
+
 - `wasm-verify` job: renamed to "WASM Build + Contract Verification"; added
   `mkdir -p static/wasm` before the build; added **`wasm-binaries` artifact upload**
   (`static/wasm/libdedx.{mjs,wasm}`, 1-day retention).
@@ -48,6 +52,7 @@ and asked whether it was included in GitHub Actions.
 - `unit-tests` job: unchanged (Vitest uses mocks, no WASM needed).
 
 ### Docs
+
 - `docs/progress/stage-3.md` — "Known Transition Items" section updated to
   "Transition Items (resolved post-Stage 4)".
 - `docs/00-redesign-plan.md` — Stage 3 transition note updated to "(resolved)".
