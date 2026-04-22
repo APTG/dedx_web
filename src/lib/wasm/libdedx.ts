@@ -207,3 +207,9 @@ export class LibdedxServiceImpl implements LibdedxService {
     return this.calculate(programId, particleId, materialId, energies);
   }
 }
+
+export let libdedx: { service: LibdedxServiceImpl | null } = { service: null };
+
+export function initLibdedx(module: EmscriptenModule): void {
+  libdedx.service = new LibdedxServiceImpl(module);
+}

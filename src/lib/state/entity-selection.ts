@@ -1,5 +1,5 @@
-import { buildCompatibilityMatrix, getAvailablePrograms, getAvailableParticles, getAvailableMaterials } from "./compatibility-matrix";
-import type { CompatibilityMatrix, ProgramEntity, ParticleEntity, MaterialEntity, LibdedxService } from "$lib/wasm/types";
+import { getAvailablePrograms, getAvailableParticles, getAvailableMaterials } from "./compatibility-matrix";
+import type { CompatibilityMatrix, ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 export interface AutoSelectProgram {
   id: -1;

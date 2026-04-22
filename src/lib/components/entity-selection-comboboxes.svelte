@@ -32,30 +32,65 @@
     });
   });
 
-  const materialItems = $derived.by(() => {
-    const elements = state.allMaterials
+  interface MaterialGroup {
+    type: "section";
+    label: string;
+  }
+
+  interface MaterialItem {
+    type: "item";
+    entity: MaterialEntity;
+    available: boolean;
+    label: string;
+  }
+
+  type MaterialEntry = MaterialGroup | MaterialItem;
+
+  const materialItems = $derived.by<MaterialEntry[]>(() => {
+    const elements = state.availableMaterials
       .filter((m) => m.id >= 1 && m.id <= 98)
       .sort((a, b) => a.id - b.id);
-    const compounds = state.allMaterials
+    const compounds = state.availableMaterials
       .filter((m) => m.id > 98 || m.id === 906)
       .sort((a, b) => a.name.localeCompare(b.name));
 
-    return [...elements, ...compounds].map((material) => ({
-      entity: material,
-      available: state.availableMaterials.some((m) => m.id === material.id),
-      label: `${material.id}  ${material.name}`,
-    }));
+    const result: MaterialEntry[] = [
+      { type: "section", label: "Elements" },
+      ...elements.map((material) => ({
+        type: "item" as const,
+        entity: material,
+        available: state.availableMaterials.some((m) => m.id === material.id),
+        label: `${material.id}  ${material.name}`,
+      })),
+      { type: "section", label: "Compounds" },
+      ...compounds.map((material) => ({
+        type: "item" as const,
+        entity: material,
+        available: state.availableMaterials.some((m) => m.id === material.id),
+        label: `${material.id}  ${material.name}`,
+      })),
+    ];
+
+    return result;
   });
 
+  interface ProgramGroup {
+    type: "section";
+    label: string;
+  }
+
   interface ProgramItem {
-    entity: SelectedProgram;
+    type: "item";
+    entity: SelectedProgram | { id: number; name: string; version: string };
     available: boolean;
     label: string;
     description?: string;
   }
 
-  const programItems = $derived.by<ProgramItem[]>(() => {
-    const result: ProgramItem[] = [];
+  type ProgramEntry = ProgramGroup | ProgramItem;
+
+  const programItems = $derived.by<ProgramEntry[]>(() => {
+    const result: ProgramEntry[] = [];
 
     const autoSelect = state.selectedProgram;
     if (autoSelect.id === -1) {
@@ -63,6 +98,7 @@
         ? `Auto-select → ${autoSelect.resolvedProgram.name}`
         : "Auto-select";
       result.push({
+        type: "item" as const,
         entity: autoSelect,
         available: true,
         label: resolvedLabel,
@@ -72,8 +108,11 @@
     const tabulatedPrograms = state.availablePrograms.filter((p) => p.id <= 90);
     const analyticalPrograms = state.availablePrograms.filter((p) => p.id > 90);
 
+    result.push({ type: "section", label: "Tabulated Programs" });
+
     for (const program of tabulatedPrograms) {
       result.push({
+        type: "item" as const,
         entity: program,
         available: true,
         label: `${program.name} — ${program.version}`,
@@ -81,8 +120,11 @@
     }
 
     if (analyticalPrograms.length > 0) {
+      result.push({ type: "section", label: "Analytical Programs" });
+
       for (const program of analyticalPrograms) {
         result.push({
+          type: "item" as const,
           entity: program,
           available: true,
           label: `${program.name} — ${program.version}`,
