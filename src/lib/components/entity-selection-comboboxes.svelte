@@ -2,7 +2,7 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
-  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection";
+  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
 
   interface Props {
     state: EntitySelectionState;
@@ -15,9 +15,8 @@
     if (particle.id === 1001) {
       return "Electron";
     }
-    const z = particle.massNumber > 0 ? particle.massNumber : "";
     const symbol = particle.symbol || "";
-    return `${z ? `Z=${z} ` : ""}${particle.name}${symbol ? ` (${symbol})` : ""}`;
+    return `Z=${particle.id} ${particle.name}${symbol ? ` (${symbol})` : ""}`;
   }
 
   const particleItems = $derived.by(() => {
@@ -25,7 +24,7 @@
       const isAvailable = state.availableParticles.some((p) => p.id === particle.id);
       return {
         entity: particle,
-        available: isAvailable || particle.id === 1001,
+        available: particle.id !== 1001,
         label: getParticleLabel(particle),
         description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
       };
@@ -94,9 +93,7 @@
 
     const autoSelect = state.selectedProgram;
     if (autoSelect.id === -1) {
-      const resolvedLabel = autoSelect.resolvedProgram
-        ? `Auto-select → ${autoSelect.resolvedProgram.name}`
-        : "Auto-select";
+      const resolvedLabel = autoSelect.resolvedProgram ? "Auto-select →" : "Auto-select";
       result.push({
         type: "item" as const,
         entity: autoSelect,

@@ -2,7 +2,7 @@
   import EntityPanel from "./entity-panel.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
-  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection";
+  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
 
   interface Props {
     state: EntitySelectionState;

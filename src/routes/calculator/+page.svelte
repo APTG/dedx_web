@@ -1,17 +1,18 @@
 <script lang="ts">
   import { wasmReady } from "$lib/state/ui.svelte";
-  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection";
+  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
-  import { LibdedxServiceImpl } from "$lib/wasm/__mocks__/libdedx";
+  import { getService } from "$lib/wasm/loader";
 
   let state = $state<EntitySelectionState | null>(null);
 
   $effect(() => {
     if (wasmReady.value && !state) {
-      const service = new LibdedxServiceImpl();
-      const matrix = buildCompatibilityMatrix(service);
-      state = createEntitySelectionState(matrix);
+      getService().then((service) => {
+        const matrix = buildCompatibilityMatrix(service);
+        state = createEntitySelectionState(matrix);
+      });
     }
   });
 </script>

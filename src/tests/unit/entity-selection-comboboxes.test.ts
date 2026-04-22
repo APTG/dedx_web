@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/svelte";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
-import { createEntitySelectionState } from "$lib/state/entity-selection";
+import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
@@ -188,11 +188,14 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Program combobox shows tabulated and analytical programs grouped", async () => {
+    // ASTAR only supports helium; switch to helium so all four programs are available
+    state.selectParticle(2);
+
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
-    
+
     const programCombobox = container.querySelector('[aria-label="Program"]');
     fireEvent.click(programCombobox!);
-    
+
     // Should show PSTAR, ASTAR, MSTAR, ICRU 90
     expect(await screen.findByText(/PSTAR/i)).toBeInTheDocument();
     expect(await screen.findByText(/ASTAR/i)).toBeInTheDocument();

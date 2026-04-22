@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { createEntitySelectionState } from "$lib/state/entity-selection";
+import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
-import type { EntitySelectionState } from "$lib/state/entity-selection";
+import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Extended mock service for entity selection tests

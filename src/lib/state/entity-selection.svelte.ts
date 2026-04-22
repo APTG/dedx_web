@@ -37,9 +37,9 @@ const WATER_ID = 276;
 const ELECTRON_ID = 1001;
 
 export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
-  let selectedParticleId: number | null = PROTON_ID;
-  let selectedMaterialId: number | null = WATER_ID;
-  let selectedProgramId: number = -1;
+  let selectedParticleId = $state<number | null>(PROTON_ID);
+  let selectedMaterialId = $state<number | null>(WATER_ID);
+  let selectedProgramId = $state<number>(-1);
 
   function resolveAutoSelect(programId: number, particleId: number | null, materialId: number | null): number | null {
     if (particleId === null || materialId === null) {
