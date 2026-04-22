@@ -23,6 +23,7 @@ class MockLibdedxService {
       [
         3,
         [
+          { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] },
           { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
           { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
         ],
@@ -40,6 +41,7 @@ class MockLibdedxService {
       [
         3,
         [
+          { id: 1, name: "Hydrogen", density: 0.000089, isGasByDefault: true },
           { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
           { id: 267, name: "Air", density: 0.0012, isGasByDefault: true },
         ],
@@ -155,7 +157,8 @@ describe("createEntitySelectionState", () => {
       const state = createEntitySelectionState(matrix);
       // Start: proton, water, PSTAR
       state.selectMaterial(267); // air
-      // Proton is compatible with air (via MSTAR)
+      // Air is in MSTAR, which now has proton
+      // Proton is preserved since it's compatible with air via MSTAR
       expect(state.selectedParticle?.id).toBe(1);
       // PSTAR doesn't support air, so program resets
       expect(state.selectedProgram.id).toBe(-1);
