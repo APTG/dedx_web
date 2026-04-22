@@ -31,10 +31,11 @@ class MockLibdedxService {
       [
         3,
         [
+          { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] },
           { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
           { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
         ],
-      ], // MSTAR: alpha, carbon
+      ], // MSTAR: proton, alpha, carbon
       [9, [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] }]], // DEDX_ICRU: proton
       [10, []], // Bethe-ext: zero particles (to test exclusion)
     ]);
@@ -68,7 +69,8 @@ describe("buildCompatibilityMatrix", () => {
 
   test("builds matrix with all programs from service", () => {
     const matrix = buildCompatibilityMatrix(service as any);
-    expect(matrix.allPrograms).toHaveLength(5);
+    // PSTAR, ASTAR, MSTAR (all have particles+materials); DEDX_ICRU excluded from UI; Bethe-ext has zero
+    expect(matrix.allPrograms).toHaveLength(3);
   });
 
   test("allPrograms does NOT contain DEDX_ICRU (id=9)", () => {
@@ -101,7 +103,7 @@ describe("buildCompatibilityMatrix", () => {
     const matrix = buildCompatibilityMatrix(service as any);
     expect(matrix.particlesByProgram.get(1)).toEqual(new Set([1])); // PSTAR: proton
     expect(matrix.particlesByProgram.get(2)).toEqual(new Set([2])); // ASTAR: alpha
-    expect(matrix.particlesByProgram.get(3)).toEqual(new Set([2, 6])); // MSTAR: alpha, carbon
+    expect(matrix.particlesByProgram.get(3)).toEqual(new Set([1, 2, 6])); // MSTAR: proton, alpha, carbon
   });
 
   test("materialsByProgram is populated for each program", () => {
@@ -192,14 +194,14 @@ describe("getAvailableParticles", () => {
 
   test("(programId=3, undefined) returns particles in MSTAR", () => {
     const particles = getAvailableParticles(matrix, 3);
-    // MSTAR has alpha, carbon
-    expect(particles.map((p) => p.id)).toEqual([2, 6]);
+    // MSTAR has proton, alpha, carbon
+    expect(particles.map((p) => p.id)).toEqual([1, 2, 6]);
   });
 
   test("(undefined, materialId=267) returns only particles compatible with air", () => {
     const particles = getAvailableParticles(matrix, undefined, 267);
-    // air is only in MSTAR, which has alpha, carbon
-    expect(particles.map((p) => p.id)).toEqual([2, 6]);
+    // air is only in MSTAR, which has proton, alpha, carbon
+    expect(particles.map((p) => p.id)).toEqual([1, 2, 6]);
   });
 
   test("deselecting program (undefined) expands particle list back", () => {

@@ -213,21 +213,40 @@ Existing tests (energy, csv, wasm-mock, url-sync, calculation, selection) all pa
 
 ---
 
-## Next Steps (GREEN phase)
+## Phase 1 Complete — Logic Layer GREEN ✓
 
-1. Update types.ts with proper CompatibilityMatrix interface
-2. Implement compatibility-matrix.ts
-3. Implement entity-selection.ts
-4. Run tests — should all pass (GREEN)
-5. Refactor if needed
-6. Log out, commit
+**Status:** Logic layer implementation complete (2026-04-22)
+
+### Completed:
+1. ✓ Updated `types.ts` with proper `CompatibilityMatrix` interface + added `symbol` to `ParticleEntity`, `atomicNumber?` to `MaterialEntity`
+2. ✓ Created `compatibility-matrix.ts` with all 4 functions:
+   - `buildCompatibilityMatrix(service)`
+   - `getAvailablePrograms(matrix, particleId?, materialId?)`
+   - `getAvailableParticles(matrix, programId?, materialId?)`
+   - `getAvailableMaterials(matrix, programId?, particleId?)`
+3. ✓ All 28 compatibility-matrix tests pass
+4. ✓ All existing tests still pass (137 total: energy, csv, wasm-mock, url-sync, compatibility-matrix)
+
+### Still RED (Phase 2 — state layer):
+- `entity-selection-state.test.ts` — 24 tests still fail (module not implemented yet)
+
+### Next Session (State Layer):
+1. Create `entity-selection.ts` with `createEntitySelectionState()` and `EntitySelectionState` class
+2. Make 24 state tests pass
+3. Then UI components (separate session)
 
 ---
 
-## Session Stats
+## Session Stats — Phase 1 (Logic Layer)
 
-- **Files created:** 3 test files
-- **Total tests written:** 66 (28 + 24 + 14)
-- **Existing tests passing:** 109
-- **Session duration:** ~45 min
+### Phase 1 (this session):
+- **Files modified:** 2 (`types.ts`, new `compatibility-matrix.ts`)
+- **Files created:** 1 implementation file
+- **Tests passing:** 28/28 compatibility-matrix tests GREEN
+- **Total passing:** 137 (including existing: energy 30, csv 16, wasm-mock 27, url-sync 36)
+- **Still RED:** 24 entity-selection-state tests (not implemented yet)
+
+### Phase 0 (previous session - RED phase):
+- **Files created:** 3 test files (66 tests total: 28 + 24 + 14)
+
 - **Branch:** `qwen/stage-5-tdd`
