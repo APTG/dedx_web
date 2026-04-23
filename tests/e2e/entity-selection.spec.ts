@@ -1,6 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("Calculator page — compact mode", () => {
+  const particleTrigger = (page: import("@playwright/test").Page) =>
+    page.getByRole("button", { name: /^Particle$/ });
+  const materialTrigger = (page: import("@playwright/test").Page) =>
+    page.getByRole("button", { name: /^Material$/ });
+  const programTrigger = (page: import("@playwright/test").Page) =>
+    page.getByRole("button", { name: /^Program$/ });
+
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
     // Wait for WASM to load and combobox triggers to appear
@@ -8,21 +15,21 @@ test.describe("Calculator page — compact mode", () => {
   });
 
   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /particle/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /material/i })).toBeVisible();
-    await expect(page.getByRole("button", { name: /program/i })).toBeVisible();
+    await expect(particleTrigger(page)).toBeVisible();
+    await expect(materialTrigger(page)).toBeVisible();
+    await expect(programTrigger(page)).toBeVisible();
   });
 
   test("default values show Proton (Z=1), Water, Auto-select", async ({ page }) => {
-    await expect(page.getByRole("button", { name: /particle/i })).toContainText(/Z=1/i);
-    await expect(page.getByRole("button", { name: /material/i })).toContainText(/water/i);
-    await expect(page.getByRole("button", { name: /program/i })).toContainText(/auto-select/i);
+    await expect(particleTrigger(page)).toContainText(/Z=1/i);
+    await expect(materialTrigger(page)).toContainText(/water/i);
+    await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
 
   test("typing carbon in the Particle search filters the list and shows Carbon", async ({
     page,
   }) => {
-    const particleBtn = page.getByRole("button", { name: /particle/i });
+    const particleBtn = particleTrigger(page);
     await particleBtn.click();
 
     // Type in the search input inside the open dropdown (filter to visible only)
@@ -35,12 +42,12 @@ test.describe("Calculator page — compact mode", () => {
     page,
   }) => {
     // Open particle dropdown and select Carbon (Z=6)
-    const particleBtn = page.getByRole("button", { name: /particle/i });
+    const particleBtn = particleTrigger(page);
     await particleBtn.click();
     await page.getByRole("option", { name: /Z=6/i }).first().click();
 
     // Open program dropdown
-    const programBtn = page.getByRole("button", { name: /program/i });
+    const programBtn = programTrigger(page);
     await programBtn.click();
 
     // PSTAR (proton-only in libdedx) should not appear for carbon
@@ -49,7 +56,7 @@ test.describe("Calculator page — compact mode", () => {
 
   test("Reset all link restores defaults", async ({ page }) => {
     // Change particle to Carbon (Z=6)
-    const particleBtn = page.getByRole("button", { name: /particle/i });
+    const particleBtn = particleTrigger(page);
     await particleBtn.click();
     await page.getByRole("option", { name: /Z=6/i }).first().click();
 
@@ -57,15 +64,15 @@ test.describe("Calculator page — compact mode", () => {
     await page.getByRole("link", { name: /reset all/i }).click();
 
     // Verify defaults restored
-    await expect(page.getByRole("button", { name: /particle/i })).toContainText(/Z=1/i);
-    await expect(page.getByRole("button", { name: /material/i })).toContainText(/water/i);
-    await expect(page.getByRole("button", { name: /program/i })).toContainText(/auto-select/i);
+    await expect(particleTrigger(page)).toContainText(/Z=1/i);
+    await expect(materialTrigger(page)).toContainText(/water/i);
+    await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
 
   test("Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0", async ({
     page,
   }) => {
-    const particleBtn = page.getByRole("button", { name: /particle/i });
+    const particleBtn = particleTrigger(page);
     await particleBtn.click();
 
     const electronOption = page.getByRole("option", { name: /electron/i });

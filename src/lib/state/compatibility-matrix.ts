@@ -7,19 +7,22 @@ import type {
 } from "$lib/wasm/types";
 
 // DEDX_ICRU (id=9) is the internal auto-selector in libdedx — it picks the best
-// ICRU dataset for the current particle/material at the C layer. The frontend
-// implements its own "Auto-select" entry that resolves the same chain, making
-// DEDX_ICRU redundant as a UI option. Showing both would confuse users.
+// ICRU dataset for the current particle/material at the C layer.
+// Spec references:
+// - docs/04-feature-specs/entity-selection.md ("Hidden programs": ID 9 excluded)
+// - docs/06-wasm-api-contract.md §10.3 (ID 9 used internally by Auto-select)
+// The UI exposes a synthetic "Auto-select" entry instead, so showing ID 9 directly
+// would duplicate behavior and confuse users.
 const EXCLUDED_FROM_UI = new Set([9]);
 
 export function buildCompatibilityMatrix(service: LibdedxService): CompatibilityMatrix {
   const programs = service.getPrograms();
-  
+
   const particlesByProgram = new Map<number, Set<number>>();
   const materialsByProgram = new Map<number, Set<number>>();
   const programsByParticle = new Map<number, Set<number>>();
   const programsByMaterial = new Map<number, Set<number>>();
-  
+
   const allParticlesMap = new Map<number, ParticleEntity>();
   const allMaterialsMap = new Map<number, MaterialEntity>();
   const allProgramsFiltered: ProgramEntity[] = [];
@@ -27,10 +30,10 @@ export function buildCompatibilityMatrix(service: LibdedxService): Compatibility
   for (const program of programs) {
     const particles = service.getParticles(program.id);
     const materials = service.getMaterials(program.id);
-    
+
     particlesByProgram.set(program.id, new Set(particles.map((p) => p.id)));
     materialsByProgram.set(program.id, new Set(materials.map((m) => m.id)));
-    
+
     for (const particle of particles) {
       allParticlesMap.set(particle.id, particle);
       if (!programsByParticle.has(particle.id)) {
@@ -38,7 +41,7 @@ export function buildCompatibilityMatrix(service: LibdedxService): Compatibility
       }
       programsByParticle.get(particle.id)!.add(program.id);
     }
-    
+
     for (const material of materials) {
       allMaterialsMap.set(material.id, material);
       if (!programsByMaterial.has(material.id)) {
@@ -46,11 +49,11 @@ export function buildCompatibilityMatrix(service: LibdedxService): Compatibility
       }
       programsByMaterial.get(material.id)!.add(program.id);
     }
-    
+
     const hasParticles = particles.length > 0;
     const hasMaterials = materials.length > 0;
     const isExcluded = EXCLUDED_FROM_UI.has(program.id);
-    
+
     if (hasParticles && hasMaterials && !isExcluded) {
       allProgramsFiltered.push(program);
     }
@@ -70,7 +73,7 @@ export function buildCompatibilityMatrix(service: LibdedxService): Compatibility
 export function getAvailablePrograms(
   matrix: CompatibilityMatrix,
   particleId?: number,
-  materialId?: number
+  materialId?: number,
 ): ProgramEntity[] {
   let candidates = matrix.allPrograms;
 
@@ -96,7 +99,7 @@ export function getAvailablePrograms(
 export function getAvailableParticles(
   matrix: CompatibilityMatrix,
   programId?: number,
-  materialId?: number
+  materialId?: number,
 ): ParticleEntity[] {
   let candidates = matrix.allParticles;
 
@@ -131,7 +134,7 @@ export function getAvailableParticles(
 export function getAvailableMaterials(
   matrix: CompatibilityMatrix,
   programId?: number,
-  particleId?: number
+  particleId?: number,
 ): MaterialEntity[] {
   let candidates = matrix.allMaterials;
 

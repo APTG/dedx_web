@@ -1,5 +1,5 @@
-import { describe, test, expect, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/svelte";
+import { describe, test, expect, beforeEach } from "vitest";
+import { render, screen, cleanup } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -9,37 +9,106 @@ import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/ty
 class MockLibdedxService {
   getPrograms(): ProgramEntity[] {
     return [
-      { id: 1, name: "PSTAR", version: "1.0" },
-      { id: 2, name: "ASTAR", version: "1.0" },
-      { id: 3, name: "MSTAR", version: "1.0" },
+      { id: 1, name: "ASTAR", version: "1.0" },
+      { id: 2, name: "PSTAR", version: "1.0" },
+      { id: 4, name: "MSTAR", version: "1.0" },
+      { id: 7, name: "ICRU49", version: "1.0" },
       { id: 9, name: "ICRU", version: "1.0" },
       { id: 10, name: "Bethe-ext", version: "1.0" },
-      { id: 90, name: "ICRU 90", version: "1.0" },
     ];
   }
 
   getParticles(programId: number): ParticleEntity[] {
     const particles: Map<number, ParticleEntity[]> = new Map([
-      [1, [
-        { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] },
-        { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
-        { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
-      ]],
-      [2, [{ id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] }]],
       [
-        3,
+        1,
         [
-          { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] },
-          { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
-          { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha", "α", "He-4"],
+          },
         ],
       ],
-      [90, [
-        { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] },
-        { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha"] },
-        { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
-      ]],
-      [9, [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] }]],
+      [
+        2,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton", "p", "H-1"],
+          },
+        ],
+      ],
+      [
+        4,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton", "p", "H-1"],
+          },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha", "α", "He-4"],
+          },
+          {
+            id: 6,
+            name: "Carbon",
+            massNumber: 12,
+            atomicMass: 12.011,
+            symbol: "C",
+            aliases: ["C-12"],
+          },
+        ],
+      ],
+      [
+        7,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton"],
+          },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha"],
+          },
+        ],
+      ],
+      [
+        9,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton"],
+          },
+        ],
+      ],
       [10, []],
     ]);
     return particles.get(programId) || [];
@@ -50,14 +119,14 @@ class MockLibdedxService {
       [1, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [2, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [
-        3,
+        4,
         [
           { id: 1, name: "Hydrogen", density: 0.000089, isGasByDefault: true },
           { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
           { id: 267, name: "Air", density: 0.0012, isGasByDefault: true },
         ],
       ],
-      [90, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
+      [7, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [9, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [10, []],
     ]);
@@ -77,7 +146,7 @@ describe("EntitySelectionComboboxes", () => {
 
   test("renders three comboboxes: Particle, Material, Program", () => {
     render(EntitySelectionComboboxes, { props: { state } });
-    
+
     expect(screen.getByLabelText("Particle")).toBeInTheDocument();
     expect(screen.getByLabelText("Material")).toBeInTheDocument();
     expect(screen.getByLabelText("Program")).toBeInTheDocument();
@@ -85,11 +154,11 @@ describe("EntitySelectionComboboxes", () => {
 
   test("displays default selections: Proton, Water (liquid), Auto-select", () => {
     render(EntitySelectionComboboxes, { props: { state } });
-    
+
     const particleCombobox = screen.getByLabelText("Particle");
     const materialCombobox = screen.getByLabelText("Material");
     const programCombobox = screen.getByLabelText("Program");
-    
+
     expect(particleCombobox).toHaveTextContent("Z=1 Hydrogen (H)");
     expect(materialCombobox).toHaveTextContent("276");
     expect(materialCombobox).toHaveTextContent("Water (liquid)");
@@ -98,8 +167,8 @@ describe("EntitySelectionComboboxes", () => {
 
   test("Auto-select shows resolved program name when particle+material are set", () => {
     render(EntitySelectionComboboxes, { props: { state } });
-    
-    // With proton+water, Auto-select should resolve to ICRU 90 or PSTAR
+
+    // With proton+water, Auto-select resolves to one runtime-compatible program
     const programCombobox = screen.getByLabelText("Program");
     expect(programCombobox).toHaveTextContent("Auto-select →");
   });
@@ -118,7 +187,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("selecting carbon preserves water and keeps selected program when still compatible", async () => {
-    state.selectProgram(3); // MSTAR
+    state.selectProgram(4); // MSTAR
 
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
     const user = userEvent.setup();
@@ -131,7 +200,7 @@ describe("EntitySelectionComboboxes", () => {
 
     expect(state.selectedParticle?.id).toBe(6);
     expect(state.selectedMaterial?.id).toBe(276);
-    expect(state.selectedProgram.id).toBe(3);
+    expect(state.selectedProgram.id).toBe(4);
   });
 
   test("clicking Reset all restores defaults", async () => {
@@ -140,7 +209,7 @@ describe("EntitySelectionComboboxes", () => {
 
     state.selectParticle(6);
     state.selectMaterial(267);
-    state.selectProgram(3);
+    state.selectProgram(4);
 
     const resetLink = screen.getByRole("link", { name: /reset all/i });
     await user.click(resetLink);
@@ -171,16 +240,16 @@ describe("EntitySelectionComboboxes", () => {
 
   test("Material dropdown shows Elements and Compounds sections", () => {
     render(EntitySelectionComboboxes, { props: { state } });
-    
+
     const materialCombobox = screen.getByLabelText("Material");
-    
+
     // Material should show the default selected material
     expect(materialCombobox).toHaveTextContent("276");
     expect(materialCombobox).toHaveTextContent("Water");
   });
 
   test("Program combobox shows tabulated and analytical programs grouped", async () => {
-    state.selectParticle(2); // helium — all four programs available
+    state.selectParticle(2); // helium — ASTAR/MSTAR/ICRU49 available
 
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
     const user = userEvent.setup();
@@ -188,10 +257,9 @@ describe("EntitySelectionComboboxes", () => {
     const programCombobox = container.querySelector('[aria-label="Program"]')!;
     await user.click(programCombobox);
 
-    expect(screen.getByText(/PSTAR/i)).toBeInTheDocument();
     expect(screen.getByText(/ASTAR/i)).toBeInTheDocument();
     expect(screen.getByText(/MSTAR/i)).toBeInTheDocument();
-    expect(screen.getByText(/ICRU 90/i)).toBeInTheDocument();
+    expect(screen.getByText(/ICRU49/i)).toBeInTheDocument();
   });
 
   test("isComplete reflects valid selection state", () => {
@@ -272,16 +340,34 @@ describe("EntitySelectionComboboxes", () => {
 class MockLibdedxServiceWithElectron {
   getPrograms(): ProgramEntity[] {
     return [
-      { id: 1, name: "PSTAR", version: "1.0" },
+      { id: 2, name: "PSTAR", version: "1.0" },
       { id: 3, name: "ESTAR", version: "1.0" },
     ];
   }
 
   getParticles(programId: number): ParticleEntity[] {
     if (programId === 3) {
-      return [{ id: 1001, name: "Electron", massNumber: 0, atomicMass: 0.000548, symbol: "e⁻", aliases: ["e⁻", "e-", "beta"] }];
+      return [
+        {
+          id: 1001,
+          name: "Electron",
+          massNumber: 0,
+          atomicMass: 0.000548,
+          symbol: "e⁻",
+          aliases: ["e⁻", "e-", "beta"],
+        },
+      ];
     }
-    return [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] }];
+    return [
+      {
+        id: 1,
+        name: "Hydrogen",
+        massNumber: 1,
+        atomicMass: 1.007,
+        symbol: "H",
+        aliases: ["proton"],
+      },
+    ];
   }
 
   getMaterials(programId: number): MaterialEntity[] {

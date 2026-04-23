@@ -2,7 +2,11 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
-  import type { EntitySelectionState, SelectedProgram, AutoSelectProgram } from "$lib/state/entity-selection.svelte";
+  import type {
+    EntitySelectionState,
+    SelectedProgram,
+    AutoSelectProgram,
+  } from "$lib/state/entity-selection.svelte";
 
   interface Props {
     state: EntitySelectionState;
@@ -89,7 +93,7 @@
     const result: ProgramEntry[] = [];
 
     // Auto-select is always shown at the top; resolvedProgram only populated when currently
-    // in auto-select mode so the trigger can display "Auto-select → ICRU 90"
+    // in auto-select mode so the trigger can display "Auto-select → <resolved program>"
     const currentProgram = state.selectedProgram;
     const autoSelectEntity: AutoSelectProgram = {
       id: -1,
@@ -173,10 +177,14 @@
   />
 
   <div class="text-center">
-    <a href="#" class="text-sm text-muted-foreground hover:underline" onclick={(e) => {
-      e.preventDefault();
-      state.resetAll();
-    }}>
+    <a
+      href="#"
+      class="text-sm text-muted-foreground hover:underline"
+      onclick={(e) => {
+        e.preventDefault();
+        state.resetAll();
+      }}
+    >
       Reset all
     </a>
   </div>

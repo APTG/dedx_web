@@ -48,19 +48,30 @@ const HELIUM_ID = 2;
 const CARBON_ID = 6;
 const WATER_ID = 276;
 const ELECTRON_ID = 1001;
+const PROGRAM_ID = {
+  ASTAR: 1,
+  PSTAR: 2,
+  MSTAR: 4,
+  ICRU73_OLD: 5,
+  ICRU73: 6,
+  ICRU49: 7,
+} as const;
 
-// Resolution chain per entity-selection.md § "Auto-select program resolution":
-// Proton → ICRU 90 (id=90) → PSTAR (id=1)
-// Alpha  → ICRU 90 (id=90) → ICRU 49 (id=7)
-// Carbon → ICRU 90 (id=90) → ICRU 73 (id=6) → ICRU 73old (id=5)
-// Other heavy ions → ICRU 73 (id=6) → ICRU 73old (id=5)
-// Electron (id=1001) → N/A (ESTAR not implemented)
+// Program IDs follow runtime verification in wasm/verify.mjs:140-144 and
+// docs/06-wasm-api-contract.md (program enum table).
+//
+// Auto-select priority follows docs/04-feature-specs/entity-selection.md §7
+// using the currently runtime-available ICRU family:
+// Proton: ICRU49 → PSTAR
+// Alpha:  ICRU49 → ASTAR
+// Carbon/heavy ions: ICRU73 → ICRU73(old) → MSTAR
+// Electron (id=1001): N/A (ESTAR remains unimplemented)
 const AUTO_SELECT_CHAIN: Record<number, number[]> = {
-  [PROTON_ID]: [90, 1],
-  [HELIUM_ID]: [90, 7],
-  [CARBON_ID]: [90, 6, 5],
+  [PROTON_ID]: [PROGRAM_ID.ICRU49, PROGRAM_ID.PSTAR],
+  [HELIUM_ID]: [PROGRAM_ID.ICRU49, PROGRAM_ID.ASTAR],
+  [CARBON_ID]: [PROGRAM_ID.ICRU73, PROGRAM_ID.ICRU73_OLD, PROGRAM_ID.MSTAR],
 };
-const DEFAULT_AUTO_SELECT_CHAIN = [6, 5];
+const DEFAULT_AUTO_SELECT_CHAIN = [PROGRAM_ID.ICRU73, PROGRAM_ID.ICRU73_OLD, PROGRAM_ID.MSTAR];
 
 export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
   let selectedParticleId = $state<number | null>(PROTON_ID);

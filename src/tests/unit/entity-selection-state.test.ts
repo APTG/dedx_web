@@ -7,9 +7,9 @@ import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/ty
 class MockLibdedxService {
   getPrograms(): ProgramEntity[] {
     return [
-      { id: 1, name: "PSTAR", version: "1.0" },
-      { id: 2, name: "ASTAR", version: "1.0" },
-      { id: 3, name: "MSTAR", version: "1.0" },
+      { id: 1, name: "ASTAR", version: "1.0" },
+      { id: 2, name: "PSTAR", version: "1.0" },
+      { id: 4, name: "MSTAR", version: "1.0" },
       { id: 9, name: "ICRU", version: "1.0" }, // DEDX_ICRU - internal auto-selector
       { id: 10, name: "Bethe-ext", version: "1.0" },
     ];
@@ -17,17 +17,74 @@ class MockLibdedxService {
 
   getParticles(programId: number): ParticleEntity[] {
     const particles: Map<number, ParticleEntity[]> = new Map([
-      [1, [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] }]],
-      [2, [{ id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] }]],
       [
-        3,
+        1,
         [
-          { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] },
-          { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
-          { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha", "α", "He-4"],
+          },
         ],
       ],
-      [9, [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] }]],
+      [
+        2,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton", "p", "H-1"],
+          },
+        ],
+      ],
+      [
+        4,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton", "p", "H-1"],
+          },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha", "α", "He-4"],
+          },
+          {
+            id: 6,
+            name: "Carbon",
+            massNumber: 12,
+            atomicMass: 12.011,
+            symbol: "C",
+            aliases: ["C-12"],
+          },
+        ],
+      ],
+      [
+        9,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton", "p", "H-1"],
+          },
+        ],
+      ],
       [10, []],
     ]);
     return particles.get(programId) || [];
@@ -38,7 +95,7 @@ class MockLibdedxService {
       [1, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [2, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [
-        3,
+        4,
         [
           { id: 1, name: "Hydrogen", density: 0.000089, isGasByDefault: true },
           { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
@@ -57,16 +114,34 @@ class MockLibdedxServiceWithElectron {
   getPrograms(): ProgramEntity[] {
     return [
       { id: 3, name: "ESTAR", version: "1.0" },
-      { id: 1, name: "PSTAR", version: "1.0" },
+      { id: 2, name: "PSTAR", version: "1.0" },
     ];
   }
 
   getParticles(programId: number): ParticleEntity[] {
     if (programId === 3) {
-      return [{ id: 1001, name: "Electron", massNumber: 0, atomicMass: 0.000548, symbol: "e⁻", aliases: ["e⁻", "e-", "beta"] }];
+      return [
+        {
+          id: 1001,
+          name: "Electron",
+          massNumber: 0,
+          atomicMass: 0.000548,
+          symbol: "e⁻",
+          aliases: ["e⁻", "e-", "beta"],
+        },
+      ];
     }
-    if (programId === 1) {
-      return [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton", "p", "H-1"] }];
+    if (programId === 2) {
+      return [
+        {
+          id: 1,
+          name: "Hydrogen",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "H",
+          aliases: ["proton", "p", "H-1"],
+        },
+      ];
     }
     return [];
   }
@@ -75,7 +150,7 @@ class MockLibdedxServiceWithElectron {
     if (programId === 3) {
       return [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }];
     }
-    if (programId === 1) {
+    if (programId === 2) {
       return [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }];
     }
     return [];
@@ -183,7 +258,7 @@ describe("createEntitySelectionState", () => {
       state.selectParticle(6);
       state.selectMaterial(276);
       // Now select PSTAR which doesn't support carbon
-      state.selectProgram(1); // PSTAR
+      state.selectProgram(2); // PSTAR
       // Carbon unsupported, should fall back to proton (PSTAR's only particle)
       expect(state.selectedParticle?.id).toBe(1);
     });
@@ -193,14 +268,14 @@ describe("createEntitySelectionState", () => {
       // Start: proton, water, PSTAR
       // MSTAR supports alpha, carbon - proton is also supported via MSTAR in our mock
       // Let's adjust: select a program that doesn't support proton
-      state.selectProgram(2); // ASTAR - only alpha
+      state.selectProgram(1); // ASTAR - only alpha
       // Proton not in ASTAR, should fall back to alpha
       expect(state.selectedParticle?.id).toBe(2);
     });
 
     test("selecting Auto-select always succeeds (never greyed out)", () => {
       const state = createEntitySelectionState(matrix);
-      state.selectProgram(1); // PSTAR
+      state.selectProgram(2); // PSTAR
       state.selectProgram(-1); // Auto-select
       expect(state.selectedProgram.id).toBe(-1);
     });
@@ -234,8 +309,8 @@ describe("createEntitySelectionState", () => {
 
     test("deselecting program resets to Auto-select (not null)", () => {
       const state = createEntitySelectionState(matrix);
-      state.selectProgram(1); // PSTAR
-      expect(state.selectedProgram.id).toBe(1);
+      state.selectProgram(2); // PSTAR
+      expect(state.selectedProgram.id).toBe(2);
 
       state.selectProgram(-1); // Auto-select
       expect(state.selectedProgram.id).toBe(-1);
@@ -256,7 +331,7 @@ describe("createEntitySelectionState", () => {
       // Change everything
       state.selectParticle(6); // carbon
       state.selectMaterial(267); // air
-      state.selectProgram(3); // MSTAR
+      state.selectProgram(4); // MSTAR
 
       state.resetAll();
 
