@@ -26,11 +26,14 @@
 ```
 
 The project uses **Vitest** for unit and integration tests and **Playwright**
-for end-to-end tests. Automated test gating is planned as a staged rollout:
-`pnpm test` in Stage 5 for unit/integration coverage, Playwright in Stage 7
-for E2E coverage, and Stage 8 for deploy-focused CI/CD work. Until those
-stages land, these tests are not configured to run automatically on every pull
-request.
+for end-to-end tests. These checks are already wired into CI:
+
+- `wasm-verify`: Docker WASM build + `node wasm/verify.mjs`
+- `unit-tests`: `vitest run --coverage`
+- `e2e-tests`: Playwright against built app with WASM binaries downloaded from
+  `wasm-verify` artifacts
+
+See `.github/workflows/ci.yml` for the exact matrix.
 
 ### 1.1 Test-driven principles for migration work
 
@@ -52,15 +55,19 @@ request.
 **Tool:** Vitest + Svelte Testing Library (STL).
 
 **What is tested:**
+
 - Individual Svelte 5 components: rendering, prop reactivity, ARIA attributes,
   keyboard interactions.
 - Pure TypeScript logic: unit conversion formulas, URL encoding/decoding,
   data-validation functions, CSV serialisation.
-- WASM wrapper (`src/lib/wasm/`): integration tests that call the real
-  Emscripten module (not mocked) to verify `dedxGetStp()`, `dedxGetCsda()`,
-  and related functions return physically plausible values.
+- Integration tests currently focus on app/state flows (`src/tests/integration`)
+  rather than direct real-WASM wrapper calls.
+- Real libdedx contract/runtime integration is validated in CI by
+  `node wasm/verify.mjs` (WASM verify job) and by Playwright E2E against the
+  built app with downloaded WASM artifacts.
 
 **Key constraints from feature specs:**
+
 - Every interactive component must have `aria-label`, role, and state
   assertions in its unit test.
 - Unit conversion tests must cover all three unit modes
@@ -78,6 +85,7 @@ request.
 **Tool:** Playwright (browser-level).
 
 **What is tested:**
+
 - Full user journeys: select particle + material + program → calculate → read results.
 - Plot page: add series, verify chart renders, remove series.
 - Export: download CSV, download PDF (file existence + MIME type).
@@ -85,6 +93,7 @@ request.
 - Error states: invalid input, WASM load failure fallback.
 
 **Accessibility E2E (mandatory):**
+
 - `@axe-core/playwright` runs on every E2E test page.
 - **Zero Level AA violations are required for CI to pass.**
 - Manual screen-reader verification (NVDA/VoiceOver) is a human step,
@@ -94,14 +103,24 @@ request.
 
 ---
 
-## 4. CI matrix (target — Stage 8)
+## 4. CI matrix (current)
 
-There is currently **no active CI** running these checks (the legacy
-`.github/workflows/test_and_deploy.yml` workflow is `workflow_dispatch`-only
-and marked DISABLED). CI/CD is planned for Stage 8 — see
-[`08-deployment.md`](08-deployment.md). Until then, the matrix below is the
-**local pre-push checklist** every contributor (human or AI) is expected to
-run before opening a pull request:
+Active CI workflow (`.github/workflows/ci.yml`) runs on pushes and PRs to
+`master`/`develop`:
+
+1. **WASM Build + Contract Verification**
+   - builds `static/wasm/libdedx.*` via Docker
+   - runs `node wasm/verify.mjs`
+   - uploads WASM binaries + verification stats artifacts
+2. **Unit & Integration Tests**
+   - runs `pnpm exec vitest run --coverage --reporter=verbose`
+   - uploads coverage artifact
+3. **E2E Tests (Playwright)**
+   - depends on WASM verify job
+   - downloads WASM binaries artifact
+   - runs `pnpm build` then `pnpm test:e2e`
+
+Recommended local pre-push checklist:
 
 ```
 pnpm lint          ← ESLint + Prettier check
@@ -113,7 +132,7 @@ pnpm build         ← SvelteKit static build (must not fail)
 A Lighthouse performance budget on a simulated 3G Fast profile (targets:
 FCP ≤ 1.5 s, TTI ≤ 3.5 s — see
 [09-non-functional-requirements.md §3](09-non-functional-requirements.md))
-is also planned for the Stage 8 CI matrix; not currently enforced.
+is planned as an additional CI gate; not currently enforced.
 
 ---
 
@@ -127,11 +146,8 @@ node wasm/verify.mjs    ← runs in Node.js, calls key exported functions,
                           checks return values are physically plausible
 ```
 
-This script is the acceptance gate for Stage 3 (WASM build pipeline). The
-target location for Stage 3 is `wasm/verify.mjs` in the new SvelteKit project;
-the working prototype currently lives at
-`prototypes/libdedx-investigation/wasm-runtime/verify.mjs` (run as
-`node verify.mjs` from that directory).
+This script is the acceptance gate for Stage 3 (WASM build pipeline) and is
+run in CI (`wasm-verify` job).
 See [ADR 003](decisions/003-wasm-build-pipeline.md) and
 [06-wasm-api-contract.md](06-wasm-api-contract.md).
 
@@ -142,16 +158,16 @@ See [ADR 003](decisions/003-wasm-build-pipeline.md) and
 Each feature spec contains a numbered acceptance-criteria checklist.
 Tests are written to match those criteria exactly. Cross-reference:
 
-| Feature | Spec with AC |
-|---------|-------------|
-| Entity selection | [entity-selection.md](04-feature-specs/entity-selection.md) |
-| Calculator | [calculator.md](04-feature-specs/calculator.md) |
-| Plot | [plot.md](04-feature-specs/plot.md) |
-| Unit handling | [unit-handling.md](04-feature-specs/unit-handling.md) |
-| Export (CSV + PDF) | [export.md](04-feature-specs/export.md) |
-| Shareable URLs | [shareable-urls.md](04-feature-specs/shareable-urls.md) |
-| Custom compounds | [custom-compounds.md](04-feature-specs/custom-compounds.md) |
-| External data (.webdedx) | [external-data.md](04-feature-specs/external-data.md) |
-| Multi-program | [multi-program.md](04-feature-specs/multi-program.md) |
-| Inverse lookups | [inverse-lookups.md](04-feature-specs/inverse-lookups.md) |
-| Advanced options | [advanced-options.md](04-feature-specs/advanced-options.md) |
+| Feature                  | Spec with AC                                                |
+| ------------------------ | ----------------------------------------------------------- |
+| Entity selection         | [entity-selection.md](04-feature-specs/entity-selection.md) |
+| Calculator               | [calculator.md](04-feature-specs/calculator.md)             |
+| Plot                     | [plot.md](04-feature-specs/plot.md)                         |
+| Unit handling            | [unit-handling.md](04-feature-specs/unit-handling.md)       |
+| Export (CSV + PDF)       | [export.md](04-feature-specs/export.md)                     |
+| Shareable URLs           | [shareable-urls.md](04-feature-specs/shareable-urls.md)     |
+| Custom compounds         | [custom-compounds.md](04-feature-specs/custom-compounds.md) |
+| External data (.webdedx) | [external-data.md](04-feature-specs/external-data.md)       |
+| Multi-program            | [multi-program.md](04-feature-specs/multi-program.md)       |
+| Inverse lookups          | [inverse-lookups.md](04-feature-specs/inverse-lookups.md)   |
+| Advanced options         | [advanced-options.md](04-feature-specs/advanced-options.md) |

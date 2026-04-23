@@ -4,9 +4,10 @@ import type {
   ParticleEntity,
   MaterialEntity,
   CalculationResult,
-  AdvancedOptions
-} from './types';
-import { LibdedxError } from './types';
+  AdvancedOptions,
+} from "./types";
+import { LibdedxError } from "./types";
+import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -32,7 +33,7 @@ interface EmscriptenModule {
     energies: number,
     num_energies: number,
     stp: number,
-    csda: number
+    csda: number,
   ): number;
   _dedx_get_csda_range_table(
     program_id: number,
@@ -40,7 +41,7 @@ interface EmscriptenModule {
     material_id: number,
     energies: number,
     num_energies: number,
-    csda: number
+    csda: number,
   ): number;
   _malloc(size: number): number;
   _free(ptr: number): void;
@@ -81,7 +82,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       this.programs.push({
         id,
         name: this.module.UTF8ToString(this.module._dedx_get_program_name(id)),
-        version: this.module.UTF8ToString(this.module._dedx_get_program_version(id))
+        version: this.module.UTF8ToString(this.module._dedx_get_program_version(id)),
       });
     }
 
@@ -93,12 +94,19 @@ export class LibdedxServiceImpl implements LibdedxService {
         const ionIds = readIdList(heap, this.module._dedx_get_ion_list(prog.id));
         const particles: ParticleEntity[] = [];
         for (const id of ionIds) {
+          const runtimeName = this.module.UTF8ToString(this.module._dedx_get_ion_name(id));
+          const symbol = getParticleSymbol(id);
+          // libdedx does not currently expose aliases/symbols in the C API, so we enrich
+          // runtime particles with static lookup data to keep UI labels and search behavior
+          // aligned with the Stage 5 entity-selection specification.
+          const aliases = Array.from(new Set([runtimeName, ...getParticleAliases(id)]));
           particles.push({
             id,
-            name: this.module.UTF8ToString(this.module._dedx_get_ion_name(id)),
+            name: runtimeName,
             massNumber: this.module._dedx_get_ion_nucleon_number(id),
             atomicMass: this.module._dedx_get_ion_atom_mass(id),
-            aliases: []
+            symbol,
+            aliases,
           });
         }
         this.particles.set(prog.id, particles);
@@ -112,7 +120,7 @@ export class LibdedxServiceImpl implements LibdedxService {
             id,
             name: this.module.UTF8ToString(this.module._dedx_get_material_name(id)),
             density,
-            isGasByDefault: this.module._dedx_target_is_gas(id) !== 0
+            isGasByDefault: this.module._dedx_target_is_gas(id) !== 0,
           });
         }
         this.materials.set(prog.id, materials);
@@ -139,7 +147,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     particleId: number,
     materialId: number,
     energies: number[],
-    _options?: AdvancedOptions
+    _options?: AdvancedOptions,
   ): CalculationResult {
     const numEnergies = energies.length;
     const energiesPtr = this.module._malloc(numEnergies * 8);
@@ -159,11 +167,11 @@ export class LibdedxServiceImpl implements LibdedxService {
         energiesPtr,
         numEnergies,
         stpPtr,
-        csdaPtr
+        csdaPtr,
       );
 
       if (errorCode !== 0) {
-        throw new LibdedxError(errorCode, 'WASM calculation failed');
+        throw new LibdedxError(errorCode, "WASM calculation failed");
       }
 
       const stoppingPowers: number[] = [];
@@ -176,7 +184,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       return {
         energies: [...energies],
         stoppingPowers,
-        csdaRanges
+        csdaRanges,
       };
     } finally {
       this.module._free(energiesPtr);
@@ -190,7 +198,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     particleId: number,
     materialId: number,
     numPoints: number,
-    logScale: boolean
+    logScale: boolean,
   ): CalculationResult {
     const minEnergy = 0.001;
     const maxEnergy = 1000;
@@ -206,4 +214,10 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     return this.calculate(programId, particleId, materialId, energies);
   }
+}
+
+export let libdedx: { service: LibdedxServiceImpl | null } = { service: null };
+
+export function initLibdedx(module: EmscriptenModule): void {
+  libdedx.service = new LibdedxServiceImpl(module);
 }

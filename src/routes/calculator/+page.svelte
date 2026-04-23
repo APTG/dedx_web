@@ -1,6 +1,20 @@
 <script lang="ts">
-  import { base } from "$app/paths";
   import { wasmReady } from "$lib/state/ui.svelte";
+  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+  import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
+  import { getService } from "$lib/wasm/loader";
+
+  let state = $state<EntitySelectionState | null>(null);
+
+  $effect(() => {
+    if (wasmReady.value && !state) {
+      getService().then((service) => {
+        const matrix = buildCompatibilityMatrix(service);
+        state = createEntitySelectionState(matrix);
+      });
+    }
+  });
 </script>
 
 <svelte:head>
@@ -13,17 +27,13 @@
     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
   </p>
 
-  {#if !wasmReady.value}
+  {#if !wasmReady.value || !state}
     <div class="rounded-lg border bg-card p-6 text-center">
-      <p class="text-muted-foreground">Loading WASM module...</p>
+      <p class="text-muted-foreground">Loading...</p>
     </div>
   {:else}
-    <div class="rounded-lg border bg-card p-6">
-      <p class="text-muted-foreground">Calculator form coming soon...</p>
-      <p class="mt-2 text-sm">
-        This is a placeholder. The Calculator page will be implemented in Stage 6 per
-        <a href={`${base}/docs`} class="underline hover:no-underline">feature specs</a>.
-      </p>
+    <div class="mx-auto max-w-2xl">
+      <EntitySelectionComboboxes {state} />
     </div>
   {/if}
 </div>
