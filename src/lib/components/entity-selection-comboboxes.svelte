@@ -100,17 +100,24 @@
       name: "Auto-select",
       resolvedProgram: currentProgram.id === -1 ? currentProgram.resolvedProgram : null,
     };
+    const autoSelectLabel = autoSelectEntity.resolvedProgram
+      ? `Auto-select → ${autoSelectEntity.resolvedProgram.name}`
+      : "Auto-select";
     result.push({
       type: "item" as const,
       entity: autoSelectEntity,
       available: true,
-      label: autoSelectEntity.resolvedProgram ? "Auto-select →" : "Auto-select",
+      // Keep the trigger label fully informative: when Auto-select is active we show
+      // the resolved concrete runtime program (spec AC: "Auto-select → <program>").
+      label: autoSelectLabel,
     });
 
+    // availablePrograms is already filtered in compatibility-matrix.ts to hide
+    // DEDX_ICRU (id=9). The UI must only show the synthetic Auto-select entry.
     const tabulatedPrograms = state.availablePrograms.filter((p) => p.id <= 90);
     const analyticalPrograms = state.availablePrograms.filter((p) => p.id > 90);
 
-    result.push({ type: "section", label: "Tabulated Programs" });
+    result.push({ type: "section", label: "Tabulated data" });
 
     for (const program of tabulatedPrograms) {
       result.push({
@@ -122,7 +129,7 @@
     }
 
     if (analyticalPrograms.length > 0) {
-      result.push({ type: "section", label: "Analytical Programs" });
+      result.push({ type: "section", label: "Analytical models" });
 
       for (const program of analyticalPrograms) {
         result.push({

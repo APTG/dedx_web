@@ -14,7 +14,7 @@ class MockLibdedxService {
       { id: 4, name: "MSTAR", version: "1.0" },
       { id: 7, name: "ICRU49", version: "1.0" },
       { id: 9, name: "ICRU", version: "1.0" },
-      { id: 10, name: "Bethe-ext", version: "1.0" },
+      { id: 101, name: "Bethe-ext", version: "1.0" },
     ];
   }
 
@@ -109,7 +109,27 @@ class MockLibdedxService {
           },
         ],
       ],
-      [10, []],
+      [
+        101,
+        [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton"],
+          },
+          {
+            id: 2,
+            name: "Helium",
+            massNumber: 4,
+            atomicMass: 4.002,
+            symbol: "He",
+            aliases: ["alpha"],
+          },
+        ],
+      ],
     ]);
     return particles.get(programId) || [];
   }
@@ -128,7 +148,7 @@ class MockLibdedxService {
       ],
       [7, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
       [9, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
-      [10, []],
+      [101, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]],
     ]);
     return materials.get(programId) || [];
   }
@@ -168,9 +188,24 @@ describe("EntitySelectionComboboxes", () => {
   test("Auto-select shows resolved program name when particle+material are set", () => {
     render(EntitySelectionComboboxes, { props: { state } });
 
-    // With proton+water, Auto-select resolves to one runtime-compatible program
+    // With proton+water, Auto-select resolves to one runtime-compatible program.
+    // This must include the concrete program name, not only the "Auto-select →" prefix.
     const programCombobox = screen.getByLabelText("Program");
-    expect(programCombobox).toHaveTextContent("Auto-select →");
+    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU49/);
+    expect(programCombobox).not.toHaveTextContent(/^Auto-select →\s*$/);
+  });
+
+  test("Auto-select resolved label updates when selected entities change", () => {
+    const { rerender } = render(EntitySelectionComboboxes, { props: { state } });
+
+    const programCombobox = screen.getByLabelText("Program");
+    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU49/);
+
+    state.selectParticle(6);
+    state.selectMaterial(267);
+    rerender({ state });
+
+    expect(programCombobox).toHaveTextContent(/Auto-select → MSTAR/);
   });
 
   test("selecting a particle updates the selection state", async () => {
@@ -238,17 +273,18 @@ describe("EntitySelectionComboboxes", () => {
     expect(electronState.selectedParticle?.id).toBe(1); // Still proton
   });
 
-  test("Material dropdown shows Elements and Compounds sections", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+  test("Material dropdown shows Elements and Compounds section headers", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
 
-    const materialCombobox = screen.getByLabelText("Material");
+    const materialCombobox = container.querySelector('[aria-label="Material"]')!;
+    await user.click(materialCombobox);
 
-    // Material should show the default selected material
-    expect(materialCombobox).toHaveTextContent("276");
-    expect(materialCombobox).toHaveTextContent("Water");
+    expect(screen.getByRole("group", { name: /elements/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /compounds/i })).toBeInTheDocument();
   });
 
-  test("Program combobox shows tabulated and analytical programs grouped", async () => {
+  test("Program combobox uses spec grouping labels", async () => {
     state.selectParticle(2); // helium — ASTAR/MSTAR/ICRU49 available
 
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
@@ -257,9 +293,8 @@ describe("EntitySelectionComboboxes", () => {
     const programCombobox = container.querySelector('[aria-label="Program"]')!;
     await user.click(programCombobox);
 
-    expect(screen.getByText(/ASTAR/i)).toBeInTheDocument();
-    expect(screen.getByText(/MSTAR/i)).toBeInTheDocument();
-    expect(screen.getByText(/ICRU49/i)).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /^Tabulated data$/i })).toBeInTheDocument();
+    expect(screen.getByRole("group", { name: /^Analytical models$/i })).toBeInTheDocument();
   });
 
   test("isComplete reflects valid selection state", () => {
