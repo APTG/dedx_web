@@ -158,8 +158,8 @@ contains a split layout with two independently scrollable sub-lists.
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Type                    | Always-visible **split panel**: one shared text filter on top, two side-by-side scrollable sub-lists below ("Elements" on the left, "Compounds" on the right)                                                                                                                                                      |
 | Data source             | Derived from `CompatibilityMatrix.allMaterials`                                                                                                                                                                                                                                                                    |
-| Display format          | `ID  Name` — e.g., "276 Water (liquid)"                                                                                                                                                                                                                                                                            |
-| Search                  | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID, common aliases (e.g., "water" → "Water (liquid)")                                                                                                                                                   |
+| Display format          | `Name` — e.g., "Water (liquid)". The numeric material ID is **not shown** in labels or triggers; it remains available as a search keyword so users can still type "276" to find water. Names are sourced from `dedx_get_material_friendly_name()` (local C wrapper in `wasm/dedx_extra.{h,c}`) which applies title-case and a human-friendly override table (e.g., "WATER" → "Water (liquid)", "WATERVAPOR" → "Water Vapor"). |
+| Search                  | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID (numeric, e.g. "276" finds Water), common aliases (e.g., "water" → "Water (liquid)"). The ID is a search keyword only — it is not shown in the label.                                                |
 | Default                 | **Water (liquid)** (ID 276) — highlighted on page load                                                                                                                                                                                                                                                             |
 | Available / unavailable | All materials are always shown. Materials incompatible with the current particle+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast.                                                                                                             |
 | Selected state          | Dark background highlight with white text (same style as particle/program). Toggle off by clicking again.                                                                                                                                                                                                          |
@@ -554,9 +554,9 @@ the program (Alternative A layout):
 │ │ ① Particle  │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
 │ │ [Filter.. ] │ │ [Filter...               ] │ │ │                        │
 │ │ ┌─────────┐ │ │ ┌──────────┬─────────────┐ │ │ │                        │
-│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS   │ │ │ │                        │
-│ │ │ Alpha   │ │ │ │ 1  H     │ 276 Water   │ │ │ │                        │
-│ │ │ Lithium │ │ │ │ 2  He    │ 99  A-150   │ │ │ │                        │
+│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS        │ │ │                        │
+│ │ │ Alpha   │ │ │ │ Hydrogen │ Water (liquid)   │ │ │                        │
+│ │ │ Lithium │ │ │ │ Helium   │ A-150 Tissue-Eq. │ │ │                        │
 │ │ │ ...  ↕  │ │ │ │ ...  ↕   │ ...   ↕     │ │ │ │                        │
 │ │ └─────────┘ │ │ └──────────┴─────────────┘ │ │ ├────────────────────────┤
 │ └─────────────┘ └────────────────────────────┘ │ │ Series list / legend   │
@@ -628,7 +628,7 @@ side-by-side. The plot canvas scrolls below.
 │ [Filter...                        ]  │
 │ ┌────────────────┬───────────────────┐│
 │ │ ELEMENTS       │ COMPOUNDS         ││
-│ │ 1 Hydrogen     │ 276 Water (liq.)  ││
+│ │ Hydrogen       │ Water (liquid)    ││
 │ │ ...  scroll ↕  │ ...    scroll ↕   ││
 │ └────────────────┴───────────────────┘│
 ├──────────────────────────────────────┤
@@ -684,8 +684,7 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
-│  │  Program: [Auto-select → ICRU49 ▾]   Energy: (•) MeV         │  │
+│  │  [Proton (H) ▾]      [Water (liquid) ▾]   [Auto-select → ICRU49 ▾]  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
@@ -700,8 +699,9 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 
 - Max content width ~720px, centered horizontally (`mx-auto`).
-- Entity selectors in a **flex row that wraps**: Particle and Material on the
-  first line; Program and Energy unit on the second line.
+- Entity selectors in a **single three-column grid row** (`grid-cols-3`): Particle,
+  Material, and Program each occupy one column. All three are always visible without
+  wrapping on desktop. The Energy unit selector lives in the energy input row below.
 - Program combobox is **narrower** than Particle/Material (~180px vs ~240px)
   because it is less frequently changed — visual hierarchy via width.
 - The unified input/result table is the visual centerpiece, full content width.

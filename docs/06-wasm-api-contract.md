@@ -722,6 +722,7 @@ These wrappers live in this repository and are compiled alongside libdedx.
 | `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getParticles()` | Returns atomic mass in u for Z=1..112 |
 | `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
 | `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
+| `dedx_get_material_friendly_name(material)` | `getMaterials()` | Returns human-friendly display name; applies override table + title-case to the raw ALL-CAPS C name (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`). Falls back to `dedx_get_material_name()` for unmapped IDs. Intended for future inclusion in libdedx. |
 
 ### 4.6 Emscripten Runtime Methods
 
@@ -1028,8 +1029,18 @@ TypeScript wrapper implementation.
 
 `dedx_get_material_name()` and `dedx_get_ion_name()` return ALL-CAPS strings
 (e.g., `"WATER"`, `"GRAPHITE"`, `"HYDROGEN"`). The TypeScript wrapper must
-apply title-case formatting before storing them in `MaterialEntity.name` /
-`ParticleEntity.name`.
+apply human-friendly formatting before storing them in `MaterialEntity.name` /
+`ParticleEntity.name`:
+
+- **Materials**: call `getMaterialFriendlyName(id, rawName)` from
+  `src/lib/config/material-names.ts`, which checks a JS-side override table
+  (mirrors the C `dedx_get_material_friendly_name()` override table) and falls
+  back to title-case + underscore-to-space for unmapped IDs.
+- **Particles**: apply title-case to the raw name (e.g., `"HYDROGEN"` → `"Hydrogen"`).
+  For particle ID 1001, hard-code `"Electron"` (the C API returns `""`).
+
+The numeric material ID is **not displayed** in UI labels; it is kept in the
+`searchText` field so users can still type "276" in the filter to find Water.
 
 ### 10.2 Electron (ID=1001) has no name
 
@@ -1110,6 +1121,7 @@ in the public API headers. We forward-declare them in our local wrapper.
 | `float dedx_get_ion_atom_mass(int ion)` | `dedx_internal_get_atom_mass()` | Atomic mass in u (e.g., 1.00794 for H), or -1 on error |
 | `float dedx_get_density(int material, int *err)` | `dedx_internal_read_density()` | Density in g/cm³ |
 | `int dedx_target_is_gas(int target)` | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise |
+| `const char *dedx_get_material_friendly_name(int material)` | `dedx_get_material_name()` | Human-friendly name; override table for key materials + fallback to raw C name |
 
 ### 11.2 Example Implementation Sketch
 

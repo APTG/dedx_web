@@ -78,7 +78,7 @@
         type: "item" as const,
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
       { type: "section", label: "Compounds" },
@@ -86,7 +86,7 @@
         type: "item" as const,
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
     ];

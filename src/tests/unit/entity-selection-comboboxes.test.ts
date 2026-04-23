@@ -189,8 +189,8 @@ describe("EntitySelectionComboboxes", () => {
     const programCombobox = screen.getByLabelText("Program");
 
     expect(particleCombobox).toHaveTextContent("Z=1 Hydrogen (H)");
-    expect(materialCombobox).toHaveTextContent("276");
     expect(materialCombobox).toHaveTextContent("Water (liquid)");
+    expect(materialCombobox).not.toHaveTextContent("276");
     expect(programCombobox).toHaveTextContent("Auto-select");
   });
 

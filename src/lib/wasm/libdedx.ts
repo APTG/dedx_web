@@ -8,6 +8,7 @@ import type {
 } from "./types";
 import { LibdedxError } from "./types";
 import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases";
+import { getMaterialFriendlyName, formatMaterialName } from "$lib/config/material-names";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -95,6 +96,8 @@ export class LibdedxServiceImpl implements LibdedxService {
         const particles: ParticleEntity[] = [];
         for (const id of ionIds) {
           const runtimeName = this.module.UTF8ToString(this.module._dedx_get_ion_name(id));
+          // dedx_get_ion_name() returns ALL-CAPS ("HYDROGEN") or "" for electron (ID 1001).
+          const name = id === 1001 ? "Electron" : formatMaterialName(runtimeName);
           const symbol = getParticleSymbol(id);
           // libdedx does not currently expose aliases/symbols in the C API, so we enrich
           // runtime particles with static lookup data to keep UI labels and search behavior
@@ -102,7 +105,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           const aliases = Array.from(new Set([runtimeName, ...getParticleAliases(id)]));
           particles.push({
             id,
-            name: runtimeName,
+            name,
             massNumber: this.module._dedx_get_ion_nucleon_number(id),
             atomicMass: this.module._dedx_get_ion_atom_mass(id),
             symbol,
@@ -116,9 +119,12 @@ export class LibdedxServiceImpl implements LibdedxService {
         const materials: MaterialEntity[] = [];
         for (const id of matIds) {
           const density = this.module._dedx_get_density(id, errPtr);
+          const rawName = this.module.UTF8ToString(this.module._dedx_get_material_name(id));
+          // dedx_get_material_name() returns ALL-CAPS names; apply human-friendly formatting.
+          const name = getMaterialFriendlyName(id, rawName);
           materials.push({
             id,
-            name: this.module.UTF8ToString(this.module._dedx_get_material_name(id)),
+            name,
             density,
             isGasByDefault: this.module._dedx_target_is_gas(id) !== 0,
           });
