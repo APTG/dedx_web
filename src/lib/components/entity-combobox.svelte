@@ -1,4 +1,4 @@
-<script lang="ts" generic="T extends { id: number; name: string }">
+<script lang="ts" generics="T extends { id: number; name: string }">
   import { tick, untrack } from "svelte";
   import { Combobox } from "bits-ui";
   import { cn } from "$lib/utils";
@@ -35,6 +35,7 @@
     placeholder,
     disabled = false,
     onItemSelect,
+    onClear,
     class: className,
   }: Props<T> = $props();
 
@@ -79,7 +80,7 @@
         value: String((item as EntityItem<T>).entity.id),
         label: (item as EntityItem<T>).label,
         disabled: !(item as EntityItem<T>).available,
-      }))
+      })),
   );
 
   // Items grouped by preceding section header, filtered by current search term
@@ -200,7 +201,7 @@
                       label={item.label}
                       class={cn(
                         "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                        !item.available && "pointer-events-none opacity-50"
+                        !item.available && "pointer-events-none opacity-50",
                       )}
                     >
                       {item.label}
@@ -217,4 +218,16 @@
       {/if}
     </Combobox.ContentStatic>
   </Combobox.Root>
+  {#if onClear && selectedId !== null}
+    <div class="mt-1 text-right">
+      <button
+        type="button"
+        aria-label={`Clear ${label}`}
+        class="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
+        onclick={onClear}
+      >
+        Clear
+      </button>
+    </div>
+  {/if}
 </div>

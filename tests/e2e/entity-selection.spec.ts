@@ -19,7 +19,9 @@ test.describe("Calculator page — compact mode", () => {
     await expect(page.getByRole("button", { name: /program/i })).toContainText(/auto-select/i);
   });
 
-  test("typing carbon in the Particle search filters the list and shows Carbon", async ({ page }) => {
+  test("typing carbon in the Particle search filters the list and shows Carbon", async ({
+    page,
+  }) => {
     const particleBtn = page.getByRole("button", { name: /particle/i });
     await particleBtn.click();
 
@@ -29,7 +31,9 @@ test.describe("Calculator page — compact mode", () => {
     await expect(page.getByRole("option", { name: /carbon/i }).first()).toBeVisible();
   });
 
-  test("selecting Carbon removes incompatible programs (PSTAR proton-only disappears)", async ({ page }) => {
+  test("selecting Carbon removes incompatible programs (PSTAR proton-only disappears)", async ({
+    page,
+  }) => {
     // Open particle dropdown and select Carbon (Z=6)
     const particleBtn = page.getByRole("button", { name: /particle/i });
     await particleBtn.click();
@@ -58,15 +62,20 @@ test.describe("Calculator page — compact mode", () => {
     await expect(page.getByRole("button", { name: /program/i })).toContainText(/auto-select/i);
   });
 
-  test("Electron (ESTAR) does not appear — ESTAR not implemented in libdedx v1.4.0", async ({ page }) => {
+  test("Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0", async ({
+    page,
+  }) => {
     const particleBtn = page.getByRole("button", { name: /particle/i });
     await particleBtn.click();
 
-    // ESTAR is unimplemented: electron particle should not be in the dropdown
-    await expect(page.getByRole("option", { name: /electron/i })).toHaveCount(0);
+    const electronOption = page.getByRole("option", { name: /electron/i });
+    await expect(electronOption).toHaveCount(1);
+    await expect(electronOption).toHaveAttribute("data-disabled", "");
   });
 
-  test("DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox", async ({ page }) => {
+  test("DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox", async ({
+    page,
+  }) => {
     // ICRU (ID 9) is excluded from the UI via EXCLUDED_FROM_UI set.
     // Its label would be "ICRU — 1.0". No such option should be in the DOM at all.
     // Note: ICRU49 (a different program) is valid and may appear; we only exclude the internal ICRU.

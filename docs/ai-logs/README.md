@@ -10,6 +10,11 @@ summary table of all sessions.
 
 | File | Date | Topic |
 |------|------|-------|
+| [2026-04-23-stage5-review-thread-fixes.md](2026-04-23-stage5-review-thread-fixes.md) | 23 Apr 2026 | Stage 5 PR review-thread follow-up: state compatibility-preserve fixes, compatibility matrix consumer typing migration, CI Electron E2E assertion alignment, and docs/index synchronization |
+| [2026-04-23-stage5-next-session-prompt.md](2026-04-23-stage5-next-session-prompt.md) | 23 Apr 2026 | Stage 5 next-session prompt and carry-over checklist for unresolved entity-selection review comments and CI follow-up |
+| [2026-04-22-stage5-tdd-component-tests.md](2026-04-22-stage5-tdd-component-tests.md) | 22 Apr 2026 | Stage 5 TDD Phase 3: component tests + utilities; added particle aliases and UI test coverage; fixed duplicate script tags |
+| [2026-04-22-stage5-state-layer.md](2026-04-22-stage5-state-layer.md) | 22 Apr 2026 | Stage 5 TDD Phase 2: entity-selection state layer implementation (GREEN) |
+| [2026-04-22-stage5-tdd-entity-selection.md](2026-04-22-stage5-tdd-entity-selection.md) | 22 Apr 2026 | Stage 5 TDD Phase 1: entity-selection RED test battery (unit + E2E) |
 | [2026-04-21-wasm-web-ci-fix.md](2026-04-21-wasm-web-ci-fix.md) | 21 Apr 2026 | WASM web target + CI artifact wiring (Stage 3→4 transition) + WASM wrapper runtime fix (wrong function names, wrong data structure, wrong arity) + deploy.yml WASM build inclusion |
 | [2026-04-21-stage4-scaffold-qwen-session.md](2026-04-21-stage4-scaffold-qwen-session.md) | 21 Apr 2026 | Stage 4 scaffolding raw opencode session dump (Qwen3.5-397B): full SvelteKit scaffold — homepage redirect, E2E test de-flaking with `waitForURL`, playwright test runs |
 | [2026-04-21-stage4-review-thread-followup.md](2026-04-21-stage4-review-thread-followup.md) | 21 Apr 2026 | Stage 4 review-thread follow-up: strengthened E2E nav/docs route assertions, removed duplicated route-load tests, enabled CI coverage artifact generation via Vitest coverage provider, wired SvelteKit base-path handling for `/web_dev` deployment, and fixed energy conversion validation/tests for mixed `A`/`m_u` edge cases |

@@ -1,7 +1,6 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
-import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Extended mock service for entity selection tests
@@ -210,9 +209,6 @@ describe("createEntitySelectionState", () => {
   describe("Clear / deselect", () => {
     test("clearParticle() removes particle constraint; available materials and programs expand", () => {
       const state = createEntitySelectionState(matrix);
-      const beforeMaterials = state.availableMaterials.length;
-      const beforePrograms = state.availablePrograms.length;
-
       state.selectParticle(6); // carbon - restricts to MSTAR
       const withCarbonMaterials = state.availableMaterials.length;
       const withCarbonPrograms = state.availablePrograms.length;

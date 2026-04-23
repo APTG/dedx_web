@@ -1,4 +1,4 @@
-<script lang="ts" generic="T extends { id: number; name: string }">
+<script lang="ts" generics="T extends { id: number; name: string }">
   import { cn } from "$lib/utils";
 
   interface EntityItem<T> {
@@ -56,15 +56,18 @@
     }
 
     const filtered = items.filter(
-      (item) => item.label.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term)
+      (item) =>
+        item.label.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
     );
 
     if (grouped && groups.length > 0) {
       const groupedFiltered = groups
         .map((group) => ({
           groupName: group.groupName,
-          items: group.items.filter((item) =>
-            item.label.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term)
+          items: group.items.filter(
+            (item) =>
+              item.label.toLowerCase().includes(term) ||
+              item.description?.toLowerCase().includes(term),
           ),
         }))
         .filter((group) => group.items.length > 0);
@@ -119,7 +122,9 @@
     {#each filteredItems as group (group.groupName)}
       <div>
         {#if group.groupName}
-          <div class="sticky top-0 mb-2 bg-card py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground">
+          <div
+            class="sticky top-0 mb-2 bg-card py-1 text-xs font-medium uppercase tracking-wider text-muted-foreground"
+          >
             {group.groupName}
           </div>
         {/if}
@@ -135,7 +140,7 @@
                 item.entity.id === selectedId
                   ? "bg-accent text-accent-foreground"
                   : "hover:bg-accent/50",
-                !item.available && "cursor-not-allowed opacity-40"
+                !item.available && "cursor-not-allowed opacity-40",
               )}
               onclick={() => {
                 if (item.available) {

@@ -2,7 +2,7 @@
   import EntityPanel from "./entity-panel.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
-  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
+  import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 
   interface Props {
     state: EntitySelectionState;
@@ -15,9 +15,9 @@
     if (particle.id === 1001) {
       return "Electron";
     }
-    const z = particle.massNumber > 0 ? particle.massNumber : "";
+    const atomicNumber = particle.id > 0 ? particle.id : "";
     const symbol = particle.symbol || "";
-    return `${z ? `Z=${z} ` : ""}${particle.name}${symbol ? ` (${symbol})` : ""}`;
+    return `${atomicNumber ? `Z=${atomicNumber} ` : ""}${particle.name}${symbol ? ` (${symbol})` : ""}`;
   }
 
   const particleItems = $derived.by(() => {

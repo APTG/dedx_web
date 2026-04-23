@@ -23,11 +23,11 @@ const mockParticles: Map<number, ParticleEntity[]> = new Map([
 ]);
 
 const mockMaterials: Map<number, MaterialEntity[]> = new Map([
-  [1, [{ id: 276, name: 'Water (liquid)', density: 1.0, isGasByDefault: false, atomicNumber: 1 }]],
-  [2, [{ id: 267, name: 'Air', density: 0.0012, isGasByDefault: true, atomicNumber: 1 }]],
+  [1, [{ id: 276, name: 'Water (liquid)', density: 1.0, isGasByDefault: false }]],
+  [2, [{ id: 267, name: 'Air', density: 0.0012, isGasByDefault: true }]],
   [3, [
-    { id: 276, name: 'Water (liquid)', density: 1.0, isGasByDefault: false, atomicNumber: 1 },
-    { id: 267, name: 'Air', density: 0.0012, isGasByDefault: true, atomicNumber: 1 }
+    { id: 276, name: 'Water (liquid)', density: 1.0, isGasByDefault: false },
+    { id: 267, name: 'Air', density: 0.0012, isGasByDefault: true }
   ]]
 ]);
 

@@ -117,7 +117,7 @@ describe("EntitySelectionComboboxes", () => {
     expect(state.selectedParticle?.id).toBe(2);
   });
 
-  test("selecting carbon preserves water and resets program to Auto-select", async () => {
+  test("selecting carbon preserves water and keeps selected program when still compatible", async () => {
     state.selectProgram(3); // MSTAR
 
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
@@ -131,7 +131,7 @@ describe("EntitySelectionComboboxes", () => {
 
     expect(state.selectedParticle?.id).toBe(6);
     expect(state.selectedMaterial?.id).toBe(276);
-    expect(state.selectedProgram.id).toBe(-1);
+    expect(state.selectedProgram.id).toBe(3);
   });
 
   test("clicking Reset all restores defaults", async () => {
