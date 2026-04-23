@@ -4,6 +4,9 @@ This file is loaded automatically by **opencode** (and compatible agents such
 as Qwen running via opencode) at session start. It points to the authoritative
 docs — do not duplicate content here.
 
+> **Claude Code users:** read [`CLAUDE.md`](CLAUDE.md) instead — it is the
+> self-contained Claude Code entry point for this project.
+
 ---
 
 ## 1. Start here
