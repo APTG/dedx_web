@@ -169,8 +169,8 @@
   });
 </script>
 
-<div class={cn("flex flex-wrap gap-3", className)}>
-  <div class="w-full lg:w-[calc(50%-0.375rem)]">
+<div class={cn("flex flex-wrap items-start gap-3 lg:flex-nowrap", className)}>
+  <div class="w-full lg:min-w-0 lg:flex-1">
     <EntityCombobox
       label="Particle"
       items={particleItems}
@@ -186,7 +186,7 @@
     />
   </div>
 
-  <div class="w-full lg:w-[calc(50%-0.375rem)]">
+  <div class="w-full lg:min-w-0 lg:flex-1">
     <EntityCombobox
       label="Material"
       items={materialItems}
@@ -199,8 +199,8 @@
     />
   </div>
 
-  <!-- Compact-mode layout follows spec: Particle+Material first row, Program next row. -->
-  <div class="w-full">
+  <!-- Keep all three selectors in one desktop row to avoid overlap with expanded popovers. -->
+  <div class="w-full lg:min-w-0 lg:flex-1">
     <EntityCombobox
       label="Program"
       items={programItems}
