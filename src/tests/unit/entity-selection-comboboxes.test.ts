@@ -172,6 +172,15 @@ describe("EntitySelectionComboboxes", () => {
     expect(screen.getByLabelText("Program")).toBeInTheDocument();
   });
 
+  test("uses a non-overlapping desktop one-row grid layout for selectors", () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const root = container.firstElementChild as HTMLElement;
+
+    expect(root).toHaveClass("grid");
+    expect(root).toHaveClass("lg:grid-cols-3");
+    expect(root).not.toHaveClass("lg:flex-nowrap");
+  });
+
   test("displays default selections: Proton, Water (liquid), Auto-select", () => {
     render(EntitySelectionComboboxes, { props: { state } });
 

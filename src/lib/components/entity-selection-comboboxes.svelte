@@ -169,8 +169,8 @@
   });
 </script>
 
-<div class={cn("flex flex-wrap items-start gap-3 lg:flex-nowrap", className)}>
-  <div class="w-full lg:min-w-0 lg:flex-1">
+<div class={cn("grid grid-cols-1 items-start gap-3 lg:grid-cols-3", className)}>
+  <div class="w-full">
     <EntityCombobox
       label="Particle"
       items={particleItems}
@@ -186,7 +186,7 @@
     />
   </div>
 
-  <div class="w-full lg:min-w-0 lg:flex-1">
+  <div class="w-full">
     <EntityCombobox
       label="Material"
       items={materialItems}
@@ -199,8 +199,8 @@
     />
   </div>
 
-  <!-- Keep all three selectors in one desktop row to avoid overlap with expanded dropdown content. -->
-  <div class="w-full lg:min-w-0 lg:flex-1">
+  <!-- Keep all three selectors in one desktop row and avoid pointer-intercept overlap. -->
+  <div class="w-full">
     <EntityCombobox
       label="Program"
       items={programItems}
@@ -212,7 +212,7 @@
     />
   </div>
 
-  <div class="w-full text-center">
+  <div class="w-full text-center lg:col-span-3">
     <button
       type="button"
       class="text-sm text-muted-foreground hover:underline"
