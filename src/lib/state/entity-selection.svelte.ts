@@ -15,6 +15,8 @@ export interface EntitySelectionState {
   selectedParticle: ParticleEntity | null;
   selectedMaterial: MaterialEntity | null;
   isComplete: boolean;
+  allParticles: ParticleEntity[];
+  allMaterials: MaterialEntity[];
   availablePrograms: ProgramEntity[];
   availableParticles: ParticleEntity[];
   availableMaterials: MaterialEntity[];
@@ -33,8 +35,23 @@ const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
 };
 
 const PROTON_ID = 1;
+const HELIUM_ID = 2;
+const CARBON_ID = 6;
 const WATER_ID = 276;
 const ELECTRON_ID = 1001;
+
+// Resolution chain per entity-selection.md § "Auto-select program resolution":
+// Proton → ICRU 90 (id=90) → PSTAR (id=1)
+// Alpha  → ICRU 90 (id=90) → ICRU 49 (id=7)
+// Carbon → ICRU 90 (id=90) → ICRU 73 (id=6) → ICRU 73old (id=5)
+// Other heavy ions → ICRU 73 (id=6) → ICRU 73old (id=5)
+// Electron (id=1001) → N/A (ESTAR not implemented)
+const AUTO_SELECT_CHAIN: Record<number, number[]> = {
+  [PROTON_ID]: [90, 1],
+  [HELIUM_ID]: [90, 7],
+  [CARBON_ID]: [90, 6, 5],
+};
+const DEFAULT_AUTO_SELECT_CHAIN = [6, 5];
 
 export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
   let selectedParticleId = $state<number | null>(PROTON_ID);
@@ -42,29 +59,13 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let selectedProgramId = $state<number>(-1);
 
   function resolveAutoSelect(programId: number, particleId: number | null, materialId: number | null): number | null {
-    if (particleId === null || materialId === null) {
-      return null;
+    if (particleId === null || materialId === null) return null;
+    if (particleId === ELECTRON_ID) return null;
+    const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
+    const progs = matrix.programsByParticle.get(particleId);
+    for (const pid of chain) {
+      if (progs?.has(pid)) return pid;
     }
-
-    if (particleId === PROTON_ID) {
-      const particlePrograms = matrix.programsByParticle.get(particleId);
-      if (particlePrograms?.has(90)) return 90;
-      if (particlePrograms?.has(1)) return 1;
-    } else if (particleId === 2) {
-      const particlePrograms = matrix.programsByParticle.get(particleId);
-      if (particlePrograms?.has(90)) return 90;
-      if (particlePrograms?.has(1)) return 1;
-    } else if (particleId === 6) {
-      const particlePrograms = matrix.programsByParticle.get(particleId);
-      if (particlePrograms?.has(90)) return 90;
-      if (particlePrograms?.has(73)) return 73;
-      if (particlePrograms?.has(72)) return 72;
-    } else if (particlePrograms) {
-      const particlePrograms = matrix.programsByParticle.get(particleId);
-      if (particlePrograms?.has(73)) return 73;
-      if (particlePrograms?.has(72)) return 72;
-    }
-
     return null;
   }
 
@@ -140,6 +141,14 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       }
       const resolvedId = getResolvedProgramId(selectedProgramId, selectedParticleId, selectedMaterialId);
       return resolvedId !== null;
+    },
+
+    get allParticles(): ParticleEntity[] {
+      return matrix.allParticles;
+    },
+
+    get allMaterials(): MaterialEntity[] {
+      return matrix.allMaterials;
     },
 
     get availablePrograms(): ProgramEntity[] {

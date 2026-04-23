@@ -1,5 +1,6 @@
 import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
@@ -105,75 +106,66 @@ describe("EntitySelectionComboboxes", () => {
 
   test("selecting a particle updates the selection state", async () => {
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
-    
-    const particleCombobox = container.querySelector('[aria-label="Particle"]');
-    expect(particleCombobox).toBeInTheDocument();
-    
-    // Click to open the combobox
-    fireEvent.click(particleCombobox!);
-    
-    // Give Svelte time to update the dropdown
-    await new Promise(r => setTimeout(r, 50));
-    
-    // In auto-select with water, should show particles compatible with water (proton, helium, carbon)
-    // Select helium from the dropdown
-    const heliumItem = await screen.findByText(/Helium/i);
-    fireEvent.click(heliumItem);
-    
+    const user = userEvent.setup();
+
+    const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(particleCombobox);
+
+    const heliumItem = screen.getByText(/Helium/i);
+    await user.click(heliumItem);
+
     expect(state.selectedParticle?.id).toBe(2);
   });
 
   test("selecting carbon preserves water and resets program to Auto-select", async () => {
-    // First select a program to populate particles
     state.selectProgram(3); // MSTAR
-    
+
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
-    
-    const particleCombobox = container.querySelector('[aria-label="Particle"]');
-    fireEvent.click(particleCombobox!);
-    
-    const carbonItem = await screen.findByText(/Z=6 Carbon/i);
-    fireEvent.click(carbonItem);
-    
+    const user = userEvent.setup();
+
+    const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(particleCombobox);
+
+    const carbonItem = screen.getByText(/Z=6 Carbon/i);
+    await user.click(carbonItem);
+
     expect(state.selectedParticle?.id).toBe(6);
-    expect(state.selectedMaterial?.id).toBe(276); // Water preserved
-    expect(state.selectedProgram.id).toBe(-1); // Reset to Auto-select
+    expect(state.selectedMaterial?.id).toBe(276);
+    expect(state.selectedProgram.id).toBe(-1);
   });
 
   test("clicking Reset all restores defaults", async () => {
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
-    
-    // Change selections
-    state.selectParticle(6); // carbon
-    state.selectMaterial(267); // air
-    state.selectProgram(3); // MSTAR
-    
-    // Click reset
+    const user = userEvent.setup();
+
+    state.selectParticle(6);
+    state.selectMaterial(267);
+    state.selectProgram(3);
+
     const resetLink = screen.getByRole("link", { name: /reset all/i });
-    fireEvent.click(resetLink);
-    
-    expect(state.selectedParticle?.id).toBe(1); // proton
-    expect(state.selectedMaterial?.id).toBe(276); // water
-    expect(state.selectedProgram.id).toBe(-1); // Auto-select
+    await user.click(resetLink);
+
+    expect(state.selectedParticle?.id).toBe(1);
+    expect(state.selectedMaterial?.id).toBe(276);
+    expect(state.selectedProgram.id).toBe(-1);
   });
 
   test("electron (id=1001) cannot be selected", async () => {
     const electronService = new MockLibdedxServiceWithElectron();
     const electronMatrix = buildCompatibilityMatrix(electronService as any);
     const electronState = createEntitySelectionState(electronMatrix);
-    
+
     const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
-    
-    const particleCombobox = container.querySelector('[aria-label="Particle"]');
-    fireEvent.click(particleCombobox!);
-    
-    // Electron should be visible but disabled
+    const user = userEvent.setup();
+
+    const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(particleCombobox);
+
     const electronItem = screen.getByText(/Electron/i);
     expect(electronItem).toBeInTheDocument();
     expect(electronItem).toHaveAttribute("data-disabled", "");
-    
-    // Attempting to select electron should not change state
-    fireEvent.click(electronItem);
+
+    await user.click(electronItem);
     expect(electronState.selectedParticle?.id).toBe(1); // Still proton
   });
 
@@ -188,30 +180,92 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Program combobox shows tabulated and analytical programs grouped", async () => {
-    // ASTAR only supports helium; switch to helium so all four programs are available
-    state.selectParticle(2);
+    state.selectParticle(2); // helium — all four programs available
 
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
 
-    const programCombobox = container.querySelector('[aria-label="Program"]');
-    fireEvent.click(programCombobox!);
+    const programCombobox = container.querySelector('[aria-label="Program"]')!;
+    await user.click(programCombobox);
 
-    // Should show PSTAR, ASTAR, MSTAR, ICRU 90
-    expect(await screen.findByText(/PSTAR/i)).toBeInTheDocument();
-    expect(await screen.findByText(/ASTAR/i)).toBeInTheDocument();
-    expect(await screen.findByText(/MSTAR/i)).toBeInTheDocument();
-    expect(await screen.findByText(/ICRU 90/i)).toBeInTheDocument();
+    expect(screen.getByText(/PSTAR/i)).toBeInTheDocument();
+    expect(screen.getByText(/ASTAR/i)).toBeInTheDocument();
+    expect(screen.getByText(/MSTAR/i)).toBeInTheDocument();
+    expect(screen.getByText(/ICRU 90/i)).toBeInTheDocument();
   });
 
   test("isComplete reflects valid selection state", () => {
     render(EntitySelectionComboboxes, { props: { state } });
-    
+
     // Initial state should be complete
     expect(state.isComplete).toBe(true);
-    
+
     // Clear particle
     state.clearParticle();
     expect(state.isComplete).toBe(false);
+  });
+
+  // --- Keyboard / ARIA (RED until Bits UI component is in place) ---
+
+  test("search input has role=combobox and aria-expanded", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
+
+    const trigger = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(trigger);
+
+    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    expect(searchInput).toHaveAttribute("role", "combobox");
+    expect(searchInput).toHaveAttribute("aria-expanded", "true");
+  });
+
+  test("ArrowDown highlights first item; Enter selects it", async () => {
+    // Clear selection first so we can prove keyboard nav actually selected something
+    state.clearParticle();
+    expect(state.selectedParticle).toBeNull();
+
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
+
+    const trigger = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(trigger);
+
+    // Input is focused after click; ArrowDown highlights first candidate
+    await user.keyboard("{ArrowDown}");
+    // Enter selects the highlighted item
+    await user.keyboard("{Enter}");
+
+    expect(state.selectedParticle).not.toBeNull();
+  });
+
+  test("Escape key closes the dropdown", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
+
+    const trigger = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(trigger);
+
+    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    expect(searchInput).toBeVisible();
+
+    await user.keyboard("{Escape}");
+    expect(searchInput).not.toBeVisible();
+  });
+
+  test("aria-activedescendant on search input tracks highlighted item", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
+
+    const trigger = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(trigger);
+
+    await user.keyboard("{ArrowDown}");
+
+    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    expect(searchInput).toHaveAttribute("aria-activedescendant");
+    const activeId = searchInput.getAttribute("aria-activedescendant");
+    expect(activeId).toBeTruthy();
+    expect(document.getElementById(activeId!)).toBeInTheDocument();
   });
 });
 

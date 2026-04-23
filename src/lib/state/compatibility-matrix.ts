@@ -6,7 +6,11 @@ import type {
   LibdedxService,
 } from "$lib/wasm/types";
 
-const EXCLUDED_FROM_UI = new Set([9]); // DEDX_ICRU - internal auto-selector
+// DEDX_ICRU (id=9) is the internal auto-selector in libdedx — it picks the best
+// ICRU dataset for the current particle/material at the C layer. The frontend
+// implements its own "Auto-select" entry that resolves the same chain, making
+// DEDX_ICRU redundant as a UI option. Showing both would confuse users.
+const EXCLUDED_FROM_UI = new Set([9]);
 
 export function buildCompatibilityMatrix(service: LibdedxService): CompatibilityMatrix {
   const programs = service.getPrograms();

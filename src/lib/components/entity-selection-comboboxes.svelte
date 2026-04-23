@@ -2,7 +2,7 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
-  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
+  import type { EntitySelectionState, SelectedProgram, AutoSelectProgram } from "$lib/state/entity-selection.svelte";
 
   interface Props {
     state: EntitySelectionState;
@@ -20,15 +20,12 @@
   }
 
   const particleItems = $derived.by(() => {
-    return state.availableParticles.map((particle) => {
-      const isAvailable = state.availableParticles.some((p) => p.id === particle.id);
-      return {
-        entity: particle,
-        available: particle.id !== 1001,
-        label: getParticleLabel(particle),
-        description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
-      };
-    });
+    return state.allParticles.map((particle) => ({
+      entity: particle,
+      available: state.availableParticles.some((p) => p.id === particle.id) && particle.id !== 1001,
+      label: getParticleLabel(particle),
+      description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
+    }));
   });
 
   interface MaterialGroup {
@@ -46,10 +43,10 @@
   type MaterialEntry = MaterialGroup | MaterialItem;
 
   const materialItems = $derived.by<MaterialEntry[]>(() => {
-    const elements = state.availableMaterials
+    const elements = state.allMaterials
       .filter((m) => m.id >= 1 && m.id <= 98)
       .sort((a, b) => a.id - b.id);
-    const compounds = state.availableMaterials
+    const compounds = state.allMaterials
       .filter((m) => m.id > 98 || m.id === 906)
       .sort((a, b) => a.name.localeCompare(b.name));
 
@@ -91,16 +88,20 @@
   const programItems = $derived.by<ProgramEntry[]>(() => {
     const result: ProgramEntry[] = [];
 
-    const autoSelect = state.selectedProgram;
-    if (autoSelect.id === -1) {
-      const resolvedLabel = autoSelect.resolvedProgram ? "Auto-select →" : "Auto-select";
-      result.push({
-        type: "item" as const,
-        entity: autoSelect,
-        available: true,
-        label: resolvedLabel,
-      });
-    }
+    // Auto-select is always shown at the top; resolvedProgram only populated when currently
+    // in auto-select mode so the trigger can display "Auto-select → ICRU 90"
+    const currentProgram = state.selectedProgram;
+    const autoSelectEntity: AutoSelectProgram = {
+      id: -1,
+      name: "Auto-select",
+      resolvedProgram: currentProgram.id === -1 ? currentProgram.resolvedProgram : null,
+    };
+    result.push({
+      type: "item" as const,
+      entity: autoSelectEntity,
+      available: true,
+      label: autoSelectEntity.resolvedProgram ? "Auto-select →" : "Auto-select",
+    });
 
     const tabulatedPrograms = state.availablePrograms.filter((p) => p.id <= 90);
     const analyticalPrograms = state.availablePrograms.filter((p) => p.id > 90);
