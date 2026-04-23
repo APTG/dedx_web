@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-04-21T19:13:18.850Z",
+    "generated_at": "2026-04-22T20:38:22.761Z",
     "analysis_type": "typescript_wrapper_contract_verification_stage3",
     "wasm_environment": "web,node",
     "build_script": "wasm/build.sh",

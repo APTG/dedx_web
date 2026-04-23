@@ -10,6 +10,7 @@ export interface LibdedxEntity {
 export interface ParticleEntity extends LibdedxEntity {
   massNumber: number;
   atomicMass: number;
+  symbol: string;
   aliases: string[];
 }
 
@@ -20,6 +21,7 @@ export interface ProgramEntity extends LibdedxEntity {
 export interface MaterialEntity extends LibdedxEntity {
   density: number;
   isGasByDefault: boolean;
+  atomicNumber?: number;
 }
 
 export interface CalculationResult {
@@ -103,4 +105,12 @@ export interface LibdedxService {
   ): CalculationResult;
 }
 
-export type CompatibilityMatrix = Map<string, number[]>;
+export interface CompatibilityMatrix {
+  particlesByProgram: Map<number, Set<number>>;
+  materialsByProgram: Map<number, Set<number>>;
+  programsByParticle: Map<number, Set<number>>;
+  programsByMaterial: Map<number, Set<number>>;
+  allParticles: ParticleEntity[];
+  allMaterials: MaterialEntity[];
+  allPrograms: ProgramEntity[];
+}

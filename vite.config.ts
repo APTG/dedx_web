@@ -16,10 +16,19 @@ export default defineConfig({
       provider: 'v8',
       reporter: ['text', 'lcov'],
       include: ['src/**']
-    }
+    },
+    pool: 'threads'
   },
   build: {
     sourcemap: true,
     minify: true
-  }
+  },
+  optimizeDeps: {
+    include: ['svelte', '@testing-library/svelte']
+  },
+  resolve: process.env.VITEST
+    ? {
+        conditions: ['browser']
+      }
+    : undefined
 });

@@ -4,7 +4,7 @@
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
-> for choosing *what* to calculate.
+> for choosing _what_ to calculate.
 >
 > **v2 changes:** Reversed the visual and logical order from Program-first
 > to Particle → Material → Program. Added bidirectional filtering via a
@@ -50,7 +50,7 @@
 or electron) and target (material, like Silicon), then see which stopping-power
 programs can serve that combination,
 **so that** I follow the natural mental model of a physics experiment: pick the
-beam, pick the target, *then* pick the data source — rather than memorizing
+beam, pick the target, _then_ pick the data source — rather than memorizing
 which programs exist.
 
 **As a** data quality researcher,
@@ -112,14 +112,14 @@ program = manageable). The data is static for the lifetime of the page.
 
 > **Stage 2.6 particle-count clarification (runtime-verified):**
 >
-> | Program | Particles via `dedx_get_ion_list()` | Notes |
-> |---------|--------------------------------------|-------|
-> | ASTAR | 1 (alpha, Z=2) | Tabulated helium only |
-> | PSTAR | 1 (proton, Z=1) | Tabulated proton only |
-> | ESTAR | 1 (electron, ID=1001) | Runtime ion list contains electron, but ESTAR calculations are disabled/unimplemented (`DEDX_ERR_ESTAR_NOT_IMPL`) |
-> | MSTAR | 17 (Z=2–18) | Runtime list only; parametric polynomial extends to Z≥1; use Z=1–98 for the UI |
-> | ICRU 49, 73, 73new, 90 | varies (4–16) | Tabulated specific ions |
-> | DEFAULT / Bethe-ext | **112** (Z=1–112) | Bethe parametric path covers Z=1–112 |
+> | Program             | Particles via `dedx_get_ion_list()` | Notes                                                                                                             |
+> | ------------------- | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+> | ASTAR               | 1 (alpha, Z=2)                      | Tabulated helium only                                                                                             |
+> | PSTAR               | 1 (proton, Z=1)                     | Tabulated proton only                                                                                             |
+> | ESTAR               | 1 (electron, ID=1001)               | Runtime ion list contains electron, but ESTAR calculations are disabled/unimplemented (`DEDX_ERR_ESTAR_NOT_IMPL`) |
+> | MSTAR               | 17 (Z=2–18)                         | Runtime list only; parametric polynomial extends to Z≥1; use Z=1–98 for the UI                                    |
+> | ICRU 49, 73, 73new  | varies (4–16)                       | Tabulated specific ions available in libdedx v1.4.0                                                               |
+> | DEFAULT / Bethe-ext | **112** (Z=1–112)                   | Bethe parametric path covers Z=1–112                                                                              |
 >
 > The "~240 particles" figure cited in earlier specs applies to the combined
 > union of all programs (including MSTAR parametric extension). The actual
@@ -137,49 +137,49 @@ program = manageable). The data is static for the lifetime of the page.
 
 ### 1. Particle Selector (primary — top / left)
 
-| Property | Detail |
-|----------|--------|
-| Type | Always-visible scrollable list panel with text filter input |
-| Data source | Derived from `CompatibilityMatrix.allParticles` |
-| Display format | `Z=N  Name (Symbol)` — e.g., "Z=6  Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "e⁻". |
-| Search aliases | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A |
-| Default | **Proton** (Hydrogen, Z=1) — highlighted on page load |
-| Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast. |
-| Selected state | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle). |
-| Special | Particle ID 1001 = Electron — always present in the particle list but **always greyed out** (ESTAR is not implemented in libdedx v1.4.0; `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations). Show a tooltip on hover: *"Electron stopping powers not available in libdedx v1.4.0."* |
-| Clearable | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header |
+| Property                | Detail                                                                                                                                                                                                                                                                                                |
+| ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                    | Always-visible scrollable list panel with text filter input                                                                                                                                                                                                                                           |
+| Data source             | Derived from `CompatibilityMatrix.allParticles`                                                                                                                                                                                                                                                       |
+| Display format          | `Z=N  Name (Symbol)` — e.g., "Z=6 Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "e⁻".                                                                                                                                                                            |
+| Search aliases          | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A                                                                                                                                                                                    |
+| Default                 | **Proton** (Hydrogen, Z=1) — highlighted on page load                                                                                                                                                                                                                                                 |
+| Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast.                                                                                            |
+| Selected state          | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle).                                                                                                                                                        |
+| Special                 | Particle ID 1001 = Electron — always present in the particle list but **always greyed out** (ESTAR is not implemented in libdedx v1.4.0; `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations). Show a tooltip on hover: _"Electron stopping powers not available in libdedx v1.4.0."_ |
+| Clearable               | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header                                                                                                                                                                                                      |
 
 ### 2. Material Selector (second — middle)
 
 The material selector is **wider** than the other two panels because it
 contains a split layout with two independently scrollable sub-lists.
 
-| Property | Detail |
-|----------|--------|
-| Type | Always-visible **split panel**: one shared text filter on top, two side-by-side scrollable sub-lists below ("Elements" on the left, "Compounds" on the right) |
-| Data source | Derived from `CompatibilityMatrix.allMaterials` |
-| Display format | `ID  Name` — e.g., "276  Water (liquid)" |
-| Search | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID, common aliases (e.g., "water" → "Water (liquid)") |
-| Default | **Water (liquid)** (ID 276) — highlighted on page load |
-| Available / unavailable | All materials are always shown. Materials incompatible with the current particle+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast. |
-| Selected state | Dark background highlight with white text (same style as particle/program). Toggle off by clicking again. |
-| Split layout | **Elements** (material IDs 1–98, i.e. pure chemical elements) in the left sub-list, sorted by ID (= atomic number). **Compounds** (IDs 99–278 + 906 Graphite, i.e. mixtures, tissues, plastics, etc.) in the right sub-list, sorted alphabetically by name. Each sub-list has its own independent scroll position. |
-| Special | Gas-default materials (29 entries) shown with a gas indicator icon/badge |
-| Clearable | Yes — click selected item to toggle off, or clear (×) button in the panel header |
+| Property                | Detail                                                                                                                                                                                                                                                                                                             |
+| ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Type                    | Always-visible **split panel**: one shared text filter on top, two side-by-side scrollable sub-lists below ("Elements" on the left, "Compounds" on the right)                                                                                                                                                      |
+| Data source             | Derived from `CompatibilityMatrix.allMaterials`                                                                                                                                                                                                                                                                    |
+| Display format          | `ID  Name` — e.g., "276 Water (liquid)"                                                                                                                                                                                                                                                                            |
+| Search                  | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID, common aliases (e.g., "water" → "Water (liquid)")                                                                                                                                                   |
+| Default                 | **Water (liquid)** (ID 276) — highlighted on page load                                                                                                                                                                                                                                                             |
+| Available / unavailable | All materials are always shown. Materials incompatible with the current particle+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast.                                                                                                             |
+| Selected state          | Dark background highlight with white text (same style as particle/program). Toggle off by clicking again.                                                                                                                                                                                                          |
+| Split layout            | **Elements** (material IDs 1–98, i.e. pure chemical elements) in the left sub-list, sorted by ID (= atomic number). **Compounds** (IDs 99–278 + 906 Graphite, i.e. mixtures, tissues, plastics, etc.) in the right sub-list, sorted alphabetically by name. Each sub-list has its own independent scroll position. |
+| Special                 | Gas-default materials (29 entries) shown with a gas indicator icon/badge                                                                                                                                                                                                                                           |
+| Clearable               | Yes — click selected item to toggle off, or clear (×) button in the panel header                                                                                                                                                                                                                                   |
 
 ### 3. Program Selector (last — bottom / right)
 
-| Property | Detail |
-|----------|--------|
-| Type | Always-visible scrollable list panel with text filter input |
-| Data source | Derived from `CompatibilityMatrix.allPrograms` |
-| Display format | `name — description` (e.g., "PSTAR — proton stopping powers (NIST)") |
-| Grouping | Two visual groups separated by a labelled divider: **"Tabulated data"** (ASTAR, PSTAR, MSTAR, ICRU family) and **"Analytical models"** (Bethe-Bloch variants). Matches demo layout. |
-| Default | **“Auto-select”** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current particle/material (see §4.3 of 01-project-vision.md) |
-| Hidden programs | **`DEDX_ICRU`** (ID 9) is **excluded** from the program panel. Its function is entirely covered by "Auto-select"; showing both would confuse users. The compatibility matrix still uses `DEDX_ICRU` internally for resolution, but it never appears as a selectable option. |
-| Available / unavailable | All *visible* programs are always shown. Programs incompatible with the current particle+material selection are **greyed out**. “Auto-select” is never greyed out. |
-| Selected state | Dark background highlight with white text. Toggle to deselect; deselecting any program resets to "Auto-select". |
-| Clearable | No explicit clear — deselecting returns to "Auto-select" |
+| Property                | Detail                                                                                                                                                                                                                                                                      |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                    | Always-visible scrollable list panel with text filter input                                                                                                                                                                                                                 |
+| Data source             | Derived from `CompatibilityMatrix.allPrograms`                                                                                                                                                                                                                              |
+| Display format          | `name — description` (e.g., "PSTAR — proton stopping powers (NIST)")                                                                                                                                                                                                        |
+| Grouping                | Two visual groups separated by a labelled divider: **"Tabulated data"** (ASTAR, PSTAR, MSTAR, ICRU family) and **"Analytical models"** (Bethe-Bloch variants). Matches demo layout.                                                                                         |
+| Default                 | **“Auto-select”** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current particle/material (see §4.3 of 01-project-vision.md)                                                                                                    |
+| Hidden programs         | **`DEDX_ICRU`** (ID 9) is **excluded** from the program panel. Its function is entirely covered by "Auto-select"; showing both would confuse users. The compatibility matrix still uses `DEDX_ICRU` internally for resolution, but it never appears as a selectable option. |
+| Available / unavailable | All _visible_ programs are always shown. Programs incompatible with the current particle+material selection are **greyed out**. “Auto-select” is never greyed out.                                                                                                          |
+| Selected state          | Dark background highlight with white text. Toggle to deselect; deselecting any program resets to "Auto-select".                                                                                                                                                             |
+| Clearable               | No explicit clear — deselecting returns to "Auto-select"                                                                                                                                                                                                                    |
 
 ---
 
@@ -205,11 +205,11 @@ function getAvailablePrograms(particle?: number, material?: number): ProgramEnti
   let candidates = matrix.allPrograms;
   if (particle != null) {
     const progs = matrix.programsByParticle.get(particle);
-    candidates = candidates.filter(p => progs?.has(p.id));
+    candidates = candidates.filter((p) => progs?.has(p.id));
   }
   if (material != null) {
     const progs = matrix.programsByMaterial.get(material);
-    candidates = candidates.filter(p => progs?.has(p.id));
+    candidates = candidates.filter((p) => progs?.has(p.id));
   }
   return candidates;
 }
@@ -218,15 +218,14 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
   let candidates = matrix.allParticles;
   if (program != null) {
     const particles = matrix.particlesByProgram.get(program);
-    candidates = candidates.filter(i => particles?.has(i.id));
+    candidates = candidates.filter((i) => particles?.has(i.id));
   }
   if (material != null) {
     // particles that share at least one program with this material
     const materialProgs = matrix.programsByMaterial.get(material);
-    candidates = candidates.filter(i => {
+    candidates = candidates.filter((i) => {
       const particleProgs = matrix.programsByParticle.get(i.id);
-      return particleProgs && materialProgs &&
-        [...particleProgs].some(p => materialProgs.has(p));
+      return particleProgs && materialProgs && [...particleProgs].some((p) => materialProgs.has(p));
     });
   }
   return candidates;
@@ -303,14 +302,20 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
 7. **Auto-select program resolution (display):**
    - When "Auto-select" is active, after any particle or material change, resolve
      the concrete program that would be used for the current combination.
-   - Display the resolved program name, e.g., *"Auto-select → ICRU 90"*.
+   - Display the resolved program name, e.g., _"Auto-select → ICRU49"_.
    - Resolution uses `DEDX_ICRU` internally; the resolution chain is:
-     - Proton: ICRU 90 → PSTAR
-     - Alpha: ICRU 90 → ICRU 49
-     - Carbon: ICRU 90 → ICRU 73 → ICRU 73 (old)
+     - Proton: ICRU 49 → PSTAR
+     - Alpha: ICRU 49 → ASTAR
+     - Carbon: ICRU 73 → ICRU 73 (old) → MSTAR
      - Other heavy ions: ICRU 73 → ICRU 73 (old)
      - Electron (ID 1001): N/A — ESTAR not implemented in libdedx v1.4.0;
        Electron is permanently greyed out and cannot be used in calculations
+       > [!NOTE]
+       > **Runtime note (libdedx v1.4.0):** wireframes below still show
+       > `"Auto-select → ICRU 90"` as historical aspirational text, but runtime data
+       > currently does not contain ICRU 90 (`data/wasm_runtime_stats.json`).
+       > The highest runtime ICRU dataset is ICRU 49 (id=7), so proton/alpha
+       > Auto-select resolves through ICRU49 first.
    - Future: a webdedx-level auto-selection layer may extend this (e.g., prefer
      MSTAR for specific heavy-ion/material combos). This is out of scope for v1
      but the data model should not preclude it.
@@ -367,7 +372,7 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 
 - Reduced opacity (~0.4) and `pointer-events: none`.
 - They maintain their position in the list so the layout doesn't jump.
-- This communicates *what exists* in libdedx even when it's not compatible
+- This communicates _what exists_ in libdedx even when it's not compatible
   with the current selection — useful for discoverability.
 - The text filter can still match greyed-out items (they remain visible
   but non-interactive).
@@ -378,20 +383,20 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 
 ### Search Matching Rules
 
-| Entity | Searchable fields |
-|--------|-------------------|
-| Program | `name`, `version` |
+| Entity   | Searchable fields                                                                                                                                 |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Program  | `name`, `version`                                                                                                                                 |
 | Particle | `name`, `aliases` (e.g., "proton", "alpha", "deuteron", "electron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
-| Material | `name`, `id` (as string), common aliases |
+| Material | `name`, `id` (as string), common aliases                                                                                                          |
 
 For particles, the `aliases` field from `ParticleEntity` provides human-friendly names:
 
-| Particle ID | Name | Aliases |
-|--------|------|---------|
-| 1 | Hydrogen | proton, p, H-1 |
-| 2 | Helium | alpha, α, He-4 |
-| 6 | Carbon | C-12 |
-| 1001 | Electron | e⁻, e-, beta |
+| Particle ID | Name     | Aliases        |
+| ----------- | -------- | -------------- |
+| 1           | Hydrogen | proton, p, H-1 |
+| 2           | Helium   | alpha, α, He-4 |
+| 6           | Carbon   | C-12           |
+| 1001        | Electron | e⁻, e-, beta   |
 
 > The alias list is a frontend configuration, not from libdedx. It should be
 > defined as a static lookup table in `src/lib/config/particle-aliases.ts`.
@@ -409,12 +414,12 @@ For particles, the `aliases` field from `ParticleEntity` provides human-friendly
 
 ### Error States
 
-| Error | Handling |
-|-------|----------|
-| WASM init failure | Error banner, all selectors disabled, retry button |
-| Compatibility matrix contains a program with zero particles or materials | Omit that program from `allPrograms` (data issue in libdedx, not actionable by user) |
-| Previously selected particle/material unavailable after a change in another selector | Auto-fall-back + notification |
-| All three selectors cleared to a state with zero compatible programs | Show inline warning: "No program supports this combination" (should not happen with valid data) |
+| Error                                                                                | Handling                                                                                        |
+| ------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------- |
+| WASM init failure                                                                    | Error banner, all selectors disabled, retry button                                              |
+| Compatibility matrix contains a program with zero particles or materials             | Omit that program from `allPrograms` (data issue in libdedx, not actionable by user)            |
+| Previously selected particle/material unavailable after a change in another selector | Auto-fall-back + notification                                                                   |
+| All three selectors cleared to a state with zero compatible programs                 | Show inline warning: "No program supports this combination" (should not happen with valid data) |
 
 ---
 
@@ -447,10 +452,10 @@ interface EntitySelectionState {
 
 /** The synthetic "Auto-select" program entry. */
 interface AutoSelectProgram {
-  id: -1;  // sentinel value, never sent to C API
+  id: -1; // sentinel value, never sent to C API
   name: "Auto-select";
   /** The concrete program it resolves to for the current particle/material. */
-  resolvedProgram: ProgramEntity | null;  // null when particle or material is cleared
+  resolvedProgram: ProgramEntity | null; // null when particle or material is cleared
 }
 ```
 
@@ -466,10 +471,10 @@ store (architecture TBD in `docs/03-architecture.md`).
 The entity selection component is used on both the Calculator and Plot pages,
 but the **primary activity** on each page is different:
 
-| Page | Primary activity | Entity selection role | Screen budget |
-|------|------------------|-----------------------|---------------|
-| **Calculator** | Enter energy values, read numeric results | Setup (done once, then mostly stable) | Shared with energy input + result table |
-| **Plot** | Explore data: add/compare series, inspect curves | Repeated (new series = new entity combo) | Shared with the JSROOT canvas |
+| Page           | Primary activity                                 | Entity selection role                    | Screen budget                           |
+| -------------- | ------------------------------------------------ | ---------------------------------------- | --------------------------------------- |
+| **Calculator** | Enter energy values, read numeric results        | Setup (done once, then mostly stable)    | Shared with energy input + result table |
+| **Plot**       | Explore data: add/compare series, inspect curves | Repeated (new series = new entity combo) | Shared with the JSROOT canvas           |
 
 **UX best practices applied:**
 
@@ -482,17 +487,17 @@ but the **primary activity** on each page is different:
   real estate.
 - **Progressive disclosure** (§4.4 of project vision): the Calculator shows
   a compact selector by default; the Plot shows full panels because
-  exploration *is* the task.
+  exploration _is_ the task.
 - **F-pattern scanning**: entity selection (setup) on the left; output
   (results/plot) on the right or center — matching the natural reading flow.
 
 The component therefore has **two layout modes** consuming the same underlying
 `EntitySelectionState` and `CompatibilityMatrix`:
 
-| Mode | Used on | Layout |
-|------|---------|--------|
-| **Full panels** | Plot page | Always-visible scrollable list panels (sidebar) |
-| **Compact** | Calculator page | Searchable dropdown comboboxes (inline form) |
+| Mode            | Used on         | Layout                                          |
+| --------------- | --------------- | ----------------------------------------------- |
+| **Full panels** | Plot page       | Always-visible scrollable list panels (sidebar) |
+| **Compact**     | Calculator page | Searchable dropdown comboboxes (inline form)    |
 
 Both modes share all behavior described in the Behavior section above
 (bidirectional filtering, greying out, preserve/fallback, Auto-select
@@ -521,6 +526,7 @@ occupies the remaining right-hand space.
 #### Panel Style
 
 Each panel is a **card** with:
+
 - A header: numbered label (e.g., “① Particle”), accent colour.
 - A text filter input below the header.
 - A scrollable list body (fixed height, ~400px on desktop, adapts on mobile).
@@ -556,7 +562,7 @@ the program (Alternative A layout):
 │ └─────────────┘ └────────────────────────────┘ │ │ Series list / legend   │
 │                                                │ │ ● Proton Water ICRU    │
 │ ┌────────────────────────────────────────────┐ │ │ ● Carbon Water MSTAR   │
-│ │ ③ Program        Auto-select → ICRU 90    │ │ │                        │
+│ │ ③ Program        Auto-select → ICRU49     │ │ │                        │
 │ │ [Filter... ]                               │ │ │ [Export CSV] [Export…] │
 │ │ ┌────────────────────────────────────────┐ │ │ └────────────────────────┘
 │ │ │ ── Tabulated ──                        │ │ │
@@ -667,7 +673,7 @@ Each entity selector is a **searchable dropdown combobox**:
 - Material dropdown shows "Elements" and "Compounds" as section headers
   within the single dropdown list (not two columns — too narrow).
 - Program dropdown shows the resolved label inline:
-  `Auto-select → ICRU 90` as the default display value.
+  `Auto-select → ICRU49` as the default display value.
 
 ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 `role="listbox"` on the dropdown, `role="option"` on items,
@@ -679,7 +685,7 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
 │  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
-│  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV         │  │
+│  │  Program: [Auto-select → ICRU49 ▾]   Energy: (•) MeV         │  │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
@@ -714,7 +720,7 @@ Entity selectors stack vertically, each full width:
 ┌──────────────────────────────────────┐
 │ Particle: [Proton (H)            ▾]  │
 │ Material: [Water (liquid)        ▾]  │
-│ Program:  [Auto-select → ICRU 90 ▾] │
+│ Program:  [Auto-select → ICRU49 ▾] │
 │ Energy:   (•) MeV  ( ) MeV/nucl     │
 │                                      │
 │ ← scroll →                          │
@@ -768,6 +774,7 @@ the URL encodes the selection identically for both pages (see
 ## Acceptance Criteria
 
 ### Layout & Panels — Full Panel Mode (Plot Page)
+
 - [ ] Three panels are displayed in the sidebar: Particle, Material, Program — in that visual order.
 - [ ] On desktop (≥900px), Particle and Material are in a sub-grid row (1fr + 2fr); Program spans full sidebar width below, with shorter list height (~150px).
 - [ ] The sidebar takes ≈30% of the page width; the JSROOT canvas takes ≈70%.
@@ -777,6 +784,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Each sub-list has a sticky group header ("Elements" / "Compounds").
 
 ### Layout — Compact Mode (Calculator Page)
+
 - [ ] Entity selectors are searchable dropdown comboboxes in a horizontal flex row.
 - [ ] Particle and Material comboboxes are wider (~240px) than Program (~180px) — visual hierarchy.
 - [ ] On desktop, the form is centered (max-width ~720px) with the result table as visual centerpiece.
@@ -784,15 +792,18 @@ the URL encodes the selection identically for both pages (see
 - [ ] Material dropdown shows Elements and Compounds as section headers within a single dropdown list.
 
 ### Shared State
+
 - [ ] Both modes share the same `EntitySelectionState` store; selection persists across page navigation.
 - [ ] Layout mode is determined by page route, not a user toggle.
 
 ### Defaults & Init
+
 - [ ] On page load, entity selectors populate from WASM data within 2 seconds (after WASM init).
 - [ ] Default state is Proton / Water (liquid) / Auto-select with no user interaction required.
 - [ ] The compatibility matrix is built at init from all programs' particle/material lists.
 
 ### Bidirectional Filtering
+
 - [ ] Selecting a particle greys out incompatible materials and programs.
 - [ ] Selecting a material greys out incompatible particles and programs.
 - [ ] Selecting a program greys out incompatible particles and materials.
@@ -801,10 +812,12 @@ the URL encodes the selection identically for both pages (see
 - [ ] Deselecting (toggling off) an entity removes its filtering constraint; other panels update immediately.
 
 ### Preserve / Fallback
+
 - [ ] Changing a selector preserves the current selections in other panels if they remain compatible.
 - [ ] If a previously selected particle or material becomes incompatible, the selector falls back to the default (Proton / Water) if available, else the first available entry, and a notification is shown.
 
 ### Text Filter
+
 - [ ] Typing in any panel's filter input filters that panel's list with case-insensitive substring matching.
 - [ ] The Material panel's single filter input filters both Elements and Compounds sub-lists simultaneously.
 - [ ] Particle filter matches on name, aliases ("proton", "alpha"), Z, A, and chemical symbol.
@@ -813,20 +826,23 @@ the URL encodes the selection identically for both pages (see
 - [ ] Non-matching items are hidden from view.
 
 ### Selection UX
+
 - [ ] Clicking an available item selects it with a dark accent background and white text.
 - [ ] Clicking the selected item again deselects it (toggle).
 - [ ] Clicking a greyed-out item does nothing.
-- [ ] The "Auto-select" program displays the resolved concrete program name (e.g., "Auto-select → ICRU 90").
+- [ ] The "Auto-select" program displays the resolved concrete program name (e.g., "Auto-select → ICRU49").
 - [ ] Resolved program updates when particle or material changes while "Auto-select" is active.
 - [ ] A "Reset all" link restores defaults (Proton / Water / Auto-select).
 
 ### Program Panel
+
 - [ ] Programs are grouped into "Tabulated data" and "Analytical models" with labelled dividers.
 - [ ] "Auto-select" is always shown at the top and never greyed out.
 - [ ] `DEDX_ICRU` (ID 9) is **not** shown in the program panel; its function is covered by "Auto-select".
-- [ ] The resolved program label uses frontend-enriched names (e.g., "ICRU 90") not raw C library names (e.g., "ICRU").
+- [ ] The resolved program label uses frontend-enriched names (e.g., "ICRU49") not raw C library names (e.g., "ICRU").
 
 ### Keyboard & Accessibility
+
 - [ ] Each panel is keyboard-navigable (Tab to filter, Arrow keys to navigate list, Enter to select, Escape to clear filter).
 - [ ] ARIA attributes: `role="listbox"`, `role="option"`, `aria-selected`, `aria-disabled`, `role="searchbox"` on filters.
 - [ ] Screen readers announce available item counts.
@@ -834,6 +850,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Error state with retry is shown if WASM init fails.
 
 ### Special Cases
+
 - [ ] Electron (particle ID 1001) appears in the particle list but is always greyed out (ESTAR not implemented in libdedx v1.4.0). A tooltip on hover reads "Electron stopping powers not available in libdedx v1.4.0."
 - [ ] Gas-default materials are visually indicated with an icon and text badge, not colour alone.
 
@@ -853,7 +870,7 @@ the URL encodes the selection identically for both pages (see
 
 1. **Auto-select resolution visibility:** Should the resolved program be shown
    only as a subtle label, or also as a tooltip on the program selector?
-   *Current decision: subtle label below the program list inside the panel.*
+   _Current decision: subtle label below the program list inside the panel._
 
 2. ~~**Material grouping**~~ **Resolved.** Materials are split into two
    side-by-side sub-lists (Elements / Compounds) with a shared text filter.
@@ -861,15 +878,15 @@ the URL encodes the selection identically for both pages (see
 
 3. **Panel scroll height:** ~400px on desktop, ~300px on tablet, ~200px on
    mobile. Exact values to be refined during implementation.
-   *Inspired by `libdedx_demo.html` which uses `height: 400px`.*
+   _Inspired by `libdedx_demo.html` which uses `height: 400px`._
 
 4. **Graphite (ID 906):** This is a special allotrope of Carbon (element 6)
    with its own material ID. Should it appear in the Elements sub-list
    (alongside Carbon) or in the Compounds sub-list? The demo places it at
    the end of the full list.
-   *Current decision: place in Compounds sub-list (ID ≥ 99 rule), with a
-   note "(allotrope of Carbon)" in the display name.*
+   _Current decision: place in Compounds sub-list (ID ≥ 99 rule), with a
+   note "(allotrope of Carbon)" in the display name._
 
 5. **Sort order within Elements sub-list:** By atomic number (= material ID)
-   or alphabetically? *Current decision: by ID (= atomic number), matching
-   periodic table order, as in the demo.*
+   or alphabetically? _Current decision: by ID (= atomic number), matching
+   periodic table order, as in the demo._
