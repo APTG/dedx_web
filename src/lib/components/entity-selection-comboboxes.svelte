@@ -199,7 +199,7 @@
     />
   </div>
 
-  <!-- Keep all three selectors in one desktop row to avoid overlap with expanded popovers. -->
+  <!-- Keep all three selectors in one desktop row to avoid overlap with expanded dropdown content. -->
   <div class="w-full lg:min-w-0 lg:flex-1">
     <EntityCombobox
       label="Program"
