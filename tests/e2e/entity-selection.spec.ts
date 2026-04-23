@@ -61,7 +61,7 @@ test.describe("Calculator page — compact mode", () => {
     await page.getByRole("option", { name: /Z=6/i }).first().click();
 
     // Click reset all
-    await page.getByRole("link", { name: /reset all/i }).click();
+    await page.getByRole("button", { name: /reset all/i }).click();
 
     // Verify defaults restored
     await expect(particleTrigger(page)).toContainText(/Z=1/i);

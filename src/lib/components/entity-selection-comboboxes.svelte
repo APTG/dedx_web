@@ -1,7 +1,7 @@
 <script lang="ts">
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils";
-  import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
+  import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
   import type {
     EntitySelectionState,
     SelectedProgram,
@@ -23,12 +23,29 @@
     return `Z=${particle.id} ${particle.name}${symbol ? ` (${symbol})` : ""}`;
   }
 
+  function getParticleSearchText(particle: ParticleEntity): string {
+    return [
+      particle.name,
+      particle.symbol,
+      `z=${particle.id}`,
+      `z${particle.id}`,
+      String(particle.id),
+      `a=${particle.massNumber}`,
+      `a${particle.massNumber}`,
+      String(particle.massNumber),
+      ...(particle.aliases ?? []),
+    ]
+      .filter(Boolean)
+      .join(" ");
+  }
+
   const particleItems = $derived.by(() => {
     return state.allParticles.map((particle) => ({
       entity: particle,
       available: state.availableParticles.some((p) => p.id === particle.id) && particle.id !== 1001,
       label: getParticleLabel(particle),
       description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
+      searchText: getParticleSearchText(particle),
     }));
   });
 
@@ -42,6 +59,7 @@
     entity: MaterialEntity;
     available: boolean;
     label: string;
+    searchText: string;
   }
 
   type MaterialEntry = MaterialGroup | MaterialItem;
@@ -61,6 +79,7 @@
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
         label: `${material.id}  ${material.name}`,
+        searchText: `${material.id} ${material.name}`,
       })),
       { type: "section", label: "Compounds" },
       ...compounds.map((material) => ({
@@ -68,6 +87,7 @@
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
         label: `${material.id}  ${material.name}`,
+        searchText: `${material.id} ${material.name}`,
       })),
     ];
 
@@ -81,10 +101,11 @@
 
   interface ProgramItem {
     type: "item";
-    entity: SelectedProgram | { id: number; name: string; version: string };
+    entity: SelectedProgram | ProgramEntity;
     available: boolean;
     label: string;
     description?: string;
+    searchText?: string;
   }
 
   type ProgramEntry = ProgramGroup | ProgramItem;
@@ -110,6 +131,7 @@
       // Keep the trigger label fully informative: when Auto-select is active we show
       // the resolved concrete runtime program (spec AC: "Auto-select → <program>").
       label: autoSelectLabel,
+      searchText: `auto select ${autoSelectEntity.resolvedProgram?.name ?? ""}`,
     });
 
     // availablePrograms is already filtered in compatibility-matrix.ts to hide
@@ -125,6 +147,7 @@
         entity: program,
         available: true,
         label: `${program.name} — ${program.version}`,
+        searchText: `${program.name} ${program.version}`,
       });
     }
 
@@ -137,6 +160,7 @@
           entity: program,
           available: true,
           label: `${program.name} — ${program.version}`,
+          searchText: `${program.name} ${program.version}`,
         });
       }
     }
@@ -145,54 +169,58 @@
   });
 </script>
 
-<div class={cn("space-y-3", className)}>
-  <EntityCombobox
-    label="Particle"
-    items={particleItems}
-    selectedId={state.selectedParticle?.id ?? null}
-    placeholder="Select particle"
-    onItemSelect={(particle: ParticleEntity) => {
-      if (particle.id === 1001) {
-        return;
-      }
-      state.selectParticle(particle.id);
-    }}
-    onClear={() => state.clearParticle()}
-  />
+<div class={cn("flex flex-wrap gap-3", className)}>
+  <div class="w-full lg:w-[calc(50%-0.375rem)]">
+    <EntityCombobox
+      label="Particle"
+      items={particleItems}
+      selectedId={state.selectedParticle?.id ?? null}
+      placeholder="Select particle"
+      onItemSelect={(particle: ParticleEntity) => {
+        if (particle.id === 1001) {
+          return;
+        }
+        state.selectParticle(particle.id);
+      }}
+      onClear={() => state.clearParticle()}
+    />
+  </div>
 
-  <EntityCombobox
-    label="Material"
-    items={materialItems}
-    selectedId={state.selectedMaterial?.id ?? null}
-    placeholder="Select material"
-    onItemSelect={(material: MaterialEntity) => {
-      state.selectMaterial(material.id);
-    }}
-    onClear={() => state.clearMaterial()}
-  />
+  <div class="w-full lg:w-[calc(50%-0.375rem)]">
+    <EntityCombobox
+      label="Material"
+      items={materialItems}
+      selectedId={state.selectedMaterial?.id ?? null}
+      placeholder="Select material"
+      onItemSelect={(material: MaterialEntity) => {
+        state.selectMaterial(material.id);
+      }}
+      onClear={() => state.clearMaterial()}
+    />
+  </div>
 
-  <EntityCombobox
-    label="Program"
-    items={programItems}
-    selectedId={state.selectedProgram?.id ?? null}
-    placeholder="Select program"
-    onItemSelect={(item: any) => {
-      if ("id" in item) {
-        state.selectProgram(item.id);
-      }
-    }}
-  />
+  <!-- Compact-mode layout follows spec: Particle+Material first row, Program next row. -->
+  <div class="w-full">
+    <EntityCombobox
+      label="Program"
+      items={programItems}
+      selectedId={state.selectedProgram?.id ?? null}
+      placeholder="Select program"
+      onItemSelect={(program: SelectedProgram | ProgramEntity) => {
+        state.selectProgram(program.id);
+      }}
+    />
+  </div>
 
-  <div class="text-center">
-    <a
-      href="#"
+  <div class="w-full text-center">
+    <button
+      type="button"
       class="text-sm text-muted-foreground hover:underline"
-      onclick={(e) => {
-        e.preventDefault();
+      onclick={() => {
         state.resetAll();
       }}
     >
       Reset all
-    </a>
+    </button>
   </div>
 </div>

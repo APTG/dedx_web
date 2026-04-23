@@ -7,6 +7,7 @@ import type {
   AdvancedOptions,
 } from "./types";
 import { LibdedxError } from "./types";
+import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -93,16 +94,19 @@ export class LibdedxServiceImpl implements LibdedxService {
         const ionIds = readIdList(heap, this.module._dedx_get_ion_list(prog.id));
         const particles: ParticleEntity[] = [];
         for (const id of ionIds) {
+          const runtimeName = this.module.UTF8ToString(this.module._dedx_get_ion_name(id));
+          const symbol = getParticleSymbol(id);
+          // libdedx does not currently expose aliases/symbols in the C API, so we enrich
+          // runtime particles with static lookup data to keep UI labels and search behavior
+          // aligned with the Stage 5 entity-selection specification.
+          const aliases = Array.from(new Set([runtimeName, ...getParticleAliases(id)]));
           particles.push({
             id,
-            name: this.module.UTF8ToString(this.module._dedx_get_ion_name(id)),
+            name: runtimeName,
             massNumber: this.module._dedx_get_ion_nucleon_number(id),
             atomicMass: this.module._dedx_get_ion_atom_mass(id),
-            // libdedx v1.4.0 does not expose ion symbols in the C API yet.
-            // Keep this non-optional field stable for UI typing by using an empty string
-            // placeholder until the runtime API exposes a dedicated symbol accessor.
-            symbol: "",
-            aliases: [],
+            symbol,
+            aliases,
           });
         }
         this.particles.set(prog.id, particles);

@@ -221,6 +221,19 @@ describe("EntitySelectionComboboxes", () => {
     expect(state.selectedParticle?.id).toBe(2);
   });
 
+  test("particle search matches aliases from enriched search text", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const user = userEvent.setup();
+
+    const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+    await user.click(particleCombobox);
+
+    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    await user.type(searchInput, "alpha");
+
+    expect(screen.getByRole("option", { name: /helium/i })).toBeInTheDocument();
+  });
+
   test("selecting carbon preserves water and keeps selected program when still compatible", async () => {
     state.selectProgram(4); // MSTAR
 
@@ -239,15 +252,15 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("clicking Reset all restores defaults", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { state } });
     const user = userEvent.setup();
 
     state.selectParticle(6);
     state.selectMaterial(267);
     state.selectProgram(4);
 
-    const resetLink = screen.getByRole("link", { name: /reset all/i });
-    await user.click(resetLink);
+    const resetButton = screen.getByRole("button", { name: /reset all/i });
+    await user.click(resetButton);
 
     expect(state.selectedParticle?.id).toBe(1);
     expect(state.selectedMaterial?.id).toBe(276);

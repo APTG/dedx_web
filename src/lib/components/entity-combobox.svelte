@@ -13,6 +13,7 @@
     available: boolean;
     label: string;
     description?: string;
+    searchText?: string;
   }
 
   type ComboboxEntry<T> = EntityItem<T> | SectionHeader;
@@ -83,7 +84,9 @@
       })),
   );
 
-  // Items grouped by preceding section header, filtered by current search term
+  // Items grouped by preceding section header, filtered by current search term.
+  // `searchText` lets callers inject domain-specific keywords (aliases/symbols/IDs)
+  // without polluting the visible label shown in the trigger/list.
   const filteredGroups = $derived.by(() => {
     const term = inputValue.toLowerCase().trim();
     const groups: Array<{ label: string; items: EntityItem<T>[] }> = [];
@@ -95,11 +98,9 @@
         groups.push(current);
       } else {
         const ei = raw as EntityItem<T>;
-        if (
-          !term ||
-          ei.label.toLowerCase().includes(term) ||
-          ei.description?.toLowerCase().includes(term)
-        ) {
+        const searchableText =
+          `${ei.label} ${ei.description ?? ""} ${ei.searchText ?? ""}`.toLowerCase();
+        if (!term || searchableText.includes(term)) {
           if (!current) {
             current = { label: "", items: [] };
             groups.push(current);
