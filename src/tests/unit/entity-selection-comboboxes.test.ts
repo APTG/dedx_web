@@ -12,7 +12,7 @@ class MockLibdedxService {
       { id: 1, name: "ASTAR", version: "1.0" },
       { id: 2, name: "PSTAR", version: "1.0" },
       { id: 4, name: "MSTAR", version: "1.0" },
-      { id: 7, name: "ICRU49", version: "1.0" },
+      { id: 7, name: "ICRU 49", version: "1.0" },
       { id: 9, name: "ICRU", version: "1.0" },
       { id: 101, name: "Bethe-ext", version: "1.0" },
     ];
@@ -188,9 +188,9 @@ describe("EntitySelectionComboboxes", () => {
     const materialCombobox = screen.getByLabelText("Material");
     const programCombobox = screen.getByLabelText("Program");
 
-    expect(particleCombobox).toHaveTextContent("Z=1 Hydrogen (H)");
-    expect(materialCombobox).toHaveTextContent("276");
+    expect(particleCombobox).toHaveTextContent("Hydrogen (H)");
     expect(materialCombobox).toHaveTextContent("Water (liquid)");
+    expect(materialCombobox).not.toHaveTextContent("276");
     expect(programCombobox).toHaveTextContent("Auto-select");
   });
 
@@ -200,7 +200,7 @@ describe("EntitySelectionComboboxes", () => {
     // With proton+water, Auto-select resolves to one runtime-compatible program.
     // This must include the concrete program name, not only the "Auto-select →" prefix.
     const programCombobox = screen.getByLabelText("Program");
-    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU49/);
+    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU 49/);
     expect(programCombobox).not.toHaveTextContent(/^Auto-select →\s*$/);
   });
 
@@ -208,7 +208,7 @@ describe("EntitySelectionComboboxes", () => {
     const { rerender } = render(EntitySelectionComboboxes, { props: { state } });
 
     const programCombobox = screen.getByLabelText("Program");
-    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU49/);
+    expect(programCombobox).toHaveTextContent(/Auto-select → ICRU 49/);
 
     state.selectParticle(6);
     state.selectMaterial(267);
@@ -252,7 +252,7 @@ describe("EntitySelectionComboboxes", () => {
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
     await user.click(particleCombobox);
 
-    const carbonItem = screen.getByText(/Z=6 Carbon/i);
+    const carbonItem = screen.getByText(/Carbon \(C\)/i);
     await user.click(carbonItem);
 
     expect(state.selectedParticle?.id).toBe(6);

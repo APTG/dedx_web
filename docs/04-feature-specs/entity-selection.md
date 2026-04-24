@@ -141,7 +141,7 @@ program = manageable). The data is static for the lifetime of the page.
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Type                    | Always-visible scrollable list panel with text filter input                                                                                                                                                                                                                                           |
 | Data source             | Derived from `CompatibilityMatrix.allParticles`                                                                                                                                                                                                                                                       |
-| Display format          | `Z=N  Name (Symbol)` — e.g., "Z=6 Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "e⁻".                                                                                                                                                                            |
+| Display format          | `Name (Symbol)` — e.g., "Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "Electron". The atomic number Z is **not shown** in the label; it remains a search keyword so users can type "z=6" or "6" to find Carbon.                                                  |
 | Search aliases          | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A                                                                                                                                                                                    |
 | Default                 | **Proton** (Hydrogen, Z=1) — highlighted on page load                                                                                                                                                                                                                                                 |
 | Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast.                                                                                            |
@@ -158,8 +158,8 @@ contains a split layout with two independently scrollable sub-lists.
 | ----------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Type                    | Always-visible **split panel**: one shared text filter on top, two side-by-side scrollable sub-lists below ("Elements" on the left, "Compounds" on the right)                                                                                                                                                      |
 | Data source             | Derived from `CompatibilityMatrix.allMaterials`                                                                                                                                                                                                                                                                    |
-| Display format          | `ID  Name` — e.g., "276 Water (liquid)"                                                                                                                                                                                                                                                                            |
-| Search                  | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID, common aliases (e.g., "water" → "Water (liquid)")                                                                                                                                                   |
+| Display format          | `Name` — e.g., "Water (liquid)". The numeric material ID is **not shown** in labels or triggers; it remains available as a search keyword so users can still type "276" to find water. Names use the app's friendly-name formatting layer, including human-friendly overrides for known materials (e.g., "WATER" → "Water (liquid)", "WATERVAPOR" → "Water Vapor"). |
+| Search                  | A single text filter input at the top filters **both** sub-lists simultaneously. Match on `name`, material ID (numeric, e.g. "276" finds Water), common aliases (e.g., "water" → "Water (liquid)"). The ID is a search keyword only — it is not shown in the label.                                                |
 | Default                 | **Water (liquid)** (ID 276) — highlighted on page load                                                                                                                                                                                                                                                             |
 | Available / unavailable | All materials are always shown. Materials incompatible with the current particle+program selection are **greyed out** (reduced opacity, non-interactive). Compatible materials shown at full contrast.                                                                                                             |
 | Selected state          | Dark background highlight with white text (same style as particle/program). Toggle off by clicking again.                                                                                                                                                                                                          |
@@ -173,7 +173,7 @@ contains a split layout with two independently scrollable sub-lists.
 | ----------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Type                    | Always-visible scrollable list panel with text filter input                                                                                                                                                                                                                 |
 | Data source             | Derived from `CompatibilityMatrix.allPrograms`                                                                                                                                                                                                                              |
-| Display format          | `name — description` (e.g., "PSTAR — proton stopping powers (NIST)")                                                                                                                                                                                                        |
+| Display format          | `name — description` (e.g., "PSTAR — protons (NIST)", "ICRU 49 — protons & α particles"). Descriptions come from `getProgramDescription()` in `src/lib/config/program-names.ts`. The raw version string from `dedx_get_program_version()` is kept in `searchText` but not displayed.                                                                                                                                                                                                        |
 | Grouping                | Two visual groups separated by a labelled divider: **"Tabulated data"** (ASTAR, PSTAR, MSTAR, ICRU family) and **"Analytical models"** (Bethe-Bloch variants). Matches demo layout.                                                                                         |
 | Default                 | **“Auto-select”** — a virtual entry at the top, always available, resolves to the best ICRU dataset for the current particle/material (see §4.3 of 01-project-vision.md)                                                                                                    |
 | Hidden programs         | **`DEDX_ICRU`** (ID 9) is **excluded** from the program panel. Its function is entirely covered by "Auto-select"; showing both would confuse users. The compatibility matrix still uses `DEDX_ICRU` internally for resolution, but it never appears as a selectable option. |
@@ -302,7 +302,7 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
 7. **Auto-select program resolution (display):**
    - When "Auto-select" is active, after any particle or material change, resolve
      the concrete program that would be used for the current combination.
-   - Display the resolved program name, e.g., _"Auto-select → ICRU49"_.
+   - Display the resolved program name, e.g., _"Auto-select → ICRU 49"_.
    - Resolution uses `DEDX_ICRU` internally; the resolution chain is:
      - Proton: ICRU 49 → PSTAR
      - Alpha: ICRU 49 → ASTAR
@@ -315,7 +315,7 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
        > `"Auto-select → ICRU 90"` as historical aspirational text, but runtime data
        > currently does not contain ICRU 90 (`data/wasm_runtime_stats.json`).
        > The highest runtime ICRU dataset is ICRU 49 (id=7), so proton/alpha
-       > Auto-select resolves through ICRU49 first.
+       > Auto-select resolves through ICRU 49 first.
    - Future: a webdedx-level auto-selection layer may extend this (e.g., prefer
      MSTAR for specific heavy-ion/material combos). This is out of scope for v1
      but the data model should not preclude it.
@@ -385,7 +385,7 @@ Unavailable items are shown **greyed out** in-place rather than hidden:
 
 | Entity   | Searchable fields                                                                                                                                 |
 | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Program  | `name`, `version`                                                                                                                                 |
+| Program  | `name`, `description`, `version` (version kept for search only, not displayed)                                                                    |
 | Particle | `name`, `aliases` (e.g., "proton", "alpha", "deuteron", "electron"), `Z` (atomic number as string), `A` (mass number as string; N/A for Electron) |
 | Material | `name`, `id` (as string), common aliases                                                                                                          |
 
@@ -554,19 +554,19 @@ the program (Alternative A layout):
 │ │ ① Particle  │ │ ② Target Material          │ │ │    JSROOT Plot Canvas  │
 │ │ [Filter.. ] │ │ [Filter...               ] │ │ │                        │
 │ │ ┌─────────┐ │ │ ┌──────────┬─────────────┐ │ │ │                        │
-│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS   │ │ │ │                        │
-│ │ │ Alpha   │ │ │ │ 1  H     │ 276 Water   │ │ │ │                        │
-│ │ │ Lithium │ │ │ │ 2  He    │ 99  A-150   │ │ │ │                        │
+│ │ │ Proton  │ │ │ │ ELEMENTS │ COMPOUNDS        │ │ │                        │
+│ │ │ Alpha   │ │ │ │ Hydrogen │ Water (liquid)   │ │ │                        │
+│ │ │ Lithium │ │ │ │ Helium   │ A-150 Tissue-Eq. │ │ │                        │
 │ │ │ ...  ↕  │ │ │ │ ...  ↕   │ ...   ↕     │ │ │ │                        │
 │ │ └─────────┘ │ │ └──────────┴─────────────┘ │ │ ├────────────────────────┤
 │ └─────────────┘ └────────────────────────────┘ │ │ Series list / legend   │
 │                                                │ │ ● Proton Water ICRU    │
 │ ┌────────────────────────────────────────────┐ │ │ ● Carbon Water MSTAR   │
-│ │ ③ Program        Auto-select → ICRU49     │ │ │                        │
+│ │ ③ Program        Auto-select → ICRU 49    │ │ │                        │
 │ │ [Filter... ]                               │ │ │ [Export CSV] [Export…] │
 │ │ ┌────────────────────────────────────────┐ │ │ └────────────────────────┘
 │ │ │ ── Tabulated ──                        │ │ │
-│ │ │ ASTAR · PSTAR · MSTAR · ICRU49 · …    │ │ │
+│ │ │ ASTAR · PSTAR · MSTAR · ICRU 49 · …   │ │ │
 │ │ │ ── Analytical ──                       │ │ │
 │ │ │ Bethe-Bloch · Bethe-Ext               │ │ │
 │ │ └────────────────────────────────────────┘ │ │
@@ -620,15 +620,15 @@ side-by-side. The plot canvas scrolls below.
 │ ① Particle                           │
 │ [Filter...                        ]  │
 │ ┌──────────────────────────────────┐  │
-│ │ Z=1  Proton (H)                  │  │
-│ │ Z=2  Alpha (He)      scroll ↕   │  │
+│ │ Hydrogen (H)                     │  │
+│ │ Helium (He)          scroll ↕   │  │
 │ └──────────────────────────────────┘  │
 ├──────────────────────────────────────┤
 │ ② Target Material                    │
 │ [Filter...                        ]  │
 │ ┌────────────────┬───────────────────┐│
 │ │ ELEMENTS       │ COMPOUNDS         ││
-│ │ 1 Hydrogen     │ 276 Water (liq.)  ││
+│ │ Hydrogen       │ Water (liquid)    ││
 │ │ ...  scroll ↕  │ ...    scroll ↕   ││
 │ └────────────────┴───────────────────┘│
 ├──────────────────────────────────────┤
@@ -664,7 +664,7 @@ step — most users pick Proton + Water and only change the energy.
 
 Each entity selector is a **searchable dropdown combobox**:
 
-- A single-line input showing the current selection (e.g., "Proton (H)").
+- A single-line input showing the current selection (e.g., "Hydrogen (H)").
 - Clicking or focusing opens a dropdown panel with a filtered list.
 - Typing in the input filters the dropdown (same matching rules: aliases,
   Z, A, name, ID).
@@ -673,7 +673,7 @@ Each entity selector is a **searchable dropdown combobox**:
 - Material dropdown shows "Elements" and "Compounds" as section headers
   within the single dropdown list (not two columns — too narrow).
 - Program dropdown shows the resolved label inline:
-  `Auto-select → ICRU49` as the default display value.
+  `Auto-select → ICRU 49` as the default display value.
 
 ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 `role="listbox"` on the dropdown, `role="option"` on items,
@@ -684,8 +684,7 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 ┌────────────────────────────────────────────────────────────────────────┐
 │  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  Particle: [Proton (H) ▾]   Material: [Water (liquid)      ▾]   │  │
-│  │  Program: [Auto-select → ICRU49 ▾]   Energy: (•) MeV         │  │
+│  │  [Hydrogen (H) ▾]    [Water (liquid) ▾]   [Auto-select → ICRU 49 ▾] │
 │  └──────────────────────────────────────────────────────────────────┘  │
 │                                                                        │
 │  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
@@ -700,8 +699,9 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 ```
 
 - Max content width ~720px, centered horizontally (`mx-auto`).
-- Entity selectors in a **flex row that wraps**: Particle and Material on the
-  first line; Program and Energy unit on the second line.
+- Entity selectors in a **single three-column grid row** (`grid-cols-3`): Particle,
+  Material, and Program each occupy one column. All three are always visible without
+  wrapping on desktop. The Energy unit selector lives in the energy input row below.
 - Program combobox is **narrower** than Particle/Material (~180px vs ~240px)
   because it is less frequently changed — visual hierarchy via width.
 - The unified input/result table is the visual centerpiece, full content width.
@@ -718,9 +718,9 @@ Entity selectors stack vertically, each full width:
 
 ```
 ┌──────────────────────────────────────┐
-│ Particle: [Proton (H)            ▾]  │
+│ Particle: [Hydrogen (H)          ▾]  │
 │ Material: [Water (liquid)        ▾]  │
-│ Program:  [Auto-select → ICRU49 ▾] │
+│ Program:  [Auto-select → ICRU 49 ▾] │
 │ Energy:   (•) MeV  ( ) MeV/nucl     │
 │                                      │
 │ ← scroll →                          │
@@ -830,7 +830,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Clicking an available item selects it with a dark accent background and white text.
 - [ ] Clicking the selected item again deselects it (toggle).
 - [ ] Clicking a greyed-out item does nothing.
-- [ ] The "Auto-select" program displays the resolved concrete program name (e.g., "Auto-select → ICRU49").
+- [ ] The "Auto-select" program displays the resolved concrete program name (e.g., "Auto-select → ICRU 49").
 - [ ] Resolved program updates when particle or material changes while "Auto-select" is active.
 - [ ] A "Reset all" link restores defaults (Proton / Water / Auto-select).
 
@@ -839,7 +839,7 @@ the URL encodes the selection identically for both pages (see
 - [ ] Programs are grouped into "Tabulated data" and "Analytical models" with labelled dividers.
 - [ ] "Auto-select" is always shown at the top and never greyed out.
 - [ ] `DEDX_ICRU` (ID 9) is **not** shown in the program panel; its function is covered by "Auto-select".
-- [ ] The resolved program label uses frontend-enriched names (e.g., "ICRU49") not raw C library names (e.g., "ICRU").
+- [ ] The resolved program label uses frontend-enriched names (e.g., "ICRU 49") not raw C library names (e.g., "ICRU").
 
 ### Keyboard & Accessibility
 

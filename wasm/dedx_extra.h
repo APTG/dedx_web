@@ -5,10 +5,10 @@
 extern "C" {
 #endif
 
-int   dedx_get_ion_nucleon_number(int ion);
-float dedx_get_ion_atom_mass(int ion);
-float dedx_get_density(int material, int *err);
-int   dedx_target_is_gas(int target);
+int         dedx_get_ion_nucleon_number(int ion);
+float       dedx_get_ion_atom_mass(int ion);
+float       dedx_get_density(int material, int *err);
+int         dedx_target_is_gas(int target);
 
 #ifdef __cplusplus
 }

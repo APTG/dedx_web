@@ -56,9 +56,13 @@
     valueStr = selectedId !== null ? String(selectedId) : "";
   });
 
-  // Focus search input after the dropdown opens so keyboard navigation works
+  // Reset the search term and focus the input whenever the dropdown opens.
+  // Note: bind:inputValue on Combobox.Root does not propagate typed values back
+  // (bits-ui's inputValue prop is not $bindable), so we track the typed text via
+  // an oninput handler on Combobox.Input directly.
   $effect(() => {
     if (open) {
+      inputValue = "";
       tick().then(() => inputRef?.focus());
     }
   });
@@ -133,7 +137,6 @@
     bind:value={valueStr}
     onValueChange={handleValueChange}
     items={bitsItems}
-    bind:inputValue
     bind:open
     allowDeselect={false}
     {disabled}
@@ -181,6 +184,9 @@
             bind:ref={inputRef}
             class="flex h-10 w-full border-b border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
             placeholder="Search..."
+            oninput={(e: Event) => {
+              inputValue = (e.currentTarget as HTMLInputElement).value;
+            }}
           />
           <div class="max-h-[300px] overflow-y-auto p-1">
             {#if filteredGroups.length === 0}

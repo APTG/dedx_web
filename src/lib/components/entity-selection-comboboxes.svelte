@@ -2,6 +2,7 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
+  import { getProgramDescription } from "$lib/config/program-names";
   import type {
     EntitySelectionState,
     SelectedProgram,
@@ -20,7 +21,7 @@
       return "Electron";
     }
     const symbol = particle.symbol || "";
-    return `Z=${particle.id} ${particle.name}${symbol ? ` (${symbol})` : ""}`;
+    return symbol ? `${particle.name} (${symbol})` : particle.name;
   }
 
   function getParticleSearchText(particle: ParticleEntity): string {
@@ -78,7 +79,7 @@
         type: "item" as const,
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
       { type: "section", label: "Compounds" },
@@ -86,7 +87,7 @@
         type: "item" as const,
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
     ];
@@ -142,12 +143,13 @@
     result.push({ type: "section", label: "Tabulated data" });
 
     for (const program of tabulatedPrograms) {
+      const desc = getProgramDescription(program.id);
       result.push({
         type: "item" as const,
         entity: program,
         available: true,
-        label: `${program.name} — ${program.version}`,
-        searchText: `${program.name} ${program.version}`,
+        label: desc ? `${program.name} — ${desc}` : program.name,
+        searchText: `${program.name} ${program.version} ${desc ?? ""}`,
       });
     }
 
@@ -155,12 +157,13 @@
       result.push({ type: "section", label: "Analytical models" });
 
       for (const program of analyticalPrograms) {
+        const desc = getProgramDescription(program.id);
         result.push({
           type: "item" as const,
           entity: program,
           available: true,
-          label: `${program.name} — ${program.version}`,
-          searchText: `${program.name} ${program.version}`,
+          label: desc ? `${program.name} — ${desc}` : program.name,
+          searchText: `${program.name} ${program.version} ${desc ?? ""}`,
         });
       }
     }
