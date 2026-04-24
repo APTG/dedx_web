@@ -495,8 +495,8 @@ As a <role>, I want to <action> so that <benefit>.
 ### Stage 5: Core Shared Components
 - **Who:** AI implements (one component per chat session).
 - **Order:**
-  1. Entity selection (cascading dropdowns) — Svelte stores + WASM
-  2. Energy input component — textarea with per-line validation, debounce
+  1. ✅ Entity selection (cascading dropdowns) — Svelte stores + WASM (merged PR #366, Apr 2026)
+  2. ✅ Energy input component — textarea with per-line validation, debounce (merged PR #368, Apr 2026)
   3. Unit selector — radio/segmented control
   4. Result table — reactive rendering
   5. JSROOT plot wrapper — Svelte component managing JSROOT lifecycle
