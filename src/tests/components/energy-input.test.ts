@@ -208,4 +208,60 @@ describe("EnergyInput component", () => {
     const selectedButton = Array.from(updatedButtons).find(btn => btn.getAttribute("aria-checked") === "true");
     expect(selectedButton?.textContent).toBe("MeV/nucl");
   });
+
+  test("proton (A=1) shows only MeV unit", () => {
+    const { container } = render(EnergyInput, {
+      props: { particleMassNumber: 1 },
+    });
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(1);
+    expect(unitButtons[0].textContent).toBe("MeV");
+  });
+
+  test("electron (particleId=1001) shows only MeV unit", () => {
+    const { container } = render(EnergyInput, {
+      props: { particleId: 1001 },
+    });
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(1);
+    expect(unitButtons[0].textContent).toBe("MeV");
+  });
+
+  test("helium (A=4) shows MeV and MeV/nucl units", () => {
+    const { container } = render(EnergyInput, {
+      props: { particleMassNumber: 4 },
+    });
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(2);
+    
+    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
+    expect(buttonLabels).toContain("MeV");
+    expect(buttonLabels).toContain("MeV/nucl");
+  });
+
+  test("heavy ion (A=12) shows MeV and MeV/nucl units", () => {
+    const { container } = render(EnergyInput, {
+      props: { particleMassNumber: 12 },
+    });
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(2);
+    
+    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
+    expect(buttonLabels).toContain("MeV");
+    expect(buttonLabels).toContain("MeV/nucl");
+  });
+
+  test("particleId takes precedence over particleMassNumber for electron", () => {
+    const { container } = render(EnergyInput, {
+      props: { particleMassNumber: 12, particleId: 1001 },
+    });
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(1);
+    expect(unitButtons[0].textContent).toBe("MeV");
+  });
 });

@@ -4,6 +4,13 @@
   import type { EnergyUnit } from "$lib/wasm/types";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
 
+  interface Props {
+    particleMassNumber?: number;
+    particleId?: number;
+  }
+
+  let { particleMassNumber, particleId }: Props = $props();
+
   const state = createEnergyInputState();
 
   
@@ -71,9 +78,22 @@
     state.setMasterUnit(unit as EnergyUnit);
   }
 
-  // Default available units for the master selector
-  // TODO: derive from particleMassNumber/particleId props (unit-handling.md §2)
-  const AVAILABLE_UNITS: EnergyUnit[] = ["MeV", "MeV/nucl", "MeV/u"];
+  function getAvailableUnits(): EnergyUnit[] {
+    const isElectron = particleId === 1001;
+    const isProton = particleMassNumber === 1 && particleId !== 1001;
+    
+    if (isElectron || isProton) {
+      return ["MeV"];
+    }
+    
+    if (particleMassNumber !== undefined && particleMassNumber > 1) {
+      return ["MeV", "MeV/nucl"];
+    }
+    
+    return ["MeV", "MeV/nucl", "MeV/u"];
+  }
+
+  const availableUnits = $derived(getAvailableUnits());
 
   function formatParsedValue(text: string): { value: string; unit: string } | null {
     const parsed = parseEnergyInput(text);
@@ -93,7 +113,7 @@
     <EnergyUnitSelector
       id="energy-unit-selector"
       value={state.masterUnit}
-      availableUnits={AVAILABLE_UNITS}
+      availableUnits={availableUnits}
       onValueChange={handleUnitChange}
       disabled={state.isPerRowMode}
     />
