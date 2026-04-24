@@ -1,5 +1,6 @@
 import { describe, test, expect, vi } from "vitest";
-import { render } from "@testing-library/svelte";
+import { render, fireEvent, screen } from "@testing-library/svelte";
+import userEvent from "@testing-library/user-event";
 import EntityCombobox from "$lib/components/entity-combobox.svelte";
 
 describe("EntityCombobox component - UX fixes", () => {
@@ -114,7 +115,30 @@ describe("EntityCombobox component - UX fixes", () => {
       },
     });
 
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    fireEvent.click(trigger);
+
+    // Verify match count is not visible when no search term
     const matchCount = container.querySelector("[data-match-count]");
     expect(matchCount).not.toBeInTheDocument();
+  });
+
+  test("§7.5: scrollable dropdown has gradient mask hint", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const scrollContainer = container.querySelector("[data-testid='dropdown-scroll-container']");
+    expect(scrollContainer).toBeInTheDocument();
+    expect(scrollContainer).toHaveStyle("mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)");
   });
 });
