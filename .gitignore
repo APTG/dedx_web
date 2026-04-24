@@ -39,3 +39,4 @@ prototypes/*/pnpm-lock.yaml
 # Playwright — CI uploads these as artifacts; do not commit
 playwright-report/
 test-results/
+package-lock.json
