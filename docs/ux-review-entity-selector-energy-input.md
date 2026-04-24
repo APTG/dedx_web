@@ -73,6 +73,8 @@ Particle and `"Name or ID…"` for Material. The Program box can keep
 
 ### 4. No match count inside the dropdown
 
+**Status:** ✅ FIXED (2026-04-24)
+
 **Issue:** The `entity-panel` (full panel mode) shows `"X of Y available"`.
 The combobox shows nothing equivalent. After filtering, there is no
 feedback on how many items matched — the user just sees the list.
@@ -80,6 +82,10 @@ feedback on how many items matched — the user just sees the list.
 **Fix:** Show a small count below the search input: `"12 results"` or
 `"3 of 240"` when a search term is active. Hide it when the field is empty
 to avoid clutter.
+
+**Implemented:** Added `$derived` `totalMatchCount` to `entity-combobox.svelte` 
+that counts filtered items. Displays `"{n} result(s)"` below search input 
+when search term is active. Test: `§7.4: match count hides when no search term`.
 
 ---
 
@@ -133,6 +139,8 @@ the user had uncommon selections.
 
 ### 8. Dropdown max-height is fixed at 300 px with no scroll indicator
 
+**Status:** ✅ FIXED (2026-04-24)
+
 **Issue:** The dropdown list is `max-h-[300px]` with `overflow-y-auto`.
 When the list overflows there is no visual hint that scrolling is
 possible (no fading edge, no scrollbar until the user hovers).
@@ -142,6 +150,9 @@ scrollability — a common technique:
 ```css
 mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);
 ```
+
+**Implemented:** Added `mask-image` gradient style to dropdown scroll container 
+in `entity-combobox.svelte`. Test: `§7.5: scrollable dropdown has gradient mask hint`.
 
 ---
 
@@ -176,6 +187,8 @@ numbers and align on the same field names.
 
 ### 11. Panel mode: "X of Y available" does not reflect current search
 
+**Status:** ✅ FIXED (2026-04-24)
+
 **Issue:** In `entity-panel.svelte`, `totalAvailable` is computed as
 `items.filter(i => i.available).length` — a static count that never
 changes when the user types in the search box. After filtering to
@@ -190,6 +203,12 @@ const filteredTotal = $derived(filteredItems.flatMap(g => g.items).length);
 ```
 Display as `"3 of 18 available (filtered)"` or just hide the counter
 when a search term is active.
+
+**Implemented:** Replaced `totalAvailable` with `filteredAvailable` and 
+`filteredTotal` derived states in `entity-panel.svelte`. Counter now shows 
+filtered results (e.g., "1 of 1 available" when searching for "Hydrogen"). 
+Tests: 3 new tests in `entity-panel.test.ts` verify count updates when 
+searching, shows correct filtered matches, and resets when cleared.
 
 ---
 
