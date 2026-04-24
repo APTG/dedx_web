@@ -21,7 +21,7 @@ test.describe("Calculator page — compact mode", () => {
   });
 
   test("default values show Proton, Water, Auto-select", async ({ page }) => {
-    await expect(particleTrigger(page)).toContainText(/proton/i);
+    await expect(particleTrigger(page)).toContainText(/hydrogen/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
@@ -64,7 +64,7 @@ test.describe("Calculator page — compact mode", () => {
     await page.getByRole("button", { name: /reset all/i }).click();
 
     // Verify defaults restored
-    await expect(particleTrigger(page)).toContainText(/proton/i);
+    await expect(particleTrigger(page)).toContainText(/hydrogen/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
@@ -85,7 +85,7 @@ test.describe("Calculator page — compact mode", () => {
   }) => {
     // ICRU (ID 9) is excluded from the UI via EXCLUDED_FROM_UI set.
     // Its label would be "ICRU — 1.0". No such option should be in the DOM at all.
-    // Note: ICRU49 (a different program) is valid and may appear; we only exclude the internal ICRU.
+    // Note: ICRU 49 (a different program) is valid and may appear; we only exclude the internal ICRU.
     const icruInternal = page.locator('[role="option"]', { hasText: "ICRU — 1.0" });
     await expect(icruInternal).toHaveCount(0);
   });
