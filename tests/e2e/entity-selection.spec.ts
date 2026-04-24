@@ -20,8 +20,8 @@ test.describe("Calculator page — compact mode", () => {
     await expect(programTrigger(page)).toBeVisible();
   });
 
-  test("default values show Proton (Z=1), Water, Auto-select", async ({ page }) => {
-    await expect(particleTrigger(page)).toContainText(/Z=1/i);
+  test("default values show Proton, Water, Auto-select", async ({ page }) => {
+    await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
@@ -41,10 +41,10 @@ test.describe("Calculator page — compact mode", () => {
   test("selecting Carbon removes incompatible programs (PSTAR proton-only disappears)", async ({
     page,
   }) => {
-    // Open particle dropdown and select Carbon (Z=6)
+    // Open particle dropdown and select Carbon (C)
     const particleBtn = particleTrigger(page);
     await particleBtn.click();
-    await page.getByRole("option", { name: /Z=6/i }).first().click();
+    await page.getByRole("option", { name: /^Carbon \(C\)/i }).first().click();
 
     // Open program dropdown
     const programBtn = programTrigger(page);
@@ -55,16 +55,16 @@ test.describe("Calculator page — compact mode", () => {
   });
 
   test("Reset all link restores defaults", async ({ page }) => {
-    // Change particle to Carbon (Z=6)
+    // Change particle to Carbon (C)
     const particleBtn = particleTrigger(page);
     await particleBtn.click();
-    await page.getByRole("option", { name: /Z=6/i }).first().click();
+    await page.getByRole("option", { name: /^Carbon \(C\)/i }).first().click();
 
     // Click reset all
     await page.getByRole("button", { name: /reset all/i }).click();
 
     // Verify defaults restored
-    await expect(particleTrigger(page)).toContainText(/Z=1/i);
+    await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
