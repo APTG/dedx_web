@@ -1,0 +1,7 @@
+packages:
+  - "."
+
+onlyBuiltDependencies:
+  - canvas
+  - core-js
+  - esbuild
