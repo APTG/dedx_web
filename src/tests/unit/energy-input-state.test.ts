@@ -21,12 +21,10 @@ function isEmpty(result: ParseResult): boolean {
 }
 
 describe("createEnergyInputState", () => {
-  test("initializes with default energy values", () => {
+  test("initializes with default energy value", () => {
     const state = createEnergyInputState();
-    expect(state.rows).toHaveLength(3);
-    expect(state.rows[0].text).toBe("0.1");
-    expect(state.rows[1].text).toBe("1.0");
-    expect(state.rows[2].text).toBe("10.0");
+    expect(state.rows).toHaveLength(1);
+    expect(state.rows[0].text).toBe("100");
   });
 
   test("master unit defaults to MeV", () => {
@@ -44,10 +42,11 @@ describe("createEnergyInputState", () => {
 
   test("removeRow removes row by index", () => {
     const state = createEnergyInputState();
+    state.addRow();
     const secondRowText = state.rows[1].text;
     state.removeRow(1);
-    expect(state.rows).toHaveLength(2);
-    expect(state.rows[1].text).not.toBe(secondRowText);
+    expect(state.rows).toHaveLength(1);
+    expect(state.rows[0].text).not.toBe(secondRowText);
   });
 
   test("cannot remove last row", () => {
@@ -104,12 +103,9 @@ describe("createEnergyInputState", () => {
   test("clearAllRows resets to defaults", () => {
     const state = createEnergyInputState();
     state.updateRowText(0, "999");
-    state.updateRowText(1, "888");
     state.addRow();
     state.clearAllRows();
-    expect(state.rows).toHaveLength(3);
-    expect(state.rows[0].text).toBe("0.1");
-    expect(state.rows[1].text).toBe("1.0");
-    expect(state.rows[2].text).toBe("10.0");
+    expect(state.rows).toHaveLength(1);
+    expect(state.rows[0].text).toBe("100");
   });
 });

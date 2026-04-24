@@ -4,6 +4,7 @@ import type { EnergyUnit } from "$lib/wasm/types";
 export interface EnergyRow {
   id: number;
   text: string;
+  error?: string;
 }
 
 export interface EnergyInputState {
@@ -13,6 +14,7 @@ export interface EnergyInputState {
   addRow(): void;
   removeRow(index: number): void;
   updateRowText(index: number, text: string): void;
+  handleBlur(index: number): void;
   setMasterUnit(unit: EnergyUnit): void;
   getParsedEnergies(): ParseResult[];
   clearAllRows(): void;
@@ -20,7 +22,7 @@ export interface EnergyInputState {
 
 let rowIdCounter = 0;
 
-const DEFAULT_ROWS: string[] = ["0.1", "1.0", "10.0"];
+const DEFAULT_ROWS: string[] = ["100"];
 const DEFAULT_UNIT: EnergyUnit = "MeV";
 
 export function createEnergyInputState(): EnergyInputState {
@@ -47,7 +49,25 @@ export function createEnergyInputState(): EnergyInputState {
   }
 
   function updateRowText(index: number, text: string): void {
-    rows = rows.map((row, i) => (i === index ? { ...row, text } : row));
+    const parsed = parseEnergyInput(text);
+    let error: string | undefined;
+    
+    if ("error" in parsed) {
+      error = parsed.error;
+    }
+    
+    rows = rows.map((row, i) => (i === index ? { ...row, text, error } : row));
+    
+    if (index === rows.length - 1 && text.trim() !== "") {
+      addRow();
+    }
+  }
+  
+  function handleBlur(index: number): void {
+    const row = rows[index];
+    if (row && row.text.trim() === "" && rows.length > 1) {
+      removeRow(index);
+    }
   }
 
   function setMasterUnit(unit: EnergyUnit): void {
@@ -76,6 +96,7 @@ export function createEnergyInputState(): EnergyInputState {
     addRow,
     removeRow,
     updateRowText,
+    handleBlur,
     setMasterUnit,
     getParsedEnergies,
     clearAllRows,

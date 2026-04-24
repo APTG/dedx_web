@@ -20,6 +20,28 @@
     const target = event.target as HTMLInputElement;
     state.updateRowText(index, target.value);
   }
+  
+  function handleKeydown(index: number, event: KeyboardEvent) {
+    if (event.key === "Enter" || event.key === "Tab") {
+      event.preventDefault();
+      if (index < state.rows.length - 1) {
+        const nextInput = document.querySelector(`input[aria-label="Energy value ${index + 2}"]`) as HTMLInputElement;
+        if (nextInput) {
+          nextInput.focus();
+          nextInput.select();
+        }
+      } else {
+        state.addRow();
+        setTimeout(() => {
+          const newInput = document.querySelector(`input[aria-label="Energy value ${index + 2}"]`) as HTMLInputElement;
+          if (newInput) {
+            newInput.focus();
+            newInput.select();
+          }
+        }, 0);
+      }
+    }
+  }
 
   function handleUnitChange(unit: string) {
     state.setMasterUnit(unit as EnergyUnit);
@@ -67,7 +89,9 @@
           value={row.text}
           placeholder={row.text || ""}
           oninput={(e) => handleInputText(index, e)}
-          class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+          onkeydown={(e) => handleKeydown(index, e)}
+          onblur={() => state.handleBlur(index)}
+          class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
           aria-label={`Energy value ${index + 1}`}
         />
         {#snippet parsedRow()}
@@ -81,6 +105,9 @@
           {/if}
         {/snippet}
         {@render parsedRow()}
+        {#if row.error}
+          <span class="text-xs text-destructive whitespace-nowrap">{row.error}</span>
+        {/if}
         <button
           type="button"
           onclick={() => handleRemoveRow(index)}
