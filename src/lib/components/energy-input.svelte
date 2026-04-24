@@ -39,9 +39,9 @@
 
 <div class="w-full space-y-4">
   <div class="flex items-center gap-4">
-    <label class="text-sm font-medium">Energy Unit</label>
+    <label for="energy-unit-select" class="text-sm font-medium">Energy Unit</label>
     <Select.Root value={state.masterUnit} onValueChange={handleUnitChange} disabled={state.isPerRowMode}>
-      <Select.Trigger class="w-[180px]">
+      <Select.Trigger id="energy-unit-select" class="w-[180px]">
         {state.masterUnit}
       </Select.Trigger>
       <Select.Content>

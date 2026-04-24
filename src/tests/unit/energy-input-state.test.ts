@@ -82,8 +82,9 @@ describe("createEnergyInputState", () => {
     const parsed = state.getParsedEnergies();
     const val = getValue(parsed[0]);
     expect(val).not.toBeNull();
-    expect(val!.value).toBe(100);
-    expect(val!.unit).toBe("keV");
+    if (val == null) throw new Error("Value should not be null");
+    expect(val.value).toBe(100);
+    expect(val.unit).toBe("keV");
   });
 
   test("parsed energies for invalid input", () => {

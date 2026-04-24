@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/svelte";
+import { render, fireEvent } from "@testing-library/svelte";
 import EnergyInput from "$lib/components/energy-input.svelte";
 
 describe("EnergyInput component", () => {
@@ -27,7 +27,7 @@ describe("EnergyInput component", () => {
     );
     expect(addButton).toBeDefined();
     
-    await fireEvent.click(addButton!);
+    await fireEvent.click(addButton as HTMLButtonElement);
     
     const energyInputs = Array.from(container.querySelectorAll("input")).filter(
       (input) => input.getAttribute("aria-label")?.includes("Energy value")
