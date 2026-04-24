@@ -126,6 +126,10 @@
     return groups.filter((g) => g.items.length > 0);
   });
 
+  const totalMatchCount = $derived(
+    filteredGroups.flatMap((g) => g.items).length,
+  );
+
   function handleValueChange(newValue: string) {
     const numId = Number(newValue);
     for (const item of items) {
@@ -202,6 +206,14 @@
               inputValue = (e.currentTarget as HTMLInputElement).value;
             }}
           />
+          {#if inputValue.toLowerCase().trim()}
+            <div
+              data-match-count
+              class="px-3 py-2 text-xs text-muted-foreground"
+            >
+              {totalMatchCount} {totalMatchCount === 1 ? "result" : "results"}
+            </div>
+          {/if}
           <div class="max-h-[300px] overflow-y-auto p-1">
             {#if filteredGroups.length === 0}
               <div class="px-3 py-2 text-sm text-muted-foreground">No results</div>

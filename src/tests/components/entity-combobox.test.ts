@@ -103,4 +103,18 @@ describe("EntityCombobox component - UX fixes", () => {
     const label = container.querySelector("label");
     expect(label?.getAttribute("for")).toBe("trigger-material");
   });
+
+  test("§7.4: match count hides when no search term", () => {
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const matchCount = container.querySelector("[data-match-count]");
+    expect(matchCount).not.toBeInTheDocument();
+  });
 });
