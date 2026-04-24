@@ -8,7 +8,9 @@ import type {
 } from "./types";
 import { LibdedxError } from "./types";
 import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases";
-import { getMaterialFriendlyName, formatMaterialName } from "$lib/config/material-names";
+import { getMaterialFriendlyName } from "$lib/config/material-names";
+import { getProgramFriendlyName } from "$lib/config/program-names";
+import { getParticleFriendlyName } from "$lib/config/particle-names";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -80,9 +82,10 @@ export class LibdedxServiceImpl implements LibdedxService {
     // Programs
     const programIds = readIdList(heap, this.module._dedx_get_program_list());
     for (const id of programIds) {
+      const rawProgramName = this.module.UTF8ToString(this.module._dedx_get_program_name(id));
       this.programs.push({
         id,
-        name: this.module.UTF8ToString(this.module._dedx_get_program_name(id)),
+        name: getProgramFriendlyName(id, rawProgramName),
         version: this.module.UTF8ToString(this.module._dedx_get_program_version(id)),
       });
     }
@@ -97,7 +100,7 @@ export class LibdedxServiceImpl implements LibdedxService {
         for (const id of ionIds) {
           const runtimeName = this.module.UTF8ToString(this.module._dedx_get_ion_name(id));
           // dedx_get_ion_name() returns ALL-CAPS ("HYDROGEN") or "" for electron (ID 1001).
-          const name = id === 1001 ? "Electron" : formatMaterialName(runtimeName);
+          const name = getParticleFriendlyName(id, runtimeName);
           const symbol = getParticleSymbol(id);
           // libdedx does not currently expose aliases/symbols in the C API, so we enrich
           // runtime particles with static lookup data to keep UI labels and search behavior
