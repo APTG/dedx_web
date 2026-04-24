@@ -237,7 +237,7 @@ describe("EntitySelectionComboboxes", () => {
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
     await user.click(particleCombobox);
 
-    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    const searchInput = container.querySelector('[role="listbox"] input')!;
     await user.type(searchInput, "alpha");
 
     expect(screen.getByRole("option", { name: /helium/i })).toBeInTheDocument();
@@ -339,7 +339,7 @@ describe("EntitySelectionComboboxes", () => {
     const trigger = container.querySelector('[aria-label="Particle"]')!;
     await user.click(trigger);
 
-    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    const searchInput = container.querySelector('[role="listbox"] input')!;
     expect(searchInput).toHaveAttribute("role", "combobox");
     expect(searchInput).toHaveAttribute("aria-expanded", "true");
   });
@@ -370,7 +370,7 @@ describe("EntitySelectionComboboxes", () => {
     const trigger = container.querySelector('[aria-label="Particle"]')!;
     await user.click(trigger);
 
-    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    const searchInput = container.querySelector('[role="listbox"] input')!;
     expect(searchInput).toBeVisible();
 
     await user.keyboard("{Escape}");
@@ -386,11 +386,15 @@ describe("EntitySelectionComboboxes", () => {
 
     await user.keyboard("{ArrowDown}");
 
-    const searchInput = container.querySelector('input[placeholder="Search..."]')!;
+    const searchInput = container.querySelector('[role="listbox"] input')!;
     expect(searchInput).toHaveAttribute("aria-activedescendant");
     const activeId = searchInput.getAttribute("aria-activedescendant");
     expect(activeId).toBeTruthy();
-    expect(document.getElementById(activeId!)).toBeInTheDocument();
+
+    const highlightedId = activeId!;
+    const highlightedOption = container.querySelector(`[id="${highlightedId}"]`);
+    expect(highlightedOption).toBeInTheDocument();
+    expect(highlightedOption).toHaveAttribute("data-highlighted");
   });
 });
 

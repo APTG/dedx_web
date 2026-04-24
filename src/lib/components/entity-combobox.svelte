@@ -40,6 +40,15 @@
     class: className,
   }: Props<T> = $props();
 
+  const labelId = $derived(`label-${label.toLowerCase().replace(/\s+/g, "-")}`);
+  const triggerId = $derived(`trigger-${label.toLowerCase().replace(/\s+/g, "-")}`);
+
+  function getSearchPlaceholder(): string {
+    if (label === "Particle") return "Name, symbol, Z...";
+    if (label === "Material") return "Name or ID...";
+    return "Search...";
+  }
+
   function isSection(item: ComboboxEntry<T>): item is SectionHeader {
     return (item as SectionHeader).type === "section";
   }
@@ -132,6 +141,9 @@
 </script>
 
 <div class={cn("relative", className)}>
+  <label for={triggerId} id={labelId} class="mb-2 block text-sm font-medium">
+    {label}
+  </label>
   <Combobox.Root
     type="single"
     bind:value={valueStr}
@@ -142,6 +154,8 @@
     {disabled}
   >
     <Combobox.Trigger
+      id={triggerId}
+      aria-labelledby={labelId}
       aria-label={label}
       class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
     >
@@ -183,7 +197,7 @@
           <Combobox.Input
             bind:ref={inputRef}
             class="flex h-10 w-full border-b border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder="Search..."
+            placeholder={getSearchPlaceholder()}
             oninput={(e: Event) => {
               inputValue = (e.currentTarget as HTMLInputElement).value;
             }}
@@ -201,22 +215,39 @@
                       {group.label}
                     </Combobox.GroupHeading>
                   {/if}
-                  {#each group.items as item (item.entity.id)}
-                    <Combobox.Item
-                      value={String(item.entity.id)}
-                      disabled={!item.available}
-                      label={item.label}
-                      class={cn(
-                        "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                        !item.available && "pointer-events-none opacity-50",
-                      )}
-                    >
-                      {item.label}
-                      {#if item.description}
-                        <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
-                      {/if}
-                    </Combobox.Item>
-                  {/each}
+                   {#each group.items as item (item.entity.id)}
+                     <Combobox.Item
+                       value={String(item.entity.id)}
+                       disabled={!item.available}
+                       label={item.label}
+                       class={cn(
+                         "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                         !item.available && "pointer-events-none opacity-50",
+                       )}
+                     >
+                       {item.label}
+                       {#if item.description}
+                         <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
+                       {/if}
+                       {#if item.entity.id === selectedId}
+                         <svg
+                           xmlns="http://www.w3.org/2000/svg"
+                           width="16"
+                           height="16"
+                           viewBox="0 0 24 24"
+                           fill="none"
+                           stroke="currentColor"
+                           stroke-width="2"
+                           stroke-linecap="round"
+                           stroke-linejoin="round"
+                           class="ml-2 shrink-0 text-primary"
+                           aria-label="Selected"
+                         >
+                           <polyline points="20 6 9 17 4 12" />
+                         </svg>
+                       {/if}
+                     </Combobox.Item>
+                   {/each}
                 </Combobox.Group>
               {/each}
             {/if}
