@@ -1,4 +1,7 @@
-allowBuilds:
-  canvas: true
-  core-js: true
-  esbuild: true
+packages:
+  - "."
+
+onlyBuiltDependencies:
+  - canvas
+  - core-js
+  - esbuild

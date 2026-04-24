@@ -722,7 +722,7 @@ These wrappers live in this repository and are compiled alongside libdedx.
 | `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getParticles()` | Returns atomic mass in u for Z=1..112 |
 | `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
 | `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
-| `dedx_get_material_friendly_name(material)` | `getMaterials()` | Returns human-friendly display name; applies override table + title-case to the raw ALL-CAPS C name (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`). Falls back to `dedx_get_material_name()` for unmapped IDs. Intended for future inclusion in libdedx. |
+| `dedx_get_material_friendly_name(material)` | Not currently exported to JS | Planned helper for human-friendly display names. Current C implementation uses an override table for selected IDs (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`), but for unmapped IDs it currently falls back to raw `dedx_get_material_name()` output rather than title-casing it. Use the TS-side `getMaterialFriendlyName()` for `getMaterials()` until this helper is exported and verified. |
 
 ### 4.6 Emscripten Runtime Methods
 

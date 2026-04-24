@@ -1,5 +1,7 @@
 # 2026-04-24 — Human-friendly particle & program display names
 
+**Model:** (Claude Sonnet 4.6 via Copilot)
+
 ## Session Narrative
 
 ### Prompt 1: particle and program name improvements

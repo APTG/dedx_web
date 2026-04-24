@@ -1,5 +1,7 @@
 # 2026-04-23 — Human-friendly material names
 
+**Model:** (Claude Sonnet 4.6 via Copilot)
+
 ## Session Narrative
 
 ### Prompt 1: Improve printing of material names. Adjust spec if needed.

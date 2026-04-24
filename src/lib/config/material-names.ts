@@ -188,9 +188,10 @@ export const MATERIAL_NAME_OVERRIDES: ReadonlyMap<number, string> = new Map([
 /**
  * Returns the human-friendly display name for a material.
  *
- * 1. Checks the override table (covers all ~180 compound materials).
- * 2. Falls back to formatMaterialName(rawName) for unmapped IDs
- *    (handles the 98 pure elements which need only title-case).
+ * 1. Checks the override table for material IDs whose raw names are ambiguous
+ *    or not readable when title-cased directly.
+ * 2. Falls back to formatMaterialName(rawName) for unmapped IDs, including
+ *    pure elements and compounds that only need underscore/word formatting.
  *
  * @param id      libdedx material ID
  * @param rawName Raw ALL-CAPS name from dedx_get_material_name()

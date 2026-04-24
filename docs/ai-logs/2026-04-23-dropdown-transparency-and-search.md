@@ -1,5 +1,7 @@
 # 2026-04-23 — Dropdown transparency fix + combobox search filter fix
 
+**Model:** (Claude Sonnet 4.6 via Copilot)
+
 ## Session Narrative
 
 ### Prompt 1: Check the dropdown implementation; fix transparent background and broken search filtering

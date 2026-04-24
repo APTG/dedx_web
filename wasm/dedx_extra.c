@@ -45,8 +45,10 @@ int dedx_target_is_gas(int target) {
  * wrapper applies additional title-case formatting to the fallback.
  *
  * Intended for future inclusion in libdedx as a public API function.
+ * Currently internal-only (not exported from WASM build). The TypeScript-side
+ * getMaterialFriendlyName() serves the same purpose at runtime.
  */
-const char *dedx_get_material_friendly_name(int material) {
+static const char *dedx_get_material_friendly_name(int material) {
     switch (material) {
         /* === Elements (1-98): simple title-case handled in TypeScript; no overrides needed === */
 
