@@ -35,3 +35,8 @@ prototypes/*/libdedx.a
 prototypes/*/preload/
 prototypes/*/embed/
 prototypes/*/pnpm-lock.yaml
+
+# Playwright — CI uploads these as artifacts; do not commit
+playwright-report/
+test-results/
+package-lock.json

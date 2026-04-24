@@ -1,15 +1,20 @@
 <script lang="ts">
-  import { Select } from "bits-ui";
   import { createEnergyInputState } from "$lib/state/energy-input.svelte";
+  import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
+  import EnergyUnitSelector from "./energy-unit-selector.svelte";
+
+  interface Props {
+    particleMassNumber?: number;
+    particleId?: number;
+  }
+
+  let { particleMassNumber, particleId }: Props = $props();
 
   const state = createEnergyInputState();
 
-  // Master unit selector is restricted to the three base units that the WASM
-  // service accepts. SI-prefixed variants (keV, GeV, …) are only recognised as
-  // inline suffixes typed by the user and are normalised before calculation.
-  const ENERGY_UNITS: EnergyUnit[] = ["MeV", "MeV/nucl", "MeV/u"];
+  
 
   function handleAddRow() {
     state.addRow();
@@ -74,6 +79,36 @@
     state.setMasterUnit(unit as EnergyUnit);
   }
 
+  function getAvailableUnits(): EnergyUnit[] {
+    const isElectron = particleId === 1001;
+    const isProton = particleMassNumber === 1 && particleId !== 1001;
+
+    if (isElectron || isProton) {
+      return ["MeV"];
+    }
+
+    if (particleMassNumber !== undefined && particleMassNumber > 1) {
+      // MeV/u is only available for heavy ions in advanced mode (spec §3)
+      if (isAdvancedMode.value) {
+        return ["MeV", "MeV/nucl", "MeV/u"];
+      }
+      return ["MeV", "MeV/nucl"];
+    }
+
+    return ["MeV", "MeV/nucl", "MeV/u"];
+  }
+
+  const availableUnits = $derived(getAvailableUnits());
+
+  // Reset masterUnit to first available unit when it becomes unavailable
+  // (e.g., switching particle or toggling advanced mode)
+  $effect(() => {
+    const units = availableUnits;
+    if (!units.includes(state.masterUnit)) {
+      state.setMasterUnit(units[0]);
+    }
+  });
+
   function formatParsedValue(text: string): { value: string; unit: string } | null {
     const parsed = parseEnergyInput(text);
     if ("value" in parsed && parsed.unit !== null) {
@@ -88,21 +123,14 @@
 
 <div class="w-full space-y-4">
   <div class="flex items-center gap-4">
-    <label for="energy-unit-select" class="text-sm font-medium">Energy Unit</label>
-    <Select.Root value={state.masterUnit} onValueChange={handleUnitChange} disabled={state.isPerRowMode}>
-      <Select.Trigger id="energy-unit-select" class="w-[180px]">
-        {state.masterUnit}
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Viewport>
-          {#each ENERGY_UNITS as unit (unit)}
-            <Select.Item value={unit}>
-              {unit}
-            </Select.Item>
-          {/each}
-        </Select.Viewport>
-      </Select.Content>
-    </Select.Root>
+    <span id="energy-unit-label" class="text-sm font-medium">Energy Unit</span>
+    <EnergyUnitSelector
+      value={state.masterUnit}
+      availableUnits={availableUnits}
+      onValueChange={handleUnitChange}
+      disabled={state.isPerRowMode}
+      labelledBy="energy-unit-label"
+    />
     {#if state.isPerRowMode}
       <span class="text-xs text-muted-foreground">(per-row mode active)</span>
     {/if}

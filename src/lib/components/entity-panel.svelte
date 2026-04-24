@@ -77,7 +77,10 @@
     return [{ groupName: "", items: filtered }];
   });
 
-  const totalAvailable = $derived(items.filter((i) => i.available).length);
+  const filteredAvailable = $derived(
+    filteredItems.flatMap((g) => g.items).filter((i) => i.available).length,
+  );
+  const filteredTotal = $derived(filteredItems.flatMap((g) => g.items).length);
 </script>
 
 <div
@@ -110,7 +113,7 @@
   />
 
   <div class="text-xs text-muted-foreground mb-2">
-    {totalAvailable} of {items.length} available
+    {filteredAvailable} of {filteredTotal} available
   </div>
 
   <div
