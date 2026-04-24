@@ -11,8 +11,8 @@ describe("EnergyInput component", () => {
 
   test("shows energy unit label", () => {
     const { container } = render(EnergyInput);
-    
-    const label = container.querySelector("label");
+
+    const label = container.querySelector("#energy-unit-label");
     expect(label).toBeInTheDocument();
     expect(label?.textContent).toBe("Energy Unit");
   });

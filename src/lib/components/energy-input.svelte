@@ -1,5 +1,6 @@
 <script lang="ts">
   import { createEnergyInputState } from "$lib/state/energy-input.svelte";
+  import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
@@ -81,19 +82,32 @@
   function getAvailableUnits(): EnergyUnit[] {
     const isElectron = particleId === 1001;
     const isProton = particleMassNumber === 1 && particleId !== 1001;
-    
+
     if (isElectron || isProton) {
       return ["MeV"];
     }
-    
+
     if (particleMassNumber !== undefined && particleMassNumber > 1) {
+      // MeV/u is only available for heavy ions in advanced mode (spec §3)
+      if (isAdvancedMode.value) {
+        return ["MeV", "MeV/nucl", "MeV/u"];
+      }
       return ["MeV", "MeV/nucl"];
     }
-    
+
     return ["MeV", "MeV/nucl", "MeV/u"];
   }
 
   const availableUnits = $derived(getAvailableUnits());
+
+  // Reset masterUnit to first available unit when it becomes unavailable
+  // (e.g., switching particle or toggling advanced mode)
+  $effect(() => {
+    const units = availableUnits;
+    if (!units.includes(state.masterUnit)) {
+      state.setMasterUnit(units[0]);
+    }
+  });
 
   function formatParsedValue(text: string): { value: string; unit: string } | null {
     const parsed = parseEnergyInput(text);
@@ -109,13 +123,13 @@
 
 <div class="w-full space-y-4">
   <div class="flex items-center gap-4">
-    <label for="energy-unit-selector" class="text-sm font-medium">Energy Unit</label>
+    <span id="energy-unit-label" class="text-sm font-medium">Energy Unit</span>
     <EnergyUnitSelector
-      id="energy-unit-selector"
       value={state.masterUnit}
       availableUnits={availableUnits}
       onValueChange={handleUnitChange}
       disabled={state.isPerRowMode}
+      labelledBy="energy-unit-label"
     />
     {#if state.isPerRowMode}
       <span class="text-xs text-muted-foreground">(per-row mode active)</span>

@@ -7,10 +7,11 @@
     availableUnits: EnergyUnit[];
     disabled?: boolean;
     onValueChange: (unit: EnergyUnit) => void;
+    labelledBy?: string;
     class?: string;
   }
 
-  let { value, availableUnits, disabled = false, onValueChange, class: className }: Props = $props();
+  let { value, availableUnits, disabled = false, onValueChange, labelledBy, class: className }: Props = $props();
 
   let buttonRefs = $state<HTMLButtonElement[]>([]);
   let focusedIndex = $state(0);
@@ -23,8 +24,8 @@
   });
 
   function handleKeyDown(event: KeyboardEvent) {
-    if (disabled) return;
-    
+    if (disabled || availableUnits.length === 0) return;
+
     if (event.key === "ArrowRight" || event.key === "ArrowDown") {
       event.preventDefault();
       const nextIndex = (focusedIndex + 1) % availableUnits.length;
@@ -63,7 +64,8 @@
     disabled && "opacity-50",
     className
   )}
-  aria-label="Energy unit selection"
+  aria-label={labelledBy ? undefined : "Energy unit selection"}
+  aria-labelledby={labelledBy}
 >
   {#each availableUnits as unit, index (unit)}
     <button
@@ -73,7 +75,7 @@
       aria-checked={value === unit}
       aria-disabled={disabled ? "true" : "false"}
       aria-label={unit}
-      tabindex={disabled ? -1 : 0}
+      tabindex={disabled ? -1 : (focusedIndex === index ? 0 : -1)}
       disabled={disabled}
       class={cn(
         "inline-flex items-center justify-center rounded px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",

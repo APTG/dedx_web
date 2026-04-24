@@ -32,12 +32,10 @@ test.describe("Calculator page — compact mode", () => {
     const particleBtn = particleTrigger(page);
     await particleBtn.click();
 
-    // Type in the search input inside the open dropdown (filter to visible only)
-    // Particle combobox uses placeholder "Name, symbol, Z..." (not generic "Search...")
-    await page
-      .locator('input[placeholder="Name, symbol, Z..."]')
-      .filter({ visible: true })
-      .fill("carbon");
+    // Type in the search input inside the open Particle dropdown.
+    // Particle combobox uses placeholder "Name, symbol, Z..." (not generic "Search...").
+    // Use .first() — after opening, exactly one such input is in the DOM.
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
 
     await expect(page.getByRole("option", { name: /carbon/i }).first()).toBeVisible();
   });

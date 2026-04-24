@@ -75,7 +75,7 @@ describe("EntityCombobox component - UX fixes", () => {
     expect(label?.textContent?.trim()).toBe("Target Material");
   });
 
-  test("§7.3: search placeholder for Particle suggests Name, symbol, Z", () => {
+  test("§7.3: Particle label has for='trigger-particle' and id='label-particle'", () => {
     const { container } = render(EntityCombobox, {
       props: {
         label: "Particle",
@@ -90,7 +90,7 @@ describe("EntityCombobox component - UX fixes", () => {
     expect(label?.getAttribute("id")).toBe("label-particle");
   });
 
-  test("§7.3: search placeholder for Material suggests Name or ID", () => {
+  test("§7.3: Material label has for='trigger-material'", () => {
     const { container } = render(EntityCombobox, {
       props: {
         label: "Material",
