@@ -149,4 +149,63 @@ describe("EnergyInput component", () => {
     const inputsAfter = container.querySelectorAll("input[aria-label*='Energy value']");
     expect(inputsAfter).toHaveLength(1);
   });
+
+  test("renders EnergyUnitSelector with base units", () => {
+    const { container } = render(EnergyInput);
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    expect(unitButtons).toHaveLength(3);
+    
+    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
+    expect(buttonLabels).toContain("MeV");
+    expect(buttonLabels).toContain("MeV/nucl");
+    expect(buttonLabels).toContain("MeV/u");
+  });
+
+  test("EnergyUnitSelector is disabled in per-row mode", async () => {
+    const { container } = render(EnergyInput);
+    
+    const addButton = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent?.includes("Add row")
+    );
+    await fireEvent.click(addButton as HTMLButtonElement);
+    
+    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
+    await fireEvent.input(input, { target: { value: "100 MeV/nucl" } });
+    await fireEvent.blur(input);
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    unitButtons.forEach(btn => {
+      expect(btn.getAttribute("aria-disabled")).toBe("true");
+    });
+  });
+
+  test("shows per-row mode indicator when active", async () => {
+    const { container } = render(EnergyInput);
+    
+    const addButton = Array.from(container.querySelectorAll("button")).find(
+      (btn) => btn.textContent?.includes("Add row")
+    );
+    await fireEvent.click(addButton as HTMLButtonElement);
+    
+    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
+    await fireEvent.input(input, { target: { value: "100 MeV/nucl" } });
+    await fireEvent.blur(input);
+    
+    expect(container.textContent).toContain("(per-row mode active)");
+  });
+
+  test("selects correct unit when EnergyUnitSelector button is clicked", async () => {
+    const { container } = render(EnergyInput);
+    
+    const unitButtons = container.querySelectorAll("[role='radio']");
+    const meVPerNuclButton = Array.from(unitButtons).find(btn => btn.textContent === "MeV/nucl");
+    expect(meVPerNuclButton).toBeDefined();
+    
+    await fireEvent.click(meVPerNuclButton as HTMLButtonElement);
+    
+    const updatedButtons = container.querySelectorAll("[role='radio']");
+    const selectedButton = Array.from(updatedButtons).find(btn => btn.getAttribute("aria-checked") === "true");
+    expect(selectedButton?.textContent).toBe("MeV/nucl");
+  });
 });

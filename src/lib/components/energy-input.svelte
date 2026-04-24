@@ -1,15 +1,12 @@
 <script lang="ts">
-  import { Select } from "bits-ui";
   import { createEnergyInputState } from "$lib/state/energy-input.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
+  import EnergyUnitSelector from "./energy-unit-selector.svelte";
 
   const state = createEnergyInputState();
 
-  // Master unit selector is restricted to the three base units that the WASM
-  // service accepts. SI-prefixed variants (keV, GeV, …) are only recognised as
-  // inline suffixes typed by the user and are normalised before calculation.
-  const ENERGY_UNITS: EnergyUnit[] = ["MeV", "MeV/nucl", "MeV/u"];
+  
 
   function handleAddRow() {
     state.addRow();
@@ -74,6 +71,10 @@
     state.setMasterUnit(unit as EnergyUnit);
   }
 
+  // Default available units for the master selector
+  // TODO: derive from particleMassNumber/particleId props (unit-handling.md §2)
+  const AVAILABLE_UNITS: EnergyUnit[] = ["MeV", "MeV/nucl", "MeV/u"];
+
   function formatParsedValue(text: string): { value: string; unit: string } | null {
     const parsed = parseEnergyInput(text);
     if ("value" in parsed && parsed.unit !== null) {
@@ -88,21 +89,14 @@
 
 <div class="w-full space-y-4">
   <div class="flex items-center gap-4">
-    <label for="energy-unit-select" class="text-sm font-medium">Energy Unit</label>
-    <Select.Root value={state.masterUnit} onValueChange={handleUnitChange} disabled={state.isPerRowMode}>
-      <Select.Trigger id="energy-unit-select" class="w-[180px]">
-        {state.masterUnit}
-      </Select.Trigger>
-      <Select.Content>
-        <Select.Viewport>
-          {#each ENERGY_UNITS as unit (unit)}
-            <Select.Item value={unit}>
-              {unit}
-            </Select.Item>
-          {/each}
-        </Select.Viewport>
-      </Select.Content>
-    </Select.Root>
+    <label for="energy-unit-selector" class="text-sm font-medium">Energy Unit</label>
+    <EnergyUnitSelector
+      id="energy-unit-selector"
+      value={state.masterUnit}
+      availableUnits={AVAILABLE_UNITS}
+      onValueChange={handleUnitChange}
+      disabled={state.isPerRowMode}
+    />
     {#if state.isPerRowMode}
       <span class="text-xs text-muted-foreground">(per-row mode active)</span>
     {/if}

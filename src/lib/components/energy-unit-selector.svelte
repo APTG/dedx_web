@@ -6,11 +6,11 @@
     value: EnergyUnit;
     availableUnits: EnergyUnit[];
     disabled?: boolean;
-    onchange: (unit: EnergyUnit) => void;
+    onValueChange: (unit: EnergyUnit) => void;
     class?: string;
   }
 
-  let { value, availableUnits, disabled = false, onchange, class: className }: Props = $props();
+  let { value, availableUnits, disabled = false, onValueChange, class: className }: Props = $props();
 
   let buttonRefs = $state<HTMLButtonElement[]>([]);
   let focusedIndex = $state(0);
@@ -51,7 +51,7 @@
   function handleChange(unit: EnergyUnit) {
     if (disabled) return;
     if (unit !== value) {
-      onchange(unit);
+      onValueChange(unit);
     }
   }
 </script>
@@ -71,6 +71,7 @@
       bind:this={buttonRefs[index]}
       role="radio"
       aria-checked={value === unit}
+      aria-disabled={disabled ? "true" : "false"}
       aria-label={unit}
       tabindex={disabled ? -1 : 0}
       disabled={disabled}

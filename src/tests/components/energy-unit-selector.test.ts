@@ -1,7 +1,6 @@
 import { describe, test, expect, vi } from "vitest";
 import { render, fireEvent } from "@testing-library/svelte";
 import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
-import type { EnergyUnit } from "$lib/wasm/types";
 
 describe("EnergyUnitSelector component", () => {
   test("renders only the buttons listed in availableUnits", () => {
@@ -9,7 +8,7 @@ describe("EnergyUnitSelector component", () => {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange: vi.fn(),
+        onValueChange: vi.fn(),
       },
     });
 
@@ -24,7 +23,7 @@ describe("EnergyUnitSelector component", () => {
       props: {
         value: "MeV/nucl",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange: vi.fn(),
+        onValueChange: vi.fn(),
       },
     });
 
@@ -33,36 +32,36 @@ describe("EnergyUnitSelector component", () => {
     expect(buttons[1].getAttribute("aria-checked")).toBe("true");
   });
 
-  test("clicking a non-selected button calls onchange with correct EnergyUnit", async () => {
-    const onchange = vi.fn();
+  test("clicking a non-selected button calls onValueChange with correct EnergyUnit", async () => {
+    const onValueChange = vi.fn();
     const { container } = render(EnergyUnitSelector, {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange,
+        onValueChange,
       },
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
     await fireEvent.click(buttons[1]);
 
-    expect(onchange).toHaveBeenCalledWith("MeV/nucl");
+    expect(onValueChange).toHaveBeenCalledWith("MeV/nucl");
   });
 
-  test("clicking the already-selected button does NOT call onchange again", async () => {
-    const onchange = vi.fn();
+  test("clicking the already-selected button does NOT call onValueChange again", async () => {
+    const onValueChange = vi.fn();
     const { container } = render(EnergyUnitSelector, {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange,
+        onValueChange,
       },
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
     await fireEvent.click(buttons[0]);
 
-    expect(onchange).not.toHaveBeenCalled();
+    expect(onValueChange).not.toHaveBeenCalled();
   });
 
   test("when disabled=true, all buttons have disabled attribute", () => {
@@ -70,7 +69,7 @@ describe("EnergyUnitSelector component", () => {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange: vi.fn(),
+        onValueChange: vi.fn(),
         disabled: true,
       },
     });
@@ -81,13 +80,13 @@ describe("EnergyUnitSelector component", () => {
     });
   });
 
-  test("when disabled=true, onchange is never called on click", async () => {
-    const onchange = vi.fn();
+  test("when disabled=true, onValueChange is never called on click", async () => {
+    const onValueChange = vi.fn();
     const { container } = render(EnergyUnitSelector, {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange,
+        onValueChange,
         disabled: true,
       },
     });
@@ -95,7 +94,7 @@ describe("EnergyUnitSelector component", () => {
     const buttons = container.querySelectorAll('button[type="button"]');
     await fireEvent.click(buttons[1]);
 
-    expect(onchange).not.toHaveBeenCalled();
+    expect(onValueChange).not.toHaveBeenCalled();
   });
 
   test('passing availableUnits=["MeV"] renders exactly one button', () => {
@@ -103,7 +102,7 @@ describe("EnergyUnitSelector component", () => {
       props: {
         value: "MeV",
         availableUnits: ["MeV"],
-        onchange: vi.fn(),
+        onValueChange: vi.fn(),
       },
     });
 
@@ -116,7 +115,7 @@ describe("EnergyUnitSelector component", () => {
       props: {
         value: "MeV",
         availableUnits: ["MeV", "MeV/nucl"],
-        onchange: vi.fn(),
+        onValueChange: vi.fn(),
       },
     });
 
