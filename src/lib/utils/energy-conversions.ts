@@ -21,12 +21,20 @@ const BASE_UNITS: Record<string, EnergyUnit> = {
 };
 
 function getBaseUnit(unit: string): EnergyUnit {
-  return BASE_UNITS[unit] || "MeV";
+  const base = BASE_UNITS[unit];
+  if (base === undefined) {
+    throw new Error(`Unsupported energy unit: ${unit}`);
+  }
+  return base;
 }
 
 function getSiPrefixMultiplier(unit: string): number {
-  const base = unit.replace(/\/nucl$|\/u$/, "");
-  return SI_PREFIX_TO_MEV[base] || 1;
+  const prefix = unit.replace(/\/nucl$|\/u$/, "");
+  const multiplier = SI_PREFIX_TO_MEV[prefix];
+  if (multiplier === undefined) {
+    throw new Error(`Unsupported energy unit prefix: ${unit}`);
+  }
+  return multiplier;
 }
 
 function normalizeToBaseUnit(value: number, unit: string): { value: number; baseUnit: EnergyUnit } {

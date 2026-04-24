@@ -1,8 +1,24 @@
-import type { EnergyUnit } from "../wasm/types";
+/**
+ * All energy units that may appear in typed user input, including SI-prefixed
+ * variants (eV, keV, GeV) that are not part of the base `EnergyUnit` contract
+ * passed to WASM. Use `convertEnergyToMeVperU` to normalise to a base unit
+ * before calling the calculation service.
+ */
+export type EnergySuffixUnit =
+  | "eV"
+  | "keV"
+  | "MeV"
+  | "GeV"
+  | "MeV/nucl"
+  | "GeV/nucl"
+  | "keV/nucl"
+  | "MeV/u"
+  | "GeV/u"
+  | "keV/u";
 
 export interface ParsedEnergy {
   value: number;
-  unit: EnergyUnit | null;
+  unit: EnergySuffixUnit | null;
 }
 
 export interface ParseError {
@@ -28,7 +44,7 @@ const VALID_UNITS: ReadonlySet<string> = new Set([
   "kev/u",
 ]);
 
-const UNIT_BASES: ReadonlyMap<string, EnergyUnit> = new Map([
+const UNIT_BASES: ReadonlyMap<string, EnergySuffixUnit> = new Map([
   ["ev", "eV"],
   ["kev", "keV"],
   ["mev", "MeV"],
@@ -75,7 +91,7 @@ export function parseEnergyInput(raw: string): ParseResult {
     return { error: `unknown unit: ${unitStr}` };
   }
 
-  const unit = UNIT_BASES.get(unitLower) as EnergyUnit;
+  const unit = UNIT_BASES.get(unitLower)!;
 
   return { value, unit };
 }

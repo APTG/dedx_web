@@ -6,7 +6,10 @@
 
   const state = createEnergyInputState();
 
-  const ENERGY_UNITS: EnergyUnit[] = ["MeV", "keV", "GeV", "eV", "MeV/nucl", "GeV/nucl", "keV/nucl", "MeV/u", "GeV/u", "keV/u"];
+  // Master unit selector is restricted to the three base units that the WASM
+  // service accepts. SI-prefixed variants (keV, GeV, …) are only recognised as
+  // inline suffixes typed by the user and are normalised before calculation.
+  const ENERGY_UNITS: EnergyUnit[] = ["MeV", "MeV/nucl", "MeV/u"];
 
   function handleAddRow() {
     state.addRow();
@@ -20,26 +23,50 @@
     const target = event.target as HTMLInputElement;
     state.updateRowText(index, target.value);
   }
-  
+
+  function focusEnergyInput(index: number) {
+    const input = document.querySelector(
+      `input[aria-label="Energy value ${index + 1}"]`,
+    ) as HTMLInputElement | null;
+    if (input) {
+      input.focus();
+      input.select();
+    }
+  }
+
   function handleKeydown(index: number, event: KeyboardEvent) {
-    if (event.key === "Enter" || event.key === "Tab") {
+    if (event.key === "Enter") {
       event.preventDefault();
       if (index < state.rows.length - 1) {
-        const nextInput = document.querySelector(`input[aria-label="Energy value ${index + 2}"]`) as HTMLInputElement;
-        if (nextInput) {
-          nextInput.focus();
-          nextInput.select();
-        }
+        focusEnergyInput(index + 1);
       } else {
         state.addRow();
         setTimeout(() => {
-          const newInput = document.querySelector(`input[aria-label="Energy value ${index + 2}"]`) as HTMLInputElement;
-          if (newInput) {
-            newInput.focus();
-            newInput.select();
-          }
+          focusEnergyInput(index + 1);
         }, 0);
       }
+      return;
+    }
+
+    if (event.key !== "Tab") {
+      return;
+    }
+
+    if (event.shiftKey) {
+      // Shift+Tab: move to previous row; if already at the first row let the
+      // browser handle focus so users can tab out of the component.
+      if (index > 0) {
+        event.preventDefault();
+        focusEnergyInput(index - 1);
+      }
+      return;
+    }
+
+    // Tab: move to next row; if already on the last row let the browser move
+    // focus out of the component naturally.
+    if (index < state.rows.length - 1) {
+      event.preventDefault();
+      focusEnergyInput(index + 1);
     }
   }
 
