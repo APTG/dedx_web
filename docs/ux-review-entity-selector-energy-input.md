@@ -25,6 +25,8 @@ components make the experience feel unfinished.
 
 ### 1. No visible field labels
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Each combobox uses its placeholder text ("Select particle", etc.)
 as the only visible label. Once an item is selected the placeholder
 disappears; only the selected value remains visible. Users scanning the
@@ -37,6 +39,11 @@ above or beside the control. The label must not vanish after selection.
 `aria-labelledby`) above each combobox, e.g. **Particle**, **Material**,
 **Program**. The current `aria-label` on `<Combobox.Trigger>` covers
 accessibility but not visual clarity.
+
+**Implemented:** Persistent visible labels are already implemented in
+`entity-combobox.svelte` (commit `0b274b9`). Each combobox displays a
+`<label class="mb-2 block text-sm font-medium">` above the trigger,
+properly associated via `for`/`id` attributes.
 
 ---
 
@@ -519,9 +526,6 @@ overflow on narrow viewports.
 | # | Issue | Severity | Effort | Status |
 |---|-------|----------|--------|--------|
 | 13 | Unified table not implemented | Critical | Large | ⏳ Open |
-| 1 | No visible field labels on comboboxes | High | Small | ⏳ Open |
-| 9 | Program list jargon-heavy, no in-line help | Low | Medium | ⏳ Open |
-| 10 | Label inconsistency panel vs. compact mode | Low | Trivial | ⏳ Open |
 | 23 | No live region for selection feedback | Low | Medium | ⏳ Open |
 | 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
 | 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
