@@ -291,6 +291,8 @@ tests updated accordingly.
 
 ### 13. Spec gap: the unified table is not implemented
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The spec (`calculator.md` v5) describes a **unified input/result
 table** with five columns per row: Typed Value | → MeV/nucl | Unit
 (per-row dropdown) | Stopping Power | CSDA Range. The current
@@ -300,6 +302,8 @@ suffix the user types, but there is no dedicated column control.
 
 This is the most significant gap: the energy input UI is an incomplete
 component, not a minor style issue.
+
+**Implemented:** Replaced the plain list with a `<table>` structure containing all 5 columns: (1) Typed Value input, (2) → MeV/nucl converted value, (3) per-row unit dropdown, (4) Stopping Power placeholder (—), (5) CSDA Range placeholder (—). The per-row unit dropdown updates the row text with the new unit suffix. Stopping Power and CSDA Range columns show placeholders until WASM calculation integration is completed in a later stage.
 
 **Fix:** This is tracked in the stage plan. The table layout needs to be
 built before the calculator is usable.
@@ -534,7 +538,7 @@ overflow on narrow viewports.
 
 | # | Issue | Severity | Effort | Status |
 |---|-------|----------|--------|--------|
-| 13 | Unified table not implemented | Critical | Large | ⏳ Open |
+| 13 | Unified table not implemented | Critical | Large | ✅ Fixed |
 | 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
 | 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
 | 20 | Paste of multi-line text unhandled | High | Small | ✅ Fixed |
