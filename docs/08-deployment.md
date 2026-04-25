@@ -23,7 +23,7 @@ preserved in the redesign):
 | Environment | Repository | Trigger |
 |-------------|-----------|---------|
 | Development (`web_dev`) | `APTG/web_dev` | Push to `master` |
-| Production (`web`) | `APTG/web` | Git tag `v*` |
+| Production (`web`) | `APTG/web` | Git tag `v*` *(planned for Stage 8; not yet implemented in this repo)* |
 
 **Decision rationale:** [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)
 chose SvelteKit with its static adapter precisely because GitHub Pages
@@ -110,7 +110,7 @@ stage so that every PR has a gate matching the current scope of the project:
 | **4** | `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc), `pnpm build` |
 | **5** | `pnpm test` (Vitest — first unit tests written in this stage) |
 | **7** | `pnpm exec playwright install --with-deps`, `pnpm exec playwright test` |
-| **8** | Deploy job: push `build/` → `APTG/web_dev` (master) / `APTG/web` (v* tag) |
+| **8** | Production deploy job added to `deploy.yml`: tag `v*` → build + push `build/` → `APTG/web` |
 
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
 The deploy job in `deploy.yml` runs only on `master` push — never on PRs.

@@ -483,9 +483,8 @@ As a <role>, I want to <action> so that <benefit>.
   (source: `gh-pages` branch); create `dev` environment in `dedx_web` repo
   settings. See [`docs/08-deployment.md §5.1`](08-deployment.md) for the
   full checklist.
-- **Stage 8 migration:** switch trigger to `master` + `v*` tags, replace
-  placeholder with `pnpm build`, add production deploy job for `APTG/web`.
-  The workflow file has a Phase 1/Phase 2 comment header with the exact diff.
+- **Stage 8 migration:** add `v*` tag trigger and a production deploy job to
+  `deploy.yml` that builds and pushes `build/` to `APTG/web`.
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.

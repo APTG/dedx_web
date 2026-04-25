@@ -1,5 +1,7 @@
 # 2026-04-25 — Drop develop branch; deploy straight to master
 
+**Model:** Claude Sonnet 4.6 via Claude Code
+
 ## Session Narrative
 
 ### Prompt 1: Drop develop branch strategy, update CI and docs, improve README deployment links

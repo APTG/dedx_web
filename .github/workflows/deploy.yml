@@ -1,7 +1,7 @@
 name: Deploy
 
 # Deploys to APTG/web_dev on every push to master.
-# Production deploy to APTG/web is triggered by git tags: ['v*'] (Stage 8).
+# Production deploy to APTG/web will be triggered by git tags: ['v*'] in Stage 8.
 
 on:
   push:
