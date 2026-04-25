@@ -40,7 +40,7 @@
       <EntitySelectionComboboxes {state} />
       <div class="rounded-lg border bg-card p-6">
         {#if energyState}
-          <EnergyInput {state: energyState} />
+          <EnergyInput state={energyState} />
         {/if}
       </div>
     </div>

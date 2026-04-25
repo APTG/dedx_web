@@ -1,4 +1,4 @@
-import { render } from "@testing-library/svelte";
+import { render, fireEvent } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 import EnergyInput from "$lib/components/energy-input.svelte";
 import type { EnergyInputState } from "$lib/state/energy-input.svelte";
@@ -138,4 +138,41 @@ test("particleId takes precedence over particleMassNumber for electron", () => {
   ).map((el) => el.textContent);
   expect(buttonLabels).toContain("MeV");
   expect(buttonLabels).not.toContain("MeV/nucl");
+});
+
+test("§20: paste multi-line text creates multiple rows", async () => {
+  idCounter = 0;
+  const updateRowTextCalls: Array<{ index: number; text: string }> = [];
+  let addRowCalls = 0;
+
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
+    errors: { 0: null },
+    updateRowText: (index: number, text: string) => {
+      updateRowTextCalls.push({ index, text });
+    },
+    addRow: () => {
+      addRowCalls++;
+    },
+  });
+
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
+
+  const pasteData = "100 keV\n200 MeV\n500 GeV";
+  
+  await fireEvent.paste(input, {
+    clipboardData: {
+      getData: () => pasteData,
+    },
+  });
+
+  expect(updateRowTextCalls).toHaveLength(3);
+  expect(updateRowTextCalls[0].index).toBe(0);
+  expect(updateRowTextCalls[0].text).toBe("100 keV");
+  expect(updateRowTextCalls[1].index).toBe(1);
+  expect(updateRowTextCalls[1].text).toBe("200 MeV");
+  expect(updateRowTextCalls[2].index).toBe(2);
+  expect(updateRowTextCalls[2].text).toBe("500 GeV");
+  expect(addRowCalls).toBe(2);
 });

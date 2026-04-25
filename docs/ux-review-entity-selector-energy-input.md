@@ -42,6 +42,8 @@ accessibility but not visual clarity.
 
 ### 2. No checkmark / highlight on the currently selected item when re-opening
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Opening a combobox after a selection shows the list in its
 default state. There is no visual indicator (checkmark, bold text, or
 highlighted background) next to the currently selected item. The user
@@ -55,6 +57,10 @@ UI) always highlights or marks the selected item on open.
 and render a checkmark SVG (similar to the existing chevron) on the right
 when true. Bits UI exposes `data-selected` on the item — that attribute
 can drive a Tailwind class instead of manual comparison.
+
+**Implemented:** Checkmark already rendered at lines 248-264 in `entity-combobox.svelte`.
+Added test `§7.2: shows checkmark on selected item when combobox re-opens` to verify
+the SVG with `aria-label="Selected"` appears for the selected item.
 
 ---
 
