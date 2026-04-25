@@ -1,7 +1,8 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
-  import { parseEnergyInput, type ParseResult } from "$lib/utils/energy-parser";
+  import { parseEnergyInput } from "$lib/utils/energy-parser";
+  import { convertEnergyToMeVperU, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { EnergyInputState } from "$lib/state/energy-input.svelte";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
@@ -10,9 +11,15 @@
     state: EnergyInputState;
     particleMassNumber?: number;
     particleId?: number;
+    atomicMass?: number;
   }
 
-  const { state: inputState, particleMassNumber = 1, particleId = 1 } = $props();
+  const {
+    state: inputState,
+    particleMassNumber = 1,
+    particleId = 1,
+    atomicMass,
+  }: Props = $props();
 
   let inputRefs: HTMLInputElement[] = $state([]);
 
@@ -28,20 +35,20 @@
     inputState.addRow();
   }
 
-  function handleRemoveRow(index: number) {
-    inputState.removeRow(index);
-  }
-
   function handleInputText(index: number, event: Event) {
     const target = event.target as HTMLInputElement;
     inputState.updateRowText(index, target.value);
   }
 
-  function handlePaste(index: number, event: ClipboardEvent) {
+  async function handlePaste(index: number, event: ClipboardEvent) {
     event.preventDefault();
     const clipboardText = event.clipboardData?.getData("text") ?? "";
-    const lines = clipboardText.split("\n").filter((line) => line.trim() !== "");
-    
+    // Handle Windows (\r\n), Unix (\n) and old Mac (\r) line endings.
+    const lines = clipboardText
+      .split(/\r?\n|\r/)
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+
     if (lines.length === 0) {
       return;
     }
@@ -53,6 +60,9 @@
       inputState.updateRowText(index + i, lines[i]);
     }
 
+    // Wait for Svelte to render the new rows before focusing — bind:this refs
+    // for newly added rows are not populated until after the DOM update.
+    await tick();
     focusEnergyInput(index + lines.length - 1);
   }
 
@@ -118,17 +128,6 @@
     }
   });
 
-  function formatParsedValue(text: string): { value: string; unit: string } | null {
-    const parsed = parseEnergyInput(text);
-    if ("value" in parsed && parsed.unit !== null) {
-      return { value: String(parsed.value), unit: parsed.unit };
-    }
-    if ("value" in parsed && parsed.unit === null) {
-      return { value: String(parsed.value), unit: inputState.masterUnit };
-    }
-    return null;
-  }
-
   function getRowUnit(rowText: string): string {
     const parsed = parseEnergyInput(rowText);
     if ("value" in parsed && parsed.unit !== null) {
@@ -143,11 +142,7 @@
     let newText = row.text;
     
     if ("value" in parsed) {
-      if (parsed.unit !== null) {
-        newText = `${parsed.value} ${newUnit}`;
-      } else {
-        newText = `${parsed.value} ${newUnit}`;
-      }
+      newText = `${parsed.value} ${newUnit}`;
     }
     
     inputState.updateRowText(index, newText);
@@ -162,22 +157,16 @@
     return value.toFixed(3);
   }
 
-  function convertToMeVNucl(value: number, unit: string): number {
-    const conversions: Record<string, number> = {
-      "eV": 1e-6,
-      "keV": 1e-3,
-      "MeV": 1,
-      "GeV": 1000,
-      "TeV": 1e6,
-      "eV/nucl": 1e-6,
-      "keV/nucl": 1e-3,
-      "MeV/nucl": 1,
-      "GeV/nucl": 1000,
-      "TeV/nucl": 1e6,
-      "MeV/u": 1,
-    };
-    const factor = conversions[unit] ?? 1;
-    return value * factor;
+  // Convert a parsed energy (value + unit) to MeV/nucl for the conversion
+  // column. Uses the active particle's mass number A and atomic mass m_u so
+  // results are correct for heavy ions (see docs/04-feature-specs/unit-handling.md §4).
+  function convertToMeVNucl(value: number, unit: string): number | null {
+    try {
+      const meVperU = convertEnergyToMeVperU(value, unit, particleMassNumber, atomicMass);
+      return convertEnergyFromMeVperU(meVperU, "MeV/nucl", particleMassNumber, atomicMass);
+    } catch {
+      return null;
+    }
   }
 </script>
 
@@ -226,10 +215,11 @@
             <td class="p-2 text-right font-mono">
               {#if "value" in parseEnergyInput(row.text)}
                 {@const parsed = parseEnergyInput(row.text) as { value: number; unit: string | null }}
-                {#if parsed.unit !== null}
-                  {formatNumber(convertToMeVNucl(parsed.value, parsed.unit))}
+                {@const converted = convertToMeVNucl(parsed.value, parsed.unit ?? inputState.masterUnit)}
+                {#if converted !== null}
+                  {formatNumber(converted)}
                 {:else}
-                  {formatNumber(convertToMeVNucl(parsed.value, inputState.masterUnit))}
+                  —
                 {/if}
               {:else}
                 —

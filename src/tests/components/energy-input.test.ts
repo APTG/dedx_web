@@ -1,33 +1,44 @@
 import { render, fireEvent } from "@testing-library/svelte";
 import { expect, test } from "vitest";
 import EnergyInput from "$lib/components/energy-input.svelte";
-import type { EnergyInputState } from "$lib/state/energy-input.svelte";
+import type { EnergyInputState, EnergyRow } from "$lib/state/energy-input.svelte";
+import type { EnergyUnit } from "$lib/wasm/types";
+import type { ParseResult } from "$lib/utils/energy-parser";
 
 let idCounter = 0;
 function generateId(): number {
   return ++idCounter;
 }
 
-function createTestState(props?: Partial<EnergyInputState>): EnergyInputState {
-  const rows = props?.rows?.map((row) => ({ ...row, id: generateId() })) ?? [
+interface TestStateOverrides {
+  rows?: EnergyRow[];
+  masterUnit?: EnergyUnit;
+  isPerRowMode?: boolean;
+  addRow?: () => void;
+  removeRow?: (index: number) => void;
+  updateRowText?: (index: number, text: string) => void;
+  setMasterUnit?: (unit: EnergyUnit) => void;
+  getParsedEnergies?: () => ParseResult[];
+  handleBlur?: (index: number) => void;
+  clearAllRows?: () => void;
+}
+
+function createTestState(overrides?: TestStateOverrides): EnergyInputState {
+  const rows: EnergyRow[] = overrides?.rows ?? [
     { text: "100 MeV", id: generateId() },
   ];
   return {
     rows,
-    particleMassNumber: props?.particleMassNumber ?? 1,
-    particleId: props?.particleId ?? 1001,
-    masterUnit: props?.masterUnit ?? "MeV",
-    perRowMode: props?.perRowMode ?? false,
-    errors: props?.errors ?? { 0: null },
-    parsedEnergies: props?.parsedEnergies ?? [{ value: 100, unit: "MeV" }],
-    addRow: () => {},
-    removeRow: () => {},
-    updateRowText: () => {},
-    setMasterUnit: () => {},
-    getParsedEnergies: () => [{ value: 100, unit: "MeV" }],
-    isPerRowMode: false,
-    handleBlur: () => {},
-    ...props,
+    masterUnit: overrides?.masterUnit ?? "MeV",
+    isPerRowMode: overrides?.isPerRowMode ?? false,
+    addRow: overrides?.addRow ?? (() => {}),
+    removeRow: overrides?.removeRow ?? (() => {}),
+    updateRowText: overrides?.updateRowText ?? (() => {}),
+    setMasterUnit: overrides?.setMasterUnit ?? (() => {}),
+    getParsedEnergies:
+      overrides?.getParsedEnergies ?? (() => [{ value: 100, unit: "MeV" }]),
+    handleBlur: overrides?.handleBlur ?? (() => {}),
+    clearAllRows: overrides?.clearAllRows ?? (() => {}),
   };
 }
 
@@ -49,7 +60,6 @@ test("renders multiple rows from state", () => {
       { text: "200 keV", id: generateId() },
       { text: "50 GeV", id: generateId() },
     ],
-    errors: { 0: null, 1: null, 2: null },
   });
   const { container } = render(EnergyInput, { props: { state } });
 
@@ -76,7 +86,6 @@ test("respects particle mass number for unit buttons (mass number > 1)", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 MeV", id: generateId() }],
-    errors: { 0: null },
   });
   const { container } = render(EnergyInput, {
     props: { state, particleMassNumber: 4, particleId: 2 },
@@ -93,7 +102,6 @@ test("shows only MeV for single-nucleon particles (proton)", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 MeV", id: generateId() }],
-    errors: { 0: null },
   });
   const { container } = render(EnergyInput, {
     props: { state, particleMassNumber: 1, particleId: 1 },
@@ -110,7 +118,6 @@ test("shows MeV, MeV/nucl, and total energy for heavy nuclei", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 MeV", id: generateId() }],
-    errors: { 0: null },
   });
   const { container } = render(EnergyInput, {
     props: { state, particleMassNumber: 12, particleId: 6 },
@@ -127,7 +134,6 @@ test("particleId takes precedence over particleMassNumber for electron", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 MeV", id: generateId() }],
-    errors: { 0: null },
   });
   const { container } = render(EnergyInput, {
     props: { state, particleMassNumber: 12, particleId: 1001 },
@@ -147,7 +153,6 @@ test("§20: paste multi-line text creates multiple rows", async () => {
 
   const state = createTestState({
     rows: [{ text: "", id: generateId() }],
-    errors: { 0: null },
     updateRowText: (index: number, text: string) => {
       updateRowTextCalls.push({ index, text });
     },
@@ -177,11 +182,34 @@ test("§20: paste multi-line text creates multiple rows", async () => {
   expect(addRowCalls).toBe(2);
 });
 
+test("§20: paste handles Windows CRLF line endings", async () => {
+  idCounter = 0;
+  const updateRowTextCalls: Array<{ index: number; text: string }> = [];
+
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
+    updateRowText: (index: number, text: string) => {
+      updateRowTextCalls.push({ index, text });
+    },
+  });
+
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
+
+  await fireEvent.paste(input, {
+    clipboardData: {
+      getData: () => "100 keV\r\n200 MeV\r\n",
+    },
+  });
+
+  // No trailing \r should remain in the pasted text.
+  expect(updateRowTextCalls.map((c) => c.text)).toEqual(["100 keV", "200 MeV"]);
+});
+
 test("§16: uses instructional placeholder text", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "", id: generateId() }],
-    errors: { 0: null },
   });
 
   const { container } = render(EnergyInput, { props: { state } });
@@ -207,20 +235,15 @@ test("§15: hides parsed-value display when unit matches master unit", () => {
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 MeV", id: generateId() }],
-    errors: { 0: null },
     masterUnit: "MeV",
   });
   const { container } = render(EnergyInput, { props: { state } });
 
-  // Table has "→ MeV/nucl" in header but row data should not have "→"
-  // Check only non-header rows - the value column should show just the number
+  // The conversion arrow "→" should only appear in the table header, never
+  // inside any data cell (<td>).
   const tds = container.querySelectorAll("td");
   for (const td of tds) {
-    td.textContent?.split(" ").forEach((token) => {
-      if (token.includes("→")) {
-        fail("Row data should not contain conversion arrow when unit matches master");
-      }
-    });
+    expect(td.textContent ?? "").not.toContain("→");
   }
 });
 
@@ -228,7 +251,6 @@ test("§15: shows parsed-value display with conversion arrow when unit differs f
   idCounter = 0;
   const state = createTestState({
     rows: [{ text: "100 keV", id: generateId() }],
-    errors: { 0: null },
     masterUnit: "MeV",
   });
   const { container } = render(EnergyInput, { props: { state } });

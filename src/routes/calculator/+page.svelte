@@ -42,7 +42,12 @@
       <EntitySelectionComboboxes {state} />
       <div class="rounded-lg border bg-card p-6">
         {#if energyState}
-          <EnergyInput state={energyState} />
+          <EnergyInput
+            state={energyState}
+            particleId={state.selectedParticle?.id}
+            particleMassNumber={state.selectedParticle?.massNumber}
+            atomicMass={state.selectedParticle?.atomicMass}
+          />
         {/if}
       </div>
     </div>

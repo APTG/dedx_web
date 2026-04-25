@@ -169,3 +169,29 @@ Final state: 340 unit tests + 36 e2e tests passing, 2 e2e skipped.
 - **Branch:** `fix/ux-review-entity-energy`
 - **Model:** Qwen3.5-122B-A10B via opencode
 - **Pre-existing lint errors:** 34 problems / 28 errors in unrelated files — not introduced by this session
+
+---
+
+## Follow-up — Copilot reviewer feedback (2026-04-25)
+
+**Model:** Claude Sonnet 4.5 via Copilot coding agent
+
+Addressed 11 review comments from `@copilot-pull-request-reviewer` on commit `b59177d`.
+
+### Review fixes
+- **Status:** completed
+- **Stage:** 5.3
+- **Files changed:**
+  - `src/lib/components/energy-input.svelte`
+  - `src/lib/components/entity-combobox.svelte`
+  - `src/routes/calculator/+page.svelte`
+  - `src/tests/components/energy-input.test.ts`
+- **Changes:**
+  - Removed unused `ParseResult` import, `handleRemoveRow`, and `formatParsedValue` (would fail `noUnusedLocals` typecheck).
+  - `handlePaste` now splits on `/\r?\n|\r/` (handles CRLF / old Mac line endings) and `await tick()`s before focusing the newly created row, so refs are populated.
+  - Replaced ad-hoc `convertToMeVNucl` with `convertEnergyToMeVperU` + `convertEnergyFromMeVperU` from `$lib/utils/energy-conversions`. The "→ MeV/nucl" column now uses the particle's mass number A and atomic mass m_u, matching the formulas in `docs/04-feature-specs/unit-handling.md §4`.
+  - `EnergyInput` now receives `particleId`, `particleMassNumber`, and `atomicMass` from `state.selectedParticle` in the calculator route, so unit availability and the conversion column react to particle changes.
+  - `entity-combobox.svelte`: replaced block-level `<div>` and nested `<button>` inside the `Combobox.Trigger` button (invalid HTML / interactive nesting) with span-only content; the clear button is now a sibling absolutely positioned over the trigger.
+  - Removed `pointer-events-none` on disabled (Electron) items so the title tooltip remains discoverable on hover; replaced with `cursor-not-allowed`.
+  - Test helper `createTestState()` rewritten to match the actual `EnergyInputState` shape (no excess `particleMassNumber`/`particleId`/`perRowMode`/`errors`/`parsedEnergies` fields). Replaced unimported `fail(...)` with `expect(...).not.toContain("→")`. Added a CRLF paste test.
+- **Verification:** `pnpm test --run` → 341 passing across 18 files. `svelte-check` errors dropped from 72 (baseline) to 57; remaining errors are pre-existing `noUncheckedIndexedAccess` warnings in unrelated files.

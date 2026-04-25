@@ -158,29 +158,51 @@
     allowDeselect={false}
     {disabled}
   >
-    <Combobox.Trigger
-      id={triggerId}
-      aria-labelledby={labelId}
-      aria-label={label}
-      class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      <span class="truncate">
-        {#if selectedItem}
-          <div class="flex flex-col text-left">
-            <span>{selectedItem.label}</span>
-            {#if selectedItem.description}
-              <span class="text-xs text-muted-foreground">{selectedItem.description}</span>
-            {/if}
-          </div>
-        {:else}
-          <span class="text-muted-foreground">{placeholder ?? label}</span>
+    <div class="relative">
+      <Combobox.Trigger
+        id={triggerId}
+        aria-labelledby={labelId}
+        aria-label={label}
+        class={cn(
+          "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          selectedId !== null && onClear && "pr-8",
+        )}
+      >
+        <span class="truncate">
+          {#if selectedItem}
+            <span class="flex flex-col text-left">
+              <span>{selectedItem.label}</span>
+              {#if selectedItem.description}
+                <span class="text-xs text-muted-foreground">{selectedItem.description}</span>
+              {/if}
+            </span>
+          {:else}
+            <span class="text-muted-foreground">{placeholder ?? label}</span>
+          {/if}
+        </span>
+        {#if !(selectedId !== null && onClear)}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="ml-2 shrink-0 opacity-50"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
         {/if}
-      </span>
+      </Combobox.Trigger>
       {#if selectedId !== null && onClear}
         <button
           type="button"
           aria-label={`Clear ${label}`}
-          class="ml-2 shrink-0 rounded-sm p-1 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+          class="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-1 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
           onclick={(e) => {
             e.stopPropagation();
             onClear();
@@ -203,24 +225,8 @@
             <line x1="6" y1="6" x2="18" y2="18" />
           </svg>
         </button>
-      {:else}
-        <svg
-          xmlns="http://www.w3.org/2000/svg"
-          width="16"
-          height="16"
-          viewBox="0 0 24 24"
-          fill="none"
-          stroke="currentColor"
-          stroke-width="2"
-          stroke-linecap="round"
-          stroke-linejoin="round"
-          class="ml-2 shrink-0 opacity-50"
-          aria-hidden="true"
-        >
-          <path d="m6 9 6 6 6-6" />
-        </svg>
       {/if}
-    </Combobox.Trigger>
+    </div>
 
     <!--
       ContentStatic with forceMount keeps the listbox element in the DOM at all
@@ -279,7 +285,7 @@
                         title={item.isElectron ? "Electrons not supported in libdedx v1.4.0" : undefined}
                         class={cn(
                           "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                          !item.available && "pointer-events-none opacity-50",
+                          !item.available && "cursor-not-allowed opacity-50",
                         )}
                       >
                         {item.label}
