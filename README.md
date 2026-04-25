@@ -9,7 +9,14 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 | **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — entity selection and energy input | 25 April 2026 |
 | **v1.1.0 (stable)** | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release — fully functional but based on the old React stack | 1 April 2022 |
 
-> **v2 rewrite in progress:** The app is being rebuilt from scratch with a modern stack (SvelteKit + WebAssembly). Currently at Stage 5 of 8 — core UI components. The development site tracks the current state; v2.0.0 will replace the stable site when the rewrite is complete.
+The last stable release, v1.1.0 (April 2022), has several limitations:
+
+- The CSDA range calculation for ions with atomic number greater than 2 contained a bug (fixed in v1.1.0, but the underlying architecture has not changed).
+- The UI is built on React 17 class components with no TypeScript — effectively unmaintainable without a full rewrite.
+- There is no unit handling: energies are accepted and returned in a single unit without conversion.
+- Plots are basic and do not meet the needs of typical physics workflows.
+
+v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development**: the entire v2 codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Currently at Stage 5 of 8 — core UI components. v2.0.0 will replace the stable site on first production release.
 
 ## Related tools
 
@@ -25,19 +32,11 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 Prerequisites: **Docker** (for the WASM build), **Node.js 24+**, **pnpm**.
 
 ```sh
-# 1. Build the WASM module (pulls emscripten/emsdk:5.0.5, ~2 min first time)
 cd wasm && ./build.sh
-
-# 2. Install dependencies and start dev server
 pnpm install && pnpm dev
 ```
 
-Open [http://localhost:5173](http://localhost:5173).
-
-```sh
-# Production build (GitHub Pages sub-path)
-BASE_PATH=/web_dev pnpm build
-```
+Open [http://localhost:5173](http://localhost:5173). The first `build.sh` run pulls `emscripten/emsdk:5.0.5` and takes ~2 min.
 
 ### Documentation
 
