@@ -301,11 +301,10 @@ export function createCalculatorState(
   };
 }
 
-export function formatStpValue(value: number, unit: StpUnit): string {
+export function formatStpValue(value: number, _unit: StpUnit): string {
   // 4 sig figs is correct for both keV/µm and MeV·cm²/g; the unit is
   // accepted as a parameter so call-sites stay unit-aware and to allow
   // future per-unit precision tweaks.
-  void unit;
   return formatSigFigs(value, 4);
 }
 
