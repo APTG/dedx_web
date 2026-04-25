@@ -122,6 +122,8 @@ the worst of both worlds.
 
 ### 6. "Clear" button placement is awkward
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The "Clear" link appears below the combobox trigger on a
 separate line (`mt-1 text-right`). In the three-column grid this adds
 vertical height to only some columns (Material and Particle have clear
@@ -131,6 +133,12 @@ buttons; Program does not), creating uneven row heights.
 button on the right side of the trigger, replacing the chevron when a
 value is selected. This is the standard "clearable select" pattern and
 eliminates the extra row.
+
+**Implemented:** Replaced standalone Clear link with inline × button using
+SVG inside `Combobox.Trigger`. Button renders when `selectedId !== null`
+and `onClear` prop exists, calls `e.stopPropagation()` to prevent dropdown
+open. Added 3 tests: absent when no selection, present when selected,
+clicking calls handler without opening dropdown.
 
 ---
 

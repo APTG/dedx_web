@@ -170,21 +170,50 @@
           <span class="text-muted-foreground">{placeholder ?? label}</span>
         {/if}
       </span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="ml-2 shrink-0 opacity-50"
-        aria-hidden="true"
-      >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
+      {#if selectedId !== null && onClear}
+        <button
+          type="button"
+          aria-label={`Clear ${label}`}
+          class="ml-2 shrink-0 rounded-sm p-1 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+          onclick={(e) => {
+            e.stopPropagation();
+            onClear();
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      {:else}
+        <svg
+          xmlns="http://www.w3.org/2000/svg"
+          width="16"
+          height="16"
+          viewBox="0 0 24 24"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          class="ml-2 shrink-0 opacity-50"
+          aria-hidden="true"
+        >
+          <path d="m6 9 6 6 6-6" />
+        </svg>
+      {/if}
     </Combobox.Trigger>
 
     <!--
@@ -272,16 +301,4 @@
       {/if}
     </Combobox.ContentStatic>
   </Combobox.Root>
-  {#if onClear && selectedId !== null}
-    <div class="mt-1 text-right">
-      <button
-        type="button"
-        aria-label={`Clear ${label}`}
-        class="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-        onclick={onClear}
-      >
-        Clear
-      </button>
-    </div>
-  {/if}
 </div>

@@ -222,4 +222,72 @@ describe("EntityCombobox component - UX fixes", () => {
     const input = container.querySelector("input") as HTMLInputElement;
     expect(input.placeholder).toBe("Search...");
   });
+
+  test("§6: clear button is absent when nothing is selected", () => {
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+        onClear: vi.fn(),
+      },
+    });
+
+    // Clear button should not be present
+    const clearButton = container.querySelector("button[aria-label^='Clear']");
+    expect(clearButton).not.toBeInTheDocument();
+
+    // Chevron should be present instead
+    const chevron = container.querySelector('svg path[d="m6 9 6 6 6-6"]');
+    expect(chevron).toBeInTheDocument();
+  });
+
+  test("§6: clear button appears when value is selected", () => {
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect: vi.fn(),
+        onClear: vi.fn(),
+      },
+    });
+
+    // Clear button should be present
+    const clearButton = container.querySelector("button[aria-label='Clear Particle']");
+    expect(clearButton).toBeInTheDocument();
+
+    const xIcon = clearButton?.querySelector("svg");
+    expect(xIcon).toBeInTheDocument();
+
+    // Chevron should not be present
+    const chevron = container.querySelector('svg path[d="m6 9 6 6 6-6"]');
+    expect(chevron).not.toBeInTheDocument();
+  });
+
+  test("§6: clicking clear button calls onClear without opening dropdown", async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const onItemSelect = vi.fn();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect,
+        onClear,
+      },
+    });
+
+    const clearButton = container.querySelector("button[aria-label='Clear Particle']") as HTMLElement;
+    await user.click(clearButton);
+
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onItemSelect).not.toHaveBeenCalled();
+
+    // Dropdown should remain closed
+    const dropdown = container.querySelector('[data-test-id="combobox-content"]');
+    expect(dropdown).not.toBeInTheDocument();
+  });
 });
