@@ -189,3 +189,16 @@ test("§16: uses instructional placeholder text", () => {
 
   expect(input.placeholder).toBe("e.g. 100 keV");
 });
+
+test("§19: add-row button uses secondary styling", () => {
+  idCounter = 0;
+  const state = createTestState();
+  const { container } = render(EnergyInput, { props: { state } });
+
+  const addButton = Array.from(container.querySelectorAll("button")).find(
+    (btn) => btn.textContent?.includes("Add row")
+  );
+  expect(addButton?.textContent?.trim()).toBe("Add row");
+  // Verify it does NOT have primary button classes (bg-primary)
+  expect(addButton).not.toHaveClass("bg-primary");
+});

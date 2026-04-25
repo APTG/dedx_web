@@ -287,6 +287,8 @@ master unit, omit the arrow entirely.
 
 ### 16. `placeholder` is set to `row.text` — a bug
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** In `energy-input.svelte:117`:
 ```svelte
 placeholder={row.text || ""}
@@ -297,7 +299,8 @@ HTML placeholder text is shown only when the input is empty. Since
 instructional text like `"e.g. 100 keV"`. Setting it to `row.text`
 is a no-op that adds confusion in the code.
 
-**Fix:** Use a fixed instructional placeholder: `placeholder="e.g. 100 keV"`.
+**Implemented:** Changed to fixed instructional placeholder
+`placeholder="e.g. 100 keV"`. Added test verifying placeholder text.
 
 ---
 
