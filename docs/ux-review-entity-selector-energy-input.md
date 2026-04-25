@@ -489,6 +489,8 @@ querySelector pattern. Existing focus tests pass.
 
 ### 23. Accessibility: no live region for selection feedback
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** When a user selects a particle or material, nothing is
 announced to screen readers outside the combobox itself. A user
 relying on a screen reader knows the combobox closed, but does not
@@ -497,6 +499,13 @@ get confirmation that the calculated data will now update.
 **Fix:** Add an `aria-live="polite"` region on the Calculator page that
 announces "Particle changed to Proton. Material: Water. Program:
 Auto-select → PSTAR. Ready to calculate." after each selection.
+
+**Implemented:** Added `selectionSummary` getter to `EntitySelectionState`
+that generates an accessibility-friendly summary string. Created
+`SelectionLiveRegion` component with `aria-live="polite"` that displays
+the summary. Placed the live region in the calculator page to announce
+changes like "Particle: Hydrogen. Material: Water (liquid). Program:
+Auto-select." when selections change.
 
 ---
 
@@ -526,7 +535,6 @@ overflow on narrow viewports.
 | # | Issue | Severity | Effort | Status |
 |---|-------|----------|--------|--------|
 | 13 | Unified table not implemented | Critical | Large | ⏳ Open |
-| 23 | No live region for selection feedback | Low | Medium | ⏳ Open |
 | 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
 | 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
 | 20 | Paste of multi-line text unhandled | High | Small | ✅ Fixed |
@@ -545,4 +553,5 @@ overflow on narrow viewports.
 | 17 | Error + parsed value share unstable layout slot | Low | Medium | ✅ Fixed |
 | 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial | ✅ Fixed |
 | 22 | Focus helper uses fragile `aria-label` query | Low | Small | ✅ Fixed |
+| 23 | No live region for selection feedback | Low | Medium | ✅ Fixed |
 | 24 | Mobile dropdown overflow risk | Low | Small | ✅ Fixed |
