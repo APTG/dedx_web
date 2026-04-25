@@ -53,7 +53,7 @@
 
     // Create new rows for subsequent lines
     for (let i = 1; i < lines.length; i++) {
-      inputState.addRow();
+        inputState.addRow();
       inputState.updateRowText(index + i, lines[i]);
     }
 
@@ -67,7 +67,7 @@
       if (index < inputState.rows.length - 1) {
         focusEnergyInput(index + 1);
       } else {
-        state.addRow();
+        inputState.addRow();
         await tick();
         focusEnergyInput(index + 1);
       }
@@ -171,20 +171,20 @@
             bind:this={inputRefs[index]}
             class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
           />
-        {#snippet parsedRow()}
-          {@const parsed = formatParsedValue(row.text)}
-          {#if parsed && parsed.unit !== inputState.masterUnit}
-            <div class="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-              <span>→</span>
-              <span>{parsed.value}</span>
-              <span>{parsed.unit}</span>
-            </div>
+        <div class="min-h-[1.25rem]">
+          {#if row.error}
+            <span class="text-xs text-destructive whitespace-nowrap">{row.error}</span>
+          {:else}
+            {@const parsed = formatParsedValue(row.text)}
+            {#if parsed && parsed.unit !== inputState.masterUnit}
+              <div class="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
+                <span>→</span>
+                <span>{parsed.value}</span>
+                <span>{parsed.unit}</span>
+              </div>
+            {/if}
           {/if}
-        {/snippet}
-        {@render parsedRow()}
-        {#if row.error}
-          <span class="text-xs text-destructive whitespace-nowrap">{row.error}</span>
-        {/if}
+        </div>
         <button
           type="button"
           onclick={() => handleRemoveRow(index)}
