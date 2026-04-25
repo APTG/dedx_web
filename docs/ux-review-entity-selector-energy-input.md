@@ -104,6 +104,8 @@ when search term is active. Test: `§7.4: match count hides when no search term`
 
 ### 5. Permanently disabled "Electron" clutters the list
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Electron (ID 1001) is always greyed out with the description
 "Not available in libdedx v1.4.0". It cannot be selected under any
 circumstance. Showing a permanently disabled item trains users to expect
@@ -117,6 +119,11 @@ it will eventually be enabled, and its presence in the list is noise.
 
 The current behaviour — middle of the list, opacity-50, no tooltip — is
 the worst of both worlds.
+
+**Implemented:** Moved Electron to bottom of particle list using 
+`#each` conditional with `Combobox.Separator` before it. Added `title` 
+tooltip "Electrons not supported in libdedx v1.4.0" on the disabled item.
+Test verifies Electron renders last with tooltip attribute.
 
 ---
 
@@ -242,6 +249,8 @@ searching, shows correct filtered matches, and resets when cleared.
 
 ### 12. Panel mode: keyboard navigation is absent
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The panel uses `role="listbox"` / `role="option"`, which
 implies keyboard navigation with arrow keys per the ARIA spec. But no
 `onkeydown` handler is implemented. Keyboard users expecting to navigate
@@ -250,6 +259,11 @@ the list with arrows will find the interaction broken.
 **Fix:** Implement arrow-key navigation within the `role="listbox"` container,
 or change the ARIA role to `role="list"` / `role="listitem"` to avoid
 making a promise the implementation cannot keep.
+
+**Implemented:** Changed `role="listbox"` to `role="list"` and 
+`role="option"` to `role="listitem"` in `entity-panel.svelte`. This removes
+the broken ARIA promise without adding complex keyboard logic. Accessibility
+tests updated accordingly.
 
 ---
 
@@ -295,6 +309,8 @@ to pass state as prop.
 
 ### 15. Parsed value display is redundant for the common case
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The "→ value unit" snippet fires for every row, including
 rows where no conversion is needed. If the user types `100` and the
 master unit is MeV, the display shows `→ 100 MeV` — identical
@@ -304,6 +320,11 @@ information echoed back. This is visual noise.
 **differs** from the master unit — i.e. when `parsed.unit !== null`
 and `parsed.unit !== masterUnit`. When the value is already in the
 master unit, omit the arrow entirely.
+
+**Implemented:** Added conditional check `parsed.unit !== inputState.masterUnit`
+before rendering the parsed value display in `energy-input.svelte`. Added
+tests for (a) row in master unit → no arrow rendered, (b) different unit
+→ arrow with converted value shown.
 
 ---
 
@@ -397,6 +418,8 @@ verifying multi-line paste creates correct number of rows with proper text.
 
 ### 21. Focus management uses `setTimeout` instead of `tick()`
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** In `handleKeydown`, adding a row and then focusing it uses:
 ```ts
 state.addRow();
@@ -413,9 +436,16 @@ await tick();
 focusEnergyInput(index + 1);
 ```
 
+**Implemented:** Replaced `setTimeout` with `await tick()` in 
+`handleKeydown` function in `energy-input.svelte`. Imported `tick` from 
+`svelte` and made handler `async`. Existing keyboard-nav tests verify 
+focus still works correctly.
+
 ---
 
 ### 22. Focus helper relies on fragile `aria-label` query
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** `focusEnergyInput` finds rows via:
 ```ts
@@ -426,6 +456,12 @@ breaks silently. It also assumes only one component instance per page.
 
 **Fix:** Use `bind:this` refs stored in an array, or set `data-row-index`
 attributes and query on that instead of aria-label.
+
+**Implemented:** Replaced querySelector with `bind:this` refs array
+declared as `let inputRefs: HTMLInputElement[] = $state([])`. In `{#each}`
+block bound each input with `bind:this={inputRefs[index]}`. Updated
+`focusEnergyInput` to call `inputRefs[index]?.focus()`. Removed old
+querySelector pattern. Existing focus tests pass.
 
 ---
 
