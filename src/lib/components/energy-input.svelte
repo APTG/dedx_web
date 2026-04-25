@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { tick } from "svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
@@ -60,16 +61,15 @@
     }
   }
 
-  function handleKeydown(index: number, event: KeyboardEvent) {
+  async function handleKeydown(index: number, event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
       if (index < state.rows.length - 1) {
         focusEnergyInput(index + 1);
       } else {
         state.addRow();
-        setTimeout(() => {
-          focusEnergyInput(index + 1);
-        }, 0);
+        await tick();
+        focusEnergyInput(index + 1);
       }
       return;
     }
