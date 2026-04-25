@@ -3,6 +3,7 @@
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
 
   interface Props {
     state: EntitySelectionState;
@@ -25,7 +26,7 @@
       entity: particle,
       available: state.availableParticles.some((p) => p.id === particle.id),
       label: getParticleLabel(particle),
-      description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
+      description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
     }));
   });
 

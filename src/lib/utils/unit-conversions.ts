@@ -45,12 +45,26 @@ export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µ
   }
 }
 
-/** Format a number to n significant figures, no scientific notation, no grouping separators. */
+/** Format a number to n significant figures, no grouping separators.
+ *  Falls back to toPrecision() (scientific notation) for extreme magnitudes
+ *  where the implied `decimalPlaces` argument to toFixed() would exceed the
+ *  100-digit cap that `Number.prototype.toFixed` enforces (it throws a
+ *  RangeError above that).  In practice this happens for subnormal values
+ *  with magnitude below ~-(sigFigs + 5) and for huge values with magnitude
+ *  ≥ 15 where toFixed() would produce useless trailing-zero noise.
+ *  As a defence-in-depth measure decimalPlaces is also clamped to [0, 100]. */
 export function formatSigFigs(value: number, sigFigs: number): string {
+  if (!Number.isFinite(value) || Number.isNaN(value)) return "—";
   if (value === 0) return "0";
 
   const absValue = Math.abs(value);
   const magnitude = Math.floor(Math.log10(absValue));
+
+  // Fall back to scientific notation for values too extreme for toFixed().
+  // toFixed(n) is only safe for n in [0, 100] in all browsers.
+  if (magnitude < -(sigFigs + 5) || magnitude >= 15) {
+    return value.toPrecision(sigFigs);
+  }
 
   // Round to the desired significant figures, supporting negative
   // decimalPlaces (i.e. rounding to tens / hundreds / etc. for large values).
@@ -63,7 +77,7 @@ export function formatSigFigs(value: number, sigFigs: number): string {
 
   const roundedAbs = Math.abs(rounded);
   const roundedMagnitude = Math.floor(Math.log10(roundedAbs));
-  const decimalPlaces = Math.max(0, sigFigs - roundedMagnitude - 1);
+  const decimalPlaces = Math.max(0, Math.min(100, sigFigs - roundedMagnitude - 1));
 
   let formatted = rounded.toFixed(decimalPlaces);
 

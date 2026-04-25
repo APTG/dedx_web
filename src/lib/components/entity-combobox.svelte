@@ -2,6 +2,7 @@
   import { tick, untrack } from "svelte";
   import { Combobox } from "bits-ui";
   import { cn } from "$lib/utils";
+  import { ELECTRON_UNSUPPORTED_TITLE } from "$lib/config/libdedx-version";
 
   interface SectionHeader {
     type: "section";
@@ -282,7 +283,7 @@
                         value={String(item.entity.id)}
                         disabled={!item.available}
                         label={item.label}
-                        title={item.isElectron ? "Electrons not supported in libdedx v1.4.0" : undefined}
+                        title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
                         class={cn(
                           "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
                           !item.available && "cursor-not-allowed opacity-50",

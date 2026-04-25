@@ -155,4 +155,22 @@ describe('formatSigFigs', () => {
     expect(formatSigFigs(1.0, 4)).toBe('1');
     expect(formatSigFigs(45.7623, 4)).toBe('45.76');
   });
+
+  it('does not throw for extreme small values (subnormal range)', () => {
+    // These values would cause RangeError in toFixed() without the guard.
+    expect(() => formatSigFigs(1e-314, 4)).not.toThrow();
+    expect(() => formatSigFigs(1e-307, 4)).not.toThrow();
+    expect(() => formatSigFigs(5e-324, 4)).not.toThrow();
+  });
+
+  it('uses scientific notation for very small values', () => {
+    const result = formatSigFigs(1e-30, 4);
+    expect(result).toContain('e');
+  });
+
+  it('returns "—" for non-finite values', () => {
+    expect(formatSigFigs(Infinity, 4)).toBe('—');
+    expect(formatSigFigs(-Infinity, 4)).toBe('—');
+    expect(formatSigFigs(NaN, 4)).toBe('—');
+  });
 });

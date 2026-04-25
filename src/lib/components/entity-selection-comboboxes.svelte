@@ -8,6 +8,7 @@
     SelectedProgram,
     AutoSelectProgram,
   } from "$lib/state/entity-selection.svelte";
+  import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
 
   interface Props {
     state: EntitySelectionState;
@@ -57,7 +58,7 @@
         entity: particle,
         available: false,
         label: getParticleLabel(particle),
-        description: "Not available in libdedx v1.4.0",
+        description: ELECTRON_UNSUPPORTED_SHORT,
         searchText: getParticleSearchText(particle),
         isElectron: true as const,
       }));
