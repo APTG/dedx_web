@@ -225,7 +225,7 @@ export class LibdedxServiceImpl implements LibdedxService {
   }
 }
 
-export let libdedx: { service: LibdedxServiceImpl | null } = { service: null };
+export const libdedx: { service: LibdedxServiceImpl | null } = { service: null };
 
 export function initLibdedx(module: EmscriptenModule): void {
   libdedx.service = new LibdedxServiceImpl(module);

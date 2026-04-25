@@ -119,8 +119,8 @@
   <div
     class="space-y-4 overflow-y-auto"
     style="max-height: {maxHeight};"
-    role="listbox"
-    aria-label="{label} options"
+    role="list"
+    aria-label="{label}"
   >
     {#each filteredItems as group (group.groupName)}
       <div>
@@ -135,9 +135,7 @@
         <div class="space-y-1">
           {#each group.items as item (item.entity.id)}
             <div
-              role="option"
-              aria-selected={item.entity.id === selectedId}
-              aria-disabled={!item.available}
+              role="listitem"
               class={cn(
                 "flex cursor-pointer items-center rounded-md px-3 py-2 text-sm transition-colors",
                 item.entity.id === selectedId

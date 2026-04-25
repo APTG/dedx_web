@@ -41,13 +41,28 @@
   }
 
   const particleItems = $derived.by(() => {
-    return state.allParticles.map((particle) => ({
-      entity: particle,
-      available: state.availableParticles.some((p) => p.id === particle.id) && particle.id !== 1001,
-      label: getParticleLabel(particle),
-      description: particle.id === 1001 ? "Not available in libdedx v1.4.0" : undefined,
-      searchText: getParticleSearchText(particle),
-    }));
+    const nonElectronParticles = state.allParticles
+      .filter((p) => p.id !== 1001)
+      .map((particle) => ({
+        entity: particle,
+        available: state.availableParticles.some((p) => p.id === particle.id),
+        label: getParticleLabel(particle),
+        description: undefined,
+        searchText: getParticleSearchText(particle),
+      }));
+
+    const electronParticle = state.allParticles
+      .filter((p) => p.id === 1001)
+      .map((particle) => ({
+        entity: particle,
+        available: false,
+        label: getParticleLabel(particle),
+        description: "Not available in libdedx v1.4.0",
+        searchText: getParticleSearchText(particle),
+        isElectron: true as const,
+      }));
+
+    return [...nonElectronParticles, ...electronParticle];
   });
 
   interface MaterialGroup {
@@ -215,15 +230,16 @@
     />
   </div>
 
-  <div class="w-full text-center lg:col-span-3">
+  <div class="lg:col-span-3 lg:text-right">
     <button
       type="button"
-      class="text-sm text-muted-foreground hover:underline"
+      title="Restores Proton / Water / Auto-select"
+      class="text-sm text-muted-foreground hover:text-foreground"
       onclick={() => {
         state.resetAll();
       }}
     >
-      Reset all
+      Restore defaults
     </button>
   </div>
 </div>

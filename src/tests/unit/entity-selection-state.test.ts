@@ -349,6 +349,60 @@ describe("createEntitySelectionState", () => {
     });
   });
 
+  describe("Selection summary for accessibility", () => {
+    test("selectionSummary shows particle and material names with Auto-select", () => {
+      const state = createEntitySelectionState(matrix);
+      const summary = state.selectionSummary;
+      
+      expect(summary).toContain("Hydrogen"); // default particle
+      expect(summary).toContain("Water"); // default material
+      expect(summary).toContain("Auto-select"); // default program
+    });
+
+    test("selectionSummary includes resolved program name when Auto-select resolves", () => {
+      const state = createEntitySelectionState(matrix);
+      const summary = state.selectionSummary;
+      
+      // Auto-select is shown; when resolved it includes the arrow with program name
+      expect(summary).toContain("Auto-select");
+      // The resolved program should be shown if available for proton+water
+      if (state.resolvedProgram) {
+        expect(summary).toContain("Auto-select →");
+        expect(summary).toContain(state.resolvedProgram.name);
+      }
+    });
+
+    test("selectionSummary updates when particle changes", () => {
+      const state = createEntitySelectionState(matrix);
+      
+      state.selectParticle(2); // helium
+      const summary = state.selectionSummary;
+      
+      expect(summary).toContain("Helium");
+      expect(summary).not.toContain("Hydrogen");
+    });
+
+    test("selectionSummary updates when material changes", () => {
+      const state = createEntitySelectionState(matrix);
+      
+      state.selectMaterial(267); // air
+      const summary = state.selectionSummary;
+      
+      expect(summary).toContain("Air");
+      expect(summary).not.toContain("Water");
+    });
+
+    test("selectionSummary shows explicit program when manually selected", () => {
+      const state = createEntitySelectionState(matrix);
+      
+      state.selectProgram(2); // PSTAR
+      const summary = state.selectionSummary;
+      
+      expect(summary).toContain("PSTAR");
+      expect(summary).not.toContain("Auto-select →");
+    });
+  });
+
   describe("Electron special case", () => {
     test("electron (id=1001) appears in availableParticles", () => {
       const electronService = new MockLibdedxServiceWithElectron();

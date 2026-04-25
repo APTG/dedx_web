@@ -260,7 +260,7 @@ describe("EntitySelectionComboboxes", () => {
     expect(state.selectedProgram.id).toBe(4);
   });
 
-  test("clicking Reset all restores defaults", async () => {
+  test("clicking Restore defaults restores defaults", async () => {
     render(EntitySelectionComboboxes, { props: { state } });
     const user = userEvent.setup();
 
@@ -268,12 +268,30 @@ describe("EntitySelectionComboboxes", () => {
     state.selectMaterial(267);
     state.selectProgram(4);
 
-    const resetButton = screen.getByRole("button", { name: /reset all/i });
+    const resetButton = screen.getByRole("button", { name: /restore defaults/i });
     await user.click(resetButton);
 
     expect(state.selectedParticle?.id).toBe(1);
     expect(state.selectedMaterial?.id).toBe(276);
     expect(state.selectedProgram.id).toBe(-1);
+  });
+
+  test("Restore defaults button has tooltip", () => {
+    render(EntitySelectionComboboxes, { props: { state } });
+
+    const resetButton = screen.getByRole("button", { name: /restore defaults/i });
+    expect(resetButton).toHaveAttribute(
+      "title",
+      "Restores Proton / Water / Auto-select"
+    );
+  });
+
+  test("Restore defaults button uses secondary styling", () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+
+    const resetButton = container.querySelector('button[title="Restores Proton / Water / Auto-select"]');
+    expect(resetButton).toHaveClass("text-sm");
+    expect(resetButton).toHaveClass("text-muted-foreground");
   });
 
   test("electron (id=1001) cannot be selected", async () => {
