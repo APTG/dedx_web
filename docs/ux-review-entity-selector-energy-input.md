@@ -246,6 +246,8 @@ built before the calculator is usable.
 
 ### 14. State is not exposed to the parent
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** `energy-input.svelte` calls `createEnergyInputState()` internally.
 The parent (Calculator page) cannot access `getParsedEnergies()` or react
 to row changes. The component is self-contained in a way that breaks the
@@ -255,6 +257,11 @@ dataflow needed for calculations.
 the rows), consistent with how `EntitySelectionState` is passed to
 `entity-selection-comboboxes.svelte`. Alternatively expose an
 `onchange` callback.
+
+**Implemented:** Moved state creation from `energy-input.svelte` to
+`calculator/+page.svelte`. Component now accepts `state: EnergyInputState`
+via `$props()`. Parent can call `state.getParsedEnergies()`. Tests updated
+to pass state as prop.
 
 ---
 
