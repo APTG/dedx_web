@@ -380,6 +380,12 @@ for column layout.
   reformatting).
 - **Scientific notation is NOT used for output** (stopping power, CSDA
   range). SI prefix auto-scaling replaces it.
+- **Extreme magnitude fallback**: when values are physically nonsensical
+  (NaN, Infinity, or subnormal magnitudes), scientific notation overrides
+  the no-scientific-notation rule:
+  - NaN / Infinity → `"—"` (em-dash).
+  - `|magnitude| ≥ 15` OR `magnitude < −(sigFigs + 5)` → `toPrecision(sigFigs)`
+    (scientific notation).
 - Decimal separator: period (`.`) — consistent with scientific notation
   conventions.
 
@@ -401,7 +407,9 @@ for column layout.
 |-----------|---------|
 | No energies entered (only empty row) | Only the empty input row is shown; no result columns populated |
 | All entered values are invalid | Error indicators on each row; summary message below table |
-| Entity selection incomplete | Message above table: "Select a particle and material to calculate" |
+| Entity selection incomplete — electron selected | Message above table: "Electron (ESTAR) is not yet supported by libdedx v1.4.0." |
+| Entity selection incomplete — particle + material selected but no program | Message above table: "No program supports **{particle}** in **{material}**. Change the particle or material selection to continue." |
+| Entity selection incomplete — neither selected | Message above table: "Select a particle and material to calculate." |
 | WASM not yet loaded | Loading spinner with "Initializing calculation engine…" |
 | WASM load failed | Error message with retry button |
 

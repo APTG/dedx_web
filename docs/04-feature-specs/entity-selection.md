@@ -316,6 +316,14 @@ function getAvailableParticles(program?: number, material?: number): ParticleEnt
        > currently does not contain ICRU 90 (`data/wasm_runtime_stats.json`).
        > The highest runtime ICRU dataset is ICRU 49 (id=7), so proton/alpha
        > Auto-select resolves through ICRU 49 first.
+   - **Fallback behavior:** If none of the preferred programs in the chain are
+     available for the selected particle+material combination, the first program
+     returned by `getAvailablePrograms(matrix, particleId, materialId)` is used
+     as a fallback. This ensures calculation can proceed rather than blocking
+     the user. The resolved program name is shown in the selection summary
+     (e.g., _"Auto-select → MSTAR"_). Trade-off: the fallback program may have
+     lower accuracy (e.g., MSTAR instead of ICRU 73 for Carbon), but provides
+     a result when no preferred chain member is available.
    - Future: a webdedx-level auto-selection layer may extend this (e.g., prefer
      MSTAR for specific heavy-ion/material combos). This is out of scope for v1
      but the data model should not preclude it.

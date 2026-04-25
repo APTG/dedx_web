@@ -139,4 +139,37 @@ describe('ResultTable', () => {
     expect(summary).toBeInTheDocument();
     expect(summary.textContent).toMatch(/invalid/);
   });
+
+  it('renders custom columns when columns prop is provided', async () => {
+    const customColumns = [
+      {
+        id: "energy",
+        header: (s: typeof calcState) => `Energy (${s.masterUnit})`,
+        getValue: (row: any) => row.rawInput,
+        align: "left" as const,
+      },
+      {
+        id: "stopping-power",
+        header: (s: typeof calcState) => `Stopping Power (${s.stpDisplayUnit})`,
+        getValue: (row: any, s: typeof calcState) => {
+          if (s.isCalculating) return "—";
+          if (row.stoppingPower !== null) return row.stoppingPower.toFixed(2);
+          return "-";
+        },
+        align: "right" as const,
+      },
+    ];
+
+    calcState.updateRowText(0, '100');
+    await calcState.triggerCalculation();
+    await Promise.resolve();
+
+    render(ResultTable, { props: { state: calcState, entitySelection, columns: customColumns } });
+
+    expect(screen.getByText(/Energy \(MeV\)/)).toBeInTheDocument();
+    expect(screen.getByText(/Stopping Power \(keV\/µm\)/)).toBeInTheDocument();
+    expect(screen.queryByText(/→ MeV\/nucl/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Unit/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/CSDA Range/)).not.toBeInTheDocument();
+  });
 });

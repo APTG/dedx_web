@@ -7,13 +7,85 @@
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
 
+  /**
+   * Column definition for {@link ResultTable}.
+   *
+   * Note: column IDs `"energy"` and `"unit"` are **reserved** by the component.
+   * For these IDs the cell renderer is fixed (interactive `<input>` for `"energy"`
+   * and the per-row unit `<select>`/label for `"unit"`); the `getValue` callback is
+   * only used for read-only/display columns. If a future caller needs custom
+   * rendering for those positions, extend `ColumnDef` with an explicit `render`
+   * hook rather than overloading the reserved IDs.
+   */
+  export interface ColumnDef {
+    id: string;
+    header: (state: CalculatorState) => string;
+    getValue: (row: CalculatedRow, state: CalculatorState, entitySelection: EntitySelectionState) => string | number | null;
+    align?: "left" | "right";
+    /**
+     * When true, render the cell with a monospaced font. Defaults to `true` for
+     * right-aligned columns (numeric values) and `false` for left-aligned ones,
+     * but can be overridden per-column (e.g. set to `false` for the Unit column
+     * which renders a `<select>`).
+     */
+    monospace?: boolean;
+  }
+
   interface Props {
     state: CalculatorState;
     entitySelection: EntitySelectionState;
+    columns?: ColumnDef[];
     class?: string;
   }
 
-  let { state, entitySelection, class: className = "" }: Props = $props();
+  let { state, entitySelection, columns = getDefaultColumns(), class: className = "" }: Props = $props();
+
+  function getDefaultColumns(): ColumnDef[] {
+    return [
+      {
+        id: "energy",
+        header: (s) => `Energy (${s.masterUnit})`,
+        getValue: (row) => row.rawInput,
+        align: "left",
+      },
+      {
+        id: "mev-nucl",
+        header: () => "→ MeV/nucl",
+        getValue: (row) => row.normalizedMevNucl !== null ? formatSigFigs(row.normalizedMevNucl, 4) : "-",
+        align: "right",
+      },
+      {
+        id: "unit",
+        header: () => "Unit",
+        getValue: (row, _s, _e) => row.unit,
+        align: "right",
+        monospace: false,
+      },
+      {
+        id: "stopping-power",
+        header: (s) => `Stopping Power (${s.stpDisplayUnit})`,
+        getValue: (row, s) => {
+          if (s.isCalculating) return "—";
+          if (row.stoppingPower !== null) return formatSigFigs(row.stoppingPower, 4);
+          return "-";
+        },
+        align: "right",
+      },
+      {
+        id: "csda-range",
+        header: () => "CSDA Range",
+        getValue: (row, s) => {
+          if (s.isCalculating) return "—";
+          if (row.csdaRangeCm !== null) {
+            const scaled = autoScaleLengthCm(row.csdaRangeCm);
+            return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;
+          }
+          return "-";
+        },
+        align: "right",
+      },
+    ];
+  }
 
   function getAvailableUnits(): EnergyUnit[] {
     const particle = entitySelection.selectedParticle;
@@ -144,93 +216,66 @@
     <table class="w-full text-sm">
       <thead class="sticky top-0 bg-background">
         <tr>
-          <th scope="col" class="text-left px-4 py-2 font-medium">
-            Energy ({state.masterUnit})
-          </th>
-          <th scope="col" class="text-right px-4 py-2 font-medium">
-            → MeV/nucl
-          </th>
-          <th scope="col" class="text-right px-4 py-2 font-medium">
-            Unit
-          </th>
-          <th scope="col" class="text-right px-4 py-2 font-medium">
-            Stopping Power ({state.stpDisplayUnit})
-          </th>
-          <th scope="col" class="text-right px-4 py-2 font-medium">
-            CSDA Range
-          </th>
+          {#each columns as col (col.id)}
+            <th
+              scope="col"
+              class={`px-4 py-2 font-medium ${col.align === "right" ? "text-right" : "text-left"}`}
+            >
+              {col.header(state)}
+            </th>
+          {/each}
         </tr>
       </thead>
       <tbody>
         {#each state.rows as row, i (row.id)}
           <tr class="even:bg-muted/30">
-            <td class="px-4 py-2">
-              <input
-                type="text"
-                aria-label={`Energy value row ${i + 1}`}
-                data-row-index={i}
-                value={row.rawInput}
-                placeholder="e.g. 100 keV"
-                class={`w-24 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-                  row.status === "invalid" || row.status === "out-of-range"
-                    ? "border-red-500 bg-red-50 dark:bg-red-950"
-                    : "border-input"
-                }`}
-                onfocus={(e) => handleInputFocus(e)}
-                onkeydown={(e) => handleInputKeyDown(e, i)}
-                oninput={(e) => handleInputChange(e, i)}
-                onpaste={(e) => handlePaste(e, i)}
-                disabled={state.isCalculating}
-              />
-              {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
-                <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
-                  {row.message}
-                </div>
-              {/if}
-            </td>
-            <td class="px-4 py-2 text-right font-mono">
-              {#if row.normalizedMevNucl !== null}
-                {formatSigFigs(row.normalizedMevNucl, 4)}
-              {:else}
-                -
-              {/if}
-            </td>
-            <td class="px-4 py-2 text-right">
-              {#if canShowPerRowUnitSelector(row)}
-                <select
-                  aria-label={`Unit for row ${i + 1}`}
-                  class="px-2 py-1 border border-input rounded text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
-                  value={formatRowUnit(row)}
-                  onchange={(e) => handleUnitChange(e, i)}
-                  disabled={state.isCalculating}
-                >
-                  {#each getAvailableUnits() as unitOption (unitOption)}
-                    <option value={unitOption}>{unitOption}</option>
-                  {/each}
-                </select>
-              {:else}
-                <span class="text-muted-foreground">{formatRowUnit(row)}</span>
-              {/if}
-            </td>
-            <td class="px-4 py-2 text-right font-mono">
-              {#if state.isCalculating}
-                <span class="animate-pulse text-muted-foreground">—</span>
-              {:else if row.stoppingPower !== null}
-                {formatSigFigs(row.stoppingPower, 4)}
-              {:else}
-                -
-              {/if}
-            </td>
-            <td class="px-4 py-2 text-right font-mono">
-              {#if state.isCalculating}
-                <span class="animate-pulse text-muted-foreground">—</span>
-              {:else if row.csdaRangeCm !== null}
-                {@const scaled = autoScaleLengthCm(row.csdaRangeCm)}
-                {formatSigFigs(scaled.value, 4)} {scaled.unit}
-              {:else}
-                -
-              {/if}
-            </td>
+            {#each columns as col, colIndex (col.id)}
+              {@const useMonospace = col.monospace ?? col.align === "right"}
+              <td class={`px-4 py-2 ${col.align === "right" ? "text-right" : ""} ${useMonospace ? "font-mono" : ""}`}>
+                {#if col.id === "energy"}
+                  <input
+                    type="text"
+                    aria-label={`Energy value row ${i + 1}`}
+                    data-row-index={i}
+                    value={row.rawInput}
+                    placeholder="e.g. 100 keV"
+                    class={`w-24 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
+                      row.status === "invalid" || row.status === "out-of-range"
+                        ? "border-red-500 bg-red-50 dark:bg-red-950"
+                        : "border-input"
+                    }`}
+                    onfocus={(e) => handleInputFocus(e)}
+                    onkeydown={(e) => handleInputKeyDown(e, i)}
+                    oninput={(e) => handleInputChange(e, i)}
+                    onpaste={(e) => handlePaste(e, i)}
+                    disabled={state.isCalculating}
+                  />
+                  {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
+                    <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
+                      {row.message}
+                    </div>
+                  {/if}
+                {:else if col.id === "unit"}
+                  {#if canShowPerRowUnitSelector(row)}
+                    <select
+                      aria-label={`Unit for row ${i + 1}`}
+                      class="px-2 py-1 border border-input rounded text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
+                      value={formatRowUnit(row)}
+                      onchange={(e) => handleUnitChange(e, i)}
+                      disabled={state.isCalculating}
+                    >
+                      {#each getAvailableUnits() as unitOption (unitOption)}
+                        <option value={unitOption}>{unitOption}</option>
+                      {/each}
+                    </select>
+                  {:else}
+                    <span class="text-muted-foreground">{formatRowUnit(row)}</span>
+                  {/if}
+                {:else}
+                  {col.getValue(row, state, entitySelection)}
+                {/if}
+              </td>
+            {/each}
           </tr>
         {/each}
       </tbody>

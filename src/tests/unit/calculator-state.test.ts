@@ -166,6 +166,144 @@ describe('CalculatorState', () => {
     calcState.updateRowText(0, '0');
     expect(calcState.rows[0].status).toBe('invalid');
   });
+
+  it('logs warning for subnormal WASM stopping power values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [1e-320],
+      csdaRanges: [0.1],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (stopping power)',
+      expect.objectContaining({
+        programId: expect.any(Number),
+        particleId: expect.any(Number),
+        materialId: expect.any(Number),
+        energyMevNucl: 100,
+        rawValue: 1e-320,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('logs warning for subnormal WASM CSDA range values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [1.0],
+      csdaRanges: [1e-320],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (CSDA range)',
+      expect.objectContaining({
+        programId: expect.any(Number),
+        particleId: expect.any(Number),
+        materialId: expect.any(Number),
+        energyMevNucl: 100,
+        rawValue: 1e-320,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('logs warning for NaN WASM values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [NaN],
+      csdaRanges: [0.1],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (stopping power)',
+      expect.objectContaining({
+        rawValue: NaN,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('stores results by row ID to avoid float key collisions', async () => {
+    // Mock two consecutive calculate() calls so we can assert that the second
+    // result is keyed by row ID — and not by the parsed energy value, which
+    // changed only in its trailing decimals. (Returned MeV·cm²/g values are
+    // converted to keV/µm for water, so we assert *relative* changes.)
+    vi.spyOn(service, 'calculate')
+      .mockImplementationOnce(() => ({
+        energies: [100],
+        stoppingPowers: [12.3],
+        csdaRanges: [0.1],
+      }))
+      .mockImplementationOnce(() => ({
+        energies: [100.0000001],
+        stoppingPowers: [45.6],
+        csdaRanges: [0.2],
+      }));
+
+    calcState.updateRowText(0, '100');
+    const rowId1 = calcState.rows[0].id;
+
+    await calcState.triggerCalculation();
+
+    const firstStp = calcState.rows[0].stoppingPower;
+    expect(firstStp).not.toBeNull();
+    expect(firstStp).toBeGreaterThan(0);
+
+    // Change the parsed energy by a tiny amount — the row ID stays the same
+    // but a float-keyed lookup would now miss the existing result.
+    calcState.updateRowText(0, '100.0000001');
+    expect(calcState.rows[0].id).toBe(rowId1);
+    expect(calcState.rows[0].normalizedMevNucl).toBeCloseTo(100.0000001);
+
+    await calcState.triggerCalculation();
+
+    // Row ID is stable across recalculations and the new STP is attached to it.
+    expect(calcState.rows[0].id).toBe(rowId1);
+    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    // The second mocked call returned a different STP — confirm the row picked
+    // up the new value (i.e. results are keyed by rowId, not by the changed
+    // float energy).
+    expect(calcState.rows[0].stoppingPower).not.toBeCloseTo(firstStp!);
+  });
+
+  it('MeV/u input: "12MeV/u" for proton computes normalizedMevNucl ≈ 12.1', () => {
+    calcState.updateRowText(0, '12MeV/u');
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12.1, 0);
+  });
+
+  it('MeV/nucl input: "12 MeV/nucl" for proton computes normalizedMevNucl = 12', () => {
+    calcState.updateRowText(0, '12 MeV/nucl');
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12, 0);
+  });
+
+  it('MeV/u input: "100 MeV/u" for Carbon (A=12) computes normalizedMevNucl', async () => {
+    const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+    expect(carbon).toBeDefined();
+    entitySelection.selectParticle(carbon!.id);
+    
+    calcState.updateRowText(0, '100 MeV/u');
+    await calcState.triggerCalculation();
+    
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+  });
 });
 
 describe('formatStpValue', () => {

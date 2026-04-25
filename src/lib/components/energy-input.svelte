@@ -1,11 +1,12 @@
 <script lang="ts">
-  import { tick } from "svelte";
-  import { isAdvancedMode } from "$lib/state/ui.svelte";
-  import { parseEnergyInput } from "$lib/utils/energy-parser";
-  import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
-  import type { EnergyUnit } from "$lib/wasm/types";
-  import type { EnergyInputState } from "$lib/state/energy-input.svelte";
-  import EnergyUnitSelector from "./energy-unit-selector.svelte";
+import { tick } from "svelte";
+import { isAdvancedMode } from "$lib/state/ui.svelte";
+import { parseEnergyInput } from "$lib/utils/energy-parser";
+import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
+import { formatSigFigs } from "$lib/utils/unit-conversions";
+import type { EnergyUnit } from "$lib/wasm/types";
+import type { EnergyInputState } from "$lib/state/energy-input.svelte";
+import EnergyUnitSelector from "./energy-unit-selector.svelte";
 
   interface Props {
     state: EnergyInputState;
@@ -148,15 +149,6 @@
     inputState.updateRowText(index, newText);
   }
 
-  function formatNumber(value: number): string {
-    if (value === 0) return "0";
-    const absValue = Math.abs(value);
-    if (absValue < 0.001 || absValue >= 10000) {
-      return value.toExponential(3);
-    }
-    return value.toFixed(3);
-  }
-
   // Convert a parsed energy (value + unit) to MeV/nucl for the conversion
   // column. Uses the active particle's mass number A and atomic mass m_u so
   // results are correct for heavy ions (see docs/04-feature-specs/unit-handling.md §4).
@@ -216,7 +208,7 @@
                 {@const parsed = parseEnergyInput(row.text) as { value: number; unit: string | null }}
                 {@const converted = convertToMeVNucl(parsed.value, parsed.unit ?? inputState.masterUnit)}
                 {#if converted !== null}
-                  {formatNumber(converted)}
+                  {formatSigFigs(converted, 4)}
                 {:else}
                   —
                 {/if}
