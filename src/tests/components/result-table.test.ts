@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/svelte';
+import { render, screen, fireEvent, cleanup } from '@testing-library/svelte';
 import { LibdedxServiceImpl } from '$lib/wasm/__mocks__/libdedx';
 import { buildCompatibilityMatrix } from '$lib/state/compatibility-matrix';
 import { createEntitySelectionState } from '$lib/state/entity-selection.svelte';
@@ -14,6 +14,7 @@ describe('ResultTable', () => {
   let calcState: CalculatorState;
 
   beforeEach(() => {
+    cleanup();
     service = new LibdedxServiceImpl();
     const matrix = buildCompatibilityMatrix(service);
     entitySelection = createEntitySelectionState(matrix);
@@ -46,8 +47,8 @@ describe('ResultTable', () => {
     
     render(ResultTable, { props: { state: calcState, entitySelection } });
     
-    // Mock returns Math.log(100 + 1) ≈ 4.615, converted to keV/µm = 4.615 * 1.0 / 10 = 0.4615
-    expect(screen.getByText(/0\.4608/)).toBeInTheDocument();
+    // Mock returns Math.log(99.3 + 1) ≈ 4.608, converted to keV/µm with density 1.0 = 0.4608
+    expect(screen.getAllByText(/0\.4608/)[0]).toBeInTheDocument();
   });
 
   it('shows CSDA range with auto-scaled units', async () => {
@@ -75,16 +76,15 @@ describe('ResultTable', () => {
   it('shows select dropdown in Unit column in per-row mode', async () => {
     // Select a heavy ion to enable per-row mode with MeV/nucl option
     const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
-    if (carbon) {
-      entitySelection.selectParticle(carbon.id);
-      
-      // Force per-row mode by typing a unit suffix
-      calcState.updateRowText(0, '100 MeV/nucl');
-      
-      render(ResultTable, { props: { state: calcState, entitySelection } });
-      
-      expect(screen.getByRole('combobox')).toBeInTheDocument();
-    }
+    expect(carbon).toBeDefined();
+    entitySelection.selectParticle(carbon!.id);
+
+    // Force per-row mode by typing a unit suffix
+    calcState.updateRowText(0, '100 MeV/nucl');
+
+    render(ResultTable, { props: { state: calcState, entitySelection } });
+
+    expect(screen.getByRole('combobox')).toBeInTheDocument();
   });
 
   it('shows plain text in Unit column in master mode', () => {
@@ -101,10 +101,42 @@ describe('ResultTable', () => {
     const freshCalcState = createCalculatorState(entitySelection, service);
     freshCalcState.updateRowText(0, 'abc');
     freshCalcState.handleBlur(0);
-    
+
     render(ResultTable, { props: { state: freshCalcState, entitySelection } });
-    
-    const summary = screen.getAllByText(/excluded/);
-    expect(summary[0]).toBeInTheDocument();  // First occurrence
+
+    const summary = screen.getAllByText(/excluded/)[0];
+    expect(summary).toBeInTheDocument();
+  });
+
+  it('changes the row unit when the per-row select dropdown changes', async () => {
+    // Heavy ion to enable the per-row select
+    const carbon = entitySelection.availableParticles.find((p) => p.name === 'Carbon');
+    expect(carbon).toBeDefined();
+    entitySelection.selectParticle(carbon!.id);
+
+    calcState.updateRowText(0, '120 MeV');
+
+    render(ResultTable, { props: { state: calcState, entitySelection } });
+
+    const select = screen.getByRole('combobox') as HTMLSelectElement;
+    await fireEvent.change(select, { target: { value: 'MeV/nucl' } });
+
+    // The row text should now be rewritten with the new unit suffix
+    expect(calcState.rows[0].rawInput).toBe('120 MeV/nucl');
+    expect(calcState.rows[0].unitFromSuffix).toBe(true);
+  });
+
+  it('shows the count of invalid + out-of-range rows in the validation summary', () => {
+    const fresh = createCalculatorState(entitySelection, service);
+    fresh.updateRowText(0, 'abc');           // invalid
+    fresh.handleBlur(0);                     // adds empty row
+    fresh.updateRowText(1, '0');             // out of range
+    fresh.handleBlur(1);
+
+    render(ResultTable, { props: { state: fresh, entitySelection } });
+
+    const summary = screen.getAllByText(/excluded/)[0];
+    expect(summary).toBeInTheDocument();
+    expect(summary.textContent).toMatch(/invalid/);
   });
 });

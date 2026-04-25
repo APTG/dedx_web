@@ -29,11 +29,8 @@ describe('CalculatorState', () => {
 
   it('calculates results after triggering', async () => {
     expect(entitySelection.isComplete).toBe(true);
-    calcState.triggerCalculation();
-    
-    // Wait for async calculation to complete
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+    await calcState.triggerCalculation();
+
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
     expect(calcState.rows[0].csdaRangeCm).not.toBeNull();
   });
@@ -48,22 +45,18 @@ describe('CalculatorState', () => {
     calcState.updateRowText(0, 'abc');
     calcState.handleBlur(0);  // Creates new row
     calcState.updateRowText(1, '200');
-    
-    calcState.triggerCalculation();
-    
-    // Wait for async calculation
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
+
+    await calcState.triggerCalculation();
+
     expect(calcState.rows[0].stoppingPower).toBeNull();
     expect(calcState.rows[1].stoppingPower).not.toBeNull();
   });
 
   it('switches stpDisplayUnit to MeV·cm²/g for gas material (air)', () => {
     const airMaterial = entitySelection.availableMaterials.find(m => m.name === 'Air');
-    if (airMaterial) {
-      entitySelection.selectMaterial(airMaterial.id);
-      expect(calcState.stpDisplayUnit).toBe('MeV·cm²/g');
-    }
+    expect(airMaterial).toBeDefined();
+    entitySelection.selectMaterial(airMaterial!.id);
+    expect(calcState.stpDisplayUnit).toBe('MeV·cm²/g');
   });
 
   it('handles empty rows correctly', () => {
@@ -73,15 +66,15 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 
-  it('clears results when entity selection is incomplete', () => {
+  it('clears results when entity selection is incomplete', async () => {
     calcState.updateRowText(0, '100');
-    calcState.triggerCalculation();
-    
+    await calcState.triggerCalculation();
+
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
-    
+
     calcState.clearResults();
     entitySelection.clearParticle();
-    
+
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 
@@ -89,18 +82,16 @@ describe('CalculatorState', () => {
     // Initial state has 1 row with "100"
     calcState.updateRowText(0, '100');  // Update first row
     calcState.handleBlur(0);  // Triggers adding new row
-    
-    calcState.updateRowText(1, '200');  // Update second row 
+
+    calcState.updateRowText(1, '200');  // Update second row
     calcState.handleBlur(1);  // Triggers adding new row
-    
+
     calcState.updateRowText(2, '300');  // Update third row
     // Last row is the always-empty-row
-    
-    calcState.triggerCalculation();
-    
+
+    await calcState.triggerCalculation();
+
     // Should now have 4 rows (3 with values + 1 empty always-empty-row)
-    await new Promise(resolve => setTimeout(resolve, 10));
-    
     expect(calcState.rows).toHaveLength(4);
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
     expect(calcState.rows[1].stoppingPower).not.toBeNull();
@@ -134,40 +125,40 @@ describe('CalculatorState', () => {
     expect(calcState.validationSummary.valid).toBe(0);
   });
 
-  it('isCalculating is set during calculation', () => {
+  it('isCalculating is set during calculation', async () => {
     expect(calcState.isCalculating).toBe(false);
-    
+
     vi.spyOn(service, 'calculate').mockImplementation((...args) => {
+      void args;
       expect(calcState.isCalculating).toBe(true);
       return { energies: [100], stoppingPowers: [1.0], csdaRanges: [0.1] };
     });
-    
-    calcState.triggerCalculation();
-    
+
+    await calcState.triggerCalculation();
+
     vi.restoreAllMocks();
   });
 
-  it('handles MeV/nucl unit for heavy ions', () => {
+  it('handles MeV/nucl unit for heavy ions', async () => {
     const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
-    if (carbon) {
-      entitySelection.selectParticle(carbon.id);
-      expect(calcState.masterUnit).toBe('MeV');
-      
-      calcState.updateRowText(0, '120');
-      calcState.triggerCalculation();
-      
-      expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
-    }
+    expect(carbon).toBeDefined();
+    entitySelection.selectParticle(carbon!.id);
+    expect(calcState.masterUnit).toBe('MeV');
+
+    calcState.updateRowText(0, '120');
+    await calcState.triggerCalculation();
+
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
   });
 
-  it('clears results when explicitly requested', () => {
+  it('clears results when explicitly requested', async () => {
     calcState.updateRowText(0, '100');
-    calcState.triggerCalculation();
-    
+    await calcState.triggerCalculation();
+
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
-    
+
     calcState.clearResults();
-    
+
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 

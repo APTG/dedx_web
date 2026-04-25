@@ -45,12 +45,21 @@ Total project tests: **393 passing**
 
 ### Auto-Scaled Length Units
 
+Implemented as `autoScaleLengthCm()` in `src/lib/utils/unit-conversions.ts`,
+re-exported from `src/lib/state/calculator.svelte.ts`. Supports five SI
+prefixes so that displayed numbers stay in a human-readable range:
+
 ```typescript
-// From src/lib/state/calculator.svelte.ts
-const autoScaleLengthCm = (cm: number): { value: number; unit: 'cm' | 'm' } => {
-  if (cm >= 100) return { value: cm / 100, unit: 'm' };
-  return { value: cm, unit: 'cm' };
-};
+// From src/lib/utils/unit-conversions.ts
+export function autoScaleLengthCm(
+  cm: number
+): { value: number; unit: 'nm' | 'µm' | 'mm' | 'cm' | 'm' } {
+  if (cm >= 100)   return { value: cm / 100,  unit: 'm' };
+  if (cm >= 1)     return { value: cm,        unit: 'cm' };
+  if (cm >= 0.1)   return { value: cm * 10,   unit: 'mm' };
+  if (cm >= 1e-4)  return { value: cm * 10000,unit: 'µm' };
+  return            { value: cm * 1e7,        unit: 'nm' };
+}
 ```
 
 ### Per-Row Unit Selector Logic

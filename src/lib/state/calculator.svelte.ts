@@ -5,8 +5,10 @@ import {
   stpMassToKevUm,
   csdaGcm2ToCm,
   formatSigFigs,
+  autoScaleLengthCm,
 } from "$lib/utils/unit-conversions";
-import type { EnergyUnit, StpUnit, LibdedxService, LibdedxError } from "$lib/wasm/types";
+import { LibdedxError } from "$lib/wasm/types";
+import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 
 export interface CalculatedRow {
@@ -33,7 +35,7 @@ export interface CalculatorState {
   setRowUnit(index: number, unit: EnergyUnit): void;
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
-  triggerCalculation(): void;
+  triggerCalculation(): Promise<void>;
   clearResults(): void;
 }
 
@@ -44,10 +46,9 @@ export function createCalculatorState(
   let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<number, { stoppingPower: number; csdaRangeCm: number }>>(new Map());
-
-  // Force Svelte to detect Map changes by wrapping in an object
-  let resultsVersion = $state(0);
+  let calculationResults = $state<Map<number, { stoppingPower: number; csdaRangeCm: number }>>(
+    new Map()
+  );
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
@@ -87,39 +88,22 @@ export function createCalculatorState(
       };
     }
 
-    const effectiveUnit = parsed.unit !== null 
-      ? (parsed.unit === 'MeV' || parsed.unit === 'MeV/nucl' || parsed.unit === 'MeV/u' 
-         ? parsed.unit 
-         : inputState.masterUnit)
-      : inputState.masterUnit;
+    const conversionUnit: EnergyUnit =
+      parsed.unit === "MeV" || parsed.unit === "MeV/nucl" || parsed.unit === "MeV/u"
+        ? parsed.unit
+        : inputState.masterUnit;
 
+    const effectiveUnit: EnergyUnit = conversionUnit;
     const unitFromSuffix = parsed.unit !== null;
 
     let normalizedMevNucl: number | null = null;
     try {
-      if (parsed.unit === 'MeV') {
-        normalizedMevNucl = parsed.value / particleMassNumber;
-      } else if (parsed.unit === 'MeV/nucl' || parsed.unit === 'keV/nucl' || parsed.unit === 'GeV/nucl') {
-        const mevPerNucl = parsed.unit === 'MeV/nucl' ? parsed.value : 
-                          parsed.unit === 'keV/nucl' ? parsed.value / 1000 :
-                          parsed.value * 1000;
-        normalizedMevNucl = (mevPerNucl * particleMassNumber) / (particleAtomicMass ?? particleMassNumber);
-      } else if (parsed.unit === null) {
-        // No unit suffix - use master unit
-        normalizedMevNucl = convertEnergyToMeVperU(
-          parsed.value,
-          inputState.masterUnit,
-          particleMassNumber,
-          particleAtomicMass
-        );
-      } else {
-        normalizedMevNucl = convertEnergyToMeVperU(
-          parsed.value,
-          parsed.unit,
-          particleMassNumber,
-          particleAtomicMass
-        );
-      }
+      normalizedMevNucl = convertEnergyToMeVperU(
+        parsed.value,
+        parsed.unit ?? inputState.masterUnit,
+        particleMassNumber,
+        particleAtomicMass
+      );
     } catch {
       return {
         id: row.id,
@@ -215,12 +199,8 @@ export function createCalculatorState(
         });
       }
 
-      // Clear and rebuild the map to trigger reactivity
-      calculationResults.clear();
-      for (const [key, value] of newResults.entries()) {
-        calculationResults.set(key, value);
-      }
-      resultsVersion++;  // Force reactivity tick
+      // Reassign to a new Map so Svelte detects the change.
+      calculationResults = newResults;
     } catch (e) {
       error = e instanceof LibdedxError ? e : new LibdedxError(-1, 'Calculation failed');
     } finally {
@@ -286,9 +266,23 @@ export function createCalculatorState(
     },
     setRowUnit(index: number, unit: EnergyUnit) {
       const row = inputState.rows[index];
-      if (row) {
-        inputState.updateRowText(index, row.text);
+      if (!row) {
+        return;
       }
+
+      const trimmed = row.text.trim();
+      if (trimmed === "") {
+        return;
+      }
+
+      // Match the leading numeric value (incl. sign / decimal / exponent)
+      // and replace the suffix with the chosen unit.
+      const match = trimmed.match(/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
+      if (!match) {
+        return;
+      }
+
+      inputState.updateRowText(index, `${match[0]} ${unit}`);
     },
     updateRowText(index: number, text: string) {
       inputState.updateRowText(index, text);
@@ -308,26 +302,18 @@ export function createCalculatorState(
 }
 
 export function formatStpValue(value: number, unit: StpUnit): string {
+  // 4 sig figs is correct for both keV/µm and MeV·cm²/g; the unit is
+  // accepted as a parameter so call-sites stay unit-aware and to allow
+  // future per-unit precision tweaks.
+  void unit;
   return formatSigFigs(value, 4);
 }
 
 export function formatRangeValue(cm: number | null): string {
   if (cm === null) return '';
-  
+
   const scaled = autoScaleLengthCm(cm);
   return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;
 }
 
-export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µm' | 'mm' | 'cm' | 'm' } {
-  if (cm >= 100) {
-    return { value: cm / 100, unit: 'm' };
-  } else if (cm >= 1) {
-    return { value: cm, unit: 'cm' };
-  } else if (cm >= 0.1) {
-    return { value: cm * 10, unit: 'mm' };
-  } else if (cm >= 1e-4) {
-    return { value: cm * 10000, unit: 'µm' };
-  } else {
-    return { value: cm * 1e7, unit: 'nm' };
-  }
-}
+export { autoScaleLengthCm };

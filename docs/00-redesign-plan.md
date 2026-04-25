@@ -507,7 +507,7 @@ As a <role>, I want to <action> so that <benefit>.
   1. ✅ Entity selection (cascading dropdowns) — Svelte stores + WASM (merged PR #366, Apr 2026)
   2. ✅ Energy input component — textarea with per-line validation, debounce (merged PR #368, Apr 2026)
   3. ✅ Unit selector — radio/segmented control (merged PR #370, Apr 2026)
-  4. 🚧 Result table — unified input/result table (Stage 5.4, in progress)
+  4. ✅ Result table — unified input/result table (Stage 5.4, completed Apr 2026)
   5. JSROOT plot wrapper — Svelte component managing JSROOT lifecycle
 - **Expand CI:** add `pnpm test` (Vitest) to `ci.yml` — first unit tests are written
   in this stage; every PR's test suite must pass before merge.

@@ -47,20 +47,29 @@ export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µ
 
 /** Format a number to n significant figures, no scientific notation, no grouping separators. */
 export function formatSigFigs(value: number, sigFigs: number): string {
-  if (value === 0) return '0';
-  
+  if (value === 0) return "0";
+
   const absValue = Math.abs(value);
   const magnitude = Math.floor(Math.log10(absValue));
-  const decimalPlaces = Math.max(0, sigFigs - magnitude - 1);
-  
-  const multiplier = Math.pow(10, decimalPlaces);
-  const rounded = Math.round(value * multiplier) / multiplier;
-  
-  let formatted = rounded.toFixed(decimalPlaces);
-  
-  if (formatted.includes('.')) {
-    formatted = formatted.replace(/\.?0+$/, '');
+
+  // Round to the desired significant figures, supporting negative
+  // decimalPlaces (i.e. rounding to tens / hundreds / etc. for large values).
+  const roundingScale = Math.pow(10, magnitude - sigFigs + 1);
+  const rounded = Math.round(value / roundingScale) * roundingScale;
+
+  if (Number.isInteger(rounded)) {
+    return rounded.toFixed(0);
   }
-  
+
+  const roundedAbs = Math.abs(rounded);
+  const roundedMagnitude = Math.floor(Math.log10(roundedAbs));
+  const decimalPlaces = Math.max(0, sigFigs - roundedMagnitude - 1);
+
+  let formatted = rounded.toFixed(decimalPlaces);
+
+  if (formatted.includes(".")) {
+    formatted = formatted.replace(/\.?0+$/, "");
+  }
+
   return formatted;
 }

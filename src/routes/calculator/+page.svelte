@@ -41,7 +41,7 @@
       <SelectionLiveRegion {state} />
       <EntitySelectionComboboxes {state} />
       <div class="rounded-lg border bg-card p-6">
-        <ResultTable {state} {calcState} entitySelection={state} />
+        <ResultTable state={calcState} entitySelection={state} />
       </div>
     </div>
   {/if}

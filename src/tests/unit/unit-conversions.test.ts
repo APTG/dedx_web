@@ -127,11 +127,12 @@ describe('formatSigFigs', () => {
   });
 
   it('handles large numbers', () => {
-    expect(formatSigFigs(1234567, 4)).toBe('1234567');
-    expect(formatSigFigs(99999, 4)).toBe('99999');
+    // 4 sig figs rounds to nearest thousand for 7-digit values
+    expect(formatSigFigs(1234567, 4)).toBe('1235000');
+    expect(formatSigFigs(99999, 4)).toBe('100000');
     expect(formatSigFigs(12340, 4)).toBe('12340');
-    // 12345 with 4 sig figs has 0 decimal places → no rounding needed at integer level
-    expect(formatSigFigs(12345, 4)).toBe('12345');
+    // 12345 rounds to 12350 when limited to 4 significant figures
+    expect(formatSigFigs(12345, 4)).toBe('12350');
   });
 
   it('handles zero', () => {
