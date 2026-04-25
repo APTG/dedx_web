@@ -27,3 +27,4 @@ Design documents and specifications for the dEdx Web redesign.
 | [decisions/](decisions/) | Architecture Decision Records (ADRs) — why SvelteKit, why JSROOT, WASM build pipeline |
 | [progress/](progress/) | Stage completion logs — what was produced, key decisions, and what each next stage needs |
 | [ai-logs/](ai-logs/) | Detailed AI session logs — prompt→response narratives for project continuity |
+| [ux-reviews/](ux-reviews/) | Periodic UX reviews — issue tracking, severity ratings, and implementation status per review session |
