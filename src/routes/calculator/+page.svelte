@@ -3,6 +3,7 @@
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
+  import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import EnergyInput from "$lib/components/energy-input.svelte";
   import { createEnergyInputState, type EnergyInputState } from "$lib/state/energy-input.svelte";
   import { getService } from "$lib/wasm/loader";
@@ -37,6 +38,7 @@
     </div>
   {:else}
     <div class="mx-auto max-w-2xl space-y-6">
+      <SelectionLiveRegion {state} />
       <EntitySelectionComboboxes {state} />
       <div class="rounded-lg border bg-card p-6">
         {#if energyState}

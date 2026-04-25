@@ -24,6 +24,7 @@ export interface EntitySelectionState {
   selectedParticle: ParticleEntity | null;
   selectedMaterial: MaterialEntity | null;
   isComplete: boolean;
+  selectionSummary: string;
   allParticles: ParticleEntity[];
   allMaterials: MaterialEntity[];
   availablePrograms: ProgramEntity[];
@@ -185,6 +186,20 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         selectedMaterialId,
       );
       return resolvedId !== null;
+    },
+
+    get selectionSummary(): string {
+      const particleName = this.selectedParticle?.name ?? "None";
+      const materialName = this.selectedMaterial?.name ?? "None";
+      let programText = "Auto-select";
+      
+      if (this.selectedProgram.id !== -1) {
+        programText = this.selectedProgram.name;
+      } else if (this.resolvedProgram) {
+        programText = `Auto-select → ${this.resolvedProgram.name}`;
+      }
+      
+      return `Particle: ${particleName}. Material: ${materialName}. Program: ${programText}.`;
     },
 
     get allParticles(): ParticleEntity[] {
