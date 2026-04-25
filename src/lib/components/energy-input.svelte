@@ -1,7 +1,7 @@
 <script lang="ts">
   import { tick } from "svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
-  import { parseEnergyInput } from "$lib/utils/energy-parser";
+  import { parseEnergyInput, type ParseResult } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { EnergyInputState } from "$lib/state/energy-input.svelte";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
@@ -23,8 +23,6 @@
       input.select();
     }
   }
-
-  
 
   function handleAddRow() {
     inputState.addRow();
@@ -48,16 +46,13 @@
       return;
     }
 
-    // Update the current row with the first line
     inputState.updateRowText(index, lines[0]);
 
-    // Create new rows for subsequent lines
     for (let i = 1; i < lines.length; i++) {
-        inputState.addRow();
+      inputState.addRow();
       inputState.updateRowText(index + i, lines[i]);
     }
 
-    // Focus the last populated row
     focusEnergyInput(index + lines.length - 1);
   }
 
@@ -79,8 +74,6 @@
     }
 
     if (event.shiftKey) {
-      // Shift+Tab: move to previous row; if already at the first row let the
-      // browser handle focus so users can tab out of the component.
       if (index > 0) {
         event.preventDefault();
         focusEnergyInput(index - 1);
@@ -88,8 +81,6 @@
       return;
     }
 
-    // Tab: move to next row; if already on the last row let the browser move
-    // focus out of the component naturally.
     if (index < inputState.rows.length - 1) {
       event.preventDefault();
       focusEnergyInput(index + 1);
@@ -109,7 +100,6 @@
     }
 
     if (particleMassNumber !== undefined && particleMassNumber > 1) {
-      // MeV/u is only available for heavy ions in advanced mode (spec §3)
       if (isAdvancedMode.value) {
         return ["MeV", "MeV/nucl", "MeV/u"];
       }
@@ -121,8 +111,6 @@
 
   const availableUnits = $derived(getAvailableUnits());
 
-  // Reset masterUnit to first available unit when it becomes unavailable
-  // (e.g., switching particle or toggling advanced mode)
   $effect(() => {
     const units = availableUnits;
     if (!units.includes(inputState.masterUnit)) {
@@ -139,6 +127,57 @@
       return { value: String(parsed.value), unit: inputState.masterUnit };
     }
     return null;
+  }
+
+  function getRowUnit(rowText: string): string {
+    const parsed = parseEnergyInput(rowText);
+    if ("value" in parsed && parsed.unit !== null) {
+      return parsed.unit;
+    }
+    return inputState.masterUnit;
+  }
+
+  function handleRowUnitChange(index: number, newUnit: string) {
+    const row = inputState.rows[index];
+    const parsed = parseEnergyInput(row.text);
+    let newText = row.text;
+    
+    if ("value" in parsed) {
+      if (parsed.unit !== null) {
+        newText = `${parsed.value} ${newUnit}`;
+      } else {
+        newText = `${parsed.value} ${newUnit}`;
+      }
+    }
+    
+    inputState.updateRowText(index, newText);
+  }
+
+  function formatNumber(value: number): string {
+    if (value === 0) return "0";
+    const absValue = Math.abs(value);
+    if (absValue < 0.001 || absValue >= 10000) {
+      return value.toExponential(3);
+    }
+    return value.toFixed(3);
+  }
+
+  function convertToMeVNucl(value: number, unit: string): number {
+    const conversions: Record<string, number> = {
+      "eV": 1e-6,
+      "keV": 1e-3,
+      "MeV": 1,
+      "GeV": 1000,
+      "TeV": 1e6,
+      "eV/nucl": 1e-6,
+      "keV/nucl": 1e-3,
+      "MeV/nucl": 1,
+      "GeV/nucl": 1000,
+      "TeV/nucl": 1e6,
+      "MeV/u": 1,
+    };
+    const factor = conversions[unit] ?? 1;
+    return value * factor;
   }
 </script>
 
@@ -157,45 +196,66 @@
     {/if}
   </div>
 
-  <div class="space-y-2">
-    {#each inputState.rows as row, index (row.id)}
-      <div class="flex items-center gap-2">
-          <input
-            type="text"
-            value={row.text}
-            placeholder="e.g. 100 keV"
-            oninput={(e) => handleInputText(index, e)}
-            onkeydown={(e) => handleKeydown(index, e)}
-            onpaste={(e) => handlePaste(index, e)}
-            onblur={() => inputState.handleBlur(index)}
-            bind:this={inputRefs[index]}
-            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
-          />
-        <div class="min-h-[1.25rem]">
-          {#if row.error}
-            <span class="text-xs text-destructive whitespace-nowrap">{row.error}</span>
-          {:else}
-            {@const parsed = formatParsedValue(row.text)}
-            {#if parsed && parsed.unit !== inputState.masterUnit}
-              <div class="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-                <span>→</span>
-                <span>{parsed.value}</span>
-                <span>{parsed.unit}</span>
-              </div>
-            {/if}
-          {/if}
-        </div>
-        <button
-          type="button"
-          onclick={() => handleRemoveRow(index)}
-          disabled={inputState.rows.length <= 1}
-          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-destructive hover:text-destructive-foreground h-10 px-3"
-          aria-label={`Remove row ${index + 1}`}
-        >
-          ✕
-        </button>
-      </div>
-    {/each}
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="border-b bg-muted/30">
+          <th class="text-left p-2 font-medium">Energy ({inputState.masterUnit})</th>
+          <th class="text-right p-2 font-medium">→ MeV/nucl</th>
+          <th class="text-center p-2 font-medium">Unit</th>
+          <th class="text-right p-2 font-medium">Stopping Power</th>
+          <th class="text-right p-2 font-medium">CSDA Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each inputState.rows as row, index (row.id)}
+          <tr class="border-b hover:bg-muted/20 {row.error ? 'bg-destructive/10' : ''}">
+            <td class="p-2">
+              <input
+                type="text"
+                value={row.text}
+                placeholder="e.g. 100 keV"
+                oninput={(e) => handleInputText(index, e)}
+                onkeydown={(e) => handleKeydown(index, e)}
+                onpaste={(e) => handlePaste(index, e)}
+                onblur={() => inputState.handleBlur(index)}
+                bind:this={inputRefs[index]}
+                class="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
+              />
+            </td>
+            <td class="p-2 text-right font-mono">
+              {#if "value" in parseEnergyInput(row.text)}
+                {@const parsed = parseEnergyInput(row.text) as { value: number; unit: string | null }}
+                {#if parsed.unit !== null}
+                  {formatNumber(convertToMeVNucl(parsed.value, parsed.unit))}
+                {:else}
+                  {formatNumber(convertToMeVNucl(parsed.value, inputState.masterUnit))}
+                {/if}
+              {:else}
+                —
+              {/if}
+            </td>
+            <td class="p-2 text-center">
+              <select
+                value={getRowUnit(row.text)}
+                oninput={(e) => handleRowUnitChange(index, (e.target as HTMLSelectElement).value)}
+                class="h-8 px-2 text-sm rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {#each availableUnits as unit}
+                  <option value={unit}>{unit}</option>
+                {/each}
+              </select>
+            </td>
+            <td class="p-2 text-right font-mono text-muted-foreground">
+              —
+            </td>
+            <td class="p-2 text-right font-mono text-muted-foreground">
+              —
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
 
   <button

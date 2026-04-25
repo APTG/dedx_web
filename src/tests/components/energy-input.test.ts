@@ -212,10 +212,15 @@ test("§15: hides parsed-value display when unit matches master unit", () => {
   });
   const { container } = render(EnergyInput, { props: { state } });
 
-  // Should NOT show the arrow (→) when unit matches
-  const allElements = container.querySelectorAll("*");
-  for (const el of allElements) {
-    expect(el.textContent).not.toContain("→");
+  // Table has "→ MeV/nucl" in header but row data should not have "→"
+  // Check only non-header rows - the value column should show just the number
+  const tds = container.querySelectorAll("td");
+  for (const td of tds) {
+    td.textContent?.split(" ").forEach((token) => {
+      if (token.includes("→")) {
+        fail("Row data should not contain conversion arrow when unit matches master");
+      }
+    });
   }
 });
 
