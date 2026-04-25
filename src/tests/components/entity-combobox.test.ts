@@ -141,4 +141,31 @@ describe("EntityCombobox component - UX fixes", () => {
     expect(scrollContainer).toBeInTheDocument();
     expect(scrollContainer).toHaveStyle("mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)");
   });
+
+  test("§7.2: shows checkmark on selected item when combobox re-opens", async () => {
+    const user = userEvent.setup();
+    const onItemSelect = vi.fn();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect,
+      },
+    });
+
+    // Open the dropdown
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find the Hydrogen item (id=1) and verify it has a checkmark
+    const hydrogenItem = Array.from(container.querySelectorAll("[data-combobox-item]")).find((el) =>
+      el.textContent?.includes("Hydrogen")
+    );
+    expect(hydrogenItem).toBeTruthy();
+
+    // Check for checkmark SVG inside the selected item
+    const checkmark = hydrogenItem?.querySelector('svg[aria-label="Selected"]');
+    expect(checkmark).toBeInTheDocument();
+  });
 });
