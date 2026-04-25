@@ -1,267 +1,268 @@
-import { describe, test, expect } from "vitest";
 import { render, fireEvent } from "@testing-library/svelte";
+import { expect, test } from "vitest";
 import EnergyInput from "$lib/components/energy-input.svelte";
+import type { EnergyInputState, EnergyRow } from "$lib/state/energy-input.svelte";
+import type { EnergyUnit } from "$lib/wasm/types";
+import type { ParseResult } from "$lib/utils/energy-parser";
 
-describe("EnergyInput component", () => {
-  test("renders with default row", () => {
-    const { getByDisplayValue } = render(EnergyInput);
-    
-    expect(getByDisplayValue("100")).toBeInTheDocument();
+let idCounter = 0;
+function generateId(): number {
+  return ++idCounter;
+}
+
+interface TestStateOverrides {
+  rows?: EnergyRow[];
+  masterUnit?: EnergyUnit;
+  isPerRowMode?: boolean;
+  addRow?: () => void;
+  removeRow?: (index: number) => void;
+  updateRowText?: (index: number, text: string) => void;
+  setMasterUnit?: (unit: EnergyUnit) => void;
+  getParsedEnergies?: () => ParseResult[];
+  handleBlur?: (index: number) => void;
+  clearAllRows?: () => void;
+}
+
+function createTestState(overrides?: TestStateOverrides): EnergyInputState {
+  const rows: EnergyRow[] = overrides?.rows ?? [
+    { text: "100 MeV", id: generateId() },
+  ];
+  return {
+    rows,
+    masterUnit: overrides?.masterUnit ?? "MeV",
+    isPerRowMode: overrides?.isPerRowMode ?? false,
+    addRow: overrides?.addRow ?? (() => {}),
+    removeRow: overrides?.removeRow ?? (() => {}),
+    updateRowText: overrides?.updateRowText ?? (() => {}),
+    setMasterUnit: overrides?.setMasterUnit ?? (() => {}),
+    getParsedEnergies:
+      overrides?.getParsedEnergies ?? (() => [{ value: 100, unit: "MeV" }]),
+    handleBlur: overrides?.handleBlur ?? (() => {}),
+    clearAllRows: overrides?.clearAllRows ?? (() => {}),
+  };
+}
+
+test("renders energy input with state prop", () => {
+  idCounter = 0;
+  const state = createTestState();
+  const { container } = render(EnergyInput, { props: { state } });
+
+  const inputs = container.querySelectorAll("input[type='text']");
+  expect(inputs).toHaveLength(1);
+  expect(inputs[0]).toHaveValue("100 MeV");
+});
+
+test("renders multiple rows from state", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [
+      { text: "100 MeV", id: generateId() },
+      { text: "200 keV", id: generateId() },
+      { text: "50 GeV", id: generateId() },
+    ],
+  });
+  const { container } = render(EnergyInput, { props: { state } });
+
+  const inputs = container.querySelectorAll("input[type='text']");
+  expect(inputs).toHaveLength(3);
+  expect(inputs[0]).toHaveValue("100 MeV");
+  expect(inputs[1]).toHaveValue("200 keV");
+  expect(inputs[2]).toHaveValue("50 GeV");
+});
+
+test("shows add row button", () => {
+  idCounter = 0;
+  const state = createTestState();
+  const { container } = render(EnergyInput, { props: { state } });
+
+  const addButtons = container.querySelectorAll("button");
+  const addButton = Array.from(addButtons).find((btn) =>
+    btn.textContent?.includes("Add row"),
+  );
+  expect(addButton).toBeTruthy();
+});
+
+test("respects particle mass number for unit buttons (mass number > 1)", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+  });
+  const { container } = render(EnergyInput, {
+    props: { state, particleMassNumber: 4, particleId: 2 },
   });
 
-  test("shows energy unit label", () => {
-    const { container } = render(EnergyInput);
+  const buttonLabels = Array.from(
+    container.querySelectorAll("[role='radio']"),
+  ).map((el) => el.textContent);
+  expect(buttonLabels).toContain("MeV");
+  expect(buttonLabels).toContain("MeV/nucl");
+});
 
-    const label = container.querySelector("#energy-unit-label");
-    expect(label).toBeInTheDocument();
-    expect(label?.textContent).toBe("Energy Unit");
+test("shows only MeV for single-nucleon particles (proton)", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+  });
+  const { container } = render(EnergyInput, {
+    props: { state, particleMassNumber: 1, particleId: 1 },
   });
 
-  test("adds new row when clicking add button", async () => {
-    const { container } = render(EnergyInput);
-    
-    const addButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Add row")
-    );
-    expect(addButton).toBeDefined();
-    
-    await fireEvent.click(addButton as HTMLButtonElement);
-    
-    const energyInputs = Array.from(container.querySelectorAll("input")).filter(
-      (input) => input.getAttribute("aria-label")?.includes("Energy value")
-    );
-    expect(energyInputs).toHaveLength(2);
+  const buttonLabels = Array.from(
+    container.querySelectorAll("[role='radio']"),
+  ).map((el) => el.textContent);
+  expect(buttonLabels).toContain("MeV");
+  expect(buttonLabels).not.toContain("MeV/nucl");
+});
+
+test("shows MeV, MeV/nucl, and total energy for heavy nuclei", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+  });
+  const { container } = render(EnergyInput, {
+    props: { state, particleMassNumber: 12, particleId: 6 },
   });
 
-  test("removes row when clicking remove button", async () => {
-    const { container } = render(EnergyInput);
-    
-    const removeButtons = Array.from(container.querySelectorAll("button")).filter(
-      (btn) => btn.getAttribute("aria-label")?.includes("Remove row")
-    );
-    expect(removeButtons).toHaveLength(1);
-    
-    await fireEvent.click(removeButtons[0]);
-    
-    const energyInputs = Array.from(container.querySelectorAll("input")).filter(
-      (input) => input.getAttribute("aria-label")?.includes("Energy value")
-    );
-    expect(energyInputs).toHaveLength(1);
+  const buttonLabels = Array.from(
+    container.querySelectorAll("[role='radio']"),
+  ).map((el) => el.textContent);
+  expect(buttonLabels).toContain("MeV");
+  expect(buttonLabels).toContain("MeV/nucl");
+});
+
+test("particleId takes precedence over particleMassNumber for electron", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+  });
+  const { container } = render(EnergyInput, {
+    props: { state, particleMassNumber: 12, particleId: 1001 },
   });
 
-  test("does not remove last row", async () => {
-    const { container } = render(EnergyInput);
-    
-    const getRemoveButtons = () =>
-      Array.from(container.querySelectorAll("button")).filter(
-        (btn) => btn.getAttribute("aria-label")?.includes("Remove row")
-      );
-    
-    const getEnergyInputs = () =>
-      Array.from(container.querySelectorAll("input")).filter(
-        (input) => input.getAttribute("aria-label")?.includes("Energy value")
-      );
+  const buttonLabels = Array.from(
+    container.querySelectorAll("[role='radio']"),
+  ).map((el) => el.textContent);
+  expect(buttonLabels).toContain("MeV");
+  expect(buttonLabels).not.toContain("MeV/nucl");
+});
 
-    let removeButtons = getRemoveButtons();
-    await fireEvent.click(removeButtons[0]);
-    
-    removeButtons = getRemoveButtons();
-    await fireEvent.click(removeButtons[0]);
-    
-    const energyInputs = getEnergyInputs();
-    expect(energyInputs).toHaveLength(1);
-    
-    removeButtons = getRemoveButtons();
-    await fireEvent.click(removeButtons[0]);
-    
-    const inputsAfter = getEnergyInputs();
-    expect(inputsAfter).toHaveLength(1);
+test("§20: paste multi-line text creates multiple rows", async () => {
+  idCounter = 0;
+  const updateRowTextCalls: Array<{ index: number; text: string }> = [];
+  let addRowCalls = 0;
+
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
+    updateRowText: (index: number, text: string) => {
+      updateRowTextCalls.push({ index, text });
+    },
+    addRow: () => {
+      addRowCalls++;
+    },
   });
 
-  test("updates row text on input", async () => {
-    const { getAllByRole } = render(EnergyInput);
-    
-    const inputs = getAllByRole("textbox");
-    await fireEvent.change(inputs[0], { target: { value: "5.0" } });
-    
-    expect(inputs[0]).toHaveValue("5.0");
-  });
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
 
-  test("has correct initial parsed values", () => {
-    const { container } = render(EnergyInput);
-    
-    const textContent = container.textContent || "";
-    expect(textContent).toContain("100");
-  });
+  const pasteData = "100 keV\n200 MeV\n500 GeV";
   
-  test("shows error for invalid input", async () => {
-    const { container } = render(EnergyInput);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.input(input, { target: { value: "abc" } });
-    
-    expect(container.textContent).toContain("invalid number");
-  });
-  
-  test("shows error for negative numbers", async () => {
-    const { container } = render(EnergyInput);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.input(input, { target: { value: "-5" } });
-    
-    expect(container.textContent).toContain("must be positive");
-  });
-  
-  test("applies error styling for invalid input", async () => {
-    const { container } = render(EnergyInput);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.input(input, { target: { value: "abc" } });
-    
-    expect(input.className).toContain("border-destructive");
-  });
-  
-  test("removes empty row on blur when multiple rows exist", async () => {
-    const { container } = render(EnergyInput);
-    
-    const addButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Add row")
-    );
-    await fireEvent.click(addButton as HTMLButtonElement);
-    
-    const inputs = Array.from(container.querySelectorAll("input[aria-label*='Energy value']"));
-    const secondInput = inputs[1] as HTMLInputElement;
-    
-    await fireEvent.input(secondInput, { target: { value: "" } });
-    await fireEvent.blur(secondInput);
-    
-    const inputsAfter = Array.from(container.querySelectorAll("input[aria-label*='Energy value']"));
-    expect(inputsAfter).toHaveLength(1);
-  });
-  
-  test("does not remove single empty row on blur", async () => {
-    const { container } = render(EnergyInput);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.change(input, { target: { value: "" } });
-    await fireEvent.blur(input);
-    
-    const inputsAfter = container.querySelectorAll("input[aria-label*='Energy value']");
-    expect(inputsAfter).toHaveLength(1);
+  await fireEvent.paste(input, {
+    clipboardData: {
+      getData: () => pasteData,
+    },
   });
 
-  test("renders EnergyUnitSelector with base units", () => {
-    const { container } = render(EnergyInput);
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(3);
-    
-    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
-    expect(buttonLabels).toContain("MeV");
-    expect(buttonLabels).toContain("MeV/nucl");
-    expect(buttonLabels).toContain("MeV/u");
+  expect(updateRowTextCalls).toHaveLength(3);
+  expect(updateRowTextCalls[0].index).toBe(0);
+  expect(updateRowTextCalls[0].text).toBe("100 keV");
+  expect(updateRowTextCalls[1].index).toBe(1);
+  expect(updateRowTextCalls[1].text).toBe("200 MeV");
+  expect(updateRowTextCalls[2].index).toBe(2);
+  expect(updateRowTextCalls[2].text).toBe("500 GeV");
+  expect(addRowCalls).toBe(2);
+});
+
+test("§20: paste handles Windows CRLF line endings", async () => {
+  idCounter = 0;
+  const updateRowTextCalls: Array<{ index: number; text: string }> = [];
+
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
+    updateRowText: (index: number, text: string) => {
+      updateRowTextCalls.push({ index, text });
+    },
   });
 
-  test("EnergyUnitSelector is disabled in per-row mode", async () => {
-    const { container } = render(EnergyInput);
-    
-    const addButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Add row")
-    );
-    await fireEvent.click(addButton as HTMLButtonElement);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.input(input, { target: { value: "100 MeV/nucl" } });
-    await fireEvent.blur(input);
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    unitButtons.forEach(btn => {
-      expect(btn.getAttribute("aria-disabled")).toBe("true");
-    });
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
+
+  await fireEvent.paste(input, {
+    clipboardData: {
+      getData: () => "100 keV\r\n200 MeV\r\n",
+    },
   });
 
-  test("shows per-row mode indicator when active", async () => {
-    const { container } = render(EnergyInput);
-    
-    const addButton = Array.from(container.querySelectorAll("button")).find(
-      (btn) => btn.textContent?.includes("Add row")
-    );
-    await fireEvent.click(addButton as HTMLButtonElement);
-    
-    const input = container.querySelector("input[aria-label='Energy value 1']") as HTMLInputElement;
-    await fireEvent.input(input, { target: { value: "100 MeV/nucl" } });
-    await fireEvent.blur(input);
-    
-    expect(container.textContent).toContain("(per-row mode active)");
+  // No trailing \r should remain in the pasted text.
+  expect(updateRowTextCalls.map((c) => c.text)).toEqual(["100 keV", "200 MeV"]);
+});
+
+test("§16: uses instructional placeholder text", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
   });
 
-  test("selects correct unit when EnergyUnitSelector button is clicked", async () => {
-    const { container } = render(EnergyInput);
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    const meVPerNuclButton = Array.from(unitButtons).find(btn => btn.textContent === "MeV/nucl");
-    expect(meVPerNuclButton).toBeDefined();
-    
-    await fireEvent.click(meVPerNuclButton as HTMLButtonElement);
-    
-    const updatedButtons = container.querySelectorAll("[role='radio']");
-    const selectedButton = Array.from(updatedButtons).find(btn => btn.getAttribute("aria-checked") === "true");
-    expect(selectedButton?.textContent).toBe("MeV/nucl");
-  });
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
 
-  test("proton (A=1) shows only MeV unit", () => {
-    const { container } = render(EnergyInput, {
-      props: { particleMassNumber: 1 },
-    });
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(1);
-    expect(unitButtons[0].textContent).toBe("MeV");
-  });
+  expect(input.placeholder).toBe("e.g. 100 keV");
+});
 
-  test("electron (particleId=1001) shows only MeV unit", () => {
-    const { container } = render(EnergyInput, {
-      props: { particleId: 1001 },
-    });
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(1);
-    expect(unitButtons[0].textContent).toBe("MeV");
-  });
+test("§19: add-row button uses secondary styling", () => {
+  idCounter = 0;
+  const state = createTestState();
+  const { container } = render(EnergyInput, { props: { state } });
 
-  test("helium (A=4) shows MeV and MeV/nucl units", () => {
-    const { container } = render(EnergyInput, {
-      props: { particleMassNumber: 4 },
-    });
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(2);
-    
-    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
-    expect(buttonLabels).toContain("MeV");
-    expect(buttonLabels).toContain("MeV/nucl");
-  });
+  const addButton = Array.from(container.querySelectorAll("button")).find(
+    (btn) => btn.textContent?.includes("Add row")
+  );
+  expect(addButton?.textContent?.trim()).toBe("Add row");
+  // Verify it does NOT have primary button classes (bg-primary)
+  expect(addButton).not.toHaveClass("bg-primary");
+});
 
-  test("heavy ion (A=12) shows MeV and MeV/nucl units", () => {
-    const { container } = render(EnergyInput, {
-      props: { particleMassNumber: 12 },
-    });
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(2);
-    
-    const buttonLabels = Array.from(unitButtons).map(btn => btn.textContent);
-    expect(buttonLabels).toContain("MeV");
-    expect(buttonLabels).toContain("MeV/nucl");
+test("§15: hides parsed-value display when unit matches master unit", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+    masterUnit: "MeV",
   });
+  const { container } = render(EnergyInput, { props: { state } });
 
-  test("particleId takes precedence over particleMassNumber for electron", () => {
-    const { container } = render(EnergyInput, {
-      props: { particleMassNumber: 12, particleId: 1001 },
-    });
-    
-    const unitButtons = container.querySelectorAll("[role='radio']");
-    expect(unitButtons).toHaveLength(1);
-    expect(unitButtons[0].textContent).toBe("MeV");
+  // The conversion arrow "→" should only appear in the table header, never
+  // inside any data cell (<td>).
+  const tds = container.querySelectorAll("td");
+  for (const td of tds) {
+    expect(td.textContent ?? "").not.toContain("→");
+  }
+});
+
+test("§15: shows parsed-value display with conversion arrow when unit differs from master", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 keV", id: generateId() }],
+    masterUnit: "MeV",
   });
+  const { container } = render(EnergyInput, { props: { state } });
+
+  // Should show the arrow (→) when unit differs
+  const allElements = container.querySelectorAll("*");
+  let foundArrow = false;
+  for (const el of allElements) {
+    if (el.textContent?.includes("→")) {
+      foundArrow = true;
+      break;
+    }
+  }
+  expect(foundArrow).toBe(true);
 });

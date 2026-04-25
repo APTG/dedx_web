@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/svelte";
+import { render, fireEvent } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntityCombobox from "$lib/components/entity-combobox.svelte";
 
@@ -65,7 +65,7 @@ describe("EntityCombobox component - UX fixes", () => {
   test("§7.1: label text matches the label prop", () => {
     const { container } = render(EntityCombobox, {
       props: {
-        label: "Target Material",
+        label: "Material",
         items: mockItems,
         selectedId: null,
         onItemSelect: vi.fn(),
@@ -73,7 +73,7 @@ describe("EntityCombobox component - UX fixes", () => {
     });
 
     const label = container.querySelector("label");
-    expect(label?.textContent?.trim()).toBe("Target Material");
+    expect(label?.textContent?.trim()).toBe("Material");
   });
 
   test("§7.3: Particle label has for='trigger-particle' and id='label-particle'", () => {
@@ -140,5 +140,252 @@ describe("EntityCombobox component - UX fixes", () => {
     const scrollContainer = container.querySelector("[data-testid='dropdown-scroll-container']");
     expect(scrollContainer).toBeInTheDocument();
     expect(scrollContainer).toHaveStyle("mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)");
+  });
+
+  test("§7.2: shows checkmark on selected item when combobox re-opens", async () => {
+    const user = userEvent.setup();
+    const onItemSelect = vi.fn();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect,
+      },
+    });
+
+    // Open the dropdown
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find the Hydrogen item (id=1) and verify it has a checkmark
+    const hydrogenItem = Array.from(container.querySelectorAll("[data-combobox-item]")).find((el) =>
+      el.textContent?.includes("Hydrogen")
+    );
+    expect(hydrogenItem).toBeTruthy();
+
+    // Check for checkmark SVG inside the selected item
+    const checkmark = hydrogenItem?.querySelector('svg[aria-label="Selected"]');
+    expect(checkmark).toBeInTheDocument();
+  });
+
+  test("§3: Particle combobox has placeholder 'Name, symbol, Z…'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Name, symbol, Z...");
+  });
+
+  test("§3: Material combobox has placeholder 'Name or ID...'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Material",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Name or ID...");
+  });
+
+  test("§3: Program combobox has placeholder 'Search...'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Program",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Search...");
+  });
+
+  test("§6: clear button is absent when nothing is selected", () => {
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+        onClear: vi.fn(),
+      },
+    });
+
+    // Clear button should not be present
+    const clearButton = container.querySelector("button[aria-label^='Clear']");
+    expect(clearButton).not.toBeInTheDocument();
+
+    // Chevron should be present instead
+    const chevron = container.querySelector('svg path[d="m6 9 6 6 6-6"]');
+    expect(chevron).toBeInTheDocument();
+  });
+
+  test("§6: clear button appears when value is selected", () => {
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect: vi.fn(),
+        onClear: vi.fn(),
+      },
+    });
+
+    // Clear button should be present
+    const clearButton = container.querySelector("button[aria-label='Clear Particle']");
+    expect(clearButton).toBeInTheDocument();
+
+    const xIcon = clearButton?.querySelector("svg");
+    expect(xIcon).toBeInTheDocument();
+
+    // Chevron should not be present
+    const chevron = container.querySelector('svg path[d="m6 9 6 6 6-6"]');
+    expect(chevron).not.toBeInTheDocument();
+  });
+
+  test("§6: clicking clear button calls onClear without opening dropdown", async () => {
+    const user = userEvent.setup();
+    const onClear = vi.fn();
+    const onItemSelect = vi.fn();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: 1,
+        onItemSelect,
+        onClear,
+      },
+    });
+
+    const clearButton = container.querySelector("button[aria-label='Clear Particle']") as HTMLElement;
+    await user.click(clearButton);
+
+    expect(onClear).toHaveBeenCalledTimes(1);
+    expect(onItemSelect).not.toHaveBeenCalled();
+
+    // Dropdown should remain closed
+    const dropdown = container.querySelector('[data-test-id="combobox-content"]');
+    expect(dropdown).not.toBeInTheDocument();
+  });
+
+  test("§5: Electron appears last in particle list with separator", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Check for separator before Electron (look for the CSS class)
+    const separator = container.querySelector(".my-1.border-t.border-muted");
+    expect(separator).toBeInTheDocument();
+
+    // Find all particle items
+    const items = container.querySelectorAll("[data-combobox-item]");
+    const itemLabels = Array.from(items).map((el) => el.textContent?.trim());
+
+    // Electron should be the last item
+    expect(itemLabels[itemLabels.length - 1]).toBe("Electron (e⁻)");
+  });
+
+  test("§5: Electron item has tooltip explaining unavailability", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find Electron item and verify it has the tooltip
+    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    expect(electronItem).toBeInTheDocument();
+  });
+
+  test("§5: Electron item is disabled", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find Electron item and verify it's disabled
+    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    const comboItem = electronItem?.closest("[data-combobox-item]");
+    expect(comboItem).toHaveAttribute("data-disabled");
   });
 });

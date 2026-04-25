@@ -14,6 +14,7 @@
     label: string;
     description?: string;
     searchText?: string;
+    isElectron?: boolean;
   }
 
   type ComboboxEntry<T> = EntityItem<T> | SectionHeader;
@@ -157,35 +158,75 @@
     allowDeselect={false}
     {disabled}
   >
-    <Combobox.Trigger
-      id={triggerId}
-      aria-labelledby={labelId}
-      aria-label={label}
-      class="flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-    >
-      <span class="truncate">
-        {#if selectedItem}
-          {selectedItem.label}
-        {:else}
-          <span class="text-muted-foreground">{placeholder ?? label}</span>
-        {/if}
-      </span>
-      <svg
-        xmlns="http://www.w3.org/2000/svg"
-        width="16"
-        height="16"
-        viewBox="0 0 24 24"
-        fill="none"
-        stroke="currentColor"
-        stroke-width="2"
-        stroke-linecap="round"
-        stroke-linejoin="round"
-        class="ml-2 shrink-0 opacity-50"
-        aria-hidden="true"
+    <div class="relative">
+      <Combobox.Trigger
+        id={triggerId}
+        aria-labelledby={labelId}
+        aria-label={label}
+        class={cn(
+          "flex h-10 w-full items-center justify-between rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50",
+          selectedId !== null && onClear && "pr-8",
+        )}
       >
-        <path d="m6 9 6 6 6-6" />
-      </svg>
-    </Combobox.Trigger>
+        <span class="truncate">
+          {#if selectedItem}
+            <span class="flex flex-col text-left">
+              <span>{selectedItem.label}</span>
+              {#if selectedItem.description}
+                <span class="text-xs text-muted-foreground">{selectedItem.description}</span>
+              {/if}
+            </span>
+          {:else}
+            <span class="text-muted-foreground">{placeholder ?? label}</span>
+          {/if}
+        </span>
+        {#if !(selectedId !== null && onClear)}
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="ml-2 shrink-0 opacity-50"
+            aria-hidden="true"
+          >
+            <path d="m6 9 6 6 6-6" />
+          </svg>
+        {/if}
+      </Combobox.Trigger>
+      {#if selectedId !== null && onClear}
+        <button
+          type="button"
+          aria-label={`Clear ${label}`}
+          class="absolute right-2 top-1/2 -translate-y-1/2 rounded-sm p-1 hover:bg-accent focus:outline-none focus:ring-2 focus:ring-ring"
+          onclick={(e) => {
+            e.stopPropagation();
+            onClear();
+          }}
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            width="16"
+            height="16"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            stroke-width="2"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            class="h-4 w-4"
+            aria-hidden="true"
+          >
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
+        </button>
+      {/if}
+    </div>
 
     <!--
       ContentStatic with forceMount keeps the listbox element in the DOM at all
@@ -196,7 +237,7 @@
     <Combobox.ContentStatic forceMount={true}>
       {#if open}
         <div
-          class="absolute z-50 mt-1 w-full min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+          class="absolute z-50 mt-1 w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
         >
           <Combobox.Input
             bind:ref={inputRef}
@@ -231,39 +272,45 @@
                       {group.label}
                     </Combobox.GroupHeading>
                   {/if}
-                   {#each group.items as item (item.entity.id)}
-                     <Combobox.Item
-                       value={String(item.entity.id)}
-                       disabled={!item.available}
-                       label={item.label}
-                       class={cn(
-                         "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                         !item.available && "pointer-events-none opacity-50",
-                       )}
-                     >
-                       {item.label}
-                       {#if item.description}
-                         <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
-                       {/if}
-                       {#if item.entity.id === selectedId}
-                         <svg
-                           xmlns="http://www.w3.org/2000/svg"
-                           width="16"
-                           height="16"
-                           viewBox="0 0 24 24"
-                           fill="none"
-                           stroke="currentColor"
-                           stroke-width="2"
-                           stroke-linecap="round"
-                           stroke-linejoin="round"
-                           class="ml-2 shrink-0 text-primary"
-                           aria-label="Selected"
-                         >
-                           <polyline points="20 6 9 17 4 12" />
-                         </svg>
-                       {/if}
-                     </Combobox.Item>
-                   {/each}
+                    {#each group.items as item, itemIndex (item.entity.id)}
+                      {#if item.isElectron}
+                        {#if itemIndex > 0}
+                          <Combobox.Separator class="my-1 border-t border-muted" />
+                        {/if}
+                      {/if}
+                      <Combobox.Item
+                        value={String(item.entity.id)}
+                        disabled={!item.available}
+                        label={item.label}
+                        title={item.isElectron ? "Electrons not supported in libdedx v1.4.0" : undefined}
+                        class={cn(
+                          "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                          !item.available && "cursor-not-allowed opacity-50",
+                        )}
+                      >
+                        {item.label}
+                        {#if item.description}
+                          <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
+                        {/if}
+                        {#if item.entity.id === selectedId}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="ml-2 shrink-0 text-primary"
+                            aria-label="Selected"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        {/if}
+                      </Combobox.Item>
+                    {/each}
                 </Combobox.Group>
               {/each}
             {/if}
@@ -272,16 +319,4 @@
       {/if}
     </Combobox.ContentStatic>
   </Combobox.Root>
-  {#if onClear && selectedId !== null}
-    <div class="mt-1 text-right">
-      <button
-        type="button"
-        aria-label={`Clear ${label}`}
-        class="text-xs text-muted-foreground hover:text-foreground focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-foreground"
-        onclick={onClear}
-      >
-        Clear
-      </button>
-    </div>
-  {/if}
 </div>

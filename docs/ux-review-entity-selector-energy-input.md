@@ -25,6 +25,8 @@ components make the experience feel unfinished.
 
 ### 1. No visible field labels
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Each combobox uses its placeholder text ("Select particle", etc.)
 as the only visible label. Once an item is selected the placeholder
 disappears; only the selected value remains visible. Users scanning the
@@ -38,9 +40,16 @@ above or beside the control. The label must not vanish after selection.
 **Program**. The current `aria-label` on `<Combobox.Trigger>` covers
 accessibility but not visual clarity.
 
+**Implemented:** Persistent visible labels are already implemented in
+`entity-combobox.svelte` (commit `0b274b9`). Each combobox displays a
+`<label class="mb-2 block text-sm font-medium">` above the trigger,
+properly associated via `for`/`id` attributes.
+
 ---
 
 ### 2. No checkmark / highlight on the currently selected item when re-opening
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** Opening a combobox after a selection shows the list in its
 default state. There is no visual indicator (checkmark, bold text, or
@@ -56,9 +65,15 @@ and render a checkmark SVG (similar to the existing chevron) on the right
 when true. Bits UI exposes `data-selected` on the item — that attribute
 can drive a Tailwind class instead of manual comparison.
 
+**Implemented:** Checkmark already rendered at lines 248-264 in `entity-combobox.svelte`.
+Added test `§7.2: shows checkmark on selected item when combobox re-opens` to verify
+the SVG with `aria-label="Selected"` appears for the selected item.
+
 ---
 
 ### 3. Search box does not hint at searchable fields
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** The search input placeholder is the generic `"Search..."`. The
 combobox supports searching by Z number (`z=6`), mass number (`a=12`),
@@ -68,6 +83,11 @@ rather than names, but nothing in the UI reveals this capability.
 **Fix:** Use a more descriptive placeholder: `"Name, symbol, Z…"` for
 Particle and `"Name or ID…"` for Material. The Program box can keep
 `"Search…"` since name is the natural search key there.
+
+**Implemented:** Added `getSearchPlaceholder()` function at lines 46-50 in
+`entity-combobox.svelte` that returns context-aware placeholders based on
+the `label` prop. Added three tests verifying correct placeholder for
+Particle/Material/Program comboboxes.
 
 ---
 
@@ -91,6 +111,8 @@ when search term is active. Test: `§7.4: match count hides when no search term`
 
 ### 5. Permanently disabled "Electron" clutters the list
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Electron (ID 1001) is always greyed out with the description
 "Not available in libdedx v1.4.0". It cannot be selected under any
 circumstance. Showing a permanently disabled item trains users to expect
@@ -105,9 +127,16 @@ it will eventually be enabled, and its presence in the list is noise.
 The current behaviour — middle of the list, opacity-50, no tooltip — is
 the worst of both worlds.
 
+**Implemented:** Moved Electron to bottom of particle list using 
+`#each` conditional with `Combobox.Separator` before it. Added `title` 
+tooltip "Electrons not supported in libdedx v1.4.0" on the disabled item.
+Test verifies Electron renders last with tooltip attribute.
+
 ---
 
 ### 6. "Clear" button placement is awkward
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** The "Clear" link appears below the combobox trigger on a
 separate line (`mt-1 text-right`). In the three-column grid this adds
@@ -119,9 +148,17 @@ button on the right side of the trigger, replacing the chevron when a
 value is selected. This is the standard "clearable select" pattern and
 eliminates the extra row.
 
+**Implemented:** Replaced standalone Clear link with inline × button using
+SVG inside `Combobox.Trigger`. Button renders when `selectedId !== null`
+and `onClear` prop exists, calls `e.stopPropagation()` to prevent dropdown
+open. Added 3 tests: absent when no selection, present when selected,
+clicking calls handler without opening dropdown.
+
 ---
 
 ### 7. "Reset all" is easy to trigger accidentally
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** "Reset all" is a plain text button, centered below the three
 comboboxes, with no confirmation step. A misclick resets all three
@@ -134,6 +171,11 @@ the user had uncommon selections.
   values (Proton / Water / Auto-select), not a data-loss action.
 - Alternatively, consider moving it to a less prominent location (e.g.,
   a small icon button with tooltip) so it is not on the critical path.
+
+**Implemented:** Renamed button to "Restore defaults", right-aligned with
+`lg:text-right`, reduced styling to `text-sm text-muted-foreground`, added
+`title="Restores Proton / Water / Auto-select"`. Added 3 tests: button text,
+tooltip present, styling classes correct.
 
 ---
 
@@ -158,6 +200,8 @@ in `entity-combobox.svelte`. Test: `§7.5: scrollable dropdown has gradient mask
 
 ### 9. Program selector is jargon-heavy with no explanation
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The program list contains entries like "PSTAR — Proton stopping
 powers", "ICRU 73 — Stopping powers for ions", "MSTAR". A physicist will
 know these, but a student will not. "Auto-select" resolves this for the
@@ -170,9 +214,16 @@ tooltip with a 1-sentence description when no description is already
 visible in the trigger. For the combobox the description is shown in
 the item list — but it disappears once closed.
 
+**Implemented:** Modified combobox trigger to display both the program
+name (label) and its short description (e.g., "PSTAR" → "protons (NIST)")
+when a program is selected, making it easier for students to understand
+what each program does without reopening the dropdown.
+
 ---
 
 ### 10. Panel mode label inconsistency
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** Full panel mode uses numbered labels — "① Particle",
 "② Target Material", "③ Program" — while compact mode uses plain
@@ -182,6 +233,10 @@ the item list — but it disappears once closed.
 **Fix:** Standardise. If the numbered approach aids discoverability in
 the panel, apply consistent naming across both modes. If not, drop the
 numbers and align on the same field names.
+
+**Implemented:** Changed panel mode label from "② Target Material" to
+"② Material" in `entity-selection-panels.svelte` to match compact mode
+naming conventions. Updated test to reflect new label text.
 
 ---
 
@@ -214,6 +269,8 @@ searching, shows correct filtered matches, and resets when cleared.
 
 ### 12. Panel mode: keyboard navigation is absent
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The panel uses `role="listbox"` / `role="option"`, which
 implies keyboard navigation with arrow keys per the ARIA spec. But no
 `onkeydown` handler is implemented. Keyboard users expecting to navigate
@@ -223,11 +280,18 @@ the list with arrows will find the interaction broken.
 or change the ARIA role to `role="list"` / `role="listitem"` to avoid
 making a promise the implementation cannot keep.
 
+**Implemented:** Changed `role="listbox"` to `role="list"` and 
+`role="option"` to `role="listitem"` in `entity-panel.svelte`. This removes
+the broken ARIA promise without adding complex keyboard logic. Accessibility
+tests updated accordingly.
+
 ---
 
 ## Energy Input
 
 ### 13. Spec gap: the unified table is not implemented
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** The spec (`calculator.md` v5) describes a **unified input/result
 table** with five columns per row: Typed Value | → MeV/nucl | Unit
@@ -239,12 +303,16 @@ suffix the user types, but there is no dedicated column control.
 This is the most significant gap: the energy input UI is an incomplete
 component, not a minor style issue.
 
+**Implemented:** Replaced the plain list with a `<table>` structure containing all 5 columns: (1) Typed Value input, (2) → MeV/nucl converted value, (3) per-row unit dropdown, (4) Stopping Power placeholder (—), (5) CSDA Range placeholder (—). The per-row unit dropdown updates the row text with the new unit suffix. Stopping Power and CSDA Range columns show placeholders until WASM calculation integration is completed in a later stage.
+
 **Fix:** This is tracked in the stage plan. The table layout needs to be
 built before the calculator is usable.
 
 ---
 
 ### 14. State is not exposed to the parent
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** `energy-input.svelte` calls `createEnergyInputState()` internally.
 The parent (Calculator page) cannot access `getParsedEnergies()` or react
@@ -256,9 +324,16 @@ the rows), consistent with how `EntitySelectionState` is passed to
 `entity-selection-comboboxes.svelte`. Alternatively expose an
 `onchange` callback.
 
+**Implemented:** Moved state creation from `energy-input.svelte` to
+`calculator/+page.svelte`. Component now accepts `state: EnergyInputState`
+via `$props()`. Parent can call `state.getParsedEnergies()`. Tests updated
+to pass state as prop.
+
 ---
 
 ### 15. Parsed value display is redundant for the common case
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** The "→ value unit" snippet fires for every row, including
 rows where no conversion is needed. If the user types `100` and the
@@ -270,9 +345,16 @@ information echoed back. This is visual noise.
 and `parsed.unit !== masterUnit`. When the value is already in the
 master unit, omit the arrow entirely.
 
+**Implemented:** Added conditional check `parsed.unit !== inputState.masterUnit`
+before rendering the parsed value display in `energy-input.svelte`. Added
+tests for (a) row in master unit → no arrow rendered, (b) different unit
+→ arrow with converted value shown.
+
 ---
 
 ### 16. `placeholder` is set to `row.text` — a bug
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** In `energy-input.svelte:117`:
 ```svelte
@@ -284,11 +366,14 @@ HTML placeholder text is shown only when the input is empty. Since
 instructional text like `"e.g. 100 keV"`. Setting it to `row.text`
 is a no-op that adds confusion in the code.
 
-**Fix:** Use a fixed instructional placeholder: `placeholder="e.g. 100 keV"`.
+**Implemented:** Changed to fixed instructional placeholder
+`placeholder="e.g. 100 keV"`. Added test verifying placeholder text.
 
 ---
 
 ### 17. Error and parsed-value appear in the same horizontal slot
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** Error messages (`text-xs text-destructive`) and parsed
 values (`→ value unit`) share the same horizontal row without fixed
@@ -300,9 +385,15 @@ a fixed-width or full-width region for error messages (e.g. below the
 input, not inline). Or adopt the table layout the spec requires, where
 columns are fixed-width by definition.
 
+**Implemented:** Added `min-h-[1.25rem]` container to wrap both error
+and parsed-value feedback regions, preventing layout shift when either
+appears or disappears. No new tests needed — visual stability fix.
+
 ---
 
 ### 18. "Per-row mode active" message is cryptic
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** When the master unit selector is disabled, the label
 `"(per-row mode active)"` appears next to it. Most users — especially
@@ -314,35 +405,44 @@ re-enable it.
 to change"` or provide a small `×` reset button that strips all inline
 unit suffixes and returns to master-unit mode.
 
+**Implemented:** Replaced cryptic string `"(per-row mode active)"` with
+`"Mixed units — edit rows to change"` at line 156 in `energy-input.svelte`.
+
 ---
 
 ### 19. "Add row" button is over-styled as primary action
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** The "Add row" button uses `bg-primary` (solid blue/branded
 color), the highest visual weight in the design system. Adding a row
 is a supporting action — the primary action is typing values. This
 hierarchy mismatch draws the eye away from the inputs.
 
-**Fix:** Style "Add row" as a secondary/ghost button (outline or
-text-only). The auto-append behaviour (typing in the last row appends
-a new one) already means most users will never need this button for
-normal flow.
+**Implemented:** Changed button styling from `bg-primary` to
+`hover:bg-accent hover:text-accent-foreground` (secondary/outline style).
+Added test verifying the button does not have `bg-primary` class.
 
 ---
 
 ### 20. Paste of multi-line text is not handled
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The spec explicitly requires: "Paste support — pasting
 multi-line text creates multiple rows." No `onpaste` handler exists
 in `energy-input.svelte` or `energy-input.svelte.ts`.
 
-**Fix:** Add an `onpaste` handler that splits clipboard content on
-newlines, creates a row per non-empty line, and calls `updateRowText`
-for each.
+**Implemented:** Added `handlePaste()` function to `energy-input.svelte` that
+splits clipboard text on newlines, updates first row with first line, creates
+new rows for subsequent lines. Added `onpaste` event handler and test
+verifying multi-line paste creates correct number of rows with proper text.
 
 ---
 
 ### 21. Focus management uses `setTimeout` instead of `tick()`
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** In `handleKeydown`, adding a row and then focusing it uses:
 ```ts
@@ -360,9 +460,16 @@ await tick();
 focusEnergyInput(index + 1);
 ```
 
+**Implemented:** Replaced `setTimeout` with `await tick()` in 
+`handleKeydown` function in `energy-input.svelte`. Imported `tick` from 
+`svelte` and made handler `async`. Existing keyboard-nav tests verify 
+focus still works correctly.
+
 ---
 
 ### 22. Focus helper relies on fragile `aria-label` query
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** `focusEnergyInput` finds rows via:
 ```ts
@@ -374,11 +481,19 @@ breaks silently. It also assumes only one component instance per page.
 **Fix:** Use `bind:this` refs stored in an array, or set `data-row-index`
 attributes and query on that instead of aria-label.
 
+**Implemented:** Replaced querySelector with `bind:this` refs array
+declared as `let inputRefs: HTMLInputElement[] = $state([])`. In `{#each}`
+block bound each input with `bind:this={inputRefs[index]}`. Updated
+`focusEnergyInput` to call `inputRefs[index]?.focus()`. Removed old
+querySelector pattern. Existing focus tests pass.
+
 ---
 
 ## Cross-cutting Issues
 
 ### 23. Accessibility: no live region for selection feedback
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** When a user selects a particle or material, nothing is
 announced to screen readers outside the combobox itself. A user
@@ -389,9 +504,18 @@ get confirmation that the calculated data will now update.
 announces "Particle changed to Proton. Material: Water. Program:
 Auto-select → PSTAR. Ready to calculate." after each selection.
 
+**Implemented:** Added `selectionSummary` getter to `EntitySelectionState`
+that generates an accessibility-friendly summary string. Created
+`SelectionLiveRegion` component with `aria-live="polite"` that displays
+the summary. Placed the live region in the calculator page to announce
+changes like "Particle: Hydrogen. Material: Water (liquid). Program:
+Auto-select." when selections change.
+
 ---
 
 ### 24. Mobile: three-column combobox grid stacks to single column
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** On mobile (< `lg` breakpoint), the three comboboxes stack
 vertically. Each combobox then spans full width — reasonable. But the
@@ -404,33 +528,34 @@ parent container not having `overflow-hidden`).
 **Fix:** Verify on 375 px viewport that no dropdown overflows. If it
 does, add `max-w-[calc(100vw-2rem)]` to the dropdown container.
 
+**Implemented:** Added `max-w-[calc(100vw-2rem)]` and `overflow-x-hidden`
+to the dropdown content container in `entity-combobox.svelte` to prevent
+overflow on narrow viewports.
+
 ---
 
 ## Priority Summary
 
-| # | Issue | Severity | Effort |
-|---|-------|----------|--------|
-| 13 | Unified table not implemented | Critical | Large |
-| 14 | Energy state not exposed to parent | Critical | Small |
-| 1 | No visible field labels on comboboxes | High | Small |
-| 2 | No selected-item indicator on re-open | High | Small |
-| 20 | Paste of multi-line text unhandled | High | Small |
-| 6 | "Clear" button placement awkward | Medium | Small |
-| 7 | "Reset all" easy to trigger accidentally | Medium | Small |
-| 16 | Placeholder set to `row.text` (bug) | Medium | Trivial |
-| 18 | "Per-row mode" label cryptic | Medium | Small |
-| 19 | "Add row" over-styled as primary action | Medium | Trivial |
-| 3 | Search box gives no hint of searchable fields | Medium | Trivial |
-| 5 | Electron always visible but permanently disabled | Medium | Small |
-| 15 | Redundant parsed-value display | Low | Small |
-| 11 | Available count ignores search filter (panel) | Low | Small |
-| 12 | Panel listbox: keyboard nav not implemented | Low | Medium |
-| 4 | No match count in combobox dropdown | Low | Small |
-| 8 | Dropdown scroll not signalled visually | Low | Trivial |
-| 10 | Label inconsistency panel vs. compact mode | Low | Trivial |
-| 17 | Error + parsed value share unstable layout slot | Low | Medium |
-| 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial |
-| 22 | Focus helper uses fragile `aria-label` query | Low | Small |
-| 9 | Program list jargon-heavy, no in-line help | Low | Medium |
-| 23 | No live region for selection feedback | Low | Medium |
-| 24 | Mobile dropdown overflow risk | Low | Small |
+| # | Issue | Severity | Effort | Status |
+|---|-------|----------|--------|--------|
+| 13 | Unified table not implemented | Critical | Large | ✅ Fixed |
+| 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
+| 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
+| 20 | Paste of multi-line text unhandled | High | Small | ✅ Fixed |
+| 6 | "Clear" button placement awkward | Medium | Small | ✅ Fixed |
+| 7 | "Reset all" easy to trigger accidentally | Medium | Small | ✅ Fixed |
+| 16 | Placeholder set to `row.text` (bug) | Medium | Trivial | ✅ Fixed |
+| 18 | "Per-row mode" label cryptic | Medium | Small | ✅ Fixed |
+| 19 | "Add row" over-styled as primary action | Medium | Trivial | ✅ Fixed |
+| 3 | Search box gives no hint of searchable fields | Medium | Trivial | ✅ Fixed |
+| 5 | Electron always visible but permanently disabled | Medium | Small | ✅ Fixed |
+| 15 | Redundant parsed-value display | Low | Small | ✅ Fixed |
+| 11 | Available count ignores search filter (panel) | Low | Small | ✅ Fixed |
+| 12 | Panel listbox: keyboard nav not implemented | Low | Medium | ✅ Fixed |
+| 4 | No match count in combobox dropdown | Low | Small | ✅ Fixed |
+| 8 | Dropdown scroll not signalled visually | Low | Trivial | ✅ Fixed |
+| 17 | Error + parsed value share unstable layout slot | Low | Medium | ✅ Fixed |
+| 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial | ✅ Fixed |
+| 22 | Focus helper uses fragile `aria-label` query | Low | Small | ✅ Fixed |
+| 23 | No live region for selection feedback | Low | Medium | ✅ Fixed |
+| 24 | Mobile dropdown overflow risk | Low | Small | ✅ Fixed |

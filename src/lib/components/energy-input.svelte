@@ -1,54 +1,80 @@
 <script lang="ts">
-  import { createEnergyInputState } from "$lib/state/energy-input.svelte";
+  import { tick } from "svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
+  import { convertEnergyToMeVperU, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
   import type { EnergyUnit } from "$lib/wasm/types";
+  import type { EnergyInputState } from "$lib/state/energy-input.svelte";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
 
   interface Props {
+    state: EnergyInputState;
     particleMassNumber?: number;
     particleId?: number;
+    atomicMass?: number;
   }
 
-  let { particleMassNumber, particleId }: Props = $props();
+  const {
+    state: inputState,
+    particleMassNumber = 1,
+    particleId = 1,
+    atomicMass,
+  }: Props = $props();
 
-  const state = createEnergyInputState();
-
-  
-
-  function handleAddRow() {
-    state.addRow();
-  }
-
-  function handleRemoveRow(index: number) {
-    state.removeRow(index);
-  }
-
-  function handleInputText(index: number, event: Event) {
-    const target = event.target as HTMLInputElement;
-    state.updateRowText(index, target.value);
-  }
+  let inputRefs: HTMLInputElement[] = $state([]);
 
   function focusEnergyInput(index: number) {
-    const input = document.querySelector(
-      `input[aria-label="Energy value ${index + 1}"]`,
-    ) as HTMLInputElement | null;
+    const input = inputRefs[index];
     if (input) {
       input.focus();
       input.select();
     }
   }
 
-  function handleKeydown(index: number, event: KeyboardEvent) {
+  function handleAddRow() {
+    inputState.addRow();
+  }
+
+  function handleInputText(index: number, event: Event) {
+    const target = event.target as HTMLInputElement;
+    inputState.updateRowText(index, target.value);
+  }
+
+  async function handlePaste(index: number, event: ClipboardEvent) {
+    event.preventDefault();
+    const clipboardText = event.clipboardData?.getData("text") ?? "";
+    // Handle Windows (\r\n), Unix (\n) and old Mac (\r) line endings.
+    const lines = clipboardText
+      .split(/\r?\n|\r/)
+      .map((line) => line.trim())
+      .filter((line) => line !== "");
+
+    if (lines.length === 0) {
+      return;
+    }
+
+    inputState.updateRowText(index, lines[0]);
+
+    for (let i = 1; i < lines.length; i++) {
+      inputState.addRow();
+      inputState.updateRowText(index + i, lines[i]);
+    }
+
+    // Wait for Svelte to render the new rows before focusing — bind:this refs
+    // for newly added rows are not populated until after the DOM update.
+    await tick();
+    focusEnergyInput(index + lines.length - 1);
+  }
+
+  async function handleKeydown(index: number, event: KeyboardEvent) {
     if (event.key === "Enter") {
       event.preventDefault();
-      if (index < state.rows.length - 1) {
+      if (index < inputState.rows.length - 1) {
         focusEnergyInput(index + 1);
       } else {
-        state.addRow();
-        setTimeout(() => {
-          focusEnergyInput(index + 1);
-        }, 0);
+        inputState.addRow();
+        await tick();
+        focusEnergyInput(index + 1);
       }
       return;
     }
@@ -58,8 +84,6 @@
     }
 
     if (event.shiftKey) {
-      // Shift+Tab: move to previous row; if already at the first row let the
-      // browser handle focus so users can tab out of the component.
       if (index > 0) {
         event.preventDefault();
         focusEnergyInput(index - 1);
@@ -67,16 +91,14 @@
       return;
     }
 
-    // Tab: move to next row; if already on the last row let the browser move
-    // focus out of the component naturally.
-    if (index < state.rows.length - 1) {
+    if (index < inputState.rows.length - 1) {
       event.preventDefault();
       focusEnergyInput(index + 1);
     }
   }
 
   function handleUnitChange(unit: string) {
-    state.setMasterUnit(unit as EnergyUnit);
+    inputState.setMasterUnit(unit as EnergyUnit);
   }
 
   function getAvailableUnits(): EnergyUnit[] {
@@ -88,7 +110,6 @@
     }
 
     if (particleMassNumber !== undefined && particleMassNumber > 1) {
-      // MeV/u is only available for heavy ions in advanced mode (spec §3)
       if (isAdvancedMode.value) {
         return ["MeV", "MeV/nucl", "MeV/u"];
       }
@@ -100,24 +121,52 @@
 
   const availableUnits = $derived(getAvailableUnits());
 
-  // Reset masterUnit to first available unit when it becomes unavailable
-  // (e.g., switching particle or toggling advanced mode)
   $effect(() => {
     const units = availableUnits;
-    if (!units.includes(state.masterUnit)) {
-      state.setMasterUnit(units[0]);
+    if (!units.includes(inputState.masterUnit)) {
+      inputState.setMasterUnit(units[0]);
     }
   });
 
-  function formatParsedValue(text: string): { value: string; unit: string } | null {
-    const parsed = parseEnergyInput(text);
+  function getRowUnit(rowText: string): string {
+    const parsed = parseEnergyInput(rowText);
     if ("value" in parsed && parsed.unit !== null) {
-      return { value: String(parsed.value), unit: parsed.unit };
+      return parsed.unit;
     }
-    if ("value" in parsed && parsed.unit === null) {
-      return { value: String(parsed.value), unit: state.masterUnit };
+    return inputState.masterUnit;
+  }
+
+  function handleRowUnitChange(index: number, newUnit: string) {
+    const row = inputState.rows[index];
+    const parsed = parseEnergyInput(row.text);
+    let newText = row.text;
+    
+    if ("value" in parsed) {
+      newText = `${parsed.value} ${newUnit}`;
     }
-    return null;
+    
+    inputState.updateRowText(index, newText);
+  }
+
+  function formatNumber(value: number): string {
+    if (value === 0) return "0";
+    const absValue = Math.abs(value);
+    if (absValue < 0.001 || absValue >= 10000) {
+      return value.toExponential(3);
+    }
+    return value.toFixed(3);
+  }
+
+  // Convert a parsed energy (value + unit) to MeV/nucl for the conversion
+  // column. Uses the active particle's mass number A and atomic mass m_u so
+  // results are correct for heavy ions (see docs/04-feature-specs/unit-handling.md §4).
+  function convertToMeVNucl(value: number, unit: string): number | null {
+    try {
+      const meVperU = convertEnergyToMeVperU(value, unit, particleMassNumber, atomicMass);
+      return convertEnergyFromMeVperU(meVperU, "MeV/nucl", particleMassNumber, atomicMass);
+    } catch {
+      return null;
+    }
   }
 </script>
 
@@ -125,61 +174,84 @@
   <div class="flex items-center gap-4">
     <span id="energy-unit-label" class="text-sm font-medium">Energy Unit</span>
     <EnergyUnitSelector
-      value={state.masterUnit}
+      value={inputState.masterUnit}
       availableUnits={availableUnits}
       onValueChange={handleUnitChange}
-      disabled={state.isPerRowMode}
+      disabled={inputState.isPerRowMode}
       labelledBy="energy-unit-label"
     />
-    {#if state.isPerRowMode}
-      <span class="text-xs text-muted-foreground">(per-row mode active)</span>
+    {#if inputState.isPerRowMode}
+      <span class="text-xs text-muted-foreground">Mixed units — edit rows to change</span>
     {/if}
   </div>
 
-  <div class="space-y-2">
-    {#each state.rows as row, index (row.id)}
-      <div class="flex items-center gap-2">
-        <input
-          type="text"
-          value={row.text}
-          placeholder={row.text || ""}
-          oninput={(e) => handleInputText(index, e)}
-          onkeydown={(e) => handleKeydown(index, e)}
-          onblur={() => state.handleBlur(index)}
-          class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
-          aria-label={`Energy value ${index + 1}`}
-        />
-        {#snippet parsedRow()}
-          {@const parsed = formatParsedValue(row.text)}
-          {#if parsed}
-            <div class="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
-              <span>→</span>
-              <span>{parsed.value}</span>
-              <span>{parsed.unit}</span>
-            </div>
-          {/if}
-        {/snippet}
-        {@render parsedRow()}
-        {#if row.error}
-          <span class="text-xs text-destructive whitespace-nowrap">{row.error}</span>
-        {/if}
-        <button
-          type="button"
-          onclick={() => handleRemoveRow(index)}
-          disabled={state.rows.length <= 1}
-          class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-destructive hover:text-destructive-foreground h-10 px-3"
-          aria-label={`Remove row ${index + 1}`}
-        >
-          ✕
-        </button>
-      </div>
-    {/each}
+  <div class="overflow-x-auto">
+    <table class="w-full border-collapse">
+      <thead>
+        <tr class="border-b bg-muted/30">
+          <th class="text-left p-2 font-medium">Energy ({inputState.masterUnit})</th>
+          <th class="text-right p-2 font-medium">→ MeV/nucl</th>
+          <th class="text-center p-2 font-medium">Unit</th>
+          <th class="text-right p-2 font-medium">Stopping Power</th>
+          <th class="text-right p-2 font-medium">CSDA Range</th>
+        </tr>
+      </thead>
+      <tbody>
+        {#each inputState.rows as row, index (row.id)}
+          <tr class="border-b hover:bg-muted/20 {row.error ? 'bg-destructive/10' : ''}">
+            <td class="p-2">
+              <input
+                type="text"
+                value={row.text}
+                placeholder="e.g. 100 keV"
+                oninput={(e) => handleInputText(index, e)}
+                onkeydown={(e) => handleKeydown(index, e)}
+                onpaste={(e) => handlePaste(index, e)}
+                onblur={() => inputState.handleBlur(index)}
+                bind:this={inputRefs[index]}
+                class="flex h-10 w-32 rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
+              />
+            </td>
+            <td class="p-2 text-right font-mono">
+              {#if "value" in parseEnergyInput(row.text)}
+                {@const parsed = parseEnergyInput(row.text) as { value: number; unit: string | null }}
+                {@const converted = convertToMeVNucl(parsed.value, parsed.unit ?? inputState.masterUnit)}
+                {#if converted !== null}
+                  {formatNumber(converted)}
+                {:else}
+                  —
+                {/if}
+              {:else}
+                —
+              {/if}
+            </td>
+            <td class="p-2 text-center">
+              <select
+                value={getRowUnit(row.text)}
+                oninput={(e) => handleRowUnitChange(index, (e.target as HTMLSelectElement).value)}
+                class="h-8 px-2 text-sm rounded border border-input bg-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+              >
+                {#each availableUnits as unit}
+                  <option value={unit}>{unit}</option>
+                {/each}
+              </select>
+            </td>
+            <td class="p-2 text-right font-mono text-muted-foreground">
+              —
+            </td>
+            <td class="p-2 text-right font-mono text-muted-foreground">
+              —
+            </td>
+          </tr>
+        {/each}
+      </tbody>
+    </table>
   </div>
 
   <button
     type="button"
     onclick={handleAddRow}
-    class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+    class="inline-flex items-center justify-center rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 hover:bg-accent hover:text-accent-foreground h-10 px-4 py-2"
   >
     Add row
   </button>
