@@ -2,9 +2,9 @@ name: CI
 
 on:
   push:
-    branches: [master, develop, "feature/**", "fix/**", "qwen/**"]
+    branches: [master, "feature/**", "fix/**", "qwen/**"]
   pull_request:
-    branches: [master, develop]
+    branches: [master]
 
 jobs:
   wasm-verify:

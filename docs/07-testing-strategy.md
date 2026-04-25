@@ -105,8 +105,9 @@ See `.github/workflows/ci.yml` for the exact matrix.
 
 ## 4. CI matrix (current)
 
-Active CI workflow (`.github/workflows/ci.yml`) runs on pushes and PRs to
-`master`/`develop`:
+Active CI workflow (`.github/workflows/ci.yml`) runs on pushes to `master`,
+`feature/**`, `fix/**`, and `qwen/**`, and on pull requests targeting
+`master`:
 
 1. **WASM Build + Contract Verification**
    - builds `static/wasm/libdedx.*` via Docker

@@ -1,69 +1,58 @@
 # dEdx web
 
-An online interface of the libdEdx library for calculating charged-particle stopping powers and CSDA ranges.
+Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** directly in the browser — no installation required. Select a particle, a target material, and an energy range; get numerical results and interactive plots instantly. Based on the [libdedx](https://github.com/APTG/libdedx) library, running fully client-side via WebAssembly.
 
-- **Stable:** [aptg.github.io/web](https://aptg.github.io/web/)
-- **Development:** [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) — updated on every push to `develop`
+## Try it
 
-## Local development
+| | URL | What's there | Deployment |
+|---|-----|-------------|------------|
+| **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — entity selection and energy input | Continuous on `master` |
+| **v1.1.0 (stable)** | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release — fully functional but based on the old React stack | Released 1 April 2022 |
+
+## Why v2?
+
+v1.1.0 (April 2022) has several limitations: no unit handling, React 17 class components with no TypeScript, and plots that do not meet the needs of typical physics workflows.
+
+v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development** — the codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Currently at Stage 5 of 8. v2.0.0 will replace the stable site on first production release.
+
+## Related tools
+
+- [PSTAR (NIST)](https://physics.nist.gov/PhysRefData/Star/Text/PSTAR.html) — proton stopping powers
+- [ATIMA](https://www.isotopea.com/webatima/) — similar scope, different library
+
+---
+
+## For developers
+
+### Run locally
 
 Prerequisites: **Docker** (for the WASM build), **Node.js 24+**, **pnpm**.
 
-**1. Build WASM** (requires Docker; pulls `emscripten/emsdk:5.0.5`, ~2 min first time):
+Build the WASM module (requires Docker; pulls `emscripten/emsdk:5.0.5`, ~2 min on first run). The parentheses run this in a subshell so your terminal stays in the project root:
 
 ```sh
-cd wasm && ./build.sh
+(cd wasm && ./build.sh)
 ```
 
-Output: `static/wasm/libdedx.mjs` + `static/wasm/libdedx.wasm`
-
-**2. Install dependencies and start the dev server:**
+Back in the project root, install dependencies and start the dev server:
 
 ```sh
-pnpm install
-pnpm dev
+pnpm install && pnpm dev
 ```
 
 Open [http://localhost:5173](http://localhost:5173).
 
-**3. Production build** (with the GitHub Pages sub-path):
+### Documentation
 
-```sh
-BASE_PATH=/web_dev pnpm build
-```
+| | |
+|---|---|
+| [Redesign plan](docs/00-redesign-plan.md) | Stage-by-stage implementation plan and current status |
+| [Project vision](docs/01-project-vision.md) | Target audience, core use cases, design principles |
+| [Feature specs](docs/04-feature-specs/) | Per-feature specs with acceptance criteria |
+| [WASM API contract](docs/06-wasm-api-contract.md) | TypeScript ↔ libdedx interface |
+| [Deployment](docs/08-deployment.md) | GitHub Pages pipeline and CI |
+| [AI changelog](CHANGELOG-AI.md) | Log of all AI-assisted sessions |
 
-Output in `build/`. Verify the WASM contract first: `node wasm/verify.mjs`.
+### Team
 
-## Documentation
-
-Design documents for the ongoing redesign live in [`docs/`](docs/):
-
-| Document | Description |
-|----------|-------------|
-| [Redesign Plan](docs/00-redesign-plan.md) | Implementation stages, tech stack, spec template |
-| [Project Vision](docs/01-project-vision.md) | Audience, core use cases, design principles |
-| [WASM API Contract](docs/06-wasm-api-contract.md) | TypeScript ↔ libdedx WebAssembly interface |
-| [Deployment](docs/08-deployment.md) | GitHub Pages pipeline, WASM build, CI |
-| [Feature Specs](docs/04-feature-specs/) | Per-feature specs (entity selection, calculator, unit handling) |
-| [AI Session Logs](docs/ai-logs/) | Detailed AI coding session logs |
-| [AI Changelog](CHANGELOG-AI.md) | Summary table of all AI-assisted sessions |
-
-## Technologies
-
-| Layer | Choice |
-|-------|--------|
-| Framework | **SvelteKit** with **Svelte 5** (TypeScript) |
-| Plotting | **JSROOT** (physics community standard) |
-| Styling | **Tailwind CSS** + **shadcn-svelte** |
-| WASM | **Emscripten 5.x** — libdedx compiled to `.mjs` + `.wasm` |
-| Deployment | **GitHub Pages** (static adapter) |
-| Testing | **Vitest** (unit/integration) + **Playwright** (E2E) |
-
-## Related projects
-
-- [PSTAR (NIST)](https://physics.nist.gov/PhysRefData/Star/Text/PSTAR.html)
-- [ATIMA](https://www.isotopea.com/webatima/)
-
-## Team and Supervisor
-
-Developed by [Piotr Połeć](https://github.com/piotrpolec) and [Marek Ślązak](https://github.com/Mexolius) under supervision of [Leszek Granka](https://github.com/grzanka)
+Developed by [Piotr Połeć](https://github.com/piotrpolec) and [Marek Ślązak](https://github.com/Mexolius) under supervision of [Leszek Grzanka](https://github.com/grzanka)

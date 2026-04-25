@@ -8,16 +8,27 @@
 
 ## 1. Context
 
-The current codebase is an outdated, broken React 17 + Bootstrap + JSROOT web interface
+### Versioning
+
+| Version | Status | URL | Notes |
+|---------|--------|-----|-------|
+| **v1.1.0** | Released 1 April 2022 | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release; legacy React 17 app |
+| **v2.x** | In development | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | This rewrite — SvelteKit + Svelte 5 + WASM |
+
+The first production release of v2 will be tagged `v2.0.0` and deployed to `APTG/web` (see Stage 8).
+
+### What is being rewritten and why
+
+The **v1.1.0** codebase is an outdated, broken React 17 + Bootstrap + JSROOT web interface
 for the **libdedx** C library (stopping power / energy calculations), compiled to WebAssembly
 via Emscripten.
 
-**Pain points with the current app:**
+**Pain points with v1:**
 - It doesn't work.
 - Plots are ugly.
 - Code is old (React 17, class components, no TypeScript, CRA).
 
-The goal is a **ground-up rewrite** using modern tooling, driven by AI agents
+The goal of **v2** is a **ground-up rewrite** using modern tooling, driven by AI agents
 (GitHub Copilot) with spec-driven development.
 
 ---
@@ -457,14 +468,13 @@ As a <role>, I want to <action> so that <benefit>.
 - **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
 ### Stage 3.8: Early development deploy ✅ (21 April 2026)
-- **Rationale:** Before the SvelteKit app exists, establish the `develop →
-  APTG/web_dev` deployment pipeline so it is exercised and confirmed working
-  well before Stage 8 makes it load-bearing. Makes the dev site immediately
-  visible to collaborators with a placeholder page.
+- **Rationale:** Establish the `master → APTG/web_dev` deployment pipeline so
+  it is exercised and confirmed working well before the full app is complete.
+  Makes the dev site immediately visible to collaborators.
 - **Deliverables:**
-  - `.github/workflows/deploy.yml` — triggers on push to `develop`; builds a
-    static "Under Construction" `index.html` (with link to this plan) and
-    deploys to `APTG/web_dev` via `peaceiris/actions-gh-pages@v4`.
+  - `.github/workflows/deploy.yml` — triggers on push to `master`; builds the
+    WASM + SvelteKit app and deploys to `APTG/web_dev` via
+    `peaceiris/actions-gh-pages@v4`.
   - `docs/08-deployment.md §5.1` — documents early deploy phase, one-time
     repo setup, and Stage 8 migration path.
 - **One-time repo setup (human step):** Create a fine-grained PAT with
@@ -473,9 +483,8 @@ As a <role>, I want to <action> so that <benefit>.
   (source: `gh-pages` branch); create `dev` environment in `dedx_web` repo
   settings. See [`docs/08-deployment.md §5.1`](08-deployment.md) for the
   full checklist.
-- **Stage 8 migration:** switch trigger to `master` + `v*` tags, replace
-  placeholder with `pnpm build`, add production deploy job for `APTG/web`.
-  The workflow file has a Phase 1/Phase 2 comment header with the exact diff.
+- **Stage 8 migration:** add `v*` tag trigger and a production deploy job to
+  `deploy.yml` that builds and pushes `build/` to `APTG/web`.
 
 ### Stage 4: Project Scaffolding + Full AI Config
 - **Who:** AI implements.
@@ -530,6 +539,7 @@ As a <role>, I want to <action> so that <benefit>.
 - This stage adds the **deploy job**: push `build/` to `APTG/web_dev` on `master`,
   to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
   for the full workflow YAML.
+- **First production release:** tag `v2.0.0` → deploys to `APTG/web`, replacing v1.1.0.
 
 ### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
 - Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on
