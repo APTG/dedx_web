@@ -83,13 +83,14 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     if (particleId === null || materialId === null) return null;
     if (particleId === ELECTRON_ID) return null;
     const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
-    const availableProgramIds = new Set(
-      getAvailablePrograms(matrix, particleId, materialId).map((program) => program.id),
-    );
+    const availablePrograms = getAvailablePrograms(matrix, particleId, materialId);
+    const availableProgramIds = new Set(availablePrograms.map((program) => program.id));
+    // Preferred chain first (accuracy-ordered for this particle type).
     for (const pid of chain) {
       if (availableProgramIds.has(pid)) return pid;
     }
-    return null;
+    // Fallback: any program that supports this combination rather than blocking.
+    return availablePrograms[0]?.id ?? null;
   }
 
   function getResolvedProgramId(
@@ -192,13 +193,14 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       const particleName = this.selectedParticle?.name ?? "None";
       const materialName = this.selectedMaterial?.name ?? "None";
       let programText = "Auto-select";
-      
-      if (this.selectedProgram.id !== -1) {
-        programText = this.selectedProgram.name;
-      } else if (this.resolvedProgram) {
-        programText = `Auto-select → ${this.resolvedProgram.name}`;
+
+      const sp = this.selectedProgram;
+      if (sp.id !== -1) {
+        programText = sp.name;
+      } else if (sp.resolvedProgram) {
+        programText = `Auto-select → ${sp.resolvedProgram.name}`;
       }
-      
+
       return `Particle: ${particleName}. Material: ${materialName}. Program: ${programText}.`;
     },
 

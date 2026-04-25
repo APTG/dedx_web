@@ -362,13 +362,15 @@ describe("createEntitySelectionState", () => {
     test("selectionSummary includes resolved program name when Auto-select resolves", () => {
       const state = createEntitySelectionState(matrix);
       const summary = state.selectionSummary;
-      
-      // Auto-select is shown; when resolved it includes the arrow with program name
-      expect(summary).toContain("Auto-select");
-      // The resolved program should be shown if available for proton+water
-      if (state.resolvedProgram) {
-        expect(summary).toContain("Auto-select →");
-        expect(summary).toContain(state.resolvedProgram.name);
+
+      // Default is proton+water: Auto-select resolves to a concrete program
+      expect(summary).toContain("Auto-select →");
+      // resolvedProgramId is available as a getter on the state
+      expect(state.resolvedProgramId).not.toBeNull();
+      const resolvedProgram = state.selectedProgram;
+      // selectedProgram is AutoSelectProgram when id === -1; resolvedProgram is the concrete one
+      if (resolvedProgram.id === -1 && resolvedProgram.resolvedProgram) {
+        expect(summary).toContain(resolvedProgram.resolvedProgram.name);
       }
     });
 
@@ -400,6 +402,25 @@ describe("createEntitySelectionState", () => {
       
       expect(summary).toContain("PSTAR");
       expect(summary).not.toContain("Auto-select →");
+    });
+  });
+
+  describe("Auto-select fallback for unsupported preferred-chain combinations", () => {
+    test("proton + air: preferred chain (PSTAR) doesn't support air, falls back to MSTAR", () => {
+      // PSTAR (id=2) only has Water in the mock. Air (id=267) is only in MSTAR (id=4).
+      // Auto-select should fall back to MSTAR and return isComplete=true.
+      const state = createEntitySelectionState(matrix);
+      state.selectMaterial(267); // air — not in PSTAR
+      expect(state.isComplete).toBe(true);
+      expect(state.resolvedProgramId).toBe(4); // MSTAR
+    });
+
+    test("selectionSummary shows fallback program name, not bare Auto-select", () => {
+      const state = createEntitySelectionState(matrix);
+      state.selectMaterial(267); // air — triggers fallback
+      const summary = state.selectionSummary;
+      expect(summary).toContain("Auto-select →");
+      expect(summary).not.toBe("Program: Auto-select.");
     });
   });
 

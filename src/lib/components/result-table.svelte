@@ -129,7 +129,15 @@
 <div class={`overflow-x-auto ${className}`}>
   {#if !entitySelection.isComplete}
     <div class="p-4 text-center text-muted-foreground">
-      Select a particle and material to calculate.
+      {#if entitySelection.selectedParticle?.id === 1001}
+        Electron (ESTAR) is not yet supported by libdedx v1.4.0.
+      {:else if entitySelection.selectedParticle && entitySelection.selectedMaterial}
+        No program supports <strong>{entitySelection.selectedParticle.name}</strong> in
+        <strong>{entitySelection.selectedMaterial.name}</strong>.
+        Try selecting a specific program from the Program dropdown.
+      {:else}
+        Select a particle and material to calculate.
+      {/if}
     </div>
   {:else}
     <table class="w-full text-sm">
@@ -161,6 +169,7 @@
                 aria-label={`Energy value row ${i + 1}`}
                 data-row-index={i}
                 value={row.rawInput}
+                placeholder="e.g. 100 keV"
                 class={`w-24 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
                   row.status === "invalid" || row.status === "out-of-range"
                     ? "border-red-500 bg-red-50 dark:bg-red-950"
@@ -172,6 +181,11 @@
                 onpaste={(e) => handlePaste(e, i)}
                 disabled={state.isCalculating}
               />
+              {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
+                <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
+                  {row.message}
+                </div>
+              {/if}
             </td>
             <td class="px-4 py-2 text-right font-mono">
               {#if row.normalizedMevNucl !== null}
