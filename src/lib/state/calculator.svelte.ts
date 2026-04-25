@@ -41,10 +41,13 @@ export function createCalculatorState(
   entitySelection: EntitySelectionState,
   service: LibdedxService
 ): CalculatorState {
-  const inputState = createEnergyInputState();
+  let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
   let calculationResults = $state<Map<number, { stoppingPower: number; csdaRangeCm: number }>>(new Map());
+
+  // Force Svelte to detect Map changes by wrapping in an object
+  let resultsVersion = $state(0);
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
@@ -212,7 +215,12 @@ export function createCalculatorState(
         });
       }
 
-      calculationResults = newResults;
+      // Clear and rebuild the map to trigger reactivity
+      calculationResults.clear();
+      for (const [key, value] of newResults.entries()) {
+        calculationResults.set(key, value);
+      }
+      resultsVersion++;  // Force reactivity tick
     } catch (e) {
       error = e instanceof LibdedxError ? e : new LibdedxError(-1, 'Calculation failed');
     } finally {
@@ -288,9 +296,9 @@ export function createCalculatorState(
     handleBlur(index: number) {
       inputState.handleBlur(index);
     },
-    triggerCalculation() {
+    async triggerCalculation(): Promise<void> {
       const energies = getValidEnergies();
-      performCalculation(energies);
+      await performCalculation(energies);
     },
     clearResults() {
       calculationResults = new Map();
