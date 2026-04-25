@@ -173,7 +173,7 @@
          />
         {#snippet parsedRow()}
           {@const parsed = formatParsedValue(row.text)}
-          {#if parsed}
+          {#if parsed && parsed.unit !== state.masterUnit}
             <div class="flex items-center gap-1 text-xs text-muted-foreground whitespace-nowrap">
               <span>→</span>
               <span>{parsed.value}</span>

@@ -202,3 +202,40 @@ test("§19: add-row button uses secondary styling", () => {
   // Verify it does NOT have primary button classes (bg-primary)
   expect(addButton).not.toHaveClass("bg-primary");
 });
+
+test("§15: hides parsed-value display when unit matches master unit", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 MeV", id: generateId() }],
+    errors: { 0: null },
+    masterUnit: "MeV",
+  });
+  const { container } = render(EnergyInput, { props: { state } });
+
+  // Should NOT show the arrow (→) when unit matches
+  const allElements = container.querySelectorAll("*");
+  for (const el of allElements) {
+    expect(el.textContent).not.toContain("→");
+  }
+});
+
+test("§15: shows parsed-value display with conversion arrow when unit differs from master", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "100 keV", id: generateId() }],
+    errors: { 0: null },
+    masterUnit: "MeV",
+  });
+  const { container } = render(EnergyInput, { props: { state } });
+
+  // Should show the arrow (→) when unit differs
+  const allElements = container.querySelectorAll("*");
+  let foundArrow = false;
+  for (const el of allElements) {
+    if (el.textContent?.includes("→")) {
+      foundArrow = true;
+      break;
+    }
+  }
+  expect(foundArrow).toBe(true);
+});
