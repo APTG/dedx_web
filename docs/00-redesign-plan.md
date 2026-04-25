@@ -8,16 +8,27 @@
 
 ## 1. Context
 
-The current codebase is an outdated, broken React 17 + Bootstrap + JSROOT web interface
+### Versioning
+
+| Version | Status | URL | Notes |
+|---------|--------|-----|-------|
+| **v1.1.0** | Released 1 April 2022 | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release; legacy React 17 app |
+| **v2.x** | In development | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | This rewrite — SvelteKit + Svelte 5 + WASM |
+
+The first production release of v2 will be tagged `v2.0.0` and deployed to `APTG/web` (see Stage 8).
+
+### What is being rewritten and why
+
+The **v1.1.0** codebase is an outdated, broken React 17 + Bootstrap + JSROOT web interface
 for the **libdedx** C library (stopping power / energy calculations), compiled to WebAssembly
 via Emscripten.
 
-**Pain points with the current app:**
+**Pain points with v1:**
 - It doesn't work.
 - Plots are ugly.
 - Code is old (React 17, class components, no TypeScript, CRA).
 
-The goal is a **ground-up rewrite** using modern tooling, driven by AI agents
+The goal of **v2** is a **ground-up rewrite** using modern tooling, driven by AI agents
 (GitHub Copilot) with spec-driven development.
 
 ---
@@ -529,6 +540,7 @@ As a <role>, I want to <action> so that <benefit>.
 - This stage adds the **deploy job**: push `build/` to `APTG/web_dev` on `master`,
   to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
   for the full workflow YAML.
+- **First production release:** tag `v2.0.0` → deploys to `APTG/web`, replacing v1.1.0.
 
 ### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
 - Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on

@@ -6,10 +6,10 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 
 | | URL | What's there | Last deployed |
 |---|-----|-------------|---------------|
-| **Development** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Current work-in-progress — entity selection and energy input | 25 April 2026 |
-| **Stable** | [aptg.github.io/web](https://aptg.github.io/web/) | Previous version (legacy React app — functional but outdated) | — |
+| **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — entity selection and energy input | 25 April 2026 |
+| **v1.1.0 (stable)** | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release — fully functional but based on the old React stack | 1 April 2022 |
 
-> **Rewrite in progress:** The app is being rebuilt from scratch with a modern stack. Currently at Stage 5 of 8 — core UI components. The development site tracks the current state; the stable site will be updated when the rewrite reaches a full release.
+> **v2 rewrite in progress:** The app is being rebuilt from scratch with a modern stack (SvelteKit + WebAssembly). Currently at Stage 5 of 8 — core UI components. The development site tracks the current state; v2.0.0 will replace the stable site when the rewrite is complete.
 
 ## Related tools
 
