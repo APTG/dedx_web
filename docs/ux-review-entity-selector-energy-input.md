@@ -144,6 +144,8 @@ clicking calls handler without opening dropdown.
 
 ### 7. "Reset all" is easy to trigger accidentally
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** "Reset all" is a plain text button, centered below the three
 comboboxes, with no confirmation step. A misclick resets all three
 selections to defaults. The action is irreversible within a session if
@@ -155,6 +157,11 @@ the user had uncommon selections.
   values (Proton / Water / Auto-select), not a data-loss action.
 - Alternatively, consider moving it to a less prominent location (e.g.,
   a small icon button with tooltip) so it is not on the critical path.
+
+**Implemented:** Renamed button to "Restore defaults", right-aligned with
+`lg:text-right`, reduced styling to `text-sm text-muted-foreground`, added
+`title="Restores Proton / Water / Auto-select"`. Added 3 tests: button text,
+tooltip present, styling classes correct.
 
 ---
 

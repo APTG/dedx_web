@@ -215,15 +215,16 @@
     />
   </div>
 
-  <div class="w-full text-center lg:col-span-3">
+  <div class="lg:col-span-3 lg:text-right">
     <button
       type="button"
-      class="text-sm text-muted-foreground hover:underline"
+      title="Restores Proton / Water / Auto-select"
+      class="text-sm text-muted-foreground hover:text-foreground"
       onclick={() => {
         state.resetAll();
       }}
     >
-      Reset all
+      Restore defaults
     </button>
   </div>
 </div>
