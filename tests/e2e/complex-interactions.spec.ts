@@ -297,7 +297,9 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await typeInRow(page, 0, "100 MeV/nucl");
 
     const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
-    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+    // Only treat the bare placeholder dash as "no result" — scientific-notation
+    // values like "3.8e-314" legitimately contain "-" in the exponent.
+    await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
     await expect(stpCell).not.toBeEmpty();
   });
 
@@ -312,7 +314,9 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await typeInRow(page, 0, "50 MeV/nucl");
 
     const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
-    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+    // Only treat the bare placeholder dash as "no result" — scientific-notation
+    // values like "3.8e-314" legitimately contain "-" in the exponent.
+    await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
     await expect(stpCell).not.toBeEmpty();
   });
 
@@ -347,6 +351,8 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await expect(page.locator("body")).not.toContainText("RangeError");
 
     const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
-    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+    // Only treat the bare placeholder dash as "no result" — scientific-notation
+    // values like "3.8e-314" legitimately contain "-" in the exponent.
+    await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
   });
 });

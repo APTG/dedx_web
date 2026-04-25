@@ -239,18 +239,46 @@ describe('CalculatorState', () => {
   });
 
   it('stores results by row ID to avoid float key collisions', async () => {
+    // Mock two consecutive calculate() calls so we can assert that the second
+    // result is keyed by row ID — and not by the parsed energy value, which
+    // changed only in its trailing decimals. (Returned MeV·cm²/g values are
+    // converted to keV/µm for water, so we assert *relative* changes.)
+    vi.spyOn(service, 'calculate')
+      .mockImplementationOnce(() => ({
+        energies: [100],
+        stoppingPowers: [12.3],
+        csdaRanges: [0.1],
+      }))
+      .mockImplementationOnce(() => ({
+        energies: [100.0000001],
+        stoppingPowers: [45.6],
+        csdaRanges: [0.2],
+      }));
+
+    calcState.updateRowText(0, '100');
     const rowId1 = calcState.rows[0].id;
-    
+
     await calcState.triggerCalculation();
-    
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
-    
-    calcState.updateRowText(0, '200');
+
+    const firstStp = calcState.rows[0].stoppingPower;
+    expect(firstStp).not.toBeNull();
+    expect(firstStp).toBeGreaterThan(0);
+
+    // Change the parsed energy by a tiny amount — the row ID stays the same
+    // but a float-keyed lookup would now miss the existing result.
+    calcState.updateRowText(0, '100.0000001');
+    expect(calcState.rows[0].id).toBe(rowId1);
+    expect(calcState.rows[0].normalizedMevNucl).toBeCloseTo(100.0000001);
+
     await calcState.triggerCalculation();
-    
-    const newRowId = calcState.rows[0].id;
-    expect(newRowId).toBe(rowId1);
+
+    // Row ID is stable across recalculations and the new STP is attached to it.
+    expect(calcState.rows[0].id).toBe(rowId1);
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    // The second mocked call returned a different STP — confirm the row picked
+    // up the new value (i.e. results are keyed by rowId, not by the changed
+    // float energy).
+    expect(calcState.rows[0].stoppingPower).not.toBeCloseTo(firstStp!);
   });
 
   it('MeV/u input: "12MeV/u" for proton computes normalizedMevNucl ≈ 12.1', () => {

@@ -1,6 +1,6 @@
 # AI Session: UX Review Open Issues (2026-04-25)
 
-**Model:** Qwen/Qwen3.5-397B-A17B-FP8 via opencode  
+**Model:** (Qwen/Qwen3.5-397B-A17B-FP8 via opencode)  
 **Branch:** `fix/ux-review-open-issues-2`  
 **Date:** 2026-04-25
 

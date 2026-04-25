@@ -2,13 +2,14 @@ import { describe, it, expect } from "vitest";
 import { formatSigFigs } from "$lib/utils/unit-conversions";
 
 /**
- * Task 1 (Issue #13): Ensure energy-input.svelte uses formatSigFigs
- * for consistent number formatting with result-table.
+ * Unit tests for `formatSigFigs(value, 4)`.
  *
- * This test asserts that for given numeric values, the formatting
- * matches formatSigFigs(value, 4) exactly.
+ * These assertions verify the formatter's behavior directly for a range
+ * of representative numeric values. They do not exercise any Svelte
+ * component rendering path; the goal is to lock in the formatter contract
+ * shared by `energy-input.svelte`, `result-table.svelte`, and the calculator.
  */
-describe("energy-input format consistency", () => {
+describe("formatSigFigs with 4 significant figures", () => {
   it("formats typical energy values to 4 significant figures", () => {
     expect(formatSigFigs(12.0, 4)).toBe("12");
     expect(formatSigFigs(12.096, 4)).toBe("12.1");
