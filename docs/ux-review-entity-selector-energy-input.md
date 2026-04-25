@@ -345,13 +345,16 @@ normal flow.
 
 ### 20. Paste of multi-line text is not handled
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The spec explicitly requires: "Paste support — pasting
 multi-line text creates multiple rows." No `onpaste` handler exists
 in `energy-input.svelte` or `energy-input.svelte.ts`.
 
-**Fix:** Add an `onpaste` handler that splits clipboard content on
-newlines, creates a row per non-empty line, and calls `updateRowText`
-for each.
+**Implemented:** Added `handlePaste()` function to `energy-input.svelte` that
+splits clipboard text on newlines, updates first row with first line, creates
+new rows for subsequent lines. Added `onpaste` event handler and test
+verifying multi-line paste creates correct number of rows with proper text.
 
 ---
 

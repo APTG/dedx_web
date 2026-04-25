@@ -176,3 +176,16 @@ test("§20: paste multi-line text creates multiple rows", async () => {
   expect(updateRowTextCalls[2].text).toBe("500 GeV");
   expect(addRowCalls).toBe(2);
 });
+
+test("§16: uses instructional placeholder text", () => {
+  idCounter = 0;
+  const state = createTestState({
+    rows: [{ text: "", id: generateId() }],
+    errors: { 0: null },
+  });
+
+  const { container } = render(EnergyInput, { props: { state } });
+  const input = container.querySelector("input[type='text']") as HTMLInputElement;
+
+  expect(input.placeholder).toBe("e.g. 100 keV");
+});

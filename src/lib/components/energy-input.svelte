@@ -160,13 +160,13 @@
   <div class="space-y-2">
     {#each state.rows as row, index (row.id)}
       <div class="flex items-center gap-2">
-         <input
-           type="text"
-           value={row.text}
-           placeholder={row.text || ""}
-           oninput={(e) => handleInputText(index, e)}
-           onkeydown={(e) => handleKeydown(index, e)}
-           onpaste={(e) => handlePaste(index, e)}
+          <input
+            type="text"
+            value={row.text}
+            placeholder="e.g. 100 keV"
+            oninput={(e) => handleInputText(index, e)}
+            onkeydown={(e) => handleKeydown(index, e)}
+            onpaste={(e) => handlePaste(index, e)}
            onblur={() => state.handleBlur(index)}
            class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium file:text-foreground placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 {row.error ? 'border-destructive focus-visible:ring-destructive' : ''}"
            aria-label={`Energy value ${index + 1}`}
