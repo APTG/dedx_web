@@ -54,12 +54,29 @@ Address 9 open issues from the UX review (`docs/ux-reviews/2026-04-25-calculator
 
 ---
 
+### Task 3 — Refactor calculationResults to use rowId keys (Issue #10)
+
+**Status:** ✅ COMPLETED
+
+**Changes:**
+- Changed `calculationResults` from `Map<number, …>` (keyed by float energy) to `Map<string, …>` (keyed by row ID)
+- Updated `getValidEnergies()` to return `{ rowId: string; energy: number }[]` instead of `number[]`
+- Modified `performCalculation()` to accept the new energy format and store results by row ID
+- Updated `parseRow()` to look up results using `String(row.id)`
+- Added unit test to verify results are stored by row ID
+- Prevents float-key collisions and enables Inverse STP (which needs two energies per STP value)
+- All 415 tests passing (+1 new)
+
+**Commit:** `refactor: key calculationResults by rowId instead of float energy (#10)`
+
+---
+
 ## Next Steps
 
 Continue with remaining tasks in order:
 1. ✅ Task 1: formatNumber → formatSigFigs (Issue #13)
 2. ✅ Task 2: Debug logging for subnormal WASM values (Issue #7)
-3. ⏳ Task 3: Refactor calculationResults to rowId keys (Issue #10)
+3. ✅ Task 3: Refactor calculationResults to rowId keys (Issue #10)
 4. ⏳ Task 4: Extract columns into ColumnDef[] prop (Issue #11)
 5. ⏳ Task 5: Lift electron guard into EntitySelectionState (Issue #12)
 6. ⏳ Task 6: E2E tests for heavy-ion calculations (Issue #8)
