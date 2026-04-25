@@ -1,7 +1,7 @@
 /**
  * All energy units that may appear in typed user input, including SI-prefixed
  * variants (eV, keV, GeV) that are not part of the base `EnergyUnit` contract
- * passed to WASM. Use `convertEnergyToMeVperU` to normalise to a base unit
+ * passed to WASM. Use `convertEnergyToMeVperNucl` to normalise to MeV/nucl
  * before calling the calculation service.
  */
 export type EnergySuffixUnit =

@@ -34,7 +34,7 @@
   <div class="rounded-lg border bg-muted p-6">
     <h2 class="mb-2 text-lg font-semibold">Project Status</h2>
     <p class="text-muted-foreground">
-      This is a work in progress. Stage 5 (Entity Selection &amp; Result Table) is currently being implemented. See
+      This is a work in progress. Stage 5 is currently being implemented. See
       the
       <a
         href="https://github.com/APTG/dedx_web/blob/master/docs/00-redesign-plan.md"
