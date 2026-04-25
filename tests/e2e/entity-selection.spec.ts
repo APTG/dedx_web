@@ -62,8 +62,8 @@ test.describe("Calculator page — compact mode", () => {
     await particleBtn.click();
     await page.getByRole("option", { name: /^Carbon \(C\)/i }).first().click();
 
-    // Click reset all
-    await page.getByRole("button", { name: /reset all/i }).click();
+    // Click restore defaults
+    await page.getByRole("button", { name: /restore defaults/i }).click();
 
     // Verify defaults restored
     await expect(particleTrigger(page)).toContainText(/hydrogen/i);

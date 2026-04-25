@@ -267,8 +267,10 @@
                     </Combobox.GroupHeading>
                   {/if}
                     {#each group.items as item, itemIndex (item.entity.id)}
-                      {#if item.isElectron && itemIndex > 0}
-                        <Combobox.Separator class="my-1 border-t border-muted" />
+                      {#if item.isElectron}
+                        {#if itemIndex > 0}
+                          <Combobox.Separator class="my-1 border-t border-muted" />
+                        {/if}
                       {/if}
                       <Combobox.Item
                         value={String(item.entity.id)}
