@@ -272,3 +272,75 @@ test.describe("Calculator — no crashes during typical interactions", () => {
     await expect(page.locator("body")).not.toContainText("RangeError");
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Heavy-ion calculations (Carbon, Helium)
+// ─────────────────────────────────────────────────────────────────────────────
+
+test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
+  test.beforeEach(async ({ page }) => {
+    await waitForWasm(page);
+    await waitForTable(page);
+  });
+
+  test("Carbon + Water + 100 MeV/nucl shows numeric STP result", async ({ page }) => {
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
+    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
+    await carbonOption.click();
+
+    await waitForTable(page);
+    await typeInRow(page, 0, "100 MeV/nucl");
+
+    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+    await expect(stpCell).not.toBeEmpty();
+  });
+
+  test("Helium + Water + 50 MeV/nucl shows numeric STP result", async ({ page }) => {
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("helium");
+    const heliumOption = page.getByRole("option", { name: /helium/i }).first();
+    await heliumOption.click();
+
+    await waitForTable(page);
+    await typeInRow(page, 0, "50 MeV/nucl");
+
+    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+    await expect(stpCell).not.toBeEmpty();
+  });
+
+  test("Carbon: per-row unit selector shows MeV/nucl column with correct value", async ({ page }) => {
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
+    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
+    await carbonOption.click();
+
+    await waitForTable(page);
+    await typeInRow(page, 0, "100");
+
+    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
+    await expect(mevNuclCell).toContainText("100");
+  });
+
+  test("switching from Proton to Carbon with value entered does not crash", async ({ page }) => {
+    await typeInRow(page, 0, "50");
+
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
+    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
+    await carbonOption.click();
+
+    await waitForTable(page);
+    await expect(page.locator("table")).toBeVisible();
+    await expect(page.locator("body")).not.toContainText("RangeError");
+
+    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    await expect(stpCell).not.toContainText("-", { timeout: 5000 });
+  });
+});
