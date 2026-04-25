@@ -46,7 +46,7 @@ function normalizeToBaseUnit(value: number, unit: string): { value: number; base
   };
 }
 
-export function convertEnergyToMeVperU(
+export function convertEnergyToMeVperNucl(
   value: number,
   unit: string,
   massNumber: number,
@@ -58,11 +58,11 @@ export function convertEnergyToMeVperU(
 
   switch (baseUnit) {
     case "MeV/u":
-      return baseValue;
+      return (baseValue * m_u) / massNumber;
     case "MeV":
-      return baseValue / m_u;
+      return baseValue / massNumber;
     case "MeV/nucl":
-      return (baseValue * massNumber) / m_u;
+      return baseValue;
     default:
       throw new Error(`Unsupported energy unit: ${unit}`);
   }

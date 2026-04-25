@@ -1,45 +1,51 @@
 import { describe, test, expect } from "vitest";
-import { convertEnergyToMeVperU, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
+import { convertEnergyToMeVperNucl, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
 
-describe("convertEnergyToMeVperU", () => {
-  test("MeV/u to MeV/u is unchanged", () => {
-    expect(convertEnergyToMeVperU(1, "MeV/u", 1)).toBe(1);
+describe("convertEnergyToMeVperNucl", () => {
+  test("MeV/nucl to MeV/nucl is unchanged", () => {
+    expect(convertEnergyToMeVperNucl(1, "MeV/nucl", 1)).toBe(1);
   });
 
-  test("MeV to MeV/u for proton (A=1)", () => {
-    expect(convertEnergyToMeVperU(1, "MeV", 1)).toBe(1);
+  test("MeV to MeV/nucl for proton (A=1)", () => {
+    expect(convertEnergyToMeVperNucl(1, "MeV", 1)).toBe(1);
   });
 
-  test("MeV to MeV/u for carbon (A=12)", () => {
-    expect(convertEnergyToMeVperU(1, "MeV", 12)).toBeCloseTo(1 / 12, 6);
+  test("MeV to MeV/nucl for carbon (A=12)", () => {
+    expect(convertEnergyToMeVperNucl(1, "MeV", 12)).toBeCloseTo(1 / 12, 6);
   });
 
-  test("MeV to MeV/u for carbon (A=12) - 100 MeV", () => {
-    expect(convertEnergyToMeVperU(100, "MeV", 12)).toBeCloseTo(100 / 12, 6);
+  test("MeV to MeV/nucl for carbon (A=12) - 100 MeV", () => {
+    expect(convertEnergyToMeVperNucl(100, "MeV", 12)).toBeCloseTo(100 / 12, 6);
   });
 
-  test("keV to MeV/u for proton (A=1)", () => {
-    expect(convertEnergyToMeVperU(1, "keV", 1)).toBe(0.001);
+  test("keV to MeV/nucl for proton (A=1)", () => {
+    expect(convertEnergyToMeVperNucl(1, "keV", 1)).toBe(0.001);
   });
 
-  test("GeV to MeV/u for proton (A=1)", () => {
-    expect(convertEnergyToMeVperU(1, "GeV", 1)).toBe(1000);
+  test("GeV to MeV/nucl for proton (A=1)", () => {
+    expect(convertEnergyToMeVperNucl(1, "GeV", 1)).toBe(1000);
   });
 
-  test("MeV/nucl to MeV/u is unchanged (MeV/nucl ≡ MeV/u)", () => {
-    expect(convertEnergyToMeVperU(1, "MeV/nucl", 1)).toBe(1);
+  test("MeV/u to MeV/nucl for carbon (A=12)", () => {
+    const m_u = 12.0; // atomic mass ≈ mass number
+    expect(convertEnergyToMeVperNucl(1, "MeV/u", 12, m_u)).toBeCloseTo(1, 6);
   });
 
-  test("eV to MeV/u", () => {
-    expect(convertEnergyToMeVperU(1000000, "eV", 1)).toBe(1);
+  test("MeV/u to MeV/nucl with different atomic mass", () => {
+    const m_u = 12.096; // carbon-12 atomic mass units
+    expect(convertEnergyToMeVperNucl(1, "MeV/u", 12, m_u)).toBeCloseTo((1 * m_u) / 12, 6);
   });
 
-  test("GeV/nucl to MeV/u", () => {
-    expect(convertEnergyToMeVperU(1, "GeV/nucl", 12)).toBeCloseTo(1000, 6);
+  test("eV to MeV/nucl", () => {
+    expect(convertEnergyToMeVperNucl(1000000, "eV", 1)).toBe(1);
   });
 
-  test("keV/nucl to MeV/u", () => {
-    expect(convertEnergyToMeVperU(1000, "keV/nucl", 1)).toBeCloseTo(1, 6);
+  test("GeV/nucl to MeV/nucl", () => {
+    expect(convertEnergyToMeVperNucl(1, "GeV/nucl", 12)).toBeCloseTo(1000, 6);
+  });
+
+  test("keV/nucl to MeV/nucl", () => {
+    expect(convertEnergyToMeVperNucl(1000, "keV/nucl", 1)).toBeCloseTo(1, 6);
   });
 });
 
@@ -72,19 +78,19 @@ describe("convertEnergyFromMeVperU", () => {
     expect(convertEnergyFromMeVperU(1, "eV", 1)).toBe(1000000);
   });
 
-  test("round-trip: MeV → MeV/u → MeV for carbon", () => {
+  test("round-trip: MeV → MeV/nucl → MeV for carbon", () => {
     const original = 120;
     const massNumber = 12;
-    const toMeVperU = convertEnergyToMeVperU(original, "MeV", massNumber);
-    const back = convertEnergyFromMeVperU(toMeVperU, "MeV", massNumber);
+    const toMeVperNucl = convertEnergyToMeVperNucl(original, "MeV", massNumber);
+    const back = convertEnergyFromMeVperU(toMeVperNucl, "MeV", massNumber);
     expect(back).toBeCloseTo(original, 6);
   });
 
-  test("round-trip: keV → MeV/u → keV for helium", () => {
+  test("round-trip: keV → MeV/nucl → keV for helium", () => {
     const original = 500;
     const massNumber = 4;
-    const toMeVperU = convertEnergyToMeVperU(original, "keV", massNumber);
-    const back = convertEnergyFromMeVperU(toMeVperU, "keV", massNumber);
+    const toMeVperNucl = convertEnergyToMeVperNucl(original, "keV", massNumber);
+    const back = convertEnergyFromMeVperU(toMeVperNucl, "keV", massNumber);
     expect(back).toBeCloseTo(original, 6);
   });
 });

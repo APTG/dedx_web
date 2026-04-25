@@ -139,7 +139,7 @@
             Energy ({state.masterUnit})
           </th>
           <th scope="col" class="text-right px-4 py-2 font-medium">
-            → MeV/u
+            → MeV/nucl
           </th>
           <th scope="col" class="text-right px-4 py-2 font-medium">
             Unit

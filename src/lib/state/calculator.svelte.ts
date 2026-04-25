@@ -1,6 +1,6 @@
 import { createEnergyInputState, type EnergyRow } from "./energy-input.svelte";
 import { parseEnergyInput } from "$lib/utils/energy-parser";
-import { convertEnergyToMeVperU } from "$lib/utils/energy-conversions";
+import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
 import {
   stpMassToKevUm,
   csdaGcm2ToCm,
@@ -98,7 +98,7 @@ export function createCalculatorState(
 
     let normalizedMevNucl: number | null = null;
     try {
-      normalizedMevNucl = convertEnergyToMeVperU(
+      normalizedMevNucl = convertEnergyToMeVperNucl(
         parsed.value,
         parsed.unit ?? inputState.masterUnit,
         particleMassNumber,
@@ -216,7 +216,7 @@ export function createCalculatorState(
       .filter((p): p is { value: number; unit: string | null } => 'value' in p && p.value > 0)
       .map((p) => {
         try {
-          return convertEnergyToMeVperU(
+          return convertEnergyToMeVperNucl(
             p.value,
             p.unit ?? inputState.masterUnit,
             particle.massNumber,

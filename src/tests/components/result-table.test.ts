@@ -47,8 +47,8 @@ describe('ResultTable', () => {
     
     render(ResultTable, { props: { state: calcState, entitySelection } });
     
-    // Mock returns Math.log(99.3 + 1) ≈ 4.608, converted to keV/µm with density 1.0 = 0.4608
-    expect(screen.getAllByText(/0\.4608/)[0]).toBeInTheDocument();
+    // Mock returns Math.log(100 + 1) ≈ 4.615, converted to keV/µm with density 1.0 = 0.4615
+    expect(screen.getAllByText(/0\.4615/)[0]).toBeInTheDocument();
   });
 
   it('shows CSDA range with auto-scaled units', async () => {
@@ -60,8 +60,8 @@ describe('ResultTable', () => {
     
     render(ResultTable, { props: { state: freshCalcState, entitySelection } });
     
-    // Mock returns Math.pow(100, 1.5) = 1000, converted to cm = 1000 / 1.0 = 989.6 cm ≈ 9.9 m
-    const ranges = screen.getAllByText(/9\.896\s*m/);
+    // Mock returns Math.pow(100, 1.5) = 1000, converted to cm = 1000 / 1.0 = 1000 cm = 10 m
+    const ranges = screen.getAllByText(/10\s*m/);
     expect(ranges[0]).toBeInTheDocument();
   });
 
