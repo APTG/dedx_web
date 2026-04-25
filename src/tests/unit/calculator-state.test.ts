@@ -166,6 +166,77 @@ describe('CalculatorState', () => {
     calcState.updateRowText(0, '0');
     expect(calcState.rows[0].status).toBe('invalid');
   });
+
+  it('logs warning for subnormal WASM stopping power values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [1e-320],
+      csdaRanges: [0.1],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (stopping power)',
+      expect.objectContaining({
+        programId: expect.any(Number),
+        particleId: expect.any(Number),
+        materialId: expect.any(Number),
+        energyMevNucl: 100,
+        rawValue: 1e-320,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('logs warning for subnormal WASM CSDA range values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [1.0],
+      csdaRanges: [1e-320],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (CSDA range)',
+      expect.objectContaining({
+        programId: expect.any(Number),
+        particleId: expect.any(Number),
+        materialId: expect.any(Number),
+        energyMevNucl: 100,
+        rawValue: 1e-320,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
+
+  it('logs warning for NaN WASM values', async () => {
+    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+    
+    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+      energies: [100],
+      stoppingPowers: [NaN],
+      csdaRanges: [0.1],
+    }));
+
+    await calcState.triggerCalculation();
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      '[dedx] subnormal/invalid WASM output (stopping power)',
+      expect.objectContaining({
+        rawValue: NaN,
+      }),
+    );
+
+    warnSpy.mockRestore();
+  });
 });
 
 describe('formatStpValue', () => {

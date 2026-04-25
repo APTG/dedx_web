@@ -183,6 +183,27 @@ export function createCalculatorState(
         const stpMass = result.stoppingPowers[i];
         const csdaGcm2 = result.csdaRanges[i];
 
+        // Debug logging for subnormal/invalid WASM output values.
+        // This helps diagnose physics issues when WASM returns nonsensical values.
+        if (!Number.isFinite(stpMass) || (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)) {
+          console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
+            programId: resolvedProgramId,
+            particleId,
+            materialId,
+            energyMevNucl: energies[i],
+            rawValue: stpMass,
+          });
+        }
+        if (!Number.isFinite(csdaGcm2) || (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)) {
+          console.warn("[dedx] subnormal/invalid WASM output (CSDA range)", {
+            programId: resolvedProgramId,
+            particleId,
+            materialId,
+            energyMevNucl: energies[i],
+            rawValue: csdaGcm2,
+          });
+        }
+
         let stpDisplay: number;
         if (getStpDisplayUnit() === 'keV/µm') {
           const converted = stpMassToKevUm(stpMass, density);

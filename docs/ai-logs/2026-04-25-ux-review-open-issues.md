@@ -28,9 +28,12 @@ Address 9 open issues from the UX review (`docs/ux-reviews/2026-04-25-calculator
 **Status:** ✅ COMPLETED
 
 **Changes:**
-- Created unit test in `src/tests/unit/energy-input-format.test.ts`
-- Replaced local `formatNumber()` with `formatSigFigs` from `$lib/units/unit-conversions`
+- Created unit test in `src/tests/unit/energy-input-format.test.ts` (6 tests)
+- Imported `formatSigFigs` from `$lib/utils/unit-conversions`
+- Removed local `formatNumber()` helper (lines 151-158)
+- Updated `→ MeV/nucl` column to use `formatSigFigs(converted, 4)`
 - Ensures consistent number formatting across energy-input and result-table components
+- All 411 tests passing (+6 new)
 
 **Commit:** `fix: replace local formatNumber in energy-input with formatSigFigs (#13)`
 
