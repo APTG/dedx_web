@@ -2,7 +2,7 @@
 
 **Date:** 2026-04-25  
 **Stage:** 5.4 (Result Table refinement)  
-**Model:** Qwen/Qwen3.5-397B (via opencode)  
+**Model:** Qwen/Qwen3.5-122B-A10B (via opencode)  
 **Branch:** `fix/unit-label-mismatch`
 
 ---
@@ -108,4 +108,4 @@ For a proton (A=1):
 
 ## Attribution
 
-(opencode + Qwen3.5-397B)
+(Qwen/Qwen3.5-122B-A10B via opencode). Raw transcript: [qwen-session](2026-04-25-mevnucl-fix-qwen-session.md)
