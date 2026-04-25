@@ -2,21 +2,21 @@
   import { wasmReady } from "$lib/state/ui.svelte";
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+  import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
-  import EnergyInput from "$lib/components/energy-input.svelte";
-  import { createEnergyInputState, type EnergyInputState } from "$lib/state/energy-input.svelte";
+  import ResultTable from "$lib/components/result-table.svelte";
   import { getService } from "$lib/wasm/loader";
 
   let state = $state<EntitySelectionState | null>(null);
-  let energyState = $state<EnergyInputState | null>(null);
+  let calcState = $state<CalculatorState | null>(null);
 
   $effect(() => {
-    if (wasmReady.value && !state && !energyState) {
+    if (wasmReady.value && !state && !calcState) {
       getService().then((service) => {
         const matrix = buildCompatibilityMatrix(service);
         state = createEntitySelectionState(matrix);
-        energyState = createEnergyInputState();
+        calcState = createCalculatorState(state, service);
       });
     }
   });
@@ -32,23 +32,16 @@
     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
   </p>
 
-  {#if !wasmReady.value || !state}
+  {#if !wasmReady.value || !state || !calcState}
     <div class="rounded-lg border bg-card p-6 text-center">
       <p class="text-muted-foreground">Loading...</p>
     </div>
   {:else}
-    <div class="mx-auto max-w-2xl space-y-6">
+    <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion {state} />
       <EntitySelectionComboboxes {state} />
       <div class="rounded-lg border bg-card p-6">
-        {#if energyState}
-          <EnergyInput
-            state={energyState}
-            particleId={state.selectedParticle?.id}
-            particleMassNumber={state.selectedParticle?.massNumber}
-            atomicMass={state.selectedParticle?.atomicMass}
-          />
-        {/if}
+        <ResultTable {state} {calcState} entitySelection={state} />
       </div>
     </div>
   {/if}
