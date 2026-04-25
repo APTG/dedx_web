@@ -51,7 +51,7 @@
   },
   "dependencies": {
     "bits-ui": "^1.7.8",
-    "jspdf": "^3.0.1",
+    "jspdf": "^4.2.1",
     "jsroot": "^7.9.0",
     "zarrita": "^0.7.1"
   }
