@@ -342,6 +342,8 @@ columns are fixed-width by definition.
 
 ### 18. "Per-row mode active" message is cryptic
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** When the master unit selector is disabled, the label
 `"(per-row mode active)"` appears next to it. Most users — especially
 students — will not understand what "per-row mode" means. The disabled
@@ -351,6 +353,9 @@ re-enable it.
 **Fix:** Replace with actionable text: `"Mixed units in use — edit rows
 to change"` or provide a small `×` reset button that strips all inline
 unit suffixes and returns to master-unit mode.
+
+**Implemented:** Replaced cryptic string `"(per-row mode active)"` with
+`"Mixed units — edit rows to change"` at line 156 in `energy-input.svelte`.
 
 ---
 

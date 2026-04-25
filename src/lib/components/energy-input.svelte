@@ -153,7 +153,7 @@
       labelledBy="energy-unit-label"
     />
     {#if state.isPerRowMode}
-      <span class="text-xs text-muted-foreground">(per-row mode active)</span>
+      <span class="text-xs text-muted-foreground">Mixed units — edit rows to change</span>
     {/if}
   </div>
 
