@@ -328,6 +328,8 @@ is a no-op that adds confusion in the code.
 
 ### 17. Error and parsed-value appear in the same horizontal slot
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** Error messages (`text-xs text-destructive`) and parsed
 values (`→ value unit`) share the same horizontal row without fixed
 column widths. When both appear simultaneously the row layout shifts,
@@ -337,6 +339,10 @@ and on narrow viewports text wraps unpredictably. The layout is unstable.
 a fixed-width or full-width region for error messages (e.g. below the
 input, not inline). Or adopt the table layout the spec requires, where
 columns are fixed-width by definition.
+
+**Implemented:** Added `min-h-[1.25rem]` container to wrap both error
+and parsed-value feedback regions, preventing layout shift when either
+appears or disappears. No new tests needed — visual stability fix.
 
 ---
 
@@ -440,6 +446,8 @@ Auto-select → PSTAR. Ready to calculate." after each selection.
 
 ### 24. Mobile: three-column combobox grid stacks to single column
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** On mobile (< `lg` breakpoint), the three comboboxes stack
 vertically. Each combobox then spans full width — reasonable. But the
 "Reset all" link is `lg:col-span-3` on desktop and `w-full` on mobile,
@@ -450,6 +458,10 @@ parent container not having `overflow-hidden`).
 
 **Fix:** Verify on 375 px viewport that no dropdown overflows. If it
 does, add `max-w-[calc(100vw-2rem)]` to the dropdown container.
+
+**Implemented:** Added `max-w-[calc(100vw-2rem)]` and `overflow-x-hidden`
+to the dropdown content container in `entity-combobox.svelte` to prevent
+overflow on narrow viewports.
 
 ---
 
