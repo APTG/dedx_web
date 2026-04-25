@@ -290,4 +290,102 @@ describe("EntityCombobox component - UX fixes", () => {
     const dropdown = container.querySelector('[data-test-id="combobox-content"]');
     expect(dropdown).not.toBeInTheDocument();
   });
+
+  test("§5: Electron appears last in particle list with separator", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Check for separator before Electron (look for the CSS class)
+    const separator = container.querySelector(".my-1.border-t.border-muted");
+    expect(separator).toBeInTheDocument();
+
+    // Find all particle items
+    const items = container.querySelectorAll("[data-combobox-item]");
+    const itemLabels = Array.from(items).map((el) => el.textContent?.trim());
+
+    // Electron should be the last item
+    expect(itemLabels[itemLabels.length - 1]).toBe("Electron (e⁻)");
+  });
+
+  test("§5: Electron item has tooltip explaining unavailability", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find Electron item and verify it has the tooltip
+    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    expect(electronItem).toBeInTheDocument();
+  });
+
+  test("§5: Electron item is disabled", async () => {
+    const user = userEvent.setup();
+    const itemsWithElectron = [
+      ...mockItems,
+      {
+        entity: { id: 1001, name: "Electron" },
+        available: false,
+        label: "Electron (e⁻)",
+        searchText: "e- z=-1 a=0",
+        isElectron: true as const,
+      },
+    ];
+
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: itemsWithElectron,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    // Find Electron item and verify it's disabled
+    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    const comboItem = electronItem?.closest("[data-combobox-item]");
+    expect(comboItem).toHaveAttribute("data-disabled");
+  });
 });

@@ -14,6 +14,7 @@
     label: string;
     description?: string;
     searchText?: string;
+    isElectron?: boolean;
   }
 
   type ComboboxEntry<T> = EntityItem<T> | SectionHeader;
@@ -260,39 +261,43 @@
                       {group.label}
                     </Combobox.GroupHeading>
                   {/if}
-                   {#each group.items as item (item.entity.id)}
-                     <Combobox.Item
-                       value={String(item.entity.id)}
-                       disabled={!item.available}
-                       label={item.label}
-                       class={cn(
-                         "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                         !item.available && "pointer-events-none opacity-50",
-                       )}
-                     >
-                       {item.label}
-                       {#if item.description}
-                         <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
-                       {/if}
-                       {#if item.entity.id === selectedId}
-                         <svg
-                           xmlns="http://www.w3.org/2000/svg"
-                           width="16"
-                           height="16"
-                           viewBox="0 0 24 24"
-                           fill="none"
-                           stroke="currentColor"
-                           stroke-width="2"
-                           stroke-linecap="round"
-                           stroke-linejoin="round"
-                           class="ml-2 shrink-0 text-primary"
-                           aria-label="Selected"
-                         >
-                           <polyline points="20 6 9 17 4 12" />
-                         </svg>
-                       {/if}
-                     </Combobox.Item>
-                   {/each}
+                    {#each group.items as item, itemIndex (item.entity.id)}
+                      {#if item.isElectron && itemIndex > 0}
+                        <Combobox.Separator class="my-1 border-t border-muted" />
+                      {/if}
+                      <Combobox.Item
+                        value={String(item.entity.id)}
+                        disabled={!item.available}
+                        label={item.label}
+                        title={item.isElectron ? "Electrons not supported in libdedx v1.4.0" : undefined}
+                        class={cn(
+                          "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                          !item.available && "pointer-events-none opacity-50",
+                        )}
+                      >
+                        {item.label}
+                        {#if item.description}
+                          <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
+                        {/if}
+                        {#if item.entity.id === selectedId}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="ml-2 shrink-0 text-primary"
+                            aria-label="Selected"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        {/if}
+                      </Combobox.Item>
+                    {/each}
                 </Combobox.Group>
               {/each}
             {/if}
