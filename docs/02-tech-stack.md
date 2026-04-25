@@ -181,12 +181,12 @@ See [`03-architecture.md` §5](03-architecture.md#5-component-tree).
 
 ## 5. PDF Export
 
-### jsPDF 2
+### jsPDF 4
 
 | Item | Value |
 |------|-------|
 | Package | `jspdf` |
-| Pin | `^2.x` |
+| Pin | `^4.x` |
 
 Used for Calculator and Plot PDF export (see [`04-feature-specs/export.md`](04-feature-specs/export.md)).
 `jsPDF` produces PDF programmatically from JS — no server, no headless browser.
@@ -479,7 +479,7 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 | `shadcn-svelte` CLI | `@latest` (via `pnpm dlx`) | UI component scaffolding (source copied) |
 | `bits-ui` | `^1.x` | Headless UI primitives (runtime) |
 | `jsroot` | `^7.x` | Physics plotting |
-| `jspdf` | `^2.x` | PDF export |
+| `jspdf` | `^4.x` | PDF export |
 | `zarrita` | `^0.7.x` | Zarr v3 reader (external data) |
 | `vitest` | `^4.x` | Unit/integration tests |
 | `@testing-library/svelte` | `^5.x` | Component tests |
