@@ -226,7 +226,7 @@
     <Combobox.ContentStatic forceMount={true}>
       {#if open}
         <div
-          class="absolute z-50 mt-1 w-full min-w-[8rem] overflow-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+          class="absolute z-50 mt-1 w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
         >
           <Combobox.Input
             bind:ref={inputRef}
