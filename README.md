@@ -9,14 +9,11 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 | **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — entity selection and energy input | 25 April 2026 |
 | **v1.1.0 (stable)** | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release — fully functional but based on the old React stack | 1 April 2022 |
 
-The last stable release, v1.1.0 (April 2022), has several limitations:
+## Why v2?
 
-- The CSDA range calculation for ions with atomic number greater than 2 contained a bug (fixed in v1.1.0, but the underlying architecture has not changed).
-- The UI is built on React 17 class components with no TypeScript — effectively unmaintainable without a full rewrite.
-- There is no unit handling: energies are accepted and returned in a single unit without conversion.
-- Plots are basic and do not meet the needs of typical physics workflows.
+v1.1.0 (April 2022) has several limitations: no unit handling, React 17 class components with no TypeScript, and plots that do not meet the needs of typical physics workflows.
 
-v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development**: the entire v2 codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Currently at Stage 5 of 8 — core UI components. v2.0.0 will replace the stable site on first production release.
+v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development** — the codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Currently at Stage 5 of 8. v2.0.0 will replace the stable site on first production release.
 
 ## Related tools
 
@@ -32,7 +29,7 @@ v2 is a ground-up rewrite addressing all of the above. It is also an experiment 
 Prerequisites: **Docker** (for the WASM build), **Node.js 24+**, **pnpm**.
 
 ```sh
-cd wasm && ./build.sh
+(cd wasm && ./build.sh)
 pnpm install && pnpm dev
 ```
 
