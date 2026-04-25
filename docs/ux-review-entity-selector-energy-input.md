@@ -66,6 +66,8 @@ the SVG with `aria-label="Selected"` appears for the selected item.
 
 ### 3. Search box does not hint at searchable fields
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The search input placeholder is the generic `"Search..."`. The
 combobox supports searching by Z number (`z=6`), mass number (`a=12`),
 chemical symbol, and aliases. Physicists habitually type atomic numbers
@@ -74,6 +76,11 @@ rather than names, but nothing in the UI reveals this capability.
 **Fix:** Use a more descriptive placeholder: `"Name, symbol, Z…"` for
 Particle and `"Name or ID…"` for Material. The Program box can keep
 `"Search…"` since name is the natural search key there.
+
+**Implemented:** Added `getSearchPlaceholder()` function at lines 46-50 in
+`entity-combobox.svelte` that returns context-aware placeholders based on
+the `label` prop. Added three tests verifying correct placeholder for
+Particle/Material/Program comboboxes.
 
 ---
 
@@ -334,15 +341,16 @@ unit suffixes and returns to master-unit mode.
 
 ### 19. "Add row" button is over-styled as primary action
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The "Add row" button uses `bg-primary` (solid blue/branded
 color), the highest visual weight in the design system. Adding a row
 is a supporting action — the primary action is typing values. This
 hierarchy mismatch draws the eye away from the inputs.
 
-**Fix:** Style "Add row" as a secondary/ghost button (outline or
-text-only). The auto-append behaviour (typing in the last row appends
-a new one) already means most users will never need this button for
-normal flow.
+**Implemented:** Changed button styling from `bg-primary` to
+`hover:bg-accent hover:text-accent-foreground` (secondary/outline style).
+Added test verifying the button does not have `bg-primary` class.
 
 ---
 

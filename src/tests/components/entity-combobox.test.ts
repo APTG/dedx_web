@@ -168,4 +168,58 @@ describe("EntityCombobox component - UX fixes", () => {
     const checkmark = hydrogenItem?.querySelector('svg[aria-label="Selected"]');
     expect(checkmark).toBeInTheDocument();
   });
+
+  test("§3: Particle combobox has placeholder 'Name, symbol, Z…'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Particle",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Name, symbol, Z...");
+  });
+
+  test("§3: Material combobox has placeholder 'Name or ID...'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Material",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Name or ID...");
+  });
+
+  test("§3: Program combobox has placeholder 'Search...'", async () => {
+    const user = userEvent.setup();
+    const { container } = render(EntityCombobox, {
+      props: {
+        label: "Program",
+        items: mockItems,
+        selectedId: null,
+        onItemSelect: vi.fn(),
+      },
+    });
+
+    const trigger = container.querySelector("[data-combobox-trigger]") as HTMLElement;
+    await user.click(trigger);
+
+    const input = container.querySelector("input") as HTMLInputElement;
+    expect(input.placeholder).toBe("Search...");
+  });
 });
