@@ -166,7 +166,12 @@
     >
       <span class="truncate">
         {#if selectedItem}
-          {selectedItem.label}
+          <div class="flex flex-col text-left">
+            <span>{selectedItem.label}</span>
+            {#if selectedItem.description}
+              <span class="text-xs text-muted-foreground">{selectedItem.description}</span>
+            {/if}
+          </div>
         {:else}
           <span class="text-muted-foreground">{placeholder ?? label}</span>
         {/if}
