@@ -1,15 +1,11 @@
 name: Deploy
 
-# Phase 1 (Stage 4+): builds WASM + SvelteKit app and deploys to APTG/web_dev
-#   on every push to develop.
-#
-# Phase 2 (Stage 8): switch trigger to `master` + `tags: ['v*']`,
-#   add pnpm build step for APTG/web with production domain (no BASE_PATH),
-#   and add the production deploy job.
+# Deploys to APTG/web_dev on every push to master.
+# Production deploy to APTG/web is triggered by git tags: ['v*'] (Stage 8).
 
 on:
   push:
-    branches: [develop]
+    branches: [master]
 
 permissions:
   contents: read

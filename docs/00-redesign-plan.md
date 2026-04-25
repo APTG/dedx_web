@@ -457,14 +457,13 @@ As a <role>, I want to <action> so that <benefit>.
 - **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
 ### Stage 3.8: Early development deploy ✅ (21 April 2026)
-- **Rationale:** Before the SvelteKit app exists, establish the `develop →
-  APTG/web_dev` deployment pipeline so it is exercised and confirmed working
-  well before Stage 8 makes it load-bearing. Makes the dev site immediately
-  visible to collaborators with a placeholder page.
+- **Rationale:** Establish the `master → APTG/web_dev` deployment pipeline so
+  it is exercised and confirmed working well before the full app is complete.
+  Makes the dev site immediately visible to collaborators.
 - **Deliverables:**
-  - `.github/workflows/deploy.yml` — triggers on push to `develop`; builds a
-    static "Under Construction" `index.html` (with link to this plan) and
-    deploys to `APTG/web_dev` via `peaceiris/actions-gh-pages@v4`.
+  - `.github/workflows/deploy.yml` — triggers on push to `master`; builds the
+    WASM + SvelteKit app and deploys to `APTG/web_dev` via
+    `peaceiris/actions-gh-pages@v4`.
   - `docs/08-deployment.md §5.1` — documents early deploy phase, one-time
     repo setup, and Stage 8 migration path.
 - **One-time repo setup (human step):** Create a fine-grained PAT with

@@ -2,8 +2,12 @@
 
 An online interface of the libdEdx library for calculating charged-particle stopping powers and CSDA ranges.
 
-- **Stable:** [aptg.github.io/web](https://aptg.github.io/web/)
-- **Development:** [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) — updated on every push to `develop`
+## Live deployments
+
+| Environment | URL | Updated on |
+|-------------|-----|------------|
+| **Development** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | every push to `master` [![Deploy](https://github.com/APTG/dedx_web/actions/workflows/deploy.yml/badge.svg)](https://github.com/APTG/dedx_web/actions/workflows/deploy.yml) |
+| **Production** | [aptg.github.io/web](https://aptg.github.io/web/) | git tag `v*` |
 
 ## Local development
 
