@@ -503,29 +503,29 @@ overflow on narrow viewports.
 
 ## Priority Summary
 
-| # | Issue | Severity | Effort |
-|---|-------|----------|--------|
-| 13 | Unified table not implemented | Critical | Large |
-| 14 | Energy state not exposed to parent | Critical | Small |
-| 1 | No visible field labels on comboboxes | High | Small |
-| 2 | No selected-item indicator on re-open | High | Small |
-| 20 | Paste of multi-line text unhandled | High | Small |
-| 6 | "Clear" button placement awkward | Medium | Small |
-| 7 | "Reset all" easy to trigger accidentally | Medium | Small |
-| 16 | Placeholder set to `row.text` (bug) | Medium | Trivial |
-| 18 | "Per-row mode" label cryptic | Medium | Small |
-| 19 | "Add row" over-styled as primary action | Medium | Trivial |
-| 3 | Search box gives no hint of searchable fields | Medium | Trivial |
-| 5 | Electron always visible but permanently disabled | Medium | Small |
-| 15 | Redundant parsed-value display | Low | Small |
-| 11 | Available count ignores search filter (panel) | Low | Small |
-| 12 | Panel listbox: keyboard nav not implemented | Low | Medium |
-| 4 | No match count in combobox dropdown | Low | Small |
-| 8 | Dropdown scroll not signalled visually | Low | Trivial |
-| 10 | Label inconsistency panel vs. compact mode | Low | Trivial |
-| 17 | Error + parsed value share unstable layout slot | Low | Medium |
-| 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial |
-| 22 | Focus helper uses fragile `aria-label` query | Low | Small |
-| 9 | Program list jargon-heavy, no in-line help | Low | Medium |
-| 23 | No live region for selection feedback | Low | Medium |
-| 24 | Mobile dropdown overflow risk | Low | Small |
+| # | Issue | Severity | Effort | Status |
+|---|-------|----------|--------|--------|
+| 13 | Unified table not implemented | Critical | Large | ⏳ Open |
+| 1 | No visible field labels on comboboxes | High | Small | ⏳ Open |
+| 9 | Program list jargon-heavy, no in-line help | Low | Medium | ⏳ Open |
+| 10 | Label inconsistency panel vs. compact mode | Low | Trivial | ⏳ Open |
+| 23 | No live region for selection feedback | Low | Medium | ⏳ Open |
+| 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
+| 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
+| 20 | Paste of multi-line text unhandled | High | Small | ✅ Fixed |
+| 6 | "Clear" button placement awkward | Medium | Small | ✅ Fixed |
+| 7 | "Reset all" easy to trigger accidentally | Medium | Small | ✅ Fixed |
+| 16 | Placeholder set to `row.text` (bug) | Medium | Trivial | ✅ Fixed |
+| 18 | "Per-row mode" label cryptic | Medium | Small | ✅ Fixed |
+| 19 | "Add row" over-styled as primary action | Medium | Trivial | ✅ Fixed |
+| 3 | Search box gives no hint of searchable fields | Medium | Trivial | ✅ Fixed |
+| 5 | Electron always visible but permanently disabled | Medium | Small | ✅ Fixed |
+| 15 | Redundant parsed-value display | Low | Small | ✅ Fixed |
+| 11 | Available count ignores search filter (panel) | Low | Small | ✅ Fixed |
+| 12 | Panel listbox: keyboard nav not implemented | Low | Medium | ✅ Fixed |
+| 4 | No match count in combobox dropdown | Low | Small | ✅ Fixed |
+| 8 | Dropdown scroll not signalled visually | Low | Trivial | ✅ Fixed |
+| 17 | Error + parsed value share unstable layout slot | Low | Medium | ✅ Fixed |
+| 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial | ✅ Fixed |
+| 22 | Focus helper uses fragile `aria-label` query | Low | Small | ✅ Fixed |
+| 24 | Mobile dropdown overflow risk | Low | Small | ✅ Fixed |
