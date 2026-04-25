@@ -252,6 +252,30 @@ describe('CalculatorState', () => {
     expect(newRowId).toBe(rowId1);
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
   });
+
+  it('MeV/u input: "12MeV/u" for proton computes normalizedMevNucl ≈ 12.1', () => {
+    calcState.updateRowText(0, '12MeV/u');
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12.1, 0);
+  });
+
+  it('MeV/nucl input: "12 MeV/nucl" for proton computes normalizedMevNucl = 12', () => {
+    calcState.updateRowText(0, '12 MeV/nucl');
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12, 0);
+  });
+
+  it('MeV/u input: "100 MeV/u" for Carbon (A=12) computes normalizedMevNucl', async () => {
+    const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+    expect(carbon).toBeDefined();
+    entitySelection.selectParticle(carbon!.id);
+    
+    calcState.updateRowText(0, '100 MeV/u');
+    await calcState.triggerCalculation();
+    
+    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+  });
 });
 
 describe('formatStpValue', () => {
