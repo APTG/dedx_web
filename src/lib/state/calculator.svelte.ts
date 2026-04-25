@@ -46,7 +46,7 @@ export function createCalculatorState(
   let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<number, { stoppingPower: number; csdaRangeCm: number }>>(
+  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
     new Map()
   );
 
@@ -118,7 +118,7 @@ export function createCalculatorState(
       };
     }
 
-    const resultData = calculationResults.get(normalizedMevNucl);
+    const resultData = calculationResults.get(String(row.id));
     
     return {
       id: row.id,
@@ -152,7 +152,7 @@ export function createCalculatorState(
     );
   }
 
-  async function performCalculation(energies: number[]): Promise<void> {
+  async function performCalculation(energies: { rowId: string; energy: number }[]): Promise<void> {
     if (energies.length === 0) {
       calculationResults = new Map();
       return;
@@ -172,16 +172,18 @@ export function createCalculatorState(
         return;
       }
 
-      const result = service.calculate(resolvedProgramId, particleId, materialId, energies);
+      const energyValues = energies.map(e => e.energy);
+      const result = service.calculate(resolvedProgramId, particleId, materialId, energyValues);
       
       const material = entitySelection.selectedMaterial;
       const density = material?.density ?? 1;
 
-      const newResults = new Map<number, { stoppingPower: number; csdaRangeCm: number }>();
+      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
       
       for (let i = 0; i < energies.length; i++) {
         const stpMass = result.stoppingPowers[i];
         const csdaGcm2 = result.csdaRanges[i];
+        const { rowId, energy } = energies[i];
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
@@ -190,7 +192,7 @@ export function createCalculatorState(
             programId: resolvedProgramId,
             particleId,
             materialId,
-            energyMevNucl: energies[i],
+            energyMevNucl: energy,
             rawValue: stpMass,
           });
         }
@@ -199,7 +201,7 @@ export function createCalculatorState(
             programId: resolvedProgramId,
             particleId,
             materialId,
-            energyMevNucl: energies[i],
+            energyMevNucl: energy,
             rawValue: csdaGcm2,
           });
         }
@@ -214,7 +216,7 @@ export function createCalculatorState(
 
         const csdaCm = csdaGcm2ToCm(csdaGcm2, density);
 
-        newResults.set(energies[i], {
+        newResults.set(rowId, {
           stoppingPower: stpDisplay,
           csdaRangeCm: csdaCm,
         });
@@ -229,25 +231,32 @@ export function createCalculatorState(
     }
   }
 
-  function getValidEnergies(): number[] {
+  function getValidEnergies(): { rowId: string; energy: number }[] {
     const particle = entitySelection.selectedParticle;
     if (!particle) return [];
 
-    return inputState.getParsedEnergies()
-      .filter((p): p is { value: number; unit: string | null } => 'value' in p && p.value > 0)
-      .map((p) => {
+    const parsedEnergies = inputState.getParsedEnergies();
+    
+    return inputState.rows
+      .map((row, index) => {
+        const parsed = parsedEnergies[index];
+        if (!('value' in parsed) || parsed.value <= 0) {
+          return null;
+        }
+        
         try {
-          return convertEnergyToMeVperNucl(
-            p.value,
-            p.unit ?? inputState.masterUnit,
+          const energy = convertEnergyToMeVperNucl(
+            parsed.value,
+            parsed.unit ?? inputState.masterUnit,
             particle.massNumber,
             particle.atomicMass
           );
+          return { rowId: String(row.id), energy };
         } catch {
           return null;
         }
       })
-      .filter((e): e is number => e !== null);
+      .filter((e): e is { rowId: string; energy: number } => e !== null);
   }
 
   function computeValidationSummary(): { valid: number; invalid: number; outOfRange: number; total: number } {

@@ -39,11 +39,26 @@ Address 9 open issues from the UX review (`docs/ux-reviews/2026-04-25-calculator
 
 ---
 
+### Task 2 — Add debug logging for subnormal WASM values (Issue #7)
+
+**Status:** ✅ COMPLETED
+
+**Changes:**
+- Added `console.warn` logging in `performCalculation()` (`calculator.svelte.ts:186-205`)
+- Logs when stopping power or CSDA range values are subnormal (`< Number.MIN_VALUE * 1e10`) or non-finite (NaN/Infinity)
+- Includes context: programId, particleId, materialId, energyMevNucl, rawValue
+- Created 3 unit tests in `calculator-state.test.ts` for subnormal stopping power, CSDA range, and NaN values
+- All 414 tests passing (+3 new)
+
+**Commit:** `fix: warn on subnormal WASM output in performCalculation (#7)`
+
+---
+
 ## Next Steps
 
 Continue with remaining tasks in order:
 1. ✅ Task 1: formatNumber → formatSigFigs (Issue #13)
-2. ⏳ Task 2: Debug logging for subnormal WASM values (Issue #7)
+2. ✅ Task 2: Debug logging for subnormal WASM values (Issue #7)
 3. ⏳ Task 3: Refactor calculationResults to rowId keys (Issue #10)
 4. ⏳ Task 4: Extract columns into ColumnDef[] prop (Issue #11)
 5. ⏳ Task 5: Lift electron guard into EntitySelectionState (Issue #12)

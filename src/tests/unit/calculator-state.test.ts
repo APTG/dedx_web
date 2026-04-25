@@ -237,6 +237,21 @@ describe('CalculatorState', () => {
 
     warnSpy.mockRestore();
   });
+
+  it('stores results by row ID to avoid float key collisions', async () => {
+    const rowId1 = calcState.rows[0].id;
+    
+    await calcState.triggerCalculation();
+    
+    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    
+    calcState.updateRowText(0, '200');
+    await calcState.triggerCalculation();
+    
+    const newRowId = calcState.rows[0].id;
+    expect(newRowId).toBe(rowId1);
+    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+  });
 });
 
 describe('formatStpValue', () => {
