@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { render, fireEvent, screen } from "@testing-library/svelte";
+import { render, fireEvent } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntityCombobox from "$lib/components/entity-combobox.svelte";
 
