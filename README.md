@@ -28,13 +28,13 @@ v2 is a ground-up rewrite addressing all of the above. It is also an experiment 
 
 Prerequisites: **Docker** (for the WASM build), **Node.js 24+**, **pnpm**.
 
-Build the WASM module (requires Docker; pulls `emscripten/emsdk:5.0.5`, ~2 min on first run):
+Build the WASM module (requires Docker; pulls `emscripten/emsdk:5.0.5`, ~2 min on first run). The parentheses run this in a subshell so your terminal stays in the project root:
 
 ```sh
 (cd wasm && ./build.sh)
 ```
 
-Install dependencies and start the dev server:
+Back in the project root, install dependencies and start the dev server:
 
 ```sh
 pnpm install && pnpm dev
