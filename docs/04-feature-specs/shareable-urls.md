@@ -129,7 +129,7 @@ entity selection state:
 | `urlv` | Integer major version | `1` | **URL contract major version.** Current Stage 1 value is `1`. If missing, parser assumes `1` for backward compatibility. Canonical URL writing always includes it explicitly. |
 | `particle` | Numeric ID or omitted | `1`, `6`, `1001` | **Required.** Particle ID from `ParticleEntity`. Default if omitted: `1` (proton). Validation: must exist in compatibility matrix. Invalid → use `1`. |
 | `material` | Numeric ID or omitted | `276`, `104` | **Required.** Material ID from `MaterialEntity`. Default if omitted: `276` (water liquid). Validation: must be compatible with `particle` and `program`. Invalid → use `276`. |
-| `program` | `"auto"` or numeric ID, or omitted | `"auto"`, `2`, `9` | **Optional.** Specifies which program to use (or `"auto"` for auto-select). Default if omitted: `"auto"`. Validation: if numeric, must be compatible with `particle` and `material`. Incompatible → silently fall back to `"auto"`. |
+| `program` | `"auto"` or numeric ID, or omitted | `"auto"`, `2`, `9` | **Optional.** Specifies which program to use (or `"auto"` for auto-select). Default if omitted: `"auto"`. Validation: if numeric, must be compatible with `particle` and `material`. Incompatible → silently fall back to `"auto"`. **Note:** When `program=auto` and the resolved program is a fallback (not from the preferred chain in [`entity-selection.md`](entity-selection.md) §7), the same URL may resolve to different programs across libdedx versions. Future: append resolved program as `program=auto:MSTAR` to preserve fallback choice. |
 
 ### 3.2 Basic Mode (Calculator & Plot pages, no `mode=advanced`)
 
