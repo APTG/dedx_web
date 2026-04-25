@@ -98,7 +98,7 @@
     />
 
     <EntityPanel
-      label="② Target Material"
+      label="② Material"
       items={[]}
       grouped={true}
       groups={[

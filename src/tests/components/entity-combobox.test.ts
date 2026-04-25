@@ -65,7 +65,7 @@ describe("EntityCombobox component - UX fixes", () => {
   test("§7.1: label text matches the label prop", () => {
     const { container } = render(EntityCombobox, {
       props: {
-        label: "Target Material",
+        label: "Material",
         items: mockItems,
         selectedId: null,
         onItemSelect: vi.fn(),
@@ -73,7 +73,7 @@ describe("EntityCombobox component - UX fixes", () => {
     });
 
     const label = container.querySelector("label");
-    expect(label?.textContent?.trim()).toBe("Target Material");
+    expect(label?.textContent?.trim()).toBe("Material");
   });
 
   test("§7.3: Particle label has for='trigger-particle' and id='label-particle'", () => {
