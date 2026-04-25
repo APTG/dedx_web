@@ -2,7 +2,7 @@
   import { tick } from "svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
-  import { convertEnergyToMeVperU, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
+  import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { EnergyInputState } from "$lib/state/energy-input.svelte";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
@@ -162,8 +162,7 @@
   // results are correct for heavy ions (see docs/04-feature-specs/unit-handling.md §4).
   function convertToMeVNucl(value: number, unit: string): number | null {
     try {
-      const meVperU = convertEnergyToMeVperU(value, unit, particleMassNumber, atomicMass);
-      return convertEnergyFromMeVperU(meVperU, "MeV/nucl", particleMassNumber, atomicMass);
+      return convertEnergyToMeVperNucl(value, unit, particleMassNumber, atomicMass);
     } catch {
       return null;
     }

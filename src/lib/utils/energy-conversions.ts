@@ -97,3 +97,33 @@ export function convertEnergyFromMeVperU(
   const prefixMultiplier = getSiPrefixMultiplier(targetUnit);
   return baseValue / prefixMultiplier;
 }
+
+export function convertEnergyFromMeVperNucl(
+  valueMeVperNucl: number,
+  targetUnit: string,
+  massNumber: number,
+  atomicMass?: number
+): number {
+  const m_u = atomicMass ?? massNumber;
+
+  let baseValue: number;
+
+  const targetBase = getBaseUnit(targetUnit);
+
+  switch (targetBase) {
+    case "MeV/nucl":
+      baseValue = valueMeVperNucl;
+      break;
+    case "MeV":
+      baseValue = valueMeVperNucl * massNumber;
+      break;
+    case "MeV/u":
+      baseValue = (valueMeVperNucl * massNumber) / m_u;
+      break;
+    default:
+      throw new Error(`Unsupported energy unit: ${targetUnit}`);
+  }
+
+  const prefixMultiplier = getSiPrefixMultiplier(targetUnit);
+  return baseValue / prefixMultiplier;
+}

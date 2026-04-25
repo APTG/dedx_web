@@ -1,5 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { convertEnergyToMeVperNucl, convertEnergyFromMeVperU } from "$lib/utils/energy-conversions";
+import {
+  convertEnergyToMeVperNucl,
+  convertEnergyFromMeVperU,
+  convertEnergyFromMeVperNucl,
+} from "$lib/utils/energy-conversions";
 
 describe("convertEnergyToMeVperNucl", () => {
   test("MeV/nucl to MeV/nucl is unchanged", () => {
@@ -81,16 +85,38 @@ describe("convertEnergyFromMeVperU", () => {
   test("round-trip: MeV → MeV/nucl → MeV for carbon", () => {
     const original = 120;
     const massNumber = 12;
-    const toMeVperNucl = convertEnergyToMeVperNucl(original, "MeV", massNumber);
-    const back = convertEnergyFromMeVperU(toMeVperNucl, "MeV", massNumber);
+    const atomicMass = 12.0107;
+    const toMeVperNucl = convertEnergyToMeVperNucl(original, "MeV", massNumber, atomicMass);
+    const back = convertEnergyFromMeVperNucl(toMeVperNucl, "MeV", massNumber, atomicMass);
     expect(back).toBeCloseTo(original, 6);
   });
 
   test("round-trip: keV → MeV/nucl → keV for helium", () => {
     const original = 500;
     const massNumber = 4;
-    const toMeVperNucl = convertEnergyToMeVperNucl(original, "keV", massNumber);
-    const back = convertEnergyFromMeVperU(toMeVperNucl, "keV", massNumber);
+    const atomicMass = 4.002602;
+    const toMeVperNucl = convertEnergyToMeVperNucl(original, "keV", massNumber, atomicMass);
+    const back = convertEnergyFromMeVperNucl(toMeVperNucl, "keV", massNumber, atomicMass);
     expect(back).toBeCloseTo(original, 6);
+  });
+});
+
+describe("convertEnergyFromMeVperNucl", () => {
+  test("MeV/nucl to MeV/nucl is unchanged", () => {
+    expect(convertEnergyFromMeVperNucl(1, "MeV/nucl", 1)).toBe(1);
+  });
+
+  test("MeV/nucl to total MeV for proton (A=1)", () => {
+    expect(convertEnergyFromMeVperNucl(1, "MeV", 1)).toBe(1);
+  });
+
+  test("MeV/nucl to total MeV for carbon (A=12)", () => {
+    expect(convertEnergyFromMeVperNucl(1, "MeV", 12)).toBeCloseTo(12, 6);
+  });
+
+  test("MeV/nucl to MeV/u for carbon uses atomic mass", () => {
+    const m_u = 12.0107;
+    // value_MeV_per_u = value_MeV_per_nucl * A / m_u
+    expect(convertEnergyFromMeVperNucl(1, "MeV/u", 12, m_u)).toBeCloseTo(12 / m_u, 6);
   });
 });

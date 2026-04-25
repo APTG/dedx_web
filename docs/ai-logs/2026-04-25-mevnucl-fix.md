@@ -24,7 +24,7 @@ Where `m_u` is the atomic mass and `A` is the mass number.
 
 1. The function `convertEnergyToMeVperU()` in `src/lib/utils/energy-conversions.ts` was misnamed—it actually normalized to MeV/u, not MeV/nucl.
 
-2. The internal WASM API expects energies in **MeV/nucl**, so the conversion was correct for the API but the displayed value was labeled incorrectly.
+2. The internal WASM API expects energies in **MeV/nucl**, but the helper produced MeV/u and the calculator state fed those values to the WASM call as if they were MeV/nucl. As a result, both the calculation inputs and the displayed unit label were wrong for heavy ions (the input value was off by a factor of `m_u / A`, and the column header read "MeV/u" instead of "MeV/nucl").
 
 3. For protons (A=1, m_u≈1), MeV/u ≈ MeV/nucl, so the bug was only visible for heavy ions.
 
@@ -98,6 +98,29 @@ For a proton (A=1):
 
 ---
 
+## Follow-up (review feedback)
+
+Three review issues from the initial fix were addressed in a follow-up commit:
+
+1. **Stale import in `energy-input.svelte`** — the conversion column helper still
+   imported `convertEnergyToMeVperU` (removed by the rename). It now calls
+   `convertEnergyToMeVperNucl` directly with the active particle's `A` and
+   `m_u`, which removes the unnecessary MeV/u → MeV/nucl round-trip.
+
+2. **Round-trip tests** in `energy-conversions.test.ts` were composing
+   `convertEnergyFromMeVperU(convertEnergyToMeVperNucl(...))`, which is only
+   the inverse when `atomicMass === massNumber`. A new
+   `convertEnergyFromMeVperNucl()` helper was added (the proper inverse of
+   `convertEnergyToMeVperNucl`) and the round-trip tests now use it with
+   realistic `atomicMass` values for carbon and helium. Direct unit tests for
+   the new helper were added too.
+
+3. **Root-cause wording** above was sharpened: the bug was *both* a wrong
+   numeric input to the WASM call (off by `m_u / A` for heavy ions) and a
+   wrong UI label, not just a label mismatch.
+
+---
+
 ## Related Files
 
 - `docs/06-wasm-api-contract.md` - WASM API uses MeV/nucl
@@ -109,3 +132,5 @@ For a proton (A=1):
 ## Attribution
 
 (Qwen/Qwen3.5-122B-A10B via opencode). Raw transcript: [qwen-session](2026-04-25-mevnucl-fix-qwen-session.md)
+
+Follow-up review fixes: (Claude Sonnet 4.6 via Copilot coding agent).
