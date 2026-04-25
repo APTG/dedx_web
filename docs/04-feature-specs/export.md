@@ -665,7 +665,7 @@ dedx_plot_report.pdf
 |----------|--------|
 | Label | "Export PDF" |
 | Position | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
-| Mechanism | jsPDF + `jspdf-autotable` plugin (client-side, portrait orientation) |
+| Mechanism | jsPDF + `jspdf-autotable` plugin v5.0.5+ (client-side, portrait orientation; autotable v5.x required for jsPDF 4.x compatibility) |
 
 ### 6.2 Content — Basic Mode
 
