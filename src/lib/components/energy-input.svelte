@@ -1,18 +1,17 @@
 <script lang="ts">
-  import { createEnergyInputState } from "$lib/state/energy-input.svelte";
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { parseEnergyInput } from "$lib/utils/energy-parser";
   import type { EnergyUnit } from "$lib/wasm/types";
+  import type { EnergyInputState } from "$lib/state/energy-input.svelte";
   import EnergyUnitSelector from "./energy-unit-selector.svelte";
 
   interface Props {
+    state: EnergyInputState;
     particleMassNumber?: number;
     particleId?: number;
   }
 
-  let { particleMassNumber, particleId }: Props = $props();
-
-  const state = createEnergyInputState();
+  let { state, particleMassNumber, particleId }: Props = $props();
 
   
 
