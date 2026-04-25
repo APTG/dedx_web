@@ -193,6 +193,8 @@ in `entity-combobox.svelte`. Test: `§7.5: scrollable dropdown has gradient mask
 
 ### 9. Program selector is jargon-heavy with no explanation
 
+**Status:** ✅ FIXED (2026-04-25)
+
 **Issue:** The program list contains entries like "PSTAR — Proton stopping
 powers", "ICRU 73 — Stopping powers for ions", "MSTAR". A physicist will
 know these, but a student will not. "Auto-select" resolves this for the
@@ -205,9 +207,16 @@ tooltip with a 1-sentence description when no description is already
 visible in the trigger. For the combobox the description is shown in
 the item list — but it disappears once closed.
 
+**Implemented:** Modified combobox trigger to display both the program
+name (label) and its short description (e.g., "PSTAR" → "protons (NIST)")
+when a program is selected, making it easier for students to understand
+what each program does without reopening the dropdown.
+
 ---
 
 ### 10. Panel mode label inconsistency
+
+**Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** Full panel mode uses numbered labels — "① Particle",
 "② Target Material", "③ Program" — while compact mode uses plain
@@ -217,6 +226,10 @@ the item list — but it disappears once closed.
 **Fix:** Standardise. If the numbered approach aids discoverability in
 the panel, apply consistent naming across both modes. If not, drop the
 numbers and align on the same field names.
+
+**Implemented:** Changed panel mode label from "② Target Material" to
+"② Material" in `entity-selection-panels.svelte` to match compact mode
+naming conventions. Updated test to reflect new label text.
 
 ---
 
