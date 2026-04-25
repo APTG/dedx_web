@@ -420,7 +420,8 @@ describe("createEntitySelectionState", () => {
       state.selectMaterial(267); // air — triggers fallback
       const summary = state.selectionSummary;
       expect(summary).toContain("Auto-select →");
-      expect(summary).not.toBe("Program: Auto-select.");
+      expect(summary).toContain("MSTAR");
+      expect(summary).not.toContain("Program: Auto-select.");
     });
   });
 

@@ -17,7 +17,12 @@ async function waitForWasm(page: import("@playwright/test").Page) {
 
 /** Wait until the result table is visible (entity selection is complete). */
 async function waitForTable(page: import("@playwright/test").Page) {
-  await page.waitForSelector("table", { timeout: 5000 });
+  // Wait for a stable, identifying header cell so we don't race the
+  // initial WASM load.  Reuse WASM_TIMEOUT — initial page load and
+  // resolveAutoSelect can both be slow in CI.
+  await expect(page.locator("thead th").first()).toContainText(/Energy/i, {
+    timeout: WASM_TIMEOUT,
+  });
 }
 
 /** Type a value into the first energy row and wait for input. */
@@ -27,9 +32,10 @@ async function typeInRow(
   value: string,
 ) {
   const inputs = page.locator("input[data-row-index]");
+  // page.fill() already dispatches an `input` event, which is what the
+  // <input oninput> handler in result-table.svelte listens to — no need
+  // to dispatch a second event (that would trigger an extra WASM call).
   await inputs.nth(index).fill(value);
-  // Trigger the oninput handler by dispatching an input event.
-  await inputs.nth(index).dispatchEvent("input");
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

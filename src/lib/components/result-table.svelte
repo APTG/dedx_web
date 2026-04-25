@@ -5,6 +5,7 @@
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { CalculatorState, CalculatedRow } from "$lib/state/calculator.svelte";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
 
   interface Props {
     state: CalculatorState;
@@ -130,11 +131,11 @@
   {#if !entitySelection.isComplete}
     <div class="p-4 text-center text-muted-foreground">
       {#if entitySelection.selectedParticle?.id === 1001}
-        Electron (ESTAR) is not yet supported by libdedx v1.4.0.
+        {ELECTRON_UNSUPPORTED_MESSAGE}
       {:else if entitySelection.selectedParticle && entitySelection.selectedMaterial}
         No program supports <strong>{entitySelection.selectedParticle.name}</strong> in
         <strong>{entitySelection.selectedMaterial.name}</strong>.
-        Try selecting a specific program from the Program dropdown.
+        Change the particle or material selection to continue.
       {:else}
         Select a particle and material to calculate.
       {/if}

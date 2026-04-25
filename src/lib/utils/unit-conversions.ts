@@ -47,7 +47,12 @@ export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µ
 
 /** Format a number to n significant figures, no grouping separators.
  *  Falls back to toPrecision() (scientific notation) for extreme magnitudes
- *  where toFixed() would throw a RangeError (value < ~1e-10 or > 1e15). */
+ *  where the implied `decimalPlaces` argument to toFixed() would exceed the
+ *  100-digit cap that `Number.prototype.toFixed` enforces (it throws a
+ *  RangeError above that).  In practice this happens for subnormal values
+ *  with magnitude below ~-(sigFigs + 5) and for huge values with magnitude
+ *  ≥ 15 where toFixed() would produce useless trailing-zero noise.
+ *  As a defence-in-depth measure decimalPlaces is also clamped to [0, 100]. */
 export function formatSigFigs(value: number, sigFigs: number): string {
   if (!Number.isFinite(value) || Number.isNaN(value)) return "—";
   if (value === 0) return "0";

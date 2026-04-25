@@ -124,7 +124,7 @@ a particle AND a material were selected but no program supported the pair.
 **Fix:** Three context-aware messages replace the single generic one:
 - Electron: "Electron (ESTAR) is not yet supported by libdedx v1.4.0."
 - Particle+material selected but no program: "No program supports **X** in **Y**.
-  Try selecting a specific program from the Program dropdown."
+  Change the particle or material selection to continue."
 - Neither selected: "Select a particle and material to calculate." (original)
 
 ---
@@ -206,3 +206,101 @@ energy does not crash" — but does not verify STP values.
 | 7 | WASM returns subnormal values (root cause) | High | 🔍 Open |
 | 6 | MeV/u and MeV/nucl not displaying | Medium | 🔍 Open |
 | 8 | No heavy-ion E2E coverage | Low | 🔍 Open |
+| 9 | Spec divergence — auto-select fallback, scientific-notation rule, empty-state branches | Medium | 🔍 Open (spec) |
+| 10 | `Map<float, result>` results store blocks Inverse STP and risks float-key collisions | High | 🔍 Open (refactor) |
+| 11 | `result-table.svelte` columns hard-coded — blocks multi-program & inverse tabs | Medium | 🔍 Open (refactor) |
+| 12 | Electron unsupported guard hard-wired in result-table — blocks inverse-tab reuse | Medium | 🔍 Open (refactor) |
+| 13 | Divergent number formatting (`formatNumber` in `energy-input.svelte` vs `formatSigFigs`) | Low | 🔍 Open |
+| 14 | Auto-select fallback not recorded in shareable URLs — silent program drift across libdedx versions | Medium | 🔍 Open |
+
+---
+
+## Follow-up Audit (2026-04-25, post-fix research session)
+
+The five fixes above closed the immediate user-blocking bugs.  A follow-up
+read-only audit was then performed to (a) cross-check the implementation against
+the calculator + entity-selection feature specs, (b) assess how reusable the
+energy-input/result-table code is for the planned inverse calculator, and (c)
+flag any way the recent changes might block other planned features.  Findings
+are summarised below; full citations live in the session log
+[`docs/ai-logs/2026-04-25-ux-review-fixes.md`](../ai-logs/2026-04-25-ux-review-fixes.md).
+
+### A. Spec compliance — what diverges
+
+| # | Fix | Spec status | Action |
+|---|-----|-------------|--------|
+| 1 | Auto-select fallback | Silent / partly contradicts (`entity-selection.md:306-322` defers a generic fallback to *"future webdedx-level auto-selection layer"*) | Update `entity-selection.md` §"Auto-select program resolution" to document the new generic fallback step and how it interacts with the *"PSTAR doesn't support Carbon"* notification path |
+| 2 | `formatSigFigs` scientific fallback | **Contradicts** `calculator.md:381` *"Scientific notation is NOT used for output (stopping power, CSDA range)"*; thresholds also differ from `:378-379` | Add an "extreme magnitude fallback" subsection to calculator.md §"Number Formatting"; specify NaN/Infinity → `"—"` and which columns are exempt from the no-scientific rule |
+| 3 | `selectionSummary` resolves program name | Already mandated (`calculator.md:743`) — old code was a bug | No spec change needed |
+| 4 | Inline per-row error message | Already mandated (`calculator.md:306-312, :763, :838`) | No spec change needed |
+| 5 | Context-aware empty-state messages | Silent in `calculator.md:399-406, :467-471` | Split the single generic message in spec into the three branches now implemented |
+
+### B. Inverse-calculator reusability (`inverse-lookups.md`)
+
+**Directly reusable** (no change): `parseEnergyInput`, `formatSigFigs`,
+`autoScaleLengthCm`, `csdaGcm2ToCm`, `convertEnergyToMeVperNucl`,
+`EnergyUnitSelector`, the singleton `EntitySelectionState`.
+
+**Active blockers** (designed-in, not just missing — must refactor before the
+inverse calculator is implemented):
+
+1. **`calculationResults` is a `Map<number, …>` keyed on `normalizedMevNucl`**
+   (`calculator.svelte.ts:49-51, 121, 196`).  Inverse STP requires *each input
+   STP value to map to two energies* (`inverse-lookups.md:325-328`); a
+   float-keyed map of single results cannot model this.  Same map is the upstream
+   cause of the float-key collision risk already flagged as open issue #7.
+   → **Issue #10**, refactor to `Map<rowId, …>`.
+
+2. **Hard-coded electron guard** at `result-table.svelte:133-134`
+   (`ELECTRON_UNSUPPORTED_MESSAGE`).  `inverse-lookups.md:172-180` explicitly
+   states *"Both inverse tabs support the electron particle (ESTAR program)"*.
+   Reusing this component would falsely suppress electron rows.
+   → **Issue #12**, lift the guard into `EntitySelectionState` as a
+   `selectionStatus` derived field that each tab can interpret.
+
+3. **Single-program assumption** — `calculator.svelte.ts:165` reads
+   `entitySelection.resolvedProgramId` (one program).  Both inverse tabs need
+   per-program columns in advanced mode (`inverse-lookups.md:159-164`).
+
+**Refactor required (not blockers but tedious to duplicate):** `CalculatedRow`
+output fields, `parseRow()`, `getStpDisplayUnit()`, `setRowUnit()` regex,
+`getValidEnergies()` / `performCalculation()`, the `result-table.svelte` literal
+`<thead>`/`<tbody>` markup (5 columns vs Range's 3 vs Inverse STP's 4), and the
+`triggerCalculation` `$effect` that fires on every `isComplete` change.
+
+### C. Cross-cutting blockers for other planned features
+
+- **Multi-program** (`multi-program.md:88-91`): table must be column-data-driven
+  before grouped/reorderable columns can be implemented.  Issue #11.
+- **Multi-program reference**: the new "first available program" fallback can
+  silently make Bethe-Bloch (MSTAR) the *reference* program for esoteric
+  materials — multi-program.md `:166-168` assumes the curated chain.  Worth
+  documenting.
+- **Plot** (`plot.md`): `formatSigFigs`'s `"—"` sentinel will appear literally
+  in axis tooltips/legend if not filtered.  The new scientific-notation fallback
+  changes large CSDA label widths.
+- **Shareable URLs** (`shareable-urls.md`): the auto-select fallback is **not
+  recorded** in the URL.  The same `?program=auto&particle=H&material=Urea` URL
+  resolves to different programs across libdedx versions with no warning.
+  → **Issue #14**, either record the resolved-program id in the URL, or surface
+  a "fallback used" badge so users can diagnose.
+- **Custom compounds / advanced options**: unrealistic user-supplied densities
+  will now silently produce scientific-notation output instead of crashing —
+  better, but needs a "value out of physical range" UX warning at input time
+  rather than letting it propagate.
+- **Inline `role="alert"` floods** (`result-table.svelte:185-189`): on URL load
+  with many invalid `:unit` segments (`calculator.md:501-514`), every row emits
+  an aria-live announcement.  Use `aria-live="polite"` or a single combined
+  summary for batch loads.  → low-severity follow-up to issue #4.
+
+### D. Quick-win refactors recommended before the inverse calculator lands
+
+1. Extract `result-table.svelte` columns into a `columns: ColumnDef[]` prop —
+   small change now, large downstream payoff (issue #11 + multi-program).
+2. Replace the float-keyed `calculationResults` map with a `rowId`-keyed map
+   (issue #10) — closes both #7 and the Inverse STP blocker.
+3. Lift the electron unsupported policy from `result-table.svelte` into a
+   derived `selectionStatus` on `EntitySelectionState` (issue #12).
+4. Replace `formatNumber()` in `energy-input.svelte:151-158` with
+   `formatSigFigs` so the two table components agree on number output (issue
+   #13).
