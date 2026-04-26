@@ -31,30 +31,32 @@ export interface EmptyInput {
 
 export type ParseResult = ParsedEnergy | ParseError | EmptyInput;
 
-const VALID_UNITS: ReadonlySet<string> = new Set([
-  "ev",
-  "kev",
-  "mev",
-  "gev",
-  "mev/nucl",
-  "gev/nucl",
-  "kev/nucl",
-  "mev/u",
-  "gev/u",
-  "kev/u",
-]);
-
-const UNIT_BASES: ReadonlyMap<string, EnergySuffixUnit> = new Map([
-  ["ev", "eV"],
-  ["kev", "keV"],
-  ["mev", "MeV"],
-  ["gev", "GeV"],
-  ["mev/nucl", "MeV/nucl"],
-  ["gev/nucl", "GeV/nucl"],
-  ["kev/nucl", "keV/nucl"],
-  ["mev/u", "MeV/u"],
-  ["gev/u", "GeV/u"],
-  ["kev/u", "keV/u"],
+/**
+ * Canonical SI casing for every accepted unit suffix.
+ *
+ * Energy units are **case sensitive**: physicists distinguish
+ * `MeV` (mega-electron-volt, 10⁶ eV) from `meV` (milli-electron-volt,
+ * 10⁻³ eV) — a 10⁹ ratio. Treating them as equivalent is dangerous, so
+ * the parser only accepts the canonical SI casing below. Any other
+ * casing (e.g. `mev`, `MEV`, `eV/Nucl`, `EV`) is rejected as an
+ * unknown unit so the user sees an inline error instead of a silently
+ * mis-scaled result.
+ *
+ * `meV`, `μeV`, `neV` etc. are NOT in this list because libdedx does
+ * not operate at sub-eV beam energies; we surface them as "unknown
+ * unit" rather than silently accept and underflow the WASM bounds check.
+ */
+const CANONICAL_UNITS: ReadonlyMap<string, EnergySuffixUnit> = new Map([
+  ["eV", "eV"],
+  ["keV", "keV"],
+  ["MeV", "MeV"],
+  ["GeV", "GeV"],
+  ["MeV/nucl", "MeV/nucl"],
+  ["GeV/nucl", "GeV/nucl"],
+  ["keV/nucl", "keV/nucl"],
+  ["MeV/u", "MeV/u"],
+  ["GeV/u", "GeV/u"],
+  ["keV/u", "keV/u"],
 ]);
 
 export function parseEnergyInput(raw: string): ParseResult {
@@ -85,13 +87,12 @@ export function parseEnergyInput(raw: string): ParseResult {
     return { value, unit: null };
   }
 
-  const unitLower = unitStr.toLowerCase();
+  // Case-sensitive lookup — see CANONICAL_UNITS doc-comment for rationale.
+  const unit = CANONICAL_UNITS.get(unitStr);
 
-  if (!VALID_UNITS.has(unitLower)) {
+  if (!unit) {
     return { error: `unknown unit: ${unitStr}` };
   }
-
-  const unit = UNIT_BASES.get(unitLower)!;
 
   return { value, unit };
 }

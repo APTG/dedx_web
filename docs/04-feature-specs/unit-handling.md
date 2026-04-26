@@ -130,18 +130,29 @@ suffixes **per row** and assigns each row its own unit.
 
 ### Supported Suffixes
 
-| Suffix (case-insensitive) | Resolved base unit | SI prefix multiplier |
-|---------------------------|-------------------|---------------------|
-| `eV` | MeV | ×1e-6 |
-| `keV` | MeV | ×1e-3 |
-| `MeV` | MeV | ×1 |
-| `GeV` | MeV | ×1e3 |
-| `MeV/nucl` | MeV/nucl | ×1 |
-| `GeV/nucl` | MeV/nucl | ×1e3 |
-| `keV/nucl` | MeV/nucl | ×1e-3 |
-| `MeV/u` | MeV/u | ×1 |
-| `GeV/u` | MeV/u | ×1e3 |
-| `keV/u` | MeV/u | ×1e-3 |
+> **Case sensitivity:** unit suffixes are matched **case-sensitively**
+> against the canonical SI casing in the table below. `MeV` is accepted;
+> `mev`, `MEV`, `Mev` are rejected as `unknown unit`. The reason is that
+> `MeV` (mega-electron-volt, 10⁶ eV) and `meV` (milli-electron-volt,
+> 10⁻³ eV) differ by a factor of 10⁹ — silently collapsing them would
+> produce catastrophic mis-scaling. Likewise `EV` is rejected because
+> the canonical electron-volt symbol is `eV`. Adding a fuzzy auto-correct
+> that suggests `Did you mean MeV?` is a possible future improvement, but
+> the parser must never guess silently. (See
+> `src/lib/utils/energy-parser.ts:CANONICAL_UNITS`.)
+
+| Suffix (case-sensitive) | Resolved base unit | SI prefix multiplier |
+|-------------------------|--------------------|----------------------|
+| `eV`                    | MeV                | ×1e-6                |
+| `keV`                   | MeV                | ×1e-3                |
+| `MeV`                   | MeV                | ×1                   |
+| `GeV`                   | MeV                | ×1e3                 |
+| `MeV/nucl`              | MeV/nucl           | ×1                   |
+| `GeV/nucl`              | MeV/nucl           | ×1e3                 |
+| `keV/nucl`              | MeV/nucl           | ×1e-3                |
+| `MeV/u`                 | MeV/u              | ×1                   |
+| `GeV/u`                 | MeV/u              | ×1e3                 |
+| `keV/u`                 | MeV/u              | ×1e-3                |
 
 ### Per-Row Parsing Rules
 
@@ -512,6 +523,39 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] A line with only a unit suffix and no number (e.g., "MeV") is treated as invalid input.
 - [ ] A row with a per-nucleon unit (e.g., "10 MeV/nucl") for a proton or electron shows a validation error.
 - [ ] Unit detection does not fire on URL-populated input.
+
+### Inline Unit Detection — case sensitivity (added 2026-04-26)
+
+Rationale: physicists distinguish `MeV` (mega) from `meV` (milli) — a
+factor of 10⁹. The parser must never silently collapse them.
+
+- [ ] `100 MeV` parses as `(value=100, unit=MeV)`.
+- [ ] `100 mev` is rejected with `unknown unit: mev` (lowercase canonical
+      mismatch, **not** silently treated as MeV).
+- [ ] `100 meV` is rejected with `unknown unit: meV` (would be
+      milli-eV in SI; libdedx does not operate at sub-eV beam energies).
+- [ ] `100 MEV` is rejected with `unknown unit: MEV`.
+- [ ] `100 EV` is rejected with `unknown unit: EV` (canonical is `eV`).
+- [ ] `100 KeV` is rejected with `unknown unit: KeV` (canonical is `keV`).
+- [ ] `100 MeV/Nucl` is rejected with `unknown unit: MeV/Nucl` (canonical
+      is `MeV/nucl`).
+- [ ] An "Unknown unit" inline error explicitly names the rejected suffix
+      so the user can fix the casing themselves; no silent auto-correct.
+
+### Always-visible MeV/nucl column (added 2026-04-26)
+
+Rationale: libdedx's natural per-row energy unit is **MeV/nucl** (it is
+what the WASM `calculate()` API consumes). The user must always see the
+per-nucleon value alongside whatever unit they typed, so they can
+cross-check beam energy against tabulated cross-sections.
+
+- [ ] The result table renders a "→ MeV/nucl" column for every row,
+      regardless of master/per-row mode and regardless of particle.
+- [ ] For a proton (A=1), "→ MeV/nucl" equals the typed `MeV` value.
+- [ ] For Carbon (A=12), `120 MeV` displays `10` in the "→ MeV/nucl"
+      column.
+- [ ] If the row has a parse error or an out-of-range energy the
+      "→ MeV/nucl" cell shows the placeholder `—`, never a stale value.
 
 ### Output — Stopping Power
 - [ ] Default stopping power unit is keV/µm for non-gas materials.

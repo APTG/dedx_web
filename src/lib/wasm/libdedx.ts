@@ -165,8 +165,19 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       const heapF64 = this.module.HEAPF64;
+      // Zero-initialise the output buffers. `_malloc` returns uninitialized
+      // memory, and if the libdedx C function returns success without writing
+      // every output slot (e.g. transient internal state on rapid repeat calls
+      // observed in `docs/ux-reviews/2026-04-25-calculator-full-review.md` §7
+      // and the `3.820e-314` denormal report on 2026-04-26), the leftover
+      // heap bytes are interpreted as wildly wrong stopping-power / CSDA
+      // values. Pre-zeroing makes any unwritten slot show up as a clean 0
+      // instead of a denormal, which the downstream subnormal warning then
+      // flags explicitly.
       for (let i = 0; i < numEnergies; i++) {
         heapF64[energiesPtr / 8 + i] = energies[i] ?? 0;
+        heapF64[stpPtr / 8 + i] = 0;
+        heapF64[csdaPtr / 8 + i] = 0;
       }
 
       const errorCode = this.module._dedx_get_stp_table(

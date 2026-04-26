@@ -141,13 +141,68 @@ program = manageable). The data is static for the lifetime of the page.
 | ----------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Type                    | Always-visible scrollable list panel with text filter input                                                                                                                                                                                                                                           |
 | Data source             | Derived from `CompatibilityMatrix.allParticles`                                                                                                                                                                                                                                                       |
-| Display format          | `Name (Symbol)` — e.g., "Carbon (C)". The chemical symbol comes from `ParticleEntity.symbol`. For Electron: "Electron". The atomic number Z is **not shown** in the label; it remains a search keyword so users can type "z=6" or "6" to find Carbon.                                                  |
-| Search aliases          | Match on `name`, `symbol`, `aliases` (e.g., “proton” → Hydrogen, “alpha” → Helium), atomic number Z, mass number A                                                                                                                                                                                    |
-| Default                 | **Proton** (Hydrogen, Z=1) — highlighted on page load                                                                                                                                                                                                                                                 |
+| Display format          | See **§ Particle naming preferences** below — `proton`, `alpha particle`, `electron`, plus `Element (Symbol)` for every other ion. The atomic number Z is **not shown** in the label; it remains a search keyword so users can type "z=6" or "6" to find Carbon.                                       |
+| Search aliases          | Match on `name`, `symbol`, `aliases` (e.g., "proton" → ID 1, "alpha" → ID 2, "Sn" → ID 50), atomic number Z, mass number A                                                                                                                                                                            |
+| Default                 | **proton** (ID 1) — highlighted on page load                                                                                                                                                                                                                                                          |
 | Available / unavailable | All particles are always shown. Particles incompatible with the current material+program selection are **greyed out** (reduced opacity, non-interactive). Compatible particles are shown at full contrast.                                                                                            |
 | Selected state          | The selected particle has a **dark background highlight** (accent colour) with white text. Clicking a selected particle deselects it (toggle).                                                                                                                                                        |
-| Special                 | Particle ID 1001 = Electron — always present in the particle list but **always greyed out** (ESTAR is not implemented in libdedx v1.4.0; `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations). Show a tooltip on hover: _"Electron stopping powers not available in libdedx v1.4.0."_ |
+| Special                 | Particle ID 1001 = electron — always present in the particle list but **always greyed out** (ESTAR is not implemented in libdedx v1.4.0; `dedx.c:587` returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations). Show a tooltip on hover: _"Electron stopping powers not available in libdedx v1.4.0."_ |
 | Clearable               | Yes — clicking the selected item again toggles it off, or a clear (×) button in the panel header                                                                                                                                                                                                      |
+
+#### Particle naming preferences (added 2026-04-26)
+
+Physicists do not normally talk about a "Hydrogen beam" — they talk about
+a **proton beam**. Likewise the ⁴He²⁺ ion is universally called an
+**alpha particle**. The dropdown labels and (where shown) section
+headings should match this language so users find what they expect at
+first glance.
+
+Display labels:
+
+| Particle ID | Display label              | Notes                                                                |
+| ----------- | -------------------------- | -------------------------------------------------------------------- |
+| 1           | `proton`                   | lowercase, no chemical symbol — `(H)` is unfamiliar in this context  |
+| 2           | `alpha particle`           | lowercase, no chemical symbol — `(He)` is unfamiliar in this context |
+| 1001        | `electron`                 | lowercase, no chemical symbol                                        |
+| 3..118      | `Element (Symbol)`         | e.g. `Carbon (C)`, `Tin (Sn)` — Title-cased element name             |
+
+Group headings in the dropdown:
+
+```
+Beams
+  proton
+  alpha particle
+  electron        (greyed out — ESTAR unsupported)
+
+Ions
+  Carbon (C)
+  Magnesium (Mg)
+  Tin (Sn)
+  Antimony (Sb)
+  Iodine (I)
+  …
+```
+
+Notes:
+
+- The "Beams" / "Ions" group headings themselves are Title Case (HTML
+  `optgroup`-style headings). The items inside the "Beams" group are
+  lowercase because they are common nouns. The items inside the "Ions"
+  group keep the canonical Title Case for the chemical element name.
+- Search keywords stay broad: typing `hydrogen` still finds `proton`,
+  `helium` still finds `alpha particle`, `H` and `He` still match. See
+  `src/lib/config/particle-aliases.ts:PARTICLE_ALIASES`.
+- The chemical symbol is shown for ions because the symbol *is* how a
+  physicist disambiguates `Tin (Sn)` from `Antimony (Sb)`; dropping it
+  would force users to memorise element ordering. The symbol is **not**
+  shown for `proton`, `alpha particle`, `electron` because the parenthetical
+  `(H)`, `(He)`, `(e⁻)` adds visual noise without adding information for
+  a physicist who already knows what these particles are.
+- Every ion ID 3..118 must have a chemical symbol in
+  `PARTICLE_ALIASES`. A regression caught on 2026-04-26 (Tin / Antimony /
+  Iodine / Copernicium displayed without a symbol) was caused by the
+  table only covering Z=1..18; that has been fixed but the test suite
+  should assert non-empty `chemicalSymbol` for every entry.
 
 ### 2. Material Selector (second — middle)
 

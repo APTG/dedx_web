@@ -32,14 +32,35 @@ describe("parseEnergyInput", () => {
     expect(result).toEqual({ value: 1000, unit: "MeV" });
   });
 
-  test("case-insensitive unit parsing - lowercase mev", () => {
+  test("case-sensitive unit parsing - lowercase 'mev' is rejected (could be milli-eV)", () => {
     const result = parseEnergyInput("1.5mev");
+    expect(result).toEqual({ error: "unknown unit: mev" });
+  });
+
+  test("case-sensitive unit parsing - canonical 'MeV' is accepted", () => {
+    const result = parseEnergyInput("1.5MeV");
     expect(result).toEqual({ value: 1.5, unit: "MeV" });
   });
 
-  test("case-insensitive unit parsing - mixed case", () => {
-    const result = parseEnergyInput("1.5MeV");
-    expect(result).toEqual({ value: 1.5, unit: "MeV" });
+  test("case-sensitive unit parsing - 'meV' (milli-eV) is rejected, not silently treated as MeV", () => {
+    // 10⁹ ratio between meV (milli) and MeV (mega) — must NOT collapse.
+    const result = parseEnergyInput("1.5 meV");
+    expect(result).toEqual({ error: "unknown unit: meV" });
+  });
+
+  test("case-sensitive unit parsing - 'EV' (all caps) is rejected", () => {
+    const result = parseEnergyInput("1.5 EV");
+    expect(result).toEqual({ error: "unknown unit: EV" });
+  });
+
+  test("case-sensitive unit parsing - 'KeV' is rejected (canonical is keV)", () => {
+    const result = parseEnergyInput("100 KeV");
+    expect(result).toEqual({ error: "unknown unit: KeV" });
+  });
+
+  test("case-sensitive unit parsing - 'MeV/Nucl' is rejected (canonical is MeV/nucl)", () => {
+    const result = parseEnergyInput("1 MeV/Nucl");
+    expect(result).toEqual({ error: "unknown unit: MeV/Nucl" });
   });
 
   test("empty string returns empty marker", () => {
