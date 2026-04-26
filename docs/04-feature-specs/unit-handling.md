@@ -99,6 +99,15 @@ button in the Advanced section (see §7).
 
 ### Unit Preservation on Particle Change
 
+> **Open question (2026-04-26):** the rule below preserves the *typed
+> number* but not the *kinetic energy*. The project owner has requested that
+> kinetic energy be the conserved quantity (e.g. He @ 20 MeV/nucl ↔
+> proton @ 80 MeV ↔ He @ 20 MeV/nucl). Until that change is approved, the
+> implementation MUST follow the rule below; the gap is tracked in
+> [`docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`](../ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md)
+> and exercised by `tests/e2e/particle-unit-switching.spec.ts` (the
+> `test.fixme()` group documents the desired behaviour).
+
 When the user changes the selected particle and the previously selected unit is no longer
 available (e.g., switching from Carbon with "MeV/nucl" selected to
 Proton where only "MeV" is available):

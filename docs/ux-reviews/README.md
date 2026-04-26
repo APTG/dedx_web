@@ -14,5 +14,6 @@ documents issues found, their severity, and implementation status.
 
 | File | Date | Scope | Open Issues |
 |------|------|-------|-------------|
+| [2026-04-26-stage5-completion-and-ke-conservation.md](2026-04-26-stage5-completion-and-ke-conservation.md) | 26 Apr 2026 | Stage 5 completion audit, kinetic-energy conservation on particle/unit switching, add-row affordance, master unit selector, debounce, dead code | 6 open |
 | [2026-04-24-entity-selector-energy-input.md](2026-04-24-entity-selector-energy-input.md) | 24 Apr 2026 | Entity selector comboboxes, entity panels, EnergyInput component | 0 (all fixed) |
 | [2026-04-25-calculator-full-review.md](2026-04-25-calculator-full-review.md) | 25 Apr 2026 | Full calculator page — auto-select UX, result table, energy input, error handling, E2E coverage, spec compliance, inverse-calculator reusability | 9 open |
