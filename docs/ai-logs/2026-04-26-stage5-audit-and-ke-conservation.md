@@ -113,3 +113,108 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
 - **Files changed:**
   - `CHANGELOG-AI.md` (one new top row)
   - `docs/ai-logs/README.md` (this file's entry)
+
+---
+
+## Round 2 — same day, follow-up prompt
+
+### Prompt 2: "I am hesitating now on the kinetic energy conservation. give me some cons or pros whether I should conserve MeV value or MeV/nucl value … check whether code distinguishes meV (milli) from MeV (mega) … case sensitive also for EV/eV … add acceptance criteria … investigate 3.820e-314 stopping power bug … note that user prefers proton over Hydrogen, alpha particle nice, rest under Ions category … why no symbols for Tin? … add PR with another detailed report"
+
+**AI response:** Five threads, executed in one PR round:
+
+1. **KE conservation pros/cons** — extended the UX review with a §
+   "Conservation choice" section laying out three options (A: total MeV
+   conserved; B: per-nucleon conserved; C: status-quo "literal text").
+   Recommendation: **Option B** — the user's "should always be visible"
+   note about MeV/nucl makes B the only choice where the displayed and
+   the libdedx-natural quantity are the same. Electron special case
+   (no nucleons) handled by an explicit "convert to total MeV using
+   source particle's A" fallback in spec text.
+
+2. **Case sensitivity audit** — found a real bug:
+   `src/lib/utils/energy-parser.ts:88` previously called
+   `.toLowerCase()` so `meV` (10⁻³ eV) collapsed into `MeV` (10⁶ eV),
+   a 10⁹ ratio. Fixed by switching to a case-sensitive lookup table
+   containing only the canonical SI casing for each accepted suffix.
+   `mev`, `MEV`, `meV`, `EV`, `KeV`, `MeV/Nucl` all now rejected with
+   `unknown unit: <as typed>`. Six new rejection tests added; two old
+   case-insensitive tests inverted. 423/423 unit tests passing.
+
+3. **Acceptance criteria added** — `unit-handling.md` gained two new
+   acceptance blocks: "Inline Unit Detection — case sensitivity" (7
+   criteria) and "Always-visible MeV/nucl column" (4 criteria).
+
+4. **`3.820e-314` denormal investigation** — root cause is
+   `src/lib/wasm/libdedx.ts:163-164` calling `_malloc` for stp/csda
+   output buffers without zero-init. If the libdedx C function returns
+   success but doesn't write every output slot (transient internal
+   state, rapid second call, etc.), leftover heap bytes leak through as
+   denormalised IEEE-754 doubles. Defensive fix: the buffers are now
+   zero-initialised before the C call, so any unwritten slot reads back
+   as a clean `0`, which the existing subnormal-output warning then
+   flags explicitly. The deeper C-side investigation remains a follow-up
+   issue against `libdedx/`.
+
+5. **Particle naming + missing symbols** —
+   - Spec change: added "Particle naming preferences" section to
+     `entity-selection.md` documenting `proton` / `alpha particle` /
+     `electron` (lowercase, no symbol) for IDs 1/2/1001 and `Element
+     (Symbol)` for ions Z=3..118; "Beams" / "Ions" group headings.
+   - Code fix for missing symbols: `PARTICLE_ALIASES` in
+     `src/lib/config/particle-aliases.ts` was only populated up to Z=18,
+     which is why the user's screenshot showed Tin (Z=50), Antimony,
+     Iodine, Copernicium without their `(Sn)` etc. parentheticals. The
+     table is now exhaustive Z=1..118 (every IUPAC element). Aliases for
+     IDs 1 and 2 also extended (`alpha particle`, locale variants).
+   - The UI rename (`Hydrogen (H)` → `proton` etc.) was deliberately
+     deferred — it touches existing component tests, and the user only
+     asked for the preference to be **recorded** in the spec.
+
+6. **E2E run** — local Playwright timed out after ~17 min on the full
+   suite (Chromium needed reinstall after a fresh node_modules); CI
+   will produce the authoritative numbers. The new
+   `particle-unit-switching.spec.ts` was already confirmed green in
+   Round 1.
+
+## Tasks (round 2)
+
+### Case-sensitive parser
+- **Status:** completed
+- **Files changed:**
+  - `src/lib/utils/energy-parser.ts` (CANONICAL_UNITS map, case-sensitive lookup)
+  - `src/tests/unit/energy-parser.test.ts` (-2 / +6 tests)
+
+### Defensive zero-init for WASM output
+- **Status:** completed
+- **Decision:** zero-initialise both output buffers before the C call.
+  Cheaper than alternatives (alloc-and-clear via Module.HEAPU8.fill,
+  or switching to `_calloc`) and keeps the diff to two lines.
+- **Files changed:**
+  - `src/lib/wasm/libdedx.ts` (3 added lines + comment)
+
+### Particle aliases — exhaustive Z=1..118
+- **Status:** completed
+- **Files changed:**
+  - `src/lib/config/particle-aliases.ts` (table extended; aliases enriched for IDs 1, 2)
+
+### Spec updates
+- **Status:** completed
+- **Files changed:**
+  - `docs/04-feature-specs/unit-handling.md` (case sensitivity + always-visible MeV/nucl acceptance blocks; suffix table reformatted)
+  - `docs/04-feature-specs/entity-selection.md` (Particle naming preferences section)
+  - `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md` (Conservation choice §; new Issues 7-10; priority table extended)
+
+### Changelog + log update
+- **Status:** completed
+- **Files changed:**
+  - `CHANGELOG-AI.md` (round-2 row prepended)
+  - `docs/ai-logs/2026-04-26-stage5-audit-and-ke-conservation.md` (this round-2 section)
+
+### Issues left open
+- KE-conservation **implementation** (Option B) — needs spec sign-off.
+- UI rename `Hydrogen (H)` → `proton` and "Beams"/"Ions" grouping in
+  `entity-selection-comboboxes.svelte`.
+- Wire `EnergyUnitSelector` into the calculator route.
+- Restore explicit "Add row" button.
+- Wire the `debounce()` util into `triggerCalculation`.
+- Delete dead code (`energy-input.svelte`, `units/energy.ts`, ~480 LOC).
