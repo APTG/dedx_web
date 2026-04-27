@@ -36,14 +36,14 @@ jobs:
         run: node wasm/verify.mjs
 
       - name: Upload WASM binaries
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: wasm-binaries
           path: static/wasm/libdedx.*
           retention-days: 1
 
       - name: Upload verification stats
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: wasm-verification-stats
@@ -76,7 +76,7 @@ jobs:
         run: pnpm exec vitest run --coverage --reporter=verbose
 
       - name: Upload coverage
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
@@ -120,7 +120,7 @@ jobs:
         run: pnpm test:e2e
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: always()
         with:
           name: playwright-report
@@ -128,7 +128,7 @@ jobs:
           retention-days: 7
 
       - name: Upload test results
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         if: failure()
         with:
           name: test-results
