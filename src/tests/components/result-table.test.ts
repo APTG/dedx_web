@@ -41,6 +41,7 @@ describe('ResultTable', () => {
   it('displays calculated results with proper formatting', async () => {
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
     
     // Force a tick for reactivity
     await Promise.resolve();
@@ -55,6 +56,7 @@ describe('ResultTable', () => {
     const freshCalcState = createCalculatorState(entitySelection, service);
     freshCalcState.updateRowText(0, '100');
     await freshCalcState.triggerCalculation();
+    freshCalcState.flushCalculation();
     
     await Promise.resolve();
     
@@ -163,6 +165,7 @@ describe('ResultTable', () => {
 
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
     await Promise.resolve();
 
     render(ResultTable, { props: { state: calcState, entitySelection, columns: customColumns } });

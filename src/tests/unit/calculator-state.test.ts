@@ -30,6 +30,8 @@ describe('CalculatorState', () => {
   it('calculates results after triggering', async () => {
     expect(entitySelection.isComplete).toBe(true);
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
+    calcState.flushCalculation();
 
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
     expect(calcState.rows[0].csdaRangeCm).not.toBeNull();
@@ -47,6 +49,8 @@ describe('CalculatorState', () => {
     calcState.updateRowText(1, '200');
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
+    calcState.flushCalculation();
 
     expect(calcState.rows[0].stoppingPower).toBeNull();
     expect(calcState.rows[1].stoppingPower).not.toBeNull();
@@ -69,6 +73,8 @@ describe('CalculatorState', () => {
   it('clears results when entity selection is incomplete', async () => {
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
+    calcState.flushCalculation();
 
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
 
@@ -90,6 +96,8 @@ describe('CalculatorState', () => {
     // Last row is the always-empty-row
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
+    calcState.flushCalculation();
 
     // Should now have 4 rows (3 with values + 1 empty always-empty-row)
     expect(calcState.rows).toHaveLength(4);
@@ -135,6 +143,7 @@ describe('CalculatorState', () => {
     });
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     vi.restoreAllMocks();
   });
@@ -147,6 +156,7 @@ describe('CalculatorState', () => {
 
     calcState.updateRowText(0, '120');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
   });
@@ -154,6 +164,7 @@ describe('CalculatorState', () => {
   it('clears results when explicitly requested', async () => {
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
 
@@ -177,6 +188,7 @@ describe('CalculatorState', () => {
     }));
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
       '[dedx] subnormal/invalid WASM output (stopping power)',
@@ -202,6 +214,7 @@ describe('CalculatorState', () => {
     }));
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
       '[dedx] subnormal/invalid WASM output (CSDA range)',
@@ -227,6 +240,7 @@ describe('CalculatorState', () => {
     }));
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
       '[dedx] subnormal/invalid WASM output (stopping power)',
@@ -259,6 +273,7 @@ describe('CalculatorState', () => {
     const rowId1 = calcState.rows[0].id;
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     const firstStp = calcState.rows[0].stoppingPower;
     expect(firstStp).not.toBeNull();
@@ -271,6 +286,7 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].normalizedMevNucl).toBeCloseTo(100.0000001);
 
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
 
     // Row ID is stable across recalculations and the new STP is attached to it.
     expect(calcState.rows[0].id).toBe(rowId1);
@@ -300,6 +316,7 @@ describe('CalculatorState', () => {
     
     calcState.updateRowText(0, '100 MeV/u');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
     
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
     expect(calcState.rows[0].stoppingPower).not.toBeNull();

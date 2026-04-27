@@ -11,6 +11,7 @@ import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
+import { debounce } from "$lib/utils/debounce";
 
 export interface CalculatedRow {
   id: number;
@@ -39,6 +40,7 @@ export interface CalculatorState {
   handleBlur(index: number): void;
   addRow(): void;
   triggerCalculation(): Promise<void>;
+  flushCalculation(): void;
   clearResults(): void;
 }
 
@@ -52,6 +54,11 @@ export function createCalculatorState(
   let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
     new Map()
   );
+
+  const debouncedCalculate = debounce(async () => {
+    const energies = getValidEnergies();
+    await performCalculation(energies);
+  }, 300);
 
   function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
     const rows = inputState.rows;
@@ -435,8 +442,10 @@ export function createCalculatorState(
       inputState.addRow();
     },
     async triggerCalculation(): Promise<void> {
-      const energies = getValidEnergies();
-      await performCalculation(energies);
+      debouncedCalculate();
+    },
+    flushCalculation() {
+      debouncedCalculate.flush();
     },
     clearResults() {
       calculationResults = new Map();
