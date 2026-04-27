@@ -296,5 +296,15 @@
         )
       </div>
     {/if}
+
+    <div class="mt-2 flex justify-start">
+      <button
+        type="button"
+        class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+        onclick={() => state.addRow()}
+      >
+        + Add row
+      </button>
+    </div>
   {/if}
 </div>

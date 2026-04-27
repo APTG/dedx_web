@@ -37,6 +37,7 @@ export interface CalculatorState {
   switchParticle(particleId: number | null): void;
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
+  addRow(): void;
   triggerCalculation(): Promise<void>;
   clearResults(): void;
 }
@@ -429,6 +430,9 @@ export function createCalculatorState(
     },
     handleBlur(index: number) {
       inputState.handleBlur(index);
+    },
+    addRow() {
+      inputState.addRow();
     },
     async triggerCalculation(): Promise<void> {
       const energies = getValidEnergies();
