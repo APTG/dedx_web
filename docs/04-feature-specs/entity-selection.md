@@ -1,6 +1,6 @@
 # Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** Final v6 (15 April 2026 — Stage 2.6 amendments)
+> **Status:** Final v7 (27 April 2026 — particle group heading resolved)
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -27,6 +27,14 @@
 >
 > **v5:** Marked as final after cross-review with calculator.md,
 > 06-wasm-api-contract.md, and 01-project-vision.md. No changes needed.
+>
+> **v7** (27 April 2026): Resolved particle group heading — "Beams"
+> replaced by **"Common particles"** (project owner decision). The second
+> group remains "Ions". Code change needed in
+> `src/lib/components/entity-selection-comboboxes.svelte` (add section
+> headers to `particleItems`) and `src/lib/config/particle-names.ts`
+> (add overrides for proton → "proton", alpha → "alpha particle",
+> electron → "electron" lowercase).
 >
 > **Terminology:** The libdedx C library uses the term "ion" everywhere —
 > including for the electron (ID 1001) — even though calling an electron an
@@ -169,7 +177,7 @@ Display labels:
 Group headings in the dropdown:
 
 ```
-Beams
+Common particles
   proton
   alpha particle
   electron        (greyed out — ESTAR unsupported)
@@ -185,10 +193,10 @@ Ions
 
 Notes:
 
-- The "Beams" / "Ions" group headings themselves are Title Case (HTML
-  `optgroup`-style headings). The items inside the "Beams" group are
-  lowercase because they are common nouns. The items inside the "Ions"
-  group keep the canonical Title Case for the chemical element name.
+- The **"Common particles"** / **"Ions"** group headings are Title Case
+  (HTML `optgroup`-style headings). The items inside "Common particles"
+  are lowercase because they are common nouns. The items inside "Ions"
+  keep the canonical Title Case for the chemical element name.
 - Search keywords stay broad: typing `hydrogen` still finds `proton`,
   `helium` still finds `alpha particle`, `H` and `He` still match. See
   `src/lib/config/particle-aliases.ts:PARTICLE_ALIASES`.

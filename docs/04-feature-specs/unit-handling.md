@@ -1,6 +1,6 @@
 # Feature: Unit Handling
 
-> **Status:** Final v3 (7 April 2026)
+> **Status:** Final v4 (27 April 2026)
 >
 > This spec covers energy unit selection, SI prefix handling, inline unit
 > detection from typed text, and output unit conversion for stopping power
@@ -24,6 +24,16 @@
 > stopping-power conversion paths, resolved per-row→master transition
 > wording, and added explicit numeric acceptance examples for all
 > conversion paths.
+>
+> **v4** (27 April 2026): Three changes:
+> (1) Closed open question — KE conservation: **MeV/nucl is now the
+> conserved quantity** on particle change (was: preserve typed number);
+> §2 "Unit Preservation on Particle Change" rewritten accordingly.
+> (2) Added **TeV**, **TeV/nucl**, **TeV/u** to §3 supported suffixes
+> table (multiplier ×1e6 relative to MeV).
+> (3) Added **§3a Typo Suggestions**: parser emits "did you mean X?"
+> hints for common casing errors (`meV`→`MeV`, `MeV/Nucl`→`MeV/nucl`,
+> etc.) using a case-fold lookup; never silently auto-corrects.
 
 ---
 
@@ -99,27 +109,42 @@ button in the Advanced section (see §7).
 
 ### Unit Preservation on Particle Change
 
-> **Open question (2026-04-26):** the rule below preserves the *typed
-> number* but not the *kinetic energy*. The project owner has requested that
-> kinetic energy be the conserved quantity (e.g. He @ 20 MeV/nucl ↔
-> proton @ 80 MeV ↔ He @ 20 MeV/nucl). Until that change is approved, the
-> implementation MUST follow the rule below; the gap is tracked in
+> **Decision (2026-04-27):** the **MeV/nucl value is conserved** when the
+> particle changes. Rationale: the per-nucleon kinetic energy is the
+> quantity that stays constant in accelerator physics when you "scale" a
+> beam to a different ion species. The previous behaviour (preserve typed
+> number, reinterpret in new unit) was confusing because switching Carbon
+> 120 MeV → Proton would give Proton 120 MeV instead of the physically
+> equivalent Proton 10 MeV. See
 > [`docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`](../ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md)
-> and exercised by `tests/e2e/particle-unit-switching.spec.ts` (the
-> `test.fixme()` group documents the desired behaviour).
+> §"Option B" for the full pros/cons matrix. The `test.fixme()` group in
+> `tests/e2e/particle-unit-switching.spec.ts` documents the desired
+> behaviour and should be un-skipped once implemented.
 
-When the user changes the selected particle and the previously selected unit is no longer
-available (e.g., switching from Carbon with "MeV/nucl" selected to
-Proton where only "MeV" is available):
+When the user changes the selected particle, each row's kinetic energy is
+re-expressed in the new particle's best available unit such that
+**MeV/nucl is invariant**:
 
-1. The master unit selector resets to **MeV** (always available).
-2. The input values are **not modified** — numeric values stay the same.
-3. Values are reinterpreted as MeV, triggering recalculation.
-4. If per-row mode is active and any row has a per-nucleon unit that is
-   no longer available (e.g., MeV/nucl for a proton), that row's unit
-   resets to MeV and a validation message is shown.
-5. No explicit notification is needed for the master selector — the visual
-   update is sufficient feedback.
+1. Compute the per-nucleon energy for each row:
+   - From MeV: `E_nucl = E_total / A_old`
+   - From MeV/nucl: `E_nucl = E_nucl` (unchanged)
+   - From MeV/u: `E_nucl = E_u × m_u_old / A_old`
+2. Express in the new particle's unit:
+   - Unit stays MeV/nucl (heavy ion → heavy ion, A > 1 → A > 1):
+     `new_value = E_nucl` (same number, same unit)
+   - Unit must change to MeV (new particle is proton, A = 1, or electron):
+     `new_value = E_nucl × 1 = E_nucl` (numerically equal because A = 1)
+   - Unit stays MeV: `new_value = E_nucl × A_new`
+   - Unit stays MeV/u: `new_value = E_nucl × A_new / m_u_new`
+3. If the previously selected unit is no longer available for the new
+   particle (e.g., MeV/nucl → Proton where only MeV is shown), the
+   master unit selector resets to **MeV** and `new_value = E_nucl`.
+4. Per-row mode: each row converts independently using its own detected
+   or inherited unit. Rows whose per-row unit is unavailable for the new
+   particle reset to MeV automatically (no validation message needed —
+   the value is physically correct).
+5. No explicit notification is needed for the master selector — the
+   updated value is the visible feedback.
 
 ---
 
@@ -136,9 +161,9 @@ suffixes **per row** and assigns each row its own unit.
 > `MeV` (mega-electron-volt, 10⁶ eV) and `meV` (milli-electron-volt,
 > 10⁻³ eV) differ by a factor of 10⁹ — silently collapsing them would
 > produce catastrophic mis-scaling. Likewise `EV` is rejected because
-> the canonical electron-volt symbol is `eV`. Adding a fuzzy auto-correct
-> that suggests `Did you mean MeV?` is a possible future improvement, but
-> the parser must never guess silently. (See
+> the canonical electron-volt symbol is `eV`. For a small set of common
+> easy-to-identify typos the parser emits a "Did you mean X?" hint
+> alongside the error — see **§3a Typo Suggestions** below. (See
 > `src/lib/utils/energy-parser.ts:CANONICAL_UNITS`.)
 
 | Suffix (case-sensitive) | Resolved base unit | SI prefix multiplier |
@@ -147,11 +172,14 @@ suffixes **per row** and assigns each row its own unit.
 | `keV`                   | MeV                | ×1e-3                |
 | `MeV`                   | MeV                | ×1                   |
 | `GeV`                   | MeV                | ×1e3                 |
+| `TeV`                   | MeV                | ×1e6                 |
 | `MeV/nucl`              | MeV/nucl           | ×1                   |
 | `GeV/nucl`              | MeV/nucl           | ×1e3                 |
+| `TeV/nucl`              | MeV/nucl           | ×1e6                 |
 | `keV/nucl`              | MeV/nucl           | ×1e-3                |
 | `MeV/u`                 | MeV/u              | ×1                   |
 | `GeV/u`                 | MeV/u              | ×1e3                 |
+| `TeV/u`                 | MeV/u              | ×1e6                 |
 | `keV/u`                 | MeV/u              | ×1e-3                |
 
 ### Per-Row Parsing Rules
@@ -227,6 +255,49 @@ suffixes **per row** and assigns each row its own unit.
 - Unit detection does not fire if the input is populated from URL
   parameters (URL values use explicit unit encoding — see calculator.md
   URL State Encoding).
+
+### §3a Typo Suggestions
+
+When the parser rejects a suffix as `unknown unit`, it checks a small
+table of **near-miss patterns** and appends a suggestion to the error
+message if a match is found. The suggestion is **always explicit** — the
+parser never silently corrects; it surfaces the error AND the hint so the
+user makes the final decision.
+
+Error message format: `unknown unit: <X> — did you mean <Y>?`
+
+| Typed suffix (rejected) | Suggested canonical | Reason |
+|-------------------------|---------------------|--------|
+| `meV` | `MeV` | Very common shift-key slip; `meV` (milli-eV) is not a valid libdedx energy range. |
+| `mev` | `MeV` | Fully-lowercase variant of the above. |
+| `MEV` | `MeV` | Fully-uppercase variant. |
+| `MeV/Nucl` | `MeV/nucl` | Capital N is a common capitalisation error; `nucl` must be lowercase. |
+| `MeV/NUCL` | `MeV/nucl` | All-caps nucleon part. |
+| `Mev/nucl` | `MeV/nucl` | lowercase `e` variant. |
+| `GeV/Nucl` | `GeV/nucl` | Same capital-N pattern for GeV. |
+| `TeV/Nucl` | `TeV/nucl` | Same capital-N pattern for TeV. |
+| `MeV/U` | `MeV/u` | Capital U in atomic mass unit. |
+| `GeV/U` | `GeV/u` | Same for GeV. |
+| `TeV/U` | `TeV/u` | Same for TeV. |
+
+Rules for the near-miss check:
+
+1. **Case-fold check:** if `suffix.toLowerCase()` matches the lowercase
+   form of any canonical unit exactly, suggest the canonical casing.
+   This catches `mev`, `MEV`, `geV`, `MeV/NUCL`, `mev/u`, etc. in one
+   rule rather than listing every variant.
+2. **Explicit hard-coded exceptions** (only if the case-fold rule does
+   not produce a unique match): `meV → MeV` (because `meV` lowercases to
+   `mev`, which matches `MeV` — handled by rule 1).
+3. Only suggest if there is **exactly one** canonical match. If a suffix
+   is ambiguous even after case-folding, emit the error without a
+   suggestion.
+4. The suggestion is appended to the existing inline error — it does not
+   replace it. The row remains invalid and excluded from calculation.
+
+Implementation note: a `TYPO_SUGGESTIONS` map in
+`src/lib/utils/energy-parser.ts` maps `suffix.toLowerCase()` →
+`canonicalUnit`. The parser calls this after the primary lookup fails.
 
 ---
 
@@ -530,17 +601,39 @@ Rationale: physicists distinguish `MeV` (mega) from `meV` (milli) — a
 factor of 10⁹. The parser must never silently collapse them.
 
 - [ ] `100 MeV` parses as `(value=100, unit=MeV)`.
-- [ ] `100 mev` is rejected with `unknown unit: mev` (lowercase canonical
-      mismatch, **not** silently treated as MeV).
-- [ ] `100 meV` is rejected with `unknown unit: meV` (would be
-      milli-eV in SI; libdedx does not operate at sub-eV beam energies).
-- [ ] `100 MEV` is rejected with `unknown unit: MEV`.
-- [ ] `100 EV` is rejected with `unknown unit: EV` (canonical is `eV`).
-- [ ] `100 KeV` is rejected with `unknown unit: KeV` (canonical is `keV`).
-- [ ] `100 MeV/Nucl` is rejected with `unknown unit: MeV/Nucl` (canonical
-      is `MeV/nucl`).
-- [ ] An "Unknown unit" inline error explicitly names the rejected suffix
-      so the user can fix the casing themselves; no silent auto-correct.
+- [ ] `100 mev` is rejected with `unknown unit: mev — did you mean MeV?`.
+- [ ] `100 meV` is rejected with `unknown unit: meV — did you mean MeV?`
+      (milli-eV; libdedx does not operate at sub-eV beam energies).
+- [ ] `100 MEV` is rejected with `unknown unit: MEV — did you mean MeV?`.
+- [ ] `100 EV` is rejected with `unknown unit: EV` (canonical is `eV`;
+      no suggestion — "ev" lowercases to "ev" which does not match "eV"
+      case-insensitively).
+- [ ] `100 KeV` is rejected with `unknown unit: KeV — did you mean keV?`.
+- [ ] `100 MeV/Nucl` is rejected with
+      `unknown unit: MeV/Nucl — did you mean MeV/nucl?`.
+- [ ] An "Unknown unit" inline error always names the rejected suffix.
+      If a near-miss suggestion is available, the message appends
+      `— did you mean X?`. The parser never silently auto-corrects.
+
+### Inline Unit Detection — TeV range (added 2026-04-27)
+
+- [ ] `1 TeV` parses as `(value=1e6, unit=MeV)` (TeV = 10⁶ MeV).
+- [ ] `0.5 TeV/nucl` parses as `(value=5e5, unit=MeV/nucl)`.
+- [ ] `2 TeV/u` parses as `(value=2e6, unit=MeV/u)`.
+- [ ] The "→ MeV/nucl" column correctly shows the TeV-scaled value.
+
+### KE conservation on particle change (added 2026-04-27)
+
+Rationale: MeV/nucl is conserved so that "scaling" a beam to a different
+ion species keeps the same per-nucleon kinetic energy.
+
+- [ ] Carbon (A=12) at 120 MeV switched to Proton → shows 10 MeV.
+- [ ] Carbon (A=12) at 10 MeV/nucl switched to Proton → shows 10 MeV.
+- [ ] Carbon (A=12) at 10 MeV/nucl switched to Helium (A=4) → shows
+      10 MeV/nucl (unit preserved, value unchanged).
+- [ ] Proton at 10 MeV switched to Carbon (A=12) → shows 120 MeV
+      (or 10 MeV/nucl if MeV/nucl is the active master unit).
+- [ ] All rows in per-row mode convert independently.
 
 ### Always-visible MeV/nucl column (added 2026-04-26)
 
