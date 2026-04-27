@@ -1,6 +1,6 @@
 import { createEnergyInputState, type EnergyRow } from "./energy-input.svelte";
 import { parseEnergyInput } from "$lib/utils/energy-parser";
-import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
+import { convertEnergyToMeVperNucl, convertEnergyFromMeVperNucl } from "$lib/utils/energy-conversions";
 import {
   stpMassToKevUm,
   csdaGcm2ToCm,
@@ -305,14 +305,33 @@ export function createCalculatorState(
         return;
       }
 
-      // Match the leading numeric value (incl. sign / decimal / exponent)
-      // and replace the suffix with the chosen unit.
-      const match = trimmed.match(/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
-      if (!match) {
+      const particle = entitySelection.selectedParticle;
+      if (!particle) {
         return;
       }
 
-      inputState.updateRowText(index, `${match[0]} ${unit}`);
+      const parsed = parseEnergyInput(trimmed);
+      if (!("value" in parsed) || parsed.unit === null && parsed.value === undefined) {
+        return;
+      }
+      if ("error" in parsed || "empty" in parsed) {
+        return;
+      }
+
+      const currentUnit = parsed.unit ?? inputState.masterUnit;
+      const mevNucl = convertEnergyToMeVperNucl(
+        parsed.value,
+        currentUnit,
+        particle.massNumber,
+        particle.atomicMass
+      );
+      const converted = convertEnergyFromMeVperNucl(
+        mevNucl,
+        unit,
+        particle.massNumber,
+        particle.atomicMass
+      );
+      inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
     },
     updateRowText(index: number, text: string) {
       inputState.updateRowText(index, text);

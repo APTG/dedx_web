@@ -118,24 +118,24 @@ test.describe("Per-row unit dropdown — current behaviour", () => {
     await waitForTable(page);
   });
 
-  test("Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with new suffix, NUMBER is unchanged", async ({
+  test("Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)", async ({
     page,
   }) => {
     await selectParticle(page, "carbon");
     await typeInRow(page, 0, "12 MeV");
 
-    // Carbon 12 MeV total = 1 MeV/nucl
+    // Carbon 12 MeV total = 1 MeV/nucl in the conversion column.
     expect(await mevNuclCell(page, 0)).toContain("1");
 
     // Use the per-row Unit dropdown to switch the row to MeV/nucl.
     const unitSelect = page.locator("tbody tr").first().locator("select").first();
     await unitSelect.selectOption("MeV/nucl");
 
-    // Per `setRowUnit()` in calculator.svelte.ts: the numeric value is NOT
-    // converted — only the suffix is replaced. So "12 MeV" → "12 MeV/nucl",
-    // and the MeV/nucl column now reads 12 (kinetic energy 4× larger).
-    expect(await rowText(page, 0)).toBe("12 MeV/nucl");
-    expect(await mevNuclCell(page, 0)).toContain("12");
+    // Per `setRowUnit()` in calculator.svelte.ts: the numeric value IS
+    // converted to conserve kinetic energy. So "12 MeV" → "1 MeV/nucl",
+    // and the MeV/nucl column now reads 1 (kinetic energy conserved).
+    expect(await rowText(page, 0)).toBe("1 MeV/nucl");
+    expect(await mevNuclCell(page, 0)).toContain("1");
   });
 });
 
@@ -183,7 +183,7 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
     },
   );
 
-  test.fixme(
+  test(
     "Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved",
     async ({ page }) => {
       await selectParticle(page, "carbon");

@@ -304,6 +304,52 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
   });
+
+  describe('setRowUnit - KE conversion', () => {
+    it('Carbon (A=12), row "12 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "1 MeV/nucl"', () => {
+      const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+      expect(carbon).toBeDefined();
+      entitySelection.selectParticle(carbon!.id);
+      
+      calcState.updateRowText(0, '12 MeV');
+      calcState.setRowUnit(0, 'MeV/nucl');
+      
+      expect(calcState.rows[0].rawInput).toBe('1 MeV/nucl');
+    });
+
+    it('Carbon (A=12), row "1 MeV/nucl", setRowUnit(0, "MeV") → row text becomes "12 MeV"', () => {
+      const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+      expect(carbon).toBeDefined();
+      entitySelection.selectParticle(carbon!.id);
+      
+      calcState.updateRowText(0, '1 MeV/nucl');
+      calcState.setRowUnit(0, 'MeV');
+      
+      expect(calcState.rows[0].rawInput).toBe('12 MeV');
+    });
+
+    it('Helium (A=4), row "80 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "20 MeV/nucl"', () => {
+      const helium = entitySelection.availableParticles.find(p => p.name === 'Helium');
+      expect(helium).toBeDefined();
+      entitySelection.selectParticle(helium!.id);
+      
+      calcState.updateRowText(0, '80 MeV');
+      calcState.setRowUnit(0, 'MeV/nucl');
+      
+      expect(calcState.rows[0].rawInput).toBe('20 MeV/nucl');
+    });
+
+    it('Proton (A=1), row "100 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "100 MeV/nucl"', () => {
+      const hydrogen = entitySelection.availableParticles.find(p => p.name === 'Hydrogen');
+      expect(hydrogen).toBeDefined();
+      entitySelection.selectParticle(hydrogen!.id);
+      
+      calcState.updateRowText(0, '100 MeV');
+      calcState.setRowUnit(0, 'MeV/nucl');
+      
+      expect(calcState.rows[0].rawInput).toBe('100 MeV/nucl');
+    });
+  });
 });
 
 describe('formatStpValue', () => {

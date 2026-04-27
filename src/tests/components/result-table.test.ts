@@ -121,8 +121,9 @@ describe('ResultTable', () => {
     const select = screen.getByRole('combobox') as HTMLSelectElement;
     await fireEvent.change(select, { target: { value: 'MeV/nucl' } });
 
-    // The row text should now be rewritten with the new unit suffix
-    expect(calcState.rows[0].rawInput).toBe('120 MeV/nucl');
+    // The row text should now be rewritten with converted value (KE conserved).
+    // 120 MeV total / 12 nucleons = 10 MeV/nucl.
+    expect(calcState.rows[0].rawInput).toBe('10 MeV/nucl');
     expect(calcState.rows[0].unitFromSuffix).toBe(true);
   });
 
