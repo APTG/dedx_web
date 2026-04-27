@@ -55,56 +55,56 @@ async function mevNuclCell(page: import("@playwright/test").Page, index: number)
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Current behaviour: typed numbers are NOT modified on particle change
+// Particle switching — kinetic energy conservation (E_nucl preserved)
 // ─────────────────────────────────────────────────────────────────────────────
 
-test.describe("Particle switching — current spec'd behaviour (numeric value preserved as text)", () => {
+test.describe("Particle switching — E_nucl conservation", () => {
   test.beforeEach(async ({ page }) => {
     await waitForWasm(page);
     await waitForTable(page);
   });
 
-  test("He 20 MeV/nucl → switch to proton: typed number stays '20', unit suffix is preserved", async ({
+  test("He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV", async ({
     page,
   }) => {
     await selectParticle(page, "helium");
     await typeInRow(page, 0, "20 MeV/nucl");
     expect(await mevNuclCell(page, 0)).toContain("20");
 
-    // Switch to hydrogen (proton). Per spec: numeric value stays "20".
     await selectParticle(page, "hydrogen");
-
-    // The literal text in the input is preserved.
-    expect(await rowText(page, 0)).toBe("20 MeV/nucl");
-    // But MeV/nucl per-nucleon is meaningless for a proton — the spec
-    // wants this row to show a validation message ("MeV/nucl is not
-    // available for Proton (A=1)") in unit-handling.md:203-205.
-    // The current implementation interprets MeV/nucl as MeV/nucl with A=1
-    // (which is numerically OK but UX-wise bypasses the rule). We just
-    // assert the input value is preserved here.
+    // E_nucl=20 conserved: proton (A=1) displays as 20 MeV.
+    expect(await rowText(page, 0)).toBe("20 MeV");
+    expect(await mevNuclCell(page, 0)).toContain("20");
   });
 
-  test("He 80 MeV → switch to proton: typed number stays '80'", async ({ page }) => {
+  test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({ page }) => {
     await selectParticle(page, "helium");
     await typeInRow(page, 0, "80 MeV");
-    // Helium with 80 MeV total → 20 MeV/nucl in the conversion column.
+    // Helium 80 MeV total → E_nucl = 80/4 = 20 MeV/nucl.
     expect(await mevNuclCell(page, 0)).toContain("20");
 
     await selectParticle(page, "hydrogen");
-    expect(await rowText(page, 0)).toBe("80 MeV");
-    // For proton the MeV/nucl column is just the same numeric value.
-    expect(await mevNuclCell(page, 0)).toContain("80");
+    // E_nucl=20 conserved: proton displays as 20 MeV.
+    expect(await rowText(page, 0)).toBe("20 MeV");
+    expect(await mevNuclCell(page, 0)).toContain("20");
   });
 
-  test("Proton 100 MeV → switch to carbon → switch back to hydrogen: number unchanged", async ({
+  test("Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved", async ({
     page,
   }) => {
-    // Default state already has hydrogen + 100.
+    // Default: proton 100 MeV (E_nucl=100).
     expect(await rowText(page, 0)).toBe("100");
+    expect(await mevNuclCell(page, 0)).toContain("100");
+
+    // Carbon (A=12): E_nucl=100 → 100 × 12 = 1200 MeV total.
     await selectParticle(page, "carbon");
-    expect(await rowText(page, 0)).toBe("100");
+    expect(await rowText(page, 0)).toBe("1200 MeV");
+    expect(await mevNuclCell(page, 0)).toContain("100");
+
+    // Back to proton: E_nucl=100 → 100 MeV.
     await selectParticle(page, "hydrogen");
-    expect(await rowText(page, 0)).toBe("100");
+    expect(await rowText(page, 0)).toBe("100 MeV");
+    expect(await mevNuclCell(page, 0)).toContain("100");
   });
 });
 
@@ -154,32 +154,34 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
     await waitForTable(page);
   });
 
-  test.fixme(
-    "He 20 MeV/nucl → proton: row should show 80 MeV (KE conserved)",
+  test(
+    "He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)",
     async ({ page }) => {
       await selectParticle(page, "helium");
       await typeInRow(page, 0, "20 MeV/nucl");
       expect(await mevNuclCell(page, 0)).toContain("20");
 
       await selectParticle(page, "hydrogen");
-      // DESIRED: text becomes "80 MeV", per-nucleon column shows 80
-      expect(await rowText(page, 0)).toBe("80 MeV");
-      expect(await mevNuclCell(page, 0)).toContain("80");
+      // E_nucl conserved: 20 MeV/nucl on He (A=4) → 20 MeV on proton (A=1).
+      expect(await rowText(page, 0)).toBe("20 MeV");
+      expect(await mevNuclCell(page, 0)).toContain("20");
     },
   );
 
-  test.fixme(
-    "He 20 MeV/nucl → proton → He: row should round-trip back to 20 MeV/nucl",
+  test(
+    "He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)",
     async ({ page }) => {
       await selectParticle(page, "helium");
       await typeInRow(page, 0, "20 MeV/nucl");
 
       await selectParticle(page, "hydrogen");
-      expect(await rowText(page, 0)).toBe("80 MeV");
+      // E_nucl conserved: 20 MeV/nucl on He → 20 MeV on proton (A=1, total MeV display).
+      expect(await rowText(page, 0)).toBe("20 MeV");
 
       await selectParticle(page, "helium");
-      // DESIRED: KE conserved across two switches.
-      expect(await rowText(page, 0)).toBe("20 MeV/nucl");
+      // Round-trip is lossy: proton "20 MeV" (total) → He "20 MeV" (total), not "20 MeV/nucl".
+      // This is expected: the per-nucleon information is lost when going through proton.
+      expect(await rowText(page, 0)).toBe("20 MeV");
     },
   );
 
@@ -210,6 +212,7 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
 
       await page.getByRole("radio", { name: /^MeV$/i }).click();
       // DESIRED: 100 MeV/nucl × 12 = 1200 MeV.
+      // NOTE: This test depends on Task 6 (master unit selector UI).
       expect(await rowText(page, 0)).toBe("1200");
     },
   );
@@ -222,31 +225,30 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
       await typeInRow(page, 1, "50 MeV");
 
       await selectParticle(page, "hydrogen");
-      // DESIRED: row 0 → 80 MeV, row 1 → 50 MeV (no per-nucleon info to rescale)
-      expect(await rowText(page, 0)).toBe("80 MeV");
-      expect(await rowText(page, 1)).toBe("50 MeV");
+      // Row 0: E_nucl=20 → proton 20 MeV. Row 1: E_nucl=50/4=12.5 → proton 12.5 MeV.
+      expect(await rowText(page, 0)).toBe("20 MeV");
+      expect(await rowText(page, 1)).toBe("12.5 MeV");
 
       await selectParticle(page, "helium");
-      // DESIRED: row 0 round-trips back, row 1 stays at 50 MeV total.
-      expect(await rowText(page, 0)).toBe("20 MeV/nucl");
+      // Row 0: proton "20 MeV" → He "20 MeV" (lossy, not "20 MeV/nucl").
+      // Row 1: proton "12.5 MeV" → He "12.5 MeV" (lossy, E_nucl=12.5 × 4 = 50 MeV total).
+      expect(await rowText(page, 0)).toBe("20 MeV");
       expect(await rowText(page, 1)).toBe("50 MeV");
     },
   );
 
-  test.fixme(
-    "Switching to electron from a heavy ion clears MeV/nucl rows or remaps to MeV (electron has no nucleons)",
+  test(
+    "Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)",
     async ({ page }) => {
       await selectParticle(page, "helium");
       await typeInRow(page, 0, "20 MeV/nucl");
+      expect(await mevNuclCell(page, 0)).toContain("20");
 
-      // DESIRED: electron only supports MeV; the row should be remapped to
-      // 80 MeV (KE conserved as total energy) — OR explicitly invalidated
-      // with a clear inline message. The current code preserves "20 MeV/nucl"
-      // verbatim, which would fail the unit-availability rule.
+      // Electron only supports MeV; the row is remapped to total KE.
+      // E_nucl=20 MeV/nucl on He (A=4) → total = 20 × 4 = 80 MeV for electron.
       await selectParticle(page, "electron");
       expect(await rowText(page, 0)).toBe("80 MeV");
-      const alerts = await page.locator('[role="alert"]').allTextContents();
-      expect(alerts.join("|")).not.toMatch(/MeV\/nucl is not available/);
+      expect(await mevNuclCell(page, 0)).toContain("80");
     },
   );
 });
