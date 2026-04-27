@@ -6,10 +6,21 @@
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
+  import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
   import { getService } from "$lib/wasm/loader";
+  import type { EnergyUnit } from "$lib/wasm/types";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
+
+  function getAvailableUnits(): EnergyUnit[] {
+    if (!state?.selectedParticle) return ["MeV"];
+    const particle = state.selectedParticle;
+    const isElectron = particle.id === 1001;
+    const isProton = particle.massNumber === 1 && !isElectron;
+    if (isElectron || isProton) return ["MeV"];
+    return ["MeV", "MeV/nucl"];
+  }
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -40,6 +51,12 @@
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion {state} />
       <EntitySelectionComboboxes {state} />
+      <EnergyUnitSelector
+        value={calcState.masterUnit}
+        availableUnits={getAvailableUnits()}
+        disabled={calcState.isPerRowMode}
+        onValueChange={(unit) => calcState.setMasterUnit(unit)}
+      />
       <div class="rounded-lg border bg-card p-6">
         <ResultTable state={calcState} entitySelection={state} />
       </div>
