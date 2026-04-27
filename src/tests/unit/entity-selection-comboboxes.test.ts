@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/svelte";
+import { render, screen, cleanup, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -181,14 +181,14 @@ describe("EntitySelectionComboboxes", () => {
     expect(root).not.toHaveClass("lg:flex-nowrap");
   });
 
-  test("displays default selections: Proton, Water (liquid), Auto-select", () => {
+  test("displays default selections: proton, Water (liquid), Auto-select", () => {
     render(EntitySelectionComboboxes, { props: { state } });
 
     const particleCombobox = screen.getByLabelText("Particle");
     const materialCombobox = screen.getByLabelText("Material");
     const programCombobox = screen.getByLabelText("Program");
 
-    expect(particleCombobox).toHaveTextContent("Hydrogen (H)");
+    expect(particleCombobox).toHaveTextContent("proton");
     expect(materialCombobox).toHaveTextContent("Water (liquid)");
     expect(materialCombobox).not.toHaveTextContent("276");
     expect(programCombobox).toHaveTextContent("Auto-select");
@@ -224,8 +224,8 @@ describe("EntitySelectionComboboxes", () => {
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
     await user.click(particleCombobox);
 
-    const heliumItem = screen.getByText(/Helium/i);
-    await user.click(heliumItem);
+    const alphaItem = screen.getByText(/alpha particle/i);
+    await user.click(alphaItem);
 
     expect(state.selectedParticle?.id).toBe(2);
   });
@@ -240,7 +240,7 @@ describe("EntitySelectionComboboxes", () => {
     const searchInput = container.querySelector('[role="listbox"] input')!;
     await user.type(searchInput, "alpha");
 
-    expect(screen.getByRole("option", { name: /helium/i })).toBeInTheDocument();
+    expect(screen.getByRole("option", { name: /alpha particle/i })).toBeInTheDocument();
   });
 
   test("selecting carbon preserves water and keeps selected program when still compatible", async () => {
@@ -414,6 +414,86 @@ describe("EntitySelectionComboboxes", () => {
     expect(highlightedOption).toBeInTheDocument();
     expect(highlightedOption).toHaveAttribute("data-highlighted");
   });
+
+  describe("Particle combobox", () => {
+    test("Proton label is 'proton' (not 'Hydrogen (H)')", async () => {
+      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
+      const protonItem = within(commonGroup).getByRole("option", { name: /proton/i });
+      expect(protonItem).toBeInTheDocument();
+    });
+
+    test("Helium label is 'alpha particle' (not 'Helium (He)')", async () => {
+      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
+      const alphaItem = within(commonGroup).getByRole("option", { name: /alpha particle/i });
+      expect(alphaItem).toBeInTheDocument();
+    });
+
+    test("Electron label is 'electron' (not 'Electron')", async () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const electronMatrix = buildCompatibilityMatrix(electronService as any);
+      const electronState = createEntitySelectionState(electronMatrix);
+
+      const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
+      const electronItem = within(commonGroup).getByRole("option", { name: /electron/i });
+      expect(electronItem).toBeInTheDocument();
+    });
+
+    test("Carbon label is 'Carbon (C)'", async () => {
+      state.selectParticle(6);
+      render(EntitySelectionComboboxes, { props: { state } });
+
+      const particleCombobox = screen.getByLabelText("Particle");
+      expect(particleCombobox).toHaveTextContent("Carbon (C)");
+    });
+
+    test("'Common particles' group exists and contains proton, alpha particle, electron", async () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const electronMatrix = buildCompatibilityMatrix(electronService as any);
+      const electronState = createEntitySelectionState(electronMatrix);
+
+      const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
+      expect(commonGroup).toBeInTheDocument();
+      expect(within(commonGroup).getByRole("option", { name: /proton/i })).toBeInTheDocument();
+      expect(within(commonGroup).getByRole("option", { name: /alpha particle/i })).toBeInTheDocument();
+      expect(within(commonGroup).getByRole("option", { name: /electron/i })).toBeInTheDocument();
+    });
+
+    test("'Ions' group exists and contains 'Carbon (C)'", async () => {
+      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const ionsGroup = screen.getByRole("group", { name: /^Ions$/i });
+      expect(ionsGroup).toBeInTheDocument();
+      expect(within(ionsGroup).getByRole("option", { name: /Carbon \(C\)/i })).toBeInTheDocument();
+    });
+  });
 });
 
 class MockLibdedxServiceWithElectron {
@@ -434,6 +514,22 @@ class MockLibdedxServiceWithElectron {
           atomicMass: 0.000548,
           symbol: "e⁻",
           aliases: ["e⁻", "e-", "beta"],
+        },
+        {
+          id: 1,
+          name: "Hydrogen",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "H",
+          aliases: ["proton"],
+        },
+        {
+          id: 2,
+          name: "Helium",
+          massNumber: 4,
+          atomicMass: 4.002,
+          symbol: "He",
+          aliases: ["alpha", "α", "He-4"],
         },
       ];
     }

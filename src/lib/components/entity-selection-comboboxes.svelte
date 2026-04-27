@@ -18,9 +18,10 @@
   let { state, class: className }: Props = $props();
 
   function getParticleLabel(particle: ParticleEntity): string {
-    if (particle.id === 1001) {
-      return "Electron";
-    }
+    // Special-named particles have no parenthetical symbol — the name IS the identifier.
+    if (particle.id === 1) return "proton";
+    if (particle.id === 2) return "alpha particle";
+    if (particle.id === 1001) return "electron";
     const symbol = particle.symbol || "";
     return symbol ? `${particle.name} (${symbol})` : particle.name;
   }
@@ -42,28 +43,37 @@
   }
 
   const particleItems = $derived.by(() => {
-    const nonElectronParticles = state.allParticles
-      .filter((p) => p.id !== 1001)
-      .map((particle) => ({
-        entity: particle,
-        available: state.availableParticles.some((p) => p.id === particle.id),
-        label: getParticleLabel(particle),
-        description: undefined,
-        searchText: getParticleSearchText(particle),
-      }));
+    // "Common particles" group: proton (1), alpha (2), electron (1001)
+    const COMMON_IDS = new Set([1, 2, 1001]);
+    const commonParticles = state.allParticles
+      .filter((p) => COMMON_IDS.has(p.id))
+      .sort((a, b) => {
+        // fixed order: proton, alpha particle, electron
+        const ORDER = [1, 2, 1001];
+        return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
+      });
+    
+    const ionParticles = state.allParticles
+      .filter((p) => !COMMON_IDS.has(p.id))
+      .sort((a, b) => a.id - b.id);
 
-    const electronParticle = state.allParticles
-      .filter((p) => p.id === 1001)
-      .map((particle) => ({
+    function toItem(particle: ParticleEntity) {
+      return {
         entity: particle,
-        available: false,
+        available: particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
         label: getParticleLabel(particle),
-        description: ELECTRON_UNSUPPORTED_SHORT,
+        description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
         searchText: getParticleSearchText(particle),
-        isElectron: true as const,
-      }));
+      };
+    }
 
-    return [...nonElectronParticles, ...electronParticle];
+    // Use same section-header pattern as materialItems
+    return [
+      { type: "section" as const, label: "Common particles" },
+      ...commonParticles.map(toItem),
+      { type: "section" as const, label: "Ions" },
+      ...ionParticles.map(toItem),
+    ];
   });
 
   interface MaterialGroup {

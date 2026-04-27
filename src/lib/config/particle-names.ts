@@ -32,7 +32,9 @@ export function formatParticleName(rawName: string): string {
  * (e.g., "CARBON12" for ¹²C) that need splitting.
  */
 export const PARTICLE_NAME_OVERRIDES: ReadonlyMap<number, string> = new Map([
-  [1001, "Electron"],
+  [1, "proton"],
+  [2, "alpha particle"],
+  [1001, "electron"],
 ]);
 
 /**
