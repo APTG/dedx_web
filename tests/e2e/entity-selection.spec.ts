@@ -20,7 +20,7 @@ test.describe("Calculator page — compact mode", () => {
     await expect(programTrigger(page)).toBeVisible();
   });
 
-  test("default values show Proton, Water, Auto-select", async ({ page }) => {
+  test("default values show proton, Water, Auto-select", async ({ page }) => {
     await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
