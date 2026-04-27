@@ -65,6 +65,26 @@ const CANONICAL_UNITS: ReadonlyMap<string, EnergySuffixUnit> = new Map([
   ["keV/u", "keV/u"],
 ]);
 
+// Units whose case-fold match is ambiguous or confusing — never suggest them.
+// eV (electron-volt) uses lowercase 'e' per SI convention; all-caps "EV" is
+// ambiguous (sometimes used informally for electron-volts), so we never suggest it.
+const NO_SUGGEST: ReadonlySet<string> = new Set(["eV"]);
+
+// Build a case-fold lookup: lowercase(suffix) → canonical unit (if unique).
+const TYPO_SUGGESTIONS: ReadonlyMap<string, EnergySuffixUnit> = (() => {
+  const m = new Map<string, EnergySuffixUnit>();
+  for (const canonical of CANONICAL_UNITS.values()) {
+    if (NO_SUGGEST.has(canonical)) continue;
+    const lower = canonical.toLowerCase();
+    if (m.has(lower)) {
+      m.delete(lower); // ambiguous — remove so we never suggest
+    } else {
+      m.set(lower, canonical);
+    }
+  }
+  return m;
+})();
+
 export function parseEnergyInput(raw: string): ParseResult {
   const trimmed = raw.trim();
 
@@ -97,7 +117,9 @@ export function parseEnergyInput(raw: string): ParseResult {
   const unit = CANONICAL_UNITS.get(unitStr);
 
   if (!unit) {
-    return { error: `unknown unit: ${unitStr}` };
+    const suggestion = TYPO_SUGGESTIONS.get(unitStr.toLowerCase());
+    const hint = suggestion ? ` — did you mean ${suggestion}?` : "";
+    return { error: `unknown unit: ${unitStr}${hint}` };
   }
 
   return { value, unit };
