@@ -1,20 +1,31 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { wasmReady, entityState } from "$lib/state/ui.svelte";
+  import { wasmReady } from "$lib/state/ui.svelte";
+  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
-  import { libdedx } from "$lib/wasm/libdedx";
-  import { Button } from "$lib/components/ui/button";
+  import { getService } from "$lib/wasm/loader";
 
   const plotState = createPlotState();
+  let entityState = $state<EntitySelectionState | null>(null);
+
+  $effect(() => {
+    if (wasmReady.value && !entityState) {
+      getService().then((service) => {
+        const matrix = buildCompatibilityMatrix(service);
+        entityState = createEntitySelectionState(matrix);
+      });
+    }
+  });
 
   let urlInitialized = $state(false);
 
   $effect(() => {
-    if (!browser || !wasmReady.value || urlInitialized) return;
+    if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
 
@@ -34,38 +45,37 @@
     plotState.setAxisScale("x", decoded.xLog);
     plotState.setAxisScale("y", decoded.yLog);
 
-    const service = libdedx.service;
-    if (!service) return;
-
-    for (const s of decoded.series) {
-      try {
-        const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
-        const programs = service.getPrograms();
-        const particles = service.getParticles(s.programId);
-        const materials = service.getMaterials(s.programId);
-        const prog = programs.find((p) => p.id === s.programId);
-        const part = particles.find((p) => p.id === s.particleId);
-        const mat = materials.find((m) => m.id === s.materialId);
-        if (!prog || !part || !mat) continue;
-        plotState.addSeries({
-          programId: s.programId,
-          particleId: s.particleId,
-          materialId: s.materialId,
-          programName: prog.name,
-          particleName: part.name,
-          materialName: mat.name,
-          density: mat.density,
-          result,
-        });
-      } catch {
-        // Invalid triplet — silently skip per spec
+    getService().then((service) => {
+      for (const s of decoded.series) {
+        try {
+          const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
+          const programs = service.getPrograms();
+          const particles = service.getParticles(s.programId);
+          const materials = service.getMaterials(s.programId);
+          const prog = programs.find((p) => p.id === s.programId);
+          const part = particles.find((p) => p.id === s.particleId);
+          const mat = materials.find((m) => m.id === s.materialId);
+          if (!prog || !part || !mat) continue;
+          plotState.addSeries({
+            programId: s.programId,
+            particleId: s.particleId,
+            materialId: s.materialId,
+            programName: prog.name,
+            particleName: part.name,
+            materialName: mat.name,
+            density: mat.density,
+            result,
+          });
+        } catch {
+          // Invalid triplet — silently skip per spec
+        }
       }
-    }
+    });
     urlInitialized = true;
   });
 
   $effect(() => {
-    if (!browser || !urlInitialized) return;
+    if (!browser || !entityState || !urlInitialized) return;
     const params = encodePlotUrl({
       particleId: entityState.selectedParticle?.id ?? null,
       materialId: entityState.selectedMaterial?.id ?? null,
@@ -85,38 +95,40 @@
 
   // ── Preview series: auto-calculated whenever entity selection changes ──
   $effect(() => {
-    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
+    if (!entityState) { plotState.clearPreview(); return; }
+    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete, selectedProgram } = entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) {
       plotState.clearPreview();
       return;
     }
-    const service = libdedx.service;
-    if (!service) return;
+    const programName = "resolvedProgram" in selectedProgram
+      ? (selectedProgram.resolvedProgram?.name ?? "Auto")
+      : selectedProgram.name;
 
-    try {
-      const result = service.getPlotData(
-        resolvedProgramId,
-        selectedParticle.id,
-        selectedMaterial.id,
-        500,
-        true,
-      );
-      plotState.setPreview({
-        programId: resolvedProgramId,
-        particleId: selectedParticle.id,
-        materialId: selectedMaterial.id,
-        programName: entityState.selectedProgram.id === -1
-          ? (entityState.selectedProgram.resolvedProgram?.name ?? "Auto")
-          : entityState.selectedProgram.name,
-        particleName: selectedParticle.name,
-        materialName: selectedMaterial.name,
-        density: selectedMaterial.density,
-        result,
-      });
-    } catch (err) {
-      console.error("Preview series error:", err);
-      plotState.clearPreview();
-    }
+    getService().then((service) => {
+      try {
+        const result = service.getPlotData(
+          resolvedProgramId,
+          selectedParticle.id,
+          selectedMaterial.id,
+          500,
+          true,
+        );
+        plotState.setPreview({
+          programId: resolvedProgramId,
+          particleId: selectedParticle.id,
+          materialId: selectedMaterial.id,
+          programName,
+          particleName: selectedParticle.name,
+          materialName: selectedMaterial.name,
+          density: selectedMaterial.density,
+          result,
+        });
+      } catch (err) {
+        console.error("Preview series error:", err);
+        plotState.clearPreview();
+      }
+    });
   });
 
   // ── Derived: axis ranges from visible series ──
@@ -130,10 +142,9 @@
 
   // ── Add Series ──
   function handleAddSeries() {
+    if (!entityState) return;
     const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
-    const service = libdedx.service;
-    if (!service) return;
     if (!plotState.preview) return;
 
     const added = plotState.addSeries({
@@ -165,7 +176,7 @@
 
   function doReset() {
     plotState.resetAll();
-    entityState.resetAll();
+    entityState?.resetAll();
     showResetConfirm = false;
   }
 </script>
@@ -174,7 +185,7 @@
   <title>Plot - webdedx</title>
 </svelte:head>
 
-{#if !wasmReady.value}
+{#if !wasmReady.value || !entityState}
   <div class="flex h-64 items-center justify-center rounded-lg border bg-card p-6">
     <p class="text-muted-foreground">Loading WASM module…</p>
   </div>
@@ -187,15 +198,14 @@
       <EntitySelectionPanels state={entityState} />
 
       <!-- Add Series button -->
-      <Button
-        variant="default"
+      <button
         disabled={!entityState.isComplete}
         aria-disabled={!entityState.isComplete}
         onclick={handleAddSeries}
-        class="w-full"
+        class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
       >
         ＋ Add Series
-      </Button>
+      </button>
 
       {#if plotState.series.length >= 10}
         <p class="text-sm text-muted-foreground">
@@ -338,8 +348,14 @@
       <div class="rounded-lg border bg-card p-6 shadow-lg">
         <p class="mb-4">Remove all {plotState.series.length} series and reset selections?</p>
         <div class="flex justify-end gap-2">
-          <Button variant="outline" onclick={() => (showResetConfirm = false)}>Cancel</Button>
-          <Button variant="destructive" onclick={doReset}>Reset</Button>
+          <button
+            onclick={() => (showResetConfirm = false)}
+            class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
+          >Cancel</button>
+          <button
+            onclick={doReset}
+            class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
+          >Reset</button>
         </div>
       </div>
     </div>
