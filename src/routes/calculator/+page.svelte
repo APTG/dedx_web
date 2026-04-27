@@ -1,12 +1,14 @@
 <script lang="ts">
-  import { wasmReady } from "$lib/state/ui.svelte";
+  import { wasmReady, isAdvancedMode } from "$lib/state/ui.svelte";
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
+  import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
   import { getService } from "$lib/wasm/loader";
+  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -39,7 +41,13 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion {state} />
-      <EntitySelectionComboboxes {state} />
+      <EntitySelectionComboboxes {state} onParticleSelect={(particleId) => calcState.switchParticle(particleId)} />
+      <EnergyUnitSelector
+        value={calcState.masterUnit}
+        availableUnits={getAvailableEnergyUnits(state.selectedParticle, isAdvancedMode.value)}
+        disabled={calcState.isPerRowMode}
+        onValueChange={(unit) => calcState.setMasterUnit(unit)}
+      />
       <div class="rounded-lg border bg-card p-6">
         <ResultTable state={calcState} entitySelection={state} />
       </div>

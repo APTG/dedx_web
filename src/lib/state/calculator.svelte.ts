@@ -1,6 +1,10 @@
 import { createEnergyInputState, type EnergyRow } from "./energy-input.svelte";
 import { parseEnergyInput } from "$lib/utils/energy-parser";
-import { convertEnergyToMeVperNucl } from "$lib/utils/energy-conversions";
+import {
+  convertEnergyToMeVperNucl,
+  convertEnergyFromMeVperNucl,
+  getEnergyUnitCategory,
+} from "$lib/utils/energy-conversions";
 import {
   stpMassToKevUm,
   csdaGcm2ToCm,
@@ -10,6 +14,8 @@ import {
 import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
+import type { ParticleEntity } from "$lib/wasm/types";
+import { debounce } from "$lib/utils/debounce";
 
 export interface CalculatedRow {
   id: number;
@@ -33,9 +39,12 @@ export interface CalculatorState {
   validationSummary: { valid: number; invalid: number; outOfRange: number; total: number };
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
+  switchParticle(particleId: number | null): void;
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
-  triggerCalculation(): Promise<void>;
+  addRow(): void;
+  triggerCalculation(): void;
+  flushCalculation(): Promise<void> | undefined;
   clearResults(): void;
 }
 
@@ -49,6 +58,86 @@ export function createCalculatorState(
   let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
     new Map()
   );
+
+  const debouncedCalculate = debounce(async () => {
+    const energies = getValidEnergies();
+    await performCalculation(energies);
+  }, 300);
+
+  function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
+    const rows = inputState.rows;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const trimmed = row.text.trim();
+      if (trimmed === "") continue;
+
+      const parsed = parseEnergyInput(trimmed);
+      if (!("value" in parsed) || parsed.value === undefined) continue;
+      if ("error" in parsed || "empty" in parsed) continue;
+
+      // Treat plain numbers (no typed suffix) as if they were typed with the
+      // active master unit. This keeps every row under one consistent rule —
+      // "interpret the number with its current unit, conserve E_nucl across
+      // the particle change" — instead of silently exempting rows that
+      // happen to lack an explicit suffix. (Reported in PR #379: typing
+      // "100" on proton → switching to alpha used to keep "100" while a
+      // sibling row "1 GeV" became "4000 MeV", which made it impossible
+      // for the user to tell what was being conserved.)
+      // The parser may return SI-prefixed suffixes (e.g. `GeV/nucl`,
+      // `TeV/u`) which are not part of the base `EnergyUnit` contract;
+      // we keep the original suffix as a string for accurate
+      // E_nucl conversion and derive the *category* (MeV vs MeV/nucl
+      // vs MeV/u) for picking the new display unit.
+      const oldUnitSuffix: string = parsed.unit ?? inputState.masterUnit;
+      const oldUnitCategory: EnergyUnit = getEnergyUnitCategory(oldUnitSuffix);
+
+      // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
+      const mevPerNucl = convertEnergyToMeVperNucl(
+        parsed.value,
+        oldUnitSuffix,
+        oldParticle.massNumber,
+        oldParticle.atomicMass
+      );
+
+      let newUnit: EnergyUnit;
+      // Proton (A=1) and electron always use total MeV display.
+      if (newParticle.id === 1001 || newParticle.massNumber === 1) {
+        newUnit = "MeV";
+      } else if (oldUnitCategory === "MeV/nucl") {
+        // Preserve MeV/nucl for heavy ions (A>1).
+        newUnit = "MeV/nucl";
+      } else if (oldUnitCategory === "MeV/u") {
+        // Preserve MeV/u for heavy ions (A>1).
+        newUnit = "MeV/u";
+      } else {
+        newUnit = "MeV";
+      }
+
+      let newValue: number;
+      if (newParticle.id === 1001) {
+        // Electron: use old particle's A to compute total MeV (electron has no nucleons).
+        newValue = mevPerNucl * oldParticle.massNumber;
+      } else if (newParticle.massNumber === 1) {
+        // Proton: E_nucl × 1 = total MeV (same numeric value as E_nucl).
+        newValue = mevPerNucl;
+      } else {
+        // Heavy ion: convert E_nucl back to the new display unit using
+        // the new particle's mass data. This is the inverse of the
+        // `convertEnergyToMeVperNucl` call above and correctly handles
+        // MeV/u (which depends on atomicMass / m_u, not just A).
+        newValue = convertEnergyFromMeVperNucl(
+          mevPerNucl,
+          newUnit,
+          newParticle.massNumber,
+          newParticle.atomicMass
+        );
+      }
+
+      inputState.updateRowText(i, `${formatSigFigs(newValue, 4)} ${newUnit}`);
+    }
+  }
+
+  let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
@@ -305,14 +394,44 @@ export function createCalculatorState(
         return;
       }
 
-      // Match the leading numeric value (incl. sign / decimal / exponent)
-      // and replace the suffix with the chosen unit.
-      const match = trimmed.match(/^[+-]?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/);
-      if (!match) {
+      const particle = entitySelection.selectedParticle;
+      if (!particle) {
         return;
       }
 
-      inputState.updateRowText(index, `${match[0]} ${unit}`);
+      const parsed = parseEnergyInput(trimmed);
+      if (!("value" in parsed) || parsed.unit === null && parsed.value === undefined) {
+        return;
+      }
+      if ("error" in parsed || "empty" in parsed) {
+        return;
+      }
+
+      const currentUnit = parsed.unit ?? inputState.masterUnit;
+      const mevNucl = convertEnergyToMeVperNucl(
+        parsed.value,
+        currentUnit,
+        particle.massNumber,
+        particle.atomicMass
+      );
+      const converted = convertEnergyFromMeVperNucl(
+        mevNucl,
+        unit,
+        particle.massNumber,
+        particle.atomicMass
+      );
+      inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
+    },
+    switchParticle(particleId: number | null) {
+      const oldParticle = previousParticle;
+      const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
+      
+      entitySelection.selectParticle(particleId);
+      
+      if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
+        convertRowsForNewParticle(oldParticle, newParticle);
+      }
+      previousParticle = newParticle;
     },
     updateRowText(index: number, text: string) {
       inputState.updateRowText(index, text);
@@ -320,9 +439,17 @@ export function createCalculatorState(
     handleBlur(index: number) {
       inputState.handleBlur(index);
     },
-    async triggerCalculation(): Promise<void> {
-      const energies = getValidEnergies();
-      await performCalculation(energies);
+    addRow() {
+      inputState.addRow();
+    },
+    triggerCalculation(): void {
+      // Schedules a debounced calculation. Use `flushCalculation()` and
+      // await its returned promise if you need to wait for the result
+      // (tests, pre-screenshot, programmatic recompute on share-link).
+      debouncedCalculate();
+    },
+    flushCalculation(): Promise<void> | undefined {
+      return debouncedCalculate.flush();
     },
     clearResults() {
       calculationResults = new Map();

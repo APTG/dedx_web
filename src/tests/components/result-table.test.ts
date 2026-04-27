@@ -41,6 +41,7 @@ describe('ResultTable', () => {
   it('displays calculated results with proper formatting', async () => {
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
     
     // Force a tick for reactivity
     await Promise.resolve();
@@ -55,6 +56,7 @@ describe('ResultTable', () => {
     const freshCalcState = createCalculatorState(entitySelection, service);
     freshCalcState.updateRowText(0, '100');
     await freshCalcState.triggerCalculation();
+    freshCalcState.flushCalculation();
     
     await Promise.resolve();
     
@@ -121,8 +123,9 @@ describe('ResultTable', () => {
     const select = screen.getByRole('combobox') as HTMLSelectElement;
     await fireEvent.change(select, { target: { value: 'MeV/nucl' } });
 
-    // The row text should now be rewritten with the new unit suffix
-    expect(calcState.rows[0].rawInput).toBe('120 MeV/nucl');
+    // The row text should now be rewritten with converted value (KE conserved).
+    // 120 MeV total / 12 nucleons = 10 MeV/nucl.
+    expect(calcState.rows[0].rawInput).toBe('10 MeV/nucl');
     expect(calcState.rows[0].unitFromSuffix).toBe(true);
   });
 
@@ -162,6 +165,7 @@ describe('ResultTable', () => {
 
     calcState.updateRowText(0, '100');
     await calcState.triggerCalculation();
+    calcState.flushCalculation();
     await Promise.resolve();
 
     render(ResultTable, { props: { state: calcState, entitySelection, columns: customColumns } });

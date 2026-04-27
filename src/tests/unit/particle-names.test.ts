@@ -24,8 +24,16 @@ describe("formatParticleName", () => {
 });
 
 describe("PARTICLE_NAME_OVERRIDES", () => {
-  test("maps Electron to ID 1001", () => {
-    expect(PARTICLE_NAME_OVERRIDES.get(1001)).toBe("Electron");
+  test("maps proton to ID 1", () => {
+    expect(PARTICLE_NAME_OVERRIDES.get(1)).toBe("proton");
+  });
+
+  test("maps alpha particle to ID 2", () => {
+    expect(PARTICLE_NAME_OVERRIDES.get(2)).toBe("alpha particle");
+  });
+
+  test("maps electron to ID 1001", () => {
+    expect(PARTICLE_NAME_OVERRIDES.get(1001)).toBe("electron");
   });
 
   test("no override is an empty string", () => {
@@ -36,25 +44,42 @@ describe("PARTICLE_NAME_OVERRIDES", () => {
 });
 
 describe("getParticleFriendlyName", () => {
-  test("returns Hydrogen for ID 1, raw HYDROGEN", () => {
-    expect(getParticleFriendlyName(1, "HYDROGEN")).toBe("Hydrogen");
+  test("returns proton for ID 1, raw HYDROGEN", () => {
+    expect(getParticleFriendlyName(1, "HYDROGEN")).toBe("proton");
   });
 
-  test("returns Helium for ID 2, raw HELIUM", () => {
-    expect(getParticleFriendlyName(2, "HELIUM")).toBe("Helium");
+  test("returns alpha particle for ID 2, raw HELIUM", () => {
+    expect(getParticleFriendlyName(2, "HELIUM")).toBe("alpha particle");
   });
 
   test("returns Carbon for ID 6, raw CARBON", () => {
     expect(getParticleFriendlyName(6, "CARBON")).toBe("Carbon");
   });
 
-  test("returns Electron for ID 1001 regardless of raw name", () => {
-    expect(getParticleFriendlyName(1001, "")).toBe("Electron");
-    expect(getParticleFriendlyName(1001, "ELECTRON")).toBe("Electron");
+  test("returns electron for ID 1001 regardless of raw name", () => {
+    expect(getParticleFriendlyName(1001, "")).toBe("electron");
+    expect(getParticleFriendlyName(1001, "ELECTRON")).toBe("electron");
   });
 
   test("override takes precedence over raw name for electron", () => {
-    expect(getParticleFriendlyName(1001, "ANYTHING")).toBe("Electron");
+    expect(getParticleFriendlyName(1001, "ANYTHING")).toBe("electron");
+  });
+
+  test("returns alpha particle for ID 2, raw HELIUM", () => {
+    expect(getParticleFriendlyName(2, "HELIUM")).toBe("alpha particle");
+  });
+
+  test("returns Carbon for ID 6, raw CARBON", () => {
+    expect(getParticleFriendlyName(6, "CARBON")).toBe("Carbon");
+  });
+
+  test("returns electron for ID 1001 regardless of raw name", () => {
+    expect(getParticleFriendlyName(1001, "")).toBe("electron");
+    expect(getParticleFriendlyName(1001, "ELECTRON")).toBe("electron");
+  });
+
+  test("override takes precedence over raw name for electron", () => {
+    expect(getParticleFriendlyName(1001, "ANYTHING")).toBe("electron");
   });
 
   test("falls back to formatParticleName for unknown IDs", () => {

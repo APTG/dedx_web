@@ -2,6 +2,7 @@
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { autoScaleLengthCm } from "$lib/utils/unit-conversions";
   import { formatSigFigs } from "$lib/utils/unit-conversions";
+  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { CalculatorState, CalculatedRow } from "$lib/state/calculator.svelte";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -88,17 +89,7 @@
   }
 
   function getAvailableUnits(): EnergyUnit[] {
-    const particle = entitySelection.selectedParticle;
-    if (!particle) return ["MeV"];
-
-    const isElectron = particle.id === 1001;
-    const isProton = particle.massNumber === 1 && !isElectron;
-    if (isElectron || isProton) return ["MeV"];
-
-    if (isAdvancedMode.value) {
-      return ["MeV", "MeV/nucl", "MeV/u"];
-    }
-    return ["MeV", "MeV/nucl"];
+    return getAvailableEnergyUnits(entitySelection.selectedParticle, isAdvancedMode.value);
   }
 
   function handleInputFocus(event: Event) {
@@ -296,5 +287,15 @@
         )
       </div>
     {/if}
+
+    <div class="mt-2 flex justify-start">
+      <button
+        type="button"
+        class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+        onclick={() => state.addRow()}
+      >
+        + Add row
+      </button>
+    </div>
   {/if}
 </div>

@@ -9,11 +9,14 @@ export type EnergySuffixUnit =
   | "keV"
   | "MeV"
   | "GeV"
+  | "TeV"
   | "MeV/nucl"
   | "GeV/nucl"
+  | "TeV/nucl"
   | "keV/nucl"
   | "MeV/u"
   | "GeV/u"
+  | "TeV/u"
   | "keV/u";
 
 export interface ParsedEnergy {
@@ -31,31 +34,56 @@ export interface EmptyInput {
 
 export type ParseResult = ParsedEnergy | ParseError | EmptyInput;
 
-const VALID_UNITS: ReadonlySet<string> = new Set([
-  "ev",
-  "kev",
-  "mev",
-  "gev",
-  "mev/nucl",
-  "gev/nucl",
-  "kev/nucl",
-  "mev/u",
-  "gev/u",
-  "kev/u",
+/**
+ * Canonical SI casing for every accepted unit suffix.
+ *
+ * Energy units are **case sensitive**: physicists distinguish
+ * `MeV` (mega-electron-volt, 10⁶ eV) from `meV` (milli-electron-volt,
+ * 10⁻³ eV) — a 10⁹ ratio. Treating them as equivalent is dangerous, so
+ * the parser only accepts the canonical SI casing below. Any other
+ * casing (e.g. `mev`, `MEV`, `eV/Nucl`, `EV`) is rejected as an
+ * unknown unit so the user sees an inline error instead of a silently
+ * mis-scaled result.
+ *
+ * `meV`, `μeV`, `neV` etc. are NOT in this list because libdedx does
+ * not operate at sub-eV beam energies; we surface them as "unknown
+ * unit" rather than silently accept and underflow the WASM bounds check.
+ */
+const CANONICAL_UNITS: ReadonlyMap<string, EnergySuffixUnit> = new Map([
+  ["eV", "eV"],
+  ["keV", "keV"],
+  ["MeV", "MeV"],
+  ["GeV", "GeV"],
+  ["TeV", "TeV"],
+  ["MeV/nucl", "MeV/nucl"],
+  ["GeV/nucl", "GeV/nucl"],
+  ["TeV/nucl", "TeV/nucl"],
+  ["keV/nucl", "keV/nucl"],
+  ["MeV/u", "MeV/u"],
+  ["GeV/u", "GeV/u"],
+  ["TeV/u", "TeV/u"],
+  ["keV/u", "keV/u"],
 ]);
 
-const UNIT_BASES: ReadonlyMap<string, EnergySuffixUnit> = new Map([
-  ["ev", "eV"],
-  ["kev", "keV"],
-  ["mev", "MeV"],
-  ["gev", "GeV"],
-  ["mev/nucl", "MeV/nucl"],
-  ["gev/nucl", "GeV/nucl"],
-  ["kev/nucl", "keV/nucl"],
-  ["mev/u", "MeV/u"],
-  ["gev/u", "GeV/u"],
-  ["kev/u", "keV/u"],
-]);
+// Units whose case-fold match is ambiguous or confusing — never suggest them.
+// eV (electron-volt) uses lowercase 'e' per SI convention; all-caps "EV" is
+// ambiguous (sometimes used informally for electron-volts), so we never suggest it.
+const NO_SUGGEST: ReadonlySet<string> = new Set(["eV"]);
+
+// Build a case-fold lookup: lowercase(suffix) → canonical unit (if unique).
+const TYPO_SUGGESTIONS: ReadonlyMap<string, EnergySuffixUnit> = (() => {
+  const m = new Map<string, EnergySuffixUnit>();
+  for (const canonical of CANONICAL_UNITS.values()) {
+    if (NO_SUGGEST.has(canonical)) continue;
+    const lower = canonical.toLowerCase();
+    if (m.has(lower)) {
+      m.delete(lower); // ambiguous — remove so we never suggest
+    } else {
+      m.set(lower, canonical);
+    }
+  }
+  return m;
+})();
 
 export function parseEnergyInput(raw: string): ParseResult {
   const trimmed = raw.trim();
@@ -85,13 +113,14 @@ export function parseEnergyInput(raw: string): ParseResult {
     return { value, unit: null };
   }
 
-  const unitLower = unitStr.toLowerCase();
+  // Case-sensitive lookup — see CANONICAL_UNITS doc-comment for rationale.
+  const unit = CANONICAL_UNITS.get(unitStr);
 
-  if (!VALID_UNITS.has(unitLower)) {
-    return { error: `unknown unit: ${unitStr}` };
+  if (!unit) {
+    const suggestion = TYPO_SUGGESTIONS.get(unitStr.toLowerCase());
+    const hint = suggestion ? ` — did you mean ${suggestion}?` : "";
+    return { error: `unknown unit: ${unitStr}${hint}` };
   }
-
-  const unit = UNIT_BASES.get(unitLower)!;
 
   return { value, unit };
 }
