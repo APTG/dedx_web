@@ -73,6 +73,47 @@ During verification an interesting interaction was discovered: removing
 factory still wrapped the surface in a `default` key, leaving
 `JSROOT.settings` undefined in tests too. Updating the mock to expose
 named exports — matching the real ESM shape — restored a clean 493/493.
+
+### Prompt 4: Sidebar overlaps controls/plot, JSROOT cleanup race on navigation
+
+User screenshot showed the `/plot` sidebar with Particle and Material
+crammed side-by-side in a nested grid; from the user's viewpoint the
+controls bar (`keV/µm`, `X: Log`, …) and plot canvas appeared to overlap
+the Material and Program panels. Also, navigating Calculator → Plot →
+Calculator → Plot reliably produced two JSROOT console messages:
+
+```
+pad drawing is not completed when cleanup is called   TPadPainter.mjs
+failure, should not happen
+```
+
+**AI response**:
+
+1. Composition: removed the inner `md:grid-cols-[1fr_2fr]` wrapper in
+   `entity-selection-panels.svelte` so Particle, Material and Program now
+   stack as three full-width rows in the sidebar, matching the
+   single-column flex layout the page already uses for Add Series / Reset
+   all. The component is only consumed by `plot/+page.svelte`, so this
+   change is local.
+2. JSROOT lifecycle: introduced a module-local `drawChain: Promise<unknown>`
+   inside `jsroot-plot.svelte`. Each `$effect` run now (a) waits for the
+   previous draw or teardown to settle before calling `JSROOT.draw`, and
+   (b) on cleanup defers `painter.cleanup()` + `JSROOT.cleanup(el)` until
+   the in-flight draw resolves. Removed the eager `JSROOT.cleanup(el)`
+   call that used to run inside `drawPlot()` before each new draw — the
+   serialized chain handles teardown. The resize observer also now keeps
+   a local `disposed` flag so a late dynamic-import resolution doesn't
+   call `resize` after the component is gone.
+3. Re-ran unit suite (493/493) and plot E2E (`tests/e2e/plot.spec.ts` —
+   2/2) — both clean.
+
+The "grid-lines missing on first load" symptom the user observed is a
+side-effect of `axisRanges` returning `DEFAULT_RANGES` (0.001…10000,
+0.1…1000) until the first preview series resolves; once a material is
+selected and the preview lands, `computeAxisRanges` produces real
+log-rounded ranges and JSROOT redraws with grid lines. No code change
+needed here — it self-heals as soon as the WASM call resolves, which is
+exactly the user's observation.
 ### Prompt 2: Use timeouts so E2E doesn't hang
 
 **AI response**: re-ran with `timeout 300 pnpm exec playwright test
@@ -144,6 +185,38 @@ this session's changes.
   `plot/+page.svelte` (visible as a duplicate pair in the user's
   screenshot). Drop the stub block; the page-level buttons remain the
   single source of truth.
+
+### Stack entity panels vertically in sidebar
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+- **Decision**: removed the nested `md:grid-cols-[1fr_2fr]` row wrapping
+  Particle and Material. Within the plot sidebar (≈ 30% of viewport via
+  `lg:grid-cols-[minmax(360px,3fr)_7fr]`) the 1/3+2/3 split squeezed
+  Material into ~220 px while making the right edge of Material flirt
+  with the start of the controls bar in the main column — visually
+  reading as overlap. A clean three-row stack matches the rest of the
+  sidebar and removes the perceived collision.
+
+### Serialize JSROOT draw / cleanup across navigations
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/jsroot-plot.svelte](../../src/lib/components/jsroot-plot.svelte)
+- **Decision**: the previous `$effect` started `JSROOT.draw(el, ...)` and
+  on dependency change immediately called `painter.cleanup()`/`JSROOT.cleanup(el)`,
+  even if the previous draw was still in flight (which is common when the
+  user navigates Calculator → Plot → Calculator → Plot before the first
+  draw resolves). JSROOT then logs `pad drawing is not completed when
+  cleanup is called` and `failure, should not happen`. Fixed by chaining
+  every draw and every teardown onto a module-local `drawChain` so that
+  draw and cleanup never overlap on the same element. Also removed the
+  pre-emptive `JSROOT.cleanup(el)` from inside `drawPlot()` (the chained
+  teardown now owns that), and made the resize observer guard against a
+  late `import("jsroot")` resolution after disposal.
 
 ### Pre-existing E2E failures (not addressed)
 

@@ -34,14 +34,24 @@
     cleanup?: () => void;
   }
   let currentPainter = $state<JsrootPainter | null>(null);
+  // Serialize draw/cleanup operations so a re-render (or fast page navigation)
+  // never calls JSROOT.cleanup() while a previous JSROOT.draw() is still
+  // in flight on the same element — that produces JSROOT's
+  // "pad drawing is not completed when cleanup is called" warning.
+  let drawChain: Promise<unknown> = Promise.resolve();
 
   $effect(() => {
     const snapshot = { series, preview, stpUnit, xLog, yLog, axisRanges };
+    const el = container;
+    if (!el) return;
     let cancelled = false;
     let restoreSettings: (() => void) | null = null;
 
-    drawPlot(container, snapshot)
-      .then(({ painter, restore }) => {
+    const job = drawChain
+      .catch(() => {})
+      .then(async () => {
+        if (cancelled) return;
+        const { painter, restore } = await drawPlot(el, snapshot);
         if (cancelled) {
           painter?.cleanup?.();
           restore();
@@ -58,25 +68,39 @@
           console.error("JsrootPlot error:", err);
         }
       });
+    drawChain = job;
 
     return () => {
       cancelled = true;
-      currentPainter?.cleanup?.();
-      currentPainter = null;
-      restoreSettings?.();
-      restoreSettings = null;
+      // Defer cleanup until the in-flight draw settles so JSROOT's pad
+      // painter exists and can be torn down cleanly.
+      drawChain = job.then(async () => {
+        currentPainter?.cleanup?.();
+        currentPainter = null;
+        restoreSettings?.();
+        restoreSettings = null;
+        const JSROOT = await import("jsroot");
+        if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(el);
+      });
     };
   });
 
   $effect(() => {
     if (!container) return;
+    const el = container;
+    let disposed = false;
     const observer = new ResizeObserver(() => {
+      if (disposed) return;
       import("jsroot").then((JSROOT) => {
-        if (typeof JSROOT.resize === "function") JSROOT.resize(container);
+        if (disposed) return;
+        if (typeof JSROOT.resize === "function") JSROOT.resize(el);
       });
     });
-    observer.observe(container);
-    return () => observer.disconnect();
+    observer.observe(el);
+    return () => {
+      disposed = true;
+      observer.disconnect();
+    };
   });
 
   async function drawPlot(
@@ -107,8 +131,6 @@
 
     const mg = buildMultigraph(JSROOT, opts);
     const drawOpts = buildDrawOptions(opts.xLog, opts.yLog);
-
-    if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(el);
 
     const painter = (await JSROOT.draw(
       el,

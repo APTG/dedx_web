@@ -83,37 +83,35 @@
 </script>
 
 <div class={cn("grid gap-4", className)}>
-  <div class="grid grid-cols-1 gap-4 md:grid-cols-[1fr_2fr]">
-    <EntityPanel
-      label="① Particle"
-      items={particleItems}
-      selectedId={state.selectedParticle?.id ?? null}
-      maxHeight="300px"
-      onItemSelect={(particle: ParticleEntity) => {
-        if (particle.id === 1001) {
-          return;
-        }
-        state.selectParticle(particle.id);
-      }}
-      onClear={() => state.clearParticle()}
-    />
+  <EntityPanel
+    label="① Particle"
+    items={particleItems}
+    selectedId={state.selectedParticle?.id ?? null}
+    maxHeight="300px"
+    onItemSelect={(particle: ParticleEntity) => {
+      if (particle.id === 1001) {
+        return;
+      }
+      state.selectParticle(particle.id);
+    }}
+    onClear={() => state.clearParticle()}
+  />
 
-    <EntityPanel
-      label="② Material"
-      items={[]}
-      grouped={true}
-      groups={[
-        { groupName: "Elements", items: elements },
-        { groupName: "Compounds", items: compounds },
-      ]}
-      selectedId={state.selectedMaterial?.id ?? null}
-      maxHeight="300px"
-      onItemSelect={(material: MaterialEntity) => {
-        state.selectMaterial(material.id);
-      }}
-      onClear={() => state.clearMaterial()}
-    />
-  </div>
+  <EntityPanel
+    label="② Material"
+    items={[]}
+    grouped={true}
+    groups={[
+      { groupName: "Elements", items: elements },
+      { groupName: "Compounds", items: compounds },
+    ]}
+    selectedId={state.selectedMaterial?.id ?? null}
+    maxHeight="300px"
+    onItemSelect={(material: MaterialEntity) => {
+      state.selectMaterial(material.id);
+    }}
+    onClear={() => state.clearMaterial()}
+  />
 
   <EntityPanel
     label="③ Program"
