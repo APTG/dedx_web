@@ -7,7 +7,7 @@
 > `tests/e2e/`, all `docs/04-feature-specs/*.md`. Live `pnpm exec playwright test`
 > run against the WASM build (60 prior tests + 12 new tests, 64 active passing,
 > 8 intentional `fixme`).
-> **Reporter:** User (leszek.grzanka@gmail.com) + Claude Sonnet 4.6 via Copilot coding agent
+> **Reporter:** project owner + Claude Sonnet 4.6 via Copilot coding agent
 > **Companion:** [`docs/progress/stage-5-audit-2026-04-26.md`](../progress/stage-5-audit-2026-04-26.md)
 
 ---

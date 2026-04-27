@@ -1,6 +1,10 @@
 import { createEnergyInputState, type EnergyRow } from "./energy-input.svelte";
 import { parseEnergyInput } from "$lib/utils/energy-parser";
-import { convertEnergyToMeVperNucl, convertEnergyFromMeVperNucl } from "$lib/utils/energy-conversions";
+import {
+  convertEnergyToMeVperNucl,
+  convertEnergyFromMeVperNucl,
+  getEnergyUnitCategory,
+} from "$lib/utils/energy-conversions";
 import {
   stpMassToKevUm,
   csdaGcm2ToCm,
@@ -39,8 +43,8 @@ export interface CalculatorState {
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
   addRow(): void;
-  triggerCalculation(): Promise<void>;
-  flushCalculation(): void;
+  triggerCalculation(): void;
+  flushCalculation(): Promise<void> | undefined;
   clearResults(): void;
 }
 
@@ -79,12 +83,18 @@ export function createCalculatorState(
       // "100" on proton → switching to alpha used to keep "100" while a
       // sibling row "1 GeV" became "4000 MeV", which made it impossible
       // for the user to tell what was being conserved.)
-      const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
+      // The parser may return SI-prefixed suffixes (e.g. `GeV/nucl`,
+      // `TeV/u`) which are not part of the base `EnergyUnit` contract;
+      // we keep the original suffix as a string for accurate
+      // E_nucl conversion and derive the *category* (MeV vs MeV/nucl
+      // vs MeV/u) for picking the new display unit.
+      const oldUnitSuffix: string = parsed.unit ?? inputState.masterUnit;
+      const oldUnitCategory: EnergyUnit = getEnergyUnitCategory(oldUnitSuffix);
 
       // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
       const mevPerNucl = convertEnergyToMeVperNucl(
         parsed.value,
-        oldUnit,
+        oldUnitSuffix,
         oldParticle.massNumber,
         oldParticle.atomicMass
       );
@@ -93,10 +103,10 @@ export function createCalculatorState(
       // Proton (A=1) and electron always use total MeV display.
       if (newParticle.id === 1001 || newParticle.massNumber === 1) {
         newUnit = "MeV";
-      } else if (oldUnit === "MeV/nucl") {
+      } else if (oldUnitCategory === "MeV/nucl") {
         // Preserve MeV/nucl for heavy ions (A>1).
         newUnit = "MeV/nucl";
-      } else if (oldUnit === "MeV/u") {
+      } else if (oldUnitCategory === "MeV/u") {
         // Preserve MeV/u for heavy ions (A>1).
         newUnit = "MeV/u";
       } else {
@@ -111,12 +121,16 @@ export function createCalculatorState(
         // Proton: E_nucl × 1 = total MeV (same numeric value as E_nucl).
         newValue = mevPerNucl;
       } else {
-        // Heavy ion: convert E_nucl to the new display unit.
-        if (newUnit === "MeV/nucl" || newUnit === "MeV/u") {
-          newValue = mevPerNucl;
-        } else {
-          newValue = mevPerNucl * newParticle.massNumber;
-        }
+        // Heavy ion: convert E_nucl back to the new display unit using
+        // the new particle's mass data. This is the inverse of the
+        // `convertEnergyToMeVperNucl` call above and correctly handles
+        // MeV/u (which depends on atomicMass / m_u, not just A).
+        newValue = convertEnergyFromMeVperNucl(
+          mevPerNucl,
+          newUnit,
+          newParticle.massNumber,
+          newParticle.atomicMass
+        );
       }
 
       inputState.updateRowText(i, `${formatSigFigs(newValue, 4)} ${newUnit}`);
@@ -428,11 +442,14 @@ export function createCalculatorState(
     addRow() {
       inputState.addRow();
     },
-    async triggerCalculation(): Promise<void> {
+    triggerCalculation(): void {
+      // Schedules a debounced calculation. Use `flushCalculation()` and
+      // await its returned promise if you need to wait for the result
+      // (tests, pre-screenshot, programmatic recompute on share-link).
       debouncedCalculate();
     },
-    flushCalculation() {
-      debouncedCalculate.flush();
+    flushCalculation(): Promise<void> | undefined {
+      return debouncedCalculate.flush();
     },
     clearResults() {
       calculationResults = new Map();

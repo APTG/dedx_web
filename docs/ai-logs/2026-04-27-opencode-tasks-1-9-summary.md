@@ -1,7 +1,7 @@
 # opencode Tasks 1–9 — Summary (Stage 5 E2E Debug in Progress)
 
 **Date:** 2026-04-27  
-**Model:** Qwen3.5-397B-A17B-FP8 via opencode  
+**Model:** (Qwen3.5-397B-A17B-FP8 via opencode)  
 **Branch:** `copilot/check-stage-5-implementations`
 
 ---

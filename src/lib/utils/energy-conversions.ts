@@ -24,6 +24,16 @@ const BASE_UNITS: Record<string, EnergyUnit> = {
   "keV/u": "MeV/u",
 };
 
+/**
+ * Returns the base unit category ('MeV' | 'MeV/nucl' | 'MeV/u') for any
+ * supported energy suffix, including SI-prefixed variants like 'GeV/nucl'
+ * or 'TeV/u'. Use this when reasoning about which display unit a row's
+ * value should fall into after a particle switch.
+ */
+export function getEnergyUnitCategory(unit: string): EnergyUnit {
+  return getBaseUnit(unit);
+}
+
 function getBaseUnit(unit: string): EnergyUnit {
   const base = BASE_UNITS[unit];
   if (base === undefined) {
