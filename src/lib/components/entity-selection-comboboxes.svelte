@@ -3,6 +3,7 @@
   import { cn } from "$lib/utils";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
   import { getProgramDescription } from "$lib/config/program-names";
+  import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import type {
     EntitySelectionState,
     SelectedProgram,
@@ -17,31 +18,6 @@
   }
 
   let { state, class: className, onParticleSelect }: Props = $props();
-
-  function getParticleLabel(particle: ParticleEntity): string {
-    // Special-named particles have no parenthetical symbol — the name IS the identifier.
-    if (particle.id === 1) return "proton";
-    if (particle.id === 2) return "alpha particle";
-    if (particle.id === 1001) return "electron";
-    const symbol = particle.symbol || "";
-    return symbol ? `${particle.name} (${symbol})` : particle.name;
-  }
-
-  function getParticleSearchText(particle: ParticleEntity): string {
-    return [
-      particle.name,
-      particle.symbol,
-      `z=${particle.id}`,
-      `z${particle.id}`,
-      String(particle.id),
-      `a=${particle.massNumber}`,
-      `a${particle.massNumber}`,
-      String(particle.massNumber),
-      ...(particle.aliases ?? []),
-    ]
-      .filter(Boolean)
-      .join(" ");
-  }
 
   const particleItems = $derived.by(() => {
     // "Common particles" group: proton (1), alpha (2), electron (1001)

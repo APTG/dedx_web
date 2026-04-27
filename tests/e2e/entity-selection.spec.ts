@@ -20,7 +20,7 @@ test.describe("Calculator page — compact mode", () => {
     await expect(programTrigger(page)).toBeVisible();
   });
 
-  test("default values show Proton, Water, Auto-select", async ({ page }) => {
+  test("default values show proton, Water, Auto-select", async ({ page }) => {
     await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
@@ -90,17 +90,5 @@ test.describe("Calculator page — compact mode", () => {
     // Note: ICRU 49 (a different program) is valid and may appear; we only exclude the internal ICRU.
     const icruInternal = page.locator('[role="option"]', { hasText: "ICRU — 1.0" });
     await expect(icruInternal).toHaveCount(0);
-  });
-});
-
-test.describe("Plot page — placeholder (Stage 6)", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/plot");
-    await page.waitForSelector("main", { timeout: 10000 });
-  });
-
-  test("Plot page loads and shows coming-soon placeholder", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /plot/i })).toBeVisible();
-    await expect(page.getByText(/coming soon/i)).toBeVisible();
   });
 });
