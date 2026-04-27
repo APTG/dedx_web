@@ -62,12 +62,6 @@ vi.mock("jsroot", () => ({
 import JsrootPlot from "$lib/components/jsroot-plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
 
-const mockResult = {
-  energies: [1, 10, 100],
-  stoppingPowers: [5, 5, 5],
-  csdaRanges: [0.5, 0.5, 0.5],
-};
-
 describe("JsrootPlot", () => {
   it("renders a container div", () => {
     render(JsrootPlot, {

@@ -90,9 +90,9 @@ describe("createPlotState", () => {
     state.addSeries(mockSeries());
     const sid = state.series[0].seriesId;
     state.toggleVisibility(sid);
-    expect(state.series.find((s) => s.seriesId === sid)!.visible).toBe(false);
+    expect(state.series.find((s) => s.seriesId === sid)?.visible).toBe(false);
     state.toggleVisibility(sid);
-    expect(state.series.find((s) => s.seriesId === sid)!.visible).toBe(true);
+    expect(state.series.find((s) => s.seriesId === sid)?.visible).toBe(true);
   });
 
   it("setStpUnit changes unit", () => {

@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { computeSeriesLabels, allocateColor, releaseColor } from "$lib/utils/series-labels";
-import { COLOR_PALETTE } from "$lib/utils/plot-utils";
 
 describe("computeSeriesLabels", () => {
   it("returns full label for single series", () => {
