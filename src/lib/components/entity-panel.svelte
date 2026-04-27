@@ -119,8 +119,7 @@
   <div
     class="space-y-4 overflow-y-auto"
     style="max-height: {maxHeight};"
-    role="list"
-    aria-label="{label}"
+    aria-label={label}
   >
     {#each filteredItems as group (group.groupName)}
       <div>
@@ -134,10 +133,12 @@
 
         <div class="space-y-1">
           {#each group.items as item (item.entity.id)}
-            <div
-              role="listitem"
+            <button
+              type="button"
+              disabled={!item.available}
+              aria-pressed={item.entity.id === selectedId}
               class={cn(
-                "flex cursor-pointer items-center rounded-md px-3 py-2 text-sm transition-colors",
+                "flex w-full items-center rounded-md px-3 py-2 text-left text-sm transition-colors",
                 item.entity.id === selectedId
                   ? "bg-accent text-accent-foreground"
                   : "hover:bg-accent/50",
@@ -158,7 +159,7 @@
               {#if item.badge}
                 <span class="ml-auto rounded bg-secondary px-2 py-0.5 text-xs">{item.badge}</span>
               {/if}
-            </div>
+            </button>
           {/each}
 
           {#if group.items.length === 0}

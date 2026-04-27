@@ -246,7 +246,7 @@
 
         <!-- X axis scale -->
         <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog] ([label, isLog])}
+          {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
             <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
               {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
               <input
@@ -263,7 +263,7 @@
 
         <!-- Y axis scale -->
         <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog] ([label, isLog])}
+          {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
             <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
               {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
               <input
