@@ -10,6 +10,7 @@ import {
 import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
+import type { ParticleEntity } from "$lib/wasm/types";
 
 export interface CalculatedRow {
   id: number;
@@ -33,6 +34,7 @@ export interface CalculatorState {
   validationSummary: { valid: number; invalid: number; outOfRange: number; total: number };
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
+  switchParticle(particleId: number | null): void;
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
   triggerCalculation(): Promise<void>;
@@ -49,6 +51,84 @@ export function createCalculatorState(
   let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
     new Map()
   );
+
+  function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
+    const rows = inputState.rows;
+    for (let i = 0; i < rows.length; i++) {
+      const row = rows[i];
+      const trimmed = row.text.trim();
+      if (trimmed === "") continue;
+
+      const parsed = parseEnergyInput(trimmed);
+      if (!("value" in parsed) || parsed.value === undefined) continue;
+      if ("error" in parsed || "empty" in parsed) continue;
+
+      const hadExplicitSuffix = parsed.unit !== null;
+      
+      // Plain number rows (no suffix) preserve their numeric value (they represent total MeV).
+      // Only rows with explicit per-nucleon units conserve E_nucl.
+      if (!hadExplicitSuffix) {
+        // Keep the numeric value unchanged; it represents total MeV on both particles.
+        continue;
+      }
+
+      const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
+
+      // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
+      const mevPerNucl = convertEnergyToMeVperNucl(
+        parsed.value,
+        oldUnit,
+        oldParticle.massNumber,
+        oldParticle.atomicMass
+      );
+
+      let newUnit: EnergyUnit;
+      // Proton (A=1) and electron always use total MeV display.
+      if (newParticle.id === 1001 || newParticle.massNumber === 1) {
+        newUnit = "MeV";
+      } else if (oldUnit === "MeV/nucl") {
+        // Preserve MeV/nucl for heavy ions (A>1).
+        newUnit = "MeV/nucl";
+      } else if (oldUnit === "MeV/u") {
+        // Preserve MeV/u for heavy ions (A>1).
+        newUnit = "MeV/u";
+      } else {
+        newUnit = "MeV";
+      }
+
+      let newValue: number;
+      if (newParticle.id === 1001) {
+        // Electron: use old particle's A to compute total MeV (electron has no nucleons).
+        newValue = mevPerNucl * oldParticle.massNumber;
+      } else if (newParticle.massNumber === 1) {
+        // Proton: E_nucl × 1 = total MeV (same numeric value as E_nucl).
+        newValue = mevPerNucl;
+      } else {
+        // Heavy ion: convert E_nucl to the new display unit.
+        if (newUnit === "MeV/nucl" || newUnit === "MeV/u") {
+          newValue = mevPerNucl;
+        } else {
+          newValue = mevPerNucl * newParticle.massNumber;
+        }
+      }
+
+      inputState.updateRowText(i, `${formatSigFigs(newValue, 4)} ${newUnit}`);
+    }
+  }
+
+  let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
+
+  function switchParticle(particleId: number | null): void {
+    const oldParticle = previousParticle;
+    const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
+    
+    entitySelection.selectParticle(particleId);
+    
+    if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
+      convertRowsForNewParticle(oldParticle, newParticle);
+    }
+    previousParticle = newParticle;
+  }
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
@@ -332,6 +412,17 @@ export function createCalculatorState(
         particle.atomicMass
       );
       inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
+    },
+    switchParticle(particleId: number | null) {
+      const oldParticle = previousParticle;
+      const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
+      
+      entitySelection.selectParticle(particleId);
+      
+      if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
+        convertRowsForNewParticle(oldParticle, newParticle);
+      }
+      previousParticle = newParticle;
     },
     updateRowText(index: number, text: string) {
       inputState.updateRowText(index, text);

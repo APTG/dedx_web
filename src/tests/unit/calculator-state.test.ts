@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LibdedxServiceImpl } from '$lib/wasm/__mocks__/libdedx';
+import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from '$lib/wasm/__mocks__/libdedx';
 import { buildCompatibilityMatrix } from '$lib/state/compatibility-matrix';
 import { createEntitySelectionState } from '$lib/state/entity-selection.svelte';
 import { createCalculatorState, formatStpValue, formatRangeValue } from '$lib/state/calculator.svelte';
@@ -348,6 +348,103 @@ describe('CalculatorState', () => {
       calcState.setRowUnit(0, 'MeV/nucl');
       
       expect(calcState.rows[0].rawInput).toBe('100 MeV/nucl');
+    });
+  });
+
+  describe('KE conservation on particle switch', () => {
+    it('He (A=4) row "20 MeV/nucl" → switch to proton (A=1): row text → "20 MeV" (E_nucl conserved)', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(2);
+      cs.updateRowText(0, '20 MeV/nucl');
+      cs.switchParticle(1);
+      
+      expect(cs.rows[0].rawInput).toBe('20 MeV');
+      expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(20, 0);
+    });
+
+    it('He (A=4) row "20 MeV/nucl" → switch to proton → switch back to He: round-trip is NOT perfect (proton has no per-nucleon unit)', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(2);
+      cs.updateRowText(0, '20 MeV/nucl');
+      cs.switchParticle(1);  // → "80 MeV" (A=1, total)
+      cs.switchParticle(2);  // → "80 MeV" (treated as total, not per-nucleon)
+      
+      // Round-trip is lossy: proton "80 MeV" (total) → He "80 MeV" (total), not "20 MeV/nucl".
+      // This is expected behavior since proton has no per-nucleon unit display.
+      expect(cs.rows[0].rawInput).toBe('80 MeV');
+    });
+
+    it('He (A=4) row "80 MeV" → switch to proton (A=1): row text → "20 MeV"', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(2);
+      cs.updateRowText(0, '80 MeV');
+      cs.switchParticle(1);
+      
+      expect(cs.rows[0].rawInput).toBe('20 MeV');
+    });
+
+    it('Carbon (A=12) row "120 MeV" → switch to proton: row text → "10 MeV"', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(6);
+      cs.updateRowText(0, '120 MeV');
+      cs.switchParticle(1);
+      
+      expect(cs.rows[0].rawInput).toBe('10 MeV');
+    });
+
+    it('Carbon (A=12) row "10 MeV/nucl" → switch to He (A=4): row text → "10 MeV/nucl"', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(6);
+      cs.updateRowText(0, '10 MeV/nucl');
+      cs.switchParticle(2);
+      
+      expect(cs.rows[0].rawInput).toBe('10 MeV/nucl');
+    });
+
+    it('He (A=4) row "20 MeV/nucl" → switch to electron (ID=1001): row text → "80 MeV"', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(2);
+      cs.updateRowText(0, '20 MeV/nucl');
+      cs.switchParticle(1001);
+      
+      expect(cs.rows[0].rawInput).toBe('80 MeV');
+    });
+
+    it('Plain number row "100" (master unit MeV, proton) → switch to Carbon (A=12): row text → "100", mevNucl ≈ 8.333', () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.updateRowText(0, '100');
+      cs.switchParticle(6);
+      
+      expect(cs.rows[0].rawInput).toBe('100');
+      expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(8.333, 1);
     });
   });
 });
