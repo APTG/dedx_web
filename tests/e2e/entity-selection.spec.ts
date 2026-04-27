@@ -21,7 +21,7 @@ test.describe("Calculator page — compact mode", () => {
   });
 
   test("default values show Proton, Water, Auto-select", async ({ page }) => {
-    await expect(particleTrigger(page)).toContainText(/hydrogen/i);
+    await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
@@ -66,7 +66,7 @@ test.describe("Calculator page — compact mode", () => {
     await page.getByRole("button", { name: /restore defaults/i }).click();
 
     // Verify defaults restored
-    await expect(particleTrigger(page)).toContainText(/hydrogen/i);
+    await expect(particleTrigger(page)).toContainText(/proton/i);
     await expect(materialTrigger(page)).toContainText(/water/i);
     await expect(programTrigger(page)).toContainText(/auto-select/i);
   });
