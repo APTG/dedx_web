@@ -31,7 +31,48 @@ User reported:
    and `pnpm test -- --run` (493/493 unit tests passing).
 5. Ran `pnpm exec playwright test` with a 300 s wall-clock cap. 58 passed,
    9 failed, 4 skipped.
+### Prompt 3: Plot canvas blank, JSROOT undefined, layout broken
 
+User screenshot showed the `/plot` page with three new symptoms:
+
+1. Console: `TypeError: can't access property "settings", JSROOT is undefined`
+   from `jsroot-plot.svelte:96`, then the same error in the resize observer.
+2. Vite/SvelteKit warning about `history.replaceState(...)` conflicting with
+   the SvelteKit router — should use `replaceState` from `$app/navigation`.
+3. Sidebar showed two `+ Add Series` buttons and two `Reset all` links,
+   stacked vertically, because `EntitySelectionPanels` rendered its own
+   stub buttons in addition to the page-level controls.
+
+**AI response**:
+
+1. Verified the installed `jsroot@7.10.3` package exposes only **named ESM
+   exports** (221 of them, including `settings`, `draw`, `resize`,
+   `createTGraph`, `createTMultiGraph`, `createHistogram`, `BIT`,
+   `cleanup`) and **no default export**. The component used
+   `(await import("jsroot")).default` which evaluated to `undefined`,
+   causing every property access to throw. Replaced both dynamic-import
+   sites in `jsroot-plot.svelte` with the namespace form
+   `await import("jsroot")`, then propagated the same fix to
+   `jsroot-plot.test.ts` (the `vi.mock("jsroot", ...)` factory was
+   wrapping its surface in `default: { ... }` — flattened it to top-level
+   named exports — and the in-test import was updated likewise).
+2. Replaced the bare `history.replaceState({}, "", newUrl)` call in
+   `plot/+page.svelte` with SvelteKit's `replaceState(newUrl, page.state)`
+   (`$app/navigation` + `$app/state`) so the router stays in sync.
+3. Removed the duplicate stub `+ Add Series` / `Reset all` block at the
+   bottom of `entity-selection-panels.svelte`. The component is only used
+   inside the plot page, which already renders the wired-up versions
+   below the sidebar; the stub `+ Add Series` had no `onclick` handler
+   and was confusing in the rendered UI.
+4. Re-ran the unit suite (493/493 pass) and the plot E2E spec
+   (`tests/e2e/plot.spec.ts` — 2/2 pass).
+
+During verification an interesting interaction was discovered: removing
+`default` from the runtime import temporarily broke 1/493 unit tests
+(`entity-combobox.test.ts`) because the existing `vi.mock("jsroot")`
+factory still wrapped the surface in a `default` key, leaving
+`JSROOT.settings` undefined in tests too. Updating the mock to expose
+named exports — matching the real ESM shape — restored a clean 493/493.
 ### Prompt 2: Use timeouts so E2E doesn't hang
 
 **AI response**: re-ran with `timeout 300 pnpm exec playwright test
@@ -70,11 +111,43 @@ this session's changes.
   forces removing the list ARIA scaffolding, which is acceptable because
   the panel root still carries `aria-label={label}`.
 
+### Fix `JSROOT undefined` runtime error on plot page
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/jsroot-plot.svelte](../../src/lib/components/jsroot-plot.svelte)
+  - [src/tests/components/jsroot-plot.test.ts](../../src/tests/components/jsroot-plot.test.ts)
+- **Decision**: jsroot 7.10.3 publishes pure ESM with named exports and
+  no default. Use `await import("jsroot")` and read members from the
+  namespace; updated the vitest mock to mirror that shape (no `default:`
+  wrapper).
+
+### Switch URL writes to SvelteKit `replaceState`
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/routes/plot/+page.svelte](../../src/routes/plot/+page.svelte)
+- **Decision**: import `replaceState` from `$app/navigation` and `page`
+  from `$app/state`; pass the existing `page.state` so SvelteKit's router
+  stays consistent and the deprecation warning goes away.
+
+### Remove duplicate Add Series / Reset all from sidebar
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+- **Decision**: the inner stub `+ Add Series` button had no `onclick`
+  handler and was rendered alongside the wired-up controls in
+  `plot/+page.svelte` (visible as a duplicate pair in the user's
+  screenshot). Drop the stub block; the page-level buttons remain the
+  single source of truth.
+
 ### Pre-existing E2E failures (not addressed)
 
 - **Status**: blocked (out of scope for this session)
-- **Stage**: 4.x / 5.x
-- **Files changed**: none
 - **Issue**: 9 Playwright tests fail on the current branch HEAD before any
   of this session's edits:
   - `tests/e2e/entity-selection.spec.ts:23,59` — default particle renders

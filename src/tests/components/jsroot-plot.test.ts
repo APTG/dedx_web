@@ -31,32 +31,30 @@ afterEach(() => {
 });
 
 vi.mock("jsroot", () => ({
-  default: {
-    settings: { ZoomWheel: true, ZoomTouch: true },
-    createTGraph: vi.fn((_n: number, _x: number[], _y: number[]) => ({
-      fLineColor: 1,
-      fLineWidth: 2,
-      fLineStyle: 1,
-      fTitle: "",
-      InvertBit: vi.fn(),
-    })),
-    createTMultiGraph: vi.fn((_graphs: unknown[]) => ({
-      fGraphs: { Add: vi.fn() },
-      fHistogram: null,
-      fTitle: "",
-    })),
-    createHistogram: vi.fn(() => ({
-      fXaxis: { fTitle: "", fXmin: 0, fXmax: 1, InvertBit: vi.fn() },
-      fYaxis: { fTitle: "", InvertBit: vi.fn() },
-      fMinimum: 0,
-      fMaximum: 1,
-      fTitle: "",
-    })),
-    draw: vi.fn(async () => ({ cleanup: vi.fn() })),
-    BIT: vi.fn((n: number) => n),
-    resize: vi.fn(),
-    cleanup: vi.fn(),
-  },
+  settings: { ZoomWheel: true, ZoomTouch: true },
+  createTGraph: vi.fn((_n: number, _x: number[], _y: number[]) => ({
+    fLineColor: 1,
+    fLineWidth: 2,
+    fLineStyle: 1,
+    fTitle: "",
+    InvertBit: vi.fn(),
+  })),
+  createTMultiGraph: vi.fn((_graphs: unknown[]) => ({
+    fGraphs: { Add: vi.fn() },
+    fHistogram: null,
+    fTitle: "",
+  })),
+  createHistogram: vi.fn(() => ({
+    fXaxis: { fTitle: "", fXmin: 0, fXmax: 1, InvertBit: vi.fn() },
+    fYaxis: { fTitle: "", InvertBit: vi.fn() },
+    fMinimum: 0,
+    fMaximum: 1,
+    fTitle: "",
+  })),
+  draw: vi.fn(async () => ({ cleanup: vi.fn() })),
+  BIT: vi.fn((n: number) => n),
+  resize: vi.fn(),
+  cleanup: vi.fn(),
 }));
 
 import JsrootPlot from "$lib/components/jsroot-plot.svelte";
@@ -92,7 +90,7 @@ describe("JsrootPlot", () => {
   });
 
   it("calls JSROOT.draw after mount", async () => {
-    const JSROOT = (await import("jsroot")).default;
+    const JSROOT = await import("jsroot");
     render(JsrootPlot, {
       props: {
         series: [],

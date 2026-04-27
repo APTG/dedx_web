@@ -126,20 +126,4 @@
       }
     }}
   />
-
-  <div class="flex gap-4">
-    <button
-      type="button"
-      class="rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90"
-    >
-      + Add Series
-    </button>
-    <button
-      type="button"
-      class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground"
-      onclick={() => state.resetAll()}
-    >
-      Reset all
-    </button>
-  </div>
 </div>

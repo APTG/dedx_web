@@ -1,5 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
+  import { replaceState } from "$app/navigation";
+  import { page } from "$app/state";
   import { wasmReady } from "$lib/state/ui.svelte";
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
@@ -90,7 +92,7 @@
       yLog: plotState.yLog,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    history.replaceState({}, "", newUrl);
+    replaceState(newUrl, page.state);
   });
 
   // ── Preview series: auto-calculated whenever entity selection changes ──

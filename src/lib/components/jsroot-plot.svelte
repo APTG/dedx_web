@@ -71,8 +71,7 @@
   $effect(() => {
     if (!container) return;
     const observer = new ResizeObserver(() => {
-      import("jsroot").then((mod) => {
-        const JSROOT = mod.default;
+      import("jsroot").then((JSROOT) => {
         if (typeof JSROOT.resize === "function") JSROOT.resize(container);
       });
     });
@@ -91,7 +90,7 @@
       axisRanges: AxisRanges;
     },
   ): Promise<{ painter: JsrootPainter; restore: () => void }> {
-    const JSROOT = (await import("jsroot")).default;
+    const JSROOT = await import("jsroot");
 
     const prevZoomWheel = JSROOT.settings.ZoomWheel;
     JSROOT.settings.ZoomWheel = false;
