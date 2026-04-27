@@ -163,7 +163,7 @@
   // swatch hex matches what JSROOT renders for fLineColor = colorIndex + 2. ──
   let jsrootSwatchColors = $state<Map<number, string> | null>(null);
   $effect(() => {
-    if (!browser) return;
+    if (!browser || jsrootSwatchColors) return;
     getJsrootSwatchColors().then((m) => (jsrootSwatchColors = m));
   });
 
