@@ -1,14 +1,88 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { wasmReady, entityState } from "$lib/state/ui.svelte";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
+  import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
   import { libdedx } from "$lib/wasm/libdedx";
   import type { StpUnit } from "$lib/wasm/types";
   import { Button } from "$lib/components/ui/button";
 
   const plotState = createPlotState();
+
+  let urlInitialized = $state(false);
+
+  $effect(() => {
+    if (!browser || !wasmReady.value || urlInitialized) return;
+    const params = new URLSearchParams(window.location.search);
+    const decoded = decodePlotUrl(params);
+
+    if (decoded.particleId !== null) {
+      entityState.selectParticle(decoded.particleId);
+    }
+    if (decoded.materialId !== null) {
+      entityState.selectMaterial(decoded.materialId);
+    }
+    if (decoded.programId !== -1) {
+      entityState.selectProgram(decoded.programId);
+    }
+
+    if (decoded.stpUnit) {
+      plotState.setStpUnit(decoded.stpUnit);
+    }
+    plotState.setAxisScale("x", decoded.xLog);
+    plotState.setAxisScale("y", decoded.yLog);
+
+    const service = libdedx.service;
+    if (!service) return;
+
+    for (const s of decoded.series) {
+      try {
+        const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
+        const programs = service.getPrograms();
+        const particles = service.getParticles(s.programId);
+        const materials = service.getMaterials(s.programId);
+        const prog = programs.find((p) => p.id === s.programId);
+        const part = particles.find((p) => p.id === s.particleId);
+        const mat = materials.find((m) => m.id === s.materialId);
+        if (!prog || !part || !mat) continue;
+        plotState.addSeries({
+          programId: s.programId,
+          particleId: s.particleId,
+          materialId: s.materialId,
+          programName: prog.name,
+          particleName: part.name,
+          materialName: mat.name,
+          density: mat.density,
+          result,
+        });
+      } catch {
+        // Invalid triplet — silently skip per spec
+      }
+    }
+    urlInitialized = true;
+  });
+
+  $effect(() => {
+    if (!browser || !urlInitialized) return;
+    const params = encodePlotUrl({
+      particleId: entityState.selectedParticle?.id ?? null,
+      materialId: entityState.selectedMaterial?.id ?? null,
+      programId: entityState.selectedProgram.id,
+      series: plotState.series.map((s) => ({
+        programId: s.programId,
+        particleId: s.particleId,
+        materialId: s.materialId,
+      })),
+      stpUnit: plotState.stpUnit,
+      xLog: plotState.xLog,
+      yLog: plotState.yLog,
+    });
+    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    history.replaceState({}, "", newUrl);
+  });
 
   // ── Preview series: auto-calculated whenever entity selection changes ──
   $effect(() => {
@@ -221,7 +295,7 @@
               <span>Preview — {plotState.preview.particleName} in {plotState.preview.materialName}</span>
               <button
                 aria-label="Toggle preview visibility"
-                onclick={() => { if (plotState.preview) plotState.preview.visible = !plotState.preview.visible; }}
+                onclick={() => plotState.togglePreviewVisibility()}
                 class="ml-auto text-muted-foreground hover:text-foreground"
               >👁</button>
             </div>

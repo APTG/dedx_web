@@ -35,6 +35,7 @@ export interface PlotState {
   toggleVisibility(seriesId: number): void;
   setPreview(data: PlotSeriesData): void;
   clearPreview(): void;
+  togglePreviewVisibility(): void;
   setStpUnit(unit: StpUnit): void;
   setAxisScale(axis: "x" | "y", log: boolean): void;
   resetAll(): void;
@@ -47,6 +48,7 @@ export function createPlotState(): PlotState {
   let xLog = $state(true);
   let yLog = $state(true);
   let nextSeriesId = $state(1);
+  // eslint-disable-next-line prefer-const -- $state needed for Svelte reactivity
   let availableColorIndices = $state<Set<number>>(
     new Set(COLOR_PALETTE.map((_, i) => i)),
   );
@@ -111,6 +113,12 @@ export function createPlotState(): PlotState {
     preview = null;
   }
 
+  function togglePreviewVisibility(): void {
+    if (preview) {
+      preview = { ...preview, visible: !preview.visible };
+    }
+  }
+
   function setStpUnit(unit: StpUnit): void {
     stpUnit = unit;
   }
@@ -156,6 +164,7 @@ export function createPlotState(): PlotState {
     toggleVisibility,
     setPreview,
     clearPreview,
+    togglePreviewVisibility,
     setStpUnit,
     setAxisScale,
     resetAll,
