@@ -5,6 +5,7 @@ const SI_PREFIX_TO_MEV: Record<string, number> = {
   keV: 1e-3,
   MeV: 1,
   GeV: 1e3,
+  TeV: 1e6,
 };
 
 const BASE_UNITS: Record<string, EnergyUnit> = {
@@ -12,11 +13,14 @@ const BASE_UNITS: Record<string, EnergyUnit> = {
   keV: "MeV",
   MeV: "MeV",
   GeV: "MeV",
+  TeV: "MeV",
   "MeV/nucl": "MeV/nucl",
   "GeV/nucl": "MeV/nucl",
+  "TeV/nucl": "MeV/nucl",
   "keV/nucl": "MeV/nucl",
   "MeV/u": "MeV/u",
   "GeV/u": "MeV/u",
+  "TeV/u": "MeV/u",
   "keV/u": "MeV/u",
 };
 

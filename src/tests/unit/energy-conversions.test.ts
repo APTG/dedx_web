@@ -119,4 +119,25 @@ describe("convertEnergyFromMeVperNucl", () => {
     // value_MeV_per_u = value_MeV_per_nucl * A / m_u
     expect(convertEnergyFromMeVperNucl(1, "MeV/u", 12, m_u)).toBeCloseTo(12 / m_u, 6);
   });
+
+  test("TeV to MeV/nucl for proton (A=1) = 1e6", () => {
+    expect(convertEnergyToMeVperNucl(1, "TeV", 1)).toBe(1e6);
+  });
+
+  test("TeV/nucl to MeV/nucl for carbon (A=12) = 1e6", () => {
+    expect(convertEnergyToMeVperNucl(1, "TeV/nucl", 12, 12.011)).toBe(1e6);
+  });
+
+  test("TeV/u to MeV/nucl for carbon (A=12) ≈ 1e6", () => {
+    // 1 TeV/u = 1e6 MeV/u, then MeV/u → MeV/nucl: (1e6 * m_u) / A = (1e6 * 12.011) / 12 ≈ 1000916.67
+    expect(convertEnergyToMeVperNucl(1, "TeV/u", 12, 12.011)).toBeCloseTo(1000916.67, 2);
+  });
+
+  test("MeV/nucl to TeV for proton (A=1) = 1", () => {
+    expect(convertEnergyFromMeVperNucl(1e6, "TeV", 1)).toBe(1);
+  });
+
+  test("MeV/nucl to TeV/nucl for carbon (A=12) = 1", () => {
+    expect(convertEnergyFromMeVperNucl(1e6, "TeV/nucl", 12, 12.011)).toBe(1);
+  });
 });

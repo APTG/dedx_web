@@ -1,8 +1,21 @@
-# 2026-04-27 — Unit Handling spec v4: KE conservation, TeV units, typo suggestions, particle group rename
+# 2026-04-27 — Unit Handling spec v4 + opencode task list: KE conservation, TeV units, typo suggestions, particle group rename
 
 ## Session Narrative
 
 ### Prompt 1: Continue Copilot branch work — spec decisions on unit handling and particle naming
+
+(See earlier content above for prompts 1–2.)
+
+### Prompt 3: Turn review + spec changes into opencode task list
+
+**AI response**: created `docs/opencode-tasks-2026-04-27.md` — a detailed,
+copy-paste-ready prompt for Qwen3.5-397B-A17B-FP8 via opencode. Nine tasks in
+dependency order, each self-contained so the user can run `/compact` between
+them. TDD throughout (tests written first). MCPs used: tailwind + playwright.
+Tasks cover: TeV units, typo suggestions, particle labelling ("proton"/
+"alpha particle"/"electron" + "Common particles"/"Ions" groups), `setRowUnit`
+KE fix, KE conservation on particle switch (un-skip all E2E fixme tests),
+master unit selector, "Add row" button, debounce wiring, dead code cleanup.
 
 User asked to continue work started by GitHub Copilot on branch
 `copilot/check-stage-5-implementations`. Three specific decisions provided:

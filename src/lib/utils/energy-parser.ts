@@ -9,11 +9,14 @@ export type EnergySuffixUnit =
   | "keV"
   | "MeV"
   | "GeV"
+  | "TeV"
   | "MeV/nucl"
   | "GeV/nucl"
+  | "TeV/nucl"
   | "keV/nucl"
   | "MeV/u"
   | "GeV/u"
+  | "TeV/u"
   | "keV/u";
 
 export interface ParsedEnergy {
@@ -51,11 +54,14 @@ const CANONICAL_UNITS: ReadonlyMap<string, EnergySuffixUnit> = new Map([
   ["keV", "keV"],
   ["MeV", "MeV"],
   ["GeV", "GeV"],
+  ["TeV", "TeV"],
   ["MeV/nucl", "MeV/nucl"],
   ["GeV/nucl", "GeV/nucl"],
+  ["TeV/nucl", "TeV/nucl"],
   ["keV/nucl", "keV/nucl"],
   ["MeV/u", "MeV/u"],
   ["GeV/u", "GeV/u"],
+  ["TeV/u", "TeV/u"],
   ["keV/u", "keV/u"],
 ]);
 

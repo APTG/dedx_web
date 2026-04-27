@@ -152,4 +152,26 @@ describe("parseEnergyInput", () => {
     const result = parseEnergyInput("1.5E2 MeV");
     expect(result).toEqual({ value: 150, unit: "MeV" });
   });
+
+  describe("TeV range", () => {
+    test("parses TeV unit", () => {
+      const result = parseEnergyInput("1 TeV");
+      expect(result).toEqual({ value: 1, unit: "TeV" });
+    });
+
+    test("parses TeV/nucl unit", () => {
+      const result = parseEnergyInput("0.5 TeV/nucl");
+      expect(result).toEqual({ value: 0.5, unit: "TeV/nucl" });
+    });
+
+    test("parses TeV/u unit", () => {
+      const result = parseEnergyInput("2 TeV/u");
+      expect(result).toEqual({ value: 2, unit: "TeV/u" });
+    });
+
+    test("10 TeV is accepted (not rejected as unknown unit)", () => {
+      const result = parseEnergyInput("10 TeV");
+      expect(result).toEqual({ value: 10, unit: "TeV" });
+    });
+  });
 });
