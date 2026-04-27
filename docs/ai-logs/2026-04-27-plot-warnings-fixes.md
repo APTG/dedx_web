@@ -235,3 +235,119 @@ this session's changes.
   so these are existing regressions on `qwen/stage-5-jsroot-plot`. Should
   be fixed in a dedicated session that revisits the entity-combobox
   default selection and the Add-row UI.
+
+---
+
+## Round 5 — Plot sidebar layout & calculator-style naming
+
+### Prompt 5: Program scrolls below the fold; align with calculator UX
+
+User reported that on a large screen the Program panel sits so far down
+that the whole page must be scrolled to reach it. Asked for a denser
+sidebar layout and to **adopt the calculator's polished particle/material
+patterns**: the "Common particles" / "Ions" split, the lowercase
+`proton` / `alpha particle` / `electron` labels, and material labels
+without the leading numeric ID. Also: hide the electron from
+"first-glance" prominence, fit Particle and Material side-by-side, and
+use the same particle naming on the plot (series legends) — even if it
+means amending the spec.
+
+**AI response**:
+
+1. **Extracted shared helpers** into
+   [src/lib/utils/particle-label.ts](../../src/lib/utils/particle-label.ts)
+   so Calculator combobox, Plot full-panel and Plot series legends all
+   share one source of truth for particle naming. Refactored
+   `entity-selection-comboboxes.svelte` to import from the new module
+   (drops two duplicated functions).
+2. **Refactored `entity-selection-panels.svelte`** to mirror the
+   calculator's pattern:
+   - Particle panel now uses `grouped`/`groups` with two sections —
+     "Common particles" (proton, alpha particle, electron) and "Ions"
+     (sorted by Z). Electron stays in Common particles but is greyed
+     out (ESTAR unsupported), so it is visible to discover yet visually
+     de-emphasised.
+   - Particle labels come from the shared `getParticleLabel` —
+     `proton` / `alpha particle` / `electron` / `Element (Symbol)`. The
+     old `Z=N Name (Sym)` format is gone.
+   - Material labels are now just `material.name`. The numeric ID
+     stays as a hidden `searchText` so users can still type "276" to
+     find Water.
+3. **Plumbed `searchText` through `entity-panel.svelte`** — added an
+   optional `searchText` field on `EntityItem<T>` and made the filter
+   match on it in addition to label/description. No visible change for
+   call sites that don't set it.
+4. **Restored side-by-side layout per spec.** Reinstated the
+   `1fr+2fr` Particle | Material sub-grid in
+   `entity-selection-panels.svelte`, with Program full-width below at
+   `maxHeight=150px`. Bumped the plot page sidebar column from
+   `minmax(360px,3fr)_7fr` to `minmax(520px,5fr)_7fr` so the two
+   panels actually fit comfortably; combined with the shorter Program
+   list, all three panels now sit above the fold on a 1080p display.
+5. **Plot series legends** now also use `getParticleLabel`, so a
+   freshly added series reads `"proton in Water"` instead of
+   `"Hydrogen in Water"`.
+6. **Spec amendment**:
+   `docs/04-feature-specs/entity-selection.md` (§ Particle naming
+   preferences) gained a note that both layout modes share the same
+   labels via `src/lib/utils/particle-label.ts`, including the plot
+   series legends.
+7. Verification: `pnpm test -- --run` → 493/493; plot E2E
+   (`tests/e2e/plot.spec.ts`) → 2/2.
+
+### Refactor: shared `getParticleLabel` helper
+
+- **Status**: completed
+- **Stage**: 5.5 (plot) + 4.6 (entity selection UX)
+- **Files changed**:
+  - [src/lib/utils/particle-label.ts](../../src/lib/utils/particle-label.ts) (new)
+  - [src/lib/components/entity-selection-comboboxes.svelte](../../src/lib/components/entity-selection-comboboxes.svelte)
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+  - [src/routes/plot/+page.svelte](../../src/routes/plot/+page.svelte)
+- **Decision**: extract instead of duplicate so the plot, calculator and
+  series legends never drift apart again.
+
+### Refactor: plot particle panel — Common particles / Ions split
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+- **Decision**: keep electron in "Common particles" (matches the
+  calculator and the spec wireframe) but greyed out — that is already
+  the agreed "discoverable but de-emphasised" treatment. Pulling it
+  into a separate "Other" section would diverge from the spec without
+  user-visible benefit since greyed-out items already drop in opacity.
+
+### Refactor: drop material ID from plot panel labels
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+  - [src/lib/components/entity-panel.svelte](../../src/lib/components/entity-panel.svelte)
+- **Decision**: the spec already mandates this for the calculator
+  combobox; the plot panel was the outlier. Adding `searchText` to
+  `EntityPanel` keeps numeric-ID search ("276" → Water) working.
+
+### Layout: side-by-side Particle | Material, Program below
+
+- **Status**: completed
+- **Stage**: 5.5 (plot)
+- **Files changed**:
+  - [src/lib/components/entity-selection-panels.svelte](../../src/lib/components/entity-selection-panels.svelte)
+  - [src/routes/plot/+page.svelte](../../src/routes/plot/+page.svelte)
+- **Decision**: revert round-4's vertical stack — that fix was a
+  workaround for cramped material width, which is now solved by
+  dropping the ID prefix and widening the sidebar column from
+  `minmax(360px,3fr)` to `minmax(520px,5fr)`. The result matches the
+  spec wireframe exactly and brings Program above the fold.
+
+### Spec amendment: plot uses calculator's particle naming
+
+- **Status**: completed
+- **Stage**: docs
+- **Files changed**:
+  - [docs/04-feature-specs/entity-selection.md](../../docs/04-feature-specs/entity-selection.md)
+- **Decision**: documented that both layout modes (and the plot series
+  legends) share `getParticleLabel` from `src/lib/utils/particle-label.ts`.

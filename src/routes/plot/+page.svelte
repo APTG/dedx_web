@@ -10,6 +10,7 @@
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
+  import { getParticleLabel } from "$lib/utils/particle-label";
   import { getService } from "$lib/wasm/loader";
 
   const plotState = createPlotState();
@@ -63,7 +64,7 @@
             particleId: s.particleId,
             materialId: s.materialId,
             programName: prog.name,
-            particleName: part.name,
+            particleName: getParticleLabel(part),
             materialName: mat.name,
             density: mat.density,
             result,
@@ -121,7 +122,7 @@
           particleId: selectedParticle.id,
           materialId: selectedMaterial.id,
           programName,
-          particleName: selectedParticle.name,
+          particleName: getParticleLabel(selectedParticle),
           materialName: selectedMaterial.name,
           density: selectedMaterial.density,
           result,
@@ -154,7 +155,7 @@
       particleId: selectedParticle.id,
       materialId: selectedMaterial.id,
       programName: plotState.preview.programName,
-      particleName: selectedParticle.name,
+      particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
       density: selectedMaterial.density,
       result: plotState.preview.result,
@@ -193,7 +194,7 @@
   </div>
 {:else}
   <!-- Desktop: sidebar + main grid -->
-  <div class="grid gap-4 lg:grid-cols-[minmax(360px,3fr)_7fr]">
+  <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
 
     <!-- ── SIDEBAR ── -->
     <aside class="flex flex-col gap-4">

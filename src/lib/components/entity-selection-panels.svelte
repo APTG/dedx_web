@@ -4,6 +4,7 @@
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
+  import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
 
   interface Props {
     state: EntitySelectionState;
@@ -12,23 +13,39 @@
 
   let { state, class: className }: Props = $props();
 
-  function getParticleLabel(particle: ParticleEntity): string {
-    if (particle.id === 1001) {
-      return "Electron";
-    }
-    const atomicNumber = particle.id > 0 ? particle.id : "";
-    const symbol = particle.symbol || "";
-    return `${atomicNumber ? `Z=${atomicNumber} ` : ""}${particle.name}${symbol ? ` (${symbol})` : ""}`;
-  }
+  const COMMON_PARTICLE_IDS = new Set([1, 2, 1001]);
+  const COMMON_PARTICLE_ORDER = [1, 2, 1001];
 
-  const particleItems = $derived.by(() => {
-    return state.allParticles.map((particle) => ({
+  function toParticleItem(particle: ParticleEntity) {
+    return {
       entity: particle,
-      available: state.availableParticles.some((p) => p.id === particle.id),
+      // Electron is intentionally non-selectable until ESTAR is wired up.
+      available:
+        particle.id !== 1001 &&
+        state.availableParticles.some((p) => p.id === particle.id),
       label: getParticleLabel(particle),
       description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
-    }));
-  });
+      searchText: getParticleSearchText(particle),
+    };
+  }
+
+  const commonParticles = $derived.by(() =>
+    state.allParticles
+      .filter((p) => COMMON_PARTICLE_IDS.has(p.id))
+      .sort(
+        (a, b) =>
+          COMMON_PARTICLE_ORDER.indexOf(a.id) -
+          COMMON_PARTICLE_ORDER.indexOf(b.id),
+      )
+      .map(toParticleItem),
+  );
+
+  const ionParticles = $derived.by(() =>
+    state.allParticles
+      .filter((p) => !COMMON_PARTICLE_IDS.has(p.id))
+      .sort((a, b) => a.id - b.id)
+      .map(toParticleItem),
+  );
 
   const elements = $derived.by(() => {
     return state.allMaterials
@@ -37,7 +54,11 @@
       .map((material) => ({
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        // ID is intentionally not in the visible label — too noisy alongside
+        // the element list. Keep it as a hidden search keyword so users can
+        // still type "276" to find Water.
+        label: material.name,
+        searchText: `${material.id} ${material.name}`,
       }));
   });
 
@@ -48,7 +69,8 @@
       .map((material) => ({
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
-        label: `${material.id}  ${material.name}`,
+        label: material.name,
+        searchText: `${material.id} ${material.name}`,
       }));
   });
 
@@ -83,41 +105,53 @@
 </script>
 
 <div class={cn("grid gap-4", className)}>
-  <EntityPanel
-    label="① Particle"
-    items={particleItems}
-    selectedId={state.selectedParticle?.id ?? null}
-    maxHeight="300px"
-    onItemSelect={(particle: ParticleEntity) => {
-      if (particle.id === 1001) {
-        return;
-      }
-      state.selectParticle(particle.id);
-    }}
-    onClear={() => state.clearParticle()}
-  />
+  <!--
+    Spec: docs/04-feature-specs/entity-selection.md § Layout & Panels (Plot Page)
+    Particle and Material live side-by-side in a 1fr+2fr sub-grid; Program
+    spans the full sidebar width below with a shorter list height (~150px).
+  -->
+  <div class="grid grid-cols-1 gap-4 md:grid-cols-[1fr_2fr]">
+    <EntityPanel
+      label="① Particle"
+      items={[]}
+      grouped={true}
+      groups={[
+        { groupName: "Common particles", items: commonParticles },
+        { groupName: "Ions", items: ionParticles },
+      ]}
+      selectedId={state.selectedParticle?.id ?? null}
+      maxHeight="260px"
+      onItemSelect={(particle: ParticleEntity) => {
+        if (particle.id === 1001) {
+          return;
+        }
+        state.selectParticle(particle.id);
+      }}
+      onClear={() => state.clearParticle()}
+    />
 
-  <EntityPanel
-    label="② Material"
-    items={[]}
-    grouped={true}
-    groups={[
-      { groupName: "Elements", items: elements },
-      { groupName: "Compounds", items: compounds },
-    ]}
-    selectedId={state.selectedMaterial?.id ?? null}
-    maxHeight="300px"
-    onItemSelect={(material: MaterialEntity) => {
-      state.selectMaterial(material.id);
-    }}
-    onClear={() => state.clearMaterial()}
-  />
+    <EntityPanel
+      label="② Material"
+      items={[]}
+      grouped={true}
+      groups={[
+        { groupName: "Elements", items: elements },
+        { groupName: "Compounds", items: compounds },
+      ]}
+      selectedId={state.selectedMaterial?.id ?? null}
+      maxHeight="260px"
+      onItemSelect={(material: MaterialEntity) => {
+        state.selectMaterial(material.id);
+      }}
+      onClear={() => state.clearMaterial()}
+    />
+  </div>
 
   <EntityPanel
     label="③ Program"
     items={programItems}
     selectedId={state.selectedProgram?.id ?? null}
-    maxHeight="200px"
+    maxHeight="150px"
     onItemSelect={(item: any) => {
       if ("id" in item) {
         state.selectProgram(item.id);

@@ -211,6 +211,12 @@ Notes:
   Iodine / Copernicium displayed without a symbol) was caused by the
   table only covering Z=1..18; that has been fixed but the test suite
   should assert non-empty `chemicalSymbol` for every entry.
+- **Both layout modes share these labels** — the calculator combobox
+  (`entity-selection-comboboxes.svelte`) and the plot full-panel
+  (`entity-selection-panels.svelte`) both render via the shared helper
+  `getParticleLabel()` in `src/lib/utils/particle-label.ts`. The plot
+  page also uses this label for series names so legends read
+  "proton in Water" instead of "Hydrogen in Water".
 
 ### 2. Material Selector (second — middle)
 

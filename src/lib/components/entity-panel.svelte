@@ -7,6 +7,8 @@
     label: string;
     description?: string;
     badge?: string;
+    /** Extra hidden text matched by the filter (e.g. ID, aliases). Not displayed. */
+    searchText?: string;
   }
 
   interface GroupedItems<T> {
@@ -55,20 +57,18 @@
       return [{ groupName: "", items }];
     }
 
-    const filtered = items.filter(
-      (item) =>
-        item.label.toLowerCase().includes(term) || item.description?.toLowerCase().includes(term),
-    );
+    const matches = (item: EntityItem<T>) =>
+      item.label.toLowerCase().includes(term) ||
+      item.description?.toLowerCase().includes(term) ||
+      item.searchText?.toLowerCase().includes(term);
+
+    const filtered = items.filter(matches);
 
     if (grouped && groups.length > 0) {
       const groupedFiltered = groups
         .map((group) => ({
           groupName: group.groupName,
-          items: group.items.filter(
-            (item) =>
-              item.label.toLowerCase().includes(term) ||
-              item.description?.toLowerCase().includes(term),
-          ),
+          items: group.items.filter(matches),
         }))
         .filter((group) => group.items.length > 0);
       return groupedFiltered;
