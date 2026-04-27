@@ -2,6 +2,7 @@
   import { isAdvancedMode } from "$lib/state/ui.svelte";
   import { autoScaleLengthCm } from "$lib/utils/unit-conversions";
   import { formatSigFigs } from "$lib/utils/unit-conversions";
+  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { CalculatorState, CalculatedRow } from "$lib/state/calculator.svelte";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -88,17 +89,7 @@
   }
 
   function getAvailableUnits(): EnergyUnit[] {
-    const particle = entitySelection.selectedParticle;
-    if (!particle) return ["MeV"];
-
-    const isElectron = particle.id === 1001;
-    const isProton = particle.massNumber === 1 && !isElectron;
-    if (isElectron || isProton) return ["MeV"];
-
-    if (isAdvancedMode.value) {
-      return ["MeV", "MeV/nucl", "MeV/u"];
-    }
-    return ["MeV", "MeV/nucl"];
+    return getAvailableEnergyUnits(entitySelection.selectedParticle, isAdvancedMode.value);
   }
 
   function handleInputFocus(event: Event) {

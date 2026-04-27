@@ -1,21 +1,18 @@
 /**
  * Particle / unit switching E2E corner-case sequences.
  *
- * Two purposes:
+ * Locks down the **kinetic-energy-conservation** behaviour mandated by
+ * `docs/04-feature-specs/unit-handling.md` v4 §"Unit Preservation on
+ * Particle Change":
  *
- * 1. **Lock down today's behaviour** — when the user changes the selected
- *    particle, the typed numeric value is **not modified** (per
- *    `docs/04-feature-specs/unit-handling.md` §"Unit Preservation on Particle
- *    Change", points 1–4). The "→ MeV/nucl" column reinterprets the same
- *    number under the new particle's mass number.
+ *   - Switching the particle preserves each row's per-nucleon kinetic
+ *     energy (E_nucl). E.g. He @ 20 MeV/nucl → switch to proton →
+ *     row reads `20 MeV` (since proton A=1 ⇒ MeV = MeV/nucl).
+ *   - Toggling a row's unit between MeV and MeV/nucl re-expresses the
+ *     same physical KE in the new unit, not the same numeric value.
  *
- * 2. **Document the open question** — the project owner has requested that
- *    *kinetic energy be conserved* on particle/unit switches (e.g. He @
- *    20 MeV/nucl ≡ 80 MeV; switching to a proton should show 80 MeV; back
- *    to He should show 20 MeV/nucl). The spec does NOT mandate this today.
- *    The desired-behaviour assertions are wrapped in `test.fixme()` so the
- *    suite stays green while the gap is tracked. See
- *    `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`.
+ * Companion design notes:
+ * `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`.
  */
 import { test, expect } from "@playwright/test";
 
@@ -140,66 +137,28 @@ test.describe("Per-row unit dropdown — current behaviour", () => {
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Desired behaviour: kinetic energy conservation on particle/unit switch.
+// Pending KE-conservation behaviours that need follow-up implementation.
 //
-// These are intentionally `test.fixme()` — they describe the behaviour the
-// project owner has requested. They will be flipped to active once
-// `docs/04-feature-specs/unit-handling.md` is updated to mandate KE
-// conservation and the implementation lands.
+// Active KE-conservation behaviours (particle switch, per-row toggle) are
+// covered by the two `describe` blocks above. The cases here track work
+// the spec mandates but the implementation does not yet meet:
+//
+//   - master-unit toggle MeV ↔ MeV/nucl needs to convert row values
+//     (Task 6 follow-up; see calculator.svelte.ts setMasterUnit).
+//   - multi-row, particle round-trip preservation across all rows.
+//
+// Both are wrapped in `test.fixme()` so the suite stays green while the
+// gap is tracked. Note: an electron-selection scenario was intentionally
+// omitted — `entity-selection-comboboxes.svelte` blocks selecting
+// particle id 1001 (ESTAR is not implemented in libdedx v1.4.0); see
+// `src/lib/components/entity-selection-comboboxes.svelte:209-218`.
 // ─────────────────────────────────────────────────────────────────────────────
 
-test.describe("Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented)", () => {
+test.describe("Particle/unit switching — KE conservation (pending)", () => {
   test.beforeEach(async ({ page }) => {
     await waitForWasm(page);
     await waitForTable(page);
   });
-
-  test(
-    "He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)",
-    async ({ page }) => {
-      await selectParticle(page, "alpha");
-      await typeInRow(page, 0, "20 MeV/nucl");
-      expect(await mevNuclCell(page, 0)).toContain("20");
-
-      await selectParticle(page, "proton");
-      // E_nucl conserved: 20 MeV/nucl on He (A=4) → 20 MeV on proton (A=1).
-      expect(await rowText(page, 0)).toBe("20 MeV");
-      expect(await mevNuclCell(page, 0)).toContain("20");
-    },
-  );
-
-  test(
-    "He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)",
-    async ({ page }) => {
-      await selectParticle(page, "alpha");
-      await typeInRow(page, 0, "20 MeV/nucl");
-
-      await selectParticle(page, "proton");
-      // E_nucl conserved: 20 MeV/nucl on He → 20 MeV on proton (A=1, total MeV display).
-      expect(await rowText(page, 0)).toBe("20 MeV");
-
-      await selectParticle(page, "alpha");
-      // Round-trip is lossy: proton "20 MeV" (total) → He "20 MeV" (total), not "20 MeV/nucl".
-      // This is expected: the per-nucleon information is lost when going through proton.
-      expect(await rowText(page, 0)).toBe("20 MeV");
-    },
-  );
-
-  test(
-    "Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved",
-    async ({ page }) => {
-      await selectParticle(page, "carbon");
-      await typeInRow(page, 0, "12 MeV");
-
-      const unitSelect = page.locator("tbody tr").first().locator("select").first();
-      await unitSelect.selectOption("MeV/nucl");
-
-      // DESIRED: the numeric value converts on unit toggle.
-      // 12 MeV total ÷ 12 nucleons = 1 MeV/nucl.
-      expect(await rowText(page, 0)).toBe("1 MeV/nucl");
-      expect(await mevNuclCell(page, 0)).toContain("1");
-    },
-  );
 
   test.fixme(
     "Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV (KE conserved)",
@@ -212,7 +171,8 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
 
       await page.getByRole("radio", { name: /^MeV$/i }).click();
       // DESIRED: 100 MeV/nucl × 12 = 1200 MeV.
-      // NOTE: This test depends on Task 6 (master unit selector UI).
+      // NOTE: This test depends on master-unit-selector KE conversion
+      // (calculator.svelte.ts setMasterUnit) being wired up.
       expect(await rowText(page, 0)).toBe("1200");
     },
   );
@@ -236,25 +196,10 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
       expect(await rowText(page, 1)).toBe("50 MeV");
     },
   );
-
-  test(
-    "Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)",
-    async ({ page }) => {
-      await selectParticle(page, "alpha");
-      await typeInRow(page, 0, "20 MeV/nucl");
-      expect(await mevNuclCell(page, 0)).toContain("20");
-
-      // Electron only supports MeV; the row is remapped to total KE.
-      // E_nucl=20 MeV/nucl on He (A=4) → total = 20 × 4 = 80 MeV for electron.
-      await selectParticle(page, "electron");
-      expect(await rowText(page, 0)).toBe("80 MeV");
-      expect(await mevNuclCell(page, 0)).toContain("80");
-    },
-  );
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Add-row UX — there is no explicit "Add row" button; rows auto-append.
+// Add-row UX — explicit "+ Add row" button rendered below the table.
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe("Add row UX", () => {
@@ -279,11 +224,15 @@ test.describe("Add row UX", () => {
     await expect(page.locator("tbody tr")).toHaveCount(initialCount + 2);
   });
 
-  test("there is no explicit 'Add row' button rendered in the result table", async ({ page }) => {
-    // The legacy `energy-input.svelte` used to render an "Add row" button,
-    // but the unified `result-table.svelte` relies on auto-append. Lock this
-    // in as a behavioural assertion so a future regression that re-introduces
-    // the button has to update this test deliberately.
-    await expect(page.getByRole("button", { name: /^Add row$/i })).toHaveCount(0);
+  test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({ page }) => {
+    // `result-table.svelte` renders an explicit add-row affordance
+    // (button text: "+ Add row"). It coexists with the auto-append
+    // behaviour above; clicking it inserts an extra empty row immediately.
+    const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
+    await expect(addBtn).toHaveCount(1);
+
+    const before = await page.locator("tbody tr").count();
+    await addBtn.click();
+    await expect(page.locator("tbody tr")).toHaveCount(before + 1);
   });
 });

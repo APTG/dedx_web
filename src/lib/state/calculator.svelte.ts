@@ -126,18 +126,6 @@ export function createCalculatorState(
 
   let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
 
-  function switchParticle(particleId: number | null): void {
-    const oldParticle = previousParticle;
-    const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-    
-    entitySelection.selectParticle(particleId);
-    
-    if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
-      convertRowsForNewParticle(oldParticle, newParticle);
-    }
-    previousParticle = newParticle;
-  }
-
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
     if (material?.isGasByDefault) {

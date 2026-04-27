@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { wasmReady } from "$lib/state/ui.svelte";
+  import { wasmReady, isAdvancedMode } from "$lib/state/ui.svelte";
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
@@ -8,19 +8,10 @@
   import ResultTable from "$lib/components/result-table.svelte";
   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
   import { getService } from "$lib/wasm/loader";
-  import type { EnergyUnit } from "$lib/wasm/types";
+  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
-
-  function getAvailableUnits(): EnergyUnit[] {
-    if (!state?.selectedParticle) return ["MeV"];
-    const particle = state.selectedParticle;
-    const isElectron = particle.id === 1001;
-    const isProton = particle.massNumber === 1 && !isElectron;
-    if (isElectron || isProton) return ["MeV"];
-    return ["MeV", "MeV/nucl"];
-  }
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -53,7 +44,7 @@
       <EntitySelectionComboboxes {state} onParticleSelect={(particleId) => calcState.switchParticle(particleId)} />
       <EnergyUnitSelector
         value={calcState.masterUnit}
-        availableUnits={getAvailableUnits()}
+        availableUnits={getAvailableEnergyUnits(state.selectedParticle, isAdvancedMode.value)}
         disabled={calcState.isPerRowMode}
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />
