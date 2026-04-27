@@ -7,7 +7,6 @@
   import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
   import { libdedx } from "$lib/wasm/libdedx";
-  import type { StpUnit } from "$lib/wasm/types";
   import { Button } from "$lib/components/ui/button";
 
   const plotState = createPlotState();
@@ -219,7 +218,7 @@
       <div class="flex flex-wrap items-center gap-4">
         <!-- Stopping power unit segmented control -->
         <div role="radiogroup" aria-label="Stopping power unit" class="flex gap-1">
-          {#each (["keV/µm", "MeV/cm", "MeV·cm²/g"] as const) as unit}
+          {#each (["keV/µm", "MeV/cm", "MeV·cm²/g"] as const) as unit (unit)}
             <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
               {plotState.stpUnit === unit ? 'bg-primary text-primary-foreground' : 'bg-background'}">
               <input
@@ -237,7 +236,7 @@
 
         <!-- X axis scale -->
         <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog]}
+          {#each [["Log", true], ["Lin", false]] as [label, isLog] ([label, isLog])}
             <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
               {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
               <input
@@ -254,7 +253,7 @@
 
         <!-- Y axis scale -->
         <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog]}
+          {#each [["Log", true], ["Lin", false]] as [label, isLog] ([label, isLog])}
             <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
               {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
               <input
