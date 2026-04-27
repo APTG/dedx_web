@@ -13,9 +13,10 @@
   interface Props {
     state: EntitySelectionState;
     class?: string;
+    onParticleSelect?: (particleId: number) => void;
   }
 
-  let { state, class: className }: Props = $props();
+  let { state, class: className, onParticleSelect }: Props = $props();
 
   function getParticleLabel(particle: ParticleEntity): string {
     // Special-named particles have no parenthetical symbol — the name IS the identifier.
@@ -209,7 +210,11 @@
         if (particle.id === 1001) {
           return;
         }
-        state.selectParticle(particle.id);
+        if (onParticleSelect) {
+          onParticleSelect(particle.id);
+        } else {
+          state.selectParticle(particle.id);
+        }
       }}
       onClear={() => state.clearParticle()}
     />

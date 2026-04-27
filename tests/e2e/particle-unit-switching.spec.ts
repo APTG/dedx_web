@@ -67,23 +67,23 @@ test.describe("Particle switching — E_nucl conservation", () => {
   test("He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV", async ({
     page,
   }) => {
-    await selectParticle(page, "helium");
+    await selectParticle(page, "alpha");
     await typeInRow(page, 0, "20 MeV/nucl");
     expect(await mevNuclCell(page, 0)).toContain("20");
 
-    await selectParticle(page, "hydrogen");
+    await selectParticle(page, "proton");
     // E_nucl=20 conserved: proton (A=1) displays as 20 MeV.
     expect(await rowText(page, 0)).toBe("20 MeV");
     expect(await mevNuclCell(page, 0)).toContain("20");
   });
 
   test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({ page }) => {
-    await selectParticle(page, "helium");
+    await selectParticle(page, "alpha");
     await typeInRow(page, 0, "80 MeV");
     // Helium 80 MeV total → E_nucl = 80/4 = 20 MeV/nucl.
     expect(await mevNuclCell(page, 0)).toContain("20");
 
-    await selectParticle(page, "hydrogen");
+    await selectParticle(page, "proton");
     // E_nucl=20 conserved: proton displays as 20 MeV.
     expect(await rowText(page, 0)).toBe("20 MeV");
     expect(await mevNuclCell(page, 0)).toContain("20");
@@ -102,7 +102,7 @@ test.describe("Particle switching — E_nucl conservation", () => {
     expect(await mevNuclCell(page, 0)).toContain("100");
 
     // Back to proton: E_nucl=100 → 100 MeV.
-    await selectParticle(page, "hydrogen");
+    await selectParticle(page, "proton");
     expect(await rowText(page, 0)).toBe("100 MeV");
     expect(await mevNuclCell(page, 0)).toContain("100");
   });
@@ -157,11 +157,11 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
   test(
     "He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)",
     async ({ page }) => {
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       await typeInRow(page, 0, "20 MeV/nucl");
       expect(await mevNuclCell(page, 0)).toContain("20");
 
-      await selectParticle(page, "hydrogen");
+      await selectParticle(page, "proton");
       // E_nucl conserved: 20 MeV/nucl on He (A=4) → 20 MeV on proton (A=1).
       expect(await rowText(page, 0)).toBe("20 MeV");
       expect(await mevNuclCell(page, 0)).toContain("20");
@@ -171,14 +171,14 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
   test(
     "He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)",
     async ({ page }) => {
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       await typeInRow(page, 0, "20 MeV/nucl");
 
-      await selectParticle(page, "hydrogen");
+      await selectParticle(page, "proton");
       // E_nucl conserved: 20 MeV/nucl on He → 20 MeV on proton (A=1, total MeV display).
       expect(await rowText(page, 0)).toBe("20 MeV");
 
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       // Round-trip is lossy: proton "20 MeV" (total) → He "20 MeV" (total), not "20 MeV/nucl".
       // This is expected: the per-nucleon information is lost when going through proton.
       expect(await rowText(page, 0)).toBe("20 MeV");
@@ -220,16 +220,16 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
   test.fixme(
     "He 20 MeV/nucl + multiple rows: KE conservation applies independently to each row",
     async ({ page }) => {
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       await typeInRow(page, 0, "20 MeV/nucl");
       await typeInRow(page, 1, "50 MeV");
 
-      await selectParticle(page, "hydrogen");
+      await selectParticle(page, "proton");
       // Row 0: E_nucl=20 → proton 20 MeV. Row 1: E_nucl=50/4=12.5 → proton 12.5 MeV.
       expect(await rowText(page, 0)).toBe("20 MeV");
       expect(await rowText(page, 1)).toBe("12.5 MeV");
 
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       // Row 0: proton "20 MeV" → He "20 MeV" (lossy, not "20 MeV/nucl").
       // Row 1: proton "12.5 MeV" → He "12.5 MeV" (lossy, E_nucl=12.5 × 4 = 50 MeV total).
       expect(await rowText(page, 0)).toBe("20 MeV");
@@ -240,7 +240,7 @@ test.describe("Particle/unit switching — kinetic energy conservation (DESIRED,
   test(
     "Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)",
     async ({ page }) => {
-      await selectParticle(page, "helium");
+      await selectParticle(page, "alpha");
       await typeInRow(page, 0, "20 MeV/nucl");
       expect(await mevNuclCell(page, 0)).toContain("20");
 

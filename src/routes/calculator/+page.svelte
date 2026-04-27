@@ -50,7 +50,7 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion {state} />
-      <EntitySelectionComboboxes {state} />
+      <EntitySelectionComboboxes {state} onParticleSelect={(particleId) => calcState.switchParticle(particleId)} />
       <EnergyUnitSelector
         value={calcState.masterUnit}
         availableUnits={getAvailableUnits()}

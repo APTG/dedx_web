@@ -306,8 +306,8 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   test("Helium + Water + 50 MeV/nucl shows numeric STP result", async ({ page }) => {
     const particleBtn = page.getByRole("button", { name: /^Particle$/ });
     await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("helium");
-    const heliumOption = page.getByRole("option", { name: /helium/i }).first();
+    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("alpha");
+    const heliumOption = page.getByRole("option", { name: /alpha particle/i }).first();
     await heliumOption.click();
 
     await waitForTable(page);
