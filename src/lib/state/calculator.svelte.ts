@@ -71,15 +71,14 @@ export function createCalculatorState(
       if (!("value" in parsed) || parsed.value === undefined) continue;
       if ("error" in parsed || "empty" in parsed) continue;
 
-      const hadExplicitSuffix = parsed.unit !== null;
-      
-      // Plain number rows (no suffix) preserve their numeric value (they represent total MeV).
-      // Only rows with explicit per-nucleon units conserve E_nucl.
-      if (!hadExplicitSuffix) {
-        // Keep the numeric value unchanged; it represents total MeV on both particles.
-        continue;
-      }
-
+      // Treat plain numbers (no typed suffix) as if they were typed with the
+      // active master unit. This keeps every row under one consistent rule —
+      // "interpret the number with its current unit, conserve E_nucl across
+      // the particle change" — instead of silently exempting rows that
+      // happen to lack an explicit suffix. (Reported in PR #379: typing
+      // "100" on proton → switching to alpha used to keep "100" while a
+      // sibling row "1 GeV" became "4000 MeV", which made it impossible
+      // for the user to tell what was being conserved.)
       const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
 
       // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.

@@ -451,7 +451,7 @@ describe('CalculatorState', () => {
       expect(cs.rows[0].rawInput).toBe('80 MeV');
     });
 
-    it('Plain number row "100" (master unit MeV, proton) → switch to Carbon (A=12): row text → "100", mevNucl ≈ 8.333', () => {
+    it('Plain number row "100" (master unit MeV, proton) → switch to Carbon (A=12): row text → "1200 MeV" (E_nucl conserved consistently for plain and suffixed rows)', () => {
       const electronService = new MockLibdedxServiceWithElectron();
       const matrix = buildCompatibilityMatrix(electronService);
       const es = createEntitySelectionState(matrix);
@@ -459,9 +459,14 @@ describe('CalculatorState', () => {
 
       cs.updateRowText(0, '100');
       cs.switchParticle(6);
-      
-      expect(cs.rows[0].rawInput).toBe('100');
-      expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(8.333, 1);
+
+      // Plain numbers are interpreted under the active master unit (MeV here)
+      // and follow the same E_nucl-conservation rule as suffixed rows. This
+      // keeps the conservation behaviour predictable: every row plays by the
+      // same rule regardless of whether the user typed an explicit suffix.
+      // 100 MeV on proton (E_nucl=100) → Carbon (A=12) total = 100 × 12 = 1200 MeV.
+      expect(cs.rows[0].rawInput).toBe('1200 MeV');
+      expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(100, 1);
     });
   });
 });

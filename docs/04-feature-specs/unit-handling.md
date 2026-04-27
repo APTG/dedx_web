@@ -145,6 +145,16 @@ re-expressed in the new particle's best available unit such that
    the value is physically correct).
 5. No explicit notification is needed for the master selector — the
    updated value is the visible feedback.
+6. **Plain-number rows are converted on the same rule as suffixed rows.**
+   A plain number (no typed suffix) is interpreted under the active
+   master unit and then put through the same E_nucl-conservation
+   pipeline above. Rationale: if one row in the table is suffixed and
+   another is plain, the user otherwise sees them follow opposite
+   rules on a particle switch — e.g. proton `100` and proton `1 GeV`
+   switching to alpha would yield `100` and `4000 MeV`, which makes
+   it impossible to tell what is being conserved (reported in PR
+   #379). After the switch the converted row is rewritten with an
+   explicit suffix so the new unit is visible.
 
 ---
 

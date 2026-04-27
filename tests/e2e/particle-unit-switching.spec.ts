@@ -103,6 +103,34 @@ test.describe("Particle switching — E_nucl conservation", () => {
     expect(await rowText(page, 0)).toBe("100 MeV");
     expect(await mevNuclCell(page, 0)).toContain("100");
   });
+
+  test("Plain '100' + suffixed '1 GeV' on proton → switch to alpha: both rows follow the same E_nucl-conservation rule (PR #379 regression)", async ({
+    page,
+  }) => {
+    // Reproduces the inconsistency reported on PR #379: the plain-number
+    // row used to keep its numeric value across particle switches while
+    // the suffixed row got KE-converted, so the user could not tell what
+    // was being conserved. After the fix, both rows are interpreted under
+    // the active master unit (MeV here) and both conserve E_nucl.
+
+    // Row 0 already pre-populated with "100" by default. Add row 1 with "1 GeV".
+    const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
+    await addBtn.click();
+    await typeInRow(page, 1, "1 GeV");
+
+    // Sanity: on proton (A=1), E_nucl mirrors the total in MeV.
+    expect(await mevNuclCell(page, 0)).toContain("100");
+    expect(await mevNuclCell(page, 1)).toContain("1000");
+
+    // Switch to alpha (A=4). Both rows should be re-expressed as total MeV
+    // with E_nucl conserved (100 → 400, 1000 → 4000) — NOT one row
+    // unchanged and the other scaled.
+    await selectParticle(page, "alpha");
+    expect(await rowText(page, 0)).toBe("400 MeV");
+    expect(await rowText(page, 1)).toBe("4000 MeV");
+    expect(await mevNuclCell(page, 0)).toContain("100");
+    expect(await mevNuclCell(page, 1)).toContain("1000");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
