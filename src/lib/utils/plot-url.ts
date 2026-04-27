@@ -56,14 +56,22 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
 }
 
 export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
-  const particleId = params.has("particle")
-    ? Number(params.get("particle"))
-    : null;
-  const materialId = params.has("material")
-    ? Number(params.get("material"))
-    : null;
+  const parseFiniteInt = (raw: string | null): number | null => {
+    if (raw === null) return null;
+    const n = Number(raw);
+    return Number.isFinite(n) ? n : null;
+  };
+
+  const particleId = params.has("particle") ? parseFiniteInt(params.get("particle")) : null;
+  const materialId = params.has("material") ? parseFiniteInt(params.get("material")) : null;
   const programParam = params.get("program");
-  const programId = !programParam || programParam === "auto" ? -1 : Number(programParam);
+  let programId: number;
+  if (!programParam || programParam === "auto") {
+    programId = -1;
+  } else {
+    const parsed = parseFiniteInt(programParam);
+    programId = parsed ?? -1;
+  }
 
   const seriesParam = params.get("series") ?? "";
   const series = seriesParam
@@ -71,7 +79,7 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
         .split(",")
         .map((triplet) => {
           const parts = triplet.split(".").map(Number);
-          if (parts.length !== 3 || parts.some(isNaN)) return null;
+          if (parts.length !== 3 || parts.some((p) => !Number.isFinite(p))) return null;
           return { programId: parts[0], particleId: parts[1], materialId: parts[2] };
         })
         .filter(

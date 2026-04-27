@@ -8,7 +8,7 @@
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
-  import { computeAxisRanges } from "$lib/utils/plot-utils";
+  import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
   import { getParticleLabel } from "$lib/utils/particle-label";
   import { getService } from "$lib/wasm/loader";
@@ -29,17 +29,20 @@
 
   $effect(() => {
     if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
+    // Mark in-flight so the URL-write effect cannot run while we are
+    // restoring (it would otherwise wipe `series=...` from the address bar).
+    const state = entityState;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
 
     if (decoded.particleId !== null) {
-      entityState.selectParticle(decoded.particleId);
+      state.selectParticle(decoded.particleId);
     }
     if (decoded.materialId !== null) {
-      entityState.selectMaterial(decoded.materialId);
+      state.selectMaterial(decoded.materialId);
     }
     if (decoded.programId !== -1) {
-      entityState.selectProgram(decoded.programId);
+      state.selectProgram(decoded.programId);
     }
 
     if (decoded.stpUnit) {
@@ -48,33 +51,38 @@
     plotState.setAxisScale("x", decoded.xLog);
     plotState.setAxisScale("y", decoded.yLog);
 
-    getService().then((service) => {
-      for (const s of decoded.series) {
-        try {
-          const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
-          const programs = service.getPrograms();
-          const particles = service.getParticles(s.programId);
-          const materials = service.getMaterials(s.programId);
-          const prog = programs.find((p) => p.id === s.programId);
-          const part = particles.find((p) => p.id === s.particleId);
-          const mat = materials.find((m) => m.id === s.materialId);
-          if (!prog || !part || !mat) continue;
-          plotState.addSeries({
-            programId: s.programId,
-            particleId: s.particleId,
-            materialId: s.materialId,
-            programName: prog.name,
-            particleName: getParticleLabel(part),
-            materialName: mat.name,
-            density: mat.density,
-            result,
-          });
-        } catch {
-          // Invalid triplet — silently skip per spec
+    getService()
+      .then((service) => {
+        for (const s of decoded.series) {
+          try {
+            const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
+            const programs = service.getPrograms();
+            const particles = service.getParticles(s.programId);
+            const materials = service.getMaterials(s.programId);
+            const prog = programs.find((p) => p.id === s.programId);
+            const part = particles.find((p) => p.id === s.particleId);
+            const mat = materials.find((m) => m.id === s.materialId);
+            if (!prog || !part || !mat) continue;
+            plotState.addSeries({
+              programId: s.programId,
+              particleId: s.particleId,
+              materialId: s.materialId,
+              programName: prog.name,
+              particleName: getParticleLabel(part),
+              materialName: mat.name,
+              density: mat.density,
+              result,
+            });
+          } catch {
+            // Invalid triplet — silently skip per spec
+          }
         }
-      }
-    });
-    urlInitialized = true;
+      })
+      .finally(() => {
+        // Only allow URL-writes after every restored series has been added,
+        // otherwise a write running mid-restore would overwrite `series=...`.
+        urlInitialized = true;
+      });
   });
 
   $effect(() => {
@@ -108,19 +116,31 @@
       ? (selectedProgram.resolvedProgram?.name ?? "Auto")
       : selectedProgram.name;
 
+    // Snapshot the current selection so a slower in-flight getPlotData
+    // for an outdated selection cannot clobber a fresher preview (race
+    // when the user changes particle/material/program quickly).
+    const snapshot = {
+      programId: resolvedProgramId,
+      particleId: selectedParticle.id,
+      materialId: selectedMaterial.id,
+    };
+    let cancelled = false;
+
     getService().then((service) => {
+      if (cancelled) return;
       try {
         const result = service.getPlotData(
-          resolvedProgramId,
-          selectedParticle.id,
-          selectedMaterial.id,
+          snapshot.programId,
+          snapshot.particleId,
+          snapshot.materialId,
           500,
           true,
         );
+        if (cancelled) return;
         plotState.setPreview({
-          programId: resolvedProgramId,
-          particleId: selectedParticle.id,
-          materialId: selectedMaterial.id,
+          programId: snapshot.programId,
+          particleId: snapshot.particleId,
+          materialId: snapshot.materialId,
           programName,
           particleName: getParticleLabel(selectedParticle),
           materialName: selectedMaterial.name,
@@ -128,10 +148,23 @@
           result,
         });
       } catch (err) {
+        if (cancelled) return;
         console.error("Preview series error:", err);
         plotState.clearPreview();
       }
     });
+
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  // ── Legend swatch colors: derived from JSROOT's actual color list so the
+  // swatch hex matches what JSROOT renders for fLineColor = colorIndex + 2. ──
+  let jsrootSwatchColors = $state<Map<number, string> | null>(null);
+  $effect(() => {
+    if (!browser) return;
+    getJsrootSwatchColors().then((m) => (jsrootSwatchColors = m));
   });
 
   // ── Derived: axis ranges from visible series ──
@@ -150,15 +183,27 @@
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
     if (!plotState.preview) return;
 
+    // Only commit the cached preview result when it matches the *current*
+    // selection; otherwise the preview is stale (e.g. from a previous
+    // particle/material) and would commit the wrong series.
+    const p = plotState.preview;
+    if (
+      p.programId !== resolvedProgramId ||
+      p.particleId !== selectedParticle.id ||
+      p.materialId !== selectedMaterial.id
+    ) {
+      return;
+    }
+
     const added = plotState.addSeries({
       programId: resolvedProgramId,
       particleId: selectedParticle.id,
       materialId: selectedMaterial.id,
-      programName: plotState.preview.programName,
+      programName: p.programName,
       particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
       density: selectedMaterial.density,
-      result: plotState.preview.result,
+      result: p.result,
     });
 
     if (!added) {
@@ -189,11 +234,16 @@
 </svelte:head>
 
 {#if !wasmReady.value || !entityState}
-  <div class="flex h-64 items-center justify-center rounded-lg border bg-card p-6">
-    <p class="text-muted-foreground">Loading WASM module…</p>
+  <div class="space-y-6">
+    <h1 class="text-3xl font-bold">Plot</h1>
+    <div class="flex h-64 items-center justify-center rounded-lg border bg-card p-6">
+      <p class="text-muted-foreground">Loading WASM module…</p>
+    </div>
   </div>
 {:else}
-  <!-- Desktop: sidebar + main grid -->
+  <div class="space-y-4">
+    <h1 class="text-3xl font-bold">Plot</h1>
+    <!-- Desktop: sidebar + main grid -->
   <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
 
     <!-- ── SIDEBAR ── -->
@@ -321,8 +371,8 @@
             >
               <span
                 class="inline-block h-4 w-4 rounded-sm"
-                style="background-color: {s.color}"
-                aria-label="{s.color}, solid line"
+                style="background-color: {jsrootSwatchColors?.get(s.colorIndex) ?? s.color}"
+                aria-label="{jsrootSwatchColors?.get(s.colorIndex) ?? s.color}, solid line"
               ></span>
               <span>{s.label}</span>
               <button
@@ -363,4 +413,5 @@
       </div>
     </div>
   {/if}
+  </div>
 {/if}

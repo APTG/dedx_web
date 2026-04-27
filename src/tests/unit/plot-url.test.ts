@@ -184,4 +184,17 @@ describe("decodePlotUrl", () => {
     expect(decoded.xLog).toBe(false);
     expect(decoded.yLog).toBe(false);
   });
+
+  it("treats non-numeric particle/material as null", () => {
+    const sp = new URLSearchParams("particle=abc&material=foo");
+    const decoded = decodePlotUrl(sp);
+    expect(decoded.particleId).toBe(null);
+    expect(decoded.materialId).toBe(null);
+  });
+
+  it("falls back to -1 (auto) for non-numeric program", () => {
+    const sp = new URLSearchParams("program=bogus");
+    const decoded = decodePlotUrl(sp);
+    expect(decoded.programId).toBe(-1);
+  });
 });

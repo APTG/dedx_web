@@ -92,15 +92,3 @@ test.describe("Calculator page — compact mode", () => {
     await expect(icruInternal).toHaveCount(0);
   });
 });
-
-test.describe("Plot page — placeholder (Stage 6)", () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto("/plot");
-    await page.waitForSelector("main", { timeout: 10000 });
-  });
-
-  test("Plot page loads and shows coming-soon placeholder", async ({ page }) => {
-    await expect(page.getByRole("heading", { name: /plot/i })).toBeVisible();
-    await expect(page.getByText(/coming soon/i)).toBeVisible();
-  });
-});

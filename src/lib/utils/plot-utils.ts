@@ -16,6 +16,44 @@ export const COLOR_PALETTE: readonly string[] = [
 export const PREVIEW_COLOR = "#000000";
 
 /**
+ * Resolve the actual color JSROOT uses to draw a series with the given
+ * palette `colorIndex`. JSROOT's TGraph painter renders `fLineColor` by
+ * looking the index up in its global ROOT color list, so the legend swatch
+ * must use the same lookup to stay visually consistent with the drawn line.
+ *
+ * Lazily imports `jsroot` so we do not bloat the initial bundle. Falls back
+ * to the local palette hex if JSROOT is unavailable.
+ */
+let _jsrootColorsCache: Map<number, string> | null = null;
+let _jsrootColorsPromise: Promise<Map<number, string>> | null = null;
+
+export function getJsrootSwatchColors(): Promise<Map<number, string>> {
+  if (_jsrootColorsCache) return Promise.resolve(_jsrootColorsCache);
+  if (_jsrootColorsPromise) return _jsrootColorsPromise;
+  _jsrootColorsPromise = import("jsroot")
+    .then((JSROOT) => {
+      const map = new Map<number, string>();
+      const getColor = (JSROOT as { getColor?: (i: number) => string | undefined }).getColor;
+      for (let i = 0; i < COLOR_PALETTE.length; i++) {
+        // Mirror the index offset used in jsroot-plot.svelte (`s.colorIndex + 2`).
+        const resolved = getColor?.(i + 2);
+        const fallback = COLOR_PALETTE[i] ?? PREVIEW_COLOR;
+        map.set(i, resolved ?? fallback);
+      }
+      _jsrootColorsCache = map;
+      return map;
+    })
+    .catch(() => {
+      const fallback = new Map<number, string>();
+      for (let i = 0; i < COLOR_PALETTE.length; i++) {
+        fallback.set(i, COLOR_PALETTE[i] ?? PREVIEW_COLOR);
+      }
+      return fallback;
+    });
+  return _jsrootColorsPromise;
+}
+
+/**
  * Convert mass stopping power values (MeV·cm²/g) to the target display unit.
  * Each series must supply its own material density for density-dependent units.
  */

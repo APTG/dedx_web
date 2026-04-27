@@ -4,7 +4,9 @@ test.describe("Nav link clicks", () => {
   test("clicking Plot nav link navigates to /plot", async ({ page }) => {
     await page.goto("/calculator");
     await page.getByRole("link", { name: "Plot" }).click();
-    await expect(page).toHaveURL(/\/plot$/);
+    // Plot page writes canonical URL params (stp_unit/xscale/yscale) on mount,
+    // so allow an optional query string after `/plot`.
+    await expect(page).toHaveURL(/\/plot(\?|$)/);
     await expect(page.getByRole("heading", { level: 1, name: "Plot" })).toBeVisible();
   });
 

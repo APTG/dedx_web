@@ -55,9 +55,7 @@ export function createPlotState(): PlotState {
 
   function recomputeLabels(): void {
     const labels = computeSeriesLabels(series);
-    for (let i = 0; i < series.length; i++) {
-      series[i] = { ...series[i], label: labels[i] };
-    }
+    series = series.map((s, i) => ({ ...s, label: labels[i] ?? s.label }));
   }
 
   function addSeries(data: PlotSeriesData): boolean {
