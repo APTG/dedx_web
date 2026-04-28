@@ -1,9 +1,18 @@
-import { describe, test, expect } from "vitest";
+import { describe, test, it, expect } from "vitest";
 import {
   convertEnergyToMeVperNucl,
   convertEnergyFromMeVperU,
   convertEnergyFromMeVperNucl,
 } from "$lib/utils/energy-conversions";
+import { SI_PREFIX_TABLE } from "$lib/utils/energy-units";
+
+describe("SI_PREFIX_TABLE canonical import", () => {
+  it("has MeV = 1 (base unit)", () => expect(SI_PREFIX_TABLE.MeV).toBe(1));
+  it("has keV = 0.001", () => expect(SI_PREFIX_TABLE.keV).toBe(0.001));
+  it("has GeV = 1000", () => expect(SI_PREFIX_TABLE.GeV).toBe(1000));
+  it("has TeV = 1e6", () => expect(SI_PREFIX_TABLE.TeV).toBe(1e6));
+  it("has eV = 1e-6", () => expect(SI_PREFIX_TABLE.eV).toBeCloseTo(1e-6));
+});
 
 describe("convertEnergyToMeVperNucl", () => {
   test("MeV/nucl to MeV/nucl is unchanged", () => {

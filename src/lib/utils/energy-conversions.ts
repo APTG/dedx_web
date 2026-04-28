@@ -1,12 +1,5 @@
 import type { EnergyUnit } from "$lib/wasm/types";
-
-const SI_PREFIX_TO_MEV: Record<string, number> = {
-  eV: 1e-6,
-  keV: 1e-3,
-  MeV: 1,
-  GeV: 1e3,
-  TeV: 1e6,
-};
+import { SI_PREFIX_TABLE } from "$lib/utils/energy-units";
 
 const BASE_UNITS: Record<string, EnergyUnit> = {
   eV: "MeV",
@@ -44,7 +37,7 @@ function getBaseUnit(unit: string): EnergyUnit {
 
 function getSiPrefixMultiplier(unit: string): number {
   const prefix = unit.replace(/\/nucl$|\/u$/, "");
-  const multiplier = SI_PREFIX_TO_MEV[prefix];
+  const multiplier = SI_PREFIX_TABLE[prefix as keyof typeof SI_PREFIX_TABLE];
   if (multiplier === undefined) {
     throw new Error(`Unsupported energy unit prefix: ${unit}`);
   }
