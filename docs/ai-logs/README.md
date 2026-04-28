@@ -6,6 +6,17 @@ the prompt→response narrative and task outcomes for one session.
 See [`CHANGELOG-AI.md`](../../CHANGELOG-AI.md) in the repo root for a
 summary table of all sessions.
 
+> **Note for future readers:** these session logs are point-in-time
+> narratives. They may reference behavior, group names, or specs that
+> were later changed. For the **current** behavior, the per-feature spec
+> under `docs/04-feature-specs/` is authoritative.
+
+## Subdirectories
+
+| Directory | Purpose |
+|-----------|---------|
+| [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session **outputs** stay in this directory. |
+
 ## Log Files
 
 | File                                                                                             | Date         | Topic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |

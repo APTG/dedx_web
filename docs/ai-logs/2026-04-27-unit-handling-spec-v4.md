@@ -8,7 +8,7 @@
 
 ### Prompt 3: Turn review + spec changes into opencode task list
 
-**AI response**: created `docs/opencode-tasks-2026-04-27.md` — a detailed,
+**AI response**: created `docs/ai-logs/prompts/2026-04-27-opencode-tasks.md` — a detailed,
 copy-paste-ready prompt for Qwen3.5-397B-A17B-FP8 via opencode. Nine tasks in
 dependency order, each self-contained so the user can run `/compact` between
 them. TDD throughout (tests written first). MCPs used: tailwind + playwright.

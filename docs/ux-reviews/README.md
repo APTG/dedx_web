@@ -3,6 +3,11 @@
 Periodic UX reviews of the webdedx calculator interface.  Each review
 documents issues found, their severity, and implementation status.
 
+> **Note for future readers:** these review files are point-in-time
+> narratives. They may reference behavior, group names, or wording that
+> was later changed. For the **current** behavior, the per-feature spec
+> under `docs/04-feature-specs/` is authoritative.
+
 ## Convention
 
 - One file per review session, named `YYYY-MM-DD-<scope>.md`.

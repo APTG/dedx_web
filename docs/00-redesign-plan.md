@@ -501,30 +501,28 @@ As a <role>, I want to <action> so that <benefit>.
   `pnpm build` to `ci.yml` — every PR now gets a full type-check and build gate.
 - **Verify:** App builds, routes work, `eslint . && prettier --check .` pass, deploys to GitHub Pages (empty pages).
 
-### Stage 5: Core Shared Components
+### Stage 5: Core Shared Components ✅ (28 April 2026)
 - **Who:** AI implements (one component per chat session).
 - **Order:**
-  1. ✅ Entity selection (cascading dropdowns) — Svelte stores + WASM (merged PR #366, Apr 2026)
-  2. ✅ Energy input component — textarea with per-line validation, debounce (merged PR #368, Apr 2026)
-  3. ✅ Unit selector — radio/segmented control (merged PR #370, Apr 2026)
-  4. ✅ Result table — unified input/result table (Stage 5.4, completed Apr 2026)
-  5. JSROOT plot wrapper — Svelte component managing JSROOT lifecycle
+  1. ✅ Entity selection (cascading dropdowns) — Svelte stores + WASM ([PR #366](https://github.com/APTG/dedx_web/pull/366), Apr 2026; cascading-fixes [PR #371](https://github.com/APTG/dedx_web/pull/371))
+  2. ✅ Energy input component — textarea with per-line validation, debounce ([PR #368](https://github.com/APTG/dedx_web/pull/368), Apr 2026)
+  3. ✅ Unit selector — radio/segmented control ([PR #370](https://github.com/APTG/dedx_web/pull/370), Apr 2026)
+  4. ✅ Result table — unified input/result table ([PR #374](https://github.com/APTG/dedx_web/pull/374), Apr 2026; follow-up fixes [PR #376](https://github.com/APTG/dedx_web/pull/376), [PR #377](https://github.com/APTG/dedx_web/pull/377), [PR #378](https://github.com/APTG/dedx_web/pull/378), [PR #379](https://github.com/APTG/dedx_web/pull/379))
+  5. ✅ JSROOT plot wrapper — Svelte component managing JSROOT lifecycle ([PR #394](https://github.com/APTG/dedx_web/pull/394), Apr 2026)
 - **Expand CI:** add `pnpm test` (Vitest) to `ci.yml` — first unit tests are written
   in this stage; every PR's test suite must pass before merge.
+- **Status:** Complete. See [`docs/progress/stage-5.md`](progress/stage-5.md) for the consolidated stage summary, [`docs/progress/stage-5-entity-selection.md`](progress/stage-5-entity-selection.md), [`docs/progress/stage-5.4-result-table.md`](progress/stage-5.4-result-table.md), [`docs/progress/stage-5-audit-2026-04-26.md`](progress/stage-5-audit-2026-04-26.md), and the closing [UX review](ux-reviews/2026-04-28-stage5-completion-and-stage6-readiness.md).
 
 ### Stage 6: Feature Pages (one at a time)
 - **Who:** AI implements per feature spec.
 - **Order:**
-
-| # | Feature                | Depends on                               |
-|---|------------------------|------------------------------------------|
-| 1 | Calculator (basic)     | Entity selection, energy input, result table |
-| 2 | Live calculation       | Calculator + debounce logic              |
-| 3 | Multi-program mode     | Calculator + modified WASM calls         |
-| 4 | Plot page with JSROOT  | JSROOT wrapper + entity selection        |
-| 5 | Data series comparison | Plot page + series management            |
-| 6 | Shareable URLs         | Svelte stores + URL sync                 |
-| 7 | CSV + PDF export       | Result table data + file generation      |
+  1. ⏳ Calculator (basic) — depends on entity selection, energy input, result table; spec [`docs/04-feature-specs/calculator.md`](04-feature-specs/calculator.md). *Already shipped as a side-effect of Stage 5.4 — just needs the toolbar and Share URL plumbing to be marked done.*
+  2. ⏳ Live calculation — depends on Calculator + debounce logic. *Already shipped as a side-effect of Stage 5.2 (`debounce` wired in `calculator.svelte.ts`).*
+  3. ⏳ Multi-program mode — depends on Calculator + modified WASM calls; spec [`docs/04-feature-specs/multi-program.md`](04-feature-specs/multi-program.md).
+  4. ⏳ Plot page with JSROOT — depends on JSROOT wrapper + entity selection; spec [`docs/04-feature-specs/plot.md`](04-feature-specs/plot.md). *Already shipped as a side-effect of Stage 5.5.*
+  5. ⏳ Data series comparison — depends on Plot page + series management. *Already shipped as a side-effect of Stage 5.5 (color pool + smart labels).*
+  6. ⏳ Shareable URLs — depends on Svelte stores + URL sync; spec [`docs/04-feature-specs/shareable-urls.md`](04-feature-specs/shareable-urls.md). *Plot URL sync done; Calculator URL sync still requires deleting the unwired `src/lib/state/url-sync.ts` and re-implementing per spec canonical params.*
+  7. ⏳ CSV + PDF export — depends on Result table data + file generation; spec [`docs/04-feature-specs/export.md`](04-feature-specs/export.md).
 
 ### Stage 7: E2E Tests & Polish
 - Playwright tests with real WASM.

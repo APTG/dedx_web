@@ -429,7 +429,133 @@ start.**
 
 ---
 
-## 7. Conclusion
+## 6.5 Code & information duplication audit (added 28 Apr 2026 per @grzanka review)
+
+Two cleanup categories were checked: **code duplication** (same logic in
+two places, risk of one branch silently diverging) and **information
+duplication** (the same fact stated in two specs / two docs / a spec
+plus the implementation, risk of stale half-truths).
+
+### 6.5.1 Code duplication — current state
+
+| # | Item | File(s) | Status | Action |
+|---|---|---|---|---|
+| C1 | Dead `url-sync.ts` module + 187-line test | `src/lib/state/url-sync.ts` (58 LOC), `src/tests/unit/url-sync.test.ts` (187 LOC) | **Dead** — zero production importers; uses old short-key contract (`particle`, `material`, `program`, `energies`, `eunit`) and is functionally a half-implementation of [`shareable-urls.md`](../04-feature-specs/shareable-urls.md). | **Delete** at the start of Stage 6 feature 6 — re-implement per the canonical spec rather than evolving this stub. |
+| C2 | `formatSigFigs` tests duplicated across files | `src/tests/unit/energy-input-format.test.ts` (159 LOC, 18 cases all `formatSigFigs(_,4)`) and `src/tests/unit/unit-conversions.test.ts` (`describe('formatSigFigs')` block at lines 114-176, 11 cases incl. negatives, edge precisions, subnormals, NaN/Infinity) | **Overlapping** — `unit-conversions.test.ts` strictly supersets the format-specific cases (it has the same inputs **plus** subnormal / Infinity / NaN guards added in PR #377). | **Delete** `energy-input-format.test.ts` (fold any test it has that `unit-conversions.test.ts` doesn't into the consolidated file). Already flagged in the 26-Apr audit §3 as a low-risk cleanup. |
+| C3 | Energy conversion logic duplicated between parser and converter | `src/lib/utils/energy-parser.ts` (suffix → MeV/nucl) and `src/lib/utils/energy-conversions.ts` (`convertEnergyToMeVperNucl` / `convertEnergyFromMeVperNucl`) | **Acceptable separation** — the parser maps a typed string to a numeric `(value, base unit)` tuple; the converter maps between numeric `(value, unit)` representations. They share the conversion table conceptually but the parser does not call the converter (it inlines the simple `keV→MeV / GeV→MeV / TeV→MeV` factors). Worth keeping the boundary, but extract the `unit → factor` table into a single constant module to prevent drift. | **Stage 6 small refactor** — extract the canonical SI-prefix table into `src/lib/utils/energy-units.ts` (single source of truth, imported by both files). Bonus: kills the asymmetry where `keV` is supported on input but not on output. |
+| C4 | Plot URL helpers vs. dead Calculator URL helpers | `src/lib/utils/plot-url.ts` (canonical) vs. `src/lib/state/url-sync.ts` (dead) | Subset of C1 — they have a different shape (plot-url emits `series=` and `stp=` etc., url-sync emits `program=`/`energies=`). They are **not** redundant; they cover different routes. | Delete C1; then plot-url.ts becomes the only URL module, and Stage 6 feature 6 adds a `calculator-url.ts` next to it with the same shape. |
+| C5 | Particle / material display naming logic | Centralized in `src/lib/utils/particle-label.ts` and reused by **all** consumers (calculator combobox, plot legend, panels). | **Already deduplicated** as of `26-Apr` (per the stored memory and `src/lib/utils/particle-label.ts:3-34`). No action. | — |
+| C6 | Available-units logic | Centralized in `src/lib/utils/available-units.ts` (`getAvailableEnergyUnits(particle, isAdvanced)`) and reused by both the master `EnergyUnitSelector` and per-row dropdowns. | **Already deduplicated** in PR #379 (per its commit message "extracted `getAvailableEnergyUnits()` helper"). No action. | — |
+| C7 | `energy-input.svelte.ts` (state) vs. legacy `energy-input.svelte` (component) | `src/lib/state/energy-input.svelte.ts` is **alive** (used by `calculator.svelte.ts:1`); the old standalone `energy-input.svelte` component **was deleted** in the 26-Apr cleanup. | No duplication left — but the **module name** `energy-input.svelte.ts` is now misleading since the component is gone (the module is just per-row text/parse/validation state). | **Stage 6 nice-to-have** — rename `src/lib/state/energy-input.svelte.ts` → `src/lib/state/energy-rows.svelte.ts` for clarity. |
+| C8 | Compatibility-matrix logic vs. WASM `getAvailablePrograms` | Compat matrix at `src/lib/state/compatibility-matrix.ts` (~341 LOC of tests) vs. the runtime WASM call. | Compat matrix is the spec-derived static table; WASM call is the runtime truth. They **must agree** — and CI doesn't currently cross-check this. | **Stage 7 hardening** — add a one-shot integration test that loops over particles × materials and asserts both sources return the same set of programs. |
+
+**Net code-duplication action items for Stage 6:** delete C1, delete C2,
+extract C3 (small refactor), rename C7 (cosmetic). Total: ~245 LOC removed
+plus a one-file extraction. Same order of magnitude as the 480 LOC removed
+in the 26-Apr cleanup, equally low risk.
+
+### 6.5.2 Information duplication — spec / doc audit
+
+| # | Item | Files | Status | Action |
+|---|---|---|---|---|
+| I1 | `shareable-urls.md` (1133 LOC) and `shareable-urls-formal.md` (691 LOC) | Both Final v6, dated 9 Apr and 13 Apr | **Intentionally complementary** — `shareable-urls.md` is prose for humans, `shareable-urls-formal.md` is the ABNF + semantic precedence rules for implementers. The risk is they drift; they currently both say v6 and both reference each other in the header. | **Add a one-liner cross-check at the top of each:** "If this file disagrees with the other, the formal contract wins." Already half-implemented at `shareable-urls-formal.md:5`; mirror it in the prose spec. |
+| I2 | Calculator wireframes appear in `calculator.md §Page Layout Overview` AND in `entity-selection.md §Compact Mode` AND in `05-ui-wireframes.md` | Three files | These have drifted at least once (the Apr 26 review noted the entity-selection compact wireframe lagged behind calculator.md by one revision). The cross-spec consistency rule in `.github/copilot-instructions.md` `# Cross-Spec Consistency` already names `entity-selection.md ↔ calculator.md` as a key pair to keep in sync. | **Stage 6 grooming** — add a single "Wireframes for the Calculator page live in `calculator.md §Page Layout Overview`. Anything else is a derived view." stub at the top of the entity-selection compact section and remove the duplicated ASCII art there. Same for `05-ui-wireframes.md` — keep it as an *index* of routes with links into the per-feature spec, not a parallel wireframe set. |
+| I3 | Energy unit lists / SI prefix tables | `unit-handling.md §3` (suffix table), `06-wasm-api-contract.md §6.x` (EnergyUnit type), `src/lib/utils/energy-parser.ts` (suffix → factor literal), `src/lib/utils/energy-conversions.ts` (factor functions). | Four sources of truth for "what suffixes does the parser accept and at what factor." `unit-handling.md` v4 is canonical, but TS code restates the table. | **Stage 6 small refactor (linked to C3)** — extract the canonical table into a single TS module that the parser, the converter, and a generated section of the spec all reference. |
+| I4 | Stopping-power unit conversion formula | `unit-handling.md §4`, `06-wasm-api-contract.md §6.581-597`, `calculator.md §3 Stopping Power Column Unit`, `plot.md §unit-conversion notes`, `src/lib/utils/unit-conversions.ts` | Five places. Spec says "convertStpUnits is in `LibdedxService`" but the code path is actually in `unit-conversions.ts` (pure JS) — the WASM service exports a thin re-export. | **Documentation cleanup** — `06-wasm-api-contract.md` should call out that `convertStpUnits` is implemented in TypeScript (not in C), and the four spec mentions should converge to "see `unit-handling.md §4` for the canonical formulas; everything else cites it." |
+| I5 | "Beams / Common particles" group naming | `entity-selection.md` v7 settled on "Common particles". The historic UX-review docs at `2026-04-25-ux-review-fixes.md`, `2026-04-26-stage5-completion-and-ke-conservation.md`, the `opencode-tasks-2026-04-27.md` task list (now under `docs/ai-logs/prompts/`), and parts of `unit-handling.md` history mention "Beams". | The historical references are correct snapshots of what was decided when. **Not a real duplication problem** — just a sign that future readers should treat ai-logs and ux-review files as point-in-time records and trust the spec for current behavior. | **Add a note to `docs/ux-reviews/README.md` and `docs/ai-logs/README.md`:** "These files are historical narratives. For current behavior, the spec under `docs/04-feature-specs/` is authoritative." |
+| I6 | Stage-completion records | `docs/00-redesign-plan.md §8` (stages 1-8 with ✅/🔵 markers) AND `docs/progress/stage-N.md` (one file per stage) AND `CHANGELOG-AI.md` (per-session rows) | Three sources. As of this review, Stage 5 had no consolidated `docs/progress/stage-5.md`, only sub-stage logs (`stage-5-entity-selection.md`, `stage-5.4-result-table.md`, `stage-5-audit-2026-04-26.md`). | **Created `docs/progress/stage-5.md`** in this PR consolidating sub-stages with PR links and pointing back to the audit and closing review. |
+| I7 | Particle naming preferences | `entity-selection.md §Particle naming preferences`, `src/lib/utils/particle-label.ts`, `src/lib/config/particle-aliases.ts`, plus the historic UX-review entries listing the migration. | Two live sources (spec + code). Code is built from the spec; both currently agree. | No action. The stored memory ("Particle display/search labels are centralized in `src/lib/utils/particle-label.ts`") already documents this. |
+
+**Net information-duplication action items:** I1 (cross-check), I2
+(consolidate wireframes), I3+I4 (single SI table + STP-conversion canon),
+I5 (historical-vs-current note), I6 (✅ done in this PR). I7 is a
+non-issue.
+
+### 6.5.3 Cross-check: spec acceptance criteria → implementation/tests
+
+The four specs that have an `## Acceptance Criteria` section AND are
+implemented today are `entity-selection.md`, `calculator.md`,
+`unit-handling.md`, and `plot.md`. The not-yet-implemented specs
+(`multi-program.md`, `inverse-lookups.md`, `advanced-options.md`,
+`build-info.md`) are Stage 6+ and out of scope here.
+
+For each implemented spec I sampled the AC list against tests +
+code and recorded the result.
+
+#### `calculator.md` Acceptance Criteria (lines 746-849, ~75 checkboxes)
+
+| AC group | Sampled checks | Verdict |
+|---|---|---|
+| Default State | Pre-filled "100", auto-resolved program label, phase badge, empty row | **Mostly met** — pre-filled "100" ✅, auto-resolved program shown inside combobox trigger ✅, empty row appended on input ✅. **Phase badge missing** (AC `:752,797-798`) — see D1. **Resolved-program subtitle missing** (AC `:751`) — see D3. |
+| Unified Input/Result Table | 5 cols, edit cell, paste multi-line, Tab/Enter focus, clearing removes row | **All met** — visually verified in `result-table.svelte:44-91, 110-162`. |
+| Energy Input | Scientific notation, dynamic header showing master unit, valid range label | Scientific notation ✅, dynamic header ✅. **Valid range label missing** (AC `:767`) — see D2. |
+| Per-Row Validation | Red outline + inline message, summary "X of Y values excluded" | All met (`result-table.svelte:233-247, 275-289`). |
+| Live Calculation | 300 ms debounce, immediate on entity change, loading indicator | Debounce ✅, immediate-on-entity ✅. **Loading indicator** is just `disabled={state.isCalculating}` on inputs — no spinner; spec says "subtle loading indicator". Acceptable. |
+| Output Units — Stopping Power | keV/µm for non-gas, MeV·cm²/g for gas, switch on material change, 4 sig figs, fixture check | All met (verified by `unit-conversions.test.ts` numeric fixtures). |
+| Output Units — CSDA Range | Auto-scaled SI prefixes per row, 4 sig figs, fixture check | All met. |
+| Material Phase Badge | Badge next to combobox, updates on material change | **Not met** — see D1. The combobox shows phase inside its dropdown options but no standalone badge. |
+| Energy Unit Selector | Available units depend on particle, segmented controls, master / per-row mode | All met since PR #379 (`getAvailableEnergyUnits` helper, `disabled={isPerRowMode}`). |
+| Entity Selection Integration | Compact mode, layout matches `entity-selection.md`, state shared with Plot page | **Mostly met** — compact mode ✅, layout ✅. **Cross-route state sharing**: each route creates its own `EntitySelectionState` factory; selecting Carbon on `/calculator` then navigating to `/plot` does **not** preserve the selection. Spec is ambiguous here ("shared with the Plot page (persists across navigation)") — treat as Stage 6.6 (Shareable URLs) since URL params are how state will travel. |
+| Error Handling | WASM init failure with retry, expandable error details, incomplete-selection message | Layout-level retry ✅; per-route in-content retry ⚠️ (see D-table item, the issue is in §3.1); expandable details — **not implemented** (errors are inline alerts only). |
+| Responsive | Desktop centered, tablet full width, mobile horizontal scroll | See §4. |
+| URL State | Encoded in URL, mixed-unit syntax, restore from URL, invalid params fall back silently, advanced mode params | **Calculator URL state not wired.** `url-sync.ts` exists but no caller. **Big gap** — folded into Stage 6.6. |
+| Export | PDF + CSV buttons in toolbar | **Not implemented** — Stage 6.7. |
+| Performance | 300 ms debounce, < 100 ms calc for ≤ 50 values, paste > 200 warns | Debounce ✅; perf ✅ in practice; **paste > 200 warning not implemented**. Low priority. |
+| Accessibility | Per-input aria-label, aria-live for errors, table semantics, radiogroup, Tab order | All met. `selection-live-region.svelte` handles aria-live; `EnergyUnitSelector` uses `role="radiogroup"`. |
+
+**`calculator.md` AC verdict:** roughly **64 of ~75** met. Gaps map onto
+D1, D2, D3 (small UI omissions) plus the four Stage-6 gaps (URL state,
+PDF export, CSV export, expandable error details). No acceptance criterion
+contradicts a passing test.
+
+#### `entity-selection.md` Acceptance Criteria
+
+Verified by inspection: cascading particle/material/program ✅,
+auto-resolve ✅, toggle-deselect ✅, particle naming v7 (proton, alpha
+particle, electron, "Common particles" / "Ions") ✅, electron blocked
+with explanatory message ✅, Bits UI Combobox semantics ✅, panel mode
+with `1fr+2fr` layout ✅, compact mode wireframe match ✅. Open: D1
+(phase badge), notification on auto-fallback (Stage 5.1 nice-to-have).
+
+#### `unit-handling.md` v4 Acceptance Criteria
+
+Includes the new "Always-visible MeV/nucl column" AC (`unit-handling.md`
+line ~542), the inline parser case-sensitivity AC (rejects `meV` /
+`mev`), the suffix table including TeV variants (×1e6), KE conservation
+on particle switch (E2E `tests/e2e/particle-unit-switching.spec.ts`),
+and the typo-suggestion AC (`§3a`). All met by code inspection +
+tests; no test.fixme blocks remain.
+
+#### `plot.md` v5 Acceptance Criteria
+
+The big AC blocks (multi-series, smart labels, color pool, preview,
+JSROOT lifecycle, ZoomWheel/Touch disabled, resize, URL state) are met
+(see §2.5). The export AC (`Export image ▾` dropdown adjacent to canvas;
+PDF + CSV in app toolbar) is not implemented — Stage 6.7. The mobile
+canvas layout AC (responsive aspect ratio) is partially met — see M5.
+
+### 6.5.4 Documentation cleaning checklist
+
+These are the concrete cleanup items derived from §6.5:
+
+- [x] **Move opencode prompt files out of `docs/` root** — done in this PR (now under `docs/ai-logs/prompts/` with its own README).
+- [x] **Add consolidated `docs/progress/stage-5.md`** — done in this PR.
+- [x] **Mark Stage 5 done in `docs/00-redesign-plan.md`** with PR links — done in this PR.
+- [x] **Reformat Stage 6 in `00-redesign-plan.md`** as a checklist with spec links — done in this PR.
+- [x] **Update `src/routes/docs/+page.svelte` Project Status box** — done in this PR.
+- [ ] Delete `src/lib/state/url-sync.ts` + `src/tests/unit/url-sync.test.ts` (C1) — Stage 6 feature 6.
+- [ ] Delete `src/tests/unit/energy-input-format.test.ts` (C2) — Stage 6 grooming.
+- [ ] Extract canonical SI prefix table → `src/lib/utils/energy-units.ts` (C3 / I3) — Stage 6 small refactor.
+- [ ] Rename `src/lib/state/energy-input.svelte.ts` → `energy-rows.svelte.ts` (C7) — Stage 6 cosmetic.
+- [ ] Add cross-check stubs at top of `shareable-urls.md` and `shareable-urls-formal.md` (I1) — Stage 6 grooming.
+- [ ] Consolidate calculator wireframes — keep one canonical copy in `calculator.md`, replace duplicates with links (I2) — Stage 6 grooming.
+- [ ] Add "STP conversion implemented in TS not C" note to `06-wasm-api-contract.md` (I4) — Stage 6 grooming.
+- [ ] Add "historical narrative" disclaimer to `docs/ux-reviews/README.md` and `docs/ai-logs/README.md` (I5) — small fix, can land now.
+- [ ] Add cross-check integration test for compat matrix vs. WASM (C8) — Stage 7 hardening.
+
+---
+
+
 
 - **All five Stage 5 sub-items are implemented and tested.**
 - **Every "Open" issue from the 26-Apr UX review is either closed
