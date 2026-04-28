@@ -19,7 +19,7 @@ the session log is authoritative for what shipped.
 | [opencode-prompt-ux-review-fixes.md](opencode-prompt-ux-review-fixes.md) | [`../2026-04-25-ux-review-fixes.md`](../2026-04-25-ux-review-fixes.md) + [qwen-session](../2026-04-25-ux-review-open-issues-qwen-session.md) | 25 Apr 2026 | UX review follow-up tasks (stage 5.3 + 5.4 polish) |
 | [2026-04-27-opencode-tasks.md](2026-04-27-opencode-tasks.md) | [`../2026-04-27-opencode-tasks-1-9-summary.md`](../2026-04-27-opencode-tasks-1-9-summary.md) + [qwen-session](../2026-04-27-opencode-tasks-1-9-qwen-session.md) | 27 Apr 2026 | 9 ordered TDD tasks — TeV units, parser typos, particle naming, master selector, Add row, debounce |
 | [2026-04-27-opencode-tasks-jsroot-plot.md](2026-04-27-opencode-tasks-jsroot-plot.md) | [`../2026-04-27-stage5-jsroot-plot.md`](../2026-04-27-stage5-jsroot-plot.md) + [qwen-session](../2026-04-27-stage5-jsroot-plot-qwen-session.md) | 27 Apr 2026 | Stage 5.5 — JSROOT plot wrapper |
-| [2026-04-28-stage6-calculator-basic.md](2026-04-28-stage6-calculator-basic.md) | *(not yet run)* | 28 Apr 2026 | Stage 6.1 — Calculator (basic): toolbar, URL sync, phase badge, program label, range hint, restore defaults, loading skeleton, URL round-trip |
+| [2026-04-28-stage6-calculator-basic.md](2026-04-28-stage6-calculator-basic.md) | [`../2026-04-28-stage6-calculator-basic.md`](../2026-04-28-stage6-calculator-basic.md) + [qwen-session](../2026-04-28-stage6-calculator-basic-qwen-session.md) | 28 Apr 2026 | Stage 6.1 — Calculator (basic): WASM fix, toolbar, URL sync, phase badge, program label, range hint, restore defaults, loading skeleton |
 
 ## Convention
 
