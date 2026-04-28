@@ -15,7 +15,7 @@ summary table of all sessions.
 
 | Directory | Purpose |
 |-----------|---------|
-| [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session **outputs** stay in this directory. |
+| [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session logs/outputs live in this parent directory, not here. |
 
 ## Log Files
 

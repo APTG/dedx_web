@@ -25,7 +25,7 @@
 ## Outcomes
 
 - All five sub-components are stable, reused in place, and exercised by 425+ unit/integration tests.
-- ~480 LOC of dead/duplicated code removed (`energy-input.svelte` component, `units/energy.ts`, `energy-input-format.test.ts` overlaps).
+- ~480 LOC of dead/duplicated code removed or consolidated (`energy-input.svelte` standalone component and `units/energy.ts` removed; overlapping `formatSigFigs` coverage between `energy-input-format.test.ts` and `unit-conversions.test.ts` reduced — the format file still exists at ~49 LOC, see §6.5.1 C2 of the closing UX review for the remaining cleanup).
 - Particle/material display naming centralized in [`src/lib/utils/particle-label.ts`](../../src/lib/utils/particle-label.ts) and reused by both calculator comboboxes and plot legends.
 - KE conservation across particle / per-row-unit switches is locked in by spec ([`unit-handling.md` v4](../04-feature-specs/unit-handling.md)) **and** by E2E tests ([`tests/e2e/particle-unit-switching.spec.ts`](../../tests/e2e/particle-unit-switching.spec.ts)).
 - Plot URL state encoded/decoded via [`plot-url.ts`](../../src/lib/utils/plot-url.ts) (canonical params) — serves as the reference implementation for the Calculator URL sync that Stage 6 owns.
