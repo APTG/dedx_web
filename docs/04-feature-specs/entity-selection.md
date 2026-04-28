@@ -756,60 +756,10 @@ ARIA: `role="combobox"`, `aria-expanded`, `aria-activedescendant`,
 `role="listbox"` on the dropdown, `role="option"` on items,
 `aria-disabled="true"` on greyed-out items.
 
-#### Desktop (≥900px) — Centered form layout
+#### Page Layout
 
-```
-┌────────────────────────────────────────────────────────────────────────┐
-│  ┌──────────────────────────────────────────────────────────────────┐  │
-│  │  [Hydrogen (H) ▾]    [Water (liquid) ▾]   [Auto-select → ICRU 49 ▾] │
-│  └──────────────────────────────────────────────────────────────────┘  │
-│                                                                        │
-│  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────┐  │
-│  │ Energy (MeV) │→ MeV/nucl│ Unit │Stp Power (keV/µm)│ CSDA Range  │  │
-│  ├──────────────┼──────────┼──────┼──────────────────┼──────────────┤  │
-│  │ 100          │ 100      │ MeV  │ 45.76            │ 7.718 cm    │  │
-│  │ 200          │ 200      │ MeV  │ 27.34            │ 26.27 cm    │  │
-│  │ ░░░░░░░░░░░░ │          │      │                  │             │  │
-│  └──────────────┴──────────┴──────┴──────────────────┴──────────────┘  │
-│  Valid range: 0.001–10000 MeV                          [Export CSV ↓] │
-└────────────────────────────────────────────────────────────────────────┘
-```
-
-- Max content width ~720px, centered horizontally (`mx-auto`).
-- Entity selectors in a **single three-column grid row** (`grid-cols-3`): Particle,
-  Material, and Program each occupy one column. All three are always visible without
-  wrapping on desktop. The Energy unit selector lives in the energy input row below.
-- Program combobox is **narrower** than Particle/Material (~180px vs ~240px)
-  because it is less frequently changed — visual hierarchy via width.
-- The unified input/result table is the visual centerpiece, full content width.
-  Energy is typed in the first column; results appear inline in the same row.
-
-#### Tablet (600–899px)
-
-Same as desktop but at full viewport width (no centering margin).
-All four selector items may wrap to two rows.
-
-#### Mobile (<600px)
-
-Entity selectors stack vertically, each full width:
-
-```
-┌──────────────────────────────────────┐
-│ Particle: [Hydrogen (H)          ▾]  │
-│ Material: [Water (liquid)        ▾]  │
-│ Program:  [Auto-select → ICRU 49 ▾] │
-│ Energy:   (•) MeV  ( ) MeV/nucl     │
-│                                      │
-│ ← scroll →                          │
-│ ┌───────┬────────┬─────┬──────┬─────┐│
-│ │Energy │→MeV/n  │Unit │StpPwr│Range ││
-│ │(MeV)  │        │     │keV/µm│      ││
-│ │ 100   │ 100    │ MeV │45.76 │7.7cm ││
-│ │ 200   │ 200    │ MeV │27.34 │26 cm ││
-│ └───────┴────────┴─────┴──────┴─────┘│
-│                       [Export CSV ↓] │
-└──────────────────────────────────────┘
-```
+**Wireframe:** see [`calculator.md §Page Layout Overview`](calculator.md#page-layout-overview) — the Calculator
+spec owns the compact-mode wireframe. Anything here is a derived view.
 
 ---
 

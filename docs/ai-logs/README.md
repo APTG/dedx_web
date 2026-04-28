@@ -6,6 +6,10 @@ the prompt→response narrative and task outcomes for one session.
 See [`CHANGELOG-AI.md`](../../CHANGELOG-AI.md) in the repo root for a
 summary table of all sessions.
 
+> **Note:** These session logs are historical records. For current intended
+> behavior, see `docs/04-feature-specs/`. For current implementation, see
+> the code.
+
 > **Note for future readers:** these session logs are point-in-time
 > narratives. They may reference behavior, group names, or specs that
 > were later changed. For the **current** behavior, the per-feature spec

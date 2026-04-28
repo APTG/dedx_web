@@ -554,6 +554,11 @@ interface LibdedxService {
    * Convert stopping power values between unit systems.
    * Calls: convert_units() from dedx_tools.h.
    *
+   * **Implementation note:** `convertStpUnits` is implemented in TypeScript
+   * (`src/lib/utils/unit-conversions.ts`), not in C. The WASM layer returns
+   * raw values in MeV·cm²/g (stopping power) and g/cm² (CSDA range); all
+   * display-unit conversion happens on the JS side.
+   *
    * @param materialId — needed for density when converting to/from linear units.
    * @returns New stopping power values in the target unit.
    * @throws LibdedxError if the conversion fails.
