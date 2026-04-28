@@ -3,6 +3,10 @@
 Periodic UX reviews of the webdedx calculator interface.  Each review
 documents issues found, their severity, and implementation status.
 
+> **Note:** These are historical, point-in-time reviews. For current
+> intended behavior, the specs under `docs/04-feature-specs/` are
+> authoritative.
+
 > **Note for future readers:** these review files are point-in-time
 > narratives. They may reference behavior, group names, or wording that
 > was later changed. For the **current** behavior, the per-feature spec

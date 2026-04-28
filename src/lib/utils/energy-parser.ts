@@ -1,3 +1,5 @@
+import { SI_PREFIX_TABLE } from "$lib/utils/energy-units";
+
 /**
  * All energy units that may appear in typed user input, including SI-prefixed
  * variants (eV, keV, GeV) that are not part of the base `EnergyUnit` contract
@@ -64,6 +66,14 @@ const CANONICAL_UNITS: ReadonlyMap<string, EnergySuffixUnit> = new Map([
   ["TeV/u", "TeV/u"],
   ["keV/u", "keV/u"],
 ]);
+
+/** Verify SI_PREFIX_TABLE has all required keys (compile-time + runtime guard) */
+const _requiredPrefixes: Array<keyof typeof SI_PREFIX_TABLE> = ["eV", "keV", "MeV", "GeV", "TeV"];
+for (const prefix of _requiredPrefixes) {
+  if (SI_PREFIX_TABLE[prefix] === undefined) {
+    throw new Error(`SI_PREFIX_TABLE missing required prefix: ${prefix}`);
+  }
+}
 
 // Units whose case-fold match is ambiguous or confusing — never suggest them.
 // eV (electron-volt) uses lowercase 'e' per SI convention; all-caps "EV" is

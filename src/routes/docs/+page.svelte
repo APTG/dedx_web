@@ -34,10 +34,7 @@
   <div class="rounded-lg border bg-muted p-6">
     <h2 class="mb-2 text-lg font-semibold">Project Status</h2>
     <p class="text-muted-foreground">
-      Stage 5 (Core shared components) is <strong>complete</strong> as of 28 April 2026 —
-      entity selection, energy input, unit selector, unified result table, and the
-      JSROOT plot wrapper all shipped. Stage 6 (Feature pages — multi-program mode,
-      Share URL, CSV/PDF export) is next. See the
+      Stage 6 (Calculator basics) — in progress. See the
       <a
         href="https://github.com/APTG/dedx_web/blob/master/docs/00-redesign-plan.md"
         target="_blank"
@@ -45,7 +42,7 @@
       >
         redesign plan
       </a>
-      for the full roadmap.
+      for the roadmap.
     </p>
   </div>
 </div>

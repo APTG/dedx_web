@@ -37,10 +37,7 @@ Results update as the user types (debounced 300 ms).
 | Tablet 600–899 px | Form fills viewport width; same sub-grid row for Particle + Material |
 | Mobile < 600 px | All comboboxes stack vertically at full width |
 
-**Normative wireframes:**
-- [entity-selection.md — Desktop compact mode wireframe](04-feature-specs/entity-selection.md#desktop-900px--centered-form-layout)
-- [entity-selection.md — Tablet compact mode](04-feature-specs/entity-selection.md#tablet-600899px)
-- [calculator.md — full page layout](04-feature-specs/calculator.md)
+**Calculator page:** See [`docs/04-feature-specs/calculator.md §Page Layout Overview`](04-feature-specs/calculator.md).
 
 ---
 

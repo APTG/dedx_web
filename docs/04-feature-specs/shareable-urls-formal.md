@@ -2,6 +2,8 @@
 
 > **Status:** Final v6 (13 April 2026)
 >
+> **Cross-check:** If this file disagrees with `shareable-urls.md`, this formal contract wins.
+>
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
 > - ABNF grammar for query-string syntax

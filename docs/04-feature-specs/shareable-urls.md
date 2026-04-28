@@ -2,6 +2,8 @@
 
 > **Status:** Final v6 (9 April 2026)
 >
+> **Cross-check:** If this file disagrees with `shareable-urls-formal.md`, the formal contract wins.
+>
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
 > shareability. When a user shares a URL, the recipient sees identical inputs,

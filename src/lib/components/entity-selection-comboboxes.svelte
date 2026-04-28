@@ -19,6 +19,15 @@
 
   let { state, class: className, onParticleSelect }: Props = $props();
 
+  function getMaterialPhase(material: MaterialEntity | null): "gas" | "liquid" | "solid" | null {
+    if (!material) return null;
+    if (material.isGasByDefault) return "gas";
+    if (material.name.toLowerCase().includes("liquid")) return "liquid";
+    return "solid";
+  }
+
+  let materialPhase = $derived.by(() => getMaterialPhase(state.selectedMaterial));
+
   const particleItems = $derived.by(() => {
     // "Common particles" group: proton (1), alpha (2), electron (1001)
     const COMMON_IDS = new Set([1, 2, 1001]);
@@ -196,17 +205,27 @@
     />
   </div>
 
-  <div class="w-full">
-    <EntityCombobox
-      label="Material"
-      items={materialItems}
-      selectedId={state.selectedMaterial?.id ?? null}
-      placeholder="Select material"
-      onItemSelect={(material: MaterialEntity) => {
-        state.selectMaterial(material.id);
-      }}
-      onClear={() => state.clearMaterial()}
-    />
+  <div class="flex items-center gap-2 w-full">
+    <div class="flex-1">
+      <EntityCombobox
+        label="Material"
+        items={materialItems}
+        selectedId={state.selectedMaterial?.id ?? null}
+        placeholder="Select material"
+        onItemSelect={(material: MaterialEntity) => {
+          state.selectMaterial(material.id);
+        }}
+        onClear={() => state.clearMaterial()}
+      />
+    </div>
+    {#if materialPhase}
+      <span
+        class="mt-6 inline-flex items-center rounded-full border border-transparent bg-secondary px-2.5 py-0.5 text-xs font-medium"
+        data-testid="phase-badge"
+      >
+        {materialPhase}
+      </span>
+    {/if}
   </div>
 
   <!-- Keep all three selectors in one desktop row and avoid pointer-intercept overlap. -->

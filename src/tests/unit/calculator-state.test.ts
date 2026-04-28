@@ -469,6 +469,34 @@ describe('CalculatorState', () => {
       expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(100, 1);
     });
   });
+
+  describe('resetAll', () => {
+    it('resetAll() resets entity selection (calls entitySelection.resetAll)', () => {
+      expect(entitySelection.selectedParticle?.id).toBe(1); // proton
+      expect(entitySelection.selectedMaterial?.id).toBe(276); // water
+      entitySelection.selectParticle(6); // carbon
+      expect(entitySelection.selectedParticle?.id).toBe(6);
+      calcState.resetAll();
+      expect(entitySelection.selectedParticle?.id).toBe(1); // proton
+      expect(entitySelection.selectedMaterial?.id).toBe(276); // water
+    });
+
+    it('resetAll() resets rows to a single pre-filled "100" row', () => {
+      calcState.updateRowText(0, '500');
+      // updateRowText auto-adds an empty row when the last row has text
+      expect(calcState.rows).toHaveLength(2);
+      calcState.resetAll();
+      expect(calcState.rows.filter(r => r.status !== 'empty')).toHaveLength(1);
+      expect(calcState.rows[0].rawInput).toBe('100');
+    });
+
+    it('resetAll() resets masterUnit to "MeV"', () => {
+      calcState.setMasterUnit('GeV');
+      expect(calcState.masterUnit).toBe('GeV');
+      calcState.resetAll();
+      expect(calcState.masterUnit).toBe('MeV');
+    });
+  });
 });
 
 describe('formatStpValue', () => {
