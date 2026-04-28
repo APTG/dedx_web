@@ -1,6 +1,6 @@
 <script lang="ts">
   import { wasmReady, isAdvancedMode } from "$lib/state/ui.svelte";
-  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import { createEntitySelectionState, type EntitySelectionState, type AutoSelectProgram } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
@@ -12,6 +12,7 @@
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
+  let energyRangeLabel = $state<string>("");
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -21,6 +22,31 @@
         calcState = createCalculatorState(state, service);
       });
     }
+  });
+
+  $effect(() => {
+    if (calcState && state?.isComplete) {
+      const programId = state.resolvedProgramId;
+      const particleId = state.selectedParticle?.id;
+      if (programId !== null && particleId !== null) {
+        getService().then((service) => {
+          const min = service.getMinEnergy(programId, particleId);
+          const max = service.getMaxEnergy(programId, particleId);
+          energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
+        });
+      }
+    }
+  });
+
+  let programLabel = $derived.by(() => {
+    if (!state) return "";
+    const program = state.selectedProgram;
+    if (program.id === -1 && (program as AutoSelectProgram).resolvedProgram) {
+      return `Results calculated using ${(program as AutoSelectProgram).resolvedProgram!.name} (auto-selected)`;
+    } else if (program.id !== -1) {
+      return `Results calculated using ${program.name}`;
+    }
+    return "";
   });
 </script>
 
@@ -51,6 +77,18 @@
       <div class="rounded-lg border bg-card p-6">
         <ResultTable state={calcState} entitySelection={state} />
       </div>
+      {#if programLabel}
+        <p class="text-sm text-muted-foreground -mt-2">{programLabel}</p>
+      {/if}
+      {#if state.isComplete && energyRangeLabel}
+        <p class="text-xs text-muted-foreground">
+          Valid range: {energyRangeLabel}
+          ({state.selectedProgram.id === -1
+            ? (state.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto"
+            : state.selectedProgram.name},
+          {state.selectedParticle?.name ?? ""})
+        </p>
+      {/if}
     </div>
   {/if}
 </div>

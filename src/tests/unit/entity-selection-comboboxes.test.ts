@@ -549,3 +549,60 @@ class MockLibdedxServiceWithElectron {
     return [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }];
   }
 }
+
+describe("Material phase badge", () => {
+  beforeEach(() => {
+    cleanup();
+  });
+
+  test("shows 'gas' when selectedMaterial.isGasByDefault is true", () => {
+    const service = new MockLibdedxService();
+    const matrix = buildCompatibilityMatrix(service as any);
+    const state = createEntitySelectionState(matrix);
+    state.selectMaterial(1); // Hydrogen (gas)
+    render(EntitySelectionComboboxes, { props: { state } });
+    expect(screen.getByTestId("phase-badge")).toHaveTextContent("gas");
+  });
+
+  test("shows 'liquid' when material name contains 'liquid'", () => {
+    const service = new MockLibdedxService();
+    const matrix = buildCompatibilityMatrix(service as any);
+    const state = createEntitySelectionState(matrix);
+    state.selectMaterial(276); // Water (liquid)
+    render(EntitySelectionComboboxes, { props: { state } });
+    expect(screen.getByTestId("phase-badge")).toHaveTextContent("liquid");
+  });
+
+  test("shows 'solid' for non-gas materials without 'liquid' in name", () => {
+    // Create a custom mock with an Aluminum material
+    class MockWithAluminum {
+      getPrograms(): ProgramEntity[] {
+        return [{ id: 7, name: "ICRU 49", version: "1.0" }];
+      }
+      getParticles(programId: number): ParticleEntity[] {
+        return [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] }];
+      }
+      getMaterials(programId: number): MaterialEntity[] {
+        return [
+          { id: 13, name: "Aluminum", density: 2.7, isGasByDefault: false },
+          { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
+        ];
+      }
+    }
+    const service = new MockWithAluminum();
+    const matrix = buildCompatibilityMatrix(service as any);
+    const state = createEntitySelectionState(matrix);
+    state.selectMaterial(13); // Aluminum
+    render(EntitySelectionComboboxes, { props: { state } });
+    expect(screen.getByTestId("phase-badge")).toHaveTextContent("solid");
+  });
+
+  test("renders no phase badge when no material is selected", () => {
+    const service = new MockLibdedxService();
+    const matrix = buildCompatibilityMatrix(service as any);
+    const state = createEntitySelectionState(matrix);
+    state.selectMaterial(null);
+    render(EntitySelectionComboboxes, { props: { state } });
+    expect(screen.queryByTestId("phase-badge")).not.toBeInTheDocument();
+  });
+});
