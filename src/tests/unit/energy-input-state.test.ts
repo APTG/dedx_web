@@ -1,5 +1,5 @@
 import { describe, test, expect } from "vitest";
-import { createEnergyInputState } from "$lib/state/energy-input.svelte";
+import { createEnergyInputState } from "$lib/state/energy-rows.svelte";
 import type { ParseResult } from "$lib/utils/energy-parser";
 
 function getValue(result: ParseResult): { value: number; unit: string | null } | null {

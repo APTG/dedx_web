@@ -1,4 +1,4 @@
-import { createEnergyInputState, type EnergyRow } from "./energy-input.svelte";
+import { createEnergyInputState, type EnergyRow } from "./energy-rows.svelte";
 import { parseEnergyInput } from "$lib/utils/energy-parser";
 import {
   convertEnergyToMeVperNucl,
