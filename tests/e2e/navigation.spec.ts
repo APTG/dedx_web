@@ -20,14 +20,15 @@ test.describe("Nav link clicks", () => {
   test("clicking Calculator nav link navigates to /calculator", async ({ page }) => {
     await page.goto("/plot");
     await page.getByRole("link", { name: "Calculator" }).click();
-    await expect(page).toHaveURL(/\/calculator$/);
+    // Calculator writes canonical URL params on mount — allow optional query.
+    await expect(page).toHaveURL(/\/calculator(\?|$)/);
     await expect(page.getByRole("heading", { level: 1, name: "Calculator" })).toBeVisible();
   });
 
   test("clicking webdedx brand logo redirects to /calculator", async ({ page }) => {
     await page.goto("/plot");
     await page.getByRole("link", { name: /webdedx/i }).click();
-    await expect(page).toHaveURL(/\/calculator$/);
+    await expect(page).toHaveURL(/\/calculator(\?|$)/);
     await expect(page.getByRole("heading", { level: 1, name: "Calculator" })).toBeVisible();
   });
 });

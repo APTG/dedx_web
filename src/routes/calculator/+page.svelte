@@ -17,7 +17,7 @@
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
-  import { decodeCalculatorUrl, encodeCalculatorUrl } from "$lib/utils/calculator-url";
+  import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -54,16 +54,21 @@
 
   $effect(() => {
     if (!urlInitialized || !calcState || !state) return;
-    const params = encodeCalculatorUrl({
+    const qs = calculatorUrlQueryString({
       particleId: state.selectedParticle?.id ?? null,
       materialId: state.selectedMaterial?.id ?? null,
       programId: state.resolvedProgramId,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
     });
-    // Preserve SvelteKit's internal history payload so back/forward and
-    // page.state-aware components keep working — see plot/+page.svelte.
-    replaceState(`${page.url.pathname}?${params}`, page.state);
+    // Build the new URL from `window.location.pathname` rather than
+    // `page.url.pathname` so reading `page.url` does not register a
+    // reactive dependency on the very URL we are about to rewrite —
+    // otherwise this effect re-runs on every `replaceState` and forms a
+    // (silent) replaceState loop. Same pattern as plot/+page.svelte.
+    const next = `${window.location.pathname}?${qs}`;
+    if (next === `${window.location.pathname}${window.location.search}`) return;
+    replaceState(next, page.state);
   });
 
   $effect(() => {
@@ -119,8 +124,13 @@
   <div class="flex items-center justify-between">
     <h1 class="text-3xl font-bold">Calculator</h1>
     {#if calcState}
-      <Button variant="ghost" size="sm" onclick={() => calcState.resetAll()}>
-        Restore defaults
+      <Button
+        variant="ghost"
+        size="sm"
+        onclick={() => calcState.resetAll()}
+        title="Reset particle, material, program, and energy rows"
+      >
+        Reset all
       </Button>
     {/if}
   </div>

@@ -2,7 +2,9 @@ import { test, expect } from '@playwright/test';
 
 test('homepage redirects to calculator', async ({ page }) => {
   await page.goto('/');
-  await expect(page).toHaveURL(/\/calculator$/);
+  // Calculator writes canonical URL params (urlv/particle/material/...) on
+  // mount, so allow an optional query string after `/calculator`.
+  await expect(page).toHaveURL(/\/calculator(\?|$)/);
 });
 
 test('calculator page loads', async ({ page }) => {

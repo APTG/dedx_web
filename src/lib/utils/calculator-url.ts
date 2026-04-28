@@ -89,20 +89,39 @@ function normalizeRowForEncoding(
 
   const parsed = parseEnergyInput(trimmed);
   if ("empty" in parsed || "error" in parsed) {
-    // Fallback: keep the user's literal input but never emit an explicit
-    // `:unit` suffix we cannot validate. Treat as master-unit.
-    return { numeric: trimmed, unit: masterUnit, explicit: false };
+    // Invalid / unparseable rows are dropped from the encoded URL —
+    // emitting the raw text could otherwise inject a `,` (e.g. `1,000`)
+    // or `:` and corrupt the comma-separated `energies` tokenization
+    // when the URL is loaded back. Decoder will treat the share-URL as
+    // having one fewer row; users see an empty trailing input.
+    return null;
   }
 
   const numeric = String(parsed.value);
   if (parsed.unit !== null) {
-    // Suffix typed in the input — always serialise as per-row.
+    // Suffix typed in the input — only serialise as per-row when it
+    // differs from the master unit; otherwise the bare numeric form is
+    // canonical (and round-trips identically through the decoder).
+    if (parsed.unit === masterUnit) {
+      return { numeric, unit: parsed.unit, explicit: false };
+    }
     return { numeric, unit: parsed.unit, explicit: true };
   }
   // No suffix in text — fall back to the row's logical unit.
   const unit = row.unit ?? masterUnit;
   const explicit = row.unitFromSuffix && unit !== masterUnit;
   return { numeric, unit, explicit };
+}
+
+/**
+ * Skip rows whose `rawInput` would corrupt the comma-separated `energies`
+ * tokenization once embedded in the URL. The parser already rejects commas
+ * (e.g. `1,000`) and colons (used as the per-row suffix separator), but
+ * we double-check here so an invalid row never injects either character
+ * into the encoded output.
+ */
+function isUrlSafeNumeric(s: string): boolean {
+  return !s.includes(",") && !s.includes(":");
 }
 
 export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams {
@@ -116,6 +135,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   for (const row of state.rows) {
     const norm = normalizeRowForEncoding(row, state.masterUnit);
     if (!norm) continue;
+    if (!isUrlSafeNumeric(norm.numeric)) continue;
     encodedRows.push(norm.explicit ? `${norm.numeric}:${norm.unit}` : norm.numeric);
   }
   if (encodedRows.length > 0) {
@@ -123,6 +143,18 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   }
   params.set("eunit", state.masterUnit);
   return params;
+}
+
+/**
+ * Build the query string for the URL bar. We intentionally emit `:` and
+ * `,` literally (both are reserved-but-permitted in the query component
+ * per RFC 3986 §3.4 / 2.2) so shareable URLs stay human-readable —
+ * `?energies=100,500:keV` instead of the percent-encoded
+ * `?energies=100%2C500%3AkeV` that `URLSearchParams.toString()` produces.
+ */
+export function calculatorUrlQueryString(state: CalculatorUrlState): string {
+  const params = encodeCalculatorUrl(state);
+  return params.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
 }
 
 export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState {

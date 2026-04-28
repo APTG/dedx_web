@@ -111,3 +111,126 @@ refactor remains a fair Stage 6 follow-up.
   Less surface area, no breakage to existing tests.
 - **Issue**: WASM RAM/timing profiling and a fresh E2E run against built
   WASM are deferred — neither is reproducible in this sandbox.
+
+---
+
+## Round 2 — Copilot-reviewer feedback on `0698804` + failing E2E
+
+**Model:** (Claude Sonnet 4.6 via Copilot coding agent)
+
+### Prompt: "fix recent review comments, fix failing e2e tests. Ensure that while running e2e tests you have full wasm bundle available in your sandbox, same for GitHub actions"
+
+**AI response**: Downloaded the `wasm-binaries` artifact from the failing CI
+run (id 25056152375) into `static/wasm/` so E2E tests + the integration test
+could be reproduced locally — confirmed all 3 failing scenarios reproduce.
+
+#### Failure root causes
+
+1. `calculator-url.spec.ts › mixed-unit rows encoded with :unit suffix` — the
+   encoder *did* emit `500:keV`, but `URLSearchParams.toString()` percent-encoded
+   the colon to `%3A`, so `window.location.search.includes("500:keV")` never
+   matched.
+2. `entity-selection.spec.ts › Reset all link restores defaults` — strict-mode
+   violation: round-1 added a new top-of-page `Restore defaults` Button to
+   `calculator/+page.svelte`, which collided by accessible name with the
+   pre-existing inline `entity-selection-comboboxes` Restore defaults button.
+3. `navigation.spec.ts › clicking Calculator nav link navigates to /calculator`
+   (and webdedx-brand variant) + `basic.spec.ts › homepage redirects to
+   calculator` — the new URL-sync `$effect` writes canonical params on mount,
+   so the old `/\/calculator$/` regex never matched the trailing query.
+
+#### Fixes
+
+- `calculator-url.ts`:
+  - `normalizeRowForEncoding()` now drops invalid/unparseable rows instead of
+    falling back to raw text (an input like `1,000` could otherwise inject a
+    comma into the comma-separated `energies` token).
+  - When a row's parsed unit equals the master unit, the explicit `:unit`
+    suffix is suppressed (so `100 MeV` with master MeV serialises as `100`,
+    not `100:MeV`).
+  - Added `calculatorUrlQueryString(state)` that calls `encodeCalculatorUrl()`
+    then unescapes `%3A → :` and `%2C → ,` so URLs stay human-readable. Both
+    characters are reserved-but-permitted in the query component per RFC 3986
+    §3.4 / 2.2, so leaving them literal is spec-compliant.
+- `calculator/+page.svelte`:
+  - URL-write `$effect` now uses `window.location.pathname` (matches plot
+    page) and early-returns when the next URL matches the current URL, so
+    reading `page.url` reactively no longer triggers a `replaceState` loop.
+  - Top-of-page "Restore defaults" → "Reset all" (matches plot page wording);
+    this also resolves the strict-mode collision with the
+    entity-selection-comboboxes inline button.
+- `tests/e2e/calculator.spec.ts`: STP/CSDA assertions now use
+  `expect.poll(() => parseFloat(textContent)).toBeGreaterThan(0)` instead of
+  `not.toBe('0')` — the previous form silently passed against the `"—"`
+  (calculating placeholder) and `"-"` (no-result placeholder) ResultTable
+  renders.
+- `tests/e2e/basic.spec.ts` + `navigation.spec.ts`: `/\/calculator$/` →
+  `/\/calculator(\?|$)/` (mirrors how `plot.spec.ts` already handles its own
+  query string).
+- `src/tests/integration/wasm-calculate.test.ts`:
+  - Tolerance is now an explicit `±10%` (`Math.abs(actual - ref) / ref < 0.1`)
+    rather than `toBeCloseTo(..., 0)` (~±0.5).
+  - Factory invocation passes `locateFile` so Node ESM resolves `libdedx.wasm`
+    against the local `static/wasm/` directory instead of the default
+    `http://localhost:3000/wasm/...` (which fails outside the browser).
+- `src/lib/components/ui/button/button.svelte`: invalid Tailwind variant
+  `[a]:hover:bg-primary/80` (hover never applied) → `hover:bg-primary/80`.
+- `src/lib/components/ui/{button,skeleton}/index.ts`: re-formatted with
+  Prettier (spaces).
+
+#### WASM perf / RAM probe
+
+Ran 100 cycles of (stp+csda) × 1000 energies against the real WASM module
+loaded directly in Node:
+
+| Metric                          | Result                            |
+| ------------------------------- | --------------------------------- |
+| Per-call cost (stp+csda × 1000) | 12.64 ms                          |
+| Per-energy cost                 | 12.6 µs                           |
+| WASM heap before / after        | 17 088 KiB / 17 088 KiB (Δ 0 KiB) |
+| WASM heap during run            | 17 088 KiB throughout (no growth) |
+| Node RSS Δ                      | +4.2 MiB total                    |
+
+Confirms `_malloc`/`_free` are paired correctly in `LibdedxServiceImpl.calculate()`
+— no per-call leak. WASM heap stays at the initial 17 MiB after pre-allocating
+the input/output scratch buffers, which is well within "negligible".
+
+### Tasks
+
+#### Calculator URL encoder hardening + page-effect loop guard
+- **Status**: completed
+- **Stage**: 6.1
+- **Files changed**: `src/lib/utils/calculator-url.ts`,
+  `src/routes/calculator/+page.svelte`,
+  `src/tests/unit/calculator-url.test.ts`
+- **Decision**: Emit `:` and `,` literally rather than relying on
+  `URLSearchParams.toString()` (which percent-encodes them). Cheaper than
+  rewriting the encoder around `URL` + manual key/value building, and
+  spec-compliant.
+
+#### E2E hardening (real WASM, real numeric assertions)
+- **Status**: completed
+- **Files changed**: `tests/e2e/calculator.spec.ts`,
+  `tests/e2e/basic.spec.ts`, `tests/e2e/navigation.spec.ts`
+- **Decision**: Use `expect.poll` against `parseFloat(textContent)` so the
+  test fails when the cell stays at `"—"` / `"-"` for the whole 5-second
+  window — catches WASM regressions the previous assertion missed.
+
+#### Integration test fixes (tolerance + WASM `locateFile`)
+- **Status**: completed
+- **Files changed**: `src/tests/integration/wasm-calculate.test.ts`
+
+#### UI / formatting
+- **Status**: completed
+- **Files changed**: `src/lib/components/ui/button/button.svelte`,
+  `src/lib/components/ui/button/index.ts`,
+  `src/lib/components/ui/skeleton/index.ts`
+
+#### Verification
+- **Status**: completed
+- 485 unit/integration tests pass (was 482 + 3 skipped — the 3 WASM
+  integration tests now actually run thanks to the `locateFile` fix).
+- 75 E2E tests pass + 4 intentional skips (was 72 pass + 3 fail + 4 skip
+  on `0698804`).
+- WASM perf probe documented above.
+- Lint is clean for every file changed in this round.

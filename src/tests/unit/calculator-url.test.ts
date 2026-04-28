@@ -75,6 +75,44 @@ describe("encodeCalculatorUrl", () => {
     });
     expect(p.get("energies")).toBe("100");
   });
+
+  it("drops invalid/unparseable rows so commas in rawInput cannot corrupt tokenization", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      rows: [
+        { rawInput: "100", unit: "MeV", unitFromSuffix: false },
+        // `1,000` would otherwise inject an extra comma into the energies list.
+        { rawInput: "1,000", unit: "MeV", unitFromSuffix: false },
+        { rawInput: "200", unit: "MeV", unitFromSuffix: false },
+      ],
+    });
+    expect(p.get("energies")).toBe("100,200");
+  });
+
+  it("does not emit explicit :unit when row's parsed unit equals masterUnit", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      masterUnit: "MeV",
+      rows: [{ rawInput: "100 MeV", unit: "MeV", unitFromSuffix: true }],
+    });
+    expect(p.get("energies")).toBe("100");
+  });
+});
+
+describe("calculatorUrlQueryString", () => {
+  it("emits ':' literally (not %3A) so URLs stay human-readable", async () => {
+    const { calculatorUrlQueryString } = await import("$lib/utils/calculator-url");
+    const qs = calculatorUrlQueryString({
+      ...defaultState,
+      rows: [
+        { rawInput: "100", unit: "MeV", unitFromSuffix: false },
+        { rawInput: "500", unit: "keV", unitFromSuffix: true },
+      ],
+    });
+    expect(qs).toContain("500:keV");
+    expect(qs).not.toContain("%3A");
+    expect(qs).not.toContain("%2C");
+  });
 });
 
 describe("decodeCalculatorUrl", () => {
