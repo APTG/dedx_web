@@ -8,7 +8,7 @@
 
 ## Session Overview
 
-This session was intended to complete all 9 tasks from `docs/opencode-tasks-2026-04-27.md`, covering:
+This session was intended to complete all 9 tasks from `docs/ai-logs/prompts/2026-04-27-opencode-tasks.md`, covering:
 
 - TeV energy units (Task 1) ✅
 - Typo suggestions in parser (Task 2) ✅
@@ -157,7 +157,7 @@ These changes wire the particle selection callback through `calcState.switchPart
 
 ## Cross-reference
 
-- Task list: [`docs/opencode-tasks-2026-04-27.md`](../opencode-tasks-2026-04-27.md)
+- Task list: [`docs/ai-logs/prompts/2026-04-27-opencode-tasks.md`](prompts/2026-04-27-opencode-tasks.md)
 - E2E test file: [`tests/e2e/particle-unit-switching.spec.ts`](../../tests/e2e/particle-unit-switching.spec.ts)
 - WASM loader: [`src/lib/wasm/loader.ts`](../../src/lib/wasm/loader.ts)
 - Calculator page: [`src/routes/calculator/+page.svelte`](../../src/routes/calculator/+page.svelte)

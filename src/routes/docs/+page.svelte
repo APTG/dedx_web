@@ -34,8 +34,10 @@
   <div class="rounded-lg border bg-muted p-6">
     <h2 class="mb-2 text-lg font-semibold">Project Status</h2>
     <p class="text-muted-foreground">
-      This is a work in progress. Stage 5 is currently being implemented. See
-      the
+      Stage 5 (Core shared components) is <strong>complete</strong> as of 28 April 2026 —
+      entity selection, energy input, unit selector, unified result table, and the
+      JSROOT plot wrapper all shipped. Stage 6 (Feature pages — multi-program mode,
+      Share URL, CSV/PDF export) is next. See the
       <a
         href="https://github.com/APTG/dedx_web/blob/master/docs/00-redesign-plan.md"
         target="_blank"
