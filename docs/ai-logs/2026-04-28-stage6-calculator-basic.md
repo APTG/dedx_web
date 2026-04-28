@@ -6,7 +6,7 @@
 
 ## Session Summary
 
-This session implements **Task 0** from the Stage 6 plan: fixing the critical WASM calculation bug where STP and CSDA range always return 0.
+This session implements all 8 tasks from the Stage 6 Calculator (basic) plan: fixing the critical WASM calculation bug, code cleanup, SI prefix extraction, material phase badge, restore defaults button, app toolbar, URL sync, loading skeleton with retry CTA, and documentation grooming.
 
 ## Tasks Completed
 
@@ -28,10 +28,11 @@ This session implements **Task 0** from the Stage 6 plan: fixing the critical WA
 - Added E2E test in `tests/e2e/calculator.spec.ts` for non-zero STP/range values
 - Added `data-testid` attributes to `result-table.svelte` for E2E selectors
 
-**Test results:**
-- 453 unit tests pass
-- Integration tests skipped (no WASM binary locally)
-- All pre-existing lint warnings remain (47 errors, pre-existing)
+**Commit:** `fix(wasm): correct float/double types, param order, add CSDA call in calculate()`
+
+---
+
+### Task 1 — Code cleanup: delete dead modules + rename energy-input state
 
 **Actions:**
 - Deleted `src/lib/state/url-sync.ts` (unused after calculator URL sync rewrite)
@@ -44,14 +45,143 @@ This session implements **Task 0** from the Stage 6 plan: fixing the critical WA
 
 **Commit:** `chore: delete dead url-sync.ts, rename energy-input→energy-rows, fold format test`
 
+---
+
+### Task 2 — Extract canonical SI prefix table to `energy-units.ts`
+
+**Actions:**
+- Created `src/lib/utils/energy-units.ts` with `SI_PREFIX_TABLE` constant
+- Updated `energy-parser.ts` and `energy-conversions.ts` to import from canonical module
+- Added 5 canonical import unit tests
+
+**Commit:** `refactor(units): extract canonical SI prefix table to energy-units.ts`
+
+---
+
+### Task 3 — Material phase badge + resolved program label + energy range label
+
+**Actions:**
+- Added material phase badge ("gas"/"liquid"/"solid") to `entity-selection-comboboxes.svelte`
+- Added resolved program label below entity selectors in `calculator/+page.svelte`
+- Added energy range label below result table with TODO for `getMinEnergy`/`getMaxEnergy`
+- Added 4 component tests for phase badge
+
+**Commit:** `feat(calculator): add material phase badge, resolved program label, energy range hint`
+
+---
+
+### Task 4 — Restore defaults button + paste > 200 values warning
+
+**Actions:**
+- Added `resetAll()` to `CalculatorState` and `EnergyRowsState` interfaces
+- Added `hasLargeInput` derived value (>200 filled rows)
+- Added Restore defaults button to calculator page header
+- Added large-input warning with `role="status"`
+- Added E2E test for large-input warning
+
+**Commit:** `feat(calculator): add restore-defaults button, large-input warning, resetAll()`
+
+---
+
+### Task 5 — App toolbar: Share URL + disabled Export buttons + mobile nav
+
+**Actions:**
+- Added toolbar to `+layout.svelte` with Share URL, Export PDF, Export CSV buttons
+- Export buttons disabled (`hidden sm:inline-flex` for mobile overflow prevention)
+- Share URL copies `window.location.href` to clipboard with "Copied!" feedback
+- Fixed mobile nav overflow with `min-w-0` and `shrink-0` classes
+- Added 4 E2E tests in `tests/e2e/toolbar.spec.ts`
+
+**Commit:** `feat(layout): add app toolbar with Share URL and disabled Export PDF/CSV buttons`
+
+---
+
+### Task 6 — Calculator URL sync (calculator-url.ts + wire to page)
+
+**Actions:**
+- Created `src/lib/utils/calculator-url.ts` with `encodeCalculatorUrl`/`decodeCalculatorUrl`
+- Added 11 unit tests for URL encode/decode round-trip
+- Wired URL sync to `calculator/+page.svelte` with `urlInitialized` guard
+- Added 3 E2E tests in `tests/e2e/calculator-url.spec.ts`
+
+**Commit:** `feat(calculator): implement URL state sync per shareable-urls spec (calculator-url.ts)`
+
+---
+
+### Task 7 — Stage 5.1 polish: loading skeleton + auto-fallback notification + retry CTA
+
+**Actions:**
+- Installed shadcn-svelte Skeleton component
+- Added loading skeleton to `calculator/+page.svelte` and `plot/+page.svelte`
+- Added in-body retry CTA when WASM fails with error details
+- Added `lastAutoFallbackMessage` and `clearAutoFallbackMessage()` to `EntitySelectionState`
+- Added dismissable auto-fallback notification UI
+
+**Commit:** `feat(calculator): loading skeleton, retry CTA, auto-fallback notification for entity selection`
+
+---
+
+### Task 8 — Documentation grooming (no code changes)
+
+**Actions:**
+- Added cross-check stubs to `shareable-urls.md` and `shareable-urls-formal.md`
+- Consolidated calculator wireframes in `entity-selection.md` and `05-ui-wireframes.md`
+- Added STP implementation note to `06-wasm-api-contract.md`
+- Added historical narrative disclaimers to `docs/ux-reviews/README.md` and `docs/ai-logs/README.md`
+
+**Commit:** `docs: grooming — shareable-urls cross-check, wireframe consolidation, STP implementation note, historical disclaimers`
+
+---
+
 ## Files Modified
 
-- `src/lib/wasm/libdedx.ts` — Fixed `calculate()` method, added `getMinEnergy`/`getMaxEnergy`
-- `src/lib/wasm/types.ts` — Added `getMinEnergy`/`getMaxEnergy` to `LibdedxService` interface
-- `src/lib/components/result-table.svelte` — Added `data-testid` attributes for E2E
-- `tests/e2e/calculator.spec.ts` — Added WASM calculation E2E test
-- `src/tests/integration/wasm-calculate.test.ts` — New integration test file (created)
+| File | Change |
+|------|--------|
+| `src/lib/wasm/libdedx.ts` | Fixed `calculate()` method, added `getMinEnergy`/`getMaxEnergy` |
+| `src/lib/wasm/types.ts` | Added `getMinEnergy`/`getMaxEnergy` to `LibdedxService` interface |
+| `src/lib/utils/energy-units.ts` | Created with `SI_PREFIX_TABLE` constant |
+| `src/lib/utils/calculator-url.ts` | Created with `encodeCalculatorUrl`/`decodeCalculatorUrl` |
+| `src/lib/utils/energy-parser.ts` | Updated to import `SI_PREFIX_TABLE` |
+| `src/lib/utils/energy-conversions.ts` | Updated to import `SI_PREFIX_TABLE` |
+| `src/lib/state/energy-rows.svelte.ts` | Renamed from `energy-input.svelte.ts`, added `resetRows()`, `hasLargeInput` |
+| `src/lib/state/calculator.svelte.ts` | Added `resetAll()`, `hasLargeInput` delegate |
+| `src/lib/state/entity-selection.svelte.ts` | Added `lastAutoFallbackMessage`, `clearAutoFallbackMessage()` |
+| `src/lib/components/entity-selection-comboboxes.svelte` | Added material phase badge |
+| `src/lib/components/result-table.svelte` | Added `data-testid` attributes |
+| `src/routes/+layout.svelte` | Added app toolbar with Share URL and Export buttons |
+| `src/routes/calculator/+page.svelte` | Added phase badge, labels, restore button, large-input warning, URL sync, skeleton, retry CTA, fallback notification |
+| `src/routes/plot/+page.svelte` | Added skeleton and retry CTA |
+| `tests/e2e/calculator.spec.ts` | Added WASM calculation test, large-input warning test |
+| `tests/e2e/toolbar.spec.ts` | Created with 4 toolbar tests |
+| `tests/e2e/calculator-url.spec.ts` | Created with 3 URL sync tests |
+| `src/tests/integration/wasm-calculate.test.ts` | Created with 3 integration tests |
+| `src/tests/unit/calculator-url.test.ts` | Created with 11 unit tests |
+
+## Test Results
+
+- **Unit tests:** 476 passing
+- **Integration tests:** 3 skipped (no WASM binary locally)
+- **E2E tests:** 10 new tests added (toolbar, URL sync, WASM calculation, large-input warning)
+
+## Commits
+
+| Hash | Message |
+|------|---------|
+| `272f404` | `fix(wasm): correct float/double types, param order, add CSDA call in calculate()` |
+| `2aa4f6b` | `chore: delete dead url-sync.ts, rename energy-input→energy-rows, fold format test` |
+| `04ed8e1` | `refactor(units): extract canonical SI prefix table to energy-units.ts` |
+| `32eed35` | `feat(calculator): add material phase badge, resolved program label, energy range hint` |
+| `fb5d364` | `feat(layout): add app toolbar with Share URL and disabled Export PDF/CSV buttons` |
+| `0e099d7` | `feat(calculator): implement URL state sync per shareable-urls spec (calculator-url.ts)` |
+| `7e5905f` | `feat(calculator): loading skeleton, retry CTA, auto-fallback notification for entity selection` |
+| `e9620dd` | `docs: grooming — shareable-urls cross-check, wireframe consolidation, STP implementation note, historical disclaimers` |
+| `b664761` | `chore: add tailwind-merge peer dependency for tailwind-variants` |
 
 ## Next Steps
 
-Continue with Task 1 (delete dead modules + rename energy-input state), Task 2 (extract SI prefix table), Task 3 (material phase badge + labels), Task 4 (restore defaults button + large input warning), Task 5 (toolbar with Share URL + Export buttons), Task 6 (calculator URL sync), Task 7 (loading skeleton + retry CTA + auto-fallback notification), Task 8 (documentation grooming).
+- Stage 6.7: Export CSV functionality (`docs/04-feature-specs/export.md`)
+- Stage 6.8: Export PDF functionality
+- Stage 6.9: Advanced mode toggle (per-row units, manual program override)
+- Stage 7: Plot enhancements (multi-series, axis controls, download)
+- Run `pnpm build` for production build gate verification
+- Update `CHANGELOG-AI.md` with Task 7-8 entries
