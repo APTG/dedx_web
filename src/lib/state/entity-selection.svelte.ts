@@ -30,12 +30,14 @@ export interface EntitySelectionState {
   availablePrograms: ProgramEntity[];
   availableParticles: ParticleEntity[];
   availableMaterials: MaterialEntity[];
+  lastAutoFallbackMessage: string | null;
   selectProgram(programId: number): void;
   selectParticle(particleId: number | null): void;
   selectMaterial(materialId: number | null): void;
   clearParticle(): void;
   clearMaterial(): void;
   resetAll(): void;
+  clearAutoFallbackMessage(): void;
 }
 
 const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
@@ -78,6 +80,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let selectedParticleId = $state<number | null>(PROTON_ID);
   let selectedMaterialId = $state<number | null>(WATER_ID);
   let selectedProgramId = $state<number>(-1);
+  let lastAutoFallbackMessage = $state<string | null>(null);
 
   function resolveAutoSelect(particleId: number | null, materialId: number | null): number | null {
     if (particleId === null || materialId === null) return null;
@@ -268,10 +271,20 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         }
       }
 
+      const oldProgramId = selectedProgramId;
+      const wasExplicitProgram = selectedProgramId !== -1;
+
       // Preserve explicit program choice when still valid for the new particle/material.
       // Fall back to Auto-select only when the concrete program became incompatible.
       if (selectedProgramId !== -1 && !isProgramAvailable(selectedProgramId)) {
         selectedProgramId = -1;
+      }
+
+      if (wasExplicitProgram && oldProgramId !== -1 && selectedProgramId === -1) {
+        const oldProgram = matrix.allPrograms.find((p) => p.id === oldProgramId);
+        if (oldProgram) {
+          lastAutoFallbackMessage = `Program changed to Auto-select — "${oldProgram.name}" does not support the selected particle.`;
+        }
       }
     },
 
@@ -293,8 +306,18 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         }
       }
 
+      const oldProgramId = selectedProgramId;
+      const wasExplicitProgram = selectedProgramId !== -1;
+
       if (selectedProgramId !== -1 && !isProgramAvailable(selectedProgramId)) {
         selectedProgramId = -1;
+      }
+
+      if (wasExplicitProgram && oldProgramId !== -1 && selectedProgramId === -1) {
+        const oldProgram = matrix.allPrograms.find((p) => p.id === oldProgramId);
+        if (oldProgram) {
+          lastAutoFallbackMessage = `Program changed to Auto-select — "${oldProgram.name}" does not support the selected particle or material.`;
+        }
       }
     },
 
@@ -310,6 +333,15 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       selectedParticleId = PROTON_ID;
       selectedMaterialId = WATER_ID;
       selectedProgramId = -1;
+      lastAutoFallbackMessage = null;
+    },
+
+    get lastAutoFallbackMessage() {
+      return lastAutoFallbackMessage;
+    },
+
+    clearAutoFallbackMessage(): void {
+      lastAutoFallbackMessage = null;
     },
   };
 

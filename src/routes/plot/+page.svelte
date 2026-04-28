@@ -2,7 +2,9 @@
   import { browser } from "$app/environment";
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import { wasmReady } from "$lib/state/ui.svelte";
+  import { wasmReady, wasmError } from "$lib/state/ui.svelte";
+  import { Skeleton } from "$lib/components/ui/skeleton";
+  import { Button } from "$lib/components/ui/button";
   import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
@@ -233,11 +235,35 @@
   <title>Plot - webdedx</title>
 </svelte:head>
 
-{#if !wasmReady.value || !entityState}
+{#if wasmError.value}
   <div class="space-y-6">
     <h1 class="text-3xl font-bold">Plot</h1>
-    <div class="flex h-64 items-center justify-center rounded-lg border bg-card p-6">
-      <p class="text-muted-foreground">Loading WASM module…</p>
+    <div class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4">
+      <p class="font-semibold text-destructive">Failed to load the calculation engine.</p>
+      <p class="text-sm text-muted-foreground">
+        Please try refreshing the page or use a different browser.
+      </p>
+      <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
+        Retry
+      </Button>
+      <details class="text-left text-xs text-muted-foreground mt-2">
+        <summary class="cursor-pointer">Show details</summary>
+        <pre class="mt-1 whitespace-pre-wrap">{wasmError.value.message}</pre>
+      </details>
+    </div>
+  </div>
+{:else if !wasmReady.value || !entityState}
+  <div class="space-y-6">
+    <h1 class="text-3xl font-bold">Plot</h1>
+    <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading plot page">
+      <div class="flex flex-wrap gap-3">
+        <Skeleton class="h-10 w-44 rounded-md" />
+        <Skeleton class="h-10 w-44 rounded-md" />
+        <Skeleton class="h-10 w-36 rounded-md" />
+      </div>
+      <div class="rounded-lg border bg-card p-6 space-y-2">
+        <Skeleton class="h-64 w-full" />
+      </div>
     </div>
   </div>
 {:else}
