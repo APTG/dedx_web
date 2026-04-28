@@ -204,7 +204,7 @@
       {/if}
     </div>
   {:else}
-    <table class="w-full text-sm">
+    <table class="w-full text-sm" data-testid="result-table">
       <thead class="sticky top-0 bg-background">
         <tr>
           {#each columns as col (col.id)}
@@ -228,6 +228,7 @@
                     type="text"
                     aria-label={`Energy value row ${i + 1}`}
                     data-row-index={i}
+                    data-testid={`energy-input-${i}`}
                     value={row.rawInput}
                     placeholder="e.g. 100 keV"
                     class={`w-24 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
@@ -262,6 +263,14 @@
                   {:else}
                     <span class="text-muted-foreground">{formatRowUnit(row)}</span>
                   {/if}
+                {:else if col.id === "stopping-power"}
+                  <span data-testid={`stp-cell-${i}`}>
+                    {col.getValue(row, state, entitySelection)}
+                  </span>
+                {:else if col.id === "csda-range"}
+                  <span data-testid={`range-cell-${i}`}>
+                    {col.getValue(row, state, entitySelection)}
+                  </span>
                 {:else}
                   {col.getValue(row, state, entitySelection)}
                 {/if}

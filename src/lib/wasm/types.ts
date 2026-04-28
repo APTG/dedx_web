@@ -103,6 +103,8 @@ export interface LibdedxService {
     numPoints: number,
     logScale: boolean
   ): CalculationResult;
+  getMinEnergy(programId: number, particleId: number): number;
+  getMaxEnergy(programId: number, particleId: number): number;
 }
 
 export interface CompatibilityMatrix {

@@ -33,23 +33,25 @@ interface EmscriptenModule {
     program_id: number,
     particle_id: number,
     material_id: number,
-    energies: number,
     num_energies: number,
+    energies: number,
     stp: number,
-    csda: number,
   ): number;
   _dedx_get_csda_range_table(
     program_id: number,
     particle_id: number,
     material_id: number,
-    energies: number,
     num_energies: number,
+    energies: number,
     csda: number,
   ): number;
+  _dedx_get_min_energy(program_id: number, ion_id: number): number;
+  _dedx_get_max_energy(program_id: number, ion_id: number): number;
   _malloc(size: number): number;
   _free(ptr: number): void;
   UTF8ToString(ptr: number): string;
   HEAP32: Int32Array;
+  HEAPF32: Float32Array;
   HEAPF64: Float64Array;
 }
 
@@ -159,46 +161,84 @@ export class LibdedxServiceImpl implements LibdedxService {
     _options?: AdvancedOptions,
   ): CalculationResult {
     const numEnergies = energies.length;
-    const energiesPtr = this.module._malloc(numEnergies * 8);
-    const stpPtr = this.module._malloc(numEnergies * 8);
+
+    // energies and STP are float (4 bytes each) in the C API.
+    // CSDA ranges are double (8 bytes each).
+    const energiesPtr = this.module._malloc(numEnergies * 4);
+    const stpPtr = this.module._malloc(numEnergies * 4);
     const csdaPtr = this.module._malloc(numEnergies * 8);
 
     try {
+      const heapF32 = this.module.HEAPF32;
       const heapF64 = this.module.HEAPF64;
-      // Zero-initialise the output buffers. `_malloc` returns uninitialized
-      // memory, and if the libdedx C function returns success without writing
-      // every output slot (e.g. transient internal state on rapid repeat calls
-      // observed in `docs/ux-reviews/2026-04-25-calculator-full-review.md` §7
-      // and the `3.820e-314` denormal report on 2026-04-26), the leftover
-      // heap bytes are interpreted as wildly wrong stopping-power / CSDA
-      // values. Pre-zeroing makes any unwritten slot show up as a clean 0
-      // instead of a denormal, which the downstream subnormal warning then
-      // flags explicitly.
+
+      // Write inputs and zero-initialise output buffers.
       for (let i = 0; i < numEnergies; i++) {
-        heapF64[energiesPtr / 8 + i] = energies[i] ?? 0;
-        heapF64[stpPtr / 8 + i] = 0;
-        heapF64[csdaPtr / 8 + i] = 0;
+        heapF32[energiesPtr / 4 + i] = energies[i] ?? 0; // float*
+        heapF32[stpPtr / 4 + i] = 0; // float* (zeroed)
+        heapF64[csdaPtr / 8 + i] = 0; // double* (zeroed)
       }
 
-      const errorCode = this.module._dedx_get_stp_table(
+      // Call 1: stopping powers (6 args: program, ion, target, n, energies*, stps*)
+      const stpErr = this.module._dedx_get_stp_table(
         programId,
         particleId,
         materialId,
-        energiesPtr,
         numEnergies,
+        energiesPtr,
         stpPtr,
+      );
+      if (stpErr !== 0) {
+        throw new LibdedxError(stpErr, "WASM STP calculation failed");
+      }
+
+      // Call 2: CSDA ranges (6 args: program, ion, target, n, energies*, csda*)
+      const csdaErr = this.module._dedx_get_csda_range_table(
+        programId,
+        particleId,
+        materialId,
+        numEnergies,
+        energiesPtr,
         csdaPtr,
       );
-
-      if (errorCode !== 0) {
-        throw new LibdedxError(errorCode, "WASM calculation failed");
+      if (csdaErr !== 0) {
+        throw new LibdedxError(csdaErr, "WASM CSDA calculation failed");
       }
 
       const stoppingPowers: number[] = [];
       const csdaRanges: number[] = [];
       for (let i = 0; i < numEnergies; i++) {
-        stoppingPowers.push(heapF64[stpPtr / 8 + i] ?? 0);
-        csdaRanges.push(heapF64[csdaPtr / 8 + i] ?? 0);
+        const stpMass = heapF32[stpPtr / 4 + i] ?? 0; // read float
+        const csdaGcm2 = heapF64[csdaPtr / 8 + i] ?? 0; // read double
+
+        // Subnormal / non-finite guard — log and continue rather than throw.
+        if (
+          !Number.isFinite(stpMass) ||
+          (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)
+        ) {
+          console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
+            programId,
+            particleId,
+            materialId,
+            energyMevNucl: energies[i],
+            rawValue: stpMass,
+          });
+        }
+        if (
+          !Number.isFinite(csdaGcm2) ||
+          (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)
+        ) {
+          console.warn("[dedx] subnormal/invalid WASM output (CSDA range)", {
+            programId,
+            particleId,
+            materialId,
+            energyMevNucl: energies[i],
+            rawValue: csdaGcm2,
+          });
+        }
+
+        stoppingPowers.push(stpMass);
+        csdaRanges.push(csdaGcm2);
       }
 
       return {
@@ -233,6 +273,14 @@ export class LibdedxServiceImpl implements LibdedxService {
     }
 
     return this.calculate(programId, particleId, materialId, energies);
+  }
+
+  getMinEnergy(programId: number, particleId: number): number {
+    return this.module._dedx_get_min_energy(programId, particleId);
+  }
+
+  getMaxEnergy(programId: number, particleId: number): number {
+    return this.module._dedx_get_max_energy(programId, particleId);
   }
 }
 
