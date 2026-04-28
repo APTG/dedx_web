@@ -10,10 +10,14 @@
   import { Button } from "$lib/components/ui/button";
   import { getService } from "$lib/wasm/loader";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+  import { page } from "$app/stores";
+  import { replaceState } from "$app/navigation";
+  import { decodeCalculatorUrl, encodeCalculatorUrl } from "$lib/utils/calculator-url";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
+  let urlInitialized = $state(false);
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -21,8 +25,38 @@
         const matrix = buildCompatibilityMatrix(service);
         state = createEntitySelectionState(matrix);
         calcState = createCalculatorState(state, service);
+
+        const urlState = decodeCalculatorUrl($page.url.searchParams);
+        if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
+        if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
+        if (urlState.programId !== null) state.selectProgram(urlState.programId);
+        calcState.setMasterUnit(urlState.masterUnit);
+        if ($page.url.searchParams.has("energies")) {
+          urlState.rows.forEach((r, i) => {
+            const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
+            if (i === 0) {
+              calcState!.updateRowText(0, text);
+            } else {
+              calcState!.addRow();
+              calcState!.updateRowText(i, text);
+            }
+          });
+        }
+        urlInitialized = true;
       });
     }
+  });
+
+  $effect(() => {
+    if (!urlInitialized || !calcState || !state) return;
+    const params = encodeCalculatorUrl({
+      particleId: state.selectedParticle?.id ?? null,
+      materialId: state.selectedMaterial?.id ?? null,
+      programId: state.resolvedProgramId,
+      rows: calcState.rows,
+      masterUnit: calcState.masterUnit,
+    });
+    replaceState(`${$page.url.pathname}?${params}`, {});
   });
 
   $effect(() => {
