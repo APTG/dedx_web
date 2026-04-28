@@ -3,8 +3,10 @@
 import { describe, it, expect, beforeAll } from "vitest";
 import { existsSync } from "fs";
 import path from "path";
+import { pathToFileURL } from "url";
 
 const wasmMjs = path.resolve("static/wasm/libdedx.mjs");
+const wasmMjsUrl = pathToFileURL(wasmMjs).href;
 const skipIfNoWasm = existsSync(wasmMjs) ? describe : describe.skip;
 
 skipIfNoWasm("LibdedxServiceImpl.calculate() — real WASM", () => {
@@ -13,7 +15,9 @@ skipIfNoWasm("LibdedxServiceImpl.calculate() — real WASM", () => {
   beforeAll(async () => {
     const { LibdedxServiceImpl } = await import("$lib/wasm/libdedx");
     // Load the real Emscripten module. The mjs file exports a default factory.
-    const factory = (await import(/* @vite-ignore */ wasmMjs)).default;
+    // Use a `file://` URL so Node ESM accepts the absolute path on every
+    // platform (Windows path separators otherwise break dynamic import).
+    const factory = (await import(/* @vite-ignore */ wasmMjsUrl)).default;
     const module = await factory();
     service = new LibdedxServiceImpl(module);
     await service.init();

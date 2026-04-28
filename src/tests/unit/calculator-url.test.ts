@@ -1,5 +1,9 @@
 import { describe, it, expect } from "vitest";
-import { encodeCalculatorUrl, decodeCalculatorUrl } from "$lib/utils/calculator-url";
+import {
+  encodeCalculatorUrl,
+  decodeCalculatorUrl,
+  CALCULATOR_URL_VERSION,
+} from "$lib/utils/calculator-url";
 import type { CalculatorUrlState } from "$lib/utils/calculator-url";
 
 const defaultState: CalculatorUrlState = {
@@ -11,8 +15,9 @@ const defaultState: CalculatorUrlState = {
 };
 
 describe("encodeCalculatorUrl", () => {
-  it("encodes particle, material, program=auto, energies, eunit", () => {
+  it("encodes urlv, particle, material, program=auto, energies, eunit", () => {
     const p = encodeCalculatorUrl(defaultState);
+    expect(p.get("urlv")).toBe(String(CALCULATOR_URL_VERSION));
     expect(p.get("particle")).toBe("1");
     expect(p.get("material")).toBe("276");
     expect(p.get("program")).toBe("auto");
@@ -48,6 +53,18 @@ describe("encodeCalculatorUrl", () => {
     expect(p.get("energies")).toBe("100,500:keV");
   });
 
+  it("re-parses inline-unit rawInput so '500 keV' becomes '500:keV' (no %20 in URL)", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      rows: [
+        { rawInput: "100", unit: "MeV", unitFromSuffix: false },
+        // Row whose unit lives inside rawInput rather than the suffix flag
+        { rawInput: "500 keV", unit: "MeV", unitFromSuffix: false },
+      ],
+    });
+    expect(p.get("energies")).toBe("100,500:keV");
+  });
+
   it("skips empty rows", () => {
     const p = encodeCalculatorUrl({
       ...defaultState,
@@ -62,7 +79,9 @@ describe("encodeCalculatorUrl", () => {
 
 describe("decodeCalculatorUrl", () => {
   it("decodes basic params", () => {
-    const params = new URLSearchParams("particle=1&material=276&program=auto&energies=100,200&eunit=MeV");
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV",
+    );
     const s = decodeCalculatorUrl(params);
     expect(s.particleId).toBe(1);
     expect(s.materialId).toBe(276);
@@ -99,9 +118,26 @@ describe("decodeCalculatorUrl", () => {
     expect(s.masterUnit).toBe("MeV");
   });
 
+  it("ignores SI-prefixed eunit (master must be base unit only)", () => {
+    // Per shareable-urls.md §4.1, eunit ∈ {MeV, MeV/nucl, MeV/u}.
+    const params = new URLSearchParams("eunit=keV");
+    const s = decodeCalculatorUrl(params);
+    expect(s.masterUnit).toBe("MeV");
+  });
+
   it("decodes explicit program ID", () => {
     const params = new URLSearchParams("program=4");
     const s = decodeCalculatorUrl(params);
     expect(s.programId).toBe(4);
+  });
+
+  it("rejects unknown :unit suffix and treats whole token as plain rawInput", () => {
+    const params = new URLSearchParams("energies=100:bebok");
+    const s = decodeCalculatorUrl(params);
+    expect(s.rows[0]).toEqual({
+      rawInput: "100:bebok",
+      unit: "MeV",
+      unitFromSuffix: false,
+    });
   });
 });

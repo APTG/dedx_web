@@ -1,6 +1,10 @@
 <script lang="ts">
   import { wasmReady, wasmError, isAdvancedMode } from "$lib/state/ui.svelte";
-  import { createEntitySelectionState, type EntitySelectionState, type AutoSelectProgram } from "$lib/state/entity-selection.svelte";
+  import {
+    createEntitySelectionState,
+    type EntitySelectionState,
+    type AutoSelectProgram,
+  } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
@@ -11,7 +15,7 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
-  import { page } from "$app/stores";
+  import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { decodeCalculatorUrl, encodeCalculatorUrl } from "$lib/utils/calculator-url";
 
@@ -27,12 +31,12 @@
         state = createEntitySelectionState(matrix);
         calcState = createCalculatorState(state, service);
 
-        const urlState = decodeCalculatorUrl($page.url.searchParams);
+        const urlState = decodeCalculatorUrl(page.url.searchParams);
         if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
         if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
         if (urlState.programId !== null) state.selectProgram(urlState.programId);
         calcState.setMasterUnit(urlState.masterUnit);
-        if ($page.url.searchParams.has("energies") && calcState) {
+        if (page.url.searchParams.has("energies") && calcState) {
           urlState.rows.forEach((r, i) => {
             const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
             if (i === 0) {
@@ -57,7 +61,9 @@
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
     });
-    replaceState(`${$page.url.pathname}?${params}`, {});
+    // Preserve SvelteKit's internal history payload so back/forward and
+    // page.state-aware components keep working — see plot/+page.svelte.
+    replaceState(`${page.url.pathname}?${params}`, page.state);
   });
 
   $effect(() => {
@@ -65,11 +71,27 @@
       const programId = state.resolvedProgramId;
       const particleId = state.selectedParticle?.id;
       if (programId !== null && particleId !== null) {
+        // Snapshot the (programId, particleId) we're querying for so a
+        // slower in-flight `getService()` resolution cannot overwrite a
+        // fresher selection (race when the user changes particle or
+        // program quickly).
+        const snapshot = { programId, particleId };
+        let cancelled = false;
         getService().then((service) => {
+          if (cancelled) return;
+          if (
+            snapshot.programId !== state?.resolvedProgramId ||
+            snapshot.particleId !== state?.selectedParticle?.id
+          ) {
+            return;
+          }
           const min = service.getMinEnergy(programId, particleId);
           const max = service.getMaxEnergy(programId, particleId);
           energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
         });
+        return () => {
+          cancelled = true;
+        };
       }
     }
   });
@@ -107,7 +129,9 @@
   </p>
 
   {#if wasmError.value}
-    <div class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4">
+    <div
+      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
+    >
       <p class="font-semibold text-destructive">Failed to load the calculation engine.</p>
       <p class="text-sm text-muted-foreground">
         Please try refreshing the page or use a different browser.
@@ -137,14 +161,20 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion {state} />
-      <EntitySelectionComboboxes {state} onParticleSelect={(particleId) => calcState.switchParticle(particleId)} />
+      <EntitySelectionComboboxes
+        {state}
+        onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
+      />
       {#if state.lastAutoFallbackMessage}
-        <div class="flex items-center justify-between rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800">
+        <div
+          class="flex items-center justify-between rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
+        >
           <span role="status" aria-live="polite">{state.lastAutoFallbackMessage}</span>
           <button
             class="ml-2 text-amber-600 hover:text-amber-800 text-lg leading-none"
             aria-label="Dismiss"
-            onclick={() => state.clearAutoFallbackMessage()}>
+            onclick={() => state.clearAutoFallbackMessage()}
+          >
             ×
           </button>
         </div>
@@ -165,15 +195,15 @@
         <p class="text-xs text-muted-foreground">
           Valid range: {energyRangeLabel}
           ({state.selectedProgram.id === -1
-            ? (state.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto"
+            ? ((state.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
             : state.selectedProgram.name},
           {state.selectedParticle?.name ?? ""})
         </p>
       {/if}
       {#if calcState?.hasLargeInput}
         <p class="text-sm text-amber-600" role="status">
-          Large input ({calcState.rows.filter(r => r.status !== 'empty').length} values).
-          Calculation may be slow.
+          Large input ({calcState.rows.filter((r) => r.status !== "empty").length} values). Calculation
+          may be slow.
         </p>
       {/if}
     </div>
