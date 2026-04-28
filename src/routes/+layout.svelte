@@ -4,12 +4,24 @@
   import { base } from "$app/paths";
   import { getService } from "$lib/wasm/loader";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
+  import { Button } from "$lib/components/ui/button";
 
   let { children } = $props();
   let pathname = $derived($page.url.pathname);
   let routePath = $derived(
     pathname.startsWith(base) ? pathname.slice(base.length) || "/" : pathname,
   );
+
+  let copied = $state(false);
+  let copyTimeout: ReturnType<typeof setTimeout> | null = null;
+
+  async function shareUrl() {
+    if (typeof navigator === "undefined") return;
+    await navigator.clipboard.writeText(window.location.href);
+    copied = true;
+    if (copyTimeout) clearTimeout(copyTimeout);
+    copyTimeout = setTimeout(() => (copied = false), 2000);
+  }
 
   $effect(() => {
     getService()
@@ -25,40 +37,55 @@
 <div class="min-h-screen bg-background">
   <nav class="border-b bg-card">
     <div class="container mx-auto px-4">
-      <div class="flex h-14 items-center justify-between">
-        <div class="flex items-center gap-6">
-          <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl">
-            <img src={`${base}/favicon.svg`} alt="" class="h-6 w-6" />
-            webdedx
-          </a>
-          <div class="flex items-center gap-4 text-sm">
-            <a
-              href={`${base}/calculator`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath === "/calculator"}
-              class:text-muted-foreground={routePath !== "/calculator"}
-            >
-              Calculator
+        <div class="flex h-14 items-center justify-between gap-2">
+          <div class="flex items-center gap-3 min-w-0">
+            <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl">
+              <img src={`${base}/favicon.svg`} alt="" class="h-6 w-6" />
+              webdedx
             </a>
-            <a
-              href={`${base}/plot`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath === "/plot"}
-              class:text-muted-foreground={routePath !== "/plot"}
-            >
-              Plot
-            </a>
-            <a
-              href={`${base}/docs`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath.startsWith("/docs")}
-              class:text-muted-foreground={!routePath.startsWith("/docs")}
-            >
-              Docs
-            </a>
+            <div class="flex items-center gap-4 text-sm">
+              <a
+                href={`${base}/calculator`}
+                class="transition-colors hover:text-foreground/80"
+                class:text-foreground={routePath === "/calculator"}
+                class:text-muted-foreground={routePath !== "/calculator"}
+              >
+                Calculator
+              </a>
+              <a
+                href={`${base}/plot`}
+                class="transition-colors hover:text-foreground/80"
+                class:text-foreground={routePath === "/plot"}
+                class:text-muted-foreground={routePath !== "/plot"}
+              >
+                Plot
+              </a>
+              <a
+                href={`${base}/docs`}
+                class="transition-colors hover:text-foreground/80"
+                class:text-foreground={routePath.startsWith("/docs")}
+                class:text-muted-foreground={!routePath.startsWith("/docs")}
+              >
+                Docs
+              </a>
+            </div>
+          </div>
+          <div class="flex items-center gap-2 shrink-0">
+            <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
+              Export PDF
+            </Button>
+            <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
+              Export CSV ↓
+            </Button>
+            <Button variant="outline" size="sm" onclick={shareUrl}>
+              {#if copied}
+                <span aria-live="polite">Copied!</span>
+              {:else}
+                Share URL
+              {/if}
+            </Button>
           </div>
         </div>
-      </div>
     </div>
   </nav>
 

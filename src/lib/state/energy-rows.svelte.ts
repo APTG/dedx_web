@@ -11,6 +11,7 @@ export interface EnergyInputState {
   rows: EnergyRow[];
   masterUnit: EnergyUnit;
   isPerRowMode: boolean;
+  hasLargeInput: boolean;
   addRow(): void;
   removeRow(index: number): void;
   updateRowText(index: number, text: string): void;
@@ -18,6 +19,7 @@ export interface EnergyInputState {
   setMasterUnit(unit: EnergyUnit): void;
   getParsedEnergies(): ParseResult[];
   clearAllRows(): void;
+  resetRows(initial: { text: string }[]): void;
 }
 
 let rowIdCounter = 0;
@@ -83,6 +85,15 @@ export function createEnergyInputState(): EnergyInputState {
     rows = DEFAULT_ROWS.map((text) => ({ id: rowIdCounter++, text }));
   }
 
+  function resetRows(initial: { text: string }[]): void {
+    rowIdCounter = 0;
+    rows = initial.map((item) => ({ id: rowIdCounter++, text: item.text }));
+    masterUnit = DEFAULT_UNIT;
+  }
+
+  const filledRowCount = $derived(rows.filter((r) => r.text.trim() !== "").length);
+  const hasLargeInput = $derived(filledRowCount > 200);
+
   return {
     get rows() {
       return rows;
@@ -93,6 +104,9 @@ export function createEnergyInputState(): EnergyInputState {
     get isPerRowMode() {
       return computeIsPerRowMode();
     },
+    get hasLargeInput() {
+      return hasLargeInput;
+    },
     addRow,
     removeRow,
     updateRowText,
@@ -100,5 +114,6 @@ export function createEnergyInputState(): EnergyInputState {
     setMasterUnit,
     getParsedEnergies,
     clearAllRows,
+    resetRows,
   };
 }

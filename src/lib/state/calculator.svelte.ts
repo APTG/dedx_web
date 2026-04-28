@@ -37,6 +37,7 @@ export interface CalculatorState {
   isCalculating: boolean;
   error: LibdedxError | null;
   validationSummary: { valid: number; invalid: number; outOfRange: number; total: number };
+  hasLargeInput: boolean;
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
   switchParticle(particleId: number | null): void;
@@ -46,6 +47,7 @@ export interface CalculatorState {
   triggerCalculation(): void;
   flushCalculation(): Promise<void> | undefined;
   clearResults(): void;
+  resetAll(): void;
 }
 
 export function createCalculatorState(
@@ -454,6 +456,16 @@ export function createCalculatorState(
     clearResults() {
       calculationResults = new Map();
       isCalculating = false;
+    },
+    resetAll() {
+      entitySelection.resetAll();
+      inputState.resetRows([{ text: "100" }]);
+      calculationResults = new Map();
+      isCalculating = false;
+      error = null;
+    },
+    get hasLargeInput() {
+      return inputState.hasLargeInput;
     },
   };
 }

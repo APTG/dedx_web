@@ -7,6 +7,7 @@
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
+  import { Button } from "$lib/components/ui/button";
   import { getService } from "$lib/wasm/loader";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
 
@@ -55,7 +56,14 @@
 </svelte:head>
 
 <div class="space-y-6">
-  <h1 class="text-3xl font-bold">Calculator</h1>
+  <div class="flex items-center justify-between">
+    <h1 class="text-3xl font-bold">Calculator</h1>
+    {#if calcState}
+      <Button variant="ghost" size="sm" onclick={() => calcState.resetAll()}>
+        Restore defaults
+      </Button>
+    {/if}
+  </div>
   <p class="text-muted-foreground">
     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
   </p>
@@ -87,6 +95,12 @@
             ? (state.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto"
             : state.selectedProgram.name},
           {state.selectedParticle?.name ?? ""})
+        </p>
+      {/if}
+      {#if calcState?.hasLargeInput}
+        <p class="text-sm text-amber-600" role="status">
+          Large input ({calcState.rows.filter(r => r.status !== 'empty').length} values).
+          Calculation may be slow.
         </p>
       {/if}
     </div>
