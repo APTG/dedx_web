@@ -33,15 +33,6 @@ function makeMockProgram(options?: Partial<ProgramEntity>): ProgramEntity {
   };
 }
 
-function makeMockProgram(options?: Partial<ProgramEntity>): ProgramEntity {
-  return {
-    id: 2,
-    name: 'PSTAR',
-    version: '1.0',
-    ...options,
-  };
-}
-
 // --- Tests ---
 
 describe("buildPdfFilename", () => {
