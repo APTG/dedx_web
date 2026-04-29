@@ -18,6 +18,7 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
+  import { initExportState } from "$lib/state/export.svelte";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -113,6 +114,12 @@
       return `Results calculated using ${program.name}`;
     }
     return "";
+  });
+
+  $effect(() => {
+    if (calcState && state) {
+      initExportState(calcState, state);
+    }
   });
 </script>
 

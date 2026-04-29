@@ -1,8 +1,38 @@
 {
   "$schema": "https://opencode.ai/config.json",
-
+  "provider": {
+    "dedxweb": {
+      "name": "PLGrid Forge Dedx",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://llmlab.plgrid.pl/api/v1"
+      },
+      "models": {
+        "Qwen/Qwen3.5-397B-A17B-FP8": {
+          "name": "Qwen/Qwen3.5-397B-A17B-FP8",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          }
+        },
+        "Qwen/Qwen3.5-122B-A10B": {
+          "name": "Qwen/Qwen3.5-122B-A10B",
+          "limit": {
+            "context": 131072,
+            "output": 16384
+          }
+        },
+        "Qwen/Qwen3.6-35B-A3B": {
+          "name": "Qwen/Qwen3.6-35B-A3B",
+          "limit": {
+            "context": 80000,
+            "output": 16384
+          }
+        }
+      }
+    }
+  },
   "plugin": ["@sveltejs/opencode"],
-
   "mcp": {
     "tailwind": {
       "type": "local",
