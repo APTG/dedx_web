@@ -6,6 +6,10 @@ on:
   pull_request:
     branches: [master]
 
+permissions:
+  contents: read
+  actions: read
+
 jobs:
   wasm-verify:
     name: WASM Build + Contract Verification
