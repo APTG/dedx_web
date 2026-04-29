@@ -47,7 +47,7 @@ type JsdocPdf = import("jspdf").jsPDF;
  *   4. Page-number footer "Page n / N"
  */
 export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void> {
-  const { rows, stpUnit, particle, material, program, filename, url } = ctx;
+  const { rows, particle, material, program, filename, url } = ctx;
 
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -55,7 +55,6 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   const pageWidth = doc.internal.pageSize.getWidth();
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
-  const contentWidth = pageWidth - 2 * margin;
 
   const isValidRows = rows.filter((r) => r.status === "valid");
 

@@ -58,11 +58,14 @@ export function exportPdf(): void {
   if (!_calcState || !_entitySelection) return;
 
   import("$lib/export/pdf").then((mod) => {
-    const rows = _calcState!.rows;
-    const stpUnit = _calcState!.stpDisplayUnit;
-    const particle = _entitySelection!.selectedParticle;
-    const material = _entitySelection!.selectedMaterial;
-    const sp = _entitySelection!.selectedProgram;
+    // _calcState and _entitySelection are guaranteed non-null by the guard above
+    const calc = _calcState!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const sel = _entitySelection!; // eslint-disable-line @typescript-eslint/no-non-null-assertion
+    const rows = calc.rows;
+    const stpUnit = calc.stpDisplayUnit;
+    const particle = sel.selectedParticle;
+    const material = sel.selectedMaterial;
+    const sp = sel.selectedProgram;
 
     let program: ProgramEntity | null;
     if (sp.id === -1) {
