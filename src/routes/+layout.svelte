@@ -100,12 +100,14 @@
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
-            Export PDF
-          </Button>
-          <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
-            Export CSV ↓
-          </Button>
+          <div class="hidden sm:flex items-center gap-2">
+            <Button variant="outline" size="sm" disabled>
+              Export PDF
+            </Button>
+            <Button variant="outline" size="sm" disabled>
+              Export CSV ↓
+            </Button>
+          </div>
           <Button variant="outline" size="sm" onclick={shareUrl}>
             {#if copied}
               <span aria-live="polite">Copied!</span>
