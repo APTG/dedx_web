@@ -139,7 +139,15 @@ describe("EntityCombobox component - UX fixes", () => {
 
     const scrollContainer = container.querySelector("[data-testid='dropdown-scroll-container']");
     expect(scrollContainer).toBeInTheDocument();
-    expect(scrollContainer).toHaveStyle("mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)");
+    // Assert the raw style attribute rather than parsed style: jsdom's CSS
+    // parser drops `linear-gradient(...)` declarations that contain `calc()`,
+    // even though real browsers apply them correctly.
+    expect(scrollContainer).toHaveAttribute(
+      "style",
+      expect.stringContaining(
+        "mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%)",
+      ),
+    );
   });
 
   test("§7.2: shows checkmark on selected item when combobox re-opens", async () => {
