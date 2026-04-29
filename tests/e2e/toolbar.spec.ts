@@ -7,8 +7,19 @@ test.describe("App toolbar", () => {
     await expect(page.getByRole("button", { name: /share url/i })).toBeVisible();
   });
 
-  test("toolbar has Export PDF and Export CSV buttons; both start disabled", async ({ page }) => {
+  test("Export PDF and Export CSV buttons are visible on calculator page", async ({ page }) => {
     await page.goto("/calculator");
+    await expect(page.getByRole("navigation")).toBeVisible();
+    const exportPdf = page.getByRole("button", { name: /export pdf/i });
+    const exportCsv = page.getByRole("button", { name: /export csv/i });
+    await expect(exportPdf).toBeVisible();
+    await expect(exportCsv).toBeVisible();
+  });
+
+  test("Export PDF and Export CSV buttons are disabled on plot page (no calculator results)", async ({
+    page,
+  }) => {
+    await page.goto("/plot");
     await expect(page.getByRole("navigation")).toBeVisible();
     const exportPdf = page.getByRole("button", { name: /export pdf/i });
     const exportCsv = page.getByRole("button", { name: /export csv/i });

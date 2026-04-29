@@ -5,7 +5,7 @@ import type { CalculatedRow } from "$lib/state/calculator.svelte";
 
 function makeMockRow(overrides: Partial<CalculatedRow> = {}): CalculatedRow {
   return {
-    id: '1',
+    id: 1,
     rawInput: '100',
     normalizedMevNucl: 100,
     unit: 'MeV' as const,
@@ -40,13 +40,11 @@ describe('canExport — after initExportState', () => {
 
     const exportModule = await import('$lib/state/export.svelte');
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const, masterUnit: 'MeV' as const },
+      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
         selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
         selectedMaterial: null,
         selectedProgram: { id: 2, name: 'PSTAR', resolvedProgram: null },
-        autoSelectProgram: null,
-        resolvedProgram: null,
       },
     );
 
@@ -57,13 +55,11 @@ describe('canExport — after initExportState', () => {
     const exportModule = await import('$lib/state/export.svelte');
 
     exportModule.initExportState(
-      { rows: [], stpDisplayUnit: 'keV/µm' as const, masterUnit: 'MeV' as const },
+      { rows: [], stpDisplayUnit: 'keV/µm' as const },
       {
         selectedParticle: null,
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
-        autoSelectProgram: null,
-        resolvedProgram: null,
       },
     );
 
@@ -81,13 +77,11 @@ describe('initExportState — stores data for export functions', () => {
 
     const exportModule = await import('$lib/state/export.svelte');
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const, masterUnit: 'MeV' as const },
+      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
         selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
-        autoSelectProgram: null,
-        resolvedProgram: null,
       },
     );
 
@@ -102,13 +96,11 @@ describe('initExportState — stores data for export functions', () => {
 
     const exportModule = await import('$lib/state/export.svelte');
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const, masterUnit: 'MeV' as const },
+      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
         selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
-        autoSelectProgram: null,
-        resolvedProgram: null,
       },
     );
 
@@ -124,13 +116,11 @@ describe('initExportState — stores data for export functions', () => {
 
     const exportModule = await import('$lib/state/export.svelte');
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const, masterUnit: 'MeV' as const },
+      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
         selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
-        autoSelectProgram: null,
-        resolvedProgram: null,
       },
     );
 

@@ -105,18 +105,22 @@
             <Button
               variant="outline"
               size="sm"
-              disabled={!canExport.value}
+              disabled={routePath !== "/calculator" || !canExport.value}
               aria-label="Export PDF"
-              onclick={exportPdf}
+              onclick={() => {
+                if (routePath === "/calculator") exportPdf();
+              }}
             >
               Export PDF
             </Button>
             <Button
               variant="outline"
               size="sm"
-              disabled={!canExport.value}
+              disabled={routePath !== "/calculator" || !canExport.value}
               aria-label="Export CSV"
-              onclick={exportCsv}
+              onclick={() => {
+                if (routePath === "/calculator") exportCsv();
+              }}
             >
               Export CSV
             </Button>

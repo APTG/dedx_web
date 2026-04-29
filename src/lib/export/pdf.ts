@@ -1,6 +1,13 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
-import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
-import { formatSigFigs } from "$lib/utils/unit-conversions";
+import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
+
+/**
+ * Lightweight identity used for filename construction and entity labels in
+ * exports. Only `name` is required.
+ */
+export interface PdfEntity {
+  name: string;
+}
 
 /**
  * PDF filename for basic-mode Calculator export.
@@ -8,9 +15,9 @@ import { formatSigFigs } from "$lib/utils/unit-conversions";
  * Format: dedx_calculator_{particle}_{material}_{program}.pdf
  */
 export function buildPdfFilename(
-  particle: ParticleEntity | null,
-  material: MaterialEntity | null,
-  program: ProgramEntity | null,
+  particle: PdfEntity | null,
+  material: PdfEntity | null,
+  program: PdfEntity | null,
 ): string {
   function slug(name: string): string {
     return name.toLowerCase().replace(/\s+/g, "_");
@@ -28,14 +35,14 @@ export function buildPdfFilename(
 export interface PdfExportContext {
   rows: CalculatedRow[];
   stpUnit: string;
-  particle: ParticleEntity | null;
-  material: MaterialEntity | null;
-  program: ProgramEntity | null;
+  particle: PdfEntity | null;
+  material: PdfEntity | null;
+  program: PdfEntity | null;
   filename: string;
   url: string;
 }
 
-type JsdocPdf = import("jspdf").jsPDF;
+type JsPdf = import("jspdf").jsPDF;
 
 /**
  * Generate a basic-mode Calculator PDF and download it.
@@ -43,11 +50,12 @@ type JsdocPdf = import("jspdf").jsPDF;
  * Layout (export.md §6.2):
  *   1. Header: app name, generated timestamp (ISO 8601 UTC), clickable URL
  *   2. Entity summary line (particle in material — program)
- *   3. Five-column results table (no error rows)
+ *   3. Five-column results table (no error rows): Normalized Energy,
+ *      Typed Value, Unit, CSDA Range, Stopping Power ({unit})
  *   4. Page-number footer "Page n / N"
  */
 export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void> {
-  const { rows, particle, material, program, filename, url } = ctx;
+  const { rows, stpUnit, particle, material, program, filename, url } = ctx;
 
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -56,7 +64,9 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   const pageHeight = doc.internal.pageSize.getHeight();
   const margin = 15;
 
-  const isValidRows = rows.filter((r) => r.status === "valid");
+  const validRows = rows.filter(
+    (r) => r.status === "valid" && r.stoppingPower !== null && r.csdaRangeCm !== null,
+  );
 
   // --- Header block ---
   const headerLeft = margin;
@@ -64,21 +74,20 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
 
   // App name
   doc.setFontSize(14);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.text("dEdx Web \u2014 Calculator", headerLeft, y);
   y += 8;
 
   // Generated timestamp
   const generatedAt = new Date().toISOString();
   doc.setFontSize(8);
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
   doc.text(`Generated: ${generatedAt}`, headerLeft, y);
   y += 5;
 
-  // URL (hyperlinked)
-  doc.addLink(url);
+  // URL — rendered as a clickable hyperlink
   doc.setTextColor(0, 0, 180);
-  doc.text(url, headerLeft, y);
+  doc.textWithLink(url, headerLeft, y, { url });
   doc.setTextColor(0, 0, 0);
   y += 8;
 
@@ -88,119 +97,106 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   const programName = program?.name ?? "Unknown program";
   const summary = `${particleName} in ${materialName} \u2014 ${programName}`;
   doc.setFontSize(10);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   doc.text(summary, headerLeft, y);
   y += 8;
 
-  // Add a horizontal rule
+  // Horizontal rule
   doc.setDrawColor(200);
   doc.setLineWidth(0.2);
   doc.line(margin, y, pageWidth - margin, y);
   y += 6;
 
   // --- Table ---
-  const tableTop = y;
-  const colLabels = [
-    "Typed",
-    "Norm (MeV/nucl)",
-    "Unit",
-    "STP",
-    "CSDA",
+  // Column order/labels per export.md §2 acceptance checklist.
+  const columns: Array<{ label: string; width: number }> = [
+    { label: "Normalized Energy (MeV/nucl)", width: 38 },
+    { label: "Typed Value", width: 22 },
+    { label: "Unit", width: 16 },
+    { label: "CSDA Range", width: 32 },
+    { label: `Stopping Power (${stpUnit})`, width: 38 },
   ];
-  // Adjust "CSDA" column header to include unit suffix from range units
-  // but keep CSDA column header without unit per spec (# CSDA Range column header carries no unit)
 
-  // Column widths (mm) — fit 5 columns in contentWidth
-  const colWidths = [28, 28, 14, 38, 38];
+  const tableTop = y;
+  const cellHeight = 4.5;
+  const bottomMargin = 12;
 
   // Table header row
   doc.setFontSize(8);
-  doc.setFont(undefined, "bold");
+  doc.setFont("helvetica", "bold");
   let cellX = margin;
-  for (const label of colLabels) {
-    doc.text(label, cellX + 1, tableTop + 3, { align: "left" });
-    cellX += colWidths[colLabels.indexOf(label)];
+  for (const col of columns) {
+    doc.text(col.label, cellX + 1, tableTop + 3, { align: "left" });
+    cellX += col.width;
   }
   doc.line(margin, tableTop + 5, pageWidth - margin, tableTop + 5);
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
 
   let rowY = tableTop + 9;
-  const cellHeight = 4.5;
-  const maxRowsPerPage = Math.floor((pageHeight - rowY - 12) / cellHeight); // 12mm bottom margin for page number
+  const rowsPerPage = Math.max(1, Math.floor((pageHeight - rowY - bottomMargin) / cellHeight));
+  const totalPages = Math.max(1, Math.ceil(validRows.length / rowsPerPage));
 
-  const totalPages = calcTotalPages(isValidRows.length, maxRowsPerPage, rowY, pageHeight, 12);
+  let currentPage = 1;
 
-  for (let i = 0; i < isValidRows.length; i++) {
-    const r = isValidRows[i];
-
+  for (const r of validRows) {
     // Check if we need a new page
-    if (rowY + cellHeight > pageHeight - 12) {
-      // Add page number footer before page break
-      addPageFooter(doc, margin, pageWidth, i + 1, totalPages);
+    if (rowY + cellHeight > pageHeight - bottomMargin) {
+      addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
       doc.addPage();
+      currentPage += 1;
       rowY = margin + 5;
     }
 
     const energyStr = r.normalizedMevNucl !== null ? formatSigFigs(r.normalizedMevNucl, 4) : "";
     const typedValue = r.rawInput.trim();
     const unit = r.unit ?? "";
-    const csdaStr = r.csdaRangeCm !== null ? formatSigFigs(r.csdaRangeCm, 4) : "";
+    const csdaStr = r.csdaRangeCm !== null ? formatCsdaCellFromCm(r.csdaRangeCm) : "";
     const stpStr = r.stoppingPower !== null ? formatSigFigs(r.stoppingPower, 4) : "";
 
-    const cellValues = [typedValue, energyStr, unit, stpStr, csdaStr];
+    const cellValues = [energyStr, typedValue, unit, csdaStr, stpStr];
+
     cellX = margin;
-    for (let ci = 0; ci < colLabels.length; ci++) {
-      const val = ci === 4 && r.csdaRangeCm !== null ? formatCsdarangeWithUnit(r.csdaRangeCm) : cellValues[ci];
-      // Check if value needs wrapping (multi-line)
-      const lines = wrapText(val, colWidths[ci] - 2, 8);
+    for (let ci = 0; ci < columns.length; ci++) {
+      const col = columns[ci];
+      const value = cellValues[ci];
+      if (!col || value === undefined) continue;
+      const lines = wrapText(value, col.width - 2, 8);
       for (let li = 0; li < lines.length; li++) {
-        doc.text(lines[li], cellX + 1, rowY + cellHeight - 1 - (lines.length - 1 - li) * 3.5, { align: "left" });
+        doc.text(
+          lines[li] ?? "",
+          cellX + 1,
+          rowY + cellHeight - 1 - (lines.length - 1 - li) * 3.5,
+          { align: "left" },
+        );
       }
-      cellX += colWidths[ci];
+      cellX += col.width;
     }
     rowY += cellHeight;
   }
 
-  // Add page footer to the last page
-  addPageFooter(doc, margin, pageWidth, totalPages, totalPages);
+  // Footer on the last (or only) page.
+  addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
 
   // Save PDF
   doc.save(filename);
 }
 
 /**
- * Format CSDA range with unit suffix (e.g., "7.718 cm").
+ * Format CSDA range with auto-scaled SI unit suffix per export.md §1
+ * (e.g. `0.01562 µm`, `7.718 cm`, `116.1 cm`).
  */
-function formatCsdarangeWithUnit(value: number): string {
-  // Determine the range unit based on the material
-  // For water-liquid, results are in cm
-  return `${formatSigFigs(value, 4)} cm`;
-}
-
-/**
- * Calculate total number of pages needed for a table.
- */
-function calcTotalPages(
-  rowCount: number,
-  maxRowsPerPage: number,
-  initialY: number,
-  pageHeight: number,
-  bottomMargin: number,
-): number {
-  if (rowCount === 0) return 1;
-  const availableHeight = pageHeight - initialY - bottomMargin;
-  const rowsPerPage = Math.floor(availableHeight / 4.5);
-  if (rowsPerPage <= 0) return rowCount + 1;
-  return Math.ceil(rowCount / rowsPerPage);
+function formatCsdaCellFromCm(cm: number): string {
+  const scaled = autoScaleLengthCm(cm);
+  return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;
 }
 
 /**
  * Split text into lines that fit within the given width.
  */
 function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
-  // Rough character width estimation: fontSize * 0.4 pixels per char, in mm: fontSize * 0.4 * 0.2646
+  // Rough character-width estimation in mm at the given font size.
   const charWidth = fontSize * 0.22;
-  const charsPerLine = Math.floor(maxWidth / charWidth);
+  const charsPerLine = Math.max(1, Math.floor(maxWidth / charWidth));
 
   if (text.length <= charsPerLine) return [text];
 
@@ -224,10 +220,16 @@ function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
 /**
  * Add page number footer to the current PDF page.
  */
-function addPageFooter(doc: JsdocPdf, margin: number, pageWidth: number, page: number, total: number): void {
+function addPageFooter(
+  doc: JsPdf,
+  margin: number,
+  pageWidth: number,
+  page: number,
+  total: number,
+): void {
   const footerY = doc.internal.pageSize.getHeight() - 8;
   const pageNumText = `Page ${page} / ${total}`;
   doc.setFontSize(8);
-  doc.setFont(undefined, "normal");
+  doc.setFont("helvetica", "normal");
   doc.text(pageNumText, pageWidth - margin, footerY, { align: "right" });
 }

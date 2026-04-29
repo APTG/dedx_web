@@ -1,6 +1,5 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
-import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
-import { formatSigFigs } from "$lib/utils/unit-conversions";
+import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
 
 /**
  * CSV injection prevention: values starting with =, +, -, @ are prefixed
@@ -14,17 +13,35 @@ function sanitizeCsvCell(value: string): string {
   return value;
 }
 
+/**
+ * RFC 4180 quoting: only wrap in double quotes when the value contains
+ * `"`, `,`, CR, or LF; escape inner quotes by doubling them.
+ */
 function makeCsvCell(value: string): string {
-  if (value.includes('"') || value.includes(',') || value.includes('\n')) {
+  if (value.includes('"') || value.includes(",") || value.includes("\r") || value.includes("\n")) {
     return `"${value.replaceAll('"', '""')}"`;
   }
-  return `"${value}"`;
+  return value;
 }
 
+/**
+ * Lightweight identity used for filename construction and entity labels in
+ * exports. Only `name` is required — the richer entity types are not needed
+ * here and would force unsafe casts on callers.
+ */
 export interface CsvExportMeta {
-  particle: ParticleEntity | null;
-  material: MaterialEntity | null;
-  program: ProgramEntity | null;
+  particle: { name: string } | null;
+  material: { name: string } | null;
+  program: { name: string } | null;
+}
+
+/**
+ * Format CSDA range (input in cm) with auto-scaled SI unit suffix per
+ * `export.md` §1/§2 (e.g. `0.01562 µm`, `7.718 cm`).
+ */
+function formatCsdaCellFromCm(cm: number): string {
+  const scaled = autoScaleLengthCm(cm);
+  return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;
 }
 
 /**
@@ -50,12 +67,13 @@ export function generateCalculatorCsv(
 
   for (const row of rows) {
     if (row.status !== "valid") continue;
+    if (row.stoppingPower === null || row.csdaRangeCm === null) continue;
 
     const energyStr = row.normalizedMevNucl !== null ? formatSigFigs(row.normalizedMevNucl, 4) : "";
     const typedValue = row.rawInput.trim();
-    const unit = row.unitFromSuffix ? (row.unit ?? "") : (row.unit ?? "");
-    const csdaStr = row.csdaRangeCm !== null ? formatSigFigs(row.csdaRangeCm, 4) : "";
-    const stpStr = row.stoppingPower !== null ? formatSigFigs(row.stoppingPower, 4) : "";
+    const unit = row.unit ?? "";
+    const csdaStr = formatCsdaCellFromCm(row.csdaRangeCm);
+    const stpStr = formatSigFigs(row.stoppingPower, 4);
 
     lines.push(
       [
@@ -77,9 +95,9 @@ export function generateCalculatorCsv(
  * Build filename per export.md: dedx_calculator_{particle}_{material}_{program}.csv
  */
 function buildCsvFilename(
-  particle: ParticleEntity | null,
-  material: MaterialEntity | null,
-  program: ProgramEntity | null,
+  particle: { name: string } | null,
+  material: { name: string } | null,
+  program: { name: string } | null,
 ): string {
   function slug(name: string): string {
     return name.toLowerCase().replace(/\s+/g, "_");
@@ -100,27 +118,33 @@ export function generateLegacyCsv(
   energies: number[],
   stoppingPowers: number[],
   csdaRanges: number[],
-  options?: { includeHeader?: boolean; includeMetadata?: boolean; program?: string; particle?: string; material?: string; csdaUnitSuffix?: string },
+  options?: {
+    includeHeader?: boolean;
+    includeMetadata?: boolean;
+    program?: string;
+    particle?: string;
+    material?: string;
+    csdaUnitSuffix?: string;
+  },
 ): string {
   const lines: string[] = [];
 
   if (options?.includeMetadata && options.program) {
-    lines.push(`"# Program: ${options.program}"`);
-    lines.push(`"# Particle: ${options.particle || "N/A"}"`);
-    lines.push(`"# Material: ${options.material || "N/A"}"`);
-    lines.push(`"# Generated: ${new Date().toISOString()}"`);
+    lines.push(makeCsvCell(`# Program: ${options.program}`));
+    lines.push(makeCsvCell(`# Particle: ${options.particle || "N/A"}`));
+    lines.push(makeCsvCell(`# Material: ${options.material || "N/A"}`));
+    lines.push(makeCsvCell(`# Generated: ${new Date().toISOString()}`));
     lines.push("");
   }
 
   const csdaUnitSuffix = options?.csdaUnitSuffix ?? "g/cm²";
-  const numCols = options?.includeHeader !== false ? 3 : 0;
 
   if (options?.includeHeader !== false) {
     lines.push(
       [
-        '"Energy (MeV/nucl)"',
-        '"Stopping Power (MeV·cm²/g)"',
-        '"CSDA Range"',
+        makeCsvCell("Energy (MeV/nucl)"),
+        makeCsvCell("Stopping Power (MeV·cm²/g)"),
+        makeCsvCell("CSDA Range"),
       ].join(","),
     );
   }
@@ -132,9 +156,9 @@ export function generateLegacyCsv(
     if (e !== undefined && s !== undefined && r !== undefined) {
       lines.push(
         [
-          `"${formatSigFigs(e)}"`,
-          `"${formatSigFigs(s)}"`,
-          `"${formatSigFigs(r)} ${csdaUnitSuffix}"`,
+          makeCsvCell(formatSigFigs(e)),
+          makeCsvCell(formatSigFigs(s)),
+          makeCsvCell(`${formatSigFigs(r)} ${csdaUnitSuffix}`),
         ].join(","),
       );
     }
@@ -144,8 +168,8 @@ export function generateLegacyCsv(
 }
 
 export function downloadCsv(content: string, filename: string): void {
-  const blob = new Blob(['\uFEFF' + content], { type: 'text/csv;charset=utf-8;' });
-  const link = document.createElement('a');
+  const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  const link = document.createElement("a");
   link.href = URL.createObjectURL(blob);
   link.download = filename;
   link.click();

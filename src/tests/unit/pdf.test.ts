@@ -1,36 +1,17 @@
 import { describe, test, expect } from "vitest";
-import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
 import * as pdfModule from "$lib/export/pdf";
+import type { PdfEntity } from "$lib/export/pdf";
 
-function makeMockParticle(options?: Partial<ParticleEntity>): ParticleEntity {
-  return {
-    id: 1,
-    name: 'Proton',
-    massNumber: 1,
-    atomicMass: 1.007,
-    symbol: 'p',
-    aliases: ['proton'],
-    ...options,
-  };
+function makeMockParticle(options?: Partial<PdfEntity>): PdfEntity {
+  return { name: "Proton", ...options };
 }
 
-function makeMockMaterial(options?: Partial<MaterialEntity>): MaterialEntity {
-  return {
-    id: 276,
-    name: 'Water (liquid)',
-    density: 0.997,
-    isGasByDefault: false,
-    ...options,
-  };
+function makeMockMaterial(options?: Partial<PdfEntity>): PdfEntity {
+  return { name: "Water (liquid)", ...options };
 }
 
-function makeMockProgram(options?: Partial<ProgramEntity>): ProgramEntity {
-  return {
-    id: 2,
-    name: 'PSTAR',
-    version: '1.0',
-    ...options,
-  };
+function makeMockProgram(options?: Partial<PdfEntity>): PdfEntity {
+  return { name: "PSTAR", ...options };
 }
 
 // --- Tests ---
@@ -61,8 +42,12 @@ describe("buildPdfFilename", () => {
     expect(filename).toMatch(/unknown_program/);
   });
 
-  test("conspaces spaces to underscores", () => {
-    const filename = pdfModule.buildPdfFilename(makeMockMaterial(), makeMockMaterial(), makeMockMaterial());
+  test("collapses spaces to underscores", () => {
+    const filename = pdfModule.buildPdfFilename(
+      makeMockParticle({ name: "Some Particle" }),
+      makeMockMaterial({ name: "Heavy Water" }),
+      makeMockProgram({ name: "ICRU 90" }),
+    );
     expect(filename).not.toMatch(/ /);
     expect(filename).toMatch(/_/);
   });
