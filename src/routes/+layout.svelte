@@ -106,7 +106,7 @@
               variant="outline"
               size="sm"
               disabled={!canExport.value}
-              aria-label="Download results as PDF"
+              aria-label="Export PDF"
               onclick={exportPdf}
             >
               Export PDF
@@ -115,10 +115,10 @@
               variant="outline"
               size="sm"
               disabled={!canExport.value}
-              aria-label="Download results as CSV"
+              aria-label="Export CSV"
               onclick={exportCsv}
             >
-              Export CSV ↓
+              Export CSV
             </Button>
           </div>
           <Button variant="outline" size="sm" onclick={shareUrl}>
