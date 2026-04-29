@@ -42,11 +42,12 @@ export function initExportState(
 /**
  * Return the entity used as `program` in export filenames/labels. For the
  * Auto-select pseudo-entry (id === -1) prefer the resolved program name
- * when available; otherwise fall back to the literal "Auto-select" label.
+ * when available; otherwise fall back to the literal "Auto-select" label
+ * so filenames carry meaningful provenance instead of `unknown_program`.
  */
 function selectedProgramEntity(sp: EntitySelectionView["selectedProgram"]): ExportEntity | null {
   if (sp.id === -1) {
-    return sp.resolvedProgram ?? null;
+    return sp.resolvedProgram ?? { name: "Auto-select" };
   }
   return { name: sp.name };
 }
@@ -60,12 +61,16 @@ export function exportCsv(): void {
   const material = _entitySelection.selectedMaterial;
   const program = selectedProgramEntity(_entitySelection.selectedProgram);
 
-  const { content, filename } = generateCalculatorCsv(rows, stpUnit, {
-    particle,
-    material,
-    program,
-  });
-  downloadCsv(content, filename);
+  try {
+    const { content, filename } = generateCalculatorCsv(rows, stpUnit, {
+      particle,
+      material,
+      program,
+    });
+    downloadCsv(content, filename);
+  } catch (error) {
+    console.error("Failed to export CSV.", error);
+  }
 }
 
 export function exportPdf(): void {
@@ -73,22 +78,26 @@ export function exportPdf(): void {
   const calc = _calcState;
   const sel = _entitySelection;
 
-  void import("$lib/export/pdf").then((mod) => {
-    const rows = calc.rows;
-    const stpUnit = calc.stpDisplayUnit;
-    const particle = sel.selectedParticle;
-    const material = sel.selectedMaterial;
-    const program = selectedProgramEntity(sel.selectedProgram);
+  void import("$lib/export/pdf")
+    .then((mod) => {
+      const rows = calc.rows;
+      const stpUnit = calc.stpDisplayUnit;
+      const particle = sel.selectedParticle;
+      const material = sel.selectedMaterial;
+      const program = selectedProgramEntity(sel.selectedProgram);
 
-    const filename = mod.buildPdfFilename(particle, material, program);
-    return mod.generateCalculatorPdf({
-      rows,
-      stpUnit,
-      particle,
-      material,
-      program,
-      filename,
-      url: window.location.href,
+      const filename = mod.buildPdfFilename(particle, material, program);
+      return mod.generateCalculatorPdf({
+        rows,
+        stpUnit,
+        particle,
+        material,
+        program,
+        filename,
+        url: window.location.href,
+      });
+    })
+    .catch((error: unknown) => {
+      console.error("Failed to export PDF.", error);
     });
-  });
 }

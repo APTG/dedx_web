@@ -169,9 +169,13 @@ export function generateLegacyCsv(
 
 export function downloadCsv(content: string, filename: string): void {
   const blob = new Blob(["\uFEFF" + content], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
-  link.href = URL.createObjectURL(blob);
+  link.href = url;
   link.download = filename;
+  document.body.appendChild(link);
   link.click();
-  URL.revokeObjectURL(link.href);
+  document.body.removeChild(link);
+  // Defer revoke so the browser has a tick to start the download stream.
+  setTimeout(() => URL.revokeObjectURL(url), 0);
 }

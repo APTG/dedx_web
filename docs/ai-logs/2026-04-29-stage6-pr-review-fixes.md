@@ -53,7 +53,17 @@
 
 ## Validation
 
-- `pnpm test --run`: **508 passed, 3 skipped, 1 skipped file** (no regressions, +2 tests vs baseline from new CSV scaling cases).
+- `pnpm test --run`: **511 passed, 0 skipped** (no regressions, +2 tests vs baseline from new CSV scaling cases).
 - `pnpm build`: success (static adapter).
 - `CI=1 pnpm test:e2e`: **80 passed, 4 skipped** (was 75 passed / 1 failed / 4 skipped on the prior commit). Added 3 new export E2E tests; toolbar disabled-by-default check moved to `/plot`.
 - `pnpm lint`: 47 problems remaining — all pre-existing in code outside the export module (down from 53 with my new `csv.test.ts` / `pdf.ts` non-null assertions cleaned up).
+
+## Round 2 — second reviewer pass on commit `6ebfc5d`
+
+Addressed the remaining 5 review comments (4 actionable code/doc + 1 PR-description nit):
+
+- `docs/ai-logs/README.md` — fixed malformed `## Log Files` table: header + separator now sit immediately under the section heading and all rows live below them (the previous prepend put the two new rows above the separator).
+- `src/lib/state/export.svelte.ts` — `selectedProgramEntity()` now returns `{ name: "Auto-select" }` when `sp.id === -1` and no `resolvedProgram` is available (matches the docstring; avoids `..._unknown_program.*` filenames). Wrapped both `exportCsv()` and `exportPdf()` in error handling (`try`/`catch` for sync CSV; `.catch(...)` on the dynamic `import("$lib/export/pdf")` chain) so a `jspdf` load failure or a generation throw is logged instead of producing an unhandled rejection.
+- `src/lib/export/csv.ts` — `downloadCsv()` now appends the anchor to `document.body`, clicks, removes it, and revokes the object URL on a deferred `setTimeout(..., 0)` so long-lived sessions can't leak object URLs and Firefox/Safari have a tick to actually start the download.
+
+Re-validated: 511 unit pass, 80 E2E pass + 4 skipped, build succeeds.
