@@ -5,6 +5,7 @@
   import { getService } from "$lib/wasm/loader";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Button } from "$lib/components/ui/button";
+  import { canExport, exportCsv, exportPdf } from "$lib/state/export.svelte";
 
   let { children } = $props();
   let pathname = $derived(page.url.pathname);
@@ -101,10 +102,22 @@
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <div class="hidden sm:flex items-center gap-2">
-            <Button variant="outline" size="sm" disabled>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canExport.value}
+              aria-label="Download results as PDF"
+              onclick={exportPdf}
+            >
               Export PDF
             </Button>
-            <Button variant="outline" size="sm" disabled>
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={!canExport.value}
+              aria-label="Download results as CSV"
+              onclick={exportCsv}
+            >
               Export CSV ↓
             </Button>
           </div>

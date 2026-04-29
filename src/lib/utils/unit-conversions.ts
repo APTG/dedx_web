@@ -53,7 +53,7 @@ export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µ
  *  with magnitude below ~-(sigFigs + 5) and for huge values with magnitude
  *  ≥ 15 where toFixed() would produce useless trailing-zero noise.
  *  As a defence-in-depth measure decimalPlaces is also clamped to [0, 100]. */
-export function formatSigFigs(value: number, sigFigs: number): string {
+export function formatSigFigs(value: number, sigFigs: number = 4): string {
   if (!Number.isFinite(value) || Number.isNaN(value)) return "—";
   if (value === 0) return "0";
 

@@ -89,7 +89,7 @@ describe("generateCalculatorCsv — column structure", () => {
 describe("generateCalculatorCsv — filename", () => {
   test("produces correct filename format", () => {
     const { filename } = generateCalculatorCsv(mockValidRows, "keV/µm", mockMeta);
-    expect(filename).toBe("dedx_calculator_proton_water_(liquid)_pstarr.csv");
+    expect(filename).toBe("dedx_calculator_proton_water_(liquid)_pstar.csv");
   });
 
   test("all lowercase with underscores", () => {
