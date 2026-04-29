@@ -40,5 +40,3 @@ prototypes/*/pnpm-lock.yaml
 playwright-report/
 test-results/
 package-lock.json
-
-opencode.json
