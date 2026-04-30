@@ -106,9 +106,11 @@ are worth keeping in mind for future contributors:
   spreads.** Spreading `{ error: undefined }` onto a type with `error?: string`
   is now a type error; clone-and-`delete` (or a conditional spread) instead.
 
-`tsc --noEmit` is currently not part of CI — only `vitest` and the Vite build
-run, which do not surface every strict-mode error. Run `pnpm check` (or
-`pnpm exec tsc --noEmit`) locally before bumping the TypeScript pin.
+CI runs `pnpm typecheck` (`svelte-kit sync && tsc --noEmit`) in the
+`unit-tests` job so strict-mode regressions surface on every PR. `pnpm check`
+(svelte-check) is the more thorough local check — it validates `.svelte` files
+as well — but it currently reports pre-existing rune-typing noise and is not
+yet wired into CI.
 
 ---
 

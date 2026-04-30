@@ -76,6 +76,9 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: TypeScript type-check (tsc --noEmit)
+        run: pnpm typecheck
+
       - name: Run unit & integration tests
         run: pnpm exec vitest run --coverage --reporter=verbose
 
