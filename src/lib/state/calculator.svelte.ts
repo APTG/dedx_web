@@ -57,7 +57,7 @@ export function createCalculatorState(
   let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
+  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number | null }>>(
     new Map()
   );
 
@@ -270,7 +270,7 @@ export function createCalculatorState(
       const material = entitySelection.selectedMaterial;
       const density = material?.density ?? 1;
 
-      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
+      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
       
       for (let i = 0; i < energies.length; i++) {
         const item = energies[i];
@@ -313,8 +313,9 @@ export function createCalculatorState(
         newResults.set(rowId, {
           stoppingPower: stpDisplay,
           // csdaGcm2ToCm returns null when density ≤ 0 (non-physical material).
-          // Fall back to the raw g/cm² value so the row still displays a number.
-          csdaRangeCm: csdaCm ?? csdaGcm2,
+          // Keep null so consumers (display, CSV/PDF export) skip it rather than
+          // showing a g/cm² value under a cm-labelled column.
+          csdaRangeCm: csdaCm,
         });
       }
 

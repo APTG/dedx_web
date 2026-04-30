@@ -67,12 +67,12 @@ export default {
 
 ## 2. Language
 
-### TypeScript 5 (strict mode)
+### TypeScript 6 (strict mode)
 
 | Item | Value |
 |------|-------|
 | Package | `typescript` |
-| Pin | `^5.x` |
+| Pin | `^6.x` |
 
 All source files are `.ts` or `.svelte` (with `<script lang="ts">`).
 
@@ -91,6 +91,24 @@ All source files are `.ts` or `.svelte` (with `<script lang="ts">`).
 
 `noUncheckedIndexedAccess` is critical — WASM array returns are indexed
 frequently; this flag prevents silent `undefined` access bugs.
+
+**Notes on TypeScript 6 (bumped from 5.9.3 in #408):** v6 is primarily a
+strictness/cleanup release rather than a new-feature release; we did not adopt
+any new language constructs. Two TS 6 changes did require code adjustments and
+are worth keeping in mind for future contributors:
+
+- **Named value/type exports from `*.svelte` files via wildcard module
+  declarations are no longer resolved (TS2614).** Co-located helpers (e.g.
+  `buttonVariants`, prop types) must live in a sibling `*.variants.ts` /
+  `*.types.ts` file and be re-imported by the component, not exported from the
+  `.svelte` file itself. See `src/lib/components/ui/button/`.
+- **`exactOptionalPropertyTypes` is enforced more aggressively in object
+  spreads.** Spreading `{ error: undefined }` onto a type with `error?: string`
+  is now a type error; clone-and-`delete` (or a conditional spread) instead.
+
+`tsc --noEmit` is currently not part of CI — only `vitest` and the Vite build
+run, which do not surface every strict-mode error. Run `pnpm check` (or
+`pnpm exec tsc --noEmit`) locally before bumping the TypeScript pin.
 
 ---
 
@@ -474,7 +492,7 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 | `@sveltejs/kit` | `^2.x` | Framework |
 | `svelte` | `^5.x` | UI compiler |
 | `@sveltejs/adapter-static` | `^3.x` | Static site output |
-| `typescript` | `^5.x` | Language |
+| `typescript` | `^6.x` | Language |
 | `tailwindcss` | `^4.x` | Styling |
 | `shadcn-svelte` CLI | `@latest` (via `pnpm dlx`) | UI component scaffolding (source copied) |
 | `bits-ui` | `^1.x` | Headless UI primitives (runtime) |
