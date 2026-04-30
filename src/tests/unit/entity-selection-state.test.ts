@@ -369,7 +369,7 @@ describe("createEntitySelectionState", () => {
       expect(state.resolvedProgramId).not.toBeNull();
       const resolvedProgram = state.selectedProgram;
       // selectedProgram is AutoSelectProgram when id === -1; resolvedProgram is the concrete one
-      if (resolvedProgram.id === -1 && resolvedProgram.resolvedProgram) {
+      if ('resolvedProgram' in resolvedProgram && resolvedProgram.id === -1 && resolvedProgram.resolvedProgram) {
         expect(summary).toContain(resolvedProgram.resolvedProgram.name);
       }
     });

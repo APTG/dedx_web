@@ -31,7 +31,7 @@ skipIfNoWasm("LibdedxServiceImpl.calculate() — real WASM", () => {
   it("returns non-zero stopping power for 100 MeV proton in water (PSTAR)", () => {
     // PSTAR = program 2, proton = particle 1, Water liquid = material 276
     const result = service.calculate(2, 1, 276, [100]);
-    const stp = result.stoppingPowers[0];
+    const stp = result.stoppingPowers[0]!;
     expect(stp).toBeGreaterThan(0);
     // NIST PSTAR reference: ~7.3 MeV·cm²/g, accept ±10% across libdedx builds.
     expect(Math.abs(stp - 7.3) / 7.3).toBeLessThan(0.1);
@@ -39,7 +39,7 @@ skipIfNoWasm("LibdedxServiceImpl.calculate() — real WASM", () => {
 
   it("returns non-zero CSDA range for 100 MeV proton in water (PSTAR)", () => {
     const result = service.calculate(2, 1, 276, [100]);
-    const range = result.csdaRanges[0];
+    const range = result.csdaRanges[0]!;
     expect(range).toBeGreaterThan(0);
     // NIST PSTAR reference: ~7.718 cm, accept ±10% across libdedx builds.
     expect(Math.abs(range - 7.718) / 7.718).toBeLessThan(0.1);

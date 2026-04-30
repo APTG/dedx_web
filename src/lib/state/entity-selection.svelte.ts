@@ -200,7 +200,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       const sp = this.selectedProgram;
       if (sp.id !== -1) {
         programText = sp.name;
-      } else if (sp.resolvedProgram) {
+      } else if ('resolvedProgram' in sp && sp.resolvedProgram) {
         programText = `Auto-select → ${sp.resolvedProgram.name}`;
       }
 

@@ -42,7 +42,7 @@ describe('canExport — after initExportState', () => {
     exportModule.initExportState(
       { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: { name: 'Proton' },
         selectedMaterial: null,
         selectedProgram: { id: 2, name: 'PSTAR', resolvedProgram: null },
       },
@@ -79,7 +79,7 @@ describe('initExportState — stores data for export functions', () => {
     exportModule.initExportState(
       { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: { name: 'Proton' },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
       },
@@ -98,7 +98,7 @@ describe('initExportState — stores data for export functions', () => {
     exportModule.initExportState(
       { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: { name: 'Proton' },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
       },
@@ -118,7 +118,7 @@ describe('initExportState — stores data for export functions', () => {
     exportModule.initExportState(
       { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: { name: 'Proton' },
         selectedMaterial: null,
         selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
       },

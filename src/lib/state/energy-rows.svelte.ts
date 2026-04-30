@@ -58,7 +58,12 @@ export function createEnergyInputState(): EnergyInputState {
       error = parsed.error;
     }
     
-    rows = rows.map((row, i) => (i === index ? { ...row, text, error } : row));
+    rows = rows.map((row, i) => {
+      if (i !== index) return row;
+      if (error !== undefined) return { ...row, text, error };
+      const { error: _prev, ...rowWithoutError } = row;
+      return { ...rowWithoutError, text };
+    });
     
     if (index === rows.length - 1 && text.trim() !== "") {
       addRow();

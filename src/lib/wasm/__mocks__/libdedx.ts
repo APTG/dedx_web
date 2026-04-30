@@ -91,9 +91,9 @@ export class LibdedxServiceImpl implements LibdedxService {
   }
 
   calculate(
-    programId: number,
-    particleId: number,
-    materialId: number,
+    _programId: number,
+    _particleId: number,
+    _materialId: number,
     energies: number[],
   ): CalculationResult {
     return {
@@ -114,6 +114,14 @@ export class LibdedxServiceImpl implements LibdedxService {
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
     );
     return this.calculate(programId, particleId, materialId, energies);
+  }
+
+  getMinEnergy(_programId: number, _particleId: number): number {
+    return 0.001;
+  }
+
+  getMaxEnergy(_programId: number, _particleId: number): number {
+    return 10000;
   }
 }
 
@@ -145,14 +153,14 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     return [];
   }
 
-  getMaterials(programId: number): MaterialEntity[] {
+  getMaterials(_programId: number): MaterialEntity[] {
     return [
       { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
       { id: 267, name: "Air", density: 0.0012, isGasByDefault: true },
     ];
   }
 
-  calculate(programId: number, particleId: number, materialId: number, energies: number[]): CalculationResult {
+  calculate(_programId: number, _particleId: number, _materialId: number, energies: number[]): CalculationResult {
     return {
       energies,
       stoppingPowers: energies.map((e) => Math.log(e + 1)),
@@ -165,5 +173,13 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
     );
     return this.calculate(programId, particleId, materialId, energies);
+  }
+
+  getMinEnergy(_programId: number, _particleId: number): number {
+    return 0.001;
+  }
+
+  getMaxEnergy(_programId: number, _particleId: number): number {
+    return 10000;
   }
 }

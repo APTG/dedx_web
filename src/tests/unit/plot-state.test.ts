@@ -46,9 +46,9 @@ describe("createPlotState", () => {
     const added = state.addSeries(mockSeries());
     expect(added).toBe(true);
     expect(state.series.length).toBe(1);
-    expect(state.series[0].seriesId).toBe(1);
-    expect(state.series[0].visible).toBe(true);
-    expect(state.series[0].color).toBe("#e41a1c"); // palette index 0
+    expect(state.series[0]!.seriesId).toBe(1);
+    expect(state.series[0]!.visible).toBe(true);
+    expect(state.series[0]!.color).toBe("#e41a1c"); // palette index 0
     expect(state.nextSeriesId).toBe(2);
   });
 
@@ -56,7 +56,7 @@ describe("createPlotState", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
     state.addSeries(mockSeries({ programId: 9 }));
-    expect(state.series[1].color).toBe("#377eb8"); // palette index 1
+    expect(state.series[1]!.color).toBe("#377eb8"); // palette index 1
   });
 
   it("addSeries detects duplicates", () => {
@@ -71,7 +71,7 @@ describe("createPlotState", () => {
   it("removeSeries removes by seriesId", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
-    const id = state.series[0].seriesId;
+    const id = state.series[0]!.seriesId;
     state.removeSeries(id);
     expect(state.series.find((s) => s.seriesId === id)).toBeUndefined();
   });
@@ -79,16 +79,16 @@ describe("createPlotState", () => {
   it("removeSeries releases color back to pool", () => {
     const state = createPlotState();
     state.addSeries(mockSeries()); // gets color index 0
-    const sid0 = state.series[state.series.length - 1].seriesId;
+    const sid0 = state.series[state.series.length - 1]!.seriesId;
     state.removeSeries(sid0);
     state.addSeries(mockSeries({ particleId: 6 })); // should get index 0 again
-    expect(state.series[state.series.length - 1].color).toBe("#e41a1c");
+    expect(state.series[state.series.length - 1]!.color).toBe("#e41a1c");
   });
 
   it("toggleVisibility toggles visible flag", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
-    const sid = state.series[0].seriesId;
+    const sid = state.series[0]!.seriesId;
     state.toggleVisibility(sid);
     expect(state.series.find((s) => s.seriesId === sid)?.visible).toBe(false);
     state.toggleVisibility(sid);
@@ -132,23 +132,23 @@ describe("createPlotState", () => {
   it("recomputes labels on add (single series → full label)", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
-    expect(state.series[0].label).toBe("Proton in Water (liquid)");
+    expect(state.series[0]!.label).toBe("Proton in Water (liquid)");
   });
 
   it("recomputes labels on add (second series, only program varies)", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
     state.addSeries(mockSeries({ programId: 9, programName: "ICRU 90" }));
-    expect(state.series[0].label).toBe("PSTAR");
-    expect(state.series[1].label).toBe("ICRU 90");
+    expect(state.series[0]!.label).toBe("PSTAR");
+    expect(state.series[1]!.label).toBe("ICRU 90");
   });
 
   it("recomputes labels on remove (back to single series → full label)", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());
     state.addSeries(mockSeries({ programId: 9, programName: "ICRU 90" }));
-    const s1id = state.series[0].seriesId;
+    const s1id = state.series[0]!.seriesId;
     state.removeSeries(s1id);
-    expect(state.series[0].label).toBe("Proton in Water (liquid)");
+    expect(state.series[0]!.label).toBe("Proton in Water (liquid)");
   });
 });

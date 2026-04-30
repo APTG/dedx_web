@@ -70,6 +70,7 @@ export function createCalculatorState(
     const rows = inputState.rows;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      if (!row) continue;
       const trimmed = row.text.trim();
       if (trimmed === "") continue;
 
@@ -272,9 +273,11 @@ export function createCalculatorState(
       const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
       
       for (let i = 0; i < energies.length; i++) {
+        const item = energies[i];
         const stpMass = result.stoppingPowers[i];
         const csdaGcm2 = result.csdaRanges[i];
-        const { rowId, energy } = energies[i];
+        if (!item || stpMass === undefined || csdaGcm2 === undefined) continue;
+        const { rowId, energy } = item;
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
@@ -309,7 +312,7 @@ export function createCalculatorState(
 
         newResults.set(rowId, {
           stoppingPower: stpDisplay,
-          csdaRangeCm: csdaCm,
+          csdaRangeCm: csdaCm ?? csdaGcm2,
         });
       }
 
@@ -331,7 +334,7 @@ export function createCalculatorState(
     return inputState.rows
       .map((row, index) => {
         const parsed = parsedEnergies[index];
-        if (!('value' in parsed) || parsed.value <= 0) {
+        if (!parsed || !('value' in parsed) || parsed.value <= 0) {
           return null;
         }
         
