@@ -312,6 +312,8 @@ export function createCalculatorState(
 
         newResults.set(rowId, {
           stoppingPower: stpDisplay,
+          // csdaGcm2ToCm returns null when density ≤ 0 (non-physical material).
+          // Fall back to the raw g/cm² value so the row still displays a number.
           csdaRangeCm: csdaCm ?? csdaGcm2,
         });
       }

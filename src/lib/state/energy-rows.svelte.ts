@@ -61,6 +61,8 @@ export function createEnergyInputState(): EnergyInputState {
     rows = rows.map((row, i) => {
       if (i !== index) return row;
       if (error !== undefined) return { ...row, text, error };
+      // Destructure to discard the old error property; exactOptionalPropertyTypes
+      // prohibits setting error: undefined on a type with error?: string.
       const { error: _prev, ...rowWithoutError } = row;
       return { ...rowWithoutError, text };
     });
