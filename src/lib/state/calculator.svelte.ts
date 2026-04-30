@@ -57,7 +57,7 @@ export function createCalculatorState(
   let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
+  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number | null }>>(
     new Map()
   );
 
@@ -70,6 +70,7 @@ export function createCalculatorState(
     const rows = inputState.rows;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
+      if (!row) continue;
       const trimmed = row.text.trim();
       if (trimmed === "") continue;
 
@@ -269,12 +270,14 @@ export function createCalculatorState(
       const material = entitySelection.selectedMaterial;
       const density = material?.density ?? 1;
 
-      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
+      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
       
       for (let i = 0; i < energies.length; i++) {
+        const item = energies[i];
         const stpMass = result.stoppingPowers[i];
         const csdaGcm2 = result.csdaRanges[i];
-        const { rowId, energy } = energies[i];
+        if (!item || stpMass === undefined || csdaGcm2 === undefined) continue;
+        const { rowId, energy } = item;
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
@@ -309,6 +312,9 @@ export function createCalculatorState(
 
         newResults.set(rowId, {
           stoppingPower: stpDisplay,
+          // csdaGcm2ToCm returns null when density ≤ 0 (non-physical material).
+          // Keep null so consumers (display, CSV/PDF export) skip it rather than
+          // showing a g/cm² value under a cm-labelled column.
           csdaRangeCm: csdaCm,
         });
       }
@@ -331,7 +337,7 @@ export function createCalculatorState(
     return inputState.rows
       .map((row, index) => {
         const parsed = parsedEnergies[index];
-        if (!('value' in parsed) || parsed.value <= 0) {
+        if (!parsed || !('value' in parsed) || parsed.value <= 0) {
           return null;
         }
         

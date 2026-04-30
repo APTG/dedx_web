@@ -19,7 +19,7 @@ test.describe("Calculator URL sync", () => {
   test("invalid URL params fall back to defaults without error", async ({ page }) => {
     await page.goto("/calculator?particle=NOPE&energies=notanumber&eunit=bebok");
     await expect(page.getByRole("heading", { name: /calculator/i })).toBeVisible({ timeout: 8000 });
-    await expect(page.getByText(/error/i, { selector: "*" })).not.toBeVisible();
+    await expect(page.getByText(/error/i)).not.toBeVisible();
   });
 
   test("mixed-unit rows encoded with :unit suffix", async ({ page }) => {

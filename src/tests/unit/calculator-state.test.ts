@@ -18,13 +18,13 @@ describe('CalculatorState', () => {
 
   it('initializes with one pre-filled row and correct stpDisplayUnit for water', () => {
     expect(calcState.rows).toHaveLength(1);
-    expect(calcState.rows[0].rawInput).toBe('100');
+    expect(calcState.rows[0]!.rawInput).toBe('100');
     expect(calcState.stpDisplayUnit).toBe('keV/µm');
   });
 
   it('has null results before calculation is triggered', () => {
-    expect(calcState.rows[0].stoppingPower).toBeNull();
-    expect(calcState.rows[0].csdaRangeCm).toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
+    expect(calcState.rows[0]!.csdaRangeCm).toBeNull();
   });
 
   it('calculates results after triggering', async () => {
@@ -33,14 +33,14 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
     calcState.flushCalculation();
 
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
-    expect(calcState.rows[0].csdaRangeCm).not.toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.csdaRangeCm).not.toBeNull();
   });
 
   it('handles invalid input with appropriate status', () => {
     calcState.updateRowText(0, 'abc');
-    expect(calcState.rows[0].status).toBe('invalid');
-    expect(calcState.rows[0].normalizedMevNucl).toBeNull();
+    expect(calcState.rows[0]!.status).toBe('invalid');
+    expect(calcState.rows[0]!.normalizedMevNucl).toBeNull();
   });
 
   it('excludes invalid rows from calculation', async () => {
@@ -52,8 +52,8 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
     calcState.flushCalculation();
 
-    expect(calcState.rows[0].stoppingPower).toBeNull();
-    expect(calcState.rows[1].stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
+    expect(calcState.rows[1]!.stoppingPower).not.toBeNull();
   });
 
   it('switches stpDisplayUnit to MeV·cm²/g for gas material (air)', () => {
@@ -65,9 +65,9 @@ describe('CalculatorState', () => {
 
   it('handles empty rows correctly', () => {
     calcState.updateRowText(0, '');
-    expect(calcState.rows[0].status).toBe('empty');
-    expect(calcState.rows[0].normalizedMevNucl).toBeNull();
-    expect(calcState.rows[0].stoppingPower).toBeNull();
+    expect(calcState.rows[0]!.status).toBe('empty');
+    expect(calcState.rows[0]!.normalizedMevNucl).toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
   });
 
   it('clears results when entity selection is incomplete', async () => {
@@ -76,12 +76,12 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
     calcState.flushCalculation();
 
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
 
     calcState.clearResults();
     entitySelection.clearParticle();
 
-    expect(calcState.rows[0].stoppingPower).toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
   });
 
   it('handles multiple rows with different values', async () => {
@@ -101,21 +101,21 @@ describe('CalculatorState', () => {
 
     // Should now have 4 rows (3 with values + 1 empty always-empty-row)
     expect(calcState.rows).toHaveLength(4);
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
-    expect(calcState.rows[1].stoppingPower).not.toBeNull();
-    expect(calcState.rows[2].stoppingPower).not.toBeNull();
-    expect(calcState.rows[3].rawInput).toBe('');
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
+    expect(calcState.rows[1]!.stoppingPower).not.toBeNull();
+    expect(calcState.rows[2]!.stoppingPower).not.toBeNull();
+    expect(calcState.rows[3]!.rawInput).toBe('');
   });
 
   it('maintains always-empty-row pattern', () => {
     // Initial state has one row with "100", no empty row yet
     expect(calcState.rows).toHaveLength(1);
-    expect(calcState.rows[0].rawInput).toBe('100');
+    expect(calcState.rows[0]!.rawInput).toBe('100');
     
     // Typing in the last row creates a new empty row
     calcState.updateRowText(0, '50');
     
-    expect(calcState.rows[calcState.rows.length - 1].rawInput).toBe('');
+    expect(calcState.rows[calcState.rows.length - 1]!.rawInput).toBe('');
     expect(calcState.rows).toHaveLength(2);
   });
 
@@ -158,7 +158,7 @@ describe('CalculatorState', () => {
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
-    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0]!.normalizedMevNucl).not.toBeNull();
   });
 
   it('clears results when explicitly requested', async () => {
@@ -166,16 +166,16 @@ describe('CalculatorState', () => {
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
 
     calcState.clearResults();
 
-    expect(calcState.rows[0].stoppingPower).toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
   });
 
   it('handles out-of-range energy values', () => {
     calcState.updateRowText(0, '0');
-    expect(calcState.rows[0].status).toBe('invalid');
+    expect(calcState.rows[0]!.status).toBe('invalid');
   });
 
   it('logs warning for subnormal WASM stopping power values', async () => {
@@ -270,43 +270,43 @@ describe('CalculatorState', () => {
       }));
 
     calcState.updateRowText(0, '100');
-    const rowId1 = calcState.rows[0].id;
+    const rowId1 = calcState.rows[0]!.id;
 
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
-    const firstStp = calcState.rows[0].stoppingPower;
+    const firstStp = calcState.rows[0]!.stoppingPower;
     expect(firstStp).not.toBeNull();
     expect(firstStp).toBeGreaterThan(0);
 
     // Change the parsed energy by a tiny amount — the row ID stays the same
     // but a float-keyed lookup would now miss the existing result.
     calcState.updateRowText(0, '100.0000001');
-    expect(calcState.rows[0].id).toBe(rowId1);
-    expect(calcState.rows[0].normalizedMevNucl).toBeCloseTo(100.0000001);
+    expect(calcState.rows[0]!.id).toBe(rowId1);
+    expect(calcState.rows[0]!.normalizedMevNucl).toBeCloseTo(100.0000001);
 
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
     // Row ID is stable across recalculations and the new STP is attached to it.
-    expect(calcState.rows[0].id).toBe(rowId1);
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.id).toBe(rowId1);
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
     // The second mocked call returned a different STP — confirm the row picked
     // up the new value (i.e. results are keyed by rowId, not by the changed
     // float energy).
-    expect(calcState.rows[0].stoppingPower).not.toBeCloseTo(firstStp!);
+    expect(calcState.rows[0]!.stoppingPower).not.toBeCloseTo(firstStp!);
   });
 
   it('MeV/u input: "12MeV/u" for proton computes normalizedMevNucl ≈ 12.1', () => {
     calcState.updateRowText(0, '12MeV/u');
-    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
-    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12.1, 0);
+    expect(calcState.rows[0]!.normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0]!.normalizedMevNucl!).toBeCloseTo(12.1, 0);
   });
 
   it('MeV/nucl input: "12 MeV/nucl" for proton computes normalizedMevNucl = 12', () => {
     calcState.updateRowText(0, '12 MeV/nucl');
-    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
-    expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12, 0);
+    expect(calcState.rows[0]!.normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0]!.normalizedMevNucl!).toBeCloseTo(12, 0);
   });
 
   it('MeV/u input: "100 MeV/u" for Carbon (A=12) computes normalizedMevNucl', async () => {
@@ -318,8 +318,8 @@ describe('CalculatorState', () => {
     await calcState.triggerCalculation();
     calcState.flushCalculation();
     
-    expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
-    expect(calcState.rows[0].stoppingPower).not.toBeNull();
+    expect(calcState.rows[0]!.normalizedMevNucl).not.toBeNull();
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
   });
 
   describe('setRowUnit - KE conversion', () => {
@@ -331,7 +331,7 @@ describe('CalculatorState', () => {
       calcState.updateRowText(0, '12 MeV');
       calcState.setRowUnit(0, 'MeV/nucl');
       
-      expect(calcState.rows[0].rawInput).toBe('1 MeV/nucl');
+      expect(calcState.rows[0]!.rawInput).toBe('1 MeV/nucl');
     });
 
     it('Carbon (A=12), row "1 MeV/nucl", setRowUnit(0, "MeV") → row text becomes "12 MeV"', () => {
@@ -342,7 +342,7 @@ describe('CalculatorState', () => {
       calcState.updateRowText(0, '1 MeV/nucl');
       calcState.setRowUnit(0, 'MeV');
       
-      expect(calcState.rows[0].rawInput).toBe('12 MeV');
+      expect(calcState.rows[0]!.rawInput).toBe('12 MeV');
     });
 
     it('Helium (A=4), row "80 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "20 MeV/nucl"', () => {
@@ -353,7 +353,7 @@ describe('CalculatorState', () => {
       calcState.updateRowText(0, '80 MeV');
       calcState.setRowUnit(0, 'MeV/nucl');
       
-      expect(calcState.rows[0].rawInput).toBe('20 MeV/nucl');
+      expect(calcState.rows[0]!.rawInput).toBe('20 MeV/nucl');
     });
 
     it('Proton (A=1), row "100 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "100 MeV/nucl"', () => {
@@ -364,7 +364,7 @@ describe('CalculatorState', () => {
       calcState.updateRowText(0, '100 MeV');
       calcState.setRowUnit(0, 'MeV/nucl');
       
-      expect(calcState.rows[0].rawInput).toBe('100 MeV/nucl');
+      expect(calcState.rows[0]!.rawInput).toBe('100 MeV/nucl');
     });
   });
 
@@ -487,12 +487,12 @@ describe('CalculatorState', () => {
       expect(calcState.rows).toHaveLength(2);
       calcState.resetAll();
       expect(calcState.rows.filter(r => r.status !== 'empty')).toHaveLength(1);
-      expect(calcState.rows[0].rawInput).toBe('100');
+      expect(calcState.rows[0]!.rawInput).toBe('100');
     });
 
     it('resetAll() resets masterUnit to "MeV"', () => {
-      calcState.setMasterUnit('GeV');
-      expect(calcState.masterUnit).toBe('GeV');
+      calcState.setMasterUnit('MeV/nucl');
+      expect(calcState.masterUnit).toBe('MeV/nucl');
       calcState.resetAll();
       expect(calcState.masterUnit).toBe('MeV');
     });

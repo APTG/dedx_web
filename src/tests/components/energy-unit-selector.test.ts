@@ -14,8 +14,8 @@ describe("EnergyUnitSelector component", () => {
 
     const buttons = container.querySelectorAll('button[type="button"]');
     expect(buttons).toHaveLength(2);
-    expect(buttons[0].textContent?.trim()).toBe("MeV");
-    expect(buttons[1].textContent?.trim()).toBe("MeV/nucl");
+    expect(buttons[0]!.textContent?.trim()).toBe("MeV");
+    expect(buttons[1]!.textContent?.trim()).toBe("MeV/nucl");
   });
 
   test("the button matching value has aria-checked=true", () => {
@@ -28,8 +28,8 @@ describe("EnergyUnitSelector component", () => {
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
-    expect(buttons[0].getAttribute("aria-checked")).toBe("false");
-    expect(buttons[1].getAttribute("aria-checked")).toBe("true");
+    expect(buttons[0]!.getAttribute("aria-checked")).toBe("false");
+    expect(buttons[1]!.getAttribute("aria-checked")).toBe("true");
   });
 
   test("clicking a non-selected button calls onValueChange with correct EnergyUnit", async () => {
@@ -43,7 +43,7 @@ describe("EnergyUnitSelector component", () => {
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
-    await fireEvent.click(buttons[1]);
+    await fireEvent.click(buttons[1]!);
 
     expect(onValueChange).toHaveBeenCalledWith("MeV/nucl");
   });
@@ -59,7 +59,7 @@ describe("EnergyUnitSelector component", () => {
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
-    await fireEvent.click(buttons[0]);
+    await fireEvent.click(buttons[0]!);
 
     expect(onValueChange).not.toHaveBeenCalled();
   });
@@ -92,7 +92,7 @@ describe("EnergyUnitSelector component", () => {
     });
 
     const buttons = container.querySelectorAll('button[type="button"]');
-    await fireEvent.click(buttons[1]);
+    await fireEvent.click(buttons[1]!);
 
     expect(onValueChange).not.toHaveBeenCalled();
   });

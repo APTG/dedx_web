@@ -94,7 +94,7 @@ describe('ResultTable', () => {
     
     // Should NOT have a select dropdown in master mode for proton
     // Use the first table found since we're testing the first rendered component
-    const firstTable = screen.getAllByRole('table')[0];
+    const firstTable = screen.getAllByRole('table')[0]!;
     const comboboxesInFirstTable = firstTable.querySelectorAll('select');
     expect(comboboxesInFirstTable).toHaveLength(0);
   });
@@ -106,7 +106,7 @@ describe('ResultTable', () => {
 
     render(ResultTable, { props: { state: freshCalcState, entitySelection } });
 
-    const summary = screen.getAllByText(/excluded/)[0];
+    const summary = screen.getAllByText(/excluded/)[0]!;
     expect(summary).toBeInTheDocument();
   });
 
@@ -125,8 +125,8 @@ describe('ResultTable', () => {
 
     // The row text should now be rewritten with converted value (KE conserved).
     // 120 MeV total / 12 nucleons = 10 MeV/nucl.
-    expect(calcState.rows[0].rawInput).toBe('10 MeV/nucl');
-    expect(calcState.rows[0].unitFromSuffix).toBe(true);
+    expect(calcState.rows[0]!.rawInput).toBe('10 MeV/nucl');
+    expect(calcState.rows[0]!.unitFromSuffix).toBe(true);
   });
 
   it('shows the count of invalid + out-of-range rows in the validation summary', () => {
@@ -138,7 +138,7 @@ describe('ResultTable', () => {
 
     render(ResultTable, { props: { state: fresh, entitySelection } });
 
-    const summary = screen.getAllByText(/excluded/)[0];
+    const summary = screen.getAllByText(/excluded/)[0]!;
     expect(summary).toBeInTheDocument();
     expect(summary.textContent).toMatch(/invalid/);
   });

@@ -1,5 +1,5 @@
 import { describe, test, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/svelte";
+import { render } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntityPanel from "$lib/components/entity-panel.svelte";
 
