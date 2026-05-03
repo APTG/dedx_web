@@ -117,6 +117,56 @@ setup procedure and egress notes.
 
 ---
 
+## 6a. Multi-agent workflow (orchestrator pattern)
+
+> Use this when you receive a feature spec to implement. This workflow prevents
+> context overflow and eliminates the need for manual "please continue" prompts.
+
+**You are the orchestrator.** Do NOT implement everything in a single long conversation.
+Instead, decompose the spec into atomic tasks and delegate each to the `implementer`
+and `reviewer` subagents.
+
+### How to start
+
+The user will paste a prompt based on
+[`.opencode/prompts/run-feature.md`](.opencode/prompts/run-feature.md).
+That prompt tells you the spec path, branch name, and acceptance criteria.
+
+### Orchestration loop (repeat for each task)
+
+```
+1. Write .opencode/tasks/<branch>.md  — task list with statuses
+2. For each task:
+   a. Call 'implementer' subagent → receives ONE task, outputs TASK DONE: or TASK BLOCKED:
+   b. Call 'reviewer'    subagent → validates, outputs REVIEW PASS or REVIEW FAIL: <issues>
+   c. If REVIEW FAIL → call implementer again with the issue list (max 2 retries)
+   d. Mark task done or blocked, move to next
+3. When all tasks complete → write CHANGELOG-AI.md row + session log
+```
+
+### Rules for the orchestrator
+
+- **Never ask for confirmation between tasks.** Proceed autonomously.
+- **Never implement code yourself** — that is the implementer's job.
+- **Keep each implementer call to ONE task** (one commit boundary).
+- **Track state in `.opencode/tasks/<branch>.md`** so you can resume if the
+  session is interrupted.
+- If a task is blocked after 2 retries, mark it blocked and continue to the next.
+  Do not spend the whole session on one stuck task.
+
+### Subagent reference
+
+| Agent | Model | Role |
+|-------|-------|------|
+| `implementer` | Qwen3.5-397B | Writes code, tests, commits for ONE task |
+| `reviewer` | Qwen3.6-35B | Validates lint/tests, reports issues |
+| `svelte-file-editor` | Qwen3.5-397B | (auto) edits `.svelte` files with MCP validation |
+
+Full agent documentation: [`.opencode/agents/`](.opencode/agents/)
+Full setup guide: [`docs/opencode-setup.md`](docs/opencode-setup.md)
+
+---
+
 ## 7. opencode full setup guide
 
 See [`docs/opencode-setup.md`](docs/opencode-setup.md) for step-by-step
