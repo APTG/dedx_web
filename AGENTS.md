@@ -73,7 +73,11 @@ submodules. Full index: [`vendor/README.md`](vendor/README.md).
 
 ---
 
-## 5. MCP servers (opencode.json)
+## 5. MCP servers
+
+> **opencode only** — this section applies only to opencode sessions.
+> VS Code (Claude Code, Copilot) and other tools manage their own MCP configuration
+> and do not read `opencode.json`.
 
 [`opencode.json`](opencode.json) configures the MCP/tooling setup and the
 PLGrid provider. Tailwind and Playwright are started via `npx`. The Svelte MCP
@@ -110,14 +114,20 @@ setup procedure and egress notes.
 - **Commit after each working increment** using Conventional Commits
   (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
 - **Log every session** — append a row to `CHANGELOG-AI.md` and create a file in
-  `docs/ai-logs/YYYY-MM-DD-<slug>.md`. Attribution `(opencode + Qwen3.5-397B)` is
-  mandatory — see `.github/copilot-instructions.md § AI Session Logging`.
-- **Branch naming for Qwen sessions:** `qwen/<stage-or-feature>` (see
+  `docs/ai-logs/YYYY-MM-DD-<slug>.md`. Include the tool + model attribution in
+  every entry — see `.github/copilot-instructions.md § AI Session Logging` for the
+  exact format per tool (opencode, Copilot, Claude Code).
+- **Branch naming for Qwen/opencode sessions:** `qwen/<stage-or-feature>` (see
   [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md)).
 
 ---
 
 ## 6a. Multi-agent workflow (orchestrator pattern)
+
+> **opencode only** — this section applies only to opencode sessions using the
+> `implementer` and `reviewer` subagents defined in `opencode.json`. If you are
+> running as Claude Code, GitHub Copilot, or any other tool, skip this section
+> and implement directly per § 6.
 
 > Use this when you receive a feature spec to implement. This workflow prevents
 > context overflow and eliminates the need for manual "please continue" prompts.
@@ -168,6 +178,8 @@ Full setup guide: [`docs/opencode-setup.md`](docs/opencode-setup.md)
 ---
 
 ## 7. opencode full setup guide
+
+> **opencode only** — applies only to opencode sessions.
 
 See [`docs/opencode-setup.md`](docs/opencode-setup.md) for step-by-step
 instructions covering: prerequisites, submodule init, env var setup, all MCP

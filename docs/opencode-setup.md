@@ -89,11 +89,11 @@ Svelte MCP server as a local stdio process.
 - `svelte-file-editor` subagent — automatically used when editing `.svelte` /
   `.svelte.ts` files
 
-**PLGrid model override (`svelte.json`):** The `@sveltejs/opencode` plugin
-defaults to the Anthropic model for its `svelte-file-editor` subagent. On PLGrid
-that would fail because no Anthropic API key is available. `svelte.json`
-(committed at repo root) overrides this to use `Qwen3.5-397B` from the PLGrid
-provider — no manual action required.
+**PLGrid model override (`.opencode/svelte.json`):** The `@sveltejs/opencode`
+plugin defaults to the Anthropic model for its `svelte-file-editor` subagent.
+On PLGrid that would fail because no Anthropic API key is available.
+`.opencode/svelte.json` (committed in `.opencode/`) overrides this to use
+`Qwen3.5-397B` from the PLGrid provider — no manual action required.
 
 **No additional setup needed** — opencode downloads and caches `@sveltejs/mcp`
 on first run.
@@ -139,8 +139,8 @@ cd /path/to/dedx_web
 opencode
 ```
 
-opencode reads `opencode.json` and `svelte.json` automatically and loads
-`AGENTS.md` as context.
+opencode reads `opencode.json` and `.opencode/svelte.json` automatically and
+loads `AGENTS.md` as context.
 
 ### Selecting the Qwen model
 
@@ -324,15 +324,15 @@ catch regressions before you commit.
 
 ### `svelte-file-editor` tries to use anthropic and fails
 
-**Cause:** `svelte.json` is missing or the `model` override is not set.
-**Fix:** Confirm `svelte.json` exists at the repo root with `"model": "dedxweb/Qwen/Qwen3.5-397B-A17B-FP8"`.
+**Cause:** `.opencode/svelte.json` is missing or the `model` override is not set.
+**Fix:** Confirm `.opencode/svelte.json` exists with `"model": "dedxweb/Qwen/Qwen3.5-397B-A17B-FP8"`.
 
 ### `@sveltejs/mcp` npx download fails
 
 **Cause:** No internet / npm registry blocked.
 **Fix:** On PLGrid compute nodes, use `vendor/svelte/documentation/` as the
 offline fallback and set `"mcp": { "type": "local", "enabled": false }` in
-`svelte.json` temporarily.
+`.opencode/svelte.json` temporarily.
 
 ### Playwright MCP errors: browsers not installed
 
