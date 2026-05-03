@@ -71,7 +71,11 @@ test.describe('Calculator on mobile viewport', () => {
     // The bug from the issue: result columns get squished and their text gets
     // clipped on narrow viewports. With the fix, the table has a min-width
     // and the wrapper scrolls horizontally, so each cell is wide enough that
-    // its content is not visually truncated by an `overflow:hidden` ancestor.
+    // its content is not visually truncated.
+    //
+    // The result-table cells render values inside inline `<span>` elements
+    // (which always report 0 for `clientWidth`/`scrollWidth`). Walk up to the
+    // enclosing `<td>` block element to get a meaningful measurement.
     for (const cell of [stpCell, rangeCell]) {
       const text = (await cell.textContent())?.trim() ?? '';
       expect(text.length).toBeGreaterThan(0);
@@ -79,16 +83,20 @@ test.describe('Calculator on mobile viewport', () => {
       // Each result cell should be wide enough to fully render its number
       // (scrollWidth must not exceed clientWidth — otherwise the value
       // is being clipped by an overflow:hidden ancestor).
-      const { clientWidth, scrollWidth } = await cell.evaluate((el) => ({
-        clientWidth: el.clientWidth,
-        scrollWidth: el.scrollWidth,
-      }));
+      const { clientWidth, scrollWidth } = await cell.evaluate((span) => {
+        const td = span.closest('td');
+        if (!td) throw new Error('cell <span> is not inside a <td>');
+        return { clientWidth: td.clientWidth, scrollWidth: td.scrollWidth };
+      });
+      expect(clientWidth).toBeGreaterThan(0);
       expect(scrollWidth).toBeLessThanOrEqual(clientWidth);
     }
 
     // The table wrapper (the element with `overflow-x-auto`) must allow the
     // user to scroll to the right-hand result columns when the viewport is
-    // narrower than the table — i.e. scrollWidth > clientWidth on the wrapper.
+    // narrower than the table — i.e. scrollWidth strictly greater than
+    // clientWidth on the wrapper. Equality would mean the table fits and
+    // there is nothing to scroll, which would silently regress this fix.
     const tableWrapper = page.locator('[data-testid="result-table"]').locator('..');
     const wrapperMetrics = await tableWrapper.evaluate((el) => {
       const style = getComputedStyle(el);
@@ -99,6 +107,6 @@ test.describe('Calculator on mobile viewport', () => {
       };
     });
     expect(wrapperMetrics.overflowX).toMatch(/auto|scroll/);
-    expect(wrapperMetrics.scrollWidth).toBeGreaterThanOrEqual(wrapperMetrics.clientWidth);
+    expect(wrapperMetrics.scrollWidth).toBeGreaterThan(wrapperMetrics.clientWidth);
   });
 });
