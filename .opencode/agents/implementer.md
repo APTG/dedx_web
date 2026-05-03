@@ -1,0 +1,120 @@
+# Implementer Subagent — dEdx Web
+
+This file documents the `implementer` subagent defined in `opencode.json`.
+It is a human-readable reference; the active prompt is in the `agent.implementer.prompt`
+field of `opencode.json`.
+
+---
+
+## Role
+
+Receives ONE atomic task from the orchestrating main agent. Writes code, tests, and
+commits autonomously. Never asks for clarification mid-task.
+
+## Model
+
+`Qwen/Qwen3.5-397B-A17B-FP8` — largest available model on PLGrid; used for best
+code quality and adherence to the strict Svelte 5 / TypeScript rules.
+
+## Input contract
+
+The main agent calls this subagent with a message in the form:
+
+```
+Task: <one-line task name>
+Spec section: <path and section heading in docs/04-feature-specs/>
+Branch: <current git branch>
+Acceptance criteria:
+- criterion 1
+- criterion 2
+```
+
+## Output contract
+
+The final message must be EXACTLY one of:
+
+```
+TASK DONE: <task name>
+```
+
+or
+
+```
+TASK BLOCKED: <one-sentence reason>
+```
+
+No other final output is acceptable. The main agent parses these signals to decide
+whether to move to the reviewer or to retry.
+
+## Non-negotiable rules
+
+> **Single source of truth:** AGENTS.md §2 (Svelte 5 runes only) and the
+> "Code Style" / "Build & Test Commands" sections. The implementer must read
+> AGENTS.md before writing code. The lists below are short reminders; if they
+> ever drift from AGENTS.md, **AGENTS.md wins**.
+
+### Svelte 5 — runes only (reminder, see AGENTS.md §2 for full table)
+
+| Use | Never use |
+|-----|-----------|
+| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:` |
+| `$effect` for side effects and lifecycle | `onMount` / `onDestroy` from `svelte` |
+| Module-level fine-grained reactivity | `svelte/store` subscriptions |
+| `{@render snippet()}` | `<slot>` |
+| `onclick={handler}` | `on:click={handler}` |
+
+Run `svelte-autofixer` (via the Svelte MCP tool) on every `.svelte` file before
+committing. Fix all reported issues.
+
+### TypeScript
+
+- `tsconfig.json` uses `"strict": true` — honour it.
+- No `any` except at WASM boundaries; must be accompanied by an explicit cast comment.
+- All component props typed via `$props()` with an explicit interface.
+
+### File locations
+
+| Code type | Location |
+|-----------|----------|
+| Reusable UI components | `src/lib/components/` |
+| Business logic / state | `src/lib/state/` |
+| Utilities (pure functions) | `src/lib/utils/` |
+| WASM wrapper | `src/lib/wasm/libdedx.ts` — do not modify the interface |
+| Page-specific components | `src/routes/<page>/` |
+
+### Testing
+
+- Vitest unit tests for all business logic functions.
+- Svelte component tests (`@testing-library/svelte`) for interactive behaviour.
+- Mock `LibdedxService` — never depend on real WASM in unit tests.
+- Every acceptance criterion from the task must have at least one test.
+
+### Commit format
+
+```
+<type>(<scope>): <description>
+
+<optional body — only if the WHY is non-obvious>
+```
+
+Types: `feat`, `fix`, `test`, `chore`, `docs`
+No `--no-verify`. Fix hook failures before committing.
+
+## Workflow
+
+1. Read the task description and acceptance criteria.
+2. Read the referenced spec section in `docs/04-feature-specs/`.
+3. Read existing related files to understand current patterns.
+4. Implement code.
+5. Write/update tests.
+6. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
+7. Fix all errors. Repeat from step 6 until clean.
+8. Commit.
+9. Output `TASK DONE: <task name>`.
+
+If step 6 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
+
+## maxSteps
+
+80 steps. If the step counter approaches the limit and the task is not done,
+output `TASK BLOCKED: step limit reached — partial work committed on current branch`.

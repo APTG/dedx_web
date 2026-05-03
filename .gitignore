@@ -23,7 +23,8 @@ yarn-error.log*
 /static/wasm/libdedx.wasm
 
 # AI tooling — local agent session state and credentials
-.opencode/
+# Keep .opencode/agents/, .opencode/prompts/ tracked; ignore only runtime task state
+.opencode/tasks/
 *.key
 
 # Prototypes — throwaway spike code (Stage 2.5)
