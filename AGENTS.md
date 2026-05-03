@@ -97,13 +97,12 @@ setup in your environment. As an additional fallback, read Svelte 5 docs
 directly from [`vendor/svelte/`](vendor/svelte/) (committed as a shallow
 submodule).
 
-Provider credentials must be set as env vars before starting opencode:
-```sh
-export PLGRID_LLMLAB_BASE_URL=https://...   # PLGrid llmlab endpoint
-export PLGRID_LLMLAB_API_KEY=...            # never commit this
-```
-See [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md) for the full
-setup procedure and egress notes.
+Provider credentials are managed by opencode itself — run `opencode auth login`
+once and the API key is stored under `~/.local/share/opencode/auth.json`. The
+PLGrid base URL is hard-coded in `opencode.json`. Do not put the API key in
+env vars or in the repo.
+
+See [`docs/opencode-setup.md §2`](docs/opencode-setup.md) for details.
 
 ---
 
@@ -169,11 +168,13 @@ That prompt tells you the spec path, branch name, and acceptance criteria.
 | Agent | Model | Role |
 |-------|-------|------|
 | `implementer` | Qwen3.5-397B | Writes code, tests, commits for ONE task |
-| `reviewer` | Qwen3.6-35B | Validates lint/tests, reports issues |
+| `reviewer` | Qwen3.6-35B | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
 | `svelte-file-editor` | Qwen3.5-397B | (auto) edits `.svelte` files with MCP validation |
 
 Full agent documentation: [`.opencode/agents/`](.opencode/agents/)
 Full setup guide: [`docs/opencode-setup.md`](docs/opencode-setup.md)
+Authoring new task prompts (Claude → file → opencode funnel):
+[`docs/opencode-prompt-authoring.md`](docs/opencode-prompt-authoring.md)
 
 ---
 
@@ -182,9 +183,14 @@ Full setup guide: [`docs/opencode-setup.md`](docs/opencode-setup.md)
 > **opencode only** — applies only to opencode sessions.
 
 See [`docs/opencode-setup.md`](docs/opencode-setup.md) for step-by-step
-instructions covering: prerequisites, submodule init, env var setup, all MCP
-servers, selecting the Qwen model, branch naming, session logging, and
-troubleshooting.
+instructions covering: prerequisites, submodule init, PLGrid auth (no env
+vars), all MCP servers, selecting the Qwen model, branch naming, session
+logging, and troubleshooting.
+
+To author a new multi-task prompt for opencode (the recommended workflow is
+"draft in Claude / VS Code, then hand the file to opencode"), see
+[`docs/opencode-prompt-authoring.md`](docs/opencode-prompt-authoring.md) for
+the canonical schema and the Claude meta-prompt.
 
 ---
 

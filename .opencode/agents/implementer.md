@@ -48,7 +48,12 @@ whether to move to the reviewer or to retry.
 
 ## Non-negotiable rules
 
-### Svelte 5 — runes only
+> **Single source of truth:** AGENTS.md §2 (Svelte 5 runes only) and the
+> "Code Style" / "Build & Test Commands" sections. The implementer must read
+> AGENTS.md before writing code. The lists below are short reminders; if they
+> ever drift from AGENTS.md, **AGENTS.md wins**.
+
+### Svelte 5 — runes only (reminder, see AGENTS.md §2 for full table)
 
 | Use | Never use |
 |-----|-----------|

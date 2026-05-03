@@ -144,16 +144,50 @@ reads `.opencode/svelte.json`.
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:
-  - `opencode.json` — `provider.dedxweb.options` now reads both
-    `baseURL` and `apiKey` via `{env:PLGRID_LLMLAB_BASE_URL}` /
-    `{env:PLGRID_LLMLAB_API_KEY}` substitution, so the env vars documented in
-    the setup guide actually take effect (they were previously decorative).
-  - `docs/opencode-setup.md` — clarified that both env vars are read by
-    `opencode.json` and that opencode will fail to authenticate if either is
-    unset (addresses reviewer comment on §2).
+  - `opencode.json` — first iteration switched `baseURL`/`apiKey` to
+    `{env:…}` substitution; **reverted in the next commit** at the user's
+    request (they keep the API key in `~/.local/share/opencode/auth.json`,
+    not env vars). Final state: hardcoded baseURL, no apiKey field.
+  - `docs/opencode-setup.md` — rewrote §2 to document `opencode auth login`
+    (no env vars).
+  - `AGENTS.md` — same: pointed at `opencode auth login` instead of env vars.
   - `docs/ai-logs/README.md` — corrected `svelte.json` reference to
     `.opencode/svelte.json` so readers land in the right path.
-- **Decision**: Took option (b) from the reviewer (wire the env var) rather
-  than (a) (delete the env var doc), because it preserves the ability to
-  point opencode at a different PLGrid endpoint without editing the committed
-  config file.
+- **Decision**: User explicitly preferred opencode's own auth store over env
+  vars. The reviewer's option (a) (remove env var docs entirely) was the right
+  call after all.
+
+### Apply easy harness improvements + add prompt-authoring guide
+- **Status**: completed
+- **Stage**: tooling
+- **Files changed**:
+  - `opencode.json` — narrowed `reviewer` to **diff-only** review: dropped
+    `pnpm lint` / `pnpm test` / `pnpm build` re-runs (the implementer already
+    runs them at step 6 — duplicating wasted ~5–10 min of Qwen3.6-35B time
+    per task). Reduced `maxSteps` 30 → 15. Set `edit: deny`, `webfetch: deny`
+    for the reviewer (it should never modify files or hit the network).
+    Slimmed `implementer` prompt to point at AGENTS.md instead of
+    re-stating the Svelte 5 / TypeScript / Tailwind rules inline (was three
+    sources of truth — AGENTS.md, `.opencode/agents/implementer.md`, and
+    the inline prompt — guaranteed to drift).
+  - `.opencode/agents/reviewer.md` — full rewrite explaining diff-only role,
+    new permissions, and the 6-check list (acceptance criteria, Svelte 4
+    regressions, `: any`, test coverage, dead code in diff).
+  - `.opencode/agents/implementer.md` — added "Single source of truth"
+    callout pointing at AGENTS.md §2.
+  - `docs/opencode-prompt-authoring.md` — **new** doc: canonical prompt
+    schema (header / context / AI-logging / task blocks with acceptance
+    criteria + tests-first + implement bullets + Done-when), Claude
+    meta-prompt for VS Code, launch line for opencode, anti-patterns,
+    when-not-to-use guidance. Cross-references the existing reference
+    example (`docs/ai-logs/prompts/2026-04-27-opencode-tasks.md`).
+  - `docs/README.md` — added index entry for the new doc.
+  - `AGENTS.md` §6a — updated subagent table to flag reviewer as diff-only;
+    added pointer to the prompt-authoring guide from §7.
+- **Decision**: Took the cheapest two harness wins from the previous PR
+  comment (#1 dedup reviewer, #4 single-source-of-truth via AGENTS.md). Did
+  not implement the YAML task-ledger schema, `dependsOn` / blocked-skip
+  logic, or the post-commit-hook reviewer alternative — those are real
+  changes that deserve their own PR with discussion. The prompt-authoring
+  guide answers the user's separate question about how to draft prompts in
+  Claude/VS Code.

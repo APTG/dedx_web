@@ -54,22 +54,22 @@ See [`vendor/README.md`](../vendor/README.md) for the full index. Summary:
 
 ---
 
-## 2. Set environment variables
+## 2. PLGrid credentials
 
-Create a `.env.local` file at the repo root (gitignored) **or** export in your
-shell. Never commit credentials.
+The PLGrid llmlab endpoint URL is hard-coded in `opencode.json`
+(`provider.dedxweb.options.baseURL` = `https://llmlab.plgrid.pl/api/v1`). Override
+it only by editing the file if PLGrid publishes a new endpoint.
+
+The **API key is not stored in this repo and is not read from an env var**.
+Authenticate once with:
 
 ```sh
-# PLGrid llmlab — OpenAI-compatible endpoint for Qwen3.5
-# Both vars are read by opencode.json via {env:...} substitution.
-export PLGRID_LLMLAB_BASE_URL="https://llmlab.plgrid.pl/api/v1"
-export PLGRID_LLMLAB_API_KEY="your-plgrid-api-key"
+opencode auth login
 ```
 
-`opencode.json` references these as `{env:PLGRID_LLMLAB_BASE_URL}` /
-`{env:PLGRID_LLMLAB_API_KEY}` under `provider.dedxweb.options`. If either is
-unset, opencode will fail to authenticate to PLGrid. Override the base URL
-only if PLGrid documents a new endpoint.
+opencode writes the key to `~/.local/share/opencode/auth.json` (per-user, outside
+the repo). All sessions on that machine pick it up automatically. Never commit
+the key, never paste it into `.env`, and never reference it from `opencode.json`.
 
 Verify the endpoint URL and model name against the current PLGrid llmlab
 documentation — the model ids in `opencode.json` were confirmed in April 2026

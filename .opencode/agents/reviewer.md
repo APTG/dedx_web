@@ -8,14 +8,29 @@ field of `opencode.json`.
 
 ## Role
 
-Validates one completed implementation task. Reports issues only — does NOT rewrite
-code. The main orchestrating agent uses this output to decide whether to accept the
-task or send it back to the implementer for a fix round.
+**Diff-only review.** Validates one completed implementation task by inspecting the
+implementer's commit diff against the task acceptance criteria. Reports issues only —
+does NOT rewrite code, and does NOT re-run `pnpm lint` / `pnpm test` / `pnpm build`
+(the implementer already did that before committing). The main orchestrating agent
+uses this output to decide whether to accept the task or send it back to the
+implementer for a fix round.
+
+> **Why diff-only?** Re-running lint and the full Vitest suite for every task is
+> ~5–10 minutes of wasted Qwen3.6-35B time per task and produces no signal the
+> implementer didn't already have. The reviewer's job is the things the implementer
+> *cannot* easily self-check: spec adherence, Svelte 4 regressions, dead code,
+> missing acceptance-criterion tests.
 
 ## Model
 
 `Qwen/Qwen3.6-35B-A3B` — smaller/faster model on PLGrid; sufficient for
 read-and-verify work without burning quota on the largest model.
+
+## Permissions
+
+- `bash`: allow (only used to run `git show` / `git diff` for inspection)
+- `edit`: **deny** (reviewer never modifies files)
+- `webfetch`: **deny** (no network needed for a diff review)
 
 ## Input contract
 
@@ -47,57 +62,57 @@ REVIEW FAIL:
 ```
 
 Issues must be specific and actionable. "There are linting issues" is not acceptable.
-"ESLint error in src/lib/foo.ts:42 — no-unused-vars: 'x' is defined but never used" is.
+"Svelte 4 pattern in src/lib/components/foo.svelte:42 — `export let value` (use `$props()`)" is.
 
-## Checks (in order)
+## Checks (in order, on the diff only)
 
-### 1. Lint
-
-```sh
-pnpm lint
-```
-
-Must exit 0. Any ESLint error is a blocker. Warnings are noted but do not block.
-
-### 2. Tests
+### 1. Get the diff
 
 ```sh
-pnpm test
+git show --stat HEAD
+git show HEAD -- '*.svelte' '*.ts'
 ```
 
-All tests must pass. List the test name and failure message for any failing test.
+### 2. Acceptance criteria
 
-### 3. Svelte 4 pattern scan
+For every criterion in the task message, verify the diff contains a code change or
+test that observably addresses it. Flag any criterion with no corresponding change.
 
-Search modified `.svelte` files for forbidden patterns:
+### 3. Svelte 4 regressions in modified `.svelte` files
 
 | Pattern | Why forbidden |
 |---------|---------------|
-| `export let` | Svelte 4 prop declaration |
-| `$:` | Svelte 4 reactive statement |
-| `createEventDispatcher` | Svelte 4 event system |
-| `import { onMount` or `import { onDestroy` from `'svelte'` | Svelte 4 lifecycle |
-| `svelte/store` imports | Svelte 4 store pattern |
+| `export let` | Svelte 4 prop declaration → use `$props()` |
+| `$:` (reactive block) | Svelte 4 reactive statement → use `$derived` / `$effect` |
+| `createEventDispatcher` | Svelte 4 event system → use callback props |
+| `import { onMount` or `import { onDestroy` from `'svelte'` | Use `$effect` |
+| `from 'svelte/store'` | Use rune-based state |
 
-Any match is a blocker.
+Any hit is a blocker.
 
 ### 4. TypeScript `any`
 
-Search modified `.ts` and `.svelte` files for unguarded `any`. Allowed only at WASM
-boundaries and must have an adjacent cast comment. Flag any unguarded `any`.
+Search the diff for `: any` or `as any` outside `src/lib/wasm/`. Each hit is a
+blocker unless adjacent to an explicit cast comment explaining the WASM boundary.
 
 ### 5. Test coverage
 
-For each acceptance criterion in the task, verify at least one test exercises it.
-If a criterion has no test, report it as a missing test.
+Every acceptance criterion from the task must have at least one new/changed test
+in the diff. Flag missing test coverage by criterion name.
+
+### 6. Dead code in the diff
+
+Imports added but never used; exported functions never called from `src/` or tests.
+Flag.
 
 ## What the reviewer does NOT do
 
-- Does not suggest refactoring or improvements beyond the acceptance criteria.
-- Does not edit any file.
-- Does not run `pnpm build` (build validation is the implementer's responsibility).
-- Does not re-run the implementer's logic.
+- Does **not** run `pnpm lint`, `pnpm test`, or `pnpm build`. Trust the implementer.
+- Does **not** suggest refactoring beyond the acceptance criteria.
+- Does **not** edit any file (the `edit` permission is denied in `opencode.json`).
+- Does **not** review the entire codebase — only the diff of the most recent commit.
 
 ## maxSteps
 
-30 steps. Validation should never take more than a few tool calls.
+15 steps. A diff-only review should be just a handful of `git show` calls plus the
+final `REVIEW PASS` / `REVIEW FAIL` output.
