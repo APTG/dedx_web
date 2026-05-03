@@ -204,13 +204,13 @@
       {/if}
     </div>
   {:else}
-    <table class="w-full text-sm" data-testid="result-table">
+    <table class="w-full min-w-[560px] text-sm" data-testid="result-table">
       <thead class="sticky top-0 bg-background">
         <tr>
           {#each columns as col (col.id)}
             <th
               scope="col"
-              class={`px-4 py-2 font-medium ${col.align === "right" ? "text-right" : "text-left"}`}
+              class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}
             >
               {col.header(state)}
             </th>
@@ -222,7 +222,7 @@
           <tr class="even:bg-muted/30">
             {#each columns as col, colIndex (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
-              <td class={`px-4 py-2 ${col.align === "right" ? "text-right" : ""} ${useMonospace ? "font-mono" : ""}`}>
+              <td class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}>
                 {#if col.id === "energy"}
                   <input
                     type="text"

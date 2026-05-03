@@ -202,7 +202,7 @@
         disabled={calcState.isPerRowMode}
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />
-      <div class="rounded-lg border bg-card p-6">
+      <div class="rounded-lg border bg-card p-3 sm:p-6">
         <ResultTable state={calcState} entitySelection={state} />
       </div>
       {#if programLabel}
