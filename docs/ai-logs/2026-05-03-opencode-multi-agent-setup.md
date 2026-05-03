@@ -139,3 +139,21 @@ reads `.opencode/svelte.json`.
 - **Decision**: `svelte.json` at the root is not read by the plugin (lookup is
   hardcoded to `.opencode/svelte.json`). No functional change to VS Code tools —
   they never read this file.
+
+### Address PR review feedback
+- **Status**: completed
+- **Stage**: tooling
+- **Files changed**:
+  - `opencode.json` — `provider.dedxweb.options` now reads both
+    `baseURL` and `apiKey` via `{env:PLGRID_LLMLAB_BASE_URL}` /
+    `{env:PLGRID_LLMLAB_API_KEY}` substitution, so the env vars documented in
+    the setup guide actually take effect (they were previously decorative).
+  - `docs/opencode-setup.md` — clarified that both env vars are read by
+    `opencode.json` and that opencode will fail to authenticate if either is
+    unset (addresses reviewer comment on §2).
+  - `docs/ai-logs/README.md` — corrected `svelte.json` reference to
+    `.opencode/svelte.json` so readers land in the right path.
+- **Decision**: Took option (b) from the reviewer (wire the env var) rather
+  than (a) (delete the env var doc), because it preserves the ability to
+  point opencode at a different PLGrid endpoint without editing the committed
+  config file.

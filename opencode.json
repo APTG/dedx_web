@@ -5,7 +5,8 @@
       "name": "PLGrid Forge Dedx",
       "npm": "@ai-sdk/openai-compatible",
       "options": {
-        "baseURL": "https://llmlab.plgrid.pl/api/v1"
+        "baseURL": "{env:PLGRID_LLMLAB_BASE_URL}",
+        "apiKey": "{env:PLGRID_LLMLAB_API_KEY}"
       },
       "models": {
         "Qwen/Qwen3.5-397B-A17B-FP8": {

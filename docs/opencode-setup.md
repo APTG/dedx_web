@@ -61,9 +61,15 @@ shell. Never commit credentials.
 
 ```sh
 # PLGrid llmlab — OpenAI-compatible endpoint for Qwen3.5
+# Both vars are read by opencode.json via {env:...} substitution.
 export PLGRID_LLMLAB_BASE_URL="https://llmlab.plgrid.pl/api/v1"
 export PLGRID_LLMLAB_API_KEY="your-plgrid-api-key"
 ```
+
+`opencode.json` references these as `{env:PLGRID_LLMLAB_BASE_URL}` /
+`{env:PLGRID_LLMLAB_API_KEY}` under `provider.dedxweb.options`. If either is
+unset, opencode will fail to authenticate to PLGrid. Override the base URL
+only if PLGrid documents a new endpoint.
 
 Verify the endpoint URL and model name against the current PLGrid llmlab
 documentation — the model ids in `opencode.json` were confirmed in April 2026
