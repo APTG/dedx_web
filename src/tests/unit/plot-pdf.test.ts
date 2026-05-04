@@ -25,6 +25,7 @@ vi.mock("jspdf", () => {
         save: vi.fn(),
         html: vi.fn(),
         addSvgAsImage: vi.fn(),
+        addImage: vi.fn(),
         image: vi.fn(),
         getNumberOfPages: vi.fn().mockReturnValue(1),
         setTextColor: vi.fn(),
@@ -34,6 +35,44 @@ vi.mock("jspdf", () => {
     }),
   };
 });
+
+// Mock browser APIs required by svgToPng (not available in jsdom).
+// The mock Image triggers onload asynchronously so that svgToPng resolves,
+// and the canvas mock returns a stable PNG data URL.
+function setupSvgToPngMocks() {
+  vi.stubGlobal("URL", {
+    createObjectURL: vi.fn().mockReturnValue("blob:mock-svg-url"),
+    revokeObjectURL: vi.fn(),
+  });
+
+  const mockCtx = {
+    fillStyle: "" as string,
+    fillRect: vi.fn(),
+    drawImage: vi.fn(),
+  };
+  const mockCanvas = {
+    width: 0,
+    height: 0,
+    getContext: vi.fn().mockReturnValue(mockCtx),
+    toDataURL: vi.fn().mockReturnValue("data:image/png;base64,mockedpng"),
+  };
+  vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+    if (tag === "canvas") return mockCanvas as unknown as HTMLElement;
+    return document.createElement.wrappedMethod
+      ? (document.createElement.wrappedMethod as typeof document.createElement)(tag)
+      : document.createElement(tag);
+  });
+
+  // Image mock: triggers onload after the src setter is called.
+  class MockImage {
+    onload: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    set src(_url: string) {
+      Promise.resolve().then(() => this.onload?.());
+    }
+  }
+  vi.stubGlobal("Image", MockImage);
+}
 
 function makeMockSeries(options?: Partial<PlotSeries>): PlotSeries {
   return {
@@ -61,6 +100,7 @@ function makeMockSeries(options?: Partial<PlotSeries>): PlotSeries {
 describe("generatePlotPdf", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    setupSvgToPngMocks();
   });
 
   test("calls jsPDF.save() with 'dedx_plot_report.pdf'", async () => {
@@ -148,7 +188,7 @@ describe("generatePlotPdf", () => {
     expect(rectCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  test("embeds SVG content in the PDF", async () => {
+  test("embeds SVG via addImage (not doc.html) to avoid oklch crash", async () => {
     const svgString = '<svg class="plot"><rect/></svg>';
     const series: PlotSeries[] = [makeMockSeries()];
     const url = "https://dedx.example.org/";
@@ -163,12 +203,36 @@ describe("generatePlotPdf", () => {
     const { default: jsPDF } = await import("jspdf");
     const mockDoc = (jsPDF as any).mock.results[0].value;
 
-    // Check that either html() or addSvgAsImage was called with the SVG
-    const htmlCalled = mockDoc.html.mock.calls.length > 0;
-    const addSvgAsImageCalled = mockDoc.addSvgAsImage
-      ? mockDoc.addSvgAsImage.mock.calls.length > 0
-      : false;
-    expect(htmlCalled || addSvgAsImageCalled).toBe(true);
+    // Must use addImage (canvas-based PNG), never doc.html() which triggers
+    // html2canvas and crashes on oklch colors from Tailwind CSS v4.
+    expect(mockDoc.addImage).toHaveBeenCalled();
+    expect(mockDoc.html).not.toHaveBeenCalled();
+  });
+
+  test("svgToPng returns a PNG data URL for a valid SVG string", async () => {
+    const svg = '<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><rect/></svg>';
+    const result = await pdfModule.svgToPng(svg, 100, 50);
+    // The mock canvas returns a stable base64 PNG URL
+    expect(result).toBe("data:image/png;base64,mockedpng");
+  });
+
+  test("svgToPng returns null when canvas context is unavailable", async () => {
+    // Override the canvas mock to return null context for this test
+    vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
+      if (tag === "canvas") {
+        return {
+          width: 0,
+          height: 0,
+          getContext: vi.fn().mockReturnValue(null),
+          toDataURL: vi.fn(),
+        } as unknown as HTMLElement;
+      }
+      return document.createElement(tag);
+    });
+
+    const svg = "<svg/>";
+    const result = await pdfModule.svgToPng(svg, 100, 50);
+    expect(result).toBeNull();
   });
 
   test("includes page number footer", async () => {

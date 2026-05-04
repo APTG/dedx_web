@@ -219,6 +219,51 @@ function wrapText(text: string, maxWidth: number, fontSize: number): string[] {
 }
 
 /**
+ * Convert an SVG string to a PNG data URL using a browser canvas.
+ * This avoids html2canvas and its inability to parse oklch() colors.
+ * Returns null if the canvas context is unavailable (e.g. in unit tests).
+ *
+ * widthMm / heightMm are the intended PDF dimensions in mm; we render at
+ * 150 DPI (≈5.91 px/mm) for good print quality.
+ */
+export async function svgToPng(
+  svgString: string,
+  widthMm: number,
+  heightMm: number,
+): Promise<string | null> {
+  const PX_PER_MM = 150 / 25.4;
+  const widthPx = Math.round(widthMm * PX_PER_MM);
+  const heightPx = Math.round(heightMm * PX_PER_MM);
+
+  return new Promise<string | null>((resolve) => {
+    const blob = new Blob([svgString], { type: "image/svg+xml;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      canvas.width = widthPx;
+      canvas.height = heightPx;
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+        URL.revokeObjectURL(url);
+        resolve(null);
+        return;
+      }
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, widthPx, heightPx);
+      ctx.drawImage(img, 0, 0, widthPx, heightPx);
+      URL.revokeObjectURL(url);
+      resolve(canvas.toDataURL("image/png"));
+    };
+    img.onerror = () => {
+      URL.revokeObjectURL(url);
+      resolve(null);
+    };
+    img.src = url;
+  });
+}
+
+/**
  * Add page number footer to the current PDF page.
  */
 function addPageFooter(
@@ -297,19 +342,18 @@ export async function generatePlotPdf(ctx: PlotPdfContext): Promise<void> {
   y += 6;
 
   // --- Chart SVG ---
-  // Only embed if we have SVG content
+  // Only embed if we have SVG content.
+  // We convert SVG → PNG via a canvas element rather than using doc.html(),
+  // because doc.html() delegates to html2canvas which cannot parse oklch()
+  // colors emitted by Tailwind CSS v4 (throws "unsupported color function").
   if (svgString) {
-    // Calculate chart height to fit page width with some margins
     const chartWidth = pageWidth - 2 * margin;
-    const chartHeight = pageHeight * 0.5; // Use 50% of page height for chart
+    const chartHeight = pageHeight * 0.5;
 
-    // Embed SVG using jsPDF's html() method (works with SVG strings)
-    doc.html(svgString, {
-      x: margin,
-      y: y,
-      width: chartWidth,
-      height: chartHeight,
-    });
+    const pngDataUrl = await svgToPng(svgString, chartWidth, chartHeight);
+    if (pngDataUrl) {
+      doc.addImage(pngDataUrl, "PNG", margin, y, chartWidth, chartHeight);
+    }
     y += chartHeight + 5;
   }
 
