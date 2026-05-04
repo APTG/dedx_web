@@ -132,7 +132,11 @@
         await JSROOT.draw(offscreen, mg, drawOpts);
         const svgEl = offscreen.querySelector("svg");
         const result = svgEl ? new XMLSerializer().serializeToString(svgEl) : null;
-        if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(offscreen);
+        try {
+          if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(offscreen);
+        } catch {
+          // cleanup failure is non-fatal; the offscreen div is removed in finally
+        }
         return result;
       } finally {
         if (offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);

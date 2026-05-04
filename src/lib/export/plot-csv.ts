@@ -99,7 +99,9 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
 
   // Build data rows
   const maxRows = Math.max(...visibleSeries.map((s) => s.result.energies.length));
-  // Pre-convert stopping powers to the requested display unit for each series
+  // Pre-convert stopping powers to the requested display unit for each series.
+  // Done once per series here rather than inside the inner loop to avoid
+  // redundant calls to convertStpForDisplay on every row.
   const displayValues = visibleSeries.map((s) =>
     convertStpForDisplay(s.result.stoppingPowers, s.density, stpUnit),
   );
