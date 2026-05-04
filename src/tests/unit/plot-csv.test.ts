@@ -43,11 +43,8 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
     const csv = formatPlotCsv(series, "keV/µm");
     const lines = csv.split("\r\n").filter(Boolean);
 
-    // UTF-8 BOM is prepended
-    expect(csv.startsWith("\uFEFF")).toBe(true);
-
-    // Header line (BOM stripped for checking)
-    const header = lines[0]?.replace("\uFEFF", "") ?? "";
+    // Header line (no BOM - added by downloadCsv())
+    const header = lines[0] ?? "";
     expect(header).toBe('Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)');
 
     // 3 data rows
@@ -95,7 +92,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
 
     const csv = formatPlotCsv(series, "keV/µm");
     const lines = csv.split("\r\n").filter(Boolean);
-    const header = lines[0]?.replace("\uFEFF", "") ?? "";
+    const header = lines[0] ?? "";
 
     expect(header).toBe(
       'Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Stp PSTAR — p in Water (keV/µm)',
@@ -142,7 +139,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
 
     const csv = formatPlotCsv(series, "keV/µm");
     const lines = csv.split("\r\n").filter(Boolean);
-    const header = lines[0]?.replace("\uFEFF", "") ?? "";
+    const header = lines[0] ?? "";
 
     // Case B: each series gets its own Energy column before its Stp column
     expect(header).toBe(
@@ -196,7 +193,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
 
     const csv = formatPlotCsv(series, "keV/µm");
     const lines = csv.split("\r\n").filter(Boolean);
-    const header = lines[0]?.replace("\uFEFF", "") ?? "";
+    const header = lines[0] ?? "";
 
     // Case B: each series gets own Energy column
     expect(header).toBe(
@@ -242,7 +239,7 @@ describe("formatPlotCsv — hidden series exclusion", () => {
 
     const csv = formatPlotCsv(series, "keV/µm");
     const lines = csv.split("\r\n").filter(Boolean);
-    const header = lines[0]?.replace("\uFEFF", "") ?? "";
+    const header = lines[0] ?? "";
 
     // Only ICRU 90 appears (the visible series)
     expect(header).toBe('Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)');
@@ -289,30 +286,7 @@ describe("formatPlotCsv — CSV injection prevention", () => {
   });
 });
 
-describe("formatPlotCsv — UTF-8 BOM and CRLF", () => {
-  test("output starts with UTF-8 BOM", () => {
-    const series: PlotSeries[] = [
-      {
-        seriesId: 1,
-        programId: 1,
-        particleId: 1,
-        materialId: 1,
-        programName: "ICRU 90",
-        particleName: "p",
-        materialName: "Water",
-        density: 1.0,
-        result: mockResult([0.001], [84.3]),
-        label: "ICRU 90 — p in Water",
-        color: "#ff0000",
-        colorIndex: 0,
-        visible: true,
-      },
-    ];
-
-    const csv = formatPlotCsv(series, "keV/µm");
-    expect(csv.startsWith("\uFEFF")).toBe(true);
-  });
-
+describe("formatPlotCsv — CRLF line endings", () => {
   test("uses CRLF line endings throughout", () => {
     const series: PlotSeries[] = [
       {

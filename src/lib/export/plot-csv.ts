@@ -97,51 +97,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
 
   // Build data rows
   const maxRows = Math.max(...visibleSeries.map((s) => s.result.energies.length));
-  const dataRows: string[] = [];
-
-  for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
-    const rowCells: string[] = [];
-
-    for (const s of visibleSeries) {
-      const energyCount = s.result.energies.length;
-
-      if (caseA) {
-        // Case A: only add Energy column once (for first series iteration handled above)
-        if (s === visibleSeries[0]) {
-          const energyVal = s.result.energies[rowIdx] ?? 0;
-          rowCells.push(formatValue(energyVal));
-        }
-      } else {
-        // Case B: each series gets its own Energy column
-        if (rowIdx < energyCount) {
-          rowCells.push(formatValue(s.result.energies[rowIdx] ?? 0));
-        } else {
-          // Pad with empty cell
-          rowCells.push("");
-        }
-      }
-
-      // Add Stp column
-      if (rowIdx < energyCount) {
-        const stpVal = s.result.stoppingPowers[rowIdx] ?? 0;
-        rowCells.push(formatValue(stpVal));
-      } else {
-        // Pad with empty cell
-        rowCells.push("");
-      }
-    }
-
-    // Adjust for Case A: we added Energy column only once in the loop
-    if (caseA && rowIdx < visibleSeries[0].result.energies.length) {
-      // Already handled above
-    }
-
-    dataRows.push(rowCells.join(","));
-  }
-
-  // For Case A, we need to restructure: Energy column should be added once at the beginning
-  // Let me rewrite the row logic for Case A
-  const finalRows: string[] = [];
+  const rows: string[] = [];
 
   for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
     const rowCells: string[] = [];
@@ -161,7 +117,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
       const energyCount = s.result.energies.length;
 
       if (!caseA) {
-        // Case B: Energy column already handled in loop above
+        // Case B: each series gets its own Energy column
         if (rowIdx < energyCount) {
           rowCells.push(formatValue(s.result.energies[rowIdx] ?? 0));
         } else {
@@ -178,11 +134,11 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
       }
     }
 
-    finalRows.push(rowCells.join(","));
+    rows.push(rowCells.join(","));
   }
 
-  // Build final CSV content with BOM and CRLF
-  const content = ["\uFEFF" + headerCells.join(","), ...finalRows].join("\r\n");
+  // Build final CSV content (no BOM - added by downloadCsv())
+  const content = [headerCells.join(","), ...rows].join("\r\n");
   return content;
 }
 
