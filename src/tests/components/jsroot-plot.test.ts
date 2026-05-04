@@ -119,65 +119,80 @@ describe("JsrootPlot", () => {
     expect(canvas.getAttribute("aria-label")).toContain("Stopping power");
   });
 
-  it("exposes requestExportSvg bindable - component has export function in effect", async () => {
-    // This test verifies that the component properly sets up the requestExportSvg
-    // bindable prop through its $effect. We verify this by checking that:
-    // 1. The component renders with the prop
-    // 2. The container gets created with proper role
-    // The actual binding is tested in the page integration
-
-    const { container: root } = render(JsrootPlot, {
-      props: {
-        series: [],
-        preview: null,
-        stpUnit: "keV/µm" as StpUnit,
-        xLog: true,
-        yLog: true,
-        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+  it("sets requestExportSvg to an async function after container is bound", async () => {
+    // Capture the $bindable update by defining a setter on the props object.
+    // @testing-library/svelte-core uses $state.raw(initialProps), so the Proxy
+    // setter writes back to the same object reference — our setter intercepts it.
+    let capturedExportFn: (() => Promise<string | null>) | null = null;
+    const propsBase = {
+      series: [],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: true,
+      yLog: true,
+      axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+    };
+    const props = Object.defineProperty(propsBase, "requestExportSvg", {
+      get() {
+        return capturedExportFn;
       },
+      set(v: (() => Promise<string | null>) | null) {
+        capturedExportFn = v;
+      },
+      enumerable: true,
+      configurable: true,
+    }) as typeof propsBase & { requestExportSvg?: (() => Promise<string | null>) | null };
+
+    render(JsrootPlot, { props });
+
+    // Wait for the $effect to bind the container and assign requestExportSvg
+    await vi.waitFor(() => {
+      expect(capturedExportFn).not.toBeNull();
     });
+    expect(typeof capturedExportFn).toBe("function");
 
-    // Verify the plot container exists with proper accessibility
-    const plotContainer = root.querySelector('[role="img"]') as HTMLDivElement;
-    expect(plotContainer).toBeTruthy();
-
-    // Simulate what the effect does - query for SVG in the container
-    // and serialize it
-    const mockSvg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-    mockSvg.setAttribute("id", "test-svg");
-    mockSvg.innerHTML = '<rect width="100" height="100" />';
-    plotContainer.appendChild(mockSvg);
-
-    // Verify we can query and serialize the SVG (this is what requestExportSvg does)
-    const svgEl = plotContainer.querySelector("svg");
-    expect(svgEl).toBeTruthy();
-    if (svgEl) {
-      const serialized = new XMLSerializer().serializeToString(svgEl);
-      expect(serialized).toContain("<svg");
-      expect(serialized).toContain("</svg>");
-    }
+    // Call the export function — JSROOT.draw mock adds no SVG, so result is null
+    const result = await capturedExportFn!();
+    expect(result).toBeNull();
   });
 
-  it("requestExportSvg returns null when no SVG child exists", async () => {
-    const { container: root } = render(JsrootPlot, {
-      props: {
-        series: [],
-        preview: null,
-        stpUnit: "keV/µm" as StpUnit,
-        xLog: true,
-        yLog: true,
-        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
-      },
+  it("requestExportSvg returns an SVG string when JSROOT renders one", async () => {
+    const JSROOT = await import("jsroot");
+    // Override draw to append an <svg> to the offscreen container
+    vi.mocked(JSROOT.draw).mockImplementation(async (el: unknown) => {
+      const svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+      (el as HTMLElement).appendChild(svg);
+      return { cleanup: vi.fn() };
     });
 
-    const plotContainer = root.querySelector('[role="img"]') as HTMLDivElement;
-    expect(plotContainer).toBeTruthy();
+    let capturedExportFn: (() => Promise<string | null>) | null = null;
+    const propsBase = {
+      series: [],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: true,
+      yLog: true,
+      axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+    };
+    const props = Object.defineProperty(propsBase, "requestExportSvg", {
+      get() {
+        return capturedExportFn;
+      },
+      set(v: (() => Promise<string | null>) | null) {
+        capturedExportFn = v;
+      },
+      enumerable: true,
+      configurable: true,
+    }) as typeof propsBase & { requestExportSvg?: (() => Promise<string | null>) | null };
 
-    // Ensure container is empty (no SVG)
-    plotContainer.innerHTML = "";
+    render(JsrootPlot, { props });
 
-    // Verify querying for SVG returns null (this is what requestExportSvg checks)
-    const svgEl = plotContainer.querySelector("svg");
-    expect(svgEl).toBeNull();
+    await vi.waitFor(() => {
+      expect(capturedExportFn).not.toBeNull();
+    });
+
+    const result = await capturedExportFn!();
+    expect(result).not.toBeNull();
+    expect(result).toContain("<svg");
   });
 });

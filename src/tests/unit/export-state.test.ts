@@ -1,5 +1,15 @@
-import { describe, test, expect, beforeEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
 import type { PlotSeries } from "$lib/state/plot.svelte";
+
+// Module-level mocks for dynamic imports used by exportPlotCsv / exportPlotPdf
+vi.mock("$lib/export/plot-csv", () => ({
+  downloadPlotCsv: vi.fn(),
+}));
+
+vi.mock("$lib/export/pdf", () => ({
+  generatePlotPdf: vi.fn().mockResolvedValue(undefined),
+  buildPdfFilename: vi.fn().mockReturnValue("test.pdf"),
+}));
 
 function makeMockSeries(
   programId: number,
@@ -84,5 +94,105 @@ describe("initPlotExportState", () => {
     exportModule.initPlotExportState(mockPlotState, () => Promise.resolve(null));
 
     expect(exportModule.canExport.value).toBe(true);
+  });
+});
+
+describe("exportPlotCsv", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("calls downloadPlotCsv with series and stpUnit when initialized", async () => {
+    const { downloadPlotCsv } = await import("$lib/export/plot-csv");
+    const exportModule = await import("$lib/state/export.svelte");
+
+    const plotState = {
+      series: [makeMockSeries(1, 1, 1, true)],
+      stpUnit: "MeV/cm" as const,
+    };
+    exportModule.initPlotExportState(plotState, () => Promise.resolve(null));
+    exportModule.exportPlotCsv();
+
+    await vi.waitFor(() => expect(downloadPlotCsv).toHaveBeenCalledOnce());
+    expect(downloadPlotCsv).toHaveBeenCalledWith(plotState.series, "MeV/cm");
+  });
+
+  test("does nothing when plot state is not initialized", async () => {
+    const { downloadPlotCsv } = await import("$lib/export/plot-csv");
+    const exportModule = await import("$lib/state/export.svelte");
+
+    // No initPlotExportState call — _plotState remains null
+    exportModule.exportPlotCsv();
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    expect(downloadPlotCsv).not.toHaveBeenCalled();
+  });
+});
+
+describe("exportPlotPdf", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    vi.clearAllMocks();
+  });
+
+  test("calls generatePlotPdf with svgString and series when getSvg returns a string", async () => {
+    const { generatePlotPdf } = await import("$lib/export/pdf");
+    const exportModule = await import("$lib/state/export.svelte");
+
+    const testSvg = '<svg xmlns="http://www.w3.org/2000/svg"></svg>';
+    const plotState = {
+      series: [makeMockSeries(1, 1, 1, true)],
+      stpUnit: "keV/µm" as const,
+    };
+    const getSvg = vi.fn().mockResolvedValue(testSvg);
+
+    exportModule.initPlotExportState(plotState, getSvg);
+    exportModule.exportPlotPdf();
+
+    await vi.waitFor(() => expect(generatePlotPdf).toHaveBeenCalledOnce());
+    expect(generatePlotPdf).toHaveBeenCalledWith(
+      expect.objectContaining({
+        svgString: testSvg,
+        series: plotState.series,
+        filename: "dedx_plot_report.pdf",
+      }),
+    );
+  });
+
+  test("does not call generatePlotPdf when getSvg returns null", async () => {
+    const { generatePlotPdf } = await import("$lib/export/pdf");
+    const exportModule = await import("$lib/state/export.svelte");
+
+    const plotState = {
+      series: [makeMockSeries(1, 1, 1, true)],
+      stpUnit: "keV/µm" as const,
+    };
+    const getSvg = vi.fn().mockResolvedValue(null);
+
+    exportModule.initPlotExportState(plotState, getSvg);
+    exportModule.exportPlotPdf();
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    expect(generatePlotPdf).not.toHaveBeenCalled();
+  });
+
+  test("does nothing when plot state is not initialized", async () => {
+    const { generatePlotPdf } = await import("$lib/export/pdf");
+    const exportModule = await import("$lib/state/export.svelte");
+
+    // No initPlotExportState call
+    exportModule.exportPlotPdf();
+
+    await new Promise<void>((resolve) => setTimeout(resolve, 20));
+    expect(generatePlotPdf).not.toHaveBeenCalled();
   });
 });
