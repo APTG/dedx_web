@@ -23,7 +23,8 @@
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
-  import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
+  import { decodeCalculatorUrl, encodeCalculatorUrl } from "$lib/utils/calculator-url";
+  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
   import { initExportState } from "$lib/state/export.svelte";
 
   let state = $state<EntitySelectionState | null>(null);
@@ -62,19 +63,33 @@
 
   $effect(() => {
     if (!urlInitialized || !calcState || !state) return;
-    const qs = calculatorUrlQueryString({
+
+    const params = encodeCalculatorUrl({
       particleId: state.selectedParticle?.id ?? null,
       materialId: state.selectedMaterial?.id ?? null,
       programId: state.resolvedProgramId,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
+      // Include advanced mode state when active
+      ...(multiProgState
+        ? {
+            isAdvancedMode: true,
+            selectedProgramIds: multiProgState.selectedProgramIds.filter(
+              (id) => id !== state.resolvedProgramId,
+            ),
+            hiddenProgramIds: multiProgState.selectedProgramIds.filter(
+              (id) => multiProgState.columnVisibility.get(id) === false,
+            ),
+            quantityFocus: multiProgState.quantityFocus,
+          }
+        : {}),
     });
     // Build the new URL from `window.location.pathname` rather than
     // `page.url.pathname` so reading `page.url` does not register a
     // reactive dependency on the very URL we are about to rewrite —
     // otherwise this effect re-runs on every `replaceState` and forms a
     // (silent) replaceState loop. Same pattern as plot/+page.svelte.
-    const next = `${window.location.pathname}?${qs}`;
+    const next = `${window.location.pathname}?${params.toString()}`;
     if (next === `${window.location.pathname}${window.location.search}`) return;
     replaceState(next, page.state);
   });
@@ -205,11 +220,55 @@
     multiProgState = createMultiProgramState();
     multiProgState.setAdvancedMode(true);
 
+    // Restore advanced mode state from URL if present
+    const multiParams = decodeMultiProgramUrl(page.url.searchParams);
+
     // Initialize with the resolved program as default
     const defaultProgramId = state.resolvedProgramId;
     if (defaultProgramId !== null && defaultProgramId !== -1) {
       multiProgState.addProgram(defaultProgramId);
       multiProgState.setDefaultProgram(defaultProgramId);
+    }
+
+    // Restore selected programs from URL
+    if (multiParams.mode === "advanced" && multiParams.parsedProgramIds) {
+      // Filter to only include valid programs (available and compatible)
+      const availableIds = new Set(state.availablePrograms.map((p) => p.id));
+      const validProgramIds = multiParams.parsedProgramIds.filter((id) => availableIds.has(id));
+
+      // Add programs from URL (excluding default which is already added)
+      for (const programId of validProgramIds) {
+        if (programId !== defaultProgramId) {
+          multiProgState.addProgram(programId);
+        }
+      }
+
+      // Restore display order (default must be first)
+      if (validProgramIds.length > 0) {
+        const orderedIds = [
+          defaultProgramId !== null ? defaultProgramId : validProgramIds[0],
+          ...validProgramIds.filter((id) => id !== defaultProgramId),
+        ];
+        multiProgState.setProgramDisplayOrder(orderedIds);
+      }
+
+      // Restore hidden programs
+      if (multiParams.parsedHiddenIds) {
+        for (const hiddenId of multiParams.parsedHiddenIds) {
+          if (availableIds.has(hiddenId) && hiddenId !== defaultProgramId) {
+            multiProgState.toggleColumnVisibility(hiddenId);
+          }
+        }
+      }
+
+      // Restore quantity focus
+      if (
+        multiParams.qfocus === "both" ||
+        multiParams.qfocus === "stp" ||
+        multiParams.qfocus === "csda"
+      ) {
+        multiProgState.setQuantityFocus(multiParams.qfocus);
+      }
     }
 
     return () => {
@@ -473,7 +532,7 @@
         <ResultTable
           state={calcState}
           entitySelection={state}
-          multiProgramState={isAdvancedMode.value ? multiProgState ?? undefined : undefined}
+          multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
           comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
         />
       </div>

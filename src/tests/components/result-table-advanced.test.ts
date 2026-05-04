@@ -5,7 +5,10 @@ import { LibdedxError } from "$lib/wasm/types";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { createCalculatorState } from "$lib/state/calculator.svelte";
-import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte.ts";
+import {
+  createMultiProgramState,
+  type MultiProgramState,
+} from "$lib/state/multi-program.svelte.ts";
 import ResultTable from "$lib/components/result-table.svelte";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -28,7 +31,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     // Using particle ID 1 (Hydrogen/Proton) which is supported by programs 2 (PSTAR) and 4 (MSTAR)
     entitySelection.selectParticle(1); // Hydrogen/Proton
     entitySelection.selectMaterial(276); // Water
-    
+
     // Create multi-program state with 2 programs
     multiProgState = createMultiProgramState();
     multiProgState.setAdvancedMode(true);
@@ -42,10 +45,10 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
   function createComparisonResults(
     programIds: number[],
-    options?: { failProgramId?: number }
+    options?: { failProgramId?: number },
   ): Map<number, CalculationResult | LibdedxError> {
     const results = new Map<number, CalculationResult | LibdedxError>();
-    
+
     for (const programId of programIds) {
       if (options?.failProgramId === programId) {
         results.set(programId, new LibdedxError(42, "Test error for program " + programId));
@@ -57,7 +60,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
         });
       }
     }
-    
+
     return results;
   }
 
@@ -103,11 +106,11 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     // - 2 stopping power cells (one per program)
     // - 2 CSDA range cells (one per program)
     // Total: 4 result cells in the data row
-    
+
     // Find all data cells with test ids for result values
     const stpCells = document.querySelectorAll("[data-testid^='stp-cell']");
     const rangeCells = document.querySelectorAll("[data-testid^='range-cell']");
-    
+
     // In advanced mode there should be multiple result cells per row
     expect(stpCells.length).toBeGreaterThanOrEqual(2);
     expect(rangeCells.length).toBeGreaterThanOrEqual(2);
@@ -132,7 +135,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     // Stopping Power group should be present
     expect(screen.getByText(/Stopping Power/)).toBeInTheDocument();
-    
+
     // CSDA Range group header should NOT be in the DOM
     const csdaHeader = screen.queryByText(/CSDA Range/);
     expect(csdaHeader).not.toBeInTheDocument();
@@ -157,7 +160,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     // CSDA Range group should be present
     expect(screen.getByText(/CSDA Range/)).toBeInTheDocument();
-    
+
     // Stopping Power group header should NOT be in the DOM
     const stpHeader = screen.queryByText(/Stopping Power/);
     expect(stpHeader).not.toBeInTheDocument();
@@ -178,7 +181,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     // Error cells should show "—" (em dash)
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
-    
+
     // Warning icon should be present with error title
     const warningIcon = document.querySelector('[title*="Test error"]');
     expect(warningIcon).toBeInTheDocument();
@@ -200,7 +203,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     // Find the ICRU 90 header cell (default program) and check for bold styling
     const defaultHeader = document.querySelector("th[scope='col']");
     expect(defaultHeader).toBeInTheDocument();
-    
+
     // Check that the default program header contains the bold class or font-bold
     const boldElements = document.querySelectorAll(".font-bold, [class*='font-bold']");
     expect(boldElements.length).toBeGreaterThan(0);
@@ -213,7 +216,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     multiProgState.addProgram(2); // PSTAR (default)
     multiProgState.addProgram(4); // MSTAR
     multiProgState.setDefaultProgram(2);
-    
+
     multiProgState.toggleColumnVisibility(4); // Hide MSTAR (program 4)
     const comparisonResults = createComparisonResults([2, 4]);
     multiProgState.setComparisonResults(comparisonResults);
@@ -230,7 +233,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     // MSTAR column should not be in DOM
     const mstarParams = document.querySelectorAll("[data-program-id='4']");
     expect(mstarParams.length).toBe(0);
-    
+
     // PSTAR (default) should still be visible
     const pstarElements = document.querySelectorAll("[data-program-id='2']");
     expect(pstarElements.length).toBeGreaterThan(0);

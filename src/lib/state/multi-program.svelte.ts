@@ -178,20 +178,14 @@ export function createMultiProgramState(): MultiProgramState {
         selectedProgramIds = [programId, ...selectedProgramIds];
       } else {
         // Move to first position
-        selectedProgramIds = [
-          programId,
-          ...selectedProgramIds.filter((id) => id !== programId),
-        ];
+        selectedProgramIds = [programId, ...selectedProgramIds.filter((id) => id !== programId)];
       }
 
       // Update display order to put default first
       if (!programDisplayOrder.includes(programId)) {
         programDisplayOrder = [programId, ...programDisplayOrder];
       } else {
-        programDisplayOrder = [
-          programId,
-          ...programDisplayOrder.filter((id) => id !== programId),
-        ];
+        programDisplayOrder = [programId, ...programDisplayOrder.filter((id) => id !== programId)];
       }
 
       // Ensure visibility
@@ -283,9 +277,7 @@ export function createMultiProgramState(): MultiProgramState {
  * Compute derived state from MultiProgramState.
  * This is a pure function that should be called from component computed properties.
  */
-export function computeMultiProgramDerived(
-  state: MultiProgramState,
-): MultiProgramDerivedState {
+export function computeMultiProgramDerived(state: MultiProgramState): MultiProgramDerivedState {
   const visibleProgramIds = state.programDisplayOrder.filter(
     (id) => state.columnVisibility.get(id) !== false,
   );
@@ -296,11 +288,9 @@ export function computeMultiProgramDerived(
     (r) => r instanceof LibdedxError,
   );
 
-  const showStoppingPowerGroup =
-    state.quantityFocus === "both" || state.quantityFocus === "stp";
+  const showStoppingPowerGroup = state.quantityFocus === "both" || state.quantityFocus === "stp";
 
-  const showCsdaRangeGroup =
-    state.quantityFocus === "both" || state.quantityFocus === "csda";
+  const showCsdaRangeGroup = state.quantityFocus === "both" || state.quantityFocus === "csda";
 
   return {
     visibleProgramIds,

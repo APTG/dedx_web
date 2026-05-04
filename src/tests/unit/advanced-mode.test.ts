@@ -32,9 +32,7 @@ describe("advanced-mode state", () => {
   });
 
   test("toggleAdvancedMode() → value flips to true; localStorage key set", async () => {
-    const { isAdvancedMode, toggleAdvancedMode } = await import(
-      "$lib/state/advanced-mode.svelte"
-    );
+    const { isAdvancedMode, toggleAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
     expect(isAdvancedMode.value).toBe(false);
     toggleAdvancedMode();
     expect(isAdvancedMode.value).toBe(true);
@@ -42,9 +40,7 @@ describe("advanced-mode state", () => {
   });
 
   test("toggleAdvancedMode() again → value false; localStorage key cleared", async () => {
-    const { isAdvancedMode, toggleAdvancedMode } = await import(
-      "$lib/state/advanced-mode.svelte"
-    );
+    const { isAdvancedMode, toggleAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
     // Start with true
     isAdvancedMode.value = true;
     mockLocalStorage["dedx_advanced_mode"] = "1";
@@ -54,17 +50,15 @@ describe("advanced-mode state", () => {
   });
 
   test("initAdvancedModeFromUrl(new URLSearchParams('mode=advanced')) → value true", async () => {
-    const { isAdvancedMode, initAdvancedModeFromUrl } = await import(
-      "$lib/state/advanced-mode.svelte"
-    );
+    const { isAdvancedMode, initAdvancedModeFromUrl } =
+      await import("$lib/state/advanced-mode.svelte");
     initAdvancedModeFromUrl(new URLSearchParams("mode=advanced"));
     expect(isAdvancedMode.value).toBe(true);
   });
 
   test("initAdvancedModeFromUrl(new URLSearchParams('')) → value false", async () => {
-    const { isAdvancedMode, initAdvancedModeFromUrl } = await import(
-      "$lib/state/advanced-mode.svelte"
-    );
+    const { isAdvancedMode, initAdvancedModeFromUrl } =
+      await import("$lib/state/advanced-mode.svelte");
     initAdvancedModeFromUrl(new URLSearchParams(""));
     expect(isAdvancedMode.value).toBe(false);
   });

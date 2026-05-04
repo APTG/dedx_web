@@ -68,9 +68,15 @@
         )
       : [],
   );
-  const showStp = $derived(!isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "csda");
-  const showCsda = $derived(!isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "stp");
-  const defaultProgramId = $derived(isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null);
+  const showStp = $derived(
+    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "csda",
+  );
+  const showCsda = $derived(
+    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "stp",
+  );
+  const defaultProgramId = $derived(
+    isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null,
+  );
 
   function getDefaultColumns(): ColumnDef[] {
     return [
@@ -481,7 +487,8 @@
                               {@const csdaGcm2 = result.csdaRanges[csdaIndex]}
                               {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
                               {@const scaled = autoScaleLengthCm(csdaCm)}
-                              {formatSigFigs(scaled.value, 4)} {scaled.unit}
+                              {formatSigFigs(scaled.value, 4)}
+                              {scaled.unit}
                             {:else}
                               —
                             {/if}

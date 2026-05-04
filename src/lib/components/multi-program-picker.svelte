@@ -12,7 +12,13 @@
     onInteraction?: () => void;
   }
 
-  let { state: multiState, availablePrograms, compatibleIds, class: className = "", onInteraction }: Props = $props();
+  let {
+    state: multiState,
+    availablePrograms,
+    compatibleIds,
+    class: className = "",
+    onInteraction,
+  }: Props = $props();
 
   let isOpen = $state(false);
 
