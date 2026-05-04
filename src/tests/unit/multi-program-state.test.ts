@@ -109,6 +109,48 @@ describe("MultiProgramState — core functionality", () => {
     });
   });
 
+  describe("setDefaultProgram idempotency", () => {
+    beforeEach(() => {
+      state.addProgram(9);
+      state.addProgram(2);
+      state.addProgram(101);
+    });
+
+    it("does not mutate selectedProgramIds when setting the same default", () => {
+      // Initial state
+      state.setDefaultProgram(9);
+      const beforeIds = [...state.selectedProgramIds];
+      const beforeOrder = [...state.programDisplayOrder];
+
+      // Set the same default again - should NOT mutate
+      state.setDefaultProgram(9);
+
+      expect(state.selectedProgramIds).toEqual(beforeIds);
+      expect(state.programDisplayOrder).toEqual(beforeOrder);
+    });
+
+    it("does not mutate when default is already first", () => {
+      state.setProgramDisplayOrder([9, 2, 101]);
+
+      // 9 is already first
+      state.setDefaultProgram(9);
+
+      expect(state.selectedProgramIds[0]).toBe(9);
+      expect(state.programDisplayOrder[0]).toBe(9);
+      expect(state.programDisplayOrder).toEqual([9, 2, 101]);
+    });
+
+    it("mutates when changing to a different default", () => {
+      state.setProgramDisplayOrder([9, 2, 101]);
+
+      // Change default to 101
+      state.setDefaultProgram(101);
+
+      expect(state.selectedProgramIds[0]).toBe(101);
+      expect(state.programDisplayOrder[0]).toBe(101);
+    });
+  });
+
   describe("toggleColumnVisibility", () => {
     beforeEach(() => {
       state.addProgram(9); // default
