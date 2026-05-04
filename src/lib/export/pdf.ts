@@ -354,7 +354,6 @@ export async function generatePlotPdf(ctx: PlotPdfContext): Promise<void> {
     // Draw series label next to swatch
     doc.text(s.label, headerLeft + swatchSize + 2, y);
     y += legendRowHeight;
-    seriesIndex++;
   }
 
   // Footer on the last (or only) page
