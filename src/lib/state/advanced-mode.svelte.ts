@@ -18,6 +18,9 @@ export function initAdvancedModeFromUrl(searchParams: URLSearchParams): void {
   if (searchParams.has("mode")) {
     // URL param takes precedence over localStorage when present in the URL.
     isAdvancedMode.value = searchParams.get("mode") === "advanced";
+    // Guard with `browser` in case this module is ever imported during SSR
+    // (currently it is only called from a page component's $effect, but the
+    // defensive check future-proofs the export).
     if (browser) {
       if (isAdvancedMode.value) localStorage.setItem("dedx_advanced_mode", "1");
       else localStorage.removeItem("dedx_advanced_mode");

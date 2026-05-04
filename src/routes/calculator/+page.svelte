@@ -217,6 +217,8 @@
           const button = document.getElementById("columns-button");
           if (dropdown && !dropdown.contains(target) && button && !button.contains(target)) {
             showColumnDropdown = false;
+            // Guard: the button-close path (else branch) may have already set
+            // columnOutsideClickHandler to null before this outside-click fires.
             if (columnOutsideClickHandler) {
               document.removeEventListener("click", columnOutsideClickHandler);
               columnOutsideClickHandler = null;
@@ -365,7 +367,7 @@
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
     // overwrite the current state with results computed for different inputs.
-    const snapshot = { selectedProgramIds, particleId, materialId, energies };
+    const inputSnapshot = { selectedProgramIds, particleId, materialId, energies };
     let cancelled = false;
 
     // Debounce the calculation
@@ -375,10 +377,10 @@
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
       const results = service.calculateMulti({
-        programIds: snapshot.selectedProgramIds,
-        particleId: snapshot.particleId,
-        materialId: snapshot.materialId,
-        energies: snapshot.energies,
+        programIds: inputSnapshot.selectedProgramIds,
+        particleId: inputSnapshot.particleId,
+        materialId: inputSnapshot.materialId,
+        energies: inputSnapshot.energies,
       });
 
       if (!cancelled) {
