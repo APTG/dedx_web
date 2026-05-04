@@ -108,6 +108,23 @@ See [`docs/opencode-setup.md §2`](docs/opencode-setup.md) for details.
 
 ## 6. Working process
 
+### ⚠ Branching (MANDATORY — do this before any code)
+
+**NEVER commit or push directly to `master`.** Branch protection is enabled on
+the remote and will reject any direct push. If you get a rejection, do **NOT**
+force-push — stop and output `TASK BLOCKED: cannot push to master`.
+
+Before writing any code:
+
+1. `git checkout -b qwen/<slug>` — create the feature branch.
+2. `git push -u origin qwen/<slug>` — publish it immediately.
+
+If the branch already exists: `git checkout qwen/<slug>` before making any commits.
+
+Branch naming: `qwen/<stage-or-feature>` (see [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md)).
+
+### Other working rules
+
 - **Check progress first:** [`docs/progress/`](docs/progress/) lists completed stages.
 - **One feature per session** — reference the spec file, do not re-explain.
 - **Commit after each working increment** using Conventional Commits
@@ -116,8 +133,6 @@ See [`docs/opencode-setup.md §2`](docs/opencode-setup.md) for details.
   `docs/ai-logs/YYYY-MM-DD-<slug>.md`. Include the tool + model attribution in
   every entry — see `.github/copilot-instructions.md § AI Session Logging` for the
   exact format per tool (opencode, Copilot, Claude Code).
-- **Branch naming for Qwen/opencode sessions:** `qwen/<stage-or-feature>` (see
-  [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md)).
 
 ---
 
