@@ -256,7 +256,7 @@
     const url = URL.createObjectURL(blob);
     const a = document.createElement("a");
     a.href = url;
-    a.download = "plot-export.svg";
+    a.download = "dedx_plot.svg";
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
@@ -460,7 +460,7 @@
                   onclick={downloadSvg}
                   class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
-                  Download SVG
+                  SVG vector
                 </button>
               </div>
             {/if}
