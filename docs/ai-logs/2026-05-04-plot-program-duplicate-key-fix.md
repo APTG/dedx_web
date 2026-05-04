@@ -25,12 +25,14 @@
 `selectedProgram` to decide whether to show `"Auto-select → ICRU49"` or plain
 `"Auto-select"` — but the `entity` is always the synthetic `id=-1` stub.
 This is correct because:
+
 - `selectedId={state.selectedProgram?.id ?? null}` still works (returns 2 for
   PSTAR, -1 for Auto-select).
 - `onItemSelect` still passes the entity's id to `state.selectProgram`.
 - `availablePrograms` never contains an entity with `id === -1`, so no collision.
 
 **Tests added**:
+
 - `src/tests/unit/entity-selection-panels.test.ts` — 4 unit tests via
   `@testing-library/svelte`:
   - "selecting PSTAR does not produce duplicate program buttons"

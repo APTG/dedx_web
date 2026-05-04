@@ -20,6 +20,7 @@ without asking me for confirmation between them.
 ### Step 1 — Read context
 
 Read in order:
+
 1. docs/ai-logs/prompts/2026-05-04-stage6-plot-export.md — the full task prompt
 2. AGENTS.md — stack, Svelte 5 rules, build commands
 3. docs/04-feature-specs/export.md — the normative spec for this session
@@ -29,18 +30,19 @@ Read in order:
 
 Write the task list to .opencode/tasks/stage-6-plot-export.md:
 
-```markdown
+````markdown
 # Tasks — stage-6-plot-export
 
 ## Status: in-progress
 
-| # | Task | Status |
-|---|------|--------|
-| 1 | formatPlotCsv() + unit tests | pending |
-| 2 | SVG export bindable + image dropdown UI | pending |
-| 3 | generatePlotPdf() basic mode + unit tests | pending |
-| 4 | Wire toolbar export buttons for /plot route | pending |
-| 5 | E2E tests for plot export | pending |
+| #   | Task                                        | Status  |
+| --- | ------------------------------------------- | ------- |
+| 1   | formatPlotCsv() + unit tests                | pending |
+| 2   | SVG export bindable + image dropdown UI     | pending |
+| 3   | generatePlotPdf() basic mode + unit tests   | pending |
+| 4   | Wire toolbar export buttons for /plot route | pending |
+| 5   | E2E tests for plot export                   | pending |
+
 Step 3 — Implement and review (repeat for each task)
 For each task in order:
 
@@ -62,7 +64,7 @@ Step 4 — Session log
 After all tasks: write the CHANGELOG-AI.md row and docs/ai-logs/2026-05-04-stage6-plot-export.md
 per the AI Logging section in the prompt file. Update docs/ai-logs/README.md.
 
-Proceed autonomously. Do not ask for confirmation between tasks. 
+Proceed autonomously. Do not ask for confirmation between tasks.
 
 ---
 
@@ -72,36 +74,35 @@ _Thinking:_
 
 I need to read all the context files first as instructed in Step 1 - the prompt file, AGENTS.md, the export spec, and the progress directory to understand what's already done
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/prompts/2026-05-04-stage6-plot-export.md"
 }
 ```
+````
 
 **Output:**
-```
+
+````
 <path>/home/grzanka/workspace/dedx_web/docs/ai-logs/prompts/2026-05-04-stage6-plot-export.md</path>
 <type>file</type>
 <content>
 1: # opencode task prompt — 2026-05-04
-2: 
+2:
 3: > **Model:** Qwen3.5-397B-A17B-FP8
 4: > **Session type:** Multi-task implementation
 5: > **Branch:** `qwen/stage-6-plot-export`
 6: > **MCPs needed:** playwright, tailwind
 7: > **TDD rule:** Write the failing test(s) first, then minimal impl.
-8: 
+8:
 9: ---
-10: 
+10:
 11: ## Context
-12: 
+12:
 13: Read at session start (in order):
 14: 1. `AGENTS.md` — stack, Svelte 5 rules, build commands, AI logging rules
 15: 2. `docs/04-feature-specs/export.md` — **the normative spec for this entire session**.
@@ -128,7 +129,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 36:    update the disable logic to also allow `/plot`
 37: 9. `src/routes/plot/+page.svelte` — Plot page; you will add the image-export
 38:    dropdown to the controls bar and wire export state
-39: 
+39:
 40: Key source files:
 41: - `src/lib/components/jsroot-plot.svelte`
 42: - `src/lib/export/csv.ts`
@@ -136,37 +137,37 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 44: - `src/lib/state/export.svelte.ts`
 45: - `src/routes/plot/+page.svelte`
 46: - `src/routes/+layout.svelte`
-47: 
+47:
 48: Test files:
 49: - `src/tests/unit/` — add `plot-csv.test.ts` and `plot-pdf.test.ts`
 50: - `tests/e2e/export.spec.ts` — existing export E2E spec; add plot-page blocks here
-51: 
+51:
 52: Run tests:
 53: ```sh
 54: pnpm test                         # Vitest — 511 tests currently passing
 55: pnpm exec playwright test         # E2E (needs WASM in static/wasm/)
 56: ```
-57: 
+57:
 58: ---
-59: 
+59:
 60: ## AI Logging (MANDATORY)
-61: 
+61:
 62: Every task that changes code or docs must be logged. Rules are in `AGENTS.md`
 63: (which refers to `.github/copilot-instructions.md` § "AI Session Logging").
 64: Attribution: `(Qwen3.5-397B-A17B-FP8 via opencode)`.
-65: 
+65:
 66: Create `docs/ai-logs/2026-05-04-stage6-plot-export.md` before writing any code.
 67: After all tasks complete, prepend a row to `CHANGELOG-AI.md` and add a one-liner
 68: to `docs/ai-logs/README.md`.
-69: 
+69:
 70: ---
-71: 
+71:
 72: ## Task 1 — Plot CSV export: `formatPlotCsv()` + unit tests
-73: 
+73:
 74: **Spec:** `docs/04-feature-specs/export.md` §4.2 and §4.3
-75: 
+75:
 76: ### Acceptance criteria
-77: 
+77:
 78: - `formatPlotCsv(series, stpUnit)` returns a UTF-8-with-BOM CSV string with CRLF
 79:   line endings.
 80: - Case A (all committed visible series share the same energy-point count AND no
@@ -179,29 +180,29 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 87: - Column header pattern: `Stp {programName} — {particleName} in {materialName} ({stpUnit})`
 88: - `downloadPlotCsv(series, stpUnit)` triggers a browser file download with filename
 89:   `dedx_plot_data.csv`.
-90: 
+90:
 91: ### Step 1a — tests first (`src/tests/unit/plot-csv.test.ts`)
-92: 
+92:
 93: ```
 94: [proton, Water, ICRU 90, energies=[0.001,0.1,100], stp=[84.3,32.5,13.9]] → Case A: 3 columns, 3 data rows
 95: [proton, Water, ICRU 90, 3 pts] + [alpha, Al, PSTAR, 2 pts] → Case B: 4 columns, padding on row 3
 96: hidden series → excluded from output
 97: CSV injection cell starting with "=" → prefixed with "'"
 98: ```
-99: 
+99:
 100: Write the test file first; run `pnpm test` and confirm it is RED before Step 1b.
-101: 
+101:
 102: ### Step 1b — implement
-103: 
+103:
 104: Create `src/lib/export/plot-csv.ts`:
-105: 
+105:
 106: ```typescript
 107: import type { PlotSeries } from "$lib/state/plot.svelte";
-108: 
+108:
 109: export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string { ... }
 110: export function downloadPlotCsv(series: PlotSeries[], stpUnit: string): void { ... }
 111: ```
-112: 
+112:
 113: Implementation notes:
 114: - Import and reuse `makeCsvCell` from `$lib/export/csv` (not re-implement it).
 115: - Add the UTF-8 BOM (`﻿`) as the first character.
@@ -212,22 +213,22 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 120:   (`,,`) for the missing rows.
 121: - `downloadPlotCsv`: creates a `Blob` with `type: 'text/csv;charset=utf-8;'`, builds
 122:   an `<a>` element, clicks it, then revokes the object URL. Filename: `dedx_plot_data.csv`.
-123: 
+123:
 124: ### Done when
-125: 
+125:
 126: `pnpm test` is green (+new plot CSV tests), then commit:
 127: ```
 128: feat(export): add formatPlotCsv() and downloadPlotCsv() for Plot page CSV export
 129: ```
-130: 
+130:
 131: ---
-132: 
+132:
 133: ## Task 2 — SVG image export: `$bindable` prop on `jsroot-plot.svelte` + "Export image ▾" dropdown
-134: 
+134:
 135: **Spec:** `docs/04-feature-specs/export.md` §4.1 (image export in controls bar)
-136: 
+136:
 137: ### Acceptance criteria
-138: 
+138:
 139: - `jsroot-plot.svelte` exposes a `$bindable` prop
 140:   `requestExportSvg: (() => string | null) | null` (not a Promise — synchronous DOM
 141:   read of the rendered `<svg>` child).
@@ -239,33 +240,33 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 147: - `aria-label="Export plot as image"`, `aria-haspopup="true"`,
 148:   `aria-expanded` toggled (per spec §8).
 149: - The dropdown button is **disabled** when `getSvg === null` (JSROOT not yet ready).
-150: 
+150:
 151: ### Step 2a — tests first (`src/tests/unit/jsroot-plot.test.ts`)
-152: 
+152:
 153: Add to the existing jsroot-plot test (or create if absent):
-154: 
+154:
 155: ```
 156: mock the DOM container with a mock <svg> child → requestExportSvg() returns an SVG string
 157: no container → requestExportSvg() returns null
 158: ```
-159: 
+159:
 160: Run `pnpm test`, confirm RED.
-161: 
+161:
 162: ### Step 2b — implement in `src/lib/components/jsroot-plot.svelte`
-163: 
+163:
 164: Add to the `$props()` destructuring:
-165: 
+165:
 166: ```typescript
 167: let {
 168:   ...,
 169:   requestExportSvg = $bindable<(() => string | null) | null>(null),
 170: } = $props();
 171: ```
-172: 
+172:
 173: Add a `$effect` that sets the bindable to a function that reads `container`'s
 174: `<svg>` child and calls `new XMLSerializer().serializeToString(svgEl)`, and clears
 175: it on cleanup:
-176: 
+176:
 177: ```typescript
 178: $effect(() => {
 179:   if (!container) { requestExportSvg = null; return; }
@@ -277,11 +278,11 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 185:   return () => { requestExportSvg = null; };
 186: });
 187: ```
-188: 
+188:
 189: ### Step 2c — add "Export image ▾" dropdown to `src/routes/plot/+page.svelte`
-190: 
+190:
 191: In the controls bar (the `<div>` that holds the unit and scale toggles):
-192: 
+192:
 193: 1. Add `let getSvg = $state<(() => string | null) | null>(null);` to the `<script>`.
 194: 2. Pass `bind:requestExportSvg={getSvg}` to `<JsrootPlot>`.
 195: 3. Add a `downloadSvg()` function that calls `getSvg?.()`, creates a `Blob` with
@@ -291,27 +292,27 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 199:    - `aria-expanded` bound to a `$state` boolean,
 200:    - disabled when `getSvg === null`,
 201:    - one item: "SVG vector" → calls `downloadSvg()` and closes the dropdown.
-202: 
+202:
 203: Use a plain `<div role="menu">` with `<button role="menuitem">` inside, styled
 204: with `cn()` and Tailwind — see how the existing unit-selector buttons are done in
 205: this file as a style reference.
-206: 
+206:
 207: ### Done when
-208: 
+208:
 209: `pnpm test` is green, the dropdown renders in the controls bar and the SVG
 210: download button is present; then commit:
 211: ```
 212: feat(plot): add SVG image export with "Export image ▾" dropdown in controls bar
 213: ```
-214: 
+214:
 215: ---
-216: 
+216:
 217: ## Task 3 — Plot PDF export: `generatePlotPdf()` (basic mode) + unit tests
-218: 
+218:
 219: **Spec:** `docs/04-feature-specs/export.md` §5.1–§5.4 (Plot PDF basic mode)
-220: 
+220:
 221: ### Acceptance criteria
-222: 
+222:
 223: - `generatePlotPdf({ svgString, series, url, filename })` produces a PDF download:
 224:   1. Header section: "dEdx Web", generated timestamp (ISO 8601 UTC), clickable URL.
 225:   2. SVG chart embedded at full page width (use jsPDF `addSvgAsImage` or embed as
@@ -321,23 +322,23 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 229:   4. Page footer: "Page n / N" right-aligned in the bottom margin.
 230:   5. Filename: `dedx_plot_report.pdf`.
 231: - The function is exported from `src/lib/export/pdf.ts` alongside `generateCalculatorPdf`.
-232: 
+232:
 233: ### Step 3a — tests first (`src/tests/unit/plot-pdf.test.ts`)
-234: 
+234:
 235: Read `src/tests/unit/pdf.test.ts` first to understand how jsPDF is mocked in
 236: this repo. Then write `plot-pdf.test.ts` with the same mock pattern.
-237: 
+237:
 238: ```
 239: generatePlotPdf called with svgString='<svg/>', 2 visible series, a URL →
 240:   jsPDF.save() called with 'dedx_plot_report.pdf'
 241:   jsPDF.text() called with 'dEdx Web' somewhere
 242:   legend entries contain each series label
 243: ```
-244: 
+244:
 245: Run `pnpm test`, confirm RED.
-246: 
+246:
 247: ### Step 3b — implement in `src/lib/export/pdf.ts`
-248: 
+248:
 249: Add the new function after `generateCalculatorPdf`. Key implementation points:
 250: - Accept `{ svgString: string | null; series: PlotSeries[]; url: string; filename: string }`.
 251: - Use `new jsPDF({ orientation: 'landscape' })` for the Plot PDF (wider canvas).
@@ -349,22 +350,22 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 257: - Page numbers: at the end call `doc.setPage(n); doc.text('Page n / N', ...)` for
 258:   each page — or use a jsPDF `addPage` hook if jsPDF version supports it.
 259: - Import `PlotSeries` type from `$lib/state/plot.svelte`.
-260: 
+260:
 261: ### Done when
-262: 
+262:
 263: `pnpm test` is green (+new plot PDF tests); then commit:
 264: ```
 265: feat(export): add generatePlotPdf() for Plot page PDF export (basic mode)
 266: ```
-267: 
+267:
 268: ---
-269: 
+269:
 270: ## Task 4 — Wire Plot page export to toolbar
-271: 
+271:
 272: **Spec:** `docs/04-feature-specs/export.md` §0, §5.1, §4.2 button-state rules
-273: 
+273:
 274: ### Acceptance criteria
-275: 
+275:
 276: - A new `initPlotExportState(plotState, getSvgFn)` function in
 277:   `src/lib/state/export.svelte.ts` sets `canExport.value = true` when
 278:   `plotState.series.some(s => s.visible)` (at least one committed visible series).
@@ -376,28 +377,28 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 284:   `routePath !== "/calculator"` to `!["calculator", "plot"].some(r => routePath.includes(r))`;
 285:   update `onclick` handlers to dispatch to either `exportCsv` / `exportPlotCsv`
 286:   and `exportPdf` / `exportPlotPdf` based on `routePath`.
-287: 
+287:
 288: ### Step 4a — tests first
-289: 
+289:
 290: Add to `src/tests/unit/export-state.test.ts` (create if absent):
-291: 
+291:
 292: ```
 293: initPlotExportState called with state having one visible series →
 294:   canExport.value === true
 295: initPlotExportState called with no visible series →
 296:   canExport.value === false
 297: ```
-298: 
+298:
 299: Run `pnpm test`, confirm RED.
-300: 
+300:
 301: ### Step 4b — implement
-302: 
+302:
 303: In `src/lib/state/export.svelte.ts` add:
-304: 
+304:
 305: ```typescript
 306: let _plotState: { series: { visible: boolean }[] } | null = null;
 307: let _getSvg: (() => string | null) | null = null;
-308: 
+308:
 309: export function initPlotExportState(
 310:   plotState: { series: { visible: boolean }[] },
 311:   getSvg: () => string | null,
@@ -406,23 +407,23 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 314:   _getSvg = getSvg;
 315:   canExport.value = plotState.series.some((s) => s.visible);
 316: }
-317: 
+317:
 318: export function exportPlotCsv(): void { ... }
 319: export function exportPlotPdf(): void { ... }
 320: ```
-321: 
+321:
 322: In `src/routes/plot/+page.svelte` add a `$effect`:
-323: 
+323:
 324: ```typescript
 325: $effect(() => {
 326:   initPlotExportState(plotState, getSvg ?? (() => null));
 327:   return () => { canExport.value = false; };
 328: });
 329: ```
-330: 
+330:
 331: In `src/routes/+layout.svelte` update the two toolbar button `disabled` and `onclick`
 332: attributes:
-333: 
+333:
 334: ```svelte
 335: disabled={!(routePath === "/calculator" || routePath === "/plot") || !canExport.value}
 336: onclick={() => {
@@ -430,34 +431,34 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 338:   else if (routePath === "/plot") exportPlotPdf();
 339: }}
 340: ```
-341: 
+341:
 342: (Same pattern for CSV.)
-343: 
+343:
 344: ### Done when
-345: 
+345:
 346: `pnpm test` green, toolbar Export PDF and Export CSV buttons are enabled on the
 347: Plot page when at least one series is present; then commit:
 348: ```
 349: feat(plot): wire toolbar Export CSV and Export PDF buttons for Plot page
 350: ```
-351: 
+351:
 352: ---
-353: 
+353:
 354: ## Task 5 — E2E tests for Plot page export
-355: 
+355:
 356: **Spec:** `docs/04-feature-specs/export.md` §9 Plot acceptance criteria
-357: 
+357:
 358: ### Acceptance criteria
-359: 
+359:
 360: - Playwright tests cover:
 361:   1. Export buttons are disabled initially (no series yet).
 362:   2. After adding a series and waiting for WASM result, Export CSV and Export PDF
 363:      become enabled.
 364:   3. Clicking "Export image ▾" → "SVG vector" triggers a download with `.svg` extension.
 365:   4. Clicking Export CSV triggers a download with filename `dedx_plot_data.csv`.
-366: 
+366:
 367: ### Step 5a — tests first (add to `tests/e2e/export.spec.ts`)
-368: 
+368:
 369: ```typescript
 370: test.describe("Plot export", () => {
 371:   test("Export buttons disabled on plot page with no series", async ({ page }) => { ... });
@@ -466,31 +467,31 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 374:   test("Export CSV download has correct filename", async ({ page }) => { ... });
 375: });
 376: ```
-377: 
+377:
 378: Mark tests `test.skip` if WASM binaries absent; leave comment:
 379: ```typescript
 380: // Skipped when WASM binary absent. CI downloads artifact before running E2E.
 381: ```
-382: 
+382:
 383: ### Step 5b — run and fix
-384: 
+384:
 385: ```sh
 386: pnpm exec playwright test tests/e2e/export.spec.ts --grep "Plot export"
 387: ```
-388: 
+388:
 389: Use the `playwright` MCP to inspect failures interactively.
-390: 
+390:
 391: ### Done when
-392: 
+392:
 393: Plot E2E export tests pass (or are cleanly skipped); then commit:
 394: ```
 395: test(e2e): add Plot page export tests (SVG image, CSV download, button enable/disable)
 396: ```
-397: 
+397:
 398: ---
-399: 
+399:
 400: ## Final checklist before handing back
-401: 
+401:
 402: - [ ] `pnpm test` green — 511 + new tests passing, no regressions
 403: - [ ] `pnpm exec playwright test` green (or plot export tests skipped with a clear comment)
 404: - [ ] `pnpm lint` clean — no new ESLint errors
@@ -499,11 +500,11 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 407: - [ ] `docs/ai-logs/2026-05-04-stage6-plot-export.md` filled in
 408: - [ ] `CHANGELOG-AI.md` new row prepended at top of table body
 409: - [ ] `docs/ai-logs/README.md` one-line pointer added
-410: 
+410:
 411: ---
-412: 
+412:
 413: ## Notes — Svelte 5
-414: 
+414:
 415: - `$bindable`: declare in `$props()` as `prop = $bindable(defaultValue)`. The
 416:   parent must use `bind:prop={local}` — a regular prop binding will not update
 417:   the parent.
@@ -512,9 +513,9 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 420: - Event handlers: `onclick={fn}` not `on:click`. Dropdown `aria-expanded` should
 421:   be a `$state` boolean toggled on button click.
 422: - Mutations: `state.value = newValue` — never mutate in place.
-423: 
+423:
 424: ## Notes — what is NOT in scope for this session
-425: 
+425:
 426: - **PNG export** (advanced mode only per spec §4.1) — deferred to after
 427:   `isAdvancedMode` is fully wired across the app.
 428: - **Advanced-mode Plot PDF** with full metadata block (§5.3) — deferred; depends
@@ -526,11 +527,12 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 
 (End of file - total 433 lines)
 </content>
-```
+````
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/AGENTS.md"
@@ -538,51 +540,52 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 ```
 
 **Output:**
-```
+
+````
 <path>/home/grzanka/workspace/dedx_web/AGENTS.md</path>
 <type>file</type>
 <content>
 1: # dEdx Web — AI Agent Context
-2: 
+2:
 3: This file is loaded automatically by **opencode** (and compatible agents such
 4: as Qwen running via opencode) at session start. It points to the authoritative
 5: docs — do not duplicate content here.
-6: 
+6:
 7: > **Claude Code users:** read [`CLAUDE.md`](CLAUDE.md) instead — it is the
 8: > self-contained Claude Code entry point for this project.
-9: 
+9:
 10: ---
-11: 
+11:
 12: ## 1. Start here
-13: 
+13:
 14: Read these two files first, in order:
-15: 
+15:
 16: 1. [`.github/copilot-instructions.md`](.github/copilot-instructions.md) —
 17:    stack, Svelte 5 rules, code style, build commands, AI logging conventions.
 18: 2. [`docs/00-redesign-plan.md`](docs/00-redesign-plan.md) —
 19:    full project plan, stage-by-stage strategy, multi-tool workflow (§4.2).
-20: 
+20:
 21: ---
-22: 
+22:
 23: ## 2. Critical: Svelte 5 runes only
-24: 
+24:
 25: > **NEVER** use Svelte 4 patterns. This project uses Svelte 5 exclusively.
-26: 
+26:
 27: | Use | Never use |
 28: |-----|-----------|
 29: | `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:`, `createEventDispatcher()` |
 30: | `$effect` for lifecycle | `onMount` / `onDestroy` from `svelte` |
 31: | Module-level fine-grained reactivity | `svelte/store` auto-subscriptions |
-32: 
+32:
 33: If you have the Svelte MCP server available, call `svelte-autofixer` on any
 34: `.svelte` file you write to catch Svelte 4 regressions before committing.
 35: When offline (PLGrid), read [`vendor/svelte/documentation/docs/02-runes/`](vendor/svelte/documentation/docs/02-runes/)
 36: and [`vendor/svelte/documentation/docs/99-legacy/`](vendor/svelte/documentation/docs/99-legacy/).
-37: 
+37:
 38: ---
-39: 
+39:
 40: ## 3. Key docs index
-41: 
+41:
 42: | Topic | File |
 43: |-------|------|
 44: | Architecture & component tree | [`docs/03-architecture.md`](docs/03-architecture.md) |
@@ -597,14 +600,14 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 53: | Prototype spikes & results | [`docs/11-prototyping-spikes.md`](docs/11-prototyping-spikes.md) |
 54: | Completed stages | [`docs/progress/`](docs/progress/) |
 55: | AI session log | [`CHANGELOG-AI.md`](CHANGELOG-AI.md) |
-56: 
+56:
 57: ---
-58: 
+58:
 59: ## 4. Vendor library docs (local, no web access needed)
-60: 
+60:
 61: Third-party library source and docs are in [`vendor/`](vendor/) as shallow git
 62: submodules. Full index: [`vendor/README.md`](vendor/README.md).
-63: 
+63:
 64: | Library | Role | Key resource |
 65: |---------|------|--------------|
 66: | JSROOT 7 | Physics plotting (`TGraph`, `TMultiGraph`) | [`vendor/jsroot/types.d.ts`](vendor/jsroot/types.d.ts), [`vendor/jsroot/docs/JSROOT.md`](vendor/jsroot/docs/JSROOT.md) |
@@ -614,44 +617,44 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 70: | **shadcn-svelte** | UI components (ADR 005) | [`vendor/shadcn-svelte/packages/registry/`](vendor/shadcn-svelte/packages/registry/) |
 71: | **Bits UI** | Headless primitives under shadcn-svelte | [`vendor/bits-ui/packages/bits-ui/src/lib/bits/`](vendor/bits-ui/packages/bits-ui/src/lib/bits/) |
 72: | Emscripten | (no submodule — too large) | [`docs/decisions/003-wasm-build-pipeline.md`](docs/decisions/003-wasm-build-pipeline.md) |
-73: 
+73:
 74: ---
-75: 
+75:
 76: ## 5. MCP servers
-77: 
+77:
 78: > **opencode only** — this section applies only to opencode sessions.
 79: > VS Code (Claude Code, Copilot) and other tools manage their own MCP configuration
 80: > and do not read `opencode.json`.
-81: 
+81:
 82: [`opencode.json`](opencode.json) configures the MCP/tooling setup and the
 83: PLGrid provider. Tailwind and Playwright are started via `npx`. The Svelte MCP
 84: is provided through the `@sveltejs/opencode` plugin, but its exact transport /
 85: mode depends on the local opencode configuration rather than this file alone.
-86: 
+86:
 87: | MCP | Availability | What it provides |
 88: |-----|-------------|-----------------|
 89: | **Svelte** (`@sveltejs/opencode` plugin) | Plugin-managed; check local opencode/Svelte MCP configuration for transport and offline behavior | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
 90: | **Tailwind** (`tailwindcss-mcp-server`) | npx (needs internet first run) | Tailwind v4 class reference |
 91: | **Playwright** (`@playwright/mcp`) | npx (needs internet first run) | Browser automation, E2E test generation |
-92: 
+92:
 93: **PLGrid / offline sessions:** the Tailwind and Playwright MCP servers will
 94: fail offline on the very first run if `npx` cannot reach npm. Once their
 95: packages are cached they work offline. For Svelte, verify the local plugin/MCP
 96: setup in your environment. As an additional fallback, read Svelte 5 docs
 97: directly from [`vendor/svelte/`](vendor/svelte/) (committed as a shallow
 98: submodule).
-99: 
+99:
 100: Provider credentials are managed by opencode itself — run `opencode auth login`
 101: once and the API key is stored under `~/.local/share/opencode/auth.json`. The
 102: PLGrid base URL is hard-coded in `opencode.json`. Do not put the API key in
 103: env vars or in the repo.
-104: 
+104:
 105: See [`docs/opencode-setup.md §2`](docs/opencode-setup.md) for details.
-106: 
+106:
 107: ---
-108: 
+108:
 109: ## 6. Working process
-110: 
+110:
 111: - **Check progress first:** [`docs/progress/`](docs/progress/) lists completed stages.
 112: - **One feature per session** — reference the spec file, do not re-explain.
 113: - **Commit after each working increment** using Conventional Commits
@@ -662,31 +665,31 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 118:   exact format per tool (opencode, Copilot, Claude Code).
 119: - **Branch naming for Qwen/opencode sessions:** `qwen/<stage-or-feature>` (see
 120:   [`docs/00-redesign-plan.md §4.2`](docs/00-redesign-plan.md)).
-121: 
+121:
 122: ---
-123: 
+123:
 124: ## 6a. Multi-agent workflow (orchestrator pattern)
-125: 
+125:
 126: > **opencode only** — this section applies only to opencode sessions using the
 127: > `implementer` and `reviewer` subagents defined in `opencode.json`. If you are
 128: > running as Claude Code, GitHub Copilot, or any other tool, skip this section
 129: > and implement directly per § 6.
-130: 
+130:
 131: > Use this when you receive a feature spec to implement. This workflow prevents
 132: > context overflow and eliminates the need for manual "please continue" prompts.
-133: 
+133:
 134: **You are the orchestrator.** Do NOT implement everything in a single long conversation.
 135: Instead, decompose the spec into atomic tasks and delegate each to the `implementer`
 136: and `reviewer` subagents.
-137: 
+137:
 138: ### How to start
-139: 
+139:
 140: The user will paste a prompt based on
 141: [`.opencode/prompts/run-feature.md`](.opencode/prompts/run-feature.md).
 142: That prompt tells you the spec path, branch name, and acceptance criteria.
-143: 
+143:
 144: ### Orchestration loop (repeat for each task)
-145: 
+145:
 146: ```
 147: 1. Write .opencode/tasks/<branch>.md  — task list with statuses
 148: 2. For each task:
@@ -696,9 +699,9 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 152:    d. Mark task done or blocked, move to next
 153: 3. When all tasks complete → write CHANGELOG-AI.md row + session log
 154: ```
-155: 
+155:
 156: ### Rules for the orchestrator
-157: 
+157:
 158: - **Never ask for confirmation between tasks.** Proceed autonomously.
 159: - **Never implement code yourself** — that is the implementer's job.
 160: - **Keep each implementer call to ONE task** (one commit boundary).
@@ -706,52 +709,53 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 162:   session is interrupted.
 163: - If a task is blocked after 2 retries, mark it blocked and continue to the next.
 164:   Do not spend the whole session on one stuck task.
-165: 
+165:
 166: ### Subagent reference
-167: 
+167:
 168: | Agent | Model | Role |
 169: |-------|-------|------|
 170: | `implementer` | Qwen3.5-397B | Writes code, tests, commits for ONE task |
 171: | `reviewer` | Qwen3.6-35B | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
 172: | `svelte-file-editor` | Qwen3.5-397B | (auto) edits `.svelte` files with MCP validation |
-173: 
+173:
 174: Full agent documentation: [`.opencode/agents/`](.opencode/agents/)
 175: Full setup guide: [`docs/opencode-setup.md`](docs/opencode-setup.md)
 176: Authoring new task prompts (Claude → file → opencode funnel):
 177: [`docs/opencode-prompt-authoring.md`](docs/opencode-prompt-authoring.md)
-178: 
+178:
 179: ---
-180: 
+180:
 181: ## 7. opencode full setup guide
-182: 
+182:
 183: > **opencode only** — applies only to opencode sessions.
-184: 
+184:
 185: See [`docs/opencode-setup.md`](docs/opencode-setup.md) for step-by-step
 186: instructions covering: prerequisites, submodule init, PLGrid auth (no env
 187: vars), all MCP servers, selecting the Qwen model, branch naming, session
 188: logging, and troubleshooting.
-189: 
+189:
 190: To author a new multi-task prompt for opencode (the recommended workflow is
 191: "draft in Claude / VS Code, then hand the file to opencode"), see
 192: [`docs/opencode-prompt-authoring.md`](docs/opencode-prompt-authoring.md) for
 193: the canonical schema and the Claude meta-prompt.
-194: 
+194:
 195: ---
-196: 
+196:
 197: ## 8. Copilot agent files (`.github/agents/`)
-198: 
+198:
 199: These are available for Copilot agent sessions (not opencode):
-200: 
+200:
 201: - [`researcher.agent.md`](.github/agents/researcher.agent.md) — read-only codebase exploration
 202: - [`spec-writer.agent.md`](.github/agents/spec-writer.agent.md) — drafting/editing docs
 
 (End of file - total 202 lines)
 </content>
-```
+````
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/04-feature-specs/export.md"
@@ -759,12 +763,13 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 ```
 
 **Output:**
-```
+
+````
 <path>/home/grzanka/workspace/dedx_web/docs/04-feature-specs/export.md</path>
 <type>file</type>
 <content>
 1: # Feature: Export
-2: 
+2:
 3: > **Status:** Final v6 (13 April 2026)
 4: >
 5: > **v6** (13 April 2026): Added `## User Stories` section (four personas:
@@ -835,69 +840,69 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 70: > - Unit handling (units in CSV headers): [`unit-handling.md`](unit-handling.md)
 71: > - Build info (commit hash, date, branch): [`build-info.md`](build-info.md)
 72: > - Advanced options (interpolation settings): [`advanced-options.md`](advanced-options.md)
-73: 
+73:
 74: ---
-75: 
+75:
 76: ## User Stories
-77: 
+77:
 78: **As a** researcher,
 79: **I want to** download my stopping-power and range results as a CSV file,
 80: **so that** I can import them directly into Python, R, or Excel for further
 81: analysis without manually transcribing values.
-82: 
+82:
 83: **As a** student preparing a lab report,
 84: **I want to** export a PDF of my calculator results or plot,
 85: **so that** I can include a clean, self-contained document with all the
 86: relevant metadata (particle, material, program, settings) in my submission.
-87: 
+87:
 88: **As a** data analyst working in a non-English locale,
 89: **I want to** choose the CSV separator and line endings before downloading,
 90: **so that** the file opens correctly in my regional spreadsheet application
 91: without needing a manual import-wizard workaround.
-92: 
+92:
 93: **As a** physicist publishing a figure,
 94: **I want to** export the stopping-power plot as an SVG vector file,
 95: **so that** I can embed it in my paper at any resolution without quality loss.
-96: 
+96:
 97: ---
-98: 
+98:
 99: ## Scope
-100: 
+100:
 101: This spec covers all CSV, image, and PDF export across the dEdx Web
 102: redesign. The export sections in [`calculator.md`](calculator.md),
 103: [`multi-program.md`](multi-program.md), and [`plot.md`](plot.md) contain
 104: brief summaries that point here for the full detail.
-105: 
+105:
 106: | Page / Mode | Export formats |
 107: |-------------|---------------|
 108: | Calculator — basic mode | CSV, PDF |
 109: | Calculator — advanced / multi-program | CSV, PDF |
 110: | Plot | Image (PNG or SVG via dropdown), CSV, PDF |
-111: 
+111:
 112: ---
-113: 
+113:
 114: ## 0. Export Toolbar — Shared (Both Pages)
-115: 
+115:
 116: **"Export PDF"** and **"Export CSV ↓"** are permanent toolbar buttons in
 117: the **upper-right corner** of the page, immediately **left of** the
 118: **"Share URL"** button — which is always the rightmost button. They appear
 119: on both the Calculator and the Plot pages in identical positions.
-120: 
+120:
 121: ```
 122: ┌──────────────────────────────────────────────────────────────────────────┐
 123: │  dEdx Web                    [Export PDF]  [Export CSV ↓]  [Share URL]  │
 124: └──────────────────────────────────────────────────────────────────────────┘
 125: ```
-126: 
+126:
 127: | Button | No-results state | Results available |
 128: |--------|-----------------|-------------------|
 129: | "Export PDF" | Disabled (greyed out) | Active |
 130: | "Export CSV ↓" | Disabled (greyed out) | Active (basic: direct download; advanced: opens config modal — see §1.1) |
-131: 
+131:
 132: **"No results"** means: no committed (non-preview) rows/series exist yet.
 133: On the Calculator page this means no row has a computed result; on the
 134: Plot page this means no committed series has been added.
-135: 
+135:
 136: **Rationale:** PDF and CSV export are *sharing and archiving* actions —
 137: the same intent as "Share URL". Keeping Share URL as the rightmost action
 138: reflects that it is the primary sharing gesture; PDF/CSV are secondary.
@@ -905,13 +910,13 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 140: sharing cluster discoverable in one place. The image export ("Export
 141: image ▾") is the exception: it is plot-specific and lives in the Plot
 142: controls bar, adjacent to the canvas it captures.
-143: 
+143:
 144: ---
-145: 
+145:
 146: ## 1. Common CSV Conventions
-147: 
+147:
 148: All exported CSV files share these rules:
-149: 
+149:
 150: | Property | Value |
 151: |----------|-------|
 152: | Encoding | UTF-8 **with BOM** (ensures correct rendering in Windows Excel) |
@@ -923,16 +928,16 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 158: | Thousands separator | None (`13920` not `13,920`) |
 159: | CSDA per-cell unit | Value and unit suffix in the same cell (e.g., `7.718 cm`); the column header carries no unit |
 160: | Stopping power unit | Active display unit appears in the column header (e.g., `Stopping Power (keV/µm)`) |
-161: 
+161:
 162: ### 1.1 Advanced-Mode CSV Export Configuration Modal
-163: 
+163:
 164: In **advanced mode** (Calculator advanced / multi-program, and Plot
 165: advanced mode), clicking **"Export CSV ↓"** opens a lightweight
 166: configuration modal instead of downloading immediately. Basic mode
 167: always downloads directly with the default settings.
-168: 
+168:
 169: **Modal layout:**
-170: 
+170:
 171: ```
 172: ┌─────────────────────────────────────────────┐
 173: │  Export CSV                              [✕] │
@@ -947,13 +952,13 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 182: │           [Cancel]  [Download CSV]           │
 183: └─────────────────────────────────────────────┘
 184: ```
-185: 
+185:
 186: | Field | Default | Options |
 187: |-------|---------|---------|
 188: | Separator | Comma (`,`) | Comma, Semicolon (`;`), Tab (`\t`) |
 189: | Line endings | CRLF | CRLF, LF |
 190: | Filename | Canonical filename (§7) | Editable — user may type any valid filename |
-191: 
+191:
 192: - The modal pre-fills the filename with the canonical default for the
 193:   current context (e.g., `dedx_proton_water_3programs.csv`).
 194: - A filename extension of `.csv` is always appended if the user omits it.
@@ -965,26 +970,26 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 200:   browser session.
 201: - Settings chosen in the modal do **not** affect the encoding (always
 202:   UTF-8 with BOM) or quoting rules (always RFC 4180).
-203: 
+203:
 204: ---
-205: 
+205:
 206: ## 2. Calculator Export — Basic Mode
-207: 
+207:
 208: ### Button
-209: 
+209:
 210: Both buttons are in the **app toolbar** (see §0). No buttons appear below
 211: the unified table.
-212: 
+212:
 213: | Property | Detail |
 214: |----------|--------|
 215: | "Export PDF" | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
 216: | "Export CSV ↓" | App toolbar, upper-right — immediately left of "Share URL" (see §0) |
 217: | Availability | Both **disabled** (greyed out) until at least one row has a computed result; always visible in the toolbar |
-218: 
+218:
 219: ### CSV Schema
-220: 
+220:
 221: Five columns — exactly the five columns visible in the unified table:
-222: 
+222:
 223: ```csv
 224: "Normalized Energy (MeV/nucl)","Typed Value","Unit","CSDA Range","Stopping Power (keV/µm)"
 225: 0.001,1,keV,0.01562 µm,84.30
@@ -993,9 +998,9 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 228: 500,500,MeV,116.1 cm,7.834
 229: 2000,2,GeV,5461 cm,3.127
 230: ```
-231: 
+231:
 232: Column rules:
-233: 
+233:
 234: | # | Header | Content |
 235: |---|--------|---------|
 236: | 1 | `Normalized Energy (MeV/nucl)` | Numeric value in MeV/nucl (4 sig figs) |
@@ -1003,12 +1008,12 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 238: | 3 | `Unit` | Per-row energy unit (e.g., `MeV`, `keV`, `GeV`, `MeV/nucl`) |
 239: | 4 | `CSDA Range` | Value + auto-scaled SI unit suffix in the same cell (e.g., `7.718 cm`); no fixed unit in header |
 240: | 5 | `Stopping Power ({unit})` | Numeric value in the active display unit (4 sig figs); no unit suffix in cell |
-241: 
+241:
 242: Column 4 substitutes `{unit}` with the active stopping-power unit:
 243: - `keV/µm` for non-gas materials (default)
 244: - `MeV·cm²/g` for gas materials (default)
 245: - Or the user-selected unit if overridden
-246: 
+246:
 247: > **CSV injection note:** The `Typed Value` column stores the raw text the
 248: > user entered. To prevent spreadsheet formula injection (values starting
 249: > with `=`, `+`, `-`, or `@` being evaluated as formulas in Excel/Sheets),
@@ -1016,49 +1021,49 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 251: > before being written to the cell, so it is treated as a text literal.
 252: > The single-quote is not visible after import and does not affect the
 253: > displayed value in compliant spreadsheet applications.
-254: 
+254:
 255: Error/invalid rows (validation failures, out-of-range energies) are
 256: **omitted** — only successfully computed rows appear in the CSV.
-257: 
+257:
 258: ### Filename
-259: 
+259:
 260: ```
 261: dedx_calculator_{particle}_{material}_{program}.csv
 262: dedx_calculator_{particle}_{material}_{program}.pdf
 263: ```
-264: 
+264:
 265: Example: `dedx_calculator_proton_water_icru90.csv`
-266: 
+266:
 267: - `{particle}` — lowercase ASCII particle name (e.g., `proton`, `alpha`, `carbon`)
 268: - `{material}` — lowercase ASCII material name; spaces → underscores
 269:   (e.g., `water`, `silicon`, `polyethylene`)
 270: - `{program}` — program ID as used in the URL (e.g., `icru90`, `pstar`)
-271: 
+271:
 272: ---
-273: 
+273:
 274: ## 3. Calculator Export — Advanced / Multi-program Mode
-275: 
+275:
 276: ### Button
-277: 
+277:
 278: Same "Export PDF" and "Export CSV ↓" buttons in the app toolbar (§0),
 279: identical positions to basic mode. No buttons appear below the comparison
 280: table. In advanced mode, clicking **"Export CSV ↓"** opens the
 281: **CSV configuration modal** (§1.1) instead of downloading immediately.
-282: 
+282:
 283: ### CSV Schema
-284: 
+284:
 285: **Wide table format** — one row per energy value; programs appear as
 286: sub-columns grouped by quantity. Column order mirrors the on-screen table,
 287: including any drag-and-drop reordering the user has applied.
-288: 
+288:
 289: ```csv
 290: "Energy (MeV)","MeV/nucl","Unit","Stp Power ICRU 90 (keV/µm)","Stp Power PSTAR (keV/µm)","Stp Power Bethe (keV/µm)","CSDA Range ICRU 90","CSDA Range PSTAR","CSDA Range Bethe"
 291: 100,100,MeV,13.92,14.01,13.85,7.718 cm,7.801 cm,7.632 cm
 292: 500,500,MeV,7.834,7.912,7.799,116.1 cm,117.4 cm,115.8 cm
 293: ```
-294: 
+294:
 295: Column rules:
-296: 
+296:
 297: | Column group | Header pattern | Content |
 298: |-------------|---------------|---------|
 299: | Energy | `Energy (MeV)` | Normalized energy in MeV (4 sig figs) |
@@ -1066,9 +1071,9 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 301: | Unit | `Unit` | Per-row energy unit string |
 302: | Stopping power per program | `Stp Power {program} ({unit})` | Numeric value in active display unit (4 sig figs) |
 303: | CSDA range per program | `CSDA Range {program}` | Value + auto-scaled SI unit suffix per cell; no fixed unit in header |
-304: 
+304:
 305: Visibility rules — what columns are included:
-306: 
+306:
 307: | Condition | Effect on CSV |
 308: |-----------|--------------|
 309: | Hidden program column | Excluded from CSV |
@@ -1077,56 +1082,56 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 312: | Quantity focus `CSDA only` | CSDA-range columns only |
 313: | Delta / % hover values | **Not exported** (derivable from raw data) |
 314: | Preview series | **Not exported** |
-315: 
+315:
 316: ### Filename
-317: 
+317:
 318: ```
 319: dedx_{particle}_{material}_{N}programs.csv
 320: dedx_{particle}_{material}_{N}programs.pdf
 321: ```
-322: 
+322:
 323: Example: `dedx_proton_water_3programs.csv`
-324: 
+324:
 325: Where `{N}` is the count of visible (non-hidden) programs.
-326: 
+326:
 327: ---
-328: 
+328:
 329: ## 4. Plot Export
-330: 
+330:
 331: ### 4.1 Image Export (PNG / SVG)
-332: 
+332:
 333: #### Button
-334: 
+334:
 335: The **"Export image ▾"** dropdown button lives in the Plot controls bar
 336: (not in the app toolbar) because it captures the canvas directly.
-337: 
+337:
 338: The **dropdown options differ by mode**:
-339: 
+339:
 340: | Mode | Options shown |
 341: |------|--------------|
 342: | Basic | SVG vector only |
 343: | Advanced | PNG image + SVG vector |
-344: 
+344:
 345: PNG export is an advanced-mode-only feature because it produces a
 346: high-resolution raster snapshot (2× resolution) that is most useful for
 347: advanced users assembling figures. SVG is available in both modes and is
 348: the recommended format for publication.
-349: 
+349:
 350: Wireframe — **basic mode** (controls bar):
-351: 
+351:
 352: ```
 353: ┌──────────────────────────────────────────────────────────────────────────┐
 354: │ [keV/µm · MeV·cm²/g · MeV/cm]  [Log-log · Lin-lin]             [img ▾] │
 355: └──────────────────────────────────────────────────────────────────────────┘
 356: ```
-357: 
+357:
 358: Dropdown open in basic mode:
 359: ```
 360:                                                       ┌──────────────┐
 361:                                                       │ SVG vector   │
 362:                                                       └──────────────┘
 363: ```
-364: 
+364:
 365: Dropdown open in advanced mode:
 366: ```
 367:                                                       ┌──────────────┐
@@ -1134,17 +1139,17 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 369:                                                       │ SVG vector   │
 370:                                                       └──────────────┘
 371: ```
-372: 
+372:
 373: Selecting an option triggers the download immediately and closes the dropdown.
-374: 
+374:
 375: | Property | Detail |
 376: |----------|--------|
 377: | Label | "Export image ▾" |
 378: | Type | Dropdown button |
 379: | Position | Controls bar above the JSROOT canvas, **right-aligned** — the only export control in the controls bar; PDF and CSV are in the app toolbar (§0) |
-380: 
+380:
 381: #### PNG Export (advanced mode only)
-382: 
+382:
 383: | Property | Detail |
 384: |----------|--------|
 385: | Trigger | Select "PNG image" from the dropdown (advanced mode only) |
@@ -1153,9 +1158,9 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 388: | Filename | `dedx_plot.png` |
 389: | Includes | All **visible** series lines, axis labels, axis ticks, gridlines |
 390: | Excludes | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
-391: 
+391:
 392: #### SVG Export (both modes)
-393: 
+393:
 394: | Property | Detail |
 395: |----------|--------|
 396: | Trigger | Select "SVG vector" from the dropdown |
@@ -1164,146 +1169,146 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 399: | Includes | All **visible** series lines, axis labels, axis ticks, gridlines |
 400: | Excludes | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
 401: | Use case | Publication-quality vector figures; further editing in Inkscape / Illustrator |
-402: 
+402:
 403: ### 4.2 Plot CSV Export
-404: 
+404:
 405: #### Button
-406: 
+406:
 407: | Property | Detail |
 408: |----------|--------|
 409: | Label | "Export CSV ↓" |
 410: | Position | App toolbar, upper-right — immediately left of "Share URL" (see §0) |
 411: | Advanced mode | Clicking opens the CSV configuration modal (§1.1) |
-412: 
+412:
 413: #### CSV Schema
-414: 
+414:
 415: **Wide format only** — one row per energy point; each series occupies one
 416: or two columns depending on whether energy grids are shared (see §4.3 for
 417: the external-data rule).
-418: 
+418:
 419: ---
-420: 
+420:
 421: **Case A — all series share the same energy grid**
-422: 
+422:
 423: Applies only when **no external (`ext:`) series are present** and all
 424: libdedx series happen to share the same tabulated energy points.
-425: 
+425:
 426: ```csv
 427: "Energy [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Stp PSTAR — p in Water (keV/µm)"
 428: 0.001,84.30,81.55
 429: 0.002,65.10,63.20
 430: ```
-431: 
+431:
 432: - A single `Energy [MeV/nucl]` column appears first.
 433: - Each subsequent column is one series' stopping-power values.
-434: 
+434:
 435: ---
-436: 
+436:
 437: **Case B — series have different energy grids (or any `ext:` series present)**
-438: 
+438:
 439: This is the typical case when programs have different tabulated energy
 440: bounds, different point counts, or when any external-data series is
 441: included (see §4.3).
-442: 
+442:
 443: ```csv
 444: "Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy PSTAR [MeV/nucl]","Stp PSTAR — α in Al (keV/µm)"
 445: 0.001,84.30,0.001,92.14
 446: 0.002,65.10,0.002,71.30
 447: ```
-448: 
+448:
 449: - Each series gets its own `Energy {program} [MeV/nucl]` column immediately
 450:   before its stopping-power column.
 451: - Rows are aligned by index position. If grids differ in length, the shorter
 452:   series' columns are padded with empty cells in the trailing rows.
-453: 
+453:
 454: ---
-455: 
+455:
 456: Stopping-power column header pattern:
-457: 
+457:
 458: ```
 459: Stp {program} — {particle} in {material} ({unit})
 460: ```
-461: 
+461:
 462: Example: `Stp ICRU 90 — p in Water (keV/µm)`
-463: 
+463:
 464: The unit in the header matches the current Y-axis display unit.
-465: 
+465:
 466: Visibility rules:
-467: 
+467:
 468: | Condition | Effect on CSV |
 469: |-----------|--------------|
 470: | Hidden series (toggled off) | Excluded |
 471: | Preview series | Excluded |
-472: 
+472:
 473: ### 4.3 External Data in Plot CSV
-474: 
+474:
 475: When the plot contains one or more series from an external `.webdedx` Zarr
 476: store source (identified by the `ext:{label}` program prefix in URL state):
-477: 
+477:
 478: #### Energy column rule
-479: 
+479:
 480: **Always Case B** — the presence of any external series forces Case B
 481: for the entire CSV, including internal libdedx series. This prevents a
 482: confusing mixed layout (shared + separate energy columns in the same file).
-483: 
+483:
 484: #### Column labels
-485: 
+485:
 486: External series use the user-assigned label from the `extdata={label}:…`
 487: URL parameter as the program name in column headers — no `[ext]` tag or
 488: other annotation. The label is user-chosen and self-describing.
-489: 
+489:
 490: ```csv
 491: "Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST [MeV/nucl]","Stp NIST — p in Water (keV/µm)"
 492: 0.001,84.30,0.001,84.11
 493: 0.002,65.10,0.005,60.44
 494: ```
-495: 
+495:
 496: #### Comment rows (metadata header)
-497: 
+497:
 498: One `#` comment line per distinct external source appears **before** the
 499: column header row. Format:
-500: 
+500:
 501: ```
 502: # External source: {label} at {url}
 503: ```
-504: 
+504:
 505: Full example with two external sources:
-506: 
+506:
 507: ```csv
 508: # External source: NIST at https://example.com/nist.webdedx
 509: # External source: SRIM at https://example.com/srim.webdedx
 510: "Energy ICRU 90 [MeV/nucl]","Stp ICRU 90 — p in Water (keV/µm)","Energy NIST [MeV/nucl]","Stp NIST — p in Water (keV/µm)","Energy SRIM [MeV/nucl]","Stp SRIM — p in Water (keV/µm)"
 511: 0.001,84.30,0.001,84.11,0.001,83.95
 512: ```
-513: 
+513:
 514: Comment rows use `#` (hash + space) prefix — standard in scientific CSV
 515: tools (pandas `comment='#'`, R `comment.char='#'`). Excel ignores
 516: `#`-prefixed rows when importing via the Text Import Wizard.
-517: 
+517:
 518: ### Filename
-519: 
+519:
 520: ```
 521: dedx_plot_data.csv
 522: dedx_plot.png
 523: dedx_plot.svg
 524: ```
-525: 
+525:
 526: ---
-527: 
+527:
 528: ## 5. PDF Export — Plot
-529: 
+529:
 530: ### 5.1 Button
-531: 
+531:
 532: | Property | Detail |
 533: |----------|--------|
 534: | Label | "Export PDF" |
 535: | Position | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
 536: | Mechanism | jsPDF (client-side) with embedded SVG (via JSROOT `makeSVG()`) |
-537: 
+537:
 538: ### 5.2 Content — Basic Mode
-539: 
+539:
 540: The Plot PDF in basic mode is a single-page document containing:
-541: 
+541:
 542: ```
 543: ┌─────────────────────────────────────────────────────────┐
 544: │  dEdx Web                                               │
@@ -1319,7 +1324,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 554: │  ■  PSTAR — Proton in Water                             │
 555: └─────────────────────────────────────────────────────────┘
 556: ```
-557: 
+557:
 558: | Element | Content |
 559: |---------|---------|
 560: | App name | "dEdx Web" |
@@ -1327,13 +1332,13 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 562: | URL | Full shareable URL of the page at export time — rendered as a clickable hyperlink in the PDF |
 563: | Chart | JSROOT `makeSVG()` output embedded at full page width |
 564: | Legend | One row per visible series: colour swatch + series label |
-565: 
+565:
 566: ### 5.3 Content — Advanced Mode
-567: 
+567:
 568: Advanced mode PDF has the same header and chart as §5.2, with an
 569: **extended metadata block appended after the legend** (not before the
 570: chart). The chart is always the first content the reader sees.
-571: 
+571:
 572: ```
 573: ┌─────────────────────────────────────────────────────────┐
 574: │  dEdx Web — Advanced Mode                               │
@@ -1374,13 +1379,13 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 609: │  Commit: a1b2c3d · 2026-04-13 · main                   │
 610: └─────────────────────────────────────────────────────────┘
 611: ```
-612: 
+612:
 613: The "Advanced Mode Details" section begins with a horizontal rule and
 614: heading so it reads as a reference appendix, not as content competing
 615: with the chart.
-616: 
+616:
 617: Metadata block rules:
-618: 
+618:
 619: | Section | Position | Mode |
 620: |---------|----------|------|
 621: | App name + mode | Header (top) | both |
@@ -1395,45 +1400,45 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 630: | **SETTINGS** | Details block — active Advanced Options (only non-default values shown) | advanced only |
 631: | **SYSTEM** | Details block — browser and OS from `navigator.userAgent` | advanced only |
 632: | **BUILD** | Details block (bottom) — commit hash · ISO date · branch/tag (from `deploy.json` per `build-info.md`) | advanced only |
-633: 
+633:
 634: If `deploy.json` is absent (local dev), the BUILD section is omitted silently.
-635: 
+635:
 636: The legend may overflow to a second page if there are many series. The
 637: "Advanced Mode Details" block starts on whichever page follows the legend.
-638: 
+638:
 639: ### 5.3.1 Page Numbers
-640: 
+640:
 641: All Plot PDF documents include a page-number footer on every page in the
 642: format:
-643: 
+643:
 644: ```
 645: Page n / N
 646: ```
-647: 
+647:
 648: where `n` is the current page number and `N` is the total page count.
 649: The footer is right-aligned, in a smaller font, and placed in the bottom
 650: margin so it does not overlap content.
-651: 
+651:
 652: ### 5.4 Filename
-653: 
+653:
 654: ```
 655: dedx_plot_report.pdf
 656: ```
-657: 
+657:
 658: ---
-659: 
+659:
 660: ## 6. PDF Export — Calculator
-661: 
+661:
 662: ### 6.1 Button
-663: 
+663:
 664: | Property | Detail |
 665: |----------|--------|
 666: | Label | "Export PDF" |
 667: | Position | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
 668: | Mechanism | jsPDF + `jspdf-autotable` plugin v5.0.5+ (client-side, portrait orientation; autotable v5.x required for jsPDF 4.x compatibility) |
-669: 
+669:
 670: ### 6.2 Content — Basic Mode
-671: 
+671:
 672: ```
 673: ┌────────────────────────────────────────────────────────┐
 674: │  dEdx Web — Calculator                                 │
@@ -1448,15 +1453,15 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 683: │  500    │ 500             │ MeV  │ 7.834        │116.1 cm│
 684: └────────────────────────────────────────────────────────┘
 685: ```
-686: 
+686:
 687: The five-column table mirrors the unified table exactly.
-688: 
+688:
 689: ### 6.3 Content — Advanced Mode
-690: 
+690:
 691: The results table comes immediately after the header — the reader sees
 692: data first. The extended metadata block (same fields as §5.3) is appended
 693: **after the table**, beginning with an "Advanced Mode Details" divider.
-694: 
+694:
 695: ```
 696: ┌────────────────────────────────────────────────────────┐
 697: │  dEdx Web — Calculator (Advanced Mode)                 │
@@ -1481,54 +1486,54 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 716: │  BUILD    a1b2c3d · 2026-04-13 · main                  │
 717: └────────────────────────────────────────────────────────┘
 718: ```
-719: 
+719:
 720: **Table layout for wide tables** — the advanced comparison table (many
 721: program columns) is split across pages by quantity group:
-722: 
+722:
 723: - **Page 1 (or continuation):** Energy columns + all stopping-power columns.
 724: - **Next page:** Energy columns + all CSDA-range columns.
-725: 
+725:
 726: This prevents the table from becoming unreadable when printed. The
 727: energy identity columns (`Energy (MeV)`, `MeV/nucl`, `Unit`) are
 728: repeated on each page as leading columns.
-729: 
+729:
 730: Visibility rules applied to the table:
-731: 
+731:
 732: - Hidden program columns are excluded.
 733: - Quantity focus (`STP only` / `CSDA only`) suppresses the corresponding page.
-734: 
+734:
 735: All Calculator PDF documents (basic and advanced) include a
 736: **page-number footer** on every page in the format `Page n / N`
 737: (right-aligned, bottom margin). Single-page basic-mode PDFs still carry
 738: the footer for consistency.
-739: 
+739:
 740: ### 6.4 Filename
-741: 
+741:
 742: ```
 743: dedx_calculator_{particle}_{material}_{program}.pdf    (basic)
 744: dedx_{particle}_{material}_{N}programs.pdf             (advanced)
 745: ```
-746: 
+746:
 747: ---
-748: 
+748:
 749: ## 7. Filename Convention Summary
-750: 
+750:
 751: | Context | CSV filename | PDF filename | Image filename |
 752: |---------|-------------|-------------|----------------|
 753: | Calculator basic | `dedx_calculator_{particle}_{material}_{program}.csv` | `dedx_calculator_{particle}_{material}_{program}.pdf` | — |
 754: | Calculator advanced | `dedx_{particle}_{material}_{N}programs.csv` | `dedx_{particle}_{material}_{N}programs.pdf` | — |
 755: | Plot | `dedx_plot_data.csv` | `dedx_plot_report.pdf` | `dedx_plot.png` / `dedx_plot.svg` |
-756: 
+756:
 757: ASCII-safe filename rules applied to `{particle}` and `{material}`:
 758: - All lowercase.
 759: - Spaces replaced with underscores.
 760: - Non-ASCII characters stripped or transliterated (e.g., `µ` → `u`).
 761: - Total filename length capped at 200 characters.
-762: 
+762:
 763: ---
-764: 
+764:
 765: ## 8. Accessibility
-766: 
+766:
 767: | Element | Requirement |
 768: |---------|-------------|
 769: | Toolbar "Export PDF" button (both pages) | `aria-label="Download results as PDF"` when on Calculator; `aria-label="Export plot report as PDF"` when on Plot |
@@ -1538,25 +1543,25 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 773: | Plot "Export image ▾" dropdown | `aria-label="Export plot as image"`, `aria-haspopup="true"`, `aria-expanded` toggled |
 774: | Dropdown menu | `role="menu"` |
 775: | Dropdown items ("PNG image", "SVG vector") | `role="menuitem"` |
-776: 
+776:
 777: Keyboard behaviour for the "Export image ▾" dropdown:
-778: 
+778:
 779: | Key | Action |
 780: |-----|--------|
 781: | `Enter` / `Space` | Opens the dropdown |
 782: | `↓` / `↑` | Navigate menu items |
 783: | `Enter` | Select focused item (triggers download, closes dropdown) |
 784: | `Escape` | Closes dropdown without downloading |
-785: 
+785:
 786: ---
-787: 
+787:
 788: ## 9. Acceptance Checklist
-789: 
+789:
 790: ### Export Toolbar
 791: - [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right) on both Calculator and Plot pages; "Share URL" is the rightmost button; the order left-to-right is `[Export PDF]  [Export CSV ↓]  [Share URL]`.
 792: - [ ] Both buttons are **disabled** (greyed out, `aria-disabled="true"`) when no results are available; they become active as soon as at least one result row is present.
 793: - [ ] Button states are independent: disabling/enabling one does not affect the other.
-794: 
+794:
 795: ### Advanced-Mode CSV Configuration Modal
 796: - [ ] In Calculator advanced mode and Plot advanced mode, clicking "Export CSV ↓" opens the configuration modal (not a direct download).
 797: - [ ] Modal offers: Separator (Comma / Semicolon / Tab), Line endings (CRLF / LF), Filename (editable, pre-filled with canonical default).
@@ -1564,7 +1569,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 799: - [ ] Last-used separator and line-ending settings are restored from `localStorage` on the next advanced export.
 800: - [ ] Encoding (UTF-8 BOM) and quoting (RFC 4180) are always applied regardless of modal settings.
 801: - [ ] In basic mode on both Calculator and Plot, clicking "Export CSV ↓" downloads directly (no modal).
-802: 
+802:
 803: ### Calculator — Basic Mode CSV
 804: - [ ] "Export CSV ↓" toolbar button becomes active when at least one result row is present; clicking downloads directly (no modal in basic mode).
 805: - [ ] CSV contains exactly five columns in this order: `Normalized Energy (MeV/nucl)`, `Typed Value`, `Unit`, `CSDA Range`, `Stopping Power ({unit})`.
@@ -1577,7 +1582,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 812: - [ ] Error/validation rows are omitted from the CSV.
 813: - [ ] CSV uses UTF-8 with BOM, comma delimiter, CRLF line endings.
 814: - [ ] Filename follows `dedx_calculator_{particle}_{material}_{program}.csv`.
-815: 
+815:
 816: ### Calculator — Basic Mode PDF
 817: - [ ] "Export PDF" toolbar button becomes active when results are present.
 818: - [ ] PDF contains: app name, generated timestamp (ISO 8601 UTC), clickable page URL, entity summary line, and the five-column table.
@@ -1586,7 +1591,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 821: - [ ] Error/validation rows are omitted from the table.
 822: - [ ] Page carries a `Page n / N` footer.
 823: - [ ] Filename follows `dedx_calculator_{particle}_{material}_{program}.pdf`.
-824: 
+824:
 825: ### Calculator — Advanced / Multi-program Mode CSV
 826: - [ ] CSV uses wide table format with one row per energy value.
 827: - [ ] Stopping-power columns appear before CSDA-range columns (grouped by quantity).
@@ -1598,7 +1603,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 833: - [ ] Stopping-power column headers include program name and unit (e.g., `Stp Power ICRU 90 (keV/µm)`).
 834: - [ ] CSDA-range column headers include program name but no fixed unit.
 835: - [ ] Filename follows `dedx_{particle}_{material}_{N}programs.csv` where `{N}` is the visible program count.
-836: 
+836:
 837: ### Calculator — Advanced / Multi-program Mode PDF
 838: - [ ] PDF metadata block order: PARTICLE, MATERIAL, PROGRAMS, SETTINGS, SYSTEM, BUILD — BUILD is last.
 839: - [ ] BUILD section is silently omitted if `deploy.json` is absent.
@@ -1607,7 +1612,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 842: - [ ] Quantity focus affects PDF table (same visibility rules as CSV).
 843: - [ ] Every page carries a `Page n / N` footer (right-aligned, bottom margin).
 844: - [ ] Filename follows `dedx_{particle}_{material}_{N}programs.pdf`.
-845: 
+845:
 846: ### Plot — Image Export
 847: - [ ] "Export image ▾" dropdown button appears in the controls bar, right-aligned — the only export control in the controls bar.
 848: - [ ] In **basic mode**: dropdown offers exactly one item: "SVG vector".
@@ -1619,7 +1624,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 854: - [ ] Both formats exclude hidden series, preview series, sidebar, and series list.
 855: - [ ] Keyboard: `Enter`/`Space` opens dropdown; `↓`/`↑` navigates; `Enter` selects and downloads; `Escape` closes without downloading.
 856: - [ ] `aria-expanded` is correctly toggled on the trigger button.
-857: 
+857:
 858: ### Plot — PDF Export
 859: - [ ] "Export PDF" toolbar button is active on the Plot page when at least one committed (non-preview) series is present; disabled otherwise.
 860: - [ ] Basic mode PDF contains: app name, generated timestamp (ISO UTC), clickable page URL, chart SVG, legend.
@@ -1630,7 +1635,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 865: - [ ] BUILD block is silently omitted if `deploy.json` is absent.
 866: - [ ] Every page carries a `Page n / N` footer (right-aligned, bottom margin).
 867: - [ ] Filename is `dedx_plot_report.pdf`.
-868: 
+868:
 869: ### Plot — CSV Export
 870: - [ ] "Export CSV ↓" toolbar button is active on the Plot page when at least one committed (non-preview) series is present.
 871: - [ ] When no external series are present and all internal series share the same energy grid: single `Energy [MeV/nucl]` column.
@@ -1644,7 +1649,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 879: - [ ] Shorter series columns padded with empty cells when grids differ in length.
 880: - [ ] CSV uses UTF-8 with BOM, comma delimiter, CRLF line endings.
 881: - [ ] Filename is `dedx_plot_data.csv`.
-882: 
+882:
 883: ### Common
 884: - [ ] All CSV files open correctly in Microsoft Excel (UTF-8 BOM recognized, comma-delimited, no truncation, `#` comment rows skipped by Import Wizard).
 885: - [ ] 4 significant figures in CSV match on-screen display values.
@@ -1654,11 +1659,12 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 
 (End of file - total 888 lines)
 </content>
-```
+````
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/progress"
@@ -1666,6 +1672,7 @@ I need to read all the context files first as instructed in Step 1 - the prompt 
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/docs/progress</path>
 <type>directory</type>
@@ -1687,13 +1694,10 @@ stage-5.md
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 3.3s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/progress/stage-5.md"
@@ -1701,21 +1705,22 @@ stage-5.md
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/docs/progress/stage-5.md</path>
 <type>file</type>
 <content>
 1: # Stage 5 — Core Shared Components
-2: 
+2:
 3: > **Status:** Complete (28 April 2026)
 4: >
 5: > Stage 5 produced the five reusable building blocks that Stage 6's
 6: > feature pages compose into the Calculator and Plot routes. Every
 7: > sub-stage was implemented in its own PR with TDD, then the closing
 8: > UX review on 28 April confirmed all acceptance criteria are met.
-9: 
+9:
 10: ## Sub-stages
-11: 
+11:
 12: | #     | Component                                            | Status | PR(s)                                                                                                                                                                                                                                                          | Detailed log                                                                          |
 13: | ----- | ---------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
 14: | 5.1   | Entity selection (cascading dropdowns + full panels) | ✅     | [#366](https://github.com/APTG/dedx_web/pull/366), [#367](https://github.com/APTG/dedx_web/pull/367) (combobox transparency), [#371](https://github.com/APTG/dedx_web/pull/371) (cascading fixes)                                                              | [`stage-5-entity-selection.md`](stage-5-entity-selection.md)                          |
@@ -1723,22 +1728,22 @@ stage-5.md
 16: | 5.3   | Energy unit selector (segmented control)             | ✅     | [#370](https://github.com/APTG/dedx_web/pull/370)                                                                                                                                                                                                              | (covered by stage-5-audit + ux-review)                                                |
 17: | 5.4   | Unified input/result table                           | ✅     | [#374](https://github.com/APTG/dedx_web/pull/374), [#376](https://github.com/APTG/dedx_web/pull/376) (MeV/nucl), [#377](https://github.com/APTG/dedx_web/pull/377), [#378](https://github.com/APTG/dedx_web/pull/378), [#379](https://github.com/APTG/dedx_web/pull/379) | [`stage-5.4-result-table.md`](stage-5.4-result-table.md), [`stage-5-audit-2026-04-26.md`](stage-5-audit-2026-04-26.md) |
 18: | 5.5   | JSROOT plot wrapper + plot route                     | ✅     | [#394](https://github.com/APTG/dedx_web/pull/394)                                                                                                                                                                                                              | [`../ai-logs/2026-04-27-stage5-jsroot-plot.md`](../ai-logs/2026-04-27-stage5-jsroot-plot.md) |
-19: 
+19:
 20: ## Closing audits
-21: 
+21:
 22: - **Stage-5 audit (26 Apr 2026):** [`stage-5-audit-2026-04-26.md`](stage-5-audit-2026-04-26.md) — flagged ~480 LOC of dead code (`energy-input.svelte` component + `units/energy.ts` + redundant tests), missing master `EnergyUnitSelector`, missing debounce wiring, kinetic-energy-conservation gap on particle / per-row-unit switches.
 23: - **Stage-5 closing UX review (28 Apr 2026):** [`../ux-reviews/2026-04-28-stage5-completion-and-stage6-readiness.md`](../ux-reviews/2026-04-28-stage5-completion-and-stage6-readiness.md) — verified every audit item is closed, identified 11 open polish items (3 desktop / 8 mobile) deferred to Stage 6 polish or Stage 7, and gave the green light to start Stage 6.
-24: 
+24:
 25: ## Outcomes
-26: 
+26:
 27: - All five sub-components are stable, reused in place, and exercised by 425+ unit/integration tests.
 28: - ~480 LOC of dead/duplicated code removed or consolidated (`energy-input.svelte` standalone component and `units/energy.ts` removed; overlapping `formatSigFigs` coverage between `energy-input-format.test.ts` and `unit-conversions.test.ts` reduced — the format file still exists at ~49 LOC, see §6.5.1 C2 of the closing UX review for the remaining cleanup).
 29: - Particle/material display naming centralized in [`src/lib/utils/particle-label.ts`](../../src/lib/utils/particle-label.ts) and reused by both calculator comboboxes and plot legends.
 30: - KE conservation across particle / per-row-unit switches is locked in by spec ([`unit-handling.md` v4](../04-feature-specs/unit-handling.md)) **and** by E2E tests ([`tests/e2e/particle-unit-switching.spec.ts`](../../tests/e2e/particle-unit-switching.spec.ts)).
 31: - Plot URL state encoded/decoded via [`plot-url.ts`](../../src/lib/utils/plot-url.ts) (canonical params) — serves as the reference implementation for the Calculator URL sync that Stage 6 owns.
-32: 
+32:
 33: ## What Stage 6 picks up
-34: 
+34:
 35: - Calculator URL sync per [`shareable-urls.md`](../04-feature-specs/shareable-urls.md) (delete the unwired `src/lib/state/url-sync.ts` first).
 36: - Shared layout toolbar (Export PDF / Export CSV / Share URL) per [`export.md`](../04-feature-specs/export.md) v3 §0 — also unblocks the mobile hamburger / overflow nav noted in M1 of the closing review.
 37: - Multi-program mode per [`multi-program.md`](../04-feature-specs/multi-program.md).
@@ -1752,6 +1757,7 @@ stage-5.md
 **Tool: glob**
 
 **Input:**
+
 ```json
 {
   "pattern": ".opencode/tasks/*.md"
@@ -1759,6 +1765,7 @@ stage-5.md
 ```
 
 **Output:**
+
 ```
 No files found
 ```
@@ -1767,15 +1774,12 @@ No files found
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 10.3s)
 
-
-
 Now I'll create the task list file and begin the orchestration loop. Let me first create the tasks directory and the task list file.
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "mkdir -p /home/grzanka/workspace/dedx_web/.opencode/tasks",
@@ -1784,6 +1788,7 @@ Now I'll create the task list file and begin the orchestration loop. Let me firs
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -1792,13 +1797,10 @@ Now I'll create the task list file and begin the orchestration loop. Let me firs
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.5s)
 
-
-
-
-
 **Tool: write**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -1807,6 +1809,7 @@ Now I'll create the task list file and begin the orchestration loop. Let me firs
 ```
 
 **Output:**
+
 ```
 Wrote file successfully.
 ```
@@ -1815,15 +1818,12 @@ Wrote file successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 11.5s)
 
-
-
 Now I'll begin the orchestration loop. Starting with Task 1.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -1833,6 +1833,7 @@ Now I'll begin the orchestration loop. Starting with Task 1.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -1843,26 +1844,20 @@ Edit applied successfully.
 
 _Thinking:_
 
-
-
-
-
-
-
-
-
 **Tool: task**
 
 **Input:**
-```json
+
+````json
 {
   "description": "Task 1: formatPlotCsv() + tests",
   "prompt": "You are the implementer agent. Implement Task 1 from the Stage 6 Plot Export session.\n\n## Spec\nRead docs/04-feature-specs/export.md §4.2 and §4.3 for the Plot CSV export requirements.\n\n## Acceptance criteria\n- `formatPlotCsv(series, stpUnit)` returns a UTF-8-with-BOM CSV string with CRLF line endings.\n- Case A (all committed visible series share the same energy-point count AND no `ext:` prefix in any programName): single `Energy [MeV/nucl]` column, then one STP column per series.\n- Case B (any series has a different energy-point count OR any programName starts with `ext:`): each series gets its own `Energy {programName} [MeV/nucl]` column immediately before its STP column; shorter series padded with empty cells.\n- Hidden series (`visible === false`) are excluded.\n- Column header pattern: `Stp {programName} — {particleName} in {materialName} ({stpUnit})`\n- `downloadPlotCsv(series, stpUnit)` triggers a browser file download with filename `dedx_plot_data.csv`.\n\n## Steps\n\n### Step 1a — tests first (`src/tests/unit/plot-csv.test.ts`)\n\nWrite the test file first with these test cases:\n```\n[proton, Water, ICRU 90, energies=[0.001,0.1,100], stp=[84.3,32.5,13.9]] → Case A: 3 columns, 3 data rows\n[proton, Water, ICRU 90, 3 pts] + [alpha, Al, PSTAR, 2 pts] → Case B: 4 columns, padding on row 3\nhidden series → excluded from output\nCSV injection cell starting with \"=\" → prefixed with \"'\"\n```\n\nRun `pnpm test` and confirm it is RED before Step 1b.\n\n### Step 1b — implement\n\nCreate `src/lib/export/plot-csv.ts`:\n\n```typescript\nimport type { PlotSeries } from \"$lib/state/plot.svelte\";\n\nexport function formatPlotCsv(series: PlotSeries[], stpUnit: string): string { ... }\nexport function downloadPlotCsv(series: PlotSeries[], stpUnit: string): void { ... }\n```\n\nImplementation notes:\n- Import and reuse `makeCsvCell` from `$lib/export/csv` (not re-implement it).\n- Add the UTF-8 BOM (`\\uFEFF`) as the first character.\n- CRLF line endings (`\\r\\n`) on every row including the last.\n- Case A vs Case B: check `series[0].result.energies.length === s.result.energies.length` for all visible series AND none has `programName` starting with `ext:`.\n- For Case B padding: if series `i` has fewer rows than the max, emit empty cells (`,,`) for the missing rows.\n- `downloadPlotCsv`: creates a `Blob` with `type: 'text/csv;charset=utf-8;'`, builds an `<a>` element, clicks it, then revokes the object URL. Filename: `dedx_plot_data.csv`.\n\n### Done when\n\n`pnpm test` is green (+new plot CSV tests), then commit:\n```\nfeat(export): add formatPlotCsv() and downloadPlotCsv() for Plot page CSV export\n```\n\n## Rules\n- Use Svelte 5 runes only — no Svelte 4 patterns\n- Write tests first (TDD)\n- Run pnpm test to verify\n- Commit with the exact commit message above when done\n\nOutput TASK DONE: when complete, or TASK BLOCKED: <reason> if blocked.",
   "subagent_type": "implementer"
 }
-```
+````
 
 **Output:**
+
 ```
 task_id: ses_20de315adffei5O548pr50B7pY (for resuming to continue this task if needed)
 
@@ -1877,15 +1872,12 @@ TASK DONE: Plot page CSV export
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 9352.2s)
 
-
-
 Task 1 complete. Now I'll call the reviewer to validate.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -1895,6 +1887,7 @@ Task 1 complete. Now I'll call the reviewer to validate.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -1902,6 +1895,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 1: formatPlotCsv",
@@ -1911,6 +1905,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20ddd731dffe2NMoUXvTAXji3a (for resuming to continue this task if needed)
 
@@ -1932,14 +1927,10 @@ _Thinking:_
 
 The reviewer found two issues. I need to call the implementer again to fix these issues. Let me update the task status and call implementer with the issue list.
 
-
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -1949,6 +1940,7 @@ The reviewer found two issues. I need to call the implementer again to fix these
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -1956,6 +1948,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Fix Task 1: reviewer issues",
@@ -1965,6 +1958,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d4ebd4fffehuT6GapmanS1Jv (for resuming to continue this task if needed)
 
@@ -1979,13 +1973,10 @@ TASK DONE:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 71.7s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 1 fixes",
@@ -1995,6 +1986,7 @@ TASK DONE:
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d4d3eefffeOStRXwLUiC1KFB (for resuming to continue this task if needed)
 
@@ -2055,15 +2047,12 @@ REVIEW PASS
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.0s)
 
-
-
 Task 1 complete. Moving to Task 2.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2073,6 +2062,7 @@ Task 1 complete. Moving to Task 2.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2081,22 +2071,20 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 579.4s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
-```json
+
+````json
 {
   "description": "Task 2: SVG export + dropdown",
   "prompt": "You are the implementer agent. Implement Task 2 from the Stage 6 Plot Export session.\n\n## Spec\nRead docs/04-feature-specs/export.md §4.1 (image export in controls bar).\n\n## Acceptance criteria\n- `jsroot-plot.svelte` exposes a `$bindable` prop `requestExportSvg: (() => string | null) | null` (not a Promise — synchronous DOM read of the rendered `<svg>` child).\n- The plot page binds to it: `let getSvg = $state<...>(null)` and `<JsrootPlot bind:requestExportSvg={getSvg} .../>`.\n- An **\"Export image ▾\"** dropdown button appears in the plot controls bar, right-aligned (per spec §4.1 wireframe). In basic mode it shows only \"SVG vector\". Clicking downloads `dedx_plot.svg`.\n- `aria-label=\"Export plot as image\"`, `aria-haspopup=\"true\"`, `aria-expanded` toggled (per spec §8).\n- The dropdown button is **disabled** when `getSvg === null` (JSROOT not yet ready).\n\n## Steps\n\n### Step 2a — tests first (`src/tests/unit/jsroot-plot.test.ts`)\n\nAdd to the existing jsroot-plot test (or create if absent):\n```\nmock the DOM container with a mock <svg> child → requestExportSvg() returns an SVG string\nno container → requestExportSvg() returns null\n```\n\nRun `pnpm test`, confirm RED.\n\n### Step 2b — implement in `src/lib/components/jsroot-plot.svelte`\n\nAdd to the `$props()` destructuring:\n```typescript\nlet {\n  ...,\n  requestExportSvg = $bindable<(() => string | null) | null>(null),\n} = $props();\n```\n\nAdd a `$effect` that sets the bindable to a function that reads `container`'s `<svg>` child and calls `new XMLSerializer().serializeToString(svgEl)`, and clears it on cleanup:\n```typescript\n$effect(() => {\n  if (!container) { requestExportSvg = null; return; }\n  const el = container;\n  requestExportSvg = () => {\n    const svgEl = el.querySelector(\"svg\");\n    return svgEl ? new XMLSerializer().serializeToString(svgEl) : null;\n  };\n  return () => { requestExportSvg = null; };\n});\n```\n\n### Step 2c — add \"Export image ▾\" dropdown to `src/routes/plot/+page.svelte`\n\nIn the controls bar (the `<div>` that holds the unit and scale toggles):\n1. Add `let getSvg = $state<(() => string | null) | null>(null);` to the `<script>`.\n2. Pass `bind:requestExportSvg={getSvg}` to `<JsrootPlot>`.\n3. Add a `downloadSvg()` function that calls `getSvg?.()`, creates a `Blob` with `type: 'image/svg+xml'`, and triggers a download with filename `dedx_plot.svg`.\n4. Add the dropdown button to the controls bar, right-aligned, with:\n   - `aria-label=\"Export plot as image\"`, `aria-haspopup=\"true\"`,\n   - `aria-expanded` bound to a `$state` boolean,\n   - disabled when `getSvg === null`,\n   - one item: \"SVG vector\" → calls `downloadSvg()` and closes the dropdown.\n\nUse a plain `<div role=\"menu\">` with `<button role=\"menuitem\">` inside, styled with `cn()` and Tailwind — see how the existing unit-selector buttons are done in this file as a style reference.\n\n### Done when\n\n`pnpm test` is green, the dropdown renders in the controls bar and the SVG download button is present; then commit:\n```\nfeat(plot): add SVG image export with \"Export image ▾\" dropdown in controls bar\n```\n\n## Rules\n- Use Svelte 5 runes only — no Svelte 4 patterns\n- Write tests first (TDD)\n- Run pnpm test to verify\n- Commit with the exact commit message above when done\n\nOutput TASK DONE: when complete, or TASK BLOCKED: <reason> if blocked.",
   "subagent_type": "implementer"
 }
-```
+````
 
 **Output:**
+
 ```
 task_id: ses_20d4c047fffe3BYyuuVd28aYex (for resuming to continue this task if needed)
 
@@ -2111,13 +2099,10 @@ TASK DONE: Add SVG image export with requestExportSvg bindable prop and "Export 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 83.2s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2127,6 +2112,7 @@ TASK DONE: Add SVG image export with requestExportSvg bindable prop and "Export 
 ```
 
 **Error:**
+
 ```
 No changes to apply: oldString and newString are identical.
 ```
@@ -2134,6 +2120,7 @@ No changes to apply: oldString and newString are identical.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 2: SVG export",
@@ -2143,6 +2130,7 @@ No changes to apply: oldString and newString are identical.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d4328e3ffeiXwBNTSLfZy2aW (for resuming to continue this task if needed)
 
@@ -2160,13 +2148,10 @@ task_id: ses_20d4328e3ffeiXwBNTSLfZy2aW (for resuming to continue this task if n
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 56.2s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2176,6 +2161,7 @@ task_id: ses_20d4328e3ffeiXwBNTSLfZy2aW (for resuming to continue this task if n
 ```
 
 **Error:**
+
 ```
 Could not find oldString in the file. It must match exactly, including whitespace, indentation, and line endings.
 ```
@@ -2183,6 +2169,7 @@ Could not find oldString in the file. It must match exactly, including whitespac
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Fix Task 2: reviewer issues",
@@ -2192,6 +2179,7 @@ Could not find oldString in the file. It must match exactly, including whitespac
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d41e26affe2lej5HGZnohgVy (for resuming to continue this task if needed)
 
@@ -2206,13 +2194,10 @@ TASK DONE: Task 2 - SVG Export Implementation
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 45.0s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md"
@@ -2220,14 +2205,15 @@ TASK DONE: Task 2 - SVG Export Implementation
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md</path>
 <type>file</type>
 <content>
 1: # Tasks — stage-6-plot-export
-2: 
+2:
 3: ## Status: in-progress
-4: 
+4:
 5: | # | Task | Status |
 6: |---|------|--------|
 7: | 1 | formatPlotCsv() + unit tests | retrying (1/2) |
@@ -2244,13 +2230,10 @@ TASK DONE: Task 2 - SVG Export Implementation
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 62.9s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2260,6 +2243,7 @@ TASK DONE: Task 2 - SVG Export Implementation
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2267,6 +2251,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 2 fixes",
@@ -2276,6 +2261,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d4048ceffekY79qokYciXjOu (for resuming to continue this task if needed)
 
@@ -2290,15 +2276,12 @@ All 5 acceptance criteria are verified. Both fixes are confirmed in the current 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 38.8s)
 
-
-
 Task 2 complete. Moving to Task 3.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2308,6 +2291,7 @@ Task 2 complete. Moving to Task 3.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2316,22 +2300,20 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 209.9s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
-```json
+
+````json
 {
   "description": "Task 3: generatePlotPdf() + tests",
   "prompt": "You are the implementer agent. Implement Task 3 from the Stage 6 Plot Export session.\n\n## Spec\nRead docs/04-feature-specs/export.md §5.1–§5.4 (Plot PDF basic mode).\n\n## Acceptance criteria\n- `generatePlotPdf({ svgString, series, url, filename })` produces a PDF download:\n  1. Header section: \"dEdx Web\", generated timestamp (ISO 8601 UTC), clickable URL.\n  2. SVG chart embedded at full page width (use jsPDF `addSvgAsImage` or embed as inline SVG via jsPDF's `html()` method — whichever the existing pdf.ts already uses for Calculator; stay consistent).\n  3. Legend section: one row per committed visible series — colour swatch + label.\n  4. Page footer: \"Page n / N\" right-aligned in the bottom margin.\n  5. Filename: `dedx_plot_report.pdf`.\n- The function is exported from `src/lib/export/pdf.ts` alongside `generateCalculatorPdf`.\n\n## Steps\n\n### Step 3a — tests first (`src/tests/unit/plot-pdf.test.ts`)\n\nRead `src/tests/unit/pdf.test.ts` first to understand how jsPDF is mocked in this repo. Then write `plot-pdf.test.ts` with the same mock pattern.\n\n```\ngeneratePlotPdf called with svgString='<svg/>', 2 visible series, a URL →\n  jsPDF.save() called with 'dedx_plot_report.pdf'\n  jsPDF.text() called with 'dEdx Web' somewhere\n  legend entries contain each series label\n```\n\nRun `pnpm test`, confirm RED.\n\n### Step 3b — implement in `src/lib/export/pdf.ts`\n\nAdd the new function after `generateCalculatorPdf`. Key implementation points:\n- Accept `{ svgString: string | null; series: PlotSeries[]; url: string; filename: string }`.\n- Use `new jsPDF({ orientation: 'landscape' })` for the Plot PDF (wider canvas).\n- Embed SVG: if `jsPDF.addSvgAsImage` is available, use it; otherwise embed via `doc.html(svgString, ...)`. Check what the existing Calculator PDF already imports from `jspdf-autotable` and stay consistent.\n- Legend: iterate `series.filter(s => s.visible)` and emit a colour swatch (small filled rect in `s.color`) + `s.label` per row.\n- Page numbers: at the end call `doc.setPage(n); doc.text('Page n / N', ...)` for each page — or use a jsPDF `addPage` hook if jsPDF version supports it.\n- Import `PlotSeries` type from `$lib/state/plot.svelte`.\n\n### Done when\n\n`pnpm test` is green (+new plot PDF tests); then commit:\n```\nfeat(export): add generatePlotPdf() for Plot page PDF export (basic mode)\n```\n\n## Rules\n- Use Svelte 5 runes only — no Svelte 4 patterns\n- Write tests first (TDD)\n- Run pnpm test to verify\n- Commit with the exact commit message above when done\n\nOutput TASK DONE: when complete, or TASK BLOCKED: <reason> if blocked.",
   "subagent_type": "implementer"
 }
-```
+````
 
 **Output:**
+
 ```
 task_id: ses_20d3ebc4dffenGv1BnJtaNRrPv (for resuming to continue this task if needed)
 
@@ -2346,13 +2328,10 @@ TASK DONE: Plot page PDF export (basic mode)
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 61.2s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2362,6 +2341,7 @@ TASK DONE: Plot page PDF export (basic mode)
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2369,6 +2349,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 3: generatePlotPdf",
@@ -2378,6 +2359,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d3b8106ffeGWYFky4MDZqHWo (for resuming to continue this task if needed)
 
@@ -2394,13 +2376,10 @@ task_id: ses_20d3b8106ffeGWYFky4MDZqHWo (for resuming to continue this task if n
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 69.3s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2410,6 +2389,7 @@ task_id: ses_20d3b8106ffeGWYFky4MDZqHWo (for resuming to continue this task if n
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2417,6 +2397,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Fix Task 3: undeclared seriesIndex",
@@ -2426,6 +2407,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d3a9a88ffeSWOinUcqQrLkBI (for resuming to continue this task if needed)
 
@@ -2440,13 +2422,10 @@ TASK DONE: Fix reviewer issue for Task 3
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 67.9s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 3 fix",
@@ -2456,6 +2435,7 @@ TASK DONE: Fix reviewer issue for Task 3
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d398673ffesKn6xNhiPIDXHh (for resuming to continue this task if needed)
 
@@ -2470,15 +2450,12 @@ REVIEW PASS
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 34.0s)
 
-
-
 Task 3 complete. Moving to Task 4.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2488,6 +2465,7 @@ Task 3 complete. Moving to Task 4.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2496,22 +2474,20 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 278.3s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
-```json
+
+````json
 {
   "description": "Task 4: Wire toolbar exports",
   "prompt": "You are the implementer agent. Implement Task 4 from the Stage 6 Plot Export session.\n\n## Spec\nRead docs/04-feature-specs/export.md §0, §5.1, §4.2 button-state rules.\n\n## Acceptance criteria\n- A new `initPlotExportState(plotState, getSvgFn)` function in `src/lib/state/export.svelte.ts` sets `canExport.value = true` when `plotState.series.some(s => s.visible)` (at least one committed visible series).\n- `exportPlotCsv()` and `exportPlotPdf()` are exported from `export.svelte.ts` and call `downloadPlotCsv` / `generatePlotPdf` respectively.\n- `src/routes/plot/+page.svelte` calls `initPlotExportState(plotState, getSvg)` in a `$effect` (and clears it on unmount).\n- `src/routes/+layout.svelte` toolbar: change `disabled` condition from `routePath !== \"/calculator\"` to `![\"calculator\", \"plot\"].some(r => routePath.includes(r))`; update `onclick` handlers to dispatch to either `exportCsv` / `exportPlotCsv` and `exportPdf` / `exportPlotPdf` based on `routePath`.\n\n## Steps\n\n### Step 4a — tests first\n\nAdd to `src/tests/unit/export-state.test.ts` (create if absent):\n```\ninitPlotExportState called with state having one visible series →\n  canExport.value === true\ninitPlotExportState called with no visible series →\n  canExport.value === false\n```\n\nRun `pnpm test`, confirm RED.\n\n### Step 4b — implement\n\nIn `src/lib/state/export.svelte.ts` add:\n```typescript\nlet _plotState: { series: { visible: boolean }[] } | null = null;\nlet _getSvg: (() => string | null) | null = null;\n\nexport function initPlotExportState(\n  plotState: { series: { visible: boolean }[] },\n  getSvg: () => string | null,\n): void {\n  _plotState = plotState;\n  _getSvg = getSvg;\n  canExport.value = plotState.series.some((s) => s.visible);\n}\n\nexport function exportPlotCsv(): void { ... }\nexport function exportPlotPdf(): void { ... }\n```\n\nIn `src/routes/plot/+page.svelte` add a `$effect`:\n```typescript\n$effect(() => {\n  initPlotExportState(plotState, getSvg ?? (() => null));\n  return () => { canExport.value = false; };\n});\n```\n\nIn `src/routes/+layout.svelte` update the two toolbar button `disabled` and `onclick` attributes:\n```svelte\ndisabled={!(routePath === \"/calculator\" || routePath === \"/plot\") || !canExport.value}\nonclick={() => {\n  if (routePath === \"/calculator\") exportPdf();\n  else if (routePath === \"/plot\") exportPlotPdf();\n}}\n```\n(Same pattern for CSV.)\n\n### Done when\n\n`pnpm test` green, toolbar Export PDF and Export CSV buttons are enabled on the Plot page when at least one series is present; then commit:\n```\nfeat(plot): wire toolbar Export CSV and Export PDF buttons for Plot page\n```\n\n## Rules\n- Use Svelte 5 runes only — no Svelte 4 patterns\n- Write tests first (TDD)\n- Run pnpm test to verify\n- Commit with the exact commit message above when done\n\nOutput TASK DONE: when complete, or TASK BLOCKED: <reason> if blocked.",
   "subagent_type": "implementer"
 }
-```
+````
 
 **Output:**
+
 ```
 task_id: ses_20d380731ffeJS1BTATEp1j6tl (for resuming to continue this task if needed)
 
@@ -2526,13 +2502,10 @@ TASK DONE: wire toolbar Export CSV and Export PDF buttons for Plot page
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 56.1s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2542,6 +2515,7 @@ TASK DONE: wire toolbar Export CSV and Export PDF buttons for Plot page
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2549,6 +2523,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 4: toolbar wiring",
@@ -2558,6 +2533,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d33c899ffep4vlJeU8QLpLQH (for resuming to continue this task if needed)
 
@@ -2572,15 +2548,12 @@ REVIEW PASS
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 49.6s)
 
-
-
 Task 4 complete. Moving to Task 5.
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2590,6 +2563,7 @@ Task 4 complete. Moving to Task 5.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2598,22 +2572,20 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 159.3s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
-```json
+
+````json
 {
   "description": "Task 5: E2E plot export tests",
   "prompt": "You are the implementer agent. Implement Task 5 from the Stage 6 Plot Export session.\n\n## Spec\nRead docs/04-feature-specs/export.md §9 Plot acceptance criteria.\n\n## Acceptance criteria\n- Playwright tests cover:\n  1. Export buttons are disabled initially (no series yet).\n  2. After adding a series and waiting for WASM result, Export CSV and Export PDF become enabled.\n  3. Clicking \"Export image ▾\" → \"SVG vector\" triggers a download with `.svg` extension.\n  4. Clicking Export CSV triggers a download with filename `dedx_plot_data.csv`.\n\n## Steps\n\n### Step 5a — tests first (add to `tests/e2e/export.spec.ts`)\n\n```typescript\ntest.describe(\"Plot export\", () => {\n  test(\"Export buttons disabled on plot page with no series\", async ({ page }) => { ... });\n  test(\"Export CSV enabled after adding a series\", async ({ page }) => { ... });\n  test(\"SVG vector download from image dropdown\", async ({ page }) => { ... });\n  test(\"Export CSV download has correct filename\", async ({ page }) => { ... });\n});\n```\n\nMark tests `test.skip` if WASM binaries absent; leave comment:\n```typescript\n// Skipped when WASM binary absent. CI downloads artifact before running E2E.\n```\n\n### Step 5b — run and fix\n\n```sh\npnpm exec playwright test tests/e2e/export.spec.ts --grep \"Plot export\"\n```\n\nUse the `playwright` MCP to inspect failures interactively.\n\n### Done when\n\nPlot E2E export tests pass (or are cleanly skipped); then commit:\n```\ntest(e2e): add Plot page export tests (SVG image, CSV download, button enable/disable)\n```\n\n## Rules\n- Use Playwright test framework\n- Mark tests skip if WASM absent with clear comment\n- Run playwright test to verify\n- Commit with the exact commit message above when done\n\nOutput TASK DONE: when complete, or TASK BLOCKED: <reason> if blocked.",
   "subagent_type": "implementer"
 }
-```
+````
 
 **Output:**
+
 ```
 task_id: ses_20d3219d0ffeSl9159bcLU09iK (for resuming to continue this task if needed)
 
@@ -2628,13 +2600,10 @@ TASK DONE: Plot page export tests added and passing
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 54.9s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2644,6 +2613,7 @@ TASK DONE: Plot page export tests added and passing
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2651,6 +2621,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 5: E2E tests",
@@ -2660,6 +2631,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d2fbcb6ffeKHlJEhcUegHauq (for resuming to continue this task if needed)
 
@@ -2676,13 +2648,10 @@ REVIEW FAIL:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 61.0s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/.opencode/tasks/stage-6-plot-export.md",
@@ -2692,6 +2661,7 @@ REVIEW FAIL:
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2699,6 +2669,7 @@ Edit applied successfully.
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Fix Task 5: reviewer issues",
@@ -2708,6 +2679,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d2ee646ffeEKyEVZY4mj4lDM (for resuming to continue this task if needed)
 
@@ -2722,13 +2694,10 @@ TASK DONE: Task 5 - Fix reviewer issues for plot export tests
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 60.7s)
 
-
-
-
-
 **Tool: task**
 
 **Input:**
+
 ```json
 {
   "description": "Review Task 5 fixes",
@@ -2738,6 +2707,7 @@ TASK DONE: Task 5 - Fix reviewer issues for plot export tests
 ```
 
 **Output:**
+
 ```
 task_id: ses_20d2dea53ffexGQyo6o3AIVd9c (for resuming to continue this task if needed)
 
@@ -2769,15 +2739,12 @@ REVIEW PASS
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 34.4s)
 
-
-
 All tasks complete. Now I need to write the session log. Let me create the session log file and update CHANGELOG-AI.md.
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md",
@@ -2786,12 +2753,13 @@ All tasks complete. Now I need to write the session log. Let me create the sessi
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md</path>
 <type>file</type>
 <content>
 1: # AI Changelog
-2: 
+2:
 3: > This changelog tracks all AI-assisted coding sessions on this project.
 4: > Each entry links to a detailed session log in `docs/ai-logs/`.
 5: >
@@ -2799,7 +2767,7 @@ All tasks complete. Now I need to write the session log. Let me create the sessi
 7: > the creation of the redesign plan (`docs/00-redesign-plan.md`). Those
 8: > early planning sessions pre-date this changelog and are not recorded here.
 9: > This log starts from 3 April 2026 when the AI changelog system was introduced.
-10: 
+10:
 11: | Date       | Stage   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ... (line truncated to 2000 chars)
 12: | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------... (line truncated to 2000 chars)
 13: | 2026-05-03 | tooling | **opencode multi-agent setup — orchestrator/implementer/reviewer** (Claude Sonnet 4.6 via Claude Code): added `implementer` (Qwen3.5-397B, 80 steps) and `reviewer` (Qwen3.6-35B, 30 steps) subagents to `opencode.json`; each carries explicit completion signals (`TASK DONE:` / `TASK BLOCKED:` / `REVIEW PASS` / `REVIEW FAIL:`) so the orchestrating main agent can drive the full implementation loop autonomously. Added `.opencode/svelte.json` to override the `svelte-file-editor` subagent model from the default Anthropic model to PLGrid Qwen3.5-397B (was silently failing on PLGrid; file must be in `.opencode/`, not repo root — confirmed by reading plugin source `config.ts:123`). Created `.opencode/agents/` docs (input/output contracts, rules per role), `.opencode/prompts/run-feature.md` (copy-paste session starter with full orchestration loop + parallel-terminal variant), updated `AGENTS.md` with new §6a orchestrator rules (guarded `> **opencode only**` so Copilot/Claude Code skip it), and rewrote `docs/opencode-setup.md` with §6 Multi-agent workflow guide. Fixed `.gitignore` to track `.opencode/agents/` and `.opencode/prompts/` while still ignoring `.opencode/tasks/` (runtime state).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ... (line truncated to 2000 chars)
@@ -2832,6 +2800,7 @@ All tasks complete. Now I need to write the session log. Let me create the sessi
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md"
@@ -2839,35 +2808,36 @@ All tasks complete. Now I need to write the session log. Let me create the sessi
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md</path>
 <type>file</type>
 <content>
 1: # AI Session Logs
-2: 
+2:
 3: Detailed session logs for AI-assisted coding sessions. Each file captures
 4: the prompt→response narrative and task outcomes for one session.
-5: 
+5:
 6: See [`CHANGELOG-AI.md`](../../CHANGELOG-AI.md) in the repo root for a
 7: summary table of all sessions.
-8: 
+8:
 9: > **Note:** These session logs are historical records. For current intended
 10: > behavior, see `docs/04-feature-specs/`. For current implementation, see
 11: > the code.
-12: 
+12:
 13: > **Note for future readers:** these session logs are point-in-time
 14: > narratives. They may reference behavior, group names, or specs that
 15: > were later changed. For the **current** behavior, the per-feature spec
 16: > under `docs/04-feature-specs/` is authoritative.
-17: 
+17:
 18: ## Subdirectories
-19: 
+19:
 20: | Directory              | Purpose                                                                                                                                      |
 21: | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 22: | [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session logs/outputs live in this parent directory, not here. |
-23: 
+23:
 24: ## Log Files
-25: 
+25:
 26: | File                                                                                                     | Date         | Topic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 27: | -------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 28: | [2026-05-03-opencode-multi-agent-setup.md](2026-05-03-opencode-multi-agent-setup.md)                     | 3 May 2026   | **opencode multi-agent setup** — added `implementer` (Qwen3.5-397B) and `reviewer` (Qwen3.6-35B) subagents to `opencode.json` with explicit `TASK DONE:` / `REVIEW PASS` completion signals; `.opencode/svelte.json` to override the `svelte-file-editor` PLGrid model (was failing silently); `.opencode/agents/` docs, `.opencode/prompts/run-feature.md` session starter template, §6a in AGENTS.md, full rewrite of `docs/opencode-setup.md`. (Claude Sonnet 4.6 via Claude Code)                                                                                                                                                                                                                                                                                                                         |
@@ -2931,15 +2901,12 @@ All tasks complete. Now I need to write the session log. Let me create the sessi
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 39.1s)
 
-
-
 Now I'll create the session log file and update the CHANGELOG-AI.md and README.md:
-
-
 
 **Tool: write**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/2026-05-04-stage6-plot-export.md",
@@ -2948,6 +2915,7 @@ Now I'll create the session log file and update the CHANGELOG-AI.md and README.m
 ```
 
 **Output:**
+
 ```
 Wrote file successfully.
 ```
@@ -2967,6 +2935,7 @@ The user is asking me to create an anchored summary of the conversation history.
 **Goal**: Implement Stage 6 Plot Export feature for the dEdx Web project
 
 **What was accomplished**:
+
 - Task 1: formatPlotCsv() + unit tests - DONE (after 1 retry to fix dead code and double BOM issues)
 - Task 2: SVG export bindable + image dropdown UI - DONE (after 1 retry to fix dropdown label and filename)
 - Task 3: generatePlotPdf() basic mode + unit tests - DONE (after 1 retry to fix undeclared seriesIndex)
@@ -2974,12 +2943,14 @@ The user is asking me to create an anchored summary of the conversation history.
 - Task 5: E2E tests for plot export - DONE (after 1 retry to fix PDF button assertion and any type)
 
 **Issues encountered and fixed**:
+
 - Task 1: Dead code (unused dataRows loop), double UTF-8 BOM in download
 - Task 2: Wrong dropdown label ("Download SVG" → "SVG vector"), wrong filename
 - Task 3: Undeclared seriesIndex variable
 - Task 5: Missing PDF button assertion, any type in test code
 
 **Key files**:
+
 - .opencode/tasks/stage-6-plot-export.md
 - src/lib/export/plot-csv.ts
 - src/lib/export/pdf.ts
@@ -2991,16 +2962,14 @@ The user is asking me to create an anchored summary of the conversation history.
 
 All 5 tasks are now complete. The user's original prompt asked me to read files, create task list, and proceed through each task with implementer/reviewer cycle, then write session logs. I've completed Tasks 1-5 but haven't yet written the final session log files (CHANGELOG-AI.md entry, docs/ai-logs/2026-05-04-stage6-plot-export.md, update README.md).
 
-
 Now I'll format this into the template structure, capturing the completed implementation work, the issues that surfaced during review cycles, and the files that were modified throughout the session.
 
-
-
-
 ## Goal
+
 - Implement Stage 6 Plot Export feature: CSV export, SVG image dropdown, PDF basic mode, toolbar wiring, and E2E tests for the `/plot` route.
 
 ## Constraints & Preferences
+
 - Svelte 5 runes only (no Svelte 4 patterns)
 - TDD: tests first, then minimal implementation
 - Follow docs/04-feature-specs/export.md as normative spec
@@ -3008,7 +2977,9 @@ Now I'll format this into the template structure, capturing the completed implem
 - Exact commit messages per task
 
 ## Progress
+
 ### Done
+
 - **Task 1**: `formatPlotCsv()` + `downloadPlotCsv()` with unit tests (Case A/B logic, BOM/CRLF, CSV injection protection)
 - **Task 2**: `$bindable` `requestExportSvg` prop + "Export image ▾" dropdown with "SVG vector" option
 - **Task 3**: `generatePlotPdf()` basic mode with header, SVG chart, legend, page footers
@@ -3016,29 +2987,35 @@ Now I'll format this into the template structure, capturing the completed implem
 - **Task 5**: Playwright E2E tests covering button enable/disable, SVG download, CSV filename
 
 ### In Progress
+
 - Session log finalization (CHANGELOG-AI.md entry, docs/ai-logs/2026-05-04-stage6-plot-export.md, README.md update)
 
 ### Blocked
+
 - (none)
 
 ## Key Decisions
+
 - BOM responsibility delegated to `downloadCsv()` in `csv.ts` rather than `formatPlotCsv()` to avoid double-BOM bug
 - PDF uses `jsPDF({ orientation: 'landscape' })` for wider canvas to match plot aspect ratio
 - Toolbar `disabled` logic extended to include both `/calculator` and `/plot` routes
 
 ## Next Steps
+
 1. Write CHANGELOG-AI.md row for 2026-05-04 stage-6-plot-export session
 2. Create docs/ai-logs/2026-05-04-stage6-plot-export.md detailed session log
 3. Update docs/ai-logs/README.md with new log file entry
 4. Run full test suite: `pnpm test` + `pnpm exec playwright test`
 
 ## Critical Context
+
 - Branch: `qwen/stage-6-plot-export`
 - All 5 tasks passed reviewer after retries; each had 1-2 fixes needed
 - Key fixes: dead code removal (Task 1), dropdown label/filename corrections (Task 2), undeclared `seriesIndex` removal (Task 3), E2E PDF assertion + `Page` type fix (Task 5)
 - CSV follows RFC 4180: UTF-8 BOM, CRLF line endings, `=` prefix protection for injection attacks
 
 ## Relevant Files
+
 - `.opencode/tasks/stage-6-plot-export.md`: task tracking table
 - `src/lib/export/plot-csv.ts`: `formatPlotCsv()`, `downloadPlotCsv()` (Case A/B logic)
 - `src/lib/export/pdf.ts`: `generatePlotPdf()` with header, SVG, legend, footers
@@ -3061,13 +3038,10 @@ _Thinking:_
 
 The user wants me to continue with any remaining next steps. Looking at the progress, I see that I mentioned the session log finalization as 'In Progress' - specifically updating CHANGELOG-AI.md and docs/ai-logs/README.md. I already created the session log file, so I should complete the CHANGELOG-AI.md entry and README.md update, then verify everything is working with tests
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md"
@@ -3075,12 +3049,13 @@ The user wants me to continue with any remaining next steps. Looking at the prog
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md</path>
 <type>file</type>
 <content>
 1: # AI Changelog
-2: 
+2:
 3: > This changelog tracks all AI-assisted coding sessions on this project.
 4: > Each entry links to a detailed session log in `docs/ai-logs/`.
 5: >
@@ -3088,7 +3063,7 @@ The user wants me to continue with any remaining next steps. Looking at the prog
 7: > the creation of the redesign plan (`docs/00-redesign-plan.md`). Those
 8: > early planning sessions pre-date this changelog and are not recorded here.
 9: > This log starts from 3 April 2026 when the AI changelog system was introduced.
-10: 
+10:
 11: | Date       | Stage   | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ... (line truncated to 2000 chars)
 12: | ---------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------... (line truncated to 2000 chars)
 13: | 2026-05-03 | tooling | **opencode multi-agent setup — orchestrator/implementer/reviewer** (Claude Sonnet 4.6 via Claude Code): added `implementer` (Qwen3.5-397B, 80 steps) and `reviewer` (Qwen3.6-35B, 30 steps) subagents to `opencode.json`; each carries explicit completion signals (`TASK DONE:` / `TASK BLOCKED:` / `REVIEW PASS` / `REVIEW FAIL:`) so the orchestrating main agent can drive the full implementation loop autonomously. Added `.opencode/svelte.json` to override the `svelte-file-editor` subagent model from the default Anthropic model to PLGrid Qwen3.5-397B (was silently failing on PLGrid; file must be in `.opencode/`, not repo root — confirmed by reading plugin source `config.ts:123`). Created `.opencode/agents/` docs (input/output contracts, rules per role), `.opencode/prompts/run-feature.md` (copy-paste session starter with full orchestration loop + parallel-terminal variant), updated `AGENTS.md` with new §6a orchestrator rules (guarded `> **opencode only**` so Copilot/Claude Code skip it), and rewrote `docs/opencode-setup.md` with §6 Multi-agent workflow guide. Fixed `.gitignore` to track `.opencode/agents/` and `.opencode/prompts/` while still ignoring `.opencode/tasks/` (runtime state).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ... (line truncated to 2000 chars)
@@ -3121,6 +3096,7 @@ The user wants me to continue with any remaining next steps. Looking at the prog
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md"
@@ -3128,35 +3104,36 @@ The user wants me to continue with any remaining next steps. Looking at the prog
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md</path>
 <type>file</type>
 <content>
 1: # AI Session Logs
-2: 
+2:
 3: Detailed session logs for AI-assisted coding sessions. Each file captures
 4: the prompt→response narrative and task outcomes for one session.
-5: 
+5:
 6: See [`CHANGELOG-AI.md`](../../CHANGELOG-AI.md) in the repo root for a
 7: summary table of all sessions.
-8: 
+8:
 9: > **Note:** These session logs are historical records. For current intended
 10: > behavior, see `docs/04-feature-specs/`. For current implementation, see
 11: > the code.
-12: 
+12:
 13: > **Note for future readers:** these session logs are point-in-time
 14: > narratives. They may reference behavior, group names, or specs that
 15: > were later changed. For the **current** behavior, the per-feature spec
 16: > under `docs/04-feature-specs/` is authoritative.
-17: 
+17:
 18: ## Subdirectories
-19: 
+19:
 20: | Directory              | Purpose                                                                                                                                      |
 21: | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
 22: | [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session logs/outputs live in this parent directory, not here. |
-23: 
+23:
 24: ## Log Files
-25: 
+25:
 26: | File                                                                                                     | Date         | Topic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
 27: | -------------------------------------------------------------------------------------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 28: | [2026-05-03-opencode-multi-agent-setup.md](2026-05-03-opencode-multi-agent-setup.md)                     | 3 May 2026   | **opencode multi-agent setup** — added `implementer` (Qwen3.5-397B) and `reviewer` (Qwen3.6-35B) subagents to `opencode.json` with explicit `TASK DONE:` / `REVIEW PASS` completion signals; `.opencode/svelte.json` to override the `svelte-file-editor` PLGrid model (was failing silently); `.opencode/agents/` docs, `.opencode/prompts/run-feature.md` session starter template, §6a in AGENTS.md, full rewrite of `docs/opencode-setup.md`. (Claude Sonnet 4.6 via Claude Code)                                                                                                                                                                                                                                                                                                                         |
@@ -3224,13 +3201,10 @@ _Thinking:_
 
 Now I have the context to add the new session to CHANGELOG-AI.md and README.md. Let me add the entry to the changelog table and create the session log entry in the README.
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md",
@@ -3240,6 +3214,7 @@ Now I have the context to add the new session to CHANGELOG-AI.md and README.md. 
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -3247,6 +3222,7 @@ Edit applied successfully.
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md",
@@ -3256,6 +3232,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -3263,8 +3240,6 @@ Edit applied successfully.
 ---
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 23.3s)
-
-
 
 Done. All session logging complete:
 
@@ -3285,18 +3260,15 @@ please commit the changelog and other just added files
 _Thinking:_
 
 The user wants me to commit the changelog and session log files I just created. I need to:
+
 1. Check git status to see what files are staged/unstaged
 2. Add the relevant files (CHANGELOG-AI.md, docs/ai-logs/README.md, docs/ai-logs/2026-05-04-stage6-plot-export.md)
 3. Create a commit with an appropriate message
 
-
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git status",
@@ -3305,6 +3277,7 @@ The user wants me to commit the changelog and session log files I just created. 
 ```
 
 **Output:**
+
 ```
 On branch master
 Your branch is up to date with 'origin/master'.
@@ -3328,6 +3301,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git log -1 --format='%s'",
@@ -3336,6 +3310,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
 ```
 
 **Output:**
+
 ```
 fix(e2e): add PDF button assertion and fix any type in plot export tests
 
@@ -3345,13 +3320,10 @@ fix(e2e): add PDF button assertion and fix any type in plot export tests
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 21.5s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git add CHANGELOG-AI.md docs/ai-logs/README.md docs/ai-logs/2026-05-04-stage6-plot-export.md",
@@ -3360,6 +3332,7 @@ fix(e2e): add PDF button assertion and fix any type in plot export tests
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -3368,13 +3341,10 @@ fix(e2e): add PDF button assertion and fix any type in plot export tests
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 26.7s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git commit -m \"docs: add Stage 6 Plot export session log (2026-05-04)\"",
@@ -3383,6 +3353,7 @@ fix(e2e): add PDF button assertion and fix any type in plot export tests
 ```
 
 **Output:**
+
 ```
 [master 0acc379] docs: add Stage 6 Plot export session log (2026-05-04)
  3 files changed, 185 insertions(+), 1 deletion(-)
@@ -3394,9 +3365,6 @@ fix(e2e): add PDF button assertion and fix any type in plot export tests
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 18.0s)
 
-
-
 Committed: `docs: add Stage 6 Plot export session log (2026-05-04)` — 3 files changed, 185 insertions.
 
 ---
-

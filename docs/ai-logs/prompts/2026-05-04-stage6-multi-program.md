@@ -150,6 +150,7 @@ both `LibdedxServiceImpl` and `MockLibdedxServiceWithElectron`.
 ### Done when
 
 `pnpm test` is green (+new calculateMulti tests), `pnpm check` clean, then commit:
+
 ```
 feat(wasm): add calculateMulti() to LibdedxService — loop calculate() per program, collect errors
 ```
@@ -221,15 +222,19 @@ add:
     class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
     aria-pressed={!isAdvancedMode.value}
     aria-label="Switch to Basic mode"
-    onclick={() => { if (isAdvancedMode.value) toggleAdvancedMode(); }}
-  >Basic</button>
+    onclick={() => {
+      if (isAdvancedMode.value) toggleAdvancedMode();
+    }}>Basic</button
+  >
   <button
     type="button"
     class={`px-3 py-1.5 transition-colors ${isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
     aria-pressed={isAdvancedMode.value}
     aria-label="Switch to Advanced mode"
-    onclick={() => { if (!isAdvancedMode.value) toggleAdvancedMode(); }}
-  >Advanced</button>
+    onclick={() => {
+      if (!isAdvancedMode.value) toggleAdvancedMode();
+    }}>Advanced</button
+  >
 </div>
 ```
 
@@ -237,6 +242,7 @@ add:
 
 `pnpm test` is green, Basic/Advanced toggle renders in toolbar, `pnpm lint` clean;
 then commit:
+
 ```
 feat(ui): add Basic/Advanced mode toggle to toolbar; advanced-mode state with localStorage
 ```
@@ -311,10 +317,18 @@ export function createMultiProgramState(
   const quantityFocus = $state<{ value: "both" | "stp" | "csda" }>({ value: "both" });
   const comparisonResults = $state(new Map<number, CalculationResult | LibdedxError>());
   return {
-    get selectedProgramIds() { return selectedProgramIds; },
-    get columnVisibility() { return columnVisibility; },
-    get quantityFocus() { return quantityFocus.value; },
-    get comparisonResults() { return comparisonResults; },
+    get selectedProgramIds() {
+      return selectedProgramIds;
+    },
+    get columnVisibility() {
+      return columnVisibility;
+    },
+    get quantityFocus() {
+      return quantityFocus.value;
+    },
+    get comparisonResults() {
+      return comparisonResults;
+    },
     selectProgram(id) {
       if (!selectedProgramIds.includes(id)) selectedProgramIds.push(id);
     },
@@ -323,8 +337,12 @@ export function createMultiProgramState(
       const idx = selectedProgramIds.indexOf(id);
       if (idx !== -1) selectedProgramIds.splice(idx, 1);
     },
-    setColumnVisible(id, visible) { columnVisibility.set(id, visible); },
-    setQuantityFocus(f) { quantityFocus.value = f; },
+    setColumnVisible(id, visible) {
+      columnVisibility.set(id, visible);
+    },
+    setQuantityFocus(f) {
+      quantityFocus.value = f;
+    },
     setResults(results) {
       comparisonResults.clear();
       for (const [k, v] of results) comparisonResults.set(k, v);
@@ -337,6 +355,7 @@ export function createMultiProgramState(
 
 Create a button that toggles a dropdown `<div role="listbox">`. For each program in
 `availablePrograms`:
+
 - `role="option"`, `aria-selected={state.selectedProgramIds.includes(p.id)}`.
 - Checked (checkbox visual) when selected; if `p.id === state.selectedProgramIds[0]`
   then the checkbox is disabled.
@@ -376,7 +395,7 @@ In the template, below `<EntitySelectionComboboxes ...>`:
   <MultiProgramPicker
     state={multiProgState}
     availablePrograms={state?.availablePrograms ?? []}
-    compatibleIds={new Set(state?.availablePrograms.map(p => p.id) ?? [])}
+    compatibleIds={new Set(state?.availablePrograms.map((p) => p.id) ?? [])}
   />
 {/if}
 ```
@@ -388,6 +407,7 @@ Pass `comparisonResults={multiProgState?.comparisonResults ?? undefined}` and
 ### Done when
 
 `pnpm test` is green (+new multi-program-state tests), `pnpm lint` clean; then commit:
+
 ```
 feat(calculator): add multi-program state, multi-program picker, and calculateMulti() wiring
 ```
@@ -429,6 +449,7 @@ feat(calculator): add multi-program state, multi-program picker, and calculateMu
 - In **basic mode** (no multi-program props), the table renders exactly as before.
 
 ### Step 4a — tests first (add to `src/tests/unit/result-table.test.ts` or create
+
 `src/tests/unit/result-table-advanced.test.ts`)
 
 ```
@@ -468,13 +489,13 @@ Add derived helper:
 const isAdvanced = $derived(multiProgramState !== undefined);
 const visibleProgramIds = $derived(
   isAdvanced
-    ? (multiProgramState!.selectedProgramIds.filter(
-        id => multiProgramState!.columnVisibility.get(id) !== false
-      ))
-    : []
+    ? multiProgramState!.selectedProgramIds.filter(
+        (id) => multiProgramState!.columnVisibility.get(id) !== false,
+      )
+    : [],
 );
-const showStp = $derived(!isAdvanced || multiProgramState!.quantityFocus !== 'csda');
-const showCsda = $derived(!isAdvanced || multiProgramState!.quantityFocus !== 'stp');
+const showStp = $derived(!isAdvanced || multiProgramState!.quantityFocus !== "csda");
+const showCsda = $derived(!isAdvanced || multiProgramState!.quantityFocus !== "stp");
 ```
 
 In the template: wrap the `<thead>` conditional on `isAdvanced` — if advanced, emit
@@ -542,6 +563,7 @@ Auto-dismiss: inside the same `$effect`, schedule `setTimeout(() => { showHint =
 ### Done when
 
 `pnpm test` is green (+new advanced table tests), `pnpm lint` clean; then commit:
+
 ```
 feat(calculator): advanced-mode grouped result table, column show/hide, quantity focus, onboarding hint
 ```
@@ -596,6 +618,7 @@ quantityFocus?: "both" | "stp" | "csda";
 ```
 
 In `encodeCalculatorUrl()`: after existing params, when `isAdvancedMode`:
+
 - `params.set("mode", "advanced")`
 - `params.set("programs", selectedProgramIds.join(","))`
 - if `hiddenProgramIds.length > 0`: `params.set("hidden_programs", hiddenProgramIds.join(","))`
@@ -622,6 +645,7 @@ test.describe("Advanced mode", () => {
 ```
 
 Mark tests `test.skip` if WASM absent, with comment:
+
 ```typescript
 // Skipped when WASM binary absent. CI downloads artifact before running E2E.
 ```
@@ -630,6 +654,7 @@ Mark tests `test.skip` if WASM absent, with comment:
 
 `pnpm test` is green (+new URL encode/decode tests), `pnpm lint` clean, E2E tests
 added and passing (or cleanly skipped); then commit:
+
 ```
 feat(calculator): advanced-mode URL state — mode, programs, hidden_programs, qfocus encode/decode
 ```

@@ -11,17 +11,18 @@
 3. jsPDF's `html()` method internally delegates to **html2canvas**, which walks the
    page's computed styles to reproduce them on a canvas.
 4. Tailwind CSS v4 emits colors in `oklch()` format (e.g.
-   `oklch(0.208 0.042 265.755)`).  html2canvas 1.x does not support `oklch` and
+   `oklch(0.208 0.042 265.755)`). html2canvas 1.x does not support `oklch` and
    throws `"Attempting to parse an unsupported color function oklch"`.
 
 **Fix**: Replaced `doc.html()` with a new `svgToPng()` helper that converts the
 SVG string to a PNG data URL using only native browser APIs — `Blob` + `Image` +
-offscreen `<canvas>` — and then calls `doc.addImage()` to embed the PNG.  html2canvas
+offscreen `<canvas>` — and then calls `doc.addImage()` to embed the PNG. html2canvas
 is never invoked, so oklch values in the page CSS are irrelevant.
 
 `svgToPng` is exported so it can be unit-tested in isolation.
 
 **Tests updated** (`plot-pdf.test.ts`):
+
 - Added `addImage: vi.fn()` to the jsPDF mock (was missing).
 - Added `setupSvgToPngMocks()` called in `beforeEach` to stub `URL.createObjectURL`,
   `URL.revokeObjectURL`, `Image` (triggers `onload` asynchronously), and
