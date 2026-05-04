@@ -39,13 +39,14 @@ matches what the PR description claimed.
 ## Tasks
 
 ### Toolbar mobile-hide refactor
+
 - **Status**: completed
 - **Stage**: 6.1 (Calculator post-merge follow-up)
 - **Files changed**:
   - `src/routes/+layout.svelte` — wrap Export PDF / Export CSV buttons in a
     `hidden sm:flex` container
   - `tests/e2e/toolbar.spec.ts` — (already in PR) mobile-viewport assertion
-    + clipboard-content assertion on Share URL
+    - clipboard-content assertion on Share URL
 - **Decision**: kept the custom `cn()` as-is (not a regression — predates
   this PR; broader conversion to `tailwind-merge` is a separate change).
   The wrapper-element approach is the local minimum-risk fix and avoids

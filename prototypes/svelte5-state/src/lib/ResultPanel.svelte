@@ -21,9 +21,7 @@
 
     const timer = setTimeout(() => {
       if (import.meta.env.DEV) {
-        console.log(
-          `[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`,
-        );
+        console.log(`[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`);
       }
       computationCount.value += 1;
     }, 300);

@@ -57,7 +57,7 @@ export function convertEnergyToMeVperNucl(
   value: number,
   unit: string,
   massNumber: number,
-  atomicMass?: number
+  atomicMass?: number,
 ): number {
   const { value: baseValue, baseUnit } = normalizeToBaseUnit(value, unit);
 
@@ -79,7 +79,7 @@ export function convertEnergyFromMeVperU(
   valueMeVperU: number,
   targetUnit: string,
   massNumber: number,
-  atomicMass?: number
+  atomicMass?: number,
 ): number {
   const m_u = atomicMass ?? massNumber;
 
@@ -109,7 +109,7 @@ export function convertEnergyFromMeVperNucl(
   valueMeVperNucl: number,
   targetUnit: string,
   massNumber: number,
-  atomicMass?: number
+  atomicMass?: number,
 ): number {
   const m_u = atomicMass ?? massNumber;
 

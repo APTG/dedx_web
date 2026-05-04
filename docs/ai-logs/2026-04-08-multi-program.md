@@ -3,19 +3,25 @@
 ## Session Narrative
 
 ### Prompt 1: Read the redesign plan and identify which spec to write next
+
 **AI response**: Reviewed the redesign plan, feature-spec index, changelog, and relevant spec dependencies. Recommended `multi-program.md` as the next spec because it is the next unwritten feature in the documented implementation order and already has WASM contract support through `calculateMulti()`.
 
 ### Prompt 2: Generate a prompt for the spec agent and recommend a VS Code model choice
+
 **AI response**: Provided a reusable prompt for drafting a `multi-program.md` skeleton and recommended using Auto in VS Code, with GPT-5.4 as the manual model choice if pinned.
 
 ### Prompt 3: Draft a skeleton for `docs/04-feature-specs/multi-program.md`
+
 **AI response**: Produced a markdown-only skeleton covering user story, scope, inputs, state model, behavior, layout, validation, unit handling, URL state, export, accessibility, acceptance criteria, open questions, and cross-spec consistency checks.
 
 ### Prompt 4: Implement that skeleton in the repository markdown file
+
 **AI response**: Added the new spec file in `docs/04-feature-specs/`, updated the feature-spec index, and recorded the session in the changelog and AI log index.
 
 ### Prompt 5: Turn skeleton into full draft v1
+
 **AI response**: User specified key design decisions:
+
 - Multi-program is an advanced-mode feature (like a calculator mode button)
 - Additional per-program columns appear in the table (stopping power + CSDA range per program)
 - Columns can be shown/hidden like Excel hidden columns
@@ -25,7 +31,9 @@
 Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expanded product vision §4.4 to define the Basic/Advanced mode concept as a project-wide principle.
 
 ### Prompt 6: Draft v2 refinements
+
 **AI response**: User provided 9 specific feedback items. Applied all changes:
+
 1. Advanced toggle moved to app-wide top-right action bar (updated product vision §4.4 first)
 2. Columns grouped by quantity (all Stp Powers → all CSDA Ranges) instead of by program
 3. Drag-and-drop column reordering within groups, synced across groups
@@ -37,11 +45,13 @@ Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expan
 9. Drag-and-drop supported, synced between groups (resolved Open Question #4)
 
 ### Prompt 7: Add quantity-focus user story, then cross-spec consistency pass, then mark spec final
+
 **AI response**: Added a new user story and implemented a concrete quantity-focus control (`Both`, `STP only`, `CSDA only`) with behavior and acceptance criteria. Then performed a full consistency sweep and integrated quantity focus across state model, URL contract (`qfocus`), export visibility rules, wireframes, accessibility semantics, and calculator cross-references. Finalized `multi-program.md` as **Final v3** and synced index/changelog metadata.
 
 ## Tasks
 
 ### Multi-Program Spec Draft v2
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:
@@ -57,6 +67,7 @@ Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expan
 - **Issue**: None — all v1 open questions resolved except #2 (incompatible programs) and #3 (non-program column hiding).
 
 ### Multi-Program Spec Final v3
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:
@@ -71,6 +82,7 @@ Rewrote the entire spec from skeleton to Draft v1 with full sections. Also expan
 - **Issue**: Remaining deferred questions are explicitly documented in spec Open Questions (#2 and #3).
 
 ### Multi-Program Spec Draft v1
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:

@@ -50,6 +50,7 @@ deferred to opencode as requested by user.
 ## Tasks
 
 ### Close KE conservation open question in unit-handling.md
+
 - **Status**: completed
 - **Stage**: 5 (unit handling)
 - **Files changed**: `docs/04-feature-specs/unit-handling.md`
@@ -58,6 +59,7 @@ deferred to opencode as requested by user.
   particle's available unit.
 
 ### Add TeV, TeV/nucl, TeV/u to supported suffixes
+
 - **Status**: completed
 - **Stage**: 5
 - **Files changed**: `docs/04-feature-specs/unit-handling.md`
@@ -65,6 +67,7 @@ deferred to opencode as requested by user.
   the existing SI-prefix table alongside GeV (×1e3).
 
 ### Add §3a Typo Suggestions spec
+
 - **Status**: completed
 - **Stage**: 5
 - **Files changed**: `docs/04-feature-specs/unit-handling.md`
@@ -72,6 +75,7 @@ deferred to opencode as requested by user.
   Error format: `unknown unit: X — did you mean Y?`. Never silent.
 
 ### Resolve "Beams" → "Common particles" group heading
+
 - **Status**: completed (spec closed; code change deferred to opencode)
 - **Stage**: 5
 - **Files changed**: `docs/04-feature-specs/entity-selection.md`

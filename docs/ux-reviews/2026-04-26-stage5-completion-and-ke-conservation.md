@@ -57,8 +57,8 @@ maximally confusing and is not on the table.)
 
 - Matches what an accelerator physicist usually does: "I have a 12 MeV
   beam line — what does it look like for different ions on this target?"
-  A change of particle is a change of *what* is in the pipe, not of
-  *how much* energy each nucleon carries.
+  A change of particle is a change of _what_ is in the pipe, not of
+  _how much_ energy each nucleon carries.
 - Total kinetic energy is the quantity that determines deposited dose
   per particle in the simplest calculations (range × LET cross-checks).
   Preserving it makes sequential particle comparisons natural.
@@ -78,8 +78,8 @@ maximally confusing and is not on the table.)
   though the row text didn't change.
 - For the heavy-ion crowd (carbon therapy etc.) the per-nucleon energy
   IS the quantity they think in: "we treat at 290 MeV/nucl". A switch
-  to a different ion at "the same beam energy" usually means *the same
-  per-nucleon energy*, not *the same total energy*. Option A is wrong
+  to a different ion at "the same beam energy" usually means _the same
+  per-nucleon energy_, not _the same total energy_. Option A is wrong
   for them.
 - The row-unit toggle (MeV ↔ MeV/nucl) becomes a per-nucleon scaler:
   toggling `12 MeV` → MeV/nucl on Carbon would yield `1 MeV/nucl`. This
@@ -97,10 +97,10 @@ maximally confusing and is not on the table.)
 - Matches libdedx's natural unit. The "→ MeV/nucl" column never jumps
   on a particle switch — what you see is what you get pushed to WASM.
 - Matches how heavy-ion / carbon-therapy physicists describe beams.
-- The row-unit toggle (MeV ↔ MeV/nucl) becomes a *display* operation
+- The row-unit toggle (MeV ↔ MeV/nucl) becomes a _display_ operation
   only: `12 MeV` on Carbon = `1 MeV/nucl` and toggling either way just
   reformats the same physical quantity. The numeric value the user typed
-  may change, but the *kinetic energy* stays put — exactly the
+  may change, but the _kinetic energy_ stays put — exactly the
   invariant the user originally asked for.
 - No special case for proton (A=1) — `MeV` and `MeV/nucl` coincide, so
   the row text doesn't change at all when switching e.g. proton ↔ proton.
@@ -118,7 +118,7 @@ maximally confusing and is not on the table.)
 - The total kinetic energy of the row jumps by a factor of A on every
   ion → ion switch, which is exactly what Option A users hate.
 
-### Option C — *display both, preserve neither* (status quo, refined)
+### Option C — _display both, preserve neither_ (status quo, refined)
 
 > Keep today's "typed number is preserved verbatim" rule, but make the
 > "→ MeV/nucl" column **always visible** and prominent so the user can
@@ -131,7 +131,7 @@ maximally confusing and is not on the table.)
   text the user typed.
 - Trivial to implement — already the current behaviour. Just add the
   always-visible column header (already in place per `result-table.svelte`)
-  and reword the spec to make this an *intentional* choice rather than a
+  and reword the spec to make this an _intentional_ choice rather than a
   legacy one.
 - The user can switch particles to compare energies and visually read
   off the per-nucleon value in the second column.
@@ -157,7 +157,7 @@ Reasoning:
    choice that makes the displayed-and-conserved quantity the same as
    libdedx's natural quantity. No translation layer in either direction.
 2. The proton-vs-He example in the original prompt (80 MeV ↔ 20 MeV/nucl
-   round-trip) is *also* satisfied by Option B if we interpret "switch
+   round-trip) is _also_ satisfied by Option B if we interpret "switch
    to proton" as "show me the same kinetic energy on a per-nucleon
    basis": He @ 20 MeV/nucl → proton @ 20 MeV (since A=1, the
    per-nucleon and total values coincide) → He @ 20 MeV/nucl. That
@@ -185,8 +185,6 @@ Specification implications if we go with Option B:
 
 ---
 
-
-
 **Reported:** "Imagine we start with helium and put 20 MeV per nucleon. That
 means 80 MeV total. If we switch to proton we should see 80 MeV, and then if
 we again switch to helium we should again see 20 MeV per nucl. Kinetic energy
@@ -194,11 +192,11 @@ should be conserved when switching particles and units."
 
 **Reproduction (live, on the deployed build):**
 
-| Step | Action                                                          | Observed                                              | Expected (per the request)                            |
-| ---- | --------------------------------------------------------------- | ----------------------------------------------------- | ----------------------------------------------------- |
-| 1    | Particle = Helium, type `20 MeV/nucl` in row 1                  | "→ MeV/nucl" cell shows 20; STP value shown          | OK                                                    |
-| 2    | Switch particle to Hydrogen (proton)                            | Row text still `20 MeV/nucl`; "→ MeV/nucl" shows 20  | Row text becomes `80 MeV`; "→ MeV/nucl" shows 80      |
-| 3    | Switch particle back to Helium                                  | Row text still `20 MeV/nucl`                         | Round-trips back to `20 MeV/nucl`                     |
+| Step | Action                                         | Observed                                            | Expected (per the request)                       |
+| ---- | ---------------------------------------------- | --------------------------------------------------- | ------------------------------------------------ |
+| 1    | Particle = Helium, type `20 MeV/nucl` in row 1 | "→ MeV/nucl" cell shows 20; STP value shown         | OK                                               |
+| 2    | Switch particle to Hydrogen (proton)           | Row text still `20 MeV/nucl`; "→ MeV/nucl" shows 20 | Row text becomes `80 MeV`; "→ MeV/nucl" shows 80 |
+| 3    | Switch particle back to Helium                 | Row text still `20 MeV/nucl`                        | Round-trips back to `20 MeV/nucl`                |
 
 **Root cause:** `selectParticle()` in `src/lib/state/entity-selection.svelte.ts:253-276`
 deliberately **does not touch the energy rows** — and the
@@ -206,7 +204,7 @@ deliberately **does not touch the energy rows** — and the
 
 > 2. The input values are **not modified** — numeric values stay the same.
 
-So the current behaviour is *correct per the existing spec*, but the spec
+So the current behaviour is _correct per the existing spec_, but the spec
 itself encodes the wrong design. There are real UX consequences:
 
 - A user comparing "the same beam" across particles has to do mental
@@ -231,7 +229,7 @@ implementation:
    bullets 1-4 with:
    > 1. The conserved quantity is the **kinetic energy** of each row.
    > 2. For each row, the parsed `(value, unit)` is converted to MeV (total)
-   >    using the *previous* particle's mass number A and atomic mass m_u.
+   >    using the _previous_ particle's mass number A and atomic mass m_u.
    > 3. The new particle's preferred display unit is chosen
    >    (`MeV` for proton/electron, `MeV/nucl` for heavy ions if currently in
    >    a per-nucleon unit, otherwise `MeV`), and the row text is rewritten
@@ -283,7 +281,7 @@ shipped independently as a smaller, less risky first step:
   `convertEnergyFromMeVperNucl(...)` to the new unit, then format
   with `formatSigFigs`.
 - Existing test at `src/tests/components/result-table.test.ts:111-127`
-  asserts the *current* behaviour (`expect(rawInput).toBe("120 MeV/nucl")`
+  asserts the _current_ behaviour (`expect(rawInput).toBe("120 MeV/nucl")`
   after switching from `120 MeV`); this test will need updating in lockstep.
 
 ---
@@ -437,7 +435,7 @@ reads back as a clean `0`, which the existing subnormal-output warning
 in `calculator.svelte.ts:190-207` will then flag explicitly so we have a
 log trail rather than silent garbage on screen.
 
-This is a *defensive* fix — it does not change the C-side behaviour. If
+This is a _defensive_ fix — it does not change the C-side behaviour. If
 the underlying C bug exists, we'd still want to track it down (open a
 follow-up issue against `libdedx/`), but the user-visible symptom (a
 stopping-power column showing `3.820e-314`) cannot recur.
@@ -488,11 +486,11 @@ worse than "Tin" without `(Sn)` would be removing the symbol from
 This is now spec'd in `entity-selection.md` § "Particle naming
 preferences" (added 2026-04-26). Summary:
 
-| Particle ID | Display label              |
-| ----------- | -------------------------- |
-| 1           | `proton`                   |
-| 2           | `alpha particle`           |
-| 1001        | `electron`                 |
+| Particle ID | Display label                  |
+| ----------- | ------------------------------ |
+| 1           | `proton`                       |
+| 2           | `alpha particle`               |
+| 1001        | `electron`                     |
 | 3..118      | `Element (Symbol)` Title-cased |
 
 Group headings:
@@ -528,7 +526,7 @@ The grouping into "Beams" / "Ions" needs an additional change to the
 `groupedItems` derivation in the same file. Both changes have been left
 out of this PR because they touch existing component tests that assert
 the current "Hydrogen (H)" label, and the user has only asked for the
-naming preference to be *recorded in the spec* — not yet implemented.
+naming preference to be _recorded in the spec_ — not yet implemented.
 
 ---
 
@@ -545,21 +543,19 @@ toggle will now have to update the spec deliberately.
 
 ---
 
-
-
-| #   | Issue                                                                                            | Severity | Status        |
-| --- | ------------------------------------------------------------------------------------------------ | -------- | ------------- |
-| 1   | Kinetic energy not conserved on particle switch (recommendation: Option B — conserve MeV/nucl)   | High     | 🆕 Open — spec change required, fixme E2E ships |
-| 2   | Per-row unit dropdown silently scales KE on heavy ions                                           | High     | 🆕 Open — can ship independently |
-| 3   | No master energy-unit selector on calculator route                                               | Medium   | 🆕 Open — spec ↔ implementation mismatch |
-| 4   | "Add row" affordance is invisible (no button, no empty sentinel on first load)                   | Medium   | 🆕 Open       |
-| 5   | Live calculation is not debounced (`calculator.md:840` unmet)                                    | Low      | 🆕 Open       |
-| 6   | ~480 LOC of dead/duplicated code in `energy-input.svelte`, `units/energy.ts`, format test files  | Low      | 🆕 Open — cleanup |
-| 7   | Parser silently collapsed `meV` (milli) into `MeV` (mega) — 10⁹ ratio                            | High     | ✅ Fixed in this PR |
-| 8   | `_malloc` returned uninitialized memory → `3.820e-314` denormal stopping powers                  | High     | ✅ Fixed in this PR (defensive zero-init) |
-| 9   | Missing chemical symbols for elements Z=19..118 (Tin, Antimony, Iodine, Copernicium, …)          | Medium   | ✅ Fixed in this PR (PARTICLE_ALIASES exhaustive Z=1..118) |
-| 10  | Particle naming preferences (`proton` / `alpha particle` / "Ions" group)                         | Medium   | 🆕 Spec'd in this PR — UI implementation deferred |
-| 11  | Stage 5.1 nice-to-haves still open in `docs/progress/stage-5-entity-selection.md`               | Low      | Pre-existing  |
+| #   | Issue                                                                                           | Severity | Status                                                     |
+| --- | ----------------------------------------------------------------------------------------------- | -------- | ---------------------------------------------------------- |
+| 1   | Kinetic energy not conserved on particle switch (recommendation: Option B — conserve MeV/nucl)  | High     | 🆕 Open — spec change required, fixme E2E ships            |
+| 2   | Per-row unit dropdown silently scales KE on heavy ions                                          | High     | 🆕 Open — can ship independently                           |
+| 3   | No master energy-unit selector on calculator route                                              | Medium   | 🆕 Open — spec ↔ implementation mismatch                   |
+| 4   | "Add row" affordance is invisible (no button, no empty sentinel on first load)                  | Medium   | 🆕 Open                                                    |
+| 5   | Live calculation is not debounced (`calculator.md:840` unmet)                                   | Low      | 🆕 Open                                                    |
+| 6   | ~480 LOC of dead/duplicated code in `energy-input.svelte`, `units/energy.ts`, format test files | Low      | 🆕 Open — cleanup                                          |
+| 7   | Parser silently collapsed `meV` (milli) into `MeV` (mega) — 10⁹ ratio                           | High     | ✅ Fixed in this PR                                        |
+| 8   | `_malloc` returned uninitialized memory → `3.820e-314` denormal stopping powers                 | High     | ✅ Fixed in this PR (defensive zero-init)                  |
+| 9   | Missing chemical symbols for elements Z=19..118 (Tin, Antimony, Iodine, Copernicium, …)         | Medium   | ✅ Fixed in this PR (PARTICLE_ALIASES exhaustive Z=1..118) |
+| 10  | Particle naming preferences (`proton` / `alpha particle` / "Ions" group)                        | Medium   | 🆕 Spec'd in this PR — UI implementation deferred          |
+| 11  | Stage 5.1 nice-to-haves still open in `docs/progress/stage-5-entity-selection.md`               | Low      | Pre-existing                                               |
 
 ---
 

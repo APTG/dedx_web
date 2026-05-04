@@ -8,13 +8,10 @@
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.1s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-combobox.svelte",
@@ -24,6 +21,7 @@
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/components/entity-combobox.svelte</path>
 <type>file</type>
@@ -112,15 +110,12 @@
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.6s)
 
-
-
 The combobox uses `Combobox.Item` from bits-ui with a `label` prop. The test is using `getByRole('option')` but bits-ui combobox items don't use `role="option"` - they use a different accessibility pattern. Let me check what role bits-ui uses:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -r \"role.*option\" vendor/bits-ui/packages/bits-ui/src/lib/bits/combobox/ 2>/dev/null | head -20",
@@ -129,6 +124,7 @@ The combobox uses `Combobox.Item` from bits-ui with a `label` prop. The test is 
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -136,6 +132,7 @@ The combobox uses `Combobox.Item` from bits-ui with a `label` prop. The test is 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls -la vendor/bits-ui/packages/bits-ui/src/lib/bits/combobox/",
@@ -144,6 +141,7 @@ The combobox uses `Combobox.Item` from bits-ui with a `label` prop. The test is 
 ```
 
 **Output:**
+
 ```
 total 24
 drwxrwxr-x  3 grzanka grzanka 4096 Apr 20 09:35 .
@@ -159,13 +157,10 @@ drwxrwxr-x  2 grzanka grzanka 4096 Apr 20 09:35 components
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.0s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls vendor/bits-ui/packages/bits-ui/src/lib/bits/combobox/components/",
@@ -174,6 +169,7 @@ drwxrwxr-x  2 grzanka grzanka 4096 Apr 20 09:35 components
 ```
 
 **Output:**
+
 ```
 combobox-input.svelte
 combobox.svelte
@@ -184,6 +180,7 @@ combobox-trigger.svelte
 **Tool: grep**
 
 **Input:**
+
 ```json
 {
   "pattern": "export.*ComboboxItem|role",
@@ -193,6 +190,7 @@ combobox-trigger.svelte
 ```
 
 **Output:**
+
 ```
 No files found
 ```
@@ -201,13 +199,10 @@ No files found
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.4s)
 
-
-
-
-
 **Tool: grep**
 
 **Input:**
+
 ```json
 {
   "include": "*.svelte",
@@ -217,6 +212,7 @@ No files found
 ```
 
 **Output:**
+
 ```
 No files found
 ```
@@ -225,13 +221,10 @@ No files found
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.3s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/vendor/bits-ui/packages/bits-ui/src/lib/bits/combobox/components/combobox.svelte",
@@ -240,6 +233,7 @@ No files found
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/vendor/bits-ui/packages/bits-ui/src/lib/bits/combobox/components/combobox.svelte</path>
 <type>file</type>
@@ -252,7 +246,7 @@ No files found
 6: 	import { SelectRootState } from "$lib/bits/select/select.svelte.js";
 7: 	import ListboxHiddenInput from "$lib/bits/select/components/select-hidden-input.svelte";
 8: 	import { watch } from "runed";
-9: 
+9:
 10: 	let {
 11: 		value = $bindable(),
 12: 		onValueChange = noop,
@@ -270,12 +264,12 @@ No files found
 24: 		inputValue = "",
 25: 		children,
 26: 	}: ComboboxRootProps = $props();
-27: 
+27:
 28: 	if (value === undefined) {
 29: 		const defaultValue = type === "single" ? "" : [];
 30: 		value = defaultValue;
 31: 	}
-32: 
+32:
 33: 	watch.pre(
 34: 		() => value,
 35: 		() => {
@@ -283,7 +277,7 @@ No files found
 37: 			value = type === "single" ? "" : [];
 38: 		}
 39: 	);
-40: 
+40:
 41: 	const rootState = SelectRootState.create({
 42: 		type,
 43: 		value: boxWith(
@@ -316,11 +310,11 @@ No files found
 70: 		onOpenChangeComplete: boxWith(() => onOpenChangeComplete),
 71: 	});
 72: </script>
-73: 
+73:
 74: <FloatingLayer>
 75: 	{@render children?.()}
 76: </FloatingLayer>
-77: 
+77:
 78: {#if Array.isArray(rootState.opts.value.current)}
 79: 	{#if rootState.opts.value.current.length}
 80: 		{#each rootState.opts.value.current as item (item)}
@@ -339,15 +333,12 @@ No files found
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.6s)
 
-
-
 Let me check the select implementation which combobox extends, to find what role is used:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -r \"role=\" vendor/bits-ui/packages/bits-ui/src/lib/bits/select/ | head -20",
@@ -356,6 +347,7 @@ Let me check the select implementation which combobox extends, to find what role
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -364,15 +356,12 @@ Let me check the select implementation which combobox extends, to find what role
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.5s)
 
-
-
 Let me check what the E2E tests that ARE passing use to find combobox items:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -A 5 \"getByRole\" tests/e2e/entity-selection.spec.ts | head -30",
@@ -381,6 +370,7 @@ Let me check what the E2E tests that ARE passing use to find combobox items:
 ```
 
 **Output:**
+
 ```
     page.getByRole("button", { name: /^Particle$/ });
   const materialTrigger = (page: import("@playwright/test").Page) =>
@@ -419,15 +409,12 @@ Let me check what the E2E tests that ARE passing use to find combobox items:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.9s)
 
-
-
 The passing tests use `getByRole("option")`! So bits-ui does render options with that role. The problem might be timing - the dropdown might not be fully open when the test tries to click. Let me look more closely at the failing test's `selectParticle` function and see if there's a race condition:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/entity-selection.spec.ts --grep \"typing carbon\" --reporter=line 2>&1",
@@ -437,6 +424,7 @@ The passing tests use `getByRole("option")`! So bits-ui does render options with
 ```
 
 **Output:**
+
 ```
 [1A[2K[2m[WebServer] [22m[2m11:41:52 AM[22m [33m[1m[vite][22m[39m [33mwarning: `optimizeDeps.esbuildOptions` option was specified by "vite-plugin-svelte" plugin. This option is deprecated, please use `optimizeDeps.rolldownOptions` instead.[39m
 
@@ -454,15 +442,12 @@ Running 1 test using 1 worker
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 65.3s)
 
-
-
 The carbon test passes! The difference is that test searches for "carbon" and the dropdown shows "Carbon (C)". The failing tests search for "helium" but the dropdown shows "alpha particle" for ID 2. Let me verify:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/entity-selection.spec.ts --grep \"typing carbon\" --reporter=list --debug 2>&1 | head -40",
@@ -472,6 +457,7 @@ The carbon test passes! The difference is that test searches for "carbon" and th
 ```
 
 **Output:**
+
 ```
 (no output)
 
@@ -484,15 +470,12 @@ bash tool terminated command after exceeding timeout 60000 ms. If this command i
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.7s)
 
-
-
 Let me check what the particle name is for ID 2 (Helium/alpha particle) in the libdedx data:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -r \"alpha\\|helium\\|HELIUM\" src/lib/config/ --include=\"*.ts\" | head -20",
@@ -501,6 +484,7 @@ Let me check what the particle name is for ID 2 (Helium/alpha particle) in the l
 ```
 
 **Output:**
+
 ```
 src/lib/config/particle-aliases.ts: *   `alpha`/`α`/`He-4`) so physicists can search for a beam by its
 src/lib/config/particle-aliases.ts: *   them as "proton" and "alpha particle" rather than "Hydrogen" /
@@ -515,8 +499,6 @@ src/lib/config/program-names.ts: * Pure alphabetic acronyms (ASTAR, PSTAR, MSTAR
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 8.7s)
 
-
-
 The aliases file includes "helium" as an alias for ID 2! So searching for "helium" should find the alpha particle. But the displayed label is "alpha particle" not "Helium". The test is using `getByRole('option', { name: /helium/i })` which looks for the visible text, not the search alias.
 
 The solution is to update the test to search for "alpha" instead of "helium". But first, let me verify what the actual displayed label is by looking at the getParticleLabel function again:
@@ -528,16 +510,16 @@ if (particle.id === 2) return "alpha particle";
 So ID 2 displays as "alpha particle", not "helium". The test needs to be updated. Let me also check if "He 20 MeV/nucl" test comment refers to Helium or alpha particle - they're the same thing (alpha particle is a helium-4 nucleus).
 
 Now I understand the issue. Looking back at the summary at the start of the session:
+
 - The unit tests are 425 passing
 - The E2E tests fail because they're searching for "helium" but the dropdown shows "alpha particle"
 
 Let me update the E2E tests to use "alpha" instead of "helium":
 
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -547,54 +529,55 @@ Let me update the E2E tests to use "alpha" instead of "helium":
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts</path>
 <type>file</type>
 <content>
-60: 
+60:
 61: test.describe("Particle switching — E_nucl conservation", () => {
 62:   test.beforeEach(async ({ page }) => {
 63:     await waitForWasm(page);
 64:     await waitForTable(page);
 65:   });
-66: 
+66:
 67:   test("He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV", async ({
 68:     page,
 69:   }) => {
 70:     await selectParticle(page, "helium");
 71:     await typeInRow(page, 0, "20 MeV/nucl");
 72:     expect(await mevNuclCell(page, 0)).toContain("20");
-73: 
+73:
 74:     await selectParticle(page, "hydrogen");
 75:     // E_nucl=20 conserved: proton (A=1) displays as 20 MeV.
 76:     expect(await rowText(page, 0)).toBe("20 MeV");
 77:     expect(await mevNuclCell(page, 0)).toContain("20");
 78:   });
-79: 
+79:
 80:   test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({ page }) => {
 81:     await selectParticle(page, "helium");
 82:     await typeInRow(page, 0, "80 MeV");
 83:     // Helium 80 MeV total → E_nucl = 80/4 = 20 MeV/nucl.
 84:     expect(await mevNuclCell(page, 0)).toContain("20");
-85: 
+85:
 86:     await selectParticle(page, "hydrogen");
 87:     // E_nucl=20 conserved: proton displays as 20 MeV.
 88:     expect(await rowText(page, 0)).toBe("20 MeV");
 89:     expect(await mevNuclCell(page, 0)).toContain("20");
 90:   });
-91: 
+91:
 92:   test("Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved", async ({
 93:     page,
 94:   }) => {
 95:     // Default: proton 100 MeV (E_nucl=100).
 96:     expect(await rowText(page, 0)).toBe("100");
 97:     expect(await mevNuclCell(page, 0)).toContain("100");
-98: 
+98:
 99:     // Carbon (A=12): E_nucl=100 → 100 × 12 = 1200 MeV total.
 100:     await selectParticle(page, "carbon");
 101:     expect(await rowText(page, 0)).toBe("1200 MeV");
 102:     expect(await mevNuclCell(page, 0)).toContain("100");
-103: 
+103:
 104:     // Back to proton: E_nucl=100 → 100 MeV.
 105:     await selectParticle(page, "hydrogen");
 106:     expect(await rowText(page, 0)).toBe("100 MeV");
@@ -610,15 +593,12 @@ Let me update the E2E tests to use "alpha" instead of "helium":
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 12.8s)
 
-
-
 Now I need to update the E2E tests to use "alpha" instead of "helium" since the display label is now "alpha particle". Let me also check what other particle names need updating:
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -628,6 +608,7 @@ Now I need to update the E2E tests to use "alpha" instead of "helium" since the 
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -636,13 +617,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 22.6s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -652,64 +630,65 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts</path>
 <type>file</type>
 <content>
-150: 
+150:
 151: test.describe("Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented)", () => {
 152:   test.beforeEach(async ({ page }) => {
 153:     await waitForWasm(page);
 154:     await waitForTable(page);
 155:   });
-156: 
+156:
 157:   test(
 158:     "He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)",
 159:     async ({ page }) => {
 160:       await selectParticle(page, "helium");
 161:       await typeInRow(page, 0, "20 MeV/nucl");
 162:       expect(await mevNuclCell(page, 0)).toContain("20");
-163: 
+163:
 164:       await selectParticle(page, "hydrogen");
 165:       // E_nucl conserved: 20 MeV/nucl on He (A=4) → 20 MeV on proton (A=1).
 166:       expect(await rowText(page, 0)).toBe("20 MeV");
 167:       expect(await mevNuclCell(page, 0)).toContain("20");
 168:     },
 169:   );
-170: 
+170:
 171:   test(
 172:     "He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)",
 173:     async ({ page }) => {
 174:       await selectParticle(page, "helium");
 175:       await typeInRow(page, 0, "20 MeV/nucl");
-176: 
+176:
 177:       await selectParticle(page, "hydrogen");
 178:       // E_nucl conserved: 20 MeV/nucl on He → 20 MeV on proton (A=1, total MeV display).
 179:       expect(await rowText(page, 0)).toBe("20 MeV");
-180: 
+180:
 181:       await selectParticle(page, "helium");
 182:       // Round-trip is lossy: proton "20 MeV" (total) → He "20 MeV" (total), not "20 MeV/nucl".
 183:       // This is expected: the per-nucleon information is lost when going through proton.
 184:       expect(await rowText(page, 0)).toBe("20 MeV");
 185:     },
 186:   );
-187: 
+187:
 188:   test(
 189:     "Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved",
 190:     async ({ page }) => {
 191:       await selectParticle(page, "carbon");
 192:       await typeInRow(page, 0, "12 MeV");
-193: 
+193:
 194:       const unitSelect = page.locator("tbody tr").first().locator("select").first();
 195:       await unitSelect.selectOption("MeV/nucl");
-196: 
+196:
 197:       // DESIRED: the numeric value converts on unit toggle.
 198:       // 12 MeV total ÷ 12 nucleons = 1 MeV/nucl.
 199:       expect(await rowText(page, 0)).toBe("1 MeV/nucl");
 200:       expect(await mevNuclCell(page, 0)).toContain("1");
 201:     },
 202:   );
-203: 
+203:
 204:   test.fixme(
 205:     "Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV (KE conserved)",
 206:     async ({ page }) => {
@@ -718,26 +697,26 @@ Edit applied successfully.
 209:       await page.getByRole("radio", { name: /MeV\/nucl/i }).click();
 210:       await typeInRow(page, 0, "100");
 211:       expect(await mevNuclCell(page, 0)).toContain("100");
-212: 
+212:
 213:       await page.getByRole("radio", { name: /^MeV$/i }).click();
 214:       // DESIRED: 100 MeV/nucl × 12 = 1200 MeV.
 215:       // NOTE: This test depends on Task 6 (master unit selector UI).
 216:       expect(await rowText(page, 0)).toBe("1200");
 217:     },
 218:   );
-219: 
+219:
 220:   test.fixme(
 221:     "He 20 MeV/nucl + multiple rows: KE conservation applies independently to each row",
 222:     async ({ page }) => {
 223:       await selectParticle(page, "helium");
 224:       await typeInRow(page, 0, "20 MeV/nucl");
 225:       await typeInRow(page, 1, "50 MeV");
-226: 
+226:
 227:       await selectParticle(page, "hydrogen");
 228:       // Row 0: E_nucl=20 → proton 20 MeV. Row 1: E_nucl=50/4=12.5 → proton 12.5 MeV.
 229:       expect(await rowText(page, 0)).toBe("20 MeV");
 230:       expect(await rowText(page, 1)).toBe("12.5 MeV");
-231: 
+231:
 232:       await selectParticle(page, "helium");
 233:       // Row 0: proton "20 MeV" → He "20 MeV" (lossy, not "20 MeV/nucl").
 234:       // Row 1: proton "12.5 MeV" → He "12.5 MeV" (lossy, E_nucl=12.5 × 4 = 50 MeV total).
@@ -745,14 +724,14 @@ Edit applied successfully.
 236:       expect(await rowText(page, 1)).toBe("50 MeV");
 237:     },
 238:   );
-239: 
+239:
 240:   test(
 241:     "Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)",
 242:     async ({ page }) => {
 243:       await selectParticle(page, "helium");
 244:       await typeInRow(page, 0, "20 MeV/nucl");
 245:       expect(await mevNuclCell(page, 0)).toContain("20");
-246: 
+246:
 247:       // Electron only supports MeV; the row is remapped to total KE.
 248:       // E_nucl=20 MeV/nucl on He (A=4) → total = 20 × 4 = 80 MeV for electron.
 249:       await selectParticle(page, "electron");
@@ -765,13 +744,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 86.9s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -781,6 +757,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -789,13 +766,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 25.7s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -805,6 +779,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -813,15 +788,12 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.2s)
 
-
-
 Now let me also check complex-interactions.spec.ts for any "helium" references:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"helium\" tests/e2e/complex-interactions.spec.ts",
@@ -830,6 +802,7 @@ Now let me also check complex-interactions.spec.ts for any "helium" references:
 ```
 
 **Output:**
+
 ```
 309:    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("helium");
 310:    const heliumOption = page.getByRole("option", { name: /helium/i }).first();
@@ -841,13 +814,10 @@ Now let me also check complex-interactions.spec.ts for any "helium" references:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.8s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts",
@@ -857,38 +827,39 @@ Now let me also check complex-interactions.spec.ts for any "helium" references:
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts</path>
 <type>file</type>
 <content>
-295: 
+295:
 296:     await waitForTable(page);
 297:     await typeInRow(page, 0, "100 MeV/nucl");
-298: 
+298:
 299:     const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
 300:     // Only treat the bare placeholder dash as "no result" — scientific-notation
 301:     // values like "3.8e-314" legitimately contain "-" in the exponent.
 302:     await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
 303:     await expect(stpCell).not.toBeEmpty();
 304:   });
-305: 
+305:
 306:   test("Helium + Water + 50 MeV/nucl shows numeric STP result", async ({ page }) => {
 307:     const particleBtn = page.getByRole("button", { name: /^Particle$/ });
 308:     await particleBtn.click();
 309:     await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("helium");
 310:     const heliumOption = page.getByRole("option", { name: /helium/i }).first();
 311:     await heliumOption.click();
-312: 
+312:
 313:     await waitForTable(page);
 314:     await typeInRow(page, 0, "50 MeV/nucl");
-315: 
+315:
 316:     const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
 317:     // Only treat the bare placeholder dash as "no result" — scientific-notation
 318:     // values like "3.8e-314" legitimately contain "-" in the exponent.
 319:     await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
 320:     await expect(stpCell).not.toBeEmpty();
 321:   });
-322: 
+322:
 323:   test("Carbon: per-row unit selector shows MeV/nucl column with correct value", async ({
 324:     page,
 
@@ -900,13 +871,10 @@ Now let me also check complex-interactions.spec.ts for any "helium" references:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.6s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts",
@@ -916,6 +884,7 @@ Now let me also check complex-interactions.spec.ts for any "helium" references:
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -924,15 +893,12 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 37.1s)
 
-
-
 Now let's run the E2E tests again to see if the particle selection issue is fixed:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=line 2>&1 | tail -40",
@@ -942,6 +908,7 @@ Now let's run the E2E tests again to see if the particle selection issue is fixe
 ```
 
 **Output:**
+
 ```
       41 |   await waitForTable(page);
       42 | }
@@ -952,7 +919,7 @@ Now let's run the E2E tests again to see if the particle selection issue is fixe
     Error Context: test-results/particle-unit-switching-Pa-c7fed-ow-20-MeV-E-nucl-conserved--chromium/error-context.md
 
 
-[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
+[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
 
     [31mTest timeout of 30000ms exceeded.[39m
 
@@ -975,12 +942,12 @@ Now let's run the E2E tests again to see if the particle selection issue is fixe
 
 
 [1A[2K  6 failed
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
   2 skipped
   4 passed (31.3s)
 
@@ -990,15 +957,12 @@ Now let's run the E2E tests again to see if the particle selection issue is fixe
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.4s)
 
-
-
 Now it's failing on "hydrogen" - the issue is that the test is searching for "hydrogen" but the dropdown shows "proton" for ID 1. Let me check the particle labels again and update the tests accordingly:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"selectParticle.*hydrogen\\|selectParticle.*proton\" tests/e2e/particle-unit-switching.spec.ts",
@@ -1007,6 +971,7 @@ Now it's failing on "hydrogen" - the issue is that the test is searching for "hy
 ```
 
 **Output:**
+
 ```
 74:    await selectParticle(page, "hydrogen");
 86:    await selectParticle(page, "hydrogen");
@@ -1021,15 +986,12 @@ Now it's failing on "hydrogen" - the issue is that the test is searching for "hy
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.2s)
 
-
-
 The test uses "hydrogen" but the display label is "proton" for ID 1. However, the search text should still include "hydrogen" since the particle name from libdedx is "HYDROGEN". Let me check the aliases file to see what search terms are available:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/config/particle-aliases.ts"
@@ -1037,6 +999,7 @@ The test uses "hydrogen" but the display label is "proton" for ID 1. However, th
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/config/particle-aliases.ts</path>
 <type>file</type>
@@ -1045,7 +1008,7 @@ The test uses "hydrogen" but the display label is "proton" for ID 1. However, th
 2:   aliases: string[];
 3:   chemicalSymbol: string;
 4: }
-5: 
+5:
 6: /**
 7:  * Aliases + chemical symbols for every libdedx particle ID.
 8:  *
@@ -1189,15 +1152,15 @@ The test uses "hydrogen" but the display label is "proton" for ID 1. However, th
 146:   [118, { aliases: ["Og", "oganesson"], chemicalSymbol: "Og" }],
 147:   [1001, { aliases: ["e⁻", "e-", "beta", "electron"], chemicalSymbol: "e⁻" }],
 148: ]);
-149: 
+149:
 150: export function getParticleAliases(particleId: number): string[] {
 151:   return PARTICLE_ALIASES.get(particleId)?.aliases ?? [];
 152: }
-153: 
+153:
 154: export function getParticleSymbol(particleId: number): string {
 155:   return PARTICLE_ALIASES.get(particleId)?.chemicalSymbol ?? "";
 156: }
-157: 
+157:
 158: export function findParticleIdByAlias(alias: string): number | null {
 159:   const lowerAlias = alias.toLowerCase();
 160:   for (const [id, data] of PARTICLE_ALIASES.entries()) {
@@ -1216,15 +1179,12 @@ The test uses "hydrogen" but the display label is "proton" for ID 1. However, th
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.7s)
 
-
-
 Good, "hydrogen" is in the aliases for ID 1. The search should work. The issue might be that the `getParticleSearchText` function in `entity-selection-comboboxes.svelte` doesn't include the aliases. Let me check:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte",
@@ -1234,11 +1194,12 @@ Good, "hydrogen" is in the aliases for ID 1. The search should work. The issue m
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte</path>
 <type>file</type>
 <content>
-28: 
+28:
 29:   function getParticleSearchText(particle: ParticleEntity): string {
 30:     return [
 31:       particle.name,
@@ -1254,7 +1215,7 @@ Good, "hydrogen" is in the aliases for ID 1. The search should work. The issue m
 41:       .filter(Boolean)
 42:       .join(" ");
 43:   }
-44: 
+44:
 45:   const particleItems = $derived.by(() => {
 46:     // "Common particles" group: proton (1), alpha (2), electron (1001)
 47:     const COMMON_IDS = new Set([1, 2, 1001]);
@@ -1272,17 +1233,14 @@ Good, "hydrogen" is in the aliases for ID 1. The search should work. The issue m
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 216.6s)
 
-
-
 The search text includes `particle.aliases`! So searching for "hydrogen" should find the proton (ID 1). But the test is failing because it can't find an option with name `/hydrogen/i`. The problem is that `getByRole('option', { name: /hydrogen/i })` looks for the **visible label**, not the search text.
 
 The visible label for ID 1 is "proton" (from `getParticleLabel`), not "hydrogen". So the test needs to search for "proton" instead of "hydrogen". Let me update all the tests:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "sed -i 's/selectParticle(page, \"hydrogen\")/selectParticle(page, \"proton\")/g' tests/e2e/particle-unit-switching.spec.ts",
@@ -1291,6 +1249,7 @@ The visible label for ID 1 is "proton" (from `getParticleLabel`), not "hydrogen"
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -1299,15 +1258,12 @@ The visible label for ID 1 is "proton" (from `getParticleLabel`), not "hydrogen"
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 9.1s)
 
-
-
 Now let's run the E2E tests again:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=line 2>&1 | tail -50",
@@ -1317,8 +1273,9 @@ Now let's run the E2E tests again:
 ```
 
 **Output:**
+
 ```
-[1A[2K  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+[1A[2K  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
@@ -1340,7 +1297,7 @@ Now let's run the E2E tests again:
 [1A[2K[10/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
 [1A[2K[11/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table
 [1A[2K[12/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it
-[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
@@ -1360,12 +1317,12 @@ Now let's run the E2E tests again:
 
 
 [1A[2K  6 failed
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
   2 skipped
   4 passed (2.8s)
 
@@ -1375,17 +1332,14 @@ Now let's run the E2E tests again:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.1s)
 
-
-
 Great progress! The particle selection is now working. The tests are failing because the KE conservation logic isn't implemented yet - the row text shows "20 MeV/nucl" instead of "20 MeV" when switching from alpha to proton.
 
 Looking at the session summary at the start, these tasks (5-9) were marked as done with commits. Let me check if the KE conservation code is actually in the calculator state:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"convertRowsForNewParticle\\|previousParticle\\|E_nucl\" src/lib/state/calculator.svelte.ts | head -20",
@@ -1394,6 +1348,7 @@ Looking at the session summary at the start, these tasks (5-9) were marked as do
 ```
 
 **Output:**
+
 ```
 63:  function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
 77:      // Only rows with explicit per-nucleon units conserve E_nucl.
@@ -1414,15 +1369,12 @@ Looking at the session summary at the start, these tasks (5-9) were marked as do
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.1s)
 
-
-
 The KE conservation code exists! Let me check the actual implementation to see why it's not working:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -1432,35 +1384,36 @@ The KE conservation code exists! Let me check the actual implementation to see w
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
 <content>
 60:     await performCalculation(energies);
 61:   }, 300);
-62: 
+62:
 63:   function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
 64:     const rows = inputState.rows;
 65:     for (let i = 0; i < rows.length; i++) {
 66:       const row = rows[i];
 67:       const trimmed = row.text.trim();
 68:       if (trimmed === "") continue;
-69: 
+69:
 70:       const parsed = parseEnergyInput(trimmed);
 71:       if (!("value" in parsed) || parsed.value === undefined) continue;
 72:       if ("error" in parsed || "empty" in parsed) continue;
-73: 
+73:
 74:       const hadExplicitSuffix = parsed.unit !== null;
-75:       
+75:
 76:       // Plain number rows (no suffix) preserve their numeric value (they represent total MeV).
 77:       // Only rows with explicit per-nucleon units conserve E_nucl.
 78:       if (!hadExplicitSuffix) {
 79:         // Keep the numeric value unchanged; it represents total MeV on both particles.
 80:         continue;
 81:       }
-82: 
+82:
 83:       const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
-84: 
+84:
 85:       // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
 86:       const mevPerNucl = convertEnergyToMeVperNucl(
 87:         parsed.value,
@@ -1468,7 +1421,7 @@ The KE conservation code exists! Let me check the actual implementation to see w
 89:         oldParticle.massNumber,
 90:         oldParticle.atomicMass
 91:       );
-92: 
+92:
 93:       let newUnit: EnergyUnit;
 94:       // Proton (A=1) and electron always use total MeV display.
 95:       if (newParticle.id === 1001 || newParticle.massNumber === 1) {
@@ -1482,7 +1435,7 @@ The KE conservation code exists! Let me check the actual implementation to see w
 103:       } else {
 104:         newUnit = "MeV";
 105:       }
-106: 
+106:
 107:       let newValue: number;
 108:       if (newParticle.id === 1001) {
 109:         // Electron: use old particle's A to compute total MeV (electron has no nucleons).
@@ -1498,25 +1451,25 @@ The KE conservation code exists! Let me check the actual implementation to see w
 119:           newValue = mevPerNucl * newParticle.massNumber;
 120:         }
 121:       }
-122: 
+122:
 123:       inputState.updateRowText(i, `${formatSigFigs(newValue, 4)} ${newUnit}`);
 124:     }
 125:   }
-126: 
+126:
 127:   let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
-128: 
+128:
 129:   function switchParticle(particleId: number | null): void {
 130:     const oldParticle = previousParticle;
 131:     const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-132:     
+132:
 133:     entitySelection.selectParticle(particleId);
-134:     
+134:
 135:     if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
 136:       convertRowsForNewParticle(oldParticle, newParticle);
 137:     }
 138:     previousParticle = newParticle;
 139:   }
-140: 
+140:
 141:   function getStpDisplayUnit(): StpUnit {
 142:     const material = entitySelection.selectedMaterial;
 143:     if (material?.isGasByDefault) {
@@ -1524,7 +1477,7 @@ The KE conservation code exists! Let me check the actual implementation to see w
 145:     }
 146:     return 'keV/µm';
 147:   }
-148: 
+148:
 149:   function parseRow(row: EnergyRow, particleMassNumber: number, particleAtomicMass?: number): CalculatedRow {
 
 (Showing lines 60-149 of 471. Use offset=150 to continue.)
@@ -1535,19 +1488,17 @@ The KE conservation code exists! Let me check the actual implementation to see w
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 8.3s)
 
-
-
 I see the issue! The `$effect` that watches for particle changes is there (lines 127-139), but there's also duplicate code at lines 425-433. Let me check what's happening. Also, the logic looks correct - when switching from alpha (A=4) with "20 MeV/nucl" to proton (A=1), it should:
+
 1. Convert 20 MeV/nucl to E_nucl = 20 MeV/nucl
 2. For proton, newUnit = "MeV", newValue = 20 MeV
 
 But the test shows "20 MeV/nucl" is staying. Let me check if the `switchParticle` function is actually being called by the UI:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"switchParticle\" src/lib/components/ | head -20",
@@ -1556,6 +1507,7 @@ But the test shows "20 MeV/nucl" is staying. Let me check if the `switchParticle
 ```
 
 **Output:**
+
 ```
 grep: src/lib/components/: Is a directory
 
@@ -1565,13 +1517,10 @@ grep: src/lib/components/: Is a directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.9s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -rn \"switchParticle\" src/lib/components/ --include=\"*.svelte\" --include=\"*.ts\" | head -20",
@@ -1580,6 +1529,7 @@ grep: src/lib/components/: Is a directory
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -1588,13 +1538,10 @@ grep: src/lib/components/: Is a directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.5s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -rn \"switchParticle\\|selectParticle\" src/routes/calculator/ --include=\"*.svelte\" --include=\"*.ts\"",
@@ -1603,6 +1550,7 @@ grep: src/lib/components/: Is a directory
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -1611,13 +1559,10 @@ grep: src/lib/components/: Is a directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.4s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte",
@@ -1626,6 +1571,7 @@ grep: src/lib/components/: Is a directory
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte</path>
 <type>file</type>
@@ -1641,10 +1587,10 @@ grep: src/lib/components/: Is a directory
 9:   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
 10:   import { getService } from "$lib/wasm/loader";
 11:   import type { EnergyUnit } from "$lib/wasm/types";
-12: 
+12:
 13:   let state = $state<EntitySelectionState | null>(null);
 14:   let calcState = $state<CalculatorState | null>(null);
-15: 
+15:
 16:   function getAvailableUnits(): EnergyUnit[] {
 17:     if (!state?.selectedParticle) return ["MeV"];
 18:     const particle = state.selectedParticle;
@@ -1653,7 +1599,7 @@ grep: src/lib/components/: Is a directory
 21:     if (isElectron || isProton) return ["MeV"];
 22:     return ["MeV", "MeV/nucl"];
 23:   }
-24: 
+24:
 25:   $effect(() => {
 26:     if (wasmReady.value && !state && !calcState) {
 27:       getService().then((service) => {
@@ -1664,17 +1610,17 @@ grep: src/lib/components/: Is a directory
 32:     }
 33:   });
 34: </script>
-35: 
+35:
 36: <svelte:head>
 37:   <title>Calculator - webdedx</title>
 38: </svelte:head>
-39: 
+39:
 40: <div class="space-y-6">
 41:   <h1 class="text-3xl font-bold">Calculator</h1>
 42:   <p class="text-muted-foreground">
 43:     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
 44:   </p>
-45: 
+45:
 46:   {#if !wasmReady.value || !state || !calcState}
 47:     <div class="rounded-lg border bg-card p-6 text-center">
 48:       <p class="text-muted-foreground">Loading...</p>
@@ -1704,15 +1650,12 @@ grep: src/lib/components/: Is a directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.7s)
 
-
-
 Now let me check the entity-selection-comboboxes component to see how it handles particle selection:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"selectParticle\\|onItemSelect\" src/lib/components/entity-selection-comboboxes.svelte",
@@ -1721,6 +1664,7 @@ Now let me check the entity-selection-comboboxes component to see how it handles
 ```
 
 **Output:**
+
 ```
 208:      onItemSelect={(particle: ParticleEntity) => {
 212:        state.selectParticle(particle.id);
@@ -1733,15 +1677,12 @@ Now let me check the entity-selection-comboboxes component to see how it handles
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.0s)
 
-
-
 I see! The comboboxes call `state.selectParticle()` (from EntitySelectionState), but the KE conservation logic is in `calcState.switchParticle()` (from CalculatorState). Let me check if there's wiring between these two:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -1751,26 +1692,27 @@ I see! The comboboxes call `state.selectParticle()` (from EntitySelectionState),
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
 <content>
 125:   }
-126: 
+126:
 127:   let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
-128: 
+128:
 129:   function switchParticle(particleId: number | null): void {
 130:     const oldParticle = previousParticle;
 131:     const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-132:     
+132:
 133:     entitySelection.selectParticle(particleId);
-134:     
+134:
 135:     if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
 136:       convertRowsForNewParticle(oldParticle, newParticle);
 137:     }
 138:     previousParticle = newParticle;
 139:   }
-140: 
+140:
 141:   function getStpDisplayUnit(): StpUnit {
 142:     const material = entitySelection.selectedMaterial;
 143:     if (material?.isGasByDefault) {
@@ -1778,10 +1720,10 @@ I see! The comboboxes call `state.selectParticle()` (from EntitySelectionState),
 145:     }
 146:     return 'keV/µm';
 147:   }
-148: 
+148:
 149:   function parseRow(row: EnergyRow, particleMassNumber: number, particleAtomicMass?: number): CalculatedRow {
 150:     const parsed = parseEnergyInput(row.text);
-151: 
+151:
 152:     if ('empty' in parsed) {
 153:       return {
 154:         id: row.id,
@@ -1794,15 +1736,12 @@ I see! The comboboxes call `state.selectParticle()` (from EntitySelectionState),
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.7s)
 
-
-
 I see the issue now! The `switchParticle` function in `calculator.svelte.ts` calls `entitySelection.selectParticle()` and then converts rows. But the combobox is calling `state.selectParticle()` directly, which bypasses the `switchParticle` wrapper. The `$effect` that watches `entitySelection.selectedParticle` should handle this, but let me check if it's actually being triggered:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -1812,6 +1751,7 @@ I see the issue now! The `switchParticle` function in `calculator.svelte.ts` cal
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
@@ -1828,9 +1768,9 @@ I see the issue now! The `switchParticle` function in `calculator.svelte.ts` cal
 424:     switchParticle(particleId: number | null) {
 425:       const oldParticle = previousParticle;
 426:       const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-427:       
+427:
 428:       entitySelection.selectParticle(particleId);
-429:       
+429:
 430:       if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
 431:         convertRowsForNewParticle(oldParticle, newParticle);
 432:       }
@@ -1845,17 +1785,14 @@ I see the issue now! The `switchParticle` function in `calculator.svelte.ts` cal
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.6s)
 
-
-
 I see there are TWO implementations - one at lines 129-139 and another at 424-434 (which is the exported API). The problem is that the combobox is calling `entitySelection.selectParticle()` directly, which doesn't go through `calcState.switchParticle()`.
 
 The `$effect` that watches `entitySelection.selectedParticle` should handle this. Let me check if that effect exists:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"\\$effect\" src/lib/state/calculator.svelte.ts",
@@ -1864,6 +1801,7 @@ The `$effect` that watches `entitySelection.selectedParticle` should handle this
 ```
 
 **Output:**
+
 ```
 (no output)
 ```
@@ -1872,17 +1810,14 @@ The `$effect` that watches `entitySelection.selectedParticle` should handle this
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 9.1s)
 
-
-
 There's no `$effect`! The code at lines 127-139 is just a regular function declaration, not a reactive effect. The `previousParticle` variable is set once and never updated reactively. That's why the KE conservation isn't triggering.
 
 Let me look at the full context around lines 127-139 again to understand the structure:
 
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -1892,6 +1827,7 @@ Let me look at the full context around lines 127-139 again to understand the str
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
@@ -1910,7 +1846,7 @@ Let me look at the full context around lines 127-139 again to understand the str
 12: import type { EntitySelectionState } from "./entity-selection.svelte";
 13: import type { ParticleEntity } from "$lib/wasm/types";
 14: import { debounce } from "$lib/utils/debounce";
-15: 
+15:
 16: export interface CalculatedRow {
 17:   id: number;
 18:   rawInput: string;
@@ -1922,7 +1858,7 @@ Let me look at the full context around lines 127-139 again to understand the str
 24:   stoppingPower: number | null;
 25:   csdaRangeCm: number | null;
 26: }
-27: 
+27:
 28: export interface CalculatorState {
 29:   rows: CalculatedRow[];
 30:   stpDisplayUnit: StpUnit;
@@ -1941,7 +1877,7 @@ Let me look at the full context around lines 127-139 again to understand the str
 43:   flushCalculation(): void;
 44:   clearResults(): void;
 45: }
-46: 
+46:
 47: export function createCalculatorState(
 48:   entitySelection: EntitySelectionState,
 49:   service: LibdedxService
@@ -1952,34 +1888,34 @@ Let me look at the full context around lines 127-139 again to understand the str
 54:   let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
 55:     new Map()
 56:   );
-57: 
+57:
 58:   const debouncedCalculate = debounce(async () => {
 59:     const energies = getValidEnergies();
 60:     await performCalculation(energies);
 61:   }, 300);
-62: 
+62:
 63:   function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
 64:     const rows = inputState.rows;
 65:     for (let i = 0; i < rows.length; i++) {
 66:       const row = rows[i];
 67:       const trimmed = row.text.trim();
 68:       if (trimmed === "") continue;
-69: 
+69:
 70:       const parsed = parseEnergyInput(trimmed);
 71:       if (!("value" in parsed) || parsed.value === undefined) continue;
 72:       if ("error" in parsed || "empty" in parsed) continue;
-73: 
+73:
 74:       const hadExplicitSuffix = parsed.unit !== null;
-75:       
+75:
 76:       // Plain number rows (no suffix) preserve their numeric value (they represent total MeV).
 77:       // Only rows with explicit per-nucleon units conserve E_nucl.
 78:       if (!hadExplicitSuffix) {
 79:         // Keep the numeric value unchanged; it represents total MeV on both particles.
 80:         continue;
 81:       }
-82: 
+82:
 83:       const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
-84: 
+84:
 85:       // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
 86:       const mevPerNucl = convertEnergyToMeVperNucl(
 87:         parsed.value,
@@ -1987,7 +1923,7 @@ Let me look at the full context around lines 127-139 again to understand the str
 89:         oldParticle.massNumber,
 90:         oldParticle.atomicMass
 91:       );
-92: 
+92:
 93:       let newUnit: EnergyUnit;
 94:       // Proton (A=1) and electron always use total MeV display.
 95:       if (newParticle.id === 1001 || newParticle.massNumber === 1) {
@@ -2005,17 +1941,14 @@ Let me look at the full context around lines 127-139 again to understand the str
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.1s)
 
-
-
 Now I understand the structure. The `createCalculatorState` function creates the state, and `previousParticle` is a local variable inside that function. The problem is that `$effect` is not being used to watch for changes to `entitySelection.selectedParticle`.
 
 Let me check if there's an effect anywhere, or if the code relies solely on the `switchParticle` method being called:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"previousParticle\" src/lib/state/calculator.svelte.ts",
@@ -2024,6 +1957,7 @@ Let me check if there's an effect anywhere, or if the code relies solely on the 
 ```
 
 **Output:**
+
 ```
 127:  let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
 130:    const oldParticle = previousParticle;
@@ -2037,17 +1971,14 @@ Let me check if there's an effect anywhere, or if the code relies solely on the 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.8s)
 
-
-
 The code has `previousParticle` defined at line 127, and it's used in the `switchParticle` function (lines 129-139 and 424-434). But the combobox is calling `entitySelection.selectParticle()` directly, not `calcState.switchParticle()`.
 
 The fix is to wire up the particle selection through `calcState.switchParticle()` instead of directly calling `entitySelection.selectParticle()`. Let me check the calculator page to see how it's wired:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"switchParticle\\|selectParticle\" src/routes/calculator/+page.svelte src/lib/components/entity-selection-comboboxes.svelte",
@@ -2056,6 +1987,7 @@ The fix is to wire up the particle selection through `calcState.switchParticle()
 ```
 
 **Output:**
+
 ```
 src/lib/components/entity-selection-comboboxes.svelte:212:        state.selectParticle(particle.id);
 
@@ -2065,17 +1997,14 @@ src/lib/components/entity-selection-comboboxes.svelte:212:        state.selectPa
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.4s)
 
-
-
 The combobox calls `state.selectParticle()` which is `EntitySelectionState.selectParticle()`. To trigger KE conservation, it needs to call `calcState.switchParticle()` instead. But the combobox only has access to `state` (EntitySelectionState), not `calcState` (CalculatorState).
 
 The solution is to have the parent (`+page.svelte`) handle the particle selection through `calcState.switchParticle()`. Let me update the calculator page:
 
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte",
@@ -2085,11 +2014,12 @@ The solution is to have the parent (`+page.svelte`) handle the particle selectio
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte</path>
 <type>file</type>
 <content>
-200: 
+200:
 201: <div class={cn("grid grid-cols-1 items-start gap-3 lg:grid-cols-3", className)}>
 202:   <div class="w-full">
 203:     <EntityCombobox
@@ -2106,7 +2036,7 @@ The solution is to have the parent (`+page.svelte`) handle the particle selectio
 214:       onClear={() => state.clearParticle()}
 215:     />
 216:   </div>
-217: 
+217:
 218:   <div class="w-full">
 219:     <EntityCombobox
 220:       label="Material"
@@ -2128,15 +2058,12 @@ The solution is to have the parent (`+page.svelte`) handle the particle selectio
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.0s)
 
-
-
 I need to modify the component to accept an optional `onParticleSelect` callback that the parent can use to intercept particle selection. Let me update the component:
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte",
@@ -2146,6 +2073,7 @@ I need to modify the component to accept an optional `onParticleSelect` callback
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2154,13 +2082,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.8s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte",
@@ -2170,6 +2095,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2178,15 +2104,12 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.5s)
 
-
-
 Now update the calculator page to pass the `onParticleSelect` callback:
-
-
 
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte",
@@ -2196,6 +2119,7 @@ Now update the calculator page to pass the `onParticleSelect` callback:
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -2204,15 +2128,12 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 12.9s)
 
-
-
 Now let's run the unit tests to make sure nothing is broken:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm test 2>&1 | tail -30",
@@ -2222,6 +2143,7 @@ Now let's run the unit tests to make sure nothing is broken:
 ```
 
 **Output:**
+
 ```
  ✓ src/tests/unit/wasm-mock.test.ts (27 tests) 12ms
  ✓ src/tests/unit/material-names.test.ts (22 tests) 15ms
@@ -2260,15 +2182,12 @@ https://svelte.dev/e/a11y_no_noninteractive_element_interactions
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 9.7s)
 
-
-
 All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservation is working:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=line 2>&1 | tail -60",
@@ -2278,6 +2197,7 @@ All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservati
 ```
 
 **Output:**
+
 ```
     > 179 |       expect(await rowText(page, 0)).toBe("20 MeV");
           |                                      ^
@@ -2289,7 +2209,7 @@ All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservati
     Error Context: test-results/particle-unit-switching-Pa-b9780-on-has-no-per-nucleon-unit--chromium/error-context.md
 
 
-[1A[2K  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+[1A[2K  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
@@ -2311,7 +2231,7 @@ All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservati
 [1A[2K[10/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table
 [1A[2K[11/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
 [1A[2K[12/12] [chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it
-[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+[1A[2K  6) [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
@@ -2331,12 +2251,12 @@ All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservati
 
 
 [1A[2K  6 failed
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
   2 skipped
   4 passed (2.8s)
 
@@ -2346,15 +2266,12 @@ All 425 unit tests pass. Now let's run the E2E tests to see if the KE conservati
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 8.4s)
 
-
-
 The tests still show "20 MeV/nucl" instead of "20 MeV" when switching to proton. This means the `switchParticle` function is still not being called. Let me add some debugging to understand what's happening:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --grep \"He 20 MeV/nucl → switch to proton\" --reporter=list 2>&1 | head -50",
@@ -2364,6 +2281,7 @@ The tests still show "20 MeV/nucl" instead of "20 MeV" when switching to proton.
 ```
 
 **Output:**
+
 ```
 
 Running 1 test using 1 worker
@@ -2371,7 +2289,7 @@ Running 1 test using 1 worker
   ✘  1 [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV (488ms)
 
 
-  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     Error: [2mexpect([22m[31mreceived[39m[2m).[22mtoBe[2m([22m[32mexpected[39m[2m) // Object.is equality[22m
 
@@ -2390,7 +2308,7 @@ Running 1 test using 1 worker
     Error Context: test-results/particle-unit-switching-Pa-4d92a--conserved-row-shows-20-MeV-chromium/error-context.md
 
   1 failed
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
 ```
 
@@ -2398,15 +2316,12 @@ Running 1 test using 1 worker
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.4s)
 
-
-
 The test completes in 488ms which is fast - no timeout. This means the particle selection is working, but the KE conservation logic isn't firing. Let me check if `calcState.switchParticle` is actually being called by looking at the implementation more carefully:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -2416,26 +2331,27 @@ The test completes in 488ms which is fast - no timeout. This means the particle 
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
 <content>
 125:   }
-126: 
+126:
 127:   let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
-128: 
+128:
 129:   function switchParticle(particleId: number | null): void {
 130:     const oldParticle = previousParticle;
 131:     const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-132:     
+132:
 133:     entitySelection.selectParticle(particleId);
-134:     
+134:
 135:     if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
 136:       convertRowsForNewParticle(oldParticle, newParticle);
 137:     }
 138:     previousParticle = newParticle;
 139:   }
-140: 
+140:
 141:   function getStpDisplayUnit(): StpUnit {
 142:     const material = entitySelection.selectedMaterial;
 143:     if (material?.isGasByDefault) {
@@ -2449,15 +2365,12 @@ The test completes in 488ms which is fast - no timeout. This means the particle 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.6s)
 
-
-
 I see the issue! The function at lines 129-139 is a LOCAL function inside `createCalculatorState`, but it's NOT exported in the returned state object. The exported one is at line 424-434. But neither of them is being called because... wait, let me check the exports:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "grep -n \"switchParticle\" src/lib/state/calculator.svelte.ts",
@@ -2466,6 +2379,7 @@ I see the issue! The function at lines 129-139 is a LOCAL function inside `creat
 ```
 
 **Output:**
+
 ```
 38:  switchParticle(particleId: number | null): void;
 129:  function switchParticle(particleId: number | null): void {
@@ -2477,15 +2391,12 @@ I see the issue! The function at lines 129-139 is a LOCAL function inside `creat
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.5s)
 
-
-
 The `switchParticle` is declared in the interface (line 38), defined as a local function (line 129), and then exported in the return object (line 424). Let me check the return statement:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -2495,11 +2406,12 @@ The `switchParticle` is declared in the interface (line 38), defined as a local 
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
 <content>
-400: 
+400:
 401:       const parsed = parseEnergyInput(trimmed);
 402:       if (!("value" in parsed) || parsed.unit === null && parsed.value === undefined) {
 403:         return;
@@ -2507,7 +2419,7 @@ The `switchParticle` is declared in the interface (line 38), defined as a local 
 405:       if ("error" in parsed || "empty" in parsed) {
 406:         return;
 407:       }
-408: 
+408:
 409:       const currentUnit = parsed.unit ?? inputState.masterUnit;
 410:       const mevNucl = convertEnergyToMeVperNucl(
 411:         parsed.value,
@@ -2526,9 +2438,9 @@ The `switchParticle` is declared in the interface (line 38), defined as a local 
 424:     switchParticle(particleId: number | null) {
 425:       const oldParticle = previousParticle;
 426:       const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-427:       
+427:
 428:       entitySelection.selectParticle(particleId);
-429:       
+429:
 430:       if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
 431:         convertRowsForNewParticle(oldParticle, newParticle);
 432:       }
@@ -2558,15 +2470,12 @@ The `switchParticle` is declared in the interface (line 38), defined as a local 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.3s)
 
-
-
 Good, the `switchParticle` is exported at line 424. Now let me check if the calculator page is actually passing the callback correctly:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte"
@@ -2574,6 +2483,7 @@ Good, the `switchParticle` is exported at line 424. Now let me check if the calc
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte</path>
 <type>file</type>
@@ -2589,10 +2499,10 @@ Good, the `switchParticle` is exported at line 424. Now let me check if the calc
 9:   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
 10:   import { getService } from "$lib/wasm/loader";
 11:   import type { EnergyUnit } from "$lib/wasm/types";
-12: 
+12:
 13:   let state = $state<EntitySelectionState | null>(null);
 14:   let calcState = $state<CalculatorState | null>(null);
-15: 
+15:
 16:   function getAvailableUnits(): EnergyUnit[] {
 17:     if (!state?.selectedParticle) return ["MeV"];
 18:     const particle = state.selectedParticle;
@@ -2601,7 +2511,7 @@ Good, the `switchParticle` is exported at line 424. Now let me check if the calc
 21:     if (isElectron || isProton) return ["MeV"];
 22:     return ["MeV", "MeV/nucl"];
 23:   }
-24: 
+24:
 25:   $effect(() => {
 26:     if (wasmReady.value && !state && !calcState) {
 27:       getService().then((service) => {
@@ -2612,17 +2522,17 @@ Good, the `switchParticle` is exported at line 424. Now let me check if the calc
 32:     }
 33:   });
 34: </script>
-35: 
+35:
 36: <svelte:head>
 37:   <title>Calculator - webdedx</title>
 38: </svelte:head>
-39: 
+39:
 40: <div class="space-y-6">
 41:   <h1 class="text-3xl font-bold">Calculator</h1>
 42:   <p class="text-muted-foreground">
 43:     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
 44:   </p>
-45: 
+45:
 46:   {#if !wasmReady.value || !state || !calcState}
 47:     <div class="rounded-lg border bg-card p-6 text-center">
 48:       <p class="text-muted-foreground">Loading...</p>
@@ -2652,19 +2562,19 @@ Good, the `switchParticle` is exported at line 424. Now let me check if the calc
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 10.2s)
 
-
-
 The code looks correct. The issue might be that `calcState` is null when the callback is created. But that shouldn't be the case because the component only renders when both `state` and `calcState` are non-null (line 50).
 
 Let me trace through what happens:
+
 1. User clicks on "proton" in the dropdown
 2. `onItemSelect` is called with `particle.id = 1`
-3. Since `onParticleSelect` is provided, it calls `onParticleSelect(1)` 
+3. Since `onParticleSelect` is provided, it calls `onParticleSelect(1)`
 4. This should call `calcState.switchParticle(1)`
 
 Wait, I think I see the issue. The initial particle is already proton (ID 1), so when we select alpha and then try to select proton again, the check at line 430 `if (newParticle && oldParticle && newParticle.id !== oldParticle.id)` should pass. But maybe the issue is that `previousParticle` is not being tracked correctly?
 
 Let me look more carefully at the logic. When the page loads:
+
 - `previousParticle` is initialized to `entitySelection.selectedParticle` (which is proton, ID 1)
 - User selects alpha (ID 2): `switchParticle(2)` is called
   - `oldParticle = previousParticle = proton (ID 1)`
@@ -2679,11 +2589,10 @@ Let me look more carefully at the logic. When the page loads:
 
 But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsForNewParticle` logic again to see if there's a bug:
 
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts",
@@ -2693,6 +2602,7 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/calculator.svelte.ts</path>
 <type>file</type>
@@ -2703,22 +2613,22 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 66:       const row = rows[i];
 67:       const trimmed = row.text.trim();
 68:       if (trimmed === "") continue;
-69: 
+69:
 70:       const parsed = parseEnergyInput(trimmed);
 71:       if (!("value" in parsed) || parsed.value === undefined) continue;
 72:       if ("error" in parsed || "empty" in parsed) continue;
-73: 
+73:
 74:       const hadExplicitSuffix = parsed.unit !== null;
-75:       
+75:
 76:       // Plain number rows (no suffix) preserve their numeric value (they represent total MeV).
 77:       // Only rows with explicit per-nucleon units conserve E_nucl.
 78:       if (!hadExplicitSuffix) {
 79:         // Keep the numeric value unchanged; it represents total MeV on both particles.
 80:         continue;
 81:       }
-82: 
+82:
 83:       const oldUnit: EnergyUnit = parsed.unit ?? inputState.masterUnit;
-84: 
+84:
 85:       // Convert to E_nucl (MeV/nucl) to conserve per-nucleon kinetic energy.
 86:       const mevPerNucl = convertEnergyToMeVperNucl(
 87:         parsed.value,
@@ -2726,7 +2636,7 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 89:         oldParticle.massNumber,
 90:         oldParticle.atomicMass
 91:       );
-92: 
+92:
 93:       let newUnit: EnergyUnit;
 94:       // Proton (A=1) and electron always use total MeV display.
 95:       if (newParticle.id === 1001 || newParticle.massNumber === 1) {
@@ -2740,7 +2650,7 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 103:       } else {
 104:         newUnit = "MeV";
 105:       }
-106: 
+106:
 107:       let newValue: number;
 108:       if (newParticle.id === 1001) {
 109:         // Electron: use old particle's A to compute total MeV (electron has no nucleons).
@@ -2756,11 +2666,11 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 119:           newValue = mevPerNucl * newParticle.massNumber;
 120:         }
 121:       }
-122: 
+122:
 123:       inputState.updateRowText(i, `${formatSigFigs(newValue, 4)} ${newUnit}`);
 124:     }
 125:   }
-126: 
+126:
 127:   let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
 
 (Showing lines 63-127 of 471. Use offset=128 to continue.)
@@ -2771,9 +2681,8 @@ But the test shows the unit stays as "MeV/nucl". Let me check the `convertRowsFo
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4919.6s)
 
-
-
 The logic looks correct! For "20 MeV/nucl" on alpha (A=4) switching to proton (A=1):
+
 1. `hadExplicitSuffix = true` (MeV/nucl is explicit)
 2. `oldUnit = "MeV/nucl"`
 3. `mevPerNucl = convertEnergyToMeVperNucl(20, "MeV/nucl", 4, 4.002602) = 20` (already in MeV/nucl)
@@ -2787,11 +2696,10 @@ Let me check if there's something wrong with how the callback is wired. Maybe th
 
 Actually, let me first check if the tests are actually using the updated code. Let me rebuild and re-run:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm run build 2>&1 | tail -10",
@@ -2800,6 +2708,7 @@ Actually, let me first check if the tests are actually using the updated code. L
 ```
 
 **Output:**
+
 ```
   - vite-plugin-sveltekit-guard (16%)
 See https://rolldown.rs/options/checks#plugintimings for more details.
@@ -2847,22 +2756,22 @@ Let me analyze the conversation history to update the anchored summary:
 The issue is that even though we wired up the callback, the KE conservation still isn't working. Let me trace through the logic again...
 
 Actually, looking at the code more carefully, I see there are TWO `switchParticle` implementations:
+
 1. Lines 129-139: A local function
 2. Lines 424-434: The exported version in the return object
 
 Both have the same logic, but the issue might be that they're checking `if (newParticle && oldParticle && newParticle.id !== oldParticle.id)` - this should work.
 
-
 The real problem appears to be with `previousParticle` initialization at line 127 - it captures the initial value but never gets updated when the combobox callback fires. I need to verify whether the callback is actually being invoked and whether the state is properly updating through the reactive flow.
 
-
-
-
 ---
+
 ## Goal
+
 - Fix E2E test failures: update particle search terms ("alpha"/"proton" instead of "helium"/"hydrogen"), wire KE conservation through `calcState.switchParticle()`, and verify all 9 tasks pass E2E
 
 ## Constraints & Preferences
+
 - TDD rule: tests first, then minimal implementation
 - Conventional Commits after each task
 - AI logging mandatory (CHANGELOG-AI.md, docs/ai-logs/)
@@ -2871,26 +2780,32 @@ The real problem appears to be with `previousParticle` initialization at line 12
 - 300ms debounce on calculation trigger per calculator.md:840
 
 ## Progress
+
 ### Done
+
 - **Task 1-9**: All 9 tasks implemented and committed (see previous summary)
 - **Unit tests**: 425 passing ✅
 - **E2E particle selection fix**: Updated test searches from "helium"/"hydrogen" to "alpha"/"proton" to match UI labels
 - **E2E wiring fix**: Added `onParticleSelect` callback to `entity-selection-comboboxes.svelte`, wired to `calcState.switchParticle()` in calculator page
 
 ### In Progress
+
 - Debugging KE conservation: `switchParticle()` called but row text still shows "20 MeV/nucl" instead of "20 MeV" when switching alpha→proton
 - E2E tests: 9 failing (KE conservation not triggering), 59 passing
 
 ### Blocked
+
 - **KE conservation not firing**: Despite `calcState.switchParticle()` being called, `convertRowsForNewParticle()` doesn't execute or doesn't update the DOM correctly
 - Possible cause: `previousParticle` tracking issue or reactivity problem in Svelte 5
 
 ## Key Decisions
+
 - E2E tests updated to search for display labels ("alpha particle", "proton") not aliases ("helium", "hydrogen")
 - `EntityCombobox` now accepts optional `onParticleSelect` callback to intercept selection before calling `state.selectParticle()`
 - Calculator page wires particle selection through `calcState.switchParticle()` to enable KE conservation
 
 ## Next Steps
+
 1. Debug why `convertRowsForNewParticle()` isn't updating row text despite being called
 2. Check if `previousParticle` is properly initialized and compared
 3. Add console logging to `switchParticle()` to verify execution flow
@@ -2900,6 +2815,7 @@ The real problem appears to be with `previousParticle` initialization at line 12
 7. Verify `pnpm lint` clean
 
 ## Critical Context
+
 - Branch: `copilot/check-stage-5-implementations`
 - Unit tests: 425 passing (all 9 tasks validated at unit level)
 - E2E tests: 9 failing (KE conservation), 59 passing, 4 skipped
@@ -2909,11 +2825,13 @@ The real problem appears to be with `previousParticle` initialization at line 12
 - WASM files present in `static/wasm/` and `build/wasm/` - no longer a timeout issue
 
 ## Relevant Files
+
 - `src/lib/components/entity-selection-comboboxes.svelte`: Added `onParticleSelect` prop, conditional call to callback vs direct `state.selectParticle()`
 - `src/routes/calculator/+page.svelte`: Wires `onParticleSelect={(particleId) => calcState.switchParticle(particleId)}`
 - `src/lib/state/calculator.svelte.ts`: `convertRowsForNewParticle()` logic, `switchParticle()` export, `previousParticle` tracking (lines 127-139, 424-434)
 - `tests/e2e/particle-unit-switching.spec.ts`: Updated particle searches ("alpha", "proton"), KE conservation assertions
 - `tests/e2e/complex-interactions.spec.ts`: Updated "helium" search to "alpha" (line 309)
+
 ---
 
 ---
@@ -2930,14 +2848,10 @@ _Thinking:_
 
 Let me first understand the current status by checking the E2E test failures and debug why KE conservation isn't working.
 
-
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=list 2>&1 | head -100",
@@ -2946,6 +2860,7 @@ Let me first understand the current status by checking the E2E test failures and
 ```
 
 **Output:**
+
 ```
 
 Running 12 tests using 6 workers
@@ -2964,7 +2879,7 @@ Running 12 tests using 6 workers
   ✘  12 [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table (20.1s)
 
 
-  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -2983,7 +2898,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-4d92a--conserved-row-shows-20-MeV-chromium/error-context.md
 
-  2) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
+  2) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3002,7 +2917,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-83fa3-ed-80-4-20-row-shows-20-MeV-chromium/error-context.md
 
-  3) [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
+  3) [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3021,7 +2936,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-bd696-o-hydrogen-E-nucl-conserved-chromium/error-context.md
 
-  4) [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved) 
+  4) [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3040,7 +2955,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pe-a9af7-nverted-value-KE-conserved--chromium/error-context.md
 
-  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
+  5) [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3054,15 +2969,12 @@ Running 12 tests using 6 workers
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.9s)
 
-
-
 The E2E tests are timing out waiting for `[aria-label="Particle"]`. This suggests WASM isn't loading. Let me check if the WASM files are present in the build directory and if the dev server is running:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls -la static/wasm/ 2>&1",
@@ -3071,6 +2983,7 @@ The E2E tests are timing out waiting for `[aria-label="Particle"]`. This suggest
 ```
 
 **Output:**
+
 ```
 total 488
 drwxrwxr-x 2 grzanka grzanka   4096 Apr 27 09:55 .
@@ -3083,6 +2996,7 @@ drwxrwxr-x 3 grzanka grzanka   4096 Apr 27 09:53 ..
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls -la build/wasm/ 2>&1",
@@ -3091,6 +3005,7 @@ drwxrwxr-x 3 grzanka grzanka   4096 Apr 27 09:53 ..
 ```
 
 **Output:**
+
 ```
 total 488
 drwxrwxr-x 2 grzanka grzanka   4096 Apr 27 13:15 .
@@ -3104,15 +3019,12 @@ drwxrwxr-x 5 grzanka grzanka   4096 Apr 27 13:15 ..
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 10.1s)
 
-
-
 WASM files are present. The issue is that the test is looking for `[aria-label="Particle"]` but we changed the particle labels. Let me check what the combobox is actually labeled as now:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte",
@@ -3122,6 +3034,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/components/entity-selection-comboboxes.svelte</path>
 <type>file</type>
@@ -3137,15 +3050,15 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 9:     AutoSelectProgram,
 10:   } from "$lib/state/entity-selection.svelte";
 11:   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
-12: 
+12:
 13:   interface Props {
 14:     state: EntitySelectionState;
 15:     class?: string;
 16:     onParticleSelect?: (particleId: number) => void;
 17:   }
-18: 
+18:
 19:   let { state, class: className, onParticleSelect }: Props = $props();
-20: 
+20:
 21:   function getParticleLabel(particle: ParticleEntity): string {
 22:     // Special-named particles have no parenthetical symbol — the name IS the identifier.
 23:     if (particle.id === 1) return "proton";
@@ -3154,7 +3067,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 26:     const symbol = particle.symbol || "";
 27:     return symbol ? `${particle.name} (${symbol})` : particle.name;
 28:   }
-29: 
+29:
 30:   function getParticleSearchText(particle: ParticleEntity): string {
 31:     return [
 32:       particle.name,
@@ -3170,7 +3083,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 42:       .filter(Boolean)
 43:       .join(" ");
 44:   }
-45: 
+45:
 46:   const particleItems = $derived.by(() => {
 47:     // "Common particles" group: proton (1), alpha (2), electron (1001)
 48:     const COMMON_IDS = new Set([1, 2, 1001]);
@@ -3181,11 +3094,11 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 53:         const ORDER = [1, 2, 1001];
 54:         return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
 55:       });
-56:     
+56:
 57:     const ionParticles = state.allParticles
 58:       .filter((p) => !COMMON_IDS.has(p.id))
 59:       .sort((a, b) => a.id - b.id);
-60: 
+60:
 61:     function toItem(particle: ParticleEntity) {
 62:       return {
 63:         entity: particle,
@@ -3195,7 +3108,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 67:         searchText: getParticleSearchText(particle),
 68:       };
 69:     }
-70: 
+70:
 71:     // Use same section-header pattern as materialItems
 72:     return [
 73:       { type: "section" as const, label: "Common particles" },
@@ -3204,7 +3117,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 76:       ...ionParticles.map(toItem),
 77:     ];
 78:   });
-79: 
+79:
 80:   interface MaterialGroup {
 
 (Showing lines 1-80 of 261. Use offset=81 to continue.)
@@ -3215,13 +3128,10 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 9.6s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/components/entity-combobox.svelte",
@@ -3231,6 +3141,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/components/entity-combobox.svelte</path>
 <type>file</type>
@@ -3240,12 +3151,12 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 3:   import { Combobox } from "bits-ui";
 4:   import { cn } from "$lib/utils";
 5:   import { ELECTRON_UNSUPPORTED_TITLE } from "$lib/config/libdedx-version";
-6: 
+6:
 7:   interface SectionHeader {
 8:     type: "section";
 9:     label: string;
 10:   }
-11: 
+11:
 12:   interface EntityItem<T> {
 13:     entity: T;
 14:     available: boolean;
@@ -3254,9 +3165,9 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 17:     searchText?: string;
 18:     isElectron?: boolean;
 19:   }
-20: 
+20:
 21:   type ComboboxEntry<T> = EntityItem<T> | SectionHeader;
-22: 
+22:
 23:   interface Props<T extends { id: number; name: string }> {
 24:     label: string;
 25:     items: ComboboxEntry<T>[];
@@ -3267,7 +3178,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 30:     onClear?: () => void;
 31:     class?: string;
 32:   }
-33: 
+33:
 34:   let {
 35:     label,
 36:     items,
@@ -3278,32 +3189,32 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 41:     onClear,
 42:     class: className,
 43:   }: Props<T> = $props();
-44: 
+44:
 45:   const labelId = $derived(`label-${label.toLowerCase().replace(/\s+/g, "-")}`);
 46:   const triggerId = $derived(`trigger-${label.toLowerCase().replace(/\s+/g, "-")}`);
-47: 
+47:
 48:   function getSearchPlaceholder(): string {
 49:     if (label === "Particle") return "Name, symbol, Z...";
 50:     if (label === "Material") return "Name or ID...";
 51:     return "Search...";
 52:   }
-53: 
+53:
 54:   function isSection(item: ComboboxEntry<T>): item is SectionHeader {
 55:     return (item as SectionHeader).type === "section";
 56:   }
-57: 
+57:
 58:   let open = $state(false);
 59:   let inputValue = $state("");
 60:   let inputRef = $state<HTMLInputElement | null>(null);
 61:   // untrack: Svelte would warn that this captures the initial prop value; the
 62:   // $effect below handles subsequent changes, so the snapshot is intentional.
 63:   let valueStr = $state(untrack(() => (selectedId !== null ? String(selectedId) : "")));
-64: 
+64:
 65:   // Keep valueStr in sync when selectedId changes externally (e.g., resetAll)
 66:   $effect(() => {
 67:     valueStr = selectedId !== null ? String(selectedId) : "";
 68:   });
-69: 
+69:
 70:   // Reset the search term and focus the input whenever the dropdown opens.
 71:   // Note: bind:inputValue on Combobox.Root does not propagate typed values back
 72:   // (bits-ui's inputValue prop is not $bindable), so we track the typed text via
@@ -3314,7 +3225,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 77:       tick().then(() => inputRef?.focus());
 78:     }
 79:   });
-80: 
+80:
 81:   const selectedItem = $derived.by(() => {
 82:     if (selectedId === null) return undefined;
 83:     for (const item of items) {
@@ -3324,7 +3235,7 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 87:     }
 88:     return undefined;
 89:   });
-90: 
+90:
 91:   // Flat item list for Bits UI keyboard navigation and label resolution
 92:   const bitsItems = $derived.by(() =>
 93:     items
@@ -3344,15 +3255,12 @@ WASM files are present. The issue is that the test is looking for `[aria-label="
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 441.1s)
 
-
-
 I see - the combobox has `label="Particle"` which generates `aria-label="Particle"`. The issue is likely that WASM is not loading properly in the test environment. Let me check if there's a running dev server or if we need to use preview:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pgrep -a vite 2>&1 || echo \"No vite process found\"",
@@ -3361,6 +3269,7 @@ I see - the combobox has `label="Particle"` which generates `aria-label="Particl
 ```
 
 **Output:**
+
 ```
 No vite process found
 
@@ -3370,15 +3279,12 @@ No vite process found
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 34.1s)
 
-
-
 The dev server isn't running. Let me check the Playwright config to see what baseURL it uses:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "cat tests/e2e/playwright.config.ts 2>&1 | head -60",
@@ -3387,6 +3293,7 @@ The dev server isn't running. Let me check the Playwright config to see what bas
 ```
 
 **Output:**
+
 ```
 cat: tests/e2e/playwright.config.ts: No such file or directory
 
@@ -3396,13 +3303,10 @@ cat: tests/e2e/playwright.config.ts: No such file or directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.6s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "find . -name \"playwright.config*\" -type f 2>&1",
@@ -3411,6 +3315,7 @@ cat: tests/e2e/playwright.config.ts: No such file or directory
 ```
 
 **Output:**
+
 ```
 ./playwright.config.ts
 
@@ -3420,13 +3325,10 @@ cat: tests/e2e/playwright.config.ts: No such file or directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 5.4s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/playwright.config.ts"
@@ -3434,12 +3336,13 @@ cat: tests/e2e/playwright.config.ts: No such file or directory
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/playwright.config.ts</path>
 <type>file</type>
 <content>
 1: import { defineConfig, devices } from '@playwright/test';
-2: 
+2:
 3: export default defineConfig({
 4:   testDir: './tests/e2e',
 5:   fullyParallel: true,
@@ -3472,15 +3375,12 @@ cat: tests/e2e/playwright.config.ts: No such file or directory
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.6s)
 
-
-
 The Playwright config uses `pnpm preview` which serves from `build/` on port 4173. The WASM files are in `build/wasm/`. Let me check if the preview server is running and if not, run the tests which should start it automatically:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pgrep -a node 2>&1 | head -10 || echo \"No node processes\"",
@@ -3489,6 +3389,7 @@ The Playwright config uses `pnpm preview` which serves from `build/` on port 417
 ```
 
 **Output:**
+
 ```
 1196 /usr/bin/prometheus-node-exporter
 
@@ -3498,15 +3399,12 @@ The Playwright config uses `pnpm preview` which serves from `build/` on port 417
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 3.5s)
 
-
-
 Let me run the E2E tests again - the webServer config should start the preview server automatically. But first, let me check if there's an issue with the WASM loading by looking at the calculator page:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte",
@@ -3515,6 +3413,7 @@ Let me run the E2E tests again - the webServer config should start the preview s
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/routes/calculator/+page.svelte</path>
 <type>file</type>
@@ -3530,10 +3429,10 @@ Let me run the E2E tests again - the webServer config should start the preview s
 9:   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
 10:   import { getService } from "$lib/wasm/loader";
 11:   import type { EnergyUnit } from "$lib/wasm/types";
-12: 
+12:
 13:   let state = $state<EntitySelectionState | null>(null);
 14:   let calcState = $state<CalculatorState | null>(null);
-15: 
+15:
 16:   function getAvailableUnits(): EnergyUnit[] {
 17:     if (!state?.selectedParticle) return ["MeV"];
 18:     const particle = state.selectedParticle;
@@ -3542,7 +3441,7 @@ Let me run the E2E tests again - the webServer config should start the preview s
 21:     if (isElectron || isProton) return ["MeV"];
 22:     return ["MeV", "MeV/nucl"];
 23:   }
-24: 
+24:
 25:   $effect(() => {
 26:     if (wasmReady.value && !state && !calcState) {
 27:       getService().then((service) => {
@@ -3553,17 +3452,17 @@ Let me run the E2E tests again - the webServer config should start the preview s
 32:     }
 33:   });
 34: </script>
-35: 
+35:
 36: <svelte:head>
 37:   <title>Calculator - webdedx</title>
 38: </svelte:head>
-39: 
+39:
 40: <div class="space-y-6">
 41:   <h1 class="text-3xl font-bold">Calculator</h1>
 42:   <p class="text-muted-foreground">
 43:     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
 44:   </p>
-45: 
+45:
 46:   {#if !wasmReady.value || !state || !calcState}
 47:     <div class="rounded-lg border bg-card p-6 text-center">
 48:       <p class="text-muted-foreground">Loading...</p>
@@ -3593,15 +3492,12 @@ Let me run the E2E tests again - the webServer config should start the preview s
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 46.6s)
 
-
-
 The calculator page looks correct - `EnergyUnitSelector` is already there. Now let me run the E2E tests with the preview server. First let me check if there's a wasmReady issue:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=list --timeout=60000 2>&1 | head -80",
@@ -3610,6 +3506,7 @@ The calculator page looks correct - `EnergyUnitSelector` is already there. Now l
 ```
 
 **Output:**
+
 ```
 
 Running 12 tests using 6 workers
@@ -3628,7 +3525,7 @@ Running 12 tests using 6 workers
   ✘  12 [chromium] › tests/e2e/particle-unit-switching.spec.ts:188:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved (20.1s)
 
 
-  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+  1) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3647,7 +3544,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-4d92a--conserved-row-shows-20-MeV-chromium/error-context.md
 
-  2) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
+  2) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3666,7 +3563,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-83fa3-ed-80-4-20-row-shows-20-MeV-chromium/error-context.md
 
-  3) [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
+  3) [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3685,7 +3582,7 @@ Running 12 tests using 6 workers
 
     Error Context: test-results/particle-unit-switching-Pa-bd696-o-hydrogen-E-nucl-conserved-chromium/error-context.md
 
-  4) [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved) 
+  4) [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
@@ -3698,15 +3595,12 @@ Running 12 tests using 6 workers
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.9s)
 
-
-
 The tests are still timing out waiting for `[aria-label="Particle"]`. The webServer should have started. Let me check if the preview server is actually running and accessible:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "curl -s http://127.0.0.1:4173/calculator 2>&1 | head -30 || echo \"Server not accessible\"",
@@ -3715,6 +3609,7 @@ The tests are still timing out waiting for `[aria-label="Particle"]`. The webSer
 ```
 
 **Output:**
+
 ```
 <!doctype html>
 <html lang="en">
@@ -3743,7 +3638,7 @@ The tests are still timing out waiting for `[aria-label="Particle"]`. The webSer
   </head>
   <body data-sveltekit-preload-data="hover">
     <div style="display: contents"><!--[--><!--[0--><!--[--><div class="min-h-screen bg-background"><nav class="border-b bg-card"><div class="container mx-auto px-4"><div class="flex h-14 items-center justify-between"><div class="flex items-center gap-6"><a href="./" class="flex items-center gap-2 font-bold text-xl"><img src="./favicon.svg" alt="" class="h-6 w-6"/> webdedx</a> <div class="flex items-center gap-4 text-sm"><a href="./calculator" class="transition-colors hover:text-foreground/80 text-foreground">Calculator</a> <a href="./plot" class="transition-colors hover:text-foreground/80 text-muted-foreground">Plot</a> <a href="./docs" class="transition-colors hover:text-foreground/80 text-muted-foreground">Docs</a></div></div></div></div></nav> <!--[1--><div class="bg-muted border-b px-4 py-3"><div class="container mx-auto"><p class="text-muted-foreground text-sm">Loading WASM module...</p></div></div><!--]--> <main class="container mx-auto px-4 py-6"><!--[--><div class="space-y-6"><h1 class="text-3xl font-bold">Calculator</h1> <p class="text-muted-foreground">Select a particle, material, and program to calculate stopping powers and CSDA ranges.</p> <!--[0--><div class="rounded-lg border bg-card p-6 text-center"><p class="text-muted-foreground">Loading...</p></div><!--]--></div><!--]--><!----></main> <footer class="border-t bg-card mt-auto"><div class="container mx-auto px-4 py-4"><div class="flex items-center justify-between text-xs text-muted-foreground"><p>webdedx — Stopping power calculations</p> <p>Built with Svelte 5 + WASM</p></div></div></footer></div><!--]--><!--]--> <!--[-1--><!--]--><!--]-->
-			
+
 			<script>
 				{
 
@@ -3753,15 +3648,12 @@ The tests are still timing out waiting for `[aria-label="Particle"]`. The webSer
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.1s)
 
-
-
 The server is running and returning HTML, but it shows `Loading...` which means WASM isn't loading. The page is waiting for `wasmReady.value` to become true. Let me check the WASM loader to see what might be failing:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "curl -s http://127.0.0.1:4173/wasm/libdedx.wasm 2>&1 | head -5 || echo \"WASM not found\"",
@@ -3770,12 +3662,18 @@ The server is running and returning HTML, but it shows `Loading...` which means 
 ```
 
 **Output:**
+
 ```
- asm   �!```}` `||`` ` ` `}}``|`~`}|``  ` `}`}`||`|`| `~~`}` `|||`}||}`}}`}}`||||||`}|`}}`@envemscripten_resize_heap  wasi_snapshot_preview1fd_write RQ       			      
+ asm   �!```}` `||`` ` ` `}}``|`~`}|``  ` `}`}`||`|`| `~~`}` `|||`}||}`}}`}}`||||||`}|`}}`@envemscripten_resize_heap  wasi_snapshot_preview1fd_write RQ       			      
+
+
 
- 
- p���A��)�+memory __wasm_call_ctors dedx_get_inverse_csda Cdedx_get_csda Ddedx_get_inverse_stp Fconvert_units Gdedx_allocate_workspace /dedx_free_workspace 0dedx_get_error_code 1dedx_get_program_name 2dedx_get_program_version 3dedx_get_material_name 4dedx_get_ion_name 5dedx_get_version_string 6dedx_get_composition 7dedx_get_i_value 8dedx_get_program_list 9dedx_get_material_list :dedx_get_ion_list ;dedx_get_min_energy <dedx_get_max_energy =dedx_load_config >dedx_get_stp Adedx_free_config Bdedx_fill_program_list Hdedx_fill_material_list Idedx_fill_ion_list Jdedx_get_stp_table Kdedx_get_simple_stp_for_program Ldedx_get_stp_table_size M"dedx_fill_default_energy_stp_table Ndedx_get_csda_range_table Odedx_internal_read_density 
-dedx_get_ion_nucleon_number dedx_get_ion_atom_mass dedx_get_density dedx_target_is_gas malloc free _emscripten_stack_restore P_emscripten_stack_alloc Qemscripten_stack_get_current R__indirect_function_table 		 A! "�
+
+ p���A��)�+memory __wasm_call_ctors dedx_get_inverse_csda C
+dedx_get_csda Ddedx_get_inverse_stp F
+convert_units Gdedx_allocate_workspace /dedx_free_workspace 0dedx_get_error_code 1dedx_get_program_name 2dedx_get_program_version 3dedx_get_material_name 4dedx_get_ion_name 5dedx_get_version_string 6dedx_get_composition 7dedx_get_i_value 8dedx_get_program_list 9dedx_get_material_list :dedx_get_ion_list ;dedx_get_min_energy <dedx_get_max_energy =dedx_load_config >dedx_get_stp Adedx_free_config Bdedx_fill_program_list Hdedx_fill_material_list Idedx_fill_ion_list Jdedx_get_stp_table Kdedx_get_simple_stp_for_program Ldedx_get_stp_table_size M"dedx_fill_default_energy_stp_table Ndedx_get_csda_range_table Odedx_internal_read_density 
+dedx_get_ion_nucleon_number 
+dedx_get_ion_atom_mass dedx_get_density dedx_target_is_gas malloc free _emscripten_stack_restore P_emscripten_stack_alloc Qemscripten_stack_get_current R__indirect_function_table 		 A! "�
 
 ```
 
@@ -3787,14 +3685,10 @@ _Thinking:_
 
 The WASM file is accessible. The issue might be with how the WASM is being loaded. Let me check the console errors by looking at what the WASM loader does:
 
-
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/wasm/loader.ts"
@@ -3802,24 +3696,25 @@ The WASM file is accessible. The issue might be with how the WASM is being loade
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/wasm/loader.ts</path>
 <type>file</type>
 <content>
 1: import { base } from '$app/paths';
 2: import type { LibdedxService } from './types';
-3: 
+3:
 4: let service: LibdedxService | null = null;
-5: 
+5:
 6: export async function getService(): Promise<LibdedxService> {
 7:   if (service) return service;
-8: 
+8:
 9:   try {
 10:     const factory = await import(/* @vite-ignore */ `${base}/wasm/libdedx.mjs`);
 11:     const module = await factory.default({
 12:       locateFile: (f: string) => `${base}/wasm/${f}`
 13:     });
-14: 
+14:
 15:     const { LibdedxServiceImpl } = await import('./libdedx');
 16:     service = new LibdedxServiceImpl(module);
 17:     await service.init();
@@ -3838,15 +3733,12 @@ The WASM file is accessible. The issue might be with how the WASM is being loade
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.5s)
 
-
-
 The WASM loader uses `${base}/wasm/libdedx.mjs`. In preview/build mode, `$app/paths` should resolve correctly. Let me check what the console errors are in the test. Let me look at one of the error context files:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "cat test-results/particle-unit-switching-Pa-4d92a--conserved-row-shows-20-MeV-chromium/error-context.md 2>&1",
@@ -3855,6 +3747,7 @@ The WASM loader uses `${base}/wasm/libdedx.mjs`. In preview/build mode, `$app/pa
 ```
 
 **Output:**
+
 ```
 # Instructions
 
@@ -3870,11 +3763,13 @@ The WASM loader uses `${base}/wasm/libdedx.mjs`. In preview/build mode, `$app/pa
 # Error details
 
 ```
+
 TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
 Call log:
-  - waiting for locator('[aria-label="Particle"]') to be visible
 
-```
+- waiting for locator('[aria-label="Particle"]') to be visible
+
+````
 
 # Page snapshot
 
@@ -3901,7 +3796,7 @@ Call log:
     - generic [ref=e24]:
       - paragraph [ref=e25]: webdedx — Stopping power calculations
       - paragraph [ref=e26]: Built with Svelte 5 + WASM
-```
+````
 
 # Test source
 
@@ -3926,21 +3821,21 @@ Call log:
   18  |  *    `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`.
   19  |  */
   20  | import { test, expect } from "@playwright/test";
-  21  | 
+  21  |
   22  | const WASM_TIMEOUT = 20000;
-  23  | 
+  23  |
   24  | async function waitForWasm(page: import("@playwright/test").Page) {
   25  |   await page.goto("/calculator");
 > 26  |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
       |              ^ TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
   27  | }
-  28  | 
+  28  |
   29  | async function waitForTable(page: import("@playwright/test").Page) {
   30  |   await expect(page.locator("thead th").first()).toContainText(/Energy/i, {
   31  |     timeout: WASM_TIMEOUT,
   32  |   });
   33  | }
-  34  | 
+  34  |
   35  | async function selectParticle(page: import("@playwright/test").Page, name: string) {
   36  |   const particleBtn = page.getByRole("button", { name: /^Particle$/ });
   37  |   await particleBtn.click();
@@ -3949,92 +3844,93 @@ Call log:
   40  |   await opt.click();
   41  |   await waitForTable(page);
   42  | }
-  43  | 
+  43  |
   44  | async function typeInRow(page: import("@playwright/test").Page, index: number, value: string) {
   45  |   const inputs = page.locator("input[data-row-index]");
   46  |   await inputs.nth(index).fill(value);
   47  | }
-  48  | 
+  48  |
   49  | async function rowText(page: import("@playwright/test").Page, index: number): Promise<string> {
   50  |   return await page.locator("input[data-row-index]").nth(index).inputValue();
   51  | }
-  52  | 
+  52  |
   53  | async function mevNuclCell(page: import("@playwright/test").Page, index: number): Promise<string> {
   54  |   return (await page.locator("tbody tr").nth(index).locator("td").nth(1).textContent()) ?? "";
   55  | }
-  56  | 
+  56  |
   57  | // ─────────────────────────────────────────────────────────────────────────────
   58  | // Particle switching — kinetic energy conservation (E_nucl preserved)
   59  | // ─────────────────────────────────────────────────────────────────────────────
-  60  | 
+  60  |
   61  | test.describe("Particle switching — E_nucl conservation", () => {
   62  |   test.beforeEach(async ({ page }) => {
   63  |     await waitForWasm(page);
   64  |     await waitForTable(page);
   65  |   });
-  66  | 
+  66  |
   67  |   test("He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV", async ({
   68  |     page,
   69  |   }) => {
   70  |     await selectParticle(page, "alpha");
   71  |     await typeInRow(page, 0, "20 MeV/nucl");
   72  |     expect(await mevNuclCell(page, 0)).toContain("20");
-  73  | 
+  73  |
   74  |     await selectParticle(page, "proton");
   75  |     // E_nucl=20 conserved: proton (A=1) displays as 20 MeV.
   76  |     expect(await rowText(page, 0)).toBe("20 MeV");
   77  |     expect(await mevNuclCell(page, 0)).toContain("20");
   78  |   });
-  79  | 
+  79  |
   80  |   test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({ page }) => {
   81  |     await selectParticle(page, "alpha");
   82  |     await typeInRow(page, 0, "80 MeV");
   83  |     // Helium 80 MeV total → E_nucl = 80/4 = 20 MeV/nucl.
   84  |     expect(await mevNuclCell(page, 0)).toContain("20");
-  85  | 
+  85  |
   86  |     await selectParticle(page, "proton");
   87  |     // E_nucl=20 conserved: proton displays as 20 MeV.
   88  |     expect(await rowText(page, 0)).toBe("20 MeV");
   89  |     expect(await mevNuclCell(page, 0)).toContain("20");
   90  |   });
-  91  | 
+  91  |
   92  |   test("Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved", async ({
   93  |     page,
   94  |   }) => {
   95  |     // Default: proton 100 MeV (E_nucl=100).
   96  |     expect(await rowText(page, 0)).toBe("100");
   97  |     expect(await mevNuclCell(page, 0)).toContain("100");
-  98  | 
+  98  |
   99  |     // Carbon (A=12): E_nucl=100 → 100 × 12 = 1200 MeV total.
   100 |     await selectParticle(page, "carbon");
   101 |     expect(await rowText(page, 0)).toBe("1200 MeV");
   102 |     expect(await mevNuclCell(page, 0)).toContain("100");
-  103 | 
+  103 |
   104 |     // Back to proton: E_nucl=100 → 100 MeV.
   105 |     await selectParticle(page, "proton");
   106 |     expect(await rowText(page, 0)).toBe("100 MeV");
   107 |     expect(await mevNuclCell(page, 0)).toContain("100");
   108 |   });
   109 | });
-  110 | 
+  110 |
   111 | // ─────────────────────────────────────────────────────────────────────────────
   112 | // Per-row unit dropdown — current behaviour
   113 | // ─────────────────────────────────────────────────────────────────────────────
-  114 | 
+  114 |
   115 | test.describe("Per-row unit dropdown — current behaviour", () => {
   116 |   test.beforeEach(async ({ page }) => {
   117 |     await waitForWasm(page);
   118 |     await waitForTable(page);
   119 |   });
-  120 | 
+  120 |
   121 |   test("Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)", async ({
   122 |     page,
   123 |   }) => {
   124 |     await selectParticle(page, "carbon");
   125 |     await typeInRow(page, 0, "12 MeV");
-  126 | 
+  126 |
 ```
-```
+
+````
 
 ---
 
@@ -4054,9 +3950,10 @@ The page snapshot shows "Loading WASM module..." and "Loading..." - the WASM is 
   "command": "pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts --reporter=list --debug 2>&1 | head -50 &\nsleep 5\ncurl -s http://127.0.0.1:4173/wasm/libdedx.mjs 2>&1 | head -20",
   "description": "Check WASM module accessibility"
 }
-```
+````
 
 **Output:**
+
 ```
 async function Module(moduleArg={}){var moduleRtn;var Module=moduleArg;var ENVIRONMENT_IS_WEB=!!globalThis.window;var ENVIRONMENT_IS_WORKER=!!globalThis.WorkerGlobalScope;var ENVIRONMENT_IS_NODE=globalThis.process?.versions?.node&&globalThis.process?.type!="renderer";if(ENVIRONMENT_IS_NODE){const{createRequire}=await import("node:module");var require=createRequire(import.meta.url)}var arguments_=[];var thisProgram="./this.program";var quit_=(status,toThrow)=>{throw toThrow};var _scriptName=import.meta.url;var scriptDirectory="";function locateFile(path){if(Module["locateFile"]){return Module["locateFile"](path,scriptDirectory)}return scriptDirectory+path}var readAsync,readBinary;if(ENVIRONMENT_IS_NODE){var fs=require("node:fs");if(_scriptName.startsWith("file:")){scriptDirectory=require("node:path").dirname(require("node:url").fileURLToPath(_scriptName))+"/"}readBinary=filename=>{filename=isFileURI(filename)?new URL(filename):filename;var ret=fs.readFileSync(filename);return ret};readAsync=async(filename,binary=true)=>{filename=isFileURI(filename)?new URL(filename):filename;var ret=fs.readFileSync(filename,binary?undefined:"utf8");return ret};if(process.argv.length>1){thisProgram=process.argv[1].replace(/\\/g,"/")}arguments_=process.argv.slice(2);quit_=(status,toThrow)=>{process.exitCode=status;throw toThrow}}else if(ENVIRONMENT_IS_WEB||ENVIRONMENT_IS_WORKER){try{scriptDirectory=new URL(".",_scriptName).href}catch{}{readAsync=async url=>{var response=await fetch(url,{credentials:"same-origin"});if(response.ok){return response.arrayBuffer()}throw new Error(response.status+" : "+response.url)}}}else{}var out=console.log.bind(console);var err=console.error.bind(console);var wasmBinary;var ABORT=false;var isFileURI=filename=>filename.startsWith("file://");class EmscriptenEH{}class EmscriptenSjLj extends EmscriptenEH{}var readyPromiseResolve,readyPromiseReject;var runtimeInitialized=false;function updateMemoryViews(){var b=wasmMemory.buffer;HEAP8=new Int8Array(b);HEAP16=new Int16Array(b);HEAPU8=new Uint8Array(b);HEAPU16=new Uint16Array(b);Module["HEAP32"]=HEAP32=new Int32Array(b);HEAPU32=new Uint32Array(b);Module["HEAPF32"]=HEAPF32=new Float32Array(b);Module["HEAPF64"]=HEAPF64=new Float64Array(b);HEAP64=new BigInt64Array(b);HEAPU64=new BigUint64Array(b)}function preRun(){if(Module["preRun"]){if(typeof Module["preRun"]=="function")Module["preRun"]=[Module["preRun"]];while(Module["preRun"].length){addOnPreRun(Module["preRun"].shift())}}callRuntimeCallbacks(onPreRuns)}function initRuntime(){runtimeInitialized=true;wasmExports["__wasm_call_ctors"]()}function postRun(){if(Module["postRun"]){if(typeof Module["postRun"]=="function")Module["postRun"]=[Module["postRun"]];while(Module["postRun"].length){addOnPostRun(Module["postRun"].shift())}}callRuntimeCallbacks(onPostRuns)}function abort(what){Module["onAbort"]?.(what);what=`Aborted(${what})`;err(what);ABORT=true;what+=". Build with -sASSERTIONS for more info.";var e=new WebAssembly.RuntimeError(what);readyPromiseReject?.(e);throw e}var wasmBinaryFile;function findWasmBinary(){if(Module["locateFile"]){return locateFile("libdedx.wasm")}return new URL("libdedx.wasm",import.meta.url).href}function getBinarySync(file){if(file==wasmBinaryFile&&wasmBinary){return new Uint8Array(wasmBinary)}if(readBinary){return readBinary(file)}throw"both async and sync fetching of the wasm failed"}async function getWasmBinary(binaryFile){if(!wasmBinary){try{var response=await readAsync(binaryFile);return new Uint8Array(response)}catch{}}return getBinarySync(binaryFile)}async function instantiateArrayBuffer(binaryFile,imports){try{var binary=await getWasmBinary(binaryFile);var instance=await WebAssembly.instantiate(binary,imports);return instance}catch(reason){err(`failed to asynchronously prepare wasm: ${reason}`);abort(reason)}}async function instantiateAsync(binary,binaryFile,imports){if(!binary&&!ENVIRONMENT_IS_NODE){try{var response=fetch(binaryFile,{credentials:"same-origin"});var instantiationResult=await WebAssembly.instantiateStreaming(response,imports);return instantiationResult}catch(reason){err(`wasm streaming compile failed: ${reason}`);err("falling back to ArrayBuffer instantiation")}}return instantiateArrayBuffer(binaryFile,imports)}function getWasmImports(){var imports={env:wasmImports,wasi_snapshot_preview1:wasmImports};return imports}async function createWasm(){function receiveInstance(instance,module){wasmExports=instance.exports;assignWasmExports(wasmExports);updateMemoryViews();return wasmExports}function receiveInstantiationResult(result){return receiveInstance(result["instance"])}var info=getWasmImports();if(Module["instantiateWasm"]){return new Promise((resolve,reject)=>{Module["instantiateWasm"](info,(inst,mod)=>{resolve(receiveInstance(inst,mod))})})}wasmBinaryFile??=findWasmBinary();var result=await instantiateAsync(wasmBinary,wasmBinaryFile,info);var exports=receiveInstantiationResult(result);return exports}class ExitStatus{name="ExitStatus";constructor(status){this.message=`Program terminated with exit(${status})`;this.status=status}}var HEAP16;var HEAP32;var HEAP64;var HEAP8;var HEAPF32;var HEAPF64;var HEAPU16;var HEAPU32;var HEAPU64;var HEAPU8;var callRuntimeCallbacks=callbacks=>{while(callbacks.length>0){callbacks.shift()(Module)}};var onPostRuns=[];var addOnPostRun=cb=>onPostRuns.push(cb);var onPreRuns=[];var addOnPreRun=cb=>onPreRuns.push(cb);var noExitRuntime=true;var stackRestore=val=>__emscripten_stack_restore(val);var stackSave=()=>_emscripten_stack_get_current();var getHeapMax=()=>2147483648;var alignMemory=(size,alignment)=>Math.ceil(size/alignment)*alignment;var growMemory=size=>{var oldHeapSize=wasmMemory.buffer.byteLength;var pages=(size-oldHeapSize+65535)/65536|0;try{wasmMemory.grow(pages);updateMemoryViews();return 1}catch(e){}};var _emscripten_resize_heap=requestedSize=>{var oldSize=HEAPU8.length;requestedSize>>>=0;var maxHeapSize=getHeapMax();if(requestedSize>maxHeapSize){return false}for(var cutDown=1;cutDown<=4;cutDown*=2){var overGrownHeapSize=oldSize*(1+.2/cutDown);overGrownHeapSize=Math.min(overGrownHeapSize,requestedSize+100663296);var newSize=Math.min(maxHeapSize,alignMemory(Math.max(requestedSize,overGrownHeapSize),65536));var replacement=growMemory(newSize);if(replacement){return true}}return false};var printCharBuffers=[null,[],[]];var UTF8Decoder=globalThis.TextDecoder&&new TextDecoder;var findStringEnd=(heapOrArray,idx,maxBytesToRead,ignoreNul)=>{var maxIdx=idx+maxBytesToRead;if(ignoreNul)return maxIdx;while(heapOrArray[idx]&&!(idx>=maxIdx))++idx;return idx};var UTF8ArrayToString=(heapOrArray,idx=0,maxBytesToRead,ignoreNul)=>{var endPtr=findStringEnd(heapOrArray,idx,maxBytesToRead,ignoreNul);if(endPtr-idx>16&&heapOrArray.buffer&&UTF8Decoder){return UTF8Decoder.decode(heapOrArray.subarray(idx,endPtr))}var str="";while(idx<endPtr){var u0=heapOrArray[idx++];if(!(u0&128)){str+=String.fromCharCode(u0);continue}var u1=heapOrArray[idx++]&63;if((u0&224)==192){str+=String.fromCharCode((u0&31)<<6|u1);continue}var u2=heapOrArray[idx++]&63;if((u0&240)==224){u0=(u0&15)<<12|u1<<6|u2}else{u0=(u0&7)<<18|u1<<12|u2<<6|heapOrArray[idx++]&63}if(u0<65536){str+=String.fromCharCode(u0)}else{var ch=u0-65536;str+=String.fromCharCode(55296|ch>>10,56320|ch&1023)}}return str};var printChar=(stream,curr)=>{var buffer=printCharBuffers[stream];if(curr===0||curr===10){(stream===1?out:err)(UTF8ArrayToString(buffer));buffer.length=0}else{buffer.push(curr)}};var UTF8ToString=(ptr,maxBytesToRead,ignoreNul)=>ptr?UTF8ArrayToString(HEAPU8,ptr,maxBytesToRead,ignoreNul):"";var _fd_write=(fd,iov,iovcnt,pnum)=>{var num=0;for(var i=0;i<iovcnt;i++){var ptr=HEAPU32[iov>>2];var len=HEAPU32[iov+4>>2];iov+=8;for(var j=0;j<len;j++){printChar(fd,HEAPU8[ptr+j])}num+=len}HEAPU32[pnum>>2]=num;return 0};var getCFunc=ident=>{var func=Module["_"+ident];return func};var writeArrayToMemory=(array,buffer)=>{HEAP8.set(array,buffer)};var lengthBytesUTF8=str=>{var len=0;for(var i=0;i<str.length;++i){var c=str.charCodeAt(i);if(c<=127){len++}else if(c<=2047){len+=2}else if(c>=55296&&c<=57343){len+=4;++i}else{len+=3}}return len};var stringToUTF8Array=(str,heap,outIdx,maxBytesToWrite)=>{if(!(maxBytesToWrite>0))return 0;var startIdx=outIdx;var endIdx=outIdx+maxBytesToWrite-1;for(var i=0;i<str.length;++i){var u=str.codePointAt(i);if(u<=127){if(outIdx>=endIdx)break;heap[outIdx++]=u}else if(u<=2047){if(outIdx+1>=endIdx)break;heap[outIdx++]=192|u>>6;heap[outIdx++]=128|u&63}else if(u<=65535){if(outIdx+2>=endIdx)break;heap[outIdx++]=224|u>>12;heap[outIdx++]=128|u>>6&63;heap[outIdx++]=128|u&63}else{if(outIdx+3>=endIdx)break;heap[outIdx++]=240|u>>18;heap[outIdx++]=128|u>>12&63;heap[outIdx++]=128|u>>6&63;heap[outIdx++]=128|u&63;i++}}heap[outIdx]=0;return outIdx-startIdx};var stringToUTF8=(str,outPtr,maxBytesToWrite)=>stringToUTF8Array(str,HEAPU8,outPtr,maxBytesToWrite);var stackAlloc=sz=>__emscripten_stack_alloc(sz);var stringToUTF8OnStack=str=>{var size=lengthBytesUTF8(str)+1;var ret=stackAlloc(size);stringToUTF8(str,ret,size);return ret};var ccall=(ident,returnType,argTypes,args,opts)=>{var toC={string:str=>{var ret=0;if(str!==null&&str!==undefined&&str!==0){ret=stringToUTF8OnStack(str)}return ret},array:arr=>{var ret=stackAlloc(arr.length);writeArrayToMemory(arr,ret);return ret}};function convertReturnValue(ret){if(returnType==="string"){return UTF8ToString(ret)}if(returnType==="boolean")return Boolean(ret);return ret}var func=getCFunc(ident);var cArgs=[];var stack=0;if(args){for(var i=0;i<args.length;i++){var converter=toC[argTypes[i]];if(converter){if(stack===0)stack=stackSave();cArgs[i]=converter(args[i])}else{cArgs[i]=args[i]}}}var ret=func(...cArgs);function onDone(ret){if(stack!==0)stackRestore(stack);return convertReturnValue(ret)}ret=onDone(ret);return ret};var cwrap=(ident,returnType,argTypes,opts)=>{var numericArgs=!argTypes||argTypes.every(type=>type==="number"||type==="boolean");var numericRet=returnType!=="string";if(numericRet&&numericArgs&&!opts){return getCFunc(ident)}return(...args)=>ccall(ident,returnType,argTypes,args,opts)};{if(Module["noExitRuntime"])noExitRuntime=Module["noExitRuntime"];if(Module["print"])out=Module["print"];if(Module["printErr"])err=Module["printErr"];if(Module["wasmBinary"])wasmBinary=Module["wasmBinary"];if(Module["arguments"])arguments_=Module["arguments"];if(Module["thisProgram"])thisProgram=Module["thisProgram"];if(Module["preInit"]){if(typeof Module["preInit"]=="function")Module["preInit"]=[Module["preInit"]];while(Module["preInit"].length>0){Module["preInit"].shift()()}}}Module["ccall"]=ccall;Module["cwrap"]=cwrap;Module["UTF8ToString"]=UTF8ToString;var _dedx_get_inverse_csda,_dedx_get_csda,_dedx_get_inverse_stp,_convert_units,_dedx_allocate_workspace,_dedx_free_workspace,_dedx_get_error_code,_dedx_get_program_name,_dedx_get_program_version,_dedx_get_material_name,_dedx_get_ion_name,_dedx_get_version_string,_dedx_get_composition,_dedx_get_i_value,_dedx_get_program_list,_dedx_get_material_list,_dedx_get_ion_list,_dedx_get_min_energy,_dedx_get_max_energy,_dedx_load_config,_dedx_get_stp,_dedx_free_config,_dedx_fill_program_list,_dedx_fill_material_list,_dedx_fill_ion_list,_dedx_get_stp_table,_dedx_get_simple_stp_for_program,_dedx_get_stp_table_size,_dedx_fill_default_energy_stp_table,_dedx_get_csda_range_table,_dedx_internal_read_density,_dedx_get_ion_nucleon_number,_dedx_get_ion_atom_mass,_dedx_get_density,_dedx_target_is_gas,_malloc,_free,__emscripten_stack_restore,__emscripten_stack_alloc,_emscripten_stack_get_current,memory,__indirect_function_table,wasmMemory;function assignWasmExports(wasmExports){_dedx_get_inverse_csda=Module["_dedx_get_inverse_csda"]=wasmExports["dedx_get_inverse_csda"];_dedx_get_csda=Module["_dedx_get_csda"]=wasmExports["dedx_get_csda"];_dedx_get_inverse_stp=Module["_dedx_get_inverse_stp"]=wasmExports["dedx_get_inverse_stp"];_convert_units=Module["_convert_units"]=wasmExports["convert_units"];_dedx_allocate_workspace=Module["_dedx_allocate_workspace"]=wasmExports["dedx_allocate_workspace"];_dedx_free_workspace=Module["_dedx_free_workspace"]=wasmExports["dedx_free_workspace"];_dedx_get_error_code=Module["_dedx_get_error_code"]=wasmExports["dedx_get_error_code"];_dedx_get_program_name=Module["_dedx_get_program_name"]=wasmExports["dedx_get_program_name"];_dedx_get_program_version=Module["_dedx_get_program_version"]=wasmExports["dedx_get_program_version"];_dedx_get_material_name=Module["_dedx_get_material_name"]=wasmExports["dedx_get_material_name"];_dedx_get_ion_name=Module["_dedx_get_ion_name"]=wasmExports["dedx_get_ion_name"];_dedx_get_version_string=Module["_dedx_get_version_string"]=wasmExports["dedx_get_version_string"];_dedx_get_composition=Module["_dedx_get_composition"]=wasmExports["dedx_get_composition"];_dedx_get_i_value=Module["_dedx_get_i_value"]=wasmExports["dedx_get_i_value"];_dedx_get_program_list=Module["_dedx_get_program_list"]=wasmExports["dedx_get_program_list"];_dedx_get_material_list=Module["_dedx_get_material_list"]=wasmExports["dedx_get_material_list"];_dedx_get_ion_list=Module["_dedx_get_ion_list"]=wasmExports["dedx_get_ion_list"];_dedx_get_min_energy=Module["_dedx_get_min_energy"]=wasmExports["dedx_get_min_energy"];_dedx_get_max_energy=Module["_dedx_get_max_energy"]=wasmExports["dedx_get_max_energy"];_dedx_load_config=Module["_dedx_load_config"]=wasmExports["dedx_load_config"];_dedx_get_stp=Module["_dedx_get_stp"]=wasmExports["dedx_get_stp"];_dedx_free_config=Module["_dedx_free_config"]=wasmExports["dedx_free_config"];_dedx_fill_program_list=Module["_dedx_fill_program_list"]=wasmExports["dedx_fill_program_list"];_dedx_fill_material_list=Module["_dedx_fill_material_list"]=wasmExports["dedx_fill_material_list"];_dedx_fill_ion_list=Module["_dedx_fill_ion_list"]=wasmExports["dedx_fill_ion_list"];_dedx_get_stp_table=Module["_dedx_get_stp_table"]=wasmExports["dedx_get_stp_table"];_dedx_get_simple_stp_for_program=Module["_dedx_get_simple_stp_for_program"]=wasmExports["dedx_get_simple_stp_for_program"];_dedx_get_stp_table_size=Module["_dedx_get_stp_table_size"]=wasmExports["dedx_get_stp_table_size"];_dedx_fill_default_energy_stp_table=Module["_dedx_fill_default_energy_stp_table"]=wasmExports["dedx_fill_default_energy_stp_table"];_dedx_get_csda_range_table=Module["_dedx_get_csda_range_table"]=wasmExports["dedx_get_csda_range_table"];_dedx_internal_read_density=Module["_dedx_internal_read_density"]=wasmExports["dedx_internal_read_density"];_dedx_get_ion_nucleon_number=Module["_dedx_get_ion_nucleon_number"]=wasmExports["dedx_get_ion_nucleon_number"];_dedx_get_ion_atom_mass=Module["_dedx_get_ion_atom_mass"]=wasmExports["dedx_get_ion_atom_mass"];_dedx_get_density=Module["_dedx_get_density"]=wasmExports["dedx_get_density"];_dedx_target_is_gas=Module["_dedx_target_is_gas"]=wasmExports["dedx_target_is_gas"];_malloc=Module["_malloc"]=wasmExports["malloc"];_free=Module["_free"]=wasmExports["free"];__emscripten_stack_restore=wasmExports["_emscripten_stack_restore"];__emscripten_stack_alloc=wasmExports["_emscripten_stack_alloc"];_emscripten_stack_get_current=wasmExports["emscripten_stack_get_current"];memory=wasmMemory=wasmExports["memory"];__indirect_function_table=wasmExports["__indirect_function_table"]}var wasmImports={emscripten_resize_heap:_emscripten_resize_heap,fd_write:_fd_write};function run(){preRun();function doRun(){Module["calledRun"]=true;if(ABORT)return;initRuntime();readyPromiseResolve?.(Module);Module["onRuntimeInitialized"]?.();postRun()}if(Module["setStatus"]){Module["setStatus"]("Running...");setTimeout(()=>{setTimeout(()=>Module["setStatus"](""),1);doRun()},1)}else{doRun()}}var wasmExports;wasmExports=await (createWasm());run();if(runtimeInitialized){moduleRtn=Module}else{moduleRtn=new Promise((resolve,reject)=>{readyPromiseResolve=resolve;readyPromiseReject=reject})}
 ;return moduleRtn}export default Module;
@@ -4075,14 +3972,10 @@ _Thinking:_
 
 The WASM module file is being served correctly. The issue is that the page is stuck on "Loading WASM module..." which means `$wasmReady.value` is not becoming true. Let me check the `wasmReady` state and see if there's an issue with how it's being set:
 
-
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/lib/state/ui.svelte.ts"
@@ -4090,6 +3983,7 @@ The WASM module file is being served correctly. The issue is that the page is st
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/lib/state/ui.svelte.ts</path>
 <type>file</type>
@@ -4106,15 +4000,12 @@ The WASM module file is being served correctly. The issue is that the page is st
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.0s)
 
-
-
 Now I understand - the page shows "Loading WASM module..." because `wasmReady.value` is still `false`. The navbar banner is shown by a different component. Let me trace through how `wasmReady` gets set to `true`:
-
-
 
 **Tool: grep**
 
 **Input:**
+
 ```json
 {
   "pattern": "wasmReady\\.value\\s*=\\s*true",
@@ -4123,6 +4014,7 @@ Now I understand - the page shows "Loading WASM module..." because `wasmReady.va
 ```
 
 **Output:**
+
 ```
 Found 1 matches
 /home/grzanka/workspace/dedx_web/src/routes/+layout.svelte:
@@ -4134,13 +4026,10 @@ Found 1 matches
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 3.3s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/src/routes/+layout.svelte"
@@ -4148,6 +4037,7 @@ Found 1 matches
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/src/routes/+layout.svelte</path>
 <type>file</type>
@@ -4158,13 +4048,13 @@ Found 1 matches
 4:   import { base } from "$app/paths";
 5:   import { getService } from "$lib/wasm/loader";
 6:   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
-7: 
+7:
 8:   let { children } = $props();
 9:   let pathname = $derived($page.url.pathname);
 10:   let routePath = $derived(
 11:     pathname.startsWith(base) ? pathname.slice(base.length) || "/" : pathname,
 12:   );
-13: 
+13:
 14:   $effect(() => {
 15:     getService()
 16:       .then(() => {
@@ -4175,7 +4065,7 @@ Found 1 matches
 21:       });
 22:   });
 23: </script>
-24: 
+24:
 25: <div class="min-h-screen bg-background">
 26:   <nav class="border-b bg-card">
 27:     <div class="container mx-auto px-4">
@@ -4215,7 +4105,7 @@ Found 1 matches
 61:       </div>
 62:     </div>
 63:   </nav>
-64: 
+64:
 65:   {#if wasmError.value}
 66:     <div class="bg-destructive/15 border-b border-destructive/20 px-4 py-3">
 67:       <div class="container mx-auto">
@@ -4238,11 +4128,11 @@ Found 1 matches
 84:       </div>
 85:     </div>
 86:   {/if}
-87: 
+87:
 88:   <main class="container mx-auto px-4 py-6">
 89:     {@render children()}
 90:   </main>
-91: 
+91:
 92:   <footer class="border-t bg-card mt-auto">
 93:     <div class="container mx-auto px-4 py-4">
 94:       <div class="flex items-center justify-between text-xs text-muted-foreground">
@@ -4261,8 +4151,6 @@ Found 1 matches
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 75.3s)
 
-
-
 The layout is calling `getService()` which should load the WASM. The issue is that `getService()` in `src/lib/wasm/loader.ts` is failing silently or hanging. Looking at line 10:
 
 ```typescript
@@ -4271,11 +4159,10 @@ const factory = await import(/* @vite-ignore */ `${base}/wasm/libdedx.mjs`);
 
 In preview mode with SvelteKit, `$app/paths` `base` should be empty string or the base path. Let me check if the mjs file is loading correctly by checking the browser console. Let me run a quick playwright test to capture console messages:
 
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "timeout 30 node -e \"\nconst { chromium } = require('playwright');\n(async () => {\n  const browser = await chromium.launch();\n  const page = await browser.newPage();\n  page.on('console', msg => console.log('CONSOLE:', msg.type(), msg.text()));\n  page.on('pageerror', err => console.log('PAGE ERROR:', err.message));\n  await page.goto('http://127.0.0.1:4173/calculator');\n  await page.waitForTimeout(10000);\n  await browser.close();\n})().catch(e => console.error(e));\n\" 2>&1 || echo \"Done\"",
@@ -4284,6 +4171,7 @@ In preview mode with SvelteKit, `$app/paths` `base` should be empty string or th
 ```
 
 **Output:**
+
 ```
 node:internal/modules/cjs/loader:1479
   throw err;
@@ -4319,14 +4207,10 @@ _Thinking:_
 
 Let me check if there's a base path issue. The mjs file should be accessible at `/wasm/libdedx.mjs`.
 
-
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "curl -I http://127.0.0.1:4173/wasm/libdedx.mjs 2>&1 | head -10",
@@ -4335,10 +4219,13 @@ Let me check if there's a base path issue. The mjs file should be accessible at 
 ```
 
 **Output:**
+
 ```
   % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
                                  Dload  Upload   Total   Spent    Left  Speed
-  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0 15807    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
+  0 15807    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0
 HTTP/1.1 200 OK
 Access-Control-Allow-Origin: *
 Content-Length: 15807
@@ -4353,15 +4240,12 @@ Connection: keep-alive
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.3s)
 
-
-
 The WASM files are accessible. Let me check if there's an issue with the E2E tests themselves. Let me run a simpler existing E2E test to see if WASM loads:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/smoke.spec.ts --reporter=list 2>&1 | head -50",
@@ -4370,6 +4254,7 @@ The WASM files are accessible. Let me check if there's an issue with the E2E tes
 ```
 
 **Output:**
+
 ```
 Error: No tests found.
 Make sure that arguments are regular expressions matching test files.
@@ -4382,13 +4267,10 @@ You may need to escape symbols like "$" or "*" and quote the arguments.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 3.6s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls tests/e2e/*.spec.ts 2>&1",
@@ -4397,6 +4279,7 @@ You may need to escape symbols like "$" or "*" and quote the arguments.
 ```
 
 **Output:**
+
 ```
 tests/e2e/basic.spec.ts
 tests/e2e/calculator.spec.ts
@@ -4412,13 +4295,10 @@ tests/e2e/particle-unit-switching.spec.ts
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.0s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/basic.spec.ts --reporter=list 2>&1 | head -80",
@@ -4427,6 +4307,7 @@ tests/e2e/particle-unit-switching.spec.ts
 ```
 
 **Output:**
+
 ```
 
 Running 4 tests using 4 workers
@@ -4448,13 +4329,10 @@ _Thinking:_
 
 The basic tests pass, so WASM is loading. Let me check what the particle-unit-switching tests are doing differently. Let me look at the test file more carefully:
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts",
@@ -4463,6 +4341,7 @@ The basic tests pass, so WASM is loading. Let me check what the particle-unit-sw
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts</path>
 <type>file</type>
@@ -4487,20 +4366,20 @@ The basic tests pass, so WASM is loading. Let me check what the particle-unit-sw
 18:  *    `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`.
 19:  */
 20: import { test, expect } from "@playwright/test";
-21: 
+21:
 22: const WASM_TIMEOUT = 20000;
-23: 
+23:
 24: async function waitForWasm(page: import("@playwright/test").Page) {
 25:   await page.goto("/calculator");
 26:   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
 27: }
-28: 
+28:
 29: async function waitForTable(page: import("@playwright/test").Page) {
 30:   await expect(page.locator("thead th").first()).toContainText(/Energy/i, {
 31:     timeout: WASM_TIMEOUT,
 32:   });
 33: }
-34: 
+34:
 35: async function selectParticle(page: import("@playwright/test").Page, name: string) {
 36:   const particleBtn = page.getByRole("button", { name: /^Particle$/ });
 37:   await particleBtn.click();
@@ -4509,30 +4388,30 @@ The basic tests pass, so WASM is loading. Let me check what the particle-unit-sw
 40:   await opt.click();
 41:   await waitForTable(page);
 42: }
-43: 
+43:
 44: async function typeInRow(page: import("@playwright/test").Page, index: number, value: string) {
 45:   const inputs = page.locator("input[data-row-index]");
 46:   await inputs.nth(index).fill(value);
 47: }
-48: 
+48:
 49: async function rowText(page: import("@playwright/test").Page, index: number): Promise<string> {
 50:   return await page.locator("input[data-row-index]").nth(index).inputValue();
 51: }
-52: 
+52:
 53: async function mevNuclCell(page: import("@playwright/test").Page, index: number): Promise<string> {
 54:   return (await page.locator("tbody tr").nth(index).locator("td").nth(1).textContent()) ?? "";
 55: }
-56: 
+56:
 57: // ─────────────────────────────────────────────────────────────────────────────
 58: // Particle switching — kinetic energy conservation (E_nucl preserved)
 59: // ─────────────────────────────────────────────────────────────────────────────
-60: 
+60:
 61: test.describe("Particle switching — E_nucl conservation", () => {
 62:   test.beforeEach(async ({ page }) => {
 63:     await waitForWasm(page);
 64:     await waitForTable(page);
 65:   });
-66: 
+66:
 67:   test("He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV", async ({
 68:     page,
 69:   }) => {
@@ -4546,15 +4425,12 @@ The basic tests pass, so WASM is loading. Let me check what the particle-unit-sw
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 3.7s)
 
-
-
 Let me check the basic test to see how it waits for the page:
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/tests/e2e/basic.spec.ts"
@@ -4562,27 +4438,28 @@ Let me check the basic test to see how it waits for the page:
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/tests/e2e/basic.spec.ts</path>
 <type>file</type>
 <content>
 1: import { test, expect } from '@playwright/test';
-2: 
+2:
 3: test('homepage redirects to calculator', async ({ page }) => {
 4:   await page.goto('/');
 5:   await expect(page).toHaveURL(/\/calculator$/);
 6: });
-7: 
+7:
 8: test('calculator page loads', async ({ page }) => {
 9:   await page.goto('/calculator');
 10:   await expect(page.getByRole('heading', { name: 'Calculator' })).toBeVisible();
 11: });
-12: 
+12:
 13: test('plot page loads', async ({ page }) => {
 14:   await page.goto('/plot');
 15:   await expect(page.getByRole('heading', { name: 'Plot' })).toBeVisible();
 16: });
-17: 
+17:
 18: test('docs page loads', async ({ page }) => {
 19:   await page.goto('/docs');
 20:   await expect(page.getByRole('heading', { name: 'Documentation' })).toBeVisible();
@@ -4596,15 +4473,12 @@ Let me check the basic test to see how it waits for the page:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 40.7s)
 
-
-
 The basic test doesn't wait for WASM - it just checks for the heading. The particle-unit-switching test waits for `[aria-label="Particle"]` which is the combobox button. Let me check another E2E test to see how they handle this:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm exec playwright test tests/e2e/entity-selection.spec.ts --reporter=list 2>&1 | head -40",
@@ -4613,6 +4487,7 @@ The basic test doesn't wait for WASM - it just checks for the heading. The parti
 ```
 
 **Output:**
+
 ```
 
 Running 8 tests using 6 workers
@@ -4627,7 +4502,7 @@ Running 8 tests using 6 workers
   ✘  7 [chromium] › tests/e2e/entity-selection.spec.ts:85:3 › Calculator page — compact mode › DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox (15.2s)
 
 
-  1) [chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program 
+  1) [chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
@@ -4645,7 +4520,7 @@ Running 8 tests using 6 workers
 
     Error Context: test-results/entity-selection-Calculato-6e53d-t-Particle-Material-Program-chromium/error-context.md
 
-  2) [chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select 
+  2) [chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
@@ -4661,15 +4536,12 @@ Running 8 tests using 6 workers
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 237.8s)
 
-
-
 All E2E tests waiting for `[aria-label="Particle"]` are failing. This is a systemic issue - WASM is not loading in the preview server. Let me check if there's an issue with the build or if the preview server needs to be restarted:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pkill -f \"127.0.0.1:4173\" 2>&1 || echo \"No process to kill\"\nsleep 2\npnpm preview --host 127.0.0.1 &\nsleep 5\ncurl -s http://127.0.0.1:4173/calculator 2>&1 | grep -o \"Loading\\|calculator\\|wasm\" | head -5",
@@ -4678,6 +4550,7 @@ All E2E tests waiting for `[aria-label="Particle"]` are failing. This is a syste
 ```
 
 **Output:**
+
 ```
 (no output)
 
@@ -4700,11 +4573,10 @@ _Thinking:_
 
 The user wants to run the tests themselves. Let me provide clear, concise instructions for running both unit tests and E2E tests.
 
-
-
 ## Running Tests
 
 ### Unit Tests (Vitest - no WASM needed)
+
 ```sh
 pnpm test
 ```
@@ -4712,16 +4584,19 @@ pnpm test
 ### E2E Tests (Playwright - requires WASM)
 
 1. **Build the project first** (WASM must be in `build/wasm/`):
+
    ```sh
    pnpm run build
    ```
 
 2. **Run E2E tests** (preview server starts automatically):
+
    ```sh
    pnpm exec playwright test
    ```
 
 3. **Run specific test file**:
+
    ```sh
    pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts
    ```
@@ -4732,11 +4607,14 @@ pnpm test
    ```
 
 ### Current Status
+
 - **Unit tests**: 425 passing ✅
 - **E2E tests**: Currently failing - WASM not loading in preview mode (investigating)
 
 ### Quick Check
+
 Verify WASM files exist:
+
 ```sh
 ls -la static/wasm/
 ls -la build/wasm/
@@ -4764,34 +4642,36 @@ The user wants me to update the anchored summary based on the conversation histo
 8. The issue is systemic - WASM is not loading in the preview server environment
 
 The previous summary mentioned:
+
 - "Unit tests: 425 passing ✅"
 - "E2E tests: 9 failing (KE conservation), 59 passing"
 - "WASM files present in `static/wasm/` and `build/wasm/` - no longer a timeout issue"
 
 But the current reality is:
+
 - WASM IS timing out - all tests waiting for `[aria-label="Particle"]` are failing
 - This is a blocker for ALL E2E tests, not just KE conservation tests
 - The preview server seems to have an issue loading WASM
 
 I need to update the summary to reflect:
+
 1. The actual current state - WASM loading is failing in E2E tests
 2. Remove stale info about "59 E2E passing" - that's no longer accurate
 3. Add the new blocker about WASM loading
 4. Update next steps to address the WASM loading issue first
 
-
 5. Keep the 9 tasks completed status but note E2E validation is blocked
 
 Let me update the summary accordingly.
 
-
-
-
 ---
+
 ## Goal
+
 - Fix E2E test failures: update particle search terms ("alpha"/"proton" instead of "helium"/"hydrogen"), wire KE conservation through `calcState.switchParticle()`, and verify all 9 tasks pass E2E
 
 ## Constraints & Preferences
+
 - TDD rule: tests first, then minimal implementation
 - Conventional Commits after each task
 - AI logging mandatory (CHANGELOG-AI.md, docs/ai-logs/)
@@ -4800,7 +4680,9 @@ Let me update the summary accordingly.
 - 300ms debounce on calculation trigger per calculator.md:840
 
 ## Progress
+
 ### Done
+
 - **Task 1-9**: All 9 tasks implemented and committed
 - **Unit tests**: 425 passing ✅
 - **E2E particle selection fix**: Updated test searches from "helium"/"hydrogen" to "alpha"/"proton" to match UI labels
@@ -4808,21 +4690,25 @@ Let me update the summary accordingly.
 - **EnergyUnitSelector**: Already rendered in calculator page (Task 6 complete)
 
 ### In Progress
+
 - Diagnosing systemic E2E failure: WASM not loading in preview server environment
 - All tests waiting for `[aria-label="Particle"]` timeout after 20s
 
 ### Blocked
+
 - **WASM loading failure in E2E**: Page shows "Loading WASM module..." indefinitely
 - `wasmReady.value` never becomes `true` in preview server
 - WASM files accessible via curl (HTTP 200) but not loading in browser context
 - Cannot validate KE conservation or any E2E scenarios until WASM loads
 
 ## Key Decisions
+
 - E2E tests updated to search for display labels ("alpha particle", "proton") not aliases ("helium", "hydrogen")
 - `EntityCombobox` accepts optional `onParticleSelect` callback to intercept selection before calling `state.selectParticle()`
 - Calculator page wires particle selection through `calcState.switchParticle()` to enable KE conservation
 
 ## Next Steps
+
 1. Debug WASM loading failure in preview server (`pnpm preview --host 127.0.0.1`)
 2. Check browser console errors for WASM import failures
 3. Verify `$app/paths` `base` resolves correctly in preview mode
@@ -4832,6 +4718,7 @@ Let me update the summary accordingly.
 7. Verify `pnpm lint` clean
 
 ## Critical Context
+
 - Branch: `copilot/check-stage-5-implementations`
 - Unit tests: 425 passing (all 9 tasks validated at unit level)
 - E2E tests: ALL tests waiting for `[aria-label="Particle"]` failing with 20s timeout
@@ -4846,6 +4733,7 @@ Let me update the summary accordingly.
 - Playwright config: baseURL `http://127.0.0.1:4173`, webServer runs `pnpm preview --host 127.0.0.1`
 
 ## Relevant Files
+
 - `src/lib/wasm/loader.ts`: WASM loading logic, `getService()` function that may be failing
 - `src/routes/+layout.svelte`: Calls `getService()`, sets `wasmReady.value = true` on success
 - `src/routes/calculator/+page.svelte`: Waits for `wasmReady.value`, renders calculator UI
@@ -4855,6 +4743,7 @@ Let me update the summary accordingly.
 - `tests/e2e/entity-selection.spec.ts`: E2E tests for entity comboboxes (also failing)
 - `tests/e2e/basic.spec.ts`: Basic E2E tests (passing - doesn't wait for WASM)
 - `static/wasm/` and `build/wasm/`: WASM module files (libdedx.mjs, libdedx.wasm)
+
 ---
 
 ---
@@ -4871,15 +4760,12 @@ _Thinking:_
 
 User wants a summary of completed work, AI logs to be filled, and current state committed before they continue with Copilot. Let me check the actual progress by reading the task file they referenced and checking what's been implemented
 
-
-
 I'll summarize the current state, fill in the AI logs, and commit the work. Let me first check what's actually been implemented.
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/opencode-tasks-2026-04-27.md",
@@ -4889,27 +4775,28 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 ```
 
 **Output:**
-```
+
+````
 <path>/home/grzanka/workspace/dedx_web/docs/opencode-tasks-2026-04-27.md</path>
 <type>file</type>
 <content>
 1: # opencode task prompt — 2026-04-27
-2: 
-3: > **Model:** Qwen3.5-397B-A17B-FP8  
+2:
+3: > **Model:** Qwen3.5-397B-A17B-FP8
 4: > **Session type:** Multi-task implementation. Work through the tasks **in
 5: > order**. After each task is complete and `pnpm test` is green, commit with
 6: > a Conventional Commits message and **stop so the user can run `/compact`**
-7: > before the next task.  
+7: > before the next task.
 8: > **MCPs available:** `playwright` (run / inspect E2E tests),
-9: > `tailwind` (Tailwind CSS class lookup).  
+9: > `tailwind` (Tailwind CSS class lookup).
 10: > **TDD rule:** Write the failing test(s) first, then write the minimal
 11: > implementation to make them pass. No implementation without a test.
-12: 
+12:
 13: ---
-14: 
+14:
 15: ## Context
-16: 
-17: Branch: `copilot/check-stage-5-implementations`  
+16:
+17: Branch: `copilot/check-stage-5-implementations`
 18: Read at session start (in order):
 19: 1. `AGENTS.md` — stack, Svelte 5 rules, build commands, AI logging
 20: 2. `docs/04-feature-specs/unit-handling.md` (v4) — energy-unit rules
@@ -4918,7 +4805,7 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 23:    open UX issues that drive this session
 24: 5. `tests/e2e/particle-unit-switching.spec.ts` — the `test.fixme()` block lists
 25:    the E2E assertions to un-skip once tasks 5–6 land
-26: 
+26:
 27: Key source files:
 28: - Parser: `src/lib/utils/energy-parser.ts`
 29: - Conversions: `src/lib/utils/energy-conversions.ts`
@@ -4931,7 +4818,7 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 36: - Result table: `src/lib/components/result-table.svelte`
 37: - Calculator page: `src/routes/calculator/+page.svelte`
 38: - Unit selector component: `src/lib/components/energy-unit-selector.svelte`
-39: 
+39:
 40: Test files:
 41: - `src/tests/unit/energy-parser.test.ts`
 42: - `src/tests/unit/energy-conversions.test.ts`
@@ -4939,49 +4826,49 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 44: - `src/tests/unit/calculator-state.test.ts`
 45: - `tests/e2e/particle-unit-switching.spec.ts`
 46: - `tests/e2e/complex-interactions.spec.ts`
-47: 
+47:
 48: Run tests:
 49: ```sh
 50: pnpm test                        # Vitest unit tests (no WASM needed)
 51: pnpm exec playwright test        # E2E tests (needs WASM in static/wasm/)
 52: ```
-53: 
+53:
 54: ---
-55: 
+55:
 56: ## AI Logging (MANDATORY)
-57: 
+57:
 58: Every task that changes code or docs must be logged. Rules are in `AGENTS.md`
 59: (which refers to `.github/copilot-instructions.md` §"AI Session Logging").
-60: 
+60:
 61: For each task:
 62: 1. Prepend a row to `CHANGELOG-AI.md` table body.
 63: 2. Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` with the session narrative.
 64: 3. Add a one-line pointer to `docs/ai-logs/README.md`.
-65: 
+65:
 66: Attribution line: `(Qwen3.5-397B-A17B-FP8 via opencode)`
-67: 
+67:
 68: ---
-69: 
+69:
 70: ## Task 1 — TeV units in the energy parser
-71: 
+71:
 72: **Spec:** `docs/04-feature-specs/unit-handling.md` v4 §3 "Supported Suffixes"
 73: (the table now includes `TeV`, `TeV/nucl`, `TeV/u` with multiplier ×1e6).
-74: 
+74:
 75: ### Step 1a — tests first (`src/tests/unit/energy-parser.test.ts`)
-76: 
+76:
 77: Add a new `describe("TeV range")` block with these failing tests:
-78: 
+78:
 79: ```
 80: "1 TeV" → { value: 1, unit: "TeV" }
 81: "0.5 TeV/nucl" → { value: 0.5, unit: "TeV/nucl" }
 82: "2 TeV/u" → { value: 2, unit: "TeV/u" }
 83: "10 TeV" is accepted (not rejected as unknown unit)
 84: ```
-85: 
+85:
 86: ### Step 1b — tests first (`src/tests/unit/energy-conversions.test.ts`)
-87: 
+87:
 88: Add tests that verify the SI-prefix multiplier for TeV is ×1e6:
-89: 
+89:
 90: ```
 91: convertEnergyToMeVperNucl(1, "TeV", 1) === 1e6   // proton 1 TeV = 1e6 MeV/nucl
 92: convertEnergyToMeVperNucl(1, "TeV/nucl", 12, 12.011) === 1e6
@@ -4989,18 +4876,19 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 94: convertEnergyFromMeVperNucl(1e6, "TeV", 1) === 1
 95: convertEnergyFromMeVperNucl(1e6, "TeV/nucl", 12, 12.011) === 1e6
 96: ```
-97: 
+97:
 98: ### Step 1c — implement
-99: 
+99:
 100: In `src/lib/utils/energy-parser.ts`:
 
 (Showing lines 1-100 of 766. Use offset=101 to continue.)
 </content>
-```
+````
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "cd /home/grzanka/workspace/dedx_web && git status",
@@ -5009,6 +4897,7 @@ I'll summarize the current state, fill in the AI logs, and commit the work. Let 
 ```
 
 **Output:**
+
 ```
 On branch copilot/check-stage-5-implementations
 Your branch is up to date with 'origin/copilot/check-stage-5-implementations'.
@@ -5028,6 +4917,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "cd /home/grzanka/workspace/dedx_web && git log --oneline -10",
@@ -5036,6 +4926,7 @@ no changes added to commit (use "git add" and/or "git commit -a")
 ```
 
 **Output:**
+
 ```
 23d07a1 chore: delete dead energy-input.svelte, units/energy.ts, and their tests (~480 LOC)
 67115e8 feat(calculator): debounce calculation trigger to 300ms per spec
@@ -5057,17 +4948,17 @@ c6bfc88 feat(parser): add TeV, TeV/nucl, TeV/u energy units (×1e6 MeV)
 grzanka@grzankax1:~/workspace/dedx_web$ (cd wasm && ./build.sh)
 === Stage 2.6 Phase 2 — WASM build (no --preload-file) ===
 Repo root : /home/grzanka/workspace/dedx_web
-Output    : /home/grzanka/workspace/dedx_web/static/wasm
-Image     : emscripten/emsdk:5.0.5
+Output : /home/grzanka/workspace/dedx_web/static/wasm
+Image : emscripten/emsdk:5.0.5
 
 --- [1/3] cmake configure ---
 emcmake: cmake . -B /build -DDEDX_BUILD_EXAMPLES=OFF -DDEDX_BUILD_TESTS=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_TOOLCHAIN_FILE=/emsdk/upstream/emscripten/cmake/Modules/Platform/Emscripten.cmake -DCMAKE_CROSSCOMPILING_EMULATOR=/emsdk/node/22.16.0_64bit/bin/node in directory /src/libdedx
 -- libdedx version: 0.0.0-unknown
 CMake Warning (dev) at src/CMakeLists.txt:46 (add_library):
-  ADD_LIBRARY called with SHARED option but the target platform does not
-  support dynamic linking.  Building a STATIC library instead.  This may lead
-  to problems.
-This warning is for project developers.  Use -Wno-dev to suppress it.
+ADD_LIBRARY called with SHARED option but the target platform does not
+support dynamic linking. Building a STATIC library instead. This may lead
+to problems.
+This warning is for project developers. Use -Wno-dev to suppress it.
 
 -- Configuring done (1.1s)
 -- Generating done (0.0s)
@@ -5093,18 +4984,18 @@ emmake: "cmake --build /build --parallel" in "/src/libdedx"
 [100%] Built target dedx
 [100%] Built target dedx_shared
 
-Static library: /build/src/libdedx.a  (1297412 bytes)
+Static library: /build/src/libdedx.a (1297412 bytes)
 
 --- [3/3] emcc link (Stage 3: full TypeScript wrapper contract) ---
 
 --- output ---
 total 480K
--rw-r--r-- 1 root root  16K Apr 27 11:41 libdedx.mjs
+-rw-r--r-- 1 root root 16K Apr 27 11:41 libdedx.mjs
 -rwxr-xr-x 1 root root 463K Apr 27 11:41 libdedx.wasm
 
 === Build complete ===
 total 480K
--rw-r--r-- 1 root root  16K Apr 27 13:41 libdedx.mjs
+-rw-r--r-- 1 root root 16K Apr 27 13:41 libdedx.mjs
 -rw-r--r-- 1 root root 463K Apr 27 13:41 libdedx.wasm
 grzanka@grzankax1:~/workspace/dedx_web$ pnpm run build
 
@@ -5116,536 +5007,586 @@ vite v8.0.9 building ssr environment for production...
 vite v8.0.9 building client environment for production...
 ✓ 688 modules transformed.
 computing gzip size...
-.svelte-kit/output/client/_app/version.json                         0.02 kB │ gzip:  0.04 kB
-.svelte-kit/output/client/.vite/manifest.json                       5.53 kB │ gzip:  0.90 kB
-.svelte-kit/output/client/_app/immutable/assets/0.C34KRNQE.css    392.37 kB │ gzip: 54.46 kB
-.svelte-kit/output/client/_app/immutable/chunks/CiN3BEHO.js         0.07 kB │ gzip:  0.09 kB │ map:   0.34 kB
-.svelte-kit/output/client/_app/immutable/entry/start.dSKGtQyn.js    0.08 kB │ gzip:  0.09 kB
-.svelte-kit/output/client/_app/immutable/chunks/v_jBEYI6.js         0.10 kB │ gzip:  0.11 kB │ map:   0.51 kB
-.svelte-kit/output/client/_app/immutable/chunks/C25ek2Mm.js         0.14 kB │ gzip:  0.14 kB │ map:   0.43 kB
-.svelte-kit/output/client/_app/immutable/chunks/DDdb-Ovg.js         0.28 kB │ gzip:  0.20 kB │ map:   4.75 kB
-.svelte-kit/output/client/_app/immutable/nodes/2.BaAd8QW-.js        0.47 kB │ gzip:  0.34 kB │ map:   0.74 kB
-.svelte-kit/output/client/_app/immutable/chunks/BuHlFu_L.js         0.69 kB │ gzip:  0.44 kB │ map:   1.23 kB
-.svelte-kit/output/client/_app/immutable/chunks/D20WQ9G2.js         0.75 kB │ gzip:  0.47 kB │ map:   6.80 kB
-.svelte-kit/output/client/_app/immutable/nodes/6.DwOrvbDL.js        0.96 kB │ gzip:  0.60 kB │ map:   1.14 kB
-.svelte-kit/output/client/_app/immutable/nodes/1.Ct8Px7Lx.js        1.03 kB │ gzip:  0.65 kB │ map:   1.09 kB
-.svelte-kit/output/client/_app/immutable/nodes/5.B8sa9w_d.js        1.15 kB │ gzip:  0.69 kB │ map:   1.44 kB
-.svelte-kit/output/client/_app/immutable/chunks/DxLN9Q9A.js         1.20 kB │ gzip:  0.68 kB
-.svelte-kit/output/client/_app/immutable/nodes/7.C0fYpwdi.js        1.26 kB │ gzip:  0.73 kB │ map:   1.47 kB
-.svelte-kit/output/client/_app/immutable/nodes/4.BW_U_mZs.js        1.58 kB │ gzip:  0.83 kB │ map:   1.97 kB
-.svelte-kit/output/client/_app/immutable/nodes/0.B94sp3UZ.js        2.91 kB │ gzip:  1.35 kB │ map:   4.82 kB
-.svelte-kit/output/client/_app/immutable/entry/app.UGmGBBe1.js      3.57 kB │ gzip:  1.50 kB │ map:   4.91 kB
-.svelte-kit/output/client/_app/immutable/chunks/DIOB-k19.js        12.94 kB │ gzip:  4.45 kB │ map:  42.31 kB
-.svelte-kit/output/client/_app/immutable/chunks/DITAzSoA.js        27.77 kB │ gzip: 10.85 kB │ map: 200.19 kB
-.svelte-kit/output/client/_app/immutable/chunks/DaVYcTHr.js        54.04 kB │ gzip: 20.57 kB │ map: 507.97 kB
-.svelte-kit/output/client/_app/immutable/nodes/3.BUfRH2bT.js      119.05 kB │ gzip: 36.36 kB │ map: 509.61 kB
+.svelte-kit/output/client/\_app/version.json 0.02 kB │ gzip: 0.04 kB
+.svelte-kit/output/client/.vite/manifest.json 5.53 kB │ gzip: 0.90 kB
+.svelte-kit/output/client/\_app/immutable/assets/0.C34KRNQE.css 392.37 kB │ gzip: 54.46 kB
+.svelte-kit/output/client/\_app/immutable/chunks/CiN3BEHO.js 0.07 kB │ gzip: 0.09 kB │ map: 0.34 kB
+.svelte-kit/output/client/\_app/immutable/entry/start.dSKGtQyn.js 0.08 kB │ gzip: 0.09 kB
+.svelte-kit/output/client/\_app/immutable/chunks/v_jBEYI6.js 0.10 kB │ gzip: 0.11 kB │ map: 0.51 kB
+.svelte-kit/output/client/\_app/immutable/chunks/C25ek2Mm.js 0.14 kB │ gzip: 0.14 kB │ map: 0.43 kB
+.svelte-kit/output/client/\_app/immutable/chunks/DDdb-Ovg.js 0.28 kB │ gzip: 0.20 kB │ map: 4.75 kB
+.svelte-kit/output/client/\_app/immutable/nodes/2.BaAd8QW-.js 0.47 kB │ gzip: 0.34 kB │ map: 0.74 kB
+.svelte-kit/output/client/\_app/immutable/chunks/BuHlFu_L.js 0.69 kB │ gzip: 0.44 kB │ map: 1.23 kB
+.svelte-kit/output/client/\_app/immutable/chunks/D20WQ9G2.js 0.75 kB │ gzip: 0.47 kB │ map: 6.80 kB
+.svelte-kit/output/client/\_app/immutable/nodes/6.DwOrvbDL.js 0.96 kB │ gzip: 0.60 kB │ map: 1.14 kB
+.svelte-kit/output/client/\_app/immutable/nodes/1.Ct8Px7Lx.js 1.03 kB │ gzip: 0.65 kB │ map: 1.09 kB
+.svelte-kit/output/client/\_app/immutable/nodes/5.B8sa9w_d.js 1.15 kB │ gzip: 0.69 kB │ map: 1.44 kB
+.svelte-kit/output/client/\_app/immutable/chunks/DxLN9Q9A.js 1.20 kB │ gzip: 0.68 kB
+.svelte-kit/output/client/\_app/immutable/nodes/7.C0fYpwdi.js 1.26 kB │ gzip: 0.73 kB │ map: 1.47 kB
+.svelte-kit/output/client/\_app/immutable/nodes/4.BW_U_mZs.js 1.58 kB │ gzip: 0.83 kB │ map: 1.97 kB
+.svelte-kit/output/client/\_app/immutable/nodes/0.B94sp3UZ.js 2.91 kB │ gzip: 1.35 kB │ map: 4.82 kB
+.svelte-kit/output/client/\_app/immutable/entry/app.UGmGBBe1.js 3.57 kB │ gzip: 1.50 kB │ map: 4.91 kB
+.svelte-kit/output/client/\_app/immutable/chunks/DIOB-k19.js 12.94 kB │ gzip: 4.45 kB │ map: 42.31 kB
+.svelte-kit/output/client/\_app/immutable/chunks/DITAzSoA.js 27.77 kB │ gzip: 10.85 kB │ map: 200.19 kB
+.svelte-kit/output/client/\_app/immutable/chunks/DaVYcTHr.js 54.04 kB │ gzip: 20.57 kB │ map: 507.97 kB
+.svelte-kit/output/client/\_app/immutable/nodes/3.BUfRH2bT.js 119.05 kB │ gzip: 36.36 kB │ map: 509.61 kB
 
 ✓ built in 1.85s
 computing gzip size...
-.svelte-kit/output/server/.vite/manifest.json                              6.91 kB │ gzip:  0.91 kB
-.svelte-kit/output/server/_app/immutable/assets/_layout.B8QtuDke.css     388.60 kB │ gzip: 54.20 kB
-.svelte-kit/output/server/chunks/loader.js                                 0.02 kB │ gzip:  0.04 kB
-.svelte-kit/output/server/entries/pages/_page.ts.js                        0.06 kB │ gzip:  0.08 kB │ map:   0.17 kB
-.svelte-kit/output/server/entries/pages/calculator/_page.ts.js             0.06 kB │ gzip:  0.08 kB │ map:   0.19 kB
-.svelte-kit/output/server/entries/pages/docs/_page.ts.js                   0.06 kB │ gzip:  0.08 kB │ map:   0.18 kB
-.svelte-kit/output/server/entries/pages/docs/technical/_page.ts.js         0.06 kB │ gzip:  0.08 kB │ map:   0.19 kB
-.svelte-kit/output/server/entries/pages/docs/user-guide/_page.ts.js        0.06 kB │ gzip:  0.08 kB │ map:   0.19 kB
-.svelte-kit/output/server/entries/pages/plot/_page.ts.js                   0.06 kB │ gzip:  0.08 kB │ map:   0.18 kB
-.svelte-kit/output/server/entries/pages/_layout.ts.js                      0.07 kB │ gzip:  0.09 kB │ map:   0.20 kB
-.svelte-kit/output/server/chunks/ui.svelte.js                              0.10 kB │ gzip:  0.11 kB │ map:   0.37 kB
-.svelte-kit/output/server/chunks/paths.js                                  0.11 kB │ gzip:  0.09 kB
-.svelte-kit/output/server/internal.js                                      0.29 kB │ gzip:  0.19 kB
-.svelte-kit/output/server/chunks/stores.js                                 0.31 kB │ gzip:  0.21 kB │ map:   4.76 kB
-.svelte-kit/output/server/entries/pages/_page.svelte.js                    0.35 kB │ gzip:  0.24 kB │ map:   0.56 kB
-.svelte-kit/output/server/entries/pages/_error.svelte.js                   0.78 kB │ gzip:  0.48 kB │ map:   0.83 kB
-.svelte-kit/output/server/entries/pages/docs/user-guide/_page.svelte.js    0.83 kB │ gzip:  0.51 kB │ map:   1.00 kB
-.svelte-kit/output/server/chunks/client.js                                 0.98 kB │ gzip:  0.56 kB │ map: 127.27 kB
-.svelte-kit/output/server/entries/pages/docs/technical/_page.svelte.js     1.03 kB │ gzip:  0.60 kB │ map:   1.30 kB
-.svelte-kit/output/server/entries/pages/plot/_page.svelte.js               1.05 kB │ gzip:  0.56 kB │ map:   1.15 kB
-.svelte-kit/output/server/entries/pages/calculator/_page.svelte.js         1.32 kB │ gzip:  0.68 kB │ map:  19.03 kB
-.svelte-kit/output/server/entries/pages/docs/_page.svelte.js               1.40 kB │ gzip:  0.70 kB │ map:   1.73 kB
-.svelte-kit/output/server/chunks/environment.js                            2.07 kB │ gzip:  1.11 kB │ map:  10.20 kB
-.svelte-kit/output/server/chunks/exports.js                                2.14 kB │ gzip:  1.03 kB │ map:   9.67 kB
-.svelte-kit/output/server/chunks/routing.js                                2.21 kB │ gzip:  1.07 kB │ map:  18.58 kB
-.svelte-kit/output/server/entries/pages/_layout.svelte.js                  2.36 kB │ gzip:  0.94 kB │ map:   4.03 kB
-.svelte-kit/output/server/chunks/internal.js                               7.43 kB │ gzip:  3.46 kB │ map:  62.26 kB
-.svelte-kit/output/server/chunks/shared.js                                10.48 kB │ gzip:  3.82 kB │ map:  45.88 kB
-.svelte-kit/output/server/remote-entry.js                                 10.70 kB │ gzip:  4.18 kB │ map:  59.10 kB
-.svelte-kit/output/server/chunks/utils.js                                 11.53 kB │ gzip:  4.69 kB │ map:  56.30 kB
-.svelte-kit/output/server/chunks/dev.js                                   44.93 kB │ gzip: 17.17 kB │ map: 407.21 kB
-.svelte-kit/output/server/index.js                                        57.43 kB │ gzip: 20.23 kB │ map: 270.54 kB
+.svelte-kit/output/server/.vite/manifest.json 6.91 kB │ gzip: 0.91 kB
+.svelte-kit/output/server/\_app/immutable/assets/\_layout.B8QtuDke.css 388.60 kB │ gzip: 54.20 kB
+.svelte-kit/output/server/chunks/loader.js 0.02 kB │ gzip: 0.04 kB
+.svelte-kit/output/server/entries/pages/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.17 kB
+.svelte-kit/output/server/entries/pages/calculator/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.19 kB
+.svelte-kit/output/server/entries/pages/docs/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.18 kB
+.svelte-kit/output/server/entries/pages/docs/technical/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.19 kB
+.svelte-kit/output/server/entries/pages/docs/user-guide/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.19 kB
+.svelte-kit/output/server/entries/pages/plot/\_page.ts.js 0.06 kB │ gzip: 0.08 kB │ map: 0.18 kB
+.svelte-kit/output/server/entries/pages/\_layout.ts.js 0.07 kB │ gzip: 0.09 kB │ map: 0.20 kB
+.svelte-kit/output/server/chunks/ui.svelte.js 0.10 kB │ gzip: 0.11 kB │ map: 0.37 kB
+.svelte-kit/output/server/chunks/paths.js 0.11 kB │ gzip: 0.09 kB
+.svelte-kit/output/server/internal.js 0.29 kB │ gzip: 0.19 kB
+.svelte-kit/output/server/chunks/stores.js 0.31 kB │ gzip: 0.21 kB │ map: 4.76 kB
+.svelte-kit/output/server/entries/pages/\_page.svelte.js 0.35 kB │ gzip: 0.24 kB │ map: 0.56 kB
+.svelte-kit/output/server/entries/pages/\_error.svelte.js 0.78 kB │ gzip: 0.48 kB │ map: 0.83 kB
+.svelte-kit/output/server/entries/pages/docs/user-guide/\_page.svelte.js 0.83 kB │ gzip: 0.51 kB │ map: 1.00 kB
+.svelte-kit/output/server/chunks/client.js 0.98 kB │ gzip: 0.56 kB │ map: 127.27 kB
+.svelte-kit/output/server/entries/pages/docs/technical/\_page.svelte.js 1.03 kB │ gzip: 0.60 kB │ map: 1.30 kB
+.svelte-kit/output/server/entries/pages/plot/\_page.svelte.js 1.05 kB │ gzip: 0.56 kB │ map: 1.15 kB
+.svelte-kit/output/server/entries/pages/calculator/\_page.svelte.js 1.32 kB │ gzip: 0.68 kB │ map: 19.03 kB
+.svelte-kit/output/server/entries/pages/docs/\_page.svelte.js 1.40 kB │ gzip: 0.70 kB │ map: 1.73 kB
+.svelte-kit/output/server/chunks/environment.js 2.07 kB │ gzip: 1.11 kB │ map: 10.20 kB
+.svelte-kit/output/server/chunks/exports.js 2.14 kB │ gzip: 1.03 kB │ map: 9.67 kB
+.svelte-kit/output/server/chunks/routing.js 2.21 kB │ gzip: 1.07 kB │ map: 18.58 kB
+.svelte-kit/output/server/entries/pages/\_layout.svelte.js 2.36 kB │ gzip: 0.94 kB │ map: 4.03 kB
+.svelte-kit/output/server/chunks/internal.js 7.43 kB │ gzip: 3.46 kB │ map: 62.26 kB
+.svelte-kit/output/server/chunks/shared.js 10.48 kB │ gzip: 3.82 kB │ map: 45.88 kB
+.svelte-kit/output/server/remote-entry.js 10.70 kB │ gzip: 4.18 kB │ map: 59.10 kB
+.svelte-kit/output/server/chunks/utils.js 11.53 kB │ gzip: 4.69 kB │ map: 56.30 kB
+.svelte-kit/output/server/chunks/dev.js 44.93 kB │ gzip: 17.17 kB │ map: 407.21 kB
+.svelte-kit/output/server/index.js 57.43 kB │ gzip: 20.23 kB │ map: 270.54 kB
 
 [PLUGIN_TIMINGS] Warning: Your build spent significant time in plugins. Here is a breakdown:
-  - vite-plugin-svelte (61%)
-  - vite-plugin-sveltekit-guard (25%)
-  - vite-plugin-svelte-module (13%)
-See https://rolldown.rs/options/checks#plugintimings for more details.
+
+- vite-plugin-svelte (61%)
+- vite-plugin-sveltekit-guard (25%)
+- vite-plugin-svelte-module (13%)
+  See https://rolldown.rs/options/checks#plugintimings for more details.
 
 ✓ built in 4.68s
 
 Run npm run preview to preview your production build locally.
 
 > Using @sveltejs/adapter-static
-  Wrote site to "build"
-  ✔ done
-grzanka@grzankax1:~/workspace/dedx_web$ pnpm exec playwright test
+> Wrote site to "build"
+> ✔ done
+> grzanka@grzankax1:~/workspace/dedx_web$ pnpm exec playwright test
 
 Running 72 tests using 6 workers
-  1) [chromium] › tests/e2e/complex-interactions.spec.ts:47:3 › Calculator — default state (Hydrogen + Water + Auto-select) › shows the result table with five columns 
+
+1.  [chromium] › tests/e2e/complex-interactions.spec.ts:47:3 › Calculator — default state (Hydrogen + Water + Auto-select) › shows the result table with five columns
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
 
     Error Context: test-results/complex-interactions-Calcu-c6731-ult-table-with-five-columns-chromium/error-context.md
 
-  2) [chromium] › tests/e2e/complex-interactions.spec.ts:57:3 › Calculator — default state (Hydrogen + Water + Auto-select) › default row '100' shows a normalised MeV/nucl value of 100 
+2.  [chromium] › tests/e2e/complex-interactions.spec.ts:57:3 › Calculator — default state (Hydrogen + Water + Auto-select) › default row '100' shows a normalised MeV/nucl value of 100
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
 
     Error Context: test-results/complex-interactions-Calcu-027b1-lised-MeV-nucl-value-of-100-chromium/error-context.md
 
-  3) [chromium] › tests/e2e/complex-interactions.spec.ts:62:3 › Calculator — default state (Hydrogen + Water + Auto-select) › editing the energy row triggers recalculation and shows STP result 
+3.  [chromium] › tests/e2e/complex-interactions.spec.ts:62:3 › Calculator — default state (Hydrogen + Water + Auto-select) › editing the energy row triggers recalculation and shows STP result
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
 
     Error Context: test-results/complex-interactions-Calcu-c52b8-lation-and-shows-STP-result-chromium/error-context.md
 
-  4) [chromium] › tests/e2e/complex-interactions.spec.ts:69:3 › Calculator — default state (Hydrogen + Water + Auto-select) › adding a second identical energy row shows results in both rows 
+4.  [chromium] › tests/e2e/complex-interactions.spec.ts:69:3 › Calculator — default state (Hydrogen + Water + Auto-select) › adding a second identical energy row shows results in both rows
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:43:5
 
     Error Context: test-results/complex-interactions-Calcu-ad886--shows-results-in-both-rows-chromium/error-context.md
 
-  5) [chromium] › tests/e2e/complex-interactions.spec.ts:101:3 › Calculator — energy input with unit suffixes › '12 MeV/nucl' shows 12 in the → MeV/nucl column (proton, A=1) 
+5.  [chromium] › tests/e2e/complex-interactions.spec.ts:101:3 › Calculator — energy input with unit suffixes › '12 MeV/nucl' shows 12 in the → MeV/nucl column (proton, A=1)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
 
     Error Context: test-results/complex-interactions-Calcu-c5fec-MeV-nucl-column-proton-A-1--chromium/error-context.md
 
-  6) [chromium] › tests/e2e/complex-interactions.spec.ts:94:3 › Calculator — energy input with unit suffixes › '100 keV' is parsed and shows ~0.1 in the → MeV/nucl column 
+6.  [chromium] › tests/e2e/complex-interactions.spec.ts:94:3 › Calculator — energy input with unit suffixes › '100 keV' is parsed and shows ~0.1 in the → MeV/nucl column
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
 
     Error Context: test-results/complex-interactions-Calcu-1db12--1-in-the-→-MeV-nucl-column-chromium/error-context.md
 
-  7) [chromium] › tests/e2e/complex-interactions.spec.ts:107:3 › Calculator — energy input with unit suffixes › '12 MeV/u' shows ~12 in the → MeV/nucl column (proton, A=1, m_u≈1) 
+7.  [chromium] › tests/e2e/complex-interactions.spec.ts:107:3 › Calculator — energy input with unit suffixes › '12 MeV/u' shows ~12 in the → MeV/nucl column (proton, A=1, m_u≈1)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:90:5
 
     Error Context: test-results/complex-interactions-Calcu-cec36-cl-column-proton-A-1-m-u≈1--chromium/error-context.md
 
-  8) [chromium] › tests/e2e/complex-interactions.spec.ts:125:3 › Calculator — invalid input error display › typing 'bebok' shows the input in red with an inline error message 
+8.  [chromium] › tests/e2e/complex-interactions.spec.ts:125:3 › Calculator — invalid input error display › typing 'bebok' shows the input in red with an inline error message
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
 
     Error Context: test-results/complex-interactions-Calcu-31fd3-ith-an-inline-error-message-chromium/error-context.md
 
-  9) [chromium] › tests/e2e/complex-interactions.spec.ts:158:3 › Calculator — invalid input error display › correcting an invalid value removes the error message 
+9.  [chromium] › tests/e2e/complex-interactions.spec.ts:158:3 › Calculator — invalid input error display › correcting an invalid value removes the error message
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
 
     Error Context: test-results/complex-interactions-Calcu-2e41c-e-removes-the-error-message-chromium/error-context.md
 
-  10) [chromium] › tests/e2e/complex-interactions.spec.ts:144:3 › Calculator — invalid input error display › typing 'unknown unit' like '100 xyz' shows inline error 
+10. [chromium] › tests/e2e/complex-interactions.spec.ts:144:3 › Calculator — invalid input error display › typing 'unknown unit' like '100 xyz' shows inline error
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
 
     Error Context: test-results/complex-interactions-Calcu-679e0--100-xyz-shows-inline-error-chromium/error-context.md
 
-  11) [chromium] › tests/e2e/complex-interactions.spec.ts:137:3 › Calculator — invalid input error display › typing '-5' (non-positive) shows an inline error message 
+11. [chromium] › tests/e2e/complex-interactions.spec.ts:137:3 › Calculator — invalid input error display › typing '-5' (non-positive) shows an inline error message
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
 
     Error Context: test-results/complex-interactions-Calcu-1c7b6-ows-an-inline-error-message-chromium/error-context.md
 
-  12) [chromium] › tests/e2e/complex-interactions.spec.ts:152:3 › Calculator — invalid input error display › validation summary counts excluded values 
+12. [chromium] › tests/e2e/complex-interactions.spec.ts:152:3 › Calculator — invalid input error display › validation summary counts excluded values
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:121:5
 
     Error Context: test-results/complex-interactions-Calcu-176af-mary-counts-excluded-values-chromium/error-context.md
 
-  13) [chromium] › tests/e2e/complex-interactions.spec.ts:178:3 › Calculator — auto-select and program resolution › default state shows table (not 'Select a particle and material') 
+13. [chromium] › tests/e2e/complex-interactions.spec.ts:178:3 › Calculator — auto-select and program resolution › default state shows table (not 'Select a particle and material')
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:175:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:175:5
 
     Error Context: test-results/complex-interactions-Calcu-716fe-ct-a-particle-and-material--chromium/error-context.md
 
-  14) [chromium] › tests/e2e/complex-interactions.spec.ts:258:3 › Calculator — no crashes during typical interactions › adding two rows with value '12' does not crash the page 
+14. [chromium] › tests/e2e/complex-interactions.spec.ts:258:3 › Calculator — no crashes during typical interactions › adding two rows with value '12' does not crash the page
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
 
     Error Context: test-results/complex-interactions-Calcu-f2a20--12-does-not-crash-the-page-chromium/error-context.md
 
-  15) [chromium] › tests/e2e/complex-interactions.spec.ts:227:3 › Calculator — multi-row paste › pasting three energy values creates three separate rows 
+15. [chromium] › tests/e2e/complex-interactions.spec.ts:227:3 › Calculator — multi-row paste › pasting three energy values creates three separate rows
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:223:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:223:5
 
     Error Context: test-results/complex-interactions-Calcu-a31b6-creates-three-separate-rows-chromium/error-context.md
 
-  16) [chromium] › tests/e2e/complex-interactions.spec.ts:184:3 › Calculator — auto-select and program resolution › switching to Urea (if available): either shows results or a clear no-program message 
+16. [chromium] › tests/e2e/complex-interactions.spec.ts:184:3 › Calculator — auto-select and program resolution › switching to Urea (if available): either shows results or a clear no-program message
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:175:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:175:5
 
     Error Context: test-results/complex-interactions-Calcu-5891e--a-clear-no-program-message-chromium/error-context.md
 
-  17) [chromium] › tests/e2e/complex-interactions.spec.ts:251:3 › Calculator — no crashes during typical interactions › editing energy value from 100 to 12 does not crash the page 
+17. [chromium] › tests/e2e/complex-interactions.spec.ts:251:3 › Calculator — no crashes during typical interactions › editing energy value from 100 to 12 does not crash the page
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
 
     Error Context: test-results/complex-interactions-Calcu-0641f--12-does-not-crash-the-page-chromium/error-context.md
 
-  18) [chromium] › tests/e2e/complex-interactions.spec.ts:265:3 › Calculator — no crashes during typical interactions › switching particle to Carbon then editing energy does not crash 
+18. [chromium] › tests/e2e/complex-interactions.spec.ts:265:3 › Calculator — no crashes during typical interactions › switching particle to Carbon then editing energy does not crash
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:247:5
 
     Error Context: test-results/complex-interactions-Calcu-70da0-iting-energy-does-not-crash-chromium/error-context.md
 
-  19) [chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program 
+19. [chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-6e53d-t-Particle-Material-Program-chromium/error-context.md
 
-  20) [chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select 
+20. [chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-cac8d-ow-Proton-Water-Auto-select-chromium/error-context.md
 
-  21) [chromium] › tests/e2e/complex-interactions.spec.ts:289:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon + Water + 100 MeV/nucl shows numeric STP result 
+21. [chromium] › tests/e2e/complex-interactions.spec.ts:289:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon + Water + 100 MeV/nucl shows numeric STP result
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
 
     Error Context: test-results/complex-interactions-Calcu-23a64-cl-shows-numeric-STP-result-chromium/error-context.md
 
-  22) [chromium] › tests/e2e/complex-interactions.spec.ts:323:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon: per-row unit selector shows MeV/nucl column with correct value 
+22. [chromium] › tests/e2e/complex-interactions.spec.ts:323:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon: per-row unit selector shows MeV/nucl column with correct value
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
 
     Error Context: test-results/complex-interactions-Calcu-a0395-l-column-with-correct-value-chromium/error-context.md
 
-  23) [chromium] › tests/e2e/complex-interactions.spec.ts:306:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Helium + Water + 50 MeV/nucl shows numeric STP result 
+23. [chromium] › tests/e2e/complex-interactions.spec.ts:306:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Helium + Water + 50 MeV/nucl shows numeric STP result
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
 
     Error Context: test-results/complex-interactions-Calcu-d80bd-cl-shows-numeric-STP-result-chromium/error-context.md
 
-  24) [chromium] › tests/e2e/complex-interactions.spec.ts:340:3 › Calculator — heavy-ion calculations (Carbon, Helium) › switching from Proton to Carbon with value entered does not crash 
+24. [chromium] › tests/e2e/complex-interactions.spec.ts:340:3 › Calculator — heavy-ion calculations (Carbon, Helium) › switching from Proton to Carbon with value entered does not crash
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    13 | async function waitForWasm(page: import("@playwright/test").Page) {
+    14 | await page.goto("/calculator");
 
-      13 | async function waitForWasm(page: import("@playwright/test").Page) {
-      14 |   await page.goto("/calculator");
-    > 15 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 15 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      16 | }
-      17 |
-      18 | /** Wait until the result table is visible (entity selection is complete). */
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
+
+    16 | }
+    17 |
+    18 | /\*_ Wait until the result table is visible (entity selection is complete). _/
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:15:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/complex-interactions.spec.ts:285:5
 
     Error Context: test-results/complex-interactions-Calcu-09a12-alue-entered-does-not-crash-chromium/error-context.md
 
-  25) [chromium] › tests/e2e/entity-selection.spec.ts:102:3 › Plot page — placeholder (Stage 6) › Plot page loads and shows coming-soon placeholder 
+25. [chromium] › tests/e2e/entity-selection.spec.ts:102:3 › Plot page — placeholder (Stage 6) › Plot page loads and shows coming-soon placeholder
 
     Error: expect(locator).toBeVisible() failed
 
@@ -5655,160 +5596,176 @@ Running 72 tests using 6 workers
     Error: element(s) not found
 
     Call log:
-      - Expect "toBeVisible" with timeout 5000ms
-      - waiting for getByText(/coming soon/i)
+    - Expect "toBeVisible" with timeout 5000ms
+    - waiting for getByText(/coming soon/i)
 
+    102 | test("Plot page loads and shows coming-soon placeholder", async ({ page }) => {
+    103 | await expect(page.getByRole("heading", { name: /plot/i })).toBeVisible();
 
-      102 |   test("Plot page loads and shows coming-soon placeholder", async ({ page }) => {
-      103 |     await expect(page.getByRole("heading", { name: /plot/i })).toBeVisible();
-    > 104 |     await expect(page.getByText(/coming soon/i)).toBeVisible();
+    > 104 | await expect(page.getByText(/coming soon/i)).toBeVisible();
+
           |                                                  ^
-      105 |   });
-      106 | });
-      107 |
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:104:50
+
+    105 | });
+    106 | });
+    107 |
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:104:50
 
     Error Context: test-results/entity-selection-Plot-page-0c57c-ows-coming-soon-placeholder-chromium/error-context.md
 
-  26) [chromium] › tests/e2e/entity-selection.spec.ts:29:3 › Calculator page — compact mode › typing carbon in the Particle search filters the list and shows Carbon 
+26. [chromium] › tests/e2e/entity-selection.spec.ts:29:3 › Calculator page — compact mode › typing carbon in the Particle search filters the list and shows Carbon
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-f1128-s-the-list-and-shows-Carbon-chromium/error-context.md
 
-  27) [chromium] › tests/e2e/entity-selection.spec.ts:43:3 › Calculator page — compact mode › selecting Carbon removes incompatible programs (PSTAR proton-only disappears) 
+27. [chromium] › tests/e2e/entity-selection.spec.ts:43:3 › Calculator page — compact mode › selecting Carbon removes incompatible programs (PSTAR proton-only disappears)
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-d7936-TAR-proton-only-disappears--chromium/error-context.md
 
-  28) [chromium] › tests/e2e/layout.spec.ts:62:3 › Browser page titles › calculator page title includes "Calculator" 
+28. [chromium] › tests/e2e/layout.spec.ts:62:3 › Browser page titles › calculator page title includes "Calculator"
 
     Error: expect(page).toHaveTitle(expected) failed
 
     Expected pattern: /Calculator/i
-    Received string:  "webdedx"
+    Received string: "webdedx"
     Timeout: 5000ms
 
     Call log:
-      - Expect "toHaveTitle" with timeout 5000ms
-        9 × unexpected value "webdedx"
+    - Expect "toHaveTitle" with timeout 5000ms
+      9 × unexpected value "webdedx"
 
+    62 | test('calculator page title includes "Calculator"', async ({ page }) => {
+    63 | await page.goto("/calculator");
 
-      62 |   test('calculator page title includes "Calculator"', async ({ page }) => {
-      63 |     await page.goto("/calculator");
-    > 64 |     await expect(page).toHaveTitle(/Calculator/i);
+    > 64 | await expect(page).toHaveTitle(/Calculator/i);
+
          |                        ^
-      65 |   });
-      66 |
-      67 |   test('plot page title includes "Plot"', async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:64:24
+
+    65 | });
+    66 |
+    67 | test('plot page title includes "Plot"', async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:64:24
 
     Error Context: test-results/layout-Browser-page-titles-cb753--title-includes-Calculator--chromium/error-context.md
 
-  29) [chromium] › tests/e2e/entity-selection.spec.ts:59:3 › Calculator page — compact mode › Reset all link restores defaults 
+29. [chromium] › tests/e2e/entity-selection.spec.ts:59:3 › Calculator page — compact mode › Reset all link restores defaults
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-aac1f--all-link-restores-defaults-chromium/error-context.md
 
-  30) [chromium] › tests/e2e/entity-selection.spec.ts:85:3 › Calculator page — compact mode › DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox 
+30. [chromium] › tests/e2e/entity-selection.spec.ts:85:3 › Calculator page — compact mode › DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-53fe7-ear-in-the-Program-combobox-chromium/error-context.md
 
-  31) [chromium] › tests/e2e/entity-selection.spec.ts:74:3 › Calculator page — compact mode › Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0 
+31. [chromium] › tests/e2e/entity-selection.spec.ts:74:3 › Calculator page — compact mode › Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0
 
     TimeoutError: page.waitForSelector: Timeout 15000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    12 | await page.goto("/calculator");
+    13 | // Wait for WASM to load and combobox triggers to appear
 
-      12 |     await page.goto("/calculator");
-      13 |     // Wait for WASM to load and combobox triggers to appear
-    > 14 |     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    > 14 | await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+
          |                ^
-      15 |   });
-      16 |
-      17 |   test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-        at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
+
+    15 | });
+    16 |
+    17 | test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
+    at /home/grzanka/workspace/dedx_web/tests/e2e/entity-selection.spec.ts:14:16
 
     Error Context: test-results/entity-selection-Calculato-57026-plemented-in-libdedx-v1-4-0-chromium/error-context.md
 
-  32) [chromium] › tests/e2e/layout.spec.ts:67:3 › Browser page titles › plot page title includes "Plot" 
+32. [chromium] › tests/e2e/layout.spec.ts:67:3 › Browser page titles › plot page title includes "Plot"
 
     Error: expect(page).toHaveTitle(expected) failed
 
     Expected pattern: /Plot/i
-    Received string:  "webdedx"
+    Received string: "webdedx"
     Timeout: 5000ms
 
     Call log:
-      - Expect "toHaveTitle" with timeout 5000ms
-        9 × unexpected value "webdedx"
+    - Expect "toHaveTitle" with timeout 5000ms
+      9 × unexpected value "webdedx"
 
+    67 | test('plot page title includes "Plot"', async ({ page }) => {
+    68 | await page.goto("/plot");
 
-      67 |   test('plot page title includes "Plot"', async ({ page }) => {
-      68 |     await page.goto("/plot");
-    > 69 |     await expect(page).toHaveTitle(/Plot/i);
+    > 69 | await expect(page).toHaveTitle(/Plot/i);
+
          |                        ^
-      70 |   });
-      71 | });
-      72 |
-        at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:69:24
+
+    70 | });
+    71 | });
+    72 |
+    at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:69:24
 
     Error Context: test-results/layout-Browser-page-titles-plot-page-title-includes-Plot--chromium/error-context.md
 
-  33) [chromium] › tests/e2e/layout.spec.ts:74:3 › WASM loading state › WASM loads and entity selectors are ready 
+33. [chromium] › tests/e2e/layout.spec.ts:74:3 › WASM loading state › WASM loads and entity selectors are ready
 
     Error: expect(locator).toBeVisible() failed
 
@@ -5818,257 +5775,279 @@ Running 72 tests using 6 workers
     Error: element(s) not found
 
     Call log:
-      - Expect "toBeVisible" with timeout 15000ms
-      - waiting for locator('[aria-label="Particle"]')
+    - Expect "toBeVisible" with timeout 15000ms
+    - waiting for locator('[aria-label="Particle"]')
 
+    74 | test("WASM loads and entity selectors are ready", async ({ page }) => {
+    75 | await page.goto("/calculator");
 
-      74 |   test("WASM loads and entity selectors are ready", async ({ page }) => {
-      75 |     await page.goto("/calculator");
-    > 76 |     await expect(page.locator('[aria-label="Particle"]')).toBeVisible({ timeout: 15000 });
+    > 76 | await expect(page.locator('[aria-label="Particle"]')).toBeVisible({ timeout: 15000 });
+
          |                                                           ^
-      77 |     await expect(page.locator('[aria-label="Material"]')).toBeVisible();
-      78 |     await expect(page.locator('[aria-label="Program"]')).toBeVisible();
-      79 |   });
-        at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:76:59
+
+    77 | await expect(page.locator('[aria-label="Material"]')).toBeVisible();
+    78 | await expect(page.locator('[aria-label="Program"]')).toBeVisible();
+    79 | });
+    at /home/grzanka/workspace/dedx_web/tests/e2e/layout.spec.ts:76:59
 
     Error Context: test-results/layout-WASM-loading-state--b6ba6--entity-selectors-are-ready-chromium/error-context.md
 
-  34) [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
+34. [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
 
     Error Context: test-results/particle-unit-switching-Pa-bd696-o-hydrogen-E-nucl-conserved-chromium/error-context.md
 
-  35) [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved) 
+35. [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:117:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:117:5
 
     Error Context: test-results/particle-unit-switching-Pe-a9af7-nverted-value-KE-conserved--chromium/error-context.md
 
-  36) [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
+36. [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
 
     Error Context: test-results/particle-unit-switching-Pa-4d92a--conserved-row-shows-20-MeV-chromium/error-context.md
 
-  37) [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
+37. [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:63:5
 
     Error Context: test-results/particle-unit-switching-Pa-83fa3-ed-80-4-20-row-shows-20-MeV-chromium/error-context.md
 
-  38) [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
+38. [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
 
     Error Context: test-results/particle-unit-switching-Pa-c7fed-ow-20-MeV-E-nucl-conserved--chromium/error-context.md
 
-  39) [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit) 
+39. [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
 
     Error Context: test-results/particle-unit-switching-Pa-b9780-on-has-no-per-nucleon-unit--chromium/error-context.md
 
-  40) [chromium] › tests/e2e/particle-unit-switching.spec.ts:188:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved 
+40. [chromium] › tests/e2e/particle-unit-switching.spec.ts:188:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
 
     Error Context: test-results/particle-unit-switching-Pa-b60d3-e-1-1-MeV-nucl-KE-conserved-chromium/error-context.md
 
-  41) [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
+41. [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:153:5
 
     Error Context: test-results/particle-unit-switching-Pa-288ac-V-electron-has-no-nucleons--chromium/error-context.md
 
-  42) [chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it 
+42. [chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:262:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:262:5
 
     Error Context: test-results/particle-unit-switching-Ad-8ce5e-ppends-a-fresh-row-below-it-chromium/error-context.md
 
-  43) [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table 
+43. [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table
 
     TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.
     Call log:
-      - waiting for locator('[aria-label="Particle"]') to be visible
+    - waiting for locator('[aria-label="Particle"]') to be visible
 
+    24 | async function waitForWasm(page: import("@playwright/test").Page) {
+    25 | await page.goto("/calculator");
 
-      24 | async function waitForWasm(page: import("@playwright/test").Page) {
-      25 |   await page.goto("/calculator");
-    > 26 |   await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+    > 26 | await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+
          |              ^
-      27 | }
-      28 |
-      29 | async function waitForTable(page: import("@playwright/test").Page) {
-        at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
-        at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:262:5
+
+    27 | }
+    28 |
+    29 | async function waitForTable(page: import("@playwright/test").Page) {
+    at waitForWasm (/home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:26:14)
+    at /home/grzanka/workspace/dedx_web/tests/e2e/particle-unit-switching.spec.ts:262:5
 
     Error Context: test-results/particle-unit-switching-Ad-87664-endered-in-the-result-table-chromium/error-context.md
 
-  43 failed
-    [chromium] › tests/e2e/complex-interactions.spec.ts:47:3 › Calculator — default state (Hydrogen + Water + Auto-select) › shows the result table with five columns 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:57:3 › Calculator — default state (Hydrogen + Water + Auto-select) › default row '100' shows a normalised MeV/nucl value of 100 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:62:3 › Calculator — default state (Hydrogen + Water + Auto-select) › editing the energy row triggers recalculation and shows STP result 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:69:3 › Calculator — default state (Hydrogen + Water + Auto-select) › adding a second identical energy row shows results in both rows 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:94:3 › Calculator — energy input with unit suffixes › '100 keV' is parsed and shows ~0.1 in the → MeV/nucl column 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:101:3 › Calculator — energy input with unit suffixes › '12 MeV/nucl' shows 12 in the → MeV/nucl column (proton, A=1) 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:107:3 › Calculator — energy input with unit suffixes › '12 MeV/u' shows ~12 in the → MeV/nucl column (proton, A=1, m_u≈1) 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:125:3 › Calculator — invalid input error display › typing 'bebok' shows the input in red with an inline error message 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:137:3 › Calculator — invalid input error display › typing '-5' (non-positive) shows an inline error message 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:144:3 › Calculator — invalid input error display › typing 'unknown unit' like '100 xyz' shows inline error 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:152:3 › Calculator — invalid input error display › validation summary counts excluded values 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:158:3 › Calculator — invalid input error display › correcting an invalid value removes the error message 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:178:3 › Calculator — auto-select and program resolution › default state shows table (not 'Select a particle and material') 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:184:3 › Calculator — auto-select and program resolution › switching to Urea (if available): either shows results or a clear no-program message 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:227:3 › Calculator — multi-row paste › pasting three energy values creates three separate rows 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:251:3 › Calculator — no crashes during typical interactions › editing energy value from 100 to 12 does not crash the page 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:258:3 › Calculator — no crashes during typical interactions › adding two rows with value '12' does not crash the page 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:265:3 › Calculator — no crashes during typical interactions › switching particle to Carbon then editing energy does not crash 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:289:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon + Water + 100 MeV/nucl shows numeric STP result 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:306:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Helium + Water + 50 MeV/nucl shows numeric STP result 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:323:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon: per-row unit selector shows MeV/nucl column with correct value 
-    [chromium] › tests/e2e/complex-interactions.spec.ts:340:3 › Calculator — heavy-ion calculations (Carbon, Helium) › switching from Proton to Carbon with value entered does not crash 
-    [chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program 
-    [chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select 
-    [chromium] › tests/e2e/entity-selection.spec.ts:29:3 › Calculator page — compact mode › typing carbon in the Particle search filters the list and shows Carbon 
-    [chromium] › tests/e2e/entity-selection.spec.ts:43:3 › Calculator page — compact mode › selecting Carbon removes incompatible programs (PSTAR proton-only disappears) 
-    [chromium] › tests/e2e/entity-selection.spec.ts:59:3 › Calculator page — compact mode › Reset all link restores defaults 
-    [chromium] › tests/e2e/entity-selection.spec.ts:74:3 › Calculator page — compact mode › Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0 
-    [chromium] › tests/e2e/entity-selection.spec.ts:85:3 › Calculator page — compact mode › DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox 
-    [chromium] › tests/e2e/entity-selection.spec.ts:102:3 › Plot page — placeholder (Stage 6) › Plot page loads and shows coming-soon placeholder 
-    [chromium] › tests/e2e/layout.spec.ts:62:3 › Browser page titles › calculator page title includes "Calculator" 
-    [chromium] › tests/e2e/layout.spec.ts:67:3 › Browser page titles › plot page title includes "Plot" 
-    [chromium] › tests/e2e/layout.spec.ts:74:3 › WASM loading state › WASM loads and entity selectors are ready 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:188:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons) 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it 
-    [chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table 
-  4 skipped
-  25 passed (2.4m) 
+43 failed
+[chromium] › tests/e2e/complex-interactions.spec.ts:47:3 › Calculator — default state (Hydrogen + Water + Auto-select) › shows the result table with five columns
+[chromium] › tests/e2e/complex-interactions.spec.ts:57:3 › Calculator — default state (Hydrogen + Water + Auto-select) › default row '100' shows a normalised MeV/nucl value of 100
+[chromium] › tests/e2e/complex-interactions.spec.ts:62:3 › Calculator — default state (Hydrogen + Water + Auto-select) › editing the energy row triggers recalculation and shows STP result
+[chromium] › tests/e2e/complex-interactions.spec.ts:69:3 › Calculator — default state (Hydrogen + Water + Auto-select) › adding a second identical energy row shows results in both rows
+[chromium] › tests/e2e/complex-interactions.spec.ts:94:3 › Calculator — energy input with unit suffixes › '100 keV' is parsed and shows ~0.1 in the → MeV/nucl column
+[chromium] › tests/e2e/complex-interactions.spec.ts:101:3 › Calculator — energy input with unit suffixes › '12 MeV/nucl' shows 12 in the → MeV/nucl column (proton, A=1)
+[chromium] › tests/e2e/complex-interactions.spec.ts:107:3 › Calculator — energy input with unit suffixes › '12 MeV/u' shows ~12 in the → MeV/nucl column (proton, A=1, m_u≈1)
+[chromium] › tests/e2e/complex-interactions.spec.ts:125:3 › Calculator — invalid input error display › typing 'bebok' shows the input in red with an inline error message
+[chromium] › tests/e2e/complex-interactions.spec.ts:137:3 › Calculator — invalid input error display › typing '-5' (non-positive) shows an inline error message
+[chromium] › tests/e2e/complex-interactions.spec.ts:144:3 › Calculator — invalid input error display › typing 'unknown unit' like '100 xyz' shows inline error
+[chromium] › tests/e2e/complex-interactions.spec.ts:152:3 › Calculator — invalid input error display › validation summary counts excluded values
+[chromium] › tests/e2e/complex-interactions.spec.ts:158:3 › Calculator — invalid input error display › correcting an invalid value removes the error message
+[chromium] › tests/e2e/complex-interactions.spec.ts:178:3 › Calculator — auto-select and program resolution › default state shows table (not 'Select a particle and material')
+[chromium] › tests/e2e/complex-interactions.spec.ts:184:3 › Calculator — auto-select and program resolution › switching to Urea (if available): either shows results or a clear no-program message
+[chromium] › tests/e2e/complex-interactions.spec.ts:227:3 › Calculator — multi-row paste › pasting three energy values creates three separate rows
+[chromium] › tests/e2e/complex-interactions.spec.ts:251:3 › Calculator — no crashes during typical interactions › editing energy value from 100 to 12 does not crash the page
+[chromium] › tests/e2e/complex-interactions.spec.ts:258:3 › Calculator — no crashes during typical interactions › adding two rows with value '12' does not crash the page
+[chromium] › tests/e2e/complex-interactions.spec.ts:265:3 › Calculator — no crashes during typical interactions › switching particle to Carbon then editing energy does not crash
+[chromium] › tests/e2e/complex-interactions.spec.ts:289:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon + Water + 100 MeV/nucl shows numeric STP result
+[chromium] › tests/e2e/complex-interactions.spec.ts:306:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Helium + Water + 50 MeV/nucl shows numeric STP result
+[chromium] › tests/e2e/complex-interactions.spec.ts:323:3 › Calculator — heavy-ion calculations (Carbon, Helium) › Carbon: per-row unit selector shows MeV/nucl column with correct value
+[chromium] › tests/e2e/complex-interactions.spec.ts:340:3 › Calculator — heavy-ion calculations (Carbon, Helium) › switching from Proton to Carbon with value entered does not crash
+[chromium] › tests/e2e/entity-selection.spec.ts:17:3 › Calculator page — compact mode › three comboboxes are present: Particle, Material, Program
+[chromium] › tests/e2e/entity-selection.spec.ts:23:3 › Calculator page — compact mode › default values show Proton, Water, Auto-select
+[chromium] › tests/e2e/entity-selection.spec.ts:29:3 › Calculator page — compact mode › typing carbon in the Particle search filters the list and shows Carbon
+[chromium] › tests/e2e/entity-selection.spec.ts:43:3 › Calculator page — compact mode › selecting Carbon removes incompatible programs (PSTAR proton-only disappears)
+[chromium] › tests/e2e/entity-selection.spec.ts:59:3 › Calculator page — compact mode › Reset all link restores defaults
+[chromium] › tests/e2e/entity-selection.spec.ts:74:3 › Calculator page — compact mode › Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0
+[chromium] › tests/e2e/entity-selection.spec.ts:85:3 › Calculator page — compact mode › DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox
+[chromium] › tests/e2e/entity-selection.spec.ts:102:3 › Plot page — placeholder (Stage 6) › Plot page loads and shows coming-soon placeholder
+[chromium] › tests/e2e/layout.spec.ts:62:3 › Browser page titles › calculator page title includes "Calculator"
+[chromium] › tests/e2e/layout.spec.ts:67:3 › Browser page titles › plot page title includes "Plot"
+[chromium] › tests/e2e/layout.spec.ts:74:3 › WASM loading state › WASM loads and entity selectors are ready
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:67:3 › Particle switching — E_nucl conservation › He 20 MeV/nucl → switch to proton: E_nucl conserved, row shows 20 MeV
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:80:3 › Particle switching — E_nucl conservation › He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:92:3 › Particle switching — E_nucl conservation › Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:121:3 › Per-row unit dropdown — current behaviour › Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:157:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton: row should show 20 MeV (E_nucl conserved)
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:171:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › He 20 MeV/nucl → proton → He: round-trip is lossy (proton has no per-nucleon unit)
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:188:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:240:3 › Particle/unit switching — kinetic energy conservation (DESIRED, not yet implemented) › Switching to electron from a heavy ion: row remaps to total MeV (electron has no nucleons)
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:266:3 › Add row UX › typing in the last row auto-appends a fresh row below it
+[chromium] › tests/e2e/particle-unit-switching.spec.ts:282:3 › Add row UX › there is no explicit 'Add row' button rendered in the result table
+4 skipped
+25 passed (2.4m)
 
 ---
 
@@ -6078,15 +6057,12 @@ _Thinking:_
 
 The user wants me to summarize what's been done, fill AI logs, and commit the current work. The E2E tests are failing because WASM isn't loading in the preview server. Let me check what files have been modified and what the current state is
 
-
-
 I'll summarize the current state, fill the AI logs, and commit the work.
-
-
 
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md",
@@ -6095,12 +6071,13 @@ I'll summarize the current state, fill the AI logs, and commit the work.
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md</path>
 <type>file</type>
 <content>
 1: # AI Changelog
-2: 
+2:
 3: > This changelog tracks all AI-assisted coding sessions on this project.
 4: > Each entry links to a detailed session log in `docs/ai-logs/`.
 5: >
@@ -6108,7 +6085,7 @@ I'll summarize the current state, fill the AI logs, and commit the work.
 7: > the creation of the redesign plan (`docs/00-redesign-plan.md`). Those
 8: > early planning sessions pre-date this changelog and are not recorded here.
 9: > This log starts from 3 April 2026 when the AI changelog system was introduced.
-10: 
+10:
 11: | Date       | Stage | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Log                                                                |
 12: | ---------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 13: | 2026-04-27 | 5     | **unit-handling.md v4 + entity-selection.md v7 + opencode task list** (Claude Sonnet 4.6 via Claude Code): spec-only session — (1) closed open question: KE conservation on particle change now uses MeV/nucl as invariant; §2 rewritten with per-nucleon-first algorithm; (2) added TeV/TeV/nucl/TeV/u to §3 suffix table (×1e6); (3) new §3a Typo Suggestions spec; (4) entity-selection.md v7 final — "Beams" → **"Common particles"**; (5) created `docs/opencode-tasks-2026-04-27.md` — 9 ordered TDD tasks for Qwen3.5-397B-A17B-FP8 covering all open UX issues from the PR + spec changes. | [log](docs/ai-logs/2026-04-27-unit-handling-spec-v4.md) |
@@ -6157,6 +6134,7 @@ I'll summarize the current state, fill the AI logs, and commit the work.
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "ls -la /home/grzanka/workspace/dedx_web/docs/ai-logs/",
@@ -6165,6 +6143,7 @@ I'll summarize the current state, fill the AI logs, and commit the work.
 ```
 
 **Output:**
+
 ```
 total 2888
 drwxrwxr-x  2 grzanka grzanka  12288 Apr 27 10:27 .
@@ -6268,6 +6247,7 @@ drwxrwxr-x 10 grzanka grzanka   4096 Apr 27 10:27 ..
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git diff --stat",
@@ -6276,6 +6256,7 @@ drwxrwxr-x 10 grzanka grzanka   4096 Apr 27 10:27 ..
 ```
 
 **Output:**
+
 ```
  .../components/entity-selection-comboboxes.svelte  |  9 +++++--
  src/routes/calculator/+page.svelte                 |  2 +-
@@ -6289,13 +6270,10 @@ drwxrwxr-x 10 grzanka grzanka   4096 Apr 27 10:27 ..
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.2s)
 
-
-
-
-
 **Tool: invalid**
 
 **Input:**
+
 ```json
 {
   "tool": "run\n</function",
@@ -6304,6 +6282,7 @@ drwxrwxr-x 10 grzanka grzanka   4096 Apr 27 10:27 ..
 ```
 
 **Output:**
+
 ```
 The arguments provided to the tool are invalid: Model tried to call unavailable tool 'run
 </function'. Available tools: invalid, question, bash, read, glob, grep, edit, write, task, webfetch, todowrite, skill, svelte_get-documentation, svelte_list-sections, svelte_playground-link, svelte_svelte-autofixer, playwright_browser_close, playwright_browser_resize, playwright_browser_console_messages, playwright_browser_handle_dialog, playwright_browser_evaluate, playwright_browser_file_upload, playwright_browser_fill_form, playwright_browser_press_key, playwright_browser_type, playwright_browser_navigate, playwright_browser_navigate_back, playwright_browser_network_requests, playwright_browser_run_code, playwright_browser_take_screenshot, playwright_browser_snapshot, playwright_browser_click, playwright_browser_drag, playwright_browser_hover, playwright_browser_select_option, playwright_browser_tabs, playwright_browser_wait_for, tailwind_get_tailwind_utilities, tailwind_get_tailwind_colors, tailwind_get_tailwind_config_guide, tailwind_search_tailwind_docs, tailwind_install_tailwind, tailwind_convert_css_to_tailwind, tailwind_generate_color_palette, tailwind_generate_component_template.
@@ -6313,15 +6292,12 @@ The arguments provided to the tool are invalid: Model tried to call unavailable 
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 19.8s)
 
-
-
 Let me read the changed files and create the summary, then fill AI logs and commit.
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git diff src/lib/components/entity-selection-comboboxes.svelte",
@@ -6330,6 +6306,7 @@ Let me read the changed files and create the summary, then fill AI logs and comm
 ```
 
 **Output:**
+
 ```
 diff --git a/src/lib/components/entity-selection-comboboxes.svelte b/src/lib/components/entity-selection-comboboxes.svelte
 index 26eb6eb..3d3ebf8 100644
@@ -6341,10 +6318,10 @@ index 26eb6eb..3d3ebf8 100644
      class?: string;
 +    onParticleSelect?: (particleId: number) => void;
    }
- 
+
 -  let { state, class: className }: Props = $props();
 +  let { state, class: className, onParticleSelect }: Props = $props();
- 
+
    function getParticleLabel(particle: ParticleEntity): string {
      // Special-named particles have no parenthetical symbol — the name IS the identifier.
 @@ -209,7 +210,11 @@
@@ -6366,6 +6343,7 @@ index 26eb6eb..3d3ebf8 100644
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git diff src/routes/calculator/+page.svelte",
@@ -6374,6 +6352,7 @@ index 26eb6eb..3d3ebf8 100644
 ```
 
 **Output:**
+
 ```
 diff --git a/src/routes/calculator/+page.svelte b/src/routes/calculator/+page.svelte
 index 180537b..34fccb8 100644
@@ -6394,6 +6373,7 @@ index 180537b..34fccb8 100644
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "pnpm test 2>&1 | tail -20",
@@ -6402,6 +6382,7 @@ index 180537b..34fccb8 100644
 ```
 
 **Output:**
+
 ```
  ✓ src/tests/unit/particle-names.test.ts (17 tests) 13ms
  ✓ src/tests/components/energy-unit-selector.test.ts (8 tests) 155ms
@@ -6430,23 +6411,21 @@ index 180537b..34fccb8 100644
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 19.4s)
 
-
-
 Now I'll create the AI log summary and commit the work:
-
-
 
 **Tool: write**
 
 **Input:**
-```json
+
+````json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/2026-04-27-opencode-tasks-1-9-summary.md",
   "content": "# opencode Tasks 1–9 — Summary (Stage 5 E2E Debug in Progress)\n\n**Date:** 2026-04-27  \n**Model:** Qwen3.5-397B-A17B-FP8 via opencode  \n**Branch:** `copilot/check-stage-5-implementations`\n\n---\n\n## Session Overview\n\nThis session was intended to complete all 9 tasks from `docs/opencode-tasks-2026-04-27.md`, covering:\n\n- TeV energy units (Task 1) ✅\n- Typo suggestions in parser (Task 2) ✅\n- Particle display names & grouping (Task 3) ✅\n- Fix `setRowUnit` KE conversion (Task 4) ✅\n- KE conservation on particle switch (Task 5) ✅\n- Master energy unit selector (Task 6) ✅\n- Add row button (Task 7) ✅\n- Debounce wiring (Task 8) ✅\n- Dead code cleanup (Task 9) ✅\n\n**Status:** All 9 tasks implemented and committed. However, **E2E tests are failing** due to WASM not loading in the Playwright preview server environment.\n\n---\n\n## What Was Completed\n\n### All 9 Tasks — Implemented & Committed\n\nThe following commits were made:\n\n1. `feat(parser): add TeV, TeV/nucl, TeV/u energy units (×1e6 MeV)` — Task 1\n2. `feat(parser): typo suggestions for common unit casing errors` — Task 2\n3. `feat(ui): rename particle groups to \"Common particles\"/\"Ions\", use proton/alpha particle/electron labels` — Task 3\n4. `fix(calculator): setRowUnit now converts KE instead of stamping suffix` — Task 4\n5. `feat(calculator): conserve E_nucl on particle switch; re-express row values via per-nucleon-first algorithm` — Task 5\n6. `feat(calculator): add master energy unit selector above result table` — Task 6\n7. `feat(result-table): add \"Add row\" button below energy table` — Task 7\n8. `feat(calculator): debounce calculation trigger to 300ms per spec` — Task 8\n9. `chore: delete dead energy-input.svelte, units/energy.ts, and their tests (~480 LOC)` — Task 9\n\n### Unit Tests: All Passing ✅\n\n```\nTest Files  20 passed (20)\n     Tests  425 passed (425)\n```\n\n### E2E Tests: Systemic Failure ❌\n\n**72 tests run, 43 failed, 4 skipped, 25 passed**\n\n**Root cause:** WASM module not loading in Playwright preview server. All failing tests timeout waiting for `[aria-label=\"Particle\"]` selector.\n\n- Error: `TimeoutError: page.waitForSelector: Timeout 20000ms exceeded.`\n- Page snapshot shows: `<paragraph>Loading WASM module...</paragraph>`\n- WASM files accessible via HTTP (curl returns 200 + binary data)\n- `wasmReady.value` never becomes `true` in browser context\n\n**Passing E2E tests:** `basic.spec.ts` (doesn't wait for Particle combobox)\n\n**Failing E2E test suites:**\n- `entity-selection.spec.ts` — 8 tests failing (all timeout on Particle combobox)\n- `complex-interactions.spec.ts` — 22 tests failing (all timeout)\n- `particle-unit-switching.spec.ts` — 12 tests failing/timeout\n- `layout.spec.ts` — 3 tests failing (page titles, WASM loading)\n\n---\n\n## Key Changes Made\n\n### `src/lib/components/entity-selection-comboboxes.svelte`\n\nAdded optional `onParticleSelect` callback to intercept particle selection before calling `state.selectParticle()`. This allows the calculator page to wire KE conservation through `calcState.switchParticle()`.\n\n```svelte\ninterface Props {\n  state: EntitySelectionState;\n  class?: string;\n  onParticleSelect?: (particleId: number) => void;\n}\n\n// In particle combobox onSelect:\nif (onParticleSelect) {\n  onParticleSelect(particle.id);\n} else {\n  state.selectParticle(particle.id);\n}\n```\n\n### `src/routes/calculator/+page.svelte`\n\nWired `onParticleSelect` callback to `calcState.switchParticle()`:\n\n```svelte\n<EntitySelectionComboboxes\n  {state}\n  onParticleSelect={(particleId) => calcState.switchParticle(particleId)}\n/>\n```\n\n### Test Files Updated\n\n- `tests/e2e/particle-unit-switching.spec.ts` — Updated search terms from \"helium\"/\"hydrogen\" to \"alpha particle\"/\"proton\" to match UI labels\n- `tests/e2e/complex-interactions.spec.ts` — Minor fixes for test assertions\n\n---\n\n## Current Blocker: WASM Loading in E2E\n\n### Symptoms\n\n1. Page shows \"Loading WASM module...\" indefinitely\n2. `wasmReady.value` stays `false`\n3. All tests waiting for `[aria-label=\"Particle\"]` timeout after 20s\n4. WASM files are accessible via HTTP (verified with curl)\n\n### Investigation Status\n\n- WASM files present in both `static/wasm/` and `build/wasm/`\n- `build/wasm/libdedx.mjs` (16K) and `build/wasm/libdedx.wasm` (463K) exist\n- Playwright config uses `baseURL: http://127.0.0.1:4173` with `pnpm preview --host 127.0.0.1`\n- `getService()` in `src/lib/wasm/loader.ts` may be throwing silently\n- `$app/paths` `base` may not resolve correctly in preview mode\n\n### Next Steps (Handoff to GitHub Copilot)\n\n1. Debug WASM loading failure:\n   - Check browser console errors (Playwright `page.on('console')`)\n   - Verify `getService()` doesn't throw\n   - Check if `$app/paths.base` resolves to empty string or `/web_dev` incorrectly\n2. Once WASM loads, re-run E2E suite to validate KE conservation logic\n3. Update AI logs with full session narrative\n4. Run `pnpm lint` to ensure clean\n\n---\n\n## Files Modified (Uncommitted)\n\n```\nsrc/lib/components/entity-selection-comboboxes.svelte  |  9 +++++--\nsrc/routes/calculator/+page.svelte                     |  2 +-\ntests/e2e/complex-interactions.spec.ts                 |  4 ++--\ntests/e2e/particle-unit-switching.spec.ts              | 28 +++++++++++-----------\n```\n\nThese changes wire the particle selection callback through `calcState.switchParticle()` for KE conservation.\n\n---\n\n## Attribution\n\n(Qwen3.5-397B-A17B-FP8 via opencode)\n\n---\n\n## Cross-reference\n\n- Task list: [`docs/opencode-tasks-2026-04-27.md`](../opencode-tasks-2026-04-27.md)\n- E2E test file: [`tests/e2e/particle-unit-switching.spec.ts`](../../tests/e2e/particle-unit-switching.spec.ts)\n- WASM loader: [`src/lib/wasm/loader.ts`](../../src/lib/wasm/loader.ts)\n- Calculator page: [`src/routes/calculator/+page.svelte`](../../src/routes/calculator/+page.svelte)\n"
 }
-```
+````
 
 **Output:**
+
 ```
 Wrote file successfully.
 ```
@@ -6455,13 +6434,10 @@ Wrote file successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.8s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md",
@@ -6470,20 +6446,21 @@ Wrote file successfully.
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md</path>
 <type>file</type>
 <content>
 1: # AI Session Logs
-2: 
+2:
 3: Detailed session logs for AI-assisted coding sessions. Each file captures
 4: the prompt→response narrative and task outcomes for one session.
-5: 
+5:
 6: See [`CHANGELOG-AI.md`](../../CHANGELOG-AI.md) in the repo root for a
 7: summary table of all sessions.
-8: 
+8:
 9: ## Log Files
-10: 
+10:
 11: | File                                                                                             | Date         | Topic                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 12: | ------------------------------------------------------------------------------------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 13: | [2026-04-27-unit-handling-spec-v4.md](2026-04-27-unit-handling-spec-v4.md) | 27 Apr 2026  | unit-handling.md v4: closed KE-conservation open question (MeV/nucl conserved); added TeV/TeV/nucl/TeV/u suffixes; added §3a Typo Suggestions spec (case-fold hints, "did you mean?"); entity-selection.md v7 draft — particle group heading "Beams" renamed pending user decision (Claude Sonnet 4.6 via Claude Code) |
@@ -6513,13 +6490,10 @@ Wrote file successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 8.6s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/docs/ai-logs/README.md",
@@ -6529,6 +6503,7 @@ Wrote file successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -6537,13 +6512,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 4.9s)
 
-
-
-
-
 **Tool: read**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md",
@@ -6552,12 +6524,13 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 <path>/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md</path>
 <type>file</type>
 <content>
 1: # AI Changelog
-2: 
+2:
 3: > This changelog tracks all AI-assisted coding sessions on this project.
 4: > Each entry links to a detailed session log in `docs/ai-logs/`.
 5: >
@@ -6565,7 +6538,7 @@ Edit applied successfully.
 7: > the creation of the redesign plan (`docs/00-redesign-plan.md`). Those
 8: > early planning sessions pre-date this changelog and are not recorded here.
 9: > This log starts from 3 April 2026 when the AI changelog system was introduced.
-10: 
+10:
 11: | Date       | Stage | Description                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     | Log                                                                |
 12: | ---------- | ----- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------ |
 13: | 2026-04-27 | 5     | **unit-handling.md v4 + entity-selection.md v7 + opencode task list** (Claude Sonnet 4.6 via Claude Code): spec-only session — (1) closed open question: KE conservation on particle change now uses MeV/nucl as invariant; §2 rewritten with per-nucleon-first algorithm; (2) added TeV/TeV/nucl/TeV/u to §3 suffix table (×1e6); (3) new §3a Typo Suggestions spec; (4) entity-selection.md v7 final — "Beams" → **"Common particles"**; (5) created `docs/opencode-tasks-2026-04-27.md` — 9 ordered TDD tasks for Qwen3.5-397B-A17B-FP8 covering all open UX issues from the PR + spec changes. | [log](docs/ai-logs/2026-04-27-unit-handling-spec-v4.md) |
@@ -6580,13 +6553,10 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 11.3s)
 
-
-
-
-
 **Tool: edit**
 
 **Input:**
+
 ```json
 {
   "filePath": "/home/grzanka/workspace/dedx_web/CHANGELOG-AI.md",
@@ -6596,6 +6566,7 @@ Edit applied successfully.
 ```
 
 **Output:**
+
 ```
 Edit applied successfully.
 ```
@@ -6604,15 +6575,12 @@ Edit applied successfully.
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 6.1s)
 
-
-
 Now let me commit the changes:
-
-
 
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git add -A && git commit -m \"feat(wiring): wire particle selection through calcState.switchParticle() for KE conservation\n\n- Added onParticleSelect callback to EntitySelectionComboboxes\n- Calculator page wires callback to calcState.switchParticle()\n- Updated E2E tests to search for 'alpha particle'/'proton' labels\n- Prepares for KE conservation on particle switch (E2E blocked by WASM loading)\n\nPart of: opencode Tasks 1-9 implementation (Stage 5)\"",
@@ -6621,6 +6589,7 @@ Now let me commit the changes:
 ```
 
 **Output:**
+
 ```
 [copilot/check-stage-5-implementations 657a547] feat(wiring): wire particle selection through calcState.switchParticle() for KE conservation
  7 files changed, 189 insertions(+), 19 deletions(-)
@@ -6632,13 +6601,10 @@ Now let me commit the changes:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 7.0s)
 
-
-
-
-
 **Tool: bash**
 
 **Input:**
+
 ```json
 {
   "command": "git log --oneline -5",
@@ -6647,6 +6613,7 @@ Now let me commit the changes:
 ```
 
 **Output:**
+
 ```
 657a547 feat(wiring): wire particle selection through calcState.switchParticle() for KE conservation
 23d07a1 chore: delete dead energy-input.svelte, units/energy.ts, and their tests (~480 LOC)
@@ -6660,31 +6627,31 @@ Now let me commit the changes:
 
 ## Assistant (Build · Qwen/Qwen3.5-397B-A17B-FP8 · 8.5s)
 
-
-
 ## Summary
 
 **All 9 opencode tasks completed and committed:**
 
-| Task | Description | Status |
-|------|-------------|--------|
-| 1 | TeV/TeV/nucl/TeV/u energy units (×1e6 MeV) | ✅ Committed |
-| 2 | Parser typo suggestions ("did you mean?") | ✅ Committed |
-| 3 | Particle labels (proton/alpha particle/electron) + "Common particles"/"Ions" groups | ✅ Committed |
-| 4 | Fix `setRowUnit` — convert KE instead of stamping suffix | ✅ Committed |
-| 5 | KE conservation on particle switch (E_nucl invariant) | ✅ Committed |
-| 6 | Master EnergyUnitSelector on calculator page | ✅ Committed |
-| 7 | "+ Add row" button below result table | ✅ Committed |
-| 8 | 300ms debounce on calculation trigger | ✅ Committed |
-| 9 | Dead code cleanup (~480 LOC) | ✅ Committed |
+| Task | Description                                                                         | Status       |
+| ---- | ----------------------------------------------------------------------------------- | ------------ |
+| 1    | TeV/TeV/nucl/TeV/u energy units (×1e6 MeV)                                          | ✅ Committed |
+| 2    | Parser typo suggestions ("did you mean?")                                           | ✅ Committed |
+| 3    | Particle labels (proton/alpha particle/electron) + "Common particles"/"Ions" groups | ✅ Committed |
+| 4    | Fix `setRowUnit` — convert KE instead of stamping suffix                            | ✅ Committed |
+| 5    | KE conservation on particle switch (E_nucl invariant)                               | ✅ Committed |
+| 6    | Master EnergyUnitSelector on calculator page                                        | ✅ Committed |
+| 7    | "+ Add row" button below result table                                               | ✅ Committed |
+| 8    | 300ms debounce on calculation trigger                                               | ✅ Committed |
+| 9    | Dead code cleanup (~480 LOC)                                                        | ✅ Committed |
 
 **Test status:**
+
 - ✅ **Unit tests:** 425 passing
 - ❌ **E2E tests:** 72 run, 43 failed (all timeout waiting for WASM), 25 passed
 
 **E2E blocker:** WASM module not loading in Playwright preview server — page shows "Loading WASM module..." indefinitely, `wasmReady.value` never becomes `true`. WASM files accessible via HTTP but not loading in browser context.
 
 **AI logging complete:**
+
 - ✅ `CHANGELOG-AI.md` updated
 - ✅ `docs/ai-logs/2026-04-27-opencode-tasks-1-9-summary.md` created
 - ✅ `docs/ai-logs/README.md` updated
@@ -6694,4 +6661,3 @@ Now let me commit the changes:
 **Handoff to GitHub Copilot:** Debug WASM loading failure in E2E environment to unblock test validation.
 
 ---
-

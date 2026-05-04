@@ -1,5 +1,6 @@
 You are working on the dEdx Web project — a SvelteKit + Svelte 5 (runes only)
-+ TypeScript + Tailwind CSS v4 physics calculator.
+
+- TypeScript + Tailwind CSS v4 physics calculator.
 
 ## Start-of-session checklist (do this before any code changes)
 
@@ -33,6 +34,7 @@ from the review doc, a title, and implementation guidance.
 ---
 
 ### Issue 14 — Energy state not exposed to parent
+
 **Files:** `src/lib/components/energy-input.svelte`,
 `src/lib/state/energy-input.svelte.ts`, `src/routes/calculator/+page.svelte`
 **What to do:** `energy-input.svelte` currently calls
@@ -50,6 +52,7 @@ state is passed as a prop and that the parent can access parsed energies.
 ---
 
 ### Issue 1 — No visible field labels on comboboxes
+
 **Files:** `src/lib/components/entity-selection-comboboxes.svelte`
 **What to do:** Add a persistent visible `<label>` (or labelled `<div>`)
 above each of the three combobox triggers: **Particle**, **Material**,
@@ -64,6 +67,7 @@ regardless of whether a value is selected.
 ---
 
 ### Issue 2 — No selected-item indicator when re-opening combobox
+
 **Files:** `src/lib/components/entity-combobox.svelte`
 **What to do:** Inside `<Combobox.Item>`, check whether the item's
 `entity.id` equals the currently selected entity's id. When it matches,
@@ -80,6 +84,7 @@ checkmark element is present).
 ---
 
 ### Issue 20 — Paste of multi-line text not handled
+
 **Files:** `src/lib/components/energy-input.svelte`,
 `src/lib/state/energy-input.svelte.ts`
 **What to do:** Add an `onpaste` handler to each energy text input. When the
@@ -94,6 +99,7 @@ asserting three rows are created with correct text values.
 ---
 
 ### Issue 16 — Placeholder set to `row.text` (bug)
+
 **Files:** `src/lib/components/energy-input.svelte`
 **What to do:** Find the `placeholder={row.text || ""}` prop on the energy
 text `<input>`. Replace with the fixed instructional string
@@ -105,6 +111,7 @@ text `<input>`. Replace with the fixed instructional string
 ---
 
 ### Issue 19 — "Add row" button over-styled as primary action
+
 **Files:** `src/lib/components/energy-input.svelte`
 **What to do:** Change the "Add row" button from `bg-primary` (solid filled)
 to a ghost/outline variant. In shadcn-svelte the correct prop is
@@ -117,10 +124,12 @@ not have a primary/filled class.
 ---
 
 ### Issue 3 — Search box gives no hint of searchable fields
+
 **Files:** `src/lib/components/entity-combobox.svelte`
 **What to do:** The search `<Combobox.Input>` currently uses a generic
 `placeholder="Search..."`. Change it to be context-aware based on which
 entity type the combobox is for:
+
 - Particle combobox → `"Name, symbol, Z…"`
 - Material combobox → `"Name or ID…"`
 - Program combobox → keep `"Search…"` (name is the only key)
@@ -135,6 +144,7 @@ text is rendered.
 ---
 
 ### Issue 6 — "Clear" button placement awkward
+
 **Files:** `src/lib/components/entity-combobox.svelte`
 **What to do:** Remove the standalone "Clear" link that sits below the
 trigger on a separate line. Replace it with an `×` icon button rendered
@@ -151,6 +161,7 @@ dropdown.
 ---
 
 ### Issue 7 — "Reset all" easy to trigger accidentally
+
 **Files:** `src/lib/components/entity-selection-comboboxes.svelte`
 **What to do:** Rename the button label from "Reset all" to
 **"Restore defaults"** to signal it resets to known defaults (Proton / Water
@@ -165,6 +176,7 @@ tooltip.
 ---
 
 ### Issue 18 — "Per-row mode active" label is cryptic
+
 **Files:** `src/lib/components/energy-input.svelte` (or
 `energy-input.svelte.ts` if the label is generated there)
 **What to do:** Replace the string `"(per-row mode active)"` with
@@ -177,6 +189,7 @@ add one.
 ---
 
 ### Issue 5 — Electron always visible but permanently disabled
+
 **Files:** `src/lib/components/entity-combobox.svelte`,
 `src/lib/components/entity-panel.svelte`
 **What to do:** Move Electron (ID 1001) to the **bottom** of the particle
@@ -191,6 +204,7 @@ attribute.
 ---
 
 ### Issue 15 — Redundant parsed-value display
+
 **Files:** `src/lib/components/energy-input.svelte`
 **What to do:** The `→ value unit` conversion snippet currently renders for
 every row. Only show it when the row's unit **differs** from the master unit
@@ -203,33 +217,40 @@ row with different unit suffix → arrow with converted value rendered.
 ---
 
 ### Issue 10 — Label inconsistency: panel vs. compact mode
+
 **Files:** `src/lib/components/entity-selection-panels.svelte`,
 `src/lib/components/entity-selection-comboboxes.svelte`
 **What to do:** Standardise the field names across both modes:
+
 - Use **"Particle"**, **"Material"**, **"Program"** everywhere (drop "Target"
   from "Target Material").
 - Keep the numbered circles (① ② ③) in panel mode as they aid
   discoverability; do not add them to compact mode.
 - Result: both modes use the same base names; only panel mode has the circles.
-**Tests:** assert label text in both components after the change.
-**Commit:** `fix: standardise field names across panel and compact modes`
+  **Tests:** assert label text in both components after the change.
+  **Commit:** `fix: standardise field names across panel and compact modes`
 
 ---
 
 ### Issue 21 — `setTimeout` instead of `tick()` for focus
+
 **Files:** `src/lib/components/energy-input.svelte` (the `handleKeydown`
 function)
 **What to do:** Replace:
+
 ```ts
 state.addRow();
 setTimeout(() => focusEnergyInput(index + 1), 0);
 ```
+
 with:
+
 ```ts
 state.addRow();
 await tick();
 focusEnergyInput(index + 1);
 ```
+
 Import `tick` from `'svelte'`. Make the enclosing handler `async`.
 **Tests:** no new tests needed — this is a correctness fix. Verify existing
 keyboard-nav tests still pass.
@@ -238,6 +259,7 @@ keyboard-nav tests still pass.
 ---
 
 ### Issue 22 — Focus helper uses fragile `aria-label` query
+
 **Files:** `src/lib/components/energy-input.svelte`
 **What to do:** Replace the `document.querySelector(
 'input[aria-label="Energy value ${index + 1}"]')` pattern with a
@@ -252,6 +274,7 @@ relied on the aria-label selector pattern.
 ---
 
 ### Issue 12 — Panel listbox: keyboard navigation absent
+
 **Files:** `src/lib/components/entity-panel.svelte`
 **What to do:** The panel uses `role="listbox"` / `role="option"`, which
 promises arrow-key navigation per ARIA. Two options — pick the simpler one:
@@ -272,6 +295,7 @@ Prefer Option A unless the spec explicitly requires listbox semantics.
 ---
 
 ### Issue 17 — Error and parsed-value share unstable layout slot
+
 **Files:** `src/lib/components/energy-input.svelte`
 **What to do:** Give the per-row feedback region a fixed minimum height so
 the row does not jump when error/parsed-value text appears or disappears.
@@ -285,6 +309,7 @@ pass.
 ---
 
 ### Issue 24 — Mobile dropdown overflow risk
+
 **Files:** `src/lib/components/entity-combobox.svelte`
 **What to do:** Add `max-w-[calc(100vw-2rem)]` to the dropdown content
 container (`<Combobox.Content>` or its wrapper `<div>`). This caps the
@@ -296,6 +321,7 @@ Combine with `overflow-x-hidden` on the same element.
 ---
 
 ### Issue 13 — Unified input/result table not implemented (LARGE)
+
 **Files:** `src/lib/components/energy-input.svelte`,
 `src/lib/state/energy-input.svelte.ts`,
 `src/routes/calculator/+page.svelte`,
@@ -306,6 +332,7 @@ v5) describes a **unified input/result table** with columns:
 
 Build it as a `<table>` (or CSS grid with `role="table"`) replacing the
 current plain list of text inputs:
+
 - Column 1: the existing text input (`<input>` bound to `row.text`)
 - Column 2: converted value in MeV/nucl (from `getParsedEnergies()`)
 - Column 3: per-row unit dropdown (shadcn-svelte `<Select>`) pre-filled from
@@ -319,6 +346,7 @@ appended if the user changes it.
 
 **Do this as a single focused commit. If the implementation is too large to
 do cleanly in one pass, split it into two commits:**
+
 1. `feat: add unit column and converted-value column to energy table`
 2. `feat: add stopping-power and CSDA range placeholder columns`
 
@@ -342,19 +370,23 @@ do cleanly in one pass, split it into two commits:**
 When all issues are done (or you have gone as far as you can):
 
 1. **Prepend a new row** to the table in `CHANGELOG-AI.md`:
+
 ```
 | 2026-04-25 | 5.3 | **Stage 5.3 UX Review Fixes — continued** (<Model name> via opencode): <one-line summary of what was fixed, how many tests, any blockers> | [log](docs/ai-logs/2026-04-25-ux-review-fixes.md) |
 ```
+
 Replace `<Model name>` with your actual model identifier.
 
 2. **Create `docs/ai-logs/2026-04-25-ux-review-fixes.md`** with this
-structure:
+   structure:
+
 ```markdown
 # 2026-04-25 — UX Review Fixes (Entity Selector & Energy Input)
 
 ## Session Narrative
 
 ### Prompt 1: implement UX review issues
+
 **AI response**: <summary of what was done>
 
 ### Prompt N: ...
@@ -362,6 +394,7 @@ structure:
 ## Tasks
 
 ### Issue N — <title>
+
 - **Status**: completed | partial | blocked
 - **Stage**: 5.3
 - **Files changed**: list

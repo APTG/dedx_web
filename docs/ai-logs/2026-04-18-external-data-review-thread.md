@@ -3,11 +3,13 @@
 ## Session Narrative
 
 ### Prompt 1: Apply requested changes from PR review thread
+
 **AI response**: Reviewed all actionable review comments referenced from PR #353 and applied surgical documentation fixes across the affected files only. Updated the external-data spec to align the store layout with Spike 4 (energy grid in root attributes, no `energy/` array files), corrected the zarrita protocol API calls to match real Spike code (`FetchStore` + `open(root(...))` + `get(...)`), fixed per-ion shard chunk settings in the Python example, synchronized Spike 4 candidate table/request-count/file-count values with verdict data, updated stale spec version references, corrected a stage-progress version mismatch, and fixed a broken ADR anchor link. Validated by running unit tests (`CI=true npm test -- --watchAll=false`) successfully.
 
 ## Tasks
 
 ### PR #353 review-thread amendments
+
 - **Status**: completed
 - **Stage**: 2.5
 - **Files changed**:

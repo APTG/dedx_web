@@ -51,14 +51,15 @@ prefixes so that displayed numbers stay in a human-readable range:
 
 ```typescript
 // From src/lib/utils/unit-conversions.ts
-export function autoScaleLengthCm(
-  cm: number
-): { value: number; unit: 'nm' | 'µm' | 'mm' | 'cm' | 'm' } {
-  if (cm >= 100)   return { value: cm / 100,  unit: 'm' };
-  if (cm >= 1)     return { value: cm,        unit: 'cm' };
-  if (cm >= 0.1)   return { value: cm * 10,   unit: 'mm' };
-  if (cm >= 1e-4)  return { value: cm * 10000,unit: 'µm' };
-  return            { value: cm * 1e7,        unit: 'nm' };
+export function autoScaleLengthCm(cm: number): {
+  value: number;
+  unit: "nm" | "µm" | "mm" | "cm" | "m";
+} {
+  if (cm >= 100) return { value: cm / 100, unit: "m" };
+  if (cm >= 1) return { value: cm, unit: "cm" };
+  if (cm >= 0.1) return { value: cm * 10, unit: "mm" };
+  if (cm >= 1e-4) return { value: cm * 10000, unit: "µm" };
+  return { value: cm * 1e7, unit: "nm" };
 }
 ```
 
@@ -66,13 +67,13 @@ export function autoScaleLengthCm(
 
 ```typescript
 // From src/lib/components/result-table.svelte
-function canShowPerRowUnitSelector(row: typeof state.rows[number]): boolean {
+function canShowPerRowUnitSelector(row: (typeof state.rows)[number]): boolean {
   if (!state.isPerRowMode) return false;
   const particle = entitySelection.selectedParticle;
   if (!particle) return false;
   if (particle.massNumber > 1) {
-    const suffixes = ['MeV', 'MeV/nucl', 'MeV/u'];
-    return suffixes.some(s => row.rawInput.includes(s));
+    const suffixes = ["MeV", "MeV/nucl", "MeV/u"];
+    return suffixes.some((s) => row.rawInput.includes(s));
   }
   return false;
 }

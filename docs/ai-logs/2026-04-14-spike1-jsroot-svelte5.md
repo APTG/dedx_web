@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Run Spike 1 (jsroot-svelte5) prototype
+
 **AI response**: opencode (with Qwen3.5-397B) scaffolded a fresh SvelteKit 2 +
 Svelte 5 project in `prototypes/jsroot-svelte5/` on branch `spike/jsroot-svelte5`.
 The agent implemented:
@@ -17,12 +18,14 @@ The agent implemented:
 - `VERDICT.md` — all 9 acceptance criteria evaluated and recorded as PASS.
 
 ### Prompt 2 (implicit): verify and commit
+
 **AI response**: committed the prototype as `chore: prototype — jsroot-svelte5`
 on branch `spike/jsroot-svelte5`.
 
 ## Tasks
 
 ### Spike 1 — JSROOT 7 + Svelte 5 $effect
+
 - **Status**: completed
 - **Stage**: 2.5
 - **Branch**: `spike/jsroot-svelte5`

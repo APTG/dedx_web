@@ -11,11 +11,11 @@
 
 **Recommendation: (A) Monolithic `.mjs` + `.wasm` — no `.data` sidecar.**
 
-| Strategy | Description | Total size (uncompressed) | Verdict |
-|----------|-------------|--------------------------|---------|
-| **(A) Monolithic** | Single `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB) | **470 KB** | **✓ RECOMMENDED** |
-| (B) Per-program `.data` shards | Split 412 KB of float data into per-program files loaded lazily | ~470 KB + loader overhead | ✗ Not worth the complexity |
-| (C) Hybrid (core + lazy heavy) | Pre-bundle PSTAR/ASTAR/MSTAR, lazy-load ICRU73 | ~350 KB core + ~185 KB lazy | ✗ Premature optimization |
+| Strategy                       | Description                                                     | Total size (uncompressed)   | Verdict                    |
+| ------------------------------ | --------------------------------------------------------------- | --------------------------- | -------------------------- |
+| **(A) Monolithic**             | Single `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB)          | **470 KB**                  | **✓ RECOMMENDED**          |
+| (B) Per-program `.data` shards | Split 412 KB of float data into per-program files loaded lazily | ~470 KB + loader overhead   | ✗ Not worth the complexity |
+| (C) Hybrid (core + lazy heavy) | Pre-bundle PSTAR/ASTAR/MSTAR, lazy-load ICRU73                  | ~350 KB core + ~185 KB lazy | ✗ Premature optimization   |
 
 ### Rationale
 
@@ -32,43 +32,43 @@
 
 ## 2. Spec Sections Needing Amendment
 
-| # | Document | Section | Amendment required |
-|---|----------|---------|-------------------|
-| 1 | `docs/decisions/003-wasm-build-pipeline.md` | Build flags | Remove `--preload-file`. Build produces `.mjs` + `.wasm` only. Add note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`. Actual WASM size 457 KB. |
-| 2 | `docs/04-feature-specs/entity-selection.md` | Particle count | Clarify that "~240 particles" applies only to `DEDX_DEFAULT` parametric path (112 ions, Z=1–112). `DEDX_MSTAR` covers Z=2–18 only. Tabulated programs cover 1–16 ions each. |
-| 3 | `docs/04-feature-specs/entity-selection.md` | ESTAR | ESTAR (program ID 3) is present in `dedx_get_program_list()` output but returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations. UI must treat it as incompatible for all particle/material combinations (grey out or exclude). |
-| 4 | `docs/06-wasm-api-contract.md` | Program list | Note that `DEDX_ICRU` (id=9) is an auto-selector returned by `dedx_get_program_list()` — TypeScript wrapper must exclude it from the UI program picker. |
-| 5 | `docs/06-wasm-api-contract.md` | MSTAR ion discovery | `dedx_get_ion_list(MSTAR)` returns only Z=2–18. Wrapper must expose Z=1–98 from spec knowledge (general polynomial extends beyond enumerated list). |
-| 6 | `docs/06-wasm-api-contract.md` | Material/ion names | Material names from C API are ALL CAPS — display formatting required. Ion ID 1001 (electron) returns empty name — hard-code `"Electron"` in wrapper. |
-| 7 | `docs/06-wasm-api-contract.md` | Density access | `dedx_get_density()` wrapper must call `dedx_internal_read_density()` (internal function) since no public density getter exists in libdedx v1.4.0. Export this function in WASM build. |
-| 8 | `docs/11-prototyping-spikes.md` | Stage 2.6 gate | Append: Phase 1 + Phase 2 complete, 44/44 PASS, ESTAR not implemented. |
+| #   | Document                                    | Section             | Amendment required                                                                                                                                                                                                             |
+| --- | ------------------------------------------- | ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `docs/decisions/003-wasm-build-pipeline.md` | Build flags         | Remove `--preload-file`. Build produces `.mjs` + `.wasm` only. Add note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`. Actual WASM size 457 KB.                                                                    |
+| 2   | `docs/04-feature-specs/entity-selection.md` | Particle count      | Clarify that "~240 particles" applies only to `DEDX_DEFAULT` parametric path (112 ions, Z=1–112). `DEDX_MSTAR` covers Z=2–18 only. Tabulated programs cover 1–16 ions each.                                                    |
+| 3   | `docs/04-feature-specs/entity-selection.md` | ESTAR               | ESTAR (program ID 3) is present in `dedx_get_program_list()` output but returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations. UI must treat it as incompatible for all particle/material combinations (grey out or exclude). |
+| 4   | `docs/06-wasm-api-contract.md`              | Program list        | Note that `DEDX_ICRU` (id=9) is an auto-selector returned by `dedx_get_program_list()` — TypeScript wrapper must exclude it from the UI program picker.                                                                        |
+| 5   | `docs/06-wasm-api-contract.md`              | MSTAR ion discovery | `dedx_get_ion_list(MSTAR)` returns only Z=2–18. Wrapper must expose Z=1–98 from spec knowledge (general polynomial extends beyond enumerated list).                                                                            |
+| 6   | `docs/06-wasm-api-contract.md`              | Material/ion names  | Material names from C API are ALL CAPS — display formatting required. Ion ID 1001 (electron) returns empty name — hard-code `"Electron"` in wrapper.                                                                           |
+| 7   | `docs/06-wasm-api-contract.md`              | Density access      | `dedx_get_density()` wrapper must call `dedx_internal_read_density()` (internal function) since no public density getter exists in libdedx v1.4.0. Export this function in WASM build.                                         |
+| 8   | `docs/11-prototyping-spikes.md`             | Stage 2.6 gate      | Append: Phase 1 + Phase 2 complete, 44/44 PASS, ESTAR not implemented.                                                                                                                                                         |
 
 ---
 
 ## 3. Breaking Gaps
 
-| Gap | Severity | Impact | Mitigation |
-|-----|----------|--------|------------|
-| **ESTAR not implemented** | **High** | Electron stopping power unavailable in libdedx v1.4.0. ESTAR header data exists but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL`. | Exclude ESTAR from UI compatibility matrix. Document as "not available in libdedx v1.4.0". The code path and data exist — a future libdedx release could enable it without API changes. |
-| **No public density getter** | **Medium** | `dedx_get_density()` specified in WASM contract does not exist in libdedx public API. Density is accessible only via internal `dedx_internal_read_density()`. | Export the internal function in the Emscripten build. Create a `dedx_extra.c` wrapper (`dedx_get_density()` → `dedx_internal_read_density()`) for clean API. |
-| **MSTAR ion list incomplete** | **Low** | `dedx_get_ion_list(MSTAR)` returns Z=2–18 only, but MSTAR analytically supports higher Z via polynomial scaling. | TypeScript wrapper must hard-code MSTAR Z range (or query dynamically via Bethe path). Document that runtime ion list is a subset of actual coverage. |
+| Gap                           | Severity   | Impact                                                                                                                                                        | Mitigation                                                                                                                                                                              |
+| ----------------------------- | ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **ESTAR not implemented**     | **High**   | Electron stopping power unavailable in libdedx v1.4.0. ESTAR header data exists but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL`.                | Exclude ESTAR from UI compatibility matrix. Document as "not available in libdedx v1.4.0". The code path and data exist — a future libdedx release could enable it without API changes. |
+| **No public density getter**  | **Medium** | `dedx_get_density()` specified in WASM contract does not exist in libdedx public API. Density is accessible only via internal `dedx_internal_read_density()`. | Export the internal function in the Emscripten build. Create a `dedx_extra.c` wrapper (`dedx_get_density()` → `dedx_internal_read_density()`) for clean API.                            |
+| **MSTAR ion list incomplete** | **Low**    | `dedx_get_ion_list(MSTAR)` returns Z=2–18 only, but MSTAR analytically supports higher Z via polynomial scaling.                                              | TypeScript wrapper must hard-code MSTAR Z range (or query dynamically via Bethe path). Document that runtime ion list is a subset of actual coverage.                                   |
 
 ---
 
 ## 4. Acceptance Criteria Evaluation
 
-| # | Criterion | Status | Evidence |
-|---|-----------|--------|----------|
-| 1 | All 10 programs enumerated | **PASS** | `dedx_get_program_list()` returns IDs 1–7, 9, 100, 101 (10 programs). |
-| 2 | Ion/material counts documented per program | **PASS** | `REPORT.md §§3,4`, `wasm_runtime_stats.json`. |
-| 3 | Energy range confirmed | **PASS** | Static + runtime match. Min 2.5×10⁻⁴ MeV/nucl (ASTAR), max 10⁴ MeV/nucl (PSTAR). |
-| 4 | Units audit complete | **PASS** | `REPORT.md §6` — all 9 quantity/unit pairs confirmed. I-value (8 materials), density (6 materials), composition (3 compounds) spot-checked at runtime. |
-| 5 | Proton-in-water reference check | **PASS** | 7.28614 MeV·cm²/g (Δ −0.19% from NIST 7.3). |
-| 6 | MSTAR ion coverage explained | **PASS** | `REPORT.md §§3.2,10.4` — runtime Z=2–18, parametric extension beyond. |
-| 7 | Bundle size analysis complete | **PASS** | `REPORT.md §7` — monolithic 457 KB WASM, no `.data` sidecar needed. |
-| 8 | REPORT.md published | **PASS** | Contains all tables specified in Phase 4. |
-| 9 | Spec gaps documented | **PASS** | This document §§2,3. |
-| 10 | No implementation decisions made | **PASS** | Spike collects data only; no Stage 3 code written. |
+| #   | Criterion                                  | Status   | Evidence                                                                                                                                               |
+| --- | ------------------------------------------ | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | All 10 programs enumerated                 | **PASS** | `dedx_get_program_list()` returns IDs 1–7, 9, 100, 101 (10 programs).                                                                                  |
+| 2   | Ion/material counts documented per program | **PASS** | `REPORT.md §§3,4`, `wasm_runtime_stats.json`.                                                                                                          |
+| 3   | Energy range confirmed                     | **PASS** | Static + runtime match. Min 2.5×10⁻⁴ MeV/nucl (ASTAR), max 10⁴ MeV/nucl (PSTAR).                                                                       |
+| 4   | Units audit complete                       | **PASS** | `REPORT.md §6` — all 9 quantity/unit pairs confirmed. I-value (8 materials), density (6 materials), composition (3 compounds) spot-checked at runtime. |
+| 5   | Proton-in-water reference check            | **PASS** | 7.28614 MeV·cm²/g (Δ −0.19% from NIST 7.3).                                                                                                            |
+| 6   | MSTAR ion coverage explained               | **PASS** | `REPORT.md §§3.2,10.4` — runtime Z=2–18, parametric extension beyond.                                                                                  |
+| 7   | Bundle size analysis complete              | **PASS** | `REPORT.md §7` — monolithic 457 KB WASM, no `.data` sidecar needed.                                                                                    |
+| 8   | REPORT.md published                        | **PASS** | Contains all tables specified in Phase 4.                                                                                                              |
+| 9   | Spec gaps documented                       | **PASS** | This document §§2,3.                                                                                                                                   |
+| 10  | No implementation decisions made           | **PASS** | Spike collects data only; no Stage 3 code written.                                                                                                     |
 
 ---
 

@@ -16,6 +16,7 @@
 
 Branch: `copilot/check-stage-5-implementations`  
 Read at session start (in order):
+
 1. `AGENTS.md` — stack, Svelte 5 rules, build commands, AI logging
 2. `docs/04-feature-specs/unit-handling.md` (v4) — energy-unit rules
 3. `docs/04-feature-specs/entity-selection.md` (v7) — particle naming rules
@@ -25,6 +26,7 @@ Read at session start (in order):
    the E2E assertions to un-skip once tasks 5–6 land
 
 Key source files:
+
 - Parser: `src/lib/utils/energy-parser.ts`
 - Conversions: `src/lib/utils/energy-conversions.ts`
 - Particle aliases: `src/lib/config/particle-aliases.ts`
@@ -38,6 +40,7 @@ Key source files:
 - Unit selector component: `src/lib/components/energy-unit-selector.svelte`
 
 Test files:
+
 - `src/tests/unit/energy-parser.test.ts`
 - `src/tests/unit/energy-conversions.test.ts`
 - `src/tests/unit/entity-selection-comboboxes.test.ts`
@@ -46,6 +49,7 @@ Test files:
 - `tests/e2e/complex-interactions.spec.ts`
 
 Run tests:
+
 ```sh
 pnpm test                        # Vitest unit tests (no WASM needed)
 pnpm exec playwright test        # E2E tests (needs WASM in static/wasm/)
@@ -59,6 +63,7 @@ Every task that changes code or docs must be logged. Rules are in `AGENTS.md`
 (which refers to `.github/copilot-instructions.md` §"AI Session Logging").
 
 For each task:
+
 1. Prepend a row to `CHANGELOG-AI.md` table body.
 2. Create `docs/ai-logs/YYYY-MM-DD-<slug>.md` with the session narrative.
 3. Add a one-line pointer to `docs/ai-logs/README.md`.
@@ -98,6 +103,7 @@ convertEnergyFromMeVperNucl(1e6, "TeV/nucl", 12, 12.011) === 1e6
 ### Step 1c — implement
 
 In `src/lib/utils/energy-parser.ts`:
+
 - Add `"TeV" | "TeV/nucl" | "TeV/u"` to the `EnergySuffixUnit` union type.
 - Add three entries to `CANONICAL_UNITS`:
   ```typescript
@@ -107,10 +113,12 @@ In `src/lib/utils/energy-parser.ts`:
   ```
 
 In `src/lib/utils/energy-conversions.ts`:
+
 - Add `TeV: 1e6` to `SI_PREFIX_TO_MEV`.
 - Add `"TeV": "MeV"`, `"TeV/nucl": "MeV/nucl"`, `"TeV/u": "MeV/u"` to `BASE_UNITS`.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(parser): add TeV, TeV/nucl, TeV/u energy units (×1e6 MeV)
 ```
@@ -131,21 +139,21 @@ Never silently auto-correct.
 Add a `describe("typo suggestions")` block. The error string must match
 `/unknown unit: X — did you mean Y\?/`. Tests:
 
-| Input | Expected error string |
-|-------|-----------------------|
-| `"100 meV"` | `unknown unit: meV — did you mean MeV?` |
-| `"100 mev"` | `unknown unit: mev — did you mean MeV?` |
-| `"100 MEV"` | `unknown unit: MEV — did you mean MeV?` |
-| `"100 KeV"` | `unknown unit: KeV — did you mean keV?` |
-| `"100 MeV/Nucl"` | `unknown unit: MeV/Nucl — did you mean MeV/nucl?` |
-| `"100 MeV/NUCL"` | `unknown unit: MeV/NUCL — did you mean MeV/nucl?` |
-| `"100 GeV/Nucl"` | `unknown unit: GeV/Nucl — did you mean GeV/nucl?` |
-| `"100 TeV/Nucl"` | `unknown unit: TeV/Nucl — did you mean TeV/nucl?` |
-| `"100 MeV/U"` | `unknown unit: MeV/U — did you mean MeV/u?` |
-| `"100 GeV/U"` | `unknown unit: GeV/U — did you mean GeV/u?` |
-| `"100 TeV/U"` | `unknown unit: TeV/U — did you mean TeV/u?` |
-| `"100 bebok"` | `unknown unit: bebok` (no suggestion — no case-fold match) |
-| `"100 EV"` | `unknown unit: EV` (no suggestion — "ev" doesn't case-fold-match "eV") |
+| Input            | Expected error string                                                  |
+| ---------------- | ---------------------------------------------------------------------- |
+| `"100 meV"`      | `unknown unit: meV — did you mean MeV?`                                |
+| `"100 mev"`      | `unknown unit: mev — did you mean MeV?`                                |
+| `"100 MEV"`      | `unknown unit: MEV — did you mean MeV?`                                |
+| `"100 KeV"`      | `unknown unit: KeV — did you mean keV?`                                |
+| `"100 MeV/Nucl"` | `unknown unit: MeV/Nucl — did you mean MeV/nucl?`                      |
+| `"100 MeV/NUCL"` | `unknown unit: MeV/NUCL — did you mean MeV/nucl?`                      |
+| `"100 GeV/Nucl"` | `unknown unit: GeV/Nucl — did you mean GeV/nucl?`                      |
+| `"100 TeV/Nucl"` | `unknown unit: TeV/Nucl — did you mean TeV/nucl?`                      |
+| `"100 MeV/U"`    | `unknown unit: MeV/U — did you mean MeV/u?`                            |
+| `"100 GeV/U"`    | `unknown unit: GeV/U — did you mean GeV/u?`                            |
+| `"100 TeV/U"`    | `unknown unit: TeV/U — did you mean TeV/u?`                            |
+| `"100 bebok"`    | `unknown unit: bebok` (no suggestion — no case-fold match)             |
+| `"100 EV"`       | `unknown unit: EV` (no suggestion — "ev" doesn't case-fold-match "eV") |
 
 > Note on `EV` → no suggestion: `"ev".toLowerCase()` is `"ev"`, and the
 > canonical `eV` also lowercases to `"ev"` — so there IS a case-fold match.
@@ -179,10 +187,13 @@ const TYPO_SUGGESTIONS: ReadonlyMap<string, EnergySuffixUnit> = (() => {
 ```
 
 In `parseEnergyInput`, change the unknown-unit branch from:
+
 ```typescript
 return { error: `unknown unit: ${unitStr}` };
 ```
+
 to:
+
 ```typescript
 const suggestion = TYPO_SUGGESTIONS.get(unitStr.toLowerCase());
 const hint = suggestion ? ` — did you mean ${suggestion}?` : "";
@@ -190,6 +201,7 @@ return { error: `unknown unit: ${unitStr}${hint}` };
 ```
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(parser): typo suggestions for common unit casing errors
 ```
@@ -201,11 +213,11 @@ feat(parser): typo suggestions for common unit casing errors
 **Spec:** `docs/04-feature-specs/entity-selection.md` v7
 §"Particle naming preferences".
 
-| ID | Display label |
-|----|---------------|
-| 1 | `proton` (lowercase) |
-| 2 | `alpha particle` (lowercase) |
-| 1001 | `electron` (lowercase) |
+| ID    | Display label                        |
+| ----- | ------------------------------------ |
+| 1     | `proton` (lowercase)                 |
+| 2     | `alpha particle` (lowercase)         |
+| 1001  | `electron` (lowercase)               |
 | 3–118 | `Element (Symbol)` e.g. `Carbon (C)` |
 
 Group headings: **"Common particles"** (IDs 1, 2, 1001), **"Ions"** (IDs 3–118).
@@ -270,7 +282,7 @@ const particleItems = $derived.by(() => {
       const ORDER = [1, 2, 1001];
       return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
     });
-  
+
   const ionParticles = state.allParticles
     .filter((p) => !COMMON_IDS.has(p.id))
     .sort((a, b) => a.id - b.id);
@@ -300,6 +312,7 @@ const particleItems = $derived.by(() => {
 > Programs). No changes needed there.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(ui): rename particle groups to "Common particles"/"Ions", use proton/alpha particle/electron labels
 ```
@@ -318,9 +331,10 @@ kinetic energy by the ratio of the old and new mass numbers.
 
 ### Step 4a — tests first (`src/tests/unit/calculator-state.test.ts`)
 
-Find (or create) a `describe("setRowUnit")` block. 
+Find (or create) a `describe("setRowUnit")` block.
 
 **Existing test to INVERT** (the old behaviour was wrong):
+
 ```typescript
 // OLD assertion (wrong): 12 MeV → MeV/nucl on Carbon should keep "12 MeV/nucl"
 // NEW assertion (correct): 12 MeV ÷ 12 nucleons = 1 MeV/nucl
@@ -328,6 +342,7 @@ expect(rawInput).toBe("1 MeV/nucl");
 ```
 
 **New tests to ADD:**
+
 ```
 Carbon (A=12, m_u=12.011), row "12 MeV", setRowUnit(0, "MeV/nucl")
   → row text becomes "1 MeV/nucl"
@@ -388,11 +403,13 @@ file (it is already exported from `energy-conversions.ts`).
 
 Un-skip (remove `test.fixme(`) the test in
 `tests/e2e/particle-unit-switching.spec.ts`:
+
 ```
 "Carbon 12 MeV → toggle row unit MeV → MeV/nucl: number should become 1 (1 MeV/nucl), KE conserved"
 ```
 
 Use the `playwright` MCP to run just this spec file and confirm it passes:
+
 ```sh
 pnpm exec playwright test tests/e2e/particle-unit-switching.spec.ts
 ```
@@ -401,6 +418,7 @@ Also confirm the previously-passing "current behaviour" test for Carbon unit
 toggle is updated to assert the new correct value (`"1 MeV/nucl"`).
 
 Verify `pnpm test` is green, then commit:
+
 ```
 fix(calculator): setRowUnit now converts KE instead of stamping suffix
 ```
@@ -413,6 +431,7 @@ fix(calculator): setRowUnit now converts KE instead of stamping suffix
 Particle Change".
 
 **Algorithm** (per-nucleon-first):
+
 1. For each row, parse current text → `(value, detectedUnit ?? masterUnit)`.
 2. Compute `E_nucl = convertEnergyToMeVperNucl(value, unit, oldA, oldMassU)`.
 3. Choose the new display unit:
@@ -494,12 +513,13 @@ In `tests/e2e/particle-unit-switching.spec.ts`, un-skip ALL remaining
 
 1. `"He 20 MeV/nucl → proton: row should show 80 MeV (KE conserved)"`
 2. `"He 20 MeV/nucl → proton → He: row should round-trip back to 20 MeV/nucl"`
-3. `"Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV"` *(requires master unit selector — if not yet added, keep fixme and note dependency on Task 6)*
+3. `"Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV"` _(requires master unit selector — if not yet added, keep fixme and note dependency on Task 6)_
 4. `"He 20 MeV/nucl + multiple rows: KE conservation applies independently to each row"`
 5. `"Switching to electron from a heavy ion clears MeV/nucl rows or remaps to MeV"`
 
 Also update the "current behaviour" tests in the first `test.describe` block —
 they lock down the OLD (wrong) behaviour and must now be INVERTED or REMOVED:
+
 - `"He 20 MeV/nucl → switch to proton: typed number stays '20'..."` → REMOVE
   (replaced by the un-skipped fixme)
 - `"He 80 MeV → switch to proton: typed number stays '80'"` → UPDATE to assert
@@ -511,6 +531,7 @@ they lock down the OLD (wrong) behaviour and must now be INVERTED or REMOVED:
 Use the `playwright` MCP to run the full E2E suite and confirm all tests pass.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(calculator): conserve MeV/nucl on particle switch; re-express row values via per-nucleon-first algorithm
 ```
@@ -526,6 +547,7 @@ render it. The UX review (§"Issue 3") reports this as a spec mismatch.
 ### Step 6a — E2E test first (`tests/e2e/complex-interactions.spec.ts`)
 
 Add a test:
+
 ```
 "Master unit selector is visible on calculator page for heavy ions"
   - Load calculator, select Carbon
@@ -536,6 +558,7 @@ Add a test:
 ```
 
 Add a second test:
+
 ```
 "Master unit selector shows only MeV for proton (disabled)"
   - Load calculator (default = proton)
@@ -544,9 +567,11 @@ Add a second test:
 ```
 
 Also un-skip the `test.fixme` in `particle-unit-switching.spec.ts`:
+
 ```
 "Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV"
 ```
+
 (This test was kept fixme in Task 5 pending this task.)
 
 ### Step 6b — implement
@@ -575,6 +600,7 @@ Use the `tailwind` MCP to look up appropriate spacing classes if you need to
 add margin/padding between the selector and the table.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(calculator): re-add master energy unit selector above result table
 ```
@@ -590,11 +616,14 @@ just no UI affordance for it. The recommended fix is a small `+ Add row` button.
 ### Step 7a — update the locking E2E test first
 
 In `tests/e2e/particle-unit-switching.spec.ts`, the test:
+
 ```
 "there is no explicit 'Add row' button rendered in the result table"
 ```
+
 was deliberately written to lock down the current (no-button) behaviour.
 **Invert this test** to assert the button IS present:
+
 ```typescript
 await expect(page.getByRole("button", { name: /^Add row$/i })).toHaveCount(1);
 ```
@@ -602,6 +631,7 @@ await expect(page.getByRole("button", { name: /^Add row$/i })).toHaveCount(1);
 ### Step 7b — unit test (`src/tests/components/result-table.test.ts` or equivalent)
 
 Add a test:
+
 ```
 "Add row button is rendered and calls addRow when clicked"
   - render ResultTable with a mock calcState
@@ -621,9 +651,7 @@ After the closing `</table>` tag, add a shadcn-svelte `Button` (variant
 
 <!-- After </table> -->
 <div class="mt-2 flex justify-start">
-  <Button variant="outline" size="sm" onclick={() => state.addRow()}>
-    + Add row
-  </Button>
+  <Button variant="outline" size="sm" onclick={() => state.addRow()}>+ Add row</Button>
 </div>
 ```
 
@@ -635,6 +663,7 @@ interface in `calculator.svelte.ts`).
 Use the `tailwind` MCP for any spacing or button styling questions.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(result-table): add "Add row" button below energy table
 ```
@@ -649,6 +678,7 @@ utility exists in `src/lib/utils/debounce.ts` (8 unit tests, no callers).
 ### Step 8a — tests first (`src/tests/unit/calculator-state.test.ts`)
 
 Add a `describe("debounce")` test:
+
 ```
 "triggerCalculation is not called synchronously on rapid text updates"
   - create a calculator state with a mock service that counts calls
@@ -679,6 +709,7 @@ Replace the direct `state.triggerCalculation()` call in `result-table.svelte`
 The import: `import { debounce } from "$lib/utils/debounce";`
 
 Verify `pnpm test` is green, then commit:
+
 ```
 feat(calculator): debounce calculation trigger to 300ms per spec
 ```
@@ -714,6 +745,7 @@ src/tests/components/energy-input.test.ts           ← component tests for dead
 ```
 
 Also remove the corresponding import/mock lines in:
+
 - `src/tests/unit/energy-parser.test.ts` if it imports from `units/energy`
 - any `__mocks__` files that re-export the deleted modules
 
@@ -728,6 +760,7 @@ must stay green. If any test breaks, it means a file was NOT actually dead —
 restore it and investigate.
 
 Verify `pnpm test` is green, then commit:
+
 ```
 chore: delete dead energy-input.svelte, units/energy.ts, and their tests (~480 LOC)
 ```

@@ -19,6 +19,7 @@ Stage 3 is essentially "promote `prototypes/libdedx-investigation/wasm-runtime/`
 `src/lib/wasm/` per `06-wasm-api-contract.md`".
 
 **Documentation gaps identified (none blocking):**
+
 1. Plan §4 file tree lists `05-ui-wireframes.md`, `07-testing-strategy.md`,
    `08-deployment.md` — these were never created; their content is folded into
    feature specs / ADRs / NFR. Tree was out of sync with reality.
@@ -68,6 +69,7 @@ can be committed in a follow-up.
 ## Tasks
 
 ### Critical review of docs and Stage 3 readiness
+
 - **Status**: completed
 - **Stage**: 2 → 3 transition
 - **Files changed**: none (review output is in this log + PR description)
@@ -75,6 +77,7 @@ can be committed in a follow-up.
   improvements, not blockers.
 
 ### Plan update — clarify §4 file tree
+
 - **Status**: completed
 - **Stage**: meta (plan maintenance)
 - **Files changed**: `docs/00-redesign-plan.md`
@@ -83,6 +86,7 @@ can be committed in a follow-up.
   lie about completeness.
 
 ### Plan update — §4.2 Multiple AI tools (opencode + Qwen / PLGrid)
+
 - **Status**: completed
 - **Stage**: meta (plan maintenance)
 - **Files changed**: `docs/00-redesign-plan.md`, `.github/copilot-instructions.md`,
@@ -95,6 +99,7 @@ can be committed in a follow-up.
   confirms the exact PLGrid model id + endpoint.
 
 ### Logging this session
+
 - **Status**: completed
 - **Files changed**: `CHANGELOG-AI.md`, `docs/ai-logs/2026-04-19-docs-review-qwen-plan.md`,
   `docs/ai-logs/README.md`

@@ -5,7 +5,13 @@
   import { getService } from "$lib/wasm/loader";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { canExport, exportCsv, exportPdf } from "$lib/state/export.svelte";
+  import {
+    canExport,
+    exportCsv,
+    exportPdf,
+    exportPlotCsv,
+    exportPlotPdf,
+  } from "$lib/state/export.svelte";
 
   let { children } = $props();
   let pathname = $derived(page.url.pathname);
@@ -105,10 +111,12 @@
             <Button
               variant="outline"
               size="sm"
-              disabled={routePath !== "/calculator" || !canExport.value}
+              disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
+                !canExport.value}
               aria-label="Export PDF"
               onclick={() => {
                 if (routePath === "/calculator") exportPdf();
+                else if (routePath === "/plot") exportPlotPdf();
               }}
             >
               Export PDF
@@ -116,10 +124,12 @@
             <Button
               variant="outline"
               size="sm"
-              disabled={routePath !== "/calculator" || !canExport.value}
+              disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
+                !canExport.value}
               aria-label="Export CSV"
               onclick={() => {
                 if (routePath === "/calculator") exportCsv();
+                else if (routePath === "/plot") exportPlotCsv();
               }}
             >
               Export CSV

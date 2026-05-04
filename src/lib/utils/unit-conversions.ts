@@ -31,17 +31,20 @@ export function csdaGcm2ToCm(csdaGcm2: number, densityGcm3: number): number | nu
  *    ≥ 1e-4 cm → µm  (i.e. ≥ 1 µm)
  *    < 1e-4 cm → nm
  */
-export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µm' | 'mm' | 'cm' | 'm' } {
+export function autoScaleLengthCm(cm: number): {
+  value: number;
+  unit: "nm" | "µm" | "mm" | "cm" | "m";
+} {
   if (cm >= 100) {
-    return { value: cm / 100, unit: 'm' };
+    return { value: cm / 100, unit: "m" };
   } else if (cm >= 1) {
-    return { value: cm, unit: 'cm' };
+    return { value: cm, unit: "cm" };
   } else if (cm >= 0.1) {
-    return { value: cm * 10, unit: 'mm' };
+    return { value: cm * 10, unit: "mm" };
   } else if (cm >= 1e-4) {
-    return { value: cm * 10000, unit: 'µm' };
+    return { value: cm * 10000, unit: "µm" };
   } else {
-    return { value: cm * 1e7, unit: 'nm' };
+    return { value: cm * 1e7, unit: "nm" };
   }
 }
 

@@ -53,6 +53,7 @@
 > user-specified energies. Results update reactively as the user types.
 >
 > **Related specs:**
+>
 > - Entity selection (compact mode): [`entity-selection.md`](entity-selection.md)
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
 > - Multi-program advanced behavior (program multi-select, grouped comparison columns, quantity focus): [`multi-program.md`](multi-program.md)
@@ -105,11 +106,11 @@ two columns of the same row.
 Defined fully in [`entity-selection.md`](entity-selection.md). The
 Calculator page renders the compact mode variant:
 
-| Selector | Default | Notes |
-|----------|---------|-------|
-| Particle | Proton (H) | Searchable combobox, ~240px on desktop |
-| Material | Water (liquid) | Searchable combobox, ~240px on desktop. Shows **phase badge** (see below). |
-| Program | Auto-select → resolved | Searchable combobox, ~180px on desktop |
+| Selector | Default                | Notes                                                                      |
+| -------- | ---------------------- | -------------------------------------------------------------------------- |
+| Particle | Proton (H)             | Searchable combobox, ~240px on desktop                                     |
+| Material | Water (liquid)         | Searchable combobox, ~240px on desktop. Shows **phase badge** (see below). |
+| Program  | Auto-select → resolved | Searchable combobox, ~180px on desktop                                     |
 
 The entity selection component exposes `EntitySelectionState` to the
 Calculator page. The Calculator only triggers calculation when
@@ -120,26 +121,28 @@ Calculator page. The Calculator only triggers calculation when
 When a material is selected, a subtle phase indicator appears next to or
 inside the material combobox: "solid", "liquid", or "gas". This is
 determined from `MaterialEntity.isGasByDefault`:
+
 - `true` → "gas"
 - `false` → "solid" or "liquid" (use the material's known phase if available,
   otherwise "solid/liquid")
 
 The badge serves two purposes:
+
 1. Inform the user about the material's default aggregate state.
 2. Explain why the default stopping power unit changes when switching
    between gas and non-gas materials (see [`unit-handling.md`](unit-handling.md) §5.1).
 
 ### 2. Energy Unit Selector
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control / radio buttons (not a dropdown — ≤3 options, see §4.2 of project vision) |
-| Position | Inline with the entity selection row, after the Program combobox |
-| Options | **Particle-dependent.** The selected particle type determines which units are shown: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules. |
-| Default | MeV |
-| Master vs. per-row mode | When all rows have plain numbers (no unit suffix), the selector is **active** (master mode). When any row has a typed unit suffix, the selector becomes **greyed out / disabled** (per-row mode). See [`unit-handling.md`](unit-handling.md) §2 "Master vs. Per-Row Mode". |
-| Behavior | Changing the unit **does not modify the typed values** — the numeric text stays the same. The values are reinterpreted in the new unit, which **triggers an immediate recalculation**. See Recalculation Triggers table below. |
-| Inline unit detection | When the user types a unit suffix in a row (e.g., `100 keV`, `250 GeV/nucl`), the parser detects it after debounce, assigns the row its own unit, and — if this creates mixed units — switches to per-row mode. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
+| Property                | Detail                                                                                                                                                                                                                                                                           |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                    | Segmented control / radio buttons (not a dropdown — ≤3 options, see §4.2 of project vision)                                                                                                                                                                                      |
+| Position                | Inline with the entity selection row, after the Program combobox                                                                                                                                                                                                                 |
+| Options                 | **Particle-dependent.** The selected particle type determines which units are shown: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules.                                                          |
+| Default                 | MeV                                                                                                                                                                                                                                                                              |
+| Master vs. per-row mode | When all rows have plain numbers (no unit suffix), the selector is **active** (master mode). When any row has a typed unit suffix, the selector becomes **greyed out / disabled** (per-row mode). See [`unit-handling.md`](unit-handling.md) §2 "Master vs. Per-Row Mode".       |
+| Behavior                | Changing the unit **does not modify the typed values** — the numeric text stays the same. The values are reinterpreted in the new unit, which **triggers an immediate recalculation**. See Recalculation Triggers table below.                                                   |
+| Inline unit detection   | When the user types a unit suffix in a row (e.g., `100 keV`, `250 GeV/nucl`), the parser detects it after debounce, assigns the row its own unit, and — if this creates mixed units — switches to per-row mode. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
 
 > Full energy unit logic — particle-dependent options, SI prefix handling,
 > per-row unit detection, output unit defaults, conversion formulas — lives in
@@ -156,17 +159,18 @@ table.
 
 #### Table Columns
 
-| # | Column | Header label | Editable? | Content |
-|---|--------|-------------|-----------|---------|
-| 1 | **Typed Value** | "Energy ({unit})" | **Yes** — inline text input | User types an energy value, optionally with a unit suffix (e.g., `100`, `10 keV`) |
-| 2 | **Normalized** | "→ MeV/nucl" | No | Computed: the typed value converted to MeV/nucl. Shown in scientific notation for very small/large values. |
-| 3 | **Unit** | "Unit" | Via dropdown | Per-row unit dropdown. In master mode: shows the master unit (not interactive). In per-row mode: each row's dropdown is independently selectable. |
-| 4 | **Stopping Power** | "Stopping Power ({unit})" | No | `CalculationResult.stoppingPowers[i]`, converted to display unit (keV/µm or MeV·cm²/g — see [`unit-handling.md`](unit-handling.md) §5). |
-| 5 | **CSDA Range** | "CSDA Range" | No | `CalculationResult.csdaRanges[i]`, converted to length and auto-scaled with SI prefix (see [`unit-handling.md`](unit-handling.md) §6). Unit shown per-row (e.g., "1.234 µm"). |
+| #   | Column             | Header label              | Editable?                   | Content                                                                                                                                                                       |
+| --- | ------------------ | ------------------------- | --------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Typed Value**    | "Energy ({unit})"         | **Yes** — inline text input | User types an energy value, optionally with a unit suffix (e.g., `100`, `10 keV`)                                                                                             |
+| 2   | **Normalized**     | "→ MeV/nucl"              | No                          | Computed: the typed value converted to MeV/nucl. Shown in scientific notation for very small/large values.                                                                    |
+| 3   | **Unit**           | "Unit"                    | Via dropdown                | Per-row unit dropdown. In master mode: shows the master unit (not interactive). In per-row mode: each row's dropdown is independently selectable.                             |
+| 4   | **Stopping Power** | "Stopping Power ({unit})" | No                          | `CalculationResult.stoppingPowers[i]`, converted to display unit (keV/µm or MeV·cm²/g — see [`unit-handling.md`](unit-handling.md) §5).                                       |
+| 5   | **CSDA Range**     | "CSDA Range"              | No                          | `CalculationResult.csdaRanges[i]`, converted to length and auto-scaled with SI prefix (see [`unit-handling.md`](unit-handling.md) §6). Unit shown per-row (e.g., "1.234 µm"). |
 
 #### Stopping Power Column Unit
 
 The column header shows the current stopping power unit:
+
 - **Non-gas materials:** "Stopping Power (keV/µm)"
 - **Gas materials:** "Stopping Power (MeV·cm²/g)"
 
@@ -204,13 +208,13 @@ See [`unit-handling.md`](unit-handling.md) §6 for auto-scaling rules.
 
 Each input cell in the "Typed Value" column is an inline `<input>` element:
 
-| Property | Detail |
-|----------|--------|
-| Type | `<input type="text">` (not `<textarea>`) — single-line per row |
+| Property         | Detail                                                                                                                                                      |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type             | `<input type="text">` (not `<textarea>`) — single-line per row                                                                                              |
 | Accepted formats | Positive numeric values: integers (`100`), decimals (`1.5`), scientific notation (`1e3`, `1.5E-2`). Optionally followed by a unit suffix (e.g., `100 keV`). |
-| Parsing | On each input event (debounced 300ms), the value is parsed. A trailing unit suffix is detected per [`unit-handling.md`](unit-handling.md) §3. |
-| Paste support | Pasting multi-line text (e.g., a column from Excel) into any input cell creates multiple rows — one per pasted line. |
-| Tab / Enter | Pressing **Tab** or **Enter** moves focus to the next row's input cell. If at the last non-empty row, this focuses the always-empty-row at the bottom. |
+| Parsing          | On each input event (debounced 300ms), the value is parsed. A trailing unit suffix is detected per [`unit-handling.md`](unit-handling.md) §3.               |
+| Paste support    | Pasting multi-line text (e.g., a column from Excel) into any input cell creates multiple rows — one per pasted line.                                        |
+| Tab / Enter      | Pressing **Tab** or **Enter** moves focus to the next row's input cell. If at the last non-empty row, this focuses the always-empty-row at the bottom.      |
 
 ### 4. Advanced Options (future)
 
@@ -220,6 +224,7 @@ toggle in the top-right action bar (see
 local disclosure below the energy input.
 
 When Advanced mode is active, additional calculator controls may expose:
+
 - Aggregate state override (gas / condensed / default)
 - Interpolation mode (log-log / linear)
 - MSTAR mode (a–h)
@@ -282,15 +287,15 @@ button. The mechanism:
 
 The result table recalculates when **any** of these inputs change:
 
-| Trigger | Debounced? | Notes |
-|---------|-----------|-------|
-| Row input (typed value) | Yes (300ms) | Per-keystroke with debounce |
-| Energy unit change (master) | No (immediate) | Energy values reinterpreted in new unit |
-| Per-row unit dropdown change | No (immediate) | That row's value reinterpreted in new unit |
-| Particle change | No (immediate) | May also change available energy units |
-| Material change | No (immediate) | May change default stopping power unit (gas vs non-gas) |
-| Program change | No (immediate) | May change energy bounds |
-| Advanced options change (future) | No (immediate) | |
+| Trigger                          | Debounced?     | Notes                                                   |
+| -------------------------------- | -------------- | ------------------------------------------------------- |
+| Row input (typed value)          | Yes (300ms)    | Per-keystroke with debounce                             |
+| Energy unit change (master)      | No (immediate) | Energy values reinterpreted in new unit                 |
+| Per-row unit dropdown change     | No (immediate) | That row's value reinterpreted in new unit              |
+| Particle change                  | No (immediate) | May also change available energy units                  |
+| Material change                  | No (immediate) | May change default stopping power unit (gas vs non-gas) |
+| Program change                   | No (immediate) | May change energy bounds                                |
+| Advanced options change (future) | No (immediate) |                                                         |
 
 For entity/unit changes (non-debounced): if the table already contains
 valid energies, recalculate immediately using the new parameters.
@@ -299,19 +304,20 @@ valid energies, recalculate immediately using the new parameters.
 
 Each row in the unified table is validated independently:
 
-| Condition | Row status | v1 reporting |
-|-----------|-----------|------------------|
-| Valid positive number (with or without unit suffix) | ✅ Valid | Results shown inline in that row |
-| Empty row | ⏭️ Skipped | No results shown; row remains for input |
-| Non-numeric text (e.g., "abc") | ❌ Invalid | Row highlighted; tooltip or inline message with reason |
-| Unrecognized unit suffix (e.g., "100 bebok") | ❌ Invalid | Row highlighted: "Unrecognized unit 'bebok'" |
-| Per-nucleon unit for proton/electron | ❌ Invalid | Row highlighted: "MeV/nucl not available for Proton" |
-| Negative number | ❌ Invalid | Row highlighted: "Energy must be positive" |
-| Zero | ❌ Invalid | Row highlighted: "Energy must be greater than zero" |
-| Exceeds max energy for program/particle | ⚠️ Out of range | Row highlighted with valid range |
-| Below min energy for program/particle | ⚠️ Out of range | Row highlighted with valid range |
+| Condition                                           | Row status      | v1 reporting                                           |
+| --------------------------------------------------- | --------------- | ------------------------------------------------------ |
+| Valid positive number (with or without unit suffix) | ✅ Valid        | Results shown inline in that row                       |
+| Empty row                                           | ⏭️ Skipped      | No results shown; row remains for input                |
+| Non-numeric text (e.g., "abc")                      | ❌ Invalid      | Row highlighted; tooltip or inline message with reason |
+| Unrecognized unit suffix (e.g., "100 bebok")        | ❌ Invalid      | Row highlighted: "Unrecognized unit 'bebok'"           |
+| Per-nucleon unit for proton/electron                | ❌ Invalid      | Row highlighted: "MeV/nucl not available for Proton"   |
+| Negative number                                     | ❌ Invalid      | Row highlighted: "Energy must be positive"             |
+| Zero                                                | ❌ Invalid      | Row highlighted: "Energy must be greater than zero"    |
+| Exceeds max energy for program/particle             | ⚠️ Out of range | Row highlighted with valid range                       |
+| Below min energy for program/particle               | ⚠️ Out of range | Row highlighted with valid range                       |
 
 **Key rules:**
+
 - Invalid and out-of-range rows are **excluded** from the calculation but
   do **not** block valid rows.
 - Invalid rows show empty cells in the Normalized, Stopping Power, and
@@ -403,15 +409,15 @@ for column layout.
 
 #### Empty States
 
-| Condition | Display |
-|-----------|---------|
-| No energies entered (only empty row) | Only the empty input row is shown; no result columns populated |
-| All entered values are invalid | Error indicators on each row; summary message below table |
-| Entity selection incomplete — electron selected | Message above table: "Electron (ESTAR) is not yet supported by libdedx v1.4.0." |
+| Condition                                                                 | Display                                                                                                                             |
+| ------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| No energies entered (only empty row)                                      | Only the empty input row is shown; no result columns populated                                                                      |
+| All entered values are invalid                                            | Error indicators on each row; summary message below table                                                                           |
+| Entity selection incomplete — electron selected                           | Message above table: "Electron (ESTAR) is not yet supported by libdedx v1.4.0."                                                     |
 | Entity selection incomplete — particle + material selected but no program | Message above table: "No program supports **{particle}** in **{material}**. Change the particle or material selection to continue." |
-| Entity selection incomplete — neither selected | Message above table: "Select a particle and material to calculate." |
-| WASM not yet loaded | Loading spinner with "Initializing calculation engine…" |
-| WASM load failed | Error message with retry button |
+| Entity selection incomplete — neither selected                            | Message above table: "Select a particle and material to calculate."                                                                 |
+| WASM not yet loaded                                                       | Loading spinner with "Initializing calculation engine…"                                                                             |
+| WASM load failed                                                          | Error message with retry button                                                                                                     |
 
 ### Resolved Program Label
 
@@ -439,6 +445,7 @@ export buttons appear below the table.
 Filename: `dedx_calculator_{particle}_{material}_{program}.csv`.
 
 **PDF** — jsPDF-generated report:
+
 - Both modes: app name, generated timestamp (ISO UTC), clickable page URL.
 - Advanced mode additionally: build info, particle (Z, A), material density,
   programs list, active Advanced Options, system info (browser + OS).
@@ -498,13 +505,13 @@ The Calculator page state is encoded in URL query parameters for
 shareability. When a user shares a URL, the recipient sees the same
 inputs and results for this basic-mode contract.
 
-| Parameter | Example | Notes |
-|-----------|---------|-------|
-| `particle` | `1` | Particle ID (proton, heavy ion, or electron) |
-| `material` | `276` | Material ID |
-| `program` | `auto` or `2` | "auto" for Auto-select, numeric for specific |
+| Parameter  | Example           | Notes                                                                   |
+| ---------- | ----------------- | ----------------------------------------------------------------------- |
+| `particle` | `1`               | Particle ID (proton, heavy ion, or electron)                            |
+| `material` | `276`             | Material ID                                                             |
+| `program`  | `auto` or `2`     | "auto" for Auto-select, numeric for specific                            |
 | `energies` | `100,200:keV,500` | Comma-separated values, with optional per-value unit suffix (see below) |
-| `eunit` | `MeV` | Master energy unit (used for values without a per-value unit) |
+| `eunit`    | `MeV`             | Master energy unit (used for values without a per-value unit)           |
 
 ### Mixed-Unit URL Encoding
 
@@ -516,12 +523,14 @@ When per-row mode is active (mixed units), each energy value in the
 ```
 
 Parsing rules:
+
 - `100` → value 100, unit from `eunit` (MeV)
 - `200:keV` → value 200, unit keV
 - `50:GeV/nucl` → value 50, unit GeV/nucl
 - `300` → value 300, unit from `eunit` (MeV)
 
 When encoding the URL from the current table state:
+
 - If all rows use the same unit (master mode): use `eunit` only, no
   per-value suffixes. E.g., `?energies=100,200,500&eunit=MeV`
 - If any row has a different unit (per-row mode): append `:unit` to
@@ -529,6 +538,7 @@ When encoding the URL from the current table state:
   the base unit for unsuffixed values.
 
 On page load with URL parameters:
+
 1. Parse parameters and set entity selection + energy input.
 2. Expand `energies` into table rows, resolving per-value units.
 3. If any value has a per-value unit, activate per-row mode.
@@ -703,22 +713,20 @@ interface EnergyRow {
 /** Only the valid energy values, converted to MeV/nucl for the C API. */
 const validEnergiesMevNucl: number[] = $derived(
   rows
-    .filter(r => r.status === "valid" && r.normalizedMevNucl !== null)
-    .map(r => r.normalizedMevNucl!)
+    .filter((r) => r.status === "valid" && r.normalizedMevNucl !== null)
+    .map((r) => r.normalizedMevNucl!),
 );
 
 /** Number of rows with each status, for summary display. */
 const validationSummary = $derived({
-  valid: rows.filter(r => r.status === "valid").length,
-  invalid: rows.filter(r => r.status === "invalid").length,
-  outOfRange: rows.filter(r => r.status === "out-of-range").length,
-  total: rows.filter(r => r.status !== "empty").length,
+  valid: rows.filter((r) => r.status === "valid").length,
+  invalid: rows.filter((r) => r.status === "invalid").length,
+  outOfRange: rows.filter((r) => r.status === "out-of-range").length,
+  total: rows.filter((r) => r.status !== "empty").length,
 });
 
 /** Whether per-row mode should be active. */
-const shouldActivatePerRowMode: boolean = $derived(
-  rows.some(r => r.unitFromSuffix)
-);
+const shouldActivatePerRowMode: boolean = $derived(rows.some((r) => r.unitFromSuffix));
 ```
 
 ### Reactivity Chain
@@ -746,6 +754,7 @@ entitySelection changes
 ## Acceptance Criteria
 
 ### Default State
+
 - [ ] On first load (no URL params), the page shows: Proton / Water (liquid) / Auto-select / 100 MeV.
 - [ ] A result row is visible immediately without user interaction, with stopping power in keV/µm and CSDA range in auto-scaled length.
 - [ ] The resolved program name is displayed (e.g., "ICRU 90 (auto-selected)").
@@ -753,6 +762,7 @@ entitySelection changes
 - [ ] An empty row appears below the pre-filled row for additional input.
 
 ### Unified Input/Result Table
+
 - [ ] The table has 5 columns: Typed Value, → MeV/nucl, Unit, Stopping Power, CSDA Range.
 - [ ] Each row has an editable input cell in the Typed Value column.
 - [ ] Typing a value and waiting 300ms shows results in the same row's Stopping Power and CSDA Range cells.
@@ -762,11 +772,13 @@ entitySelection changes
 - [ ] Tab/Enter moves focus to the next row's input cell.
 
 ### Energy Input
+
 - [ ] Scientific notation is accepted (e.g., `1e3`, `1.5E-2`).
 - [ ] The Typed Value column header dynamically shows the master unit: "Energy (MeV)".
 - [ ] A valid energy range label is shown below the table.
 
 ### Per-Row Validation
+
 - [ ] Invalid rows show an error indicator on the Typed Value cell and empty result cells.
 - [ ] Unrecognized unit suffixes (e.g., "100 bebok") mark the row as invalid with a message.
 - [ ] Out-of-range rows show a warning with the valid range.
@@ -774,6 +786,7 @@ entitySelection changes
 - [ ] A summary message below the table shows count of excluded values.
 
 ### Live Calculation
+
 - [ ] Results update reactively as the user types (debounced at 300ms).
 - [ ] Changing particle, material, or program triggers immediate recalculation (no debounce).
 - [ ] Changing the master energy unit triggers immediate reinterpretation and recalculation.
@@ -781,6 +794,7 @@ entitySelection changes
 - [ ] A subtle loading indicator appears during calculation.
 
 ### Output Units — Stopping Power
+
 - [ ] Default stopping power unit is keV/µm for non-gas materials.
 - [ ] Default stopping power unit is MeV·cm²/g for gas materials.
 - [ ] Switching from a non-gas to a gas material changes the stopping power column header and recalculates.
@@ -788,6 +802,7 @@ entitySelection changes
 - [ ] Numeric fixture check: for a row where backend `stoppingPowers[i] = 25` and `materialDensity = 1.0`, displayed value is `2.5 keV/µm` in non-gas mode and `25 MeV·cm²/g` in gas mode.
 
 ### Output Units — CSDA Range
+
 - [ ] CSDA range is displayed in auto-scaled length units (nm, µm, mm, cm, m).
 - [ ] Each row independently auto-scales to the best SI prefix.
 - [ ] The unit is displayed inline with each cell value (e.g., "1.234 µm").
@@ -795,10 +810,12 @@ entitySelection changes
 - [ ] Numeric fixture check: for a row where backend `csdaRanges[i] = 0.2` and `materialDensity = 1.0`, displayed value is `2 mm`.
 
 ### Material Phase Badge
+
 - [ ] A phase indicator (gas/solid/liquid) appears next to the material combobox.
 - [ ] The badge updates when the material selection changes.
 
 ### Energy Unit Selector
+
 - [ ] Available units depend on the selected particle.
 - [ ] For proton (A=1) and electron (particle ID 1001), only "MeV" is shown.
 - [ ] For heavy ions (A>1), "MeV" and "MeV/nucl" are shown.
@@ -808,21 +825,25 @@ entitySelection changes
 - [ ] Removing all unit suffixes re-enables the selector.
 
 ### Entity Selection Integration
+
 - [ ] Entity selectors use compact mode (searchable dropdown comboboxes).
 - [ ] The layout matches the entity-selection.md compact mode wireframes.
 - [ ] Entity selection state is shared with the Plot page (persists across navigation).
 
 ### Error Handling
+
 - [ ] WASM init failure shows an error banner with a retry button; all controls are disabled.
 - [ ] C library errors show a human-readable message with an expandable "Show details" section.
 - [ ] When entity selection is incomplete, a message appears above the table.
 
 ### Responsive
+
 - [ ] On desktop (≥900px), content is centered with max-width ~720px.
 - [ ] On tablet (600–899px), layout fills viewport width.
 - [ ] On mobile (<600px), all elements stack vertically; the table scrolls horizontally if needed.
 
 ### URL State
+
 - [ ] In basic mode, the calculator state (particle, material, program, energies, unit) is encoded in URL query parameters.
 - [ ] Mixed-unit state is encoded using `value:unit` syntax in the `energies` parameter.
 - [ ] Loading a URL with valid parameters restores the exact state and shows results.
@@ -830,6 +851,7 @@ entitySelection changes
 - [ ] In advanced mode, URL restoration also respects advanced parameters from [`multi-program.md`](multi-program.md).
 
 ### Export
+
 - [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right, left of "Share URL") on all pages; both disabled until at least one result row is present.
 - [ ] CSV contains exactly five columns matching the unified table (see [`export.md`](export.md) §2).
 - [ ] `Stopping Power` header unit in CSV matches the active display unit (e.g., `keV/µm` for non-gas, `MeV·cm²/g` for gas).
@@ -837,11 +859,13 @@ entitySelection changes
 - [ ] PDF is mode-sensitive: basic includes date + URL; advanced adds build info, particle Z/A, material density, programs, settings, system info (see [`export.md`](export.md) §6).
 
 ### Performance
+
 - [ ] Debounce interval is 300ms for input.
 - [ ] Calculation for ≤50 energy values completes in < 100ms (WASM call).
 - [ ] Pasting > 200 values shows a warning but does not block calculation.
 
 ### Accessibility
+
 - [ ] Each input cell has an accessible label (via `aria-label` or associated label).
 - [ ] Validation errors are announced to screen readers via `aria-live` region.
 - [ ] The table uses proper `<table>`, `<thead>`, `<tbody>`, `<th scope="col">` markup.
@@ -873,31 +897,31 @@ entitySelection changes
 1. **Always-empty-row vs. Add Row button:** The current design uses an
    always-empty-row at the bottom. This may change after seeing the
    implementation — an explicit "Add Row" button might be clearer.
-   *Current decision: always-empty-row. Revisit after prototype.*
+   _Current decision: always-empty-row. Revisit after prototype._
 
 2. **Per-line error highlighting:** With individual `<input>` cells per
    row, error highlighting is straightforward (red outline on the cell).
-   No overlay or `contenteditable` hack needed. *Resolved by the unified
-   table design.*
+   No overlay or `contenteditable` hack needed. _Resolved by the unified
+   table design._
 
 3. **Debounce timing:** 300ms is a common default. Should this be
    user-configurable (like the old app's "Dynamic / Performance" toggle)?
-   *Current decision: fixed at 300ms for v1. No mode toggle.*
+   _Current decision: fixed at 300ms for v1. No mode toggle._
 
 4. **"Generate default energies" button:** The old app had a button to
    fill the table with a program-specific default energy grid. Should
    the new app include this?
-   *Current decision: defer to a future iteration. The pre-filled "100" is
-   sufficient for the immediate-result-on-load requirement.*
+   _Current decision: defer to a future iteration. The pre-filled "100" is
+   sufficient for the immediate-result-on-load requirement._
 
 5. **Column visibility on mobile:** With 5 columns, horizontal scroll is
    likely on mobile. Should the "→ MeV/nucl" and "Unit" columns be
    hidden by default on small screens?
-   *Current decision: show all columns with horizontal scroll. Revisit
-   after testing on real devices.*
+   _Current decision: show all columns with horizontal scroll. Revisit
+   after testing on real devices._
 
 6. **User-selectable stopping power unit:** Should users be able to
    override the auto-selected stopping power unit (e.g., switch from
    keV/µm to MeV·cm²/g for a solid)?
-   *Current decision: auto-selected only in v1. Column header will become
-   a dropdown in a future version (see `unit-handling.md` §5).*
+   _Current decision: auto-selected only in v1. Column header will become
+   a dropdown in a future version (see `unit-handling.md` §5)._

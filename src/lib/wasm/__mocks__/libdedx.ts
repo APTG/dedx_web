@@ -131,15 +131,50 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
   getParticles(programId: number): ParticleEntity[] {
     if (programId === 3 || programId === 4) {
       return [
-        { id: 1001, name: "Electron", massNumber: 0, atomicMass: 0.000548, symbol: "e⁻", aliases: ["e⁻", "e-", "beta"] },
-        { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] },
-        { id: 2, name: "Helium", massNumber: 4, atomicMass: 4.002, symbol: "He", aliases: ["alpha", "α", "He-4"] },
-        { id: 6, name: "Carbon", massNumber: 12, atomicMass: 12.011, symbol: "C", aliases: ["C-12"] },
+        {
+          id: 1001,
+          name: "Electron",
+          massNumber: 0,
+          atomicMass: 0.000548,
+          symbol: "e⁻",
+          aliases: ["e⁻", "e-", "beta"],
+        },
+        {
+          id: 1,
+          name: "Hydrogen",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "H",
+          aliases: ["proton"],
+        },
+        {
+          id: 2,
+          name: "Helium",
+          massNumber: 4,
+          atomicMass: 4.002,
+          symbol: "He",
+          aliases: ["alpha", "α", "He-4"],
+        },
+        {
+          id: 6,
+          name: "Carbon",
+          massNumber: 12,
+          atomicMass: 12.011,
+          symbol: "C",
+          aliases: ["C-12"],
+        },
       ];
     }
     if (programId === 2) {
       return [
-        { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] },
+        {
+          id: 1,
+          name: "Hydrogen",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "H",
+          aliases: ["proton"],
+        },
       ];
     }
     return [];
@@ -152,7 +187,12 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     ];
   }
 
-  calculate(programId: number, particleId: number, materialId: number, energies: number[]): CalculationResult {
+  calculate(
+    programId: number,
+    particleId: number,
+    materialId: number,
+    energies: number[],
+  ): CalculationResult {
     return {
       energies,
       stoppingPowers: energies.map((e) => Math.log(e + 1)),
@@ -160,7 +200,13 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     };
   }
 
-  getPlotData(programId: number, particleId: number, materialId: number, numPoints: number, logScale: boolean): CalculationResult {
+  getPlotData(
+    programId: number,
+    particleId: number,
+    materialId: number,
+    numPoints: number,
+    logScale: boolean,
+  ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
     );

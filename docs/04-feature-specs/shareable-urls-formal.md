@@ -6,6 +6,7 @@
 >
 > This document is the machine-oriented companion to
 > [`shareable-urls.md`](shareable-urls.md). It defines:
+>
 > - ABNF grammar for query-string syntax
 > - semantic validation/default/precedence rules
 > - canonicalization algorithm
@@ -44,6 +45,7 @@
 > `custom-compounds.md`.
 >
 > **Normative relationship:**
+>
 > - If this file and `shareable-urls.md` conflict on syntax, this file wins.
 > - If they conflict on UX behavior (warnings/messages), `shareable-urls.md` wins.
 
@@ -52,6 +54,7 @@
 ## 1. Scope
 
 This grammar covers URL query strings for:
+
 - Calculator basic mode
 - Calculator advanced mode
 - Plot page
@@ -263,6 +266,7 @@ nz-digit            = %x31-39
 ```
 
 Notes:
+
 - Grammar permits duplicates syntactically; semantics define resolution.
 - `unknown-pair` preserves forward compatibility.
 - `extdata-pair` may appear multiple times (one per external source).
@@ -302,10 +306,12 @@ Canonical output drops unknown params.
 ## 3.4 Version Negotiation
 
 Constants:
+
 - `CURRENT_URL_MAJOR = 1`
 - `MIN_SUPPORTED_URL_MAJOR = 1`
 
 Rules:
+
 - Missing `urlv` => assume `1`.
 - `urlv == CURRENT_URL_MAJOR` => parse normally.
 - `MIN_SUPPORTED_URL_MAJOR <= urlv < CURRENT_URL_MAJOR` => migrate through registered chain.
@@ -333,22 +339,26 @@ Rules:
   - `ivalues` and `iunit` are parsed and applied only when `imode` is present
 
 Energy precedence:
+
 - In `energies`, per-row suffix (`value:unit`) overrides `eunit` for that row.
 - Unsuffixed rows inherit `eunit`.
 
 ## 3.6 Defaults
 
 Global:
+
 - `urlv=1`
 - `particle=1`
 - `material=276`
 - `program=auto`
 
 Calculator:
+
 - `eunit=MeV`
 - `energies=100` if missing/empty
 
 Advanced Options (when `mode=advanced`; all omit-when-default):
+
 - `agg_state` — absent = no override (toggle lands on material built-in phase)
 - `interp_scale` — absent = `"log-log"`
 - `interp_method` — absent = `"linear"`
@@ -357,6 +367,7 @@ Advanced Options (when `mode=advanced`; all omit-when-default):
 - `ival` — absent = no override (built-in I-value used)
 
 Inverse-lookup (when `mode=advanced`; only parsed when `imode` is present):
+
 - `imode` — absent = Forward tab active (no inverse tab)
 - `ivalues` — absent = tab opens with default pre-filled row
 - `iunit` — absent = default for active imode and material phase:
@@ -365,6 +376,7 @@ Inverse-lookup (when `mode=advanced`; only parsed when `imode` is present):
   - `imode=csda` → `cm`
 
 Plot:
+
 - `stp_unit=kev-um`
 - `xscale=log`
 - `yscale=log`
@@ -373,24 +385,29 @@ Plot:
 ## 3.7 Validation Constraints
 
 Entity constraints:
+
 - IDs must exist in compatibility matrix.
 - Program must support particle+material.
 
 Advanced constraints:
+
 - `programs` list after validation must be non-empty; otherwise fallback to auto-selected single program.
 - `hidden_programs` must be a subset of selected `programs`. Both lists accept `entity-id` (built-in `int-pos` or `ext-ref`); mixed built-in and external programs are allowed in both lists.
 
 Energy constraints:
+
 - Value parse must succeed.
 - Value must be > 0.
 - Unit token must be in allowed set.
 - Converted energy must be within valid bounds for chosen program/particle.
 
 Plot constraints:
+
 - Each `series` triplet must be valid; invalid triplets are dropped.
 - Partial success is allowed.
 
 Inverse-lookup constraints (applied only when `mode=advanced` and `imode` present):
+
 - `imode`: value must be `"stp"` or `"csda"`. Invalid value → silently ignored
   (Forward tab loads).
 - `ivalues`: each item is parsed as `number[":" ivalue-unit-token]`. Items where
@@ -433,6 +450,7 @@ to `localStorage`. A dismissible "Compound from shared URL" banner is
 shown (see `custom-compounds.md` §6.4).
 
 Advanced Options constraints (applied only when `mode=advanced`):
+
 - `agg_state`: value must be `"gas"` or `"condensed"`. If the value equals the
   material's built-in phase, treat as no override (same as absent).
   Invalid values → silently ignored (no override applied).
@@ -469,9 +487,9 @@ Canonical parameter order:
 6. Advanced-mode params — present **only** when `mode=advanced`, in this sub-order:
    a. `mode=advanced` (always first among the advanced group)
    b. `hidden_programs` — omitted when the set is empty; otherwise emitted as a
-      comma-separated list of `entity-id`
+   comma-separated list of `entity-id`
    c. `qfocus` — **always** emitted in advanced mode, even when the value equals
-      the default `both`
+   the default `both`
 
 7. Advanced Options params — present **only** when `mode=advanced`; each
    omitted when at its default value, in this sub-order:
@@ -480,30 +498,31 @@ Canonical parameter order:
    c. `interp_method` — omitted when value = `"linear"`
    d. `mstar_mode` — omitted when value = `"b"`
    e. `density` — omitted when not set; serialized via JS `Number.prototype.toString()`
-      (output may be decimal or scientific notation per ECMAScript number formatting rules)
+   (output may be decimal or scientific notation per ECMAScript number formatting rules)
    f. `ival` — omitted when not set; serialized as decimal number
 
 8. Inverse-lookup params — present **only** when `mode=advanced` and an inverse
    tab is active, in this sub-order:
    a. `imode` — always emitted when an inverse tab is active (`"stp"` or `"csda"`)
    b. `ivalues` — omitted when no input rows have data; per-value suffix uses
-      the canonical token form (`stp-iunit-token` or `length-unit-token`)
+   the canonical token form (`stp-iunit-token` or `length-unit-token`)
    c. `iunit` — omitted when equal to the default for the active `imode` and
-      material phase (see §3.6); otherwise serialized as a canonical token
-      (`stp-iunit-token` or `length-unit-token`)
+   material phase (see §3.6); otherwise serialized as a canonical token
+   (`stp-iunit-token` or `length-unit-token`)
 
 9. Custom compound params — present **only** when `mode=advanced` AND
    `material=custom`, in this sub-order:
    a. `mat_name` — always emitted (percent-encoded via `encodeURIComponent`)
    b. `mat_density` — always emitted; serialized via `Number.prototype.toString()`
    c. `mat_elements` — always emitted; elements ordered by **ascending Z**;
-      atom counts serialized via `Number.prototype.toString()`
+   atom counts serialized via `Number.prototype.toString()`
    d. `mat_ival` — omitted when compound has no iValue; otherwise emitted as
-      decimal number
+   decimal number
    e. `mat_phase` — omitted when `"condensed"` (default); emitted as `"gas"`
-      otherwise
+   otherwise
 
 Normalization rules:
+
 - Always emit `urlv`.
 - Always emit `particle`, `material`, and the mode-appropriate program param.
 - Always emit explicit defaulted page-state params (`eunit=MeV`, `xscale=log`,
@@ -542,24 +561,29 @@ Normalization rules:
 ### 5.1 Valid Inputs
 
 1. Basic calculator:
+
 - Input: `urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV`
 - Result: valid, canonical unchanged.
 
 2. Advanced calculator (no hidden programs):
+
 - Input: `urlv=1&particle=1&material=276&programs=9,2&mode=advanced&qfocus=stp&energies=100&eunit=MeV`
 - Canonical: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=stp`
 - Note: `hidden_programs` omitted (empty set); `mode` precedes `qfocus`.
 
 3. Advanced calculator (with hidden programs):
+
 - Input: `urlv=1&particle=1&material=276&programs=9,2,101&mode=advanced&hidden_programs=2&qfocus=both&energies=100&eunit=MeV`
 - Canonical: `urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both`
 - Note: `mode`, then `hidden_programs`, then `qfocus`; `qfocus=both` always emitted.
 
 4. Plot:
+
 - Input: `urlv=1&particle=1&material=276&program=auto&series=9.1.276,2.1.276&stp_unit=kev-um&xscale=log&yscale=log`
 - Result: valid, canonical unchanged.
 
 5. External data source (labeled):
+
 - Input: `urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx&particle=1&material=276&program=auto&series=ext%3Asrim%3Asrim-2013.ext%3Asrim%3Ap.ext%3Asrim%3Awater,9.1.276&stp_unit=kev-um&xscale=log&yscale=log`
 - Result: label `srim` assigned to the external source; series mixes one external
   triplet (`ext:srim:srim-2013` / `ext:srim:p` / `ext:srim:water`) and one built-in
@@ -568,101 +592,122 @@ Normalization rules:
 ### 5.2 Invalid / Recovery
 
 1. Unsupported version:
+
 - Input: `urlv=99&particle=1&material=276`
 - Result: show major-mismatch warning; no silent calc.
 
 2. Missing version legacy:
+
 - Input: `particle=1&material=276&program=auto`
 - Result: parse as v1; canonical emit includes `urlv=1`.
 
 3. Invalid unit token:
+
 - Input: `urlv=1&particle=1&material=276&energies=100:foo&eunit=MeV`
 - Result: row invalid; excluded from calculation.
 
 4. Advanced params in basic mode:
+
 - Input: `urlv=1&particle=1&material=276&mode=basic&programs=9,2&qfocus=stp`
 - Result: ignore advanced params; parse as basic.
 
 5. Advanced Options — density + aggregate state override:
+
 - Input: `urlv=1&particle=1&material=3&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=both&agg_state=condensed&density=8.99e-5`
 - Canonical: same (all params in canonical order; both at non-default values so neither omitted).
 
 6. Advanced Options — lin-lin scale + spline method:
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=lin-lin&interp_method=spline`
 - Canonical: same.
 
 7. Advanced Options — MSTAR mode, non-default:
+
 - Input: `urlv=1&particle=1&material=276&programs=101&energies=100&eunit=MeV&mode=advanced&qfocus=both&mstar_mode=c`
 - Canonical: same.
 
 8. Advanced Options — default values are omitted:
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&interp_scale=log-log&mstar_mode=b`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: both params equal their defaults → omitted in canonical output.
 
 9. Advanced Options in basic mode — silently dropped:
+
 - Input: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&density=1.2&agg_state=condensed`
 - Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
 - Note: no `mode=advanced` → Advanced Options params stripped.
 
 10. Advanced Options — invalid density silently ignored:
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&density=-1`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: negative density invalid → treated as absent.
 
 11. Advanced Options — `agg_state` equals material built-in → no override:
+
 - Input: `urlv=1&particle=1&material=3&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&agg_state=gas`
   (material 3 is a gas by default)
 - Canonical: `urlv=1&particle=1&material=3&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: `agg_state=gas` matches built-in → no override active → param omitted.
 
 12. Range tab (imode=csda), mixed units, iunit=cm (default — omitted):
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm&iunit=cm`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm`
 - Note: `iunit=cm` equals the default for `imode=csda` (non-gas material) → omitted.
   Per-value suffixes are retained; all are canonical `length-unit-token` values.
 
 13. Range tab (imode=csda), no suffixes, non-default master unit:
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718,1.5&iunit=mm`
 - Canonical: same (unchanged; `iunit=mm` is non-default so it is emitted).
 
 14. Inverse STP tab (imode=stp), non-gas material, iunit=kev-um (default — omitted):
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00`
 - Note: `iunit=kev-um` equals the default for `imode=stp` non-gas → omitted.
 
 15. Inverse params in basic mode — silently dropped:
+
 - Input: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&imode=csda&ivalues=7.718&iunit=cm`
 - Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
 - Note: no `mode=advanced` → inverse params stripped.
 
 16. `ivalues` without `imode` — silently ignored:
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&ivalues=7.718`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: `ivalues` without `imode` → dropped.
 
 17. Invalid `imode` value — silently ignored (Forward tab loads):
+
 - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=foo&ivalues=7.718`
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
 - Note: `imode=foo` is not a valid `imode-token` → dropped; `ivalues` without `imode` also dropped.
 
 18. Custom compound — PMMA, condensed (phase omitted), no iValue:
+
 - Input: `urlv=1&particle=1&material=custom&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
 - Canonical: same (all params in canonical order; `mat_phase` omitted because condensed is default; `mat_ival` omitted because absent).
 - Note: elements in ascending Z (H=1, C=6, O=8) ✓.
 
 19. Custom compound — LiF pellets, condensed (explicitly specified), with iValue:
+
 - Input: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94.0&mat_phase=condensed`
 - Canonical: `urlv=1&particle=2&material=custom&programs=101&energies=5&eunit=MeV&mode=advanced&qfocus=both&mat_name=LiF%20pellet&mat_density=2.2&mat_elements=3:1,9:1&mat_ival=94`
 - Note: `mat_phase=condensed` was explicitly provided in input, but canonicalization omits it because condensed is the default phase (§4 step 9e).
 - Note: elements in ascending Z (Li=3, F=9) ✓; `mat_ival=94` (ECMAScript drops trailing .0).
 
 20. Custom compound — `mat_*` params in basic mode — silently dropped:
+
 - Input: `urlv=1&particle=1&material=custom&program=auto&energies=100&eunit=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
 - Canonical: `urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
 - Note: no `mode=advanced` → `material=custom` and `mat_*` params silently dropped; material defaults to liquid water (276).
 
 21. Custom compound — `mat_name` missing → fall back:
+
 - Input: `urlv=1&particle=1&material=custom&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&mat_density=1.2&mat_elements=1:8,6:5,8:2`
 - Result: `mat_name` absent → fall back to default material (276); show warning banner.
 - Canonical: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both`
@@ -672,6 +717,7 @@ Normalization rules:
 ## 6. Implementation Guidance
 
 Recommended architecture:
+
 - `parseQuery(raw: string): ParsedTokens` (ABNF-equivalent parser)
 - `resolveState(tokens, route, services): ResolvedState` (semantic pass)
 - `canonicalize(state): string` (single canonical URL writer)
@@ -686,7 +732,7 @@ Validation should be deterministic and side-effect free.
 - Primary product behavior: [`shareable-urls.md`](shareable-urls.md)
 - Multi-program semantics: [`multi-program.md`](multi-program.md)
 - Energy units and conversion: [`unit-handling.md`](unit-handling.md)
-- Custom compounds (mat_* params, §6 URL contract): [`custom-compounds.md`](custom-compounds.md)
+- Custom compounds (mat\_\* params, §6 URL contract): [`custom-compounds.md`](custom-compounds.md)
 - Plot series semantics: [`plot.md`](plot.md)
 - Entity compatibility rules: [`entity-selection.md`](entity-selection.md)
 - Type and ID source of truth: [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md)

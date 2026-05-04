@@ -31,6 +31,7 @@ Identified three high-risk architecture assumptions that warrant prototyping:
    This is the most fundamental assumption and has not been tested.
 
 Created `docs/11-prototyping-spikes.md` with:
+
 - Self-contained spike specifications that an agent can execute without
   human intervention
 - Exact file contents and shell commands for each spike
@@ -39,6 +40,7 @@ Created `docs/11-prototyping-spikes.md` with:
 - Recommended execution order (fastest/most fundamental first)
 
 Updated cross-references:
+
 - `docs/00-redesign-plan.md` — inserted Stage 2.5 between Stage 2 and Stage 3
   with a gate rule
 - `docs/progress/stage-2.md` — added Stage 2.5 section with spike table
@@ -47,6 +49,7 @@ Updated cross-references:
 ## Tasks
 
 ### Prototyping spikes specification
+
 - **Status**: completed
 - **Stage**: 2.5 (new)
 - **Files changed**:

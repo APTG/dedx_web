@@ -68,6 +68,7 @@ clean.
 ## Tasks
 
 ### Make plain and suffixed rows consistent on particle switch
+
 - **Status:** completed
 - **Stage:** 5 (calculator)
 - **Files changed:**

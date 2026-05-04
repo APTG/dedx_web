@@ -24,6 +24,7 @@
 Create from `master` before starting. Naming per `docs/00-redesign-plan.md §4.2`.
 
 Read at session start (in order):
+
 1. `AGENTS.md` — stack, Svelte 5 rules, build commands, AI logging
 2. `docs/00-redesign-plan.md` — Stage 6 status and multi-tool workflow
 3. `docs/04-feature-specs/calculator.md` (Final v8) — the Calculator spec;
@@ -35,6 +36,7 @@ Read at session start (in order):
    drive this session
 
 Key source files:
+
 - Layout: `src/routes/+layout.svelte`
 - Calculator page: `src/routes/calculator/+page.svelte`
 - Calculator state: `src/lib/state/calculator.svelte.ts`
@@ -51,6 +53,7 @@ Key source files:
 - UI state (wasmReady, wasmError, isAdvancedMode): `src/lib/state/ui.svelte.ts`
 
 Test files:
+
 - `src/tests/unit/url-sync.test.ts` ← delete target
 - `src/tests/unit/energy-input-format.test.ts` ← delete target (after folding)
 - `src/tests/unit/unit-conversions.test.ts` ← receives folded tests
@@ -61,11 +64,13 @@ Test files:
 - `tests/e2e/layout.spec.ts` ← reference for layout E2E
 
 Vendor library reference docs (available offline, no web access needed):
+
 - shadcn-svelte component registry: `vendor/shadcn-svelte/packages/registry/`
 - Bits UI headless primitives: `vendor/bits-ui/packages/bits-ui/src/lib/bits/`
 - Svelte 5 runes docs: `vendor/svelte/documentation/docs/02-runes/`
 
 Run tests:
+
 ```sh
 pnpm test                        # Vitest unit + integration tests (uses WASM mock)
 pnpm exec playwright test        # E2E tests (needs static/wasm/ — see AGENTS.md)
@@ -81,6 +86,7 @@ At session start, create `docs/ai-logs/2026-04-28-stage6-calculator-basic.md`
 using the session narrative template from `.github/copilot-instructions.md`.
 
 After **each task** that changes code:
+
 1. Add or update a row in `CHANGELOG-AI.md` (prepend to top of table body).
 2. Add a `### Prompt N` section to the session log with what was done.
 3. Ensure `docs/ai-logs/README.md` has a one-line pointer to the new log file.
@@ -200,9 +206,7 @@ Add a test block to `tests/e2e/calculator.spec.ts`:
 
 ```typescript
 test.describe("WASM calculation produces real values", () => {
-  test("100 MeV proton in Water (PSTAR) shows non-zero STP and range", async ({
-    page,
-  }) => {
+  test("100 MeV proton in Water (PSTAR) shows non-zero STP and range", async ({ page }) => {
     await page.goto("/calculator");
     // Wait for WASM to load and the calculator to become ready
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
@@ -482,12 +486,14 @@ mv src/lib/state/energy-input.svelte.ts src/lib/state/energy-rows.svelte.ts
 ```
 
 Find every importer and update the path:
+
 ```sh
 grep -rn "energy-input.svelte" src/ --include="*.ts" --include="*.svelte"
 ```
 
 Update each `from "$lib/state/energy-input.svelte"` and `from "./energy-input.svelte"` to
 use `energy-rows.svelte` instead. Key files to update:
+
 - `src/lib/state/calculator.svelte.ts` (line 1)
 - `src/tests/unit/energy-input-state.test.ts` (import at top)
 
@@ -498,6 +504,7 @@ pnpm lint && pnpm test
 ```
 
 All tests must be green. Commit:
+
 ```
 chore: delete dead url-sync.ts, rename energy-input→energy-rows, fold format test
 ```
@@ -563,6 +570,7 @@ pnpm lint && pnpm test
 ```
 
 All tests green. Commit:
+
 ```
 refactor(units): extract canonical SI prefix table to energy-units.ts
 ```
@@ -584,19 +592,25 @@ Use Svelte Testing Library to render `EntitySelectionComboboxes` with a mock
 
 ```typescript
 it("shows 'gas' when selectedMaterial.isGasByDefault is true", async () => {
-  const mockState = createMockState({ selectedMaterial: { id: 1, name: "Air", isGasByDefault: true, density: 0.00129 } });
+  const mockState = createMockState({
+    selectedMaterial: { id: 1, name: "Air", isGasByDefault: true, density: 0.00129 },
+  });
   const { getByText } = render(EntitySelectionComboboxes, { props: { state: mockState } });
   expect(getByText("gas")).toBeInTheDocument();
 });
 
 it("shows 'liquid' when material name contains 'liquid'", async () => {
-  const mockState = createMockState({ selectedMaterial: { id: 276, name: "Water, Liquid", isGasByDefault: false, density: 1.0 } });
+  const mockState = createMockState({
+    selectedMaterial: { id: 276, name: "Water, Liquid", isGasByDefault: false, density: 1.0 },
+  });
   const { getByText } = render(EntitySelectionComboboxes, { props: { state: mockState } });
   expect(getByText("liquid")).toBeInTheDocument();
 });
 
 it("shows 'solid' for non-gas materials without 'liquid' in name", async () => {
-  const mockState = createMockState({ selectedMaterial: { id: 10, name: "Aluminum", isGasByDefault: false, density: 2.7 } });
+  const mockState = createMockState({
+    selectedMaterial: { id: 10, name: "Aluminum", isGasByDefault: false, density: 2.7 },
+  });
   const { getByText } = render(EntitySelectionComboboxes, { props: { state: mockState } });
   expect(getByText("solid")).toBeInTheDocument();
 });
@@ -692,6 +706,7 @@ pnpm lint && pnpm test
 ```
 
 All tests green. Commit:
+
 ```
 feat(calculator): add material phase badge, resolved program label, energy range hint
 ```
@@ -718,7 +733,7 @@ it("resetAll() resets rows to a single pre-filled '100' row", () => {
   calcState.updateRowText(0, "500");
   calcState.addRow();
   calcState.resetAll();
-  expect(calcState.rows.filter(r => r.status !== "empty")).toHaveLength(1);
+  expect(calcState.rows.filter((r) => r.status !== "empty")).toHaveLength(1);
   expect(calcState.rows[0].rawInput).toBe("100");
 });
 
@@ -732,11 +747,13 @@ it("resetAll() resets masterUnit to 'MeV'", () => {
 ### Step 4b — add `resetAll()` to `CalculatorState` interface and implementation
 
 In `src/lib/state/calculator.svelte.ts`, add to the interface:
+
 ```typescript
 resetAll(): void;
 ```
 
 Implement it:
+
 ```typescript
 resetAll() {
   entitySelection.resetAll();
@@ -747,6 +764,7 @@ resetAll() {
 
 If `inputState.resetRows()` does not exist, add it to
 `src/lib/state/energy-rows.svelte.ts`:
+
 ```typescript
 resetRows(initial: { text: string }[]): void;
 ```
@@ -757,11 +775,13 @@ unique `id`), reset `masterUnit` to `"MeV"`.
 ### Step 4c — add `hasLargeInput` derived value
 
 In `src/lib/state/energy-rows.svelte.ts`, expose:
+
 ```typescript
 hasLargeInput: boolean; // true when filled rows exceed 200
 ```
 
 Implement as:
+
 ```typescript
 hasLargeInput: $derived(rows.filter(r => r.text.trim() !== "").length > 200),
 ```
@@ -771,11 +791,12 @@ Expose it from `CalculatorState` as well (delegate to `inputState.hasLargeInput`
 ### Step 4d — add paste > 200 warning in `calculator/+page.svelte`
 
 Below the result table card and the energy range label, add:
+
 ```svelte
 {#if calcState?.hasLargeInput}
   <p class="text-sm text-amber-600" role="status">
-    Large input ({calcState.rows.filter(r => r.status !== 'empty').length} values).
-    Calculation may be slow.
+    Large input ({calcState.rows.filter((r) => r.status !== "empty").length} values). Calculation may
+    be slow.
   </p>
 {/if}
 ```
@@ -804,6 +825,7 @@ Import `Button` from `$lib/components/ui/button`.
 ### Step 4f — E2E test for large-input warning
 
 In `tests/e2e/calculator.spec.ts`, add:
+
 ```typescript
 test("paste > 200 values shows large-input warning", async ({ page }) => {
   await page.goto("/calculator");
@@ -813,7 +835,7 @@ test("paste > 200 values shows large-input warning", async ({ page }) => {
   const lines = Array.from({ length: 201 }, (_, i) => String(i + 1)).join("\n");
   await page.getByRole("textbox").first().fill(lines);
   // ... or use clipboard paste if fill creates only one row
-  
+
   await expect(page.getByRole("status", { name: /large input/i })).toBeVisible({ timeout: 2000 });
 });
 ```
@@ -827,6 +849,7 @@ pnpm lint && pnpm test
 ```
 
 Commit:
+
 ```
 feat(calculator): add restore-defaults button, large-input warning, resetAll()
 ```
@@ -899,12 +922,8 @@ the left side already has logo + nav links. Add the right-side toolbar:
 
 <!-- Inside the nav, right side (sibling to the left flex group): -->
 <div class="flex items-center gap-2">
-  <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
-    Export PDF
-  </Button>
-  <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">
-    Export CSV ↓
-  </Button>
+  <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">Export PDF</Button>
+  <Button variant="outline" size="sm" disabled class="hidden sm:inline-flex">Export CSV ↓</Button>
   <Button variant="outline" size="sm" onclick={shareUrl}>
     {#if copied}
       <span aria-live="polite">Copied!</span>
@@ -916,6 +935,7 @@ the left side already has logo + nav links. Add the right-side toolbar:
 ```
 
 Key decisions:
+
 - **Export PDF and Export CSV are always `disabled`** in this stage (Stage 6.7 wires the actual export). They are `hidden sm:inline-flex` — hidden on mobile to avoid nav overflow (M1).
 - **Share URL** is always visible, even on mobile. It copies `window.location.href` to clipboard.
 - The `copied` feedback uses an `aria-live` span so screen readers announce it.
@@ -929,7 +949,8 @@ width may exceed 375 px on mobile. Apply:
 ```svelte
 <!-- On the outer flex row: add flex-wrap or min-w-0 to left side -->
 <div class="flex h-14 items-center justify-between gap-2">
-  <div class="flex items-center gap-3 min-w-0">  <!-- was gap-6; add min-w-0 -->
+  <div class="flex items-center gap-3 min-w-0">
+    <!-- was gap-6; add min-w-0 -->
     <!-- logo + nav links -->
   </div>
   <div class="flex items-center gap-2 shrink-0">
@@ -948,6 +969,7 @@ pnpm lint && pnpm test && pnpm exec playwright test tests/e2e/toolbar.spec.ts
 ```
 
 All green. Commit:
+
 ```
 feat(layout): add app toolbar with Share URL and disabled Export PDF/CSV buttons
 ```
@@ -1030,7 +1052,9 @@ describe("encodeCalculatorUrl", () => {
 
 describe("decodeCalculatorUrl", () => {
   it("decodes basic params", () => {
-    const params = new URLSearchParams("particle=1&material=276&program=auto&energies=100,200&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&material=276&program=auto&energies=100,200&eunit=MeV",
+    );
     const s = decodeCalculatorUrl(params);
     expect(s.particleId).toBe(1);
     expect(s.materialId).toBe(276);
@@ -1083,7 +1107,16 @@ Model this on `src/lib/utils/plot-url.ts`:
 import type { EnergyUnit } from "$lib/wasm/types";
 
 const VALID_ENERGY_UNITS: ReadonlySet<string> = new Set([
-  "MeV", "MeV/nucl", "MeV/u", "keV", "GeV", "GeV/nucl", "GeV/u", "TeV", "TeV/nucl", "TeV/u",
+  "MeV",
+  "MeV/nucl",
+  "MeV/u",
+  "keV",
+  "GeV",
+  "GeV/nucl",
+  "GeV/u",
+  "TeV",
+  "TeV/nucl",
+  "TeV/u",
 ]);
 
 export interface CalculatorUrlRow {
@@ -1095,7 +1128,7 @@ export interface CalculatorUrlRow {
 export interface CalculatorUrlState {
   particleId: number | null;
   materialId: number | null;
-  programId: number | null;  // null = auto-select
+  programId: number | null; // null = auto-select
   rows: CalculatorUrlRow[];
   masterUnit: EnergyUnit;
 }
@@ -1106,13 +1139,13 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   if (state.materialId !== null) params.set("material", String(state.materialId));
   params.set("program", state.programId === null ? "auto" : String(state.programId));
 
-  const nonEmpty = state.rows.filter(r => r.rawInput.trim() !== "");
+  const nonEmpty = state.rows.filter((r) => r.rawInput.trim() !== "");
   if (nonEmpty.length > 0) {
-    const encoded = nonEmpty.map(r =>
-      r.unitFromSuffix && r.unit !== state.masterUnit
-        ? `${r.rawInput}:${r.unit}`
-        : r.rawInput
-    ).join(",");
+    const encoded = nonEmpty
+      .map((r) =>
+        r.unitFromSuffix && r.unit !== state.masterUnit ? `${r.rawInput}:${r.unit}` : r.rawInput,
+      )
+      .join(",");
     params.set("energies", encoded);
   }
   params.set("eunit", state.masterUnit);
@@ -1126,10 +1159,9 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     return isFinite(n) && n > 0 ? n : null;
   };
 
-  const masterUnit: EnergyUnit =
-    VALID_ENERGY_UNITS.has(params.get("eunit") ?? "")
-      ? (params.get("eunit") as EnergyUnit)
-      : "MeV";
+  const masterUnit: EnergyUnit = VALID_ENERGY_UNITS.has(params.get("eunit") ?? "")
+    ? (params.get("eunit") as EnergyUnit)
+    : "MeV";
 
   const rows: CalculatorUrlRow[] = [];
   const energiesParam = params.get("energies");
@@ -1233,7 +1265,7 @@ read phase is complete.
 test("calculator state is encoded in URL after loading", async ({ page }) => {
   await page.goto("/calculator");
   await page.waitForFunction(() => window.location.search.includes("particle="));
-  expect(page.url()).toContain("particle=1");   // proton default
+  expect(page.url()).toContain("particle=1"); // proton default
   expect(page.url()).toContain("material=276"); // water default
 });
 
@@ -1262,6 +1294,7 @@ pnpm lint && pnpm test && pnpm exec playwright test tests/e2e/calculator-url.spe
 ```
 
 Commit:
+
 ```
 feat(calculator): implement URL state sync per shareable-urls spec (calculator-url.ts)
 ```
@@ -1276,11 +1309,13 @@ These three items were flagged as not blocking Stage 6 start but should land ear
 ### Step 7a — loading skeleton (replace "Loading..." text)
 
 The shadcn-svelte `Skeleton` component may not be installed yet. Check:
+
 ```sh
 ls src/lib/components/ui/skeleton* 2>/dev/null || echo "not installed"
 ```
 
 If missing, install:
+
 ```sh
 pnpm dlx shadcn-svelte@latest add skeleton
 ```
@@ -1343,26 +1378,29 @@ because the previously-chosen program doesn't support the new particle, the user
 sees nothing. Fix this:
 
 **Add to `EntitySelectionState` interface** in `entity-selection.svelte.ts`:
+
 ```typescript
 lastAutoFallbackMessage: string | null;
 clearAutoFallbackMessage(): void;
 ```
 
 **Inside `createEntitySelectionState()`**, detect the program reset:
+
 ```typescript
 let lastAutoFallbackMessage = $state<string | null>(null);
 
 // Inside selectParticle(), after the logic that resets program to auto:
 // (find the place where selectedProgram is reset to AUTO_SELECT_PROGRAM)
 // Add:
-if (selectedProgram.id !== -1 && !newAvailablePrograms.some(p => p.id === selectedProgram.id)) {
+if (selectedProgram.id !== -1 && !newAvailablePrograms.some((p) => p.id === selectedProgram.id)) {
   // Program was reset
   lastAutoFallbackMessage = `Program changed to Auto-select — "${selectedProgram.name}" does not support the selected particle.`;
-  selectedProgram = AUTO_SELECT_PROGRAM;  // existing reset logic
+  selectedProgram = AUTO_SELECT_PROGRAM; // existing reset logic
 }
 ```
 
 Expose in return object:
+
 ```typescript
 lastAutoFallbackMessage: {
   get value() { return lastAutoFallbackMessage; }
@@ -1391,6 +1429,7 @@ Also wire it in `src/lib/components/selection-live-region.svelte` so screen
 readers get the announcement via the existing live region infrastructure.
 
 **Unit tests** for the new methods:
+
 ```typescript
 // In entity-selection-state.test.ts:
 it("selectParticle that forces program reset sets lastAutoFallbackMessage", ...);
@@ -1404,6 +1443,7 @@ pnpm lint && pnpm test
 ```
 
 Commit:
+
 ```
 feat(calculator): loading skeleton, retry CTA, auto-fallback notification for entity selection
 ```
@@ -1418,11 +1458,13 @@ Pure doc edits — no tests, no lint changes, just markdown files.
 ### Step 8a — I1: cross-check stubs
 
 At the top of `docs/04-feature-specs/shareable-urls.md` (after the status header):
+
 ```markdown
 > **Cross-check:** If this file disagrees with `shareable-urls-formal.md`, the formal contract wins.
 ```
 
 At the top of `docs/04-feature-specs/shareable-urls-formal.md`:
+
 ```markdown
 > **Cross-check:** If this file disagrees with `shareable-urls.md`, this formal contract wins.
 ```
@@ -1431,12 +1473,14 @@ At the top of `docs/04-feature-specs/shareable-urls-formal.md`:
 
 In `docs/04-feature-specs/entity-selection.md`, find the compact-mode ASCII
 wireframe section (§Compact Mode). Replace the ASCII art with:
+
 ```markdown
 > **Wireframe:** see `calculator.md §Page Layout Overview` — the Calculator
 > spec owns the compact-mode wireframe. Anything here is a derived view.
 ```
 
 In `docs/05-ui-wireframes.md`, replace any duplicated calculator wireframe with:
+
 ```markdown
 **Calculator page:** See [`docs/04-feature-specs/calculator.md §Page Layout Overview`](04-feature-specs/calculator.md).
 ```
@@ -1444,6 +1488,7 @@ In `docs/05-ui-wireframes.md`, replace any duplicated calculator wireframe with:
 ### Step 8c — I4: STP conversion note in wasm-api-contract.md
 
 Find the `convertStpUnits` entry in `docs/06-wasm-api-contract.md` and add:
+
 ```markdown
 > **Implementation note:** `convertStpUnits` is implemented in TypeScript
 > (`src/lib/utils/unit-conversions.ts`), not in C. The WASM layer returns
@@ -1454,6 +1499,7 @@ Find the `convertStpUnits` entry in `docs/06-wasm-api-contract.md` and add:
 ### Step 8d — I5: historical narrative disclaimers
 
 Add at the top of `docs/ux-reviews/README.md`:
+
 ```markdown
 > **Note:** These are historical, point-in-time reviews. For current
 > intended behavior, the specs under `docs/04-feature-specs/` are
@@ -1461,6 +1507,7 @@ Add at the top of `docs/ux-reviews/README.md`:
 ```
 
 Add an equivalent note to `docs/ai-logs/README.md`:
+
 ```markdown
 > **Note:** These session logs are historical records. For current intended
 > behavior, see `docs/04-feature-specs/`. For current implementation, see
@@ -1474,6 +1521,7 @@ pnpm lint  # docs-only change; should trivially pass
 ```
 
 Commit:
+
 ```
 docs: grooming — shareable-urls cross-check, wireframe consolidation, STP implementation note, historical disclaimers
 ```
@@ -1494,6 +1542,7 @@ After all 8 tasks:
 - [ ] `docs/ai-logs/README.md` has a one-line pointer to the new log file
 
 **Feature verification:**
+
 - [ ] `src/lib/state/url-sync.ts` does not exist (deleted)
 - [ ] `src/tests/unit/url-sync.test.ts` does not exist (deleted)
 - [ ] `src/lib/state/energy-input.svelte.ts` does not exist (renamed to `energy-rows.svelte.ts`)
@@ -1525,13 +1574,13 @@ After all 8 tasks:
 
 ## Notes on Svelte 5 (CRITICAL — Qwen has seen more Svelte 4 data)
 
-| **Use** | **Never use** |
-|---------|---------------|
-| `$state`, `$derived`, `$effect` | `export let`, `$:` |
+| **Use**                                  | **Never use**                        |
+| ---------------------------------------- | ------------------------------------ |
+| `$state`, `$derived`, `$effect`          | `export let`, `$:`                   |
 | `$effect` for lifecycle and side-effects | `onMount`, `onDestroy` from `svelte` |
-| `onclick={handler}` | `on:click={handler}` |
-| Reassign to mutate `$state` arrays | `.push()`, `.splice()` |
-| `$props()` for component props | destructuring `export let` |
+| `onclick={handler}`                      | `on:click={handler}`                 |
+| Reassign to mutate `$state` arrays       | `.push()`, `.splice()`               |
+| `$props()` for component props           | destructuring `export let`           |
 
 After editing any `.svelte` file, call `svelte-autofixer` via the Svelte MCP.
 Offline fallback: `vendor/svelte/documentation/docs/02-runes/` and

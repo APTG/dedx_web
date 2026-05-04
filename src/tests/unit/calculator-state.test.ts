@@ -1,10 +1,14 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from '$lib/wasm/__mocks__/libdedx';
-import { buildCompatibilityMatrix } from '$lib/state/compatibility-matrix';
-import { createEntitySelectionState } from '$lib/state/entity-selection.svelte';
-import { createCalculatorState, formatStpValue, formatRangeValue } from '$lib/state/calculator.svelte';
+import { describe, it, expect, beforeEach, vi } from "vitest";
+import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from "$lib/wasm/__mocks__/libdedx";
+import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
+import {
+  createCalculatorState,
+  formatStpValue,
+  formatRangeValue,
+} from "$lib/state/calculator.svelte";
 
-describe('CalculatorState', () => {
+describe("CalculatorState", () => {
   let service: LibdedxServiceImpl;
   let entitySelection: ReturnType<typeof createEntitySelectionState>;
   let calcState: ReturnType<typeof createCalculatorState>;
@@ -16,18 +20,18 @@ describe('CalculatorState', () => {
     calcState = createCalculatorState(entitySelection, service);
   });
 
-  it('initializes with one pre-filled row and correct stpDisplayUnit for water', () => {
+  it("initializes with one pre-filled row and correct stpDisplayUnit for water", () => {
     expect(calcState.rows).toHaveLength(1);
-    expect(calcState.rows[0].rawInput).toBe('100');
-    expect(calcState.stpDisplayUnit).toBe('keV/µm');
+    expect(calcState.rows[0].rawInput).toBe("100");
+    expect(calcState.stpDisplayUnit).toBe("keV/µm");
   });
 
-  it('has null results before calculation is triggered', () => {
+  it("has null results before calculation is triggered", () => {
     expect(calcState.rows[0].stoppingPower).toBeNull();
     expect(calcState.rows[0].csdaRangeCm).toBeNull();
   });
 
-  it('calculates results after triggering', async () => {
+  it("calculates results after triggering", async () => {
     expect(entitySelection.isComplete).toBe(true);
     await calcState.triggerCalculation();
     calcState.flushCalculation();
@@ -37,16 +41,16 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].csdaRangeCm).not.toBeNull();
   });
 
-  it('handles invalid input with appropriate status', () => {
-    calcState.updateRowText(0, 'abc');
-    expect(calcState.rows[0].status).toBe('invalid');
+  it("handles invalid input with appropriate status", () => {
+    calcState.updateRowText(0, "abc");
+    expect(calcState.rows[0].status).toBe("invalid");
     expect(calcState.rows[0].normalizedMevNucl).toBeNull();
   });
 
-  it('excludes invalid rows from calculation', async () => {
-    calcState.updateRowText(0, 'abc');
-    calcState.handleBlur(0);  // Creates new row
-    calcState.updateRowText(1, '200');
+  it("excludes invalid rows from calculation", async () => {
+    calcState.updateRowText(0, "abc");
+    calcState.handleBlur(0); // Creates new row
+    calcState.updateRowText(1, "200");
 
     await calcState.triggerCalculation();
     calcState.flushCalculation();
@@ -56,22 +60,22 @@ describe('CalculatorState', () => {
     expect(calcState.rows[1].stoppingPower).not.toBeNull();
   });
 
-  it('switches stpDisplayUnit to MeV·cm²/g for gas material (air)', () => {
-    const airMaterial = entitySelection.availableMaterials.find(m => m.name === 'Air');
+  it("switches stpDisplayUnit to MeV·cm²/g for gas material (air)", () => {
+    const airMaterial = entitySelection.availableMaterials.find((m) => m.name === "Air");
     expect(airMaterial).toBeDefined();
     entitySelection.selectMaterial(airMaterial!.id);
-    expect(calcState.stpDisplayUnit).toBe('MeV·cm²/g');
+    expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
   });
 
-  it('handles empty rows correctly', () => {
-    calcState.updateRowText(0, '');
-    expect(calcState.rows[0].status).toBe('empty');
+  it("handles empty rows correctly", () => {
+    calcState.updateRowText(0, "");
+    expect(calcState.rows[0].status).toBe("empty");
     expect(calcState.rows[0].normalizedMevNucl).toBeNull();
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 
-  it('clears results when entity selection is incomplete', async () => {
-    calcState.updateRowText(0, '100');
+  it("clears results when entity selection is incomplete", async () => {
+    calcState.updateRowText(0, "100");
     await calcState.triggerCalculation();
     calcState.flushCalculation();
     calcState.flushCalculation();
@@ -84,15 +88,15 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 
-  it('handles multiple rows with different values', async () => {
+  it("handles multiple rows with different values", async () => {
     // Initial state has 1 row with "100"
-    calcState.updateRowText(0, '100');  // Update first row
-    calcState.handleBlur(0);  // Triggers adding new row
+    calcState.updateRowText(0, "100"); // Update first row
+    calcState.handleBlur(0); // Triggers adding new row
 
-    calcState.updateRowText(1, '200');  // Update second row
-    calcState.handleBlur(1);  // Triggers adding new row
+    calcState.updateRowText(1, "200"); // Update second row
+    calcState.handleBlur(1); // Triggers adding new row
 
-    calcState.updateRowText(2, '300');  // Update third row
+    calcState.updateRowText(2, "300"); // Update third row
     // Last row is the always-empty-row
 
     await calcState.triggerCalculation();
@@ -104,39 +108,39 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
     expect(calcState.rows[1].stoppingPower).not.toBeNull();
     expect(calcState.rows[2].stoppingPower).not.toBeNull();
-    expect(calcState.rows[3].rawInput).toBe('');
+    expect(calcState.rows[3].rawInput).toBe("");
   });
 
-  it('maintains always-empty-row pattern', () => {
+  it("maintains always-empty-row pattern", () => {
     // Initial state has one row with "100", no empty row yet
     expect(calcState.rows).toHaveLength(1);
-    expect(calcState.rows[0].rawInput).toBe('100');
-    
+    expect(calcState.rows[0].rawInput).toBe("100");
+
     // Typing in the last row creates a new empty row
-    calcState.updateRowText(0, '50');
-    
-    expect(calcState.rows[calcState.rows.length - 1].rawInput).toBe('');
+    calcState.updateRowText(0, "50");
+
+    expect(calcState.rows[calcState.rows.length - 1].rawInput).toBe("");
     expect(calcState.rows).toHaveLength(2);
   });
 
-  it('updates validation summary correctly', () => {
-    // Initial: 1 valid row with "100" 
+  it("updates validation summary correctly", () => {
+    // Initial: 1 valid row with "100"
     expect(calcState.validationSummary.total).toBe(1);
     expect(calcState.validationSummary.valid).toBe(1);
-    
+
     // Make the first row invalid - this also triggers adding a new row
-    calcState.updateRowText(0, 'abc');
-    
+    calcState.updateRowText(0, "abc");
+
     // Now we have 2 rows: 1 invalid ("abc") + 1 empty
     expect(calcState.validationSummary.total).toBe(2);
     expect(calcState.validationSummary.invalid).toBe(1);
     expect(calcState.validationSummary.valid).toBe(0);
   });
 
-  it('isCalculating is set during calculation', async () => {
+  it("isCalculating is set during calculation", async () => {
     expect(calcState.isCalculating).toBe(false);
 
-    vi.spyOn(service, 'calculate').mockImplementation((...args) => {
+    vi.spyOn(service, "calculate").mockImplementation((...args) => {
       void args;
       expect(calcState.isCalculating).toBe(true);
       return { energies: [100], stoppingPowers: [1.0], csdaRanges: [0.1] };
@@ -148,21 +152,21 @@ describe('CalculatorState', () => {
     vi.restoreAllMocks();
   });
 
-  it('handles MeV/nucl unit for heavy ions', async () => {
-    const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+  it("handles MeV/nucl unit for heavy ions", async () => {
+    const carbon = entitySelection.availableParticles.find((p) => p.name === "Carbon");
     expect(carbon).toBeDefined();
     entitySelection.selectParticle(carbon!.id);
-    expect(calcState.masterUnit).toBe('MeV');
+    expect(calcState.masterUnit).toBe("MeV");
 
-    calcState.updateRowText(0, '120');
+    calcState.updateRowText(0, "120");
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
   });
 
-  it('clears results when explicitly requested', async () => {
-    calcState.updateRowText(0, '100');
+  it("clears results when explicitly requested", async () => {
+    calcState.updateRowText(0, "100");
     await calcState.triggerCalculation();
     calcState.flushCalculation();
 
@@ -173,15 +177,15 @@ describe('CalculatorState', () => {
     expect(calcState.rows[0].stoppingPower).toBeNull();
   });
 
-  it('handles out-of-range energy values', () => {
-    calcState.updateRowText(0, '0');
-    expect(calcState.rows[0].status).toBe('invalid');
+  it("handles out-of-range energy values", () => {
+    calcState.updateRowText(0, "0");
+    expect(calcState.rows[0].status).toBe("invalid");
   });
 
-  it('logs warning for subnormal WASM stopping power values', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
-    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+  it("logs warning for subnormal WASM stopping power values", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.spyOn(service, "calculate").mockImplementation(() => ({
       energies: [100],
       stoppingPowers: [1e-320],
       csdaRanges: [0.1],
@@ -191,7 +195,7 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[dedx] subnormal/invalid WASM output (stopping power)',
+      "[dedx] subnormal/invalid WASM output (stopping power)",
       expect.objectContaining({
         programId: expect.any(Number),
         particleId: expect.any(Number),
@@ -204,10 +208,10 @@ describe('CalculatorState', () => {
     warnSpy.mockRestore();
   });
 
-  it('logs warning for subnormal WASM CSDA range values', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
-    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+  it("logs warning for subnormal WASM CSDA range values", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.spyOn(service, "calculate").mockImplementation(() => ({
       energies: [100],
       stoppingPowers: [1.0],
       csdaRanges: [1e-320],
@@ -217,7 +221,7 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[dedx] subnormal/invalid WASM output (CSDA range)',
+      "[dedx] subnormal/invalid WASM output (CSDA range)",
       expect.objectContaining({
         programId: expect.any(Number),
         particleId: expect.any(Number),
@@ -230,10 +234,10 @@ describe('CalculatorState', () => {
     warnSpy.mockRestore();
   });
 
-  it('logs warning for NaN WASM values', async () => {
-    const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
-    
-    vi.spyOn(service, 'calculate').mockImplementation(() => ({
+  it("logs warning for NaN WASM values", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.spyOn(service, "calculate").mockImplementation(() => ({
       energies: [100],
       stoppingPowers: [NaN],
       csdaRanges: [0.1],
@@ -243,7 +247,7 @@ describe('CalculatorState', () => {
     calcState.flushCalculation();
 
     expect(warnSpy).toHaveBeenCalledWith(
-      '[dedx] subnormal/invalid WASM output (stopping power)',
+      "[dedx] subnormal/invalid WASM output (stopping power)",
       expect.objectContaining({
         rawValue: NaN,
       }),
@@ -252,12 +256,12 @@ describe('CalculatorState', () => {
     warnSpy.mockRestore();
   });
 
-  it('stores results by row ID to avoid float key collisions', async () => {
+  it("stores results by row ID to avoid float key collisions", async () => {
     // Mock two consecutive calculate() calls so we can assert that the second
     // result is keyed by row ID — and not by the parsed energy value, which
     // changed only in its trailing decimals. (Returned MeV·cm²/g values are
     // converted to keV/µm for water, so we assert *relative* changes.)
-    vi.spyOn(service, 'calculate')
+    vi.spyOn(service, "calculate")
       .mockImplementationOnce(() => ({
         energies: [100],
         stoppingPowers: [12.3],
@@ -269,7 +273,7 @@ describe('CalculatorState', () => {
         csdaRanges: [0.2],
       }));
 
-    calcState.updateRowText(0, '100');
+    calcState.updateRowText(0, "100");
     const rowId1 = calcState.rows[0].id;
 
     await calcState.triggerCalculation();
@@ -281,7 +285,7 @@ describe('CalculatorState', () => {
 
     // Change the parsed energy by a tiny amount — the row ID stays the same
     // but a float-keyed lookup would now miss the existing result.
-    calcState.updateRowText(0, '100.0000001');
+    calcState.updateRowText(0, "100.0000001");
     expect(calcState.rows[0].id).toBe(rowId1);
     expect(calcState.rows[0].normalizedMevNucl).toBeCloseTo(100.0000001);
 
@@ -298,77 +302,77 @@ describe('CalculatorState', () => {
   });
 
   it('MeV/u input: "12MeV/u" for proton computes normalizedMevNucl ≈ 12.1', () => {
-    calcState.updateRowText(0, '12MeV/u');
+    calcState.updateRowText(0, "12MeV/u");
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
     expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12.1, 0);
   });
 
   it('MeV/nucl input: "12 MeV/nucl" for proton computes normalizedMevNucl = 12', () => {
-    calcState.updateRowText(0, '12 MeV/nucl');
+    calcState.updateRowText(0, "12 MeV/nucl");
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
     expect(calcState.rows[0].normalizedMevNucl!).toBeCloseTo(12, 0);
   });
 
   it('MeV/u input: "100 MeV/u" for Carbon (A=12) computes normalizedMevNucl', async () => {
-    const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+    const carbon = entitySelection.availableParticles.find((p) => p.name === "Carbon");
     expect(carbon).toBeDefined();
     entitySelection.selectParticle(carbon!.id);
-    
-    calcState.updateRowText(0, '100 MeV/u');
+
+    calcState.updateRowText(0, "100 MeV/u");
     await calcState.triggerCalculation();
     calcState.flushCalculation();
-    
+
     expect(calcState.rows[0].normalizedMevNucl).not.toBeNull();
     expect(calcState.rows[0].stoppingPower).not.toBeNull();
   });
 
-  describe('setRowUnit - KE conversion', () => {
+  describe("setRowUnit - KE conversion", () => {
     it('Carbon (A=12), row "12 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "1 MeV/nucl"', () => {
-      const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+      const carbon = entitySelection.availableParticles.find((p) => p.name === "Carbon");
       expect(carbon).toBeDefined();
       entitySelection.selectParticle(carbon!.id);
-      
-      calcState.updateRowText(0, '12 MeV');
-      calcState.setRowUnit(0, 'MeV/nucl');
-      
-      expect(calcState.rows[0].rawInput).toBe('1 MeV/nucl');
+
+      calcState.updateRowText(0, "12 MeV");
+      calcState.setRowUnit(0, "MeV/nucl");
+
+      expect(calcState.rows[0].rawInput).toBe("1 MeV/nucl");
     });
 
     it('Carbon (A=12), row "1 MeV/nucl", setRowUnit(0, "MeV") → row text becomes "12 MeV"', () => {
-      const carbon = entitySelection.availableParticles.find(p => p.name === 'Carbon');
+      const carbon = entitySelection.availableParticles.find((p) => p.name === "Carbon");
       expect(carbon).toBeDefined();
       entitySelection.selectParticle(carbon!.id);
-      
-      calcState.updateRowText(0, '1 MeV/nucl');
-      calcState.setRowUnit(0, 'MeV');
-      
-      expect(calcState.rows[0].rawInput).toBe('12 MeV');
+
+      calcState.updateRowText(0, "1 MeV/nucl");
+      calcState.setRowUnit(0, "MeV");
+
+      expect(calcState.rows[0].rawInput).toBe("12 MeV");
     });
 
     it('Helium (A=4), row "80 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "20 MeV/nucl"', () => {
-      const helium = entitySelection.availableParticles.find(p => p.name === 'Helium');
+      const helium = entitySelection.availableParticles.find((p) => p.name === "Helium");
       expect(helium).toBeDefined();
       entitySelection.selectParticle(helium!.id);
-      
-      calcState.updateRowText(0, '80 MeV');
-      calcState.setRowUnit(0, 'MeV/nucl');
-      
-      expect(calcState.rows[0].rawInput).toBe('20 MeV/nucl');
+
+      calcState.updateRowText(0, "80 MeV");
+      calcState.setRowUnit(0, "MeV/nucl");
+
+      expect(calcState.rows[0].rawInput).toBe("20 MeV/nucl");
     });
 
     it('Proton (A=1), row "100 MeV", setRowUnit(0, "MeV/nucl") → row text becomes "100 MeV/nucl"', () => {
-      const hydrogen = entitySelection.availableParticles.find(p => p.name === 'Hydrogen');
+      const hydrogen = entitySelection.availableParticles.find((p) => p.name === "Hydrogen");
       expect(hydrogen).toBeDefined();
       entitySelection.selectParticle(hydrogen!.id);
-      
-      calcState.updateRowText(0, '100 MeV');
-      calcState.setRowUnit(0, 'MeV/nucl');
-      
-      expect(calcState.rows[0].rawInput).toBe('100 MeV/nucl');
+
+      calcState.updateRowText(0, "100 MeV");
+      calcState.setRowUnit(0, "MeV/nucl");
+
+      expect(calcState.rows[0].rawInput).toBe("100 MeV/nucl");
     });
   });
 
-  describe('KE conservation on particle switch', () => {
+  describe("KE conservation on particle switch", () => {
     it('He (A=4) row "20 MeV/nucl" → switch to proton (A=1): row text → "20 MeV" (E_nucl conserved)', () => {
       const electronService = new MockLibdedxServiceWithElectron();
       const matrix = buildCompatibilityMatrix(electronService);
@@ -376,10 +380,10 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(2);
-      cs.updateRowText(0, '20 MeV/nucl');
+      cs.updateRowText(0, "20 MeV/nucl");
       cs.switchParticle(1);
-      
-      expect(cs.rows[0].rawInput).toBe('20 MeV');
+
+      expect(cs.rows[0].rawInput).toBe("20 MeV");
       expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(20, 0);
     });
 
@@ -390,13 +394,13 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(2);
-      cs.updateRowText(0, '20 MeV/nucl');
-      cs.switchParticle(1);  // → "80 MeV" (A=1, total)
-      cs.switchParticle(2);  // → "80 MeV" (treated as total, not per-nucleon)
-      
+      cs.updateRowText(0, "20 MeV/nucl");
+      cs.switchParticle(1); // → "80 MeV" (A=1, total)
+      cs.switchParticle(2); // → "80 MeV" (treated as total, not per-nucleon)
+
       // Round-trip is lossy: proton "80 MeV" (total) → He "80 MeV" (total), not "20 MeV/nucl".
       // This is expected behavior since proton has no per-nucleon unit display.
-      expect(cs.rows[0].rawInput).toBe('80 MeV');
+      expect(cs.rows[0].rawInput).toBe("80 MeV");
     });
 
     it('He (A=4) row "80 MeV" → switch to proton (A=1): row text → "20 MeV"', () => {
@@ -406,10 +410,10 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(2);
-      cs.updateRowText(0, '80 MeV');
+      cs.updateRowText(0, "80 MeV");
       cs.switchParticle(1);
-      
-      expect(cs.rows[0].rawInput).toBe('20 MeV');
+
+      expect(cs.rows[0].rawInput).toBe("20 MeV");
     });
 
     it('Carbon (A=12) row "120 MeV" → switch to proton: row text → "10 MeV"', () => {
@@ -419,10 +423,10 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(6);
-      cs.updateRowText(0, '120 MeV');
+      cs.updateRowText(0, "120 MeV");
       cs.switchParticle(1);
-      
-      expect(cs.rows[0].rawInput).toBe('10 MeV');
+
+      expect(cs.rows[0].rawInput).toBe("10 MeV");
     });
 
     it('Carbon (A=12) row "10 MeV/nucl" → switch to He (A=4): row text → "10 MeV/nucl"', () => {
@@ -432,10 +436,10 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(6);
-      cs.updateRowText(0, '10 MeV/nucl');
+      cs.updateRowText(0, "10 MeV/nucl");
       cs.switchParticle(2);
-      
-      expect(cs.rows[0].rawInput).toBe('10 MeV/nucl');
+
+      expect(cs.rows[0].rawInput).toBe("10 MeV/nucl");
     });
 
     it('He (A=4) row "20 MeV/nucl" → switch to electron (ID=1001): row text → "80 MeV"', () => {
@@ -445,10 +449,10 @@ describe('CalculatorState', () => {
       const cs = createCalculatorState(es, electronService) as any;
 
       cs.switchParticle(2);
-      cs.updateRowText(0, '20 MeV/nucl');
+      cs.updateRowText(0, "20 MeV/nucl");
       cs.switchParticle(1001);
-      
-      expect(cs.rows[0].rawInput).toBe('80 MeV');
+
+      expect(cs.rows[0].rawInput).toBe("80 MeV");
     });
 
     it('Plain number row "100" (master unit MeV, proton) → switch to Carbon (A=12): row text → "1200 MeV" (E_nucl conserved consistently for plain and suffixed rows)', () => {
@@ -457,7 +461,7 @@ describe('CalculatorState', () => {
       const es = createEntitySelectionState(matrix);
       const cs = createCalculatorState(es, electronService) as any;
 
-      cs.updateRowText(0, '100');
+      cs.updateRowText(0, "100");
       cs.switchParticle(6);
 
       // Plain numbers are interpreted under the active master unit (MeV here)
@@ -465,13 +469,13 @@ describe('CalculatorState', () => {
       // keeps the conservation behaviour predictable: every row plays by the
       // same rule regardless of whether the user typed an explicit suffix.
       // 100 MeV on proton (E_nucl=100) → Carbon (A=12) total = 100 × 12 = 1200 MeV.
-      expect(cs.rows[0].rawInput).toBe('1200 MeV');
+      expect(cs.rows[0].rawInput).toBe("1200 MeV");
       expect(cs.rows[0].normalizedMevNucl).toBeCloseTo(100, 1);
     });
   });
 
-  describe('resetAll', () => {
-    it('resetAll() resets entity selection (calls entitySelection.resetAll)', () => {
+  describe("resetAll", () => {
+    it("resetAll() resets entity selection (calls entitySelection.resetAll)", () => {
       expect(entitySelection.selectedParticle?.id).toBe(1); // proton
       expect(entitySelection.selectedMaterial?.id).toBe(276); // water
       entitySelection.selectParticle(6); // carbon
@@ -482,38 +486,38 @@ describe('CalculatorState', () => {
     });
 
     it('resetAll() resets rows to a single pre-filled "100" row', () => {
-      calcState.updateRowText(0, '500');
+      calcState.updateRowText(0, "500");
       // updateRowText auto-adds an empty row when the last row has text
       expect(calcState.rows).toHaveLength(2);
       calcState.resetAll();
-      expect(calcState.rows.filter(r => r.status !== 'empty')).toHaveLength(1);
-      expect(calcState.rows[0].rawInput).toBe('100');
+      expect(calcState.rows.filter((r) => r.status !== "empty")).toHaveLength(1);
+      expect(calcState.rows[0].rawInput).toBe("100");
     });
 
     it('resetAll() resets masterUnit to "MeV"', () => {
-      calcState.setMasterUnit('GeV');
-      expect(calcState.masterUnit).toBe('GeV');
+      calcState.setMasterUnit("GeV");
+      expect(calcState.masterUnit).toBe("GeV");
       calcState.resetAll();
-      expect(calcState.masterUnit).toBe('MeV');
+      expect(calcState.masterUnit).toBe("MeV");
     });
   });
 });
 
-describe('formatStpValue', () => {
-  it('formats stopping power to 4 significant figures', () => {
-    expect(formatStpValue(45.7623, 'keV/µm')).toBe('45.76');
-    expect(formatStpValue(0.003, 'MeV·cm²/g')).toBe('0.003');
+describe("formatStpValue", () => {
+  it("formats stopping power to 4 significant figures", () => {
+    expect(formatStpValue(45.7623, "keV/µm")).toBe("45.76");
+    expect(formatStpValue(0.003, "MeV·cm²/g")).toBe("0.003");
   });
 });
 
-describe('formatRangeValue', () => {
-  it('formats CSDA range with auto-scaled units', () => {
-    expect(formatRangeValue(0.2)).toContain('mm');
-    expect(formatRangeValue(250)).toContain('m');
-    expect(formatRangeValue(0.00012)).toContain('µm');
+describe("formatRangeValue", () => {
+  it("formats CSDA range with auto-scaled units", () => {
+    expect(formatRangeValue(0.2)).toContain("mm");
+    expect(formatRangeValue(250)).toContain("m");
+    expect(formatRangeValue(0.00012)).toContain("µm");
   });
 
-  it('returns empty string for null input', () => {
-    expect(formatRangeValue(null)).toBe('');
+  it("returns empty string for null input", () => {
+    expect(formatRangeValue(null)).toBe("");
   });
 });

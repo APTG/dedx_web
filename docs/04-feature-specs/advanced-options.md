@@ -43,11 +43,13 @@
 > matrix. WASM contract type comments and `calculate()` JSDoc updated.
 >
 > This spec closes the open loops deferred from:
+>
 > - [`unit-handling.md`](unit-handling.md) §8 Q3 (aggregate state → display unit)
 > - [`external-data.md`](external-data.md) §8.2 and §13 Q2 (interpolation coupling)
 > - [`calculator.md`](calculator.md) §4 (Advanced Options future section)
 >
 > **Related specs:**
+>
 > - WASM API contract (`AdvancedOptions` interface): [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md) §2.6
 > - Unit handling (density formulas, default unit rules): [`unit-handling.md`](unit-handling.md) §5
 > - App-wide Basic/Advanced toggle: [`multi-program.md`](multi-program.md) §2
@@ -104,14 +106,14 @@ active** (see [`multi-program.md`](multi-program.md) §2). In Basic mode
 the accordion is entirely absent from the DOM — it does not render as
 collapsed, it is not rendered at all.
 
-| Property | Detail |
-|----------|--------|
-| Visibility | Advanced mode only (gated by app-wide toggle) |
-| Default state | Collapsed |
-| Persistence | Open/collapsed state stored in `localStorage` (key: `advancedOptions.open`) |
-| Position | Below entity selection row, above primary content |
-| Header label | "Advanced Options" |
-| Active-override indicator | See [Output § Active-Override Indicator](#active-override-indicator) |
+| Property                  | Detail                                                                      |
+| ------------------------- | --------------------------------------------------------------------------- |
+| Visibility                | Advanced mode only (gated by app-wide toggle)                               |
+| Default state             | Collapsed                                                                   |
+| Persistence               | Open/collapsed state stored in `localStorage` (key: `advancedOptions.open`) |
+| Position                  | Below entity selection row, above primary content                           |
+| Header label              | "Advanced Options"                                                          |
+| Active-override indicator | See [Output § Active-Override Indicator](#active-override-indicator)        |
 
 The inputs are ordered by importance: material property overrides (density,
 I-value, aggregate state) come first, then calculation-method overrides
@@ -129,19 +131,20 @@ overridden density replaces `LibdedxService.getDensity(materialId)` for
 **both** the WASM calculation and display-unit conversion (keV/µm and
 range-to-cm formulas).
 
-| Property | Detail |
-|----------|--------|
-| Type | Numeric text input |
-| Unit label | "g/cm³" (right of input) |
-| Placeholder | Built-in density from `getDensity(materialId)`. Auto-formatted: values ≥ 0.01 shown as decimal (e.g. `1.205`); values < 0.01 shown in scientific notation (e.g. `8.99e-5`). Updated when material changes. If `getDensity` returns `undefined`, shows "—". |
-| Input format | Accepts both decimal (`0.00009`) and scientific notation (`9e-5`). Value is kept exactly as typed. |
-| Label tooltip | The "Density" label always shows an info icon ⓘ. Tooltip text is material-type-specific: **Gas** (`isGasByDefault = true`): "Gas density depends on pressure and temperature. The built-in value is at standard conditions (STP). Override for non-standard conditions." **Solid / Liquid** (`isGasByDefault = false`): "The built-in density is for bulk material at standard conditions. Override for non-standard forms (e.g. powder, pressed pellets, or machined samples)." |
-| Validation | `ρ > 0`. Any positive number is accepted; no upper bound enforced. See [Behavior §5](#5-input-validation). |
-| Debounce | 300 ms before recalculation is triggered |
-| Clear action | Clearing the field removes the override and reverts to built-in density |
-| Reset on material switch | Field is cleared; override removed |
+| Property                 | Detail                                                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                     | Numeric text input                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Unit label               | "g/cm³" (right of input)                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Placeholder              | Built-in density from `getDensity(materialId)`. Auto-formatted: values ≥ 0.01 shown as decimal (e.g. `1.205`); values < 0.01 shown in scientific notation (e.g. `8.99e-5`). Updated when material changes. If `getDensity` returns `undefined`, shows "—".                                                                                                                                                                                                                       |
+| Input format             | Accepts both decimal (`0.00009`) and scientific notation (`9e-5`). Value is kept exactly as typed.                                                                                                                                                                                                                                                                                                                                                                               |
+| Label tooltip            | The "Density" label always shows an info icon ⓘ. Tooltip text is material-type-specific: **Gas** (`isGasByDefault = true`): "Gas density depends on pressure and temperature. The built-in value is at standard conditions (STP). Override for non-standard conditions." **Solid / Liquid** (`isGasByDefault = false`): "The built-in density is for bulk material at standard conditions. Override for non-standard forms (e.g. powder, pressed pellets, or machined samples)." |
+| Validation               | `ρ > 0`. Any positive number is accepted; no upper bound enforced. See [Behavior §5](#5-input-validation).                                                                                                                                                                                                                                                                                                                                                                       |
+| Debounce                 | 300 ms before recalculation is triggered                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| Clear action             | Clearing the field removes the override and reverts to built-in density                                                                                                                                                                                                                                                                                                                                                                                                          |
+| Reset on material switch | Field is cleared; override removed                                                                                                                                                                                                                                                                                                                                                                                                                                               |
 
 **Effect on display units:** When a density override is active:
+
 - The keV/µm conversion uses: `S_kevum = S_mass × ρ_override / 10`
 - The range-to-cm conversion uses: `range_cm = range_gcm2 / ρ_override`
 
@@ -167,15 +170,15 @@ Controls the `iValueOverride` field of `AdvancedOptions`. When set,
 replaces the built-in mean excitation potential from
 `LibdedxService.getIValue(materialId)` in the WASM calculation.
 
-| Property | Detail |
-|----------|--------|
-| Type | Numeric text input |
-| Unit label | "eV" (right of input) |
-| Placeholder | Built-in I-value from `getIValue(materialId)`, formatted to 4 significant figures (e.g. `75.00`). Updated when material changes. |
-| Validation | `0 < I ≤ 10 000 eV`. See [Behavior §5](#5-input-validation). |
-| Debounce | 300 ms before recalculation is triggered |
-| Clear action | Clearing the field removes the override and reverts to built-in I-value |
-| Reset on material switch | Field is cleared; override removed |
+| Property                 | Detail                                                                                                                           |
+| ------------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| Type                     | Numeric text input                                                                                                               |
+| Unit label               | "eV" (right of input)                                                                                                            |
+| Placeholder              | Built-in I-value from `getIValue(materialId)`, formatted to 4 significant figures (e.g. `75.00`). Updated when material changes. |
+| Validation               | `0 < I ≤ 10 000 eV`. See [Behavior §5](#5-input-validation).                                                                     |
+| Debounce                 | 300 ms before recalculation is triggered                                                                                         |
+| Clear action             | Clearing the field removes the override and reverts to built-in I-value                                                          |
+| Reset on material switch | Field is cleared; override removed                                                                                               |
 
 **Note:** The I-value override is passed only to WASM. It does not affect
 unit conversion (the keV/µm formula does not depend on I-value).
@@ -194,14 +197,14 @@ The control is a **two-option toggle** (Gas / Condensed). There is no
 shows the material's built-in phase, so the user can see at a glance
 what is the library default and whether they have overridden it.
 
-| Property | Detail |
-|----------|--------|
-| Type | Two-option segmented toggle |
-| Options | **Gas**, **Condensed** |
-| Built-in label | Read-only line above the toggle: "Built-in: Gas" or "Built-in: Condensed". Updates when material changes. |
-| Initial selection | The option matching the material's built-in phase (`isGasByDefault`) is pre-selected. |
-| Override active | When the selected option **differs** from the built-in phase. |
-| No override | When the selected option **matches** the built-in phase (equivalent to `aggregateState = "default"`). |
+| Property          | Detail                                                                                                    |
+| ----------------- | --------------------------------------------------------------------------------------------------------- |
+| Type              | Two-option segmented toggle                                                                               |
+| Options           | **Gas**, **Condensed**                                                                                    |
+| Built-in label    | Read-only line above the toggle: "Built-in: Gas" or "Built-in: Condensed". Updates when material changes. |
+| Initial selection | The option matching the material's built-in phase (`isGasByDefault`) is pre-selected.                     |
+| Override active   | When the selected option **differs** from the built-in phase.                                             |
+| No override       | When the selected option **matches** the built-in phase (equivalent to `aggregateState = "default"`).     |
 
 **Semantics:** Selecting the built-in option is semantically equivalent to
 "Default" — the `aggregateState` field in `AdvancedOptions` is set to
@@ -230,9 +233,9 @@ Aggregate state:
 stopping-power display unit. See [Behavior §3](#3-aggregate-state--display-unit-coupling).
 
 | Effective phase | Default display unit |
-|-----------------|---------------------|
-| Gas | MeV·cm²/g |
-| Condensed | keV/µm |
+| --------------- | -------------------- |
+| Gas             | MeV·cm²/g            |
+| Condensed       | keV/µm               |
 
 **URL encoding:** `agg_state=gas` or `agg_state=condensed`. Omitted when
 the selected option matches the built-in (no override).
@@ -275,16 +278,16 @@ integration interval.
 
 Controls the `interpolationScale` field of `AdvancedOptions`.
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control with 2 options |
-| Options | **Log-log** (default), **Lin-lin** |
-| Default | **Log-log** |
-| Label | "Axis scale" |
-| Scope | Global — applies to all programs, all series, and external data |
-| WASM STP | Sets `dedx_config.interpolation` (C library) before calling `dedx_get_stp_table` |
+| Property        | Detail                                                                                                                                                    |
+| --------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type            | Segmented control with 2 options                                                                                                                          |
+| Options         | **Log-log** (default), **Lin-lin**                                                                                                                        |
+| Default         | **Log-log**                                                                                                                                               |
+| Label           | "Axis scale"                                                                                                                                              |
+| Scope           | Global — applies to all programs, all series, and external data                                                                                           |
+| WASM STP        | Sets `dedx_config.interpolation` (C library) before calling `dedx_get_stp_table`                                                                          |
 | WASM CSDA range | Sets `dedx_config.interpolation` (C library) before calling `dedx_get_csda_range_table`; affects every `dedx_get_stp` call inside the adaptive integrator |
-| External data | Chooses the transformation space for JS-level table lookup |
+| External data   | Chooses the transformation space for JS-level table lookup                                                                                                |
 
 **Log-log** transforms both the energy axis and the stopping-power axis
 to logarithmic scale before fitting. This is the standard approach for
@@ -295,16 +298,16 @@ trends. **Lin-lin** fits in the original (untransformed) space.
 
 Controls the `interpolationMethod` field of `AdvancedOptions`.
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control with 2 options |
-| Options | **Linear** (default), **Spline** |
-| Default | **Linear** |
-| Label | "Method" |
-| Scope | Global — applies to all programs, all series, and external data |
-| WASM STP | JS reads back the native tabulated data points (`dedx_fill_default_energy_stp_table`), fits a spline in the chosen axis scale, then evaluates at the requested energies |
-| WASM CSDA range | **See note below** |
-| External data | JS fits a spline through the loaded table points in the chosen axis scale |
+| Property        | Detail                                                                                                                                                                  |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type            | Segmented control with 2 options                                                                                                                                        |
+| Options         | **Linear** (default), **Spline**                                                                                                                                        |
+| Default         | **Linear**                                                                                                                                                              |
+| Label           | "Method"                                                                                                                                                                |
+| Scope           | Global — applies to all programs, all series, and external data                                                                                                         |
+| WASM STP        | JS reads back the native tabulated data points (`dedx_fill_default_energy_stp_table`), fits a spline in the chosen axis scale, then evaluates at the requested energies |
+| WASM CSDA range | **See note below**                                                                                                                                                      |
+| External data   | JS fits a spline through the loaded table points in the chosen axis scale                                                                                               |
 
 **Linear** uses piecewise linear interpolation between tabulated points.
 **Spline** uses cubic spline interpolation, which produces a smoother
@@ -326,12 +329,12 @@ the STP curve.
 The default is **Log-log + Linear** (log-log piecewise linear), which
 matches the libdedx C library default.
 
-| `interpolationScale` | `interpolationMethod` | STP source | CSDA range source |
-|----------------------|----------------------|-----------|------------------|
-| `"log-log"` (default) | `"linear"` (default) | WASM C (log-log linear) | WASM C integrator (log-log linear) |
-| `"lin-lin"` | `"linear"` | WASM C (lin-lin linear) | WASM C integrator (lin-lin linear) |
-| `"log-log"` | `"spline"` | JS spline (log-log) | JS integration of log-log spline |
-| `"lin-lin"` | `"spline"` | JS spline (lin-lin) | JS integration of lin-lin spline |
+| `interpolationScale`  | `interpolationMethod` | STP source              | CSDA range source                  |
+| --------------------- | --------------------- | ----------------------- | ---------------------------------- |
+| `"log-log"` (default) | `"linear"` (default)  | WASM C (log-log linear) | WASM C integrator (log-log linear) |
+| `"lin-lin"`           | `"linear"`            | WASM C (lin-lin linear) | WASM C integrator (lin-lin linear) |
+| `"log-log"`           | `"spline"`            | JS spline (log-log)     | JS integration of log-log spline   |
+| `"lin-lin"`           | `"spline"`            | JS spline (lin-lin)     | JS integration of lin-lin spline   |
 
 **Retroactive on Plot:** Changing either interpolation setting on the
 Plot page **redraws all existing committed series**. These are the only
@@ -352,27 +355,27 @@ supported."
 Controls the `mstarMode` field of `AdvancedOptions`. Specific to the
 MSTAR program (`programId = DEDX_MSTAR`).
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control with 6 options |
-| Options | **A**, **B** (recommended), **C**, **D**, **G**, **H** — see table below |
-| Default | **B** |
-| Non-MSTAR program | Visible but disabled; tooltip: "Only applies to MSTAR" |
-| MSTAR active | Enabled |
-| Reset on program switch | Resets to **B** when switching away from MSTAR |
+| Property                | Detail                                                                   |
+| ----------------------- | ------------------------------------------------------------------------ |
+| Type                    | Segmented control with 6 options                                         |
+| Options                 | **A**, **B** (recommended), **C**, **D**, **G**, **H** — see table below |
+| Default                 | **B**                                                                    |
+| Non-MSTAR program       | Visible but disabled; tooltip: "Only applies to MSTAR"                   |
+| MSTAR active            | Enabled                                                                  |
+| Reset on program switch | Resets to **B** when switching away from MSTAR                           |
 
 #### Mode descriptions
 
 Sourced from `libdedx/include/dedx.h` (`DEDX_MSTAR_MODE_*` constants):
 
-| Mode | `DEDX_MSTAR_MODE_*` | Description |
-|------|---------------------|-------------|
-| **A** | `AUTO_CG` | **Auto — base modes.** Automatically selects C for condensed targets, G for gaseous targets. |
-| **B** | `AUTO_DH` | **Auto — special modes.** Automatically selects D for condensed targets, H for gaseous targets. *Recommended by H. Paul.* Default. |
-| **C** | `CONDENSED` | **Condensed — standard.** Direct condensed-phase calculation using the base formulation. |
-| **D** | `CONDENSED_SPECIAL` | **Condensed — special.** Enhanced condensed-phase mode; automatically downgrades to C for target Z ≤ 3. |
-| **G** | `GASEOUS` | **Gas — standard.** Direct gaseous-phase calculation using the base formulation. |
-| **H** | `GASEOUS_SPECIAL` | **Gas — special.** Enhanced gaseous-phase mode; hardcoded parameters only for projectile Z = 3–11 and 16–18. Automatically downgrades to G for Z < 3. |
+| Mode  | `DEDX_MSTAR_MODE_*` | Description                                                                                                                                           |
+| ----- | ------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **A** | `AUTO_CG`           | **Auto — base modes.** Automatically selects C for condensed targets, G for gaseous targets.                                                          |
+| **B** | `AUTO_DH`           | **Auto — special modes.** Automatically selects D for condensed targets, H for gaseous targets. _Recommended by H. Paul._ Default.                    |
+| **C** | `CONDENSED`         | **Condensed — standard.** Direct condensed-phase calculation using the base formulation.                                                              |
+| **D** | `CONDENSED_SPECIAL` | **Condensed — special.** Enhanced condensed-phase mode; automatically downgrades to C for target Z ≤ 3.                                               |
+| **G** | `GASEOUS`           | **Gas — standard.** Direct gaseous-phase calculation using the base formulation.                                                                      |
+| **H** | `GASEOUS_SPECIAL`   | **Gas — special.** Enhanced gaseous-phase mode; hardcoded parameters only for projectile Z = 3–11 and 16–18. Automatically downgrades to G for Z < 3. |
 
 **Practical guidance:** Modes A and B are the auto-select modes — they
 inspect the target's aggregate state and delegate to C/G (mode A) or D/H
@@ -392,14 +395,14 @@ the control is enabled and applies to MSTAR's calculation only.
 A **"Reset"** button at the bottom of the accordion clears all overrides
 simultaneously:
 
-| Option | Reset value |
-|--------|-------------|
-| Density override | Cleared (empty field) |
-| I-value override | Cleared (empty field) |
-| Aggregate state | Built-in option re-selected (no override) |
-| Axis scale | Log-log |
-| Method | Linear |
-| MSTAR mode | B |
+| Option           | Reset value                               |
+| ---------------- | ----------------------------------------- |
+| Density override | Cleared (empty field)                     |
+| I-value override | Cleared (empty field)                     |
+| Aggregate state  | Built-in option re-selected (no override) |
+| Axis scale       | Log-log                                   |
+| Method           | Linear                                    |
+| MSTAR mode       | B                                         |
 
 The reset triggers an immediate recalculation. The button is **disabled**
 when no overrides are active (all options already at defaults).
@@ -495,15 +498,15 @@ selection area and above the "Add Series" button (see [`plot.md`](plot.md)):
 
 ### 2. Reactivity — Recalculation Triggers
 
-| Option changed | Calculator | Plot |
-|----------------|-----------|------|
-| Density override | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged |
-| I-value override | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged |
-| Aggregate state | Immediate recalculation | Applies to next series added; committed series unchanged |
-| Axis scale (Log-log / Lin-lin) | Immediate recalculation | **Retroactive** — all committed series and preview curve are redrawn |
-| Method (Linear / Spline) | Immediate recalculation | **Retroactive** — all committed series and preview curve are redrawn |
-| MSTAR mode | Immediate recalculation (if MSTAR active) | Applies to next series added; committed series unchanged |
-| Reset | Immediate recalculation | Interpolation changes redraw all series; other resets apply only to next series |
+| Option changed                 | Calculator                                             | Plot                                                                            |
+| ------------------------------ | ------------------------------------------------------ | ------------------------------------------------------------------------------- |
+| Density override               | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged                        |
+| I-value override               | Recalculation after 300 ms debounce (valid input only) | Applies to next series added; committed series unchanged                        |
+| Aggregate state                | Immediate recalculation                                | Applies to next series added; committed series unchanged                        |
+| Axis scale (Log-log / Lin-lin) | Immediate recalculation                                | **Retroactive** — all committed series and preview curve are redrawn            |
+| Method (Linear / Spline)       | Immediate recalculation                                | **Retroactive** — all committed series and preview curve are redrawn            |
+| MSTAR mode                     | Immediate recalculation (if MSTAR active)              | Applies to next series added; committed series unchanged                        |
+| Reset                          | Immediate recalculation                                | Interpolation changes redraw all series; other resets apply only to next series |
 
 **Plot series immutability (non-interpolation options):** When a series is
 committed to the Plot, the density, I-value, aggregate state, and MSTAR
@@ -524,20 +527,20 @@ the default stopping-power display unit is updated using the **effective**
 phase after applying the override:
 
 | Effective phase | Default display unit |
-|-----------------|---------------------|
-| Gas | MeV·cm²/g |
-| Condensed | keV/µm |
+| --------------- | -------------------- |
+| Gas             | MeV·cm²/g            |
+| Condensed       | keV/µm               |
 
 This closes the open question from [`unit-handling.md`](unit-handling.md) §8 Q3.
 
 **Mapping:**
 
-| Built-in phase | Toggle selection | Override active? | Display unit |
-|----------------|-----------------|-----------------|--------------|
-| Gas | Gas (= built-in) | No | MeV·cm²/g |
-| Gas | Condensed | Yes | keV/µm |
-| Condensed | Condensed (= built-in) | No | keV/µm |
-| Condensed | Gas | Yes | MeV·cm²/g |
+| Built-in phase | Toggle selection       | Override active? | Display unit |
+| -------------- | ---------------------- | ---------------- | ------------ |
+| Gas            | Gas (= built-in)       | No               | MeV·cm²/g    |
+| Gas            | Condensed              | Yes              | keV/µm       |
+| Condensed      | Condensed (= built-in) | No               | keV/µm       |
+| Condensed      | Gas                    | Yes              | MeV·cm²/g    |
 
 **Reverting to built-in:** Selecting the toggle option that matches the
 built-in phase deactivates the override and reverts the display unit to
@@ -563,6 +566,7 @@ When cleared, the app reverts to the built-in density from
 `getDensity(materialId)` for both WASM and display conversion.
 
 If `getDensity(materialId)` returns `undefined` and no override is set:
+
 - Stopping power falls back to MeV·cm²/g (mass unit; no density needed).
 - CSDA range falls back to g/cm² (cannot convert to length without density).
   See [`unit-handling.md`](unit-handling.md) §5.2.
@@ -573,26 +577,26 @@ If `getDensity(materialId)` returns `undefined` and no override is set:
 
 #### Density override
 
-| Condition | State | Inline message |
-|-----------|-------|----------------|
-| Empty field | No override (valid) | — |
-| Positive number (any size) | Valid override | — |
-| `0` | Invalid | "Density must be greater than 0" |
-| Negative number | Invalid | "Density must be greater than 0" |
-| Non-numeric text (e.g., `abc`) | Invalid | "Enter a numeric value" |
+| Condition                      | State               | Inline message                   |
+| ------------------------------ | ------------------- | -------------------------------- |
+| Empty field                    | No override (valid) | —                                |
+| Positive number (any size)     | Valid override      | —                                |
+| `0`                            | Invalid             | "Density must be greater than 0" |
+| Negative number                | Invalid             | "Density must be greater than 0" |
+| Non-numeric text (e.g., `abc`) | Invalid             | "Enter a numeric value"          |
 
 Scientific notation (`9e-5`, `1.2E-3`) is valid and treated as a
 positive number for validation purposes.
 
 #### I-value override
 
-| Condition | State | Inline message |
-|-----------|-------|----------------|
-| Empty field | No override (valid) | — |
-| Positive number, `I ≤ 10 000 eV` | Valid override | — |
-| `0` or negative | Invalid | "I-value must be greater than 0" |
-| Number > 10 000 eV | Invalid | "I-value exceeds 10 000 eV (physical maximum)" |
-| Non-numeric text | Invalid | "Enter a numeric value" |
+| Condition                        | State               | Inline message                                 |
+| -------------------------------- | ------------------- | ---------------------------------------------- |
+| Empty field                      | No override (valid) | —                                              |
+| Positive number, `I ≤ 10 000 eV` | Valid override      | —                                              |
+| `0` or negative                  | Invalid             | "I-value must be greater than 0"               |
+| Number > 10 000 eV               | Invalid             | "I-value exceeds 10 000 eV (physical maximum)" |
+| Non-numeric text                 | Invalid             | "Enter a numeric value"                        |
 
 **While invalid:** Red outline on the field. No recalculation triggered.
 The last valid state (or no override if field was previously empty)
@@ -623,11 +627,11 @@ wrong results.
 
 ### 7. MSTAR Mode — Program Dependency
 
-| Active program(s) | MSTAR mode state |
-|-------------------|-----------------|
-| MSTAR only | Enabled |
-| MSTAR + others (multi-program) | Enabled; applies to MSTAR only |
-| Non-MSTAR only | Disabled; tooltip: "Only applies to MSTAR" |
+| Active program(s)              | MSTAR mode state                           |
+| ------------------------------ | ------------------------------------------ |
+| MSTAR only                     | Enabled                                    |
+| MSTAR + others (multi-program) | Enabled; applies to MSTAR only             |
+| Non-MSTAR only                 | Disabled; tooltip: "Only applies to MSTAR" |
 
 **On switch away from MSTAR:** Resets to B; becomes disabled.
 
@@ -637,22 +641,22 @@ wrong results.
 
 ### 8. Persistence
 
-| Mechanism | Scope |
-|-----------|-------|
+| Mechanism            | Scope                                                                                                  |
+| -------------------- | ------------------------------------------------------------------------------------------------------ |
 | URL query parameters | Non-default values only; present in Advanced mode URLs. See [URL State Encoding](#url-state-encoding). |
-| `localStorage` | All six option values + accordion open/collapsed state. |
+| `localStorage`       | All six option values + accordion open/collapsed state.                                                |
 
 **localStorage keys:**
 
-| Key | Type | Default |
-|-----|------|---------|
-| `advancedOptions.aggregateState` | `"default"` \| `"gas"` \| `"condensed"` | `"default"` |
-| `advancedOptions.interpScale` | `"log-log"` \| `"lin-lin"` | `"log-log"` |
-| `advancedOptions.interpMethod` | `"linear"` \| `"spline"` | `"linear"` |
-| `advancedOptions.mstarMode` | `"a"` \| `"b"` \| `"c"` \| `"d"` \| `"g"` \| `"h"` | `"b"` |
-| `advancedOptions.density` | `number` \| `null` | `null` |
-| `advancedOptions.ival` | `number` \| `null` | `null` |
-| `advancedOptions.open` | `boolean` | `false` |
+| Key                              | Type                                               | Default     |
+| -------------------------------- | -------------------------------------------------- | ----------- |
+| `advancedOptions.aggregateState` | `"default"` \| `"gas"` \| `"condensed"`            | `"default"` |
+| `advancedOptions.interpScale`    | `"log-log"` \| `"lin-lin"`                         | `"log-log"` |
+| `advancedOptions.interpMethod`   | `"linear"` \| `"spline"`                           | `"linear"`  |
+| `advancedOptions.mstarMode`      | `"a"` \| `"b"` \| `"c"` \| `"d"` \| `"g"` \| `"h"` | `"b"`       |
+| `advancedOptions.density`        | `number` \| `null`                                 | `null`      |
+| `advancedOptions.ival`           | `number` \| `null`                                 | `null`      |
+| `advancedOptions.open`           | `boolean`                                          | `false`     |
 
 `advancedOptions.aggregateState` stores `"default"` when the toggle is
 on the built-in option (no override), even though the UI has no "Default"
@@ -683,16 +687,19 @@ non-default:
 
 ```typescript
 LibdedxService.calculate({
-  programId, particleId, materialId, energies,
+  programId,
+  particleId,
+  materialId,
+  energies,
   options: {
-    aggregateState,       // omitted when "default" (toggle on built-in option)
-    interpolationScale,   // omitted when "log-log"
-    interpolationMethod,  // omitted when "linear"
-    mstarMode,            // omitted when "b" or non-MSTAR program
-    densityOverride,      // omitted when not set
-    iValueOverride,       // omitted when not set
-  }
-})
+    aggregateState, // omitted when "default" (toggle on built-in option)
+    interpolationScale, // omitted when "log-log"
+    interpolationMethod, // omitted when "linear"
+    mstarMode, // omitted when "b" or non-MSTAR program
+    densityOverride, // omitted when not set
+    iValueOverride, // omitted when not set
+  },
+});
 ```
 
 ### Effect on Unit Display
@@ -708,12 +715,12 @@ LibdedxService.calculate({
 
 The accordion header communicates active overrides even when collapsed:
 
-| Active overrides | Header display |
-|-----------------|----------------|
-| None | `Advanced Options` (no badge) |
-| Density only | `Advanced Options  ρ = 1.1 g/cm³` |
-| Density + others | `Advanced Options  ρ = 1.1 g/cm³  ●` |
-| Others only (no density) | `Advanced Options  ●` |
+| Active overrides         | Header display                       |
+| ------------------------ | ------------------------------------ |
+| None                     | `Advanced Options` (no badge)        |
+| Density only             | `Advanced Options  ρ = 1.1 g/cm³`    |
+| Density + others         | `Advanced Options  ρ = 1.1 g/cm³  ●` |
+| Others only (no density) | `Advanced Options  ●`                |
 
 The density value is surfaced in the header because density is the most
 commonly adjusted parameter and users benefit from seeing its active
@@ -730,10 +737,10 @@ options are frozen in the series metadata:
 
 ```typescript
 interface SeriesAdvancedOptions {
-  aggregateState?: AggregateState;  // if override active (differs from built-in)
-  densityOverride?: number;         // if set
-  iValueOverride?: number;          // if set
-  mstarMode?: MstarMode;            // if not "b" and MSTAR active
+  aggregateState?: AggregateState; // if override active (differs from built-in)
+  densityOverride?: number; // if set
+  iValueOverride?: number; // if set
+  mstarMode?: MstarMode; // if not "b" and MSTAR active
 }
 ```
 
@@ -745,12 +752,12 @@ The series entry in the series list shows the density override value
 **inline** so that two series calculated with different densities are
 immediately distinguishable without hovering:
 
-| Active overrides | Series label |
-|-----------------|--------------|
-| None | `Proton / Air / ICRU 90` |
-| Density only | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³` |
-| Density + other(s) | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³  ⚙` |
-| Other(s) only (no density) | `Proton / Air / ICRU 90  ⚙` |
+| Active overrides           | Series label                               |
+| -------------------------- | ------------------------------------------ |
+| None                       | `Proton / Air / ICRU 90`                   |
+| Density only               | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³`    |
+| Density + other(s)         | `Proton / Air / ICRU 90  ρ = 1.1 g/cm³  ⚙` |
+| Other(s) only (no density) | `Proton / Air / ICRU 90  ⚙`                |
 
 The inline `ρ = …` suffix is always formatted using the same
 auto-format rules as the accordion header (decimal for ≥ 0.01; sci
@@ -806,14 +813,14 @@ Advanced Options state is encoded as query parameters appended **after
 
 ### New Parameters
 
-| Parameter | Type | Omit when | Example |
-|-----------|------|-----------|---------|
-| `agg_state` | `gas` \| `condensed` | selected option = built-in (no override) | `agg_state=condensed` |
-| `interp_scale` | `lin-lin` | value = "log-log" | `interp_scale=lin-lin` |
-| `interp_method` | `spline` | value = "linear" | `interp_method=spline` |
-| `mstar_mode` | `a`\|`b`\|`c`\|`d`\|`g`\|`h` | value = "b" | `mstar_mode=c` |
-| `density` | positive number | not set | `density=0.0000899` |
-| `ival` | positive number | not set | `ival=75.0` |
+| Parameter       | Type                         | Omit when                                | Example                |
+| --------------- | ---------------------------- | ---------------------------------------- | ---------------------- |
+| `agg_state`     | `gas` \| `condensed`         | selected option = built-in (no override) | `agg_state=condensed`  |
+| `interp_scale`  | `lin-lin`                    | value = "log-log"                        | `interp_scale=lin-lin` |
+| `interp_method` | `spline`                     | value = "linear"                         | `interp_method=spline` |
+| `mstar_mode`    | `a`\|`b`\|`c`\|`d`\|`g`\|`h` | value = "b"                              | `mstar_mode=c`         |
+| `density`       | positive number              | not set                                  | `density=0.0000899`    |
+| `ival`          | positive number              | not set                                  | `ival=75.0`            |
 
 **Number serialization for `density`:** Use JavaScript's default
 `Number.prototype.toString()`. Very small values may appear in
@@ -890,34 +897,34 @@ On page load with Advanced Options URL params:
 ### AC-1: Panel gating
 
 - [ ] When mode=basic (or mode absent), the Advanced Options accordion is
-  not rendered on any page.
+      not rendered on any page.
 - [ ] When mode=advanced, the accordion is rendered (collapsed by default)
-  on all calculation pages (Calculator, Plot).
+      on all calculation pages (Calculator, Plot).
 
 ### AC-2: Accordion state and header
 
 - [ ] Clicking the accordion header toggles open/collapsed.
 - [ ] Open/collapsed state persists via localStorage.
 - [ ] When density override is active and accordion is collapsed, the header
-  shows `ρ = {value} g/cm³`.
+      shows `ρ = {value} g/cm³`.
 - [ ] When density + other overrides are active, the header shows
-  `ρ = {value} g/cm³  ●`.
+      `ρ = {value} g/cm³  ●`.
 - [ ] When only non-density overrides are active, the header shows `●`.
 - [ ] When no overrides are active, the header shows no badge and no value.
 
 ### AC-3: Aggregate state
 
 - [ ] The control shows a read-only "Built-in: Gas" or "Built-in: Condensed"
-  label above the two-option toggle, matching `isGasByDefault(materialId)`.
+      label above the two-option toggle, matching `isGasByDefault(materialId)`.
 - [ ] The toggle has exactly two options: Gas and Condensed.
 - [ ] On initial render (or after material switch), the toggle pre-selects
-  the built-in option.
+      the built-in option.
 - [ ] Selecting the non-built-in option for a gas material (→ Condensed):
-  recalculation uses `aggregateState: "condensed"`; display unit → keV/µm.
+      recalculation uses `aggregateState: "condensed"`; display unit → keV/µm.
 - [ ] Selecting the non-built-in option for a condensed material (→ Gas):
-  recalculation uses `aggregateState: "gas"`; display unit → MeV·cm²/g.
+      recalculation uses `aggregateState: "gas"`; display unit → MeV·cm²/g.
 - [ ] Selecting the built-in option after an override: override is cleared;
-  display unit reverts to material's natural default.
+      display unit reverts to material's natural default.
 - [ ] The "Built-in: …" label updates when the material changes.
 
 ### AC-4: Interpolation (axis scale and method)
@@ -926,45 +933,45 @@ On page load with Advanced Options URL params:
 - [ ] "Method" control has exactly two options: Linear and Spline.
 - [ ] Default state: Log-log + Linear selected.
 - [ ] Changing either control on the Calculator triggers an immediate
-  recalculation.
+      recalculation.
 - [ ] Changing either control on the Plot page redraws all committed series
-  and the preview curve.
+      and the preview curve.
 - [ ] External data series use the same axis scale and method as WASM series.
 - [ ] Both controls are retroactive on Plot (not just axis scale).
 
 ### AC-5: MSTAR mode
 
 - [ ] When non-MSTAR program active: control rendered but disabled; tooltip
-  "Only applies to MSTAR".
+      "Only applies to MSTAR".
 - [ ] When MSTAR active: control enabled.
 - [ ] Switching from MSTAR to non-MSTAR: resets to B, becomes disabled.
 - [ ] In multi-program mode with MSTAR: control enabled; applies to MSTAR
-  only.
+      only.
 
 ### AC-6: Density override
 
 - [ ] Empty field → no override; placeholder shows built-in density.
 - [ ] The "Density" label shows a ⓘ icon for **all** material types.
 - [ ] For gas materials, hover tooltip reads "Gas density depends on
-  pressure and temperature. The built-in value is at standard conditions
-  (STP). Override for non-standard conditions."
+      pressure and temperature. The built-in value is at standard conditions
+      (STP). Override for non-standard conditions."
 - [ ] For solid/liquid materials, hover tooltip reads "The built-in density
-  is for bulk material at standard conditions. Override for non-standard
-  forms (e.g. powder, pressed pellets, or machined samples)."
+      is for bulk material at standard conditions. Override for non-standard
+      forms (e.g. powder, pressed pellets, or machined samples)."
 - [ ] Built-in density ≥ 0.01 g/cm³ → placeholder in decimal (e.g. `1.205`).
 - [ ] Built-in density < 0.01 g/cm³ → placeholder in scientific notation
-  (e.g. `8.99e-5`).
+      (e.g. `8.99e-5`).
 - [ ] Decimal input (e.g. `0.00009`) accepted and kept as typed.
 - [ ] Scientific notation input (e.g. `9e-5`) accepted and kept as typed.
 - [ ] Valid density → recalculation uses the overridden ρ in WASM call and
-  in keV/µm and range-to-cm conversion formulas.
+      in keV/µm and range-to-cm conversion formulas.
 - [ ] Entry of `0` → inline error "Density must be greater than 0".
 - [ ] Entry of `-1` → inline error "Density must be greater than 0".
 - [ ] Entry of `abc` → inline error "Enter a numeric value".
 - [ ] While invalid: red outline; no recalculation; last valid state held.
 - [ ] Clearing the field → override removed; built-in density resumes.
 - [ ] Switching material → field cleared; override removed; placeholder
-  updates to new material's density.
+      updates to new material's density.
 
 ### AC-7: I-value override
 
@@ -979,13 +986,13 @@ On page load with Advanced Options URL params:
 - [ ] "Reset" is disabled when all options are at defaults.
 - [ ] Clicking "Reset" clears all five options simultaneously.
 - [ ] After Reset on Plot: interpolation redraws all series; other options
-  affect only future series.
+      affect only future series.
 - [ ] After Reset: accordion header shows no badge and no density value.
 
 ### AC-9: Material switch
 
 - [ ] Switching material clears density override, I-value override, and
-  returns aggregate state toggle to built-in option of the new material.
+      returns aggregate state toggle to built-in option of the new material.
 - [ ] Interpolation and MSTAR mode are not affected by material switch.
 - [ ] Placeholder text updates to new material's built-in values.
 
@@ -993,7 +1000,7 @@ On page load with Advanced Options URL params:
 
 - [ ] `agg_state=condensed` → aggregate state set to Condensed on load.
 - [ ] `agg_state=gas` when material built-in is also gas → treated as no
-  override (toggle lands on Gas, no active override).
+      override (toggle lands on Gas, no active override).
 - [ ] `interp_scale=lin-lin` → axis scale set to Lin-lin.
 - [ ] `interp_method=spline` → method set to Spline.
 - [ ] `mstar_mode=c` → MSTAR mode set to C.
@@ -1010,25 +1017,25 @@ On page load with Advanced Options URL params:
 - [ ] Setting interp_scale=lin-lin, navigating away and back → lin-lin restored.
 - [ ] Setting interp_method=spline, navigating away and back → spline restored.
 - [ ] After Reset → localStorage cleared; navigation does not restore
-  previous overrides.
+      previous overrides.
 - [ ] URL params take precedence over localStorage on load.
 
 ### AC-12: Plot series label and metadata
 
 - [ ] Series committed with no overrides: label shows `Particle / Material / Program`
-  with no suffix.
+      with no suffix.
 - [ ] Series committed with density override only: label shows
-  `Particle / Material / Program  ρ = {value} g/cm³` (auto-formatted).
+      `Particle / Material / Program  ρ = {value} g/cm³` (auto-formatted).
 - [ ] Series committed with density + other overrides: label shows density
-  suffix followed by ⚙ icon.
+      suffix followed by ⚙ icon.
 - [ ] Series committed with non-density overrides only: label shows ⚙ icon
-  (no density suffix).
+      (no density suffix).
 - [ ] Two series with different density overrides are visually distinguishable
-  in the series list without hovering (density visible inline).
+      in the series list without hovering (density visible inline).
 - [ ] ⚙ icon tooltip lists all active non-default options at commit time.
 - [ ] No tooltip rendered when no overrides were active at commit time.
 - [ ] Changing density after committing a series does not alter the committed
-  series' curve or label.
+      series' curve or label.
 
 ---
 

@@ -5,6 +5,7 @@
 ### Prompt 1: Status check and new requests
 
 **User directives:**
+
 1. Check what is left to do for inverse lookups.
 2. Add a small general feature: a build info badge in the lower-left corner
    of the app (commit hash with GitHub link, ISO date, branch/tag name)
@@ -20,6 +21,7 @@ Read `docs/04-feature-specs/inverse-lookups.md` (Draft v3), `docs/04-feature-spe
 state.
 
 **Findings:**
+
 - The footer already has a basic commit/date/branch display in `Footer.js`
   reading from `deploy.json`, but the commit hash is plain text (not a link)
   and the date format is locale-dependent.
@@ -41,7 +43,7 @@ state.
    layout (ICRU 90 E low | ICRU 90 E high | PSTAR E low | PSTAR E high),
    one row per input value.
 6. §8 Export — Inverse STP multi-program columns updated: `{ProgramName}
-   E low ({unit})` / `{ProgramName} E high ({unit})` pairs per visible
+E low ({unit})` / `{ProgramName} E high ({unit})` pairs per visible
    program; description "one data row per input value" (not one per program).
 
 **New spec `docs/04-feature-specs/build-info.md` (Final v1):**
@@ -104,14 +106,14 @@ Read `docs/ai-logs/2026-04-10-inverse-lookups.md`, `CHANGELOG-AI.md`,
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `docs/04-feature-specs/inverse-lookups.md` | **Updated** — Draft v3 → Draft v4 (Inverse STP multi-program column layout); Draft v4 → **Final v4** (consistency fixes, stale AC lines, status mark) |
-| `docs/04-feature-specs/build-info.md` | **Created** — Final v1 (build info badge spec) |
-| `docs/04-feature-specs/README.md` | Updated — `inverse-lookups.md` Draft v4 → Final v4; `build-info.md` row added |
-| `docs/01-project-vision.md` | Updated — §4.4 TODO stubs for `advanced-options.md` and `inverse-lookups.md` replaced with proper links |
-| `CHANGELOG-AI.md` | Updated with this session's entries |
-| `docs/ai-logs/2026-04-12-inverse-lookups.md` | **Created** — this log |
+| File                                         | Change                                                                                                                                                |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/04-feature-specs/inverse-lookups.md`   | **Updated** — Draft v3 → Draft v4 (Inverse STP multi-program column layout); Draft v4 → **Final v4** (consistency fixes, stale AC lines, status mark) |
+| `docs/04-feature-specs/build-info.md`        | **Created** — Final v1 (build info badge spec)                                                                                                        |
+| `docs/04-feature-specs/README.md`            | Updated — `inverse-lookups.md` Draft v4 → Final v4; `build-info.md` row added                                                                         |
+| `docs/01-project-vision.md`                  | Updated — §4.4 TODO stubs for `advanced-options.md` and `inverse-lookups.md` replaced with proper links                                               |
+| `CHANGELOG-AI.md`                            | Updated with this session's entries                                                                                                                   |
+| `docs/ai-logs/2026-04-12-inverse-lookups.md` | **Created** — this log                                                                                                                                |
 
 ## Open Questions Remaining
 

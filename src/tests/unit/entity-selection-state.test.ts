@@ -353,7 +353,7 @@ describe("createEntitySelectionState", () => {
     test("selectionSummary shows particle and material names with Auto-select", () => {
       const state = createEntitySelectionState(matrix);
       const summary = state.selectionSummary;
-      
+
       expect(summary).toContain("Hydrogen"); // default particle
       expect(summary).toContain("Water"); // default material
       expect(summary).toContain("Auto-select"); // default program
@@ -376,30 +376,30 @@ describe("createEntitySelectionState", () => {
 
     test("selectionSummary updates when particle changes", () => {
       const state = createEntitySelectionState(matrix);
-      
+
       state.selectParticle(2); // helium
       const summary = state.selectionSummary;
-      
+
       expect(summary).toContain("Helium");
       expect(summary).not.toContain("Hydrogen");
     });
 
     test("selectionSummary updates when material changes", () => {
       const state = createEntitySelectionState(matrix);
-      
+
       state.selectMaterial(267); // air
       const summary = state.selectionSummary;
-      
+
       expect(summary).toContain("Air");
       expect(summary).not.toContain("Water");
     });
 
     test("selectionSummary shows explicit program when manually selected", () => {
       const state = createEntitySelectionState(matrix);
-      
+
       state.selectProgram(2); // PSTAR
       const summary = state.selectionSummary;
-      
+
       expect(summary).toContain("PSTAR");
       expect(summary).not.toContain("Auto-select →");
     });

@@ -27,18 +27,18 @@ Write the feature specification for user-defined custom compound materials
 
 ## Context Files Read
 
-| File | Purpose |
-|------|---------|
-| `docs/00-redesign-plan.md` | Spec template (§7), stage plan |
-| `docs/01-project-vision.md` | Advanced mode definition, audience |
-| `docs/06-wasm-api-contract.md` | `CustomCompound` type, `calculateCustomCompound()` signature |
-| `docs/04-feature-specs/advanced-options.md` | Format reference, Advanced Options interaction model |
-| `docs/04-feature-specs/entity-selection.md` | Compact vs full panel modes, group structure |
-| `docs/04-feature-specs/calculator.md` | Page context, calculator entity selection |
-| `docs/04-feature-specs/shareable-urls-formal.md` | ABNF grammar, canonicalization algorithm |
-| `docs/04-feature-specs/README.md` | Spec index |
-| `CHANGELOG-AI.md` | Log format |
-| `docs/ai-logs/README.md` | Log index format |
+| File                                             | Purpose                                                      |
+| ------------------------------------------------ | ------------------------------------------------------------ |
+| `docs/00-redesign-plan.md`                       | Spec template (§7), stage plan                               |
+| `docs/01-project-vision.md`                      | Advanced mode definition, audience                           |
+| `docs/06-wasm-api-contract.md`                   | `CustomCompound` type, `calculateCustomCompound()` signature |
+| `docs/04-feature-specs/advanced-options.md`      | Format reference, Advanced Options interaction model         |
+| `docs/04-feature-specs/entity-selection.md`      | Compact vs full panel modes, group structure                 |
+| `docs/04-feature-specs/calculator.md`            | Page context, calculator entity selection                    |
+| `docs/04-feature-specs/shareable-urls-formal.md` | ABNF grammar, canonicalization algorithm                     |
+| `docs/04-feature-specs/README.md`                | Spec index                                                   |
+| `CHANGELOG-AI.md`                                | Log format                                                   |
+| `docs/ai-logs/README.md`                         | Log index format                                             |
 
 ---
 
@@ -56,7 +56,7 @@ parameters at a new **step 9** in the canonicalization algorithm.
 This keeps the material parameter as the single dispatch point and avoids
 encoding compound data into a single opaque value. The `shareable-urls-formal.md`
 ABNF was updated to **v6** in this same session (material-pair extended,
-mat_* ABNF rules, §3.8 semantic constraints, step 9 canonicalization,
+mat\_\* ABNF rules, §3.8 semantic constraints, step 9 canonicalization,
 conformance vectors 18–21).
 
 ### Round-trip guarantee without auto-save
@@ -125,10 +125,10 @@ failures or unsupported cases not caught by that filter.
 
 ## Files Modified
 
-| File | Change |
-|------|--------|
-| `docs/04-feature-specs/custom-compounds.md` | Created (Draft v1) |
-| `docs/04-feature-specs/README.md` | Added entry in main spec table (moved from "Planned Specs") |
-| `CHANGELOG-AI.md` | Prepended session entry |
-| `docs/ai-logs/README.md` | Added row for this log |
-| `docs/ai-logs/2026-04-13-custom-compounds.md` | Created (this file) |
+| File                                          | Change                                                      |
+| --------------------------------------------- | ----------------------------------------------------------- |
+| `docs/04-feature-specs/custom-compounds.md`   | Created (Draft v1)                                          |
+| `docs/04-feature-specs/README.md`             | Added entry in main spec table (moved from "Planned Specs") |
+| `CHANGELOG-AI.md`                             | Prepended session entry                                     |
+| `docs/ai-logs/README.md`                      | Added row for this log                                      |
+| `docs/ai-logs/2026-04-13-custom-compounds.md` | Created (this file)                                         |

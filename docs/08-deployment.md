@@ -20,10 +20,10 @@ browser via WebAssembly.
 Two deployment environments exist (inherited from the legacy app; will be
 preserved in the redesign):
 
-| Environment | Repository | Trigger |
-|-------------|-----------|---------|
-| Development (`web_dev`) | `APTG/web_dev` | Push to `master` |
-| Production (`web`) | `APTG/web` | Git tag `v*` *(planned for Stage 8; not yet implemented in this repo)* |
+| Environment             | Repository     | Trigger                                                                |
+| ----------------------- | -------------- | ---------------------------------------------------------------------- |
+| Development (`web_dev`) | `APTG/web_dev` | Push to `master`                                                       |
+| Production (`web`)      | `APTG/web`     | Git tag `v*` _(planned for Stage 8; not yet implemented in this repo)_ |
 
 **Decision rationale:** [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)
 chose SvelteKit with its static adapter precisely because GitHub Pages
@@ -104,12 +104,12 @@ See [03-architecture.md](03-architecture.md) for the Vite config details.
 start of Stage 3**. A new `ci.yml` is added in its place and expanded at each
 stage so that every PR has a gate matching the current scope of the project:
 
-| Stage | New steps added to `ci.yml` |
-|-------|-----------------------------|
-| **3** | Create workflow; `node wasm/verify.mjs` (WASM artifact smoke-test) |
-| **4** | `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc), `pnpm build` |
-| **5** | `pnpm test` (Vitest — first unit tests written in this stage) |
-| **7** | `pnpm exec playwright install --with-deps`, `pnpm exec playwright test` |
+| Stage | New steps added to `ci.yml`                                                                |
+| ----- | ------------------------------------------------------------------------------------------ |
+| **3** | Create workflow; `node wasm/verify.mjs` (WASM artifact smoke-test)                         |
+| **4** | `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc), `pnpm build`               |
+| **5** | `pnpm test` (Vitest — first unit tests written in this stage)                              |
+| **7** | `pnpm exec playwright install --with-deps`, `pnpm exec playwright test`                    |
 | **8** | Production deploy job added to `deploy.yml`: tag `v*` → build + push `build/` → `APTG/web` |
 
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
@@ -147,7 +147,7 @@ triggered by `v*` tags alongside the existing `master` trigger.
 on:
   push:
     branches: [master]
-    tags: ['v*']
+    tags: ["v*"]
   pull_request:
     branches: [master]
 
@@ -163,14 +163,14 @@ jobs:
         with:
           node-version: 24
           cache: pnpm
-      - run: node wasm/verify.mjs                       # Stage 3
-      - run: pnpm install                               # Stage 4
-      - run: pnpm lint                                  # Stage 4
-      - run: pnpm check                                 # Stage 4
-      - run: pnpm build                                 # Stage 4
-      - run: pnpm test                                  # Stage 5
-      - run: pnpm exec playwright install --with-deps   # Stage 7
-      - run: pnpm exec playwright test                  # Stage 7
+      - run: node wasm/verify.mjs # Stage 3
+      - run: pnpm install # Stage 4
+      - run: pnpm lint # Stage 4
+      - run: pnpm check # Stage 4
+      - run: pnpm build # Stage 4
+      - run: pnpm test # Stage 5
+      - run: pnpm exec playwright install --with-deps # Stage 7
+      - run: pnpm exec playwright test # Stage 7
 
   deploy:
     needs: ci
@@ -201,13 +201,13 @@ for the reasoning.
 
 ## 7. Cross-references
 
-| Topic | Canonical location |
-|-------|--------------------|
-| Deployment target decision | [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md) |
-| WASM build flags and rationale | [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md) |
-| WASM TypeScript API contract | [06-wasm-api-contract.md](06-wasm-api-contract.md) |
-| Performance budgets (FCP, TTI) | [09-non-functional-requirements.md §3](09-non-functional-requirements.md) |
-| Browser caching details | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md) |
-| Browser support matrix | [09-non-functional-requirements.md §4](09-non-functional-requirements.md) |
-| Stage 8 scope | [00-redesign-plan.md §8](00-redesign-plan.md) |
+| Topic                                   | Canonical location                                                                |
+| --------------------------------------- | --------------------------------------------------------------------------------- |
+| Deployment target decision              | [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)           |
+| WASM build flags and rationale          | [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md)             |
+| WASM TypeScript API contract            | [06-wasm-api-contract.md](06-wasm-api-contract.md)                                |
+| Performance budgets (FCP, TTI)          | [09-non-functional-requirements.md §3](09-non-functional-requirements.md)         |
+| Browser caching details                 | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)       |
+| Browser support matrix                  | [09-non-functional-requirements.md §4](09-non-functional-requirements.md)         |
+| Stage 8 scope                           | [00-redesign-plan.md §8](00-redesign-plan.md)                                     |
 | Legacy CI workflow (deleted in Stage 3) | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |

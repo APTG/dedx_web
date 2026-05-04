@@ -47,6 +47,7 @@ Fetched via GitHub raw/tree URLs instead:
 `chunks=(1, 379, 100)` produces a **single shard file** (`c/0/0/0`)
 containing all 287 inner chunks, each compressed independently. The
 shard index at the tail is 287 × 2 × 8 = 4,592 bytes. The browser:
+
 1. Fetches `zarr.json` (array metadata) — 1 request
 2. Fetches last ~5 KB of shard for the index — 1 Range request
 3. Fetches specific ion's inner chunk at `index[i].offset` — 1 Range request
@@ -62,6 +63,7 @@ The `requirements.txt` change: `zarr==2.18.*` → `zarr>=3.0`.
 The user noted: "I see no issues in adding this spike into 2.5."
 Added Spike 4 to Stage 2.5 in `00-redesign-plan.md`. The stage now has
 4 spikes. The gate is split:
+
 - Spikes 1–3 gate: Stage 3 (already open ✅)
 - Spike 4 gate: external-data feature implementation (not Stage 3)
 

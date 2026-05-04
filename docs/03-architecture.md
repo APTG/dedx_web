@@ -99,10 +99,10 @@ HTML response before any JavaScript runs:
 
 ```html
 <!-- src/app.html — inside <head>, before %sveltekit.head% -->
-<link rel="icon" href="%sveltekit.assets%/favicon.ico" sizes="32x32">
-<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml">
-<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png">
-<link rel="manifest" href="%sveltekit.assets%/site.webmanifest">
+<link rel="icon" href="%sveltekit.assets%/favicon.ico" sizes="32x32" />
+<link rel="icon" href="%sveltekit.assets%/favicon.svg" type="image/svg+xml" />
+<link rel="apple-touch-icon" href="%sveltekit.assets%/apple-touch-icon.png" />
+<link rel="manifest" href="%sveltekit.assets%/site.webmanifest" />
 ```
 
 `%sveltekit.assets%` resolves to the correct base path at build time —
@@ -116,11 +116,11 @@ and icon references for Android home screen and PWA install prompts.
 
 ### Naming conventions
 
-| Pattern | Description |
-|---------|-------------|
-| `*.svelte.ts` | State modules — TypeScript files containing `$state` runes. Named with `.svelte.ts` so that `svelte-check` and `eslint-plugin-svelte` apply rune-aware rules. |
-| `+layout.svelte` / `+page.svelte` | SvelteKit route files — must use the `+` prefix convention. |
-| `__mocks__/` | Vitest manual mocks — co-located with the module they mock. |
+| Pattern                           | Description                                                                                                                                                   |
+| --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `*.svelte.ts`                     | State modules — TypeScript files containing `$state` runes. Named with `.svelte.ts` so that `svelte-check` and `eslint-plugin-svelte` apply rune-aware rules. |
+| `+layout.svelte` / `+page.svelte` | SvelteKit route files — must use the `+` prefix convention.                                                                                                   |
+| `__mocks__/`                      | Vitest manual mocks — co-located with the module they mock.                                                                                                   |
 
 ---
 
@@ -128,14 +128,14 @@ and icon references for Android home screen and PWA install prompts.
 
 ### Route map
 
-| URL path | File | Purpose |
-|----------|------|---------|
-| `/` | `src/routes/+page.svelte` | Redirects to `/calculator` |
-| `/calculator` | `src/routes/calculator/+page.svelte` | Calculator page (landing) |
-| `/plot` | `src/routes/plot/+page.svelte` | Plot page |
-| `/docs` | `src/routes/docs/+page.svelte` | Documentation landing |
-| `/docs/user-guide` | `src/routes/docs/user-guide/+page.svelte` | User guide |
-| `/docs/technical` | `src/routes/docs/technical/+page.svelte` | Technical reference |
+| URL path           | File                                      | Purpose                    |
+| ------------------ | ----------------------------------------- | -------------------------- |
+| `/`                | `src/routes/+page.svelte`                 | Redirects to `/calculator` |
+| `/calculator`      | `src/routes/calculator/+page.svelte`      | Calculator page (landing)  |
+| `/plot`            | `src/routes/plot/+page.svelte`            | Plot page                  |
+| `/docs`            | `src/routes/docs/+page.svelte`            | Documentation landing      |
+| `/docs/user-guide` | `src/routes/docs/user-guide/+page.svelte` | User guide                 |
+| `/docs/technical`  | `src/routes/docs/technical/+page.svelte`  | Technical reference        |
 
 All pages set `export const prerender = true` in their `+page.ts` files.
 SvelteKit's static adapter serializes them to `index.html` files inside
@@ -238,20 +238,25 @@ $effect(() => {
 Re-exports all types from [`06-wasm-api-contract.md`](06-wasm-api-contract.md):
 
 ```ts
-export type { EnergyUnit, StpUnit, RangeUnit } from './contract';
-export type { LibdedxEntity, ParticleEntity, ProgramEntity, MaterialEntity } from './contract';
-export type { CalculationResult, InverseStpResult, InverseCsdaResult } from './contract';
-export type { AdvancedOptions, AggregateState, MstarMode,
-              InterpolationScale, InterpolationMethod } from './contract';
-export type { CustomCompound, CompoundElement } from './contract';
-export { LibdedxError } from './contract';
-export type { LibdedxService } from './contract';
+export type { EnergyUnit, StpUnit, RangeUnit } from "./contract";
+export type { LibdedxEntity, ParticleEntity, ProgramEntity, MaterialEntity } from "./contract";
+export type { CalculationResult, InverseStpResult, InverseCsdaResult } from "./contract";
+export type {
+  AdvancedOptions,
+  AggregateState,
+  MstarMode,
+  InterpolationScale,
+  InterpolationMethod,
+} from "./contract";
+export type { CustomCompound, CompoundElement } from "./contract";
+export { LibdedxError } from "./contract";
+export type { LibdedxService } from "./contract";
 ```
 
 #### `src/lib/wasm/loader.ts`
 
 ```ts
-import { base } from '$app/paths';
+import { base } from "$app/paths";
 
 let service: LibdedxService | null = null;
 
@@ -259,7 +264,7 @@ export async function getService(): Promise<LibdedxService> {
   if (service) return service;
   const factory = await import(`${base}/wasm/libdedx.mjs`);
   const module = await factory.default({
-    locateFile: (f: string) => `${base}/wasm/${f}`
+    locateFile: (f: string) => `${base}/wasm/${f}`,
   });
   service = new LibdedxServiceImpl(module);
   await service.init();
@@ -297,12 +302,12 @@ C arrays and return; there is no async C API.
 
 **Current workload.** The hot paths and their blocking estimates:
 
-| Operation | WASM calls | Estimated block |
-|-----------|-----------|-----------------|
-| Calculator: single calculation | 1 × `get_stp_table(500 pts)` | < 20 ms |
-| Plot: add 1 series | 1 × `get_stp_table(500 pts)` | < 20 ms |
-| Plot: 8-series re-render | 8 × `get_stp_table(500 pts)` | < 160 ms |
-| Init (compat matrix) | ~20 synchronous calls | < 5 ms total |
+| Operation                      | WASM calls                   | Estimated block |
+| ------------------------------ | ---------------------------- | --------------- |
+| Calculator: single calculation | 1 × `get_stp_table(500 pts)` | < 20 ms         |
+| Plot: add 1 series             | 1 × `get_stp_table(500 pts)` | < 20 ms         |
+| Plot: 8-series re-render       | 8 × `get_stp_table(500 pts)` | < 160 ms        |
+| Init (compat matrix)           | ~20 synchronous calls        | < 5 ms total    |
 
 At 500 points per call, each `get_stp_table` is a single WASM call that fills a
 buffer — not 500 individual calls. The 300 ms debounce (§4.3) absorbs rapid
@@ -346,10 +351,13 @@ list, then recording which `(program, particle)` keys are valid:
 // WASM calls: 1× getParticles + 1× getMaterials per program = 2P total
 const compat: CompatibilityMatrix = new Map();
 for (const prog of programs.value) {
-  const particles = service.getParticles(prog.id);   // one WASM call
-  const materials = service.getMaterials(prog.id);   // one WASM call — hoisted outside particle loop
+  const particles = service.getParticles(prog.id); // one WASM call
+  const materials = service.getMaterials(prog.id); // one WASM call — hoisted outside particle loop
   for (const p of particles) {
-    compat.set(`${prog.id}:${p.id}`, materials.map(m => m.id));
+    compat.set(
+      `${prog.id}:${p.id}`,
+      materials.map((m) => m.id),
+    );
   }
 }
 compatMatrix.value = compat;
@@ -406,7 +414,9 @@ value wraps the call in a local `$derived`:
 
 ```ts
 // .svelte.ts module — export a compute function
-export function computeX(): T { return someState.value + otherState.value; }
+export function computeX(): T {
+  return someState.value + otherState.value;
+}
 
 // Component — local $derived wraps the call; tracks $state deps automatically
 const x = $derived(computeX());
@@ -442,7 +452,12 @@ export const selectedMaterialId = $state<{ value: number | null }>({ value: null
 // Implements the "auto-select best program" rule (01-project-vision.md §4.3).
 // Call inside component-level $derived — cannot export $derived from a module.
 export function computeResolvedProgram(): number | null {
-  return autoSelectProgram(selectedProgramId.value, selectedParticleId.value, selectedMaterialId.value, compatMatrix);
+  return autoSelectProgram(
+    selectedProgramId.value,
+    selectedParticleId.value,
+    selectedMaterialId.value,
+    compatMatrix,
+  );
 }
 ```
 
@@ -451,8 +466,8 @@ export function computeResolvedProgram(): number | null {
 Holds the energy input state, active unit, and the latest calculation result.
 
 ```ts
-export const energyInputText = $state({ value: '' });    // raw textarea content
-export const energyUnit = $state<{ value: EnergyUnit }>({ value: 'MeV' });
+export const energyInputText = $state({ value: "" }); // raw textarea content
+export const energyUnit = $state<{ value: EnergyUnit }>({ value: "MeV" });
 export const advancedOptions = $state<{ value: AdvancedOptions }>({ value: {} });
 export const result = $state<{ value: CalculationResult | null }>({ value: null });
 export const error = $state<{ value: LibdedxError | null }>({ value: null });
@@ -473,17 +488,17 @@ uses `setTimeout` + the cleanup return to implement debouncing:
 ```ts
 $effect(() => {
   // Call compute functions — Svelte tracks the $state deps they read
-  const energies  = computeParsedEnergies();
+  const energies = computeParsedEnergies();
   const programId = computeResolvedProgram();
-  const particle  = selectedParticleId.value;
-  const material  = selectedMaterialId.value;
-  const options   = advancedOptions.value;
+  const particle = selectedParticleId.value;
+  const material = selectedMaterialId.value;
+  const options = advancedOptions.value;
 
   const timer = setTimeout(() => {
     runCalculation(energies, programId, particle, material, options);
   }, 300);
 
-  return () => clearTimeout(timer);  // cancel on next dependency change
+  return () => clearTimeout(timer); // cancel on next dependency change
 });
 ```
 
@@ -504,8 +519,8 @@ above does not have this problem.
 ### 4.4 `ui.svelte.ts`
 
 ```ts
-export const isAdvancedMode = $state({ value: false });  // persisted to localStorage + URL
-export const wasmReady = $state({ value: false });       // set true after WASM init
+export const isAdvancedMode = $state({ value: false }); // persisted to localStorage + URL
+export const wasmReady = $state({ value: false }); // set true after WASM init
 export const wasmError = $state<{ value: Error | null }>({ value: null });
 ```
 
@@ -601,7 +616,7 @@ reconcile or re-render the contents of this element.
 
 ```svelte
 <script lang="ts">
-  import { untrack } from 'svelte';
+  import { untrack } from "svelte";
   let container: HTMLDivElement;
   let painter: any = null;
 
@@ -611,9 +626,13 @@ reconcile or re-render the contents of this element.
       if (painter) painter.cleanup?.();
     });
     if (!series.length) return;
-    drawPlot(container, series).then(p => { painter = p; });
+    drawPlot(container, series).then((p) => {
+      painter = p;
+    });
 
-    return () => { painter?.cleanup?.(); };
+    return () => {
+      painter?.cleanup?.();
+    };
   });
 </script>
 
@@ -644,7 +663,7 @@ wheel zoom and touch zoom must be disabled.
 `JSROOT.draw()`:
 
 ```ts
-import JSROOT from 'jsroot';
+import JSROOT from "jsroot";
 
 export async function drawPlot(container: HTMLDivElement, series: Series[]): Promise<unknown> {
   // Disable wheel zoom: plain scroll must scroll the page, not zoom the plot.
@@ -652,7 +671,7 @@ export async function drawPlot(container: HTMLDivElement, series: Series[]): Pro
   JSROOT.settings.ZoomWheel = false;
 
   // Disable touch zoom on coarse-pointer devices so swipe scrolls the page.
-  if (window.matchMedia('(pointer: coarse)').matches) {
+  if (window.matchMedia("(pointer: coarse)").matches) {
     JSROOT.settings.ZoomTouch = false;
   }
 
@@ -700,6 +719,7 @@ EnergyInput.svelte  →  energyInputText (calculation.svelte.ts)
 ### Unit conversion in the data flow
 
 The `CalculationResult` from WASM always contains:
+
 - `energies` in MeV/nucl
 - `stoppingPowers` in MeV·cm²/g
 - `csdaRanges` in g/cm²
@@ -775,14 +795,14 @@ URL sync follows the canonical 10-step algorithm in
 
 ## 10. SSG / Static Adapter Constraints
 
-| Constraint | Implication |
-|-----------|-------------|
-| All routes are pre-rendered | No `load()` functions may call a network API. Data comes from WASM only. |
-| WASM not available at build time | `+page.ts` and `+layout.ts` `load()` functions must not call `getService()`. `+layout.ts` should return `{}` during prerender; WASM init happens client-side in `+layout.svelte` via a non-blocking `$effect`. |
-| `export const prerender = true` | Every route file must set this. If omitted, the static adapter will not output an `index.html` for that route. |
-| No `fetch()` to same-origin API routes | GitHub Pages has no server. Do not rely on SvelteKit's server fetch hook. |
-| `localStorage` access | Only safe inside `$effect` or event handlers — not in `+page.ts` load functions that run during SSG prerender. |
-| CORS for external data | User-hosted `.webdedx` Zarr stores must be served with `Access-Control-Allow-Origin: *`. All files in the store (zarr.json, shard files) must be CORS-accessible. This is documented in the user guide, not enforced by the app. |
+| Constraint                             | Implication                                                                                                                                                                                                                      |
+| -------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| All routes are pre-rendered            | No `load()` functions may call a network API. Data comes from WASM only.                                                                                                                                                         |
+| WASM not available at build time       | `+page.ts` and `+layout.ts` `load()` functions must not call `getService()`. `+layout.ts` should return `{}` during prerender; WASM init happens client-side in `+layout.svelte` via a non-blocking `$effect`.                   |
+| `export const prerender = true`        | Every route file must set this. If omitted, the static adapter will not output an `index.html` for that route.                                                                                                                   |
+| No `fetch()` to same-origin API routes | GitHub Pages has no server. Do not rely on SvelteKit's server fetch hook.                                                                                                                                                        |
+| `localStorage` access                  | Only safe inside `$effect` or event handlers — not in `+page.ts` load functions that run during SSG prerender.                                                                                                                   |
+| CORS for external data                 | User-hosted `.webdedx` Zarr stores must be served with `Access-Control-Allow-Origin: *`. All files in the store (zarr.json, shard files) must be CORS-accessible. This is documented in the user guide, not enforced by the app. |
 
 ### SSG safety — why no `browser` guard is needed
 
@@ -795,7 +815,7 @@ call:
 ```ts
 // +layout.ts
 export function load() {
-  return {};   // Nothing. WASM init happens in +layout.svelte $effect.
+  return {}; // Nothing. WASM init happens in +layout.svelte $effect.
 }
 ```
 
@@ -835,11 +855,11 @@ Plot display the banner in place of their interactive content.
 When a Svelte component throws during rendering, SvelteKit catches the error
 and renders the nearest `+error.svelte` file. The error boundary hierarchy:
 
-| File | Catches |
-|------|---------|
-| `src/routes/+error.svelte` | Top-level unhandled errors — displays a generic "something went wrong" page with a reload button |
-| `src/routes/calculator/+error.svelte` | Calculator-specific errors — allows the nav bar to remain visible |
-| `src/routes/plot/+error.svelte` | Plot-specific errors — allows the nav bar to remain visible |
+| File                                  | Catches                                                                                          |
+| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
+| `src/routes/+error.svelte`            | Top-level unhandled errors — displays a generic "something went wrong" page with a reload button |
+| `src/routes/calculator/+error.svelte` | Calculator-specific errors — allows the nav bar to remain visible                                |
+| `src/routes/plot/+error.svelte`       | Plot-specific errors — allows the nav bar to remain visible                                      |
 
 WASM errors and input validation errors are handled in-component (see above)
 and do NOT reach the `+error.svelte` boundary. The boundary only fires for
@@ -856,15 +876,15 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 
 ## 12. Performance Considerations
 
-| Area | Strategy |
-|------|----------|
-| WASM binary size | `libdedx.wasm` **457 KB** + `libdedx.mjs` 13 KB (~200 KB gzip total) — no `.data` sidecar (all data compiled in). Served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See [`09-non-functional-requirements.md` §3.1](09-non-functional-requirements.md#31-browser-caching). |
-| JSROOT bundle | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`). |
-| Main-thread computation | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy). |
-| Calculation debounce | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke. |
-| Entity list caching | Programs / particles / materials fetched once at init; stored in `entities.svelte.ts`. No per-render WASM calls. |
-| Plot data points | 500 points per series is the default; computed once per series add. Re-rendered by JSROOT — no JS-side re-computation on zoom/pan. |
-| `noUncheckedIndexedAccess` | TypeScript compiler flag; prevents accidental undefined access in hot WASM result array paths. |
+| Area                       | Strategy                                                                                                                                                                                                                                                                                                                                                                                                       |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| WASM binary size           | `libdedx.wasm` **457 KB** + `libdedx.mjs` 13 KB (~200 KB gzip total) — no `.data` sidecar (all data compiled in). Served from `static/wasm/` as un-hashed filenames. GitHub Pages applies `Cache-Control: max-age=600`; subsequent visits send conditional requests (ETag) and receive 304 if unchanged. See [`09-non-functional-requirements.md` §3.1](09-non-functional-requirements.md#31-browser-caching). |
+| JSROOT bundle              | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`).                                                                                                                                                                                                                                                                                                                       |
+| Main-thread computation    | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy).                                                                                                                                     |
+| Calculation debounce       | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke.                                                                                                                                                                                                                                                                                                                              |
+| Entity list caching        | Programs / particles / materials fetched once at init; stored in `entities.svelte.ts`. No per-render WASM calls.                                                                                                                                                                                                                                                                                               |
+| Plot data points           | 500 points per series is the default; computed once per series add. Re-rendered by JSROOT — no JS-side re-computation on zoom/pan.                                                                                                                                                                                                                                                                             |
+| `noUncheckedIndexedAccess` | TypeScript compiler flag; prevents accidental undefined access in hot WASM result array paths.                                                                                                                                                                                                                                                                                                                 |
 
 ---
 
@@ -888,15 +908,15 @@ See [`09-non-functional-requirements.md`](09-non-functional-requirements.md) for
 
 ## 14. Related Documents
 
-| Document | Purpose |
-|----------|---------|
-| [02-tech-stack.md](02-tech-stack.md) | Library versions and rationale |
-| [decisions/001-sveltekit-over-react.md](decisions/001-sveltekit-over-react.md) | SvelteKit ADR |
-| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md) | JSROOT ADR |
-| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md) | WASM build ADR |
-| [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript types + LibdedxService interface |
-| [04-feature-specs/shareable-urls-formal.md](04-feature-specs/shareable-urls-formal.md) | URL canonicalization algorithm |
-| [04-feature-specs/entity-selection.md](04-feature-specs/entity-selection.md) | EntityDropdown / EntityPanel spec |
-| [04-feature-specs/calculator.md](04-feature-specs/calculator.md) | Calculator page spec |
-| [04-feature-specs/plot.md](04-feature-specs/plot.md) | Plot page spec |
-| [09-non-functional-requirements.md](09-non-functional-requirements.md) | WCAG, performance budgets |
+| Document                                                                               | Purpose                                     |
+| -------------------------------------------------------------------------------------- | ------------------------------------------- |
+| [02-tech-stack.md](02-tech-stack.md)                                                   | Library versions and rationale              |
+| [decisions/001-sveltekit-over-react.md](decisions/001-sveltekit-over-react.md)         | SvelteKit ADR                               |
+| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md)                           | JSROOT ADR                                  |
+| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md)           | WASM build ADR                              |
+| [06-wasm-api-contract.md](06-wasm-api-contract.md)                                     | TypeScript types + LibdedxService interface |
+| [04-feature-specs/shareable-urls-formal.md](04-feature-specs/shareable-urls-formal.md) | URL canonicalization algorithm              |
+| [04-feature-specs/entity-selection.md](04-feature-specs/entity-selection.md)           | EntityDropdown / EntityPanel spec           |
+| [04-feature-specs/calculator.md](04-feature-specs/calculator.md)                       | Calculator page spec                        |
+| [04-feature-specs/plot.md](04-feature-specs/plot.md)                                   | Plot page spec                              |
+| [09-non-functional-requirements.md](09-non-functional-requirements.md)                 | WCAG, performance budgets                   |

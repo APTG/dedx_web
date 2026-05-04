@@ -6,7 +6,7 @@ export interface DebouncedFunction<T extends (...args: any[]) => any> {
 
 export function debounce<T extends (...args: any[]) => any>(
   fn: T,
-  delayMs: number
+  delayMs: number,
 ): DebouncedFunction<T> {
   let timeoutId: ReturnType<typeof setTimeout> | null = null;
   let lastArgs: Parameters<T> | null = null;

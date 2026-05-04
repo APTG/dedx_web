@@ -46,7 +46,10 @@ test.describe("Calculator page — compact mode", () => {
     // Open particle dropdown and select Carbon (C)
     const particleBtn = particleTrigger(page);
     await particleBtn.click();
-    await page.getByRole("option", { name: /^Carbon \(C\)/i }).first().click();
+    await page
+      .getByRole("option", { name: /^Carbon \(C\)/i })
+      .first()
+      .click();
 
     // Open program dropdown
     const programBtn = programTrigger(page);
@@ -60,7 +63,10 @@ test.describe("Calculator page — compact mode", () => {
     // Change particle to Carbon (C)
     const particleBtn = particleTrigger(page);
     await particleBtn.click();
-    await page.getByRole("option", { name: /^Carbon \(C\)/i }).first().click();
+    await page
+      .getByRole("option", { name: /^Carbon \(C\)/i })
+      .first()
+      .click();
 
     // Click restore defaults
     await page.getByRole("button", { name: /restore defaults/i }).click();

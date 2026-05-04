@@ -34,6 +34,7 @@
 > Table Columns, §5.5 Wireframe, and §8 Export updated accordingly.
 >
 > **Related specs:**
+>
 > - Calculator page (forward lookup, unified table, entity selection): [`calculator.md`](calculator.md)
 > - Unit handling (energy units, SI prefixes, inline detection, output units): [`unit-handling.md`](unit-handling.md)
 > - WASM API contract (service methods, result types): [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md) §§2.3, 3
@@ -71,10 +72,10 @@ who only need forward (energy → stopping power / range) lookups.
 
 ### Visibility Rule
 
-| App mode | Tab bar on Calculator page |
-|----------|---------------------------|
-| **Basic** (default) | `[ Forward ]` — only the Forward tab is shown |
-| **Advanced** | `[ Forward ]  [ Range ]  [ Inverse STP ]` — all three tabs shown |
+| App mode            | Tab bar on Calculator page                                       |
+| ------------------- | ---------------------------------------------------------------- |
+| **Basic** (default) | `[ Forward ]` — only the Forward tab is shown                    |
+| **Advanced**        | `[ Forward ]  [ Range ]  [ Inverse STP ]` — all three tabs shown |
 
 The Advanced mode toggle is the app-wide Basic/Advanced control in the
 top-right action bar, as defined in
@@ -160,7 +161,7 @@ used simultaneously:
   `PSTAR (MeV)`). Layout mirrors the multi-program forward table.
 - **Inverse STP tab:** one **E low** column and one **E high** column per
   program (e.g., `ICRU 90 E low (MeV)`, `ICRU 90 E high (MeV)`, `PSTAR E low
-  (MeV)`, `PSTAR E high (MeV)`). This mirrors the Range tab column-per-program
+(MeV)`, `PSTAR E high (MeV)`). This mirrors the Range tab column-per-program
   layout, keeping the two branches together for each program (see §5).
 
 Programs hidden via `hidden_programs` are also excluded from inverse
@@ -173,6 +174,7 @@ case (no highlight, no error message).
 
 Both inverse tabs support the electron particle (ESTAR program, particle
 ID 1001). When the selected particle is the electron:
+
 - Output energy is in **MeV** (no per-nucleon conversion; electron has
   no mass-number equivalent).
 - The energy unit selector shows only the MeV-family options; per-nucleon
@@ -212,11 +214,11 @@ Result type: [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-res
 
 **Single-program mode:**
 
-| # | Column | Header | Editable? | Content |
-|---|--------|--------|-----------|---------|
-| 1 | **Typed Value** | "Range" | **Yes** | User types a range value with an optional length suffix (e.g., `7.718 cm`, `45 µm`). Inline suffix detection applies (see §4.3). |
-| 2 | **Unit** | "Unit" | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode. |
-| 3 | **Energy** | "→ Energy (auto)" | No | Resulting energy, auto-scaled to the best SI prefix (see §6). |
+| #   | Column          | Header            | Editable?    | Content                                                                                                                          |
+| --- | --------------- | ----------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Typed Value** | "Range"           | **Yes**      | User types a range value with an optional length suffix (e.g., `7.718 cm`, `45 µm`). Inline suffix detection applies (see §4.3). |
+| 2   | **Unit**        | "Unit"            | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode.                                                     |
+| 3   | **Energy**      | "→ Energy (auto)" | No           | Resulting energy, auto-scaled to the best SI prefix (see §6).                                                                    |
 
 The intermediate g/cm² normalized value is an internal computation step
 and is not shown in the table.
@@ -235,12 +237,12 @@ parser detects them per-row after the 300ms debounce.
 #### Supported Length Suffixes
 
 | Suffix (case-insensitive) | Resolved base unit | SI multiplier to cm |
-|---------------------------|--------------------|---------------------|
-| `nm` | cm | ×1e-7 |
-| `µm` or `um` | cm | ×1e-4 |
-| `mm` | cm | ×1e-1 |
-| `cm` | cm | ×1 |
-| `m` | cm | ×100 |
+| ------------------------- | ------------------ | ------------------- |
+| `nm`                      | cm                 | ×1e-7               |
+| `µm` or `um`              | cm                 | ×1e-4               |
+| `mm`                      | cm                 | ×1e-1               |
+| `cm`                      | cm                 | ×1                  |
+| `m`                       | cm                 | ×100                |
 
 The base unit for internal calculations is **cm** (before density
 conversion to g/cm²). SI-prefixed variants are parsed from typed text and
@@ -250,10 +252,10 @@ normalised to cm.
 
 The same master/per-row mode model as the energy input applies:
 
-| Mode | Condition | Master selector state |
-|------|-----------|-----------------------|
-| **Master mode** (default) | No row has an explicit suffix | Active — all rows use the master unit |
-| **Per-row mode** | At least one row has a typed suffix | Greyed out / disabled — each row has its own unit dropdown |
+| Mode                      | Condition                           | Master selector state                                      |
+| ------------------------- | ----------------------------------- | ---------------------------------------------------------- |
+| **Master mode** (default) | No row has an explicit suffix       | Active — all rows use the master unit                      |
+| **Per-row mode**          | At least one row has a typed suffix | Greyed out / disabled — each row has its own unit dropdown |
 
 The master unit defaults to **cm**. The dropdown options are the five
 base length units: nm, µm, mm, cm, m (SI-prefixed variants are typed
@@ -273,19 +275,20 @@ Conversion is invalid (row marked invalid) when neither source yields a valid ρ
 
 ### 4.4 Row Validation
 
-| Condition | Row status | Display |
-|-----------|-----------|---------|
-| Valid positive number (with or without suffix) | ✅ Valid | Energy column populated |
-| Empty row | ⏭️ Skipped | Row kept for input |
-| Non-numeric text | ❌ Invalid | Row highlighted: "Enter a numeric value" |
-| Unrecognized suffix (e.g., `1.5 furlongs`) | ❌ Invalid | Row highlighted: "Unrecognized unit 'furlongs'" |
-| Negative or zero | ❌ Invalid | Row highlighted: "Range must be positive" |
-| Value exceeds tabulated CSDA maximum | ⚠️ Out of range | Row highlighted with valid range hint |
-| Density unavailable (ρ = 0 or missing) | ❌ Invalid | Row highlighted: "Density not available for this material" |
+| Condition                                      | Row status      | Display                                                    |
+| ---------------------------------------------- | --------------- | ---------------------------------------------------------- |
+| Valid positive number (with or without suffix) | ✅ Valid        | Energy column populated                                    |
+| Empty row                                      | ⏭️ Skipped      | Row kept for input                                         |
+| Non-numeric text                               | ❌ Invalid      | Row highlighted: "Enter a numeric value"                   |
+| Unrecognized suffix (e.g., `1.5 furlongs`)     | ❌ Invalid      | Row highlighted: "Unrecognized unit 'furlongs'"            |
+| Negative or zero                               | ❌ Invalid      | Row highlighted: "Range must be positive"                  |
+| Value exceeds tabulated CSDA maximum           | ⚠️ Out of range | Row highlighted with valid range hint                      |
+| Density unavailable (ρ = 0 or missing)         | ❌ Invalid      | Row highlighted: "Density not available for this material" |
 
 ### 4.5 Wireframe (Advanced mode)
 
 Single-program:
+
 ```
   ┌─────────────────────┬──────┬─────────────────┐
   │ Range               │ Unit │ → Energy (auto) │
@@ -300,6 +303,7 @@ Single-program:
 ```
 
 Multi-program (two programs, ICRU 90 + PSTAR):
+
 ```
   ┌─────────────────────┬──────┬─────────────────┬─────────────────┐
   │ Range               │ Unit │ ICRU 90 (MeV)   │ PSTAR (MeV)     │
@@ -335,12 +339,12 @@ input values. Result type: [`InverseStpResult`](../06-wasm-api-contract.md#23-ca
 
 **Single-program mode:**
 
-| # | Column | Header | Editable? | Content |
-|---|--------|--------|-----------|---------|
-| 1 | **Typed Value** | "Stopping Power ({unit})" | **Yes** | User types a stopping power value. No inline suffix detection — unit is set via the unit dropdown (see §5.3). |
-| 2 | **Unit** | "Unit" | Via dropdown | Unit dropdown for the input value. Default mirrors the forward Calculator output unit for the current material (see §5.3). |
-| 3 | **E low** | "E low ({unit})" | No | Energy on the low-energy branch (below the Bragg peak), auto-scaled (see §6). `—` when no solution exists. |
-| 4 | **E high** | "E high ({unit})" | No | Energy on the high-energy branch (above the Bragg peak), auto-scaled (see §6). `—` when no solution exists. |
+| #   | Column          | Header                    | Editable?    | Content                                                                                                                    |
+| --- | --------------- | ------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Typed Value** | "Stopping Power ({unit})" | **Yes**      | User types a stopping power value. No inline suffix detection — unit is set via the unit dropdown (see §5.3).              |
+| 2   | **Unit**        | "Unit"                    | Via dropdown | Unit dropdown for the input value. Default mirrors the forward Calculator output unit for the current material (see §5.3). |
+| 3   | **E low**       | "E low ({unit})"          | No           | Energy on the low-energy branch (below the Bragg peak), auto-scaled (see §6). `—` when no solution exists.                 |
+| 4   | **E high**      | "E high ({unit})"         | No           | Energy on the high-energy branch (above the Bragg peak), auto-scaled (see §6). `—` when no solution exists.                |
 
 The header labels for **E low** and **E high** include the active display
 unit after auto-scaling is applied to the first valid row; if rows
@@ -369,10 +373,10 @@ The input unit dropdown offers three options: **keV/µm**, **MeV/cm**,
 Default selection mirrors the forward Calculator's stopping power output
 unit for the currently selected material:
 
-| Material phase | Default input unit |
-|----------------|--------------------|
-| Solid or liquid (`isGasByDefault = false`) | **keV/µm** |
-| Gas (`isGasByDefault = true`) | **MeV·cm²/g** |
+| Material phase                             | Default input unit |
+| ------------------------------------------ | ------------------ |
+| Solid or liquid (`isGasByDefault = false`) | **keV/µm**         |
+| Gas (`isGasByDefault = true`)              | **MeV·cm²/g**      |
 
 This default is chosen so that values from the Forward tab's Stopping
 Power column can be copied and pasted directly into the Inverse STP
@@ -390,12 +394,12 @@ the material density from `LibdedxService.getDensity(materialId)`.
 
 ### 5.4 Row Validation
 
-| Condition | Row status | Display |
-|-----------|-----------|---------|
-| Valid positive number | ✅ Valid | E low and E high columns populated |
-| Empty row | ⏭️ Skipped | No results; row kept for input |
-| Non-numeric text | ❌ Invalid | Row highlighted; tooltip: "Enter a numeric value" |
-| Negative number or zero | ❌ Invalid | Row highlighted: "Stopping power must be positive" |
+| Condition                        | Row status     | Display                                             |
+| -------------------------------- | -------------- | --------------------------------------------------- |
+| Valid positive number            | ✅ Valid       | E low and E high columns populated                  |
+| Empty row                        | ⏭️ Skipped     | No results; row kept for input                      |
+| Non-numeric text                 | ❌ Invalid     | Row highlighted; tooltip: "Enter a numeric value"   |
+| Negative number or zero          | ❌ Invalid     | Row highlighted: "Stopping power must be positive"  |
 | Value exceeds Bragg peak maximum | ⚠️ No solution | Both E low and E high cells show `—` (no highlight) |
 
 When the queried stopping power exceeds the Bragg peak maximum for the
@@ -416,6 +420,7 @@ Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)
 ### 5.5 Wireframe (Advanced mode, non-gas material)
 
 Single-program:
+
 ```
   Branch note: two energies are shown per row because the same stopping
   power occurs at two different energies — one below and one above the
@@ -434,6 +439,7 @@ Single-program:
 ```
 
 Multi-program (two programs, ICRU 90 + PSTAR):
+
 ```
   ┌────────────────────┬────────┬────────────────┬────────────────┬────────────────┬────────────────┐
   │ Stopping Power     │ Unit   │ ICRU 90 E low  │ ICRU 90 E high │ PSTAR E low    │ PSTAR E high   │
@@ -464,12 +470,12 @@ MeV/nucl (WASM output) to the active display unit (MeV, MeV/nucl, or
 MeV/u). Since all three units are in the MeV magnitude family, the same
 cutoffs apply regardless of which unit is selected.
 
-| Value range (in active display unit) | Display prefix | Example |
-|--------------------------------------|---------------|---------|
-| ≥ 1000 | GeV | 1.200 GeV/nucl |
-| ≥ 1 | MeV | 100.0 MeV |
-| ≥ 0.001 | keV | 1.000 keV |
-| < 0.001 | eV | 500.0 eV/nucl |
+| Value range (in active display unit) | Display prefix | Example        |
+| ------------------------------------ | -------------- | -------------- |
+| ≥ 1000                               | GeV            | 1.200 GeV/nucl |
+| ≥ 1                                  | MeV            | 100.0 MeV      |
+| ≥ 0.001                              | keV            | 1.000 keV      |
+| < 0.001                              | eV             | 500.0 eV/nucl  |
 
 The rule: choose the prefix such that the displayed numeric value falls
 in the range **1.000 – 9999**.
@@ -488,6 +494,7 @@ distinction does not apply and only eV / keV / MeV / GeV are used.
 
 Because different rows may auto-scale to different prefixes, the column
 header does not hard-code a unit. Instead:
+
 - If **all valid rows** in the column auto-scale to the same prefix, the
   header shows that unit: e.g., `→ Energy (MeV)`.
 - If rows use **mixed prefixes**, the header shows `→ Energy (auto)` and
@@ -505,28 +512,28 @@ header does not hard-code a unit. Instead:
 
 Both inverse tabs use the same table interaction model as the Forward tab:
 
-| Behaviour | Detail |
-|-----------|--------|
-| Always-empty-bottom-row | One empty row always appears at the bottom; typing in it creates a new empty row below. |
-| Row deletion | Clearing a row's typed value removes the row after a short delay (or on blur), unless it is the only or last empty row. |
-| Paste from clipboard | Pasting multi-line text (e.g., a column from Excel) into any input cell creates one row per line. |
-| Tab / Enter | Moves focus to the next row's input cell; at the last row, focuses the empty bottom row. |
-| Debounce | Calculation fires 300ms after the last input event (same as Forward tab). |
-| Pre-filled row | On first switch to an inverse tab, a single representative row is pre-filled: `7.718 cm` for Range (matching the Forward tab's default 100 MeV proton/water result), `45.76` keV/µm for Inverse STP. |
-| Entity selection incomplete | Message above the table: "Select a particle and material to calculate." No WASM calls are made. |
+| Behaviour                   | Detail                                                                                                                                                                                               |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Always-empty-bottom-row     | One empty row always appears at the bottom; typing in it creates a new empty row below.                                                                                                              |
+| Row deletion                | Clearing a row's typed value removes the row after a short delay (or on blur), unless it is the only or last empty row.                                                                              |
+| Paste from clipboard        | Pasting multi-line text (e.g., a column from Excel) into any input cell creates one row per line.                                                                                                    |
+| Tab / Enter                 | Moves focus to the next row's input cell; at the last row, focuses the empty bottom row.                                                                                                             |
+| Debounce                    | Calculation fires 300ms after the last input event (same as Forward tab).                                                                                                                            |
+| Pre-filled row              | On first switch to an inverse tab, a single representative row is pre-filled: `7.718 cm` for Range (matching the Forward tab's default 100 MeV proton/water result), `45.76` keV/µm for Inverse STP. |
+| Entity selection incomplete | Message above the table: "Select a particle and material to calculate." No WASM calls are made.                                                                                                      |
 
 ### Recalculation Triggers
 
 The result columns recalculate when **any** of these change:
 
-| Trigger | Debounced? |
-|---------|-----------|
-| Row input (typed value) | Yes (300ms) |
-| Input unit change (master or per-row) | No (immediate) |
-| Particle change | No (immediate) |
-| Material change | No (immediate) — may also change default STP input unit |
-| Program change | No (immediate) |
-| Advanced Options change | No (immediate) |
+| Trigger                               | Debounced?                                              |
+| ------------------------------------- | ------------------------------------------------------- |
+| Row input (typed value)               | Yes (300ms)                                             |
+| Input unit change (master or per-row) | No (immediate)                                          |
+| Particle change                       | No (immediate)                                          |
+| Material change                       | No (immediate) — may also change default STP input unit |
+| Program change                        | No (immediate)                                          |
+| Advanced Options change               | No (immediate)                                          |
 
 ---
 
@@ -554,6 +561,7 @@ figures).
 valid row (or `auto` if rows use mixed prefixes).
 
 **Filenames:**
+
 - `dedx_range_{particle}_{material}.csv` (multi-program: omits program segment)
 - `dedx_range_{particle}_{material}_{program}.csv` (single-program)
 - `dedx_inverse_stp_{particle}_{material}.csv` (multi-program)
@@ -568,11 +576,11 @@ the existing forward-lookup parameters. The shared parameters (`particle`,
 `material`, `program`, `energies`, `eunit`) continue to encode the Forward
 tab state. When an inverse tab is active, additional parameters are added.
 
-| Parameter | Values | Notes |
-|-----------|--------|-------|
-| `imode` | `stp` or `csda` | Indicates which inverse tab is active. `csda` = Range tab; `stp` = Inverse STP tab. Absent → Forward tab active. |
-| `ivalues` | Comma-separated values | Input values for the active inverse tab. Per-value unit suffix uses the same colon syntax as `energies`: e.g., `7.718:cm,45:um,0.2`. |
-| `iunit` | e.g., `cm`, `kev-um` | Master input unit for the active inverse tab. For `imode=csda`: one of `nm`, `um`, `mm`, `cm`, `m`. For `imode=stp`: one of `kev-um`, `mev-cm`, `mev-cm2-g` (same kebab-case tokens as `stp_unit`). |
+| Parameter | Values                 | Notes                                                                                                                                                                                               |
+| --------- | ---------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `imode`   | `stp` or `csda`        | Indicates which inverse tab is active. `csda` = Range tab; `stp` = Inverse STP tab. Absent → Forward tab active.                                                                                    |
+| `ivalues` | Comma-separated values | Input values for the active inverse tab. Per-value unit suffix uses the same colon syntax as `energies`: e.g., `7.718:cm,45:um,0.2`.                                                                |
+| `iunit`   | e.g., `cm`, `kev-um`   | Master input unit for the active inverse tab. For `imode=csda`: one of `nm`, `um`, `mm`, `cm`, `m`. For `imode=stp`: one of `kev-um`, `mev-cm`, `mev-cm2-g` (same kebab-case tokens as `stp_unit`). |
 
 > **Note on naming:** The Range tab uses `imode=csda` in the URL for
 > stability (the URL contract is separate from the UI label). The parameter
@@ -592,6 +600,7 @@ tab state. When an inverse tab is active, additional parameters are added.
 ### Load Behaviour
 
 On page load with `imode` present:
+
 1. If Advanced mode is **off**, `imode` is ignored and the Forward tab
    loads normally. (Inverse tabs are hidden in Basic mode.)
 2. If Advanced mode is **on**, the indicated inverse tab is activated.

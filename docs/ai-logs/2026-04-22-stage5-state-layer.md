@@ -41,9 +41,9 @@ Implement Phase 2 of entity selection feature: state layer with `createEntitySel
 
 ### Files Changed
 
-| File | Status | Purpose |
-|------|--------|---------|
-| `src/lib/state/entity-selection.ts` | NEW | State layer implementation |
+| File                                            | Status   | Purpose                                |
+| ----------------------------------------------- | -------- | -------------------------------------- |
+| `src/lib/state/entity-selection.ts`             | NEW      | State layer implementation             |
 | `src/tests/unit/entity-selection-state.test.ts` | MODIFIED | Mock service updated (proton in MSTAR) |
 
 ### Next Steps (Phase 3 — Future Session)

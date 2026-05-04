@@ -23,7 +23,7 @@ export interface CalculatedRow {
   normalizedMevNucl: number | null;
   unit: EnergyUnit;
   unitFromSuffix: boolean;
-  status: 'valid' | 'invalid' | 'out-of-range' | 'empty';
+  status: "valid" | "invalid" | "out-of-range" | "empty";
   message?: string;
   stoppingPower: number | null;
   csdaRangeCm: number | null;
@@ -52,13 +52,13 @@ export interface CalculatorState {
 
 export function createCalculatorState(
   entitySelection: EntitySelectionState,
-  service: LibdedxService
+  service: LibdedxService,
 ): CalculatorState {
   let inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
   let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
-    new Map()
+    new Map(),
   );
 
   const debouncedCalculate = debounce(async () => {
@@ -66,7 +66,10 @@ export function createCalculatorState(
     await performCalculation(energies);
   }, 300);
 
-  function convertRowsForNewParticle(oldParticle: ParticleEntity, newParticle: ParticleEntity): void {
+  function convertRowsForNewParticle(
+    oldParticle: ParticleEntity,
+    newParticle: ParticleEntity,
+  ): void {
     const rows = inputState.rows;
     for (let i = 0; i < rows.length; i++) {
       const row = rows[i];
@@ -98,7 +101,7 @@ export function createCalculatorState(
         parsed.value,
         oldUnitSuffix,
         oldParticle.massNumber,
-        oldParticle.atomicMass
+        oldParticle.atomicMass,
       );
 
       let newUnit: EnergyUnit;
@@ -131,7 +134,7 @@ export function createCalculatorState(
           mevPerNucl,
           newUnit,
           newParticle.massNumber,
-          newParticle.atomicMass
+          newParticle.atomicMass,
         );
       }
 
@@ -144,35 +147,39 @@ export function createCalculatorState(
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
     if (material?.isGasByDefault) {
-      return 'MeV·cm²/g';
+      return "MeV·cm²/g";
     }
-    return 'keV/µm';
+    return "keV/µm";
   }
 
-  function parseRow(row: EnergyRow, particleMassNumber: number, particleAtomicMass?: number): CalculatedRow {
+  function parseRow(
+    row: EnergyRow,
+    particleMassNumber: number,
+    particleAtomicMass?: number,
+  ): CalculatedRow {
     const parsed = parseEnergyInput(row.text);
 
-    if ('empty' in parsed) {
+    if ("empty" in parsed) {
       return {
         id: row.id,
-        rawInput: '',
+        rawInput: "",
         normalizedMevNucl: null,
         unit: inputState.masterUnit,
         unitFromSuffix: false,
-        status: 'empty',
+        status: "empty",
         stoppingPower: null,
         csdaRangeCm: null,
       };
     }
 
-    if ('error' in parsed) {
+    if ("error" in parsed) {
       return {
         id: row.id,
         rawInput: row.text,
         normalizedMevNucl: null,
         unit: inputState.masterUnit,
         unitFromSuffix: false,
-        status: 'invalid',
+        status: "invalid",
         message: parsed.error,
         stoppingPower: null,
         csdaRangeCm: null,
@@ -193,7 +200,7 @@ export function createCalculatorState(
         parsed.value,
         parsed.unit ?? inputState.masterUnit,
         particleMassNumber,
-        particleAtomicMass
+        particleAtomicMass,
       );
     } catch {
       return {
@@ -202,22 +209,22 @@ export function createCalculatorState(
         normalizedMevNucl: null,
         unit: effectiveUnit,
         unitFromSuffix,
-        status: 'invalid',
-        message: 'conversion error',
+        status: "invalid",
+        message: "conversion error",
         stoppingPower: null,
         csdaRangeCm: null,
       };
     }
 
     const resultData = calculationResults.get(String(row.id));
-    
+
     return {
       id: row.id,
       rawInput: row.text,
       normalizedMevNucl,
       unit: effectiveUnit,
       unitFromSuffix,
-      status: 'valid',
+      status: "valid",
       stoppingPower: resultData?.stoppingPower ?? null,
       csdaRangeCm: resultData?.csdaRangeCm ?? null,
     };
@@ -232,15 +239,13 @@ export function createCalculatorState(
         normalizedMevNucl: null,
         unit: inputState.masterUnit,
         unitFromSuffix: false,
-        status: 'empty',
+        status: "empty",
         stoppingPower: null,
         csdaRangeCm: null,
       }));
     }
 
-    return inputState.rows.map((row) =>
-      parseRow(row, particle.massNumber, particle.atomicMass)
-    );
+    return inputState.rows.map((row) => parseRow(row, particle.massNumber, particle.atomicMass));
   }
 
   async function performCalculation(energies: { rowId: string; energy: number }[]): Promise<void> {
@@ -263,14 +268,14 @@ export function createCalculatorState(
         return;
       }
 
-      const energyValues = energies.map(e => e.energy);
+      const energyValues = energies.map((e) => e.energy);
       const result = service.calculate(resolvedProgramId, particleId, materialId, energyValues);
-      
+
       const material = entitySelection.selectedMaterial;
       const density = material?.density ?? 1;
 
       const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
-      
+
       for (let i = 0; i < energies.length; i++) {
         const stpMass = result.stoppingPowers[i];
         const csdaGcm2 = result.csdaRanges[i];
@@ -278,7 +283,10 @@ export function createCalculatorState(
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
-        if (!Number.isFinite(stpMass) || (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)) {
+        if (
+          !Number.isFinite(stpMass) ||
+          (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)
+        ) {
           console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
             programId: resolvedProgramId,
             particleId,
@@ -287,7 +295,10 @@ export function createCalculatorState(
             rawValue: stpMass,
           });
         }
-        if (!Number.isFinite(csdaGcm2) || (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)) {
+        if (
+          !Number.isFinite(csdaGcm2) ||
+          (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)
+        ) {
           console.warn("[dedx] subnormal/invalid WASM output (CSDA range)", {
             programId: resolvedProgramId,
             particleId,
@@ -298,7 +309,7 @@ export function createCalculatorState(
         }
 
         let stpDisplay: number;
-        if (getStpDisplayUnit() === 'keV/µm') {
+        if (getStpDisplayUnit() === "keV/µm") {
           const converted = stpMassToKevUm(stpMass, density);
           stpDisplay = converted ?? stpMass;
         } else {
@@ -316,7 +327,7 @@ export function createCalculatorState(
       // Reassign to a new Map so Svelte detects the change.
       calculationResults = newResults;
     } catch (e) {
-      error = e instanceof LibdedxError ? e : new LibdedxError(-1, 'Calculation failed');
+      error = e instanceof LibdedxError ? e : new LibdedxError(-1, "Calculation failed");
     } finally {
       isCalculating = false;
     }
@@ -327,20 +338,20 @@ export function createCalculatorState(
     if (!particle) return [];
 
     const parsedEnergies = inputState.getParsedEnergies();
-    
+
     return inputState.rows
       .map((row, index) => {
         const parsed = parsedEnergies[index];
-        if (!('value' in parsed) || parsed.value <= 0) {
+        if (!("value" in parsed) || parsed.value <= 0) {
           return null;
         }
-        
+
         try {
           const energy = convertEnergyToMeVperNucl(
             parsed.value,
             parsed.unit ?? inputState.masterUnit,
             particle.massNumber,
-            particle.atomicMass
+            particle.atomicMass,
           );
           return { rowId: String(row.id), energy };
         } catch {
@@ -350,12 +361,17 @@ export function createCalculatorState(
       .filter((e): e is { rowId: string; energy: number } => e !== null);
   }
 
-  function computeValidationSummary(): { valid: number; invalid: number; outOfRange: number; total: number } {
+  function computeValidationSummary(): {
+    valid: number;
+    invalid: number;
+    outOfRange: number;
+    total: number;
+  } {
     const rows = computeRows();
     return {
-      valid: rows.filter((r) => r.status === 'valid').length,
-      invalid: rows.filter((r) => r.status === 'invalid').length,
-      outOfRange: rows.filter((r) => r.status === 'out-of-range').length,
+      valid: rows.filter((r) => r.status === "valid").length,
+      invalid: rows.filter((r) => r.status === "invalid").length,
+      outOfRange: rows.filter((r) => r.status === "out-of-range").length,
       total: rows.length,
     };
   }
@@ -402,7 +418,7 @@ export function createCalculatorState(
       }
 
       const parsed = parseEnergyInput(trimmed);
-      if (!("value" in parsed) || parsed.unit === null && parsed.value === undefined) {
+      if (!("value" in parsed) || (parsed.unit === null && parsed.value === undefined)) {
         return;
       }
       if ("error" in parsed || "empty" in parsed) {
@@ -414,22 +430,25 @@ export function createCalculatorState(
         parsed.value,
         currentUnit,
         particle.massNumber,
-        particle.atomicMass
+        particle.atomicMass,
       );
       const converted = convertEnergyFromMeVperNucl(
         mevNucl,
         unit,
         particle.massNumber,
-        particle.atomicMass
+        particle.atomicMass,
       );
       inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
     },
     switchParticle(particleId: number | null) {
       const oldParticle = previousParticle;
-      const newParticle = particleId !== null ? entitySelection.allParticles.find(p => p.id === particleId) || null : null;
-      
+      const newParticle =
+        particleId !== null
+          ? entitySelection.allParticles.find((p) => p.id === particleId) || null
+          : null;
+
       entitySelection.selectParticle(particleId);
-      
+
       if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
         convertRowsForNewParticle(oldParticle, newParticle);
       }
@@ -478,7 +497,7 @@ export function formatStpValue(value: number, _unit: StpUnit): string {
 }
 
 export function formatRangeValue(cm: number | null): string {
-  if (cm === null) return '';
+  if (cm === null) return "";
 
   const scaled = autoScaleLengthCm(cm);
   return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;

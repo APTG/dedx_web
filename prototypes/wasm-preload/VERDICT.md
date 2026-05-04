@@ -6,10 +6,10 @@
 
 ## Build Artifact Sizes
 
-| Build | libdedx.mjs | libdedx.wasm | libdedx.data |
-|-------|------------|-------------|-------------|
-| `--preload-file` | 153 KB | 15 KB | 1.5 MB (sidecar) |
-| `--embed-file` | 146 KB | 1.5 MB | (none — embedded in .wasm) |
+| Build            | libdedx.mjs | libdedx.wasm | libdedx.data               |
+| ---------------- | ----------- | ------------ | -------------------------- |
+| `--preload-file` | 153 KB      | 15 KB        | 1.5 MB (sidecar)           |
+| `--embed-file`   | 146 KB      | 1.5 MB       | (none — embedded in .wasm) |
 
 Note: `--preload-file` keeps the data as a separate `.data` sidecar fetched at runtime.
 `--embed-file` bakes the data into the `.wasm` binary itself.
@@ -61,14 +61,14 @@ with files at `/tmp/ghpages/dedx_web/`.
 
 ## Acceptance Criteria
 
-| # | Criterion | Result |
-|---|-----------|--------|
-| 1 | Dev server loads — status "OK — 10 programs loaded"; 10 program names visible | **PASS** |
-| 2 | Static build (root path) loads — same result, served by Python http.server on port 4000 | **PASS** |
-| 3 | Static build (sub-path) loads — same result, served at `/dedx_web/` sub-path | **PASS** |
-| 4 | `.data` file fetched — `libdedx.data` returned HTTP 200 in all three scenarios | **PASS** |
-| 5 | No CORS errors — no CORS-related console errors in any scenario | **PASS** |
-| 6 | `locateFile` paths correct — `.wasm` and `.data` URLs correctly include the base path (`/dedx_web/` in Scenario C) | **PASS** |
+| #   | Criterion                                                                                                          | Result   |
+| --- | ------------------------------------------------------------------------------------------------------------------ | -------- |
+| 1   | Dev server loads — status "OK — 10 programs loaded"; 10 program names visible                                      | **PASS** |
+| 2   | Static build (root path) loads — same result, served by Python http.server on port 4000                            | **PASS** |
+| 3   | Static build (sub-path) loads — same result, served at `/dedx_web/` sub-path                                       | **PASS** |
+| 4   | `.data` file fetched — `libdedx.data` returned HTTP 200 in all three scenarios                                     | **PASS** |
+| 5   | No CORS errors — no CORS-related console errors in any scenario                                                    | **PASS** |
+| 6   | `locateFile` paths correct — `.wasm` and `.data` URLs correctly include the base path (`/dedx_web/` in Scenario C) | **PASS** |
 
 ## Conclusion
 

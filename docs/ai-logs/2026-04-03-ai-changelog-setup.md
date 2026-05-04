@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Analyze AI changelog best practices from another project
+
 **User** shared the `copilot-instructions.md` from the WebSRIM project, which has a
 well-structured AI session logging system. User asked for best practices analysis
 and a proposal adapted for this project (dedx_web).
@@ -16,6 +17,7 @@ Added a session narrative section to capture prompt→response history for proje
 continuity.
 
 ### Prompt 2: Implement the proposed changes
+
 **User** asked to implement the changes: create a branch, update all necessary files
 (including the redesign plan), create a PR, and include the first changelog entries.
 User noted that the beginning of the story (planning sessions from 1-2 April 2026)
@@ -30,6 +32,7 @@ to reference the AI logging system. Created a PR with all changes.
 ## Tasks
 
 ### Set up AI session logging infrastructure
+
 - **Status**: completed
 - **Stage**: Stage 0 (AI Agent Bootstrap)
 - **Files changed**:

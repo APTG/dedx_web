@@ -8,6 +8,7 @@
 
 User asked to improve the display of particles and programs to have a similar
 human-readable form as materials received in the previous session. Specifically:
+
 - Particle labels showed "Z=1 Hydrogen (H)" — user wanted the simpler "Hydrogen (H)".
 - Program labels showed "PSTAR — 1.2" (raw version string) or "ICRU 49 — ICRU Report 49 D"
   (redundant: name and version both say "ICRU 49"). User wanted short, non-redundant
@@ -17,6 +18,7 @@ human-readable form as materials received in the previous session. Specifically:
 **AI response:**
 
 **Particle names** (`src/lib/config/particle-names.ts` — new):
+
 - Added `formatParticleName(rawName)`: simple title-case (element names are single
   words, no underscore splitting needed).
 - Added `PARTICLE_NAME_OVERRIDES` map: currently only id=1001 → "Electron" (the C API
@@ -26,6 +28,7 @@ human-readable form as materials received in the previous session. Specifically:
   `id === 1001 ? "Electron" : formatMaterialName(runtimeName)` one-liner.
 
 **Program names** (`src/lib/config/program-names.ts` — updated):
+
 - Added `PROGRAM_DESCRIPTIONS` map with short human-readable descriptions for all
   known programs (e.g., id=2 → "protons (NIST)", id=7 → "protons & α particles").
 - Added `getProgramDescription(id)` exported function.
@@ -33,6 +36,7 @@ human-readable form as materials received in the previous session. Specifically:
   DEFAULT → "Default (Bethe)", etc.) were retained unchanged.
 
 **Combobox display** (`entity-selection-comboboxes.svelte` — updated):
+
 - `getParticleLabel`: removed "Z=" prefix; now returns "Hydrogen (H)" format.
   Atomic number Z stays in `searchText` so users can still type "z=6" to find Carbon.
 - Program items: label is now `${program.name} — ${desc}` where `desc` comes from
@@ -41,6 +45,7 @@ human-readable form as materials received in the previous session. Specifically:
   for programs without a description entry.
 
 **Tests** updated:
+
 - `entity-selection-comboboxes.test.ts`: updated mock program id=7 from "ICRU49" to
   "ICRU 49" (to match what `getProgramFriendlyName` produces); updated assertions for
   the particle trigger text ("Z=1 Hydrogen (H)" → "Hydrogen (H)"), carbon item
@@ -49,6 +54,7 @@ human-readable form as materials received in the previous session. Specifically:
 - Added `src/tests/unit/program-names.test.ts` (new, 16 tests).
 
 **Spec** (`docs/04-feature-specs/entity-selection.md`) updated:
+
 - Particle display format: `Z=N Name (Symbol)` → `Name (Symbol)`; added note that Z
   stays as a search keyword only.
 - Program display format example updated: "PSTAR — protons (NIST)", "ICRU 49 — protons
@@ -60,6 +66,7 @@ human-readable form as materials received in the previous session. Specifically:
 ## Tasks
 
 ### particle-names.ts config wrapper
+
 - **Status**: completed
 - **Stage**: Stage 5 (entity selection)
 - **Files changed**: `src/lib/config/particle-names.ts` (new),
@@ -69,6 +76,7 @@ human-readable form as materials received in the previous session. Specifically:
   future mass-specific ions (e.g., "CARBON12").
 
 ### PROGRAM_DESCRIPTIONS + program label overhaul
+
 - **Status**: completed
 - **Stage**: Stage 5 (entity selection)
 - **Files changed**: `src/lib/config/program-names.ts`,
@@ -80,6 +88,7 @@ human-readable form as materials received in the previous session. Specifically:
   so existing searches ("1.2", "2005/06") still work.
 
 ### Particle label format change
+
 - **Status**: completed
 - **Stage**: Stage 5 (entity selection)
 - **Files changed**: `src/lib/components/entity-selection-comboboxes.svelte`,

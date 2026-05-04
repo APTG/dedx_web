@@ -3,10 +3,12 @@
 ## Session Narrative
 
 ### Prompt 1: Run Spike 2 (wasm-preload) prototype
+
 **AI response**: Claude Sonnet 4.6 implemented Spike 2 on branch `spike/wasm-preload`
 exactly as specified in `docs/11-prototyping-spikes.md §Spike 2`. Steps taken:
 
 **Step 1 — WASM builds (Docker, emscripten/emsdk:5.0.5):**
+
 - Built `libdedx.a` from the `libdedx/` submodule (v1.4.0) using `emcmake cmake`
   inside the Docker image.
 - Built `preload/libdedx.{mjs,wasm,data}` with `--preload-file /src/libdedx/data@/data`.
@@ -16,6 +18,7 @@ exactly as specified in `docs/11-prototyping-spikes.md §Spike 2`. Steps taken:
 - Both builds required adding `HEAP32` to `EXPORTED_RUNTIME_METHODS` (see below).
 
 **Step 2 — SvelteKit app:**
+
 - Scaffolded with `pnpm dlx sv create app --template minimal --types ts`.
 - Installed `@sveltejs/adapter-static`.
 - Wrote `svelte.config.js` with `adapter-static` and `BASE_PATH` env var support.
@@ -25,6 +28,7 @@ exactly as specified in `docs/11-prototyping-spikes.md §Spike 2`. Steps taken:
 - Implemented `app/src/routes/+page.svelte` with `locateFile` override.
 
 **Step 3 — Testing (headless Playwright/Chromium):**
+
 - `pnpm dlx serve` chose random ports, ignoring `-l 4000`; switched to
   `python3 -m http.server` for reliable port binding.
 - Installed Playwright and Chromium headless shell to automate all three
@@ -38,13 +42,15 @@ WASM assets HTTP 200, no CORS errors.
 CORS errors.
 
 **Scenario C (sub-path `/dedx_web/`, port 4001):** `BASE_PATH=/dedx_web pnpm build`
-+ files copied to `/tmp/ghpages/dedx_web/` and served — 10 programs loaded,
-`locateFile` correctly produced `http://…/dedx_web/wasm/libdedx.data`, no CORS
-errors.
+
+- files copied to `/tmp/ghpages/dedx_web/` and served — 10 programs loaded,
+  `locateFile` correctly produced `http://…/dedx_web/wasm/libdedx.data`, no CORS
+  errors.
 
 ## Tasks
 
 ### Spike 2 — WASM `--preload-file` on SvelteKit Static Adapter
+
 - **Status**: completed
 - **Stage**: 2.5
 - **Branch**: `spike/wasm-preload`

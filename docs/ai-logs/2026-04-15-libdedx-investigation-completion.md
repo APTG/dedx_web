@@ -8,12 +8,14 @@
 from the Stage 2.6 plan.
 
 **AI response:** Reviewed all files in `prototypes/libdedx-investigation/`:
+
 - Phase 1 complete: `inspect_headers.py`, `data/headers_stats.json`
 - Phase 2 complete: `wasm-runtime/build.sh`, `wasm-runtime/verify.mjs`, 24/24 checks PASS
 - Phase 3 covered in REPORT.md §7
 - Phase 4 partial: cross-check tables in REPORT.md §8–§9
 
 Identified missing deliverables:
+
 1. `data/wasm_runtime_stats.json` — no machine-readable JSON from Phase 2
 2. `VERDICT.md` — structured go/no-go verdict not created
 3. `PLAN.md` — living plan document not created
@@ -29,6 +31,7 @@ Added 3 new WASM exports: `_dedx_get_i_value`, `_dedx_get_composition`,
 `_dedx_internal_read_density`, `_dedx_get_program_version`.
 
 **2. Updated `wasm-runtime/verify.mjs`:**
+
 - Added JSON data collector (`runtimeStats` object) that captures all runtime data
 - Added program version collection (Task 2.2)
 - Added I-value spot-checks for 8 materials (Task 2.9): H, C, Al, Cu, Au, Pb, Water, Air
@@ -38,6 +41,7 @@ Added 3 new WASM exports: `_dedx_get_i_value`, `_dedx_get_composition`,
 - Updated summary section numbering (§9→§12)
 
 **3. Rebuilt WASM and ran verification:**
+
 - Docker rebuild with emscripten/emsdk:5.0.5: `libdedx.mjs` 13 KB, `libdedx.wasm` 457 KB
 - **44/44 checks PASS** (up from 24/24)
 - All I-values match expected values (eV unit confirmed)
@@ -45,16 +49,19 @@ Added 3 new WASM exports: `_dedx_get_i_value`, `_dedx_get_composition`,
 - All compositions return correct elements with mass fractions summing to ~1.0
 
 **4. Created `VERDICT.md`:**
+
 - Bundle strategy: (A) Monolithic recommended — 457 KB WASM, no sidecar
 - 8 spec amendments listed
 - 3 breaking gaps documented (ESTAR not implemented, no public density getter, MSTAR list incomplete)
 - All 10 acceptance criteria evaluated and PASS
 
 **5. Created `PLAN.md`:**
+
 - Living plan document with deliverable status table
 - Phase summaries and key findings
 
 **6. Consistency fixes in `REPORT.md`:**
+
 - Updated check count: 24/24 → 44/44
 - Updated WASM size: 456 KB → 457 KB
 - **Critical correction:** DEFAULT ion list returns Z=1–112, not Z=1–98 as previously stated
@@ -68,6 +75,7 @@ spec must be updated accordingly.
 ## Tasks
 
 ### Task 1: Add missing runtime checks
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `prototypes/libdedx-investigation/wasm-runtime/build.sh`, `prototypes/libdedx-investigation/wasm-runtime/verify.mjs`
@@ -75,6 +83,7 @@ spec must be updated accordingly.
 - **Issue**: None
 
 ### Task 2: Generate wasm_runtime_stats.json
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `prototypes/libdedx-investigation/data/wasm_runtime_stats.json`
@@ -82,6 +91,7 @@ spec must be updated accordingly.
 - **Issue**: None
 
 ### Task 3: Create VERDICT.md
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `prototypes/libdedx-investigation/VERDICT.md`
@@ -89,6 +99,7 @@ spec must be updated accordingly.
 - **Issue**: None
 
 ### Task 4: Create PLAN.md
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `prototypes/libdedx-investigation/PLAN.md`
@@ -96,6 +107,7 @@ spec must be updated accordingly.
 - **Issue**: None
 
 ### Task 5: Consistency check and REPORT update
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `prototypes/libdedx-investigation/REPORT.md`, `prototypes/libdedx-investigation/VERDICT.md`
@@ -103,6 +115,7 @@ spec must be updated accordingly.
 - **Issue**: None
 
 ### Task 6: AI session logging
+
 - **Status**: completed
 - **Stage**: 2.6
 - **Files changed**: `docs/ai-logs/2026-04-15-libdedx-investigation-completion.md`, `docs/ai-logs/README.md`, `CHANGELOG-AI.md`

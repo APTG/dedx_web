@@ -17,6 +17,8 @@
     xLog,
     yLog,
     axisRanges,
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    requestExportSvg = $bindable<(() => Promise<string | null>) | null>(null),
   }: {
     series: PlotSeries[];
     preview: PlotSeries | null;
@@ -24,6 +26,7 @@
     xLog: boolean;
     yLog: boolean;
     axisRanges: AxisRanges;
+    requestExportSvg?: (() => Promise<string | null>) | null | undefined;
   } = $props();
 
   let container = $state<HTMLDivElement | null>(null);
@@ -63,8 +66,7 @@
       })
       .catch((err) => {
         if (!cancelled) {
-          jsrootError =
-            "Failed to load the plot engine. Please refresh the page.";
+          jsrootError = "Failed to load the plot engine. Please refresh the page.";
           console.error("JsrootPlot error:", err);
         }
       });
@@ -103,6 +105,48 @@
     };
   });
 
+  $effect(() => {
+    if (!container) {
+      requestExportSvg = null;
+      return;
+    }
+    const el = container;
+    requestExportSvg = async (): Promise<string | null> => {
+      if (!el) return null;
+      // Render an off-screen copy without the preview series, so the exported
+      // SVG/PDF never contains the ephemeral preview curve (export spec §4.1).
+      const offscreen = document.createElement("div");
+      offscreen.style.cssText =
+        "position:fixed;visibility:hidden;pointer-events:none;width:800px;height:600px;top:-9999px;left:-9999px;";
+      document.body.appendChild(offscreen);
+      try {
+        const JSROOT = await import("jsroot");
+        // Read current reactive values at call time; exclude preview (preview: null)
+        const mg = buildMultigraph(JSROOT, {
+          series,
+          preview: null,
+          stpUnit,
+          axisRanges,
+        });
+        const drawOpts = buildDrawOptions(xLog, yLog);
+        await JSROOT.draw(offscreen, mg, drawOpts);
+        const svgEl = offscreen.querySelector("svg");
+        const result = svgEl ? new XMLSerializer().serializeToString(svgEl) : null;
+        try {
+          if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(offscreen);
+        } catch {
+          // cleanup failure is non-fatal; the offscreen div is removed in finally
+        }
+        return result;
+      } finally {
+        if (offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
+      }
+    };
+    return () => {
+      requestExportSvg = null;
+    };
+  });
+
   async function drawPlot(
     el: HTMLDivElement,
     opts: {
@@ -132,11 +176,7 @@
     const mg = buildMultigraph(JSROOT, opts);
     const drawOpts = buildDrawOptions(opts.xLog, opts.yLog);
 
-    const painter = (await JSROOT.draw(
-      el,
-      mg,
-      drawOpts,
-    )) as JsrootPainter;
+    const painter = (await JSROOT.draw(el, mg, drawOpts)) as JsrootPainter;
     return { painter, restore };
   }
 
@@ -157,16 +197,8 @@
     ];
 
     const graphs = allVisible.map((s) => {
-      const yData = convertStpForDisplay(
-        s.result.stoppingPowers,
-        s.density,
-        opts.stpUnit,
-      );
-      const tgraph = JSROOT_any.createTGraph(
-        s.result.energies.length,
-        s.result.energies,
-        yData,
-      );
+      const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
+      const tgraph = JSROOT_any.createTGraph(s.result.energies.length, s.result.energies, yData);
       const isPreview = s.seriesId === 0;
       tgraph.fLineColor = isPreview ? 1 : s.colorIndex + 2;
       tgraph.fLineWidth = isPreview ? 1 : 2;
@@ -193,16 +225,11 @@
     return mg;
   }
 
-  const numVisibleSeries = $derived(
-    series.filter((s) => s.visible).length + (preview ? 1 : 0),
-  );
+  const numVisibleSeries = $derived(series.filter((s) => s.visible).length + (preview ? 1 : 0));
 </script>
 
 {#if jsrootError}
-  <div
-    class="flex items-center justify-center text-destructive"
-    style="width: 100%; height: 100%;"
-  >
+  <div class="flex items-center justify-center text-destructive" style="width: 100%; height: 100%;">
     {jsrootError}
   </div>
 {:else}

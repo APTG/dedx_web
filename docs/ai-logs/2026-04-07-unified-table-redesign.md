@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Major UX changes to output units, input behavior, and number formatting
+
 **AI response**: User requested sweeping changes to the calculator UX. Agent asked
 12 clarifying questions (Q1–Q12) covering: default stopping power unit (keV/µm for
 non-gas, MeV·cm²/g for gas), CSDA range in length units, per-row independent SI
@@ -11,6 +12,7 @@ master vs per-row mode, unrecognized suffix handling, URL encoding for mixed uni
 material phase notification, and "Reset to single unit" advanced feature.
 
 ### Prompt 2: Writing the spec updates
+
 **AI response**: After all Q&A completed and all relevant files read, the agent
 rewrote two major spec files:
 
@@ -37,6 +39,7 @@ rewrote two major spec files:
 ## Tasks
 
 ### Rewrite unit-handling.md to v2
+
 - **Status**: completed
 - **Stage**: 1 (Feature Specs)
 - **Files changed**: docs/04-feature-specs/unit-handling.md
@@ -47,6 +50,7 @@ rewrote two major spec files:
 - **Issue**: None
 
 ### Rewrite calculator.md to v5
+
 - **Status**: completed
 - **Stage**: 1 (Feature Specs)
 - **Files changed**: docs/04-feature-specs/calculator.md
@@ -57,6 +61,7 @@ rewrote two major spec files:
 - **Issue**: Mobile UX with 5 columns needs real-device testing.
 
 ### Update CHANGELOG-AI.md
+
 - **Status**: completed
 - **Stage**: 1
 - **Files changed**: CHANGELOG-AI.md

@@ -18,14 +18,14 @@ and documented the two WASM transition items that need to be addressed in Stage 
 
 Cross-checked the current `wasm/` directory against ADR 003 (`docs/decisions/003-wasm-build-pipeline.md`).
 
-| Check | Finding |
-|-------|---------|
-| `wasm/dedx_extra.{h,c}` location | ✅ Correct — `wasm/` per ADR 003 |
-| `wasm/verify.mjs` location | ✅ Correct — `wasm/` per plan §8 Stage 3 |
-| `wasm/build.sh` output path | ⚠️ `wasm/output/` — ADR 003 target is `static/wasm/` |
-| `ENVIRONMENT` flag | ⚠️ `node` — ADR 003 specifies `web` for production |
-| `.data` sidecar | ✅ Not produced — correct, no `--preload-file` |
-| `wasm/output/` content | Not present (build not run since merge) — expected |
+| Check                            | Finding                                              |
+| -------------------------------- | ---------------------------------------------------- |
+| `wasm/dedx_extra.{h,c}` location | ✅ Correct — `wasm/` per ADR 003                     |
+| `wasm/verify.mjs` location       | ✅ Correct — `wasm/` per plan §8 Stage 3             |
+| `wasm/build.sh` output path      | ⚠️ `wasm/output/` — ADR 003 target is `static/wasm/` |
+| `ENVIRONMENT` flag               | ⚠️ `node` — ADR 003 specifies `web` for production   |
+| `.data` sidecar                  | ✅ Not produced — correct, no `--preload-file`       |
+| `wasm/output/` content           | Not present (build not run since merge) — expected   |
 
 ### Why the discrepancies are intentional (for now)
 
@@ -46,31 +46,31 @@ Both items are documented in `docs/progress/stage-3.md` and in `docs/00-redesign
 
 ## Files Removed
 
-| Path | Reason |
-|------|--------|
-| `src/` (entire tree) | Legacy React codebase — App.js, Backend/, Components/, Styles/, `__test__/`, index.js, reportWebVitals.js, setupTests.js, logo.svg |
-| `public/index.html` | CRA HTML entry point — replaced by SvelteKit in Stage 4 |
-| `public/logo192.png` | CRA default React logo |
-| `public/logo512.png` | CRA default React logo |
-| `public/manifest.json` | CRA PWA manifest |
-| `public/robots.txt` | CRA default robots.txt |
-| `build_wasm.sh` | Legacy Emscripten build script — superseded by `wasm/build.sh` |
+| Path                   | Reason                                                                                                                             |
+| ---------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `src/` (entire tree)   | Legacy React codebase — App.js, Backend/, Components/, Styles/, `__test__/`, index.js, reportWebVitals.js, setupTests.js, logo.svg |
+| `public/index.html`    | CRA HTML entry point — replaced by SvelteKit in Stage 4                                                                            |
+| `public/logo192.png`   | CRA default React logo                                                                                                             |
+| `public/logo512.png`   | CRA default React logo                                                                                                             |
+| `public/manifest.json` | CRA PWA manifest                                                                                                                   |
+| `public/robots.txt`    | CRA default robots.txt                                                                                                             |
+| `build_wasm.sh`        | Legacy Emscripten build script — superseded by `wasm/build.sh`                                                                     |
 
 ## Files Kept
 
-| Path | Reason |
-|------|--------|
-| `public/favicon.ico` | Project favicon — to be copied to `static/` in Stage 4 |
-| `public/webdEdx_logo.svg` | Project logo — to be copied to `static/` in Stage 4 |
+| Path                      | Reason                                                 |
+| ------------------------- | ------------------------------------------------------ |
+| `public/favicon.ico`      | Project favicon — to be copied to `static/` in Stage 4 |
+| `public/webdEdx_logo.svg` | Project logo — to be copied to `static/` in Stage 4    |
 
 ---
 
 ## Docs Updated
 
-| File | Change |
-|------|--------|
+| File                       | Change                                                                                                                           |
+| -------------------------- | -------------------------------------------------------------------------------------------------------------------------------- |
 | `docs/00-redesign-plan.md` | Stage 3 marked ✅; Stage 3.7 block added with removal list and WASM transition note; Stage 9 updated to reflect early completion |
-| `docs/progress/stage-3.md` | Created — Stage 3 completion record with verification results and Stage 4 transition items |
+| `docs/progress/stage-3.md` | Created — Stage 3 completion record with verification results and Stage 4 transition items                                       |
 
 ---
 

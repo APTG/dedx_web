@@ -14,6 +14,7 @@ Stage 5 entity selection is **GREEN** on this branch:
 - 35 E2E tests pass (Playwright against real WASM on Calculator + Plot pages)
 
 Core files:
+
 - `src/lib/state/compatibility-matrix.ts` — bidirectional matrix built at WASM init
 - `src/lib/state/entity-selection.svelte.ts` — reactive state with `$state` runes
 - `src/lib/components/entity-combobox.svelte` — **custom** 165-line combobox (NOT shadcn)
@@ -36,6 +37,7 @@ The tests are GREEN but the implementation has bugs and gaps described below.
 The variable `particlePrograms` is declared inside the `else if (particleId === 6)` block but referenced in the next `else if` clause, where it is out of scope. This means the "other heavy ions → ICRU 73" resolution path never runs.
 
 **Current (broken):**
+
 ```typescript
 } else if (particleId === 6) {
   const particlePrograms = matrix.programsByParticle.get(particleId);
@@ -68,6 +70,7 @@ const particleItems = $derived.by(() => {
 ```
 
 **Fix:**
+
 1. Expose `allParticles` and `allMaterials` on the `EntitySelectionState` interface in `entity-selection.svelte.ts` (the compatibility matrix already has them).
 2. Map over `allParticles`/`allMaterials` instead of `availableParticles`/`availableMaterials`.
 3. Set `available: state.availableParticles.some(p => p.id === particle.id) && particle.id !== 1001`.
@@ -111,11 +114,14 @@ pnpm add -D @testing-library/user-event
 ```
 
 Then convert component tests from:
+
 ```typescript
 fireEvent.click(item);
-await new Promise(r => setTimeout(r, 50)); // timing hack
+await new Promise((r) => setTimeout(r, 50)); // timing hack
 ```
+
 to:
+
 ```typescript
 const user = userEvent.setup();
 await user.click(item);
@@ -138,6 +144,7 @@ The heterogeneous flat array pattern (discriminated union `SectionHeader | Entit
 **File:** `src/lib/components/entity-selection-comboboxes.svelte:136`
 
 Current:
+
 ```html
 <div class={cn("space-y-3", className)}>
 ```
@@ -160,24 +167,24 @@ Current:
 
 The acceptance criteria from `docs/04-feature-specs/entity-selection.md` that have NO tests yet, in priority order:
 
-| Priority | Missing Test | Where to Add |
-|----------|--------------|--------------|
-| HIGH | Text filter: alias matching ("proton" → Hydrogen, "alpha" → Helium) | component + E2E |
-| HIGH | Text filter: greyed-out items matching filter remain **visible** (not hidden) | component |
-| HIGH | Text filter: non-matching items hidden | component |
-| HIGH | Toggle deselect: clicking selected particle/material deselects it | component + E2E |
-| HIGH | Greyed-out items shown in-place (not removed from DOM/list) | component |
-| MEDIUM | ARIA: `aria-selected`, `aria-disabled`, `role="searchbox"` on trigger | component |
-| MEDIUM | Program label enrichment: "ICRU 90" not raw "ICRU" in display | unit + E2E |
-| MEDIUM | Auto-select always at top of program list (even after selecting concrete program) | component |
-| MEDIUM | "Reset all" link restores Proton / Water / Auto-select | E2E |
-| LOW | Electron appears greyed-out with tooltip (currently absent from WASM data) | component (mock) |
-| LOW | Gas-default material visual indicator (icon + badge) | component |
-| LOW | Keyboard navigation (Arrow/Enter/Escape in dropdown list) | component (after shadcn switch) |
-| LOW | Screen reader count announcement ("3 of 12 particles available") | component |
-| LOW | Loading skeleton shown while WASM initializes | E2E |
-| LOW | Error state with retry on WASM failure | component |
-| LOW | Shared state persists across page navigation (Calculator → Plot → Calculator) | E2E |
+| Priority | Missing Test                                                                      | Where to Add                    |
+| -------- | --------------------------------------------------------------------------------- | ------------------------------- |
+| HIGH     | Text filter: alias matching ("proton" → Hydrogen, "alpha" → Helium)               | component + E2E                 |
+| HIGH     | Text filter: greyed-out items matching filter remain **visible** (not hidden)     | component                       |
+| HIGH     | Text filter: non-matching items hidden                                            | component                       |
+| HIGH     | Toggle deselect: clicking selected particle/material deselects it                 | component + E2E                 |
+| HIGH     | Greyed-out items shown in-place (not removed from DOM/list)                       | component                       |
+| MEDIUM   | ARIA: `aria-selected`, `aria-disabled`, `role="searchbox"` on trigger             | component                       |
+| MEDIUM   | Program label enrichment: "ICRU 90" not raw "ICRU" in display                     | unit + E2E                      |
+| MEDIUM   | Auto-select always at top of program list (even after selecting concrete program) | component                       |
+| MEDIUM   | "Reset all" link restores Proton / Water / Auto-select                            | E2E                             |
+| LOW      | Electron appears greyed-out with tooltip (currently absent from WASM data)        | component (mock)                |
+| LOW      | Gas-default material visual indicator (icon + badge)                              | component                       |
+| LOW      | Keyboard navigation (Arrow/Enter/Escape in dropdown list)                         | component (after shadcn switch) |
+| LOW      | Screen reader count announcement ("3 of 12 particles available")                  | component                       |
+| LOW      | Loading skeleton shown while WASM initializes                                     | E2E                             |
+| LOW      | Error state with retry on WASM failure                                            | component                       |
+| LOW      | Shared state persists across page navigation (Calculator → Plot → Calculator)     | E2E                             |
 
 ---
 
@@ -188,6 +195,7 @@ The owner wants explanatory WHY comments (not what-the-code-does) in the TypeScr
 #### `src/lib/state/entity-selection.svelte.ts` — `resolveAutoSelect` function
 
 Add a comment citing the spec §7 resolution chain:
+
 ```
 // Resolution chain per entity-selection.md §"Auto-select program resolution":
 // Proton → ICRU 90 (id=90) → PSTAR (id=1)
@@ -227,6 +235,7 @@ const EXCLUDED_FROM_UI = new Set([9]);
 ### PRIORITY 6 — Refactor: Extract Shared Test Fixture
 
 `MockLibdedxService` is copy-pasted three times across:
+
 - `src/tests/unit/compatibility-matrix.test.ts`
 - `src/tests/unit/entity-selection-state.test.ts`
 - `src/tests/unit/entity-selection-comboboxes.test.ts`
@@ -236,6 +245,7 @@ const EXCLUDED_FROM_UI = new Set([9]);
 **Extract to:** `src/tests/fixtures/mock-libdedx-service.ts`
 
 Export:
+
 ```typescript
 export class MockLibdedxService { ... }
 export class MockLibdedxServiceWithElectron extends MockLibdedxService { ... }
@@ -257,6 +267,7 @@ From `docs/04-feature-specs/entity-selection.md` § Compact Mode:
 ## Spec Details Worth Knowing (Full Panel Mode — Stage 6)
 
 From the spec § Full Panel Mode (Plot Page):
+
 - Two-column sub-grid for Particle + Material; Program below at full width
 - Material panel: two **independently scrollable** sub-lists (Elements / Compounds) with ONE shared filter input
 - Elements: IDs 1–98 sorted by ID; Compounds: IDs 99+ sorted alphabetically
@@ -268,10 +279,10 @@ Full panel mode (`entity-selection-panels.svelte`) is deferred to Stage 6. Fix B
 
 ## Known Accepted Spec Deviations
 
-| Spec requirement | Actual behaviour | Status |
-|-----------------|-----------------|--------|
-| Electron greyed out in particle list | Electron absent (WASM returns empty `getParticles(ESTAR)`) | Accepted; E2E test documents actual behavior |
-| Notifications on auto-fallback | Not implemented | Deferred to Stage 8 (Sonner/toast per ADR 005) |
+| Spec requirement                     | Actual behaviour                                           | Status                                         |
+| ------------------------------------ | ---------------------------------------------------------- | ---------------------------------------------- |
+| Electron greyed out in particle list | Electron absent (WASM returns empty `getParticles(ESTAR)`) | Accepted; E2E test documents actual behavior   |
+| Notifications on auto-fallback       | Not implemented                                            | Deferred to Stage 8 (Sonner/toast per ADR 005) |
 
 ---
 
@@ -282,11 +293,11 @@ The current if-else chain with magic particle IDs and program IDs is error-prone
 ```typescript
 // Priority table: particleId → ordered list of program IDs to try
 const AUTO_SELECT_CHAIN: Record<number, number[]> = {
-  [PROTON_ID]:   [90, 1],       // ICRU 90 → PSTAR
-  [HELIUM_ID]:   [90, 7],       // ICRU 90 → ICRU 49
-  [CARBON_ID]:   [90, 6, 5],    // ICRU 90 → ICRU 73 → ICRU 73old
+  [PROTON_ID]: [90, 1], // ICRU 90 → PSTAR
+  [HELIUM_ID]: [90, 7], // ICRU 90 → ICRU 49
+  [CARBON_ID]: [90, 6, 5], // ICRU 90 → ICRU 73 → ICRU 73old
 };
-const DEFAULT_CHAIN = [6, 5];   // other heavy ions: ICRU 73 → ICRU 73old
+const DEFAULT_CHAIN = [6, 5]; // other heavy ions: ICRU 73 → ICRU 73old
 
 function resolveAutoSelect(matrix, particleId, materialId): number | null {
   if (particleId === ELECTRON_ID) return null; // ESTAR not implemented
@@ -305,24 +316,25 @@ function resolveAutoSelect(matrix, particleId, materialId): number | null {
 
 From runtime verification (Stage 2.6):
 
-| Program | ID |
-|---------|-----|
-| ASTAR | 1 |
-| PSTAR | 2 |
-| ESTAR | 3 (returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations) |
-| MSTAR | 4 |
-| ICRU73_OLD | 5 |
-| ICRU73 | 6 |
-| ICRU49 | 7 |
-| ICRU (DEDX_ICRU, excluded from UI) | 9 |
-| DEFAULT | 100 |
-| BETHE_EXT00 | 101 |
+| Program                            | ID                                                         |
+| ---------------------------------- | ---------------------------------------------------------- |
+| ASTAR                              | 1                                                          |
+| PSTAR                              | 2                                                          |
+| ESTAR                              | 3 (returns `DEDX_ERR_ESTAR_NOT_IMPL` for all calculations) |
+| MSTAR                              | 4                                                          |
+| ICRU73_OLD                         | 5                                                          |
+| ICRU73                             | 6                                                          |
+| ICRU49                             | 7                                                          |
+| ICRU (DEDX_ICRU, excluded from UI) | 9                                                          |
+| DEFAULT                            | 100                                                        |
+| BETHE_EXT00                        | 101                                                        |
 
 ---
 
 ## Files to Read Before Starting
 
 In order:
+
 1. `docs/04-feature-specs/entity-selection.md` — full acceptance criteria (source of truth)
 2. `src/lib/state/entity-selection.svelte.ts` — state + `resolveAutoSelect` (Bug 1)
 3. `src/lib/components/entity-selection-comboboxes.svelte` — layout + Bug 2, Bug 4

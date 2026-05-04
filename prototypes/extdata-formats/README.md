@@ -109,26 +109,26 @@ After running in the browser:
 
 ## Documents
 
-| Document | Purpose |
-|----------|---------|
-| [PLAN.md](PLAN.md) | Spike plan: goal, data shape, directory layout, evaluation questions, acceptance criteria, decision criteria |
-| [VERDICT.md](VERDICT.md) | Decision, full benchmark tables, corrected request patterns, post-gate items |
-| [REPORT.md](REPORT.md) | Local file size and round-trip accuracy |
-| [REPORT_S3.md](REPORT_S3.md) | S3 Python urllib benchmark (mobile + wifi) |
-| [REPORT_S3_ZARRITA.md](REPORT_S3_ZARRITA.md) | S3 zarrita 0.7.1 benchmark, Bun runtime |
-| [REPORT_BROWSER.md](REPORT_BROWSER.md) | S3 zarrita 0.7.1 benchmark, browser — per-request Range headers, bundle sizes, STP verification |
+| Document                                     | Purpose                                                                                                      |
+| -------------------------------------------- | ------------------------------------------------------------------------------------------------------------ |
+| [PLAN.md](PLAN.md)                           | Spike plan: goal, data shape, directory layout, evaluation questions, acceptance criteria, decision criteria |
+| [VERDICT.md](VERDICT.md)                     | Decision, full benchmark tables, corrected request patterns, post-gate items                                 |
+| [REPORT.md](REPORT.md)                       | Local file size and round-trip accuracy                                                                      |
+| [REPORT_S3.md](REPORT_S3.md)                 | S3 Python urllib benchmark (mobile + wifi)                                                                   |
+| [REPORT_S3_ZARRITA.md](REPORT_S3_ZARRITA.md) | S3 zarrita 0.7.1 benchmark, Bun runtime                                                                      |
+| [REPORT_BROWSER.md](REPORT_BROWSER.md)       | S3 zarrita 0.7.1 benchmark, browser — per-request Range headers, bundle sizes, STP verification              |
 
 Related project docs:
 
-| Document | Purpose |
-|----------|---------|
-| [../../docs/04-feature-specs/external-data.md](../../docs/04-feature-specs/external-data.md) | Feature spec — to be amended post-gate to replace Parquet §2 with Zarr v3 per-ion spec |
-| [../../docs/11-prototyping-spikes.md](../../docs/11-prototyping-spikes.md) | Spike 4 acceptance criteria and gate rule |
-| [../../docs/02-tech-stack.md](../../docs/02-tech-stack.md) | Tech stack — `hyparquet` to be replaced with `zarrita` post-gate |
-| [../../docs/ai-logs/2026-04-17-spike4-phase1-impl.md](../../docs/ai-logs/2026-04-17-spike4-phase1-impl.md) | Session log: data generation + local benchmark |
-| [../../docs/ai-logs/2026-04-17-extdata-formats.md](../../docs/ai-logs/2026-04-17-extdata-formats.md) | Session log: Spike 4 plan + Zarr v3 upgrade |
-| [../../docs/ai-logs/2026-04-18-spike4-s3-verdict.md](../../docs/ai-logs/2026-04-18-spike4-s3-verdict.md) | Session log: S3 benchmarks + VERDICT |
-| [../../docs/ai-logs/2026-04-18-spike4-browser-gate.md](../../docs/ai-logs/2026-04-18-spike4-browser-gate.md) | Session log: Vite browser app, gate close, zarrita ZEP2 findings |
+| Document                                                                                                     | Purpose                                                                                |
+| ------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------- |
+| [../../docs/04-feature-specs/external-data.md](../../docs/04-feature-specs/external-data.md)                 | Feature spec — to be amended post-gate to replace Parquet §2 with Zarr v3 per-ion spec |
+| [../../docs/11-prototyping-spikes.md](../../docs/11-prototyping-spikes.md)                                   | Spike 4 acceptance criteria and gate rule                                              |
+| [../../docs/02-tech-stack.md](../../docs/02-tech-stack.md)                                                   | Tech stack — `hyparquet` to be replaced with `zarrita` post-gate                       |
+| [../../docs/ai-logs/2026-04-17-spike4-phase1-impl.md](../../docs/ai-logs/2026-04-17-spike4-phase1-impl.md)   | Session log: data generation + local benchmark                                         |
+| [../../docs/ai-logs/2026-04-17-extdata-formats.md](../../docs/ai-logs/2026-04-17-extdata-formats.md)         | Session log: Spike 4 plan + Zarr v3 upgrade                                            |
+| [../../docs/ai-logs/2026-04-18-spike4-s3-verdict.md](../../docs/ai-logs/2026-04-18-spike4-s3-verdict.md)     | Session log: S3 benchmarks + VERDICT                                                   |
+| [../../docs/ai-logs/2026-04-18-spike4-browser-gate.md](../../docs/ai-logs/2026-04-18-spike4-browser-gate.md) | Session log: Vite browser app, gate close, zarrita ZEP2 findings                       |
 
 ---
 
@@ -136,11 +136,11 @@ Related project docs:
 
 Bucket: `https://s3p.cloud.cyfronet.pl/webdedx/` (Cyfronet PLGrid, public-read)
 
-| File | Size | URL |
-|------|------|-----|
-| `srim_synthetic.webdedx.parquet` | 87.86 MB | `…/srim_synthetic.webdedx.parquet` |
-| `srim_synthetic_single.zarr/zarr.json` | 86.5 KB | `…/srim_synthetic_single.zarr/zarr.json` |
-| `srim_synthetic_per_ion.zarr/zarr.json` | 86.5 KB | `…/srim_synthetic_per_ion.zarr/zarr.json` |
+| File                                    | Size     | URL                                       |
+| --------------------------------------- | -------- | ----------------------------------------- |
+| `srim_synthetic.webdedx.parquet`        | 87.86 MB | `…/srim_synthetic.webdedx.parquet`        |
+| `srim_synthetic_single.zarr/zarr.json`  | 86.5 KB  | `…/srim_synthetic_single.zarr/zarr.json`  |
+| `srim_synthetic_per_ion.zarr/zarr.json` | 86.5 KB  | `…/srim_synthetic_per_ion.zarr/zarr.json` |
 
 Upload command (Cyfronet Ares, rclone `yaptide:` remote → `webdedx` bucket):
 

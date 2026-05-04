@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Review and finalize new specs on the branch; critical review questions
+
 **AI response**: Investigated the branch diff and reviewed three new/in-progress specs:
 `shareable-urls.md` (Draft v4), `shareable-urls-formal.md` (Draft v2), and
 `external-data.md` (Draft v2). Identified seven issues needing clarification:
@@ -20,10 +21,12 @@
    separator unambiguous.
 
 ### Prompt 2: Apply fixes per user answers (Q1–Q7)
+
 **AI response**: Updated `shareable-urls-formal.md` (Draft v2 → Draft v3) and
 `shareable-urls.md` (Draft v4 → Draft v5):
 
 **Grammar (shareable-urls-formal.md):**
+
 - Added `extdata-pair` rule with `ext-label ":" url-value` structure; first literal
   `:` is unambiguously the label/URL separator.
 - Introduced `entity-id = int-pos / ext-ref` and
@@ -34,6 +37,7 @@
   `%x21-25 / %x27-39 / %x3B-3C / %x3E-FF`).
 
 **Canonicalization (shareable-urls-formal.md §4):**
+
 - Fully rewritten to specify exactly one program param per mode: basic → `program`
   always; advanced → `programs` always. Neither ever emits the other.
 - Advanced-mode sub-order: `mode=advanced` → `hidden_programs` (omit if empty) →
@@ -42,27 +46,33 @@
   label-declaration order; omitted entirely when no external sources.
 
 **Parse pipeline (shareable-urls-formal.md §3.1):**
+
 - Added step 5: extract `extdata` label and percent-encoded URL; validate label
   uniqueness (duplicate label = parse error).
 
 **Conformance vectors (shareable-urls-formal.md §5):**
+
 - Added vector 3: advanced calculator with `hidden_programs`.
 - Added vector 5: external data source with labeled source and mixed external/built-in
   series triplets.
 
 **shareable-urls.md §7.2 and §7.3:**
+
 - Added missing `GeV/nucl` to supported unit token list.
 - Rewrote canonicalization ordering paragraph; added `hidden_programs` example.
 
 **external-data.md (Draft v2 → Draft v3):**
+
 - Changed `extdata` format from `extdata={url}` to `extdata={label}:{url}`.
 - All `ext:0:id` references → `ext:{label}:id`.
 
 ### Prompt 3: PDG codes, ICRU IDs, size limits, interpolation, and offline support
+
 **AI response**: Extended `external-data.md` (Draft v3 → Draft v4) and
 `06-wasm-api-contract.md`:
 
 **Particle merge key — PDG Monte Carlo codes:**
+
 - Added `pdgCode` as the primary particle merge key in `external-data.md` §4 JSON
   schema and §4.2 merging rules. Priority chain: `pdgCode` → `(Z, A)` → external-only.
 - Rationale: (Z, A) fails for electrons (Z=0, A=0 is ambiguous); PDG code 11
@@ -74,6 +84,7 @@
   `pdgCode` within a source, etc.
 
 **Material merge key — ICRU/NIST IDs and atomic numbers:**
+
 - Added `icruId` as primary material merge key (matches libdedx's ICRU material
   numbering directly; e.g., `icruId: 276` = water liquid).
 - Added `atomicNumber` for pure elemental targets (Z range 1–118), mutually exclusive
@@ -85,12 +96,14 @@
   exclusive on a single material entry.
 
 **Size limits raised:**
+
 - Particles per source: 200 → 1000.
 - Materials per source: 1000 → 10000.
 - Max data rows (Parquet row groups): 50,000 → 1,000,000.
 - Max file size: 100 MB → 1 GB (rationale: Range Requests; full file is never downloaded).
 
 **Interpolation (§8.2 and §13):**
+
 - Resolved open question Q2: log-log interpolation is fixed for v1 external data;
   no per-dataset override.
 - Added note: a future configurable toggle (covering both WASM `InterpolationMode`
@@ -99,9 +112,11 @@
   comparisons, so the toggle must be global.
 
 **Offline support (§13 Q4):**
+
 - Resolved: URL-only. No local file system access (`<input type="file">`) in Stage 1.
 
 ### Prompt 4: Share button specification
+
 **AI response**: Extended `shareable-urls.md` (Draft v5 → Final v6):
 
 - Renamed "social sharing" → "sharing via communicators" throughout (§1.1, §1.2,
@@ -121,18 +136,21 @@
 - Added six acceptance criteria for the Share button in §12.
 
 ### Prompt 5: Mark all new specs Final
+
 **AI response**: Changed status from Draft to Final in:
+
 - `shareable-urls.md` → Final v6
 - `shareable-urls-formal.md` → Final v3
 - `external-data.md` → Final v4
-Updated `docs/04-feature-specs/README.md` status table accordingly.
-Created this AI log and updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
+  Updated `docs/04-feature-specs/README.md` status table accordingly.
+  Created this AI log and updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
 
 ---
 
 ## Tasks
 
 ### shareable-urls-formal.md Draft v2 → Draft v3 (ABNF + canonicalization overhaul)
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:
@@ -148,6 +166,7 @@ Created this AI log and updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
 - **Issue**: None.
 
 ### external-data.md Draft v3 → Draft v4 (PDG codes, ICRU IDs, size limits)
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications (implementation deferred)
 - **Files changed**:
@@ -169,6 +188,7 @@ Created this AI log and updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
   from stopping power integration) remain intentionally deferred as open questions.
 
 ### shareable-urls.md Draft v5 → Final v6 (Share button)
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:
@@ -180,6 +200,7 @@ Created this AI log and updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
 - **Issue**: None.
 
 ### Finalize all new specs
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:

@@ -8,9 +8,7 @@
   <h1 class="text-3xl font-bold">User Guide</h1>
 
   <div class="prose max-w-none">
-    <p class="text-muted-foreground">
-      The user guide is under construction. It will cover:
-    </p>
+    <p class="text-muted-foreground">The user guide is under construction. It will cover:</p>
     <ul class="mt-4 list-disc pl-6 space-y-2 text-muted-foreground">
       <li>Getting started with stopping power calculations</li>
       <li>Choosing particles, materials, and programs</li>

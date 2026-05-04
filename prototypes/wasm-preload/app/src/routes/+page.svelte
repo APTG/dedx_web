@@ -19,12 +19,7 @@
       // Call dedx_fill_program_list to verify the data files loaded
       const bufSize = 20;
       const ptr = module._malloc(bufSize * 4);
-      module.ccall(
-        "dedx_fill_program_list",
-        null,
-        ["number"],
-        [ptr],
-      );
+      module.ccall("dedx_fill_program_list", null, ["number"], [ptr]);
 
       // Read program IDs until -1 terminator
       const heap = new Int32Array(module.HEAP32.buffer, ptr, bufSize);
@@ -38,12 +33,7 @@
       // Get program names
       const names: string[] = [];
       for (const id of ids) {
-        const namePtr = module.ccall(
-          "dedx_get_program_name",
-          "number",
-          ["number"],
-          [id],
-        );
+        const namePtr = module.ccall("dedx_get_program_name", "number", ["number"], [id]);
         names.push(module.UTF8ToString(namePtr));
       }
 

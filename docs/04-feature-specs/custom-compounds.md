@@ -21,6 +21,7 @@
 > implementation note retained (MSTAR runtime verification).
 >
 > **Related specs:**
+>
 > - WASM API contract (`CustomCompound` type, `calculateCustomCompound()`):
 >   [`../06-wasm-api-contract.md`](../06-wasm-api-contract.md) §2.5, §3
 > - Entity selection (compact combobox + full panel modes):
@@ -78,6 +79,7 @@ visible when the app-wide Advanced mode toggle is active (see
 [`multi-program.md`](multi-program.md) §2).
 
 The feature lets users define an arbitrary compound material by specifying:
+
 1. A display name
 2. The elemental composition: element Z + atom count per formula unit
    (or weight fractions that are converted to atom counts)
@@ -133,6 +135,7 @@ interface StoredCompound {
 
 The library has a **soft limit of 50 compounds**. No hard enforcement
 is applied, but:
+
 - At 45+ compounds the editor shows an inline notice:
   "You have X compounds saved. Consider deleting unused ones."
 - The notice does not block saving.
@@ -154,14 +157,15 @@ Custom compounds are surfaced wherever the built-in material list appears.
 The material combobox has a **"Custom Compounds" group** at the bottom of
 the dropdown, below the built-in compound list.
 
-| Element | Detail |
-|---------|--------|
-| Group header | "Custom Compounds" — always visible in Advanced mode regardless of the active text filter |
-| Compound entry | Name (bold) + density in g/cm³ (secondary text) + edit icon (✏) + delete icon (🗑) |
-| Text filter | Filters custom compound entries by name (same filter input as built-in materials) |
+| Element          | Detail                                                                                      |
+| ---------------- | ------------------------------------------------------------------------------------------- |
+| Group header     | "Custom Compounds" — always visible in Advanced mode regardless of the active text filter   |
+| Compound entry   | Name (bold) + density in g/cm³ (secondary text) + edit icon (✏) + delete icon (🗑)          |
+| Text filter      | Filters custom compound entries by name (same filter input as built-in materials)           |
 | "+ Add compound" | Button at the bottom of the custom-compounds group; opens the compound editor in "new" mode |
 
 Example:
+
 ```
 ┌─ Material ─────────────────────────────────────────────┐
 │  Elements                                               │
@@ -186,6 +190,7 @@ existing "Compounds" sub-list. The same name + density display applies.
 
 Custom compound entries are visually distinguished from built-in materials
 in both modes:
+
 - A **"custom" badge** (small label tag) is shown on each entry.
 - The badge color uses the accent color.
 
@@ -207,23 +212,25 @@ memory and restored when Advanced mode is re-enabled.
 ## 3. Compound Editor
 
 The compound editor is a **modal dialog** triggered by:
+
 - "+ Add compound" → opens in **new** mode (blank form)
 - ✏ edit icon on a saved compound → opens in **edit** mode (pre-filled)
 
 ### 3.1 Field summary
 
-| Field | Type | Required | Constraints |
-|-------|------|----------|-------------|
-| Name | Text input | Yes | Non-empty, ≤ 80 characters |
-| Density | Numeric input + "g/cm³" label | Yes | > 0; accepts decimal and scientific notation |
-| I-Value | Numeric input + "eV" label | No | If provided: > 0 and ≤ 10 000 eV |
-| Phase | Two-option segmented control | Yes | Gas / Condensed; default Condensed |
-| Input mode | Toggle | Yes | Formula / Weight fraction; default Formula |
-| Element rows | Dynamic list (1–20 rows) | Yes | ≥ 1 valid row required |
+| Field        | Type                          | Required | Constraints                                  |
+| ------------ | ----------------------------- | -------- | -------------------------------------------- |
+| Name         | Text input                    | Yes      | Non-empty, ≤ 80 characters                   |
+| Density      | Numeric input + "g/cm³" label | Yes      | > 0; accepts decimal and scientific notation |
+| I-Value      | Numeric input + "eV" label    | No       | If provided: > 0 and ≤ 10 000 eV             |
+| Phase        | Two-option segmented control  | Yes      | Gas / Condensed; default Condensed           |
+| Input mode   | Toggle                        | Yes      | Formula / Weight fraction; default Formula   |
+| Element rows | Dynamic list (1–20 rows)      | Yes      | ≥ 1 valid row required                       |
 
 ### 3.2 Element rows — Formula mode
 
 Each row contains:
+
 - **Element selector** — typeahead accepting symbol ("H", "Fe"), full
   name ("hydrogen"), or atomic number ("1"→"26"). Resolves to Z on
   selection. Placeholder: "Symbol or Z"
@@ -237,6 +244,7 @@ one blank row in new mode.
 ### 3.3 Element rows — Weight fraction mode
 
 Each row contains:
+
 - **Element selector** (same as formula mode)
 - **Weight % input** — number in (0, 100]; allows up to 4 decimal places
 - **Inferred atom count** — read-only display in small text:
@@ -244,6 +252,7 @@ Each row contains:
 - **"×" remove button**
 
 A **live sum indicator** is shown below the rows:
+
 ```
 Total: 98.7%  ← shown in error colour when < 99.9% or > 100.1%
 Total: 100.0% ✓  ← shown in success colour when within ±0.1%
@@ -252,15 +261,18 @@ Total: 100.0% ✓  ← shown in success colour when within ±0.1%
 The **"Save" button is disabled** while the sum is outside 99.9–100.1%.
 
 **Conversion to atom counts** at save time:
+
 ```
 n_i = w_i / M_i
 ```
+
 where `w_i` is the weight fraction (0–1) of element i and `M_i` is the
 standard atomic weight in g/mol. The resulting `n_i` values are stored
 directly as `atomCount` (floating point). `M_i` values are maintained as
 a small internal JS lookup table for the 118 elements.
 
 **Verification example:**
+
 - H₂O: H weight fraction ≈ 0.1119, O weight fraction ≈ 0.8881.
   n_H = 0.1119 / 1.008 ≈ 0.111, n_O = 0.8881 / 15.999 ≈ 0.0555.
   Ratio n_H / n_O ≈ 2.0 → atom counts H: 2, O: 1. ✓
@@ -271,11 +283,11 @@ was derived.
 
 ### 3.4 Dialog actions
 
-| Control | Behavior |
-|---------|----------|
-| **Save** | Validates all fields. On success: writes to `localStorage`, closes dialog, adds or updates the entry in the selector. If the edited compound is the currently selected material, recalculates immediately. |
-| **Cancel** | Discards all changes; closes dialog without modifying `localStorage`. |
-| **Delete** (edit mode only) | Shows a secondary confirmation: "Delete compound PMMA? This cannot be undone." Confirming removes from library and selector; if active material, falls back to last-used built-in material. |
+| Control                     | Behavior                                                                                                                                                                                                   |
+| --------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Save**                    | Validates all fields. On success: writes to `localStorage`, closes dialog, adds or updates the entry in the selector. If the edited compound is the currently selected material, recalculates immediately. |
+| **Cancel**                  | Discards all changes; closes dialog without modifying `localStorage`.                                                                                                                                      |
+| **Delete** (edit mode only) | Shows a secondary confirmation: "Delete compound PMMA? This cannot be undone." Confirming removes from library and selector; if active material, falls back to last-used built-in material.                |
 
 **Duplicate name warning:** If the entered name matches an existing
 compound (case-insensitive comparison), an inline warning is shown:
@@ -288,42 +300,42 @@ not unique keys (IDs are). The warning does not block saving.
 
 ### 4.1 Name
 
-| Rule | Error message |
-|------|---------------|
-| Non-empty after trimming | "Name is required." |
-| ≤ 80 characters | "Name must be 80 characters or fewer." |
+| Rule                     | Error message                          |
+| ------------------------ | -------------------------------------- |
+| Non-empty after trimming | "Name is required."                    |
+| ≤ 80 characters          | "Name must be 80 characters or fewer." |
 
 ### 4.2 Density
 
-| Rule | Error message |
-|------|---------------|
-| Non-empty and parses as a finite number | "Density is required." |
-| > 0 | "Density must be greater than zero." |
+| Rule                                    | Error message                        |
+| --------------------------------------- | ------------------------------------ |
+| Non-empty and parses as a finite number | "Density is required."               |
+| > 0                                     | "Density must be greater than zero." |
 
 Accepts decimal (`1.19`) and scientific notation (`8.99e-5`).
 
 ### 4.3 I-Value (optional)
 
-| Rule | Error message |
-|------|---------------|
+| Rule                                          | Error message                        |
+| --------------------------------------------- | ------------------------------------ |
 | If provided: parses as finite positive number | "I-value must be a positive number." |
-| If provided: ≤ 10 000 eV | "I-value must be ≤ 10 000 eV." |
+| If provided: ≤ 10 000 eV                      | "I-value must be ≤ 10 000 eV."       |
 
 Blank → field cleared; `iValue` absent from stored compound.
 
 ### 4.4 Elements — both modes
 
-| Rule | Error message |
-|------|---------------|
-| At least 1 row | "At least one element is required." |
-| Each element resolves to a valid Z ∈ [1, 118] | "Unknown element: 'X'." |
-| No duplicate Z values | "Element Z is listed more than once. Combine into a single row." |
-| Each atom count/weight % > 0 | "Count must be greater than zero." |
+| Rule                                          | Error message                                                    |
+| --------------------------------------------- | ---------------------------------------------------------------- |
+| At least 1 row                                | "At least one element is required."                              |
+| Each element resolves to a valid Z ∈ [1, 118] | "Unknown element: 'X'."                                          |
+| No duplicate Z values                         | "Element Z is listed more than once. Combine into a single row." |
+| Each atom count/weight % > 0                  | "Count must be greater than zero."                               |
 
 ### 4.5 Weight fractions only
 
-| Rule | Error message / indicator |
-|------|--------------------------|
+| Rule                | Error message / indicator                                            |
+| ------------------- | -------------------------------------------------------------------- |
 | Sum ∈ [99.9, 100.1] | Live indicator shows current total; Save disabled outside this range |
 
 ---
@@ -340,11 +352,11 @@ const result = service.calculateCustomCompound({
   particleId,
   compound: {
     name: stored.name,
-    elements: stored.elements,  // [{ atomicNumber, atomCount }, ...]
+    elements: stored.elements, // [{ atomicNumber, atomCount }, ...]
     density: stored.density,
-    iValue: stored.iValue,       // undefined when not set
+    iValue: stored.iValue, // undefined when not set
   },
-  energies,  // in MeV/nucl (converted from user's chosen unit)
+  energies, // in MeV/nucl (converted from user's chosen unit)
 });
 ```
 
@@ -378,12 +390,10 @@ function getCompatiblePrograms(compound: StoredCompound): {
   for (const program of allPrograms) {
     const supportedZ = new Set(
       getMaterials(program.id)
-        .filter(m => m.atomicNumber !== undefined)
-        .map(m => m.atomicNumber!)
+        .filter((m) => m.atomicNumber !== undefined)
+        .map((m) => m.atomicNumber!),
     );
-    const missingZ = compound.elements
-      .map(e => e.atomicNumber)
-      .filter(z => !supportedZ.has(z));
+    const missingZ = compound.elements.map((e) => e.atomicNumber).filter((z) => !supportedZ.has(z));
     if (missingZ.length === 0) {
       result.compatible.push(program);
     } else {
@@ -415,6 +425,7 @@ list.
 #### Example: LiF pellets (Li Z=3, F Z=9)
 
 For 5 MeV alpha particles (He-4, A=4):
+
 - PSTAR covers protons only → incompatible (wrong particle, filtered first)
 - MSTAR covers heavy ions — but MSTAR's elemental tables cover Z=1–92;
   both Li (Z=3) and F (Z=9) are included → compatible ✓
@@ -436,13 +447,13 @@ are replaced by the compound's own fields. The Advanced Options panel
 remains visible in Advanced mode, but certain controls are **disabled**
 (not hidden) when a custom compound is the active material:
 
-| Advanced Options control | Behaviour with custom compound |
-|--------------------------|-------------------------------|
-| Density override | **Disabled.** Tooltip: "Density is set in the compound definition." |
-| I-value override | **Disabled.** Tooltip: "Override the compound's I-value in the compound editor." |
-| Aggregate state toggle | **Disabled.** Tooltip: "Phase is set in the compound definition." |
+| Advanced Options control     | Behaviour with custom compound                                                                           |
+| ---------------------------- | -------------------------------------------------------------------------------------------------------- |
+| Density override             | **Disabled.** Tooltip: "Density is set in the compound definition."                                      |
+| I-value override             | **Disabled.** Tooltip: "Override the compound's I-value in the compound editor."                         |
+| Aggregate state toggle       | **Disabled.** Tooltip: "Phase is set in the compound definition."                                        |
 | Interpolation scale / method | **Active.** Spline interpolation operates at the JS level and is fully compatible with custom compounds. |
-| MSTAR mode | **Active.** MSTAR mode is a program-level setting and is unaffected by the material type. |
+| MSTAR mode                   | **Active.** MSTAR mode is a program-level setting and is unaffected by the material type.                |
 
 Inverse lookup tabs (Range / Inverse STP) are **fully supported** for
 custom compounds via dedicated WASM methods (see §5.5).
@@ -525,9 +536,9 @@ The custom compound's `phase` field drives the default stopping-power
 display unit, exactly as the built-in `isGasByDefault` flag does:
 
 | Compound phase | Default display unit |
-|----------------|---------------------|
-| `"condensed"` | keV/µm |
-| `"gas"` | MeV·cm²/g |
+| -------------- | -------------------- |
+| `"condensed"`  | keV/µm               |
+| `"gas"`        | MeV·cm²/g            |
 
 ---
 
@@ -606,28 +617,31 @@ When a URL contains `material=custom` with all required `mat_*` params:
 
 ### 6.5 Parse validation
 
-| Condition | Recovery |
-|-----------|----------|
-| `mat_name` missing or empty | Fall back to default material; show warning |
-| `mat_density` missing, ≤ 0, or non-numeric | Fall back to default material; show warning |
-| `mat_elements` missing or all elements invalid | Fall back to default material; show warning |
-| Individual invalid Z (outside [1, 118]) | Drop that element; if at least one valid element remains, proceed |
-| Individual invalid atom count (≤ 0) | Drop that element; same recovery |
-| Duplicate Z in URL | Collapse by summing counts |
-| `mat_ival` out of range | Silently ignore; proceed without iValue |
-| `mat_phase` unknown token | Silently ignore; default to `"condensed"` |
+| Condition                                      | Recovery                                                          |
+| ---------------------------------------------- | ----------------------------------------------------------------- |
+| `mat_name` missing or empty                    | Fall back to default material; show warning                       |
+| `mat_density` missing, ≤ 0, or non-numeric     | Fall back to default material; show warning                       |
+| `mat_elements` missing or all elements invalid | Fall back to default material; show warning                       |
+| Individual invalid Z (outside [1, 118])        | Drop that element; if at least one valid element remains, proceed |
+| Individual invalid atom count (≤ 0)            | Drop that element; same recovery                                  |
+| Duplicate Z in URL                             | Collapse by summing counts                                        |
+| `mat_ival` out of range                        | Silently ignore; proceed without iValue                           |
+| `mat_phase` unknown token                      | Silently ignore; default to `"condensed"`                         |
 
 ### 6.6 Example URLs
 
 **Basic custom compound — PMMA:**
+
 ```
 ?urlv=1&particle=1&material=custom&energies=100&eunit=MeV
 &mode=advanced&programs=9&qfocus=both
 &mat_name=PMMA&mat_density=1.19&mat_elements=1:8,6:5,8:2
 ```
+
 (elements ordered by ascending Z: H=1, C=6, O=8)
 
 **Custom water with gas phase:**
+
 ```
 ?urlv=1&particle=1&material=custom&energies=100&eunit=MeV
 &mode=advanced&programs=9&qfocus=both
@@ -680,10 +694,10 @@ weight-fraction input) are stored as-is without rounding.
 Column headers are unchanged. The material identifier in the filename and
 any header rows uses the compound name suffixed with `(custom)`:
 
-| Context | Value |
-|---------|-------|
-| CSV filename | `dedx_PMMA_custom_proton_…` |
-| Material column header | `PMMA (custom)` |
+| Context                | Value                       |
+| ---------------------- | --------------------------- |
+| CSV filename           | `dedx_PMMA_custom_proton_…` |
+| Material column header | `PMMA (custom)`             |
 
 ### 8.2 PDF export (advanced mode metadata block)
 
@@ -715,6 +729,7 @@ COMPOSITION (Bragg additivity):
 ```
 
 Columns:
+
 - **Element** — chemical symbol
 - **Z** — atomic number
 - **Atom count** — value as stored (may be fractional for weight-fraction
@@ -732,18 +747,18 @@ If an I-value override is stored on the compound, a line below the table reads:
 
 ## 9. Edge Cases
 
-| Scenario | Behaviour |
-|----------|-----------|
+| Scenario                                             | Behaviour                                                                                                                                                                              |
+| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | Custom compound active → user switches to Basic mode | Material reverts to default (liquid water). Custom compound selection held in memory. Switching back to Advanced mode restores it. URL in Basic mode never contains `material=custom`. |
-| User deletes the currently selected compound | Falls back to the last-used built-in material (or liquid water if none). Toast: "Compound 'X' deleted — switched to Liquid Water." |
-| User edits the currently selected compound | Recalculates immediately on save using the updated definition. URL updates to reflect new `mat_*` params. |
-| Multi-program mode with a custom compound | Each program calls `calculateCustomCompound()` independently. One program's runtime error does not suppress others. |
-| Custom compound selected on Plot page | `getPlotDataCustomCompound()` or equivalent is used to generate the dense energy grid. The series label shows the compound name with the "(custom)" badge. |
-| Compound name contains `&`, `=`, `%` | Percent-encoded in the URL via `encodeURIComponent`. Decoded transparently on parse. |
-| `localStorage` quota exceeded on save | Editor shows: "Cannot save: browser storage is full. Delete unused compounds first." The new compound is not persisted. |
-| WASM call fails for custom compound | Error displayed inline (human-friendly message, "Show details" for C error code). Result cells show "—". Other programs in multi-program mode are unaffected. |
-| URL parsed in Basic mode contains `material=custom` | `mat_*` params silently dropped; material defaults to liquid water. No warning shown (Basic-mode URL is expected to lack advanced params). |
-| Two elements with same Z entered by user | Editor shows inline error on the duplicate row; Save blocked. |
+| User deletes the currently selected compound         | Falls back to the last-used built-in material (or liquid water if none). Toast: "Compound 'X' deleted — switched to Liquid Water."                                                     |
+| User edits the currently selected compound           | Recalculates immediately on save using the updated definition. URL updates to reflect new `mat_*` params.                                                                              |
+| Multi-program mode with a custom compound            | Each program calls `calculateCustomCompound()` independently. One program's runtime error does not suppress others.                                                                    |
+| Custom compound selected on Plot page                | `getPlotDataCustomCompound()` or equivalent is used to generate the dense energy grid. The series label shows the compound name with the "(custom)" badge.                             |
+| Compound name contains `&`, `=`, `%`                 | Percent-encoded in the URL via `encodeURIComponent`. Decoded transparently on parse.                                                                                                   |
+| `localStorage` quota exceeded on save                | Editor shows: "Cannot save: browser storage is full. Delete unused compounds first." The new compound is not persisted.                                                                |
+| WASM call fails for custom compound                  | Error displayed inline (human-friendly message, "Show details" for C error code). Result cells show "—". Other programs in multi-program mode are unaffected.                          |
+| URL parsed in Basic mode contains `material=custom`  | `mat_*` params silently dropped; material defaults to liquid water. No warning shown (Basic-mode URL is expected to lack advanced params).                                             |
+| Two elements with same Z entered by user             | Editor shows inline error on the duplicate row; Save blocked.                                                                                                                          |
 
 ---
 
@@ -762,12 +777,14 @@ If an I-value override is stored on the compound, a line below the table reads:
 ## Acceptance Checklist
 
 ### AC-1: Visibility gating
+
 - [ ] "Custom Compounds" group is absent from the DOM in Basic mode
 - [ ] "+ Add compound" button is absent from the DOM in Basic mode
 - [ ] Switching Basic → Advanced mode renders/restores the custom compound group, even if Advanced mode had not previously been activated
 - [ ] Switching Advanced → Basic mode when a custom compound is active reverts the active material to liquid water and clears `material=custom` from the URL
 
 ### AC-2: Compound editor — create
+
 - [ ] "+ Add compound" opens the modal with all fields blank (except Phase = Condensed)
 - [ ] "Name" field receives focus on open
 - [ ] Formula mode is the default input mode
@@ -776,6 +793,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] The new compound entry shows name, density, edit icon, and delete icon
 
 ### AC-3: Compound editor — validation (Formula mode)
+
 - [ ] Empty name blocks Save with inline error "Name is required."
 - [ ] Name > 80 chars blocks Save
 - [ ] Blank density blocks Save
@@ -787,6 +805,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] Atom count ≤ 0 blocks Save
 
 ### AC-4: Compound editor — validation (Weight fraction mode)
+
 - [ ] Switching to Weight fraction mode shows the sum indicator
 - [ ] Sum < 99.9% shows sum indicator in error colour and disables Save
 - [ ] Sum > 100.1% shows sum indicator in error colour and disables Save
@@ -795,16 +814,19 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] PMMA input (C 59.99%, H 8.05%, O 31.96%) produces atom counts within 0.5% relative error of C:5, H:8, O:2
 
 ### AC-5: Compound editor — edit
+
 - [ ] Clicking ✏ on a saved compound opens the modal pre-filled with all stored values
 - [ ] Editing name/density/composition and saving updates the `localStorage` entry
 - [ ] If the edited compound is the active material, the calculation re-runs immediately with new values and the URL updates
 
 ### AC-6: Compound deletion
+
 - [ ] Clicking 🗑 shows a confirmation dialog with the compound name
 - [ ] Confirming deletion removes the compound from `localStorage` and from the selector
 - [ ] Deleting the active compound falls back to last-used built-in material (or liquid water) and shows a toast
 
 ### AC-7: Entity selection integration
+
 - [ ] Custom compounds appear in the "Custom Compounds" group in the compact combobox (Calculator)
 - [ ] Custom compounds appear in the "Custom" sub-list in the full panel (Plot)
 - [ ] Custom compound entries show the "custom" badge visually distinct from built-in entries
@@ -812,6 +834,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] Custom compounds are never greyed out regardless of particle or program selection
 
 ### AC-7b: Program compatibility filter
+
 - [ ] For a compound with elements A, B, C: only programs with elemental material data for all of A, B, C are selectable
 - [ ] Programs missing one or more elements are greyed out (option A provisional) with a tooltip listing the missing elements by symbol and Z
 - [ ] The filter updates reactively when element rows change in the editor preview (before saving)
@@ -819,6 +842,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] Particle-incompatible programs are filtered first (existing entity-selection rule), then element filter applied on remaining
 
 ### AC-8: Calculation
+
 - [ ] Selecting a custom compound calls `calculateCustomCompound()` with the correct `programId`, `particleId`, `compound`, and `energies`
 - [ ] H₂O custom compound (density 1.0 g/cm³, no iValue) produces stopping powers within 2% of built-in liquid water (ID 276) for protons at 100 MeV/nucl in PSTAR (Bragg additivity)
 - [ ] LiF compound (density 2.20 g/cm³) with 5 MeV alpha produces a CSDA range value that differs from the bulk-crystal-density calculation proportionally to the density ratio (range scales as 1/ρ)
@@ -826,11 +850,13 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] `getPlotDataCustomCompound()` produces a smooth stopping-power curve on the Plot page for a custom compound
 
 ### AC-8b: Inverse lookups with custom compound
+
 - [ ] Range tab is active for a custom compound — `getInverseCsdaCustomCompound()` is called with the correct `compound` argument
 - [ ] Inverse STP tab is active for a custom compound — `getInverseStpCustomCompound()` is called
 - [ ] `getBraggPeakStpCustomCompound()` result is shown as the valid-range hint below the Inverse STP table
 
 ### AC-9: Advanced Options interaction
+
 - [ ] Density override field is disabled and shows the tooltip when a custom compound is active
 - [ ] I-value override field is disabled and shows the tooltip when a custom compound is active
 - [ ] Aggregate state toggle is disabled and shows the tooltip when a custom compound is active
@@ -838,6 +864,7 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] MSTAR mode selection takes effect when MSTAR program is selected with a custom compound
 
 ### AC-10: URL encoding
+
 - [ ] `material=custom` appears in the URL when a custom compound is active in Advanced mode
 - [ ] `mat_name`, `mat_density`, `mat_elements` are present in canonical order (step 9 of canonicalization)
 - [ ] `mat_elements` lists elements in ascending Z order
@@ -848,17 +875,20 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] A compound name containing `&`, `=`, and spaces round-trips correctly
 
 ### AC-11: Shared URL — "from URL" banner
+
 - [ ] Navigating to a URL with `material=custom` and valid `mat_*` params shows the "Compound from shared URL — Save to library / Dismiss" banner
 - [ ] Clicking "Save to library" runs full validation and adds the compound with a new UUID
 - [ ] Clicking "Dismiss" keeps the compound active for the session but does not persist it
 - [ ] Invalid / incomplete `mat_*` params fall back to liquid water and show the warning banner
 
 ### AC-12: localStorage persistence
+
 - [ ] Compounds survive page reload
 - [ ] Compounds survive navigation between Calculator and Plot pages
 - [ ] `localStorage` full on save → editor shows the full-storage error; no partial write
 
 ### AC-13: Export
+
 - [ ] CSV filename includes `_custom` when a custom compound is active
 - [ ] Advanced PDF metadata `MATERIAL` row shows "CompoundName (custom) — X g/cm³"
 - [ ] Gas-phase custom compound shows "(custom, gas)" in the PDF MATERIAL row

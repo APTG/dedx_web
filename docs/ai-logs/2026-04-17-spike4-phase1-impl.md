@@ -5,6 +5,7 @@
 ### Prompt: Implement Phase 1 prototype scripts
 
 **User requests:**
+
 1. Adjust the plan to use the exact 165-point SRIM energy grid (dropping variable-length pairs), include `csda_range` column, and keep consistent grid for all rows.
 2. Implement all Phase 1 scripts.
 
@@ -26,6 +27,7 @@
 **Purpose:** Single source of truth. Imports used by all three writers.
 
 **Key contents:**
+
 - `ENERGIES`: 165-point array, exact SRIM-2013 values.
 - `STABLE_ISOTOPES`: 286 entries, `(Z, A, symbol)` from AME2020/NUBASE2020.
 - `ELECTRON`: special lepton entry.
@@ -36,6 +38,7 @@
 - `compute_csda_range_array(stp)`: cumulative trapezoidal integral of `1/STP` over `ENERGIES`.
 
 **Bugs fixed during implementation:**
+
 - `-1` sentinel in C array parsed as `1` by `re.findall(r'\d+', ...)` — fixed by using `re.findall(r'-?\d+', ...)` and filtering `> 0`.
 - ICRU compound materials have no `composition` key — added `i_value_eV` fallback path; used `75.0 eV` for materials missing both.
 
@@ -56,6 +59,7 @@ zstd level 5 compression with dictionary encoding on string columns.
 arrays in a loop. One shard file per quantity.
 
 **Output:** `data/srim_synthetic_single.zarr/` — **82.2 MB**, 6 files
+
 - `srim-2013/stp/c/0/0/0`: 40.5 MB
 - `srim-2013/csda_range/c/0/0/0`: 41.6 MB
 
@@ -66,6 +70,7 @@ arrays in a loop. One shard file per quantity.
 `shards=(1,379,165)`, `chunks=(1,379,165)`. 287 shard files per quantity.
 
 **Output:** `data/srim_synthetic_per_ion.zarr/` — **82.2 MB**, 578 files
+
 - `stp/c/0/0/0` (H-1): 137.5 KB
 - `stp/c/286/0/0` (electron): 217.7 KB
 
@@ -81,11 +86,11 @@ Produces `REPORT.md` with full size table and round-trip consistency check.
 
 ## Key benchmark findings
 
-| Format | Total | Per-ion fetch | Cold requests |
-|--------|-------|---------------|---------------|
-| Parquet | 87.9 MB | 296–411 KB (row group) | 2 |
-| Zarr single | 82.2 MB | 4.5 KB index + Range to inner chunk | 3 per quantity |
-| Zarr per-ion | 82.2 MB | 138–218 KB per quantity | 2 per quantity |
+| Format       | Total   | Per-ion fetch                       | Cold requests  |
+| ------------ | ------- | ----------------------------------- | -------------- |
+| Parquet      | 87.9 MB | 296–411 KB (row group)              | 2              |
+| Zarr single  | 82.2 MB | 4.5 KB index + Range to inner chunk | 3 per quantity |
+| Zarr per-ion | 82.2 MB | 138–218 KB per quantity             | 2 per quantity |
 
 - Zarr per-ion shard is **~2× smaller** than the equivalent Parquet row group.
 - Zarr single shard is **~50% smaller** total vs Parquet.

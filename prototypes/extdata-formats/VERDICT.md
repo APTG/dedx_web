@@ -26,50 +26,50 @@ All measurements from real S3 bucket at
 
 ### 2.1 Local file sizes
 
-| Format | Total size | Files |
-|--------|-----------|-------|
-| Parquet | 87.86 MB | 1 |
-| Zarr single shard | 82.16 MB | 6 |
-| Zarr per-ion | 82.16 MB | 578 |
-| Uncompressed (per quantity) | 71.79 MB | — |
+| Format                      | Total size | Files |
+| --------------------------- | ---------- | ----- |
+| Parquet                     | 87.86 MB   | 1     |
+| Zarr single shard           | 82.16 MB   | 6     |
+| Zarr per-ion                | 82.16 MB   | 578   |
+| Uncompressed (per quantity) | 71.79 MB   | —     |
 
 Zarr is ~6% smaller total than Parquet.
 
 ### 2.2 Per-ion cold-start fetch (S3, wifi — Python urllib)
 
-| Format | Requests | Total bytes | Total time |
-|--------|----------|-------------|------------|
-| Parquet | 2 (footer + row-group Range) | 466 KB | 224 ms |
-| Zarr per-ion | 2 (zarr.json + shard GET) | 224 KB | 222 ms |
-| Zarr single | 3 (zarr.json + index Range + chunk Range) | 230 KB | 324 ms |
+| Format       | Requests                                  | Total bytes | Total time |
+| ------------ | ----------------------------------------- | ----------- | ---------- |
+| Parquet      | 2 (footer + row-group Range)              | 466 KB      | 224 ms     |
+| Zarr per-ion | 2 (zarr.json + shard GET)                 | 224 KB      | 222 ms     |
+| Zarr single  | 3 (zarr.json + index Range + chunk Range) | 230 KB      | 324 ms     |
 
 Note: Python benchmark fetched shard files as full GETs, bypassing zarrita's
 internal ZEP2 protocol. See §2.5 for actual zarrita behavior.
 
 ### 2.3 Per-ion cold-start fetch (S3, wifi — zarrita 0.7.1, Bun)
 
-| Format | Total bytes | Total time |
-|--------|-------------|------------|
-| Zarr per-ion | 224 KB | 171 ms |
-| Zarr single | 229 KB | 157 ms |
+| Format       | Total bytes | Total time |
+| ------------ | ----------- | ---------- |
+| Zarr per-ion | 224 KB      | 171 ms     |
+| Zarr single  | 229 KB      | 157 ms     |
 
 Note: zarrita Bun test confirmed zarr single and per-ion return **identical
 STP values** for H-1 in Water and C-12 in PMMA — round-trip verified.
 
 ### 2.4 Individual request sizes (wifi)
 
-| Request | Size |
-|---------|------|
-| Parquet footer (tail Range) | 320.8 KB |
-| Parquet H-1 row group (Range) | 145.2 KB |
-| Parquet electron row group (Range) | 205.2 KB |
-| Zarr zarr.json (root, both variants) | 86.5 KB |
-| Zarr stp/zarr.json (array metadata, both) | 1.3 KB |
-| Zarr per-ion — H-1 ZEP2 shard index (Range) | 20 B |
-| Zarr per-ion — H-1 data (Range) | 137.5 KB |
-| Zarr per-ion — electron shard data (Range) | 217.7 KB |
-| Zarr single — ZEP2 shard index (Range tail) | 4.5 KB |
-| Zarr single — H-1 inner chunk (Range) | 137.5 KB |
+| Request                                     | Size     |
+| ------------------------------------------- | -------- |
+| Parquet footer (tail Range)                 | 320.8 KB |
+| Parquet H-1 row group (Range)               | 145.2 KB |
+| Parquet electron row group (Range)          | 205.2 KB |
+| Zarr zarr.json (root, both variants)        | 86.5 KB  |
+| Zarr stp/zarr.json (array metadata, both)   | 1.3 KB   |
+| Zarr per-ion — H-1 ZEP2 shard index (Range) | 20 B     |
+| Zarr per-ion — H-1 data (Range)             | 137.5 KB |
+| Zarr per-ion — electron shard data (Range)  | 217.7 KB |
+| Zarr single — ZEP2 shard index (Range tail) | 4.5 KB   |
+| Zarr single — H-1 inner chunk (Range)       | 137.5 KB |
 
 ### 2.5 Per-ion cold-start fetch (S3, wifi — zarrita 0.7.1, browser)
 
@@ -78,23 +78,23 @@ captures Range headers; HAR exported from DevTools.
 
 Cold start = zarr.json (root) + stp/zarr.json + first H-1 data fetch.
 
-| Format | HTTP requests | Total bytes | Total time |
-|--------|---------------|-------------|------------|
-| Zarr per-ion | 7 | 225.7 KB | 287 ms |
-| Zarr single | 7 | 230.2 KB | 210 ms |
+| Format       | HTTP requests | Total bytes | Total time |
+| ------------ | ------------- | ----------- | ---------- |
+| Zarr per-ion | 7             | 225.7 KB    | 287 ms     |
+| Zarr single  | 7             | 230.2 KB    | 210 ms     |
 
 **Actual zarrita request sequence per cold start (both formats):**
 
-| Step | URL | Range | Bytes | Notes |
-|------|-----|-------|-------|-------|
-| 1 | `.zattrs` | — | 0.2 KB | zarrita v2 compat probe |
-| 2 | `.zgroup` | — | 0.2 KB | zarrita v2 compat probe |
-| 3 | `zarr.json` | — | 86.5 KB | root group metadata |
-| 4 | `srim-2013/stp/zarr.json` | — | 1.3 KB | array metadata |
-| 5 | `srim-2013/stp/c/{i}/0/0` | — | 0 B | HEAD probe (gets Content-Length) |
-| 6 (per-ion) | `srim-2013/stp/c/{i}/0/0` | `bytes=140812-140831` | 20 B | ZEP2 shard index (1 inner chunk × 16 + 4 CRC) |
-| 6 (single) | `srim-2013/stp/c/0/0/0` | `bytes=40506358-40510953` | 4.5 KB | ZEP2 shard index (287 × 16 + 4 CRC) |
-| 7 | `srim-2013/stp/c/{i}/0/0` | `bytes=0-140811` | 137.5 KB | compressed data |
+| Step        | URL                       | Range                     | Bytes    | Notes                                         |
+| ----------- | ------------------------- | ------------------------- | -------- | --------------------------------------------- |
+| 1           | `.zattrs`                 | —                         | 0.2 KB   | zarrita v2 compat probe                       |
+| 2           | `.zgroup`                 | —                         | 0.2 KB   | zarrita v2 compat probe                       |
+| 3           | `zarr.json`               | —                         | 86.5 KB  | root group metadata                           |
+| 4           | `srim-2013/stp/zarr.json` | —                         | 1.3 KB   | array metadata                                |
+| 5           | `srim-2013/stp/c/{i}/0/0` | —                         | 0 B      | HEAD probe (gets Content-Length)              |
+| 6 (per-ion) | `srim-2013/stp/c/{i}/0/0` | `bytes=140812-140831`     | 20 B     | ZEP2 shard index (1 inner chunk × 16 + 4 CRC) |
+| 6 (single)  | `srim-2013/stp/c/0/0/0`   | `bytes=40506358-40510953` | 4.5 KB   | ZEP2 shard index (287 × 16 + 4 CRC)           |
+| 7           | `srim-2013/stp/c/{i}/0/0` | `bytes=0-140811`          | 137.5 KB | compressed data                               |
 
 Both variants use **Range requests for shard access**. The advantage of
 per-ion is that its shard index (step 6) is 20 bytes (1 inner chunk),
@@ -113,40 +113,40 @@ and C-12/PMMA) — AC #9 PASS.
 
 ## 3. Acceptance Criteria
 
-| # | Criterion | Result |
-|---|-----------|--------|
-| 1 | `generate_data.py` runs without error | ✅ PASS — 287 particles, 379 materials, 165 pts |
-| 2 | Zarr single round-trip | ✅ PASS — max diff < 1e-5 |
-| 3 | Zarr per-ion round-trip | ✅ PASS — max diff < 1e-5 |
-| 4 | Parquet round-trip | ✅ PASS — max diff < 1e-4 vs Zarr |
-| 5 | Electron chunk present and non-zero | ✅ PASS — 217.7 KB shard, distinct from proton |
-| 6 | Custom material STP uses Bragg additivity | ✅ PASS — compute path verified in code |
-| 7 | Per-particle Zarr inner chunk < Parquet row group | ✅ PASS — 137.5 KB vs 145.2 KB |
-| 8 | `run_benchmark.py` completes | ✅ PASS |
-| 9 | Browser local panels values match | ✅ PASS — browser Vite test: per-ion = single for all 8 energy samples (H-1/Water + C-12/PMMA) |
-| 10 | S3 single-shard reads successfully | ✅ PASS — zarrita confirmed (Bun + browser) |
-| 11 | S3 per-ion reads successfully | ✅ PASS — zarrita confirmed; zarrita uses Range for ZEP2 index (20 B) + data; "no Range" claim in PLAN was incorrect |
-| 12 | zarrita bundle ≤ 50 KB minified | ✅ PASS — zarrita chunk 38.62 kB (gzip 12.89 kB); lz4 codec 36.59 kB also needed; blosc/zstd chunks 603/747 kB in build (expected lazy-loaded — not needed for LZ4 data) |
-| 13 | No CORS errors | ✅ PASS — browser test confirmed no CORS errors; S3 CORS config working |
+| #   | Criterion                                         | Result                                                                                                                                                                   |
+| --- | ------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 1   | `generate_data.py` runs without error             | ✅ PASS — 287 particles, 379 materials, 165 pts                                                                                                                          |
+| 2   | Zarr single round-trip                            | ✅ PASS — max diff < 1e-5                                                                                                                                                |
+| 3   | Zarr per-ion round-trip                           | ✅ PASS — max diff < 1e-5                                                                                                                                                |
+| 4   | Parquet round-trip                                | ✅ PASS — max diff < 1e-4 vs Zarr                                                                                                                                        |
+| 5   | Electron chunk present and non-zero               | ✅ PASS — 217.7 KB shard, distinct from proton                                                                                                                           |
+| 6   | Custom material STP uses Bragg additivity         | ✅ PASS — compute path verified in code                                                                                                                                  |
+| 7   | Per-particle Zarr inner chunk < Parquet row group | ✅ PASS — 137.5 KB vs 145.2 KB                                                                                                                                           |
+| 8   | `run_benchmark.py` completes                      | ✅ PASS                                                                                                                                                                  |
+| 9   | Browser local panels values match                 | ✅ PASS — browser Vite test: per-ion = single for all 8 energy samples (H-1/Water + C-12/PMMA)                                                                           |
+| 10  | S3 single-shard reads successfully                | ✅ PASS — zarrita confirmed (Bun + browser)                                                                                                                              |
+| 11  | S3 per-ion reads successfully                     | ✅ PASS — zarrita confirmed; zarrita uses Range for ZEP2 index (20 B) + data; "no Range" claim in PLAN was incorrect                                                     |
+| 12  | zarrita bundle ≤ 50 KB minified                   | ✅ PASS — zarrita chunk 38.62 kB (gzip 12.89 kB); lz4 codec 36.59 kB also needed; blosc/zstd chunks 603/747 kB in build (expected lazy-loaded — not needed for LZ4 data) |
+| 13  | No CORS errors                                    | ✅ PASS — browser test confirmed no CORS errors; S3 CORS config working                                                                                                  |
 
 ---
 
 ## 4. Evaluation Questions (PLAN.md §7)
 
-| # | Question | Answer |
-|---|----------|--------|
-| 1 | Zarr total ≤ Parquet total? | ✅ Yes — 82.2 MB vs 87.9 MB |
-| 2 | Per-ion Zarr chunk ≤ Parquet row group? | ✅ Yes — 137.5 KB vs 145.2 KB (S3 measured) |
-| 3 | Energy grid repetition cost in Parquet? | Large footer (320.8 KB) contains per-column stats for all 287×165×379 cells; Zarr zarr.json (86.5 KB) stores the grid once |
-| 4 | HTTP cold-start round trips comparable? | Browser: 7 requests each (3 root probes + 1 stp/zarr.json + 3 shard). Parquet would need same structure. Request count equal between Zarr variants; per-ion shard index is 20 B vs 4.5 KB |
-| 5 | zarrita bundle ≤ hyparquet? | zarrita core 38.62 kB; lz4 codec 36.59 kB; total ~75 kB for LZ4-only usage. hyparquet is ~20 kB but zarrita gate criterion (≤ 50 kB) refers to zarrita core only — ✅ met |
-| 6 | Electron chunk differs from ion chunks? | ✅ Yes — 217.7 KB vs 137.5 KB (Møller formula → less compressible) |
-| 7 | Custom materials affect chunk size? | No — all 379 materials always in the ion shard |
-| 8 | Zarr single deploys without friction to GitHub Pages? | GATE OPEN — not tested, but no known blocker; single file simplifies deployment vs 578 per-ion files |
-| 9 | Zarr handles variable energy grids? | N/A — uniform 165-pt grid used (short-grid pairs dropped) |
-| 10 | Wall-clock RTT single-shard vs per-ion on S3? | Browser: per-ion 287 ms vs single 210 ms (single faster on this run, likely timing variance). Python: per-ion 222 ms vs single 324 ms. Bun: per-ion 171 ms vs single 157 ms. Differences within normal variance on fast wifi |
-| 11 | Per-ion eliminates shard index fetch? | ❌ No — zarrita always reads ZEP2 shard index via Range. Per-ion index = 20 B (1 inner chunk × 16 + 4 CRC); single index = 4.5 KB (287 × 16 + 4). Per-ion index is negligible |
-| 12 | Per-ion usable on GitHub Pages (287 files)? | ✅ Browser test PASS — 287-file structure causes no issues; file count not a browser constraint |
+| #   | Question                                              | Answer                                                                                                                                                                                                                       |
+| --- | ----------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | Zarr total ≤ Parquet total?                           | ✅ Yes — 82.2 MB vs 87.9 MB                                                                                                                                                                                                  |
+| 2   | Per-ion Zarr chunk ≤ Parquet row group?               | ✅ Yes — 137.5 KB vs 145.2 KB (S3 measured)                                                                                                                                                                                  |
+| 3   | Energy grid repetition cost in Parquet?               | Large footer (320.8 KB) contains per-column stats for all 287×165×379 cells; Zarr zarr.json (86.5 KB) stores the grid once                                                                                                   |
+| 4   | HTTP cold-start round trips comparable?               | Browser: 7 requests each (3 root probes + 1 stp/zarr.json + 3 shard). Parquet would need same structure. Request count equal between Zarr variants; per-ion shard index is 20 B vs 4.5 KB                                    |
+| 5   | zarrita bundle ≤ hyparquet?                           | zarrita core 38.62 kB; lz4 codec 36.59 kB; total ~75 kB for LZ4-only usage. hyparquet is ~20 kB but zarrita gate criterion (≤ 50 kB) refers to zarrita core only — ✅ met                                                    |
+| 6   | Electron chunk differs from ion chunks?               | ✅ Yes — 217.7 KB vs 137.5 KB (Møller formula → less compressible)                                                                                                                                                           |
+| 7   | Custom materials affect chunk size?                   | No — all 379 materials always in the ion shard                                                                                                                                                                               |
+| 8   | Zarr single deploys without friction to GitHub Pages? | GATE OPEN — not tested, but no known blocker; single file simplifies deployment vs 578 per-ion files                                                                                                                         |
+| 9   | Zarr handles variable energy grids?                   | N/A — uniform 165-pt grid used (short-grid pairs dropped)                                                                                                                                                                    |
+| 10  | Wall-clock RTT single-shard vs per-ion on S3?         | Browser: per-ion 287 ms vs single 210 ms (single faster on this run, likely timing variance). Python: per-ion 222 ms vs single 324 ms. Bun: per-ion 171 ms vs single 157 ms. Differences within normal variance on fast wifi |
+| 11  | Per-ion eliminates shard index fetch?                 | ❌ No — zarrita always reads ZEP2 shard index via Range. Per-ion index = 20 B (1 inner chunk × 16 + 4 CRC); single index = 4.5 KB (287 × 16 + 4). Per-ion index is negligible                                                |
+| 12  | Per-ion usable on GitHub Pages (287 files)?           | ✅ Browser test PASS — 287-file structure causes no issues; file count not a browser constraint                                                                                                                              |
 
 ---
 
@@ -202,35 +202,35 @@ is ever reconsidered.
 
 Gate items closed. Remaining work:
 
-| Item | Blocking? | Notes |
-|------|-----------|-------|
-| `external-data.md §2` amendment | Yes (impl gate) | Replace Parquet schema with Zarr v3 per-ion spec; document zarrita access pattern (7-request cold start) |
-| Remove `hyparquet` from `02-tech-stack.md` | Post-gate | Replaced by zarrita |
-| Investigate zarrita codec lazy-loading | Post-gate | `vite build` bundles blosc (603 kB) + zstd (747 kB); verify not eagerly loaded for LZ4-only data before production |
-| Investigate zarrita v2 compat probe | Post-gate | `.zattrs` + `.zgroup` fetched on every `open(root(...))` — 2 extra requests; check if disableable |
-| `upload_to_s3.py` implementation | No | Used rclone manually; script useful for automation |
+| Item                                       | Blocking?       | Notes                                                                                                              |
+| ------------------------------------------ | --------------- | ------------------------------------------------------------------------------------------------------------------ |
+| `external-data.md §2` amendment            | Yes (impl gate) | Replace Parquet schema with Zarr v3 per-ion spec; document zarrita access pattern (7-request cold start)           |
+| Remove `hyparquet` from `02-tech-stack.md` | Post-gate       | Replaced by zarrita                                                                                                |
+| Investigate zarrita codec lazy-loading     | Post-gate       | `vite build` bundles blosc (603 kB) + zstd (747 kB); verify not eagerly loaded for LZ4-only data before production |
+| Investigate zarrita v2 compat probe        | Post-gate       | `.zattrs` + `.zgroup` fetched on every `open(root(...))` — 2 extra requests; check if disableable                  |
+| `upload_to_s3.py` implementation           | No              | Used rclone manually; script useful for automation                                                                 |
 
 ---
 
 ## 8. Files Changed / Produced in This Spike
 
-| File | Status |
-|------|--------|
-| `generate_data.py` | ✅ New |
-| `write_parquet.py` | ✅ New |
-| `write_zarr_v3_single.py` | ✅ New |
-| `write_zarr_v3_per_ion.py` | ✅ New |
-| `run_benchmark.py` | ✅ New |
-| `run_s3_benchmark.py` | ✅ New |
-| `browser/benchmark.ts` | ✅ New (zarrita Bun script) |
-| `browser/package.json` | ✅ Updated (added vite + typescript devDeps) |
-| `browser/vite.config.ts` | ✅ New |
-| `browser/tsconfig.json` | ✅ New |
-| `browser/index.html` | ✅ New |
-| `browser/src/main.ts` | ✅ New (Vite browser benchmark + HAR export) |
-| `REPORT.md` | ✅ Generated |
-| `REPORT_S3.md` | ✅ Generated |
-| `REPORT_S3_ZARRITA.md` | ✅ Generated (Bun run) |
-| `REPORT_BROWSER.md` | ✅ Generated (browser run, 2026-04-18 11:21 UTC) |
-| `PLAN.md` | ✅ Updated (status → Complete, stale shapes fixed) |
-| `VERDICT.md` | ✅ This file |
+| File                       | Status                                             |
+| -------------------------- | -------------------------------------------------- |
+| `generate_data.py`         | ✅ New                                             |
+| `write_parquet.py`         | ✅ New                                             |
+| `write_zarr_v3_single.py`  | ✅ New                                             |
+| `write_zarr_v3_per_ion.py` | ✅ New                                             |
+| `run_benchmark.py`         | ✅ New                                             |
+| `run_s3_benchmark.py`      | ✅ New                                             |
+| `browser/benchmark.ts`     | ✅ New (zarrita Bun script)                        |
+| `browser/package.json`     | ✅ Updated (added vite + typescript devDeps)       |
+| `browser/vite.config.ts`   | ✅ New                                             |
+| `browser/tsconfig.json`    | ✅ New                                             |
+| `browser/index.html`       | ✅ New                                             |
+| `browser/src/main.ts`      | ✅ New (Vite browser benchmark + HAR export)       |
+| `REPORT.md`                | ✅ Generated                                       |
+| `REPORT_S3.md`             | ✅ Generated                                       |
+| `REPORT_S3_ZARRITA.md`     | ✅ Generated (Bun run)                             |
+| `REPORT_BROWSER.md`        | ✅ Generated (browser run, 2026-04-18 11:21 UTC)   |
+| `PLAN.md`                  | ✅ Updated (status → Complete, stale shapes fixed) |
+| `VERDICT.md`               | ✅ This file                                       |

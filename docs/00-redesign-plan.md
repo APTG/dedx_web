@@ -10,10 +10,10 @@
 
 ### Versioning
 
-| Version | Status | URL | Notes |
-|---------|--------|-----|-------|
-| **v1.1.0** | Released 1 April 2022 | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release; legacy React 17 app |
-| **v2.x** | In development | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | This rewrite — SvelteKit + Svelte 5 + WASM |
+| Version    | Status                | URL                                                       | Notes                                      |
+| ---------- | --------------------- | --------------------------------------------------------- | ------------------------------------------ |
+| **v1.1.0** | Released 1 April 2022 | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release; legacy React 17 app   |
+| **v2.x**   | In development        | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | This rewrite — SvelteKit + Svelte 5 + WASM |
 
 The first production release of v2 will be tagged `v2.0.0` and deployed to `APTG/web` (see Stage 8).
 
@@ -24,6 +24,7 @@ for the **libdedx** C library (stopping power / energy calculations), compiled t
 via Emscripten.
 
 **Pain points with v1:**
+
 - It doesn't work.
 - Plots are ugly.
 - Code is old (React 17, class components, no TypeScript, CRA).
@@ -35,22 +36,22 @@ The goal of **v2** is a **ground-up rewrite** using modern tooling, driven by AI
 
 ## 2. Technology Choices
 
-| Layer              | Choice                                  |
-|--------------------|-----------------------------------------|
-| Framework          | **SvelteKit** with **Svelte 5** (TypeScript) |
-| Plotting           | **JSROOT** (keep — physics community standard) |
-| Styling            | **Tailwind CSS**                        |
-| UI components      | **shadcn-svelte** + Bits UI ([ADR 005](decisions/005-shadcn-svelte-components.md)) |
-| WASM / libdedx     | **Full redesign** (build pipeline + JS wrapper) |
-| Deployment         | **GitHub Pages**                        |
-| Language           | **TypeScript** (strict mode)            |
-| Linting            | **ESLint** (`eslint-plugin-svelte`)     |
-| Formatting         | **Prettier** (`prettier-plugin-svelte`) |
-| Testing            | **Full coverage** — unit + integration + E2E |
-| Unit tests         | Vitest + Svelte Testing Library         |
-| E2E tests          | Playwright                              |
-| AI agent config    | **GitHub Copilot** customization files in `.github/` |
-| UX inspiration     | **ATIMA** (https://www.isotopea.com/webatima/) |
+| Layer           | Choice                                                                             |
+| --------------- | ---------------------------------------------------------------------------------- |
+| Framework       | **SvelteKit** with **Svelte 5** (TypeScript)                                       |
+| Plotting        | **JSROOT** (keep — physics community standard)                                     |
+| Styling         | **Tailwind CSS**                                                                   |
+| UI components   | **shadcn-svelte** + Bits UI ([ADR 005](decisions/005-shadcn-svelte-components.md)) |
+| WASM / libdedx  | **Full redesign** (build pipeline + JS wrapper)                                    |
+| Deployment      | **GitHub Pages**                                                                   |
+| Language        | **TypeScript** (strict mode)                                                       |
+| Linting         | **ESLint** (`eslint-plugin-svelte`)                                                |
+| Formatting      | **Prettier** (`prettier-plugin-svelte`)                                            |
+| Testing         | **Full coverage** — unit + integration + E2E                                       |
+| Unit tests      | Vitest + Svelte Testing Library                                                    |
+| E2E tests       | Playwright                                                                         |
+| AI agent config | **GitHub Copilot** customization files in `.github/`                               |
+| UX inspiration  | **ATIMA** (https://www.isotopea.com/webatima/)                                     |
 
 > **Svelte 5 only.** This project uses Svelte 5 with runes (`$state`, `$derived`,
 > `$effect`, `$props`, `$bindable`). Do **not** use Svelte 4 patterns:
@@ -159,15 +160,16 @@ anyone working on the repo.
 
 **What each primitive does:**
 
-| Primitive | File | When loaded | Purpose |
-|-----------|------|-------------|---------|
-| Workspace instructions | `copilot-instructions.md` | Every interaction | Project context, Svelte 5 rules, build commands |
-| File instructions | `*.instructions.md` | When editing matching files | Framework/domain-specific rules |
-| Prompts | `*.prompt.md` | On-demand via `/` slash command | Reusable task templates |
-| Custom agents | `*.agent.md` | User picks in agent selector, or auto-delegated | Focused roles with restricted tools |
-| Skills | `SKILL.md` in subfolder | On-demand when task matches description | Multi-step workflows with bundled assets |
+| Primitive              | File                      | When loaded                                     | Purpose                                         |
+| ---------------------- | ------------------------- | ----------------------------------------------- | ----------------------------------------------- |
+| Workspace instructions | `copilot-instructions.md` | Every interaction                               | Project context, Svelte 5 rules, build commands |
+| File instructions      | `*.instructions.md`       | When editing matching files                     | Framework/domain-specific rules                 |
+| Prompts                | `*.prompt.md`             | On-demand via `/` slash command                 | Reusable task templates                         |
+| Custom agents          | `*.agent.md`              | User picks in agent selector, or auto-delegated | Focused roles with restricted tools             |
+| Skills                 | `SKILL.md` in subfolder   | On-demand when task matches description         | Multi-step workflows with bundled assets        |
 
 **Key rules:**
+
 - `copilot-instructions.md` should be **short** (~40 lines). It loads into every request's context window.
   Link to `docs/*.md` files rather than duplicating content.
 - File instructions use `applyTo` globs to auto-attach when relevant files are edited.
@@ -307,16 +309,16 @@ are written against this interface. The WASM implementation is swappable
 
 ### Key types
 
-| Type | Purpose |
-|------|---------|
-| `LibdedxEntity` | Base: `{ id, name }` |
-| `ParticleEntity` | Extends base with `massNumber`, `atomicMass`, `aliases` |
-| `ProgramEntity` | Extends base with `version` |
-| `MaterialEntity` | Extends base with `density`, `isGasByDefault` |
-| `CalculationResult` | `{ energies, stoppingPowers, csdaRanges }` |
-| `AdvancedOptions` | `{ aggregateState, interpolation, mstarMode, densityOverride, iValueOverride }` |
-| `CustomCompound` | User-defined material with elemental composition |
-| `LibdedxError` | Typed error with C error code + message |
+| Type                | Purpose                                                                         |
+| ------------------- | ------------------------------------------------------------------------------- |
+| `LibdedxEntity`     | Base: `{ id, name }`                                                            |
+| `ParticleEntity`    | Extends base with `massNumber`, `atomicMass`, `aliases`                         |
+| `ProgramEntity`     | Extends base with `version`                                                     |
+| `MaterialEntity`    | Extends base with `density`, `isGasByDefault`                                   |
+| `CalculationResult` | `{ energies, stoppingPowers, csdaRanges }`                                      |
+| `AdvancedOptions`   | `{ aggregateState, interpolation, mstarMode, densityOverride, iValueOverride }` |
+| `CustomCompound`    | User-defined material with elemental composition                                |
+| `LibdedxError`      | Typed error with C error code + message                                         |
 
 ### Key design decisions
 
@@ -338,18 +340,23 @@ AI agents produce significantly better code when given specs in this structure.
 # Feature: <Name>
 
 ## User Story
+
 As a <role>, I want to <action> so that <benefit>.
 
 ## Inputs
+
 - (list all user inputs with types and constraints)
 
 ## Behavior
+
 - (describe step-by-step what happens, including edge cases)
 
 ## Output
+
 - (describe what the user sees / receives)
 
 ## Acceptance Criteria
+
 - [ ] (testable criterion 1)
 - [ ] (testable criterion 2)
 - [ ] ...
@@ -360,6 +367,7 @@ As a <role>, I want to <action> so that <benefit>.
 ## 8. Implementation Stages
 
 ### Stage 0: AI Agent Bootstrap
+
 - **Who:** You (human) + AI for drafting.
 - **Produce:**
   - `.github/copilot-instructions.md` — project context, Svelte 5 rules, build commands.
@@ -373,17 +381,20 @@ As a <role>, I want to <action> so that <benefit>.
   without being told. Test `/write-spec` produces output following the template from §7.
 
 ### Stage 1: Requirements & Specifications
+
 - **Who:** You (human), AI assists with drafts (use `/write-spec` prompt).
 - **Produce:** `docs/01-project-vision.md`, all `docs/04-feature-specs/*.md`, `docs/06-wasm-api-contract.md`, `docs/10-terminology.md`.
 - **Validate:** You review all specs for physics correctness.
-- **Terminology scope:** Two audiences — (1) *physics / end-user*: domain terms used in the UI, tooltips, and user documentation (stopping power, CSDA range, Bragg additivity, mean excitation energy, etc.); (2) *developer*: technical-stack terms used in code, commit messages, and internal docs (WASM, Emscripten, runes, dedx_config, entity, series, etc.).
+- **Terminology scope:** Two audiences — (1) _physics / end-user_: domain terms used in the UI, tooltips, and user documentation (stopping power, CSDA range, Bragg additivity, mean excitation energy, etc.); (2) _developer_: technical-stack terms used in code, commit messages, and internal docs (WASM, Emscripten, runes, dedx_config, entity, series, etc.).
 
 ### Stage 2: Technical Architecture
+
 - **Who:** You + AI.
 - **Produce:** `docs/02-tech-stack.md`, `docs/03-architecture.md`, ADRs in `docs/decisions/`.
-- **Key:** Document *why* SvelteKit, *why* keep JSROOT, WASM module format (ES module).
+- **Key:** Document _why_ SvelteKit, _why_ keep JSROOT, WASM module format (ES module).
 
 ### Stage 2.5: Prototyping Spikes (Risk Reduction)
+
 - **Who:** AI implements autonomously (one spike per session).
 - **Input:** [`docs/11-prototyping-spikes.md`](11-prototyping-spikes.md).
 - **Produce:** Four throwaway prototypes in `prototypes/` that validate:
@@ -398,6 +409,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Verify:** Each spike produces a `VERDICT.md` with pass/fail per criterion.
 
 ### Stage 2.6: libdedx Data Source Investigation (pre-Stage 3 gate)
+
 - **Who:** AI-assisted investigation.
 - **Purpose:** Full static analysis of libdedx C headers to verify data availability,
   coverage, units, and bundle strategy before Stage 3 implementation begins.
@@ -422,6 +434,7 @@ As a <role>, I want to <action> so that <benefit>.
   build path; remaining follow-up is to keep ADR 003/documentation aligned with the implemented build.
 
 ### Stage 3: WASM Build Pipeline Redesign ✅
+
 - **Who:** AI implements.
 - **Input:** `docs/06-wasm-api-contract.md`, `docs/decisions/003-wasm-build-pipeline.md`.
 - **Output:** New build script, TypeScript wrapper in `src/lib/wasm/`, ES module `.mjs` + `.wasm`.
@@ -450,6 +463,7 @@ As a <role>, I want to <action> so that <benefit>.
 > downloads it before `pnpm build`. Resolved on branch `fix/wasm-web-ci`.
 
 ### Stage 3.7: Legacy Code Removal ✅ (21 April 2026)
+
 - **Rationale:** Moved forward from Stage 9. The old React codebase conflicts with
   Stage 3 work (wrong `src/` structure, broken `package.json` scripts, CRA artefacts
   in `public/`). The new SvelteKit project cannot coexist with these files.
@@ -468,6 +482,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Legacy code last commit:** `0330233` (`docs: add AI session logging system`).
 
 ### Stage 3.8: Early development deploy ✅ (21 April 2026)
+
 - **Rationale:** Establish the `master → APTG/web_dev` deployment pipeline so
   it is exercised and confirmed working well before the full app is complete.
   Makes the dev site immediately visible to collaborators.
@@ -487,6 +502,7 @@ As a <role>, I want to <action> so that <benefit>.
   `deploy.yml` that builds and pushes `build/` to `APTG/web`.
 
 ### Stage 4: Project Scaffolding + Full AI Config
+
 - **Who:** AI implements.
 - **Input:** `docs/02-tech-stack.md`, `docs/03-architecture.md`.
 - **Output:** SvelteKit project with Tailwind, two routes, Vitest, Playwright, static adapter,
@@ -502,6 +518,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Verify:** App builds, routes work, `eslint . && prettier --check .` pass, deploys to GitHub Pages (empty pages).
 
 ### Stage 5: Core Shared Components ✅ (28 April 2026)
+
 - **Who:** AI implements (one component per chat session).
 - **Order:**
   1. ✅ Entity selection (cascading dropdowns) — Svelte stores + WASM ([PR #366](https://github.com/APTG/dedx_web/pull/366), Apr 2026; cascading-fixes [PR #371](https://github.com/APTG/dedx_web/pull/371))
@@ -514,17 +531,19 @@ As a <role>, I want to <action> so that <benefit>.
 - **Status:** Complete. See [`docs/progress/stage-5.md`](progress/stage-5.md) for the consolidated stage summary, [`docs/progress/stage-5-entity-selection.md`](progress/stage-5-entity-selection.md), [`docs/progress/stage-5.4-result-table.md`](progress/stage-5.4-result-table.md), [`docs/progress/stage-5-audit-2026-04-26.md`](progress/stage-5-audit-2026-04-26.md), and the closing [UX review](ux-reviews/2026-04-28-stage5-completion-and-stage6-readiness.md).
 
 ### Stage 6: Feature Pages (one at a time)
+
 - **Who:** AI implements per feature spec.
 - **Order:**
-  1. ⏳ Calculator (basic) — depends on entity selection, energy input, result table; spec [`docs/04-feature-specs/calculator.md`](04-feature-specs/calculator.md). *Already shipped as a side-effect of Stage 5.4 — just needs the toolbar and Share URL plumbing to be marked done.*
-  2. ⏳ Live calculation — depends on Calculator + debounce logic. *Already shipped as a side-effect of Stage 5.2 (`debounce` wired in `calculator.svelte.ts`).*
+  1. ⏳ Calculator (basic) — depends on entity selection, energy input, result table; spec [`docs/04-feature-specs/calculator.md`](04-feature-specs/calculator.md). _Already shipped as a side-effect of Stage 5.4 — just needs the toolbar and Share URL plumbing to be marked done._
+  2. ⏳ Live calculation — depends on Calculator + debounce logic. _Already shipped as a side-effect of Stage 5.2 (`debounce` wired in `calculator.svelte.ts`)._
   3. ⏳ Multi-program mode — depends on Calculator + modified WASM calls; spec [`docs/04-feature-specs/multi-program.md`](04-feature-specs/multi-program.md).
-  4. ⏳ Plot page with JSROOT — depends on JSROOT wrapper + entity selection; spec [`docs/04-feature-specs/plot.md`](04-feature-specs/plot.md). *Already shipped as a side-effect of Stage 5.5.*
-  5. ⏳ Data series comparison — depends on Plot page + series management. *Already shipped as a side-effect of Stage 5.5 (color pool + smart labels).*
-  6. ⏳ Shareable URLs — depends on Svelte stores + URL sync; spec [`docs/04-feature-specs/shareable-urls.md`](04-feature-specs/shareable-urls.md). *Plot URL sync done; Calculator URL sync still requires deleting the unwired `src/lib/state/url-sync.ts` and re-implementing per spec canonical params.*
+  4. ⏳ Plot page with JSROOT — depends on JSROOT wrapper + entity selection; spec [`docs/04-feature-specs/plot.md`](04-feature-specs/plot.md). _Already shipped as a side-effect of Stage 5.5._
+  5. ⏳ Data series comparison — depends on Plot page + series management. _Already shipped as a side-effect of Stage 5.5 (color pool + smart labels)._
+  6. ⏳ Shareable URLs — depends on Svelte stores + URL sync; spec [`docs/04-feature-specs/shareable-urls.md`](04-feature-specs/shareable-urls.md). _Plot URL sync done; Calculator URL sync still requires deleting the unwired `src/lib/state/url-sync.ts` and re-implementing per spec canonical params._
   7. ⏳ CSV + PDF export — depends on Result table data + file generation; spec [`docs/04-feature-specs/export.md`](04-feature-specs/export.md).
 
 ### Stage 7: E2E Tests & Polish
+
 - Playwright tests with real WASM.
 - Mobile responsive testing.
 - JSROOT plot styling (be extremely specific: axis labels, fonts, colors, legend placement).
@@ -533,6 +552,7 @@ As a <role>, I want to <action> so that <benefit>.
   to `ci.yml`.
 
 ### Stage 8: CI/CD — Deploy job
+
 - `ci.yml` already has lint, type-check, Vitest, Playwright, and build from Stages 3–7.
 - This stage adds the **deploy job**: push `build/` to `APTG/web_dev` on `master`,
   to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
@@ -540,6 +560,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **First production release:** tag `v2.0.0` → deploys to `APTG/web`, replacing v1.1.0.
 
 ### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
+
 - Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on
   21 April 2026 as Stage 3.7, ahead of the originally planned post-deployment window.
   See §8 Stage 3.7 for the complete file list and rationale.
@@ -551,24 +572,24 @@ As a <role>, I want to <action> so that <benefit>.
 
 ## 9. Best Practices for AI Agent Sessions
 
-| Practice | Reason |
-|----------|--------|
-| **Create `.github/copilot-instructions.md` first** | Every AI session benefits from project context from the start. |
-| **One feature per chat session** | Agents lose context in long threads. Start fresh per feature. |
-| **Use `/implement-feature` and `/write-spec` prompts** | Consistent context loading without manual re-explanation. |
-| **Always reference spec files** | Don't re-explain — say "implement per docs/04-feature-specs/calculator.md". |
-| **Start sessions with context** | "Read docs/03-architecture.md and docs/06-wasm-api-contract.md, then implement X." |
-| **Commit after each working increment** | Rollback points if AI produces broken code. |
-| **Enforce Svelte 5 in instructions** | AI training data has more Svelte 4 than 5. Explicit rules prevent `export let`, `$:`, `createEventDispatcher`. |
-| **Test WASM with real module early** | Mocks hide memory management bugs. |
-| **Log decisions in `docs/decisions/`** | Future sessions need this context. |
-| **Review AI-generated tests** | AI writes tests that pass by construction — check they assert real behavior. |
-| **Use RED → GREEN → REFACTOR in migration stages** | Keeps implementation tied to executable acceptance criteria and reduces regressions during rewrites. |
-| **Be specific about JSROOT styling** | "Log-log axes, 14pt labels, legend top-right, line width 2" — not "make it pretty." |
-| **Log progress in `docs/progress/`** | So the next session knows what's done and what's next. |
-| **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce. |
-| **Log every AI session** | Append to `CHANGELOG-AI.md` + create `docs/ai-logs/YYYY-MM-DD-<slug>.md`. See `.github/copilot-instructions.md` for format. |
-| **Record model + tool in every log entry** | Both `CHANGELOG-AI.md` rows and session logs must include `(<model> via <tool>)` — e.g. `(Claude Sonnet 4.6)` for Copilot, `(opencode + Qwen3.5-397B)` for opencode/PLGrid. Required for multi-tool workflows (see §4.2). |
+| Practice                                                   | Reason                                                                                                                                                                                                                    |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Create `.github/copilot-instructions.md` first**         | Every AI session benefits from project context from the start.                                                                                                                                                            |
+| **One feature per chat session**                           | Agents lose context in long threads. Start fresh per feature.                                                                                                                                                             |
+| **Use `/implement-feature` and `/write-spec` prompts**     | Consistent context loading without manual re-explanation.                                                                                                                                                                 |
+| **Always reference spec files**                            | Don't re-explain — say "implement per docs/04-feature-specs/calculator.md".                                                                                                                                               |
+| **Start sessions with context**                            | "Read docs/03-architecture.md and docs/06-wasm-api-contract.md, then implement X."                                                                                                                                        |
+| **Commit after each working increment**                    | Rollback points if AI produces broken code.                                                                                                                                                                               |
+| **Enforce Svelte 5 in instructions**                       | AI training data has more Svelte 4 than 5. Explicit rules prevent `export let`, `$:`, `createEventDispatcher`.                                                                                                            |
+| **Test WASM with real module early**                       | Mocks hide memory management bugs.                                                                                                                                                                                        |
+| **Log decisions in `docs/decisions/`**                     | Future sessions need this context.                                                                                                                                                                                        |
+| **Review AI-generated tests**                              | AI writes tests that pass by construction — check they assert real behavior.                                                                                                                                              |
+| **Use RED → GREEN → REFACTOR in migration stages**         | Keeps implementation tied to executable acceptance criteria and reduces regressions during rewrites.                                                                                                                      |
+| **Be specific about JSROOT styling**                       | "Log-log axes, 14pt labels, legend top-right, line width 2" — not "make it pretty."                                                                                                                                       |
+| **Log progress in `docs/progress/`**                       | So the next session knows what's done and what's next.                                                                                                                                                                    |
+| **Run `eslint . && prettier --check .` before committing** | Catch formatting/lint issues AI may introduce.                                                                                                                                                                            |
+| **Log every AI session**                                   | Append to `CHANGELOG-AI.md` + create `docs/ai-logs/YYYY-MM-DD-<slug>.md`. See `.github/copilot-instructions.md` for format.                                                                                               |
+| **Record model + tool in every log entry**                 | Both `CHANGELOG-AI.md` rows and session logs must include `(<model> via <tool>)` — e.g. `(Claude Sonnet 4.6)` for Copilot, `(opencode + Qwen3.5-397B)` for opencode/PLGrid. Required for multi-tool workflows (see §4.2). |
 
 ---
 
@@ -581,7 +602,7 @@ When starting a new LLM session on any machine:
 3. Check `docs/progress/` to see which stage was last completed.
 4. Check `CHANGELOG-AI.md` for recent AI session history.
 5. Use `/implement-feature` prompt pointing to the relevant spec, or tell the agent:
-   *"Read `docs/00-redesign-plan.md` for full project context."*
+   _"Read `docs/00-redesign-plan.md` for full project context."_
 6. After implementing, update `docs/progress/` and commit.
 
 ---

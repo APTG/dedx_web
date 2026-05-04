@@ -37,7 +37,9 @@
       Energy input (one number per line):
       <textarea
         value={inputText.value}
-        oninput={(e) => { inputText.value = (e.target as HTMLTextAreaElement).value; }}
+        oninput={(e) => {
+          inputText.value = (e.target as HTMLTextAreaElement).value;
+        }}
         rows="4"
         cols="30"
       ></textarea>

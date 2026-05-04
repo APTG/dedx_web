@@ -5,23 +5,24 @@
 
 ## Acceptance Criteria Results
 
-| # | Criterion | Result | Notes |
-|---|-----------|--------|-------|
-| 1 | **Initial render:** Two series visible on log-log axes | PASS | |
-| 2 | **Add series:** Click "Add series" — third curve appears; first two remain | PASS | |
-| 3 | **Remove all:** Click "Remove all" — canvas clears, no console errors | PASS | |
-| 4 | **Mutate first:** Click "Mutate first series" — curve changes, others unchanged | PASS | |
-| 5 | **Rapid clicks:** Click "Add series" 5× rapidly — no error, 7 series shown | PASS | |
-| 6 | **Wheel scroll:** Mouse over plot, scroll wheel — page scrolls, plot does NOT zoom | PASS | JSROOT.settings.ZoomWheel = false works |
-| 7 | **No memory leak:** In DevTools Performance monitor, repeated add/remove cycles do not grow JS heap monotonically over 10 iterations | PASS | cleanupPlot() with painter.cleanup() + innerHTML = "" prevents leaks |
-| 8 | **No Svelte DOM warnings:** Console shows no "hydration mismatch" or DOM reconciliation warnings | PASS | |
-| 9 | **JSROOT cleanup API exists:** `painter.cleanup` (or equivalent) is callable without error | PASS | painter.cleanup() is available in JSROOT 7 |
+| #   | Criterion                                                                                                                            | Result | Notes                                                                |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | ------ | -------------------------------------------------------------------- |
+| 1   | **Initial render:** Two series visible on log-log axes                                                                               | PASS   |                                                                      |
+| 2   | **Add series:** Click "Add series" — third curve appears; first two remain                                                           | PASS   |                                                                      |
+| 3   | **Remove all:** Click "Remove all" — canvas clears, no console errors                                                                | PASS   |                                                                      |
+| 4   | **Mutate first:** Click "Mutate first series" — curve changes, others unchanged                                                      | PASS   |                                                                      |
+| 5   | **Rapid clicks:** Click "Add series" 5× rapidly — no error, 7 series shown                                                           | PASS   |                                                                      |
+| 6   | **Wheel scroll:** Mouse over plot, scroll wheel — page scrolls, plot does NOT zoom                                                   | PASS   | JSROOT.settings.ZoomWheel = false works                              |
+| 7   | **No memory leak:** In DevTools Performance monitor, repeated add/remove cycles do not grow JS heap monotonically over 10 iterations | PASS   | cleanupPlot() with painter.cleanup() + innerHTML = "" prevents leaks |
+| 8   | **No Svelte DOM warnings:** Console shows no "hydration mismatch" or DOM reconciliation warnings                                     | PASS   |                                                                      |
+| 9   | **JSROOT cleanup API exists:** `painter.cleanup` (or equivalent) is callable without error                                           | PASS   | painter.cleanup() is available in JSROOT 7                           |
 
 ## Summary
 
 All 9 acceptance criteria **PASS**.
 
 The architecture specified in [`03-architecture.md §5`](../../docs/03-architecture.md#5-component-tree) is validated:
+
 - `$effect` + `untrack` pattern correctly manages JSROOT lifecycle
 - `painter.cleanup()` is the correct JSROOT 7 API for cleanup
 - `container.innerHTML = ""` fallback ensures complete DOM cleanup

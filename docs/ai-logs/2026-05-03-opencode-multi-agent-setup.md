@@ -50,8 +50,7 @@ Key design decisions:
    retry — no ambiguous "I've finished" narration that might get lost in a
    long response.
 
-3. **`maxSteps` guards**: `implementer` is capped at 80 steps, `reviewer` at
-   30. If a task is too large to fit in 80 steps the implementer outputs
+3. **`maxSteps` guards**: `implementer` is capped at 80 steps, `reviewer` at 30. If a task is too large to fit in 80 steps the implementer outputs
    `TASK BLOCKED: step limit reached` instead of looping forever. The right
    fix is to break the task smaller, not to raise the limit.
 
@@ -96,6 +95,7 @@ reads `.opencode/svelte.json`.
 ## Tasks
 
 ### Research: analyse existing AI logs and opencode infrastructure
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**: none (read-only research phase)
@@ -103,6 +103,7 @@ reads `.opencode/svelte.json`.
   and avoid polluting the main context with raw file dumps.
 
 ### Create feat/opencode-multi-agent branch and implement multi-agent setup
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:
@@ -122,6 +123,7 @@ reads `.opencode/svelte.json`.
   test). Not introduced by this PR.
 
 ### Write session log
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:
@@ -130,6 +132,7 @@ reads `.opencode/svelte.json`.
   - `docs/ai-logs/README.md`
 
 ### Fix svelte.json location and guard AGENTS.md tool-specific sections
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:
@@ -141,6 +144,7 @@ reads `.opencode/svelte.json`.
   they never read this file.
 
 ### Address PR review feedback
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:
@@ -158,6 +162,7 @@ reads `.opencode/svelte.json`.
   call after all.
 
 ### Apply easy harness improvements + add prompt-authoring guide
+
 - **Status**: completed
 - **Stage**: tooling
 - **Files changed**:

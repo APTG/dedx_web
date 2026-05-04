@@ -61,6 +61,7 @@ Test Files  20 passed (20)
 **Passing E2E tests:** `basic.spec.ts` (doesn't wait for Particle combobox)
 
 **Failing E2E test suites:**
+
 - `entity-selection.spec.ts` — 8 tests failing (all timeout on Particle combobox)
 - `complex-interactions.spec.ts` — 22 tests failing (all timeout)
 - `particle-unit-switching.spec.ts` — 12 tests failing/timeout

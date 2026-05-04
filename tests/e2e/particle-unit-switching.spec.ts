@@ -74,7 +74,9 @@ test.describe("Particle switching — E_nucl conservation", () => {
     expect(await mevNuclCell(page, 0)).toContain("20");
   });
 
-  test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({ page }) => {
+  test("He 80 MeV → switch to proton: E_nucl conserved (80/4=20), row shows 20 MeV", async ({
+    page,
+  }) => {
     await selectParticle(page, "alpha");
     await typeInRow(page, 0, "80 MeV");
     // Helium 80 MeV total → E_nucl = 80/4 = 20 MeV/nucl.
@@ -188,42 +190,40 @@ test.describe("Particle/unit switching — KE conservation (pending)", () => {
     await waitForTable(page);
   });
 
-  test.fixme(
-    "Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV (KE conserved)",
-    async ({ page }) => {
-      await selectParticle(page, "carbon");
-      // Use the master unit selector (MeV/nucl button).
-      await page.getByRole("radio", { name: /MeV\/nucl/i }).click();
-      await typeInRow(page, 0, "100");
-      expect(await mevNuclCell(page, 0)).toContain("100");
+  test.fixme("Carbon 100 MeV/nucl → switch master unit MeV/nucl → MeV: row should show 1200 MeV (KE conserved)", async ({
+    page,
+  }) => {
+    await selectParticle(page, "carbon");
+    // Use the master unit selector (MeV/nucl button).
+    await page.getByRole("radio", { name: /MeV\/nucl/i }).click();
+    await typeInRow(page, 0, "100");
+    expect(await mevNuclCell(page, 0)).toContain("100");
 
-      await page.getByRole("radio", { name: /^MeV$/i }).click();
-      // DESIRED: 100 MeV/nucl × 12 = 1200 MeV.
-      // NOTE: This test depends on master-unit-selector KE conversion
-      // (calculator.svelte.ts setMasterUnit) being wired up.
-      expect(await rowText(page, 0)).toBe("1200");
-    },
-  );
+    await page.getByRole("radio", { name: /^MeV$/i }).click();
+    // DESIRED: 100 MeV/nucl × 12 = 1200 MeV.
+    // NOTE: This test depends on master-unit-selector KE conversion
+    // (calculator.svelte.ts setMasterUnit) being wired up.
+    expect(await rowText(page, 0)).toBe("1200");
+  });
 
-  test.fixme(
-    "He 20 MeV/nucl + multiple rows: KE conservation applies independently to each row",
-    async ({ page }) => {
-      await selectParticle(page, "alpha");
-      await typeInRow(page, 0, "20 MeV/nucl");
-      await typeInRow(page, 1, "50 MeV");
+  test.fixme("He 20 MeV/nucl + multiple rows: KE conservation applies independently to each row", async ({
+    page,
+  }) => {
+    await selectParticle(page, "alpha");
+    await typeInRow(page, 0, "20 MeV/nucl");
+    await typeInRow(page, 1, "50 MeV");
 
-      await selectParticle(page, "proton");
-      // Row 0: E_nucl=20 → proton 20 MeV. Row 1: E_nucl=50/4=12.5 → proton 12.5 MeV.
-      expect(await rowText(page, 0)).toBe("20 MeV");
-      expect(await rowText(page, 1)).toBe("12.5 MeV");
+    await selectParticle(page, "proton");
+    // Row 0: E_nucl=20 → proton 20 MeV. Row 1: E_nucl=50/4=12.5 → proton 12.5 MeV.
+    expect(await rowText(page, 0)).toBe("20 MeV");
+    expect(await rowText(page, 1)).toBe("12.5 MeV");
 
-      await selectParticle(page, "alpha");
-      // Row 0: proton "20 MeV" → He "20 MeV" (lossy, not "20 MeV/nucl").
-      // Row 1: proton "12.5 MeV" → He "12.5 MeV" (lossy, E_nucl=12.5 × 4 = 50 MeV total).
-      expect(await rowText(page, 0)).toBe("20 MeV");
-      expect(await rowText(page, 1)).toBe("50 MeV");
-    },
-  );
+    await selectParticle(page, "alpha");
+    // Row 0: proton "20 MeV" → He "20 MeV" (lossy, not "20 MeV/nucl").
+    // Row 1: proton "12.5 MeV" → He "12.5 MeV" (lossy, E_nucl=12.5 × 4 = 50 MeV total).
+    expect(await rowText(page, 0)).toBe("20 MeV");
+    expect(await rowText(page, 1)).toBe("50 MeV");
+  });
 });
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -252,7 +252,9 @@ test.describe("Add row UX", () => {
     await expect(page.locator("tbody tr")).toHaveCount(initialCount + 2);
   });
 
-  test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({ page }) => {
+  test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({
+    page,
+  }) => {
     // `result-table.svelte` renders an explicit add-row affordance
     // (button text: "+ Add row"). It coexists with the auto-append
     // behaviour above; clicking it inserts an extra empty row immediately.

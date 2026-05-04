@@ -1,10 +1,5 @@
 import { describe, it, expect } from "vitest";
-import {
-  encodePlotUrl,
-  decodePlotUrl,
-  stpUnitToToken,
-  tokenToStpUnit,
-} from "$lib/utils/plot-url";
+import { encodePlotUrl, decodePlotUrl, stpUnitToToken, tokenToStpUnit } from "$lib/utils/plot-url";
 import type { StpUnit } from "$lib/wasm/types";
 
 describe("stpUnitToToken / tokenToStpUnit", () => {

@@ -2,7 +2,7 @@
 
 **Status:** Complete  
 **Completed:** 2026-04-21  
-**Stage Lead:** opencode + Qwen3.5-397B  
+**Stage Lead:** opencode + Qwen3.5-397B
 
 ---
 
@@ -11,6 +11,7 @@
 Successfully scaffolded a new SvelteKit 2 + Svelte 5 + TypeScript + Tailwind CSS 4 project to replace the legacy React codebase. All development tooling, configuration files, core routes, state management, and WASM API stubs are in place.
 
 See also:
+
 - [Stage 4 entry in 00-redesign-plan.md](../00-redesign-plan.md) — Original stage requirements
 - [Architecture overview](../03-architecture.md) — Component tree and state topology
 - [Tech stack](../02-tech-stack.md) — Library versions and rationale
@@ -133,9 +134,11 @@ All routes configured with `export const prerender = true` via `+page.ts` files:
 ### ✅ Tests
 
 **Unit Tests (Vitest)**:
+
 - ✅ [`energy-parser.test.ts`](../../src/tests/unit/energy-parser.test.ts) — 3 tests passing
 
 **E2E Tests (Playwright)**:
+
 - ✅ [`basic.spec.ts`](../../tests/e2e/basic.spec.ts) — 4 tests passing (Chromium only):
   - Homepage redirects to calculator
   - Calculator page loads
@@ -190,6 +193,7 @@ See [Stage 5 requirements](../00-redesign-plan.md) and [Feature Specs](../04-fea
 ## Files Modified/Created
 
 **Configuration:**
+
 - [`package.json`](../../package.json)
 - [`svelte.config.js`](../../svelte.config.js)
 - [`vite.config.ts`](../../vite.config.ts)
@@ -201,11 +205,13 @@ See [Stage 5 requirements](../00-redesign-plan.md) and [Feature Specs](../04-fea
 **Source Files:** 20+ files across `src/`
 
 **Tests:**
+
 - [`src/tests/setup.ts`](../../src/tests/setup.ts)
 - [`src/tests/unit/energy-parser.test.ts`](../../src/tests/unit/energy-parser.test.ts)
 - [`tests/e2e/basic.spec.ts`](../../tests/e2e/basic.spec.ts)
 
 **Static Assets:**
+
 - [`static/favicon.ico`](../../static/favicon.ico)
 - [`static/favicon.svg`](../../static/favicon.svg)
 - [`static/site.webmanifest`](../../static/site.webmanifest)
@@ -213,5 +219,6 @@ See [Stage 5 requirements](../00-redesign-plan.md) and [Feature Specs](../04-fea
 ---
 
 **Session Logs:**
+
 - [2026-04-21-stage4-dev-fixes.md](../ai-logs/2026-04-21-stage4-dev-fixes.md) — Dev server fixes (prerender directive, Vite warnings)
 - See also [CHANGELOG-AI.md](../../CHANGELOG-AI.md) for full Stage 4 session history

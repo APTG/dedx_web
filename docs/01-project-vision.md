@@ -2,7 +2,7 @@
 
 > **Status:** Final v1 (19 April 2026)
 >
-> This document describes *what* webdedx is, *who* it serves, and *why* it exists.
+> This document describes _what_ webdedx is, _who_ it serves, and _why_ it exists.
 > It does **not** describe how individual features work — those live in
 > `docs/04-feature-specs/`.
 
@@ -21,12 +21,12 @@ application that requires no backend, no login, and no installation.
 
 ## 2. Audience
 
-| Persona | Typical task | Experience level |
-|---------|-------------|-----------------|
-| **Medical physicist** | "What is the range of 200 MeV protons in water?" | Expert in radiation physics, non-expert in software |
-| **Radiation physicist / researcher** | Compare stopping power curves across programs or particles | Needs publication-quality plots |
-| **Student** | Explore how stopping power varies with energy, particle, or material | Learning; needs clear labels and docs |
-| **Shielding engineer** | Look up range in a specific material for beam-stop design | Wants quick numeric answers |
+| Persona                              | Typical task                                                         | Experience level                                    |
+| ------------------------------------ | -------------------------------------------------------------------- | --------------------------------------------------- |
+| **Medical physicist**                | "What is the range of 200 MeV protons in water?"                     | Expert in radiation physics, non-expert in software |
+| **Radiation physicist / researcher** | Compare stopping power curves across programs or particles           | Needs publication-quality plots                     |
+| **Student**                          | Explore how stopping power varies with energy, particle, or material | Learning; needs clear labels and docs               |
+| **Shielding engineer**               | Look up range in a specific material for beam-stop design            | Wants quick numeric answers                         |
 
 All personas share one trait: **they want answers fast, with minimal clicking.**
 
@@ -76,6 +76,7 @@ Units are critical in physics software. Getting a number without knowing
 its unit — or with the wrong unit — is worse than no answer at all.
 
 **Input units — context-aware:**
+
 - Energy input must have an explicit, always-visible unit selector.
 - The **available options depend on the selected particle:**
   - **A = 1** (proton): show only **MeV** — MeV/nucl is numerically
@@ -89,6 +90,7 @@ its unit — or with the wrong unit — is worse than no answer at all.
 - The selected unit is shown next to the input field at all times.
 
 **Output units — auto-scaling:**
+
 - Numeric results must use **human-readable magnitudes**. Display `1.2 mm`,
   not `0.0012 m`. Display `34.5 µm`, not `0.0000345 m`.
 - The app selects the best SI prefix automatically based on the value's
@@ -96,8 +98,9 @@ its unit — or with the wrong unit — is worse than no answer at all.
 - Users can override the auto-scaled unit if needed.
 
 **Plot axis labels:**
+
 - Axis labels must include the unit in standard notation:
-  *"Stopping Power [MeV·cm²/g]"*, *"Energy [MeV/nucl]"*, *"Range [g/cm²]"*.
+  _"Stopping Power [MeV·cm²/g]"_, _"Energy [MeV/nucl]"_, _"Range [g/cm²]"_.
 - When the data range spans SI prefixes, axis tick labels should auto-scale
   (e.g., switch from cm to mm) and the axis label must update accordingly.
 
@@ -128,18 +131,18 @@ See `docs/04-feature-specs/entity-selection.md` for the full specification.
 
 The app selects the most appropriate stopping-power program automatically
 based on the chosen particle and material. The default program **adapts to the
-current particle/material combination** — it is not a fixed choice. Users *can*
-override the program selection, but they shouldn't *have* to.
+current particle/material combination** — it is not a fixed choice. Users _can_
+override the program selection, but they shouldn't _have_ to.
 
 libdedx provides a starting point via the **`DEDX_ICRU`** meta-program,
 which resolves to the best available ICRU dataset at runtime:
 
-| Particle | Resolution chain |
-|----------|------------------|
-| Proton (Z=1) | ICRU 90 → PSTAR (ICRU 49 era) |
-| Alpha (Z=2) | ICRU 90 → ICRU 49 |
-| Carbon (Z=6) | ICRU 90 → ICRU 73 → ICRU 73 (old) |
-| Other heavy ions | ICRU 73 → ICRU 73 (old) |
+| Particle           | Resolution chain                                               |
+| ------------------ | -------------------------------------------------------------- |
+| Proton (Z=1)       | ICRU 90 → PSTAR (ICRU 49 era)                                  |
+| Alpha (Z=2)        | ICRU 90 → ICRU 49                                              |
+| Carbon (Z=6)       | ICRU 90 → ICRU 73 → ICRU 73 (old)                              |
+| Other heavy ions   | ICRU 73 → ICRU 73 (old)                                        |
 | Electron (ID 1001) | ESTAR — **not available in libdedx v1.4.0** (greyed out in UI) |
 
 Additionally, `dedx_get_simple_stp()` implements a two-stage fallback:
@@ -168,10 +171,10 @@ so they can be tuned without code changes.
 The default UI is simple: particle, material, energy → result. The app
 operates in two modes:
 
-| Mode | Who uses it | What is visible |
-|------|-------------|-----------------|
-| **Basic** (default) | 80% of users — quick lookups | Single program, core energy/unit selectors, unified result table (Calculator) or single-series workflow (Plot) |
-| **Advanced** | Power users comparing programs, overriding density/state, using inverse lookups | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, interpolation settings, density/I-value overrides, MeV/u energy unit, custom compounds, inverse lookups |
+| Mode                | Who uses it                                                                     | What is visible                                                                                                                                                                                        |
+| ------------------- | ------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Basic** (default) | 80% of users — quick lookups                                                    | Single program, core energy/unit selectors, unified result table (Calculator) or single-series workflow (Plot)                                                                                         |
+| **Advanced**        | Power users comparing programs, overriding density/state, using inverse lookups | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, interpolation settings, density/I-value overrides, MeV/u energy unit, custom compounds, inverse lookups |
 
 **Metaphor:** Like the "mode" button on an old handheld scientific
 calculator — pressing it reveals extra keys, but the basic keypad stays
@@ -184,9 +187,9 @@ from entity selectors. The same toggle controls advanced mode app-wide —
 switching to Advanced on Calculator and then navigating to Plot keeps
 advanced mode on.
 
-| Position element | Left | Center | Right |
-|------------------|------|--------|-------|
-| **Action bar** | *(page-specific controls)* | | **Basic · Advanced** · Share · Export |
+| Position element | Left                       | Center | Right                                 |
+| ---------------- | -------------------------- | ------ | ------------------------------------- |
+| **Action bar**   | _(page-specific controls)_ |        | **Basic · Advanced** · Share · Export |
 
 The toggle state is encoded in the URL (`mode=advanced`) so shared links
 preserve the user's context. Opening a URL with `mode=advanced` activates
@@ -195,12 +198,13 @@ advanced mode for the recipient. The mode is also stored in
 
 **What Advanced mode reveals per page:**
 
-| Page | Basic mode | Advanced mode additions |
-|------|-----------|------------------------|
+| Page           | Basic mode                                | Advanced mode additions                                                                                                                |
+| -------------- | ----------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
 | **Calculator** | Single program, five-column unified table | Multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups |
-| **Plot** | Standard series workflow | (Future: additional series metadata, batch operations, custom compounds) |
+| **Plot**       | Standard series workflow                  | (Future: additional series metadata, batch operations, custom compounds)                                                               |
 
 Advanced mode is specified per-feature in the respective feature specs:
+
 - Multi-program comparison columns (Calculator): [`multi-program.md`](04-feature-specs/multi-program.md)
 - MSTAR modes, aggregate state, density/I-value overrides: [`advanced-options.md`](04-feature-specs/advanced-options.md)
 - Inverse lookups: [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md)
@@ -250,11 +254,11 @@ specified there as well. Implementation is planned for a later stage.
 
 The app has **three top-level pages** (routes/tabs):
 
-| Page | Purpose | Default state |
-|------|---------|---------------|
-| **Calculator** | Numeric range & stopping power lookup | Pre-filled with auto-select/proton/water/100 MeV, result shown |
-| **Plot** | Interactive stopping-power-vs-energy chart | Selectors pre-filled with auto-select/proton/water, canvas empty |
-| **Documentation** | User guide + technical reference | Static content |
+| Page              | Purpose                                    | Default state                                                    |
+| ----------------- | ------------------------------------------ | ---------------------------------------------------------------- |
+| **Calculator**    | Numeric range & stopping power lookup      | Pre-filled with auto-select/proton/water/100 MeV, result shown   |
+| **Plot**          | Interactive stopping-power-vs-energy chart | Selectors pre-filled with auto-select/proton/water, canvas empty |
+| **Documentation** | User guide + technical reference           | Static content                                                   |
 
 The Calculator page is the **landing page** (first thing the user sees).
 
@@ -274,13 +278,13 @@ The documentation page has two tiers:
 
 ## 6. Technical Constraints
 
-| Constraint | Detail |
-|-----------|--------|
-| **Client-side only** | All computation runs in the browser via WebAssembly. No backend server. |
-| **Hosted on GitHub Pages** | Static site deployment. No server-side rendering or API endpoints. |
-| **No authentication** | Public access, no user accounts, no saved sessions (URL sharing instead). |
-| **libdedx as the engine** | All stopping power and range data come from the libdedx C library. The app is a frontend for this library. |
-| **WASM module size** | The compiled WASM binary includes embedded data tables. Initial load may be several MB — must handle gracefully with a loading indicator. |
+| Constraint                 | Detail                                                                                                                                    |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------- |
+| **Client-side only**       | All computation runs in the browser via WebAssembly. No backend server.                                                                   |
+| **Hosted on GitHub Pages** | Static site deployment. No server-side rendering or API endpoints.                                                                        |
+| **No authentication**      | Public access, no user accounts, no saved sessions (URL sharing instead).                                                                 |
+| **libdedx as the engine**  | All stopping power and range data come from the libdedx C library. The app is a frontend for this library.                                |
+| **WASM module size**       | The compiled WASM binary includes embedded data tables. Initial load may be several MB — must handle gracefully with a loading indicator. |
 
 ---
 
@@ -288,11 +292,11 @@ The documentation page has two tiers:
 
 All three form factors are **first-class** targets:
 
-| Device | Considerations |
-|--------|---------------|
-| **Desktop** (≥1024px) | Full layout with side-by-side controls and results. Primary development target. |
-| **Tablet** (768–1023px) | Stacked layout. Touch-friendly controls. Usable at beamlines. |
-| **Phone** (<768px) | Single-column. Collapsible sections. Plot must be zoomable. |
+| Device                  | Considerations                                                                  |
+| ----------------------- | ------------------------------------------------------------------------------- |
+| **Desktop** (≥1024px)   | Full layout with side-by-side controls and results. Primary development target. |
+| **Tablet** (768–1023px) | Stacked layout. Touch-friendly controls. Usable at beamlines.                   |
+| **Phone** (<768px)      | Single-column. Collapsible sections. Plot must be zoomable.                     |
 
 ---
 
@@ -304,28 +308,28 @@ progressively.
 
 ### v1 — Core
 
-| Feature | Spec |
-|---------|------|
-| Entity selection (cascading, typeahead) | `04-feature-specs/entity-selection.md` |
-| Calculator (range + stopping power) | `04-feature-specs/calculator.md` |
-| Plot (multi-series, interactive) | `04-feature-specs/plot.md` |
-| Unit handling (energy, stopping power, range) | `04-feature-specs/unit-handling.md` |
-| Shareable URLs | `04-feature-specs/shareable-urls.md` |
-| CSV export | `04-feature-specs/export.md` |
+| Feature                                       | Spec                                   |
+| --------------------------------------------- | -------------------------------------- |
+| Entity selection (cascading, typeahead)       | `04-feature-specs/entity-selection.md` |
+| Calculator (range + stopping power)           | `04-feature-specs/calculator.md`       |
+| Plot (multi-series, interactive)              | `04-feature-specs/plot.md`             |
+| Unit handling (energy, stopping power, range) | `04-feature-specs/unit-handling.md`    |
+| Shareable URLs                                | `04-feature-specs/shareable-urls.md`   |
+| CSV export                                    | `04-feature-specs/export.md`           |
 
 ### v1.5 — Comparison & Export
 
-| Feature | Spec |
-|---------|------|
-| Multi-program comparison | `04-feature-specs/multi-program.md` |
-| PDF export (vector) | `04-feature-specs/export.md` |
-| Inverse lookups | `04-feature-specs/inverse-lookups.md` |
+| Feature                  | Spec                                  |
+| ------------------------ | ------------------------------------- |
+| Multi-program comparison | `04-feature-specs/multi-program.md`   |
+| PDF export (vector)      | `04-feature-specs/export.md`          |
+| Inverse lookups          | `04-feature-specs/inverse-lookups.md` |
 
 ### v2 — Advanced
 
-| Feature | Spec |
-|---------|------|
-| Custom compounds | `04-feature-specs/custom-compounds.md` |
+| Feature                                                                                  | Spec                                   |
+| ---------------------------------------------------------------------------------------- | -------------------------------------- |
+| Custom compounds                                                                         | `04-feature-specs/custom-compounds.md` |
 | Advanced options (MSTAR modes, aggregate state, interpolation, density/I-value override) | `04-feature-specs/advanced-options.md` |
 
 ---
@@ -333,7 +337,7 @@ progressively.
 ## 9. Error Philosophy
 
 - **Standard mode:** Human-friendly messages.
-  *"Energy 10 000 MeV/nucl exceeds the maximum (1 000 MeV/nucl) for PSTAR with protons."*
+  _"Energy 10 000 MeV/nucl exceeds the maximum (1 000 MeV/nucl) for PSTAR with protons."_
 - **On demand:** A "Show details" link or expandable section reveals the
   technical error code from libdedx (e.g., `DEDX_ERR_ENERGY_OUT_OF_RANGE = 103`).
 - Errors from one program in a multi-program query must **not** abort the
@@ -356,10 +360,10 @@ progressively.
 
 ## 11. Related Documents
 
-| Document | Purpose |
-|----------|---------|
-| [00-redesign-plan.md](00-redesign-plan.md) | Full implementation plan with stages |
-| [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript interface for the libdedx WASM wrapper |
+| Document                                                                 | Purpose                                                                                                  |
+| ------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
+| [00-redesign-plan.md](00-redesign-plan.md)                               | Full implementation plan with stages                                                                     |
+| [06-wasm-api-contract.md](06-wasm-api-contract.md)                       | TypeScript interface for the libdedx WASM wrapper                                                        |
 | [`09-non-functional-requirements.md`](09-non-functional-requirements.md) | WCAG 2.1 AA accessibility, performance budgets, browser support matrix, responsive breakpoints, security |
-| `04-feature-specs/*.md` | Detailed per-feature specifications |
-| `03-architecture.md` | Component tree, data flow, WASM lifecycle |
+| `04-feature-specs/*.md`                                                  | Detailed per-feature specifications                                                                      |
+| `03-architecture.md`                                                     | Component tree, data flow, WASM lifecycle                                                                |

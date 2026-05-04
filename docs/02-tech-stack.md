@@ -12,12 +12,12 @@
 
 ### SvelteKit 2 + Svelte 5
 
-| Item | Value |
-|------|-------|
-| Package | `@sveltejs/kit` |
-| Pin | `^2.x` (latest stable) |
-| Svelte engine | `svelte ^5.x` |
-| ADR | [ADR 001](decisions/001-sveltekit-over-react.md) |
+| Item          | Value                                            |
+| ------------- | ------------------------------------------------ |
+| Package       | `@sveltejs/kit`                                  |
+| Pin           | `^2.x` (latest stable)                           |
+| Svelte engine | `svelte ^5.x`                                    |
+| ADR           | [ADR 001](decisions/001-sveltekit-over-react.md) |
 
 SvelteKit provides file-based routing, server-side rendering (unused here but
 available), and a static adapter for GitHub Pages. Svelte 5 replaces the store
@@ -26,23 +26,23 @@ shared state, and derived values without needing a separate state library.
 
 **Svelte 5 — required patterns:**
 
-| Use this | Not this |
-|----------|----------|
-| `let x = $state(v)` | `let x = v` (non-reactive) |
-| `let y = $derived(expr)` | `$: y = expr` |
-| `$effect(() => { … })` | `onMount` / `onDestroy` |
-| `{ …props }: Props = $props()` | `export let prop` |
-| `$bindable()` for two-way | `bind:` on `export let` |
+| Use this                       | Not this                   |
+| ------------------------------ | -------------------------- |
+| `let x = $state(v)`            | `let x = v` (non-reactive) |
+| `let y = $derived(expr)`       | `$: y = expr`              |
+| `$effect(() => { … })`         | `onMount` / `onDestroy`    |
+| `{ …props }: Props = $props()` | `export let prop`          |
+| `$bindable()` for two-way      | `bind:` on `export let`    |
 
 No `svelte/store` usage. No `createEventDispatcher()`. No Svelte 4 lifecycle
 imports.
 
 ### `@sveltejs/adapter-static`
 
-| Item | Value |
-|------|-------|
+| Item    | Value                      |
+| ------- | -------------------------- |
 | Package | `@sveltejs/adapter-static` |
-| Pin | `^3.x` |
+| Pin     | `^3.x`                     |
 
 Produces a static `build/` directory of pre-rendered HTML + JS + CSS. Required
 for GitHub Pages deployment. All routes must be pre-renderable at build time —
@@ -51,15 +51,15 @@ no server-side dynamic data is needed (all computation is WASM).
 In `svelte.config.js`:
 
 ```js
-import adapter from '@sveltejs/adapter-static';
+import adapter from "@sveltejs/adapter-static";
 
 export default {
   kit: {
     adapter: adapter({
-      fallback: '404.html'   // GitHub Pages 404 fallback for client-side navigation
+      fallback: "404.html", // GitHub Pages 404 fallback for client-side navigation
     }),
-    prerender: { handleHttpError: 'warn' }
-  }
+    prerender: { handleHttpError: "warn" },
+  },
 };
 ```
 
@@ -69,10 +69,10 @@ export default {
 
 ### TypeScript 5 (strict mode)
 
-| Item | Value |
-|------|-------|
+| Item    | Value        |
+| ------- | ------------ |
 | Package | `typescript` |
-| Pin | `^5.x` |
+| Pin     | `^5.x`       |
 
 All source files are `.ts` or `.svelte` (with `<script lang="ts">`).
 
@@ -98,10 +98,10 @@ frequently; this flag prevents silent `undefined` access bugs.
 
 ### Tailwind CSS 4
 
-| Item | Value |
-|------|-------|
-| Package | `tailwindcss` |
-| Pin | `^4.x` |
+| Item                | Value               |
+| ------------------- | ------------------- |
+| Package             | `tailwindcss`       |
+| Pin                 | `^4.x`              |
 | PostCSS integration | `@tailwindcss/vite` |
 
 Utility-first CSS. Chosen because:
@@ -119,12 +119,12 @@ Tailwind is configured in `tailwind.config.js`. The content glob covers
 
 ### shadcn-svelte + Bits UI
 
-| Item | Value |
-|------|-------|
-| CLI package | `shadcn-svelte` (via `pnpm dlx shadcn-svelte@latest`) |
-| Runtime package | `bits-ui` |
-| Runtime pin | `^1.x` |
-| ADR | [ADR 005](decisions/005-shadcn-svelte-components.md) |
+| Item            | Value                                                 |
+| --------------- | ----------------------------------------------------- |
+| CLI package     | `shadcn-svelte` (via `pnpm dlx shadcn-svelte@latest`) |
+| Runtime package | `bits-ui`                                             |
+| Runtime pin     | `^1.x`                                                |
+| ADR             | [ADR 005](decisions/005-shadcn-svelte-components.md)  |
 
 shadcn-svelte is the UI component library for dEdx Web. The CLI copies component
 source into `src/lib/components/ui/` — the project owns the code and can
@@ -158,11 +158,11 @@ pnpm dlx shadcn-svelte@latest add combobox accordion dialog table
 
 ### JSROOT 7
 
-| Item | Value |
-|------|-------|
-| Package | `jsroot` |
-| Pin | `~7.x.y` (pin to a validated minor/patch release; avoid `^7.x`) |
-| ADR | [ADR 002](decisions/002-keep-jsroot.md) |
+| Item    | Value                                                           |
+| ------- | --------------------------------------------------------------- |
+| Package | `jsroot`                                                        |
+| Pin     | `~7.x.y` (pin to a validated minor/patch release; avoid `^7.x`) |
+| ADR     | [ADR 002](decisions/002-keep-jsroot.md)                         |
 
 The physics-community standard for ROOT-style interactive plots. Loaded
 lazily on the Plot page via dynamic import to avoid adding parse cost to
@@ -170,7 +170,7 @@ the Calculator page initial load.
 
 ```ts
 // Lazy import — only executes when Plot page is first visited
-const JSROOT = await import('jsroot');
+const JSROOT = await import("jsroot");
 ```
 
 JSROOT is not Svelte-aware; a dedicated `JsrootPlot.svelte` wrapper component
@@ -183,10 +183,10 @@ See [`03-architecture.md` §5](03-architecture.md#5-component-tree).
 
 ### jsPDF 4
 
-| Item | Value |
-|------|-------|
+| Item    | Value   |
+| ------- | ------- |
 | Package | `jspdf` |
-| Pin | `^4.x` |
+| Pin     | `^4.x`  |
 
 Used for Calculator and Plot PDF export (see [`04-feature-specs/export.md`](04-feature-specs/export.md)).
 `jsPDF` produces PDF programmatically from JS — no server, no headless browser.
@@ -199,11 +199,11 @@ assembled in a utility module (`src/lib/export/pdf.ts`).
 
 ### zarrita
 
-| Item | Value |
-|------|-------|
-| Package | `zarrita` |
-| Pin | `^0.7.x` (validated: 0.7.1) |
-| ADR | Spike 4 verdict — `prototypes/extdata-formats/VERDICT.md` |
+| Item    | Value                                                     |
+| ------- | --------------------------------------------------------- |
+| Package | `zarrita`                                                 |
+| Pin     | `^0.7.x` (validated: 0.7.1)                               |
+| ADR     | Spike 4 verdict — `prototypes/extdata-formats/VERDICT.md` |
 
 Pure-JS Zarr v3 reader for the `.webdedx` external data format
 (see [`04-feature-specs/external-data.md`](04-feature-specs/external-data.md)). Supports Zarr v3 with ZEP2
@@ -231,11 +231,11 @@ for measured request sequence.
 
 ### Emscripten 5.x
 
-| Item | Value |
-|------|-------|
-| Tool | `emscripten` (system install or Docker) |
-| Pin | `5.x` — current stable: **5.0.5** (03 April 2026) |
-| ADR | [ADR 003](decisions/003-wasm-build-pipeline.md) |
+| Item | Value                                             |
+| ---- | ------------------------------------------------- |
+| Tool | `emscripten` (system install or Docker)           |
+| Pin  | `5.x` — current stable: **5.0.5** (03 April 2026) |
+| ADR  | [ADR 003](decisions/003-wasm-build-pipeline.md)   |
 
 Compiles `libdedx.a` + `wasm/dedx_extra.c` to `libdedx.mjs` + `libdedx.wasm`.
 The WASM binary is placed in `static/wasm/` so SvelteKit serves it as a
@@ -253,11 +253,11 @@ Emscripten's JS glue code require a wrapper update.
 
 **Changelog notes relevant to this project** (from [`resources/emscripten-changelog.md`](resources/emscripten-changelog.md)):
 
-| Version | Change | Impact |
-|---------|--------|--------|
-| 4.0.12 / 5.0.0 | `MODULARIZE=1` factory always returns a `Promise`, even when `WASM_ASYNC_COMPILATION=0` | `loader.ts` uses `await factory.default({...})` — correct |
-| 4.0.17 | `-sENVIRONMENT=worker` alone is disallowed; must use `web,worker` | If Web Worker support is ever added (see `03-architecture.md §3`), change `ENVIRONMENT='web'` to `ENVIRONMENT='web,worker'` |
-| 5.0.6 (dev) | Minimum Node.js for generated code bumped to v18.3.0 | Node 24 used in CI and tests is well within limits |
+| Version        | Change                                                                                  | Impact                                                                                                                      |
+| -------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- |
+| 4.0.12 / 5.0.0 | `MODULARIZE=1` factory always returns a `Promise`, even when `WASM_ASYNC_COMPILATION=0` | `loader.ts` uses `await factory.default({...})` — correct                                                                   |
+| 4.0.17         | `-sENVIRONMENT=worker` alone is disallowed; must use `web,worker`                       | If Web Worker support is ever added (see `03-architecture.md §3`), change `ENVIRONMENT='web'` to `ENVIRONMENT='web,worker'` |
+| 5.0.6 (dev)    | Minimum Node.js for generated code bumped to v18.3.0                                    | Node 24 used in CI and tests is well within limits                                                                          |
 
 ---
 
@@ -265,10 +265,10 @@ Emscripten's JS glue code require a wrapper update.
 
 ### Vitest 4
 
-| Item | Value |
-|------|-------|
+| Item    | Value    |
+| ------- | -------- |
 | Package | `vitest` |
-| Pin | `^4.x` |
+| Pin     | `^4.x`   |
 
 Unit and integration tests. Vitest is Vite-native — it reuses the Vite
 transform pipeline, so Svelte components and TypeScript are tested without
@@ -290,10 +290,10 @@ WASM module tests use the real module (loaded once per test suite) to catch
 
 ### Svelte Testing Library
 
-| Item | Value |
-|------|-------|
+| Item    | Value                     |
+| ------- | ------------------------- |
 | Package | `@testing-library/svelte` |
-| Pin | `^5.x` |
+| Pin     | `^5.x`                    |
 
 Component tests render Svelte components into jsdom and assert on accessible
 roles and text. Avoids testing implementation details (no component instance
@@ -301,10 +301,10 @@ queries).
 
 ### Playwright 1.x
 
-| Item | Value |
-|------|-------|
+| Item    | Value              |
+| ------- | ------------------ |
 | Package | `@playwright/test` |
-| Pin | `^1.x` |
+| Pin     | `^1.x`             |
 
 End-to-end tests against a built static site served locally. Tests the real
 WASM module — no mocks. See [`07-testing-strategy.md`](07-testing-strategy.md) for the test plan.
@@ -315,11 +315,11 @@ WASM module — no mocks. See [`07-testing-strategy.md`](07-testing-strategy.md)
 
 ### ESLint 9 + `eslint-plugin-svelte`
 
-| Item | Value |
-|------|-------|
-| Package | `eslint`, `eslint-plugin-svelte`, `@typescript-eslint/eslint-plugin` |
-| Pin | `eslint ^9.x`, plugins at their latest compatible version |
-| Config file | `eslint.config.js` (flat config) |
+| Item        | Value                                                                |
+| ----------- | -------------------------------------------------------------------- |
+| Package     | `eslint`, `eslint-plugin-svelte`, `@typescript-eslint/eslint-plugin` |
+| Pin         | `eslint ^9.x`, plugins at their latest compatible version            |
+| Config file | `eslint.config.js` (flat config)                                     |
 
 Uses `svelte/recommended` preset plus custom rules:
 
@@ -330,11 +330,11 @@ Uses `svelte/recommended` preset plus custom rules:
 
 ### Prettier + `prettier-plugin-svelte`
 
-| Item | Value |
-|------|-------|
-| Package | `prettier`, `prettier-plugin-svelte` |
-| Pin | `prettier ^3.x` |
-| Config file | `.prettierrc` |
+| Item        | Value                                |
+| ----------- | ------------------------------------ |
+| Package     | `prettier`, `prettier-plugin-svelte` |
+| Pin         | `prettier ^3.x`                      |
+| Config file | `.prettierrc`                        |
 
 All `.svelte`, `.ts`, `.js`, `.json`, `.md` files are formatted by Prettier.
 CI runs `prettier --check .`; the commit hook runs `prettier --write`.
@@ -347,9 +347,7 @@ CI runs `prettier --check .`; the commit hook runs `prettier --write`.
   "semi": true,
   "printWidth": 100,
   "plugins": ["prettier-plugin-svelte"],
-  "overrides": [
-    { "files": "*.svelte", "options": { "parser": "svelte" } }
-  ]
+  "overrides": [{ "files": "*.svelte", "options": { "parser": "svelte" } }]
 }
 ```
 
@@ -368,10 +366,10 @@ Type check: `pnpm check` (runs `svelte-check` + `tsc --noEmit`).
 
 ### `svelte-check`
 
-| Item | Value |
-|------|-------|
+| Item    | Value          |
+| ------- | -------------- |
 | Package | `svelte-check` |
-| Pin | `^4.x` |
+| Pin     | `^4.x`         |
 
 Validates TypeScript types inside `.svelte` files. Runs as part of `pnpm
 check` and in CI before the build step.
@@ -405,11 +403,11 @@ See [`08-deployment.md`](08-deployment.md) for the full workflow YAML.
 
 ### pnpm
 
-| Item | Value |
-|------|-------|
-| Tool | `pnpm` |
-| Pin | `^10.x` (latest stable as of April 2026) |
-| Lock file | `pnpm-lock.yaml` (committed) |
+| Item       | Value                                                                  |
+| ---------- | ---------------------------------------------------------------------- |
+| Tool       | `pnpm`                                                                 |
+| Pin        | `^10.x` (latest stable as of April 2026)                               |
+| Lock file  | `pnpm-lock.yaml` (committed)                                           |
 | Activation | `corepack enable && corepack use pnpm@latest` — Node 24 ships corepack |
 
 pnpm is used over npm for three reasons:
@@ -441,12 +439,12 @@ CI uses `pnpm/action-setup` before `actions/setup-node` with
 
 ## 13. Node.js
 
-| Item | Value |
-|------|-------|
-| Version | `24 LTS` — current patch: **24.14** |
-| Engine field | `package.json` `"engines": { "node": "^24" }` |
-| Current "Current" release | 25.9 (odd-numbered, no LTS; not used) |
-| Migration target | `^26` — Node.js 26 released April 2026; enters Active LTS October 2026 |
+| Item                      | Value                                                                  |
+| ------------------------- | ---------------------------------------------------------------------- |
+| Version                   | `24 LTS` — current patch: **24.14**                                    |
+| Engine field              | `package.json` `"engines": { "node": "^24" }`                          |
+| Current "Current" release | 25.9 (odd-numbered, no LTS; not used)                                  |
+| Migration target          | `^26` — Node.js 26 released April 2026; enters Active LTS October 2026 |
 
 Node.js 24 (currently at 24.14) is the Active LTS line used for all CI and
 contributor environments. Node.js 25.9 is the current "Current" release —
@@ -469,41 +467,41 @@ point, update `"engines"` to `"^24 || ^26"` first (validate CI), then drop
 
 ## 14. Version Summary Table
 
-| Package | Pin | Role |
-|---------|-----|------|
-| `@sveltejs/kit` | `^2.x` | Framework |
-| `svelte` | `^5.x` | UI compiler |
-| `@sveltejs/adapter-static` | `^3.x` | Static site output |
-| `typescript` | `^5.x` | Language |
-| `tailwindcss` | `^4.x` | Styling |
-| `shadcn-svelte` CLI | `@latest` (via `pnpm dlx`) | UI component scaffolding (source copied) |
-| `bits-ui` | `^1.x` | Headless UI primitives (runtime) |
-| `jsroot` | `^7.x` | Physics plotting |
-| `jspdf` | `^4.x` | PDF export |
-| `zarrita` | `^0.7.x` | Zarr v3 reader (external data) |
-| `vitest` | `^4.x` | Unit/integration tests |
-| `@testing-library/svelte` | `^5.x` | Component tests |
-| `@playwright/test` | `^1.x` | E2E tests |
-| `eslint` | `^9.x` | Linting |
-| `eslint-plugin-svelte` | latest compat | Svelte lint rules |
-| `@typescript-eslint/eslint-plugin` | latest compat | TypeScript lint rules |
-| `prettier` | `^3.x` | Formatting |
-| `prettier-plugin-svelte` | latest compat | Svelte formatter |
-| `svelte-check` | `^4.x` | Component type checking |
-| Emscripten | `5.x` | WASM compiler (system tool) |
-| Node.js | `24 LTS` (24.14) | Runtime |
+| Package                            | Pin                        | Role                                     |
+| ---------------------------------- | -------------------------- | ---------------------------------------- |
+| `@sveltejs/kit`                    | `^2.x`                     | Framework                                |
+| `svelte`                           | `^5.x`                     | UI compiler                              |
+| `@sveltejs/adapter-static`         | `^3.x`                     | Static site output                       |
+| `typescript`                       | `^5.x`                     | Language                                 |
+| `tailwindcss`                      | `^4.x`                     | Styling                                  |
+| `shadcn-svelte` CLI                | `@latest` (via `pnpm dlx`) | UI component scaffolding (source copied) |
+| `bits-ui`                          | `^1.x`                     | Headless UI primitives (runtime)         |
+| `jsroot`                           | `^7.x`                     | Physics plotting                         |
+| `jspdf`                            | `^4.x`                     | PDF export                               |
+| `zarrita`                          | `^0.7.x`                   | Zarr v3 reader (external data)           |
+| `vitest`                           | `^4.x`                     | Unit/integration tests                   |
+| `@testing-library/svelte`          | `^5.x`                     | Component tests                          |
+| `@playwright/test`                 | `^1.x`                     | E2E tests                                |
+| `eslint`                           | `^9.x`                     | Linting                                  |
+| `eslint-plugin-svelte`             | latest compat              | Svelte lint rules                        |
+| `@typescript-eslint/eslint-plugin` | latest compat              | TypeScript lint rules                    |
+| `prettier`                         | `^3.x`                     | Formatting                               |
+| `prettier-plugin-svelte`           | latest compat              | Svelte formatter                         |
+| `svelte-check`                     | `^4.x`                     | Component type checking                  |
+| Emscripten                         | `5.x`                      | WASM compiler (system tool)              |
+| Node.js                            | `24 LTS` (24.14)           | Runtime                                  |
 
 ---
 
 ## 15. Related Documents
 
-| Document | Purpose |
-|----------|---------|
-| [decisions/001-sveltekit-over-react.md](decisions/001-sveltekit-over-react.md) | Full rationale for SvelteKit |
-| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md) | Full rationale for JSROOT |
-| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md) | WASM build flags and dedx_extra rationale |
+| Document                                                                               | Purpose                                                 |
+| -------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| [decisions/001-sveltekit-over-react.md](decisions/001-sveltekit-over-react.md)         | Full rationale for SvelteKit                            |
+| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md)                           | Full rationale for JSROOT                               |
+| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md)           | WASM build flags and dedx_extra rationale               |
 | [decisions/005-shadcn-svelte-components.md](decisions/005-shadcn-svelte-components.md) | UI component library decision (shadcn-svelte + Bits UI) |
-| [03-architecture.md](03-architecture.md) | Project structure, store topology, routing |
-| [06-wasm-api-contract.md](06-wasm-api-contract.md) | TypeScript types for the WASM wrapper |
-| [08-deployment.md](08-deployment.md) | GitHub Actions workflow |
-| [09-non-functional-requirements.md](09-non-functional-requirements.md) | Performance budgets, browser support |
+| [03-architecture.md](03-architecture.md)                                               | Project structure, store topology, routing              |
+| [06-wasm-api-contract.md](06-wasm-api-contract.md)                                     | TypeScript types for the WASM wrapper                   |
+| [08-deployment.md](08-deployment.md)                                                   | GitHub Actions workflow                                 |
+| [09-non-functional-requirements.md](09-non-functional-requirements.md)                 | Performance budgets, browser support                    |

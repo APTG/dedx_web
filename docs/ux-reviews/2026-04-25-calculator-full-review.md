@@ -141,6 +141,7 @@ a particle AND a material were selected but no program supported the pair.
 appears in respective cells in '→MeV/nucl' column."
 
 **Fix:** Unit tests added in `calculator-state.test.ts` verify that:
+
 - `"12MeV/u"` for proton computes `normalizedMevNucl ≈ 12.1`
 - `"12 MeV/nucl"` for proton computes `normalizedMevNucl = 12`
 - `"100 MeV/u"` for Carbon (A=12) computes `normalizedMevNucl` and shows STP result
@@ -184,6 +185,7 @@ Switching to Carbon or Helium exercises:
 - `convertEnergyToMeVperNucl` with different A and m_u
 
 **E2E tests added:** Four tests in `complex-interactions.spec.ts`:
+
 1. Carbon + Water + 100 MeV/nucl shows numeric STP result
 2. Helium + Water + 50 MeV/nucl shows numeric STP result
 3. Carbon: per-row unit selector shows MeV/nucl column with correct value
@@ -193,22 +195,22 @@ Switching to Carbon or Helium exercises:
 
 ## Priority Summary
 
-| #   | Issue                                                                                              | Severity | Status             |
-| --- | -------------------------------------------------------------------------------------------------- | -------- | ------------------ |
-| 2   | `formatSigFigs` RangeError crashes page                                                            | Critical | ✅ Fixed           |
-| 1   | Auto-select blocks valid combinations                                                              | Critical | ✅ Fixed           |
-| 3   | selectionSummary always shows "Auto-select"                                                        | High     | ✅ Fixed           |
-| 4   | No inline error for invalid input                                                                  | Medium   | ✅ Fixed           |
-| 5   | Confusing incomplete-selection message                                                             | Medium   | ✅ Fixed           |
-| 7   | WASM returns subnormal values (root cause)                                                         | High     | ✅ Debug logging   |
-| 6   | MeV/u and MeV/nucl not displaying                                                                  | Medium   | ✅ Fixed           |
-| 8   | No heavy-ion E2E coverage                                                                          | Low      | ✅ Fixed           |
-| 9   | Spec divergence — auto-select fallback, scientific-notation rule, empty-state branches             | Medium   | ✅ Spec updated    |
-| 10  | `Map<float, result>` results store blocks Inverse STP and risks float-key collisions               | High     | ✅ Fixed           |
-| 11  | `result-table.svelte` columns hard-coded — blocks multi-program & inverse tabs                     | Medium   | ✅ Fixed           |
-| 12  | Electron unsupported guard hard-wired in result-table — blocks inverse-tab reuse                   | Medium   | ✅ Fixed           |
-| 13  | Divergent number formatting (`formatNumber` in `energy-input.svelte` vs `formatSigFigs`)           | Low      | ✅ Fixed           |
-| 14  | Auto-select fallback not recorded in shareable URLs — silent program drift across libdedx versions | Medium   | ✅ Documented      |
+| #   | Issue                                                                                              | Severity | Status           |
+| --- | -------------------------------------------------------------------------------------------------- | -------- | ---------------- |
+| 2   | `formatSigFigs` RangeError crashes page                                                            | Critical | ✅ Fixed         |
+| 1   | Auto-select blocks valid combinations                                                              | Critical | ✅ Fixed         |
+| 3   | selectionSummary always shows "Auto-select"                                                        | High     | ✅ Fixed         |
+| 4   | No inline error for invalid input                                                                  | Medium   | ✅ Fixed         |
+| 5   | Confusing incomplete-selection message                                                             | Medium   | ✅ Fixed         |
+| 7   | WASM returns subnormal values (root cause)                                                         | High     | ✅ Debug logging |
+| 6   | MeV/u and MeV/nucl not displaying                                                                  | Medium   | ✅ Fixed         |
+| 8   | No heavy-ion E2E coverage                                                                          | Low      | ✅ Fixed         |
+| 9   | Spec divergence — auto-select fallback, scientific-notation rule, empty-state branches             | Medium   | ✅ Spec updated  |
+| 10  | `Map<float, result>` results store blocks Inverse STP and risks float-key collisions               | High     | ✅ Fixed         |
+| 11  | `result-table.svelte` columns hard-coded — blocks multi-program & inverse tabs                     | Medium   | ✅ Fixed         |
+| 12  | Electron unsupported guard hard-wired in result-table — blocks inverse-tab reuse                   | Medium   | ✅ Fixed         |
+| 13  | Divergent number formatting (`formatNumber` in `energy-input.svelte` vs `formatSigFigs`)           | Low      | ✅ Fixed         |
+| 14  | Auto-select fallback not recorded in shareable URLs — silent program drift across libdedx versions | Medium   | ✅ Documented    |
 
 ---
 

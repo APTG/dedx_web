@@ -3,7 +3,9 @@
 ## Session Narrative
 
 ### Prompt 1: Add user-hosted external stopping-power/range data feature
+
 **AI response**: Asked 15 clarifying questions across data model, file format, hosting, security, URL state, and scope. User answered all questions:
+
 - Both stopping powers and CSDA ranges in the file.
 - External dataset defines its own particles and materials.
 - Appears as additional program(s) alongside built-in data.
@@ -21,7 +23,9 @@
 - Tooling spec included (Python CLI: `srim2webdedx`, `csv2webdedx`, `webdedx-inspect`).
 
 ### Prompt 2: Draft the spec
+
 **AI response**: Created `docs/04-feature-specs/external-data.md` (Draft v1) with 14 sections covering:
+
 - Binary `.webdedx` file format: 4-byte header-length prefix + JSON index header + contiguous Float64 table data.
 - HTTP Range Request protocol for partial table fetching.
 - `extdata` URL parameter contract (multiple sources, canonical ordering, ABNF extension).
@@ -36,6 +40,7 @@
 - Acceptance criteria and cross-spec consistency checklist.
 
 Also updated:
+
 - Project vision `01-project-vision.md` with §4.7 "External / User-Hosted Data".
 - Spec index `04-feature-specs/README.md` with new "Later-Stage Specs" section.
 - Changelog and AI log index.
@@ -43,6 +48,7 @@ Also updated:
 ## Tasks
 
 ### External Data Spec Draft v1
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications (implementation deferred)
 - **Files changed**:
@@ -60,6 +66,7 @@ Also updated:
 - **Issue**: Material matching heuristic (exact name vs formula vs density) left as open question for future refinement.
 
 ### External Data: Custom Format → Apache Parquet (Draft v2)
+
 - **Status**: completed
 - **Stage**: Stage 1 — Requirements & Specifications
 - **Files changed**:

@@ -51,6 +51,7 @@ Fix:
 ## Tasks
 
 ### Make calculator result table usable on mobile (Pixel 7A, ~412 px)
+
 - **Status**: completed
 - **Stage**: 6.1 (Calculator polish)
 - **Files changed**:

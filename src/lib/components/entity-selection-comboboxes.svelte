@@ -38,7 +38,7 @@
         const ORDER = [1, 2, 1001];
         return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
       });
-    
+
     const ionParticles = state.allParticles
       .filter((p) => !COMMON_IDS.has(p.id))
       .sort((a, b) => a.id - b.id);
@@ -46,7 +46,8 @@
     function toItem(particle: ParticleEntity) {
       return {
         entity: particle,
-        available: particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
+        available:
+          particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
         label: getParticleLabel(particle),
         description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
         searchText: getParticleSearchText(particle),

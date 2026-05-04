@@ -45,15 +45,15 @@ Then read only the spec files listed under the sub-task you are about to impleme
 
 ## What is already done (do NOT reimplement)
 
-| Already shipped | Location |
-|---|---|
+| Already shipped                                                              | Location                                                                   |
+| ---------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
 | Calculator page (entity selection, unified table, debounce, KE conservation) | `src/routes/calculator/+page.svelte`, `src/lib/state/calculator.svelte.ts` |
-| Plot page with JSROOT, multi-series, color pool | `src/routes/plot/+page.svelte`, `src/lib/state/plot.svelte.ts` |
-| URL encode/decode for calculator (full implementation) | `src/lib/utils/calculator-url.ts` |
-| URL encode/decode for plot (full implementation) | `src/lib/utils/plot-url.ts` |
-| CSV generate + download helpers (partial — schema wrong, see Task 3) | `src/lib/export/csv.ts` |
-| App toolbar shell: Export PDF (disabled), Export CSV (disabled), Share URL | `src/routes/+layout.svelte` |
-| Share URL button (copies `window.location.href`) | `src/routes/+layout.svelte` |
+| Plot page with JSROOT, multi-series, color pool                              | `src/routes/plot/+page.svelte`, `src/lib/state/plot.svelte.ts`             |
+| URL encode/decode for calculator (full implementation)                       | `src/lib/utils/calculator-url.ts`                                          |
+| URL encode/decode for plot (full implementation)                             | `src/lib/utils/plot-url.ts`                                                |
+| CSV generate + download helpers (partial — schema wrong, see Task 3)         | `src/lib/export/csv.ts`                                                    |
+| App toolbar shell: Export PDF (disabled), Export CSV (disabled), Share URL   | `src/routes/+layout.svelte`                                                |
+| Share URL button (copies `window.location.href`)                             | `src/routes/+layout.svelte`                                                |
 
 ---
 
@@ -189,9 +189,11 @@ error-row exclusion, filename generation. Test the 5-column output against a kno
    Use dynamic import (`import('jspdf')`) to avoid bundling it in the initial chunk.
 
 2. **Implement `src/lib/export/pdf.ts`** with a single exported function:
+
    ```typescript
-   export async function downloadCalculatorPdf(rows: EnergyRow[], meta: PdfMeta): Promise<void>
+   export async function downloadCalculatorPdf(rows: EnergyRow[], meta: PdfMeta): Promise<void>;
    ```
+
    Basic-mode PDF content per `export.md` §6.1:
    - Header: app name ("webdedx"), particle name, material name, program name.
    - Timestamp: "Generated: {ISO UTC timestamp}".
@@ -297,20 +299,24 @@ list only those tasks in the description.
 ## Session Narrative
 
 ### Task 1: Stage 5 polish
+
 **AI response**: <what was done, key decisions>
 
 ### Task 2: Calculator URL sync
+
 ...
 
 ## Tasks
 
 ### Stage 5 polish (material phase badge, D1–D3)
+
 - **Status**: completed
 - **Stage**: 6
 - **Files changed**: ...
 - **Decision**: ...
 
 ### Calculator URL sync
+
 - **Status**: completed
 - **Stage**: 6
 - **Files changed**: ...

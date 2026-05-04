@@ -49,9 +49,7 @@ export function createPlotState(): PlotState {
   let yLog = $state(true);
   let nextSeriesId = $state(1);
   // eslint-disable-next-line prefer-const -- $state needed for Svelte reactivity
-  let availableColorIndices = $state<Set<number>>(
-    new Set(COLOR_PALETTE.map((_, i) => i)),
-  );
+  let availableColorIndices = $state<Set<number>>(new Set(COLOR_PALETTE.map((_, i) => i)));
 
   function recomputeLabels(): void {
     const labels = computeSeriesLabels(series);
@@ -91,9 +89,7 @@ export function createPlotState(): PlotState {
   }
 
   function toggleVisibility(seriesId: number): void {
-    series = series.map((s) =>
-      s.seriesId === seriesId ? { ...s, visible: !s.visible } : s,
-    );
+    series = series.map((s) => (s.seriesId === seriesId ? { ...s, visible: !s.visible } : s));
   }
 
   function setPreview(data: PlotSeriesData): void {

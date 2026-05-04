@@ -18,7 +18,7 @@
 
    Fix: kept the original suffix as a `string` (`oldUnitSuffix`) for
    the call into `convertEnergyToMeVperNucl` (which already accepts
-   string), and derived the *category* (`MeV` | `MeV/nucl` | `MeV/u`)
+   string), and derived the _category_ (`MeV` | `MeV/nucl` | `MeV/u`)
    via a new exported helper `getEnergyUnitCategory()` for the
    `newUnit` decision.
 
@@ -44,7 +44,7 @@
    `flushCalculation(): Promise<void> | undefined` (the underlying
    debounced function returns a `Promise<void>` from its async
    implementation). Tests already had a `triggerCalculation();
-   flushCalculation(); flushCalculation()` pattern which keeps
+flushCalculation(); flushCalculation()` pattern which keeps
    working — the wrapped async work runs synchronously up to the
    first await inside the mock service. Documented the correct way
    to wait for completion in the inline comment.
@@ -60,7 +60,7 @@
 
 6. **`CHANGELOG-AI.md:13-15` / PR description.** The current PR
    description (last sync) said "no code changes". The PR
-   *description* will be refreshed on the next `report_progress`
+   _description_ will be refreshed on the next `report_progress`
    call, which restates the round-4 functional changes (calculator
    logic, debounce/triggerCalculation API, MeV/u fix). Changelog
    rows are correct (each round has its own entry).
@@ -76,6 +76,7 @@
 ## Tasks
 
 ### Tighten convertRowsForNewParticle types and fix MeV/u handling
+
 - **Status:** completed
 - **Stage:** 5 (calculator)
 - **Files changed:**
@@ -94,6 +95,7 @@
   on the way out).
 
 ### Make trigger/flush API contract honest
+
 - **Status:** completed
 - **Stage:** 5 (calculator)
 - **Files changed:**
@@ -104,6 +106,7 @@
     accepts `await voidExpr`).
 
 ### Fix doc PII and AI log header convention
+
 - **Status:** completed
 - **Files changed:**
   - `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`

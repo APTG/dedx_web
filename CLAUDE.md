@@ -22,12 +22,12 @@
 
 Use runes exclusively. **Never** use Svelte 4 patterns.
 
-| Use (Svelte 5) | Never use (Svelte 4) |
-|---|---|
+| Use (Svelte 5)                                         | Never use (Svelte 4)                   |
+| ------------------------------------------------------ | -------------------------------------- |
 | `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:` reactive statements |
-| `$effect` for lifecycle | `onMount` / `onDestroy` from `svelte` |
-| Module-level fine-grained reactivity | `svelte/store` auto-subscriptions |
-| | `createEventDispatcher()` |
+| `$effect` for lifecycle                                | `onMount` / `onDestroy` from `svelte`  |
+| Module-level fine-grained reactivity                   | `svelte/store` auto-subscriptions      |
+|                                                        | `createEventDispatcher()`              |
 
 Vendor source + docs are in `vendor/svelte/` if you need to check implementation details.
 
@@ -71,17 +71,17 @@ from the latest successful `build-wasm` CI artifact if missing locally.
 
 ## Key Docs
 
-| Topic | File |
-|-------|------|
-| Redesign plan (stage-by-stage) | [`docs/00-redesign-plan.md`](docs/00-redesign-plan.md) |
-| Architecture & component tree | [`docs/03-architecture.md`](docs/03-architecture.md) |
-| Feature specs | [`docs/04-feature-specs/`](docs/04-feature-specs/) |
-| WASM API contract | [`docs/06-wasm-api-contract.md`](docs/06-wasm-api-contract.md) |
-| Testing strategy | [`docs/07-testing-strategy.md`](docs/07-testing-strategy.md) |
-| Completed stages | [`docs/progress/`](docs/progress/) |
-| ADRs | [`docs/decisions/`](docs/decisions/) |
-| Glossary | [`docs/10-terminology.md`](docs/10-terminology.md) |
-| AI session log | [`CHANGELOG-AI.md`](CHANGELOG-AI.md) |
+| Topic                          | File                                                           |
+| ------------------------------ | -------------------------------------------------------------- |
+| Redesign plan (stage-by-stage) | [`docs/00-redesign-plan.md`](docs/00-redesign-plan.md)         |
+| Architecture & component tree  | [`docs/03-architecture.md`](docs/03-architecture.md)           |
+| Feature specs                  | [`docs/04-feature-specs/`](docs/04-feature-specs/)             |
+| WASM API contract              | [`docs/06-wasm-api-contract.md`](docs/06-wasm-api-contract.md) |
+| Testing strategy               | [`docs/07-testing-strategy.md`](docs/07-testing-strategy.md)   |
+| Completed stages               | [`docs/progress/`](docs/progress/)                             |
+| ADRs                           | [`docs/decisions/`](docs/decisions/)                           |
+| Glossary                       | [`docs/10-terminology.md`](docs/10-terminology.md)             |
+| AI session log                 | [`CHANGELOG-AI.md`](CHANGELOG-AI.md)                           |
 
 ---
 
@@ -132,6 +132,7 @@ Replace the model name if you are running on a different Claude version.
 ## Session Narrative
 
 ### Prompt 1: <summary of user request>
+
 **AI response**: <what was done, key decisions, outcome>
 
 ### Prompt 2: ...
@@ -139,6 +140,7 @@ Replace the model name if you are running on a different Claude version.
 ## Tasks
 
 ### <Task title>
+
 - **Status**: completed | partial | blocked
 - **Stage**: (from docs/00-redesign-plan.md)
 - **Files changed**: list of paths
@@ -150,7 +152,7 @@ Replace the model name if you are running on a different Claude version.
 
 - For trivial changes (< 3 files, no decisions) a changelog row alone is sufficient — skip the detailed log.
 - Use the slug from the feature spec filename when applicable (e.g. `entity-selection`, `calculator`).
-- Commit messages use Conventional Commits; the log captures the *why*.
+- Commit messages use Conventional Commits; the log captures the _why_.
 
 ### Keep these index files in sync when adding/renaming docs
 

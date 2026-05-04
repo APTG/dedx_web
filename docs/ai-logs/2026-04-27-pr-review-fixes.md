@@ -30,10 +30,10 @@
 3. **Out-of-date file-level docstring in
    `tests/e2e/particle-unit-switching.spec.ts`.** The header still
    described the original "lock down today's no-conservation behaviour
-   + fixme the desired KE conservation" model, but Tasks 4 and 5 made
-   KE conservation the actual implementation. Rewrote the docstring to
-   describe the active spec (E_nucl preserved across particle switch;
-   row toggle re-expresses the same KE in the new unit).
+   - fixme the desired KE conservation" model, but Tasks 4 and 5 made
+     KE conservation the actual implementation. Rewrote the docstring to
+     describe the active spec (E_nucl preserved across particle switch;
+     row toggle re-expresses the same KE in the new unit).
 
 4. **Stale "no Add row button" assertion.** Task 7 added an explicit
    `+ Add row` button below the table, so the negative assertion
@@ -70,6 +70,7 @@
 ## Tasks
 
 ### Remove unused local `switchParticle()`
+
 - **Status:** completed
 - **Files changed:**
   - `src/lib/state/calculator.svelte.ts` (-12 lines)
@@ -78,6 +79,7 @@
   local declaration was leftover refactoring. Smallest possible diff.
 
 ### Share `getAvailableEnergyUnits()` between master + per-row selectors
+
 - **Status:** completed
 - **Files changed:**
   - `src/lib/utils/available-units.ts` (new, 27 lines)
@@ -87,6 +89,7 @@
     inline helper)
 
 ### E2E spec cleanup
+
 - **Status:** completed
 - **Files changed:**
   - `tests/e2e/particle-unit-switching.spec.ts`
@@ -100,6 +103,7 @@
       appends a row when clicked.
 
 ### Issues left open
+
 - The 112 pre-existing svelte-check errors (mostly unresolved
   `$app/paths` types) are environment / kit-sync noise outside this
   PR's scope; CI runs the full sync flow and is the authoritative

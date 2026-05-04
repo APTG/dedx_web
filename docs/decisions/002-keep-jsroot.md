@@ -21,26 +21,26 @@ with no priority guarantees.
 
 ### Plotting requirements (from [`docs/04-feature-specs/plot.md`](../04-feature-specs/plot.md))
 
-| Requirement | Detail |
-|-------------|--------|
-| Log-log axes | Stopping power vs energy plots span 4–6 orders of magnitude on both axes. |
-| Multi-series overlay | Up to ~8 overlaid curves with a shared color palette (perceptually distinct, colorblind-safe). |
-| Interactive | Pan, zoom (log-aware), tooltip on hover, legend toggle. |
-| Publication quality | Export to SVG (lossless vector) and PNG; axis labels include physical units. |
-| Axis auto-labeling | Labels update when unit selection changes: `"Energy [MeV/nucl]"`, `"Stopping Power [MeV·cm²/g]"`. |
-| Dense grids | Up to 500 points per series; smooth on log-log axes. |
-| ROOT format familiarity | The target audience (radiation physicists, medical physicists) regularly reads ROOT output. |
+| Requirement             | Detail                                                                                            |
+| ----------------------- | ------------------------------------------------------------------------------------------------- |
+| Log-log axes            | Stopping power vs energy plots span 4–6 orders of magnitude on both axes.                         |
+| Multi-series overlay    | Up to ~8 overlaid curves with a shared color palette (perceptually distinct, colorblind-safe).    |
+| Interactive             | Pan, zoom (log-aware), tooltip on hover, legend toggle.                                           |
+| Publication quality     | Export to SVG (lossless vector) and PNG; axis labels include physical units.                      |
+| Axis auto-labeling      | Labels update when unit selection changes: `"Energy [MeV/nucl]"`, `"Stopping Power [MeV·cm²/g]"`. |
+| Dense grids             | Up to 500 points per series; smooth on log-log axes.                                              |
+| ROOT format familiarity | The target audience (radiation physicists, medical physicists) regularly reads ROOT output.       |
 
 ### Candidates evaluated
 
-| Library | Notes |
-|---------|-------|
-| **JSROOT** | Physics-community standard. TGraph/TMultiGraph API. Native log-axis support. SVG output. Maintained by ROOT team. Familiar to the audience. |
-| **Plotly.js** | Good log-axis and SVG support. Large bundle (~3 MB minified). Generic; axis labels need manual formatting. Not community-standard for physics. |
-| **Chart.js** | Lightweight. Log axes supported via Chart.js 3+. No built-in SVG export. Multi-series is manual. Less suited for publication output. |
-| **D3.js** | Maximum flexibility. Very high implementation cost for a production-quality log-log interactive chart. Axes and tooltips are built from scratch. |
-| **Vega-Lite** | Declarative; good defaults. Log scales supported. SVG output. Less interactive zoom/pan than JSROOT. Audience unfamiliar. |
-| **Observable Plot** | Modern; good log-axis defaults. SVG output. Limited built-in zoom/pan. Audience unfamiliar. |
+| Library             | Notes                                                                                                                                            |
+| ------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **JSROOT**          | Physics-community standard. TGraph/TMultiGraph API. Native log-axis support. SVG output. Maintained by ROOT team. Familiar to the audience.      |
+| **Plotly.js**       | Good log-axis and SVG support. Large bundle (~3 MB minified). Generic; axis labels need manual formatting. Not community-standard for physics.   |
+| **Chart.js**        | Lightweight. Log axes supported via Chart.js 3+. No built-in SVG export. Multi-series is manual. Less suited for publication output.             |
+| **D3.js**           | Maximum flexibility. Very high implementation cost for a production-quality log-log interactive chart. Axes and tooltips are built from scratch. |
+| **Vega-Lite**       | Declarative; good defaults. Log scales supported. SVG output. Less interactive zoom/pan than JSROOT. Audience unfamiliar.                        |
+| **Observable Plot** | Modern; good log-axis defaults. SVG output. Limited built-in zoom/pan. Audience unfamiliar.                                                      |
 
 ---
 
@@ -105,6 +105,7 @@ JSROOT is loaded as an ES module import; version-pinned in `package.json`.
   through to the browser's native page scroll without any custom event
   interception. See [docs/03-architecture.md §5](../03-architecture.md#5-component-tree)
   for the implementation.
+
 - **Bundle size — total payload audit.** JSROOT (~500 KB minified+gzipped) is
   additive, not substitutive. Measured payload (Stage 2.6): `libdedx.wasm`
   **457 KB** + `libdedx.mjs` 13 KB (no `.data` sidecar — data compiled in),

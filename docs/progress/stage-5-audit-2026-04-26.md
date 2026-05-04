@@ -1,4 +1,4 @@
-# Stage 5 Audit — what is *actually* finished?
+# Stage 5 Audit — what is _actually_ finished?
 
 > **Date:** 2026-04-26
 > **Auditor:** Claude Sonnet 4.6 via Copilot coding agent
@@ -7,6 +7,7 @@
 > before the plotting work in Stage 5.5 begins.
 >
 > Companion documents:
+>
 > - UX review: [`docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md`](../ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md)
 > - Session log: [`docs/ai-logs/2026-04-26-stage5-audit-and-ke-conservation.md`](../ai-logs/2026-04-26-stage5-audit-and-ke-conservation.md)
 
@@ -16,26 +17,26 @@
 
 `docs/00-redesign-plan.md:504–513` lists five Stage 5 sub-items. Status today:
 
-| #     | Item                                                | Claim    | Reality                                                                                               |
-| ----- | --------------------------------------------------- | -------- | ----------------------------------------------------------------------------------------------------- |
-| 5.1   | Entity selection (cascading dropdowns)              | ✅       | **Mostly done.** Functionally complete. See §1.1 — gaps still listed in `docs/progress/stage-5-entity-selection.md` and not closed. |
-| 5.2   | Energy input component (textarea + per-line + debounce) | ✅       | **Superseded.** Replaced wholesale by Stage 5.4 ResultTable; the standalone `energy-input.svelte` is dead code. See §2. |
-| 5.3   | Unit selector (radio / segmented control)           | ✅       | **Done in master mode** but no automatic mode-transition wiring in the calculator route; see §1.2.   |
-| 5.4   | Result table (unified input/result table)           | ✅       | **Done** — but live calculation is **not debounced**; see §1.3.                                       |
-| 5.5   | JSROOT plot wrapper                                 | ⏳       | Not started (acknowledged).                                                                           |
+| #   | Item                                                    | Claim | Reality                                                                                                                             |
+| --- | ------------------------------------------------------- | ----- | ----------------------------------------------------------------------------------------------------------------------------------- |
+| 5.1 | Entity selection (cascading dropdowns)                  | ✅    | **Mostly done.** Functionally complete. See §1.1 — gaps still listed in `docs/progress/stage-5-entity-selection.md` and not closed. |
+| 5.2 | Energy input component (textarea + per-line + debounce) | ✅    | **Superseded.** Replaced wholesale by Stage 5.4 ResultTable; the standalone `energy-input.svelte` is dead code. See §2.             |
+| 5.3 | Unit selector (radio / segmented control)               | ✅    | **Done in master mode** but no automatic mode-transition wiring in the calculator route; see §1.2.                                  |
+| 5.4 | Result table (unified input/result table)               | ✅    | **Done** — but live calculation is **not debounced**; see §1.3.                                                                     |
+| 5.5 | JSROOT plot wrapper                                     | ⏳    | Not started (acknowledged).                                                                                                         |
 
 ### 1.1 Entity selection (5.1) — open items still real
 
 `docs/progress/stage-5-entity-selection.md:50-70` lists 12 acceptance criteria
 "with no tests" of varying priority. Spot-checks against the codebase:
 
-| Criterion                                              | Status                                                                                                                                                       |
-| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Notifications on auto-fallback                         | **Still missing** — `selectParticle()` in `entity-selection.svelte.ts:253-276` silently resets program to Auto-select; no toast / live region announcement.   |
-| Toggle-deselect (clicking a selected option)           | **Implemented** — `selectParticle(null)` and `clearParticle()` exist; combobox UX wired.                                                                     |
-| Loading skeleton                                       | **Missing** — calculator `+page.svelte:35-37` shows a plain "Loading..." string only.                                                                        |
-| Error state with retry on WASM failure                 | **Missing** — no retry button in the calculator route; only the LibdedxError chain in `calculator.svelte.ts:227`.                                            |
-| Keyboard navigation in the dropdown                    | **Implemented** via Bits UI Combobox primitives.                                                                                                             |
+| Criterion                                    | Status                                                                                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Notifications on auto-fallback               | **Still missing** — `selectParticle()` in `entity-selection.svelte.ts:253-276` silently resets program to Auto-select; no toast / live region announcement. |
+| Toggle-deselect (clicking a selected option) | **Implemented** — `selectParticle(null)` and `clearParticle()` exist; combobox UX wired.                                                                    |
+| Loading skeleton                             | **Missing** — calculator `+page.svelte:35-37` shows a plain "Loading..." string only.                                                                       |
+| Error state with retry on WASM failure       | **Missing** — no retry button in the calculator route; only the LibdedxError chain in `calculator.svelte.ts:227`.                                           |
+| Keyboard navigation in the dropdown          | **Implemented** via Bits UI Combobox primitives.                                                                                                            |
 
 Action: keep `docs/progress/stage-5-entity-selection.md` open; do NOT mark
 Stage 5.1 as fully done until notifications + loading-state + WASM-failure
@@ -105,6 +106,7 @@ They do **not** cover:
 
 This audit ships a new spec `tests/e2e/particle-unit-switching.spec.ts`
 that:
+
 1. **Asserts** the current spec'd behaviour ("typed number is preserved
    verbatim across particle switches").
 2. **Documents** the desired KE-conservation behaviour as `test.fixme()`
@@ -192,15 +194,15 @@ and call it from both.
 
 ## 3. Recommended end-of-stage refactor plan
 
-| # | Refactor                                                                                                       | Risk   | Saves       |
-| - | -------------------------------------------------------------------------------------------------------------- | ------ | ----------- |
-| 1 | Delete `src/lib/components/energy-input.svelte` + its 13 component tests                                       | Low    | ~268 LOC    |
-| 2 | Delete `src/lib/units/energy.ts` + `src/tests/unit/energy.test.ts`                                             | Low    | ~165 LOC    |
-| 3 | Fold `energy-input-format.test.ts` into `unit-conversions.test.ts`                                             | Low    | ~49 LOC     |
-| 4 | Wire `debounce()` into `result-table.svelte`'s `triggerCalculation` → meets spec §calculator.md:840            | Medium | restores spec compliance |
-| 5 | Either re-add `EnergyUnitSelector` to `calculator/+page.svelte`, or delete master unit fields from spec        | Medium | resolves §1.2 inconsistency |
-| 6 | Extract the `formatRangeValue` block from `calculator.svelte.ts` and use it from `result-table.svelte` too     | Low    | ~10 LOC + clarity |
-| 7 | Replace `result-table.svelte`'s `document.querySelector('input[data-row-index]')` with `bind:this` ref array   | Low    | matches existing pattern |
+| #   | Refactor                                                                                                     | Risk   | Saves                       |
+| --- | ------------------------------------------------------------------------------------------------------------ | ------ | --------------------------- |
+| 1   | Delete `src/lib/components/energy-input.svelte` + its 13 component tests                                     | Low    | ~268 LOC                    |
+| 2   | Delete `src/lib/units/energy.ts` + `src/tests/unit/energy.test.ts`                                           | Low    | ~165 LOC                    |
+| 3   | Fold `energy-input-format.test.ts` into `unit-conversions.test.ts`                                           | Low    | ~49 LOC                     |
+| 4   | Wire `debounce()` into `result-table.svelte`'s `triggerCalculation` → meets spec §calculator.md:840          | Medium | restores spec compliance    |
+| 5   | Either re-add `EnergyUnitSelector` to `calculator/+page.svelte`, or delete master unit fields from spec      | Medium | resolves §1.2 inconsistency |
+| 6   | Extract the `formatRangeValue` block from `calculator.svelte.ts` and use it from `result-table.svelte` too   | Low    | ~10 LOC + clarity           |
+| 7   | Replace `result-table.svelte`'s `document.querySelector('input[data-row-index]')` with `bind:this` ref array | Low    | matches existing pattern    |
 
 Total deletions: roughly **~480 LOC** of dead/duplicated code and tests
 without changing any user-visible behaviour.

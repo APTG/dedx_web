@@ -47,6 +47,7 @@
 > [ADR 004](../decisions/004-zarr-v3-external-format.md) cross-reference added.
 >
 > **Related specs:**
+>
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
 > - Calculator: [`calculator.md`](calculator.md)
 > - Plot: [`plot.md`](plot.md)
@@ -66,6 +67,7 @@ generated from tools like SRIM, Geant4, FLUKA, or custom Monte-Carlo
 codes — and view them in webdedx alongside the built-in libdedx programs.
 
 This enables:
+
 - **Comparison:** Overlay user-generated data against ICRU/PSTAR/MSTAR curves.
 - **Private data:** Self-host on `localhost` for unpublished experimental data.
 - **Community sharing:** Publish datasets on GitHub Pages / S3 and share via URL.
@@ -92,7 +94,7 @@ installing any software or downloading files.
 - **Zero UI buttons added.** The feature is activated entirely via URL parameters.
   If no `extdata` parameter is present, the app behaves identically to today.
 - **External data is additive.** External programs, particles, and materials are
-  *merged* with the built-in lists. They never replace or override built-in data.
+  _merged_ with the built-in lists. They never replace or override built-in data.
 - **Visually distinct.** External entities and series are always distinguishable
   from built-in data (badges, icons, or distinct styling).
 - **Fail loudly.** If an external source is unreachable or invalid, the app shows
@@ -116,6 +118,7 @@ Spike 4): zarrita core 38.62 kB minified (gzip 12.89 kB), LZ4 codec chunk
 36.59 kB.
 
 **Why Zarr v3 over Parquet** (Spike 4 decision, 2026-04-18):
+
 - Cold-start bytes: 225.7 KB (Zarr per-ion) vs 466 KB (Parquet) — **52% less**,
   dominated by Parquet's 320 KB footer.
 - Per-ion shard size: 137.5 KB vs 145.2 KB Parquet row group (5.5% smaller).
@@ -163,9 +166,9 @@ Array codec: **LZ4** (requires zarrita lz4 codec chunk, 36.59 kB).
 
 Array shapes and shard dimensions:
 
-| Array | Shape | Shards | Notes |
-|-------|-------|--------|-------|
-| `stp` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
+| Array        | Shape                                    | Shards                         | Notes         |
+| ------------ | ---------------------------------------- | ------------------------------ | ------------- |
+| `stp`        | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
 | `csda_range` | `(n_particles, n_materials, n_energies)` | `(1, n_materials, n_energies)` | Per-ion shard |
 
 #### 2.2.2 Root `zarr.json` Attributes
@@ -195,23 +198,46 @@ object (inside `zarr.json` at the store root):
       "csdaRange": "g/cm²"
     },
     "webdedx.energyGrid": [0.001, 0.001259, 0.001585, "...", 1000.0],
-    "webdedx.programs": [
-      { "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }
-    ],
+    "webdedx.programs": [{ "id": "srim-2013", "name": "SRIM 2013", "version": "2013.00" }],
     "webdedx.particles": [
-      { "id": "p",   "name": "Proton",    "symbol": "H",  "Z": 1, "A": 1,  "atomicMass": 1.00794, "pdgCode": 2212       },
-      { "id": "C12", "name": "Carbon-12", "symbol": "C",  "Z": 6, "A": 12, "atomicMass": 12.0,    "pdgCode": 1000060120 },
-      { "id": "e-",  "name": "Electron",  "symbol": "e⁻", "Z": 0, "A": 0,  "atomicMass": 0.000511,"pdgCode": 11         }
+      {
+        "id": "p",
+        "name": "Proton",
+        "symbol": "H",
+        "Z": 1,
+        "A": 1,
+        "atomicMass": 1.00794,
+        "pdgCode": 2212
+      },
+      {
+        "id": "C12",
+        "name": "Carbon-12",
+        "symbol": "C",
+        "Z": 6,
+        "A": 12,
+        "atomicMass": 12.0,
+        "pdgCode": 1000060120
+      },
+      {
+        "id": "e-",
+        "name": "Electron",
+        "symbol": "e⁻",
+        "Z": 0,
+        "A": 0,
+        "atomicMass": 0.000511,
+        "pdgCode": 11
+      }
     ],
     "webdedx.materials": [
-      { "id": "water", "name": "Water (liquid)", "density": 1.0,   "phase": "liquid", "icruId": 276      },
-      { "id": "si",    "name": "Silicon",        "density": 2.329, "phase": "solid",  "atomicNumber": 14 }
+      { "id": "water", "name": "Water (liquid)", "density": 1.0, "phase": "liquid", "icruId": 276 },
+      { "id": "si", "name": "Silicon", "density": 2.329, "phase": "solid", "atomicNumber": 14 }
     ]
   }
 }
 ```
 
 **Key constraints:**
+
 - `webdedx.magic` must be `"webdedx-extdata"`.
 - `webdedx.formatVersion` must be a positive integer. The app rejects unknown
   major versions.
@@ -229,27 +255,27 @@ object (inside `zarr.json` at the store root):
 
 **Particle merge-key fields (`particles[]`):**
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | string | yes | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`. |
-| `name` | string | yes | Human-readable name. |
-| `symbol` | string | yes | Chemical symbol or `"e⁻"` for electrons. |
-| `Z` | integer | yes | Atomic number. 0 for electrons. |
-| `A` | integer | yes | Mass number (nucleons). 0 for electrons. |
-| `atomicMass` | number | yes | Atomic mass in u (daltons). Used for MeV/u conversion. |
-| `pdgCode` | integer | **recommended** | PDG Monte Carlo particle number. Used as the primary merge key with built-in particles. Common values: proton = 2212, electron = 11, alpha (He-4) = 1000020040, C-12 = 1000060120. Ion convention: 1000 × Z × 10000 + A × 10. |
+| Field        | Type    | Required        | Notes                                                                                                                                                                                                                         |
+| ------------ | ------- | --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`         | string  | yes             | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`.                                                                                                                                                                      |
+| `name`       | string  | yes             | Human-readable name.                                                                                                                                                                                                          |
+| `symbol`     | string  | yes             | Chemical symbol or `"e⁻"` for electrons.                                                                                                                                                                                      |
+| `Z`          | integer | yes             | Atomic number. 0 for electrons.                                                                                                                                                                                               |
+| `A`          | integer | yes             | Mass number (nucleons). 0 for electrons.                                                                                                                                                                                      |
+| `atomicMass` | number  | yes             | Atomic mass in u (daltons). Used for MeV/u conversion.                                                                                                                                                                        |
+| `pdgCode`    | integer | **recommended** | PDG Monte Carlo particle number. Used as the primary merge key with built-in particles. Common values: proton = 2212, electron = 11, alpha (He-4) = 1000020040, C-12 = 1000060120. Ion convention: 1000 × Z × 10000 + A × 10. |
 
 **Material merge-key fields (`materials[]`):**
 
-| Field | Type | Required | Notes |
-|-------|------|----------|-------|
-| `id` | string | yes | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`. |
-| `name` | string | yes | Human-readable name. |
-| `density` | number | **recommended** | Material density in g/cm³. If absent, linear unit display (keV/µm, MeV/cm) is disabled for that material; only mass stopping power (MeV·cm²/g) is available. |
-| `ival` | number | no | Mean excitation energy in eV (I-value). Informational only — not used in calculations; external STP values are used directly. |
-| `phase` | string | no | `"solid"`, `"liquid"`, or `"gas"`. |
-| `icruId` | integer | **recommended** | ICRU/NIST material number. Built-in libdedx material IDs are ICRU numbers, so `icruId: 276` matches built-in material 276 (water liquid) exactly. Use this for any standard ICRU/NIST material. |
-| `atomicNumber` | integer | recommended for elements | Atomic number Z. Used as merge key for pure elemental targets (e.g., `atomicNumber: 14` for silicon). Takes effect only when `icruId` is absent. |
+| Field          | Type    | Required                 | Notes                                                                                                                                                                                           |
+| -------------- | ------- | ------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`           | string  | yes                      | Internal ID within this store. Matches `[a-zA-Z0-9_-]+`.                                                                                                                                        |
+| `name`         | string  | yes                      | Human-readable name.                                                                                                                                                                            |
+| `density`      | number  | **recommended**          | Material density in g/cm³. If absent, linear unit display (keV/µm, MeV/cm) is disabled for that material; only mass stopping power (MeV·cm²/g) is available.                                    |
+| `ival`         | number  | no                       | Mean excitation energy in eV (I-value). Informational only — not used in calculations; external STP values are used directly.                                                                   |
+| `phase`        | string  | no                       | `"solid"`, `"liquid"`, or `"gas"`.                                                                                                                                                              |
+| `icruId`       | integer | **recommended**          | ICRU/NIST material number. Built-in libdedx material IDs are ICRU numbers, so `icruId: 276` matches built-in material 276 (water liquid) exactly. Use this for any standard ICRU/NIST material. |
+| `atomicNumber` | integer | recommended for elements | Atomic number Z. Used as merge key for pure elemental targets (e.g., `atomicNumber: 14` for silicon). Takes effect only when `icruId` is absent.                                                |
 
 #### 2.2.3 Array `zarr.json` Metadata
 
@@ -266,7 +292,10 @@ Each `{program}/stp/zarr.json` follows Zarr v3 array format. Example:
     "configuration": {
       "chunk_shape": [1, 379, 165],
       "codecs": [{ "name": "bytes", "configuration": { "endian": "little" } }, { "name": "lz4" }],
-      "index_codecs": [{ "name": "bytes", "configuration": { "endian": "little" } }, { "name": "crc32c" }],
+      "index_codecs": [
+        { "name": "bytes", "configuration": { "endian": "little" } },
+        { "name": "crc32c" }
+      ],
       "index_location": "end"
     }
   },
@@ -378,15 +407,15 @@ app-level protocol for a **cold start** (no prior cache):
 
 **Measured cold-start sequence (zarrita 0.7.1, browser, Spike 4 §2.5):**
 
-| Step | Request | Range | Bytes | Notes |
-|------|---------|-------|-------|-------|
-| 1 | `{root}/.zattrs` | — | 0.2 KB | zarrita v2 compat probe — expected 404 |
-| 2 | `{root}/.zgroup` | — | 0.2 KB | zarrita v2 compat probe — expected 404 |
-| 3 | `{root}/zarr.json` | — | ~86 KB | Root group metadata (dataset + entity lists) |
-| 4 | `{root}/{program}/stp/zarr.json` | — | 1.3 KB | Array metadata (shape, codec, shard config) |
-| 5 | `{root}/{program}/stp/c/{i}/0/0` | — | 0 B | HEAD probe (gets Content-Length) |
-| 6 | `{root}/{program}/stp/c/{i}/0/0` | `bytes=last-20` | 20 B | ZEP2 shard index (1 inner chunk × 16 B + 4 B CRC) |
-| 7 | `{root}/{program}/stp/c/{i}/0/0` | `bytes=0-{end}` | ~137 KB | Compressed ion data |
+| Step | Request                          | Range           | Bytes   | Notes                                             |
+| ---- | -------------------------------- | --------------- | ------- | ------------------------------------------------- |
+| 1    | `{root}/.zattrs`                 | —               | 0.2 KB  | zarrita v2 compat probe — expected 404            |
+| 2    | `{root}/.zgroup`                 | —               | 0.2 KB  | zarrita v2 compat probe — expected 404            |
+| 3    | `{root}/zarr.json`               | —               | ~86 KB  | Root group metadata (dataset + entity lists)      |
+| 4    | `{root}/{program}/stp/zarr.json` | —               | 1.3 KB  | Array metadata (shape, codec, shard config)       |
+| 5    | `{root}/{program}/stp/c/{i}/0/0` | —               | 0 B     | HEAD probe (gets Content-Length)                  |
+| 6    | `{root}/{program}/stp/c/{i}/0/0` | `bytes=last-20` | 20 B    | ZEP2 shard index (1 inner chunk × 16 B + 4 B CRC) |
+| 7    | `{root}/{program}/stp/c/{i}/0/0` | `bytes=0-{end}` | ~137 KB | Compressed ion data                               |
 
 Total cold start: **7 requests, ~225 KB** (S3/wifi, measured). Steps 1–2 return
 404 — zarrita handles these silently and proceeds to `zarr.json`. The store is
@@ -414,13 +443,13 @@ shard file (browser HTTP cache; zarrita does not maintain an in-process cache).
 
 ### 2.4 Hosting Requirements
 
-| Requirement | Details |
-|-------------|---------|
-| **CORS** | The server must set `Access-Control-Allow-Origin: *` (or the specific webdedx origin) for **all files** in the store (`zarr.json`, shard files, array metadata). Without this, the browser blocks every request in the cold-start sequence. S3, GitHub Pages, and most CDNs support CORS configuration. |
-| **Range Requests** | **Required** for shard reads (ZEP2 index + data fetches both use `Range`). Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively. |
-| **HTTPS** | Required when the webdedx app is served over HTTPS (mixed-content blocking). `localhost` HTTP is exempt. |
-| **Static hosting** | No server-side logic needed. The store is a directory of static files. |
-| **File count** | Per-ion stores have `1 + n_programs × (2 × n_particles + 3)` files (`1` root metadata file + per-program group metadata + 2 array metadata files + per-ion shard files). For a single-program dataset with 287 particles, this is 578 files. GitHub Pages and S3 handle this without friction (confirmed in Spike 4). |
+| Requirement        | Details                                                                                                                                                                                                                                                                                                               |
+| ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **CORS**           | The server must set `Access-Control-Allow-Origin: *` (or the specific webdedx origin) for **all files** in the store (`zarr.json`, shard files, array metadata). Without this, the browser blocks every request in the cold-start sequence. S3, GitHub Pages, and most CDNs support CORS configuration.               |
+| **Range Requests** | **Required** for shard reads (ZEP2 index + data fetches both use `Range`). Must return `Accept-Ranges: bytes` and handle `Range` headers per RFC 7233. S3, GitHub Pages, and nginx support this natively.                                                                                                             |
+| **HTTPS**          | Required when the webdedx app is served over HTTPS (mixed-content blocking). `localhost` HTTP is exempt.                                                                                                                                                                                                              |
+| **Static hosting** | No server-side logic needed. The store is a directory of static files.                                                                                                                                                                                                                                                |
+| **File count**     | Per-ion stores have `1 + n_programs × (2 × n_particles + 3)` files (`1` root metadata file + per-program group metadata + 2 array metadata files + per-ion shard files). For a single-program dataset with 287 particles, this is 578 files. GitHub Pages and S3 handle this without friction (confirmed in Spike 4). |
 
 ---
 
@@ -436,9 +465,9 @@ separated by a literal colon:
 ?extdata={label}:{url1}&extdata={label}:{url2}&...existing params...
 ```
 
-| Parameter | Type | Required? | Notes |
-|-----------|------|-----------|-------|
-| `extdata` | `{label}:{percent-encoded-url}` | Optional | `label` is a user-assigned stable identifier matching `[a-zA-Z0-9_-]+`. `url` is the absolute percent-encoded URL to the **root of a `.webdedx` Zarr store** (the URL at which `zarr.json` is served as `{url}/zarr.json`). May appear multiple times for multiple sources. Labels must be unique within a URL. |
+| Parameter | Type                            | Required? | Notes                                                                                                                                                                                                                                                                                                           |
+| --------- | ------------------------------- | --------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `extdata` | `{label}:{percent-encoded-url}` | Optional  | `label` is a user-assigned stable identifier matching `[a-zA-Z0-9_-]+`. `url` is the absolute percent-encoded URL to the **root of a `.webdedx` Zarr store** (the URL at which `zarr.json` is served as `{url}/zarr.json`). May appear multiple times for multiple sources. Labels must be unique within a URL. |
 
 The label is **stable across edits** — it does not depend on the position of the
 `extdata` parameter in the URL. All entity references (`ext:{label}:{id}`) remain
@@ -472,11 +501,13 @@ portion only; the label and separator colon are written literally.
 ### 3.3 Examples
 
 Single external source (label `srim`):
+
 ```
 /calculator?urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fsrim.webdedx&particle=1&material=276&program=auto&energies=100&eunit=MeV
 ```
 
 Multiple external sources (labels `srim` and `g4`):
+
 ```
 /plot?urlv=1&extdata=srim:https%3A%2F%2Fcdn.example.com%2Fsrim.webdedx&extdata=g4:https%3A%2F%2Fother.org%2Fgeant4.webdedx&particle=1&material=276&program=auto&series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276&stp_unit=kev-um&xscale=log&yscale=log
 ```
@@ -595,6 +626,7 @@ series=ext:srim:srim-2013.ext:srim:p.ext:srim:water,9.1.276
 ```
 
 Assuming `extdata=srim:https://...`, this encodes two series:
+
 1. External: program "srim-2013", particle "p", material "water" from source `srim`.
 2. Built-in: program 9 (ICRU 90), particle 1 (proton), material 276 (water).
 
@@ -630,13 +662,13 @@ On page load, if `extdata` parameter(s) are present:
 External data loading is **blocking** — if it fails, the app cannot proceed
 with the external data. Errors are displayed prominently.
 
-| Error | User-facing message | Recovery |
-|-------|-------------------|----------|
-| Network error (timeout, DNS, refused) | "Could not reach external data source: {url}. Check the URL and your network connection." | **Retry** button + **Load without external data** button |
-| HTTP error (4xx, 5xx) | "External data source returned error {status}: {url}" | **Load without external data** button |
-| CORS blocked | "External data source blocked by browser security policy (CORS). The hosting server must allow cross-origin requests." | **Load without external data** button |
-| Invalid format (not a valid Zarr store, missing magic, unsupported version, schema error) | "External data store is invalid: {detail}. Expected a .webdedx Zarr v3 store with webdedx format v1." | **Load without external data** button |
-| Validation failure (physics checks) | "External data contains invalid values: {detail}" | **Load without external data** button |
+| Error                                                                                     | User-facing message                                                                                                    | Recovery                                                 |
+| ----------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| Network error (timeout, DNS, refused)                                                     | "Could not reach external data source: {url}. Check the URL and your network connection."                              | **Retry** button + **Load without external data** button |
+| HTTP error (4xx, 5xx)                                                                     | "External data source returned error {status}: {url}"                                                                  | **Load without external data** button                    |
+| CORS blocked                                                                              | "External data source blocked by browser security policy (CORS). The hosting server must allow cross-origin requests." | **Load without external data** button                    |
+| Invalid format (not a valid Zarr store, missing magic, unsupported version, schema error) | "External data store is invalid: {detail}. Expected a .webdedx Zarr v3 store with webdedx format v1."                  | **Load without external data** button                    |
+| Validation failure (physics checks)                                                       | "External data contains invalid values: {detail}"                                                                      | **Load without external data** button                    |
 
 **"Load without external data"** removes the `extdata` parameters from the URL
 (via `replaceState`) and reloads with built-in data only.
@@ -658,6 +690,7 @@ series involving an external triplet:
 
 If the row group fetch fails (network error, Range Request not supported and
 full file already attempted):
+
 - Show a toast: "Could not load data for {program} / {particle} / {material}."
 - The series or calculation row is marked as failed (not silently omitted).
 
@@ -667,42 +700,42 @@ full file already attempted):
 
 ### 6.1 Structural Validation (on file open)
 
-| Check | Failure action |
-|-------|---------------|
-| Store root `zarr.json` is absent or not valid JSON | Reject store; blocking error |
-| `webdedx.magic` missing or `!== "webdedx-extdata"` | Reject file; blocking error |
-| `webdedx.formatVersion` unsupported | Reject file; blocking error |
-| Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.energyGrid`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error |
-| JSON arrays in metadata keys fail to parse | Reject file; blocking error |
-| ID format invalid (not `[a-zA-Z0-9_-]+`) | Reject file; blocking error |
-| `webdedx.units.energy` or `.stoppingPower` not in allowed set | Reject file; blocking error |
-| `webdedx.units.csdaRange` present but not in allowed set (`"g/cm²"`, `"cm"`) | Reject file; blocking error |
-| `webdedx.units.csdaRange` absent and a `csda_range` array is present in the store | Reject source; blocking error |
-| `{program}/stp/zarr.json` missing for a declared program | Reject source; blocking error |
-| `{program}/csda_range/zarr.json` missing for a declared program | Accept; CSDA features disabled for that source |
-| `stp` array shape does not match `[len(particles), len(materials), n_energies]` | Reject source; blocking error |
-| Duplicate IDs within same entity type | Reject file; blocking error |
-| A Zarr group name in the store matches a program not declared in `webdedx.programs` | Ignore silently |
-| `materials[].density` present but ≤ 0 or not finite | Reject file; blocking error |
-| `materials[].ival` present but ≤ 0 or not finite | Reject file; blocking error |
-| `particles[].pdgCode` present but not a positive integer | Reject file; blocking error |
-| `particles[].pdgCode` duplicated within `webdedx.particles` array | Reject file; blocking error |
-| `materials[].icruId` present but not a positive integer | Reject file; blocking error |
-| `materials[].atomicNumber` present but not an integer in range 1–118 | Reject file; blocking error |
-| `materials[].icruId` and `materials[].atomicNumber` both present on the same entry | Reject file; blocking error (use exactly one merge key) |
+| Check                                                                                                                                                           | Failure action                                          |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------- |
+| Store root `zarr.json` is absent or not valid JSON                                                                                                              | Reject store; blocking error                            |
+| `webdedx.magic` missing or `!== "webdedx-extdata"`                                                                                                              | Reject file; blocking error                             |
+| `webdedx.formatVersion` unsupported                                                                                                                             | Reject file; blocking error                             |
+| Missing required metadata keys (`webdedx.metadata.name`, `webdedx.units.*`, `webdedx.energyGrid`, `webdedx.programs`, `webdedx.particles`, `webdedx.materials`) | Reject file; blocking error                             |
+| JSON arrays in metadata keys fail to parse                                                                                                                      | Reject file; blocking error                             |
+| ID format invalid (not `[a-zA-Z0-9_-]+`)                                                                                                                        | Reject file; blocking error                             |
+| `webdedx.units.energy` or `.stoppingPower` not in allowed set                                                                                                   | Reject file; blocking error                             |
+| `webdedx.units.csdaRange` present but not in allowed set (`"g/cm²"`, `"cm"`)                                                                                    | Reject file; blocking error                             |
+| `webdedx.units.csdaRange` absent and a `csda_range` array is present in the store                                                                               | Reject source; blocking error                           |
+| `{program}/stp/zarr.json` missing for a declared program                                                                                                        | Reject source; blocking error                           |
+| `{program}/csda_range/zarr.json` missing for a declared program                                                                                                 | Accept; CSDA features disabled for that source          |
+| `stp` array shape does not match `[len(particles), len(materials), n_energies]`                                                                                 | Reject source; blocking error                           |
+| Duplicate IDs within same entity type                                                                                                                           | Reject file; blocking error                             |
+| A Zarr group name in the store matches a program not declared in `webdedx.programs`                                                                             | Ignore silently                                         |
+| `materials[].density` present but ≤ 0 or not finite                                                                                                             | Reject file; blocking error                             |
+| `materials[].ival` present but ≤ 0 or not finite                                                                                                                | Reject file; blocking error                             |
+| `particles[].pdgCode` present but not a positive integer                                                                                                        | Reject file; blocking error                             |
+| `particles[].pdgCode` duplicated within `webdedx.particles` array                                                                                               | Reject file; blocking error                             |
+| `materials[].icruId` present but not a positive integer                                                                                                         | Reject file; blocking error                             |
+| `materials[].atomicNumber` present but not an integer in range 1–118                                                                                            | Reject file; blocking error                             |
+| `materials[].icruId` and `materials[].atomicNumber` both present on the same entry                                                                              | Reject file; blocking error (use exactly one merge key) |
 
 ### 6.2 Size Limits (DoS prevention)
 
-| Limit | Value | Rationale |
-|-------|-------|-----------|
-| Max root `zarr.json` size | 1 MB | Prevents excessive metadata parsing |
-| Max programs per source | 100 | Reasonable upper bound |
-| Max particles per source | 1000 | Covers all ions up to Uranium plus isotopes and exotic particles |
-| Max materials per source | 10000 | Supports large compound libraries (FLUKA, Geant4 material databases) |
-| Max tables (row groups) per source | 1,000,000 | 100 programs × 1000 particles × 10 materials avg |
-| Max points per table | 10,000 | Far exceeds typical energy grid density |
-| Max total file size (computed from header) | 1 GB | Partial Range Requests are used; full file is never downloaded |
-| Max `extdata` sources | 5 | Prevents URL abuse |
+| Limit                                      | Value     | Rationale                                                            |
+| ------------------------------------------ | --------- | -------------------------------------------------------------------- |
+| Max root `zarr.json` size                  | 1 MB      | Prevents excessive metadata parsing                                  |
+| Max programs per source                    | 100       | Reasonable upper bound                                               |
+| Max particles per source                   | 1000      | Covers all ions up to Uranium plus isotopes and exotic particles     |
+| Max materials per source                   | 10000     | Supports large compound libraries (FLUKA, Geant4 material databases) |
+| Max tables (row groups) per source         | 1,000,000 | 100 programs × 1000 particles × 10 materials avg                     |
+| Max points per table                       | 10,000    | Far exceeds typical energy grid density                              |
+| Max total file size (computed from header) | 1 GB      | Partial Range Requests are used; full file is never downloaded       |
+| Max `extdata` sources                      | 5         | Prevents URL abuse                                                   |
 
 Exceeding any limit → reject the source with a clear error message.
 
@@ -710,16 +743,16 @@ Exceeding any limit → reject the source with a clear error message.
 
 Applied to each decoded row group after unit conversion:
 
-| Check | Failure action |
-|-------|---------------|
-| Energies not in strictly ascending order | Reject table; mark series as failed |
-| Any energy ≤ 0 | Reject table |
-| Any stopping power ≤ 0 | Reject table |
-| Any CSDA range ≤ 0 *(when `csda_range` array present)* | Reject table |
-| Any value is `NaN` or `Infinity` | Reject table |
-| `nPoints < 2` | Reject table (need at least 2 points for a curve) |
-| Energy range implausible (min > 1 GeV/nucl or max < 1 eV) | Warning (toast), but allow |
-| Stopping power non-monotonic check | Warning only (some datasets legitimately have Bragg peak structure) |
+| Check                                                     | Failure action                                                      |
+| --------------------------------------------------------- | ------------------------------------------------------------------- |
+| Energies not in strictly ascending order                  | Reject table; mark series as failed                                 |
+| Any energy ≤ 0                                            | Reject table                                                        |
+| Any stopping power ≤ 0                                    | Reject table                                                        |
+| Any CSDA range ≤ 0 _(when `csda_range` array present)_    | Reject table                                                        |
+| Any value is `NaN` or `Infinity`                          | Reject table                                                        |
+| `nPoints < 2`                                             | Reject table (need at least 2 points for a curve)                   |
+| Energy range implausible (min > 1 GeV/nucl or max < 1 eV) | Warning (toast), but allow                                          |
+| Stopping power non-monotonic check                        | Warning only (some datasets legitimately have Bragg peak structure) |
 
 ---
 
@@ -730,18 +763,19 @@ Applied to each decoded row group after unit conversion:
 External entities must be visually distinguishable from built-in data at
 every point in the UI:
 
-| UI element | Built-in | External |
-|-----------|----------|----------|
-| **Program selector** | Normal text | Prefixed with 🔗 icon + "(ext)" suffix, grouped under "External" divider |
-| **Particle selector** | Normal text | Merged particles show no special treatment. New external-only particles show 🔗 icon |
-| **Material selector** | Normal text | Merged materials show no special treatment. New external-only materials show 🔗 icon |
-| **Calculator result columns** | Normal styling | Column header shows 🔗 icon next to program name |
-| **Plot series label** | Normal label | Label includes 🔗 icon prefix |
-| **Plot series line style** | Solid lines | Dashed lines (to visually separate from built-in solid lines) |
+| UI element                    | Built-in       | External                                                                             |
+| ----------------------------- | -------------- | ------------------------------------------------------------------------------------ |
+| **Program selector**          | Normal text    | Prefixed with 🔗 icon + "(ext)" suffix, grouped under "External" divider             |
+| **Particle selector**         | Normal text    | Merged particles show no special treatment. New external-only particles show 🔗 icon |
+| **Material selector**         | Normal text    | Merged materials show no special treatment. New external-only materials show 🔗 icon |
+| **Calculator result columns** | Normal styling | Column header shows 🔗 icon next to program name                                     |
+| **Plot series label**         | Normal label   | Label includes 🔗 icon prefix                                                        |
+| **Plot series line style**    | Solid lines    | Dashed lines (to visually separate from built-in solid lines)                        |
 
 ### 7.2 Loading State
 
 While external data is loading:
+
 - A full-width banner appears below the navigation bar:
   "Loading external data…" with a progress indicator.
 - Entity selectors are disabled (greyed out).
@@ -754,15 +788,15 @@ When external data is loaded, a collapsible "External Data Sources" info
 panel appears below the entity selection area (Calculator) or at the
 bottom of the sidebar (Plot):
 
-| Field | Content |
-|-------|---------|
-| Source name | From `metadata.name` |
-| Version | From `metadata.version` |
-| Author | From `metadata.author` |
-| Description | From `metadata.description` (truncated to 200 chars) |
-| License | From `metadata.license` |
-| Coverage | "{n} programs, {m} particles, {k} materials, {t} tables" |
-| URL | The `extdata` URL (clickable, opens in new tab) |
+| Field       | Content                                                  |
+| ----------- | -------------------------------------------------------- |
+| Source name | From `metadata.name`                                     |
+| Version     | From `metadata.version`                                  |
+| Author      | From `metadata.author`                                   |
+| Description | From `metadata.description` (truncated to 200 chars)     |
+| License     | From `metadata.license`                                  |
+| Coverage    | "{n} programs, {m} particles, {k} materials, {t} tables" |
+| URL         | The `extdata` URL (clickable, opens in new tab)          |
 
 This panel is collapsed by default and can be expanded by clicking.
 Multiple sources each get their own section.
@@ -774,6 +808,7 @@ Multiple sources each get their own section.
 ### 8.1 Program Selection
 
 When external data is loaded:
+
 - External programs appear in the Program combobox (compact mode) under an
   "External" separator/group.
 - Auto-select does **not** consider external programs. Auto-select only
@@ -783,6 +818,7 @@ When external data is loaded:
 ### 8.2 Calculation
 
 When an external program is selected:
+
 - The app looks up the table for the current (program, particle, material)
   triplet in the external header index.
 - Fetches the table data via Range Request (if not already cached in memory).
@@ -828,6 +864,7 @@ built-in programs. They can be added to the `programs` list, hidden via
 ### 9.1 Series with External Data
 
 External (program, particle, material) triplets can be added as plot series:
+
 - The series uses the external table's native energy grid (no resampling to
   a common grid). Each series is plotted on its own grid.
 - Line style: dashed (to distinguish from solid built-in series).
@@ -949,7 +986,7 @@ tables:
     particle: p
     material: water
     file: "srim_output/proton_water.txt"
-    format: srim  # Parser to use
+    format: srim # Parser to use
 
   - program: srim-2013
     particle: C12
@@ -962,6 +999,7 @@ tables:
 per program, plus `zarr.json` metadata files).
 
 **Usage:**
+
 ```bash
 srim2webdedx manifest.yaml --output my-srim-data.webdedx
 ```
@@ -980,12 +1018,14 @@ format is standard Zarr v3, users can also use the Python `zarr` library or
 validation.
 
 Prints:
+
 - `webdedx.*` metadata (pretty-printed).
 - Summary statistics: number of programs, particles, materials, shard files.
 - Per-particle info: particle ID, nMaterials, nEnergies, energy bounds, min/max STP.
 - Validates the store against all structural and physics checks from §6.
 
 **Usage:**
+
 ```bash
 webdedx-inspect my-srim-data.webdedx
 ```
@@ -1060,8 +1100,8 @@ pip-installable CLI tool.
 1. **Material matching heuristic:** Exact name match may miss equivalent
    materials with slightly different names (e.g., "Water" vs "Water, Liquid"
    vs "H2O"). Should we also match on chemical formula or density similarity?
-   *Recommendation: start with exact case-insensitive name match; add formula
-   matching in a future iteration.*
+   _Recommendation: start with exact case-insensitive name match; add formula
+   matching in a future iteration._
 
 2. **Interpolation method for external data:** ✅ **Resolved.** Log-log +
    Linear (piecewise linear in log-log space) is the default, matching the

@@ -26,12 +26,12 @@ Playwright MCP.
 
 ### Submodules added (all `shallow = true` in `.gitmodules`)
 
-| Submodule | Repo | Size | Purpose |
-|-----------|------|------|---------|
-| `vendor/jsroot` | root-project/jsroot | ~20 MB | JSROOT 7 TypeScript types + docs |
-| `vendor/zarrita` | manzt/zarrita.js | ~3 MB | zarrita 0.7.x TypeScript source |
-| `vendor/svelte-ai-tools` | sveltejs/ai-tools | ~5 MB | `@sveltejs/opencode` plugin source |
-| `vendor/svelte` | sveltejs/svelte | 52 MB | Svelte 5 source + full documentation |
+| Submodule                | Repo                | Size   | Purpose                              |
+| ------------------------ | ------------------- | ------ | ------------------------------------ |
+| `vendor/jsroot`          | root-project/jsroot | ~20 MB | JSROOT 7 TypeScript types + docs     |
+| `vendor/zarrita`         | manzt/zarrita.js    | ~3 MB  | zarrita 0.7.x TypeScript source      |
+| `vendor/svelte-ai-tools` | sveltejs/ai-tools   | ~5 MB  | `@sveltejs/opencode` plugin source   |
+| `vendor/svelte`          | sveltejs/svelte     | 52 MB  | Svelte 5 source + full documentation |
 
 **Emscripten** not added as submodule — working tree is ~200 MB even at
 depth=1. Key flags already documented in ADR 003; changelog already in
@@ -39,14 +39,14 @@ depth=1. Key flags already documented in ADR 003; changelog already in
 
 ### New files created
 
-| File | Purpose |
-|------|---------|
-| `vendor/README.md` | Full index of vendor submodules (renamed from LIBRARIES.md) |
-| `AGENTS.md` | opencode/Qwen entry point: docs index, Svelte 5 rules, vendor reference, MCP guide, provider setup |
-| `opencode.json` | Per-repo opencode config: PLGrid provider (env vars), `@sveltejs/opencode` plugin, Tailwind + Playwright MCPs |
-| `docs/05-ui-wireframes.md` | Big-picture UI layout with links to per-spec wireframes |
-| `docs/07-testing-strategy.md` | Test pyramid (Vitest + Playwright + axe-core) with links to per-spec AC |
-| `docs/08-deployment.md` | Deployment pipeline (GitHub Pages, WASM build, CI) with links to ADRs |
+| File                          | Purpose                                                                                                       |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| `vendor/README.md`            | Full index of vendor submodules (renamed from LIBRARIES.md)                                                   |
+| `AGENTS.md`                   | opencode/Qwen entry point: docs index, Svelte 5 rules, vendor reference, MCP guide, provider setup            |
+| `opencode.json`               | Per-repo opencode config: PLGrid provider (env vars), `@sveltejs/opencode` plugin, Tailwind + Playwright MCPs |
+| `docs/05-ui-wireframes.md`    | Big-picture UI layout with links to per-spec wireframes                                                       |
+| `docs/07-testing-strategy.md` | Test pyramid (Vitest + Playwright + axe-core) with links to per-spec AC                                       |
+| `docs/08-deployment.md`       | Deployment pipeline (GitHub Pages, WASM build, CI) with links to ADRs                                         |
 
 ### `.gitignore`
 
@@ -67,12 +67,12 @@ documented via `opencode.json` and `AGENTS.md` rather than a tracked
 
 ## MCP server decisions
 
-| MCP | Decision | Reason |
-|-----|----------|--------|
-| Svelte (`@sveltejs/opencode` plugin) | ✅ Configured via plugin in `opencode.json` | Provides `svelte-autofixer` (Svelte 4→5 detection), `svelte-file-editor` subagent, doc search |
-| Tailwind CSS (`tailwindcss-mcp-server`) | ✅ Configured via npx in `opencode.json` | Class lookup for Tailwind v4 |
-| Playwright (`@playwright/mcp`) | ✅ Configured via npx in `opencode.json` | E2E test generation, browser automation |
-| Svelte local submodule (`vendor/svelte`) | ✅ Added | Offline fallback for PLGrid sessions (no internet); `documentation/docs/02-runes/` and `99-legacy/` are the key sections |
+| MCP                                      | Decision                                    | Reason                                                                                                                   |
+| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| Svelte (`@sveltejs/opencode` plugin)     | ✅ Configured via plugin in `opencode.json` | Provides `svelte-autofixer` (Svelte 4→5 detection), `svelte-file-editor` subagent, doc search                            |
+| Tailwind CSS (`tailwindcss-mcp-server`)  | ✅ Configured via npx in `opencode.json`    | Class lookup for Tailwind v4                                                                                             |
+| Playwright (`@playwright/mcp`)           | ✅ Configured via npx in `opencode.json`    | E2E test generation, browser automation                                                                                  |
+| Svelte local submodule (`vendor/svelte`) | ✅ Added                                    | Offline fallback for PLGrid sessions (no internet); `documentation/docs/02-runes/` and `99-legacy/` are the key sections |
 
 **PLGrid offline caveat:** The Svelte MCP server at `mcp.svelte.dev` is
 unreachable from PLGrid compute nodes (egress restricted). For PLGrid Qwen
@@ -84,6 +84,7 @@ Tailwind and Playwright MCPs are also unavailable unless packages are pre-cached
 ## Key finding: sveltejs/ai-tools structure
 
 The `sveltejs/ai-tools` repo is a monorepo with two delivery modes:
+
 1. **Remote HTTP** — production at `https://mcp.svelte.dev/mcp` (used by default)
 2. **Local stdio** — `packages/mcp-stdio/` publishes `@sveltejs/mcp` to npm;
    runnable via `npx @sveltejs/mcp@latest` or via `mcp.type: "local"` in

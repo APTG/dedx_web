@@ -5,10 +5,30 @@ import EntityPanel from "$lib/components/entity-panel.svelte";
 
 describe("EntityPanel component - UX fixes", () => {
   const mockItems = [
-    { entity: { id: 1, name: "Hydrogen" }, available: true, label: "Hydrogen (H)", description: "Z=1" },
-    { entity: { id: 2, name: "Helium" }, available: true, label: "Helium (He)", description: "Z=2" },
-    { entity: { id: 3, name: "Lithium" }, available: false, label: "Lithium (Li)", description: "Z=3" },
-    { entity: { id: 4, name: "Beryllium" }, available: true, label: "Beryllium (Be)", description: "Z=4" },
+    {
+      entity: { id: 1, name: "Hydrogen" },
+      available: true,
+      label: "Hydrogen (H)",
+      description: "Z=1",
+    },
+    {
+      entity: { id: 2, name: "Helium" },
+      available: true,
+      label: "Helium (He)",
+      description: "Z=2",
+    },
+    {
+      entity: { id: 3, name: "Lithium" },
+      available: false,
+      label: "Lithium (Li)",
+      description: "Z=3",
+    },
+    {
+      entity: { id: 4, name: "Beryllium" },
+      available: true,
+      label: "Beryllium (Be)",
+      description: "Z=4",
+    },
     { entity: { id: 5, name: "Boron" }, available: true, label: "Boron (B)", description: "Z=5" },
     { entity: { id: 6, name: "Carbon" }, available: true, label: "Carbon (C)", description: "Z=6" },
   ];
@@ -63,7 +83,7 @@ describe("EntityPanel component - UX fixes", () => {
     });
 
     const searchInput = container.querySelector("input[role='searchbox']") as HTMLInputElement;
-    
+
     await user.type(searchInput, "Hydrogen");
     let counter = container.querySelector(".text-xs.text-muted-foreground");
     expect(counter?.textContent?.trim()).toBe("1 of 1 available");

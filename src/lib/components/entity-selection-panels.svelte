@@ -20,9 +20,7 @@
     return {
       entity: particle,
       // Electron is intentionally non-selectable until ESTAR is wired up.
-      available:
-        particle.id !== 1001 &&
-        state.availableParticles.some((p) => p.id === particle.id),
+      available: particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
       label: getParticleLabel(particle),
       description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
       searchText: getParticleSearchText(particle),
@@ -32,11 +30,7 @@
   const commonParticles = $derived.by(() =>
     state.allParticles
       .filter((p) => COMMON_PARTICLE_IDS.has(p.id))
-      .sort(
-        (a, b) =>
-          COMMON_PARTICLE_ORDER.indexOf(a.id) -
-          COMMON_PARTICLE_ORDER.indexOf(b.id),
-      )
+      .sort((a, b) => COMMON_PARTICLE_ORDER.indexOf(a.id) - COMMON_PARTICLE_ORDER.indexOf(b.id))
       .map(toParticleItem),
   );
 
@@ -77,20 +71,25 @@
   const programItems = $derived.by(() => {
     const result = [];
 
-    const autoSelect = state.selectedProgram;
-    if (autoSelect.id === -1 && autoSelect.resolvedProgram) {
-      result.push({
-        entity: autoSelect,
-        available: true,
-        label: `Auto-select → ${autoSelect.resolvedProgram.name}`,
-      });
-    } else {
-      result.push({
-        entity: autoSelect,
-        available: true,
-        label: "Auto-select",
-      });
-    }
+    const selectedProgram = state.selectedProgram;
+
+    // Always push a synthetic Auto-select entry with id=-1.
+    // If we pushed state.selectedProgram directly and a concrete program is
+    // selected (id > 0), that same program entity would also appear in
+    // state.availablePrograms — giving Svelte two items with the same key and
+    // throwing each_key_duplicate.
+    const autoLabel =
+      selectedProgram.id === -1 &&
+      "resolvedProgram" in selectedProgram &&
+      selectedProgram.resolvedProgram
+        ? `Auto-select → ${selectedProgram.resolvedProgram.name}`
+        : "Auto-select";
+
+    result.push({
+      entity: { id: -1, name: "Auto-select" },
+      available: true,
+      label: autoLabel,
+    });
 
     for (const program of state.availablePrograms) {
       result.push({

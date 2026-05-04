@@ -3,9 +3,11 @@ description: "Draft a feature specification following the project template. Use 
 agent: "spec-writer"
 argument-hint: "Feature name or brief description"
 ---
+
 Write a feature specification for the dEdx Web project.
 
 ## Context
+
 - Read [docs/00-redesign-plan.md](../../docs/00-redesign-plan.md) for full project context.
 - The spec MUST follow the template in §7 of that document.
 - Reference the [WASM API contract](../../docs/06-wasm-api-contract.md) if it exists.
@@ -16,6 +18,7 @@ Write a feature specification for the dEdx Web project.
   - [src/Components/Pages/Plot/Plot.js](../../src/Components/Pages/Plot/Plot.js) — plot logic
 
 ## Output Format
+
 Produce a Markdown file with exactly these sections:
 
 ```
@@ -38,6 +41,7 @@ As a <role>, I want to <action> so that <benefit>.
 ```
 
 ## Rules
+
 - Be specific about data types, validation rules, and error states.
 - Reference `LibdedxService` interface methods when describing data flow.
 - Include mobile/responsive considerations.
