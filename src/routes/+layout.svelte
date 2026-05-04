@@ -108,9 +108,9 @@
           </div>
         </div>
         <div class="flex items-center gap-2 shrink-0">
-          <!-- Basic/Advanced mode toggle -->
+          <!-- Basic/Advanced mode toggle: always visible so mobile users can enter/leave Advanced mode -->
           <div
-            class="hidden sm:flex items-center rounded-md border border-border overflow-hidden text-sm"
+            class="flex items-center rounded-md border border-border overflow-hidden text-sm"
           >
             <button
               type="button"

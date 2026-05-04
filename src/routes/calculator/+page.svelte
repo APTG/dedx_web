@@ -1,6 +1,9 @@
 <script lang="ts">
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
-  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import {
+    isAdvancedMode,
+    initAdvancedModeFromUrl,
+  } from "$lib/state/advanced-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
@@ -26,7 +29,6 @@
   import { untrack } from "svelte";
   import {
     decodeCalculatorUrl,
-    encodeCalculatorUrl,
     calculatorUrlQueryString,
   } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
@@ -46,6 +48,8 @@
         calcState = createCalculatorState(state, service);
 
         const urlState = decodeCalculatorUrl(page.url.searchParams);
+        // Restore advanced mode from URL (URL param overrides localStorage if present).
+        initAdvancedModeFromUrl(page.url.searchParams);
         if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
         if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
         if (urlState.programId !== null) state.selectProgram(urlState.programId);
@@ -79,9 +83,10 @@
       ...(multiProgState
         ? {
             isAdvancedMode: true,
-            selectedProgramIds: multiProgState.selectedProgramIds.filter(
-              (id) => id !== state.resolvedProgramId,
-            ),
+            // Emit ALL selected programs in display order (default program first)
+            // so the URL is the canonical full list and consumers can reconstruct
+            // the complete comparison without needing to infer the default.
+            selectedProgramIds: multiProgState.selectedProgramIds,
             hiddenProgramIds: multiProgState.selectedProgramIds.filter(
               (id) => multiProgState.columnVisibility.get(id) === false,
             ),
@@ -154,16 +159,28 @@
   // Onboarding hint for advanced mode - show first 2 times, auto-dismiss after 8s
   let showAdvancedHint = $state(false);
   let hintTimeout: ReturnType<typeof setTimeout> | undefined;
+  // Tracks whether the user interacted with the program picker in this Advanced session.
+  // Reset to false whenever we enter/re-enter Advanced mode so the hint dismissal
+  // does not carry over from a previous session.
   let programPickerInteracted = $state(false);
 
   $effect(() => {
-    if (!isAdvancedMode.value || !multiProgState) return;
+    // Only run when actively entering Advanced mode with a live state object.
+    if (!isAdvancedMode.value || !multiProgState) {
+      // Reset per-session interaction flag when leaving Advanced mode.
+      programPickerInteracted = false;
+      return;
+    }
 
+    // Read the current count once per mode-entry (i.e. when the effect first fires
+    // for this multiProgState instance). Using a snapshot prevents the count from
+    // being incremented again if multiProgState is recreated while the mode stays on.
     const storageKey = "dedx_adv_hint_count";
     const count = parseInt(localStorage.getItem(storageKey) || "0", 10);
 
     if (count < 2 && !programPickerInteracted) {
       showAdvancedHint = true;
+      // Increment the count exactly once per actual mode-entry.
       localStorage.setItem(storageKey, (count + 1).toString());
 
       // Auto-dismiss after 8 seconds
@@ -184,29 +201,36 @@
 
   // Column visibility dropdown state
   let showColumnDropdown = $state(false);
-  let columnDropdownTimeout: ReturnType<typeof setTimeout> | undefined;
+  // Single stable reference to the outside-click handler so it can be removed
+  // on close without accumulating duplicate listeners.
+  let columnOutsideClickHandler: ((e: MouseEvent) => void) | null = null;
 
   function toggleColumnDropdown(): void {
     showColumnDropdown = !showColumnDropdown;
     if (showColumnDropdown) {
-      // Close when clicking outside
-      columnDropdownTimeout = setTimeout(() => {
-        const handleOutsideClick = (e: MouseEvent) => {
+      // Defer by one tick so the current click (which opened the dropdown) does
+      // not immediately re-close it.
+      setTimeout(() => {
+        columnOutsideClickHandler = (e: MouseEvent) => {
           const target = e.target as Node;
           const dropdown = document.getElementById("column-visibility-dropdown");
           const button = document.getElementById("columns-button");
           if (dropdown && !dropdown.contains(target) && button && !button.contains(target)) {
             showColumnDropdown = false;
-            document.removeEventListener("click", handleOutsideClick);
+            if (columnOutsideClickHandler) {
+              document.removeEventListener("click", columnOutsideClickHandler);
+              columnOutsideClickHandler = null;
+            }
           }
         };
-        // Use setTimeout to avoid immediate trigger
-        setTimeout(() => {
-          document.addEventListener("click", handleOutsideClick);
-        }, 0);
+        document.addEventListener("click", columnOutsideClickHandler);
       }, 0);
-    } else if (columnDropdownTimeout) {
-      clearTimeout(columnDropdownTimeout);
+    } else {
+      // Closed via button — remove the outside-click listener if still attached.
+      if (columnOutsideClickHandler) {
+        document.removeEventListener("click", columnOutsideClickHandler);
+        columnOutsideClickHandler = null;
+      }
     }
   }
 
@@ -338,21 +362,32 @@
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
 
+    // Capture inputs as snapshot so that a stale `getService()` resolution
+    // (race: user changed selection while the async call was in-flight) cannot
+    // overwrite the current state with results computed for different inputs.
+    const snapshot = { selectedProgramIds, particleId, materialId, energies };
+    let cancelled = false;
+
     // Debounce the calculation
     const timer = setTimeout(async () => {
-      if (!multiProgState) return;
+      if (cancelled || !multiProgState) return;
       const service = await getService();
+      // Check whether the inputs have already changed since the timer fired.
+      if (cancelled) return;
       const results = service.calculateMulti({
-        programIds: selectedProgramIds,
-        particleId,
-        materialId,
-        energies,
+        programIds: snapshot.selectedProgramIds,
+        particleId: snapshot.particleId,
+        materialId: snapshot.materialId,
+        energies: snapshot.energies,
       });
 
-      multiProgState.setComparisonResults(results);
+      if (!cancelled) {
+        multiProgState.setComparisonResults(results);
+      }
     }, 300);
 
     return () => {
+      cancelled = true;
       clearTimeout(timer);
     };
   });

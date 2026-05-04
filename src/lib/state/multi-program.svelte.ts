@@ -103,7 +103,6 @@ export function createMultiProgramState(): MultiProgramState {
   let programDisplayOrder = $state<number[]>([]);
   let columnVisibility = $state<Map<number, boolean>>(new Map());
   let comparisonResults = $state<Map<number, CalculationResult | LibdedxError>>(new Map());
-  let advancedModeEntryCount = $state<number>(0);
 
   const state: MultiProgramState = {
     get advancedMode() {
@@ -143,11 +142,11 @@ export function createMultiProgramState(): MultiProgramState {
         programDisplayOrder = [...programDisplayOrder, programId];
       }
 
-      // Ensure column visibility defaults to true
-      if (!columnVisibility.has(programId)) {
-        columnVisibility = new Map(columnVisibility);
-        columnVisibility.set(programId, true);
-      }
+      // Always reset column visibility to true when (re-)adding a program.
+      // This ensures a previously hidden-then-removed program comes back visible
+      // when the user adds it again later.
+      columnVisibility = new Map(columnVisibility);
+      columnVisibility.set(programId, true);
     },
 
     removeProgram(programId: number): void {
@@ -164,7 +163,12 @@ export function createMultiProgramState(): MultiProgramState {
       selectedProgramIds = selectedProgramIds.filter((id) => id !== programId);
       programDisplayOrder = programDisplayOrder.filter((id) => id !== programId);
 
-      // Keep visibility map but it won't be used
+      // Remove stale visibility entry so a future addProgram() always starts visible.
+      if (columnVisibility.has(programId)) {
+        columnVisibility = new Map(columnVisibility);
+        columnVisibility.delete(programId);
+      }
+
       // Remove from results
       if (comparisonResults.has(programId)) {
         comparisonResults = new Map(comparisonResults);
@@ -233,9 +237,6 @@ export function createMultiProgramState(): MultiProgramState {
     },
 
     setAdvancedMode(enabled: boolean): void {
-      if (enabled && !advancedMode) {
-        advancedModeEntryCount++;
-      }
       advancedMode = enabled;
 
       if (!enabled) {
@@ -258,7 +259,6 @@ export function createMultiProgramState(): MultiProgramState {
       programDisplayOrder = [];
       columnVisibility = new Map();
       comparisonResults = new Map();
-      advancedModeEntryCount = 0;
     },
 
     setProgramDisplayOrder(order: number[]): void {

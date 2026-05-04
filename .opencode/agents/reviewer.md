@@ -90,24 +90,50 @@ test that observably addresses it. Flag any criterion with no corresponding chan
 
 Any hit is a blocker.
 
-### 4. TypeScript `any`
+### 4. Svelte 5 effect self-dependency (`effect_update_depth_exceeded`)
+
+In any `$effect` that **writes** a reactive `$state` signal, check whether the effect
+body also **reads** that same signal after the write (e.g. calls methods on it, or
+reads it transitively through another function). This pattern causes an infinite loop:
+
+```ts
+// ❌ WRONG — reading myState after writing myState
+$effect(() => {
+  myState = createFoo();
+  myState.setX(1);   // reads the outer reactive signal → self-dependency
+});
+
+// ✅ CORRECT — local variable for all init, assign reactive signal once at end
+$effect(() => {
+  const s = createFoo();
+  s.setX(1);
+  myState = s;       // ONE write, after all reads are done
+});
+```
+
+Also flag `replaceState(url, page.state)` called without `untrack()` inside a URL-sync
+effect — `page.state` is reactive and `replaceState` updates it, creating a loop.
+
+Any self-dependency pattern is a blocker.
+
+### 5. TypeScript `any`
 
 Search the diff for `: any` or `as any` outside `src/lib/wasm/`. Each hit is a
 blocker unless adjacent to an explicit cast comment explaining the WASM boundary.
 
-### 5. Test coverage
+### 6. Test coverage
 
 Every acceptance criterion from the task must have at least one new/changed test
 in the diff. Flag missing test coverage by criterion name.
 
-### 6. Dead code in the diff
+### 7. Dead code in the diff
 
 Imports added but never used; exported functions never called from `src/` or tests.
 Flag.
 
 ## What the reviewer does NOT do
 
-- Does **not** run `pnpm lint`, `pnpm test`, or `pnpm build`. Trust the implementer.
+- Does **not** run `pnpm lint`, `pnpm test`, `pnpm exec playwright test`, or `pnpm build`. Trust the implementer.
 - Does **not** suggest refactoring beyond the acceptance criteria.
 - Does **not** edit any file (the `edit` permission is denied in `opencode.json`).
 - Does **not** review the entire codebase — only the diff of the most recent commit.

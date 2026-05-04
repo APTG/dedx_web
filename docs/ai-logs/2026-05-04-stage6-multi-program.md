@@ -1,7 +1,7 @@
 # Stage 6 Multi-Program — AI Session Log
 
 **Date:** 2026-05-04  
-**Model:** Qwen3.5-397B-A17B-FP8 via opencode  
+**Model:** (Qwen3.5-397B-A17B-FP8 via opencode)  
 **Branch:** `qwen/stage-6-multi-program`  
 **Task prompt:** `docs/ai-logs/prompts/2026-05-04-stage6-multi-program.md`
 

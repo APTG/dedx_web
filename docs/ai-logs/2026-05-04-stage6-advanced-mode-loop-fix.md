@@ -1,5 +1,7 @@
 # 2026-05-04 — Stage 6: Fix effect_update_depth_exceeded in Advanced Mode
 
+**Model:** (Claude Sonnet 4.6 via Claude Code)
+
 ## Session Narrative
 
 ### Prompt 1: Move opencode transcript, fix infinite effect loop, fix E2E tests, fill AI logs
