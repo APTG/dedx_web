@@ -16,10 +16,12 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 ## Tasks Completed
 
 ### Task 1 — `calculateMulti()` WASM wrapper + unit tests
+
 **Commit:** `04115f2`  
 **Status:** ✅ Complete (REVIEW PASS)
 
 **Changes:**
+
 - Added `calculateMulti()` method to `LibdedxService` interface in `src/lib/wasm/types.ts`
 - Implemented in `LibdedxServiceImpl` — loops over programIds, calls `calculate()` per program, catches errors per-program
 - Added mock implementations to both `LibdedxServiceImpl` and `MockLibdedxServiceWithElectron`
@@ -30,10 +32,12 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 ---
 
 ### Task 2 — Advanced mode app-wide state + toolbar Basic/Advanced toggle
+
 **Commit:** `7eb1d01`  
 **Status:** ✅ Complete (REVIEW PASS)
 
 **Changes:**
+
 - Created `src/lib/state/advanced-mode.svelte.ts` with:
   - `isAdvancedMode: { value: boolean }` — module-level $state
   - `toggleAdvancedMode()` — flips value, persists to localStorage
@@ -46,10 +50,12 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 ---
 
 ### Task 3 — Multi-program picker component + Calculator wiring
+
 **Commits:** `a000e83`, `b055ed3` (fix)  
 **Status:** ✅ Complete (REVIEW PASS)
 
 **Changes:**
+
 - Created `src/lib/state/multi-program.svelte.ts` (376 lines) with:
   - `MultiProgramState` interface: `selectedProgramIds`, `columnVisibility`, `quantityFocus`, `comparisonResults`
   - `createMultiProgramState()` factory function
@@ -64,6 +70,7 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 **Test results:** 41/41 passing
 
 **Fixes applied (b055ed3):**
+
 - Corrected import paths from `.svelte` to `.svelte.ts`
 - Fixed prop naming to use `state` instead of `multiState`
 - Added "▾" to button label
@@ -72,10 +79,12 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 ---
 
 ### Task 4 — Advanced-mode grouped result table + toolbar + onboarding hint
+
 **Commit:** `e8326d3`  
 **Status:** ✅ Complete (REVIEW PASS)
 
 **Changes:**
+
 - Updated `src/lib/components/result-table.svelte`:
   - Accepts optional props: `multiProgramState`, `comparisonResults`
   - Two-row group header in advanced mode (group spans + per-program sub-headers)
@@ -98,10 +107,12 @@ Implemented Stage 6: Multi-Program Comparison feature for the calculator page. T
 ---
 
 ### Task 5 — URL state round-trip + E2E tests
+
 **Commit:** `f488e62`  
 **Status:** ✅ Complete (REVIEW PASS)
 
 **Changes:**
+
 - Extended `CalculatorUrlState` interface in `src/lib/utils/calculator-url.ts`:
   - `isAdvancedMode?: boolean`
   - `selectedProgramIds?: number[]`
@@ -133,24 +144,24 @@ Test Files  35 passed (35)
 
 ## Files Changed
 
-| File |Lines | Description |
-|------|------|-------------|
-| `src/lib/wasm/types.ts` | +7 | Added `calculateMulti()` to interface |
-| `src/lib/wasm/libdedx.ts` | +27 | Implemented `calculateMulti()` |
-| `src/lib/wasm/__mocks__/libdedx.ts` | +74 | Mock implementations |
-| `src/lib/state/advanced-mode.svelte.ts` | +15 | Advanced mode state management |
-| `src/lib/state/multi-program.svelte.ts` | +376 | Multi-program state factory |
-| `src/lib/components/multi-program-picker.svelte` | +176 | Program picker dropdown |
-| `src/lib/components/result-table.svelte` | ~272 modified | Advanced mode grouped table |
-| `src/lib/utils/calculator-url.ts` | +52 | URL encode/decode for advanced mode |
-| `src/routes/+layout.svelte` | +28 | Basic/Advanced toggle in toolbar |
-| `src/routes/calculator/+page.svelte` | ~341 modified | Calculator page wiring, toolbar, onboarding |
-| `src/tests/unit/wasm-calculate-multi.test.ts` | +70 | Unit tests for calculateMulti |
-| `src/tests/unit/advanced-mode.test.ts` | +65 | Unit tests for advanced mode toggle |
-| `src/tests/unit/multi-program-state.test.ts` | +347 | Unit tests for multi-program state |
-| `src/tests/components/result-table-advanced.test.ts` | +276 | Component tests for advanced table |
-| `src/tests/unit/calculator-url.test.ts` | +96 | URL encode/decode tests |
-| `tests/e2e/calculator-advanced.spec.ts` | +124 | E2E tests for advanced mode |
+| File                                                 | Lines         | Description                                 |
+| ---------------------------------------------------- | ------------- | ------------------------------------------- |
+| `src/lib/wasm/types.ts`                              | +7            | Added `calculateMulti()` to interface       |
+| `src/lib/wasm/libdedx.ts`                            | +27           | Implemented `calculateMulti()`              |
+| `src/lib/wasm/__mocks__/libdedx.ts`                  | +74           | Mock implementations                        |
+| `src/lib/state/advanced-mode.svelte.ts`              | +15           | Advanced mode state management              |
+| `src/lib/state/multi-program.svelte.ts`              | +376          | Multi-program state factory                 |
+| `src/lib/components/multi-program-picker.svelte`     | +176          | Program picker dropdown                     |
+| `src/lib/components/result-table.svelte`             | ~272 modified | Advanced mode grouped table                 |
+| `src/lib/utils/calculator-url.ts`                    | +52           | URL encode/decode for advanced mode         |
+| `src/routes/+layout.svelte`                          | +28           | Basic/Advanced toggle in toolbar            |
+| `src/routes/calculator/+page.svelte`                 | ~341 modified | Calculator page wiring, toolbar, onboarding |
+| `src/tests/unit/wasm-calculate-multi.test.ts`        | +70           | Unit tests for calculateMulti               |
+| `src/tests/unit/advanced-mode.test.ts`               | +65           | Unit tests for advanced mode toggle         |
+| `src/tests/unit/multi-program-state.test.ts`         | +347          | Unit tests for multi-program state          |
+| `src/tests/components/result-table-advanced.test.ts` | +276          | Component tests for advanced table          |
+| `src/tests/unit/calculator-url.test.ts`              | +96           | URL encode/decode tests                     |
+| `tests/e2e/calculator-advanced.spec.ts`              | +124          | E2E tests for advanced mode                 |
 
 **Total:** ~2,500 lines added
 
@@ -169,6 +180,7 @@ Test Files  35 passed (35)
 ## Next Steps (Out of Scope for This Session)
 
 Per spec §Out of Scope, deferred to future stages:
+
 - Drag-and-drop column reordering
 - Delta / % difference tooltip on hover
 - Advanced mode CSV export (multi-program grouped columns)

@@ -106,7 +106,10 @@ test.describe("Plot export", () => {
     // Skip if WASM binaries are missing
     // Skipped when WASM binary absent. CI downloads artifact before running E2E.
     const wasmAvailable = await checkWasmAvailable(page);
-    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+    test.skip(
+      !wasmAvailable,
+      "Skipped when WASM binary absent. CI downloads artifact before running E2E.",
+    );
 
     await page.goto("/plot");
     await page.waitForSelector('[role="img"]', { timeout: 10000 });
@@ -123,7 +126,10 @@ test.describe("Plot export", () => {
     // Check WASM availability before running
     // Skipped when WASM binary absent. CI downloads artifact before running E2E.
     const wasmAvailable = await checkWasmAvailable(page);
-    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+    test.skip(
+      !wasmAvailable,
+      "Skipped when WASM binary absent. CI downloads artifact before running E2E.",
+    );
 
     await page.goto("/plot");
     await page.waitForSelector('[role="img"]', { timeout: 10000 });
@@ -146,7 +152,10 @@ test.describe("Plot export", () => {
     // Check WASM availability before running
     // Skipped when WASM binary absent. CI downloads artifact before running E2E.
     const wasmAvailable = await checkWasmAvailable(page);
-    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+    test.skip(
+      !wasmAvailable,
+      "Skipped when WASM binary absent. CI downloads artifact before running E2E.",
+    );
 
     await page.goto("/plot");
     await page.waitForSelector('[role="img"]', { timeout: 10000 });
@@ -175,7 +184,10 @@ test.describe("Plot export", () => {
     // Check WASM availability before running
     // Skipped when WASM binary absent. CI downloads artifact before running E2E.
     const wasmAvailable = await checkWasmAvailable(page);
-    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+    test.skip(
+      !wasmAvailable,
+      "Skipped when WASM binary absent. CI downloads artifact before running E2E.",
+    );
 
     await page.goto("/plot");
     await page.waitForSelector('[role="img"]', { timeout: 10000 });

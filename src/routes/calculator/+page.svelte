@@ -23,7 +23,12 @@
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
-  import { decodeCalculatorUrl, encodeCalculatorUrl } from "$lib/utils/calculator-url";
+  import { untrack } from "svelte";
+  import {
+    decodeCalculatorUrl,
+    encodeCalculatorUrl,
+    calculatorUrlQueryString,
+  } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
   import { initExportState } from "$lib/state/export.svelte";
 
@@ -64,7 +69,7 @@
   $effect(() => {
     if (!urlInitialized || !calcState || !state) return;
 
-    const params = encodeCalculatorUrl({
+    const urlState = {
       particleId: state.selectedParticle?.id ?? null,
       materialId: state.selectedMaterial?.id ?? null,
       programId: state.resolvedProgramId,
@@ -83,15 +88,23 @@
             quantityFocus: multiProgState.quantityFocus,
           }
         : {}),
-    });
-    // Build the new URL from `window.location.pathname` rather than
-    // `page.url.pathname` so reading `page.url` does not register a
-    // reactive dependency on the very URL we are about to rewrite —
-    // otherwise this effect re-runs on every `replaceState` and forms a
-    // (silent) replaceState loop. Same pattern as plot/+page.svelte.
-    const next = `${window.location.pathname}?${params.toString()}`;
+    };
+    // Use calculatorUrlQueryString so `:` and `,` are written literally
+    // (RFC 3986 §3.4 permits them unencoded in the query component).
+    // This matches the format the browser stores in window.location.search
+    // and keeps URLs human-readable (e.g. `energies=100,500:keV`).
+    //
+    // Build from `window.location.pathname` rather than `page.url.pathname`
+    // so reading `page.url` does not register a reactive dependency on the
+    // very URL we are about to rewrite — otherwise this effect re-runs on
+    // every `replaceState` and forms a (silent) replaceState loop.
+    const queryString = calculatorUrlQueryString(urlState);
+    const next = `${window.location.pathname}?${queryString}`;
     if (next === `${window.location.pathname}${window.location.search}`) return;
-    replaceState(next, page.state);
+    // Use untrack so reading page.state does not register a reactive dependency.
+    // Without this, replaceState updates the SvelteKit page store (new object
+    // reference for page.state) which re-triggers this effect on every call.
+    untrack(() => replaceState(next, page.state));
   });
 
   $effect(() => {
@@ -210,25 +223,34 @@
     }
   });
 
-  // Create/destroy multi-program state when advanced mode toggles or entity selection changes
+  // Create/destroy multi-program state when advanced mode toggles or entity selection changes.
+  //
+  // IMPORTANT: All initialization must go through the local `newState` variable. Never read
+  // the outer reactive `multiProgState` signal inside this effect after writing to it — doing so
+  // creates a self-dependency (the effect reads `multiProgState`, which it also writes, causing
+  // it to re-schedule itself on every run → effect_update_depth_exceeded).
   $effect(() => {
     if (!isAdvancedMode.value || !state || !calcState) {
       multiProgState = null;
       return;
     }
 
-    multiProgState = createMultiProgramState();
-    multiProgState.setAdvancedMode(true);
+    // Build the new state entirely through the local variable so the reactive
+    // `multiProgState` signal is only written once, at the end.
+    const newState = createMultiProgramState();
+    newState.setAdvancedMode(true);
 
-    // Restore advanced mode state from URL if present
-    const multiParams = decodeMultiProgramUrl(page.url.searchParams);
+    // Read URL params via window.location.search (non-reactive) to avoid
+    // registering page.url as a reactive dependency of this effect. If we
+    // read page.url.searchParams here, every replaceState call from the URL
+    // update effect below would re-trigger this effect, creating an infinite
+    // loop (effect_update_depth_exceeded).
+    const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
 
     // Initialize with the resolved program as default
     const defaultProgramId = state.resolvedProgramId;
     if (defaultProgramId !== null && defaultProgramId !== -1) {
-      multiProgState.addProgram(defaultProgramId);
-      // Don't call setDefaultProgram here - let the effect below handle it
-      // to avoid infinite loops when creating new multiProgState objects
+      newState.addProgram(defaultProgramId);
     }
 
     // Restore selected programs from URL
@@ -240,7 +262,7 @@
       // Add programs from URL (excluding default which is already added)
       for (const programId of validProgramIds) {
         if (programId !== defaultProgramId) {
-          multiProgState.addProgram(programId);
+          newState.addProgram(programId);
         }
       }
 
@@ -250,14 +272,14 @@
           defaultProgramId !== null ? defaultProgramId : validProgramIds[0],
           ...validProgramIds.filter((id) => id !== defaultProgramId),
         ];
-        multiProgState.setProgramDisplayOrder(orderedIds);
+        newState.setProgramDisplayOrder(orderedIds);
       }
 
       // Restore hidden programs
       if (multiParams.parsedHiddenIds) {
         for (const hiddenId of multiParams.parsedHiddenIds) {
           if (availableIds.has(hiddenId) && hiddenId !== defaultProgramId) {
-            multiProgState.toggleColumnVisibility(hiddenId);
+            newState.toggleColumnVisibility(hiddenId);
           }
         }
       }
@@ -268,9 +290,12 @@
         multiParams.qfocus === "stp" ||
         multiParams.qfocus === "csda"
       ) {
-        multiProgState.setQuantityFocus(multiParams.qfocus);
+        newState.setQuantityFocus(multiParams.qfocus);
       }
     }
+
+    // Write the reactive signal only once, after all initialization is done.
+    multiProgState = newState;
 
     return () => {
       multiProgState = null;
