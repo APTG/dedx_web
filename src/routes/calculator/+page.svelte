@@ -227,7 +227,8 @@
     const defaultProgramId = state.resolvedProgramId;
     if (defaultProgramId !== null && defaultProgramId !== -1) {
       multiProgState.addProgram(defaultProgramId);
-      multiProgState.setDefaultProgram(defaultProgramId);
+      // Don't call setDefaultProgram here - let the effect below handle it
+      // to avoid infinite loops when creating new multiProgState objects
     }
 
     // Restore selected programs from URL
