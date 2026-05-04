@@ -37,7 +37,8 @@
   }
 
   import type { MultiProgramState } from "$lib/state/multi-program.svelte.ts";
-  import type { LibdedxError, CalculationResult } from "$lib/wasm/types";
+  import type { CalculationResult } from "$lib/wasm/types";
+  import { LibdedxError } from "$lib/wasm/types";
 
   interface Props {
     state: CalculatorState;
@@ -45,9 +46,6 @@
     columns?: ColumnDef[];
     class?: string;
     // Multi-program comparison props (advanced mode)
-    // TODO: These props are unused in the current implementation but are kept
-    // for future multi-program table rendering. They are prefixed with underscore
-    // to suppress Svelte 5 warnings about unused $props() entries.
     multiProgramState?: MultiProgramState;
     comparisonResults?: Map<number, CalculationResult | LibdedxError>;
   }
@@ -57,9 +55,22 @@
     entitySelection,
     columns = getDefaultColumns(),
     class: className = "",
-    multiProgramState: _multiProgramState,
-    comparisonResults: _comparisonResults,
+    multiProgramState,
+    comparisonResults,
   }: Props = $props();
+
+  // Derived helpers for advanced mode
+  const isAdvanced = $derived(multiProgramState !== undefined);
+  const visibleProgramIds = $derived<number[]>(
+    isAdvanced && multiProgramState
+      ? multiProgramState.programDisplayOrder.filter(
+          (id) => multiProgramState.columnVisibility.get(id) !== false,
+        )
+      : [],
+  );
+  const showStp = $derived(!isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "csda");
+  const showCsda = $derived(!isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "stp");
+  const defaultProgramId = $derived(isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null);
 
   function getDefaultColumns(): ColumnDef[] {
     return [
@@ -209,6 +220,12 @@
       state.triggerCalculation();
     }
   });
+
+  // Helper to get program name by ID
+  function getProgramName(programId: number): string {
+    const program = entitySelection.availablePrograms.find((p) => p.id === programId);
+    return program?.name ?? `Program ${programId}`;
+  }
 </script>
 
 <div class={`overflow-x-auto ${className}`}>
@@ -226,22 +243,114 @@
     </div>
   {:else}
     <table class="w-full min-w-[560px] text-sm" data-testid="result-table">
-      <thead class="sticky top-0 bg-background">
-        <tr>
-          {#each columns as col (col.id)}
+      {#if isAdvanced}
+        <!-- Advanced mode: two-row grouped header -->
+        <thead class="sticky top-0 bg-background">
+          <!-- Row 1: Group headers -->
+          <tr>
+            <!-- Input columns (3 columns, row-spanning) -->
             <th
               scope="col"
-              class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}
+              rowspan="2"
+              class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b border-r"
             >
-              {col.header(state)}
+              Energy ({state.masterUnit})
             </th>
-          {/each}
-        </tr>
-      </thead>
+            <th
+              scope="col"
+              rowspan="2"
+              class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b border-r"
+            >
+              → MeV/nucl
+            </th>
+            <th
+              scope="col"
+              rowspan="2"
+              class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
+            >
+              Unit
+            </th>
+            <!-- Stopping Power group header (conditional) -->
+            {#if showStp}
+              <th
+                scope="colgroup"
+                colspan={visibleProgramIds.length}
+                class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
+              >
+                Stopping Power ({state.stpDisplayUnit})
+              </th>
+            {/if}
+            <!-- CSDA Range group header (conditional) -->
+            {#if showCsda}
+              <th
+                scope="colgroup"
+                colspan={visibleProgramIds.length}
+                class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
+              >
+                CSDA Range
+              </th>
+            {/if}
+          </tr>
+          <!-- Row 2: Program sub-headers -->
+          <tr class="bg-background">
+            {#if showStp}
+              {#each visibleProgramIds as programId (programId)}
+                <th
+                  scope="col"
+                  data-program-id={programId}
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                    programId === defaultProgramId
+                      ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
+                      : "bg-background"
+                  }`}
+                >
+                  {getProgramName(programId)}
+                  {#if programId === defaultProgramId}
+                    <span aria-hidden="true">◆</span>
+                  {/if}
+                </th>
+              {/each}
+            {/if}
+            {#if showCsda}
+              {#each visibleProgramIds as programId (programId)}
+                <th
+                  scope="col"
+                  data-program-id={programId}
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                    programId === defaultProgramId
+                      ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
+                      : "bg-background"
+                  }`}
+                >
+                  {getProgramName(programId)}
+                  {#if programId === defaultProgramId}
+                    <span aria-hidden="true">◆</span>
+                  {/if}
+                </th>
+              {/each}
+            {/if}
+          </tr>
+        </thead>
+      {:else}
+        <!-- Basic mode: single-row header -->
+        <thead class="sticky top-0 bg-background">
+          <tr>
+            {#each columns as col (col.id)}
+              <th
+                scope="col"
+                class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}
+              >
+                {col.header(state)}
+              </th>
+            {/each}
+          </tr>
+        </thead>
+      {/if}
       <tbody>
         {#each state.rows as row, i (row.id)}
           <tr class="even:bg-muted/30">
-            {#each columns as col, _colIndex (col.id)}
+            <!-- Input columns (always rendered the same way) -->
+            {#each columns.slice(0, 3) as col (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
               <td
                 class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}
@@ -286,12 +395,8 @@
                   {:else}
                     <span class="text-muted-foreground">{formatRowUnit(row)}</span>
                   {/if}
-                {:else if col.id === "stopping-power"}
-                  <span data-testid={`stp-cell-${i}`}>
-                    {col.getValue(row, state, entitySelection)}
-                  </span>
-                {:else if col.id === "csda-range"}
-                  <span data-testid={`range-cell-${i}`}>
+                {:else if col.id === "mev-nucl"}
+                  <span data-testid={`mev-nucl-cell-${i}`}>
                     {col.getValue(row, state, entitySelection)}
                   </span>
                 {:else}
@@ -299,6 +404,123 @@
                 {/if}
               </td>
             {/each}
+            <!-- Result columns for advanced mode -->
+            {#if isAdvanced}
+              <!-- Stopping Power columns per program -->
+              {#if showStp}
+                {#each visibleProgramIds as programId (programId)}
+                  <td
+                    data-program-id={programId}
+                    data-testid={`stp-cell-${programId}-${i}`}
+                    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
+                      programId === defaultProgramId ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    {#if comparisonResults && comparisonResults.has(programId)}
+                      {@const result = comparisonResults.get(programId)}
+                      {#if result instanceof LibdedxError}
+                        <span title={result.message}>— ⚠️</span>
+                      {:else if result && row.normalizedMevNucl !== null}
+                        {#if result.stoppingPowers && result.stoppingPowers.length > 0}
+                          {#if entitySelection.selectedMaterial}
+                            {@const density = entitySelection.selectedMaterial.density}
+                            {@const stpIndex = result.energies.findIndex(
+                              (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
+                            )}
+                            {#if stpIndex !== -1}
+                              {@const stpMass = result.stoppingPowers[stpIndex]}
+                              {#if state.stpDisplayUnit === "keV/µm"}
+                                {@const stpLinear = (stpMass * density) / 10}
+                                {formatSigFigs(stpLinear, 4)}
+                              {:else if state.stpDisplayUnit === "MeV/cm"}
+                                {@const stpLinear = stpMass * density}
+                                {formatSigFigs(stpLinear, 4)}
+                              {:else}
+                                {formatSigFigs(stpMass, 4)}
+                              {/if}
+                            {:else}
+                              —
+                            {/if}
+                          {:else}
+                            {formatSigFigs(result.stoppingPowers[0], 4)}
+                          {/if}
+                        {:else}
+                          —
+                        {/if}
+                      {:else}
+                        —
+                      {/if}
+                    {:else}
+                      —
+                    {/if}
+                  </td>
+                {/each}
+              {/if}
+              <!-- CSDA Range columns per program -->
+              {#if showCsda}
+                {#each visibleProgramIds as programId (programId)}
+                  <td
+                    data-program-id={programId}
+                    data-testid={`range-cell-${programId}-${i}`}
+                    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
+                      programId === defaultProgramId ? "bg-blue-50" : ""
+                    }`}
+                  >
+                    {#if comparisonResults && comparisonResults.has(programId)}
+                      {@const result = comparisonResults.get(programId)}
+                      {#if result instanceof LibdedxError}
+                        <span title={result.message}>— ⚠️</span>
+                      {:else if result && row.normalizedMevNucl !== null}
+                        {#if result.csdaRanges && result.csdaRanges.length > 0}
+                          {#if entitySelection.selectedMaterial}
+                            {@const density = entitySelection.selectedMaterial.density}
+                            {@const csdaIndex = result.energies.findIndex(
+                              (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
+                            )}
+                            {#if csdaIndex !== -1}
+                              {@const csdaGcm2 = result.csdaRanges[csdaIndex]}
+                              {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
+                              {@const scaled = autoScaleLengthCm(csdaCm)}
+                              {formatSigFigs(scaled.value, 4)} {scaled.unit}
+                            {:else}
+                              —
+                            {/if}
+                          {:else}
+                            {formatSigFigs(result.csdaRanges[0], 4)} cm
+                          {/if}
+                        {:else}
+                          —
+                        {/if}
+                      {:else}
+                        —
+                      {/if}
+                    {:else}
+                      —
+                    {/if}
+                  </td>
+                {/each}
+              {/if}
+            {:else}
+              <!-- Basic mode: single result column per quantity -->
+              {#each columns.slice(3) as col (col.id)}
+                {@const useMonospace = col.monospace ?? col.align === "right"}
+                <td
+                  class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}
+                >
+                  {#if col.id === "stopping-power"}
+                    <span data-testid={`stp-cell-${i}`}>
+                      {col.getValue(row, state, entitySelection)}
+                    </span>
+                  {:else if col.id === "csda-range"}
+                    <span data-testid={`range-cell-${i}`}>
+                      {col.getValue(row, state, entitySelection)}
+                    </span>
+                  {:else}
+                    {col.getValue(row, state, entitySelection)}
+                  {/if}
+                </td>
+              {/each}
+            {/if}
           </tr>
         {/each}
       </tbody>

@@ -123,6 +123,72 @@
     return "";
   });
 
+  // Onboarding hint for advanced mode - show first 2 times, auto-dismiss after 8s
+  let showAdvancedHint = $state(false);
+  let hintTimeout: ReturnType<typeof setTimeout> | undefined;
+  let programPickerInteracted = $state(false);
+
+  $effect(() => {
+    if (!isAdvancedMode.value || !multiProgState) return;
+
+    const storageKey = "dedx_adv_hint_count";
+    const count = parseInt(localStorage.getItem(storageKey) || "0", 10);
+
+    if (count < 2 && !programPickerInteracted) {
+      showAdvancedHint = true;
+      localStorage.setItem(storageKey, (count + 1).toString());
+
+      // Auto-dismiss after 8 seconds
+      hintTimeout = setTimeout(() => {
+        showAdvancedHint = false;
+      }, 8000);
+    }
+
+    return () => {
+      if (hintTimeout) clearTimeout(hintTimeout);
+    };
+  });
+
+  function dismissAdvancedHint(): void {
+    showAdvancedHint = false;
+    if (hintTimeout) clearTimeout(hintTimeout);
+  }
+
+  // Column visibility dropdown state
+  let showColumnDropdown = $state(false);
+  let columnDropdownTimeout: ReturnType<typeof setTimeout> | undefined;
+
+  function toggleColumnDropdown(): void {
+    showColumnDropdown = !showColumnDropdown;
+    if (showColumnDropdown) {
+      // Close when clicking outside
+      columnDropdownTimeout = setTimeout(() => {
+        const handleOutsideClick = (e: MouseEvent) => {
+          const target = e.target as Node;
+          const dropdown = document.getElementById("column-visibility-dropdown");
+          const button = document.getElementById("columns-button");
+          if (dropdown && !dropdown.contains(target) && button && !button.contains(target)) {
+            showColumnDropdown = false;
+            document.removeEventListener("click", handleOutsideClick);
+          }
+        };
+        // Use setTimeout to avoid immediate trigger
+        setTimeout(() => {
+          document.addEventListener("click", handleOutsideClick);
+        }, 0);
+      }, 0);
+    } else if (columnDropdownTimeout) {
+      clearTimeout(columnDropdownTimeout);
+    }
+  }
+
+  function handleProgramPickerInteraction(): void {
+    programPickerInteracted = true;
+    if (showAdvancedHint) {
+      dismissAdvancedHint();
+    }
+  }
+
   $effect(() => {
     if (calcState && state) {
       initExportState(calcState, state);
@@ -263,12 +329,124 @@
         onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
       />
       {#if isAdvancedMode.value && multiProgState && state}
-        <div class="flex items-center gap-3 pt-2">
+        <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
             state={multiProgState}
             availablePrograms={state.availablePrograms}
             compatibleIds={new Set(state.availablePrograms.map((p) => p.id))}
+            onInteraction={handleProgramPickerInteraction}
           />
+          <!-- Table toolbar -->
+          <div class="flex items-center gap-2">
+            <!-- Columns... button -->
+            <div class="relative" id="column-visibility-dropdown-container">
+              <Button
+                id="columns-button"
+                variant="outline"
+                size="sm"
+                onclick={toggleColumnDropdown}
+                aria-expanded={showColumnDropdown}
+                aria-haspopup="dialog"
+                title="Show/hide program columns"
+              >
+                Columns…
+              </Button>
+              <!-- Column visibility dropdown -->
+              {#if showColumnDropdown}
+                <div
+                  id="column-visibility-dropdown"
+                  class="absolute right-0 z-50 mt-2 min-w-[200px] rounded-md border bg-popover p-3 shadow-lg"
+                  role="dialog"
+                  aria-label="Column visibility"
+                >
+                  <div class="space-y-2">
+                    {#each multiProgState.selectedProgramIds as programId (programId)}
+                      {@const program = state.availablePrograms.find((p) => p.id === programId)}
+                      {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
+                      {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
+                      <label
+                        class="flex items-center gap-2 text-sm cursor-pointer"
+                        class:opacity-50={!isVisible}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={isVisible}
+                          disabled={isDefault}
+                          onchange={() => multiProgState.toggleColumnVisibility(programId)}
+                          class="h-4 w-4 rounded border-input"
+                        />
+                        <span>{program?.name ?? `Program ${programId}`}</span>
+                        {#if isDefault}
+                          <span class="text-xs text-muted-foreground">(default)</span>
+                        {/if}
+                      </label>
+                    {/each}
+                  </div>
+                </div>
+              {/if}
+            </div>
+            <!-- Quantity focus segmented control -->
+            <div
+              class="inline-flex items-center rounded-md border bg-background p-1"
+              role="radiogroup"
+              aria-label="Quantity focus"
+            >
+              <button
+                type="button"
+                role="radio"
+                aria-checked={multiProgState.quantityFocus === "stp"}
+                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+                class:bg-accent={multiProgState.quantityFocus === "stp"}
+                onclick={() => multiProgState.setQuantityFocus("stp")}
+              >
+                STP only
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={multiProgState.quantityFocus === "both"}
+                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+                class:bg-accent={multiProgState.quantityFocus === "both"}
+                onclick={() => multiProgState.setQuantityFocus("both")}
+              >
+                Both
+              </button>
+              <button
+                type="button"
+                role="radio"
+                aria-checked={multiProgState.quantityFocus === "csda"}
+                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+                class:bg-accent={multiProgState.quantityFocus === "csda"}
+                onclick={() => multiProgState.setQuantityFocus("csda")}
+              >
+                CSDA only
+              </button>
+            </div>
+          </div>
+        </div>
+      {/if}
+      <!-- Advanced mode onboarding hint -->
+      {#if showAdvancedHint}
+        <div
+          class="flex items-start justify-between rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
+          role="status"
+          aria-live="polite"
+        >
+          <div class="flex-1 pr-4">
+            <p class="font-medium">Multi-program comparison enabled</p>
+            <p class="mt-1 text-blue-700 dark:text-blue-300">
+              Select multiple programs to compare results side-by-side. Use the columns button to
+              show/hide programs or change the quantity focus.
+            </p>
+          </div>
+          <button
+            type="button"
+            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-lg leading-none"
+            aria-label="Dismiss hint"
+            onclick={dismissAdvancedHint}
+          >
+            ×
+          </button>
         </div>
       {/if}
       {#if state.lastAutoFallbackMessage}

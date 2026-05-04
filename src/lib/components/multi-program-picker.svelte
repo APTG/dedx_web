@@ -9,9 +9,10 @@
     availablePrograms: ProgramEntity[];
     compatibleIds: Set<number>;
     class?: string;
+    onInteraction?: () => void;
   }
 
-  let { state: multiState, availablePrograms, compatibleIds, class: className = "" }: Props = $props();
+  let { state: multiState, availablePrograms, compatibleIds, class: className = "", onInteraction }: Props = $props();
 
   let isOpen = $state(false);
 
@@ -42,6 +43,9 @@
     } else {
       multiState.addProgram(programId);
     }
+
+    // Notify parent of interaction (for onboarding hint dismissal)
+    onInteraction?.();
   }
 
   function toggleDropdown(): void {
