@@ -103,10 +103,6 @@ describe("exportPlotCsv", () => {
     vi.clearAllMocks();
   });
 
-  afterEach(() => {
-    vi.clearAllMocks();
-  });
-
   test("calls downloadPlotCsv with series and stpUnit when initialized", async () => {
     const { downloadPlotCsv } = await import("$lib/export/plot-csv");
     const exportModule = await import("$lib/state/export.svelte");
@@ -126,10 +122,9 @@ describe("exportPlotCsv", () => {
     const { downloadPlotCsv } = await import("$lib/export/plot-csv");
     const exportModule = await import("$lib/state/export.svelte");
 
-    // No initPlotExportState call — _plotState remains null
+    // No initPlotExportState call — _plotState remains null; function returns sync
     exportModule.exportPlotCsv();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 20));
     expect(downloadPlotCsv).not.toHaveBeenCalled();
   });
 });
@@ -137,10 +132,6 @@ describe("exportPlotCsv", () => {
 describe("exportPlotPdf", () => {
   beforeEach(() => {
     vi.resetModules();
-    vi.clearAllMocks();
-  });
-
-  afterEach(() => {
     vi.clearAllMocks();
   });
 
@@ -181,7 +172,8 @@ describe("exportPlotPdf", () => {
     exportModule.initPlotExportState(plotState, getSvg);
     exportModule.exportPlotPdf();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 50));
+    // Wait for getSvg to be called, then assert generatePlotPdf was never invoked
+    await vi.waitFor(() => expect(getSvg).toHaveBeenCalledOnce());
     expect(generatePlotPdf).not.toHaveBeenCalled();
   });
 
@@ -189,10 +181,9 @@ describe("exportPlotPdf", () => {
     const { generatePlotPdf } = await import("$lib/export/pdf");
     const exportModule = await import("$lib/state/export.svelte");
 
-    // No initPlotExportState call
+    // No initPlotExportState call — returns sync before any async operation
     exportModule.exportPlotPdf();
 
-    await new Promise<void>((resolve) => setTimeout(resolve, 20));
     expect(generatePlotPdf).not.toHaveBeenCalled();
   });
 });
