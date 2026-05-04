@@ -241,11 +241,11 @@
 
   // ── SVG Export ──
   // Bound from JsrootPlot requestExportSvg, set by component's $effect
-  let getSvg: (() => string | null) | null = $state(null);
+  let getSvg: (() => Promise<string | null>) | null = $state(null);
 
   // ── Export button state — enables toolbar Export PDF/CSV when series exist
   $effect(() => {
-    initPlotExportState(plotState, getSvg ?? (() => null));
+    initPlotExportState(plotState, getSvg ?? (() => Promise.resolve(null)));
     return () => {
       canExport.value = false;
     };
@@ -255,9 +255,9 @@
   let showExportMenu = $state(false);
   let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
 
-  function downloadSvg() {
+  async function downloadSvg() {
     if (!getSvg) return;
-    const svgString = getSvg();
+    const svgString = await getSvg();
     if (!svgString) return;
 
     // Create blob and trigger download

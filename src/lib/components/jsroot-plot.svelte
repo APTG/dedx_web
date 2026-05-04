@@ -18,7 +18,7 @@
     yLog,
     axisRanges,
     // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
-    requestExportSvg = $bindable<(() => string | null) | null>(null),
+    requestExportSvg = $bindable<(() => Promise<string | null>) | null>(null),
   }: {
     series: PlotSeries[];
     preview: PlotSeries | null;
@@ -26,7 +26,7 @@
     xLog: boolean;
     yLog: boolean;
     axisRanges: AxisRanges;
-    requestExportSvg?: (() => string | null) | null | undefined;
+    requestExportSvg?: (() => Promise<string | null>) | null | undefined;
   } = $props();
 
   let container = $state<HTMLDivElement | null>(null);
@@ -111,9 +111,32 @@
       return;
     }
     const el = container;
-    requestExportSvg = () => {
-      const svgEl = el.querySelector("svg");
-      return svgEl ? new XMLSerializer().serializeToString(svgEl) : null;
+    requestExportSvg = async (): Promise<string | null> => {
+      if (!el) return null;
+      // Render an off-screen copy without the preview series, so the exported
+      // SVG/PDF never contains the ephemeral preview curve (export spec §4.1).
+      const offscreen = document.createElement("div");
+      offscreen.style.cssText =
+        "position:fixed;visibility:hidden;pointer-events:none;width:800px;height:600px;top:-9999px;left:-9999px;";
+      document.body.appendChild(offscreen);
+      try {
+        const JSROOT = await import("jsroot");
+        // Read current reactive values at call time; exclude preview (preview: null)
+        const mg = buildMultigraph(JSROOT, {
+          series,
+          preview: null,
+          stpUnit,
+          axisRanges,
+        });
+        const drawOpts = buildDrawOptions(xLog, yLog);
+        await JSROOT.draw(offscreen, mg, drawOpts);
+        const svgEl = offscreen.querySelector("svg");
+        const result = svgEl ? new XMLSerializer().serializeToString(svgEl) : null;
+        if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(offscreen);
+        return result;
+      } finally {
+        if (offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
+      }
     };
     return () => {
       requestExportSvg = null;

@@ -1,5 +1,6 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
+import type { StpUnit } from "$lib/wasm/types";
 import { generateCalculatorCsv, downloadCsv } from "$lib/export/csv";
 
 interface CalcStateView {
@@ -9,6 +10,7 @@ interface CalcStateView {
 
 interface PlotStateView {
   readonly series: PlotSeries[];
+  readonly stpUnit: StpUnit;
 }
 
 interface ExportEntity {
@@ -26,7 +28,7 @@ export const canExport = $state({ value: false });
 let _calcState: CalcStateView | null = null;
 let _entitySelection: EntitySelectionView | null = null;
 let _plotState: PlotStateView | null = null;
-let _getSvg: (() => string | null) | null = null;
+let _getSvg: (() => Promise<string | null>) | null = null;
 
 /**
  * A row only counts as "exportable" once the WASM results are populated —
@@ -50,7 +52,10 @@ export function initExportState(
  * Initialize plot export state. Sets canExport.value to true when at least one
  * committed series is visible (per export.md §4.2 button-state rules).
  */
-export function initPlotExportState(plotState: PlotStateView, getSvg: () => string | null): void {
+export function initPlotExportState(
+  plotState: PlotStateView,
+  getSvg: () => Promise<string | null>,
+): void {
   _plotState = plotState;
   _getSvg = getSvg;
   canExport.value = plotState.series.some((s) => s.visible);
@@ -127,9 +132,10 @@ export function exportPlotCsv(): void {
   if (!_plotState) return;
 
   const series = _plotState.series;
+  const stpUnit = _plotState.stpUnit;
   void import("$lib/export/plot-csv")
     .then((mod) => {
-      mod.downloadPlotCsv(series, "keV/µm");
+      mod.downloadPlotCsv(series, stpUnit);
     })
     .catch((error: unknown) => {
       console.error("Failed to export plot CSV.", error);
@@ -143,21 +149,24 @@ export function exportPlotCsv(): void {
 export function exportPlotPdf(): void {
   if (!_plotState || !_getSvg) return;
 
-  const svgString = _getSvg();
-  if (!svgString) {
-    console.warn("No SVG content available for PDF export.");
-    return;
-  }
+  const svgGetter = _getSvg;
+  const plotState = _plotState;
 
-  const series = _plotState.series;
-  void import("$lib/export/pdf")
-    .then((mod) => {
-      const filename = "dedx_plot_report.pdf";
-      return mod.generatePlotPdf({
-        svgString,
-        series,
-        url: window.location.href,
-        filename,
+  void svgGetter()
+    .then((svgString) => {
+      if (!svgString) {
+        console.warn("No SVG content available for PDF export.");
+        return;
+      }
+      const series = plotState.series;
+      return import("$lib/export/pdf").then((mod) => {
+        const filename = "dedx_plot_report.pdf";
+        return mod.generatePlotPdf({
+          svgString,
+          series,
+          url: window.location.href,
+          filename,
+        });
       });
     })
     .catch((error: unknown) => {

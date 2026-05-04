@@ -1,4 +1,6 @@
 import type { PlotSeries } from "$lib/state/plot.svelte";
+import type { StpUnit } from "$lib/wasm/types";
+import { convertStpForDisplay } from "$lib/utils/plot-utils";
 import { makeCsvCell } from "$lib/export/csv";
 
 /**
@@ -68,7 +70,7 @@ function formatValue(value: number): string {
  * - Hidden series (visible === false) are excluded
  * - Shorter series in Case B are padded with empty cells
  */
-export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
+export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
   // Filter out hidden series
   const visibleSeries = series.filter((s) => s.visible);
 
@@ -97,6 +99,10 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
 
   // Build data rows
   const maxRows = Math.max(...visibleSeries.map((s) => s.result.energies.length));
+  // Pre-convert stopping powers to the requested display unit for each series
+  const displayValues = visibleSeries.map((s) =>
+    convertStpForDisplay(s.result.stoppingPowers, s.density, stpUnit),
+  );
   const rows: string[] = [];
 
   for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
@@ -113,7 +119,8 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
     }
 
     // Add columns for each series
-    for (const s of visibleSeries) {
+    for (let si = 0; si < visibleSeries.length; si++) {
+      const s = visibleSeries[si];
       const energyCount = s.result.energies.length;
 
       if (!caseA) {
@@ -125,9 +132,9 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
         }
       }
 
-      // Stp column for this series
+      // Stp column for this series (in the requested display unit)
       if (rowIdx < energyCount) {
-        const stpVal = s.result.stoppingPowers[rowIdx] ?? 0;
+        const stpVal = displayValues[si]?.[rowIdx] ?? 0;
         rowCells.push(formatValue(stpVal));
       } else {
         rowCells.push("");
@@ -147,7 +154,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: string): string {
  *
  * Filename: dedx_plot_data.csv (per export.md §4.2)
  */
-export function downloadPlotCsv(series: PlotSeries[], stpUnit: string): void {
+export function downloadPlotCsv(series: PlotSeries[], stpUnit: StpUnit): void {
   // Import here to avoid circular dependency issues
   void import("$lib/export/csv").then(({ downloadCsv }) => {
     const content = formatPlotCsv(series, stpUnit);
