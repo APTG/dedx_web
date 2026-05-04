@@ -42,6 +42,14 @@ test.describe("App toolbar", () => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"]);
     await page.goto("/calculator");
     await expect(page.getByRole("navigation")).toBeVisible();
+    // Wait for the URL sync to run (WASM loads async; URL gets query params
+    // only after the state is initialised). If we click Share URL before
+    // this, `window.location.href` still has no params — the clipboard gets
+    // the bare URL while `page.url()` would later show the updated URL,
+    // causing a spurious mismatch in the assertion below.
+    await page.waitForFunction(() => window.location.search.includes("particle="), {
+      timeout: 15000,
+    });
     await page.getByRole("button", { name: /share url/i }).click();
     await expect(page.getByText(/copied/i)).toBeVisible({ timeout: 2000 });
     const copiedText = await page.evaluate(() => navigator.clipboard.readText());

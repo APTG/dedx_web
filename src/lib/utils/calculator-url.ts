@@ -64,6 +64,12 @@ export interface CalculatorUrlState {
   programId: number | null;
   rows: CalculatorUrlRow[];
   masterUnit: EnergyUnit;
+
+  /** Advanced mode fields (optional — only present when encoding/decoding advanced mode) */
+  isAdvancedMode?: boolean;
+  selectedProgramIds?: number[];
+  hiddenProgramIds?: number[];
+  quantityFocus?: "both" | "stp" | "csda";
 }
 
 function isMasterUnit(s: string): s is EnergyUnit {
@@ -142,6 +148,23 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("energies", encodedRows.join(","));
   }
   params.set("eunit", state.masterUnit);
+
+  // Advanced mode params
+  if (state.isAdvancedMode) {
+    params.set("mode", "advanced");
+
+    if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
+      params.set("programs", state.selectedProgramIds.join(","));
+    }
+
+    if (state.hiddenProgramIds && state.hiddenProgramIds.length > 0) {
+      params.set("hidden_programs", state.hiddenProgramIds.join(","));
+    }
+
+    // Always emit qfocus in advanced mode for canonical form
+    params.set("qfocus", state.quantityFocus ?? "both");
+  }
+
   return params;
 }
 
@@ -164,11 +187,18 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     return Number.isFinite(n) && n > 0 ? n : null;
   };
 
+  const parseProgramIds = (s: string): number[] => {
+    return s
+      .split(",")
+      .map((id) => parseInt(id.trim(), 10))
+      .filter((n) => !Number.isNaN(n) && n > 0);
+  };
+
   // urlv is parsed-but-defaulted: missing → 1 (back-compat per
   // shareable-urls §3.5). Future major bumps should branch here.
   // The value isn't returned in CalculatorUrlState because Stage 1
-  // currently has no migration path; the parser just records the
-  // assumption explicitly.
+  // currently has no migration path; the parser just records the assumption
+  // explicitly.
   const _urlv = parseInt(params.get("urlv") ?? "1", 10);
   void _urlv;
 
@@ -192,6 +222,20 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     }
   }
 
+  // Parse advanced mode params
+  const mode = params.get("mode");
+  const isAdvancedMode = mode === "advanced";
+  const programsParam = params.get("programs");
+  const selectedProgramIds =
+    isAdvancedMode && programsParam ? parseProgramIds(programsParam) : undefined;
+  const hiddenParam = params.get("hidden_programs");
+  const hiddenProgramIds = hiddenParam ? parseProgramIds(hiddenParam) : undefined;
+  const qfocus = params.get("qfocus") as "both" | "stp" | "csda" | null;
+  const quantityFocus =
+    isAdvancedMode && (qfocus === "both" || qfocus === "stp" || qfocus === "csda")
+      ? qfocus
+      : undefined;
+
   return {
     particleId: parseId(params.get("particle")),
     materialId: parseId(params.get("material")),
@@ -201,5 +245,9 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
         : parseId(params.get("program")),
     rows: rows.length > 0 ? rows : [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
     masterUnit,
+    isAdvancedMode,
+    selectedProgramIds,
+    hiddenProgramIds,
+    quantityFocus,
   };
 }

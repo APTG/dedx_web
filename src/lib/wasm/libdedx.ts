@@ -253,6 +253,33 @@ export class LibdedxServiceImpl implements LibdedxService {
     }
   }
 
+  calculateMulti({
+    programIds,
+    particleId,
+    materialId,
+    energies,
+    options,
+  }: {
+    programIds: number[];
+    particleId: number;
+    materialId: number;
+    energies: number[];
+    options?: AdvancedOptions;
+  }): Map<number, CalculationResult | LibdedxError> {
+    const results = new Map<number, CalculationResult | LibdedxError>();
+    for (const programId of programIds) {
+      try {
+        results.set(
+          programId,
+          this.calculate(programId, particleId, materialId, energies, options),
+        );
+      } catch (e) {
+        results.set(programId, e instanceof LibdedxError ? e : new LibdedxError(-1, String(e)));
+      }
+    }
+    return results;
+  }
+
   getPlotData(
     programId: number,
     particleId: number,

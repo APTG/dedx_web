@@ -66,6 +66,48 @@ whether to move to the reviewer or to retry.
 Run `svelte-autofixer` (via the Svelte MCP tool) on every `.svelte` file before
 committing. Fix all reported issues.
 
+### Svelte 5 — effect self-dependency prevention (CRITICAL)
+
+`effect_update_depth_exceeded` is the most common runaway-loop in Svelte 5.
+It occurs when a `$effect` **reads** a reactive signal that it also **writes**.
+
+**Rule: NEVER read a reactive `$state` variable inside a `$effect` after writing to it.**
+
+Two safe patterns:
+
+```ts
+// ✅ SAFE: initialize through a local variable, assign to reactive signal ONCE at the end
+$effect(() => {
+  const newState = createFoo();   // local variable — no reactive signal read
+  newState.setX(1);               // safe — reads/writes only the local var
+  newState.setY(2);               // safe
+  myState = newState;             // ONE write to the reactive signal, at the very end
+});
+
+// ✅ SAFE: use untrack() to break a dependency you need to pass through but not react to
+$effect(() => {
+  const next = computeUrl(myValue);     // reactive read: myValue
+  untrack(() => replaceState(next, page.state)); // page.state read is NOT a dependency
+});
+```
+
+```ts
+// ❌ WRONG: reading myState.foo after writing myState → self-dependency → infinite loop
+$effect(() => {
+  myState = createFoo();
+  myState.setX(1);   // reads outer reactive myState — registers a dependency on it!
+  myState.setY(2);   // same problem
+});
+```
+
+Additional pitfalls:
+- `replaceState(url, page.state)` inside a URL-sync `$effect`: wrap in `untrack()`.
+  `page.state` is reactive; `replaceState` updates it; without `untrack` the effect
+  re-fires every time it runs, creating a loop.
+- Reading `page.url.searchParams` inside a creation `$effect` while also calling
+  `replaceState` elsewhere: use `new URLSearchParams(window.location.search)` instead
+  (non-reactive DOM API).
+
 ### TypeScript
 
 - `tsconfig.json` uses `"strict": true` — honour it.
@@ -89,6 +131,25 @@ committing. Fix all reported issues.
 - Mock `LibdedxService` — never depend on real WASM in unit tests.
 - Every acceptance criterion from the task must have at least one test.
 
+### E2E tests (MANDATORY — do not skip)
+
+**Always run `pnpm exec playwright test` as part of the workflow.** A task is not
+done until the E2E suite either passes or the failures are confirmed pre-existing.
+
+If the WASM binary is absent (`static/wasm/libdedx.mjs` missing), E2E tests that
+require WASM should be marked `test.skip` with the comment
+`// Skipped when WASM binary absent. CI downloads artifact before running E2E.`
+
+**Do not skip the `pnpm exec playwright test` command itself.** Even with skipped
+tests the command must run cleanly (exit 0 with all skipped / passed).
+
+If `pnpm exec playwright test` produces failures:
+1. Read the failure output carefully — do not assume failures are pre-existing.
+2. Check whether any new test you wrote caused an existing test to regress.
+3. Fix failures caused by your own changes before outputting `TASK DONE`.
+4. If a failure is pre-existing (existed before your task), document it explicitly
+   in the `TASK DONE` message.
+
 ### Commit format
 
 ```
@@ -106,13 +167,14 @@ No `--no-verify`. Fix hook failures before committing.
 2. Read the referenced spec section in `docs/04-feature-specs/`.
 3. Read existing related files to understand current patterns.
 4. Implement code.
-5. Write/update tests.
+5. Write/update tests (unit + component).
 6. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
 7. Fix all errors. Repeat from step 6 until clean.
-8. Commit.
-9. Output `TASK DONE: <task name>`.
+8. **Run `pnpm exec playwright test`.** Fix any E2E failures caused by your changes.
+9. Commit.
+10. Output `TASK DONE: <task name>`.
 
-If step 6 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
+If step 6 or step 8 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
 
 ## maxSteps
 

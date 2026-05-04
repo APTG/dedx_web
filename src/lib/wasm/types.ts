@@ -96,6 +96,13 @@ export interface LibdedxService {
     energies: number[],
     options?: AdvancedOptions,
   ): CalculationResult;
+  calculateMulti(params: {
+    programIds: number[];
+    particleId: number;
+    materialId: number;
+    energies: number[];
+    options?: AdvancedOptions;
+  }): Map<number, CalculationResult | LibdedxError>;
   getPlotData(
     programId: number,
     particleId: number,

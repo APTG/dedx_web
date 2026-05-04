@@ -18,19 +18,19 @@ feature branch before committing. All 10 feature commits landed directly on
 
 **Affected commits** (`625a1ce` → `0acc379`, plus `f416fd4` archive commit):
 
-| Commit | Message |
-|--------|---------|
-| `625a1ce` | feat(export): add formatPlotCsv() and downloadPlotCsv() |
-| `620dde2` | fix(export): remove dead code and fix double BOM |
+| Commit    | Message                                                         |
+| --------- | --------------------------------------------------------------- |
+| `625a1ce` | feat(export): add formatPlotCsv() and downloadPlotCsv()         |
+| `620dde2` | fix(export): remove dead code and fix double BOM                |
 | `2d1f0c5` | feat(plot): add SVG image export with "Export image ▾" dropdown |
-| `f686f16` | fix(plot): correct SVG dropdown label and filename per spec |
-| `2ab5032` | feat(export): add generatePlotPdf() for Plot page PDF export |
+| `f686f16` | fix(plot): correct SVG dropdown label and filename per spec     |
+| `2ab5032` | feat(export): add generatePlotPdf() for Plot page PDF export    |
 | `1d6a7b1` | fix(export): remove undeclared seriesIndex from generatePlotPdf |
-| `a798d9c` | feat(plot): wire toolbar Export CSV and Export PDF buttons |
-| `553a4c4` | test(e2e): add Plot page export tests |
-| `d4ef51a` | fix(e2e): add PDF button assertion and fix any type |
-| `0acc379` | docs: add Stage 6 Plot export session log |
-| `f416fd4` | docs: archive Stage 6 Plot export opencode session transcript |
+| `a798d9c` | feat(plot): wire toolbar Export CSV and Export PDF buttons      |
+| `553a4c4` | test(e2e): add Plot page export tests                           |
+| `d4ef51a` | fix(e2e): add PDF button assertion and fix any type             |
+| `0acc379` | docs: add Stage 6 Plot export session log                       |
+| `f416fd4` | docs: archive Stage 6 Plot export opencode session transcript   |
 
 ### Prompt 3: recovery plan
 

@@ -178,4 +178,100 @@ describe("decodeCalculatorUrl", () => {
       unitFromSuffix: false,
     });
   });
+
+  it("decodes advanced mode params: mode=advanced&programs=9,2&qfocus=stp", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qfocus=stp",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).isAdvancedMode).toBe(true);
+    expect((s as any).selectedProgramIds).toEqual([9, 2]);
+    expect((s as any).quantityFocus).toBe("stp");
+  });
+
+  it("decodes advanced mode with hidden_programs parameter", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2&qfocus=both",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).isAdvancedMode).toBe(true);
+    expect((s as any).hiddenProgramIds).toEqual([2]);
+  });
+
+  it("decodes advanced mode with invalid program IDs (no crash, IDs parsed as integers)", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C999&qfocus=both",
+    );
+    const s = decodeCalculatorUrl(params);
+    // Decoder parses all positive integers; validation against available programs happens at state level
+    // Invalid ID 999 is parsed but will be filtered out when restoring multi-program state
+    expect((s as any).selectedProgramIds).toEqual([9, 999]);
+  });
+
+  it("encodes advanced mode with mode=advanced&programs=9%2C2&qfocus=both", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9, 2],
+      hiddenProgramIds: [],
+      quantityFocus: "both",
+    } as any);
+    expect(p.get("mode")).toBe("advanced");
+    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("qfocus")).toBe("both");
+  });
+
+  it("encodes advanced mode with hidden_programs", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9, 2],
+      hiddenProgramIds: [2],
+      quantityFocus: "stp",
+    } as any);
+    expect(p.get("mode")).toBe("advanced");
+    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("hidden_programs")).toBe("2");
+    expect(p.get("qfocus")).toBe("stp");
+  });
+
+  it("basic mode does NOT contain mode= or programs= params", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: false,
+    } as any);
+    expect(p.has("mode")).toBe(false);
+    expect(p.has("programs")).toBe(false);
+    expect(p.has("hidden_programs")).toBe(false);
+    expect(p.has("qfocus")).toBe(false);
+  });
+
+  it("URL round-trip: encode(decode(url)) === url for advanced mode", () => {
+    const originalParams = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qfocus=both",
+    );
+    const decoded = decodeCalculatorUrl(originalParams);
+    const reEncoded = encodeCalculatorUrl(decoded);
+
+    // Compare key params that should round-trip
+    expect(reEncoded.get("mode")).toBe("advanced");
+    expect(reEncoded.get("programs")).toBe("9,2");
+    expect(reEncoded.get("qfocus")).toBe("both");
+    expect(reEncoded.get("particle")).toBe("1");
+    expect(reEncoded.get("material")).toBe("276");
+    expect(reEncoded.get("eunit")).toBe("MeV");
+  });
+
+  it("URL round-trip with hidden_programs: encode(decode(url)) preserves hidden", () => {
+    const originalParams = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2&qfocus=stp",
+    );
+    const decoded = decodeCalculatorUrl(originalParams);
+    const reEncoded = encodeCalculatorUrl(decoded);
+
+    expect(reEncoded.get("mode")).toBe("advanced");
+    expect(reEncoded.get("programs")).toBe("9,2");
+    expect(reEncoded.get("hidden_programs")).toBe("2");
+    expect(reEncoded.get("qfocus")).toBe("stp");
+  });
 });
