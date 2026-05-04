@@ -36,11 +36,17 @@
     monospace?: boolean;
   }
 
+  import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+  import type { LibdedxError, CalculationResult } from "$lib/wasm/types";
+
   interface Props {
     state: CalculatorState;
     entitySelection: EntitySelectionState;
     columns?: ColumnDef[];
     class?: string;
+    // Multi-program comparison props (advanced mode)
+    multiProgramState?: MultiProgramState;
+    comparisonResults?: Map<number, CalculationResult | LibdedxError>;
   }
 
   let {
@@ -48,6 +54,8 @@
     entitySelection,
     columns = getDefaultColumns(),
     class: className = "",
+    multiProgramState: _multiProgramState,
+    comparisonResults: _comparisonResults,
   }: Props = $props();
 
   function getDefaultColumns(): ColumnDef[] {
@@ -230,7 +238,7 @@
       <tbody>
         {#each state.rows as row, i (row.id)}
           <tr class="even:bg-muted/30">
-            {#each columns as col, colIndex (col.id)}
+            {#each columns as col, _colIndex (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
               <td
                 class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}

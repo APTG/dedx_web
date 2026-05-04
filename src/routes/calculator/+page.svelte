@@ -8,7 +8,12 @@
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
+  import {
+    createMultiProgramState,
+    type MultiProgramState,
+  } from "$lib/state/multi-program.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
+  import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
@@ -25,6 +30,7 @@
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlInitialized = $state(false);
+  let multiProgState = $state<MultiProgramState | null>(null);
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -122,6 +128,79 @@
       initExportState(calcState, state);
     }
   });
+
+  // Create/destroy multi-program state when advanced mode toggles or entity selection changes
+  $effect(() => {
+    if (!isAdvancedMode.value || !state || !calcState) {
+      multiProgState = null;
+      return;
+    }
+
+    multiProgState = createMultiProgramState();
+    multiProgState.setAdvancedMode(true);
+
+    // Initialize with the resolved program as default
+    const defaultProgramId = state.resolvedProgramId;
+    if (defaultProgramId !== null && defaultProgramId !== -1) {
+      multiProgState.addProgram(defaultProgramId);
+      multiProgState.setDefaultProgram(defaultProgramId);
+    }
+
+    return () => {
+      multiProgState = null;
+    };
+  });
+
+  // Update default program when resolvedProgramId changes
+  $effect(() => {
+    if (!multiProgState || !state) return;
+
+    const defaultProgramId = state.resolvedProgramId;
+    if (defaultProgramId !== null && defaultProgramId !== -1) {
+      if (!multiProgState.selectedProgramIds.includes(defaultProgramId)) {
+        multiProgState.addProgram(defaultProgramId);
+      }
+      multiProgState.setDefaultProgram(defaultProgramId);
+    }
+  });
+
+  // Debounced calculation for multi-program mode
+  $effect(() => {
+    if (!multiProgState || !state || !calcState || !state.isComplete) return;
+
+    const selectedProgramIds = multiProgState.selectedProgramIds;
+    if (selectedProgramIds.length === 0) return;
+
+    const particleId = state.selectedParticle?.id;
+    const materialId = state.selectedMaterial?.id;
+    if (particleId === null || materialId === null) return;
+
+    const validRows = calcState.rows.filter(
+      (r) => r.status === "valid" && r.normalizedMevNucl !== null,
+    );
+
+    if (validRows.length === 0) return;
+
+    const energies = validRows.map((r) => r.normalizedMevNucl as number);
+
+    // Debounce the calculation
+    const timer = setTimeout(async () => {
+      if (!multiProgState) return;
+      const service = await getService();
+      const results = service.calculateMulti({
+        programIds: selectedProgramIds,
+        particleId,
+        materialId,
+        energies,
+      });
+
+      multiProgState.setComparisonResults(results);
+    }, 300);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  });
 </script>
 
 <svelte:head>
@@ -183,6 +262,15 @@
         {state}
         onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
       />
+      {#if isAdvancedMode.value && multiProgState && state}
+        <div class="flex items-center gap-3 pt-2">
+          <MultiProgramPicker
+            multiState={multiProgState}
+            availablePrograms={state.availablePrograms}
+            compatibleIds={new Set(state.availablePrograms.map((p) => p.id))}
+          />
+        </div>
+      {/if}
       {#if state.lastAutoFallbackMessage}
         <div
           class="flex items-center justify-between rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
@@ -204,7 +292,12 @@
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />
       <div class="rounded-lg border bg-card p-3 sm:p-6">
-        <ResultTable state={calcState} entitySelection={state} />
+        <ResultTable
+          state={calcState}
+          entitySelection={state}
+          multiProgramState={isAdvancedMode.value ? multiProgState ?? undefined : undefined}
+          comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
+        />
       </div>
       {#if programLabel}
         <p class="text-sm text-muted-foreground -mt-2">{programLabel}</p>
