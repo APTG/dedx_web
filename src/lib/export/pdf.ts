@@ -1,4 +1,5 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
+import type { PlotSeries } from "$lib/state/plot.svelte";
 import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
 
 /**
@@ -232,4 +233,133 @@ function addPageFooter(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(pageNumText, pageWidth - margin, footerY, { align: "right" });
+}
+
+/**
+ * Options for Plot PDF generation.
+ */
+export interface PlotPdfContext {
+  svgString: string | null;
+  series: PlotSeries[];
+  url: string;
+  filename: string;
+}
+
+/**
+ * Generate a basic-mode Plot PDF and download it.
+ *
+ * Layout (export.md §5.2):
+ *   1. Header: app name, generated timestamp (ISO 8601 UTC), clickable URL
+ *   2. Chart SVG embedded at full page width
+ *   3. Legend: one row per committed visible series — colour swatch + label
+ *   4. Page-number footer "Page n / N"
+ */
+export async function generatePlotPdf(ctx: PlotPdfContext): Promise<void> {
+  const { svgString, series, url, filename } = ctx;
+
+  const { default: jsPDF } = await import("jspdf");
+  // Use landscape orientation for wider canvas to accommodate the plot
+  const doc = new jsPDF({ orientation: "landscape", unit: "mm", format: "a4" });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const margin = 15;
+
+  const visibleSeries = series.filter((s) => s.visible);
+
+  // --- Header block ---
+  const headerLeft = margin;
+  let y = margin;
+
+  // App name
+  doc.setFontSize(14);
+  doc.setFont("helvetica", "bold");
+  doc.text("dEdx Web", headerLeft, y);
+  y += 8;
+
+  // Generated timestamp (ISO 8601 UTC)
+  const generatedAt = new Date().toISOString();
+  doc.setFontSize(8);
+  doc.setFont("helvetica", "normal");
+  doc.text(`Generated: ${generatedAt}`, headerLeft, y);
+  y += 5;
+
+  // URL — rendered as a clickable hyperlink
+  doc.setTextColor(0, 0, 180);
+  doc.textWithLink(url, headerLeft, y, { url });
+  doc.setTextColor(0, 0, 0);
+  y += 8;
+
+  // Horizontal rule
+  doc.setDrawColor(200);
+  doc.setLineWidth(0.2);
+  doc.line(margin, y, pageWidth - margin, y);
+  y += 6;
+
+  // --- Chart SVG ---
+  // Only embed if we have SVG content
+  if (svgString) {
+    // Calculate chart height to fit page width with some margins
+    const chartWidth = pageWidth - 2 * margin;
+    const chartHeight = pageHeight * 0.5; // Use 50% of page height for chart
+
+    // Embed SVG using jsPDF's html() method (works with SVG strings)
+    doc.html(svgString, {
+      x: margin,
+      y: y,
+      width: chartWidth,
+      height: chartHeight,
+    });
+    y += chartHeight + 5;
+  }
+
+  // --- Legend section ---
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("Legend", headerLeft, y);
+  y += 6;
+
+  const legendRowHeight = 5;
+  const swatchSize = 4;
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+
+  const bottomMargin = 12;
+  const rowsPerPage = Math.max(1, Math.floor((pageHeight - y - bottomMargin) / legendRowHeight));
+  const totalPages = Math.max(1, Math.ceil(visibleSeries.length / rowsPerPage));
+
+  let currentPage = 1;
+
+  for (const s of visibleSeries) {
+    // Check if we need a new page
+    if (y + legendRowHeight > pageHeight - bottomMargin) {
+      addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
+      doc.addPage();
+      currentPage += 1;
+      y = margin + 5;
+
+      // Re-write legend header on new page
+      doc.setFontSize(10);
+      doc.setFont("helvetica", "bold");
+      doc.text("Legend (continued)", headerLeft, y);
+      y += 6;
+      doc.setFontSize(9);
+      doc.setFont("helvetica", "normal");
+    }
+
+    // Draw colour swatch (small filled rectangle)
+    doc.setFillColor(s.color);
+    doc.rect(headerLeft, y - 3, swatchSize, swatchSize, "F");
+
+    // Draw series label next to swatch
+    doc.text(s.label, headerLeft + swatchSize + 2, y);
+    y += legendRowHeight;
+    seriesIndex++;
+  }
+
+  // Footer on the last (or only) page
+  addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
+
+  // Save PDF
+  doc.save(filename);
 }
