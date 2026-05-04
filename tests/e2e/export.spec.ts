@@ -89,3 +89,106 @@ test.describe("Calculator export — toolbar buttons", () => {
     expect(buf.slice(0, 4).toString("ascii")).toBe("%PDF");
   });
 });
+
+test.describe("Plot export", () => {
+  // Helper to check WASM availability - skips tests if WASM binary is absent
+  // CI downloads artifact before running E2E.
+  async function checkWasmAvailable(page: any) {
+    try {
+      const response = await page.request.get("/wasm/libdedx.wasm");
+      return response.ok();
+    } catch {
+      return false;
+    }
+  }
+
+  test("Export buttons disabled on plot page with no series", async ({ page }) => {
+    // Skip if WASM binaries are missing
+    // Skipped when WASM binary absent. CI downloads artifact before running E2E.
+    const wasmAvailable = await checkWasmAvailable(page);
+    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+
+    await page.goto("/plot");
+    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+
+    const exportPdf = page.getByRole("button", { name: /export pdf/i });
+    const exportCsv = page.getByRole("button", { name: /export csv/i });
+
+    // Without any series, export buttons should be disabled
+    await expect(exportPdf).toBeDisabled();
+    await expect(exportCsv).toBeDisabled();
+  });
+
+  test("Export CSV enabled after adding a series", async ({ page }) => {
+    // Check WASM availability before running
+    // Skipped when WASM binary absent. CI downloads artifact before running E2E.
+    const wasmAvailable = await checkWasmAvailable(page);
+    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+
+    await page.goto("/plot");
+    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+
+    // Add a series using the default selection (Proton in Water)
+    const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await expect(addSeriesButton).toBeEnabled();
+    await addSeriesButton.click();
+
+    // Wait for JSROOT to render the series
+    await page.waitForTimeout(2000);
+
+    const exportCsv = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsv).toBeEnabled();
+  });
+
+  test("SVG vector download from image dropdown", async ({ page }) => {
+    // Check WASM availability before running
+    // Skipped when WASM binary absent. CI downloads artifact before running E2E.
+    const wasmAvailable = await checkWasmAvailable(page);
+    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+
+    await page.goto("/plot");
+    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+
+    // Add a series first
+    const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await addSeriesButton.click();
+    await page.waitForTimeout(2000);
+
+    // Open the image export dropdown
+    const imageExportButton = page.getByRole("button", { name: /export.*image/i });
+    await expect(imageExportButton).toBeVisible();
+    await imageExportButton.click();
+
+    // Select SVG vector
+    const svgOption = page.getByRole("menuitem", { name: /svg vector/i });
+    await expect(svgOption).toBeVisible();
+
+    const [download] = await Promise.all([page.waitForEvent("download"), svgOption.click()]);
+
+    // Check the downloaded file has .svg extension
+    expect(download.suggestedFilename()).toMatch(/\.svg$/);
+  });
+
+  test("Export CSV download has correct filename", async ({ page }) => {
+    // Check WASM availability before running
+    // Skipped when WASM binary absent. CI downloads artifact before running E2E.
+    const wasmAvailable = await checkWasmAvailable(page);
+    test.skip(!wasmAvailable, "Skipped when WASM binary absent. CI downloads artifact before running E2E.");
+
+    await page.goto("/plot");
+    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+
+    // Add a series first
+    const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await addSeriesButton.click();
+    await page.waitForTimeout(2000);
+
+    const exportCsv = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsv).toBeEnabled();
+
+    const [download] = await Promise.all([page.waitForEvent("download"), exportCsv.click()]);
+
+    // Check the downloaded file has the correct filename
+    expect(download.suggestedFilename()).toBe("dedx_plot_data.csv");
+  });
+});
