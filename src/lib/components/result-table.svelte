@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { isAdvancedMode } from "$lib/state/ui.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import { autoScaleLengthCm } from "$lib/utils/unit-conversions";
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";

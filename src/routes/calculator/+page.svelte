@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { wasmReady, wasmError, isAdvancedMode } from "$lib/state/ui.svelte";
+  import { wasmReady, wasmError } from "$lib/state/ui.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
