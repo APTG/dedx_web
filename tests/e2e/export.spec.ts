@@ -1,4 +1,4 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 test.describe("Calculator export — toolbar buttons", () => {
   test("Export PDF and Export CSV become enabled after a result is computed", async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe("Calculator export — toolbar buttons", () => {
 test.describe("Plot export", () => {
   // Helper to check WASM availability - skips tests if WASM binary is absent
   // CI downloads artifact before running E2E.
-  async function checkWasmAvailable(page: any) {
+  async function checkWasmAvailable(page: Page) {
     try {
       const response = await page.request.get("/wasm/libdedx.wasm");
       return response.ok();
@@ -137,7 +137,9 @@ test.describe("Plot export", () => {
     await page.waitForTimeout(2000);
 
     const exportCsv = page.getByRole("button", { name: /export csv/i });
+    const exportPdf = page.getByRole("button", { name: /export pdf/i });
     await expect(exportCsv).toBeEnabled();
+    await expect(exportPdf).toBeEnabled();
   });
 
   test("SVG vector download from image dropdown", async ({ page }) => {
