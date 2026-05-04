@@ -4,7 +4,9 @@ import type {
   ParticleEntity,
   MaterialEntity,
   CalculationResult,
+  AdvancedOptions,
 } from "../types";
+import { LibdedxError } from "../types";
 
 const mockPrograms: ProgramEntity[] = [
   { id: 1, name: "ASTAR", version: "1.0" },
@@ -96,11 +98,38 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     energies: number[],
   ): CalculationResult {
+    // Simulate error for unknown program IDs
+    if (!mockPrograms.some((p) => p.id === programId)) {
+      throw new LibdedxError(-1, `Unknown program ID: ${programId}`);
+    }
     return {
       energies,
       stoppingPowers: energies.map((e) => Math.log(e + 1)),
       csdaRanges: energies.map((e) => Math.pow(e, 1.5)),
     };
+  }
+
+  calculateMulti({
+    programIds,
+    particleId,
+    materialId,
+    energies,
+  }: {
+    programIds: number[];
+    particleId: number;
+    materialId: number;
+    energies: number[];
+    options?: AdvancedOptions;
+  }): Map<number, CalculationResult | LibdedxError> {
+    const results = new Map<number, CalculationResult | LibdedxError>();
+    for (const programId of programIds) {
+      try {
+        results.set(programId, this.calculate(programId, particleId, materialId, energies));
+      } catch (e) {
+        results.set(programId, e instanceof LibdedxError ? e : new LibdedxError(-1, String(e)));
+      }
+    }
+    return results;
   }
 
   getPlotData(
@@ -114,6 +143,14 @@ export class LibdedxServiceImpl implements LibdedxService {
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
     );
     return this.calculate(programId, particleId, materialId, energies);
+  }
+
+  getMinEnergy(_programId: number, _particleId: number): number {
+    return 0.001;
+  }
+
+  getMaxEnergy(_programId: number, _particleId: number): number {
+    return 1000;
   }
 }
 
@@ -180,7 +217,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     return [];
   }
 
-  getMaterials(programId: number): MaterialEntity[] {
+  getMaterials(_programId: number): MaterialEntity[] {
     return [
       { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
       { id: 267, name: "Air", density: 0.0012, isGasByDefault: true },
@@ -193,11 +230,38 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     materialId: number,
     energies: number[],
   ): CalculationResult {
+    const knownPrograms = [2, 3, 4]; // PSTAR, ESTAR, MSTAR
+    if (!knownPrograms.includes(programId)) {
+      throw new LibdedxError(-1, `Unknown program ID: ${programId}`);
+    }
     return {
       energies,
       stoppingPowers: energies.map((e) => Math.log(e + 1)),
       csdaRanges: energies.map((e) => Math.pow(e, 1.5)),
     };
+  }
+
+  calculateMulti({
+    programIds,
+    particleId,
+    materialId,
+    energies,
+  }: {
+    programIds: number[];
+    particleId: number;
+    materialId: number;
+    energies: number[];
+    options?: AdvancedOptions;
+  }): Map<number, CalculationResult | LibdedxError> {
+    const results = new Map<number, CalculationResult | LibdedxError>();
+    for (const programId of programIds) {
+      try {
+        results.set(programId, this.calculate(programId, particleId, materialId, energies));
+      } catch (e) {
+        results.set(programId, e instanceof LibdedxError ? e : new LibdedxError(-1, String(e)));
+      }
+    }
+    return results;
   }
 
   getPlotData(
@@ -211,5 +275,13 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
     );
     return this.calculate(programId, particleId, materialId, energies);
+  }
+
+  getMinEnergy(_programId: number, _particleId: number): number {
+    return 0.001;
+  }
+
+  getMaxEnergy(_programId: number, _particleId: number): number {
+    return 1000;
   }
 }
