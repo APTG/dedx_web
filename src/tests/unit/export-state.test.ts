@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach, afterEach, vi } from "vitest";
+import { describe, test, expect, beforeEach, vi } from "vitest";
 import type { PlotSeries } from "$lib/state/plot.svelte";
 
 // Module-level mocks for dynamic imports used by exportPlotCsv / exportPlotPdf
@@ -111,6 +111,7 @@ describe("exportPlotCsv", () => {
       series: [makeMockSeries(1, 1, 1, true)],
       stpUnit: "MeV/cm" as const,
     };
+    // getSvg is required by initPlotExportState but unused by the CSV path
     exportModule.initPlotExportState(plotState, () => Promise.resolve(null));
     exportModule.exportPlotCsv();
 
@@ -154,6 +155,7 @@ describe("exportPlotPdf", () => {
       expect.objectContaining({
         svgString: testSvg,
         series: plotState.series,
+        // exportPlotPdf hardcodes this filename; assert it's forwarded as-is
         filename: "dedx_plot_report.pdf",
       }),
     );
