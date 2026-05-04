@@ -42,6 +42,7 @@ Web Worker offloading.
 
 Added to `docs/03-architecture.md` §3: "WASM on the main thread — Web Worker
 strategy" subsection with:
+
 - Workload estimates (single calculation < 20 ms; 8-series plot < 160 ms)
 - Deferred decision rationale (main-thread blocking within acceptable budgets)
 - Concrete migration path: `ENVIRONMENT='web,worker'`, no SharedArrayBuffer
@@ -59,6 +60,7 @@ The app has `site.webmanifest` but no Service Worker. `libdedx.wasm` and
 (content-hashed, long-lived cache), WASM files re-validate every 10 minutes.
 
 Added `docs/09-non-functional-requirements.md` §3.1 "Browser caching":
+
 - First load vs repeat visit vs post-deploy behavior table
 - Re-validation cost (304, a few ms) — acceptable for infrequent scientific tool
 - Service Worker deferred: offline not a v1 requirement; stale WASM risk with
@@ -84,24 +86,24 @@ Updated `docs/02-tech-stack.md` §7 Emscripten: pin now shows current stable
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `docs/progress/stage-2.md` | "Node.js 25" → "Node.js 24 LTS (24.14)"; WASM init row updated to non-blocking description |
-| `docs/03-architecture.md` | §10: replaced contradictory blocking `+layout.ts` code; §3: added Web Worker strategy subsection; §12: expanded WASM binary size row, added main-thread computation row |
-| `docs/09-non-functional-requirements.md` | Added §3.1 "Browser caching" subsection |
-| `docs/02-tech-stack.md` | §7 Emscripten: added current stable version 5.0.5; added changelog-impact table |
-| `docs/decisions/003-wasm-build-pipeline.md` | Added "Emscripten changelog notes" subsection in Decision section |
+| File                                        | Change                                                                                                                                                                  |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/progress/stage-2.md`                  | "Node.js 25" → "Node.js 24 LTS (24.14)"; WASM init row updated to non-blocking description                                                                              |
+| `docs/03-architecture.md`                   | §10: replaced contradictory blocking `+layout.ts` code; §3: added Web Worker strategy subsection; §12: expanded WASM binary size row, added main-thread computation row |
+| `docs/09-non-functional-requirements.md`    | Added §3.1 "Browser caching" subsection                                                                                                                                 |
+| `docs/02-tech-stack.md`                     | §7 Emscripten: added current stable version 5.0.5; added changelog-impact table                                                                                         |
+| `docs/decisions/003-wasm-build-pipeline.md` | Added "Emscripten changelog notes" subsection in Decision section                                                                                                       |
 
 ---
 
 ## Inputs Read
 
-| File | Purpose |
-|------|---------|
-| `docs/resources/emscripten-changelog.md` | Emscripten 5.x changelog — identified 3 relevant entries |
-| `docs/progress/stage-2.md` | Found Node.js 25 inconsistency |
-| `docs/03-architecture.md` | Full review for §10 contradiction and insertion points |
-| `docs/09-non-functional-requirements.md` | Found missing caching section |
-| `docs/02-tech-stack.md` | §7 Emscripten section |
-| `docs/decisions/003-wasm-build-pipeline.md` | ADR 003 for changelog notes insertion |
-| `docs/06-wasm-api-contract.md` | `LibdedxService` interface — confirmed synchronous `calculate()` return type |
+| File                                        | Purpose                                                                      |
+| ------------------------------------------- | ---------------------------------------------------------------------------- |
+| `docs/resources/emscripten-changelog.md`    | Emscripten 5.x changelog — identified 3 relevant entries                     |
+| `docs/progress/stage-2.md`                  | Found Node.js 25 inconsistency                                               |
+| `docs/03-architecture.md`                   | Full review for §10 contradiction and insertion points                       |
+| `docs/09-non-functional-requirements.md`    | Found missing caching section                                                |
+| `docs/02-tech-stack.md`                     | §7 Emscripten section                                                        |
+| `docs/decisions/003-wasm-build-pipeline.md` | ADR 003 for changelog notes insertion                                        |
+| `docs/06-wasm-api-contract.md`              | `LibdedxService` interface — confirmed synchronous `calculate()` return type |

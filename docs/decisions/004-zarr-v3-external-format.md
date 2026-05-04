@@ -10,13 +10,13 @@ The external-data feature ([`docs/04-feature-specs/external-data.md`](../04-feat
 requires a browser-consumable storage format for user-hosted stopping-power
 datasets (`.webdedx` stores). The format must satisfy:
 
-| Requirement | Detail |
-|-------------|--------|
-| **Per-ion partial reads** | The user selects one particle at a time. Fetching all particles to read one must be avoided. |
-| **HTTP Range Requests** | No server-side logic — data is served as static files from S3, GitHub Pages, or nginx. |
-| **Browser JS reader ≤ 50 kB minified** | No native Node.js dependencies. The reader must work in a SvelteKit browser bundle. |
-| **3-D array structure** | Shape `(n_particles, n_materials, n_energies)`. Two quantities: STP and (optionally) CSDA range. One shared energy coordinate per program. |
-| **CORS-friendly** | All files served under a URL prefix with `Access-Control-Allow-Origin: *`. |
+| Requirement                            | Detail                                                                                                                                     |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Per-ion partial reads**              | The user selects one particle at a time. Fetching all particles to read one must be avoided.                                               |
+| **HTTP Range Requests**                | No server-side logic — data is served as static files from S3, GitHub Pages, or nginx.                                                     |
+| **Browser JS reader ≤ 50 kB minified** | No native Node.js dependencies. The reader must work in a SvelteKit browser bundle.                                                        |
+| **3-D array structure**                | Shape `(n_particles, n_materials, n_energies)`. Two quantities: STP and (optionally) CSDA range. One shared energy coordinate per program. |
+| **CORS-friendly**                      | All files served under a URL prefix with `Access-Control-Allow-Origin: *`.                                                                 |
 
 The original spec (`external-data.md` v1–v4) used **Apache Parquet** with the
 `hyparquet` reader. Spike 4 (`prototypes/extdata-formats/`, 2026-04-18) evaluated
@@ -28,12 +28,12 @@ three candidates on a real S3 bucket with measured HTTP traffic.
 
 ### A. Apache Parquet + hyparquet (original spec)
 
-| Property | Value |
-|----------|-------|
+| Property                    | Value                                             |
+| --------------------------- | ------------------------------------------------- |
 | Cold-start bytes (S3, wifi) | **466 KB** — 320.8 KB footer + 145.2 KB row group |
-| Per-ion fetch | 2 requests: footer Range + row-group Range |
-| JS reader | `hyparquet` ~20 kB minified |
-| Local file size | 87.86 MB (single file) |
+| Per-ion fetch               | 2 requests: footer Range + row-group Range        |
+| JS reader                   | `hyparquet` ~20 kB minified                       |
+| Local file size             | 87.86 MB (single file)                            |
 
 **Problem:** Parquet stores statistics for every column cell in the footer; with
 287 particles × 165 energies × 379 materials, this footer grows to 320.8 KB and
@@ -42,13 +42,13 @@ for 69% of the cold-start bytes.
 
 ### B. Zarr v3 single-shard + zarrita
 
-| Property | Value |
-|----------|-------|
+| Property                       | Value                                                                                                |
+| ------------------------------ | ---------------------------------------------------------------------------------------------------- |
 | Cold-start bytes (browser, S3) | **230.2 KB** — 86.5 KB zarr.json + 1.3 KB array meta + 20 B HEAD + 4.5 KB ZEP2 index + 137.5 KB data |
-| Per-ion fetch | 7 requests |
-| ZEP2 shard index | **4.5 KB** (287 inner chunks × 16 B + 4 B CRC) |
-| JS reader | zarrita core 38.62 kB |
-| Local file size | 82.16 MB (6 files) |
+| Per-ion fetch                  | 7 requests                                                                                           |
+| ZEP2 shard index               | **4.5 KB** (287 inner chunks × 16 B + 4 B CRC)                                                       |
+| JS reader                      | zarrita core 38.62 kB                                                                                |
+| Local file size                | 82.16 MB (6 files)                                                                                   |
 
 **Problem:** A single-shard store places all 287 ions in one shard file. The
 ZEP2 shard index must enumerate all inner chunks (287 × 16 + 4 = 4.5 KB)
@@ -57,14 +57,14 @@ before any one ion can be located. Simpler to deploy (fewer files) but adds
 
 ### C. Zarr v3 per-ion shards + zarrita (adopted)
 
-| Property | Value |
-|----------|-------|
+| Property                       | Value                                                                                                 |
+| ------------------------------ | ----------------------------------------------------------------------------------------------------- |
 | Cold-start bytes (browser, S3) | **225.7 KB** — 86.5 KB zarr.json + 1.3 KB array meta + 0 B HEAD + **20 B** ZEP2 index + 137.5 KB data |
-| Per-ion fetch | 7 requests |
-| ZEP2 shard index | **20 B** (1 inner chunk × 16 B + 4 B CRC) |
-| JS reader | zarrita core 38.62 kB (gzip 12.89 kB); LZ4 codec chunk 36.59 kB |
-| Local file size | 82.16 MB (578 files for 287 particles × 1 program) |
-| File count concern | ~2 + n\_programs × (2 × n\_particles + 2) files — confirmed OK on S3 and GitHub Pages (Spike 4 AC #12) |
+| Per-ion fetch                  | 7 requests                                                                                            |
+| ZEP2 shard index               | **20 B** (1 inner chunk × 16 B + 4 B CRC)                                                             |
+| JS reader                      | zarrita core 38.62 kB (gzip 12.89 kB); LZ4 codec chunk 36.59 kB                                       |
+| Local file size                | 82.16 MB (578 files for 287 particles × 1 program)                                                    |
+| File count concern             | ~2 + n_programs × (2 × n_particles + 2) files — confirmed OK on S3 and GitHub Pages (Spike 4 AC #12)  |
 
 ---
 

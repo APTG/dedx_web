@@ -35,13 +35,13 @@ Deployed: abc1234 · 2026-04-12 · feat/my-branch
 
 Where:
 
-| Element | Value | Notes |
-|---------|-------|-------|
-| **Commit hash** | 7-character short hash | Rendered as a hyperlink (see §4). |
-| **Date** | `YYYY-MM-DD` | ISO 8601; consistent across build locales. |
-| **Branch / tag** | Branch name or tag | `heads/` prefix stripped (e.g., `heads/master` → `master`); tag refs kept as-is (e.g., `tags/v1.0`). |
+| Element          | Value                  | Notes                                                                                                |
+| ---------------- | ---------------------- | ---------------------------------------------------------------------------------------------------- |
+| **Commit hash**  | 7-character short hash | Rendered as a hyperlink (see §4).                                                                    |
+| **Date**         | `YYYY-MM-DD`           | ISO 8601; consistent across build locales.                                                           |
+| **Branch / tag** | Branch name or tag     | `heads/` prefix stripped (e.g., `heads/master` → `master`); tag refs kept as-is (e.g., `tags/v1.0`). |
 
-The three elements are separated by ` · ` (space · space).
+The three elements are separated by `·` (space · space).
 
 ### Link
 
@@ -72,13 +72,13 @@ the source tree before the React build:
 }
 ```
 
-| Field | Source |
-|-------|--------|
-| `date` | `new Date().toISOString().slice(0, 10)` — always `YYYY-MM-DD` |
-| `commit` | `git rev-parse --short HEAD` |
-| `commitFull` | `git rev-parse HEAD` |
-| `branch` | `git describe --all`, with `heads/` prefix stripped |
-| `repoUrl` | Hard-coded repository URL |
+| Field        | Source                                                        |
+| ------------ | ------------------------------------------------------------- |
+| `date`       | `new Date().toISOString().slice(0, 10)` — always `YYYY-MM-DD` |
+| `commit`     | `git rev-parse --short HEAD`                                  |
+| `commitFull` | `git rev-parse HEAD`                                          |
+| `branch`     | `git describe --all`, with `heads/` prefix stripped           |
+| `repoUrl`    | Hard-coded repository URL                                     |
 
 > **Note:** `repoUrl` is hard-coded in `deploy.js` rather than read from
 > `package.json` to avoid a dependency on the npm package manifest format.

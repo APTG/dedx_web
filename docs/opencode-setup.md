@@ -9,15 +9,16 @@ completion without manual "please continue" interventions.
 
 ## Prerequisites
 
-| Tool | Version | Install |
-|------|---------|---------|
-| opencode | latest | `npm install -g opencode-ai` or see [opencode.ai](https://opencode.ai) |
-| Node.js | 24 LTS | [nodejs.org](https://nodejs.org) or `nvm install 24` |
-| pnpm | 9+ | `npm install -g pnpm` |
-| Docker | 24+ | Required only for WASM builds (Stage 3+) |
-| Git | 2.38+ | For sparse submodule support |
+| Tool     | Version | Install                                                                |
+| -------- | ------- | ---------------------------------------------------------------------- |
+| opencode | latest  | `npm install -g opencode-ai` or see [opencode.ai](https://opencode.ai) |
+| Node.js  | 24 LTS  | [nodejs.org](https://nodejs.org) or `nvm install 24`                   |
+| pnpm     | 9+      | `npm install -g pnpm`                                                  |
+| Docker   | 24+     | Required only for WASM builds (Stage 3+)                               |
+| Git      | 2.38+   | For sparse submodule support                                           |
 
 Verify:
+
 ```sh
 opencode --version
 node --version   # should print v24.x
@@ -35,6 +36,7 @@ pnpm install
 ```
 
 If you cloned without `--recurse-submodules`:
+
 ```sh
 git submodule update --init --recursive
 ```
@@ -43,14 +45,14 @@ git submodule update --init --recursive
 
 See [`vendor/README.md`](../vendor/README.md) for the full index. Summary:
 
-| Submodule | Purpose for AI agents |
-|-----------|----------------------|
-| `vendor/jsroot` | JSROOT 7 TypeScript types + API narrative |
-| `vendor/zarrita` | zarrita 0.7.x source (Zarr v3 reader) |
-| `vendor/svelte` | Svelte 5 docs (`documentation/docs/`) including runes + legacy guide |
-| `vendor/svelte-ai-tools` | `@sveltejs/opencode` plugin source |
-| `vendor/shadcn-svelte` | shadcn-svelte component templates |
-| `vendor/bits-ui` | Bits UI headless primitive source |
+| Submodule                | Purpose for AI agents                                                |
+| ------------------------ | -------------------------------------------------------------------- |
+| `vendor/jsroot`          | JSROOT 7 TypeScript types + API narrative                            |
+| `vendor/zarrita`         | zarrita 0.7.x source (Zarr v3 reader)                                |
+| `vendor/svelte`          | Svelte 5 docs (`documentation/docs/`) including runes + legacy guide |
+| `vendor/svelte-ai-tools` | `@sveltejs/opencode` plugin source                                   |
+| `vendor/shadcn-svelte`   | shadcn-svelte component templates                                    |
+| `vendor/bits-ui`         | Bits UI headless primitive source                                    |
 
 ---
 
@@ -88,6 +90,7 @@ The `@sveltejs/opencode` plugin is declared in `opencode.json` and runs the
 Svelte MCP server as a local stdio process.
 
 **What it provides:**
+
 - `list-sections` — find Svelte 5 documentation sections
 - `get-documentation` — retrieve full doc for a section
 - `svelte-autofixer` — analyse `.svelte` code, detect Svelte 4 patterns
@@ -120,12 +123,14 @@ Configured in `opencode.json` as an `npx` invocation. Provides browser
 automation and E2E test generation.
 
 **First-time setup** (install Playwright and its browsers):
+
 ```sh
 pnpm add -D @playwright/test
 pnpm exec playwright install --with-deps chromium
 ```
 
 If `--with-deps` fails (common on Linux Mint due to an unrelated apt GPG issue):
+
 ```sh
 pnpm exec playwright install chromium
 ```
@@ -152,11 +157,11 @@ loads `AGENTS.md` as context.
 
 In the opencode UI, select the **PLGrid** provider and one of:
 
-| Model | Context | Best for |
-|-------|---------|---------|
-| `Qwen/Qwen3.5-397B-A17B-FP8` | 131 K | Main orchestrator, implementer subagent |
-| `Qwen/Qwen3.5-122B-A10B` | 131 K | Medium tasks, fallback |
-| `Qwen/Qwen3.6-35B-A3B` | 80 K | Quick fixes, reviewer subagent |
+| Model                        | Context | Best for                                |
+| ---------------------------- | ------- | --------------------------------------- |
+| `Qwen/Qwen3.5-397B-A17B-FP8` | 131 K   | Main orchestrator, implementer subagent |
+| `Qwen/Qwen3.5-122B-A10B`     | 131 K   | Medium tasks, fallback                  |
+| `Qwen/Qwen3.6-35B-A3B`       | 80 K    | Quick fixes, reviewer subagent          |
 
 **Always use `Qwen3.5-397B` as your main session model.** The subagents
 `implementer` and `reviewer` have their models fixed in `opencode.json` regardless
@@ -210,6 +215,7 @@ Each has a bounded task with an explicit completion signal (`TASK DONE:` /
 ### How to start a feature session
 
 1. Check out your branch:
+
    ```sh
    git checkout -b qwen/feature-name
    ```
@@ -254,11 +260,11 @@ Write CHANGELOG-AI.md entry and docs/ai-logs/YYYY-MM-DD-export-csv-pdf.md.
 
 ### Agent reference
 
-| Agent | Model | `maxSteps` | Role |
-|-------|-------|-----------|------|
-| `implementer` | Qwen3.5-397B | 80 | Writes code + tests, runs lint/test/build, commits |
-| `reviewer` | Qwen3.6-35B | 30 | Runs lint/test, reports issues, does not edit |
-| `svelte-file-editor` | Qwen3.5-397B | 30 | Auto-invoked for `.svelte` file edits |
+| Agent                | Model        | `maxSteps` | Role                                               |
+| -------------------- | ------------ | ---------- | -------------------------------------------------- |
+| `implementer`        | Qwen3.5-397B | 80         | Writes code + tests, runs lint/test/build, commits |
+| `reviewer`           | Qwen3.6-35B  | 30         | Runs lint/test, reports issues, does not edit      |
+| `svelte-file-editor` | Qwen3.5-397B | 30         | Auto-invoked for `.svelte` file edits              |
 
 Full agent documentation: [`.opencode/agents/`](../.opencode/agents/)
 

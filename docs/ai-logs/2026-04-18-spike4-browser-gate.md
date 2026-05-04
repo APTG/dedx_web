@@ -63,6 +63,7 @@ that zarrita uses Range requests **for per-ion shards too** — not plain GETs
 as claimed in earlier VERDICT.md §5.
 
 Per-ion shard access sequence:
+
 1. HEAD probe to `c/0/0/0` (0 bytes — gets `Content-Length` from headers)
 2. Range `bytes=140812-140831` (20 bytes — ZEP2 shard index, 1 inner chunk × 16 + 4 CRC)
 3. Range `bytes=0-140811` (137.5 KB — data)
@@ -76,6 +77,7 @@ invisible at KB resolution. The per-request Range capture in the browser app
 revealed the full picture.
 
 VERDICT.md §3 (AC #11), §4 (Q11), and §5 rationale updated to reflect this:
+
 - "no Range headers needed" claim removed
 - "2 requests per cold start" corrected to 7 (including .zattrs/.zgroup compat probe)
 - Per-ion advantage restated as: shard index = 20 bytes vs 4.5 KB
@@ -85,6 +87,7 @@ VERDICT.md §3 (AC #11), §4 (Q11), and §5 rationale updated to reflect this:
 ### Additional Finding: zarrita v2 Compatibility Probe
 
 Every `open(root(store), { kind: "group" })` call issues two extra requests:
+
 - `GET .zattrs` (0.2 KB, ~54 ms)
 - `GET .zgroup` (0.2 KB, ~14 ms)
 
@@ -97,10 +100,10 @@ post-gate investigation item.
 
 ### Cold-Start Results (browser, wifi)
 
-| Format | HTTP requests | Total bytes | Total time |
-|--------|---------------|-------------|------------|
-| Zarr per-ion | 7 | 225.7 KB | 287 ms |
-| Zarr single-shard | 7 | 230.2 KB | 210 ms |
+| Format            | HTTP requests | Total bytes | Total time |
+| ----------------- | ------------- | ----------- | ---------- |
+| Zarr per-ion      | 7             | 225.7 KB    | 287 ms     |
+| Zarr single-shard | 7             | 230.2 KB    | 210 ms     |
 
 Byte counts match the Python S3 baseline (per-ion 224 KB, single 230 KB).
 Timing differences within normal variance on fast wifi.

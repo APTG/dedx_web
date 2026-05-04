@@ -3,11 +3,13 @@
 ## Session Narrative
 
 ### Prompt 1: Include test-driven principles in migration plan docs, create PR, explain Stage 3 impact
+
 **AI response**: Reviewed migration and testing documents, then proposed and applied documentation updates to embed RED→GREEN→REFACTOR guidance into migration planning and Stage 3 execution expectations. Updated Stage 3 inputs to explicitly include testing-strategy sections and `wasm/verify.mjs`-first workflow, and prepared PR-ready documentation/log updates (**GPT-5 via Copilot Task Agent**).
 
 ## Tasks
 
 ### Add TDD guidance to migration planning docs
+
 - **Status**: completed
 - **Stage**: meta (affects Stage 3 execution guidance)
 - **Files changed**:
@@ -18,6 +20,7 @@
 - **Issue**: None.
 
 ### Update AI session logging artifacts
+
 - **Status**: completed
 - **Stage**: meta
 - **Files changed**:

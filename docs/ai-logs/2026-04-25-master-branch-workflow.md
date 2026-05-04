@@ -5,12 +5,14 @@
 ## Session Narrative
 
 ### Prompt 1: Drop develop branch strategy, update CI and docs, improve README deployment links
+
 **AI response**: The project had a two-branch strategy (`develop` → `master`) inherited
 from legacy planning documents, but the team decided to merge feature branches directly to
 `master` (as opencode was already doing successfully). Updated all GitHub Actions workflows
 and documentation to reflect the single-branch workflow.
 
 Changes made:
+
 - `deploy.yml` trigger changed from `branches: [develop]` to `branches: [master]`;
   removed the Phase 1/Phase 2 comment scaffolding since the transition is complete.
 - `ci.yml` removed `develop` from both `push.branches` and `pull_request.branches`.
@@ -26,6 +28,7 @@ Changes made:
 ## Tasks
 
 ### Drop develop branch from CI/deploy workflows
+
 - **Status**: completed
 - **Stage**: cross-cutting (workflow hygiene)
 - **Files changed**:

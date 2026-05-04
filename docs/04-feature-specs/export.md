@@ -63,6 +63,7 @@
 > all five on-screen unified table columns including normalized energy.
 >
 > **Related specs:**
+>
 > - Calculator page: [`calculator.md`](calculator.md)
 > - Multi-program advanced mode: [`multi-program.md`](multi-program.md)
 > - Plot page: [`plot.md`](plot.md)
@@ -103,11 +104,11 @@ redesign. The export sections in [`calculator.md`](calculator.md),
 [`multi-program.md`](multi-program.md), and [`plot.md`](plot.md) contain
 brief summaries that point here for the full detail.
 
-| Page / Mode | Export formats |
-|-------------|---------------|
-| Calculator — basic mode | CSV, PDF |
-| Calculator — advanced / multi-program | CSV, PDF |
-| Plot | Image (PNG or SVG via dropdown), CSV, PDF |
+| Page / Mode                           | Export formats                            |
+| ------------------------------------- | ----------------------------------------- |
+| Calculator — basic mode               | CSV, PDF                                  |
+| Calculator — advanced / multi-program | CSV, PDF                                  |
+| Plot                                  | Image (PNG or SVG via dropdown), CSV, PDF |
 
 ---
 
@@ -124,16 +125,16 @@ on both the Calculator and the Plot pages in identical positions.
 └──────────────────────────────────────────────────────────────────────────┘
 ```
 
-| Button | No-results state | Results available |
-|--------|-----------------|-------------------|
-| "Export PDF" | Disabled (greyed out) | Active |
+| Button         | No-results state      | Results available                                                        |
+| -------------- | --------------------- | ------------------------------------------------------------------------ |
+| "Export PDF"   | Disabled (greyed out) | Active                                                                   |
 | "Export CSV ↓" | Disabled (greyed out) | Active (basic: direct download; advanced: opens config modal — see §1.1) |
 
 **"No results"** means: no committed (non-preview) rows/series exist yet.
 On the Calculator page this means no row has a computed result; on the
 Plot page this means no committed series has been added.
 
-**Rationale:** PDF and CSV export are *sharing and archiving* actions —
+**Rationale:** PDF and CSV export are _sharing and archiving_ actions —
 the same intent as "Share URL". Keeping Share URL as the rightmost action
 reflects that it is the primary sharing gesture; PDF/CSV are secondary.
 Grouping all three together keeps the content area clean and makes the
@@ -147,17 +148,17 @@ controls bar, adjacent to the canvas it captures.
 
 All exported CSV files share these rules:
 
-| Property | Value |
-|----------|-------|
-| Encoding | UTF-8 **with BOM** (ensures correct rendering in Windows Excel) |
-| Delimiter | Comma (`,`) |
-| Line endings | CRLF |
-| Quoting | RFC 4180-style: values containing commas, `"`, CR, or LF are wrapped in double quotes; internal `"` characters are escaped by doubling them (`""`); all other values are unquoted |
-| First row | Column headers (immediately after any `#` comment rows — see §4.3) |
-| Numeric precision | 4 significant figures, matching on-screen display |
-| Thousands separator | None (`13920` not `13,920`) |
-| CSDA per-cell unit | Value and unit suffix in the same cell (e.g., `7.718 cm`); the column header carries no unit |
-| Stopping power unit | Active display unit appears in the column header (e.g., `Stopping Power (keV/µm)`) |
+| Property            | Value                                                                                                                                                                             |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Encoding            | UTF-8 **with BOM** (ensures correct rendering in Windows Excel)                                                                                                                   |
+| Delimiter           | Comma (`,`)                                                                                                                                                                       |
+| Line endings        | CRLF                                                                                                                                                                              |
+| Quoting             | RFC 4180-style: values containing commas, `"`, CR, or LF are wrapped in double quotes; internal `"` characters are escaped by doubling them (`""`); all other values are unquoted |
+| First row           | Column headers (immediately after any `#` comment rows — see §4.3)                                                                                                                |
+| Numeric precision   | 4 significant figures, matching on-screen display                                                                                                                                 |
+| Thousands separator | None (`13920` not `13,920`)                                                                                                                                                       |
+| CSDA per-cell unit  | Value and unit suffix in the same cell (e.g., `7.718 cm`); the column header carries no unit                                                                                      |
+| Stopping power unit | Active display unit appears in the column header (e.g., `Stopping Power (keV/µm)`)                                                                                                |
 
 ### 1.1 Advanced-Mode CSV Export Configuration Modal
 
@@ -183,11 +184,11 @@ always downloads directly with the default settings.
 └─────────────────────────────────────────────┘
 ```
 
-| Field | Default | Options |
-|-------|---------|---------|
-| Separator | Comma (`,`) | Comma, Semicolon (`;`), Tab (`\t`) |
-| Line endings | CRLF | CRLF, LF |
-| Filename | Canonical filename (§7) | Editable — user may type any valid filename |
+| Field        | Default                 | Options                                     |
+| ------------ | ----------------------- | ------------------------------------------- |
+| Separator    | Comma (`,`)             | Comma, Semicolon (`;`), Tab (`\t`)          |
+| Line endings | CRLF                    | CRLF, LF                                    |
+| Filename     | Canonical filename (§7) | Editable — user may type any valid filename |
 
 - The modal pre-fills the filename with the canonical default for the
   current context (e.g., `dedx_proton_water_3programs.csv`).
@@ -210,11 +211,11 @@ always downloads directly with the default settings.
 Both buttons are in the **app toolbar** (see §0). No buttons appear below
 the unified table.
 
-| Property | Detail |
-|----------|--------|
-| "Export PDF" | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
-| "Export CSV ↓" | App toolbar, upper-right — immediately left of "Share URL" (see §0) |
-| Availability | Both **disabled** (greyed out) until at least one row has a computed result; always visible in the toolbar |
+| Property       | Detail                                                                                                     |
+| -------------- | ---------------------------------------------------------------------------------------------------------- |
+| "Export PDF"   | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0)                                     |
+| "Export CSV ↓" | App toolbar, upper-right — immediately left of "Share URL" (see §0)                                        |
+| Availability   | Both **disabled** (greyed out) until at least one row has a computed result; always visible in the toolbar |
 
 ### CSV Schema
 
@@ -231,15 +232,16 @@ Five columns — exactly the five columns visible in the unified table:
 
 Column rules:
 
-| # | Header | Content |
-|---|--------|---------|
-| 1 | `Normalized Energy (MeV/nucl)` | Numeric value in MeV/nucl (4 sig figs) |
-| 2 | `Typed Value` | The exact string the user typed in the input cell |
-| 3 | `Unit` | Per-row energy unit (e.g., `MeV`, `keV`, `GeV`, `MeV/nucl`) |
-| 4 | `CSDA Range` | Value + auto-scaled SI unit suffix in the same cell (e.g., `7.718 cm`); no fixed unit in header |
-| 5 | `Stopping Power ({unit})` | Numeric value in the active display unit (4 sig figs); no unit suffix in cell |
+| #   | Header                         | Content                                                                                         |
+| --- | ------------------------------ | ----------------------------------------------------------------------------------------------- |
+| 1   | `Normalized Energy (MeV/nucl)` | Numeric value in MeV/nucl (4 sig figs)                                                          |
+| 2   | `Typed Value`                  | The exact string the user typed in the input cell                                               |
+| 3   | `Unit`                         | Per-row energy unit (e.g., `MeV`, `keV`, `GeV`, `MeV/nucl`)                                     |
+| 4   | `CSDA Range`                   | Value + auto-scaled SI unit suffix in the same cell (e.g., `7.718 cm`); no fixed unit in header |
+| 5   | `Stopping Power ({unit})`      | Numeric value in the active display unit (4 sig figs); no unit suffix in cell                   |
 
 Column 4 substitutes `{unit}` with the active stopping-power unit:
+
 - `keV/µm` for non-gas materials (default)
 - `MeV·cm²/g` for gas materials (default)
 - Or the user-selected unit if overridden
@@ -294,24 +296,24 @@ including any drag-and-drop reordering the user has applied.
 
 Column rules:
 
-| Column group | Header pattern | Content |
-|-------------|---------------|---------|
-| Energy | `Energy (MeV)` | Normalized energy in MeV (4 sig figs) |
-| Normalized | `MeV/nucl` | Same value in MeV/nucl (identical to Energy for protons; differs for heavier ions) |
-| Unit | `Unit` | Per-row energy unit string |
-| Stopping power per program | `Stp Power {program} ({unit})` | Numeric value in active display unit (4 sig figs) |
-| CSDA range per program | `CSDA Range {program}` | Value + auto-scaled SI unit suffix per cell; no fixed unit in header |
+| Column group               | Header pattern                 | Content                                                                            |
+| -------------------------- | ------------------------------ | ---------------------------------------------------------------------------------- |
+| Energy                     | `Energy (MeV)`                 | Normalized energy in MeV (4 sig figs)                                              |
+| Normalized                 | `MeV/nucl`                     | Same value in MeV/nucl (identical to Energy for protons; differs for heavier ions) |
+| Unit                       | `Unit`                         | Per-row energy unit string                                                         |
+| Stopping power per program | `Stp Power {program} ({unit})` | Numeric value in active display unit (4 sig figs)                                  |
+| CSDA range per program     | `CSDA Range {program}`         | Value + auto-scaled SI unit suffix per cell; no fixed unit in header               |
 
 Visibility rules — what columns are included:
 
-| Condition | Effect on CSV |
-|-----------|--------------|
-| Hidden program column | Excluded from CSV |
-| Quantity focus `Both` | Stopping-power columns then CSDA-range columns |
-| Quantity focus `STP only` | Stopping-power columns only |
-| Quantity focus `CSDA only` | CSDA-range columns only |
-| Delta / % hover values | **Not exported** (derivable from raw data) |
-| Preview series | **Not exported** |
+| Condition                  | Effect on CSV                                  |
+| -------------------------- | ---------------------------------------------- |
+| Hidden program column      | Excluded from CSV                              |
+| Quantity focus `Both`      | Stopping-power columns then CSDA-range columns |
+| Quantity focus `STP only`  | Stopping-power columns only                    |
+| Quantity focus `CSDA only` | CSDA-range columns only                        |
+| Delta / % hover values     | **Not exported** (derivable from raw data)     |
+| Preview series             | **Not exported**                               |
 
 ### Filename
 
@@ -337,9 +339,9 @@ The **"Export image ▾"** dropdown button lives in the Plot controls bar
 
 The **dropdown options differ by mode**:
 
-| Mode | Options shown |
-|------|--------------|
-| Basic | SVG vector only |
+| Mode     | Options shown          |
+| -------- | ---------------------- |
+| Basic    | SVG vector only        |
 | Advanced | PNG image + SVG vector |
 
 PNG export is an advanced-mode-only feature because it produces a
@@ -356,6 +358,7 @@ Wireframe — **basic mode** (controls bar):
 ```
 
 Dropdown open in basic mode:
+
 ```
                                                       ┌──────────────┐
                                                       │ SVG vector   │
@@ -363,6 +366,7 @@ Dropdown open in basic mode:
 ```
 
 Dropdown open in advanced mode:
+
 ```
                                                       ┌──────────────┐
                                                       │ PNG image    │
@@ -372,43 +376,43 @@ Dropdown open in advanced mode:
 
 Selecting an option triggers the download immediately and closes the dropdown.
 
-| Property | Detail |
-|----------|--------|
-| Label | "Export image ▾" |
-| Type | Dropdown button |
+| Property | Detail                                                                                                                                         |
+| -------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| Label    | "Export image ▾"                                                                                                                               |
+| Type     | Dropdown button                                                                                                                                |
 | Position | Controls bar above the JSROOT canvas, **right-aligned** — the only export control in the controls bar; PDF and CSV are in the app toolbar (§0) |
 
 #### PNG Export (advanced mode only)
 
-| Property | Detail |
-|----------|--------|
-| Trigger | Select "PNG image" from the dropdown (advanced mode only) |
-| Mechanism | JSROOT canvas snapshot (rasterized from the rendered canvas) |
-| Resolution | 2× the CSS canvas dimensions (Retina-quality) |
-| Filename | `dedx_plot.png` |
-| Includes | All **visible** series lines, axis labels, axis ticks, gridlines |
-| Excludes | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
+| Property   | Detail                                                                               |
+| ---------- | ------------------------------------------------------------------------------------ |
+| Trigger    | Select "PNG image" from the dropdown (advanced mode only)                            |
+| Mechanism  | JSROOT canvas snapshot (rasterized from the rendered canvas)                         |
+| Resolution | 2× the CSS canvas dimensions (Retina-quality)                                        |
+| Filename   | `dedx_plot.png`                                                                      |
+| Includes   | All **visible** series lines, axis labels, axis ticks, gridlines                     |
+| Excludes   | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
 
 #### SVG Export (both modes)
 
-| Property | Detail |
-|----------|--------|
-| Trigger | Select "SVG vector" from the dropdown |
-| Mechanism | JSROOT `makeSVG()` (vector output, independent of canvas rendering mode) |
-| Filename | `dedx_plot.svg` |
-| Includes | All **visible** series lines, axis labels, axis ticks, gridlines |
-| Excludes | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
-| Use case | Publication-quality vector figures; further editing in Inkscape / Illustrator |
+| Property  | Detail                                                                               |
+| --------- | ------------------------------------------------------------------------------------ |
+| Trigger   | Select "SVG vector" from the dropdown                                                |
+| Mechanism | JSROOT `makeSVG()` (vector output, independent of canvas rendering mode)             |
+| Filename  | `dedx_plot.svg`                                                                      |
+| Includes  | All **visible** series lines, axis labels, axis ticks, gridlines                     |
+| Excludes  | Hidden series, preview series, sidebar, series list below the canvas, browser chrome |
+| Use case  | Publication-quality vector figures; further editing in Inkscape / Illustrator        |
 
 ### 4.2 Plot CSV Export
 
 #### Button
 
-| Property | Detail |
-|----------|--------|
-| Label | "Export CSV ↓" |
-| Position | App toolbar, upper-right — immediately left of "Share URL" (see §0) |
-| Advanced mode | Clicking opens the CSV configuration modal (§1.1) |
+| Property      | Detail                                                              |
+| ------------- | ------------------------------------------------------------------- |
+| Label         | "Export CSV ↓"                                                      |
+| Position      | App toolbar, upper-right — immediately left of "Share URL" (see §0) |
+| Advanced mode | Clicking opens the CSV configuration modal (§1.1)                   |
 
 #### CSV Schema
 
@@ -465,10 +469,10 @@ The unit in the header matches the current Y-axis display unit.
 
 Visibility rules:
 
-| Condition | Effect on CSV |
-|-----------|--------------|
-| Hidden series (toggled off) | Excluded |
-| Preview series | Excluded |
+| Condition                   | Effect on CSV |
+| --------------------------- | ------------- |
+| Hidden series (toggled off) | Excluded      |
+| Preview series              | Excluded      |
 
 ### 4.3 External Data in Plot CSV
 
@@ -529,11 +533,11 @@ dedx_plot.svg
 
 ### 5.1 Button
 
-| Property | Detail |
-|----------|--------|
-| Label | "Export PDF" |
-| Position | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
-| Mechanism | jsPDF (client-side) with embedded SVG (via JSROOT `makeSVG()`) |
+| Property  | Detail                                                                 |
+| --------- | ---------------------------------------------------------------------- |
+| Label     | "Export PDF"                                                           |
+| Position  | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
+| Mechanism | jsPDF (client-side) with embedded SVG (via JSROOT `makeSVG()`)         |
 
 ### 5.2 Content — Basic Mode
 
@@ -555,13 +559,13 @@ The Plot PDF in basic mode is a single-page document containing:
 └─────────────────────────────────────────────────────────┘
 ```
 
-| Element | Content |
-|---------|---------|
-| App name | "dEdx Web" |
-| Generated timestamp | ISO 8601 UTC (e.g., `2026-04-13T14:32:00Z`) |
-| URL | Full shareable URL of the page at export time — rendered as a clickable hyperlink in the PDF |
-| Chart | JSROOT `makeSVG()` output embedded at full page width |
-| Legend | One row per visible series: colour swatch + series label |
+| Element             | Content                                                                                      |
+| ------------------- | -------------------------------------------------------------------------------------------- |
+| App name            | "dEdx Web"                                                                                   |
+| Generated timestamp | ISO 8601 UTC (e.g., `2026-04-13T14:32:00Z`)                                                  |
+| URL                 | Full shareable URL of the page at export time — rendered as a clickable hyperlink in the PDF |
+| Chart               | JSROOT `makeSVG()` output embedded at full page width                                        |
+| Legend              | One row per visible series: colour swatch + series label                                     |
 
 ### 5.3 Content — Advanced Mode
 
@@ -616,20 +620,20 @@ with the chart.
 
 Metadata block rules:
 
-| Section | Position | Mode |
-|---------|----------|------|
-| App name + mode | Header (top) | both |
-| Generated timestamp | Header (top) | both |
-| URL | Header (top) — clickable hyperlink | both |
-| Chart SVG | After header | both |
-| Legend | After chart | both |
-| **"Advanced Mode Details" divider** | After legend | advanced only |
-| **PARTICLE** | Details block — Name, Z (atomic number), A (mass number) | advanced only |
-| **MATERIAL** | Details block — Name, phase, density ρ in g/cm³ (override if set) | advanced only |
-| **PROGRAMS** | Details block — one row per visible series: label + "(built-in)" or "(external) {url}" | advanced only |
-| **SETTINGS** | Details block — active Advanced Options (only non-default values shown) | advanced only |
-| **SYSTEM** | Details block — browser and OS from `navigator.userAgent` | advanced only |
-| **BUILD** | Details block (bottom) — commit hash · ISO date · branch/tag (from `deploy.json` per `build-info.md`) | advanced only |
+| Section                             | Position                                                                                              | Mode          |
+| ----------------------------------- | ----------------------------------------------------------------------------------------------------- | ------------- |
+| App name + mode                     | Header (top)                                                                                          | both          |
+| Generated timestamp                 | Header (top)                                                                                          | both          |
+| URL                                 | Header (top) — clickable hyperlink                                                                    | both          |
+| Chart SVG                           | After header                                                                                          | both          |
+| Legend                              | After chart                                                                                           | both          |
+| **"Advanced Mode Details" divider** | After legend                                                                                          | advanced only |
+| **PARTICLE**                        | Details block — Name, Z (atomic number), A (mass number)                                              | advanced only |
+| **MATERIAL**                        | Details block — Name, phase, density ρ in g/cm³ (override if set)                                     | advanced only |
+| **PROGRAMS**                        | Details block — one row per visible series: label + "(built-in)" or "(external) {url}"                | advanced only |
+| **SETTINGS**                        | Details block — active Advanced Options (only non-default values shown)                               | advanced only |
+| **SYSTEM**                          | Details block — browser and OS from `navigator.userAgent`                                             | advanced only |
+| **BUILD**                           | Details block (bottom) — commit hash · ISO date · branch/tag (from `deploy.json` per `build-info.md`) | advanced only |
 
 If `deploy.json` is absent (local dev), the BUILD section is omitted silently.
 
@@ -661,10 +665,10 @@ dedx_plot_report.pdf
 
 ### 6.1 Button
 
-| Property | Detail |
-|----------|--------|
-| Label | "Export PDF" |
-| Position | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0) |
+| Property  | Detail                                                                                                                            |
+| --------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Label     | "Export PDF"                                                                                                                      |
+| Position  | App toolbar, upper-right — immediately left of "Export CSV ↓" (see §0)                                                            |
 | Mechanism | jsPDF + `jspdf-autotable` plugin v5.0.5+ (client-side, portrait orientation; autotable v5.x required for jsPDF 4.x compatibility) |
 
 ### 6.2 Content — Basic Mode
@@ -748,13 +752,14 @@ dedx_{particle}_{material}_{N}programs.pdf             (advanced)
 
 ## 7. Filename Convention Summary
 
-| Context | CSV filename | PDF filename | Image filename |
-|---------|-------------|-------------|----------------|
-| Calculator basic | `dedx_calculator_{particle}_{material}_{program}.csv` | `dedx_calculator_{particle}_{material}_{program}.pdf` | — |
-| Calculator advanced | `dedx_{particle}_{material}_{N}programs.csv` | `dedx_{particle}_{material}_{N}programs.pdf` | — |
-| Plot | `dedx_plot_data.csv` | `dedx_plot_report.pdf` | `dedx_plot.png` / `dedx_plot.svg` |
+| Context             | CSV filename                                          | PDF filename                                          | Image filename                    |
+| ------------------- | ----------------------------------------------------- | ----------------------------------------------------- | --------------------------------- |
+| Calculator basic    | `dedx_calculator_{particle}_{material}_{program}.csv` | `dedx_calculator_{particle}_{material}_{program}.pdf` | —                                 |
+| Calculator advanced | `dedx_{particle}_{material}_{N}programs.csv`          | `dedx_{particle}_{material}_{N}programs.pdf`          | —                                 |
+| Plot                | `dedx_plot_data.csv`                                  | `dedx_plot_report.pdf`                                | `dedx_plot.png` / `dedx_plot.svg` |
 
 ASCII-safe filename rules applied to `{particle}` and `{material}`:
+
 - All lowercase.
 - Spaces replaced with underscores.
 - Non-ASCII characters stripped or transliterated (e.g., `µ` → `u`).
@@ -764,35 +769,37 @@ ASCII-safe filename rules applied to `{particle}` and `{material}`:
 
 ## 8. Accessibility
 
-| Element | Requirement |
-|---------|-------------|
-| Toolbar "Export PDF" button (both pages) | `aria-label="Download results as PDF"` when on Calculator; `aria-label="Export plot report as PDF"` when on Plot |
-| Toolbar "Export CSV ↓" button (both pages) | `aria-label="Download results as CSV"` when on Calculator basic; `aria-label="Configure and download results as CSV"` when in advanced mode; `aria-label="Export visible series data as CSV"` when on Plot basic; `aria-haspopup="dialog"` in advanced mode |
-| Both toolbar export buttons (disabled state) | `aria-disabled="true"` when no results available |
-| CSV configuration modal | `role="dialog"`, `aria-modal="true"`, `aria-labelledby` pointing to the "Export CSV" heading; focus trapped within modal while open; `Escape` closes |
-| Plot "Export image ▾" dropdown | `aria-label="Export plot as image"`, `aria-haspopup="true"`, `aria-expanded` toggled |
-| Dropdown menu | `role="menu"` |
-| Dropdown items ("PNG image", "SVG vector") | `role="menuitem"` |
+| Element                                      | Requirement                                                                                                                                                                                                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Toolbar "Export PDF" button (both pages)     | `aria-label="Download results as PDF"` when on Calculator; `aria-label="Export plot report as PDF"` when on Plot                                                                                                                                            |
+| Toolbar "Export CSV ↓" button (both pages)   | `aria-label="Download results as CSV"` when on Calculator basic; `aria-label="Configure and download results as CSV"` when in advanced mode; `aria-label="Export visible series data as CSV"` when on Plot basic; `aria-haspopup="dialog"` in advanced mode |
+| Both toolbar export buttons (disabled state) | `aria-disabled="true"` when no results available                                                                                                                                                                                                            |
+| CSV configuration modal                      | `role="dialog"`, `aria-modal="true"`, `aria-labelledby` pointing to the "Export CSV" heading; focus trapped within modal while open; `Escape` closes                                                                                                        |
+| Plot "Export image ▾" dropdown               | `aria-label="Export plot as image"`, `aria-haspopup="true"`, `aria-expanded` toggled                                                                                                                                                                        |
+| Dropdown menu                                | `role="menu"`                                                                                                                                                                                                                                               |
+| Dropdown items ("PNG image", "SVG vector")   | `role="menuitem"`                                                                                                                                                                                                                                           |
 
 Keyboard behaviour for the "Export image ▾" dropdown:
 
-| Key | Action |
-|-----|--------|
-| `Enter` / `Space` | Opens the dropdown |
-| `↓` / `↑` | Navigate menu items |
-| `Enter` | Select focused item (triggers download, closes dropdown) |
-| `Escape` | Closes dropdown without downloading |
+| Key               | Action                                                   |
+| ----------------- | -------------------------------------------------------- |
+| `Enter` / `Space` | Opens the dropdown                                       |
+| `↓` / `↑`         | Navigate menu items                                      |
+| `Enter`           | Select focused item (triggers download, closes dropdown) |
+| `Escape`          | Closes dropdown without downloading                      |
 
 ---
 
 ## 9. Acceptance Checklist
 
 ### Export Toolbar
+
 - [ ] "Export PDF" and "Export CSV ↓" buttons are present in the app toolbar (upper-right) on both Calculator and Plot pages; "Share URL" is the rightmost button; the order left-to-right is `[Export PDF]  [Export CSV ↓]  [Share URL]`.
 - [ ] Both buttons are **disabled** (greyed out, `aria-disabled="true"`) when no results are available; they become active as soon as at least one result row is present.
 - [ ] Button states are independent: disabling/enabling one does not affect the other.
 
 ### Advanced-Mode CSV Configuration Modal
+
 - [ ] In Calculator advanced mode and Plot advanced mode, clicking "Export CSV ↓" opens the configuration modal (not a direct download).
 - [ ] Modal offers: Separator (Comma / Semicolon / Tab), Line endings (CRLF / LF), Filename (editable, pre-filled with canonical default).
 - [ ] "Download CSV" in the modal applies settings and downloads; "Cancel" and `Escape` close without downloading.
@@ -801,6 +808,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] In basic mode on both Calculator and Plot, clicking "Export CSV ↓" downloads directly (no modal).
 
 ### Calculator — Basic Mode CSV
+
 - [ ] "Export CSV ↓" toolbar button becomes active when at least one result row is present; clicking downloads directly (no modal in basic mode).
 - [ ] CSV contains exactly five columns in this order: `Normalized Energy (MeV/nucl)`, `Typed Value`, `Unit`, `CSDA Range`, `Stopping Power ({unit})`.
 - [ ] Stopping Power is the **last** column.
@@ -814,6 +822,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_calculator_{particle}_{material}_{program}.csv`.
 
 ### Calculator — Basic Mode PDF
+
 - [ ] "Export PDF" toolbar button becomes active when results are present.
 - [ ] PDF contains: app name, generated timestamp (ISO 8601 UTC), clickable page URL, entity summary line, and the five-column table.
 - [ ] Table rows match the on-screen unified table (same values, same units).
@@ -823,6 +832,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_calculator_{particle}_{material}_{program}.pdf`.
 
 ### Calculator — Advanced / Multi-program Mode CSV
+
 - [ ] CSV uses wide table format with one row per energy value.
 - [ ] Stopping-power columns appear before CSDA-range columns (grouped by quantity).
 - [ ] Column order matches on-screen order, including drag-and-drop reordering.
@@ -835,6 +845,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_{particle}_{material}_{N}programs.csv` where `{N}` is the visible program count.
 
 ### Calculator — Advanced / Multi-program Mode PDF
+
 - [ ] PDF metadata block order: PARTICLE, MATERIAL, PROGRAMS, SETTINGS, SYSTEM, BUILD — BUILD is last.
 - [ ] BUILD section is silently omitted if `deploy.json` is absent.
 - [ ] Wide comparison table is split across pages: STP columns on one page, CSDA range columns on the next; energy identity columns repeated on each page.
@@ -844,6 +855,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename follows `dedx_{particle}_{material}_{N}programs.pdf`.
 
 ### Plot — Image Export
+
 - [ ] "Export image ▾" dropdown button appears in the controls bar, right-aligned — the only export control in the controls bar.
 - [ ] In **basic mode**: dropdown offers exactly one item: "SVG vector".
 - [ ] In **advanced mode**: dropdown offers two items: "PNG image" and "SVG vector".
@@ -856,6 +868,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] `aria-expanded` is correctly toggled on the trigger button.
 
 ### Plot — PDF Export
+
 - [ ] "Export PDF" toolbar button is active on the Plot page when at least one committed (non-preview) series is present; disabled otherwise.
 - [ ] Basic mode PDF contains: app name, generated timestamp (ISO UTC), clickable page URL, chart SVG, legend.
 - [ ] Advanced mode PDF additionally contains: PARTICLE (Z, A), MATERIAL (density), PROGRAMS list with ext URLs, SETTINGS (non-default advanced options), SYSTEM (browser/OS), BUILD — in that order within the "Advanced Mode Details" block; BUILD is last.
@@ -867,6 +880,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename is `dedx_plot_report.pdf`.
 
 ### Plot — CSV Export
+
 - [ ] "Export CSV ↓" toolbar button is active on the Plot page when at least one committed (non-preview) series is present.
 - [ ] When no external series are present and all internal series share the same energy grid: single `Energy [MeV/nucl]` column.
 - [ ] When any `ext:` series is present (regardless of libdedx grid): always Case B — every series gets its own `Energy {program} [MeV/nucl]` column.
@@ -881,6 +895,7 @@ Keyboard behaviour for the "Export image ▾" dropdown:
 - [ ] Filename is `dedx_plot_data.csv`.
 
 ### Common
+
 - [ ] All CSV files open correctly in Microsoft Excel (UTF-8 BOM recognized, comma-delimited, no truncation, `#` comment rows skipped by Import Wizard).
 - [ ] 4 significant figures in CSV match on-screen display values.
 - [ ] No thousands separators in numeric cells.

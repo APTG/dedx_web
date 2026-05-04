@@ -37,46 +37,46 @@ Produced all Stage 2 deliverables from `docs/00-redesign-plan.md §8`:
 
 ## Key Decisions Made in Stage 2
 
-| Decision | Location |
-|----------|----------|
-| SvelteKit 2 + Svelte 5 runes; no Svelte 4 patterns | ADR 001 |
-| JSROOT 7 (lazy import, `JsrootPlot.svelte` wrapper with `untrack`) | ADR 002 |
-| `EXPORT_ES6=1 MODULARIZE=1`; `dedx_extra.{h,c}` shim | ADR 003 |
-| `*.svelte.ts` naming for state modules (rune-aware linting) | `03-architecture.md` §1 |
+| Decision                                                                             | Location                 |
+| ------------------------------------------------------------------------------------ | ------------------------ |
+| SvelteKit 2 + Svelte 5 runes; no Svelte 4 patterns                                   | ADR 001                  |
+| JSROOT 7 (lazy import, `JsrootPlot.svelte` wrapper with `untrack`)                   | ADR 002                  |
+| `EXPORT_ES6=1 MODULARIZE=1`; `dedx_extra.{h,c}` shim                                 | ADR 003                  |
+| `*.svelte.ts` naming for state modules (rune-aware linting)                          | `03-architecture.md` §1  |
 | Non-blocking WASM init in root `+layout.svelte` `$effect`; `+layout.ts` returns `{}` | `03-architecture.md` §10 |
-| Compatibility matrix pre-built at init from entity lists | `03-architecture.md` §3 |
-| Custom compounds route via `CUSTOM_MATERIAL_ID = -1` sentinel | `03-architecture.md` §8 |
-| URL sync via `history.replaceState` in root `$effect` | `03-architecture.md` §9 |
-| 300 ms debounce on calculation `$effect` | `03-architecture.md` §6 |
-| Okabe-Ito colorblind-safe palette for plot series | `03-architecture.md` §13 |
+| Compatibility matrix pre-built at init from entity lists                             | `03-architecture.md` §3  |
+| Custom compounds route via `CUSTOM_MATERIAL_ID = -1` sentinel                        | `03-architecture.md` §8  |
+| URL sync via `history.replaceState` in root `$effect`                                | `03-architecture.md` §9  |
+| 300 ms debounce on calculation `$effect`                                             | `03-architecture.md` §6  |
+| Okabe-Ito colorblind-safe palette for plot series                                    | `03-architecture.md` §13 |
 
 ---
 
 ## Files Created
 
-| File | Change |
-|------|--------|
-| `docs/decisions/001-sveltekit-over-react.md` | **Created** |
-| `docs/decisions/002-keep-jsroot.md` | **Created** |
-| `docs/decisions/003-wasm-build-pipeline.md` | **Created** |
-| `docs/02-tech-stack.md` | **Created** — Draft v1 |
-| `docs/03-architecture.md` | **Created** — Draft v1 |
-| `docs/progress/stage-2.md` | **Created** |
-| `docs/ai-logs/2026-04-14-stage2-architecture.md` | **Created** — this file |
-| `docs/ai-logs/README.md` | Prepended this session's row |
-| `CHANGELOG-AI.md` | Prepended Stage 2 entry |
+| File                                             | Change                       |
+| ------------------------------------------------ | ---------------------------- |
+| `docs/decisions/001-sveltekit-over-react.md`     | **Created**                  |
+| `docs/decisions/002-keep-jsroot.md`              | **Created**                  |
+| `docs/decisions/003-wasm-build-pipeline.md`      | **Created**                  |
+| `docs/02-tech-stack.md`                          | **Created** — Draft v1       |
+| `docs/03-architecture.md`                        | **Created** — Draft v1       |
+| `docs/progress/stage-2.md`                       | **Created**                  |
+| `docs/ai-logs/2026-04-14-stage2-architecture.md` | **Created** — this file      |
+| `docs/ai-logs/README.md`                         | Prepended this session's row |
+| `CHANGELOG-AI.md`                                | Prepended Stage 2 entry      |
 
 ---
 
 ## Inputs Read
 
-| File | Purpose |
-|------|---------|
-| `docs/progress/stage-1.md` | Stage 1 deliverables and key design decisions |
-| `docs/00-redesign-plan.md` | §2 tech choices, §5 target directory structure, §8 Stage 2 deliverables |
-| `docs/06-wasm-api-contract.md` | TypeScript types and LibdedxService interface |
-| `docs/01-project-vision.md` | Audience, design principles, app structure |
-| `build_wasm.sh` | Legacy Emscripten flags (reference for ADR 003) |
-| `CHANGELOG-AI.md` | Log format reference |
-| `docs/ai-logs/README.md` | Log index format reference |
-| `docs/ai-logs/2026-04-14-stage1-complete.md` | Session log format reference |
+| File                                         | Purpose                                                                 |
+| -------------------------------------------- | ----------------------------------------------------------------------- |
+| `docs/progress/stage-1.md`                   | Stage 1 deliverables and key design decisions                           |
+| `docs/00-redesign-plan.md`                   | §2 tech choices, §5 target directory structure, §8 Stage 2 deliverables |
+| `docs/06-wasm-api-contract.md`               | TypeScript types and LibdedxService interface                           |
+| `docs/01-project-vision.md`                  | Audience, design principles, app structure                              |
+| `build_wasm.sh`                              | Legacy Emscripten flags (reference for ADR 003)                         |
+| `CHANGELOG-AI.md`                            | Log format reference                                                    |
+| `docs/ai-logs/README.md`                     | Log index format reference                                              |
+| `docs/ai-logs/2026-04-14-stage1-complete.md` | Session log format reference                                            |

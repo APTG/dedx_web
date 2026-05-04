@@ -3,7 +3,9 @@
 ## Session Narrative
 
 ### Prompt 1: Start Stage 1 unit conversion finalization for dEdx Web
+
 **User request summary**:
+
 - Compare unit-related docs: `unit-handling.md`, `calculator.md`, `plot.md`, `06-wasm-api-contract.md`.
 - List inconsistencies in unit naming/symbols, formulas, density usage, defaults, rounding/formatting, export behavior.
 - Define one canonical conversion contract and apply it to affected specs.
@@ -12,6 +14,7 @@
 - Update changelog/session logs.
 
 **AI response/actions**:
+
 1. Read all requested specs and API contract, plus required logging/index docs.
 2. Identified key contradictions:
    - `unit-handling.md` had conflicting per-row→master transition wording.
@@ -26,6 +29,7 @@
 ## Tasks
 
 ### Canonical conversion contract finalization across specs
+
 - **Status**: completed
 - **Stage**: 1
 - **Files changed**:
@@ -44,6 +48,7 @@
   - `unit-handling.md` remains Draft pending product decisions in open questions (MeV/u exposure, advanced aggregate override interaction).
 
 ### Acceptance fixtures and export/formatting alignment
+
 - **Status**: completed
 - **Stage**: 1
 - **Files changed**:
@@ -60,6 +65,7 @@
   - Dedicated `export.md` still pending for broader cross-page export policy details.
 
 ### Session logging updates
+
 - **Status**: completed
 - **Stage**: 1
 - **Files changed**:

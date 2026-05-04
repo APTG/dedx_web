@@ -83,12 +83,14 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
 ## Tasks
 
 ### Stage 5 audit
+
 - **Status:** completed
 - **Stage:** 5 (audit, no functional change)
 - **Files changed:**
   - `docs/progress/stage-5-audit-2026-04-26.md` (new)
 
 ### UX review on KE conservation, master-unit selector, add-row UX
+
 - **Status:** completed (review + recommendations); the underlying gaps
   remain **open** for follow-up implementation work.
 - **Stage:** 5
@@ -97,18 +99,21 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
   - `docs/ux-reviews/README.md` (index row added)
 
 ### E2E corner-case sequences
+
 - **Status:** completed; KE-conservation tests intentionally `test.fixme()`
 - **Stage:** 5
 - **Files changed:**
   - `tests/e2e/particle-unit-switching.spec.ts` (new, 12 tests)
 
 ### Spec annotation
+
 - **Status:** completed (note only — full rewrite deferred to next session)
 - **Files changed:**
   - `docs/04-feature-specs/unit-handling.md` (annotation added under
     "Unit Preservation on Particle Change" linking to the UX review)
 
 ### Index + changelog updates
+
 - **Status:** completed
 - **Files changed:**
   - `CHANGELOG-AI.md` (one new top row)
@@ -159,7 +164,7 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
    - Spec change: added "Particle naming preferences" section to
      `entity-selection.md` documenting `proton` / `alpha particle` /
      `electron` (lowercase, no symbol) for IDs 1/2/1001 and `Element
-     (Symbol)` for ions Z=3..118; "Beams" / "Ions" group headings.
+(Symbol)` for ions Z=3..118; "Beams" / "Ions" group headings.
    - Code fix for missing symbols: `PARTICLE_ALIASES` in
      `src/lib/config/particle-aliases.ts` was only populated up to Z=18,
      which is why the user's screenshot showed Tin (Z=50), Antimony,
@@ -179,12 +184,14 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
 ## Tasks (round 2)
 
 ### Case-sensitive parser
+
 - **Status:** completed
 - **Files changed:**
   - `src/lib/utils/energy-parser.ts` (CANONICAL_UNITS map, case-sensitive lookup)
   - `src/tests/unit/energy-parser.test.ts` (-2 / +6 tests)
 
 ### Defensive zero-init for WASM output
+
 - **Status:** completed
 - **Decision:** zero-initialise both output buffers before the C call.
   Cheaper than alternatives (alloc-and-clear via Module.HEAPU8.fill,
@@ -193,11 +200,13 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
   - `src/lib/wasm/libdedx.ts` (3 added lines + comment)
 
 ### Particle aliases — exhaustive Z=1..118
+
 - **Status:** completed
 - **Files changed:**
   - `src/lib/config/particle-aliases.ts` (table extended; aliases enriched for IDs 1, 2)
 
 ### Spec updates
+
 - **Status:** completed
 - **Files changed:**
   - `docs/04-feature-specs/unit-handling.md` (case sensitivity + always-visible MeV/nucl acceptance blocks; suffix table reformatted)
@@ -205,12 +214,14 @@ Updated `CHANGELOG-AI.md`, `docs/ai-logs/README.md`, and
   - `docs/ux-reviews/2026-04-26-stage5-completion-and-ke-conservation.md` (Conservation choice §; new Issues 7-10; priority table extended)
 
 ### Changelog + log update
+
 - **Status:** completed
 - **Files changed:**
   - `CHANGELOG-AI.md` (round-2 row prepended)
   - `docs/ai-logs/2026-04-26-stage5-audit-and-ke-conservation.md` (this round-2 section)
 
 ### Issues left open
+
 - KE-conservation **implementation** (Option B) — needs spec sign-off.
 - UI rename `Hydrogen (H)` → `proton` and "Beams"/"Ions" grouping in
   `entity-selection-comboboxes.svelte`.

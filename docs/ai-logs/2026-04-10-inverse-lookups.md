@@ -5,6 +5,7 @@
 ### Prompt 1: Pre-draft reading and question formulation
 
 **AI response**: Read three source files as instructed before drafting:
+
 - `docs/06-wasm-api-contract.md` §§2.3, 3 — `InverseStpResult`,
   `InverseCsdaResult` types; `getInverseStp()` (two-branch, `side` param)
   and `getInverseCsda()` (monotonic, no branch) service signatures.
@@ -25,6 +26,7 @@ User answered all 16 questions across four rounds of button prompts. Key
 decisions captured:
 
 **UI Surface (A)**
+
 - Inverse lookup surfaces as **tabs on the Calculator page**.
   Tab switcher (`[ Forward ] [ Inverse STP ] [ Inverse CSDA ]`) only visible
   in Advanced mode.
@@ -32,10 +34,12 @@ decisions captured:
   Forward tab.
 
 **Scope (B)**
+
 - **Both** `getInverseStp` and `getInverseCsda` are specified in this
   version.
 
 **Branch selection for STP (C)**
+
 - **Both branches shown simultaneously** as two output columns (`E low`,
   `E high`). No user toggle needed; `getInverseStp()` called twice
   (`side=0`, `side=1`) per batch.
@@ -43,10 +47,12 @@ decisions captured:
   show **`—`** in both columns silently (no row highlight).
 
 **Input format (D)**
+
 - **Same unified table pattern** as the Forward tab: always-empty-bottom-row,
   paste creates multiple rows, Tab/Enter navigation.
 
 **Output format and unit handling (E)**
+
 - Output energy displayed in the **user's selected master energy unit**
   (MeV / MeV/nucl / MeV/u), with **eV/keV/MeV/GeV auto-scaling** applied
   (same 1–9999 rule as CSDA length auto-scaling in `unit-handling.md` §6).
@@ -58,21 +64,26 @@ decisions captured:
   unit defaults to cm. Mixed units across rows activate per-row mode.
 
 **URL state (F)**
+
 - **Yes, shareable** — extend the Calculator URL in place
   (`?imode=stp&ivalues=...`). No separate route.
 
 **Advanced Options (G)**
+
 - **Shared, applied to both** inverse calls. Same `AdvancedOptions` object
   as the Forward tab.
 
 **Advanced feature gating (follow-up)**
+
 - Inverse tabs are **hidden until Advanced mode is on**. No lock icons, no
   prompts in Basic mode.
 
 **Energy output auto-scaling (follow-up)**
+
 - Unit ladder: **eV / keV / MeV / GeV** (all four tiers, not just three).
 
 **CSDA inline suffix parsing (follow-up)**
+
 - **Yes — inline suffix detection** per-row, same debounce model as energy
   suffix detection.
 
@@ -162,13 +173,13 @@ and fixed the following:
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `docs/04-feature-specs/inverse-lookups.md` | **Created** — Draft v1; consistency and link fixes applied in same session |
-| `docs/04-feature-specs/shareable-urls.md` | Updated — §7.3 canonical ordering extended with step 8 for inverse-lookup params |
-| `docs/04-feature-specs/README.md` | Updated — `inverse-lookups.md` promoted from Planned to main table (Draft v1) |
-| `CHANGELOG-AI.md` | Updated with this session entries |
-| `docs/ai-logs/2026-04-10-inverse-lookups.md` | **Created** — this log |
+| File                                         | Change                                                                           |
+| -------------------------------------------- | -------------------------------------------------------------------------------- |
+| `docs/04-feature-specs/inverse-lookups.md`   | **Created** — Draft v1; consistency and link fixes applied in same session       |
+| `docs/04-feature-specs/shareable-urls.md`    | Updated — §7.3 canonical ordering extended with step 8 for inverse-lookup params |
+| `docs/04-feature-specs/README.md`            | Updated — `inverse-lookups.md` promoted from Planned to main table (Draft v1)    |
+| `CHANGELOG-AI.md`                            | Updated with this session entries                                                |
+| `docs/ai-logs/2026-04-10-inverse-lookups.md` | **Created** — this log                                                           |
 
 ### Prompt 8: Draft v2 — priority, rename, getBraggPeakStp, formal grammar
 
@@ -243,6 +254,7 @@ Four rounds of button-based Q&A (16 questions total). Decisions captured:
 - Unsupported program: shows `—` (same as no-solution, no highlight)
 
 **Changes to `inverse-lookups.md` (Draft v2 → v3):**
+
 1. Status header and v3 changelog added.
 2. §1: `qfocus` note added.
 3. §3: three new sub-sections — Programs and Multi-Program Mode,
@@ -260,20 +272,19 @@ Four rounds of button-based Q&A (16 questions total). Decisions captured:
     electron, export, `qfocus`, hidden_programs, getBraggPeakStp failure).
 12. Open Questions: all resolved — section now empty.
 
-**Changes to `06-wasm-api-contract.md`:**
-13. `options?: AdvancedOptions` added to `getInverseStp()` and `getInverseCsda()`.
+**Changes to `06-wasm-api-contract.md`:** 13. `options?: AdvancedOptions` added to `getInverseStp()` and `getInverseCsda()`.
 
 **Changes to `CHANGELOG-AI.md`:** Draft v3 entry prepended.
 
 ## Files Changed
 
-| File | Change |
-|------|--------|
-| `docs/04-feature-specs/inverse-lookups.md` | **Updated** — Draft v1 → Draft v2 (rename, reorder, getBraggPeakStp, URL token fix) |
-| `docs/06-wasm-api-contract.md` | **Updated** — `getBraggPeakStp()` added to §3 service interface |
+| File                                             | Change                                                                                                           |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------- |
+| `docs/04-feature-specs/inverse-lookups.md`       | **Updated** — Draft v1 → Draft v2 (rename, reorder, getBraggPeakStp, URL token fix)                              |
+| `docs/06-wasm-api-contract.md`                   | **Updated** — `getBraggPeakStp()` added to §3 service interface                                                  |
 | `docs/04-feature-specs/shareable-urls-formal.md` | **Updated** — v4 → v5 (imode/ivalues/iunit ABNF, semantic rules, canonicalization step 8, 6 conformance vectors) |
-| `CHANGELOG-AI.md` | Updated with Draft v2 entry |
-| `docs/ai-logs/2026-04-10-inverse-lookups.md` | **Updated** — this log |
+| `CHANGELOG-AI.md`                                | Updated with Draft v2 entry                                                                                      |
+| `docs/ai-logs/2026-04-10-inverse-lookups.md`     | **Updated** — this log                                                                                           |
 
 ## Open Questions Remaining
 

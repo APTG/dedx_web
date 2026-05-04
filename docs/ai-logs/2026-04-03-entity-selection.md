@@ -3,9 +3,11 @@
 ## Session Narrative
 
 ### Prompt 1: Write feature spec for entity selection
+
 **User request**: Read `00-redesign-plan.md` and `01-project-vision.md` for context, then write the entity selection feature spec using the `write-spec` prompt template.
 
 **AI response**: Read all relevant context files in parallel:
+
 - `docs/00-redesign-plan.md` — full redesign plan with feature spec template (§7), stage plan, architecture
 - `docs/01-project-vision.md` — design principles (auto-select, minimum clicks, typeahead, unit handling)
 - `.github/prompts/write-spec.prompt.md` — spec template and rules
@@ -19,6 +21,7 @@
 - `libdedx/include/dedx_elements.h` — ion/material ID enums
 
 **Key decisions made during drafting:**
+
 1. **Auto-select is a frontend construct** — displays as a synthetic "Auto-select" entry with resolved program name (e.g., "Auto-select → ICRU 90"). `DEDX_ICRU` (ID 9) is used internally only for **resolution** (mapping ion type to concrete ICRU dataset), **not** for building the full ion/material lists.
 2. **Cascading: Program → {Ions, Materials}** (v1 design) — ion and material were siblings, not cascaded from each other. This matched the old code pattern. **Superseded in v2** by bidirectional filtering via a compatibility matrix (all programs iterated at init).
 3. **Selection preservation on program change** — if the previously selected ion/material exists in the new program's list, keep it; otherwise fall back + notify. Taken from `WithLibdedxEntities.findEntities()` pattern.
@@ -32,6 +35,7 @@ Wrote `docs/04-feature-specs/entity-selection.md` with all sections from the tem
 ## Tasks
 
 ### Write entity-selection.md feature spec
+
 - **Status**: completed
 - **Stage**: Stage 1 (Requirements & Specifications)
 - **Files changed**: `docs/04-feature-specs/entity-selection.md` (created)
@@ -39,6 +43,7 @@ Wrote `docs/04-feature-specs/entity-selection.md` with all sections from the tem
 - **Issue**: Three open questions at end of spec (auto-select display style, material grouping, dropdown max height) — needs user input. Material grouping resolved in v3 (split panel).
 
 ### Review v3 spec for consistency
+
 - **Status**: completed
 - **Stage**: Stage 1
 - **Files changed**: none (analysis only)
@@ -46,17 +51,20 @@ Wrote `docs/04-feature-specs/entity-selection.md` with all sections from the tem
 - **Issue**: All raised as questions to user. Proposed 3 alternative layouts (A: narrower program panel, B: collapsible program, C: compact calculator mode).
 
 ### Update spec to v4 with two layout modes
+
 - **Status**: completed
 - **Stage**: Stage 1
 - **Files changed**: `docs/04-feature-specs/entity-selection.md` (updated UI Layout section + Acceptance Criteria)
 - **Decision**: Full panels for Plot page (sidebar ~40% + canvas ~60%), compact dropdown comboboxes for Calculator page (centered form, max 720px). Program panel de-emphasized with narrower width (~180px in compact, shorter height ~150px in full panels). Both modes share same `EntitySelectionState` store. Layout mode determined by route, not user toggle. UX rationale added citing Fitt's Law, context-appropriate density (NNG), progressive disclosure, F-pattern scanning.
 
 ### Prompt 4: Resolve open questions (v5)
+
 **User request**: (1) Use "ICRU 90" enriched name, (2) hide `DEDX_ICRU` from program panel, (3) add `symbol` to `IonEntity`, (4) update project vision §4.2.
 
 **AI response**: Applied all four changes across three files.
 
 ### Update spec to v5 — resolve open questions
+
 - **Status**: completed
 - **Stage**: Stage 1
 - **Files changed**: `docs/04-feature-specs/entity-selection.md`, `docs/06-wasm-api-contract.md`, `docs/01-project-vision.md`

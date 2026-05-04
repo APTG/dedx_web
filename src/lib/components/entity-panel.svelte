@@ -116,11 +116,7 @@
     {filteredAvailable} of {filteredTotal} available
   </div>
 
-  <div
-    class="space-y-4 overflow-y-auto"
-    style="max-height: {maxHeight};"
-    aria-label={label}
-  >
+  <div class="space-y-4 overflow-y-auto" style="max-height: {maxHeight};" aria-label={label}>
     {#each filteredItems as group (group.groupName)}
       <div>
         {#if group.groupName}

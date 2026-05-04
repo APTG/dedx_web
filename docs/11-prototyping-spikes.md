@@ -8,7 +8,7 @@
 > `prototypes/` directory — not production code.
 >
 > **Purpose of this document:** Hand this file to an AI coding agent with the
-> instruction *"Implement the spike described in §N."* Each section is
+> instruction _"Implement the spike described in §N."_ Each section is
 > self-contained and independently executable.
 
 ---
@@ -20,11 +20,11 @@ The Stage 2 architecture ([`03-architecture.md`](03-architecture.md)) and ADRs
 carry enough technical risk that a failed assumption would require significant
 architectural rework:
 
-| Risk | Specified in | What could go wrong |
-|------|-------------|---------------------|
-| JSROOT 7 inside Svelte 5 `$effect` | [03-architecture.md §5](03-architecture.md#5-component-tree), [ADR 002](decisions/002-keep-jsroot.md) | DOM ownership conflict; `untrack` pattern insufficient; JSROOT cleanup not idempotent; memory leaks on re-draw |
+| Risk                                        | Specified in                                                                                                      | What could go wrong                                                                                                                                                                                             |
+| ------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| JSROOT 7 inside Svelte 5 `$effect`          | [03-architecture.md §5](03-architecture.md#5-component-tree), [ADR 002](decisions/002-keep-jsroot.md)             | DOM ownership conflict; `untrack` pattern insufficient; JSROOT cleanup not idempotent; memory leaks on re-draw                                                                                                  |
 | Emscripten `--preload-file` on GitHub Pages | [ADR 003](decisions/003-wasm-build-pipeline.md), [03-architecture.md §3](03-architecture.md#3-wasm-service-layer) | `.data` file not served with correct MIME type; CORS or path resolution errors; regression from legacy `--embed-file`. **Stage 2.6 supersedes: `--preload-file` is unnecessary — all data compiled into WASM.** |
-| Module-level `$state` in `.svelte.ts` files | [03-architecture.md §4](03-architecture.md#4-reactive-state-topology) | Reactivity lost across module boundaries; `{ value: T }` wrapper pattern not tracked by Svelte's proxy; `$derived` at module scope not re-evaluated |
+| Module-level `$state` in `.svelte.ts` files | [03-architecture.md §4](03-architecture.md#4-reactive-state-topology)                                             | Reactivity lost across module boundaries; `{ value: T }` wrapper pattern not tracked by Svelte's proxy; `$derived` at module scope not re-evaluated                                                             |
 
 Each spike is designed to be completable by an AI coding agent in a single
 session with no human intervention beyond reviewing the output.
@@ -212,10 +212,7 @@ Implement the wrapper following the pattern from
     if (container) container.innerHTML = "";
   }
 
-  async function drawPlot(
-    el: HTMLDivElement,
-    data: SeriesData[],
-  ): Promise<unknown> {
+  async function drawPlot(el: HTMLDivElement, data: SeriesData[]): Promise<unknown> {
     const JSROOT = await import("jsroot");
 
     // Disable wheel zoom so page scrolls normally.
@@ -245,17 +242,17 @@ Implement the wrapper following the pattern from
 Run the dev server (`pnpm dev`) and manually verify in the browser.
 Print verdict for each criterion:
 
-| # | Criterion | How to test |
-|---|-----------|-------------|
-| 1 | **Initial render:** Two series visible on log-log axes | Visual inspection on page load |
-| 2 | **Add series:** Click "Add series" — third curve appears; first two remain | Click button, observe |
-| 3 | **Remove all:** Click "Remove all" — canvas clears, no console errors | Click button, check DevTools console |
-| 4 | **Mutate first:** Click "Mutate first series" — curve changes, others unchanged | Click button, observe |
-| 5 | **Rapid clicks:** Click "Add series" 5× rapidly — no error, 7 series shown | Rapid clicks, observe |
-| 6 | **Wheel scroll:** Mouse over plot, scroll wheel — page scrolls, plot does NOT zoom | Scroll over plot |
-| 7 | **No memory leak:** In DevTools Performance monitor, repeated add/remove cycles do not grow JS heap monotonically over 10 iterations | DevTools → Performance monitor → JS Heap |
-| 8 | **No Svelte DOM warnings:** Console shows no "hydration mismatch" or DOM reconciliation warnings | DevTools console |
-| 9 | **JSROOT cleanup API exists:** `painter.cleanup` (or equivalent) is callable without error | Confirmed by criterion 3 |
+| #   | Criterion                                                                                                                            | How to test                              |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------ | ---------------------------------------- |
+| 1   | **Initial render:** Two series visible on log-log axes                                                                               | Visual inspection on page load           |
+| 2   | **Add series:** Click "Add series" — third curve appears; first two remain                                                           | Click button, observe                    |
+| 3   | **Remove all:** Click "Remove all" — canvas clears, no console errors                                                                | Click button, check DevTools console     |
+| 4   | **Mutate first:** Click "Mutate first series" — curve changes, others unchanged                                                      | Click button, observe                    |
+| 5   | **Rapid clicks:** Click "Add series" 5× rapidly — no error, 7 series shown                                                           | Rapid clicks, observe                    |
+| 6   | **Wheel scroll:** Mouse over plot, scroll wheel — page scrolls, plot does NOT zoom                                                   | Scroll over plot                         |
+| 7   | **No memory leak:** In DevTools Performance monitor, repeated add/remove cycles do not grow JS heap monotonically over 10 iterations | DevTools → Performance monitor → JS Heap |
+| 8   | **No Svelte DOM warnings:** Console shows no "hydration mismatch" or DOM reconciliation warnings                                     | DevTools console                         |
+| 9   | **JSROOT cleanup API exists:** `painter.cleanup` (or equivalent) is callable without error                                           | Confirmed by criterion 3                 |
 
 ### What to Do if a Criterion Fails
 
@@ -304,6 +301,7 @@ Build the real libdedx WASM module using both `--embed-file` and
 `--preload-file`, then serve each from a SvelteKit static build to compare.
 
 **Prerequisites:**
+
 - Docker installed (for `emscripten/emsdk` image).
 - The `libdedx/` submodule initialized (`git submodule update --init`).
 
@@ -419,12 +417,7 @@ Create `app/src/routes/+page.svelte`:
       // Call dedx_fill_program_list to verify the data files loaded
       const bufSize = 20;
       const ptr = module._malloc(bufSize * 4);
-      module.ccall(
-        "dedx_fill_program_list",
-        null,
-        ["number"],
-        [ptr],
-      );
+      module.ccall("dedx_fill_program_list", null, ["number"], [ptr]);
 
       // Read program IDs until -1 terminator
       const heap = new Int32Array(module.HEAP32.buffer, ptr, bufSize);
@@ -438,12 +431,7 @@ Create `app/src/routes/+page.svelte`:
       // Get program names
       const names: string[] = [];
       for (const id of ids) {
-        const namePtr = module.ccall(
-          "dedx_get_program_name",
-          "number",
-          ["number"],
-          [id],
-        );
+        const namePtr = module.ccall("dedx_get_program_name", "number", ["number"], [id]);
         names.push(module.UTF8ToString(namePtr));
       }
 
@@ -500,6 +488,7 @@ pnpm dlx serve /tmp/ghpages -l 4001
 **Step 4: Verify `.data` file is fetched**
 
 In each scenario, open DevTools → Network tab and confirm:
+
 - `libdedx.data` is fetched (not 404).
 - Its content type is acceptable (any binary MIME type, or `application/octet-stream`).
 - The `locateFile` override correctly produces the full path.
@@ -511,14 +500,14 @@ no `.data` file) and repeat Scenarios B and C.
 
 ### Acceptance Criteria
 
-| # | Criterion | Pass condition |
-|---|-----------|---------------|
-| 1 | **Dev server loads** | Status shows "OK — N programs loaded" (N ≥ 5); program names visible |
-| 2 | **Static build (root path) loads** | Same as above, served by `pnpm dlx serve build` |
-| 3 | **Static build (sub-path) loads** | Same as above, served at `/dedx_web/` sub-path |
-| 4 | **`.data` file fetched** | DevTools Network shows `libdedx.data` request with 200 status in all scenarios |
-| 5 | **No CORS errors** | DevTools Console has no CORS-related errors |
-| 6 | **`locateFile` paths correct** | The URLs for `.wasm` and `.data` in DevTools Network match the expected base path |
+| #   | Criterion                          | Pass condition                                                                    |
+| --- | ---------------------------------- | --------------------------------------------------------------------------------- |
+| 1   | **Dev server loads**               | Status shows "OK — N programs loaded" (N ≥ 5); program names visible              |
+| 2   | **Static build (root path) loads** | Same as above, served by `pnpm dlx serve build`                                   |
+| 3   | **Static build (sub-path) loads**  | Same as above, served at `/dedx_web/` sub-path                                    |
+| 4   | **`.data` file fetched**           | DevTools Network shows `libdedx.data` request with 200 status in all scenarios    |
+| 5   | **No CORS errors**                 | DevTools Console has no CORS-related errors                                       |
+| 6   | **`locateFile` paths correct**     | The URLs for `.wasm` and `.data` in DevTools Network match the expected base path |
 
 ### What to Do if a Criterion Fails
 
@@ -609,9 +598,7 @@ export const parsedNumbers = $derived(
 );
 
 // $derived depending on another $state
-export const computedResult = $derived(
-  parsedNumbers.map((n) => n * (selectedValue.value + 1)),
-);
+export const computedResult = $derived(parsedNumbers.map((n) => n * (selectedValue.value + 1)));
 
 // Array state — test bulk replacement
 export const items = $state<{ value: string[] }>({ value: [] });
@@ -668,7 +655,9 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
       Energy input (one number per line):
       <textarea
         value={inputText.value}
-        oninput={(e) => { inputText.value = (e.target as HTMLTextAreaElement).value; }}
+        oninput={(e) => {
+          inputText.value = (e.target as HTMLTextAreaElement).value;
+        }}
         rows="4"
         cols="30"
       ></textarea>
@@ -692,12 +681,7 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
 
 ```svelte
 <script lang="ts">
-  import {
-    selectedValue,
-    parsedNumbers,
-    computedResult,
-    items,
-  } from "./state/counter.svelte.ts";
+  import { selectedValue, parsedNumbers, computedResult, items } from "./state/counter.svelte.ts";
   import { isAdvancedMode, computationCount } from "./state/ui.svelte.ts";
 
   // Debounced $effect — simulates the Calculator page calculation effect.
@@ -709,9 +693,7 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
 
     const timer = setTimeout(() => {
       // Simulate a WASM call
-      console.log(
-        `[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`,
-      );
+      console.log(`[debounced effect] Computing with ${nums.length} numbers, selected=${sel}`);
       computationCount.value += 1;
     }, 300);
 
@@ -767,17 +749,17 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
 
 ### Acceptance Criteria
 
-| # | Criterion | How to test |
-|---|-----------|-------------|
-| 1 | **Cross-component reactivity:** Clicking +/- in InputPanel updates the "Selected value" shown in ResultPanel in real time | Click buttons, observe ResultPanel |
-| 2 | **`$derived` at module scope:** Typing "10\n20\n30" in the textarea shows `[10, 20, 30]` in ResultPanel's "Parsed numbers" list | Type in textarea, observe list |
-| 3 | **Chained `$derived`:** "Computed result" updates when either `inputText` or `selectedValue` changes; values are correct (n × (selected + 1)) | Change selected to 2, type "5\n10"; expect [15, 30] |
-| 4 | **Debounced `$effect`:** "Computation count" increments once after 300ms of quiet, NOT on every keystroke | Type rapidly, observe count stays stable; wait 300ms, count increments by 1 |
-| 5 | **Mode toggle cross-component:** Clicking "Toggle mode" in InputPanel updates the "Mode" display in ResultPanel | Click button, observe |
-| 6 | **Array bulk replacement:** "Replace all items" replaces the entire array; ResultPanel shows ["Replaced A", "Replaced B", "Replaced C"] | Click button, observe |
-| 7 | **Array append:** "Add item" appends to the array; ResultPanel shows the new item | Click button, observe |
-| 8 | **No console errors:** DevTools Console has no runtime errors or warnings related to reactivity | Check console throughout all tests |
-| 9 | **SSG prerender works:** `pnpm build` completes without error (static adapter) | Run build |
+| #   | Criterion                                                                                                                                     | How to test                                                                 |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| 1   | **Cross-component reactivity:** Clicking +/- in InputPanel updates the "Selected value" shown in ResultPanel in real time                     | Click buttons, observe ResultPanel                                          |
+| 2   | **`$derived` at module scope:** Typing "10\n20\n30" in the textarea shows `[10, 20, 30]` in ResultPanel's "Parsed numbers" list               | Type in textarea, observe list                                              |
+| 3   | **Chained `$derived`:** "Computed result" updates when either `inputText` or `selectedValue` changes; values are correct (n × (selected + 1)) | Change selected to 2, type "5\n10"; expect [15, 30]                         |
+| 4   | **Debounced `$effect`:** "Computation count" increments once after 300ms of quiet, NOT on every keystroke                                     | Type rapidly, observe count stays stable; wait 300ms, count increments by 1 |
+| 5   | **Mode toggle cross-component:** Clicking "Toggle mode" in InputPanel updates the "Mode" display in ResultPanel                               | Click button, observe                                                       |
+| 6   | **Array bulk replacement:** "Replace all items" replaces the entire array; ResultPanel shows ["Replaced A", "Replaced B", "Replaced C"]       | Click button, observe                                                       |
+| 7   | **Array append:** "Add item" appends to the array; ResultPanel shows the new item                                                             | Click button, observe                                                       |
+| 8   | **No console errors:** DevTools Console has no runtime errors or warnings related to reactivity                                               | Check console throughout all tests                                          |
+| 9   | **SSG prerender works:** `pnpm build` completes without error (static adapter)                                                                | Run build                                                                   |
 
 ### What to Do if a Criterion Fails
 
@@ -808,11 +790,11 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
 The spikes are independent and can be run in parallel. However, if a single
 agent is doing them sequentially, the recommended order is:
 
-| Order | Spike | Reason |
-|-------|-------|--------|
-| 1 | **Spike 3** (Svelte 5 `$state`) | Fastest to complete (no Docker, no WASM). Validates the most fundamental architecture assumption (shared reactive state). |
-| 2 | **Spike 1** (JSROOT + Svelte 5) | Requires only `pnpm add jsroot`. Validates the Plot page's core dependency. |
-| 3 | **Spike 2** (WASM `--preload-file`) | Requires Docker + libdedx submodule. Validates the build pipeline. |
+| Order | Spike                               | Reason                                                                                                                    |
+| ----- | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
+| 1     | **Spike 3** (Svelte 5 `$state`)     | Fastest to complete (no Docker, no WASM). Validates the most fundamental architecture assumption (shared reactive state). |
+| 2     | **Spike 1** (JSROOT + Svelte 5)     | Requires only `pnpm add jsroot`. Validates the Plot page's core dependency.                                               |
+| 3     | **Spike 2** (WASM `--preload-file`) | Requires Docker + libdedx submodule. Validates the build pipeline.                                                        |
 
 ---
 
@@ -845,12 +827,12 @@ After all spikes pass, the `prototypes/` directory should be deleted
 
 **Status:** Complete. Stage 3 gate: **OPEN.**
 
-| Phase | Status | Key findings |
-|-------|--------|-------------|
-| Phase 1 — static C header analysis | ✅ Complete | Data fully embedded (`dedx_data_access.c` has zero `fopen()` calls); `--preload-file` unnecessary; `dedx_estar.h` exists but not compiled in; 279 materials; 29 gas targets confirmed |
-| Phase 2 — WASM runtime (44/44 PASS) | ✅ Complete | ESTAR NOT IMPLEMENTED (`DEDX_ERR_ESTAR_NOT_IMPL`); 457 KB `.wasm` + 13 KB `.mjs`; no `.data`; material names ALL-CAPS; `dedx_get_ion_name(1001)` returns `""`; DEFAULT covers Z=1–112; MSTAR runtime list Z=2–18 |
-| Phase 3 — bundle size | Covered in REPORT.md | Monolithic build recommended (457 KB — well within budget). Per-program splitting not worth the complexity. |
-| Phase 4 — spec cross-check | ✅ Complete | Amendments applied to ADR 003, `06-wasm-api-contract.md`, `entity-selection.md`, `03-architecture.md` |
+| Phase                               | Status               | Key findings                                                                                                                                                                                                     |
+| ----------------------------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Phase 1 — static C header analysis  | ✅ Complete          | Data fully embedded (`dedx_data_access.c` has zero `fopen()` calls); `--preload-file` unnecessary; `dedx_estar.h` exists but not compiled in; 279 materials; 29 gas targets confirmed                            |
+| Phase 2 — WASM runtime (44/44 PASS) | ✅ Complete          | ESTAR NOT IMPLEMENTED (`DEDX_ERR_ESTAR_NOT_IMPL`); 457 KB `.wasm` + 13 KB `.mjs`; no `.data`; material names ALL-CAPS; `dedx_get_ion_name(1001)` returns `""`; DEFAULT covers Z=1–112; MSTAR runtime list Z=2–18 |
+| Phase 3 — bundle size               | Covered in REPORT.md | Monolithic build recommended (457 KB — well within budget). Per-program splitting not worth the complexity.                                                                                                      |
+| Phase 4 — spec cross-check          | ✅ Complete          | Amendments applied to ADR 003, `06-wasm-api-contract.md`, `entity-selection.md`, `03-architecture.md`                                                                                                            |
 
 ### Gate rule amendment for Stage 3
 
@@ -864,6 +846,7 @@ the WASM binary. The `wasm/build.sh` script in Stage 3 must **omit**
 
 Electron stopping powers via ESTAR are not available in libdedx v1.4.0.
 The Stage 3 TypeScript wrapper must:
+
 - Include ESTAR (ID=3) in the program list but never call it for calculations.
 - Include Electron (ID=1001) in the particle list, hard-coded name `"Electron"`,
   always greyed out.
@@ -893,11 +876,11 @@ Decide which storage format is best for the `.webdedx` external data format
 before any production code for the external-data feature
 (`docs/04-feature-specs/external-data.md`) is written. Three candidates:
 
-| Candidate | Format | HTTP access pattern | Files |
-|-----------|--------|---------------------|-------|
-| A | Apache Parquet (per-ion row groups) | 2 cold Range requests | 1 |
-| B | Zarr v3 — single shard (`shards=(287,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 6 |
-| C | Zarr v3 — per-ion shards (`shards=(1,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 578 |
+| Candidate | Format                                          | HTTP access pattern                                                                                                         | Files |
+| --------- | ----------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------- | ----- |
+| A         | Apache Parquet (per-ion row groups)             | 2 cold Range requests                                                                                                       | 1     |
+| B         | Zarr v3 — single shard (`shards=(287,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 6     |
+| C         | Zarr v3 — per-ion shards (`shards=(1,379,165)`) | 7 cold requests in browser (`.zattrs`, `.zgroup`, root `zarr.json`, array `zarr.json`, HEAD, shard-index Range, data Range) | 578   |
 
 **At the time this spike was designed**, the spec mandated Parquet + `hyparquet`. This spike measures
 the format difference with realistic data dimensions (287 particles ×
@@ -924,13 +907,13 @@ v3 + ZEP2 sharding.
 
 ### Dataset
 
-| Dimension | Count | Source |
-|-----------|-------|--------|
-| Particles | 287 | 286 stable isotopes (AME2020) + 1 electron |
-| Materials | 379 | 279 libdedx DEFAULT + 100 user-defined custom |
-| Energy points | 165 | log-spaced 0.0011–2000 MeV/u |
-| Programs | 1 | Synthetic "srim-2013" |
-| Array shape | (287, 379, 165) float32 | ~71.8 MB uncompressed |
+| Dimension     | Count                   | Source                                        |
+| ------------- | ----------------------- | --------------------------------------------- |
+| Particles     | 287                     | 286 stable isotopes (AME2020) + 1 electron    |
+| Materials     | 379                     | 279 libdedx DEFAULT + 100 user-defined custom |
+| Energy points | 165                     | log-spaced 0.0011–2000 MeV/u                  |
+| Programs      | 1                       | Synthetic "srim-2013"                         |
+| Array shape   | (287, 379, 165) float32 | ~71.8 MB uncompressed                         |
 
 Custom materials include: metal alloys (SS316L, Inconel 718, Ti-6Al-4V…),
 scintillators (LYSO, LaBr₃, GAGG, PbWO₄…), semiconductors (CZT, GaN…),
@@ -939,61 +922,62 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 
 ### Acceptance Criteria
 
-| # | Criterion | Pass condition |
-|---|-----------|---------------|
-| 1 | `generate_data.py` produces correct shape | Prints "287 particles, 379 materials"; exits 0 |
-| 2 | Zarr single-shard round-trip | Read-back values match within `float32` epsilon |
-| 3 | Zarr per-ion round-trip | Same |
-| 4 | Parquet round-trip | Same |
-| 5 | Electron chunk present and non-zero | `stp_array[286, :, :]` finite, distinct from H-1 |
-| 6 | Custom material Bragg additivity works | `SS316L` STP ≠ `IRON` STP and is a plausible mix |
-| 7 | Per-particle Zarr chunk < Parquet row group | Compressed bytes: Zarr chunk < Parquet RG |
-| 8 | `run_benchmark.py` prints full table | No exceptions; all metrics reported |
-| 9 | Browser local panels: values match | `max|zarr - parquet| < 1e-5` for H-1, electron, SS316L |
-| 10 | Browser S3 single-shard panel: reads correctly | Wall-clock time recorded; DevTools shows Range requests |
-| 11 | Browser S3 per-ion panel: reads correctly | Wall-clock time recorded; DevTools shows HEAD + Range sequence |
-| 12 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
-| 13 | No CORS errors from Vite dev server or S3 | DevTools console clean for all panels |
+| #   | Criterion                                      | Pass condition                                                 |
+| --- | ---------------------------------------------- | -------------------------------------------------------------- | -------------- | --------------------------------- |
+| 1   | `generate_data.py` produces correct shape      | Prints "287 particles, 379 materials"; exits 0                 |
+| 2   | Zarr single-shard round-trip                   | Read-back values match within `float32` epsilon                |
+| 3   | Zarr per-ion round-trip                        | Same                                                           |
+| 4   | Parquet round-trip                             | Same                                                           |
+| 5   | Electron chunk present and non-zero            | `stp_array[286, :, :]` finite, distinct from H-1               |
+| 6   | Custom material Bragg additivity works         | `SS316L` STP ≠ `IRON` STP and is a plausible mix               |
+| 7   | Per-particle Zarr chunk < Parquet row group    | Compressed bytes: Zarr chunk < Parquet RG                      |
+| 8   | `run_benchmark.py` prints full table           | No exceptions; all metrics reported                            |
+| 9   | Browser local panels: values match             | `max                                                           | zarr - parquet | < 1e-5` for H-1, electron, SS316L |
+| 10  | Browser S3 single-shard panel: reads correctly | Wall-clock time recorded; DevTools shows Range requests        |
+| 11  | Browser S3 per-ion panel: reads correctly      | Wall-clock time recorded; DevTools shows HEAD + Range sequence |
+| 12  | `zarrita` bundle ≤ 50 KB minified              | `vite build --report`                                          |
+| 13  | No CORS errors from Vite dev server or S3      | DevTools console clean for all panels                          |
 
 ### Deliverables
 
-| File | Description |
-|------|-------------|
-| `prototypes/extdata-formats/PLAN.md` | Full spike specification (complete) |
-| `prototypes/extdata-formats/generate_data.py` | Isotope list, materials, STP arrays |
-| `prototypes/extdata-formats/write_parquet.py` | Parquet writer (per-ion row groups) |
-| `prototypes/extdata-formats/write_zarr_v3_single.py` | Zarr v3 single-shard writer (`shards=(287,379,165)`) |
-| `prototypes/extdata-formats/write_zarr_v3_per_ion.py` | Zarr v3 per-ion writer (`shards=(1,379,165)`) |
-| `prototypes/extdata-formats/upload_to_s3.py` | S3 upload script for all three datasets |
-| `prototypes/extdata-formats/run_benchmark.py` | Local size + HTTP-cost comparison table |
-| `prototypes/extdata-formats/browser/` | Vite app: 5 panels (local + S3 tests) |
-| `prototypes/extdata-formats/REPORT.md` | Benchmark results |
-| `prototypes/extdata-formats/VERDICT.md` | Go/no-go decision |
+| File                                                  | Description                                          |
+| ----------------------------------------------------- | ---------------------------------------------------- |
+| `prototypes/extdata-formats/PLAN.md`                  | Full spike specification (complete)                  |
+| `prototypes/extdata-formats/generate_data.py`         | Isotope list, materials, STP arrays                  |
+| `prototypes/extdata-formats/write_parquet.py`         | Parquet writer (per-ion row groups)                  |
+| `prototypes/extdata-formats/write_zarr_v3_single.py`  | Zarr v3 single-shard writer (`shards=(287,379,165)`) |
+| `prototypes/extdata-formats/write_zarr_v3_per_ion.py` | Zarr v3 per-ion writer (`shards=(1,379,165)`)        |
+| `prototypes/extdata-formats/upload_to_s3.py`          | S3 upload script for all three datasets              |
+| `prototypes/extdata-formats/run_benchmark.py`         | Local size + HTTP-cost comparison table              |
+| `prototypes/extdata-formats/browser/`                 | Vite app: 5 panels (local + S3 tests)                |
+| `prototypes/extdata-formats/REPORT.md`                | Benchmark results                                    |
+| `prototypes/extdata-formats/VERDICT.md`               | Go/no-go decision                                    |
 
 ### Gate decision (2026-04-18): **GATE OPEN — Zarr v3 per-ion adopted**
 
 `VERDICT.md` written. Decision: **Zarr v3 per-ion shards** (`shards=(1, n_materials, n_energies)`).
 
-| Criterion | Result |
-|-----------|--------|
-| All 13 acceptance criteria | ✅ PASS |
-| zarrita bundle ≤ 50 kB | ✅ PASS — core 38.62 kB (gzip 12.89 kB) |
-| No CORS errors | ✅ PASS — S3 + browser |
-| Cold-start bytes | 225.7 KB vs 466 KB Parquet — 52% less |
-| S3 per-ion RTT | 287 ms browser, 171 ms Bun |
+| Criterion                  | Result                                  |
+| -------------------------- | --------------------------------------- |
+| All 13 acceptance criteria | ✅ PASS                                 |
+| zarrita bundle ≤ 50 kB     | ✅ PASS — core 38.62 kB (gzip 12.89 kB) |
+| No CORS errors             | ✅ PASS — S3 + browser                  |
+| Cold-start bytes           | 225.7 KB vs 466 KB Parquet — 52% less   |
+| S3 per-ion RTT             | 287 ms browser, 171 ms Bun              |
 
 Spec amendments applied (see [`docs/04-feature-specs/external-data.md`](04-feature-specs/external-data.md) Final v6):
+
 - §2 rewritten: Zarr v3 per-ion format, zarrita reader, 7-request cold-start
 - `hyparquet` removed from `docs/02-tech-stack.md §6`, replaced by `zarrita ^0.7.x`
 - CORS note in `docs/03-architecture.md §10` updated
 
 ### Post-gate work items (non-blocking for implementation)
 
-| Item | Notes |
-|------|-------|
-| Investigate zarrita codec lazy-loading | `vite build` bundles blosc (603 kB) + zstd (747 kB); verify not eagerly loaded for LZ4-only data |
-| Investigate zarrita v2 compat probe | `.zattrs` + `.zgroup` fetched on every `open(root(...))` — 2 extra 404 requests; check if disableable in a future zarrita release |
-| `upload_to_s3.py` implementation | Used rclone manually in spike; script useful for automation in converter tooling |
+| Item                                   | Notes                                                                                                                             |
+| -------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| Investigate zarrita codec lazy-loading | `vite build` bundles blosc (603 kB) + zstd (747 kB); verify not eagerly loaded for LZ4-only data                                  |
+| Investigate zarrita v2 compat probe    | `.zattrs` + `.zgroup` fetched on every `open(root(...))` — 2 extra 404 requests; check if disableable in a future zarrita release |
+| `upload_to_s3.py` implementation       | Used rclone manually in spike; script useful for automation in converter tooling                                                  |
 
 ### References
 
@@ -1006,12 +990,12 @@ Spec amendments applied (see [`docs/04-feature-specs/external-data.md`](04-featu
 
 ## Related Documents
 
-| Document | Relevance |
-|----------|-----------|
-| [03-architecture.md](03-architecture.md) | Target architecture — spikes validate §3 (WASM), §4 (state), §5 (JSROOT) |
-| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md) | JSROOT choice — Spike 1 validates |
-| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md) | `--preload-file` — Spike 2 validates |
-| [06-wasm-api-contract.md](06-wasm-api-contract.md) | LibdedxService types — Spike 2 uses a minimal subset |
-| [02-tech-stack.md](02-tech-stack.md) | Version pins — all spikes must use the pinned versions |
-| [00-redesign-plan.md](00-redesign-plan.md) | Stage plan — spikes are Stage 2.5 |
-| [04-feature-specs/external-data.md](04-feature-specs/external-data.md) | External data spec — Spike 4 validates §2 format choice |
+| Document                                                                     | Relevance                                                                |
+| ---------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| [03-architecture.md](03-architecture.md)                                     | Target architecture — spikes validate §3 (WASM), §4 (state), §5 (JSROOT) |
+| [decisions/002-keep-jsroot.md](decisions/002-keep-jsroot.md)                 | JSROOT choice — Spike 1 validates                                        |
+| [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md) | `--preload-file` — Spike 2 validates                                     |
+| [06-wasm-api-contract.md](06-wasm-api-contract.md)                           | LibdedxService types — Spike 2 uses a minimal subset                     |
+| [02-tech-stack.md](02-tech-stack.md)                                         | Version pins — all spikes must use the pinned versions                   |
+| [00-redesign-plan.md](00-redesign-plan.md)                                   | Stage plan — spikes are Stage 2.5                                        |
+| [04-feature-specs/external-data.md](04-feature-specs/external-data.md)       | External data spec — Spike 4 validates §2 format choice                  |

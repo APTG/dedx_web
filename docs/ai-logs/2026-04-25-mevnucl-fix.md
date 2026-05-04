@@ -78,6 +78,7 @@ Where `m_u` is the atomic mass and `A` is the mass number.
 ## Test Results
 
 All 396 tests pass:
+
 ```
 Test Files  21 passed (21)
 Tests       396 passed (396)
@@ -88,11 +89,13 @@ Tests       396 passed (396)
 ## Verification
 
 For a heavy ion like Carbon-12:
+
 - Input: `100 MeV` (total kinetic energy)
 - Old behavior: displayed `100 / 12.011 ≈ 8.33 MeV/u` → labeled as "MeV/nucl" ❌
 - New behavior: displays `100 / 12 ≈ 8.33 MeV/nucl` → correctly labeled ✅
 
 For a proton (A=1):
+
 - Input: `100 MeV`
 - Result: `100 / 1 = 100 MeV/nucl` (MeV/u and MeV/nucl are the same for A=1)
 
@@ -115,7 +118,7 @@ Three review issues from the initial fix were addressed in a follow-up commit:
    realistic `atomicMass` values for carbon and helium. Direct unit tests for
    the new helper were added too.
 
-3. **Root-cause wording** above was sharpened: the bug was *both* a wrong
+3. **Root-cause wording** above was sharpened: the bug was _both_ a wrong
    numeric input to the WASM call (off by `m_u / A` for heavy ions) and a
    wrong UI label, not just a label mismatch.
 

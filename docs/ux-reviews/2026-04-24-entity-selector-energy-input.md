@@ -103,8 +103,8 @@ feedback on how many items matched — the user just sees the list.
 `"3 of 240"` when a search term is active. Hide it when the field is empty
 to avoid clutter.
 
-**Implemented:** Added `$derived` `totalMatchCount` to `entity-combobox.svelte` 
-that counts filtered items. Displays `"{n} result(s)"` below search input 
+**Implemented:** Added `$derived` `totalMatchCount` to `entity-combobox.svelte`
+that counts filtered items. Displays `"{n} result(s)"` below search input
 when search term is active. Test: `§7.4: match count hides when no search term`.
 
 ---
@@ -119,6 +119,7 @@ circumstance. Showing a permanently disabled item trains users to expect
 it will eventually be enabled, and its presence in the list is noise.
 
 **Options (pick one):**
+
 - Move it to the very bottom of the list, visually separated, with a
   tooltip explaining the limitation.
 - Hide it entirely and add a tooltip on the "Particle" label: "Electrons
@@ -127,8 +128,8 @@ it will eventually be enabled, and its presence in the list is noise.
 The current behaviour — middle of the list, opacity-50, no tooltip — is
 the worst of both worlds.
 
-**Implemented:** Moved Electron to bottom of particle list using 
-`#each` conditional with `Combobox.Separator` before it. Added `title` 
+**Implemented:** Moved Electron to bottom of particle list using
+`#each` conditional with `Combobox.Separator` before it. Added `title`
 tooltip "Electrons not supported in libdedx v1.4.0" on the disabled item.
 Test verifies Electron renders last with tooltip attribute.
 
@@ -166,6 +167,7 @@ selections to defaults. The action is irreversible within a session if
 the user had uncommon selections.
 
 **Fix:**
+
 - Either require confirmation for Reset all ("Are you sure?"), or
 - Rename to "Restore defaults" to signal it is a soft reset to known
   values (Proton / Water / Auto-select), not a data-loss action.
@@ -189,11 +191,12 @@ possible (no fading edge, no scrollbar until the user hovers).
 
 **Fix:** Add a subtle gradient fade at the bottom of the list to signal
 scrollability — a common technique:
+
 ```css
 mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);
 ```
 
-**Implemented:** Added `mask-image` gradient style to dropdown scroll container 
+**Implemented:** Added `mask-image` gradient style to dropdown scroll container
 in `entity-combobox.svelte`. Test: `§7.5: scrollable dropdown has gradient mask hint`.
 
 ---
@@ -250,19 +253,21 @@ changes when the user types in the search box. After filtering to
 e.g. 3 results, the counter still says "18 of 240 available".
 
 **Fix:** Compute the available count from `filteredItems` instead:
+
 ```ts
 const filteredAvailable = $derived(
-  filteredItems.flatMap(g => g.items).filter(i => i.available).length
+  filteredItems.flatMap((g) => g.items).filter((i) => i.available).length,
 );
-const filteredTotal = $derived(filteredItems.flatMap(g => g.items).length);
+const filteredTotal = $derived(filteredItems.flatMap((g) => g.items).length);
 ```
+
 Display as `"3 of 18 available (filtered)"` or just hide the counter
 when a search term is active.
 
-**Implemented:** Replaced `totalAvailable` with `filteredAvailable` and 
-`filteredTotal` derived states in `entity-panel.svelte`. Counter now shows 
-filtered results (e.g., "1 of 1 available" when searching for "Hydrogen"). 
-Tests: 3 new tests in `entity-panel.test.ts` verify count updates when 
+**Implemented:** Replaced `totalAvailable` with `filteredAvailable` and
+`filteredTotal` derived states in `entity-panel.svelte`. Counter now shows
+filtered results (e.g., "1 of 1 available" when searching for "Hydrogen").
+Tests: 3 new tests in `entity-panel.test.ts` verify count updates when
 searching, shows correct filtered matches, and resets when cleared.
 
 ---
@@ -280,7 +285,7 @@ the list with arrows will find the interaction broken.
 or change the ARIA role to `role="list"` / `role="listitem"` to avoid
 making a promise the implementation cannot keep.
 
-**Implemented:** Changed `role="listbox"` to `role="list"` and 
+**Implemented:** Changed `role="listbox"` to `role="list"` and
 `role="option"` to `role="listitem"` in `entity-panel.svelte`. This removes
 the broken ARIA promise without adding complex keyboard logic. Accessibility
 tests updated accordingly.
@@ -357,9 +362,11 @@ tests for (a) row in master unit → no arrow rendered, (b) different unit
 **Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** In `energy-input.svelte:117`:
+
 ```svelte
 placeholder={row.text || ""}
 ```
+
 HTML placeholder text is shown only when the input is empty. Since
 `value={row.text}` is also set, the placeholder can never be seen
 (the value is always present or ""). The intent was probably
@@ -445,24 +452,27 @@ verifying multi-line paste creates correct number of rows with proper text.
 **Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** In `handleKeydown`, adding a row and then focusing it uses:
+
 ```ts
 state.addRow();
 setTimeout(() => focusEnergyInput(index + 1), 0);
 ```
+
 The rest of the codebase (e.g. `entity-combobox.svelte:66`) uses
 `tick().then(...)` for post-DOM-update work. `setTimeout(fn, 0)` is
 less reliable in Svelte 5's async scheduler.
 
 **Fix:** Replace with:
+
 ```ts
 state.addRow();
 await tick();
 focusEnergyInput(index + 1);
 ```
 
-**Implemented:** Replaced `setTimeout` with `await tick()` in 
-`handleKeydown` function in `energy-input.svelte`. Imported `tick` from 
-`svelte` and made handler `async`. Existing keyboard-nav tests verify 
+**Implemented:** Replaced `setTimeout` with `await tick()` in
+`handleKeydown` function in `energy-input.svelte`. Imported `tick` from
+`svelte` and made handler `async`. Existing keyboard-nav tests verify
 focus still works correctly.
 
 ---
@@ -472,9 +482,11 @@ focus still works correctly.
 **Status:** ✅ FIXED (2026-04-25)
 
 **Issue:** `focusEnergyInput` finds rows via:
+
 ```ts
-document.querySelector(`input[aria-label="Energy value ${index + 1}"]`)
+document.querySelector(`input[aria-label="Energy value ${index + 1}"]`);
 ```
+
 If the label template changes (localisation, wording update), focus
 breaks silently. It also assumes only one component instance per page.
 
@@ -536,26 +548,26 @@ overflow on narrow viewports.
 
 ## Priority Summary
 
-| # | Issue | Severity | Effort | Status |
-|---|-------|----------|--------|--------|
-| 13 | Unified table not implemented | Critical | Large | ✅ Fixed |
-| 14 | Energy state not exposed to parent | Critical | Small | ✅ Fixed |
-| 2 | No selected-item indicator on re-open | High | Small | ✅ Fixed |
-| 20 | Paste of multi-line text unhandled | High | Small | ✅ Fixed |
-| 6 | "Clear" button placement awkward | Medium | Small | ✅ Fixed |
-| 7 | "Reset all" easy to trigger accidentally | Medium | Small | ✅ Fixed |
-| 16 | Placeholder set to `row.text` (bug) | Medium | Trivial | ✅ Fixed |
-| 18 | "Per-row mode" label cryptic | Medium | Small | ✅ Fixed |
-| 19 | "Add row" over-styled as primary action | Medium | Trivial | ✅ Fixed |
-| 3 | Search box gives no hint of searchable fields | Medium | Trivial | ✅ Fixed |
-| 5 | Electron always visible but permanently disabled | Medium | Small | ✅ Fixed |
-| 15 | Redundant parsed-value display | Low | Small | ✅ Fixed |
-| 11 | Available count ignores search filter (panel) | Low | Small | ✅ Fixed |
-| 12 | Panel listbox: keyboard nav not implemented | Low | Medium | ✅ Fixed |
-| 4 | No match count in combobox dropdown | Low | Small | ✅ Fixed |
-| 8 | Dropdown scroll not signalled visually | Low | Trivial | ✅ Fixed |
-| 17 | Error + parsed value share unstable layout slot | Low | Medium | ✅ Fixed |
-| 21 | `setTimeout` instead of `tick()` for focus | Low | Trivial | ✅ Fixed |
-| 22 | Focus helper uses fragile `aria-label` query | Low | Small | ✅ Fixed |
-| 23 | No live region for selection feedback | Low | Medium | ✅ Fixed |
-| 24 | Mobile dropdown overflow risk | Low | Small | ✅ Fixed |
+| #   | Issue                                            | Severity | Effort  | Status   |
+| --- | ------------------------------------------------ | -------- | ------- | -------- |
+| 13  | Unified table not implemented                    | Critical | Large   | ✅ Fixed |
+| 14  | Energy state not exposed to parent               | Critical | Small   | ✅ Fixed |
+| 2   | No selected-item indicator on re-open            | High     | Small   | ✅ Fixed |
+| 20  | Paste of multi-line text unhandled               | High     | Small   | ✅ Fixed |
+| 6   | "Clear" button placement awkward                 | Medium   | Small   | ✅ Fixed |
+| 7   | "Reset all" easy to trigger accidentally         | Medium   | Small   | ✅ Fixed |
+| 16  | Placeholder set to `row.text` (bug)              | Medium   | Trivial | ✅ Fixed |
+| 18  | "Per-row mode" label cryptic                     | Medium   | Small   | ✅ Fixed |
+| 19  | "Add row" over-styled as primary action          | Medium   | Trivial | ✅ Fixed |
+| 3   | Search box gives no hint of searchable fields    | Medium   | Trivial | ✅ Fixed |
+| 5   | Electron always visible but permanently disabled | Medium   | Small   | ✅ Fixed |
+| 15  | Redundant parsed-value display                   | Low      | Small   | ✅ Fixed |
+| 11  | Available count ignores search filter (panel)    | Low      | Small   | ✅ Fixed |
+| 12  | Panel listbox: keyboard nav not implemented      | Low      | Medium  | ✅ Fixed |
+| 4   | No match count in combobox dropdown              | Low      | Small   | ✅ Fixed |
+| 8   | Dropdown scroll not signalled visually           | Low      | Trivial | ✅ Fixed |
+| 17  | Error + parsed value share unstable layout slot  | Low      | Medium  | ✅ Fixed |
+| 21  | `setTimeout` instead of `tick()` for focus       | Low      | Trivial | ✅ Fixed |
+| 22  | Focus helper uses fragile `aria-label` query     | Low      | Small   | ✅ Fixed |
+| 23  | No live region for selection feedback            | Low      | Medium  | ✅ Fixed |
+| 24  | Mobile dropdown overflow risk                    | Low      | Small   | ✅ Fixed |

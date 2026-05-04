@@ -13,7 +13,10 @@
   {#if $page.error?.message}
     <p class="mt-2 max-w-md text-center text-muted-foreground">{$page.error.message}</p>
   {/if}
-  <button onclick={() => history.back()} class="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground">
+  <button
+    onclick={() => history.back()}
+    class="mt-4 px-4 py-2 rounded bg-primary text-primary-foreground"
+  >
     Go back
   </button>
 </div>

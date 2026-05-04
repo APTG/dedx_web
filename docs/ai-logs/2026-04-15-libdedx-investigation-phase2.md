@@ -10,6 +10,7 @@ of the Stage 2.6 investigation.
 **AI response (this session):**
 
 Read the following to orient:
+
 - `prototypes/wasm-preload/VERDICT.md` — Spike 2 build artifacts and emcc commands
 - `prototypes/libdedx-investigation/REPORT.md` — Phase 1 findings and Phase 2 plan
 - `libdedx/src/CMakeLists.txt` — C source file list (`dedx_objects` OBJECT library)
@@ -17,12 +18,14 @@ Read the following to orient:
 - `libdedx/include/dedx.h` — `dedx_get_program_list`, `dedx_get_ion_list`, `dedx_get_material_list`
 
 **Critical finding before building:** `libdedx/src/dedx.c` lines 587–589:
+
 ```c
 } else if (prog == DEDX_ESTAR) {
     *err = DEDX_ERR_ESTAR_NOT_IMPL;
     return -1;
 }
 ```
+
 ESTAR is **explicitly not implemented** in libdedx v1.4.0. This is not a `.dat` file
 access problem. The `dedx_estar.h` header contains the tabulated data but is never used.
 
@@ -38,6 +41,7 @@ The `build.sh` uses a mounted inner script (bash heredoc with single-quoted deli
 to safely pass JSON arrays to emcc inside `docker run`.
 
 **Implementation steps:**
+
 1. Created `prototypes/libdedx-investigation/wasm-runtime/` prototype directory.
 2. Wrote `build.sh` — Docker + emscripten/emsdk:5.0.5 compiles libdedx without
    `--preload-file` or `--embed-file`; uses mounted inner script to avoid quoting issues.
@@ -46,6 +50,7 @@ to safely pass JSON arrays to emcc inside `docker run`.
 5. Ran `node verify.mjs` → **24/24 PASS**.
 
 **Initial verify.mjs failures (corrected):**
+
 - `readIntList()` was treating `-1` sentinel as a valid value (both 0 and -1 are used
   as sentinels in libdedx); fixed to stop at `v <= 0`.
 - MSTAR check incorrectly expected Z=1 in the runtime ion list; MSTAR starts at Z=2.
@@ -110,11 +115,11 @@ to safely pass JSON arrays to emcc inside `docker run`.
 
 ### Required amendments (Phase 2 additions)
 
-| Document | Amendment |
-|----------|-----------|
-| `docs/decisions/003-wasm-build-pipeline.md` | Add Phase 2 findings; note actual WASM size 456 KB; note Emscripten 5.x EXPORTED_FUNCTIONS JSON format requirement |
-| `docs/04-feature-specs/entity-selection.md` | ESTAR: treat as incompatible for all combinations (grey out); MSTAR: Z>18 available but not in API ion list |
-| `docs/06-wasm-api-contract.md` | ESTAR: present in program list, returns error for all calculations; MSTAR ion list: Z=2–18 only from API; material names: all-caps; electron name: empty (hard-code "Electron") |
+| Document                                    | Amendment                                                                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/decisions/003-wasm-build-pipeline.md` | Add Phase 2 findings; note actual WASM size 456 KB; note Emscripten 5.x EXPORTED_FUNCTIONS JSON format requirement                                                              |
+| `docs/04-feature-specs/entity-selection.md` | ESTAR: treat as incompatible for all combinations (grey out); MSTAR: Z>18 available but not in API ion list                                                                     |
+| `docs/06-wasm-api-contract.md`              | ESTAR: present in program list, returns error for all calculations; MSTAR ion list: Z=2–18 only from API; material names: all-caps; electron name: empty (hard-code "Electron") |
 
 ### Verify output (24/24 PASS)
 

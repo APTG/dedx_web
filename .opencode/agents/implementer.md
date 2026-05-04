@@ -55,13 +55,13 @@ whether to move to the reviewer or to retry.
 
 ### Svelte 5 — runes only (reminder, see AGENTS.md §2 for full table)
 
-| Use | Never use |
-|-----|-----------|
-| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:` |
-| `$effect` for side effects and lifecycle | `onMount` / `onDestroy` from `svelte` |
-| Module-level fine-grained reactivity | `svelte/store` subscriptions |
-| `{@render snippet()}` | `<slot>` |
-| `onclick={handler}` | `on:click={handler}` |
+| Use                                                    | Never use                             |
+| ------------------------------------------------------ | ------------------------------------- |
+| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:`                    |
+| `$effect` for side effects and lifecycle               | `onMount` / `onDestroy` from `svelte` |
+| Module-level fine-grained reactivity                   | `svelte/store` subscriptions          |
+| `{@render snippet()}`                                  | `<slot>`                              |
+| `onclick={handler}`                                    | `on:click={handler}`                  |
 
 Run `svelte-autofixer` (via the Svelte MCP tool) on every `.svelte` file before
 committing. Fix all reported issues.
@@ -74,13 +74,13 @@ committing. Fix all reported issues.
 
 ### File locations
 
-| Code type | Location |
-|-----------|----------|
-| Reusable UI components | `src/lib/components/` |
-| Business logic / state | `src/lib/state/` |
-| Utilities (pure functions) | `src/lib/utils/` |
-| WASM wrapper | `src/lib/wasm/libdedx.ts` — do not modify the interface |
-| Page-specific components | `src/routes/<page>/` |
+| Code type                  | Location                                                |
+| -------------------------- | ------------------------------------------------------- |
+| Reusable UI components     | `src/lib/components/`                                   |
+| Business logic / state     | `src/lib/state/`                                        |
+| Utilities (pure functions) | `src/lib/utils/`                                        |
+| WASM wrapper               | `src/lib/wasm/libdedx.ts` — do not modify the interface |
+| Page-specific components   | `src/routes/<page>/`                                    |
 
 ### Testing
 

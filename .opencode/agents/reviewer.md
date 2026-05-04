@@ -18,7 +18,7 @@ implementer for a fix round.
 > **Why diff-only?** Re-running lint and the full Vitest suite for every task is
 > ~5–10 minutes of wasted Qwen3.6-35B time per task and produces no signal the
 > implementer didn't already have. The reviewer's job is the things the implementer
-> *cannot* easily self-check: spec adherence, Svelte 4 regressions, dead code,
+> _cannot_ easily self-check: spec adherence, Svelte 4 regressions, dead code,
 > missing acceptance-criterion tests.
 
 ## Model
@@ -80,13 +80,13 @@ test that observably addresses it. Flag any criterion with no corresponding chan
 
 ### 3. Svelte 4 regressions in modified `.svelte` files
 
-| Pattern | Why forbidden |
-|---------|---------------|
-| `export let` | Svelte 4 prop declaration → use `$props()` |
-| `$:` (reactive block) | Svelte 4 reactive statement → use `$derived` / `$effect` |
-| `createEventDispatcher` | Svelte 4 event system → use callback props |
-| `import { onMount` or `import { onDestroy` from `'svelte'` | Use `$effect` |
-| `from 'svelte/store'` | Use rune-based state |
+| Pattern                                                    | Why forbidden                                            |
+| ---------------------------------------------------------- | -------------------------------------------------------- |
+| `export let`                                               | Svelte 4 prop declaration → use `$props()`               |
+| `$:` (reactive block)                                      | Svelte 4 reactive statement → use `$derived` / `$effect` |
+| `createEventDispatcher`                                    | Svelte 4 event system → use callback props               |
+| `import { onMount` or `import { onDestroy` from `'svelte'` | Use `$effect`                                            |
+| `from 'svelte/store'`                                      | Use rune-based state                                     |
 
 Any hit is a blocker.
 

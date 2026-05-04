@@ -30,27 +30,27 @@ stdio process instead of using the remote `mcp.svelte.dev` endpoint.
 
 ### New submodules added (`shallow = true`)
 
-| Submodule | Repo | Size | Key content |
-|-----------|------|------|-------------|
+| Submodule              | Repo                    | Size  | Key content                               |
+| ---------------------- | ----------------------- | ----- | ----------------------------------------- |
 | `vendor/shadcn-svelte` | huntabyte/shadcn-svelte | 36 MB | Component templates, CLI source, registry |
-| `vendor/bits-ui` | huntabyte/bits-ui | 11 MB | 44 headless primitive components |
+| `vendor/bits-ui`       | huntabyte/bits-ui       | 11 MB | 44 headless primitive components          |
 
 ### New files
 
-| File | Purpose |
-|------|---------|
-| `docs/decisions/005-shadcn-svelte-components.md` | ADR — why shadcn-svelte, alternatives rejected, integration plan per stage |
-| `docs/opencode-setup.md` | Full setup guide: prerequisites, env vars, all MCP servers, session workflow, troubleshooting |
+| File                                             | Purpose                                                                                       |
+| ------------------------------------------------ | --------------------------------------------------------------------------------------------- |
+| `docs/decisions/005-shadcn-svelte-components.md` | ADR — why shadcn-svelte, alternatives rejected, integration plan per stage                    |
+| `docs/opencode-setup.md`                         | Full setup guide: prerequisites, env vars, all MCP servers, session workflow, troubleshooting |
 
 ### Files updated
 
-| File | Change |
-|------|--------|
-| `vendor/README.md` | Added shadcn-svelte and bits-ui sections with component tables |
-| `AGENTS.md` | Added shadcn-svelte + bits-ui to vendor table; added §7 linking to setup guide |
-| `docs/README.md` | Added `opencode-setup.md` entry |
-| `docs/00-redesign-plan.md` | ADR list updated with ADR 005 |
-| `.gitmodules` | `shallow = true` added for both new submodules |
+| File                       | Change                                                                         |
+| -------------------------- | ------------------------------------------------------------------------------ |
+| `vendor/README.md`         | Added shadcn-svelte and bits-ui sections with component tables                 |
+| `AGENTS.md`                | Added shadcn-svelte + bits-ui to vendor table; added §7 linking to setup guide |
+| `docs/README.md`           | Added `opencode-setup.md` entry                                                |
+| `docs/00-redesign-plan.md` | ADR list updated with ADR 005                                                  |
+| `.gitmodules`              | `shallow = true` added for both new submodules                                 |
 
 ---
 
@@ -59,6 +59,7 @@ stdio process instead of using the remote `mcp.svelte.dev` endpoint.
 **Decision:** Adopt shadcn-svelte + Bits UI as the UI component library.
 
 **Key reasons:**
+
 - All needed components already exist (Combobox, Accordion, Dialog, Table,
   Dropdown, Toast) and are WCAG 2.1 AA compliant via Bits UI primitives
 - Tailwind already in stack — no new styling system
@@ -75,6 +76,7 @@ project. The Svelte MCP (`svelte-autofixer`) handles Svelte component guidance.
 ## opencode setup guide scope
 
 `docs/opencode-setup.md` covers:
+
 1. Prerequisites (opencode, Node 24, pnpm, Docker)
 2. Clone with `--recurse-submodules`
 3. PLGrid env vars (`PLGRID_LLMLAB_BASE_URL`, `PLGRID_LLMLAB_API_KEY`)

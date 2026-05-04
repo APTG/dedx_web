@@ -85,7 +85,7 @@ describe("EntityCombobox component - UX fixes", () => {
         onItemSelect: vi.fn(),
       },
     });
-    
+
     const label = container.querySelector("label");
     expect(label?.getAttribute("for")).toBe("trigger-particle");
     expect(label?.getAttribute("id")).toBe("label-particle");
@@ -100,7 +100,7 @@ describe("EntityCombobox component - UX fixes", () => {
         onItemSelect: vi.fn(),
       },
     });
-    
+
     const label = container.querySelector("label");
     expect(label?.getAttribute("for")).toBe("trigger-material");
   });
@@ -168,7 +168,7 @@ describe("EntityCombobox component - UX fixes", () => {
 
     // Find the Hydrogen item (id=1) and verify it has a checkmark
     const hydrogenItem = Array.from(container.querySelectorAll("[data-combobox-item]")).find((el) =>
-      el.textContent?.includes("Hydrogen")
+      el.textContent?.includes("Hydrogen"),
     );
     expect(hydrogenItem).toBeTruthy();
 
@@ -288,7 +288,9 @@ describe("EntityCombobox component - UX fixes", () => {
       },
     });
 
-    const clearButton = container.querySelector("button[aria-label='Clear Particle']") as HTMLElement;
+    const clearButton = container.querySelector(
+      "button[aria-label='Clear Particle']",
+    ) as HTMLElement;
     await user.click(clearButton);
 
     expect(onClear).toHaveBeenCalledTimes(1);
@@ -362,7 +364,9 @@ describe("EntityCombobox component - UX fixes", () => {
     await user.click(trigger);
 
     // Find Electron item and verify it has the tooltip
-    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    const electronItem = container.querySelector(
+      "[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']",
+    );
     expect(electronItem).toBeInTheDocument();
   });
 
@@ -392,7 +396,9 @@ describe("EntityCombobox component - UX fixes", () => {
     await user.click(trigger);
 
     // Find Electron item and verify it's disabled
-    const electronItem = container.querySelector("[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']");
+    const electronItem = container.querySelector(
+      "[data-combobox-item][title='Electrons not supported in libdedx v1.4.0']",
+    );
     const comboItem = electronItem?.closest("[data-combobox-item]");
     expect(comboItem).toHaveAttribute("data-disabled");
   });

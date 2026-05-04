@@ -84,21 +84,21 @@ EntitySelectionState.particle      // ParticleEntity — covers ions and electro
 
 ### Rules
 
-| Particle type | Available units | Rationale |
-|--------------|----------------|-----------|
-| **Proton** (A = 1) | **MeV** only | MeV/nucl is numerically identical to MeV when A=1; showing it adds clutter without value. |
-| **Electron** (particle ID 1001) | **MeV** only | MeV/nucl and MeV/u are meaningless for leptons (nucleon count is undefined). |
-| **Heavy ions** (A > 1) | **MeV**, **MeV/nucl** | Both are commonly used. MeV/nucl = E_total / A. |
-| **Heavy ions, advanced mode** | **MeV**, **MeV/nucl**, **MeV/u** | MeV/u = E_total / m_u (atomic mass in daltons). Matters for precision CSDA range. MeV/u is unlocked by the app-wide Basic/Advanced toggle defined in [`01-project-vision.md`](../01-project-vision.md) §4.4. |
+| Particle type                   | Available units                  | Rationale                                                                                                                                                                                                    |
+| ------------------------------- | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Proton** (A = 1)              | **MeV** only                     | MeV/nucl is numerically identical to MeV when A=1; showing it adds clutter without value.                                                                                                                    |
+| **Electron** (particle ID 1001) | **MeV** only                     | MeV/nucl and MeV/u are meaningless for leptons (nucleon count is undefined).                                                                                                                                 |
+| **Heavy ions** (A > 1)          | **MeV**, **MeV/nucl**            | Both are commonly used. MeV/nucl = E_total / A.                                                                                                                                                              |
+| **Heavy ions, advanced mode**   | **MeV**, **MeV/nucl**, **MeV/u** | MeV/u = E_total / m_u (atomic mass in daltons). Matters for precision CSDA range. MeV/u is unlocked by the app-wide Basic/Advanced toggle defined in [`01-project-vision.md`](../01-project-vision.md) §4.4. |
 
 ### Master vs. Per-Row Mode
 
 The master unit selector operates in two modes:
 
-| Mode | Condition | Master selector state | How rows get their unit |
-|------|-----------|----------------------|------------------------|
-| **Master mode** (default) | No row has an explicit typed unit suffix | **Active** — user can click to change | All rows use the master unit |
-| **Per-row mode** | At least one row has a typed unit suffix (e.g., "10 keV") | **Greyed out / disabled** | Each row has its own unit dropdown |
+| Mode                      | Condition                                                 | Master selector state                 | How rows get their unit            |
+| ------------------------- | --------------------------------------------------------- | ------------------------------------- | ---------------------------------- |
+| **Master mode** (default) | No row has an explicit typed unit suffix                  | **Active** — user can click to change | All rows use the master unit       |
+| **Per-row mode**          | At least one row has a typed unit suffix (e.g., "10 keV") | **Greyed out / disabled**             | Each row has its own unit dropdown |
 
 Transition from master → per-row: happens automatically when the user types
 a recognized unit suffix on any row (see §3).
@@ -177,7 +177,7 @@ suffixes **per row** and assigns each row its own unit.
 > `src/lib/utils/energy-parser.ts:CANONICAL_UNITS`.)
 
 | Suffix (case-sensitive) | Resolved base unit | SI prefix multiplier |
-|-------------------------|--------------------|----------------------|
+| ----------------------- | ------------------ | -------------------- |
 | `eV`                    | MeV                | ×1e-6                |
 | `keV`                   | MeV                | ×1e-3                |
 | `MeV`                   | MeV                | ×1                   |
@@ -276,19 +276,19 @@ user makes the final decision.
 
 Error message format: `unknown unit: <X> — did you mean <Y>?`
 
-| Typed suffix (rejected) | Suggested canonical | Reason |
-|-------------------------|---------------------|--------|
-| `meV` | `MeV` | Very common shift-key slip; `meV` (milli-eV) is not a valid libdedx energy range. |
-| `mev` | `MeV` | Fully-lowercase variant of the above. |
-| `MEV` | `MeV` | Fully-uppercase variant. |
-| `MeV/Nucl` | `MeV/nucl` | Capital N is a common capitalisation error; `nucl` must be lowercase. |
-| `MeV/NUCL` | `MeV/nucl` | All-caps nucleon part. |
-| `Mev/nucl` | `MeV/nucl` | lowercase `e` variant. |
-| `GeV/Nucl` | `GeV/nucl` | Same capital-N pattern for GeV. |
-| `TeV/Nucl` | `TeV/nucl` | Same capital-N pattern for TeV. |
-| `MeV/U` | `MeV/u` | Capital U in atomic mass unit. |
-| `GeV/U` | `GeV/u` | Same for GeV. |
-| `TeV/U` | `TeV/u` | Same for TeV. |
+| Typed suffix (rejected) | Suggested canonical | Reason                                                                            |
+| ----------------------- | ------------------- | --------------------------------------------------------------------------------- |
+| `meV`                   | `MeV`               | Very common shift-key slip; `meV` (milli-eV) is not a valid libdedx energy range. |
+| `mev`                   | `MeV`               | Fully-lowercase variant of the above.                                             |
+| `MEV`                   | `MeV`               | Fully-uppercase variant.                                                          |
+| `MeV/Nucl`              | `MeV/nucl`          | Capital N is a common capitalisation error; `nucl` must be lowercase.             |
+| `MeV/NUCL`              | `MeV/nucl`          | All-caps nucleon part.                                                            |
+| `Mev/nucl`              | `MeV/nucl`          | lowercase `e` variant.                                                            |
+| `GeV/Nucl`              | `GeV/nucl`          | Same capital-N pattern for GeV.                                                   |
+| `TeV/Nucl`              | `TeV/nucl`          | Same capital-N pattern for TeV.                                                   |
+| `MeV/U`                 | `MeV/u`             | Capital U in atomic mass unit.                                                    |
+| `GeV/U`                 | `GeV/u`             | Same for GeV.                                                                     |
+| `TeV/U`                 | `TeV/u`             | Same for TeV.                                                                     |
 
 Rules for the near-miss check:
 
@@ -317,14 +317,14 @@ All conversions use the particle's `massNumber` (A) and `atomicMass` (m_u)
 from `ParticleEntity`. **Note:** These conversions apply only to ions (A ≥ 1);
 electrons use MeV exclusively, so no per-nucleon conversion is needed.
 
-| From | To | Formula |
-|------|----|---------|
-| MeV | MeV/nucl | E_nucl = E_total / A |
-| MeV | MeV/u | E_u = E_total / m_u |
-| MeV/nucl | MeV | E_total = E_nucl × A |
-| MeV/nucl | MeV/u | E_u = E_nucl × A / m_u |
-| MeV/u | MeV | E_total = E_u × m_u |
-| MeV/u | MeV/nucl | E_nucl = E_u × m_u / A |
+| From     | To       | Formula                |
+| -------- | -------- | ---------------------- |
+| MeV      | MeV/nucl | E_nucl = E_total / A   |
+| MeV      | MeV/u    | E_u = E_total / m_u    |
+| MeV/nucl | MeV      | E_total = E_nucl × A   |
+| MeV/nucl | MeV/u    | E_u = E_nucl × A / m_u |
+| MeV/u    | MeV      | E_total = E_u × m_u    |
+| MeV/u    | MeV/nucl | E_nucl = E_u × m_u / A |
 
 These are implemented by `LibdedxService.convertEnergy()` (pure JS, no
 WASM call). See `docs/06-wasm-api-contract.md` §3.
@@ -338,42 +338,48 @@ WASM call). See `docs/06-wasm-api-contract.md` §3.
 This section is normative for Calculator, Plot, and export behavior.
 
 1. **Canonical internal units**
-  - Energy for WASM calls:
-    - **Ions (A ≥ 1):** MeV/nucl
-    - **Electron / ESTAR (particle ID 1001):** MeV
-  - Stopping power from C API: **MeV·cm²/g**.
-  - CSDA range from C API: **g/cm²**.
+
+- Energy for WASM calls:
+  - **Ions (A ≥ 1):** MeV/nucl
+  - **Electron / ESTAR (particle ID 1001):** MeV
+- Stopping power from C API: **MeV·cm²/g**.
+- CSDA range from C API: **g/cm²**.
 
 2. **Density usage**
-  - Density source: `LibdedxService.getDensity(materialId)`.
-  - Symbol and units: ρ in g/cm³.
-  - Density-dependent conversions are invalid when ρ is missing or ρ ≤ 0.
+
+- Density source: `LibdedxService.getDensity(materialId)`.
+- Symbol and units: ρ in g/cm³.
+- Density-dependent conversions are invalid when ρ is missing or ρ ≤ 0.
 
 3. **Default unit behavior split**
-  - Calculator: automatic phase-based default (non-gas → `keV/µm`, gas → `MeV·cm²/g`).
-  - Plot: one user-selected unit for all series, default `keV/µm` regardless of phase.
-  - Both use identical formulas and per-material density.
+
+- Calculator: automatic phase-based default (non-gas → `keV/µm`, gas → `MeV·cm²/g`).
+- Plot: one user-selected unit for all series, default `keV/µm` regardless of phase.
+- Both use identical formulas and per-material density.
 
 4. **Rounding and formatting**
-  - Stopping power output: 4 significant figures, no scientific notation.
-  - CSDA output: 4 significant figures, SI auto-scaling (nm/µm/mm/cm/m).
-  - Input text remains as typed.
+
+- Stopping power output: 4 significant figures, no scientific notation.
+- CSDA output: 4 significant figures, SI auto-scaling (nm/µm/mm/cm/m).
+- Input text remains as typed.
 
 5. **Export units**
-  - Calculator CSV headers include the active output unit symbols.
-  - Plot CSV exports stopping power in the currently selected plot unit.
+
+- Calculator CSV headers include the active output unit symbols.
+- Plot CSV exports stopping power in the currently selected plot unit.
 
 ### 5.1 Stopping Power — Default Unit
 
 The C API outputs mass stopping power in **MeV·cm²/g**. The default
 display unit depends on the selected material's phase:
 
-| Material phase | Default stopping power unit | Rationale |
-|----------------|---------------------------|-----------|
-| **Solid or liquid** | **keV/µm** | Most intuitive for condensed-phase materials (medical physics, shielding). Directly gives energy deposited per micrometre of traversal. |
-| **Gas** | **MeV·cm²/g** | keV/µm is misleading for gases at varied pressures (density-dependent). Mass stopping power is pressure-independent and standard for gases. |
+| Material phase      | Default stopping power unit | Rationale                                                                                                                                   |
+| ------------------- | --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Solid or liquid** | **keV/µm**                  | Most intuitive for condensed-phase materials (medical physics, shielding). Directly gives energy deposited per micrometre of traversal.     |
+| **Gas**             | **MeV·cm²/g**               | keV/µm is misleading for gases at varied pressures (density-dependent). Mass stopping power is pressure-independent and standard for gases. |
 
 The material phase is determined from `MaterialEntity.isGasByDefault`:
+
 - `true` → gas → MeV·cm²/g default.
 - `false` or `undefined` → solid/liquid → keV/µm default.
 
@@ -391,14 +397,14 @@ power unit may change when switching materials.
 Converting from MeV·cm²/g (mass stopping power) to linear stopping power
 (keV/µm or MeV/cm) requires the material density ρ (g/cm³):
 
-| From | To | Formula |
-|------|----|---------|
-| MeV·cm²/g | MeV/cm | S_linear = S_mass × ρ |
-| MeV·cm²/g | keV/µm | S_kevum = S_mass × ρ / 10 |
-| MeV/cm | keV/µm | S_kevum = S_linear / 10 |
-| MeV/cm | MeV·cm²/g | S_mass = S_linear / ρ |
-| keV/µm | MeV/cm | S_linear = S_kevum × 10 |
-| keV/µm | MeV·cm²/g | S_mass = (S_kevum × 10) / ρ |
+| From      | To        | Formula                     |
+| --------- | --------- | --------------------------- |
+| MeV·cm²/g | MeV/cm    | S_linear = S_mass × ρ       |
+| MeV·cm²/g | keV/µm    | S_kevum = S_mass × ρ / 10   |
+| MeV/cm    | keV/µm    | S_kevum = S_linear / 10     |
+| MeV/cm    | MeV·cm²/g | S_mass = S_linear / ρ       |
+| keV/µm    | MeV/cm    | S_linear = S_kevum × 10     |
+| keV/µm    | MeV·cm²/g | S_mass = (S_kevum × 10) / ρ |
 
 Where ρ = `LibdedxService.getDensity(materialId)`.
 
@@ -422,13 +428,13 @@ a physical distance.
 
 ### 5.4 CSDA Range — Conversion
 
-| From | To | Formula |
-|------|----|---------|
-| g/cm² | cm | range_cm = range_gcm2 / ρ |
-| cm | mm | range_mm = range_cm × 10 |
-| cm | µm | range_µm = range_cm × 1e4 |
-| cm | nm | range_nm = range_cm × 1e7 |
-| cm | m | range_m = range_cm / 100 |
+| From  | To  | Formula                   |
+| ----- | --- | ------------------------- |
+| g/cm² | cm  | range_cm = range_gcm2 / ρ |
+| cm    | mm  | range_mm = range_cm × 10  |
+| cm    | µm  | range_µm = range_cm × 1e4 |
+| cm    | nm  | range_nm = range_cm × 1e7 |
+| cm    | m   | range_m = range_cm / 100  |
 
 Where ρ = `LibdedxService.getDensity(materialId)`.
 
@@ -444,13 +450,13 @@ magnitudes may show different prefixes.
 
 After converting from g/cm² to cm (§5.4), select the best prefix:
 
-| Value range (cm) | Display unit | Example |
-|-------------------|-------------|---------|
-| ≥ 100 | m | 1.234 m |
-| ≥ 1 | cm | 1.234 cm |
-| ≥ 0.1 | mm | 1.234 mm |
-| ≥ 1e-4 | µm | 1.234 µm |
-| < 1e-4 | nm | 1.234 nm |
+| Value range (cm) | Display unit | Example  |
+| ---------------- | ------------ | -------- |
+| ≥ 100            | m            | 1.234 m  |
+| ≥ 1              | cm           | 1.234 cm |
+| ≥ 0.1            | mm           | 1.234 mm |
+| ≥ 1e-4           | µm           | 1.234 µm |
+| < 1e-4           | nm           | 1.234 nm |
 
 The rule: choose the prefix where the displayed number is in the range
 **1.000 – 9999** (i.e., 1 to 4 digits before the decimal point).
@@ -475,6 +481,7 @@ SI prefix auto-scaling is used. **Scientific notation is not used
 for output**.
 
 Examples:
+
 - `0.0001234 cm` → `1.234 µm` (not `1.234e-4 cm`)
 - `12340 cm` → `123.4 m` (not `1.234e+4 cm`)
 - `45.76 keV/µm` → `45.76 keV/µm` (no scaling needed)
@@ -495,29 +502,30 @@ These examples are normative and should be copied into unit/integration tests.
 
 Use particle values A = 12 and m_u = 12.011.
 
-| Path | Input | Expected output |
-|------|-------|-----------------|
-| MeV → MeV/nucl | 120 MeV | 10 MeV/nucl |
-| MeV → MeV/u | 120 MeV | 9.9908 MeV/u |
-| MeV/nucl → MeV | 10 MeV/nucl | 120 MeV |
-| MeV/nucl → MeV/u | 10 MeV/nucl | 9.9908 MeV/u |
-| MeV/u → MeV | 9.9908 MeV/u | 120 MeV |
-| MeV/u → MeV/nucl | 9.9908 MeV/u | 10 MeV/nucl |
+| Path             | Input        | Expected output |
+| ---------------- | ------------ | --------------- |
+| MeV → MeV/nucl   | 120 MeV      | 10 MeV/nucl     |
+| MeV → MeV/u      | 120 MeV      | 9.9908 MeV/u    |
+| MeV/nucl → MeV   | 10 MeV/nucl  | 120 MeV         |
+| MeV/nucl → MeV/u | 10 MeV/nucl  | 9.9908 MeV/u    |
+| MeV/u → MeV      | 9.9908 MeV/u | 120 MeV         |
+| MeV/u → MeV/nucl | 9.9908 MeV/u | 10 MeV/nucl     |
 
 ### A.2 Stopping Power Conversion (all display paths)
 
 Use S_mass = 25 MeV·cm²/g and ρ = 1.0 g/cm³.
 
-| Path | Input | Expected output |
-|------|-------|-----------------|
-| MeV·cm²/g → MeV/cm | 25 | 25 |
-| MeV·cm²/g → keV/µm | 25 | 2.5 |
-| MeV/cm → keV/µm | 25 | 2.5 |
-| MeV/cm → MeV·cm²/g | 25 | 25 |
-| keV/µm → MeV/cm | 2.5 | 25 |
-| keV/µm → MeV·cm²/g | 2.5 | 25 |
+| Path               | Input | Expected output |
+| ------------------ | ----- | --------------- |
+| MeV·cm²/g → MeV/cm | 25    | 25              |
+| MeV·cm²/g → keV/µm | 25    | 2.5             |
+| MeV/cm → keV/µm    | 25    | 2.5             |
+| MeV/cm → MeV·cm²/g | 25    | 25              |
+| keV/µm → MeV/cm    | 2.5   | 25              |
+| keV/µm → MeV·cm²/g | 2.5   | 25              |
 
 Gas sanity check:
+
 - S_mass = 25 MeV·cm²/g and ρ = 0.0012 g/cm³
 - Expected `keV/µm` = 25 × 0.0012 / 10 = 0.003
 
@@ -525,15 +533,16 @@ Gas sanity check:
 
 Use range_mass = 0.2 g/cm² and ρ = 1.0 g/cm³.
 
-| Path | Input | Expected output |
-|------|-------|-----------------|
-| g/cm² → cm | 0.2 | 0.2 cm |
-| cm → mm | 0.2 cm | 2 mm |
-| cm → µm | 0.2 cm | 2000 µm |
-| cm → nm | 0.2 cm | 2000000 nm |
-| cm → m | 0.2 cm | 0.002 m |
+| Path       | Input  | Expected output |
+| ---------- | ------ | --------------- |
+| g/cm² → cm | 0.2    | 0.2 cm          |
+| cm → mm    | 0.2 cm | 2 mm            |
+| cm → µm    | 0.2 cm | 2000 µm         |
+| cm → nm    | 0.2 cm | 2000000 nm      |
+| cm → m     | 0.2 cm | 0.002 m         |
 
 Auto-scaling examples from cm:
+
 - 0.2 cm → 2 mm
 - 0.00012 cm → 1.2 µm
 - 250 cm → 2.5 m
@@ -584,6 +593,7 @@ preserved numerically (just re-expressed in the master unit).
 ## Acceptance Criteria
 
 ### Energy Unit Selector (particle-dependent)
+
 - [ ] Available units depend on the selected particle type (from `ParticleEntity.id` and `ParticleEntity.massNumber`).
 - [ ] Proton (A=1): only MeV shown.
 - [ ] Electron (particle ID 1001): only MeV shown.
@@ -591,6 +601,7 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] Changing particle resets unit to MeV if the previous unit is no longer available.
 
 ### Master vs. Per-Row Mode
+
 - [ ] When all rows are plain numbers (no suffix), the master selector is active.
 - [ ] Typing a recognized unit suffix on any row disables the master selector and shows per-row unit dropdowns on all rows.
 - [ ] Removing all unit suffixes (so no row has one) re-enables the master selector.
@@ -598,6 +609,7 @@ preserved numerically (just re-expressed in the master unit).
 - [ ] Changing a row's dropdown reinterprets that row's value in the new unit.
 
 ### Inline Unit Detection
+
 - [ ] Typing `10 MeV` on row 1 and `10 keV` on row 2 results in per-row mode. Row 1 shows "MeV" in its dropdown, row 2 shows "MeV" with normalized value 0.01. The "→ MeV/nucl" column shows 10 and 0.01 respectively. (Per-row dropdowns show base units only: MeV, MeV/nucl, MeV/u. SI-prefixed variants like keV, GeV are parsed from typed text and normalized.)
 - [ ] Editing `10 MeV` to `10 keV` on a row updates that row's normalized value (0.01 MeV) and the "→ MeV/nucl" column after debounce.
 - [ ] Typing `100 bebok` marks the row as invalid: "Line N: unrecognized unit 'bebok'". The row is excluded from calculation.
@@ -661,27 +673,32 @@ cross-check beam energy against tabulated cross-sections.
       "→ MeV/nucl" cell shows the placeholder `—`, never a stale value.
 
 ### Output — Stopping Power
+
 - [ ] Default stopping power unit is keV/µm for non-gas materials.
 - [ ] Default stopping power unit is MeV·cm²/g for gas materials.
 - [ ] Switching from a solid/liquid material to a gas material changes the stopping power unit and recalculates.
 - [ ] Material phase is indicated next to the material name (gas/solid/liquid badge).
 
 ### Output — CSDA Range
+
 - [ ] CSDA range is displayed in length units (converted from g/cm² using material density).
 - [ ] Each row independently auto-scales to the best SI prefix (nm, µm, mm, cm, m).
 - [ ] The auto-scaling rule places the displayed number in the range 1.000–9999.
 
 ### Output — Number Formatting
+
 - [ ] Output values use 4 significant figures.
 - [ ] CSDA range uses SI prefix auto-scaling instead of scientific notation.
 - [ ] Output values and acceptance fixtures use no thousands/grouping separators.
 - [ ] Input values are displayed as entered by the user (including scientific notation if typed).
 
 ### Reset to Single Unit
+
 - [ ] "Reset to single unit" button appears in Advanced section when per-row mode is active.
 - [ ] Clicking it converts all values to the master unit, strips suffixes, and re-enables the master selector.
 
 ### Conversion Correctness
+
 - [ ] MeV ↔ MeV/nucl conversion uses integer mass number A.
 - [ ] MeV ↔ MeV/u conversion uses atomic mass m_u in daltons.
 - [ ] Round-trip conversion (MeV → MeV/nucl → MeV) preserves value to float precision.
@@ -697,14 +714,14 @@ cross-check beam energy against tabulated cross-sections.
 
 1. **Advanced mode toggle for MeV/u:** How does the user enable MeV/u
    for heavy ions? Via the existing "Advanced" section, or always shown
-   for A>1? *Deferred — not in v1.*
+   for A>1? _Deferred — not in v1._
 
 2. **User-selectable output units:** Should the user be able to override
    the auto-selected stopping power unit (e.g., switch from keV/µm to
-   MeV·cm²/g for a solid material)? *Deferred — v1 uses automatic
-   defaults only. The column header will eventually become a dropdown.*
+   MeV·cm²/g for a solid material)? _Deferred — v1 uses automatic
+   defaults only. The column header will eventually become a dropdown._
 
 3. **Aggregate state override:** When the user overrides a gas material
    to "condensed" state in advanced options, should the default stopping
-   power unit also switch to keV/µm? *Likely yes — TBD when
-   `advanced-options.md` is written.*
+   power unit also switch to keV/µm? _Likely yes — TBD when
+   `advanced-options.md` is written._

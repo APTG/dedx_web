@@ -2,7 +2,7 @@
 
 **Session date:** 2026-04-22  
 **AI tool:** opencode + Qwen3.5-397B-A17B-FP8 via PLGrid llmlab  
-**Branch:** `qwen/stage-5-tdd`  
+**Branch:** `qwen/stage-5-tdd`
 
 ---
 
@@ -17,6 +17,7 @@ Create the complete TDD test battery for Stage 5 entity selection feature **befo
 ### 1. Read prerequisite documentation
 
 Reviewed all relevant specs before writing tests:
+
 - `docs/04-feature-specs/entity-selection.md` — full feature spec with acceptance criteria
 - `docs/06-wasm-api-contract.md` — `CompatibilityMatrix` interface, `LibdedxService`
 - `docs/07-testing-strategy.md` — testing pyramid, Vitest patterns
@@ -33,6 +34,7 @@ Reviewed all relevant specs before writing tests:
 Tests for matrix builder and filter functions:
 
 **buildCompatibilityMatrix tests (10):**
+
 - Builds matrix with all programs from service
 - allPrograms does NOT contain DEDX_ICRU (id=9)
 - allPrograms excludes programs with zero particles/materials
@@ -45,6 +47,7 @@ Tests for matrix builder and filter functions:
 - Extended mock with PSTAR/ASTAR/MSTAR/DEDX_ICRU/Bethe-ext, electron
 
 **getAvailablePrograms tests (6):**
+
 - (undefined, undefined) → all visible programs
 - (particleId=1, undefined) → only programs supporting proton
 - (particleId=2, undefined) → only programs supporting alpha
@@ -53,6 +56,7 @@ Tests for matrix builder and filter functions:
 - (particleId=999, undefined) → empty array (unknown particle)
 
 **getAvailableParticles tests (5):**
+
 - (undefined, undefined) → all particles (union)
 - (programId=1, undefined) → only particles in PSTAR
 - (programId=3, undefined) → particles in MSTAR
@@ -60,6 +64,7 @@ Tests for matrix builder and filter functions:
 - Deselecting program expands particle list back
 
 **getAvailableMaterials tests (5):**
+
 - (undefined, undefined) → all materials
 - (programId=1, undefined) → only materials in PSTAR
 - (undefined, particleId=6) → only materials compatible with carbon
@@ -67,6 +72,7 @@ Tests for matrix builder and filter functions:
 - Deselecting particle expands material list back
 
 **Bidirectional filtering tests (2):**
+
 - Selecting proton + water leaves only programs supporting both
 - Clearing particle selection restores full material availability
 
@@ -75,6 +81,7 @@ Tests for matrix builder and filter functions:
 Tests for entity selection state management:
 
 **Defaults on init (5):**
+
 - selectedParticle is proton (id=1) by default
 - selectedMaterial is liquid water (id=276) by default
 - selectedProgram is Auto-select (id=-1) by default
@@ -82,38 +89,46 @@ Tests for entity selection state management:
 - Auto-select resolves to concrete program for proton+water
 
 **Preserve / fallback on particle change (3):**
+
 - Switching proton → carbon: water preserved, program resets to Auto-select
 - Switching to particle where material incompatible: falls back to water
 - Switching to particle where program incompatible: resets to Auto-select
 
 **Preserve / fallback on material change (2):**
+
 - Switching water → air: particle preserved, program resets if incompatible
 - Selecting material incompatible with particle: particle falls back
 
 **Preserve / fallback on program change (3):**
+
 - Selecting PSTAR: particle falls back to proton if unsupported
 - Selecting MSTAR: proton becomes unavailable, falls back to alpha
 - Selecting Auto-select always succeeds
 
 **Clear / deselect (4):**
+
 - clearParticle() expands available materials and programs
 - clearMaterial() expands available particles and programs
 - Deselecting program resets to Auto-select (not null)
 - isComplete is false when particle cleared
 
 **Reset (1):**
+
 - resetAll() restores proton / water / Auto-select
 
 **DEDX_ICRU exclusion (1):**
+
 - DEDX_ICRU (id=9) never appears in availablePrograms
 
 **Electron special case (2):**
+
 - Electron (id=1001) appears in availableParticles
 - Electron is never isComplete=true (ESTAR not implemented)
 
 #### `tests/e2e/entity-selection.spec.ts` — 14 Playwright tests
 
 **Calculator page — compact mode (7):**
+
 - Three comboboxes present: Particle, Material, Program
 - Default values show "Proton", "Water", "Auto-select"
 - Typing "carbon" filters and shows Carbon
@@ -123,6 +138,7 @@ Tests for entity selection state management:
 - DEDX_ICRU does not appear in Program combobox
 
 **Plot page — full panel mode (7):**
+
 - Three scrollable list panels visible in sidebar
 - Particle panel has text filter input
 - Material panel has two sub-lists: Elements and Compounds
@@ -146,6 +162,7 @@ FAIL  src/tests/unit/entity-selection-state.test.ts
 Both unit tests fail with expected import/not-found errors — modules not implemented yet.
 
 All existing tests pass:
+
 - energy.test.ts (30) ✓
 - csv.test.ts (16) ✓
 - wasm-mock.test.ts (27) ✓
@@ -218,6 +235,7 @@ Existing tests (energy, csv, wasm-mock, url-sync, calculation, selection) all pa
 **Status:** Logic layer implementation complete (2026-04-22)
 
 ### Completed:
+
 1. ✓ Updated `types.ts` with proper `CompatibilityMatrix` interface + added `symbol` to `ParticleEntity`, `atomicNumber?` to `MaterialEntity`
 2. ✓ Created `compatibility-matrix.ts` with all 4 functions:
    - `buildCompatibilityMatrix(service)`
@@ -228,9 +246,11 @@ Existing tests (energy, csv, wasm-mock, url-sync, calculation, selection) all pa
 4. ✓ All existing tests still pass (137 total: energy, csv, wasm-mock, url-sync, compatibility-matrix)
 
 ### Still RED (Phase 2 — state layer):
+
 - `entity-selection-state.test.ts` — 24 tests still fail (module not implemented yet)
 
 ### Next Session (State Layer):
+
 1. Create `entity-selection.ts` with `createEntitySelectionState()` and `EntitySelectionState` class
 2. Make 24 state tests pass
 3. Then UI components (separate session)
@@ -240,6 +260,7 @@ Existing tests (energy, csv, wasm-mock, url-sync, calculation, selection) all pa
 ## Session Stats — Phase 1 (Logic Layer)
 
 ### Phase 1 (this session):
+
 - **Files modified:** 2 (`types.ts`, new `compatibility-matrix.ts`)
 - **Files created:** 1 implementation file
 - **Tests passing:** 28/28 compatibility-matrix tests GREEN
@@ -247,6 +268,7 @@ Existing tests (energy, csv, wasm-mock, url-sync, calculation, selection) all pa
 - **Still RED:** 24 entity-selection-state tests (not implemented yet)
 
 ### Phase 0 (previous session - RED phase):
+
 - **Files created:** 3 test files (66 tests total: 28 + 24 + 14)
 
 - **Branch:** `qwen/stage-5-tdd`

@@ -11,7 +11,14 @@
     class?: string;
   }
 
-  let { value, availableUnits, disabled = false, onValueChange, labelledBy, class: className }: Props = $props();
+  let {
+    value,
+    availableUnits,
+    disabled = false,
+    onValueChange,
+    labelledBy,
+    class: className,
+  }: Props = $props();
 
   let buttonRefs = $state<HTMLButtonElement[]>([]);
   let focusedIndex = $state(0);
@@ -62,7 +69,7 @@
   class={cn(
     "inline-flex items-center rounded-md border border-input bg-background p-1",
     disabled && "opacity-50",
-    className
+    className,
   )}
   aria-label={labelledBy ? undefined : "Energy unit selection"}
   aria-labelledby={labelledBy}
@@ -75,14 +82,14 @@
       aria-checked={value === unit}
       aria-disabled={disabled ? "true" : "false"}
       aria-label={unit}
-      tabindex={disabled ? -1 : (focusedIndex === index ? 0 : -1)}
-      disabled={disabled}
+      tabindex={disabled ? -1 : focusedIndex === index ? 0 : -1}
+      {disabled}
       class={cn(
         "inline-flex items-center justify-center rounded px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
         value === unit
           ? "bg-primary text-primary-foreground shadow-sm"
           : "text-muted-foreground hover:bg-accent hover:text-accent-foreground",
-        disabled && "pointer-events-none"
+        disabled && "pointer-events-none",
       )}
       onclick={() => handleChange(unit)}
       onkeydown={handleKeyDown}

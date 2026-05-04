@@ -45,7 +45,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
 
     // Header line (no BOM - added by downloadCsv())
     const header = lines[0] ?? "";
-    expect(header).toBe('Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)');
+    expect(header).toBe("Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)");
 
     // 3 data rows
     expect(lines).toHaveLength(4); // 1 header + 3 data
@@ -95,7 +95,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
     const header = lines[0] ?? "";
 
     expect(header).toBe(
-      'Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Stp PSTAR — p in Water (keV/µm)',
+      "Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Stp PSTAR — p in Water (keV/µm)",
     );
     expect(lines).toHaveLength(4); // 1 header + 3 data
     expect(lines[1]).toBe("0.001,84.3,81.5");
@@ -143,7 +143,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
 
     // Case B: each series gets its own Energy column before its Stp column
     expect(header).toBe(
-      'Energy ICRU 90 [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Energy PSTAR [MeV/nucl],Stp PSTAR — α in Al (keV/µm)',
+      "Energy ICRU 90 [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Energy PSTAR [MeV/nucl],Stp PSTAR — α in Al (keV/µm)",
     );
 
     // 4 lines: 1 header + 3 data rows (max point count)
@@ -197,7 +197,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
 
     // Case B: each series gets own Energy column
     expect(header).toBe(
-      'Energy ICRU 90 [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Energy ext:NIST [MeV/nucl],Stp ext:NIST — p in Water (keV/µm)',
+      "Energy ICRU 90 [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Energy ext:NIST [MeV/nucl],Stp ext:NIST — p in Water (keV/µm)",
     );
   });
 });
@@ -242,7 +242,7 @@ describe("formatPlotCsv — hidden series exclusion", () => {
     const header = lines[0] ?? "";
 
     // Only ICRU 90 appears (the visible series)
-    expect(header).toBe('Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)');
+    expect(header).toBe("Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)");
     expect(lines).toHaveLength(4); // 1 header + 3 data
     expect(lines[1]).toBe("0.001,84.3");
   });

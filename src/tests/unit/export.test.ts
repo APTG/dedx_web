@@ -6,11 +6,11 @@ import type { CalculatedRow } from "$lib/state/calculator.svelte";
 function makeMockRow(overrides: Partial<CalculatedRow> = {}): CalculatedRow {
   return {
     id: 1,
-    rawInput: '100',
+    rawInput: "100",
     normalizedMevNucl: 100,
-    unit: 'MeV' as const,
+    unit: "MeV" as const,
     unitFromSuffix: false,
-    status: 'valid',
+    status: "valid",
     stoppingPower: 5.278,
     csdaRangeCm: 0.02345,
     ...overrides,
@@ -19,47 +19,54 @@ function makeMockRow(overrides: Partial<CalculatedRow> = {}): CalculatedRow {
 
 // --- Tests ---
 
-describe('canExport — initial state', () => {
+describe("canExport — initial state", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  test('canExport is false before initialization', async () => {
-    const exportModule = await import('$lib/state/export.svelte');
+  test("canExport is false before initialization", async () => {
+    const exportModule = await import("$lib/state/export.svelte");
     expect(exportModule.canExport.value).toBe(false);
   });
 });
 
-describe('canExport — after initExportState', () => {
+describe("canExport — after initExportState", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  test('becomes true when rows are non-empty', async () => {
+  test("becomes true when rows are non-empty", async () => {
     const mockRows: CalculatedRow[] = [makeMockRow()];
 
-    const exportModule = await import('$lib/state/export.svelte');
+    const exportModule = await import("$lib/state/export.svelte");
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
+      { rows: mockRows, stpDisplayUnit: "keV/µm" as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: {
+          id: 1,
+          name: "Proton",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "p",
+          aliases: ["proton"],
+        },
         selectedMaterial: null,
-        selectedProgram: { id: 2, name: 'PSTAR', resolvedProgram: null },
+        selectedProgram: { id: 2, name: "PSTAR", resolvedProgram: null },
       },
     );
 
     expect(exportModule.canExport.value).toBe(true);
   });
 
-  test('stays false when rows array is empty', async () => {
-    const exportModule = await import('$lib/state/export.svelte');
+  test("stays false when rows array is empty", async () => {
+    const exportModule = await import("$lib/state/export.svelte");
 
     exportModule.initExportState(
-      { rows: [], stpDisplayUnit: 'keV/µm' as const },
+      { rows: [], stpDisplayUnit: "keV/µm" as const },
       {
         selectedParticle: null,
         selectedMaterial: null,
-        selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
+        selectedProgram: { id: -1, name: "Auto", resolvedProgram: null },
       },
     );
 
@@ -67,60 +74,81 @@ describe('canExport — after initExportState', () => {
   });
 });
 
-describe('initExportState — stores data for export functions', () => {
+describe("initExportState — stores data for export functions", () => {
   beforeEach(() => {
     vi.resetModules();
   });
 
-  test('marks canExport as true for a single valid row', async () => {
+  test("marks canExport as true for a single valid row", async () => {
     const mockRows: CalculatedRow[] = [makeMockRow()];
 
-    const exportModule = await import('$lib/state/export.svelte');
+    const exportModule = await import("$lib/state/export.svelte");
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
+      { rows: mockRows, stpDisplayUnit: "keV/µm" as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: {
+          id: 1,
+          name: "Proton",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "p",
+          aliases: ["proton"],
+        },
         selectedMaterial: null,
-        selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
+        selectedProgram: { id: -1, name: "Auto", resolvedProgram: null },
       },
     );
 
     expect(exportModule.canExport.value).toBe(true);
   });
 
-  test('canExport is false when all rows are invalid', async () => {
+  test("canExport is false when all rows are invalid", async () => {
     const mockRows: CalculatedRow[] = [
-      makeMockRow({ status: 'invalid', normalizedMevNucl: null, rawInput: 'abc' }),
-      makeMockRow({ status: 'empty', normalizedMevNucl: null, rawInput: '' }),
+      makeMockRow({ status: "invalid", normalizedMevNucl: null, rawInput: "abc" }),
+      makeMockRow({ status: "empty", normalizedMevNucl: null, rawInput: "" }),
     ];
 
-    const exportModule = await import('$lib/state/export.svelte');
+    const exportModule = await import("$lib/state/export.svelte");
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
+      { rows: mockRows, stpDisplayUnit: "keV/µm" as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: {
+          id: 1,
+          name: "Proton",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "p",
+          aliases: ["proton"],
+        },
         selectedMaterial: null,
-        selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
+        selectedProgram: { id: -1, name: "Auto", resolvedProgram: null },
       },
     );
 
     expect(exportModule.canExport.value).toBe(false);
   });
 
-  test('canExport is true even if only one row is valid among invalid ones', async () => {
+  test("canExport is true even if only one row is valid among invalid ones", async () => {
     const mockRows: CalculatedRow[] = [
-      makeMockRow({ status: 'invalid', normalizedMevNucl: null }),
-      makeMockRow({ status: 'valid', normalizedMevNucl: 100 }),
-      makeMockRow({ status: 'empty', normalizedMevNucl: null }),
+      makeMockRow({ status: "invalid", normalizedMevNucl: null }),
+      makeMockRow({ status: "valid", normalizedMevNucl: 100 }),
+      makeMockRow({ status: "empty", normalizedMevNucl: null }),
     ];
 
-    const exportModule = await import('$lib/state/export.svelte');
+    const exportModule = await import("$lib/state/export.svelte");
     exportModule.initExportState(
-      { rows: mockRows, stpDisplayUnit: 'keV/µm' as const },
+      { rows: mockRows, stpDisplayUnit: "keV/µm" as const },
       {
-        selectedParticle: { id: 1, name: 'Proton', massNumber: 1, atomicMass: 1.007, symbol: 'p', aliases: ['proton'] },
+        selectedParticle: {
+          id: 1,
+          name: "Proton",
+          massNumber: 1,
+          atomicMass: 1.007,
+          symbol: "p",
+          aliases: ["proton"],
+        },
         selectedMaterial: null,
-        selectedProgram: { id: -1, name: 'Auto', resolvedProgram: null },
+        selectedProgram: { id: -1, name: "Auto", resolvedProgram: null },
       },
     );
 

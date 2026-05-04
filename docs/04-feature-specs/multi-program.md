@@ -11,6 +11,7 @@
 > accessibility specified.
 >
 > **v2** (8 April 2026): Address review feedback.
+>
 > - Advanced mode toggle moved to the **top-right action bar** (app-wide,
 >   uniform across Calculator and Plot).
 > - Columns grouped **by quantity** (all stopping powers together, then
@@ -25,6 +26,7 @@
 > - Added quantity-focus control: `Both`, `STP only`, `CSDA only`.
 >
 > **v3** (8 April 2026): Finalization and cross-spec consistency pass.
+>
 > - Integrated quantity-focus across state model, URL (`qfocus`),
 >   accessibility, export visibility rules, wireframes, and acceptance
 >   criteria.
@@ -32,6 +34,7 @@
 > - Marked spec as Final for merge readiness.
 >
 > **Related specs:**
+>
 > - Calculator page: [`calculator.md`](calculator.md)
 > - Entity selection: [`entity-selection.md`](entity-selection.md)
 > - Unit handling: [`unit-handling.md`](unit-handling.md)
@@ -124,49 +127,49 @@ The Advanced toggle is an **app-wide** control positioned in the
 [`01-project-vision.md`](../01-project-vision.md) §4.4). It is not
 specific to the Calculator — the same toggle appears on every page.
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control: **Basic** · **Advanced** |
-| Position | Top-right action bar, before Share / Export buttons |
-| Default | **Basic** (off) |
-| Persistence | URL parameter `mode=advanced`. Also stored in `localStorage`, so mode persists across navigation and across browser sessions until changed or storage is cleared. |
-| Behavior | Switching to Advanced on any page activates advanced features app-wide. On the Calculator page, this reveals the multi-select program picker and comparison columns. |
+| Property    | Detail                                                                                                                                                               |
+| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type        | Segmented control: **Basic** · **Advanced**                                                                                                                          |
+| Position    | Top-right action bar, before Share / Export buttons                                                                                                                  |
+| Default     | **Basic** (off)                                                                                                                                                      |
+| Persistence | URL parameter `mode=advanced`. Also stored in `localStorage`, so mode persists across navigation and across browser sessions until changed or storage is cleared.    |
+| Behavior    | Switching to Advanced on any page activates advanced features app-wide. On the Calculator page, this reveals the multi-select program picker and comparison columns. |
 
 ### 2. Onboarding Hint
 
 When the user switches to Advanced mode **for the first time** (or the
 first 2 times, tracked via `localStorage`):
 
-| Property | Detail |
-|----------|--------|
-| Type | Inline hint banner, dismissible |
-| Position | Below the entity selection row, above the unified table |
-| Content | "Advanced mode enabled. You can now select **multiple programs** to compare stopping power and range side by side." |
-| Dismiss | Clicking × or any interaction with the program picker. Auto-dismissed after 8 seconds. |
-| Suppression | After 2 showings, the hint is permanently suppressed (via `localStorage` counter). |
+| Property    | Detail                                                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------------------------------- |
+| Type        | Inline hint banner, dismissible                                                                                     |
+| Position    | Below the entity selection row, above the unified table                                                             |
+| Content     | "Advanced mode enabled. You can now select **multiple programs** to compare stopping power and range side by side." |
+| Dismiss     | Clicking × or any interaction with the program picker. Auto-dismissed after 8 seconds.                              |
+| Suppression | After 2 showings, the hint is permanently suppressed (via `localStorage` counter).                                  |
 
 ### 3. Entity Selection
 
 Particle and Material selectors are unchanged from Calculator compact
 mode. The Program selector changes behavior depending on the mode:
 
-| Mode | Program selector behavior |
-|------|--------------------------|
-| **Basic** | Single-select combobox (unchanged from Calculator). Auto-select resolves to one program. |
+| Mode         | Program selector behavior                                                                                                                                                                                            |
+| ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic**    | Single-select combobox (unchanged from Calculator). Auto-select resolves to one program.                                                                                                                             |
 | **Advanced** | The single-select combobox is replaced by (or augmented with) a **multi-select program picker**. The user can check/uncheck compatible programs. Auto-select is always included and resolved to the default program. |
 
 #### Multi-Select Program Picker (Advanced Mode)
 
-| Property | Detail |
-|----------|--------|
-| Type | Dropdown with checkboxes (multi-select combobox) |
-| Position | Same location as the single-select Program combobox |
-| Items | All programs compatible with the current particle + material, grouped by category (Tabulated / Analytical) as in [`entity-selection.md`](entity-selection.md) |
-| Incompatible items | Greyed out with a tooltip: "Not available for {particle} in {material}" |
-| Default selection | The auto-selected program is checked and **cannot be unchecked** (it is the reference program) |
-| Additional selections | The user checks additional programs to compare |
-| Selection order | The auto-selected program is always first. Additional programs appear in selection order. |
-| Maximum | No hard limit. A soft warning appears at 6 programs: "Showing many programs. Consider hiding some columns for readability." |
+| Property              | Detail                                                                                                                                                        |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                  | Dropdown with checkboxes (multi-select combobox)                                                                                                              |
+| Position              | Same location as the single-select Program combobox                                                                                                           |
+| Items                 | All programs compatible with the current particle + material, grouped by category (Tabulated / Analytical) as in [`entity-selection.md`](entity-selection.md) |
+| Incompatible items    | Greyed out with a tooltip: "Not available for {particle} in {material}"                                                                                       |
+| Default selection     | The auto-selected program is checked and **cannot be unchecked** (it is the reference program)                                                                |
+| Additional selections | The user checks additional programs to compare                                                                                                                |
+| Selection order       | The auto-selected program is always first. Additional programs appear in selection order.                                                                     |
+| Maximum               | No hard limit. A soft warning appears at 6 programs: "Showing many programs. Consider hiding some columns for readability."                                   |
 
 ### 4. Energy Input
 
@@ -224,7 +227,7 @@ interface MultiProgramState {
 ```typescript
 /** Ordered list of visible program IDs for rendering (respects drag-and-drop order). */
 const visibleProgramIds: number[] = $derived(
-  programDisplayOrder.filter(id => columnVisibility.get(id) !== false)
+  programDisplayOrder.filter((id) => columnVisibility.get(id) !== false),
 );
 
 /** The auto-selected (default/reference) program ID. */
@@ -232,28 +235,26 @@ const defaultProgramId: number = $derived(selectedProgramIds[0]);
 
 /** True if any selected program returned an error. */
 const hasAnyFailedProgram: boolean = $derived(
-  [...comparisonResults.values()].some(r => r instanceof LibdedxError)
+  [...comparisonResults.values()].some((r) => r instanceof LibdedxError),
 );
 
 /** Whether the stopping-power group is currently visible. */
 const showStoppingPowerGroup: boolean = $derived(
-  quantityFocus === "both" || quantityFocus === "stp"
+  quantityFocus === "both" || quantityFocus === "stp",
 );
 
 /** Whether the CSDA-range group is currently visible. */
-const showCsdaRangeGroup: boolean = $derived(
-  quantityFocus === "both" || quantityFocus === "csda"
-);
+const showCsdaRangeGroup: boolean = $derived(quantityFocus === "both" || quantityFocus === "csda");
 ```
 
 ### URL Persistence
 
-| Parameter | Example | Notes |
-|-----------|---------|-------|
-| `mode` | `advanced` | Present only when advanced mode is on. Absent = basic. |
-| `programs` | `9,2,101` | Comma-separated program IDs in display order. First is always the default. Present only in advanced mode. |
-| `hidden_programs` | `101` | Comma-separated program IDs whose columns are hidden. Absent = all visible. |
-| `qfocus` | `stp` | Quantity-focus mode. Allowed: `both`, `stp`, `csda`. Always emitted in canonical URLs for advanced mode (including default `both`). If absent on load, defaults to `both`. |
+| Parameter         | Example    | Notes                                                                                                                                                                      |
+| ----------------- | ---------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode`            | `advanced` | Present only when advanced mode is on. Absent = basic.                                                                                                                     |
+| `programs`        | `9,2,101`  | Comma-separated program IDs in display order. First is always the default. Present only in advanced mode.                                                                  |
+| `hidden_programs` | `101`      | Comma-separated program IDs whose columns are hidden. Absent = all visible.                                                                                                |
+| `qfocus`          | `stp`      | Quantity-focus mode. Allowed: `both`, `stp`, `csda`. Always emitted in canonical URLs for advanced mode (including default `both`). If absent on load, defaults to `both`. |
 
 These extend the existing Calculator URL parameters (`particle`,
 `material`, `program`, `energies`, `eunit`). In advanced mode, `program`
@@ -268,6 +269,7 @@ This example: Proton in Water, comparing ICRU 90 (default, ID 9),
 PSTAR (ID 2), and Bethe-Ext00 (ID 101, hidden). Energy 100 and 200 MeV.
 
 Restoration rules:
+
 - If `mode=advanced` is present but `programs` is absent, use only the
   auto-selected program (effectively single-program advanced mode).
 - If any program ID in `programs` is invalid or incompatible with the
@@ -327,17 +329,17 @@ The unified table in advanced mode groups columns **by physical
 quantity**, not by program. This makes it easy to scan across programs
 for the same quantity:
 
-| # | Column | Group | Notes |
-|---|--------|-------|-------|
-| 1 | **Typed Value** | Input | Unchanged — editable input |
-| 2 | **→ MeV/nucl** | Input | Unchanged — normalized energy |
-| 3 | **Unit** | Input | Unchanged — per-row unit |
-| 4 | **Stp Power ({default prog}) ◆** | Stopping Power | **Highlighted** — default program |
-| 5 | Stp Power ({program 2}) | Stopping Power | Additional program |
-| 6 | Stp Power ({program 3}) | Stopping Power | Additional program |
-| 7 | **CSDA Range ({default prog}) ◆** | CSDA Range | **Highlighted** — default program |
-| 8 | CSDA Range ({program 2}) | CSDA Range | Additional program |
-| 9 | CSDA Range ({program 3}) | CSDA Range | Additional program |
+| #   | Column                            | Group          | Notes                             |
+| --- | --------------------------------- | -------------- | --------------------------------- |
+| 1   | **Typed Value**                   | Input          | Unchanged — editable input        |
+| 2   | **→ MeV/nucl**                    | Input          | Unchanged — normalized energy     |
+| 3   | **Unit**                          | Input          | Unchanged — per-row unit          |
+| 4   | **Stp Power ({default prog}) ◆**  | Stopping Power | **Highlighted** — default program |
+| 5   | Stp Power ({program 2})           | Stopping Power | Additional program                |
+| 6   | Stp Power ({program 3})           | Stopping Power | Additional program                |
+| 7   | **CSDA Range ({default prog}) ◆** | CSDA Range     | **Highlighted** — default program |
+| 8   | CSDA Range ({program 2})          | CSDA Range     | Additional program                |
+| 9   | CSDA Range ({program 3})          | CSDA Range     | Additional program                |
 
 Each group has a **group header row** spanning its columns:
 "Stopping Power ({unit})" and "CSDA Range". Program names appear in the
@@ -352,14 +354,14 @@ Column Reordering).
 Users can reorder program columns within each group via drag-and-drop
 on the column sub-headers.
 
-| Property | Detail |
-|----------|--------|
-| Trigger | Drag a program sub-header cell within the stopping power or CSDA range group |
-| Constraint | The default program column is always first and cannot be moved. Only additional program columns are draggable. |
-| Sync | Reordering in either group (stopping power or CSDA range) applies the same order to the other group. The `programDisplayOrder` state is shared. |
-| Visual feedback | A drag ghost shows the column header text. Drop zones are indicated by a vertical insertion line between columns. |
-| URL persistence | The `programs` parameter encodes IDs in display order. |
-| Keyboard | Arrow keys reorder when a column header is focused and a modifier key is held (e.g., Alt+← / Alt+→). |
+| Property        | Detail                                                                                                                                          |
+| --------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trigger         | Drag a program sub-header cell within the stopping power or CSDA range group                                                                    |
+| Constraint      | The default program column is always first and cannot be moved. Only additional program columns are draggable.                                  |
+| Sync            | Reordering in either group (stopping power or CSDA range) applies the same order to the other group. The `programDisplayOrder` state is shared. |
+| Visual feedback | A drag ghost shows the column header text. Drop zones are indicated by a vertical insertion line between columns.                               |
+| URL persistence | The `programs` parameter encodes IDs in display order.                                                                                          |
+| Keyboard        | Arrow keys reorder when a column header is focused and a modifier key is held (e.g., Alt+← / Alt+→).                                            |
 
 ### Column Show/Hide
 
@@ -367,44 +369,44 @@ Users can show or hide any program's columns across both groups, like
 hiding columns in a spreadsheet. This keeps the table manageable when
 many programs are selected.
 
-| Property | Detail |
-|----------|--------|
-| Trigger | Right-click (context menu) on any program column header, or a dedicated **"Columns…"** button in the table toolbar |
-| Menu | Checklist of all selected programs. Each entry has a checkbox. Checked = visible, unchecked = hidden. |
-| Default program | Always checked; the checkbox is disabled (cannot be hidden). |
+| Property                      | Detail                                                                                                                                                         |
+| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Trigger                       | Right-click (context menu) on any program column header, or a dedicated **"Columns…"** button in the table toolbar                                             |
+| Menu                          | Checklist of all selected programs. Each entry has a checkbox. Checked = visible, unchecked = hidden.                                                          |
+| Default program               | Always checked; the checkbox is disabled (cannot be hidden).                                                                                                   |
 | Visual cue for hidden columns | A thin vertical "collapsed" indicator between visible columns within each group, like Excel's hidden-column marker. Clicking it re-shows the hidden column(s). |
-| Scope | Hiding a program hides its column in **both** the stopping power group and the CSDA range group simultaneously. |
-| Keyboard | The "Columns…" button is focusable and opens the checklist on Enter/Space. Arrow keys navigate the checklist. |
-| URL persistence | Hidden program IDs are listed in the `hidden_programs` URL parameter. |
+| Scope                         | Hiding a program hides its column in **both** the stopping power group and the CSDA range group simultaneously.                                                |
+| Keyboard                      | The "Columns…" button is focusable and opens the checklist on Enter/Space. Arrow keys navigate the checklist.                                                  |
+| URL persistence               | Hidden program IDs are listed in the `hidden_programs` URL parameter.                                                                                          |
 
 ### Quantity Focus Toggle
 
 Users can quickly focus the table on one quantity group without changing
 program selection.
 
-| Property | Detail |
-|----------|--------|
-| Type | Segmented control: `Both` · `STP only` · `CSDA only` |
-| Position | In the table toolbar, next to the `Columns…` button |
-| Default | `Both` |
-| Behavior | `STP only` hides the full CSDA group; `CSDA only` hides the full stopping power group; `Both` shows both groups. Input columns always remain visible. |
-| Interaction with program hide/show | Program visibility state is preserved while a group is hidden. Restoring `Both` brings back the prior per-program visibility within each group. |
-| URL persistence | Encoded as `qfocus=both|stp|csda` in advanced mode. |
-| Calculation behavior | Presentation-only filter: all selected programs are still calculated; toggling focus does not trigger recalculation. |
+| Property                           | Detail                                                                                                                                                |
+| ---------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------- | --- | ----------------------- |
+| Type                               | Segmented control: `Both` · `STP only` · `CSDA only`                                                                                                  |
+| Position                           | In the table toolbar, next to the `Columns…` button                                                                                                   |
+| Default                            | `Both`                                                                                                                                                |
+| Behavior                           | `STP only` hides the full CSDA group; `CSDA only` hides the full stopping power group; `Both` shows both groups. Input columns always remain visible. |
+| Interaction with program hide/show | Program visibility state is preserved while a group is hidden. Restoring `Both` brings back the prior per-program visibility within each group.       |
+| URL persistence                    | Encoded as `qfocus=both                                                                                                                               | stp | csda` in advanced mode. |
+| Calculation behavior               | Presentation-only filter: all selected programs are still calculated; toggling focus does not trigger recalculation.                                  |
 
 ### Delta / % Difference Tooltip
 
 When the user hovers over (or focuses) a **non-default program's**
 result cell, a tooltip shows the difference from the default program:
 
-| Property | Detail |
-|----------|--------|
-| Content | "Δ = {absolute difference} ({relative %}% vs {default program})" |
-| Example | "Δ = −42 keV/µm (−2.7% vs ICRU 90)" |
-| Trigger | Mouse hover or keyboard focus on any comparison cell |
-| Default program cells | No tooltip (they are the reference) |
-| Error cells | No tooltip (value is "—") |
-| Computation | `delta = value_program - value_default`; `pct = delta / value_default * 100` |
+| Property              | Detail                                                                       |
+| --------------------- | ---------------------------------------------------------------------------- |
+| Content               | "Δ = {absolute difference} ({relative %}% vs {default program})"             |
+| Example               | "Δ = −42 keV/µm (−2.7% vs ICRU 90)"                                          |
+| Trigger               | Mouse hover or keyboard focus on any comparison cell                         |
+| Default program cells | No tooltip (they are the reference)                                          |
+| Error cells           | No tooltip (value is "—")                                                    |
+| Computation           | `delta = value_program - value_default`; `pct = delta / value_default * 100` |
 
 ### Calculation Flow
 
@@ -428,12 +430,12 @@ One failing program does not block the others. Per the WASM contract,
 `calculateMulti()` returns `CalculationResult | LibdedxError` per
 program.
 
-| Scenario | Behavior |
-|----------|----------|
-| Program succeeds | Its columns show numeric results normally. |
-| Program fails | Its columns show "—" (em dash) in every row. A tooltip on the column header shows the error message from `LibdedxError`. A subtle error icon (⚠) appears in the header. |
-| All programs fail | All result columns show "—". A banner above the table states: "All programs returned errors for the current selection." |
-| Program fails, then input changes | On the next recalculation, the failed program is retried automatically. If it succeeds, its columns update normally. |
+| Scenario                          | Behavior                                                                                                                                                                |
+| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Program succeeds                  | Its columns show numeric results normally.                                                                                                                              |
+| Program fails                     | Its columns show "—" (em dash) in every row. A tooltip on the column header shows the error message from `LibdedxError`. A subtle error icon (⚠) appears in the header. |
+| All programs fail                 | All result columns show "—". A banner above the table states: "All programs returned errors for the current selection."                                                 |
+| Program fails, then input changes | On the next recalculation, the failed program is retried automatically. If it succeeds, its columns update normally.                                                    |
 
 Failed programs remain selected. The user can uncheck them in the
 picker if they want to remove them.
@@ -465,6 +467,7 @@ picker if they want to remove them.
 ### Result Semantics
 
 All result values use the same physical semantics as Calculator:
+
 - Stopping power from `CalculationResult.stoppingPowers` in MeV·cm²/g,
   converted to the current display unit per
   [`unit-handling.md`](unit-handling.md) §5.
@@ -480,12 +483,12 @@ directly comparable at a glance.
 The default (auto-selected) program's column in each group is visually
 distinct:
 
-| Element | Treatment |
-|---------|-----------|
-| Column sub-header | **Bold** program name + "◆" marker |
-| Header background | Subtle accent tint (e.g., light blue `bg-blue-50`) |
-| Cell background | Same subtle tint, slightly lighter than header |
-| Column border | Left border 2px accent color to visually separate the default column |
+| Element           | Treatment                                                            |
+| ----------------- | -------------------------------------------------------------------- |
+| Column sub-header | **Bold** program name + "◆" marker                                   |
+| Header background | Subtle accent tint (e.g., light blue `bg-blue-50`)                   |
+| Cell background   | Same subtle tint, slightly lighter than header                       |
+| Column border     | Left border 2px accent color to visually separate the default column |
 
 Additional program columns use the standard table styling (no tint,
 normal-weight header text).
@@ -566,13 +569,13 @@ Entity selectors may wrap to two rows.
 
 ### Loading / Empty / Error States
 
-| State | Display |
-|-------|---------|
-| No valid rows | All result columns empty. Standard Calculator validation messaging. |
+| State                           | Display                                                                                                                                                                                                                                                |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| No valid rows                   | All result columns empty. Standard Calculator validation messaging.                                                                                                                                                                                    |
 | No additional programs selected | Table shows only the default program column in each group, still under the grouped-header structure ("Stopping Power" / "CSDA Range" group headers remain visible). This is visually distinct from basic mode even though no comparison is active yet. |
-| Calculation in progress | Subtle shimmer/skeleton animation on result cells. Input cells remain editable. |
-| Some programs still loading | Show results for completed programs; show skeleton for pending ones. |
-| All programs failed | All result cells show "—". Banner above table. |
+| Calculation in progress         | Subtle shimmer/skeleton animation on result cells. Input cells remain editable.                                                                                                                                                                        |
+| Some programs still loading     | Show results for completed programs; show skeleton for pending ones.                                                                                                                                                                                   |
+| All programs failed             | All result cells show "—". Banner above table.                                                                                                                                                                                                         |
 
 ---
 
@@ -630,17 +633,18 @@ are excluded from the `calculateMulti()` call. Invalid rows show
 The multi-program URL parameters extend (not replace) the Calculator
 URL contract:
 
-| Parameter | When present | Format | Example |
-|-----------|-------------|--------|---------|
-| `mode` | Advanced mode is on | `advanced` | `mode=advanced` |
-| `programs` | Advanced mode is on | Comma-separated program IDs in display order | `programs=9,2,101` |
-| `hidden_programs` | Any columns are hidden | Comma-separated hidden program IDs | `hidden_programs=101` |
-| `qfocus` | Advanced mode is on (always emitted for canonical consistency, even when `both`) | `both` \| `stp` \| `csda` | `qfocus=csda` |
+| Parameter         | When present                                                                     | Format                                       | Example               |
+| ----------------- | -------------------------------------------------------------------------------- | -------------------------------------------- | --------------------- |
+| `mode`            | Advanced mode is on                                                              | `advanced`                                   | `mode=advanced`       |
+| `programs`        | Advanced mode is on                                                              | Comma-separated program IDs in display order | `programs=9,2,101`    |
+| `hidden_programs` | Any columns are hidden                                                           | Comma-separated hidden program IDs           | `hidden_programs=101` |
+| `qfocus`          | Advanced mode is on (always emitted for canonical consistency, even when `both`) | `both` \| `stp` \| `csda`                    | `qfocus=csda`         |
 
 In basic mode, the standard `program` parameter is used (single ID or
 `auto`). In advanced mode, `program` is replaced by `programs`.
 
 Restoration rules:
+
 - `mode=advanced` without `programs` → advanced mode with only the
   default program.
 - Invalid program IDs in `programs` → silently dropped; toast shown.
@@ -677,6 +681,7 @@ Example schema (wide table, one row per energy):
 ```
 
 Key rules:
+
 - CSDA range column headers carry no fixed unit; unit is per-cell.
 - Column order follows on-screen order (including drag-and-drop reordering).
 - Hidden program columns are **not** exported.
@@ -738,6 +743,7 @@ Unchanged from Calculator — single program, five-column CSV
 ## Acceptance Criteria
 
 ### Advanced Mode Toggle
+
 - [ ] The Advanced toggle in the top-right action bar is visible on all pages.
 - [ ] By default the toggle is off (basic mode). The Calculator page looks identical to the standard Calculator.
 - [ ] Toggling to Advanced on the Calculator reveals the multi-select program picker.
@@ -747,6 +753,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] The toggle state is encoded in the URL as `mode=advanced` and persists in `localStorage`.
 
 ### Program Selection
+
 - [ ] In advanced mode, the Program selector becomes a multi-select with checkboxes.
 - [ ] The auto-selected (default) program is always checked and cannot be unchecked.
 - [ ] Incompatible programs are greyed out.
@@ -754,6 +761,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Deselecting a program removes its columns from both groups.
 
 ### Column Layout — Grouped by Quantity
+
 - [ ] Columns are grouped: input columns → all stopping power columns → all CSDA range columns.
 - [ ] Each group has a spanning group header ("Stopping Power (unit)", "CSDA Range").
 - [ ] Program names appear in sub-headers within each group.
@@ -761,6 +769,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] The default program's column is first in each group and visually highlighted (bold header, accent background, left border).
 
 ### Drag-and-Drop Column Reordering
+
 - [ ] Additional program sub-headers are draggable within each group.
 - [ ] Reordering in one group applies to both groups simultaneously.
 - [ ] The default program column cannot be moved from the first position.
@@ -768,6 +777,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Keyboard reordering is available via Alt+Arrow keys.
 
 ### Column Show/Hide
+
 - [ ] A "Columns…" button allows showing/hiding program columns.
 - [ ] Right-clicking a program column header also opens the visibility menu.
 - [ ] The default program's columns cannot be hidden.
@@ -776,6 +786,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Column visibility is encoded in the URL as `hidden_programs=...`.
 
 ### Quantity Focus
+
 - [ ] A quantity-focus control is available with options `Both`, `STP only`, and `CSDA only`.
 - [ ] `STP only` hides the entire CSDA group while keeping input columns visible.
 - [ ] `CSDA only` hides the entire stopping power group while keeping input columns visible.
@@ -784,29 +795,34 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Quantity focus is encoded in the URL as `qfocus=both|stp|csda`.
 
 ### Delta Tooltip
+
 - [ ] Hovering a non-default program's result cell shows a tooltip with absolute and percentage difference from the default program.
 - [ ] The tooltip is accessible via keyboard focus.
 - [ ] Default program cells and error cells ("—") do not show a delta tooltip.
 
 ### Calculation
+
 - [ ] `calculateMulti()` is called with all selected program IDs.
 - [ ] Energies are normalized once and shared across all programs.
 - [ ] Live debounced recalculation applies to all programs simultaneously.
 - [ ] Hidden columns still receive calculated data (showing them is instant).
 
 ### Partial Failure
+
 - [ ] A failing program shows "—" in its columns with an error icon and tooltip.
 - [ ] Other programs' results are unaffected.
 - [ ] Failed programs are retried on the next recalculation.
 - [ ] If all programs fail, a banner appears above the table.
 
 ### URL State
+
 - [ ] Advanced mode, selected programs (in display order), hidden columns, and quantity focus are all encoded in the URL.
 - [ ] Loading a URL with `mode=advanced` restores the full comparison state.
 - [ ] Invalid program IDs are silently dropped.
 - [ ] A URL without `mode` or with `mode=basic` ignores multi-program parameters.
 
 ### Export
+
 - [ ] In advanced mode, CSV columns are grouped by quantity (all stopping powers, then all CSDA ranges).
 - [ ] Hidden program columns are excluded from CSV export.
 - [ ] Quantity focus mode affects export: only currently visible quantity groups are exported.
@@ -815,6 +831,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Filename includes program count.
 
 ### Responsive
+
 - [ ] The table scrolls horizontally when columns exceed viewport width.
 - [ ] The first three columns (Typed Value, → MeV/nucl, Unit) are sticky on desktop.
 - [ ] On mobile, at least the Typed Value column is sticky.
@@ -822,6 +839,7 @@ Unchanged from Calculator — single program, five-column CSV
 - [ ] Drag-and-drop works on touch devices via long-press.
 
 ### Accessibility
+
 - [ ] The multi-select picker has proper listbox/option semantics.
 - [ ] Group headers use `scope="colgroup"`.
 - [ ] Column show/hide actions are announced via `aria-live`.

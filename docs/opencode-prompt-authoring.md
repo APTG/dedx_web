@@ -1,8 +1,8 @@
 # Authoring opencode prompts (Claude / VS Code workflow)
 
 > **Audience:** the dEdx Web maintainer (and future contributors) who use Claude
-> in VS Code to *generate* the multi-task prompt files that opencode + Qwen then
-> *execute* on PLGrid.
+> in VS Code to _generate_ the multi-task prompt files that opencode + Qwen then
+> _execute_ on PLGrid.
 >
 > **Why this doc exists:** the prompt files under
 > [`docs/ai-logs/prompts/`](ai-logs/prompts/) — especially
@@ -59,7 +59,7 @@ not relevant to the session.
 ```markdown
 # opencode task prompt — YYYY-MM-DD
 
-> **Model:** Qwen3.5-397B-A17B-FP8        # (or 122B for cheap tasks)
+> **Model:** Qwen3.5-397B-A17B-FP8 # (or 122B for cheap tasks)
 > **Session type:** Multi-task implementation | Single feature | Refactor | Doc
 > **Branch:** qwen/<slug>
 > **MCPs needed:** playwright | tailwind | svelte | (none)
@@ -72,29 +72,32 @@ A numbered list of files the agent must read **before writing any code**, in
 order of importance. Always include `AGENTS.md` first if it's not already in
 the agent's automatic context.
 
-```markdown
+````markdown
 ## Context
 
 Read at session start (in order):
+
 1. AGENTS.md — stack, Svelte 5 rules, build commands
 2. <spec file path> §<exact section heading>
 3. <related file 1>
 4. <related file 2>
 
 Key source files:
+
 - <path 1>
 - <path 2>
 
 Test files:
+
 - <path 1>
 - <path 2>
 
 Run tests:
 \```sh
-pnpm test                        # Vitest unit
-pnpm exec playwright test        # E2E (needs WASM in static/wasm/)
+pnpm test # Vitest unit
+pnpm exec playwright test # E2E (needs WASM in static/wasm/)
 \```
-```
+````
 
 ### 2.3 AI logging reminder (required for sessions that change code/docs)
 
@@ -114,7 +117,7 @@ This is the heart of the file. Each task block must be **directly pasteable
 into the `implementer` subagent**, so use the exact field names the subagent
 parses.
 
-```markdown
+````markdown
 ---
 
 ## Task N — <one-line task name>
@@ -140,10 +143,12 @@ versioned, e.g. "v4 §3").
 ### Step Nb — implement
 
 In `<source file 1>`:
+
 - <surgical change 1>
 - <surgical change 2>
 
 In `<source file 2>`:
+
 - <surgical change 1>
 
 ### Done when
@@ -152,9 +157,10 @@ In `<source file 2>`:
 \```
 <conventional-commits message>
 \```
-```
+````
 
 **Why this shape works:**
+
 - `Acceptance criteria` is exactly what the `reviewer` subagent grades against.
 - `Step Na — tests first` enforces TDD without a separate prose paragraph.
 - `Step Nb — implement` is "surgical bullet points", not narrative — Qwen
@@ -179,7 +185,7 @@ dependents when an upstream task is `BLOCKED`.
 Paste this into Claude when you want it to draft a new opencode prompt file.
 Fill in the bracketed bits before sending.
 
-````markdown
+```markdown
 You are drafting an opencode task prompt for the dEdx Web project. Read
 `docs/opencode-prompt-authoring.md` §2 for the canonical schema and follow it
 exactly. Read `docs/ai-logs/prompts/2026-04-27-opencode-tasks.md` for a
@@ -190,10 +196,12 @@ Goal: [one-paragraph description of what we want opencode + Qwen to do]
 Spec(s) to implement: [path(s) under docs/04-feature-specs/]
 
 Constraints:
+
 - [any design decisions already made — e.g. "use existing X", "do not touch Y"]
 - [any acceptance test phrasing the user explicitly wants]
 
 Output:
+
 - A single markdown file ready to save under
   `docs/ai-logs/prompts/YYYY-MM-DD-<slug>.md` with today's date.
 - Header per §2.1 (Qwen3.5-397B unless I say otherwise).
@@ -207,7 +215,7 @@ Output:
 
 Do NOT execute any of the work. Do NOT modify the repo. Just produce the
 markdown.
-````
+```
 
 If the goal is small (one or two file changes, no tests), skip this and write
 the prompt by hand — the funnel is overkill.
@@ -269,7 +277,7 @@ session (no subagents) when:
   reviewer slows iteration. Open a single session, attach to it, and drive it
   interactively.
 - The spec is so vague that you'd be writing the prompt as you go. In that
-  case, draft the spec first (in `docs/04-feature-specs/`), commit it, *then*
+  case, draft the spec first (in `docs/04-feature-specs/`), commit it, _then_
   generate the opencode prompt against the committed spec.
 
 ---

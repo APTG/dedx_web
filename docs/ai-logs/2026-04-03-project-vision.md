@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Write a feature spec (via write-spec.prompt.md)
+
 **User** invoked the write-spec prompt, but asked for a broader project vision
 document rather than a single feature spec. Requested a branch, issue, and draft PR.
 Asked about the appropriate level of detail for specs.
@@ -14,6 +15,7 @@ questions about audience, inverse lookups, custom compounds, ATIMA inspiration,
 offline use, and target devices.
 
 ### Prompt 2: Document structure discussion
+
 **User** wanted clear separation between general vision and feature specs, and between
 functional and non-functional documents. Asked for the branch to be created first.
 
@@ -23,6 +25,7 @@ strategic), `09-non-functional-requirements.md` (separate), feature specs in
 architecture scope, feature granularity, and previous unanswered questions.
 
 ### Prompt 3: User answers to structure questions
+
 **User** confirmed: separate NFR doc, component tree in architecture, separate calculator
 and plot specs. Answered domain questions: all audiences, inverse lookups yes, custom
 compounds planned from start, ATIMA typeahead inspiration, no offline requirement,
@@ -32,6 +35,7 @@ all devices first-class.
 in a structured table for future reference.
 
 ### Prompt 4: Draft project vision — clarification questions
+
 **User** provided detailed context about the app: range calculator primary, plot for
 stopping power comparison, inverse lookups advanced, minimum clicks philosophy,
 shareable URLs, CSV/PDF export, no backend, GitHub Pages only.
@@ -40,10 +44,13 @@ shareable URLs, CSV/PDF export, no backend, GitHub Pages only.
 output/export, and scope/priorities categories.
 
 ### Prompt 5: User requested copy-paste question format
+
 **AI response**: Formatted all 16 questions with `→` placeholders for easy filling.
 
 ### Prompt 6: User answered all 16 questions
+
 Key decisions captured:
+
 - Calculator is landing page, range first; plot page for stopping power
 - Default: proton/water/100 MeV/PSTAR for range
 - "Best available answer" by default, overridable
@@ -63,6 +70,7 @@ follow-up questions about "best available" program logic, documentation page det
 plot page defaults, and roadmap confirmation.
 
 ### Prompt 7: User answered follow-ups + libdedx investigation
+
 **User** said to check libdedx for "best available" logic, confirmed auto-select for
 plot page too, confirmed roadmap.
 
@@ -73,6 +81,7 @@ heavy→ICRU73→ICRU73_OLD. Also found `dedx_get_simple_stp()` two-stage fallba
 (ICRU→DEFAULT/Bethe). Updated vision doc §4.3 with these findings.
 
 ### Prompt 8: Units emphasis, AI logging, redesign plan fixes
+
 **User** noted units are critical — input units must be explicit, output should
 auto-scale (1.2 mm not 0.0012 m), plot labels must show units. Also reminded about
 AI session logging, asked to check redesign plan links, and asked about old code
@@ -87,11 +96,13 @@ added Stage 9 (Legacy Code Removal), added commit hash placeholder to §11. Crea
 session log and updated CHANGELOG-AI.md.
 
 ### Prompt 9: Commit hash for legacy code reference
+
 **User** provided `git log master --oneline -1` output: `0330233`.
 
 **AI response**: Recorded commit hash `0330233` in redesign plan §11.
 
 ### Prompt 10: Auto-select refinement and context-aware units
+
 **User** clarified: auto-select should not always show DEDX_ICRU — it should adapt
 per ion/material. Also: MeV/nucl should not appear for protons (A=1, it's redundant);
 MeV/u is advanced-mode only.
@@ -101,18 +112,21 @@ A>1 → MeV + MeV/nucl, MeV/u advanced). Updated §4.3 (program auto-selection i
 webdedx-level layer on top of libdedx DEDX_ICRU, configurable, always adapts).
 
 ### Prompt 11: Cross-check, update logs, merge
+
 **User** asked to cross-check all docs for consistency, update AI logs, merge.
 
 **AI response**: Found and fixed 4 inconsistencies:
+
 1. Vision §3.1/§3.2 hardcoded "(DEDX_ICRU)" in default state → removed
 2. Redesign plan §10 referenced stale `redesign/planning` branch → made generic
 3. Redesign plan §10 had duplicate step "5" → renumbered
 4. Vision §11 linked to non-existent `09-non-functional-requirements.md` → marked "(planned)"
-Updated this session log with prompts 9–11.
+   Updated this session log with prompts 9–11.
 
 ## Tasks
 
 ### Draft project vision document
+
 - **Status**: completed
 - **Stage**: Stage 1 (Requirements & Specifications)
 - **Files changed**:
@@ -128,6 +142,7 @@ Updated this session log with prompts 9–11.
 - **Issue**: None
 
 ### Update redesign plan
+
 - **Status**: completed
 - **Stage**: Stage 1
 - **Files changed**:
@@ -139,6 +154,7 @@ Updated this session log with prompts 9–11.
 - **Issue**: None
 
 ### Cross-check and consistency fixes
+
 - **Status**: completed
 - **Stage**: Stage 1
 - **Files changed**:
@@ -147,6 +163,7 @@ Updated this session log with prompts 9–11.
   - `docs/00-redesign-plan.md` — fixed §10 stale branch reference and step numbering
 
 ### Create AI session log
+
 - **Status**: completed
 - **Stage**: Stage 0
 - **Files changed**:

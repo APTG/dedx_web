@@ -11,6 +11,7 @@
 ## Context
 
 Read at session start (in order):
+
 1. `AGENTS.md` — stack, Svelte 5 rules, build commands, AI logging rules
 2. `docs/04-feature-specs/export.md` — **the normative spec for this entire session**.
    Read the complete file. Pay special attention to:
@@ -38,6 +39,7 @@ Read at session start (in order):
    dropdown to the controls bar and wire export state
 
 Key source files:
+
 - `src/lib/components/jsroot-plot.svelte`
 - `src/lib/export/csv.ts`
 - `src/lib/export/pdf.ts`
@@ -46,10 +48,12 @@ Key source files:
 - `src/routes/+layout.svelte`
 
 Test files:
+
 - `src/tests/unit/` — add `plot-csv.test.ts` and `plot-pdf.test.ts`
 - `tests/e2e/export.spec.ts` — existing export E2E spec; add plot-page blocks here
 
 Run tests:
+
 ```sh
 pnpm test                         # Vitest — 511 tests currently passing
 pnpm exec playwright test         # E2E (needs WASM in static/wasm/)
@@ -111,6 +115,7 @@ export function downloadPlotCsv(series: PlotSeries[], stpUnit: string): void { .
 ```
 
 Implementation notes:
+
 - Import and reuse `makeCsvCell` from `$lib/export/csv` (not re-implement it).
 - Add the UTF-8 BOM (`﻿`) as the first character.
 - CRLF line endings (`\r\n`) on every row including the last.
@@ -124,6 +129,7 @@ Implementation notes:
 ### Done when
 
 `pnpm test` is green (+new plot CSV tests), then commit:
+
 ```
 feat(export): add formatPlotCsv() and downloadPlotCsv() for Plot page CSV export
 ```
@@ -176,13 +182,18 @@ it on cleanup:
 
 ```typescript
 $effect(() => {
-  if (!container) { requestExportSvg = null; return; }
+  if (!container) {
+    requestExportSvg = null;
+    return;
+  }
   const el = container;
   requestExportSvg = () => {
     const svgEl = el.querySelector("svg");
     return svgEl ? new XMLSerializer().serializeToString(svgEl) : null;
   };
-  return () => { requestExportSvg = null; };
+  return () => {
+    requestExportSvg = null;
+  };
 });
 ```
 
@@ -208,6 +219,7 @@ this file as a style reference.
 
 `pnpm test` is green, the dropdown renders in the controls bar and the SVG
 download button is present; then commit:
+
 ```
 feat(plot): add SVG image export with "Export image ▾" dropdown in controls bar
 ```
@@ -247,6 +259,7 @@ Run `pnpm test`, confirm RED.
 ### Step 3b — implement in `src/lib/export/pdf.ts`
 
 Add the new function after `generateCalculatorPdf`. Key implementation points:
+
 - Accept `{ svgString: string | null; series: PlotSeries[]; url: string; filename: string }`.
 - Use `new jsPDF({ orientation: 'landscape' })` for the Plot PDF (wider canvas).
 - Embed SVG: if `jsPDF.addSvgAsImage` is available, use it; otherwise embed via
@@ -261,6 +274,7 @@ Add the new function after `generateCalculatorPdf`. Key implementation points:
 ### Done when
 
 `pnpm test` is green (+new plot PDF tests); then commit:
+
 ```
 feat(export): add generatePlotPdf() for Plot page PDF export (basic mode)
 ```
@@ -324,7 +338,9 @@ In `src/routes/plot/+page.svelte` add a `$effect`:
 ```typescript
 $effect(() => {
   initPlotExportState(plotState, getSvg ?? (() => null));
-  return () => { canExport.value = false; };
+  return () => {
+    canExport.value = false;
+  };
 });
 ```
 
@@ -345,6 +361,7 @@ onclick={() => {
 
 `pnpm test` green, toolbar Export PDF and Export CSV buttons are enabled on the
 Plot page when at least one series is present; then commit:
+
 ```
 feat(plot): wire toolbar Export CSV and Export PDF buttons for Plot page
 ```
@@ -376,6 +393,7 @@ test.describe("Plot export", () => {
 ```
 
 Mark tests `test.skip` if WASM binaries absent; leave comment:
+
 ```typescript
 // Skipped when WASM binary absent. CI downloads artifact before running E2E.
 ```
@@ -391,6 +409,7 @@ Use the `playwright` MCP to inspect failures interactively.
 ### Done when
 
 Plot E2E export tests pass (or are cleanly skipped); then commit:
+
 ```
 test(e2e): add Plot page export tests (SVG image, CSV download, button enable/disable)
 ```

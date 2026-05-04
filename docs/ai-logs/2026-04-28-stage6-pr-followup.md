@@ -87,6 +87,7 @@ refactor remains a fair Stage 6 follow-up.
 ## Tasks
 
 ### PR #399 review fixes round 1
+
 - **Status**: completed
 - **Stage**: 6.1 (Calculator basic)
 - **Files changed**:
@@ -127,7 +128,7 @@ could be reproduced locally — confirmed all 3 failing scenarios reproduce.
 #### Failure root causes
 
 1. `calculator-url.spec.ts › mixed-unit rows encoded with :unit suffix` — the
-   encoder *did* emit `500:keV`, but `URLSearchParams.toString()` percent-encoded
+   encoder _did_ emit `500:keV`, but `URLSearchParams.toString()` percent-encoded
    the colon to `%3A`, so `window.location.search.includes("500:keV")` never
    matched.
 2. `entity-selection.spec.ts › Reset all link restores defaults` — strict-mode
@@ -136,7 +137,7 @@ could be reproduced locally — confirmed all 3 failing scenarios reproduce.
    pre-existing inline `entity-selection-comboboxes` Restore defaults button.
 3. `navigation.spec.ts › clicking Calculator nav link navigates to /calculator`
    (and webdedx-brand variant) + `basic.spec.ts › homepage redirects to
-   calculator` — the new URL-sync `$effect` writes canonical params on mount,
+calculator` — the new URL-sync `$effect` writes canonical params on mount,
    so the old `/\/calculator$/` regex never matched the trailing query.
 
 #### Fixes
@@ -198,6 +199,7 @@ the input/output scratch buffers, which is well within "negligible".
 ### Tasks
 
 #### Calculator URL encoder hardening + page-effect loop guard
+
 - **Status**: completed
 - **Stage**: 6.1
 - **Files changed**: `src/lib/utils/calculator-url.ts`,
@@ -209,6 +211,7 @@ the input/output scratch buffers, which is well within "negligible".
   spec-compliant.
 
 #### E2E hardening (real WASM, real numeric assertions)
+
 - **Status**: completed
 - **Files changed**: `tests/e2e/calculator.spec.ts`,
   `tests/e2e/basic.spec.ts`, `tests/e2e/navigation.spec.ts`
@@ -217,16 +220,19 @@ the input/output scratch buffers, which is well within "negligible".
   window — catches WASM regressions the previous assertion missed.
 
 #### Integration test fixes (tolerance + WASM `locateFile`)
+
 - **Status**: completed
 - **Files changed**: `src/tests/integration/wasm-calculate.test.ts`
 
 #### UI / formatting
+
 - **Status**: completed
 - **Files changed**: `src/lib/components/ui/button/button.svelte`,
   `src/lib/components/ui/button/index.ts`,
   `src/lib/components/ui/skeleton/index.ts`
 
 #### Verification
+
 - **Status**: completed
 - 485 unit/integration tests pass (was 482 + 3 skipped — the 3 WASM
   integration tests now actually run thanks to the `locateFile` fix).

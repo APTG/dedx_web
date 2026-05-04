@@ -16,19 +16,19 @@ no path construction. All stopping-power data is served from compiled-in static 
 
 **`libdedx/src/dedx_embedded_data.c`** is the registry of those arrays. It `#include`s:
 
-| Included header | Program |
-|-----------------|---------|
-| `data/embedded/dedx_astar.h` | ASTAR (alpha stopping powers) |
-| `data/embedded/dedx_pstar.h` | PSTAR (proton stopping powers) |
-| `data/embedded/dedx_mstar.h` | MSTAR base (alpha data for parametric scaling) |
-| `data/embedded/dedx_icru73.h` | ICRU73 and ICRU73\_OLD (shared table) |
-| `data/embedded/dedx_icru73new.h` | ICRU73 updated (Z=1–18, 2 targets) |
-| `data/embedded/dedx_icru_pstar.h` | ICRU49 proton table |
-| `data/embedded/dedx_icru_astar.h` | ICRU49 alpha table |
-| `data/embedded/dedx_bethe.h` | Bethe parametric data |
-| `data/embedded/dedx_icru90_a.h` | ICRU90 alpha corrections |
-| `data/embedded/dedx_icru90_C.h` | ICRU90 Carbon-12 corrections |
-| `data/embedded/dedx_icru90_p.h` | ICRU90 proton corrections |
+| Included header                   | Program                                        |
+| --------------------------------- | ---------------------------------------------- |
+| `data/embedded/dedx_astar.h`      | ASTAR (alpha stopping powers)                  |
+| `data/embedded/dedx_pstar.h`      | PSTAR (proton stopping powers)                 |
+| `data/embedded/dedx_mstar.h`      | MSTAR base (alpha data for parametric scaling) |
+| `data/embedded/dedx_icru73.h`     | ICRU73 and ICRU73_OLD (shared table)           |
+| `data/embedded/dedx_icru73new.h`  | ICRU73 updated (Z=1–18, 2 targets)             |
+| `data/embedded/dedx_icru_pstar.h` | ICRU49 proton table                            |
+| `data/embedded/dedx_icru_astar.h` | ICRU49 alpha table                             |
+| `data/embedded/dedx_bethe.h`      | Bethe parametric data                          |
+| `data/embedded/dedx_icru90_a.h`   | ICRU90 alpha corrections                       |
+| `data/embedded/dedx_icru90_C.h`   | ICRU90 Carbon-12 corrections                   |
+| `data/embedded/dedx_icru90_p.h`   | ICRU90 proton corrections                      |
 
 **Not included:** `dedx_estar.h`, `dedx_icru90_e.h`, `dedx_icru90_pos.h`.
 
@@ -65,37 +65,37 @@ the `.dat` files.
 
 ### 2.1 Program inventory
 
-| ID | Constant | Type | Description |
-|----|----------|------|-------------|
-| 1 | `DEDX_ASTAR` | Tabulated | NIST ASTAR — alpha particle stopping powers |
-| 2 | `DEDX_PSTAR` | Tabulated | NIST PSTAR — proton stopping powers |
-| 3 | `DEDX_ESTAR` | Tabulated (?) | NIST ESTAR — electron stopping powers (see §1) |
-| 4 | `DEDX_MSTAR` | Parametric+Tabulated | MSTAR (H. Paul) — heavy ions via scaling |
-| 5 | `DEDX_ICRU73_OLD` | Tabulated | ICRU Report 73 (2005) — older parametrisation |
-| 6 | `DEDX_ICRU73` | Tabulated | ICRU Report 73 (2005) |
-| 7 | `DEDX_ICRU49` | Tabulated | ICRU Report 49 (1993) — protons and alphas |
-| 8 | *(reserved)* | — | Not a public program |
-| 9 | `DEDX_ICRU` | Auto-select | Routes to ICRU49 or ICRU73 by ion type |
-| 100 | `DEDX_DEFAULT` | Parametric | Bethe formula — any ion, any material |
-| 101 | `DEDX_BETHE_EXT00` | Parametric | Bethe with extensions |
+| ID  | Constant           | Type                 | Description                                    |
+| --- | ------------------ | -------------------- | ---------------------------------------------- |
+| 1   | `DEDX_ASTAR`       | Tabulated            | NIST ASTAR — alpha particle stopping powers    |
+| 2   | `DEDX_PSTAR`       | Tabulated            | NIST PSTAR — proton stopping powers            |
+| 3   | `DEDX_ESTAR`       | Tabulated (?)        | NIST ESTAR — electron stopping powers (see §1) |
+| 4   | `DEDX_MSTAR`       | Parametric+Tabulated | MSTAR (H. Paul) — heavy ions via scaling       |
+| 5   | `DEDX_ICRU73_OLD`  | Tabulated            | ICRU Report 73 (2005) — older parametrisation  |
+| 6   | `DEDX_ICRU73`      | Tabulated            | ICRU Report 73 (2005)                          |
+| 7   | `DEDX_ICRU49`      | Tabulated            | ICRU Report 49 (1993) — protons and alphas     |
+| 8   | _(reserved)_       | —                    | Not a public program                           |
+| 9   | `DEDX_ICRU`        | Auto-select          | Routes to ICRU49 or ICRU73 by ion type         |
+| 100 | `DEDX_DEFAULT`     | Parametric           | Bethe formula — any ion, any material          |
+| 101 | `DEDX_BETHE_EXT00` | Parametric           | Bethe with extensions                          |
 
-ICRU73\_OLD (id=5) and ICRU73 (id=6) **share the same embedded data table** (`dedx_icru73.h`).
+ICRU73_OLD (id=5) and ICRU73 (id=6) **share the same embedded data table** (`dedx_icru73.h`).
 They differ only in parametrisation code, not in raw data.
 
-DEDX\_ICRU (id=9) is an auto-selector, not a real database. It must not appear as a standalone
+DEDX_ICRU (id=9) is an auto-selector, not a real database. It must not appear as a standalone
 program in the UI's entity-selection compatibility matrix.
 
 ### 2.2 Tabulated data per program
 
-| Program | Ions | Targets | Energy points | E min | E max | Raw float data |
-|---------|------|---------|---------------|-------|-------|---------------|
-| ASTAR | 1 (He, Z=2) | 74 | 122 | 250 eV/nucl | 250 MeV/nucl | 35.3 KB |
-| PSTAR | 1 (H, Z=1) | 74 | 133 | 1 keV/nucl | 10 GeV/nucl | 38.4 KB |
-| ESTAR | 1 (electron) | 76 | 132 | 1 keV | 10 GeV | 39.2 KB |
-| MSTAR (base) | 1 (He, Z=2) | 78 | 132 | 1 keV/nucl | 4 GeV/nucl | 40.2 KB |
-| ICRU73\_OLD | 16 (Z=3–18) | 56 | 53 | 25 keV/nucl | 1 GeV/nucl | *shared* |
-| ICRU73 | 16 (Z=3–18) | 56 | 53 | 25 keV/nucl | 1 GeV/nucl | 185.5 KB |
-| ICRU49 | 2 (H+He) | 74 | 122–133 | 250 eV/nucl | 10 GeV/nucl | 73.7 KB |
+| Program      | Ions         | Targets | Energy points | E min       | E max        | Raw float data |
+| ------------ | ------------ | ------- | ------------- | ----------- | ------------ | -------------- |
+| ASTAR        | 1 (He, Z=2)  | 74      | 122           | 250 eV/nucl | 250 MeV/nucl | 35.3 KB        |
+| PSTAR        | 1 (H, Z=1)   | 74      | 133           | 1 keV/nucl  | 10 GeV/nucl  | 38.4 KB        |
+| ESTAR        | 1 (electron) | 76      | 132           | 1 keV       | 10 GeV       | 39.2 KB        |
+| MSTAR (base) | 1 (He, Z=2)  | 78      | 132           | 1 keV/nucl  | 4 GeV/nucl   | 40.2 KB        |
+| ICRU73_OLD   | 16 (Z=3–18)  | 56      | 53            | 25 keV/nucl | 1 GeV/nucl   | _shared_       |
+| ICRU73       | 16 (Z=3–18)  | 56      | 53            | 25 keV/nucl | 1 GeV/nucl   | 185.5 KB       |
+| ICRU49       | 2 (H+He)     | 74      | 122–133       | 250 eV/nucl | 10 GeV/nucl  | 73.7 KB        |
 
 **Total raw float data (unique tables):** 412.3 KB
 
@@ -107,14 +107,14 @@ All other programs use MeV/nucl.
 These tables are compiled in and used as correction data or for specific material overrides.
 They do not appear in `dedx_fill_program_list()`.
 
-| Dataset | Ions | Targets | Energy points | Raw |
-|---------|------|---------|---------------|-----|
-| ICRU73 updated | 18 (Z=1–18) | 2 (Air, Water) | 53 | 7.5 KB |
-| ICRU90 alpha | 1 (He) | 3 | 49 | 0.6 KB |
-| ICRU90 Carbon-12 | 1 (C) | 3 | 57 | 0.7 KB |
-| ICRU90 proton | 1 (H) | 3 | 57 | 0.7 KB |
-| ICRU90 electron | 1 (e⁻) | 3 | 49 | 0.6 KB |
-| ICRU90 positron | 1 (e⁺) | 3 | 49 | 0.6 KB |
+| Dataset          | Ions        | Targets        | Energy points | Raw    |
+| ---------------- | ----------- | -------------- | ------------- | ------ |
+| ICRU73 updated   | 18 (Z=1–18) | 2 (Air, Water) | 53            | 7.5 KB |
+| ICRU90 alpha     | 1 (He)      | 3              | 49            | 0.6 KB |
+| ICRU90 Carbon-12 | 1 (C)       | 3              | 57            | 0.7 KB |
+| ICRU90 proton    | 1 (H)       | 3              | 57            | 0.7 KB |
+| ICRU90 electron  | 1 (e⁻)      | 3              | 49            | 0.6 KB |
+| ICRU90 positron  | 1 (e⁺)      | 3              | 49            | 0.6 KB |
 
 ---
 
@@ -122,14 +122,14 @@ They do not appear in `dedx_fill_program_list()`.
 
 ### 3.1 Tabulated databases
 
-| Program | Ion Z values | Ion names |
-|---------|-------------|-----------|
-| PSTAR | 1 | Hydrogen (proton) |
-| ASTAR | 2 | Helium (alpha) |
-| ICRU49 | 1, 2 | Hydrogen, Helium |
-| ICRU73 | 3–18 | Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar |
-| MSTAR (base) | 2 | Helium — used as base for parametric scaling |
-| ESTAR | 1001 | Electron (special ID, not an atomic number) |
+| Program      | Ion Z values | Ion names                                               |
+| ------------ | ------------ | ------------------------------------------------------- |
+| PSTAR        | 1            | Hydrogen (proton)                                       |
+| ASTAR        | 2            | Helium (alpha)                                          |
+| ICRU49       | 1, 2         | Hydrogen, Helium                                        |
+| ICRU73       | 3–18         | Li, Be, B, C, N, O, F, Ne, Na, Mg, Al, Si, P, S, Cl, Ar |
+| MSTAR (base) | 2            | Helium — used as base for parametric scaling            |
+| ESTAR        | 1001         | Electron (special ID, not an atomic number)             |
 
 Across all tabulated databases: **19 unique ions** (Z=1, Z=2, Z=3–18, electron).
 
@@ -172,12 +172,12 @@ of the selected program; the ~112 figure applies to `DEDX_DEFAULT` only.
 
 ### 4.1 Counts from `dedx_elements.h`
 
-| Category | Count | ID range |
-|----------|-------|----------|
-| Elemental (Z=1–98) | 98 | 1–98 |
-| Compound/mixture | 180 | 99–278 |
-| Special (Graphite) | 1 | 906 |
-| **Total** | **279** | — |
+| Category           | Count   | ID range |
+| ------------------ | ------- | -------- |
+| Elemental (Z=1–98) | 98      | 1–98     |
+| Compound/mixture   | 180     | 99–278   |
+| Special (Graphite) | 1       | 906      |
+| **Total**          | **279** | —        |
 
 The spec claims ~280 materials. **CLOSE: 279 defined.** The discrepancy is negligible.
 
@@ -185,13 +185,13 @@ The spec claims ~280 materials. **CLOSE: 279 defined.** The discrepancy is negli
 
 Not all 279 materials are available for every program. Tabulated databases cover:
 
-| Program | Targets available |
-|---------|-----------------|
-| ASTAR, PSTAR, ICRU49 | 74 |
-| ESTAR | 76 |
-| MSTAR | 78 |
-| ICRU73 | 56 |
-| DEDX\_DEFAULT (Bethe) | all 279 (parametric — no restriction) |
+| Program              | Targets available                     |
+| -------------------- | ------------------------------------- |
+| ASTAR, PSTAR, ICRU49 | 74                                    |
+| ESTAR                | 76                                    |
+| MSTAR                | 78                                    |
+| ICRU73               | 56                                    |
+| DEDX_DEFAULT (Bethe) | all 279 (parametric — no restriction) |
 
 ESTAR covers 2 more materials than ASTAR/PSTAR (includes e.g. Boron Z=5, Silicon oxide).
 ICRU73 covers significantly fewer (56 vs 74–78) — it focuses on medically and
@@ -215,16 +215,17 @@ aggregate-state UI selector is shown in Advanced Options.
 
 ### 5.1 Per-program ranges
 
-| Program | Min energy | Max energy | Notes |
-|---------|-----------|-----------|-------|
-| ASTAR | **250 eV/nucl** | 250 MeV/nucl | Lowest minimum of any program |
-| PSTAR | 1 keV/nucl | **10 GeV/nucl** | Highest maximum |
-| ESTAR | 1 keV | **10 GeV** | In MeV total (not per nucleon) |
-| MSTAR | 1 keV/nucl | 4 GeV/nucl | — |
-| ICRU73 | 25 keV/nucl | 1 GeV/nucl | Narrowest range |
-| ICRU49 | 250 eV/nucl | 10 GeV/nucl | Combined: alpha from 250 eV/nucl, proton to 10 GeV/nucl |
+| Program | Min energy      | Max energy      | Notes                                                   |
+| ------- | --------------- | --------------- | ------------------------------------------------------- |
+| ASTAR   | **250 eV/nucl** | 250 MeV/nucl    | Lowest minimum of any program                           |
+| PSTAR   | 1 keV/nucl      | **10 GeV/nucl** | Highest maximum                                         |
+| ESTAR   | 1 keV           | **10 GeV**      | In MeV total (not per nucleon)                          |
+| MSTAR   | 1 keV/nucl      | 4 GeV/nucl      | —                                                       |
+| ICRU73  | 25 keV/nucl     | 1 GeV/nucl      | Narrowest range                                         |
+| ICRU49  | 250 eV/nucl     | 10 GeV/nucl     | Combined: alpha from 250 eV/nucl, proton to 10 GeV/nucl |
 
 The spec mentions an energy range of "~10 eV to ~10 GeV". **MATCH with qualification:**
+
 - No tabulated program starts as low as 10 eV. The minimum is 250 eV/nucl (ASTAR, ICRU49 alpha).
 - The 10 GeV maximum is reached by PSTAR, ESTAR, and ICRU49 (proton).
 - The Bethe parametric program has no fixed bounds.
@@ -245,17 +246,17 @@ All other programs use MeV/nucl (kinetic energy per nucleon of the projectile io
 All unit claims from `06-wasm-api-contract.md` and `unit-handling.md` have been
 verified against C source:
 
-| Quantity | C-level unit | Source | Status |
-|----------|-------------|--------|--------|
-| Stopping power output | MeV·cm²/g | `dedx_wrappers.h` docstring | ✓ Confirmed |
-| Energy input (ions) | MeV/nucl | `dedx_wrappers.h`, `dedx.h` | ✓ Confirmed |
-| Energy input (ESTAR electron) | MeV | `dedx.h` + ESTAR comment | ✓ Confirmed |
-| CSDA range output | g/cm² | `dedx_wrappers.h` | ✓ Confirmed |
-| Material density | g/cm³ | `dedx_metadata.h` + `dedx_tools.h` | ✓ Confirmed |
-| I-value (mean excitation potential) | eV | `dedx.h` + `dedx_metadata.h` | ✓ Confirmed |
-| Composition | [Z, mass\_fraction] | `dedx.h` (`dedx_get_composition`) | ✓ Confirmed |
-| Inverse stopping power input | MeV·cm²/g | `dedx_tools.h` | ✓ Confirmed |
-| Inverse CSDA range input | g/cm² | `dedx_tools.h` | ✓ Confirmed |
+| Quantity                            | C-level unit        | Source                             | Status      |
+| ----------------------------------- | ------------------- | ---------------------------------- | ----------- |
+| Stopping power output               | MeV·cm²/g           | `dedx_wrappers.h` docstring        | ✓ Confirmed |
+| Energy input (ions)                 | MeV/nucl            | `dedx_wrappers.h`, `dedx.h`        | ✓ Confirmed |
+| Energy input (ESTAR electron)       | MeV                 | `dedx.h` + ESTAR comment           | ✓ Confirmed |
+| CSDA range output                   | g/cm²               | `dedx_wrappers.h`                  | ✓ Confirmed |
+| Material density                    | g/cm³               | `dedx_metadata.h` + `dedx_tools.h` | ✓ Confirmed |
+| I-value (mean excitation potential) | eV                  | `dedx.h` + `dedx_metadata.h`       | ✓ Confirmed |
+| Composition                         | [Z, mass\_fraction] | `dedx.h` (`dedx_get_composition`)  | ✓ Confirmed |
+| Inverse stopping power input        | MeV·cm²/g           | `dedx_tools.h`                     | ✓ Confirmed |
+| Inverse CSDA range input            | g/cm²               | `dedx_tools.h`                     | ✓ Confirmed |
 
 **Density range** (from 285 embedded metadata rows): 8.4×10⁻⁵ – 22.6 g/cm³
 **I-value range**: 19.2 – 966.0 eV
@@ -268,15 +269,15 @@ No unit inconsistencies found between headers and the WASM API contract.
 
 ### 7.1 Raw data
 
-| Table | Unique? | Raw size |
-|-------|---------|---------|
-| ASTAR | yes | 35.3 KB |
-| PSTAR | yes | 38.4 KB |
-| ESTAR | yes | 39.2 KB |
-| MSTAR | yes | 40.2 KB |
-| ICRU73 | yes (shared by ICRU73\_OLD) | 185.5 KB |
-| ICRU49 (proton + alpha) | yes | 73.7 KB |
-| **Total raw floats** | | **412.3 KB** |
+| Table                   | Unique?                    | Raw size     |
+| ----------------------- | -------------------------- | ------------ |
+| ASTAR                   | yes                        | 35.3 KB      |
+| PSTAR                   | yes                        | 38.4 KB      |
+| ESTAR                   | yes                        | 39.2 KB      |
+| MSTAR                   | yes                        | 40.2 KB      |
+| ICRU73                  | yes (shared by ICRU73_OLD) | 185.5 KB     |
+| ICRU49 (proton + alpha) | yes                        | 73.7 KB      |
+| **Total raw floats**    |                            | **412.3 KB** |
 
 ### 7.2 What the 1.5 MB `.data` sidecar actually contained
 
@@ -293,17 +294,18 @@ from its compiled-in static arrays the whole time.
 With `--preload-file` removed, the Stage 3 WASM build produces the following measured
 artifacts:
 
-| File | Measured size | Purpose |
-|------|---------------|---------|
-| `libdedx.mjs` | 13 KB | Emscripten module + loader JS |
-| `libdedx.wasm` | 457 KB | Compiled C code + 412 KB static arrays |
-| ~~`libdedx.data`~~ | ~~1.5 MB~~ | **Not needed** |
+| File               | Measured size | Purpose                                |
+| ------------------ | ------------- | -------------------------------------- |
+| `libdedx.mjs`      | 13 KB         | Emscripten module + loader JS          |
+| `libdedx.wasm`     | 457 KB        | Compiled C code + 412 KB static arrays |
+| ~~`libdedx.data`~~ | ~~1.5 MB~~    | **Not needed**                         |
 
 The total download is reduced from ~1.65 MB to ~470 KB (before gzip compression).
 
 ### 7.4 Per-program splitting — not recommended
 
 A per-program split (one WASM binary per program) would:
+
 - Require multiple module instances sharing no memory
 - Complicate the WASM API contract (must know which binary to load before selection)
 - Save at most 185 KB (ICRU73) per avoided load, versus the ~160 KB fixed loader overhead
@@ -316,31 +318,31 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 
 ## 8. Spec Cross-check Summary
 
-*Updated after Phase 2 (2026-04-15) with runtime-confirmed values.*
+_Updated after Phase 2 (2026-04-15) with runtime-confirmed values._
 
-| Spec claim | Phase 1 (static) | Phase 2 (runtime) | Status |
-|------------|------------------|--------------------|--------|
-| ~10 programs | 9 real + 1 auto + 1 reserved + 2 Bethe | 10 returned by `dedx_get_program_list()` | **MATCH** |
-| ~280 materials | 279 in `dedx_elements.h` | 279 via DEFAULT | **MATCH** |
-| 29 gas targets | 29 in `dedx_embedded_gas_targets` | — (not runtime-tested) | **MATCH** |
-| Energy 10 eV – 10 GeV | 250 eV/nucl – 10 GeV/nucl tabulated | Min 2.5×10⁻⁴ MeV/nucl; max 10 GeV | **MATCH with note** |
-| ~240 particles | 19 tabulated; DEFAULT: 112 (Z=1–112) | MSTAR: Z=2–18; DEFAULT: Z=1–112 | **NEEDS CLARIFICATION** |
-| MSTAR modes A/B/C/D/G/H | All 6 confirmed in `dedx.h` | — (not runtime-tested) | **MATCH** |
-| ESTAR support | Header present but not compiled | Returns `DEDX_ERR_ESTAR_NOT_IMPL` | **NOT IMPLEMENTED** |
-| Density g/cm³ | Confirmed in `dedx_metadata.h` | — | **MATCH** |
-| I-value eV | Confirmed in `dedx_metadata.h` | — | **MATCH** |
-| PSTAR H₂O ref STP | 7.3 MeV·cm²/g (NIST) | 7.28614 MeV·cm²/g (Δ −0.19%) | **MATCH** |
+| Spec claim              | Phase 1 (static)                       | Phase 2 (runtime)                        | Status                  |
+| ----------------------- | -------------------------------------- | ---------------------------------------- | ----------------------- |
+| ~10 programs            | 9 real + 1 auto + 1 reserved + 2 Bethe | 10 returned by `dedx_get_program_list()` | **MATCH**               |
+| ~280 materials          | 279 in `dedx_elements.h`               | 279 via DEFAULT                          | **MATCH**               |
+| 29 gas targets          | 29 in `dedx_embedded_gas_targets`      | — (not runtime-tested)                   | **MATCH**               |
+| Energy 10 eV – 10 GeV   | 250 eV/nucl – 10 GeV/nucl tabulated    | Min 2.5×10⁻⁴ MeV/nucl; max 10 GeV        | **MATCH with note**     |
+| ~240 particles          | 19 tabulated; DEFAULT: 112 (Z=1–112)   | MSTAR: Z=2–18; DEFAULT: Z=1–112          | **NEEDS CLARIFICATION** |
+| MSTAR modes A/B/C/D/G/H | All 6 confirmed in `dedx.h`            | — (not runtime-tested)                   | **MATCH**               |
+| ESTAR support           | Header present but not compiled        | Returns `DEDX_ERR_ESTAR_NOT_IMPL`        | **NOT IMPLEMENTED**     |
+| Density g/cm³           | Confirmed in `dedx_metadata.h`         | —                                        | **MATCH**               |
+| I-value eV              | Confirmed in `dedx_metadata.h`         | —                                        | **MATCH**               |
+| PSTAR H₂O ref STP       | 7.3 MeV·cm²/g (NIST)                   | 7.28614 MeV·cm²/g (Δ −0.19%)             | **MATCH**               |
 
 ---
 
 ## 9. Required Spec / ADR Amendments
 
-| Document | Amendment |
-|----------|-----------|
-| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`. Build produces `.mjs` + `.wasm` only. Add finding from Phase 1 analysis. |
-| `docs/04-feature-specs/entity-selection.md` | Clarify that particle count (~240) applies only to DEDX\_DEFAULT/MSTAR parametric path; tabulated programs cover 1–16 ions each. |
-| `docs/06-wasm-api-contract.md` | Note that `DEDX_ICRU` (id=9) is an auto-selector and must be excluded from program list queries. |
-| `docs/11-prototyping-spikes.md` | Append Stage 2.6 gate: Phase 1 complete; ESTAR open question → Phase 2. |
+| Document                                    | Amendment                                                                                                                       |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`. Build produces `.mjs` + `.wasm` only. Add finding from Phase 1 analysis.                               |
+| `docs/04-feature-specs/entity-selection.md` | Clarify that particle count (~240) applies only to DEDX_DEFAULT/MSTAR parametric path; tabulated programs cover 1–16 ions each. |
+| `docs/06-wasm-api-contract.md`              | Note that `DEDX_ICRU` (id=9) is an auto-selector and must be excluded from program list queries.                                |
+| `docs/11-prototyping-spikes.md`             | Append Stage 2.6 gate: Phase 1 complete; ESTAR open question → Phase 2.                                                         |
 
 ---
 
@@ -355,11 +357,11 @@ removing `--preload-file` already saves 1.5 MB. Further splitting is premature.
 
 ### 10.1 Build artifacts (no .data sidecar)
 
-| File | Size | Notes |
-|------|------|-------|
-| `libdedx.mjs` | 13 KB | Emscripten module loader |
-| `libdedx.wasm` | 457 KB | Compiled C + 412 KB static arrays |
-| ~~`libdedx.data`~~ | — | **Not present** — confirmed unnecessary |
+| File               | Size   | Notes                                   |
+| ------------------ | ------ | --------------------------------------- |
+| `libdedx.mjs`      | 13 KB  | Emscripten module loader                |
+| `libdedx.wasm`     | 457 KB | Compiled C + 412 KB static arrays       |
+| ~~`libdedx.data`~~ | —      | **Not present** — confirmed unnecessary |
 
 **Emscripten note (build fix):** Emscripten 5.0.5 requires JSON-quoted function names in
 `EXPORTED_FUNCTIONS`: `["_func1","_func2"]` rather than the old bracket-only format
@@ -375,6 +377,7 @@ This was the open question from Phase 1. The answer is more definitive than expe
 problem at all.
 
 Evidence from static analysis (`dedx.c` lines 587–589):
+
 ```c
 } else if (prog == DEDX_ESTAR) {
     *err = DEDX_ERR_ESTAR_NOT_IMPL;
@@ -383,6 +386,7 @@ Evidence from static analysis (`dedx.c` lines 587–589):
 ```
 
 Runtime confirmation:
+
 ```
 dedx_get_stp_table_size(ESTAR=3, electron=1001, Water=276) = -1
 ```
@@ -392,6 +396,7 @@ The `dedx_estar.h` header exists and contains the full tabulated data (132 energ
 76 targets) but is never compiled in by `dedx_embedded_data.c` and never used.
 
 **Implication for ADR 003:** `--preload-file` is doubly unnecessary for ESTAR:
+
 1. The raw `.dat` files are never read anyway (Phase 1 finding: zero `fopen()` calls).
 2. ESTAR implementation is missing in the calculation path (`find_data()` early-returns).
 
@@ -409,18 +414,18 @@ The UI must treat ESTAR as an incompatible program for all particle/material com
 
 10 programs returned by `dedx_get_program_list()`:
 
-| ID | Name | Min energy (ion=1) | Max energy (ion=1) |
-|----|------|-----------|---------|
-| 1 | ASTAR | 2.50×10⁻⁴ MeV/nucl | 2.50×10² MeV/nucl |
-| 2 | PSTAR | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
-| 3 | ESTAR | 1.00×10⁻³ MeV *(hardcoded — unimplemented)* | 1.00×10⁴ MeV |
-| 4 | MSTAR | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
-| 5 | ICRU73\_OLD | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
-| 6 | ICRU73 | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
-| 7 | ICRU49 | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
-| 9 | ICRU | 1.00×10⁻³ MeV/nucl | 1.00×10⁴ MeV/nucl |
-| 100 | DEFAULT | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
-| 101 | BETHE\_EXT00 | 1.00×10⁻³ MeV/nucl | 1.00×10³ MeV/nucl |
+| ID  | Name        | Min energy (ion=1)                          | Max energy (ion=1) |
+| --- | ----------- | ------------------------------------------- | ------------------ |
+| 1   | ASTAR       | 2.50×10⁻⁴ MeV/nucl                          | 2.50×10² MeV/nucl  |
+| 2   | PSTAR       | 1.00×10⁻³ MeV/nucl                          | 1.00×10⁴ MeV/nucl  |
+| 3   | ESTAR       | 1.00×10⁻³ MeV _(hardcoded — unimplemented)_ | 1.00×10⁴ MeV       |
+| 4   | MSTAR       | 1.00×10⁻³ MeV/nucl                          | 1.00×10³ MeV/nucl  |
+| 5   | ICRU73_OLD  | 1.00×10⁻³ MeV/nucl                          | 1.00×10⁴ MeV/nucl  |
+| 6   | ICRU73      | 1.00×10⁻³ MeV/nucl                          | 1.00×10⁴ MeV/nucl  |
+| 7   | ICRU49      | 1.00×10⁻³ MeV/nucl                          | 1.00×10⁴ MeV/nucl  |
+| 9   | ICRU        | 1.00×10⁻³ MeV/nucl                          | 1.00×10⁴ MeV/nucl  |
+| 100 | DEFAULT     | 1.00×10⁻³ MeV/nucl                          | 1.00×10³ MeV/nucl  |
+| 101 | BETHE_EXT00 | 1.00×10⁻³ MeV/nucl                          | 1.00×10³ MeV/nucl  |
 
 Note: energy range queried with `ion=1` (proton). For programs that don't support proton
 (ICRU73: Z=3–18), the switch-case default values are returned rather than the actual
@@ -451,20 +456,20 @@ in `dedx_get_program_list()`).
 
 ### 10.5 Runtime material counts
 
-| Program | Materials (runtime) | Notes |
-|---------|-------------------|-------|
-| ASTAR | 78 | Phase 1 static: 74 (target_ids array size) |
-| PSTAR | 78 | Phase 1 static: 74 |
-| ESTAR | 0 | Unimplemented |
-| MSTAR | 78 | Phase 1 static: 78 ✓ |
-| ICRU73\_OLD | 78 | Phase 1 static: 56 |
-| ICRU73 | 78 | Phase 1 static: 56 |
-| ICRU49 | 78 | Phase 1 static: 74 |
-| DEFAULT | 279 | Parametric — all materials |
+| Program    | Materials (runtime) | Notes                                      |
+| ---------- | ------------------- | ------------------------------------------ |
+| ASTAR      | 78                  | Phase 1 static: 74 (target_ids array size) |
+| PSTAR      | 78                  | Phase 1 static: 74                         |
+| ESTAR      | 0                   | Unimplemented                              |
+| MSTAR      | 78                  | Phase 1 static: 78 ✓                       |
+| ICRU73_OLD | 78                  | Phase 1 static: 56                         |
+| ICRU73     | 78                  | Phase 1 static: 56                         |
+| ICRU49     | 78                  | Phase 1 static: 74                         |
+| DEFAULT    | 279                 | Parametric — all materials                 |
 
 **Discrepancy with Phase 1:** `dedx_get_material_list()` returns 78 for all tabulated
 programs regardless of actual tabulated coverage. The function appears to return the set
-of materials that *have density/metadata* (ICRU-relevant subset) rather than strictly
+of materials that _have density/metadata_ (ICRU-relevant subset) rather than strictly
 those with tabulated stopping power data. When an ICRU73 calculation is requested for
 a material not in its 56-target tabulation, libdedx likely falls back to PSTAR or
 Bethe internally. The runtime value (78) is authoritative for what the API exposes.
@@ -495,27 +500,27 @@ Node.js float) introduces no significant precision loss.
 
 The Phase 1 amendment list from §9 is updated with these new findings:
 
-| Document | Amendment |
-|----------|-----------|
-| `docs/decisions/003-wasm-build-pipeline.md` | Already listed in §9. Add Phase 2 build note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`; actual WASM size 457 KB. |
-| `docs/04-feature-specs/entity-selection.md` | ESTAR must be treated as incompatible for all particle/material combinations (grey out in UI). |
-| `docs/06-wasm-api-contract.md` | ESTAR: program ID 3 is present in program list but returns `DEDX_ERR_ESTAR_NOT_IMPL`. MSTAR: `dedx_get_ion_list()` returns Z=2–18 only; wrapper must expose Z=1–98 from spec knowledge. Material names: all-caps from C API; display formatting required in wrapper. Electron (1001): name not available from C API; hard-code `"Electron"` in wrapper. DEFAULT: `dedx_get_ion_list()` returns Z=1–112 (not Z=1–98 as previously assumed). |
-| `docs/04-feature-specs/entity-selection.md` | MSTAR ion coverage for Z>18 is supported via parametric path but not discoverable from `dedx_get_ion_list()`. DEFAULT covers Z=1–112, not Z=1–98. |
+| Document                                    | Amendment                                                                                                                                                                                                                                                                                                                                                                                                                                  |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `docs/decisions/003-wasm-build-pipeline.md` | Already listed in §9. Add Phase 2 build note: Emscripten 5.x requires JSON-quoted `EXPORTED_FUNCTIONS`; actual WASM size 457 KB.                                                                                                                                                                                                                                                                                                           |
+| `docs/04-feature-specs/entity-selection.md` | ESTAR must be treated as incompatible for all particle/material combinations (grey out in UI).                                                                                                                                                                                                                                                                                                                                             |
+| `docs/06-wasm-api-contract.md`              | ESTAR: program ID 3 is present in program list but returns `DEDX_ERR_ESTAR_NOT_IMPL`. MSTAR: `dedx_get_ion_list()` returns Z=2–18 only; wrapper must expose Z=1–98 from spec knowledge. Material names: all-caps from C API; display formatting required in wrapper. Electron (1001): name not available from C API; hard-code `"Electron"` in wrapper. DEFAULT: `dedx_get_ion_list()` returns Z=1–112 (not Z=1–98 as previously assumed). |
+| `docs/04-feature-specs/entity-selection.md` | MSTAR ion coverage for Z>18 is supported via parametric path but not discoverable from `dedx_get_ion_list()`. DEFAULT covers Z=1–112, not Z=1–98.                                                                                                                                                                                                                                                                                          |
 
 ### 10.9 I-value spot-checks (Task 2.9)
 
 8 materials tested. All return valid I-values in eV with error code 0:
 
-| Material | ID | I-value (eV) | Expected (eV) | Note |
-|----------|----|-------------|---------------|------|
-| Hydrogen | 1 | 19.2 | 19.2 | ✓ Exact match |
-| Carbon | 6 | 70.0 | 78.0 | ~10.3% lower |
-| Aluminum | 13 | 166.0 | 166.0 | ✓ Exact match |
-| Copper | 29 | 322.0 | 322.0 | ✓ Exact match |
-| Gold | 79 | 790.0 | 790.0 | ✓ Exact match |
-| Lead | 82 | 823.0 | 823.0 | ✓ Exact match |
-| Water | 276 | 75.0 | 75.0 | ✓ Exact match |
-| Air | 104 | 85.7 | 85.7 | ✓ Exact match |
+| Material | ID  | I-value (eV) | Expected (eV) | Note          |
+| -------- | --- | ------------ | ------------- | ------------- |
+| Hydrogen | 1   | 19.2         | 19.2          | ✓ Exact match |
+| Carbon   | 6   | 70.0         | 78.0          | ~10.3% lower  |
+| Aluminum | 13  | 166.0        | 166.0         | ✓ Exact match |
+| Copper   | 29  | 322.0        | 322.0         | ✓ Exact match |
+| Gold     | 79  | 790.0        | 790.0         | ✓ Exact match |
+| Lead     | 82  | 823.0        | 823.0         | ✓ Exact match |
+| Water    | 276 | 75.0         | 75.0          | ✓ Exact match |
+| Air      | 104 | 85.7         | 85.7          | ✓ Exact match |
 
 **Unit confirmed:** eV (matches `06-wasm-api-contract.md` and `dedx_metadata.h`).
 
@@ -523,14 +528,14 @@ The Phase 1 amendment list from §9 is updated with these new findings:
 
 6 materials tested via `dedx_internal_read_density()`. All return valid densities:
 
-| Material | ID | Density (g/cm³) | Expected (g/cm³) | Note |
-|----------|----|----------------|------------------|------|
-| Hydrogen | 1 | 8.375×10⁻⁵ | 8.375×10⁻⁵ | Gas at STP |
-| Aluminum | 13 | 2.699 | 2.699 | ✓ |
-| Copper | 29 | 8.960 | 8.96 | ✓ |
-| Gold | 79 | 19.32 | 19.32 | ✓ |
-| Water | 276 | 1.000 | 1.0 | ✓ |
-| Air | 104 | 1.205×10⁻³ | 1.205×10⁻³ | Gas at STP |
+| Material | ID  | Density (g/cm³) | Expected (g/cm³) | Note       |
+| -------- | --- | --------------- | ---------------- | ---------- |
+| Hydrogen | 1   | 8.375×10⁻⁵      | 8.375×10⁻⁵       | Gas at STP |
+| Aluminum | 13  | 2.699           | 2.699            | ✓          |
+| Copper   | 29  | 8.960           | 8.96             | ✓          |
+| Gold     | 79  | 19.32           | 19.32            | ✓          |
+| Water    | 276 | 1.000           | 1.0              | ✓          |
+| Air      | 104 | 1.205×10⁻³      | 1.205×10⁻³       | Gas at STP |
 
 **Unit confirmed:** g/cm³ (matches `06-wasm-api-contract.md` and `dedx_metadata.h`).
 

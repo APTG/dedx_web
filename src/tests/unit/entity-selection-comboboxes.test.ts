@@ -280,16 +280,15 @@ describe("EntitySelectionComboboxes", () => {
     render(EntitySelectionComboboxes, { props: { state } });
 
     const resetButton = screen.getByRole("button", { name: /restore defaults/i });
-    expect(resetButton).toHaveAttribute(
-      "title",
-      "Restores Proton / Water / Auto-select"
-    );
+    expect(resetButton).toHaveAttribute("title", "Restores Proton / Water / Auto-select");
   });
 
   test("Restore defaults button uses secondary styling", () => {
     const { container } = render(EntitySelectionComboboxes, { props: { state } });
 
-    const resetButton = container.querySelector('button[title="Restores Proton / Water / Auto-select"]');
+    const resetButton = container.querySelector(
+      'button[title="Restores Proton / Water / Auto-select"]',
+    );
     expect(resetButton).toHaveClass("text-sm");
     expect(resetButton).toHaveClass("text-muted-foreground");
   });
@@ -478,7 +477,9 @@ describe("EntitySelectionComboboxes", () => {
       const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
       expect(commonGroup).toBeInTheDocument();
       expect(within(commonGroup).getByRole("option", { name: /proton/i })).toBeInTheDocument();
-      expect(within(commonGroup).getByRole("option", { name: /alpha particle/i })).toBeInTheDocument();
+      expect(
+        within(commonGroup).getByRole("option", { name: /alpha particle/i }),
+      ).toBeInTheDocument();
       expect(within(commonGroup).getByRole("option", { name: /electron/i })).toBeInTheDocument();
     });
 
@@ -580,7 +581,16 @@ describe("Material phase badge", () => {
         return [{ id: 7, name: "ICRU 49", version: "1.0" }];
       }
       getParticles(programId: number): ParticleEntity[] {
-        return [{ id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H", aliases: ["proton"] }];
+        return [
+          {
+            id: 1,
+            name: "Hydrogen",
+            massNumber: 1,
+            atomicMass: 1.007,
+            symbol: "H",
+            aliases: ["proton"],
+          },
+        ];
       }
       getMaterials(programId: number): MaterialEntity[] {
         return [

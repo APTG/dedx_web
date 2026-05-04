@@ -32,6 +32,7 @@ component only mutates the local prop copy — it never reaches the outer compon
 the full unfiltered list.
 
 Fix applied:
+
 - Added `@theme inline` + `:root` / `.dark` CSS variable definitions to `app.css`.
 - Removed broken `bind:inputValue` from `<Combobox.Root>`.
 - Added `oninput` handler directly on `<Combobox.Input>` to update the Svelte

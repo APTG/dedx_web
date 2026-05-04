@@ -73,9 +73,7 @@ The architecture document states:
 
 > ```ts
 > // calculation.svelte.ts
-> export const dEdxResults = $derived(
->   energies.value.map((e) => compute(e, selectedProgram.value))
-> );
+> export const dEdxResults = $derived(energies.value.map((e) => compute(e, selectedProgram.value)));
 > ```
 
 This pattern **does not compile in Svelte 5**. The following amendment is required:

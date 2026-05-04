@@ -16,7 +16,7 @@ Investigated root causes by reading `dedx_program_const.h` (the C material name 
 
 **Root cause 1 — ALL-CAPS names:** `dedx_get_material_name()` returns ALL-CAPS strings (e.g., "WATER", "CARBONDIOXIDE"). The WASM API contract (§10.1) already documented that title-case must be applied by the TypeScript wrapper, but `libdedx.ts` stored raw names without any formatting.
 
-**Root cause 2 — ID prefix in label:** `entity-selection-comboboxes.svelte` built labels as `` `${material.id}  ${material.name}` ``, producing "276 WATER". The spec's compact-mode wireframe already showed "Water (liquid)" without an ID, but the display-format table said "ID  Name". The user explicitly requested name-only display.
+**Root cause 2 — ID prefix in label:** `entity-selection-comboboxes.svelte` built labels as `` `${material.id}  ${material.name}` ``, producing "276 WATER". The spec's compact-mode wireframe already showed "Water (liquid)" without an ID, but the display-format table said "ID Name". The user explicitly requested name-only display.
 
 **Root cause 3 — Missing qualifier:** Simple title-case converts "WATER" → "Water" but not "Water (liquid)". Disambiguation between water and water vapor requires an override table. This was also the case for ~80 run-on compound names (e.g., "CARBONDIOXIDE" → "Carbon Dioxide") and ICRP/ICRU suffixed tissue names (e.g., "BLOOD_ICRP" → "Blood (ICRP)").
 
@@ -24,7 +24,7 @@ Investigated root causes by reading `dedx_program_const.h` (the C material name 
 
 **Actions taken:**
 
-1. **Updated `docs/04-feature-specs/entity-selection.md`** — changed Material Display format from "ID  Name" to "Name only"; updated compact desktop wireframe to 3-column single row; updated full-panel wireframes to remove ID from example list items; clarified that ID is still a search keyword.
+1. **Updated `docs/04-feature-specs/entity-selection.md`** — changed Material Display format from "ID Name" to "Name only"; updated compact desktop wireframe to 3-column single row; updated full-panel wireframes to remove ID from example list items; clarified that ID is still a search keyword.
 
 2. **Updated `docs/06-wasm-api-contract.md`** — added `dedx_get_material_friendly_name()` to §4.5 and §11.1; updated §10.1 to describe the new formatting strategy (override table + title-case fallback).
 

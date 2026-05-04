@@ -20,9 +20,7 @@
     return {
       entity: particle,
       // Electron is intentionally non-selectable until ESTAR is wired up.
-      available:
-        particle.id !== 1001 &&
-        state.availableParticles.some((p) => p.id === particle.id),
+      available: particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
       label: getParticleLabel(particle),
       description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
       searchText: getParticleSearchText(particle),
@@ -32,11 +30,7 @@
   const commonParticles = $derived.by(() =>
     state.allParticles
       .filter((p) => COMMON_PARTICLE_IDS.has(p.id))
-      .sort(
-        (a, b) =>
-          COMMON_PARTICLE_ORDER.indexOf(a.id) -
-          COMMON_PARTICLE_ORDER.indexOf(b.id),
-      )
+      .sort((a, b) => COMMON_PARTICLE_ORDER.indexOf(a.id) - COMMON_PARTICLE_ORDER.indexOf(b.id))
       .map(toParticleItem),
   );
 

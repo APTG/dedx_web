@@ -31,6 +31,7 @@ User reported:
    and `pnpm test -- --run` (493/493 unit tests passing).
 5. Ran `pnpm exec playwright test` with a 300 s wall-clock cap. 58 passed,
    9 failed, 4 skipped.
+
 ### Prompt 3: Plot canvas blank, JSROOT undefined, layout broken
 
 User screenshot showed the `/plot` page with three new symptoms:
@@ -114,6 +115,7 @@ selected and the preview lands, `computeAxisRanges` produces real
 log-rounded ranges and JSROOT redraws with grid lines. No code change
 needed here — it self-heals as soon as the WASM call resolves, which is
 exactly the user's observation.
+
 ### Prompt 2: Use timeouts so E2E doesn't hang
 
 **AI response**: re-ran with `timeout 300 pnpm exec playwright test
@@ -211,7 +213,7 @@ this session's changes.
   even if the previous draw was still in flight (which is common when the
   user navigates Calculator → Plot → Calculator → Plot before the first
   draw resolves). JSROOT then logs `pad drawing is not completed when
-  cleanup is called` and `failure, should not happen`. Fixed by chaining
+cleanup is called` and `failure, should not happen`. Fixed by chaining
   every draw and every teardown onto a module-local `drawChain` so that
   draw and cleanup never overlap on the same element. Also removed the
   pre-emptive `JSROOT.cleanup(el)` from inside `drawPlot()` (the chained
@@ -231,10 +233,10 @@ this session's changes.
     "+ Add row" button is not rendered (test expects it from PR #379).
   - `tests/e2e/complex-interactions.spec.ts:306` — same
     `getByRole("option", { name: /alpha particle/i })` timeout.
-  Reproduced on clean HEAD (after `git stash`-ing this session's edits),
-  so these are existing regressions on `qwen/stage-5-jsroot-plot`. Should
-  be fixed in a dedicated session that revisits the entity-combobox
-  default selection and the Add-row UI.
+    Reproduced on clean HEAD (after `git stash`-ing this session's edits),
+    so these are existing regressions on `qwen/stage-5-jsroot-plot`. Should
+    be fixed in a dedicated session that revisits the entity-combobox
+    default selection and the Add-row UI.
 
 ---
 

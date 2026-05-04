@@ -11,6 +11,7 @@ produce a markdown summary report; determine WASM bundle strategy (monolithic vs
 per-program). Plan only — no implementation.
 
 **AI response:** Explored the repository structure and read:
+
 - All `libdedx/include/` headers (`dedx.h`, `dedx_elements.h`, `dedx_tools.h`, `dedx_wrappers.h`)
 - All `libdedx/src/data/embedded/*.h` data tables
 - `docs/06-wasm-api-contract.md`
@@ -19,6 +20,7 @@ per-program). Plan only — no implementation.
 - `build_wasm.sh` (legacy exported functions list)
 
 Produced a four-phase plan:
+
 - **Phase 1** — Static C header analysis (Python script, no compilation)
 - **Phase 2** — Live WASM runtime queries (minimal SvelteKit app, no recompilation)
 - **Phase 3** — Bundle size analysis (per-program vs monolithic comparison)
@@ -34,6 +36,7 @@ a self-contained Python 3 script that performs static analysis of the libdedx C
 headers without any compilation.
 
 **Parsing targets:**
+
 - `libdedx/include/dedx.h` — program enum constants, special particle `#define`s
 - `libdedx/include/dedx_elements.h` — material/element enum (parsed with implicit-value tracking)
 - `libdedx/src/data/embedded/dedx_{astar,pstar,estar,mstar,icru73,icru73new,icru90_*,icru_astar,icru_pstar}.h`
@@ -43,6 +46,7 @@ headers without any compilation.
   special-case Z values)
 
 **Script output:**
+
 - `prototypes/libdedx-investigation/data/headers_stats.json` — machine-readable full results
 - Colour-coded terminal summary with 8 sections
 
@@ -60,6 +64,7 @@ sub-header records.
 **AI response (this session):**
 
 Additional analysis performed before writing:
+
 - Inspected `libdedx/src/dedx_data_access.c` — confirmed **zero `fopen()` calls**;
   all data access is via `read_embedded_stopping_data()` and `read_embedded_energy_data()`.
 - Inspected `libdedx/src/dedx_embedded_data.c` — confirmed which headers are compiled in.
@@ -69,6 +74,7 @@ Additional analysis performed before writing:
   `--preload-file` is unnecessary).
 
 Files written/updated in this prompt:
+
 - `prototypes/libdedx-investigation/REPORT.md` — full investigation report (new)
 - `docs/ai-logs/2026-04-15-libdedx-investigation-phase1.md` — this file (new)
 - `docs/ai-logs/README.md` — new entry added
@@ -129,15 +135,16 @@ Files written/updated in this prompt:
 
 ### Required amendments
 
-| Document | Amendment |
-|----------|-----------|
-| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`; build produces `.mjs`+`.wasm` only |
+| Document                                    | Amendment                                                    |
+| ------------------------------------------- | ------------------------------------------------------------ |
+| `docs/decisions/003-wasm-build-pipeline.md` | Remove `--preload-file`; build produces `.mjs`+`.wasm` only  |
 | `docs/04-feature-specs/entity-selection.md` | Clarify particle count per program (tabulated vs parametric) |
-| `docs/06-wasm-api-contract.md` | Note `DEDX_ICRU` (id=9) excluded from program enumeration |
+| `docs/06-wasm-api-contract.md`              | Note `DEDX_ICRU` (id=9) excluded from program enumeration    |
 
 ### Phase 2 plan (not yet executed)
 
 Phase 2 uses the Spike 2 WASM build (recompiled without `--preload-file`) to verify:
+
 - ESTAR without `.data` sidecar (resolve the open question)
 - Runtime program/ion/material lists match static header analysis
 - Reference STP value: PSTAR H₂O at 100 MeV/nucl ≈ 7.3 MeV·cm²/g

@@ -23,7 +23,9 @@ skipIfNoWasm("LibdedxServiceImpl.calculate() — real WASM", () => {
     // the local `static/wasm/` directory rather than the default browser
     // base URL (`http://localhost:3000/wasm/...`) which doesn't exist in
     // the Node test environment.
-    const module = await factory({ locateFile: (file: string) => (file.endsWith(".wasm") ? wasmBin : file) });
+    const module = await factory({
+      locateFile: (file: string) => (file.endsWith(".wasm") ? wasmBin : file),
+    });
     service = new LibdedxServiceImpl(module);
     await service.init();
   });

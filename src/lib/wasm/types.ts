@@ -1,6 +1,6 @@
-export type EnergyUnit = 'MeV' | 'MeV/nucl' | 'MeV/u';
-export type StpUnit = 'MeV·cm²/g' | 'MeV/cm' | 'keV/µm';
-export type RangeUnit = 'g/cm²' | 'cm';
+export type EnergyUnit = "MeV" | "MeV/nucl" | "MeV/u";
+export type StpUnit = "MeV·cm²/g" | "MeV/cm" | "keV/µm";
+export type RangeUnit = "g/cm²" | "cm";
 
 export interface LibdedxEntity {
   id: number;
@@ -40,10 +40,10 @@ export interface InverseCsdaResult {
   csdaRange: number;
 }
 
-export type AggregateState = 'gas' | 'condensed';
-export type MstarMode = 'a' | 'b' | 'c' | 'd' | 'g' | 'h';
-export type InterpolationScale = 'linear' | 'log';
-export type InterpolationMethod = 'linear' | 'cubic';
+export type AggregateState = "gas" | "condensed";
+export type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
+export type InterpolationScale = "linear" | "log";
+export type InterpolationMethod = "linear" | "cubic";
 
 export interface AdvancedOptions {
   aggregateState?: AggregateState;
@@ -59,7 +59,7 @@ export interface AdvancedOptions {
 export interface CompoundElement {
   atomicNumber: number;
   fraction: number;
-  type: 'atomic' | 'weight';
+  type: "atomic" | "weight";
 }
 
 export interface CustomCompound {
@@ -71,7 +71,7 @@ export interface CustomCompound {
 
 export interface StoredCompound extends CustomCompound {
   uuid: string;
-  phase: 'gas' | 'condensed';
+  phase: "gas" | "condensed";
   timestamp: number;
 }
 
@@ -79,7 +79,7 @@ export class LibdedxError extends Error {
   code: number;
   constructor(code: number, message: string) {
     super(message);
-    this.name = 'LibdedxError';
+    this.name = "LibdedxError";
     this.code = code;
   }
 }
@@ -94,14 +94,14 @@ export interface LibdedxService {
     particleId: number,
     materialId: number,
     energies: number[],
-    options?: AdvancedOptions
+    options?: AdvancedOptions,
   ): CalculationResult;
   getPlotData(
     programId: number,
     particleId: number,
     materialId: number,
     numPoints: number,
-    logScale: boolean
+    logScale: boolean,
   ): CalculationResult;
   getMinEnergy(programId: number, particleId: number): number;
   getMaxEnergy(programId: number, particleId: number): number;

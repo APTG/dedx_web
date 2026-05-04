@@ -70,14 +70,14 @@ Key test files to read before adding yours:
 
 `CalculatedRow` (from `calculator.svelte.ts`):
 
-| Field | Type | Meaning |
-|-------|------|---------|
-| `rawInput` | `string` | What the user typed |
-| `normalizedMevNucl` | `number \| null` | Normalized energy in MeV/nucl (null if invalid) |
-| `unit` | `EnergyUnit` | Effective unit for this row (detected suffix or master unit) |
-| `status` | `'valid' \| 'invalid' \| 'out-of-range' \| 'empty'` | Row validity |
-| `stoppingPower` | `number \| null` | Computed STP in g/cm² display unit |
-| `csdaRangeCm` | `number \| null` | Computed CSDA range in cm (always cm; format on display) |
+| Field               | Type                                                | Meaning                                                      |
+| ------------------- | --------------------------------------------------- | ------------------------------------------------------------ |
+| `rawInput`          | `string`                                            | What the user typed                                          |
+| `normalizedMevNucl` | `number \| null`                                    | Normalized energy in MeV/nucl (null if invalid)              |
+| `unit`              | `EnergyUnit`                                        | Effective unit for this row (detected suffix or master unit) |
+| `status`            | `'valid' \| 'invalid' \| 'out-of-range' \| 'empty'` | Row validity                                                 |
+| `stoppingPower`     | `number \| null`                                    | Computed STP in g/cm² display unit                           |
+| `csdaRangeCm`       | `number \| null`                                    | Computed CSDA range in cm (always cm; format on display)     |
 
 `CalculatorState.stpDisplayUnit` (`StpUnit`) — the current display unit for
 stopping power (e.g. `"keV/µm"` or `"MeV·cm²/g"`).
@@ -102,11 +102,13 @@ Use this template:
 ## Session Narrative
 
 ### Prompt 1: CSV export basic mode
+
 **AI response**: <fill in as you complete tasks>
 
 ## Tasks
 
 ### Task 1 — formatCalculatorCsv() pure function + unit tests
+
 - **Status**: in progress
 - **Stage**: 6 (CSV export)
 - **Files changed**: src/lib/utils/export-csv.ts, src/tests/unit/export-csv.test.ts
@@ -114,20 +116,24 @@ Use this template:
 - **Issue**: <fill in>
 
 ### Task 2 — Global export callback wiring (ui.svelte.ts)
+
 - **Status**: in progress
-...
+  ...
 
 ### Task 3 — Calculator page registers export callback
+
 - **Status**: in progress
-...
+  ...
 
 ### Task 4 — Layout: enable Export CSV button
+
 - **Status**: in progress
-...
+  ...
 
 ### Task 5 — E2E test for CSV download
+
 - **Status**: in progress
-...
+  ...
 ```
 
 After all tasks are done:
@@ -240,8 +246,8 @@ Implementation notes:
   numeric cells.
 - For CSDA range: call `autoScaleLengthCm(csdaRangeCm)` to get the scaled value
   and unit string; use the scaled value in the data cell and the unit in the
-  column header. **Important:** the unit in the column header is the *most
-  common* unit across all rows, not per-row. For simplicity in basic mode, use
+  column header. **Important:** the unit in the column header is the _most
+  common_ unit across all rows, not per-row. For simplicity in basic mode, use
   `cm` as the fixed column header unit and output raw `csdaRangeCm` values
   (see export.md §3 for whether auto-scaling applies to CSV — read the spec).
 - For Normalized Energy: if `normalizedMevNucl` is `null`, output an empty cell.
@@ -260,6 +266,7 @@ pnpm test
 ```
 
 Commit:
+
 ```
 feat(export): add formatCalculatorCsv() and csvFilename() utility functions
 ```
@@ -287,7 +294,9 @@ describe("csvExportHandler", () => {
   });
   it("can be assigned a function and called", () => {
     let called = false;
-    csvExportHandler.value = () => { called = true; };
+    csvExportHandler.value = () => {
+      called = true;
+    };
     csvExportHandler.value?.();
     expect(called).toBe(true);
     csvExportHandler.value = null; // cleanup
@@ -363,9 +372,9 @@ describe("calculator CSV export function", () => {
       "MeV",
     );
     expect(csv).toContain("PSTAR");
-    expect(csv).toContain("proton");   // particle label, not raw name
-    expect(csv).toContain("100");      // energy value
-    expect(csv).toContain("7.289");    // stopping power
+    expect(csv).toContain("proton"); // particle label, not raw name
+    expect(csv).toContain("100"); // energy value
+    expect(csv).toContain("7.289"); // stopping power
   });
 });
 ```
@@ -403,7 +412,7 @@ callback:
       );
 
       const filename = csvFilename(
-        particle.name,  // or use getParticleLabel(particle) from particle-label.ts
+        particle.name, // or use getParticleLabel(particle) from particle-label.ts
         material.name,
       );
 
@@ -504,6 +513,7 @@ feat(layout): wire Export CSV toolbar button to csvExportHandler
 
 **Requires:** WASM binaries in `static/wasm/`. If they are absent locally, mark
 the test `test.skip` and leave a comment:
+
 ```typescript
 // Skipped when WASM binary absent. CI downloads artifact before running E2E.
 ```

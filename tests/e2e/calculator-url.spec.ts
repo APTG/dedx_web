@@ -3,7 +3,9 @@ import { test, expect } from "@playwright/test";
 test.describe("Calculator URL sync", () => {
   test("calculator state is encoded in URL after loading", async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForFunction(() => window.location.search.includes("particle="), { timeout: 10000 });
+    await page.waitForFunction(() => window.location.search.includes("particle="), {
+      timeout: 10000,
+    });
     expect(page.url()).toContain("particle=1");
     expect(page.url()).toContain("material=276");
   });

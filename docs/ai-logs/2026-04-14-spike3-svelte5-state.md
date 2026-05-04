@@ -3,6 +3,7 @@
 ## Session Narrative
 
 ### Prompt 1: Run Spike 3 (svelte5-state) prototype
+
 **AI response**: opencode (with Qwen3.5-397B) scaffolded a fresh SvelteKit 2 +
 Svelte 5 project in `prototypes/svelte5-state/` on branch `spike/svelte5-state`.
 The agent implemented:
@@ -23,7 +24,7 @@ Svelte 5 raises a compiler error when a `.svelte.ts` module exports a `$derived`
 value:
 
 > `Cannot export derived state from a module. To expose the current derived
-> value, export a function returning its value`
+value, export a function returning its value`
 > (https://svelte.dev/e/derived_invalid_export)
 
 The architecture document (`03-architecture.md §4`) contained two such exports:
@@ -56,12 +57,14 @@ Calling a compute function inside `$derived` or `$effect` registers its
 functionally identical to the originally specified `$derived` export pattern.
 
 ### Prompt 2 (implicit): verify and commit
+
 **AI response**: committed the prototype as `chore: prototype — svelte5-state`
 on branch `spike/svelte5-state`.
 
 ## Tasks
 
 ### Spike 3 — Module-Level `$state` Reactivity in `.svelte.ts`
+
 - **Status**: completed (7/9 PASS; criteria 2 & 3 FAIL with validated amendment)
 - **Stage**: 2.5
 - **Branch**: `spike/svelte5-state`
@@ -82,7 +85,7 @@ on branch `spike/svelte5-state`.
   quiet period, not on every keystroke.
 - **Decision**: SSG prerender with `@sveltejs/adapter-static` works correctly for
   `.svelte.ts` state modules — criterion 9 PASS.
-- **Amendment required**: `03-architecture.md §4` must replace `export const X = $derived(...)` 
+- **Amendment required**: `03-architecture.md §4` must replace `export const X = $derived(...)`
   patterns with `export function computeX(): T { ... }` paired with
   component-level `const x = $derived(computeX())`. Applied in the same session.
 - **Verdict**: Critical state pattern validated; compute-function alternative is

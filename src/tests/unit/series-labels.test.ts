@@ -167,10 +167,7 @@ describe("computeSeriesLabels", () => {
         materialName: "Air",
       },
     ]);
-    expect(result).toEqual([
-      "PSTAR — Proton in Water (liquid)",
-      "ICRU 90 — Carbon in Air",
-    ]);
+    expect(result).toEqual(["PSTAR — Proton in Water (liquid)", "ICRU 90 — Carbon in Air"]);
   });
 
   it("returns empty array for empty input", () => {

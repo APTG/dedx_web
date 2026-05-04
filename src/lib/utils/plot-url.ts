@@ -83,8 +83,7 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
           return { programId: parts[0], particleId: parts[1], materialId: parts[2] };
         })
         .filter(
-          (s): s is { programId: number; particleId: number; materialId: number } =>
-            s !== null,
+          (s): s is { programId: number; particleId: number; materialId: number } => s !== null,
         )
     : [];
 

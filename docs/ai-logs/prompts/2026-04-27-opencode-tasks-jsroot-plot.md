@@ -107,7 +107,7 @@ STP values are in MeV·cm²/g (mass stopping power). Energies are in MeV/nucl.
 ```typescript
 // entity-selection-panels.svelte
 interface Props {
-  state: EntitySelectionState;  // from src/lib/state/entity-selection.svelte.ts
+  state: EntitySelectionState; // from src/lib/state/entity-selection.svelte.ts
   class?: string;
 }
 ```
@@ -148,6 +148,7 @@ pnpm format                        # Prettier
 Every task that changes code must be logged. Rules in `AGENTS.md`.
 
 For the entire session (after all tasks):
+
 1. Prepend **one row** to `CHANGELOG-AI.md` table body.
 2. Create `docs/ai-logs/2026-04-27-stage5-jsroot-plot.md` (or use today's
    actual date) with the session narrative (one section per task).
@@ -405,6 +406,7 @@ import { COLOR_PALETTE } from "$lib/utils/plot-utils";
 #### `describe("computeSeriesLabels")`
 
 Use minimal stub series objects. The function signature is:
+
 ```typescript
 computeSeriesLabels(series: Array<{
   programId: number; particleId: number; materialId: number;
@@ -587,11 +589,17 @@ const mockResult: CalculationResult = {
   csdaRanges: Array.from({ length: 500 }, () => 0.5),
 };
 
-const mockSeries = (overrides: Partial<{
-  programId: number; particleId: number; materialId: number;
-  programName: string; particleName: string; materialName: string;
-  density: number;
-}> = {}) => ({
+const mockSeries = (
+  overrides: Partial<{
+    programId: number;
+    particleId: number;
+    materialId: number;
+    programName: string;
+    particleName: string;
+    materialName: string;
+    density: number;
+  }> = {},
+) => ({
   programId: 2,
   particleId: 1,
   materialId: 276,
@@ -700,7 +708,7 @@ freshState.series[0].label → "Proton in Water (liquid)"
 ### Step 3b — implement `src/lib/state/plot.svelte.ts`
 
 ```typescript
-import { $state } from "svelte";  // NOTE: runes — no import needed in .svelte.ts, but declare properly
+import { $state } from "svelte"; // NOTE: runes — no import needed in .svelte.ts, but declare properly
 ```
 
 Actually in Svelte 5 `.svelte.ts` files you do NOT import runes — they are
@@ -740,7 +748,7 @@ export interface PlotState {
   yLog: boolean;
   nextSeriesId: number;
 
-  addSeries(data: PlotSeriesData): boolean;  // returns true if added, false if duplicate
+  addSeries(data: PlotSeriesData): boolean; // returns true if added, false if duplicate
   removeSeries(seriesId: number): void;
   toggleVisibility(seriesId: number): void;
   setPreview(data: PlotSeriesData): void;
@@ -757,9 +765,7 @@ export function createPlotState(): PlotState {
   let xLog = $state(true);
   let yLog = $state(true);
   let nextSeriesId = $state(1);
-  let availableColorIndices = $state<Set<number>>(
-    new Set(COLOR_PALETTE.map((_, i) => i))
-  );
+  let availableColorIndices = $state<Set<number>>(new Set(COLOR_PALETTE.map((_, i) => i)));
 
   function recomputeLabels(): void {
     const labels = computeSeriesLabels(series);
@@ -781,7 +787,7 @@ export function createPlotState(): PlotState {
     const newSeries: PlotSeries = {
       ...data,
       seriesId: nextSeriesId,
-      label: "",  // will be set by recomputeLabels()
+      label: "", // will be set by recomputeLabels()
       color: COLOR_PALETTE[colorIndex],
       colorIndex,
       visible: true,
@@ -801,16 +807,14 @@ export function createPlotState(): PlotState {
   }
 
   function toggleVisibility(seriesId: number): void {
-    series = series.map((s) =>
-      s.seriesId === seriesId ? { ...s, visible: !s.visible } : s,
-    );
+    series = series.map((s) => (s.seriesId === seriesId ? { ...s, visible: !s.visible } : s));
   }
 
   function setPreview(data: PlotSeriesData): void {
     preview = {
       ...data,
-      seriesId: 0,  // preview always has seriesId 0
-      label: "",    // set dynamically by the page component
+      seriesId: 0, // preview always has seriesId 0
+      label: "", // set dynamically by the page component
       color: PREVIEW_COLOR,
       colorIndex: -1,
       visible: true,
@@ -844,12 +848,24 @@ export function createPlotState(): PlotState {
   }
 
   return {
-    get series() { return series; },
-    get preview() { return preview; },
-    get stpUnit() { return stpUnit; },
-    get xLog() { return xLog; },
-    get yLog() { return yLog; },
-    get nextSeriesId() { return nextSeriesId; },
+    get series() {
+      return series;
+    },
+    get preview() {
+      return preview;
+    },
+    get stpUnit() {
+      return stpUnit;
+    },
+    get xLog() {
+      return xLog;
+    },
+    get yLog() {
+      return yLog;
+    },
+    get nextSeriesId() {
+      return nextSeriesId;
+    },
     addSeries,
     removeSeries,
     toggleVisibility,
@@ -893,7 +909,10 @@ vi.mock("jsroot", () => ({
   default: {
     settings: { ZoomWheel: true, ZoomTouch: true },
     createTGraph: vi.fn((n: number, x: number[], y: number[]) => ({
-      fLineColor: 1, fLineWidth: 2, fLineStyle: 1, fTitle: "",
+      fLineColor: 1,
+      fLineWidth: 2,
+      fLineStyle: 1,
+      fTitle: "",
       InvertBit: vi.fn(),
     })),
     createTMultiGraph: vi.fn((...graphs: unknown[]) => ({
@@ -904,7 +923,9 @@ vi.mock("jsroot", () => ({
     createHistogram: vi.fn(() => ({
       fXaxis: { fTitle: "", fXmin: 0, fXmax: 1, InvertBit: vi.fn() },
       fYaxis: { fTitle: "", InvertBit: vi.fn() },
-      fMinimum: 0, fMaximum: 1, fTitle: "",
+      fMinimum: 0,
+      fMaximum: 1,
+      fTitle: "",
     })),
     draw: vi.fn(async () => ({ cleanup: vi.fn() })),
     BIT: vi.fn((n: number) => n),
@@ -963,7 +984,12 @@ Full component structure (adapt the Spike 1 prototype pattern):
   import type { StpUnit } from "$lib/wasm/types";
   import { convertStpForDisplay, buildDrawOptions } from "$lib/utils/plot-utils";
 
-  interface AxisRanges { xMin: number; xMax: number; yMin: number; yMax: number; }
+  interface AxisRanges {
+    xMin: number;
+    xMax: number;
+    yMin: number;
+    yMax: number;
+  }
 
   let {
     series,
@@ -972,14 +998,22 @@ Full component structure (adapt the Spike 1 prototype pattern):
     xLog,
     yLog,
     axisRanges,
-  }: { series: PlotSeries[]; preview: PlotSeries | null; stpUnit: StpUnit;
-       xLog: boolean; yLog: boolean; axisRanges: AxisRanges; } = $props();
+  }: {
+    series: PlotSeries[];
+    preview: PlotSeries | null;
+    stpUnit: StpUnit;
+    xLog: boolean;
+    yLog: boolean;
+    axisRanges: AxisRanges;
+  } = $props();
 
   let container: HTMLDivElement;
   let jsrootReady = $state(false);
   let jsrootError = $state<string | null>(null);
 
-  interface JsrootPainter { cleanup?: () => void; }
+  interface JsrootPainter {
+    cleanup?: () => void;
+  }
   let currentPainter = $state<JsrootPainter | null>(null);
 
   $effect(() => {
@@ -990,7 +1024,11 @@ Full component structure (adapt the Spike 1 prototype pattern):
 
     drawPlot(container, snapshot)
       .then(({ painter, restore }) => {
-        if (cancelled) { painter?.cleanup?.(); restore(); return; }
+        if (cancelled) {
+          painter?.cleanup?.();
+          restore();
+          return;
+        }
         currentPainter = painter;
         restoreSettings = restore;
         jsrootReady = true;
@@ -1027,9 +1065,14 @@ Full component structure (adapt the Spike 1 prototype pattern):
 
   async function drawPlot(
     el: HTMLDivElement,
-    opts: { series: PlotSeries[]; preview: PlotSeries | null;
-            stpUnit: StpUnit; xLog: boolean; yLog: boolean;
-            axisRanges: AxisRanges }
+    opts: {
+      series: PlotSeries[];
+      preview: PlotSeries | null;
+      stpUnit: StpUnit;
+      xLog: boolean;
+      yLog: boolean;
+      axisRanges: AxisRanges;
+    },
   ): Promise<{ painter: JsrootPainter; restore: () => void }> {
     const JSROOT = (await import("jsroot")).default;
 
@@ -1058,10 +1101,15 @@ Full component structure (adapt the Spike 1 prototype pattern):
     return { painter, restore };
   }
 
-  function buildMultigraph(JSROOT: unknown, opts: {
-    series: PlotSeries[]; preview: PlotSeries | null;
-    stpUnit: StpUnit; axisRanges: AxisRanges;
-  }) {
+  function buildMultigraph(
+    JSROOT: unknown,
+    opts: {
+      series: PlotSeries[];
+      preview: PlotSeries | null;
+      stpUnit: StpUnit;
+      axisRanges: AxisRanges;
+    },
+  ) {
     const JSROOT_any = JSROOT as any;
 
     const allVisible = [
@@ -1073,9 +1121,9 @@ Full component structure (adapt the Spike 1 prototype pattern):
       const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
       const tgraph = JSROOT_any.createTGraph(s.result.energies.length, s.result.energies, yData);
       const isPreview = s.seriesId === 0;
-      tgraph.fLineColor = isPreview ? 1 : s.colorIndex + 2;  // JSROOT color index offset
+      tgraph.fLineColor = isPreview ? 1 : s.colorIndex + 2; // JSROOT color index offset
       tgraph.fLineWidth = isPreview ? 1 : 2;
-      tgraph.fLineStyle = isPreview ? 2 : 1;  // 2=dashed, 1=solid
+      tgraph.fLineStyle = isPreview ? 2 : 1; // 2=dashed, 1=solid
       tgraph.fTitle = "";
       // Disable graph dragging (kNotEditable bit 18)
       tgraph.InvertBit(JSROOT_any.BIT(18));
@@ -1092,7 +1140,7 @@ Full component structure (adapt the Spike 1 prototype pattern):
     hist.fYaxis.fTitle = `Stopping Power [${opts.stpUnit}]`;
     hist.fMinimum = opts.axisRanges.yMin;
     hist.fMaximum = opts.axisRanges.yMax;
-    hist.fXaxis.InvertBit(JSROOT_any.BIT(12));  // center axis label
+    hist.fXaxis.InvertBit(JSROOT_any.BIT(12)); // center axis label
     hist.fYaxis.InvertBit(JSROOT_any.BIT(12));
     hist.fTitle = "";
     mg.fHistogram = hist;
@@ -1109,7 +1157,10 @@ Full component structure (adapt the Spike 1 prototype pattern):
   </div>
 {:else}
   {#if !jsrootReady}
-    <div class="flex items-center justify-center text-muted-foreground" style="width:100%; height:100%;">
+    <div
+      class="flex items-center justify-center text-muted-foreground"
+      style="width:100%; height:100%;"
+    >
       Loading plot engine…
     </div>
   {/if}
@@ -1141,6 +1192,7 @@ chore: delete obsolete jsroot-helpers.ts
 **E2E test file to create:** `tests/e2e/plot.spec.ts`
 
 This is the main integration task. The page wires together:
+
 - `entity-selection-panels.svelte` (sidebar)
 - `JsrootPlot.svelte` (main area)
 - `createPlotState()` (state)
@@ -1185,7 +1237,9 @@ test.describe("Plot page", () => {
   });
 
   test("shows plot canvas with role=img", async ({ page }) => {
-    await expect(page.getByRole("img", { name: /stopping power/i })).toBeVisible({ timeout: 15000 });
+    await expect(page.getByRole("img", { name: /stopping power/i })).toBeVisible({
+      timeout: 15000,
+    });
   });
 });
 ```
@@ -1235,9 +1289,10 @@ Replace the placeholder content. Follow the layout from
         programId: resolvedProgramId,
         particleId: selectedParticle.id,
         materialId: selectedMaterial.id,
-        programName: entityState.selectedProgram.id === -1
-          ? (entityState.selectedProgram.resolvedProgram?.name ?? "Auto")
-          : entityState.selectedProgram.name,
+        programName:
+          entityState.selectedProgram.id === -1
+            ? (entityState.selectedProgram.resolvedProgram?.name ?? "Auto")
+            : entityState.selectedProgram.name,
         particleName: selectedParticle.name,
         materialName: selectedMaterial.name,
         density: selectedMaterial.density,
@@ -1312,7 +1367,6 @@ Replace the placeholder content. Follow the layout from
 {:else}
   <!-- Desktop: sidebar + main grid -->
   <div class="grid gap-4 lg:grid-cols-[minmax(360px,3fr)_7fr]">
-
     <!-- ── SIDEBAR ── -->
     <aside class="flex flex-col gap-4">
       <EntitySelectionPanels state={entityState} />
@@ -1344,14 +1398,15 @@ Replace the placeholder content. Follow the layout from
 
     <!-- ── MAIN AREA ── -->
     <div class="flex flex-col gap-4">
-
       <!-- Controls bar: stp unit + axis scale -->
       <div class="flex flex-wrap items-center gap-4">
         <!-- Stopping power unit segmented control -->
         <div role="radiogroup" aria-label="Stopping power unit" class="flex gap-1">
-          {#each (["keV/µm", "MeV/cm", "MeV·cm²/g"] as const) as unit}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.stpUnit === unit ? 'bg-primary text-primary-foreground' : 'bg-background'}">
+          {#each ["keV/µm", "MeV/cm", "MeV·cm²/g"] as const as unit}
+            <label
+              class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+              {plotState.stpUnit === unit ? 'bg-primary text-primary-foreground' : 'bg-background'}"
+            >
               <input
                 type="radio"
                 class="sr-only"
@@ -1368,8 +1423,10 @@ Replace the placeholder content. Follow the layout from
         <!-- X axis scale -->
         <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
           {#each [["Log", true], ["Lin", false]] as [label, isLog]}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
+            <label
+              class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+              {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
+            >
               <input
                 type="radio"
                 class="sr-only"
@@ -1385,8 +1442,10 @@ Replace the placeholder content. Follow the layout from
         <!-- Y axis scale -->
         <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
           {#each [["Log", true], ["Lin", false]] as [label, isLog]}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
+            <label
+              class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+              {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
+            >
               <input
                 type="radio"
                 class="sr-only"
@@ -1416,18 +1475,26 @@ Replace the placeholder content. Follow the layout from
       {#if plotState.series.length > 0 || plotState.preview}
         <div role="list" aria-label="Plot series" class="flex flex-col gap-1">
           {#if plotState.preview}
-            <div role="listitem" class="flex items-center gap-2 text-sm italic text-muted-foreground">
+            <div
+              role="listitem"
+              class="flex items-center gap-2 text-sm italic text-muted-foreground"
+            >
               <span
                 class="inline-block h-4 w-4 rounded-sm border border-dashed"
                 style="background-color: #000; opacity: 0.5"
                 aria-label="Black, dashed line (preview)"
               ></span>
-              <span>Preview — {plotState.preview.particleName} in {plotState.preview.materialName}</span>
+              <span
+                >Preview — {plotState.preview.particleName} in {plotState.preview
+                  .materialName}</span
+              >
               <button
                 aria-label="Toggle preview visibility"
-                onclick={() => { if (plotState.preview) plotState.preview.visible = !plotState.preview.visible; }}
-                class="ml-auto text-muted-foreground hover:text-foreground"
-              >👁</button>
+                onclick={() => {
+                  if (plotState.preview) plotState.preview.visible = !plotState.preview.visible;
+                }}
+                class="ml-auto text-muted-foreground hover:text-foreground">👁</button
+              >
             </div>
           {/if}
 
@@ -1447,25 +1514,28 @@ Replace the placeholder content. Follow the layout from
                 aria-label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
                 aria-pressed={!s.visible}
                 onclick={() => plotState.toggleVisibility(s.seriesId)}
-                class="ml-auto text-muted-foreground hover:text-foreground"
-              >👁</button>
+                class="ml-auto text-muted-foreground hover:text-foreground">👁</button
+              >
               <button
                 aria-label="Remove series {s.label}"
                 onclick={() => plotState.removeSeries(s.seriesId)}
-                class="text-muted-foreground hover:text-destructive"
-              >×</button>
+                class="text-muted-foreground hover:text-destructive">×</button
+              >
             </div>
           {/each}
         </div>
       {/if}
-
     </div>
   </div>
 
   <!-- Reset confirmation dialog -->
   {#if showResetConfirm}
-    <div role="dialog" aria-modal="true" aria-label="Confirm reset"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label="Confirm reset"
+      class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+    >
       <div class="rounded-lg border bg-card p-6 shadow-lg">
         <p class="mb-4">Remove all {plotState.series.length} series and reset selections?</p>
         <div class="flex justify-end gap-2">
@@ -1492,6 +1562,7 @@ feat(plot): implement full plot page route with entity panels, controls, and ser
 ## Task 6 — URL state encoding for the Plot page
 
 **Files to modify:**
+
 - `src/routes/plot/+page.svelte` — add URL read on mount + write on state change
 - **Test file to create:** `src/tests/unit/plot-url.test.ts`
 
@@ -1499,15 +1570,15 @@ feat(plot): implement full plot page route with entity panels, controls, and ser
 
 From `docs/04-feature-specs/plot.md` §"URL State Encoding":
 
-| Parameter | Example | Notes |
-|-----------|---------|-------|
-| `particle` | `1` | Current entity selection — particle ID |
-| `material` | `276` | Current entity selection — material ID |
-| `program` | `auto` or `2` | Current entity selection — program |
-| `series` | `2.1.276,9.6.276` | Comma-separated triplets: `programId.particleId.materialId` |
-| `stp_unit` | `kev-um` | `kev-um`, `mev-cm`, `mev-cm2-g` |
-| `xscale` | `log` | `log` or `lin` |
-| `yscale` | `log` | `log` or `lin` |
+| Parameter  | Example           | Notes                                                       |
+| ---------- | ----------------- | ----------------------------------------------------------- |
+| `particle` | `1`               | Current entity selection — particle ID                      |
+| `material` | `276`             | Current entity selection — material ID                      |
+| `program`  | `auto` or `2`     | Current entity selection — program                          |
+| `series`   | `2.1.276,9.6.276` | Comma-separated triplets: `programId.particleId.materialId` |
+| `stp_unit` | `kev-um`          | `kev-um`, `mev-cm`, `mev-cm2-g`                             |
+| `xscale`   | `log`             | `log` or `lin`                                              |
+| `yscale`   | `log`             | `log` or `lin`                                              |
 
 URL updates via `replaceState` (not `pushState`) on every state change.
 Preview series is NOT encoded.
@@ -1518,12 +1589,7 @@ Create `src/tests/unit/plot-url.test.ts`:
 
 ```typescript
 import { describe, it, expect } from "vitest";
-import {
-  encodePlotUrl,
-  decodePlotUrl,
-  stpUnitToToken,
-  tokenToStpUnit,
-} from "$lib/utils/plot-url";
+import { encodePlotUrl, decodePlotUrl, stpUnitToToken, tokenToStpUnit } from "$lib/utils/plot-url";
 import type { StpUnit } from "$lib/wasm/types";
 ```
 
@@ -1609,13 +1675,13 @@ decodePlotUrl(sp3).series → [{ programId: 2, particleId: 1, materialId: 276 },
 import type { StpUnit } from "$lib/wasm/types";
 
 const STP_TOKENS: Record<StpUnit, string> = {
-  "keV/µm":    "kev-um",
-  "MeV/cm":    "mev-cm",
+  "keV/µm": "kev-um",
+  "MeV/cm": "mev-cm",
   "MeV·cm²/g": "mev-cm2-g",
 };
 
 const TOKEN_TO_STP: Record<string, StpUnit> = Object.fromEntries(
-  Object.entries(STP_TOKENS).map(([k, v]) => [v, k as StpUnit])
+  Object.entries(STP_TOKENS).map(([k, v]) => [v, k as StpUnit]),
 );
 
 export function stpUnitToToken(unit: StpUnit): string {
@@ -1629,7 +1695,7 @@ export function tokenToStpUnit(token: string): StpUnit {
 export interface PlotUrlInput {
   particleId: number | null;
   materialId: number | null;
-  programId: number;  // -1 for auto
+  programId: number; // -1 for auto
   series: Array<{ programId: number; particleId: number; materialId: number }>;
   stpUnit: StpUnit;
   xLog: boolean;
@@ -1652,7 +1718,10 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   if (input.materialId !== null) params.set("material", String(input.materialId));
   params.set("program", input.programId === -1 ? "auto" : String(input.programId));
   if (input.series.length > 0) {
-    params.set("series", input.series.map((s) => `${s.programId}.${s.particleId}.${s.materialId}`).join(","));
+    params.set(
+      "series",
+      input.series.map((s) => `${s.programId}.${s.particleId}.${s.materialId}`).join(","),
+    );
   }
   params.set("stp_unit", stpUnitToToken(input.stpUnit));
   params.set("xscale", input.xLog ? "log" : "lin");
@@ -1675,7 +1744,9 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
           if (parts.length !== 3 || parts.some(isNaN)) return null;
           return { programId: parts[0], particleId: parts[1], materialId: parts[2] };
         })
-        .filter((s): s is { programId: number; particleId: number; materialId: number } => s !== null)
+        .filter(
+          (s): s is { programId: number; particleId: number; materialId: number } => s !== null,
+        )
     : [];
 
   const stpUnit = tokenToStpUnit(params.get("stp_unit") ?? "");
@@ -1694,7 +1765,7 @@ In `src/routes/plot/+page.svelte`, add URL read on mount and write on state chan
 
 ```svelte
 <script>
-  import { page } from "$app/stores";  // or $app/state in SvelteKit 2
+  import { page } from "$app/stores"; // or $app/state in SvelteKit 2
   import { goto } from "$app/navigation";
   import { decodePlotUrl, encodePlotUrl } from "$lib/utils/plot-url";
   import { browser } from "$app/environment";
@@ -1730,9 +1801,14 @@ In `src/routes/plot/+page.svelte`, add URL read on mount and write on state chan
         const mat = materials.find((m) => m.id === s.materialId);
         if (!prog || !part || !mat) continue;
         plotState.addSeries({
-          programId: s.programId, particleId: s.particleId, materialId: s.materialId,
-          programName: prog.name, particleName: part.name, materialName: mat.name,
-          density: mat.density, result,
+          programId: s.programId,
+          particleId: s.particleId,
+          materialId: s.materialId,
+          programName: prog.name,
+          particleName: part.name,
+          materialName: mat.name,
+          density: mat.density,
+          result,
         });
       } catch {
         // Invalid triplet — silently skip per spec
@@ -1748,7 +1824,9 @@ In `src/routes/plot/+page.svelte`, add URL read on mount and write on state chan
       materialId: entityState.selectedMaterial?.id ?? null,
       programId: entityState.selectedProgram.id,
       series: plotState.series.map((s) => ({
-        programId: s.programId, particleId: s.particleId, materialId: s.materialId,
+        programId: s.programId,
+        particleId: s.particleId,
+        materialId: s.materialId,
       })),
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
@@ -1798,36 +1876,43 @@ session date):
 ## Session Narrative
 
 ### Task 1: Plot utilities
+
 **AI response**: Created `plot-utils.ts` with `convertStpForDisplay`,
 `buildDrawOptions`, `computeAxisRanges`, `COLOR_PALETTE`, `PREVIEW_COLOR`.
 All unit tests passing.
 
 ### Task 2: Series labels + color pool
+
 **AI response**: Created `series-labels.ts` with `computeSeriesLabels`,
 `allocateColor`, `releaseColor`. All 8 label variants tested.
 
 ### Task 3: Plot state module
+
 **AI response**: Created `plot.svelte.ts` with `createPlotState()` factory.
 Tests cover add/remove/toggle, duplicate detection, label recomputation,
 color pool recycling.
 
 ### Task 4: JsrootPlot.svelte
+
 **AI response**: Created `jsroot-plot.svelte` with `$effect` lifecycle,
 TMultiGraph construction, ZoomWheel/ZoomTouch disabled, resize observer.
 Deleted obsolete `jsroot-helpers.ts`.
 
 ### Task 5: Plot page route
+
 **AI response**: Replaced placeholder `src/routes/plot/+page.svelte` with
 full implementation: entity panels, controls bar, JSROOT canvas, series list,
 Add Series button, Reset All confirmation dialog.
 
 ### Task 6: URL state
+
 **AI response**: Created `plot-url.ts` with encode/decode. Wired
 `history.replaceState` into the plot page. URL roundtrip E2E test added.
 
 ## Tasks
 
 ### Stage 5.5: JSROOT Plot Wrapper
+
 - **Status**: completed
 - **Stage**: Stage 5 (docs/00-redesign-plan.md §8)
 - **Files changed**:
@@ -1885,13 +1970,13 @@ docs: add AI session log for Stage 5.5 JSROOT plot wrapper
 
 ## Notes on Svelte 5 (critical — read before writing any component)
 
-| Use | Never use |
-|-----|-----------|
-| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:`, `createEventDispatcher()` |
-| `$effect(() => { ... return () => cleanup(); })` | `onMount` / `onDestroy` from `svelte` |
-| `onclick={handler}` | `on:click={handler}` |
-| `$derived.by(() => ...)` for complex derivations | Computed values in `$:` |
-| Reassign `$state` arrays: `arr = [...arr, item]` | `arr.push(item)` (does not trigger reactivity) |
+| Use                                                    | Never use                                      |
+| ------------------------------------------------------ | ---------------------------------------------- |
+| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:`, `createEventDispatcher()`  |
+| `$effect(() => { ... return () => cleanup(); })`       | `onMount` / `onDestroy` from `svelte`          |
+| `onclick={handler}`                                    | `on:click={handler}`                           |
+| `$derived.by(() => ...)` for complex derivations       | Computed values in `$:`                        |
+| Reassign `$state` arrays: `arr = [...arr, item]`       | `arr.push(item)` (does not trigger reactivity) |
 
 In `.svelte.ts` files, runes (`$state`, `$derived`, etc.) are available
 globally — **do not import them**.

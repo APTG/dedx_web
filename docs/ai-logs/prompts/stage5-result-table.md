@@ -44,12 +44,12 @@ Also skim these to understand what is already built:
 
 Use **runes only**. Never use Svelte 4 patterns.
 
-| Use | Never use |
-|-----|-----------|
-| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:` reactive statements |
-| `$effect` for side effects & lifecycle | `onMount` / `onDestroy` |
-| Module-level fine-grained reactivity | `svelte/store` / `$` auto-subscriptions |
-| | `createEventDispatcher()` |
+| Use                                                    | Never use                               |
+| ------------------------------------------------------ | --------------------------------------- |
+| `$state`, `$derived`, `$effect`, `$props`, `$bindable` | `export let`, `$:` reactive statements  |
+| `$effect` for side effects & lifecycle                 | `onMount` / `onDestroy`                 |
+| Module-level fine-grained reactivity                   | `svelte/store` / `$` auto-subscriptions |
+|                                                        | `createEventDispatcher()`               |
 
 State files live in `src/lib/state/*.svelte.ts` — they use `$state`/`$derived` at
 function scope (inside a factory function), NOT at module scope.
@@ -60,13 +60,13 @@ function scope (inside a factory function), NOT at module scope.
 
 A **unified input/result table** on the Calculator page. The table has 5 columns:
 
-| Col | Header | Editable? | Content |
-|-----|--------|-----------|---------|
-| 1 | Energy ({unit}) | **Yes** — `<input type="text">` | User types energy value, optionally with unit suffix |
-| 2 | → MeV/nucl | No | Normalized energy in MeV/nucl (4 sig figs) |
-| 3 | Unit | Via dropdown (per-row mode only) | Base unit for this row |
-| 4 | Stopping Power ({unit}) | No | keV/µm (non-gas) or MeV·cm²/g (gas), 4 sig figs |
-| 5 | CSDA Range | No | Auto-scaled length (nm/µm/mm/cm/m), 4 sig figs, unit inline |
+| Col | Header                  | Editable?                        | Content                                                     |
+| --- | ----------------------- | -------------------------------- | ----------------------------------------------------------- |
+| 1   | Energy ({unit})         | **Yes** — `<input type="text">`  | User types energy value, optionally with unit suffix        |
+| 2   | → MeV/nucl              | No                               | Normalized energy in MeV/nucl (4 sig figs)                  |
+| 3   | Unit                    | Via dropdown (per-row mode only) | Base unit for this row                                      |
+| 4   | Stopping Power ({unit}) | No                               | keV/µm (non-gas) or MeV·cm²/g (gas), 4 sig figs             |
+| 5   | CSDA Range              | No                               | Auto-scaled length (nm/µm/mm/cm/m), 4 sig figs, unit inline |
 
 The table replaces the existing `<EnergyInput>` component on the calculator page.
 `EnergyInputState` (which manages the text rows) stays unchanged — you extend the
@@ -87,19 +87,25 @@ Use Conventional Commits (`feat:`, `fix:`, `test:`, `chore:`).
 Update `docs/00-redesign-plan.md` Stage 5 list to mark the unit selector as complete:
 
 Find this line (around line 508):
+
 ```
   3. Unit selector — radio/segmented control
 ```
+
 Replace with:
+
 ```
   3. ✅ Unit selector — radio/segmented control (merged PR #370, Apr 2026)
 ```
 
 Also update the entry below it to show Stage 5.4 is in progress:
+
 ```
   4. Result table — reactive rendering
 ```
+
 →
+
 ```
   4. 🚧 Result table — unified input/result table (Stage 5.4, in progress)
 ```
@@ -116,16 +122,16 @@ Create `src/lib/utils/unit-conversions.ts` with these pure functions:
 /** Convert mass stopping power (MeV·cm²/g) to linear stopping power (keV/µm).
  *  Formula: S_kevum = S_mass × ρ / 10   where ρ in g/cm³.
  *  Returns null when density is missing or ≤ 0. */
-export function stpMassToKevUm(stpMass: number, densityGcm3: number): number | null
+export function stpMassToKevUm(stpMass: number, densityGcm3: number): number | null;
 
 /** Convert mass stopping power (MeV·cm²/g) to MeV/cm.
  *  Formula: S_linear = S_mass × ρ */
-export function stpMassToMeVcm(stpMass: number, densityGcm3: number): number | null
+export function stpMassToMeVcm(stpMass: number, densityGcm3: number): number | null;
 
 /** Convert CSDA range from g/cm² to cm.
  *  Formula: range_cm = range_gcm2 / ρ
  *  Returns null when density ≤ 0. */
-export function csdaGcm2ToCm(csdaGcm2: number, densityGcm3: number): number | null
+export function csdaGcm2ToCm(csdaGcm2: number, densityGcm3: number): number | null;
 
 /** Auto-scale a length in cm to the most human-readable SI prefix.
  *  Returns { value, unit } where unit is one of: 'nm' | 'µm' | 'mm' | 'cm' | 'm'.
@@ -137,10 +143,13 @@ export function csdaGcm2ToCm(csdaGcm2: number, densityGcm3: number): number | nu
  *    ≥ 1e-4 cm → µm  (i.e. ≥ 1 µm)
  *    < 1e-4 cm → nm
  */
-export function autoScaleLengthCm(cm: number): { value: number; unit: 'nm' | 'µm' | 'mm' | 'cm' | 'm' }
+export function autoScaleLengthCm(cm: number): {
+  value: number;
+  unit: "nm" | "µm" | "mm" | "cm" | "m";
+};
 
 /** Format a number to n significant figures, no scientific notation, no grouping separators. */
-export function formatSigFigs(value: number, sigFigs: number): string
+export function formatSigFigs(value: number, sigFigs: number): string;
 ```
 
 Write tests first in `src/tests/unit/unit-conversions.test.ts`.
@@ -181,20 +190,20 @@ selection, energy input, and WASM calculation results.
 
 ```typescript
 export interface CalculatedRow {
-  id: number;                   // from EnergyInputState row
-  rawInput: string;             // user-typed text
-  normalizedMevNucl: number | null;   // for the "→ MeV/nucl" column
-  unit: EnergyUnit;             // effective unit for this row
-  unitFromSuffix: boolean;      // true when suffix was typed
-  status: 'valid' | 'invalid' | 'out-of-range' | 'empty';
-  message?: string;             // validation error text
+  id: number; // from EnergyInputState row
+  rawInput: string; // user-typed text
+  normalizedMevNucl: number | null; // for the "→ MeV/nucl" column
+  unit: EnergyUnit; // effective unit for this row
+  unitFromSuffix: boolean; // true when suffix was typed
+  status: "valid" | "invalid" | "out-of-range" | "empty";
+  message?: string; // validation error text
   stoppingPower: number | null; // in display unit (stpDisplayUnit)
-  csdaRangeCm: number | null;   // in cm (before auto-scaling for display)
+  csdaRangeCm: number | null; // in cm (before auto-scaling for display)
 }
 
 export interface CalculatorState {
   rows: CalculatedRow[];
-  stpDisplayUnit: StpUnit;          // 'keV/µm' for solid/liquid, 'MeV·cm²/g' for gas
+  stpDisplayUnit: StpUnit; // 'keV/µm' for solid/liquid, 'MeV·cm²/g' for gas
   masterUnit: EnergyUnit;
   isPerRowMode: boolean;
   isCalculating: boolean;
@@ -208,8 +217,8 @@ export interface CalculatorState {
 
 export function createCalculatorState(
   entitySelection: EntitySelectionState,
-  service: LibdedxService
-): CalculatorState
+  service: LibdedxService,
+): CalculatorState;
 ```
 
 **Implementation notes:**
@@ -250,6 +259,7 @@ Use the existing mock service from `src/lib/wasm/__mocks__/libdedx.ts`.
 Use `vi.useFakeTimers()` to control debounce timing.
 
 Key test cases:
+
 - On init: one pre-filled row `100`, stpDisplayUnit = 'keV/µm' (water is non-gas).
 - After 300ms debounce: `calculate()` called with `[100]`, row gains stoppingPower and csdaRangeCm.
 - Changing master unit to MeV/nucl for a heavy ion: `normalizedMevNucl` changes, calc retriggers.
@@ -286,15 +296,13 @@ interface Props {
         <th scope="col" class="text-left ...">Energy ({masterUnit})</th>
         <th scope="col" class="text-right ...">→ MeV/nucl</th>
         <th scope="col" class="text-right ...">Unit</th>
-        <th scope="col" class="text-right ...">
-          Stopping Power ({stpUnitLabel})
-        </th>
+        <th scope="col" class="text-right ...">Stopping Power ({stpUnitLabel})</th>
         <th scope="col" class="text-right ...">CSDA Range</th>
       </tr>
     </thead>
     <tbody>
       {#each state.rows as row, i (row.id)}
-        <!-- one <tr> per row -->
+      <!-- one <tr> per row -->
       {/each}
     </tbody>
   </table>
@@ -311,7 +319,7 @@ interface Props {
 - Column 2 (→ MeV/nucl): show `row.normalizedMevNucl` formatted to 4 sig figs.
   Empty when row is invalid/empty. Use monospace font.
 
-- Column 3 (Unit): 
+- Column 3 (Unit):
   - In **master mode** (`!state.isPerRowMode`): plain text label showing `row.unit`.
   - In **per-row mode**: a small `<select>` dropdown with options `['MeV', 'MeV/nucl']`
     (or just `['MeV']` for proton/electron). On change: call `state.setRowUnit(i, newUnit)`.
@@ -324,7 +332,7 @@ interface Props {
 
 **Below the table:**
 
-- Validation summary line (when any errors): 
+- Validation summary line (when any errors):
   "N of M values excluded (N invalid, N out of range)"
 
 - Loading indicator when `state.isCalculating`: a subtle spinner or pulsing text
@@ -347,6 +355,7 @@ Write component tests in `src/tests/components/result-table.test.ts`.
 Use `@testing-library/svelte` (same pattern as `entity-selection-comboboxes.test.ts`).
 
 Key test cases:
+
 - Renders 5 column headers including the master unit in col-1 header.
 - A row with stoppingPower=2.5 and csdaRangeCm=0.002 shows "2.500" and "2.000 mm".
 - A row with status='invalid' has red styling on the input.
@@ -427,10 +436,12 @@ Replace the current page content (which uses `EnergyInput` standalone) with:
 ```
 
 For `availableUnits` derive from `entityState.selectedParticle`:
+
 - massNumber === 1 (proton) or id === 1001 (electron): `['MeV']`
 - massNumber > 1: `['MeV', 'MeV/nucl']`
 
 After wiring: run `pnpm dev` and manually verify:
+
 - Default load shows Proton / Water / 100 MeV with stopping power ≈ 45.76 keV/µm and range ≈ 7.718 cm.
 - Typing `200` in the second row adds a new empty row below and shows results after ~300ms.
 - Switching to Carbon (A=12) shows MeV/nucl option in the unit selector.
@@ -460,37 +471,44 @@ Replace the date with today's actual date.
 ## Session Narrative
 
 ### Prompt 1: implement Stage 5.4 result table
+
 **AI response**: <what was done, key decisions>
 
 ## Tasks
 
 ### Task 0: Housekeeping — mark unit selector ✅ in redesign plan
+
 - **Status**: completed
 - **Stage**: 5 housekeeping
 - **Files changed**: docs/00-redesign-plan.md
 
 ### Task 1: unit-conversions.ts utility functions
+
 - **Status**: completed
 - **Stage**: 5.4
 - **Files changed**: src/lib/utils/unit-conversions.ts, src/tests/unit/unit-conversions.test.ts
 - **Decision**: pure functions, no class — easier to test and import
 
 ### Task 2: calculator.svelte.ts state
+
 - **Status**: completed | partial | blocked
 - **Stage**: 5.4
 - **Files changed**: src/lib/state/calculator.svelte.ts, src/tests/unit/calculator-state.test.ts
 
 ### Task 3: ResultTable component
+
 - **Status**: completed | partial | blocked
 - **Stage**: 5.4
 - **Files changed**: src/lib/components/result-table.svelte, src/tests/components/result-table.test.ts
 
 ### Task 4: Wire into calculator page
+
 - **Status**: completed | partial | blocked
 - **Stage**: 5.4
 - **Files changed**: src/routes/calculator/+page.svelte
 
 ### Outstanding issues
+
 - list anything unresolved or deferred
 ```
 

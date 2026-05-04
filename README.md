@@ -4,10 +4,10 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 
 ## Try it
 
-| | URL | What's there | Deployment |
-|---|-----|-------------|------------|
+|                      | URL                                                       | What's there                                                                                    | Deployment             |
+| -------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------- |
 | **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — entity selection, energy input, and the basic Calculator (Stage 6.1) | Continuous on `master` |
-| **v1.1.0 (stable)** | [aptg.github.io/web](https://aptg.github.io/web/) | Last stable release — fully functional but based on the old React stack | Released 1 April 2022 |
+| **v1.1.0 (stable)**  | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release — fully functional but based on the old React stack                         | Released 1 April 2022  |
 
 ## Why v2?
 
@@ -44,14 +44,14 @@ Open [http://localhost:5173](http://localhost:5173).
 
 ### Documentation
 
-| | |
-|---|---|
-| [Redesign plan](docs/00-redesign-plan.md) | Stage-by-stage implementation plan and current status |
-| [Project vision](docs/01-project-vision.md) | Target audience, core use cases, design principles |
-| [Feature specs](docs/04-feature-specs/) | Per-feature specs with acceptance criteria |
-| [WASM API contract](docs/06-wasm-api-contract.md) | TypeScript ↔ libdedx interface |
-| [Deployment](docs/08-deployment.md) | GitHub Pages pipeline and CI |
-| [AI changelog](CHANGELOG-AI.md) | Log of all AI-assisted sessions |
+|                                                   |                                                       |
+| ------------------------------------------------- | ----------------------------------------------------- |
+| [Redesign plan](docs/00-redesign-plan.md)         | Stage-by-stage implementation plan and current status |
+| [Project vision](docs/01-project-vision.md)       | Target audience, core use cases, design principles    |
+| [Feature specs](docs/04-feature-specs/)           | Per-feature specs with acceptance criteria            |
+| [WASM API contract](docs/06-wasm-api-contract.md) | TypeScript ↔ libdedx interface                        |
+| [Deployment](docs/08-deployment.md)               | GitHub Pages pipeline and CI                          |
+| [AI changelog](CHANGELOG-AI.md)                   | Log of all AI-assisted sessions                       |
 
 ### Team
 

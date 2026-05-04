@@ -1,30 +1,30 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test.describe('Calculator Page - Smoke Test', () => {
-  test('calculator page loads with heading', async ({ page }) => {
-    await page.goto('/calculator');
-    await expect(page.getByRole('heading', { name: 'Calculator' })).toBeVisible();
+test.describe("Calculator Page - Smoke Test", () => {
+  test("calculator page loads with heading", async ({ page }) => {
+    await page.goto("/calculator");
+    await expect(page.getByRole("heading", { name: "Calculator" })).toBeVisible();
   });
 
-  test('energy input component renders after WASM loads', async ({ page }) => {
-    test.skip(true, 'SKIP: WASM loading timeout in E2E environment - tracked separately');
-    
-    await page.goto('/calculator');
+  test("energy input component renders after WASM loads", async ({ page }) => {
+    test.skip(true, "SKIP: WASM loading timeout in E2E environment - tracked separately");
+
+    await page.goto("/calculator");
     await page.waitForSelector('[aria-label="Particle"]', { timeout: 30000 });
     await page.waitForSelector('button:has-text("Add row")', { timeout: 10000 });
-    
+
     const energyInputs = page.locator('input[aria-label*="Energy value"]');
     await expect(energyInputs).toHaveCount(3);
   });
 });
 
-test.describe('WASM calculation produces real values', () => {
-  test('100 MeV proton in Water (PSTAR) shows non-zero STP and range', async ({ page }) => {
-    await page.goto('/calculator');
+test.describe("WASM calculation produces real values", () => {
+  test("100 MeV proton in Water (PSTAR) shows non-zero STP and range", async ({ page }) => {
+    await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
     const energyInput = page.locator('[data-testid="energy-input-0"]');
-    await energyInput.fill('100 MeV');
+    await energyInput.fill("100 MeV");
     await energyInput.blur();
 
     // Wait for the STP cell to leave the placeholder/calculating state and
@@ -35,26 +35,26 @@ test.describe('WASM calculation produces real values', () => {
     // positive number.
     const stpCell = page.locator('[data-testid="stp-cell-0"]');
     await expect
-      .poll(async () => parseFloat((await stpCell.textContent()) ?? ''), { timeout: 5000 })
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 5000 })
       .toBeGreaterThan(0);
 
     const rangeCell = page.locator('[data-testid="range-cell-0"]');
     await expect
-      .poll(async () => parseFloat((await rangeCell.textContent()) ?? ''), { timeout: 5000 })
+      .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 5000 })
       .toBeGreaterThan(0);
   });
 });
 
-test.describe('Calculator on mobile viewport', () => {
+test.describe("Calculator on mobile viewport", () => {
   // Pixel 7A-like viewport (the device referenced in the issue).
   test.use({ viewport: { width: 412, height: 915 } });
 
-  test('calculated stopping power and range are fully visible (no clipping)', async ({ page }) => {
-    await page.goto('/calculator');
+  test("calculated stopping power and range are fully visible (no clipping)", async ({ page }) => {
+    await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
     const energyInput = page.locator('[data-testid="energy-input-0"]');
-    await energyInput.fill('100 MeV');
+    await energyInput.fill("100 MeV");
     await energyInput.blur();
 
     const stpCell = page.locator('[data-testid="stp-cell-0"]');
@@ -62,10 +62,10 @@ test.describe('Calculator on mobile viewport', () => {
 
     // Wait for real WASM-computed values.
     await expect
-      .poll(async () => parseFloat((await stpCell.textContent()) ?? ''), { timeout: 5000 })
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 5000 })
       .toBeGreaterThan(0);
     await expect
-      .poll(async () => parseFloat((await rangeCell.textContent()) ?? ''), { timeout: 5000 })
+      .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 5000 })
       .toBeGreaterThan(0);
 
     // The bug from the issue: result columns get squished and their text gets
@@ -77,15 +77,15 @@ test.describe('Calculator on mobile viewport', () => {
     // (which always report 0 for `clientWidth`/`scrollWidth`). Walk up to the
     // enclosing `<td>` block element to get a meaningful measurement.
     for (const cell of [stpCell, rangeCell]) {
-      const text = (await cell.textContent())?.trim() ?? '';
+      const text = (await cell.textContent())?.trim() ?? "";
       expect(text.length).toBeGreaterThan(0);
 
       // Each result cell should be wide enough to fully render its number
       // (scrollWidth must not exceed clientWidth — otherwise the value
       // is being clipped by an overflow:hidden ancestor).
       const { clientWidth, scrollWidth } = await cell.evaluate((span) => {
-        const td = span.closest('td');
-        if (!td) throw new Error('cell <span> is not inside a <td>');
+        const td = span.closest("td");
+        if (!td) throw new Error("cell <span> is not inside a <td>");
         return { clientWidth: td.clientWidth, scrollWidth: td.scrollWidth };
       });
       expect(clientWidth).toBeGreaterThan(0);
@@ -97,7 +97,7 @@ test.describe('Calculator on mobile viewport', () => {
     // narrower than the table — i.e. scrollWidth strictly greater than
     // clientWidth on the wrapper. Equality would mean the table fits and
     // there is nothing to scroll, which would silently regress this fix.
-    const tableWrapper = page.locator('[data-testid="result-table"]').locator('..');
+    const tableWrapper = page.locator('[data-testid="result-table"]').locator("..");
     const wrapperMetrics = await tableWrapper.evaluate((el) => {
       const style = getComputedStyle(el);
       return {

@@ -17,6 +17,7 @@
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
   import { getParticleLabel } from "$lib/utils/particle-label";
   import { getService } from "$lib/wasm/loader";
+  import { initPlotExportState, canExport } from "$lib/state/export.svelte";
 
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
@@ -241,6 +242,14 @@
   // ── SVG Export ──
   // Bound from JsrootPlot requestExportSvg, set by component's $effect
   let getSvg: (() => string | null) | null = $state(null);
+
+  // ── Export button state — enables toolbar Export PDF/CSV when series exist
+  $effect(() => {
+    initPlotExportState(plotState, getSvg ?? (() => null));
+    return () => {
+      canExport.value = false;
+    };
+  });
 
   // Dropdown state
   let showExportMenu = $state(false);

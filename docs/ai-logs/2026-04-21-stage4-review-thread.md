@@ -3,14 +3,17 @@
 ## Session Narrative
 
 ### Prompt 1: Apply PR review thread changes and update AI logs/changelog
+
 **AI response**: Investigated current branch and review comments, checked GitHub Actions history for `develop` first and then `qwen/stage-4-scaffolding` (no relevant failing CI baseline found), then implemented requested fixes across routing/state/WASM/units/tests/assets with minimal scope.
 
 ### Prompt 2: Validate and finalize
+
 **AI response**: Installed dependencies, ran lint/tests before and after edits, adjusted event-handler syntax to match current Svelte 5 lint rules, and documented pre-existing environment issues (`pnpm build` still fails because `vite` binary is missing from dependencies; `pnpm check` also traverses prototype configs with missing adapter dependency).
 
 ## Tasks
 
 ### PR review thread fixes
+
 - **Status**: completed
 - **Stage**: Stage 4
 - **Files changed**:

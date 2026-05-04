@@ -1,5 +1,5 @@
-import { base } from '$app/paths';
-import type { LibdedxService } from './types';
+import { base } from "$app/paths";
+import type { LibdedxService } from "./types";
 
 let service: LibdedxService | null = null;
 
@@ -9,10 +9,10 @@ export async function getService(): Promise<LibdedxService> {
   try {
     const factory = await import(/* @vite-ignore */ `${base}/wasm/libdedx.mjs`);
     const module = await factory.default({
-      locateFile: (f: string) => `${base}/wasm/${f}`
+      locateFile: (f: string) => `${base}/wasm/${f}`,
     });
 
-    const { LibdedxServiceImpl } = await import('./libdedx');
+    const { LibdedxServiceImpl } = await import("./libdedx");
     service = new LibdedxServiceImpl(module);
     await service.init();
     return service;

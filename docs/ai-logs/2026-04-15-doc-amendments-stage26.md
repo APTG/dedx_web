@@ -12,6 +12,7 @@ WASM API contract, architecture, and all feature specs. Check for consistency.
 **AI response:**
 
 Read all relevant source material before making any changes:
+
 - `docs/00-redesign-plan.md` — Stage 2.6 description
 - `docs/ai-logs/2026-04-15-libdedx-investigation-phase1.md`
 - `docs/ai-logs/2026-04-15-libdedx-investigation-phase2.md`
@@ -28,6 +29,7 @@ Read all relevant source material before making any changes:
 All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change:
 
 **1. `docs/decisions/003-wasm-build-pipeline.md` (ADR 003)**
+
 - Removed `--preload-file libdedx/data@/data` from the `emcc` flags block.
 - Changed `EXPORTED_FUNCTIONS` format to JSON-quoted strings (Emscripten 5.x
   requirement verified in Phase 2).
@@ -46,6 +48,7 @@ All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change
   all data is compiled in and no `.data` sidecar exists.
 
 **2. `docs/06-wasm-api-contract.md`**
+
 - Bumped status to v3 (15 April 2026) with Stage 2.6 amendment summary.
 - §1 Design Decisions ESTAR row: completely rewritten — NOT IMPLEMENTED in
   libdedx v1.4.0 with explanation of `dedx.c:587` guard.
@@ -62,6 +65,7 @@ All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change
 - Old §10 (Thin C Wrappers) renumbered to §11; §4.5 cross-reference updated.
 
 **3. `docs/04-feature-specs/entity-selection.md`**
+
 - Bumped version to v6 (15 April 2026).
 - Particle Selector "Special" row: rewritten — Electron is always greyed out
   (not greyed out only when ESTAR is incompatible). Added tooltip text.
@@ -72,6 +76,7 @@ All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change
   Matrix section: per-program ion counts table, MSTAR special case note.
 
 **4. `docs/03-architecture.md`**
+
 - `static/wasm/` directory tree: removed `libdedx.data` entry; added measured
   sizes to `.mjs` and `.wasm` entries; added "(no .data sidecar)" note.
 - WASM init lifecycle diagram: updated fetch labels with measured sizes.
@@ -82,6 +87,7 @@ All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change
   gzip total)".
 
 **5. `docs/11-prototyping-spikes.md`**
+
 - Motivation table Spike 2 row: appended "Stage 2.6 supersedes" note.
 - Added new "Stage 2.6: libdedx Data Source Investigation (Gate)" section
   before "Related Documents": status table, gate rule amendment for Stage 3,
@@ -90,6 +96,7 @@ All 8 amendments listed in `VERDICT.md §2` were applied. Summary of each change
 ## Tasks
 
 ### Apply Stage 2.6 amendments to all affected documentation
+
 - **Status:** completed
 - **Stage:** 2.6 (post-investigation)
 - **Files changed:**

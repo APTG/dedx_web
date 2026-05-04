@@ -6,7 +6,7 @@ asking for confirmation between steps.
 
 ---
 
-```
+````
 Implement the feature described in {{SPEC_PATH}}.
 
 Branch: qwen/{{BRANCH_NAME}}
@@ -39,7 +39,7 @@ Write the task list to .opencode/tasks/{{BRANCH_NAME}}.md using this format:
 | 1 | <task name> | pending |
 | 2 | <task name> | pending |
 ...
-```
+````
 
 ### Step 3 — Implement and review (repeat for each task)
 
@@ -48,27 +48,29 @@ For each task in order:
 a. Update .opencode/tasks/{{BRANCH_NAME}}.md: set task status to "in-progress".
 
 b. Call the 'implementer' subagent with this message:
-   ```
-   Task: <task name>
-   Spec section: <exact path + section heading>
-   Branch: qwen/{{BRANCH_NAME}}
-   Acceptance criteria:
-   - <criterion from spec>
-   ```
+
+```
+Task: <task name>
+Spec section: <exact path + section heading>
+Branch: qwen/{{BRANCH_NAME}}
+Acceptance criteria:
+- <criterion from spec>
+```
 
 c. Wait for the implementer to output TASK DONE: or TASK BLOCKED:.
 
 d. If TASK DONE:
-   - Call the 'reviewer' subagent with:
-     ```
-     Review task: <task name>
-     Branch: qwen/{{BRANCH_NAME}}
-     Acceptance criteria:
-     - <same criteria as above>
-     ```
-   - If reviewer outputs REVIEW PASS → update task status to "done", move to next task.
-   - If reviewer outputs REVIEW FAIL → call implementer again with the reviewer's
-     issue list appended. Allow max 2 retries. If still failing, mark task "blocked".
+
+- Call the 'reviewer' subagent with:
+  ```
+  Review task: <task name>
+  Branch: qwen/{{BRANCH_NAME}}
+  Acceptance criteria:
+  - <same criteria as above>
+  ```
+- If reviewer outputs REVIEW PASS → update task status to "done", move to next task.
+- If reviewer outputs REVIEW FAIL → call implementer again with the reviewer's
+  issue list appended. Allow max 2 retries. If still failing, mark task "blocked".
 
 e. If TASK BLOCKED: → update task status to "blocked", move to next task.
 
@@ -77,6 +79,7 @@ e. If TASK BLOCKED: → update task status to "blocked", move to next task.
 After all tasks are done or blocked:
 
 1. Prepend a row to CHANGELOG-AI.md:
+
    ```
    | YYYY-MM-DD | <stage> | <what was done> (opencode + Qwen3.5-397B) | [log](docs/ai-logs/YYYY-MM-DD-{{BRANCH_NAME}}.md) |
    ```
@@ -86,6 +89,7 @@ After all tasks are done or blocked:
    - Task table: task name, status (completed/blocked), files changed
 
 3. Update docs/ai-logs/README.md and docs/README.md indexes.
+
 ```
 
 ---
@@ -93,6 +97,7 @@ After all tasks are done or blocked:
 ## Example filled prompt
 
 ```
+
 Implement the feature described in docs/04-feature-specs/export.md.
 
 Branch: qwen/export-csv-pdf
@@ -103,7 +108,9 @@ Act as orchestrator for this session. Proceed autonomously through all steps bel
 without asking me for confirmation between them.
 
 ### Step 1 — Read context
+
 ...
+
 ```
 
 ---
@@ -116,15 +123,19 @@ If you want to run tasks in parallel across multiple terminal windows:
    the task list).
 2. Open N terminals and paste one task each as a direct implementer prompt:
 
-   ```
-   You are the implementer for dEdx Web.
-   Task: <task name from .opencode/tasks/{{BRANCH_NAME}}.md>
-   Spec section: <path>
-   Branch: qwen/{{BRANCH_NAME}}-task-N
-   Acceptance criteria:
-   - ...
-   Complete the task autonomously. Output TASK DONE: or TASK BLOCKED: when finished.
-   ```
+```
+
+You are the implementer for dEdx Web.
+Task: <task name from .opencode/tasks/{{BRANCH_NAME}}.md>
+Spec section: <path>
+Branch: qwen/{{BRANCH_NAME}}-task-N
+Acceptance criteria:
+
+- ...
+  Complete the task autonomously. Output TASK DONE: or TASK BLOCKED: when finished.
+
+```
 
 3. After all parallel sessions finish, run a final reviewer session on each branch,
-   then merge into the main feature branch.
+then merge into the main feature branch.
+```

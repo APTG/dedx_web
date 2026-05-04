@@ -23,46 +23,46 @@ Cross-references between terms are marked with "→ see also".
 
 ### §1 Physics & End-User Terms
 
-| Term | One-line summary |
-|------|-----------------|
-| [Aggregate State](#aggregate-state) | Gas vs condensed treatment of a material for I-value selection |
-| [Bragg Additivity Rule](#bragg-additivity-rule) | Compound stopping power as weighted sum of elemental contributions |
-| [Bragg Peak](#bragg-peak) | Sharp dose maximum near the end of a charged particle's track |
-| [CSDA Range](#csda-range) | Path length to rest; integral of reciprocal stopping power |
-| [Custom Compound](#custom-compound) | User-defined material by elemental composition + density |
-| [ICRU 73 / ICRU 90](#icru-73--icru-90) | ICRU tabulated stopping-power reports for heavy ions and protons |
-| [Mass Stopping Power](#mass-stopping-power) | Stopping power divided by density; unit MeV·cm²/g |
-| [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value) | Material constant in Bethe formula; unit eV |
-| [MeV/nucl vs MeV/u](#mevnucl-vs-mevu) | Energy per integer nucleon vs per actual atomic mass unit |
-| [MSTAR](#mstar) | Stopping-power program for heavy ions; 6 calculation modes |
-| [Normalized Energy](#normalized-energy) | Kinetic energy expressed per unit particle mass |
-| [Particle](#particle) | Any charged projectile (proton, ion, electron); preferred over "ion" |
-| [PSTAR / ESTAR / ASTAR](#pstar--estar--astar) | NIST stopping-power programs for protons, electrons, alphas |
-| [Stopping Power](#stopping-power) | Rate of energy loss per unit path length; electronic + nuclear components |
+| Term                                                                | One-line summary                                                          |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [Aggregate State](#aggregate-state)                                 | Gas vs condensed treatment of a material for I-value selection            |
+| [Bragg Additivity Rule](#bragg-additivity-rule)                     | Compound stopping power as weighted sum of elemental contributions        |
+| [Bragg Peak](#bragg-peak)                                           | Sharp dose maximum near the end of a charged particle's track             |
+| [CSDA Range](#csda-range)                                           | Path length to rest; integral of reciprocal stopping power                |
+| [Custom Compound](#custom-compound)                                 | User-defined material by elemental composition + density                  |
+| [ICRU 73 / ICRU 90](#icru-73--icru-90)                              | ICRU tabulated stopping-power reports for heavy ions and protons          |
+| [Mass Stopping Power](#mass-stopping-power)                         | Stopping power divided by density; unit MeV·cm²/g                         |
+| [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value) | Material constant in Bethe formula; unit eV                               |
+| [MeV/nucl vs MeV/u](#mevnucl-vs-mevu)                               | Energy per integer nucleon vs per actual atomic mass unit                 |
+| [MSTAR](#mstar)                                                     | Stopping-power program for heavy ions; 6 calculation modes                |
+| [Normalized Energy](#normalized-energy)                             | Kinetic energy expressed per unit particle mass                           |
+| [Particle](#particle)                                               | Any charged projectile (proton, ion, electron); preferred over "ion"      |
+| [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)                       | NIST stopping-power programs for protons, electrons, alphas               |
+| [Stopping Power](#stopping-power)                                   | Rate of energy loss per unit path length; electronic + nuclear components |
 
 ### §2 Developer & Stack Terms
 
-| Term | One-line summary |
-|------|-----------------|
-| [ADR](#adr) | Short document recording one significant architectural choice with context and rationale |
-| [Advanced Mode / Basic Mode](#advanced-mode--basic-mode) | App-wide toggle controlling advanced-feature visibility |
-| [Canonicalization](#canonicalization) | Algorithm normalizing URL state to a single deterministic form |
-| [CI/CD](#cicd) | Automated lint → test → build → deploy pipeline running on GitHub Actions |
-| [Compatibility Matrix](#compatibility-matrix) | Pre-computed bidirectional program ↔ particle ↔ material lookup |
-| [CORS](#cors) | Browser policy blocking cross-origin fetches; relevant for user-hosted `extdata` files |
-| [dedx_config](#dedx_config) | Stateful C config struct; required for overrides and custom compounds |
-| [dedx_extra.{h,c}](#dedx_extrahc) | Local C files exposing internal libdedx data and custom-compound wrappers |
-| [dedx_wrappers.h](#dedx_wrappersh) | Local C header providing stateless wrappers for Emscripten export |
-| [Emscripten / WASM](#emscripten--wasm) | Compiler toolchain producing .wasm + .mjs from libdedx C source |
-| [Entity](#entity) | Union type: `ParticleEntity \| MaterialEntity \| ProgramEntity` |
-| [extdata](#extdata) | URL param pointing to user-hosted external stopping-power data |
-| [libdedx](#libdedx) | C library (git submodule) providing all stopping-power tables |
-| [qfocus](#qfocus) | URL param selecting quantity columns: `both` / `stp` / `csda` |
-| [Runes](#runes) | Svelte 5 reactive primitives: `$state`, `$derived`, `$effect`, `$props`, `$bindable` |
-| [Series](#series) | A (particle, material, program) triplet producing one plot curve |
-| [SSG](#ssg) | Build strategy pre-rendering all pages to static HTML at build time; enables GitHub Pages |
-| [StoredCompound](#storedcompound) | localStorage type for user compounds; distinct from WASM `CustomCompound` |
-| [urlv](#urlv) | URL contract major-version sentinel parameter |
+| Term                                                     | One-line summary                                                                          |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
+| [ADR](#adr)                                              | Short document recording one significant architectural choice with context and rationale  |
+| [Advanced Mode / Basic Mode](#advanced-mode--basic-mode) | App-wide toggle controlling advanced-feature visibility                                   |
+| [Canonicalization](#canonicalization)                    | Algorithm normalizing URL state to a single deterministic form                            |
+| [CI/CD](#cicd)                                           | Automated lint → test → build → deploy pipeline running on GitHub Actions                 |
+| [Compatibility Matrix](#compatibility-matrix)            | Pre-computed bidirectional program ↔ particle ↔ material lookup                           |
+| [CORS](#cors)                                            | Browser policy blocking cross-origin fetches; relevant for user-hosted `extdata` files    |
+| [dedx_config](#dedx_config)                              | Stateful C config struct; required for overrides and custom compounds                     |
+| [dedx_extra.{h,c}](#dedx_extrahc)                        | Local C files exposing internal libdedx data and custom-compound wrappers                 |
+| [dedx_wrappers.h](#dedx_wrappersh)                       | Local C header providing stateless wrappers for Emscripten export                         |
+| [Emscripten / WASM](#emscripten--wasm)                   | Compiler toolchain producing .wasm + .mjs from libdedx C source                           |
+| [Entity](#entity)                                        | Union type: `ParticleEntity \| MaterialEntity \| ProgramEntity`                           |
+| [extdata](#extdata)                                      | URL param pointing to user-hosted external stopping-power data                            |
+| [libdedx](#libdedx)                                      | C library (git submodule) providing all stopping-power tables                             |
+| [qfocus](#qfocus)                                        | URL param selecting quantity columns: `both` / `stp` / `csda`                             |
+| [Runes](#runes)                                          | Svelte 5 reactive primitives: `$state`, `$derived`, `$effect`, `$props`, `$bindable`      |
+| [Series](#series)                                        | A (particle, material, program) triplet producing one plot curve                          |
+| [SSG](#ssg)                                              | Build strategy pre-rendering all pages to static HTML at build time; enables GitHub Pages |
+| [StoredCompound](#storedcompound)                        | localStorage type for user compounds; distinct from WASM `CustomCompound`                 |
+| [urlv](#urlv)                                            | URL contract major-version sentinel parameter                                             |
 
 ---
 
@@ -140,7 +140,7 @@ Used in: [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) §5,
 
 ### CSDA Range
 
-*Continuous Slowing Down Approximation range.* The total path length a charged
+_Continuous Slowing Down Approximation range._ The total path length a charged
 particle travels before coming to rest, under the assumption that energy loss is
 continuous and equal to the mean stopping power at each point. Calculated by
 integrating the reciprocal stopping power from the minimum tabulated energy to
@@ -169,6 +169,7 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.3,
 ### Custom Compound
 
 A user-defined compound material, specified by:
+
 1. A display name
 2. Elemental composition: atomic numbers Z + atom count per formula unit
    (or weight fractions converted to atom counts via `n_i = w_i / M_i`)
@@ -199,9 +200,9 @@ Used in: [`custom-compounds.md`](04-feature-specs/custom-compounds.md),
 Two ICRU (International Commission on Radiation Units and Measurements) reports
 providing tabulated stopping powers for heavy ions and protons:
 
-| Report | Coverage | Notes |
-|--------|----------|-------|
-| **ICRU 73** | Heavy ions (Z > 2) in many materials | Available as a program in libdedx |
+| Report      | Coverage                                      | Notes                                         |
+| ----------- | --------------------------------------------- | --------------------------------------------- |
+| **ICRU 73** | Heavy ions (Z > 2) in many materials          | Available as a program in libdedx             |
 | **ICRU 90** | Protons and alpha particles, updated I-values | Preferred over ICRU 49 (PSTAR) when available |
 
 libdedx exposes a meta-program `DEDX_ICRU` that resolves at runtime to the best
@@ -292,13 +293,13 @@ particle is a heavy ion.
 
 **MSTAR modes** (selected in Advanced Options when MSTAR is the active program):
 
-| Mode | Meaning |
-|------|---------|
-| **A** | Auto base: selects C for condensed targets, G for gaseous |
-| **B** | Auto special: selects D for condensed targets, H for gaseous. **Default** |
-| **C** | Condensed standard |
-| **D** | Condensed special (downgrades to C for target Z ≤ 3) |
-| **G** | Gas standard |
+| Mode  | Meaning                                                                              |
+| ----- | ------------------------------------------------------------------------------------ |
+| **A** | Auto base: selects C for condensed targets, G for gaseous                            |
+| **B** | Auto special: selects D for condensed targets, H for gaseous. **Default**            |
+| **C** | Condensed standard                                                                   |
+| **D** | Condensed special (downgrades to C for target Z ≤ 3)                                 |
+| **G** | Gas standard                                                                         |
 | **H** | Gas special (hardcoded for projectile Z = 3–11 and 16–18; downgrades to G otherwise) |
 
 Modes E and F are not supported by the current WASM contract.
@@ -351,11 +352,11 @@ terminology note), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
 
 Three NIST stopping-power programs included in libdedx:
 
-| Program | Particle | ICRU reference |
-|---------|----------|----------------|
-| **PSTAR** | Proton (Z = 1) | ICRU Report 49 |
-| **ESTAR** | Electron (particle ID 1001 in libdedx) | Berger et al. |
-| **ASTAR** | Alpha particle (He-4, Z = 2) | ICRU Report 49 |
+| Program   | Particle                               | ICRU reference |
+| --------- | -------------------------------------- | -------------- |
+| **PSTAR** | Proton (Z = 1)                         | ICRU Report 49 |
+| **ESTAR** | Electron (particle ID 1001 in libdedx) | Berger et al.  |
+| **ASTAR** | Alpha particle (He-4, Z = 2)           | ICRU Report 49 |
 
 ESTAR covers all ~280 libdedx materials and is exposed in the UI as the
 "Electron" particle entry. Energy input for ESTAR uses MeV (not MeV/nucl — the
@@ -409,7 +410,7 @@ An **Architecture Decision Record** — a short document that captures the
 context, decision, and consequences for one significant, hard-to-reverse
 architectural choice. Each ADR is numbered sequentially and stored in
 `docs/decisions/`. ADRs are written before implementation begins so that
-future contributors understand *why* a choice was made, not just what was
+future contributors understand _why_ a choice was made, not just what was
 chosen.
 
 Once an ADR is accepted it constrains future work — a change requires a new
@@ -430,10 +431,10 @@ Used in: [`00-redesign-plan.md`](00-redesign-plan.md) §8,
 An app-wide toggle that controls which features are visible. Stored in
 `localStorage` and reflected in the URL parameter `mode=advanced`.
 
-| Mode | Visible features |
-|------|-----------------|
-| **Basic** (default) | Entity selection, single program, energy input, forward stopping power + CSDA range table, CSV/PDF export, Share URL |
-| **Advanced** | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups (Range + Inverse STP tabs), custom compounds |
+| Mode                | Visible features                                                                                                                                                                                          |
+| ------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic** (default) | Entity selection, single program, energy input, forward stopping power + CSDA range table, CSV/PDF export, Share URL                                                                                      |
+| **Advanced**        | Everything in Basic + multi-program comparison columns, MSTAR modes, aggregate state override, density/I-value overrides, MeV/u energy unit, inverse lookups (Range + Inverse STP tabs), custom compounds |
 
 The toggle is placed in the top-right action bar on every page, alongside Share
 and Export buttons. Enabling Advanced mode on one page enables it app-wide.
@@ -490,10 +491,10 @@ Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
 **Continuous Integration / Continuous Deployment** — the planned Stage 8
 automated pipeline for this project, intended to run via **GitHub Actions**.
 
-| Phase | Planned trigger | Planned steps |
-|-------|-----------------|---------------|
-| **CI** | On PRs / pushes (planned) | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
-| **CD** | On merge to `master` (planned) | `pnpm build` → deploy `build/` to GitHub Pages |
+| Phase  | Planned trigger                | Planned steps                                                                     |
+| ------ | ------------------------------ | --------------------------------------------------------------------------------- |
+| **CI** | On PRs / pushes (planned)      | `eslint` → `prettier --check` → `svelte-check` → `vitest run` → `playwright test` |
+| **CD** | On merge to `master` (planned) | `pnpm build` → deploy `build/` to GitHub Pages                                    |
 
 When implemented, the CI phase will catch regressions before merge, and the CD
 phase will publish the rebuilt static site automatically. See
@@ -537,8 +538,9 @@ Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) §2,
 
 **Cross-Origin Resource Sharing** — a browser security policy that blocks
 JavaScript from fetching a resource from a different **origin** (scheme + host
-+ port combination) unless the server explicitly opts in via an
-`Access-Control-Allow-Origin` response header.
+
+- port combination) unless the server explicitly opts in via an
+  `Access-Control-Allow-Origin` response header.
 
 Relevant to webdedx in the **extdata** feature: when a user supplies a URL to
 a `.webdedx` Zarr v3 store hosted on their own server, all files in the store
@@ -598,6 +600,7 @@ accessible through the main libdedx public API:
 
 Also adds **thin C wrappers for custom compound inverse lookups** (not in the
 main libdedx API):
+
 - `getInverseStpCustomCompound()` — inverse stopping power for a custom compound
 - `getInverseCsdaCustomCompound()` — inverse CSDA range for a custom compound
 - `getBraggPeakStpCustomCompound()` — Bragg peak stopping power for a custom compound
@@ -732,11 +735,11 @@ Used in: [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §1,
 The `qfocus` URL parameter controls which **quantity columns** are shown in the
 multi-program comparison table on the Calculator page (Advanced mode only).
 
-| Value | Columns shown |
-|-------|--------------|
+| Value  | Columns shown                                                 |
+| ------ | ------------------------------------------------------------- |
 | `both` | All stopping power columns + all CSDA range columns (default) |
-| `stp` | Stopping power columns only |
-| `csda` | CSDA range columns only |
+| `stp`  | Stopping power columns only                                   |
+| `csda` | CSDA range columns only                                       |
 
 `qfocus` is emitted in every canonical Advanced-mode Calculator URL, even when
 set to the default `both`, to make the URL self-describing. It does not gate the
@@ -760,13 +763,13 @@ Svelte 5's **reactive primitives**, replacing Svelte 4 stores and reactive
 statements. This project uses **Svelte 5 only** — Svelte 4 patterns are
 prohibited.
 
-| Rune | Purpose |
-|------|---------|
-| `$state` | Declares reactive mutable state (replaces `let` + `$:`) |
-| `$derived` | Declares a value computed from reactive state (replaces `$:` assignments) |
-| `$effect` | Runs a side-effect when reactive dependencies change (replaces `onMount`/`onDestroy` + `$:`) |
-| `$props` | Declares component props (replaces `export let`) |
-| `$bindable` | Declares a prop that the parent can bind to |
+| Rune        | Purpose                                                                                      |
+| ----------- | -------------------------------------------------------------------------------------------- |
+| `$state`    | Declares reactive mutable state (replaces `let` + `$:`)                                      |
+| `$derived`  | Declares a value computed from reactive state (replaces `$:` assignments)                    |
+| `$effect`   | Runs a side-effect when reactive dependencies change (replaces `onMount`/`onDestroy` + `$:`) |
+| `$props`    | Declares component props (replaces `export let`)                                             |
+| `$bindable` | Declares a prop that the parent can bind to                                                  |
 
 The `svelte/store` module and `$` auto-subscription syntax are replaced by
 runes-based fine-grained reactivity.

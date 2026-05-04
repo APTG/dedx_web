@@ -21,7 +21,11 @@
   export interface ColumnDef {
     id: string;
     header: (state: CalculatorState) => string;
-    getValue: (row: CalculatedRow, state: CalculatorState, entitySelection: EntitySelectionState) => string | number | null;
+    getValue: (
+      row: CalculatedRow,
+      state: CalculatorState,
+      entitySelection: EntitySelectionState,
+    ) => string | number | null;
     align?: "left" | "right";
     /**
      * When true, render the cell with a monospaced font. Defaults to `true` for
@@ -39,7 +43,12 @@
     class?: string;
   }
 
-  let { state, entitySelection, columns = getDefaultColumns(), class: className = "" }: Props = $props();
+  let {
+    state,
+    entitySelection,
+    columns = getDefaultColumns(),
+    class: className = "",
+  }: Props = $props();
 
   function getDefaultColumns(): ColumnDef[] {
     return [
@@ -52,7 +61,8 @@
       {
         id: "mev-nucl",
         header: () => "→ MeV/nucl",
-        getValue: (row) => row.normalizedMevNucl !== null ? formatSigFigs(row.normalizedMevNucl, 4) : "-",
+        getValue: (row) =>
+          row.normalizedMevNucl !== null ? formatSigFigs(row.normalizedMevNucl, 4) : "-",
         align: "right",
       },
       {
@@ -197,8 +207,8 @@
         {ELECTRON_UNSUPPORTED_MESSAGE}
       {:else if entitySelection.selectedParticle && entitySelection.selectedMaterial}
         No program supports <strong>{entitySelection.selectedParticle.name}</strong> in
-        <strong>{entitySelection.selectedMaterial.name}</strong>.
-        Change the particle or material selection to continue.
+        <strong>{entitySelection.selectedMaterial.name}</strong>. Change the particle or material
+        selection to continue.
       {:else}
         Select a particle and material to calculate.
       {/if}
@@ -222,7 +232,9 @@
           <tr class="even:bg-muted/30">
             {#each columns as col, colIndex (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
-              <td class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}>
+              <td
+                class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}
+              >
                 {#if col.id === "energy"}
                   <input
                     type="text"
@@ -283,12 +295,13 @@
 
     {#if state.validationSummary.invalid > 0 || state.validationSummary.outOfRange > 0}
       <div class="p-3 text-sm text-muted-foreground border-t">
-        {state.validationSummary.invalid + state.validationSummary.outOfRange} of {state.validationSummary.total}
-        values excluded
-        (
+        {state.validationSummary.invalid + state.validationSummary.outOfRange} of {state
+          .validationSummary.total}
+        values excluded (
         {#if state.validationSummary.invalid > 0}
           {state.validationSummary.invalid} invalid
-          {#if state.validationSummary.outOfRange > 0}, {/if}
+          {#if state.validationSummary.outOfRange > 0},
+          {/if}
         {/if}
         {#if state.validationSummary.outOfRange > 0}
           {state.validationSummary.outOfRange} out of range

@@ -12,18 +12,18 @@
 
 ## 1. Design Decisions
 
-| Decision | Choice | Rationale |
-|----------|--------|-----------|
-| C API style | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set. |
-| Energy units | **JS-side conversion** | For ions (A ≥ 1), C calls use MeV/nucl. For ESTAR electron (particle ID 1001), C calls use MeV. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion). |
-| Error handling | **Typed exceptions** | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message. |
-| Custom compounds | **Supported** | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API. `calculateCustomCompound()` covers the forward path. Inverse and Bragg-peak variants (`getInverseStpCustomCompound`, `getInverseCsdaCustomCompound`, `getBraggPeakStpCustomCompound`) are added via thin C wrappers in `wasm/dedx_extra.{h,c}`. Plot-data generation (`getPlotDataCustomCompound`) is JS-side only. |
-| Inverse functions | **Exposed** | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`). |
-| Density | **Exposed** | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper. |
-| ESTAR (electrons) | **Not available (libdedx v1.4.0)** | ESTAR (program 3) is returned by `dedx_get_program_list()` but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL` for every calculation. The `dedx_estar.h` tabulated data exists but is compiled out. The TypeScript wrapper exposes ESTAR in the program list so it can be shown in the UI — but must mark it as incompatible for all particle/material combinations (no valid calculations). Electron (particle ID 1001) is included in the particle list but only with ESTAR as its sole program; it must therefore be greyed out at all times until a future libdedx release enables ESTAR. Hard-code `"Electron"` as its display name since `dedx_get_ion_name(1001)` returns `""`. |
-| MSTAR modes | **Exposed** | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active. |
-| Aggregate state | **Exposed** | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`. |
-| Interpolation | **Exposed** | Two orthogonal controls: axis scale (Log-log / Lin-lin) and fitting method (Linear / Spline). Both in the Advanced Options panel. `InterpolationScale` maps to C `DEDX_INTERPOLATION_*`; spline method is JS-only and requires JS-level CSDA integration. |
+| Decision          | Choice                                     | Rationale                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------- | ------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| C API style       | **Stateless wrappers** (`dedx_wrappers.h`) | Simpler memory management in WASM; no workspace/config lifecycle to track. Each call is self-contained. Falls back to stateful API when AdvancedOptions are set.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Energy units      | **JS-side conversion**                     | For ions (A ≥ 1), C calls use MeV/nucl. For ESTAR electron (particle ID 1001), C calls use MeV. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion).                                                                                                                                                                                                                                                                                                                                                                 |
+| Error handling    | **Typed exceptions**                       | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
+| Custom compounds  | **Supported**                              | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API. `calculateCustomCompound()` covers the forward path. Inverse and Bragg-peak variants (`getInverseStpCustomCompound`, `getInverseCsdaCustomCompound`, `getBraggPeakStpCustomCompound`) are added via thin C wrappers in `wasm/dedx_extra.{h,c}`. Plot-data generation (`getPlotDataCustomCompound`) is JS-side only.                                                                                                                                                                                                                                                     |
+| Inverse functions | **Exposed**                                | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Density           | **Exposed**                                | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
+| ESTAR (electrons) | **Not available (libdedx v1.4.0)**         | ESTAR (program 3) is returned by `dedx_get_program_list()` but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL` for every calculation. The `dedx_estar.h` tabulated data exists but is compiled out. The TypeScript wrapper exposes ESTAR in the program list so it can be shown in the UI — but must mark it as incompatible for all particle/material combinations (no valid calculations). Electron (particle ID 1001) is included in the particle list but only with ESTAR as its sole program; it must therefore be greyed out at all times until a future libdedx release enables ESTAR. Hard-code `"Electron"` as its display name since `dedx_get_ion_name(1001)` returns `""`. |
+| MSTAR modes       | **Exposed**                                | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| Aggregate state   | **Exposed**                                | 29 materials are gaseous by default. State selector shown in advanced mode. Override via `compound_state` in `dedx_config`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| Interpolation     | **Exposed**                                | Two orthogonal controls: axis scale (Log-log / Lin-lin) and fitting method (Linear / Spline). Both in the Advanced Options panel. `InterpolationScale` maps to C `DEDX_INTERPOLATION_*`; spline method is JS-only and requires JS-level CSDA integration.                                                                                                                                                                                                                                                                                                                                                                                                                                        |
 
 ---
 
@@ -359,7 +359,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     materialId: number;
-    energies: number[];       // in MeV/nucl
+    energies: number[]; // in MeV/nucl
     options?: AdvancedOptions;
   }): CalculationResult;
 
@@ -374,7 +374,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     compound: CustomCompound;
-    energies: number[];       // in MeV/nucl
+    energies: number[]; // in MeV/nucl
   }): CalculationResult;
 
   /**
@@ -408,7 +408,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     compound: CustomCompound;
-    stoppingPowers: number[];  // in MeV·cm²/g
+    stoppingPowers: number[]; // in MeV·cm²/g
     side: 0 | 1;
   }): InverseStpResult;
 
@@ -424,7 +424,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     compound: CustomCompound;
-    ranges: number[];          // in g/cm²
+    ranges: number[]; // in g/cm²
   }): InverseCsdaResult;
 
   /**
@@ -454,7 +454,7 @@ interface LibdedxService {
     programIds: number[];
     particleId: number;
     materialId: number;
-    energies: number[];       // in MeV/nucl
+    energies: number[]; // in MeV/nucl
     options?: AdvancedOptions;
   }): Map<number, CalculationResult | LibdedxError>;
 
@@ -506,7 +506,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     materialId: number;
-    stoppingPowers: number[];  // in MeV·cm²/g
+    stoppingPowers: number[]; // in MeV·cm²/g
     side: 0 | 1;
     options?: AdvancedOptions;
   }): InverseStpResult;
@@ -521,7 +521,7 @@ interface LibdedxService {
     programId: number;
     particleId: number;
     materialId: number;
-    ranges: number[];          // in g/cm²
+    ranges: number[]; // in g/cm²
     options?: AdvancedOptions;
   }): InverseCsdaResult;
 
@@ -671,63 +671,63 @@ These are the C functions that must be exported in the Emscripten build
 
 ### 4.1 From `dedx_wrappers.h` (stateless)
 
-| C Function | Used by | Notes |
-|------------|---------|-------|
-| `dedx_fill_program_list(int*)` | `getPrograms()` | Fills array, terminated by -1 |
-| `dedx_fill_ion_list(int, int*)` | `getParticles()` | Filtered by program |
-| `dedx_fill_material_list(int, int*)` | `getMaterials()` | Filtered by program |
-| `dedx_get_stp_table(prog, ion, target, n, energies*, stps*)` | `calculate()` | Batch stopping power |
-| `dedx_get_csda_range_table(prog, ion, target, n, energies*, ranges*)` | `calculate()` | Batch CSDA range |
-| `dedx_get_simple_stp_for_program(prog, ion, target, energy, err*)` | — | Single-point fallback |
-| `dedx_get_stp_table_size(prog, ion, target)` | `getDefaultTableData()` | Number of tabulated points |
-| `dedx_fill_default_energy_stp_table(prog, ion, target, energies*, stps*)` | `getDefaultTableData()` | Raw tabulated data |
+| C Function                                                                | Used by                 | Notes                         |
+| ------------------------------------------------------------------------- | ----------------------- | ----------------------------- |
+| `dedx_fill_program_list(int*)`                                            | `getPrograms()`         | Fills array, terminated by -1 |
+| `dedx_fill_ion_list(int, int*)`                                           | `getParticles()`        | Filtered by program           |
+| `dedx_fill_material_list(int, int*)`                                      | `getMaterials()`        | Filtered by program           |
+| `dedx_get_stp_table(prog, ion, target, n, energies*, stps*)`              | `calculate()`           | Batch stopping power          |
+| `dedx_get_csda_range_table(prog, ion, target, n, energies*, ranges*)`     | `calculate()`           | Batch CSDA range              |
+| `dedx_get_simple_stp_for_program(prog, ion, target, energy, err*)`        | —                       | Single-point fallback         |
+| `dedx_get_stp_table_size(prog, ion, target)`                              | `getDefaultTableData()` | Number of tabulated points    |
+| `dedx_fill_default_energy_stp_table(prog, ion, target, energies*, stps*)` | `getDefaultTableData()` | Raw tabulated data            |
 
 ### 4.2 From `dedx.h` (stateful — needed for custom compounds and inverse lookups)
 
-| C Function | Used by | Notes |
-|------------|---------|-------|
-| `dedx_allocate_workspace(count, err*)` | `calculateCustomCompound()`, inverse fns | Allocate workspace |
-| `dedx_free_workspace(ws*, err*)` | cleanup | Free workspace |
-| `dedx_load_config(ws*, cfg*, err*)` | config loading | Load a program/particle/material config |
-| `dedx_get_stp(ws*, cfg*, energy, err*)` | custom compound calc | Single-point evaluation |
-| `dedx_free_config(cfg*, err*)` | cleanup | Free config |
+| C Function                              | Used by                                  | Notes                                   |
+| --------------------------------------- | ---------------------------------------- | --------------------------------------- |
+| `dedx_allocate_workspace(count, err*)`  | `calculateCustomCompound()`, inverse fns | Allocate workspace                      |
+| `dedx_free_workspace(ws*, err*)`        | cleanup                                  | Free workspace                          |
+| `dedx_load_config(ws*, cfg*, err*)`     | config loading                           | Load a program/particle/material config |
+| `dedx_get_stp(ws*, cfg*, energy, err*)` | custom compound calc                     | Single-point evaluation                 |
+| `dedx_free_config(cfg*, err*)`          | cleanup                                  | Free config                             |
 
 ### 4.3 From `dedx_tools.h`
 
-| C Function | Used by | Notes |
-|------------|---------|-------|
-| `convert_units(old, new, material, n, old_vals*, new_vals*)` | `convertStpUnits()` | Unit conversion |
-| `dedx_get_csda(ws*, cfg*, energy, err*)` | `calculateCustomCompound()` | Single-point CSDA |
-| `dedx_get_inverse_stp(ws*, cfg*, stp, side, err*)` | `getInverseStp()` | Inverse lookup |
-| `dedx_get_inverse_csda(ws*, cfg*, range, err*)` | `getInverseCsda()` | Inverse lookup |
+| C Function                                                   | Used by                     | Notes             |
+| ------------------------------------------------------------ | --------------------------- | ----------------- |
+| `convert_units(old, new, material, n, old_vals*, new_vals*)` | `convertStpUnits()`         | Unit conversion   |
+| `dedx_get_csda(ws*, cfg*, energy, err*)`                     | `calculateCustomCompound()` | Single-point CSDA |
+| `dedx_get_inverse_stp(ws*, cfg*, stp, side, err*)`           | `getInverseStp()`           | Inverse lookup    |
+| `dedx_get_inverse_csda(ws*, cfg*, range, err*)`              | `getInverseCsda()`          | Inverse lookup    |
 
 ### 4.4 From `dedx.h` (metadata)
 
-| C Function | Used by | Notes |
-|------------|---------|-------|
-| `dedx_get_program_name(prog)` | `getPrograms()` | Returns `const char*` |
-| `dedx_get_program_version(prog)` | `getPrograms()` | Returns `const char*` |
-| `dedx_get_ion_name(ion)` | `getParticles()` | Returns `const char*` |
-| `dedx_get_material_name(mat)` | `getMaterials()` | Returns `const char*` |
-| `dedx_get_min_energy(prog, ion)` | `getMinEnergy()` | Returns `float` (MeV/nucl) |
-| `dedx_get_max_energy(prog, ion)` | `getMaxEnergy()` | Returns `float` (MeV/nucl) |
-| `dedx_get_error_code(buf, err)` | `LibdedxError` constructor | Error code → string |
-| `dedx_get_version_string()` | `getVersion()` | Returns `const char*` |
-| `dedx_get_i_value(target, err*)` | `getIValue()` | Returns `float` (eV) |
-| `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()` | Compound composition |
-| `dedx_internal_read_density(material, err*)` | `getDensity()` | Internal fn, returns `float` (g/cm³) |
+| C Function                                            | Used by                    | Notes                                |
+| ----------------------------------------------------- | -------------------------- | ------------------------------------ |
+| `dedx_get_program_name(prog)`                         | `getPrograms()`            | Returns `const char*`                |
+| `dedx_get_program_version(prog)`                      | `getPrograms()`            | Returns `const char*`                |
+| `dedx_get_ion_name(ion)`                              | `getParticles()`           | Returns `const char*`                |
+| `dedx_get_material_name(mat)`                         | `getMaterials()`           | Returns `const char*`                |
+| `dedx_get_min_energy(prog, ion)`                      | `getMinEnergy()`           | Returns `float` (MeV/nucl)           |
+| `dedx_get_max_energy(prog, ion)`                      | `getMaxEnergy()`           | Returns `float` (MeV/nucl)           |
+| `dedx_get_error_code(buf, err)`                       | `LibdedxError` constructor | Error code → string                  |
+| `dedx_get_version_string()`                           | `getVersion()`             | Returns `const char*`                |
+| `dedx_get_i_value(target, err*)`                      | `getIValue()`              | Returns `float` (eV)                 |
+| `dedx_get_composition(target, comp[][2], len*, err*)` | `getComposition()`         | Compound composition                 |
+| `dedx_internal_read_density(material, err*)`          | `getDensity()`             | Internal fn, returns `float` (g/cm³) |
 
 ### 4.5 From local `wasm/dedx_extra.h` (thin wrappers — see §11)
 
 These wrappers live in this repository and are compiled alongside libdedx.
 
-| C Function | Used by | Notes |
-|------------|---------|-------|
-| `dedx_get_ion_nucleon_number(ion)` | `getNucleonNumber()`, `getParticles()` | Returns mass number (A) for Z=1..112 |
-| `dedx_get_ion_atom_mass(ion)` | `getAtomicMass()`, `getParticles()` | Returns atomic mass in u for Z=1..112 |
-| `dedx_get_density(material, err*)` | `getDensity()`, `getMaterials()` | Returns density in g/cm³ |
-| `dedx_target_is_gas(target)` | `isGasByDefault()`, `getMaterials()` | Returns 1 if gaseous by default |
-| `dedx_get_material_friendly_name(material)` | Not currently exported to JS | Planned helper for human-friendly display names. Current C implementation uses an override table for selected IDs (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`), but for unmapped IDs it currently falls back to raw `dedx_get_material_name()` output rather than title-casing it. Use the TS-side `getMaterialFriendlyName()` for `getMaterials()` until this helper is exported and verified. |
+| C Function                                  | Used by                                | Notes                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ------------------------------------------- | -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `dedx_get_ion_nucleon_number(ion)`          | `getNucleonNumber()`, `getParticles()` | Returns mass number (A) for Z=1..112                                                                                                                                                                                                                                                                                                                                                                       |
+| `dedx_get_ion_atom_mass(ion)`               | `getAtomicMass()`, `getParticles()`    | Returns atomic mass in u for Z=1..112                                                                                                                                                                                                                                                                                                                                                                      |
+| `dedx_get_density(material, err*)`          | `getDensity()`, `getMaterials()`       | Returns density in g/cm³                                                                                                                                                                                                                                                                                                                                                                                   |
+| `dedx_target_is_gas(target)`                | `isGasByDefault()`, `getMaterials()`   | Returns 1 if gaseous by default                                                                                                                                                                                                                                                                                                                                                                            |
+| `dedx_get_material_friendly_name(material)` | Not currently exported to JS           | Planned helper for human-friendly display names. Current C implementation uses an override table for selected IDs (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`), but for unmapped IDs it currently falls back to raw `dedx_get_material_name()` output rather than title-casing it. Use the TS-side `getMaterialFriendlyName()` for `getMaterials()` until this helper is exported and verified. |
 
 ### 4.6 Emscripten Runtime Methods
 
@@ -748,16 +748,16 @@ Also export `_malloc` and `_free` for heap allocation from JS.
 
 ## 5. WASM Build Requirements
 
-| Requirement | Value | Rationale |
-|-------------|-------|-----------|
-| Module format | **ES module** (`EXPORT_ES6=1`, `MODULARIZE=1`) | Native import in Vite/SvelteKit |
-| Environment | `ENVIRONMENT='web'` | Browser-only target |
-| Memory growth | `ALLOW_MEMORY_GROWTH=1` | Large material lists and batch calculations |
-| Data embedding | **(none)** | All stopping-power tables are compiled into the WASM binary as static C arrays (`dedx_embedded_data.c`). `dedx_data_access.c` has zero `fopen()` calls. No `--preload-file` or `--embed-file` needed. Stage 2.6 confirmed: 457 KB `.wasm` + 13 KB `.mjs`, no `.data` sidecar. |
-| Build tool | **Docker** (`emscripten/emsdk:5.0.5`) | Reproducible builds without local Emscripten install |
-| Output files | `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB) | ES module naming convention; no `.data` sidecar |
-| EXPORTED_FUNCTIONS format | JSON-quoted strings | Emscripten 5.x requires `'["_func1","_func2"]'`; unquoted format compiles silently but produces an empty 241-byte WASM with no exports |
-| EXPORTED_RUNTIME_METHODS | Must include `HEAP32`, `HEAPF32`, `HEAPF64` (plus `ccall`, `cwrap`, `UTF8ToString`) | Required for JS/WASM buffer reads used by the wrapper and verification tooling |
+| Requirement               | Value                                                                               | Rationale                                                                                                                                                                                                                                                                     |
+| ------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Module format             | **ES module** (`EXPORT_ES6=1`, `MODULARIZE=1`)                                      | Native import in Vite/SvelteKit                                                                                                                                                                                                                                               |
+| Environment               | `ENVIRONMENT='web'`                                                                 | Browser-only target                                                                                                                                                                                                                                                           |
+| Memory growth             | `ALLOW_MEMORY_GROWTH=1`                                                             | Large material lists and batch calculations                                                                                                                                                                                                                                   |
+| Data embedding            | **(none)**                                                                          | All stopping-power tables are compiled into the WASM binary as static C arrays (`dedx_embedded_data.c`). `dedx_data_access.c` has zero `fopen()` calls. No `--preload-file` or `--embed-file` needed. Stage 2.6 confirmed: 457 KB `.wasm` + 13 KB `.mjs`, no `.data` sidecar. |
+| Build tool                | **Docker** (`emscripten/emsdk:5.0.5`)                                               | Reproducible builds without local Emscripten install                                                                                                                                                                                                                          |
+| Output files              | `libdedx.mjs` (13 KB) + `libdedx.wasm` (457 KB)                                     | ES module naming convention; no `.data` sidecar                                                                                                                                                                                                                               |
+| EXPORTED_FUNCTIONS format | JSON-quoted strings                                                                 | Emscripten 5.x requires `'["_func1","_func2"]'`; unquoted format compiles silently but produces an empty 241-byte WASM with no exports                                                                                                                                        |
+| EXPORTED_RUNTIME_METHODS  | Must include `HEAP32`, `HEAPF32`, `HEAPF64` (plus `ccall`, `cwrap`, `UTF8ToString`) | Required for JS/WASM buffer reads used by the wrapper and verification tooling                                                                                                                                                                                                |
 
 ---
 
@@ -806,16 +806,17 @@ For example, a proton has A = 1 but m = 1.00794 u. A 100 MeV proton beam
 has 100 MeV/nucl but 100 / 1.00794 ≈ 99.21 MeV/u. This distinction matters
 for CSDA range calculations.
 
-| From | To | Formula |
-|------|----|--------|
-| MeV/nucl | MeV | `E_MeV = E_per_nucl × A` |
-| MeV | MeV/nucl | `E_per_nucl = E_MeV / A` |
-| MeV/u | MeV | `E_MeV = E_per_u × m` |
-| MeV | MeV/u | `E_per_u = E_MeV / m` |
-| MeV/nucl | MeV/u | `E_per_u = E_per_nucl × A / m` |
-| MeV/u | MeV/nucl | `E_per_nucl = E_per_u × m / A` |
+| From     | To       | Formula                        |
+| -------- | -------- | ------------------------------ |
+| MeV/nucl | MeV      | `E_MeV = E_per_nucl × A`       |
+| MeV      | MeV/nucl | `E_per_nucl = E_MeV / A`       |
+| MeV/u    | MeV      | `E_MeV = E_per_u × m`          |
+| MeV      | MeV/u    | `E_per_u = E_MeV / m`          |
+| MeV/nucl | MeV/u    | `E_per_u = E_per_nucl × A / m` |
+| MeV/u    | MeV/nucl | `E_per_nucl = E_per_u × m / A` |
 
 Where:
+
 - **A** = particle's mass number (integer nucleon count, from `dedx_nucl[]`)
 - **m** = particle's atomic mass in u (from `dedx_amu[]`)
 
@@ -863,24 +864,24 @@ const AGGREGATE_STATES = {
 
 /** Interpolation axis scales — maps to C dedx_config.interpolation */
 const INTERPOLATION_SCALES = {
-  LOG_LOG: 0,   // log-log space (default)
-  LIN_LIN: 1,   // linear space
+  LOG_LOG: 0, // log-log space (default)
+  LIN_LIN: 1, // linear space
 } as const;
 
 /** Interpolation fitting methods (JS-level; applied after axis transform) */
 const INTERPOLATION_METHODS = {
-  LINEAR: "linear",  // piecewise linear (default)
-  SPLINE: "spline",  // cubic spline
+  LINEAR: "linear", // piecewise linear (default)
+  SPLINE: "spline", // cubic spline
 } as const;
 
 /** MSTAR calculation modes — maps to C dedx_config.mstar_mode (DEDX_MSTAR_MODE_*) */
 const MSTAR_MODES = {
-  AUTO_CG:           "a",  // Auto base:    condensed→c, gaseous→g
-  AUTO_DH:           "b",  // Auto special: condensed→d, gaseous→h (recommended default)
-  CONDENSED:         "c",  // Condensed standard
-  CONDENSED_SPECIAL: "d",  // Condensed special (downgrades to c for Z ≤ 3)
-  GASEOUS:           "g",  // Gas standard
-  GASEOUS_SPECIAL:   "h",  // Gas special (Z=3–11 and 16–18; downgrades to g otherwise)
+  AUTO_CG: "a", // Auto base:    condensed→c, gaseous→g
+  AUTO_DH: "b", // Auto special: condensed→d, gaseous→h (recommended default)
+  CONDENSED: "c", // Condensed standard
+  CONDENSED_SPECIAL: "d", // Condensed special (downgrades to c for Z ≤ 3)
+  GASEOUS: "g", // Gas standard
+  GASEOUS_SPECIAL: "h", // Gas special (Z=3–11 and 16–18; downgrades to g otherwise)
 } as const;
 ```
 
@@ -904,14 +905,14 @@ const MSTAR_MODES = {
 ```typescript
 /** Particle metadata table. massNumber comes from C, aliases are JS-only. */
 const PARTICLE_ALIASES: Record<number, { name: string; aliases: string[] }> = {
-  1:  { name: "Hydrogen",  aliases: ["proton", "p", "H"] },
-  2:  { name: "Helium",    aliases: ["alpha", "α", "He"] },
-  3:  { name: "Lithium",   aliases: ["Li"] },
-  4:  { name: "Beryllium", aliases: ["Be"] },
-  5:  { name: "Boron",     aliases: ["B"] },
-  6:  { name: "Carbon",    aliases: ["C"] },
-  7:  { name: "Nitrogen",  aliases: ["N"] },
-  8:  { name: "Oxygen",    aliases: ["O"] },
+  1: { name: "Hydrogen", aliases: ["proton", "p", "H"] },
+  2: { name: "Helium", aliases: ["alpha", "α", "He"] },
+  3: { name: "Lithium", aliases: ["Li"] },
+  4: { name: "Beryllium", aliases: ["Be"] },
+  5: { name: "Boron", aliases: ["B"] },
+  6: { name: "Carbon", aliases: ["C"] },
+  7: { name: "Nitrogen", aliases: ["N"] },
+  8: { name: "Oxygen", aliases: ["O"] },
   // ... Z=9..18 for MSTAR/ICRU73 supported particles
   12: { name: "Carbon-12", aliases: ["12C", "C-12"] },
   // Full table to be generated from dedx_nucl[] + element names
@@ -928,17 +929,19 @@ by `dedx_embedded_data.c`. This is not a build or file-access issue — the
 code path is intentionally disabled in the current release.
 
 Runtime observations:
+
 - `dedx_get_stp_table_size(3, 1001, 276)` returns `-1` (error).
 - `dedx_get_material_list(ESTAR)` returns an empty list (0 materials).
 - `dedx_get_ion_name(1001)` returns `""` — hard-code `"Electron"` in the wrapper.
 
 **UI handling:**
+
 - ESTAR (ID=3) appears in `dedx_get_program_list()` output — include it in the
   `ProgramEntity` list but add a `disabled` flag or equivalent.
 - Electron (ID=1001) appears in the `ParticleEntity` list but its only
   associated program is ESTAR. It must be greyed out at all times in v1.
-- When ESTAR or Electron is selected, show a tooltip: *"Electron stopping powers
-  not available in libdedx v1.4.0."*
+- When ESTAR or Electron is selected, show a tooltip: _"Electron stopping powers
+  not available in libdedx v1.4.0."_
 - The `ParticleEntity` for electrons still gets `massNumber = 0` (no
   per-nucleon conversion for electrons; they use MeV only).
 
@@ -949,14 +952,14 @@ the data and code path both exist; only the guard at `dedx.c:587` needs removing
 
 **Resolution: Expose mode picker.** MSTAR has 6 calculation modes:
 
-| Mode | Description |
-|------|-------------|
-| `a` | Auto: condensed→`c`, gaseous→`g` |
-| `b` | Auto: condensed→`d`, gaseous→`h` (recommended by H. Paul) |
-| `c` | Condensed target mode |
-| `d` | Special condensed-target mode |
-| `g` | Gaseous target mode |
-| `h` | Special gaseous-target mode |
+| Mode | Description                                               |
+| ---- | --------------------------------------------------------- |
+| `a`  | Auto: condensed→`c`, gaseous→`g`                          |
+| `b`  | Auto: condensed→`d`, gaseous→`h` (recommended by H. Paul) |
+| `c`  | Condensed target mode                                     |
+| `d`  | Special condensed-target mode                             |
+| `g`  | Gaseous target mode                                       |
+| `h`  | Special gaseous-target mode                               |
 
 Default is `b` (recommended). Show as an advanced dropdown when MSTAR is selected.
 
@@ -968,6 +971,7 @@ type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
 
 **Resolution: Expose as advanced option.** When DEDX_BETHE_EXT00 or DEDX_DEFAULT
 is selected, the user must provide:
+
 - `rho` (density in g/cm³) — **pre-filled with the library-known density** for the
   selected material (from `dedx_get_density()`), but editable by the user.
 - `i_value` (mean excitation potential in eV) — optional, **pre-filled with
@@ -982,11 +986,12 @@ these programs are selected.
 **Resolution: Expose in advanced settings as two orthogonal controls.**
 
 ```typescript
-type InterpolationScale  = "log-log" | "lin-lin";
-type InterpolationMethod = "linear"  | "spline";
+type InterpolationScale = "log-log" | "lin-lin";
+type InterpolationMethod = "linear" | "spline";
 ```
 
 Two separate segmented controls in the Advanced Options accordion:
+
 - **Axis scale** — Log-log (default) / Lin-lin. Log-log maps to
   `DEDX_INTERPOLATION_LOG_LOG = 0`; Lin-lin maps to
   `DEDX_INTERPOLATION_LINEAR = 1`.
@@ -1005,6 +1010,7 @@ See [`advanced-options.md`](04-feature-specs/advanced-options.md) §4.
 the default phase for I-value selection.
 
 **Gaseous-by-default materials include:**
+
 - Noble gases: He, Ne, Ar, Kr, Xe, Rn
 - Elemental gases: H, N, O, F, Cl
 - Compounds: Air, CO₂, NH₃, CH₄, C₂H₆, C₃H₈, C₄H₁₀, C₂H₄, C₂H₂
@@ -1052,8 +1058,8 @@ The numeric material ID is **not displayed** in UI labels; it is kept in the
 `dedx_get_ion_name(1001)` returns `""`. Hard-code `"Electron"` in the wrapper:
 
 ```typescript
-const name = module.ccall('dedx_get_ion_name', 'string', ['number'], [ionId]);
-const displayName = ionId === 1001 ? 'Electron' : toTitleCase(name);
+const name = module.ccall("dedx_get_ion_name", "string", ["number"], [ionId]);
+const displayName = ionId === 1001 ? "Electron" : toTitleCase(name);
 ```
 
 ### 10.3 Program list includes ICRU auto-selector (ID=9)
@@ -1064,7 +1070,7 @@ virtual entry in the UI. It must **not** appear as a selectable program in the
 program picker — filter it from `getPrograms()` output:
 
 ```typescript
-const EXCLUDED_FROM_UI = new Set([9]);  // DEDX_ICRU — internal auto-selector
+const EXCLUDED_FROM_UI = new Set([9]); // DEDX_ICRU — internal auto-selector
 ```
 
 ### 10.4 MSTAR ion list: Z=2–18 only from the C API
@@ -1085,17 +1091,18 @@ const MSTAR_FULL_Z_RANGE = { min: 1, max: 98 };
 `dedx_get_ion_list(DEFAULT)` returns 112 ions (Z=1–112). Earlier specs stated
 Z=1–98; the runtime value is authoritative. Update any documentation or UI
 labels that reference "~240 particles" to clarify:
+
 - Tabulated programs: 1–19 specific ions (program-dependent).
 - MSTAR: Z=2–18 from API; Z=1–98 via parametric extension.
 - DEFAULT/Bethe-ext: Z=1–112.
 
 ### 10.6 Material counts per program (runtime-authoritative)
 
-| Program | `dedx_get_material_list()` count |
-|---------|----------------------------------|
-| DEFAULT / Bethe-ext | 279 |
-| ASTAR, PSTAR, MSTAR, ICRU family (all tabulated) | 78 each |
-| ESTAR | 0 (NOT IMPLEMENTED) |
+| Program                                          | `dedx_get_material_list()` count |
+| ------------------------------------------------ | -------------------------------- |
+| DEFAULT / Bethe-ext                              | 279                              |
+| ASTAR, PSTAR, MSTAR, ICRU family (all tabulated) | 78 each                          |
+| ESTAR                                            | 0 (NOT IMPLEMENTED)              |
 
 The function returns materials with density metadata, not strictly those with
 tabulated STP data. These runtime counts are authoritative for the API.
@@ -1120,13 +1127,13 @@ in the public API headers. We forward-declare them in our local wrapper.
 
 ### 11.1 Wrapper Functions
 
-| Function | Wraps | Returns |
-|----|----|----|
-| `int dedx_get_ion_nucleon_number(int ion)` | `dedx_internal_get_nucleon()` | Mass number (A) for Z=1..112, or -1 on error |
-| `float dedx_get_ion_atom_mass(int ion)` | `dedx_internal_get_atom_mass()` | Atomic mass in u (e.g., 1.00794 for H), or -1 on error |
-| `float dedx_get_density(int material, int *err)` | `dedx_internal_read_density()` | Density in g/cm³ |
-| `int dedx_target_is_gas(int target)` | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise |
-| `const char *dedx_get_material_friendly_name(int material)` | `dedx_get_material_name()` | Human-friendly name; override table for key materials + fallback to raw C name |
+| Function                                                    | Wraps                           | Returns                                                                        |
+| ----------------------------------------------------------- | ------------------------------- | ------------------------------------------------------------------------------ |
+| `int dedx_get_ion_nucleon_number(int ion)`                  | `dedx_internal_get_nucleon()`   | Mass number (A) for Z=1..112, or -1 on error                                   |
+| `float dedx_get_ion_atom_mass(int ion)`                     | `dedx_internal_get_atom_mass()` | Atomic mass in u (e.g., 1.00794 for H), or -1 on error                         |
+| `float dedx_get_density(int material, int *err)`            | `dedx_internal_read_density()`  | Density in g/cm³                                                               |
+| `int dedx_target_is_gas(int target)`                        | `dedx_internal_target_is_gas()` | 1 if gaseous by default, 0 otherwise                                           |
+| `const char *dedx_get_material_friendly_name(int material)` | `dedx_get_material_name()`      | Human-friendly name; override table for key materials + fallback to raw C name |
 
 ### 11.2 Example Implementation Sketch
 

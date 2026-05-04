@@ -28,9 +28,7 @@ const DEFAULT_ROWS: string[] = ["100"];
 const DEFAULT_UNIT: EnergyUnit = "MeV";
 
 export function createEnergyInputState(): EnergyInputState {
-  let rows = $state<EnergyRow[]>(
-    DEFAULT_ROWS.map((text) => ({ id: rowIdCounter++, text }))
-  );
+  let rows = $state<EnergyRow[]>(DEFAULT_ROWS.map((text) => ({ id: rowIdCounter++, text })));
 
   let masterUnit = $state<EnergyUnit>(DEFAULT_UNIT);
 
@@ -53,18 +51,18 @@ export function createEnergyInputState(): EnergyInputState {
   function updateRowText(index: number, text: string): void {
     const parsed = parseEnergyInput(text);
     let error: string | undefined;
-    
+
     if ("error" in parsed) {
       error = parsed.error;
     }
-    
+
     rows = rows.map((row, i) => (i === index ? { ...row, text, error } : row));
-    
+
     if (index === rows.length - 1 && text.trim() !== "") {
       addRow();
     }
   }
-  
+
   function handleBlur(index: number): void {
     const row = rows[index];
     if (row && row.text.trim() === "" && rows.length > 1) {

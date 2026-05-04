@@ -11,16 +11,16 @@ satisfy **WCAG 2.1 Level AA** accessibility (NFR §1) and work correctly within
 **Svelte 5 runes** (`$state`, `$derived`, `$effect`, `$props`). The components
 needed across the feature specs are:
 
-| Component need | Feature spec |
-|---------------|-------------|
-| Typeahead combobox (Particle / Material / Program dropdowns) | [`entity-selection.md`](../04-feature-specs/entity-selection.md) |
-| Scrollable list panels with keyboard selection | [`entity-selection.md`](../04-feature-specs/entity-selection.md) |
-| Collapsible accordion (Advanced Options) | [`advanced-options.md`](../04-feature-specs/advanced-options.md) |
-| Modal dialog / sheet (Custom Compounds builder) | [`custom-compounds.md`](../04-feature-specs/custom-compounds.md) |
-| Dropdown menu (Export button with PDF / CSV options) | [`export.md`](../04-feature-specs/export.md) |
-| Data table (Results grid, sortable columns) | [`calculator.md`](../04-feature-specs/calculator.md) |
-| Toast / notification (URL copied, export done, WASM error) | [`shareable-urls.md`](../04-feature-specs/shareable-urls.md), [`export.md`](../04-feature-specs/export.md) |
-| Checkbox, radio group (Advanced Options form controls) | [`advanced-options.md`](../04-feature-specs/advanced-options.md) |
+| Component need                                               | Feature spec                                                                                               |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------- |
+| Typeahead combobox (Particle / Material / Program dropdowns) | [`entity-selection.md`](../04-feature-specs/entity-selection.md)                                           |
+| Scrollable list panels with keyboard selection               | [`entity-selection.md`](../04-feature-specs/entity-selection.md)                                           |
+| Collapsible accordion (Advanced Options)                     | [`advanced-options.md`](../04-feature-specs/advanced-options.md)                                           |
+| Modal dialog / sheet (Custom Compounds builder)              | [`custom-compounds.md`](../04-feature-specs/custom-compounds.md)                                           |
+| Dropdown menu (Export button with PDF / CSV options)         | [`export.md`](../04-feature-specs/export.md)                                                               |
+| Data table (Results grid, sortable columns)                  | [`calculator.md`](../04-feature-specs/calculator.md)                                                       |
+| Toast / notification (URL copied, export done, WASM error)   | [`shareable-urls.md`](../04-feature-specs/shareable-urls.md), [`export.md`](../04-feature-specs/export.md) |
+| Checkbox, radio group (Advanced Options form controls)       | [`advanced-options.md`](../04-feature-specs/advanced-options.md)                                           |
 
 Building each of these from scratch with raw Tailwind + ARIA attributes is a
 significant undertaking and a recurring source of subtle accessibility bugs
@@ -150,14 +150,14 @@ to this project.
 
 ## Integration plan
 
-| Stage | Action |
-|-------|--------|
-| Stage 4 (SvelteKit scaffold) | Run `pnpm dlx shadcn-svelte@latest init`; commit base theme |
-| Stage 5 (Entity selection) | Add `combobox`, `command`, `popover`, `scroll-area` |
-| Stage 6 (Calculator + Plot) | Add `table`, `badge`, `separator` |
-| Stage 7 (Advanced options) | Add `accordion`, `checkbox`, `radio-group`, `select`, `slider` |
-| Stage 8 (Export + Compounds) | Add `dialog`, `sheet`, `dropdown-menu`, `sonner` (toast) |
-| All stages | `button`, `label`, `input`, `tooltip` — add as needed |
+| Stage                        | Action                                                         |
+| ---------------------------- | -------------------------------------------------------------- |
+| Stage 4 (SvelteKit scaffold) | Run `pnpm dlx shadcn-svelte@latest init`; commit base theme    |
+| Stage 5 (Entity selection)   | Add `combobox`, `command`, `popover`, `scroll-area`            |
+| Stage 6 (Calculator + Plot)  | Add `table`, `badge`, `separator`                              |
+| Stage 7 (Advanced options)   | Add `accordion`, `checkbox`, `radio-group`, `select`, `slider` |
+| Stage 8 (Export + Compounds) | Add `dialog`, `sheet`, `dropdown-menu`, `sonner` (toast)       |
+| All stages                   | `button`, `label`, `input`, `tooltip` — add as needed          |
 
 ---
 

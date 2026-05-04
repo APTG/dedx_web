@@ -8,6 +8,7 @@
 ## Summary
 
 Completed Step 3 of Stage 5 entity selection implementation:
+
 - Created particle aliases configuration for search functionality
 - Created utility function (`cn()`) for Tailwind class merging
 - Fixed duplicate `<script>` tags in component files (invalid in Svelte 5)
@@ -21,6 +22,7 @@ Completed Step 3 of Stage 5 entity selection implementation:
 **File:** `src/lib/config/particle-aliases.ts`
 
 Created comprehensive particle alias mappings for all elements (Z=1-18) plus electron:
+
 - Maps canonical names (e.g., "Hydrogen", "Proton") → particle ID
 - Maps chemical symbols (e.g., "H", "H1", "p+", "p") → particle ID
 - Special handling for electron (ID 1001) with aliases "e-", "beta-", "electron"
@@ -32,9 +34,10 @@ Created comprehensive particle alias mappings for all elements (Z=1-18) plus ele
 **File:** `src/lib/utils.ts`
 
 Implemented simplified `cn()` function for merging Tailwind CSS classes:
+
 ```typescript
 export function cn(...classes: (string | undefined | null | false)[]): string {
-  return classes.filter(Boolean).join(' ');
+  return classes.filter(Boolean).join(" ");
 }
 ```
 
@@ -43,6 +46,7 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 ### 3. Fixed Duplicate Script Tags
 
 **Files:**
+
 - `src/lib/components/entity-selection-comboboxes.svelte`
 - `src/lib/components/entity-selection-panels.svelte`
 
@@ -55,6 +59,7 @@ export function cn(...classes: (string | undefined | null | false)[]): string {
 **File:** `src/tests/unit/entity-selection-comboboxes.test.ts`
 
 Created 10-component-test battery covering:
+
 - Initial render with default selection (H-1, PSTAR, Water)
 - Particle selector opens/closes dropdown
 - Particle dropdown shows correct items (electron + elements Z=1-18)
@@ -71,11 +76,13 @@ Created 10-component-test battery covering:
 ## Test Results
 
 **Existing Tests:** 174 tests still passing (no regressions)
+
 - `compatibility-matrix.test.ts`: 28 tests ✓
 - `entity-selection-state.test.ts`: 21 tests ✓
 - Energy, CSV, URL sync, WASM mock, calculation, integration tests ✓
 
 **New Tests:** 10 component tests written (environment configuration in progress)
+
 - Current issue: Svelte 5 server/client rendering context mismatch
 - `mount()` not available in Vitest server-side context
 - Need to configure `environment: 'jsdom'` or client-side test setup
@@ -116,11 +123,13 @@ pnpm test
 ## Files Created/Modified
 
 **Created:**
+
 - `src/lib/config/particle-aliases.ts` (42 lines)
 - `src/lib/utils.ts` (8 lines)
 - `src/tests/unit/entity-selection-comboboxes.test.ts` (286 lines)
 
 **Fixed:**
+
 - `src/lib/components/entity-combobox.svelte` (removed duplicate script)
 - `src/lib/components/entity-panel.svelte` (removed duplicate script)
 - `src/lib/components/entity-selection-comboboxes.svelte` (merged scripts)
