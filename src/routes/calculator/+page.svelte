@@ -277,11 +277,19 @@
   });
 
   // Update default program when resolvedProgramId changes
+  // Track last processed default program ID to prevent infinite effect loop
+  let lastDefaultProgramId: number | null = null;
+
   $effect(() => {
     if (!multiProgState || !state) return;
 
     const defaultProgramId = state.resolvedProgramId;
-    if (defaultProgramId !== null && defaultProgramId !== -1) {
+    if (
+      defaultProgramId !== null &&
+      defaultProgramId !== -1 &&
+      defaultProgramId !== lastDefaultProgramId
+    ) {
+      lastDefaultProgramId = defaultProgramId;
       if (!multiProgState.selectedProgramIds.includes(defaultProgramId)) {
         multiProgState.addProgram(defaultProgramId);
       }
