@@ -5,7 +5,10 @@
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
-  import { createEntitySelectionState, type EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import {
+    createEntitySelectionState,
+    type EntitySelectionState,
+  } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
@@ -108,15 +111,20 @@
 
   // ── Preview series: auto-calculated whenever entity selection changes ──
   $effect(() => {
-    if (!entityState) { plotState.clearPreview(); return; }
-    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete, selectedProgram } = entityState;
+    if (!entityState) {
+      plotState.clearPreview();
+      return;
+    }
+    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete, selectedProgram } =
+      entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) {
       plotState.clearPreview();
       return;
     }
-    const programName = "resolvedProgram" in selectedProgram
-      ? (selectedProgram.resolvedProgram?.name ?? "Auto")
-      : selectedProgram.name;
+    const programName =
+      "resolvedProgram" in selectedProgram
+        ? (selectedProgram.resolvedProgram?.name ?? "Auto")
+        : selectedProgram.name;
 
     // Snapshot the current selection so a slower in-flight getPlotData
     // for an outdated selection cannot clobber a fresher preview (race
@@ -229,6 +237,64 @@
     entityState?.resetAll();
     showResetConfirm = false;
   }
+
+  // ── SVG Export ──
+  // Bound from JsrootPlot requestExportSvg, set by component's $effect
+  let getSvg: (() => string | null) | null = $state(null);
+
+  // Dropdown state
+  let showExportMenu = $state(false);
+  let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
+
+  function downloadSvg() {
+    if (!getSvg) return;
+    const svgString = getSvg();
+    if (!svgString) return;
+
+    // Create blob and trigger download
+    const blob = new Blob([svgString], { type: "image/svg+xml" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "plot-export.svg";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    showExportMenu = false;
+  }
+
+  function toggleExportMenu() {
+    if (!getSvg) return;
+    showExportMenu = !showExportMenu;
+  }
+
+  $effect(() => {
+    if (!showExportMenu) return;
+    const closeMenu = (e: MouseEvent) => {
+      const target = e.target as HTMLElement;
+      if (
+        !target.closest(`[aria-controls="${exportMenuId}"]`) &&
+        !target.closest(`#${exportMenuId}`)
+      ) {
+        showExportMenu = false;
+      }
+    };
+    document.addEventListener("click", closeMenu);
+    return () => document.removeEventListener("click", closeMenu);
+  });
+
+  $effect(() => {
+    const handleEscape = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        showExportMenu = false;
+      }
+    };
+    if (showExportMenu) {
+      document.addEventListener("keydown", handleEscape);
+      return () => document.removeEventListener("keydown", handleEscape);
+    }
+  });
 </script>
 
 <svelte:head>
@@ -238,7 +304,9 @@
 {#if wasmError.value}
   <div class="space-y-6">
     <h1 class="text-3xl font-bold">Plot</h1>
-    <div class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4">
+    <div
+      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
+    >
       <p class="font-semibold text-destructive">Failed to load the calculation engine.</p>
       <p class="text-sm text-muted-foreground">
         Please try refreshing the page or use a different browser.
@@ -270,174 +338,226 @@
   <div class="space-y-4">
     <h1 class="text-3xl font-bold">Plot</h1>
     <!-- Desktop: sidebar + main grid -->
-  <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
+    <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
+      <!-- ── SIDEBAR ── -->
+      <aside class="flex flex-col gap-4">
+        <EntitySelectionPanels state={entityState} />
 
-    <!-- ── SIDEBAR ── -->
-    <aside class="flex flex-col gap-4">
-      <EntitySelectionPanels state={entityState} />
+        <!-- Add Series button -->
+        <button
+          disabled={!entityState.isComplete}
+          aria-disabled={!entityState.isComplete}
+          onclick={handleAddSeries}
+          class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+        >
+          ＋ Add Series
+        </button>
 
-      <!-- Add Series button -->
-      <button
-        disabled={!entityState.isComplete}
-        aria-disabled={!entityState.isComplete}
-        onclick={handleAddSeries}
-        class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
-      >
-        ＋ Add Series
-      </button>
+        {#if plotState.series.length >= 10}
+          <p class="text-sm text-muted-foreground">
+            10 series displayed. Adding more may reduce readability.
+          </p>
+        {/if}
 
-      {#if plotState.series.length >= 10}
-        <p class="text-sm text-muted-foreground">
-          10 series displayed. Adding more may reduce readability.
-        </p>
-      {/if}
+        <button
+          class="text-sm text-muted-foreground underline hover:no-underline"
+          onclick={handleResetAll}
+        >
+          Reset all
+        </button>
+      </aside>
 
-      <button
-        class="text-sm text-muted-foreground underline hover:no-underline"
-        onclick={handleResetAll}
-      >
-        Reset all
-      </button>
-    </aside>
-
-    <!-- ── MAIN AREA ── -->
-    <div class="flex flex-col gap-4">
-
-      <!-- Controls bar: stp unit + axis scale -->
-      <div class="flex flex-wrap items-center gap-4">
-        <!-- Stopping power unit segmented control -->
-        <div role="radiogroup" aria-label="Stopping power unit" class="flex gap-1">
-          {#each (["keV/µm", "MeV/cm", "MeV·cm²/g"] as const) as unit (unit)}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.stpUnit === unit ? 'bg-primary text-primary-foreground' : 'bg-background'}">
-              <input
-                type="radio"
-                class="sr-only"
-                name="stp-unit"
-                value={unit}
-                checked={plotState.stpUnit === unit}
-                onchange={() => plotState.setStpUnit(unit)}
-              />
-              {unit}
-            </label>
-          {/each}
-        </div>
-
-        <!-- X axis scale -->
-        <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
-              <input
-                type="radio"
-                class="sr-only"
-                name="x-scale"
-                checked={plotState.xLog === isLog}
-                onchange={() => plotState.setAxisScale("x", isLog as boolean)}
-              />
-              X: {label}
-            </label>
-          {/each}
-        </div>
-
-        <!-- Y axis scale -->
-        <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
-          {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
-            <label class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
-              {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}">
-              <input
-                type="radio"
-                class="sr-only"
-                name="y-scale"
-                checked={plotState.yLog === isLog}
-                onchange={() => plotState.setAxisScale("y", isLog as boolean)}
-              />
-              Y: {label}
-            </label>
-          {/each}
-        </div>
-      </div>
-
-      <!-- JSROOT canvas -->
-      <div style="width: 100%; height: min(60vh, 600px); min-height: 400px;">
-        <JsrootPlot
-          series={plotState.series}
-          preview={plotState.preview}
-          stpUnit={plotState.stpUnit}
-          xLog={plotState.xLog}
-          yLog={plotState.yLog}
-          {axisRanges}
-        />
-      </div>
-
-      <!-- Series list (legend) -->
-      {#if plotState.series.length > 0 || plotState.preview}
-        <div role="list" aria-label="Plot series" class="flex flex-col gap-1">
-          {#if plotState.preview}
-            <div role="listitem" class="flex items-center gap-2 text-sm italic text-muted-foreground">
-              <span
-                class="inline-block h-4 w-4 rounded-sm border border-dashed"
-                style="background-color: #000; opacity: 0.5"
-                aria-label="Black, dashed line (preview)"
-              ></span>
-              <span>Preview — {plotState.preview.particleName} in {plotState.preview.materialName}</span>
-              <button
-                aria-label="Toggle preview visibility"
-                onclick={() => plotState.togglePreviewVisibility()}
-                class="ml-auto text-muted-foreground hover:text-foreground"
-              >👁</button>
+      <!-- ── MAIN AREA ── -->
+      <div class="flex flex-col gap-4">
+        <!-- Controls bar: stp unit + axis scale + export -->
+        <div class="flex flex-wrap items-center justify-between gap-4">
+          <!-- Left: stp unit + axis scale controls -->
+          <div class="flex flex-wrap items-center gap-4">
+            <!-- Stopping power unit segmented control -->
+            <div role="radiogroup" aria-label="Stopping power unit" class="flex gap-1">
+              {#each ["keV/µm", "MeV/cm", "MeV·cm²/g"] as const as unit (unit)}
+                <label
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                {plotState.stpUnit === unit
+                    ? 'bg-primary text-primary-foreground'
+                    : 'bg-background'}"
+                >
+                  <input
+                    type="radio"
+                    class="sr-only"
+                    name="stp-unit"
+                    value={unit}
+                    checked={plotState.stpUnit === unit}
+                    onchange={() => plotState.setStpUnit(unit)}
+                  />
+                  {unit}
+                </label>
+              {/each}
             </div>
-          {/if}
 
-          {#each plotState.series as s (s.seriesId)}
-            <div
-              role="listitem"
-              class="flex items-center gap-2 text-sm"
-              style={s.visible ? "" : "opacity: 0.4"}
+            <!-- X axis scale -->
+            <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
+              {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
+                <label
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
+                >
+                  <input
+                    type="radio"
+                    class="sr-only"
+                    name="x-scale"
+                    checked={plotState.xLog === isLog}
+                    onchange={() => plotState.setAxisScale("x", isLog as boolean)}
+                  />
+                  X: {label}
+                </label>
+              {/each}
+            </div>
+
+            <!-- Y axis scale -->
+            <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
+              {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
+                <label
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
+                >
+                  <input
+                    type="radio"
+                    class="sr-only"
+                    name="y-scale"
+                    checked={plotState.yLog === isLog}
+                    onchange={() => plotState.setAxisScale("y", isLog as boolean)}
+                  />
+                  Y: {label}
+                </label>
+              {/each}
+            </div>
+          </div>
+
+          <!-- Right: Export image dropdown -->
+          <div class="relative">
+            <button
+              aria-label="Export plot as image"
+              aria-haspopup="true"
+              aria-expanded={showExportMenu}
+              aria-controls={exportMenuId}
+              onclick={toggleExportMenu}
+              disabled={getSvg === null}
+              class="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
             >
-              <span
-                class="inline-block h-4 w-4 rounded-sm"
-                style="background-color: {jsrootSwatchColors?.get(s.colorIndex) ?? s.color}"
-                aria-label="{jsrootSwatchColors?.get(s.colorIndex) ?? s.color}, solid line"
-              ></span>
-              <span>{s.label}</span>
-              <button
-                aria-label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
-                aria-pressed={!s.visible}
-                onclick={() => plotState.toggleVisibility(s.seriesId)}
-                class="ml-auto text-muted-foreground hover:text-foreground"
-              >👁</button>
-              <button
-                aria-label="Remove series {s.label}"
-                onclick={() => plotState.removeSeries(s.seriesId)}
-                class="text-muted-foreground hover:text-destructive"
-              >×</button>
-            </div>
-          {/each}
-        </div>
-      {/if}
+              Export image ▾
+            </button>
 
-    </div>
-  </div>
-
-  <!-- Reset confirmation dialog -->
-  {#if showResetConfirm}
-    <div role="dialog" aria-modal="true" aria-label="Confirm reset"
-         class="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-      <div class="rounded-lg border bg-card p-6 shadow-lg">
-        <p class="mb-4">Remove all {plotState.series.length} series and reset selections?</p>
-        <div class="flex justify-end gap-2">
-          <button
-            onclick={() => (showResetConfirm = false)}
-            class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent"
-          >Cancel</button>
-          <button
-            onclick={doReset}
-            class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
-          >Reset</button>
+            {#if showExportMenu}
+              <div
+                id={exportMenuId}
+                role="menu"
+                aria-label="Export options"
+                class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-md border bg-popover p-1 shadow-md"
+              >
+                <button
+                  role="menuitem"
+                  onclick={downloadSvg}
+                  class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                >
+                  Download SVG
+                </button>
+              </div>
+            {/if}
+          </div>
         </div>
+
+        <!-- JSROOT canvas -->
+        <div style="width: 100%; height: min(60vh, 600px); min-height: 400px;">
+          <JsrootPlot
+            series={plotState.series}
+            preview={plotState.preview}
+            stpUnit={plotState.stpUnit}
+            xLog={plotState.xLog}
+            yLog={plotState.yLog}
+            {axisRanges}
+            bind:requestExportSvg={getSvg}
+          />
+        </div>
+
+        <!-- Series list (legend) -->
+        {#if plotState.series.length > 0 || plotState.preview}
+          <div role="list" aria-label="Plot series" class="flex flex-col gap-1">
+            {#if plotState.preview}
+              <div
+                role="listitem"
+                class="flex items-center gap-2 text-sm italic text-muted-foreground"
+              >
+                <span
+                  class="inline-block h-4 w-4 rounded-sm border border-dashed"
+                  style="background-color: #000; opacity: 0.5"
+                  aria-label="Black, dashed line (preview)"
+                ></span>
+                <span
+                  >Preview — {plotState.preview.particleName} in {plotState.preview
+                    .materialName}</span
+                >
+                <button
+                  aria-label="Toggle preview visibility"
+                  onclick={() => plotState.togglePreviewVisibility()}
+                  class="ml-auto text-muted-foreground hover:text-foreground">👁</button
+                >
+              </div>
+            {/if}
+
+            {#each plotState.series as s (s.seriesId)}
+              <div
+                role="listitem"
+                class="flex items-center gap-2 text-sm"
+                style={s.visible ? "" : "opacity: 0.4"}
+              >
+                <span
+                  class="inline-block h-4 w-4 rounded-sm"
+                  style="background-color: {jsrootSwatchColors?.get(s.colorIndex) ?? s.color}"
+                  aria-label="{jsrootSwatchColors?.get(s.colorIndex) ?? s.color}, solid line"
+                ></span>
+                <span>{s.label}</span>
+                <button
+                  aria-label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
+                  aria-pressed={!s.visible}
+                  onclick={() => plotState.toggleVisibility(s.seriesId)}
+                  class="ml-auto text-muted-foreground hover:text-foreground">👁</button
+                >
+                <button
+                  aria-label="Remove series {s.label}"
+                  onclick={() => plotState.removeSeries(s.seriesId)}
+                  class="text-muted-foreground hover:text-destructive">×</button
+                >
+              </div>
+            {/each}
+          </div>
+        {/if}
       </div>
     </div>
-  {/if}
+
+    <!-- Reset confirmation dialog -->
+    {#if showResetConfirm}
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Confirm reset"
+        class="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
+      >
+        <div class="rounded-lg border bg-card p-6 shadow-lg">
+          <p class="mb-4">Remove all {plotState.series.length} series and reset selections?</p>
+          <div class="flex justify-end gap-2">
+            <button
+              onclick={() => (showResetConfirm = false)}
+              class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent">Cancel</button
+            >
+            <button
+              onclick={doReset}
+              class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
+              >Reset</button
+            >
+          </div>
+        </div>
+      </div>
+    {/if}
   </div>
 {/if}
