@@ -36,7 +36,7 @@
     monospace?: boolean;
   }
 
-  import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+  import type { MultiProgramState } from "$lib/state/multi-program.svelte.ts";
   import type { LibdedxError, CalculationResult } from "$lib/wasm/types";
 
   interface Props {
@@ -45,6 +45,9 @@
     columns?: ColumnDef[];
     class?: string;
     // Multi-program comparison props (advanced mode)
+    // TODO: These props are unused in the current implementation but are kept
+    // for future multi-program table rendering. They are prefixed with underscore
+    // to suppress Svelte 5 warnings about unused $props() entries.
     multiProgramState?: MultiProgramState;
     comparisonResults?: Map<number, CalculationResult | LibdedxError>;
   }

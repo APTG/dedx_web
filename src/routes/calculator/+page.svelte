@@ -11,7 +11,7 @@
   import {
     createMultiProgramState,
     type MultiProgramState,
-  } from "$lib/state/multi-program.svelte";
+  } from "$lib/state/multi-program.svelte.ts";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
@@ -265,7 +265,7 @@
       {#if isAdvancedMode.value && multiProgState && state}
         <div class="flex items-center gap-3 pt-2">
           <MultiProgramPicker
-            multiState={multiProgState}
+            state={multiProgState}
             availablePrograms={state.availablePrograms}
             compatibleIds={new Set(state.availablePrograms.map((p) => p.id))}
           />

@@ -1,17 +1,17 @@
 <script lang="ts">
   import type { ProgramEntity } from "$lib/wasm/types";
-  import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+  import type { MultiProgramState } from "$lib/state/multi-program.svelte.ts";
   import { Button } from "$lib/components/ui/button";
   import { cn } from "$lib/utils";
 
   interface Props {
-    multiState: MultiProgramState;
+    state: MultiProgramState;
     availablePrograms: ProgramEntity[];
     compatibleIds: Set<number>;
     class?: string;
   }
 
-  let { multiState, availablePrograms, compatibleIds, class: className = "" }: Props = $props();
+  let { state: multiState, availablePrograms, compatibleIds, class: className = "" }: Props = $props();
 
   let isOpen = $state(false);
 
@@ -91,7 +91,7 @@
     aria-haspopup="listbox"
     class="justify-between"
   >
-    <span>Programs</span>
+    <span>Programs ▾</span>
     <span class="ml-2 text-xs">{multiState.selectedProgramIds.length}</span>
     <svg
       class={cn("ml-2 h-4 w-4 transition-transform", isOpen && "rotate-180")}
