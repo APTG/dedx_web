@@ -17,7 +17,7 @@ function sanitizeCsvCell(value: string): string {
  * RFC 4180 quoting: only wrap in double quotes when the value contains
  * `"`, `,`, CR, or LF; escape inner quotes by doubling them.
  */
-function makeCsvCell(value: string): string {
+export function makeCsvCell(value: string): string {
   if (value.includes('"') || value.includes(",") || value.includes("\r") || value.includes("\n")) {
     return `"${value.replaceAll('"', '""')}"`;
   }
