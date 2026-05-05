@@ -161,6 +161,43 @@ If `pnpm exec playwright test` produces failures:
 Types: `feat`, `fix`, `test`, `chore`, `docs`
 No `--no-verify`. Fix hook failures before committing.
 
+## MCP tool usage
+
+Three MCP servers are available. Use them proactively — do not guess when a tool can answer.
+
+### Svelte MCP (`@sveltejs/opencode` plugin)
+
+Already covered in [Non-negotiable rules](#non-negotiable-rules): call `svelte-autofixer`
+on every `.svelte` file you write before committing.
+
+### Tailwind MCP (`tailwindcss-mcp-server`)
+
+When writing Tailwind CSS classes in Svelte components:
+- **Before writing a utility class**, query the Tailwind MCP for the correct v4 name,
+  spacing/color token, or arbitrary-value syntax.
+- This is especially important for Tailwind v4 — class names and layer syntax differ from v3.
+- Example: if you want a specific gray shade or want to know the correct `@layer` syntax, ask the MCP.
+
+### Playwright MCP (`@playwright/mcp`)
+
+**This is for interactive browser control during development — NOT for running the E2E test suite.**
+
+`pnpm exec playwright test` runs the project's test files in `tests/e2e/`. The Playwright MCP
+gives you live browser tools (navigate, click, screenshot, accessibility snapshot) that you
+call manually.
+
+When to use it:
+1. After implementing a UI component, start the dev server (`pnpm dev`).
+2. Use the `browser_navigate` tool to open `http://localhost:5173/<route>`.
+3. Use `browser_screenshot` to visually verify layout and rendering.
+4. Use `browser_click` / `browser_type` to verify interactive behavior.
+5. Fix visual issues, then proceed with `pnpm exec playwright test` as usual.
+
+This turns the workflow from "code → test → commit" into "code → **see** → fix → test → commit",
+catching visual regressions before the E2E suite runs.
+
+---
+
 ## Workflow
 
 1. Read the task description and acceptance criteria.

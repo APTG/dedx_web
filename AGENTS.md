@@ -87,8 +87,8 @@ mode depends on the local opencode configuration rather than this file alone.
 | MCP                                      | Availability                                                                                     | What it provides                                                 |
 | ---------------------------------------- | ------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------- |
 | **Svelte** (`@sveltejs/opencode` plugin) | Plugin-managed; check local opencode/Svelte MCP configuration for transport and offline behavior | Svelte 5 docs, `svelte-autofixer`, `svelte-file-editor` subagent |
-| **Tailwind** (`tailwindcss-mcp-server`)  | npx (needs internet first run)                                                                   | Tailwind v4 class reference                                      |
-| **Playwright** (`@playwright/mcp`)       | npx (needs internet first run)                                                                   | Browser automation, E2E test generation                          |
+| **Tailwind** (`tailwindcss-mcp-server`)  | npx (needs internet first run)                                                                   | Tailwind v4 class/token lookup. **Query before writing utility classes** — don't guess; ask the MCP for the correct v4 class name, spacing scale, or color token. |
+| **Playwright** (`@playwright/mcp`)       | npx (needs internet first run)                                                                   | Interactive browser control during **development** (navigate, click, screenshot, accessibility snapshot). Use to visually verify a UI component against the running dev server. **NOT the E2E test runner** — run `pnpm exec playwright test` for the project's test suite. |
 
 **PLGrid / offline sessions:** the Tailwind and Playwright MCP servers will
 fail offline on the very first run if `npx` cannot reach npm. Once their
