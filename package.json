@@ -40,7 +40,7 @@
     "eslint": "^10.3.0",
     "eslint-config-prettier": "^10.1.5",
     "eslint-plugin-svelte": "^3.17.1",
-    "globals": "^17.5.0",
+    "globals": "^17.6.0",
     "jsdom": "^29.1.1",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^3.4.0",
@@ -50,13 +50,13 @@
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.1.10",
     "typescript": "^5.8.3",
-    "typescript-eslint": "^8.59.1",
+    "typescript-eslint": "^8.59.2",
     "vite": "^8.0.10",
     "vitest": "^3.2.2"
   },
   "dependencies": {
     "jspdf": "^4.2.1",
     "jsroot": "^7.9.0",
-    "zarrita": "^0.7.2"
+    "zarrita": "^0.7.3"
   }
 }
