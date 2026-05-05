@@ -1,9 +1,6 @@
 <script lang="ts">
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
-  import {
-    isAdvancedMode,
-    initAdvancedModeFromUrl,
-  } from "$lib/state/advanced-mode.svelte";
+  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
@@ -15,6 +12,7 @@
     createMultiProgramState,
     type MultiProgramState,
   } from "$lib/state/multi-program.svelte.ts";
+  import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
@@ -27,12 +25,13 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
-  import {
-    decodeCalculatorUrl,
-    calculatorUrlQueryString,
-  } from "$lib/utils/calculator-url";
+  import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
   import { initExportState } from "$lib/state/export.svelte";
+  import {
+    advancedOptions,
+    loadAdvancedOptionsFromStorage,
+  } from "$lib/state/advanced-options.svelte.ts";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -47,9 +46,19 @@
         state = createEntitySelectionState(matrix);
         calcState = createCalculatorState(state, service);
 
+        // Load advanced options from localStorage first, then URL will override if present
+        loadAdvancedOptionsFromStorage();
+
         const urlState = decodeCalculatorUrl(page.url.searchParams);
         // Restore advanced mode from URL (URL param overrides localStorage if present).
         initAdvancedModeFromUrl(page.url.searchParams);
+
+        // Restore advanced options from URL (URL takes priority over localStorage which was loaded above)
+        const urlAdvOpts = urlState.advancedOptions;
+        if (urlAdvOpts) {
+          advancedOptions.value = urlAdvOpts;
+        }
+
         if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
         if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
         if (urlState.programId !== null) state.selectProgram(urlState.programId);
@@ -91,6 +100,9 @@
               (id) => multiProgState.columnVisibility.get(id) === false,
             ),
             quantityFocus: multiProgState.quantityFocus,
+            // Include advanced options when in advanced mode
+            advancedOptions: advancedOptions.value,
+            materialIsGas: state.selectedMaterial?.isGasByDefault,
           }
         : {}),
     };
@@ -381,6 +393,7 @@
         particleId: inputSnapshot.particleId,
         materialId: inputSnapshot.materialId,
         energies: inputSnapshot.energies,
+        options: advancedOptions.value,
       });
 
       if (!cancelled) {
@@ -550,6 +563,16 @@
             </div>
           </div>
         </div>
+        <!-- Advanced Options Panel -->
+        {#if state}
+          <AdvancedOptionsPanel
+            options={advancedOptions.value}
+            materialIsGas={state.selectedMaterial?.isGasByDefault ?? false}
+            materialBuiltInDensity={state.selectedMaterial?.builtInDensity}
+            materialBuiltInAggregateState={state.selectedMaterial?.builtInAggregateState}
+            selectedProgram={state.selectedProgram?.id ?? null}
+          />
+        {/if}
       {/if}
       <!-- Advanced mode onboarding hint -->
       {#if showAdvancedHint}

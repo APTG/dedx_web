@@ -109,9 +109,7 @@
         </div>
         <div class="flex items-center gap-2 shrink-0">
           <!-- Basic/Advanced mode toggle: always visible so mobile users can enter/leave Advanced mode -->
-          <div
-            class="flex items-center rounded-md border border-border overflow-hidden text-sm"
-          >
+          <div class="flex items-center rounded-md border border-border overflow-hidden text-sm">
             <button
               type="button"
               class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}

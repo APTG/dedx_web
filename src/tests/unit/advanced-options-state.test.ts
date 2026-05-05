@@ -28,9 +28,8 @@ describe("advanced-options state", () => {
 
   describe("resetAdvancedOptions", () => {
     test("clears all fields to undefined", async () => {
-      const { advancedOptions, resetAdvancedOptions } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, resetAdvancedOptions } =
+        await import("$lib/state/advanced-options.svelte");
 
       // Set some values
       advancedOptions.value = {
@@ -66,9 +65,8 @@ describe("advanced-options state", () => {
 
   describe("persistAdvancedOptions", () => {
     test("saves non-undefined fields to localStorage", async () => {
-      const { advancedOptions, persistAdvancedOptions } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, persistAdvancedOptions } =
+        await import("$lib/state/advanced-options.svelte");
 
       advancedOptions.value = {
         aggregateState: "condensed",
@@ -89,9 +87,8 @@ describe("advanced-options state", () => {
     });
 
     test("removes localStorage keys for undefined fields", async () => {
-      const { advancedOptions, persistAdvancedOptions } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, persistAdvancedOptions } =
+        await import("$lib/state/advanced-options.svelte");
 
       // Only set density, leave others undefined
       advancedOptions.value = {
@@ -111,9 +108,8 @@ describe("advanced-options state", () => {
 
   describe("loadAdvancedOptionsFromStorage", () => {
     test("restores all fields from localStorage", async () => {
-      const { advancedOptions, loadAdvancedOptionsFromStorage } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, loadAdvancedOptionsFromStorage } =
+        await import("$lib/state/advanced-options.svelte");
 
       localStorage.setItem("dedx_adv_agg_state", "condensed");
       localStorage.setItem("dedx_adv_interp_scale", "lin-lin");
@@ -140,9 +136,8 @@ describe("advanced-options state", () => {
       // Invalid i-value (too large)
       mockLocalStorage["dedx_adv_ival"] = "15000";
 
-      const { advancedOptions, loadAdvancedOptionsFromStorage } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, loadAdvancedOptionsFromStorage } =
+        await import("$lib/state/advanced-options.svelte");
       loadAdvancedOptionsFromStorage();
 
       expect(advancedOptions.value.densityOverride).toBeUndefined();
@@ -153,9 +148,8 @@ describe("advanced-options state", () => {
     test("ignores invalid I-value at boundary (zero)", async () => {
       mockLocalStorage["dedx_adv_ival"] = "0";
 
-      const { advancedOptions, loadAdvancedOptionsFromStorage } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, loadAdvancedOptionsFromStorage } =
+        await import("$lib/state/advanced-options.svelte");
       loadAdvancedOptionsFromStorage();
 
       expect(advancedOptions.value.iValueOverride).toBeUndefined();
@@ -164,9 +158,8 @@ describe("advanced-options state", () => {
     test("accepts valid I-value at upper boundary (10000)", async () => {
       mockLocalStorage["dedx_adv_ival"] = "10000";
 
-      const { advancedOptions, loadAdvancedOptionsFromStorage } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, loadAdvancedOptionsFromStorage } =
+        await import("$lib/state/advanced-options.svelte");
       loadAdvancedOptionsFromStorage();
 
       expect(advancedOptions.value.iValueOverride).toBe(10000);
@@ -403,9 +396,8 @@ describe("advanced-options state", () => {
 
   describe("URL encode/decode round-trip", () => {
     test("round-trip for agg_state=condensed (on condensed material - no override)", async () => {
-      const { advancedOptions, encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       // Set up state with condensed aggregate state
       advancedOptions.value.aggregateState = "condensed";
@@ -419,9 +411,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for interp_scale=lin-lin", async () => {
-      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       const original = { interpolation: { scale: "linear" as const, method: "linear" as const } };
       const params = encodeAdvancedOptionsUrl(original);
@@ -432,9 +423,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for interp_method=spline", async () => {
-      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       const original = { interpolation: { scale: "log" as const, method: "cubic" as const } };
       const params = encodeAdvancedOptionsUrl(original);
@@ -445,9 +435,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for mstar_mode=c", async () => {
-      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       const original = { mstarMode: "c" as const };
       const params = encodeAdvancedOptionsUrl(original);
@@ -457,9 +446,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for density", async () => {
-      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       const original = { densityOverride: 1.205 };
       const params = encodeAdvancedOptionsUrl(original);
@@ -469,9 +457,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for ival", async () => {
-      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       const original = { iValueOverride: 75.0 };
       const params = encodeAdvancedOptionsUrl(original);
@@ -481,9 +468,8 @@ describe("advanced-options state", () => {
     });
 
     test("round-trip for all params", async () => {
-      const { advancedOptions, encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, encodeAdvancedOptionsUrl, decodeAdvancedOptionsUrl } =
+        await import("$lib/state/advanced-options.svelte");
 
       advancedOptions.value.aggregateState = "condensed";
       advancedOptions.value.interpolation = { scale: "linear", method: "cubic" };
@@ -507,9 +493,8 @@ describe("advanced-options state", () => {
 
   describe("local storage key prefix", () => {
     test("uses dedx_adv_ prefix for all keys", async () => {
-      const { advancedOptions, persistAdvancedOptions } = await import(
-        "$lib/state/advanced-options.svelte"
-      );
+      const { advancedOptions, persistAdvancedOptions } =
+        await import("$lib/state/advanced-options.svelte");
 
       advancedOptions.value = {
         aggregateState: "gas",

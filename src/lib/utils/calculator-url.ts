@@ -1,5 +1,6 @@
 import type { EnergyUnit } from "$lib/wasm/types";
 import { parseEnergyInput, type EnergySuffixUnit } from "$lib/utils/energy-parser";
+import type { AdvancedOptions } from "$lib/wasm/types";
 
 /**
  * URL contract major version. Bump only on breaking changes to query
@@ -70,6 +71,10 @@ export interface CalculatorUrlState {
   selectedProgramIds?: number[];
   hiddenProgramIds?: number[];
   quantityFocus?: "both" | "stp" | "csda";
+
+  /** Advanced options (optional — only present when encoding/decoding advanced options) */
+  advancedOptions?: AdvancedOptions;
+  materialIsGas?: boolean; // Used when encoding to determine if agg_state is an override
 }
 
 function isMasterUnit(s: string): s is EnergyUnit {
@@ -165,6 +170,47 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("qfocus", state.quantityFocus ?? "both");
   }
 
+  // Advanced options params (only in advanced mode)
+  if (state.isAdvancedMode && state.advancedOptions) {
+    const opts = state.advancedOptions;
+
+    // Aggregate state - only if it's an override (differs from built-in)
+    if (opts.aggregateState !== undefined && state.materialIsGas !== undefined) {
+      const builtInPhase = state.materialIsGas ? "gas" : "condensed";
+      if (opts.aggregateState !== builtInPhase) {
+        params.set("agg_state", opts.aggregateState);
+      }
+    } else if (opts.aggregateState !== undefined && state.materialIsGas === undefined) {
+      // If materialIsGas not provided, encode the value as-is
+      params.set("agg_state", opts.aggregateState);
+    }
+
+    // Interpolation scale - only if not default ("log" is default, "linear" maps to "lin-lin")
+    if (opts.interpolation?.scale !== undefined && opts.interpolation.scale === "linear") {
+      params.set("interp_scale", "lin-lin");
+    }
+
+    // Interpolation method - only if not default ("linear" is default, "cubic" maps to "spline")
+    if (opts.interpolation?.method !== undefined && opts.interpolation.method === "cubic") {
+      params.set("interp_method", "spline");
+    }
+
+    // MSTAR mode - only if not default ("b" is default)
+    if (opts.mstarMode !== undefined && opts.mstarMode !== "b") {
+      params.set("mstar_mode", opts.mstarMode);
+    }
+
+    // Density override - only if set
+    if (opts.densityOverride !== undefined) {
+      params.set("density", String(opts.densityOverride));
+    }
+
+    // I-value override - only if set
+    if (opts.iValueOverride !== undefined) {
+      params.set("ival", String(opts.iValueOverride));
+    }
+  }
+
   return params;
 }
 
@@ -236,7 +282,53 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
       ? qfocus
       : undefined;
 
-  return {
+  // Parse advanced options params (only in advanced mode)
+  let advancedOptions: AdvancedOptions | undefined;
+  if (isAdvancedMode) {
+    const opts: Partial<AdvancedOptions> = {};
+
+    const aggState = params.get("agg_state") as "gas" | "condensed" | null;
+    if (aggState === "gas" || aggState === "condensed") {
+      opts.aggregateState = aggState;
+    }
+
+    const interpScale = params.get("interp_scale");
+    const interpMethod = params.get("interp_method");
+    if (interpScale === "lin-lin" || interpMethod === "spline") {
+      opts.interpolation = {
+        scale: interpScale === "lin-lin" ? "linear" : "log",
+        method: interpMethod === "spline" ? "cubic" : "linear",
+      };
+    }
+
+    const mstarMode = params.get("mstar_mode") as "a" | "b" | "c" | null;
+    if (mstarMode === "a" || mstarMode === "c") {
+      opts.mstarMode = mstarMode;
+    }
+
+    const density = params.get("density");
+    if (density !== null) {
+      const d = parseFloat(density);
+      if (!Number.isNaN(d) && d > 0) {
+        opts.densityOverride = d;
+      }
+    }
+
+    const ival = params.get("ival");
+    if (ival !== null) {
+      const i = parseFloat(ival);
+      if (!Number.isNaN(i) && i > 0) {
+        opts.iValueOverride = i;
+      }
+    }
+
+    // Only include advancedOptions if at least one field is set
+    if (Object.keys(opts).length > 0) {
+      advancedOptions = opts as AdvancedOptions;
+    }
+  }
+
+  const result: CalculatorUrlState = {
     particleId: parseId(params.get("particle")),
     materialId: parseId(params.get("material")),
     programId:
@@ -246,8 +338,18 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     rows: rows.length > 0 ? rows : [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
     masterUnit,
     isAdvancedMode,
-    selectedProgramIds,
-    hiddenProgramIds,
-    quantityFocus,
   };
+  if (selectedProgramIds) {
+    result.selectedProgramIds = selectedProgramIds;
+  }
+  if (hiddenProgramIds) {
+    result.hiddenProgramIds = hiddenProgramIds;
+  }
+  if (quantityFocus) {
+    result.quantityFocus = quantityFocus;
+  }
+  if (advancedOptions) {
+    result.advancedOptions = advancedOptions;
+  }
+  return result;
 }
