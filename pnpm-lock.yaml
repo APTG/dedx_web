@@ -18,8 +18,8 @@ importers:
         specifier: ^7.9.0
         version: 7.10.3
       zarrita:
-        specifier: ^0.7.2
-        version: 0.7.2
+        specifier: ^0.7.3
+        version: 0.7.3
     devDependencies:
       '@eslint/js':
         specifier: ^10.0.1
@@ -2508,8 +2508,8 @@ packages:
     resolution: {integrity: sha512-rVksvsnNCdJ/ohGc6xgPwyN8eheCxsiLM8mxuE/t/mOVqJewPuO1miLpTHQiRgTKCLexL4MeAFVagts7HmNZ2Q==}
     engines: {node: '>=10'}
 
-  zarrita@0.7.2:
-    resolution: {integrity: sha512-BHP+Z+yemkl9pOogkO1XMOrJ5qI4RNqrmheqJeYtIhpiaW4uvqplYx/jGkMD6edQjIZRQhniFigJZE2oTh7dwQ==}
+  zarrita@0.7.3:
+    resolution: {integrity: sha512-wChTQ1Ox75INoQCzKAfLWAfB70JJ4KjdW8Sz5x4ZWrFB4Dw+YZdnxHTL0xSdsrB9EmKSeK7fS1Y+I2ibhfGbkw==}
 
   zimmerframe@1.1.4:
     resolution: {integrity: sha512-B58NGBEoc8Y9MWWCQGl/gq9xBCe4IiKM0a2x7GZdQKOW5Exr8S1W24J6OgM1njK8xCRGvAJIL/MxXHf6SkmQKQ==}
@@ -4741,7 +4741,7 @@ snapshots:
 
   yocto-queue@0.1.0: {}
 
-  zarrita@0.7.2:
+  zarrita@0.7.3:
     dependencies:
       '@zarrita/storage': 0.2.0
       numcodecs: 0.3.2
