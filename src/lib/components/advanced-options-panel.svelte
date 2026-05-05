@@ -13,19 +13,19 @@
     TooltipTrigger,
     TooltipProvider,
   } from "$lib/components/ui/tooltip";
-  import { Select, SelectContent, SelectItem, SelectTrigger } from "$lib/components/ui/select";
+  import { NativeSelect } from "$lib/components/ui/native-select";
   import { cn } from "$lib/utils";
   import Info from "@lucide/svelte/icons/info";
   import type {
-    AdvancedOptions,
     AggregateState,
     InterpolationScale,
     InterpolationMethod,
     MstarMode,
   } from "$lib/wasm/types";
 
+  import { advancedOptions } from "$lib/state/advanced-options.svelte.ts";
+
   interface Props {
-    options: { value: AdvancedOptions };
     materialIsGas: boolean;
     materialBuiltInDensity?: number;
     materialBuiltInAggregateState?: "gas" | "condensed";
@@ -33,12 +33,14 @@
   }
 
   let {
-    options,
     materialIsGas,
     materialBuiltInDensity,
     materialBuiltInAggregateState,
     selectedProgram,
   }: Props = $props();
+  
+  // Use module-level state directly for reactivity
+  const options = advancedOptions.value;
 
   // Local state for input values and validation
   let densityInput = $state("");
@@ -48,9 +50,8 @@
 
   // Sync local state with reactive options on mount and when options change
   $effect(() => {
-    const opt = options.value;
-    const densityVal = opt.densityOverride !== undefined ? String(opt.densityOverride) : "";
-    const ivalVal = opt.iValueOverride !== undefined ? String(opt.iValueOverride) : "";
+    const densityVal = options.densityOverride !== undefined ? String(options.densityOverride) : "";
+    const ivalVal = options.iValueOverride !== undefined ? String(options.iValueOverride) : "";
     // Use untracked assignment pattern - these are intentional synchronizations
     densityInput = densityVal;
     iValueInput = ivalVal;
@@ -131,9 +132,9 @@
 
     densityError = null;
     if (validation.parsedValue !== undefined) {
-      options.value.densityOverride = validation.parsedValue;
+      options.densityOverride = validation.parsedValue;
     } else {
-      delete options.value.densityOverride;
+      delete options.densityOverride;
     }
   }
 
@@ -151,9 +152,9 @@
 
     iValueError = null;
     if (validation.parsedValue !== undefined) {
-      options.value.iValueOverride = validation.parsedValue;
+      options.iValueOverride = validation.parsedValue;
     } else {
-      delete options.value.iValueOverride;
+      delete options.iValueOverride;
     }
   }
 
@@ -161,57 +162,71 @@
   function clearDensity() {
     densityInput = "";
     densityError = null;
-    delete options.value.densityOverride;
+    delete options.densityOverride;
   }
 
   // Clear I-value override
   function clearIValue() {
     iValueInput = "";
     iValueError = null;
-    delete options.value.iValueOverride;
+    delete options.iValueOverride;
   }
 
   // Handle aggregate state toggle
   function handleAggStateChange(newState: AggregateState) {
     const builtInPhase: AggregateState | undefined = materialBuiltInAggregateState;
     if (builtInPhase && newState === builtInPhase) {
-      delete options.value.aggregateState;
+      delete options.aggregateState;
     } else {
-      options.value.aggregateState = newState;
+      options.aggregateState = newState;
     }
   }
 
-  // Handle interpolation scale change
+  // Handle interpolation scale change - UNUSED kept for reference
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleInterpolationScaleChange(value: string) {
     const scale = value as InterpolationScale;
+    const currentInterpolation = advancedOptions.value.interpolation;
+    
+    let newInterpolation: typeof currentInterpolation;
     if (scale === "log") {
-      if (options.value.interpolation) {
-        delete options.value.interpolation.scale;
-        if (options.value.interpolation.method === undefined) {
-          delete options.value.interpolation;
-        }
+      if (!currentInterpolation) {
+        newInterpolation = undefined;
+      } else if (currentInterpolation.method === undefined) {
+        newInterpolation = undefined;
+      } else {
+        // Keep method, remove scale
+        newInterpolation = { method: currentInterpolation.method };
       }
     } else {
-      options.value.interpolation = {
-        ...options.value.interpolation,
+      // "lin-lin" -> internal "linear"
+      newInterpolation = {
+        ...currentInterpolation,
         scale,
       };
     }
+    
+    // Create new state object to force reactivity
+    advancedOptions.value = {
+      ...advancedOptions.value,
+      interpolation: newInterpolation,
+    };
   }
 
-  // Handle interpolation method change
+  // Handle interpolation method change - UNUSED kept for reference
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   function handleInterpolationMethodChange(value: string) {
     const method = value as InterpolationMethod;
     if (method === "linear") {
-      if (options.value.interpolation) {
-        delete options.value.interpolation.method;
-        if (options.value.interpolation.scale === undefined) {
-          delete options.value.interpolation;
+      if (options.interpolation) {
+        delete options.interpolation.method;
+        if (options.interpolation.scale === undefined) {
+          delete options.interpolation;
         }
       }
     } else {
-      options.value.interpolation = {
-        ...options.value.interpolation,
+      options.interpolation = {
+        ...options.interpolation,
         method,
       };
     }
@@ -221,9 +236,9 @@
   function handleMstarModeChange(value: string) {
     const mode = value as MstarMode;
     if (mode === "b") {
-      delete options.value.mstarMode;
+      delete options.mstarMode;
     } else {
-      options.value.mstarMode = mode;
+      options.mstarMode = mode;
     }
   }
 
@@ -236,21 +251,77 @@
   // Get accordion header text
   const headerText = $derived.by(() => {
     let text = "Advanced Options";
-    const density = options.value.densityOverride;
+    const density = options.densityOverride;
     if (density !== undefined) {
       text += ` (ρ = ${formatDensityForDisplay(density)} g/cm³)`;
     }
     return text;
   });
 
-  // Get current interpolation values for selects
-  const currentScale = $derived(options.value.interpolation?.scale ?? "log");
-  const currentMethod = $derived(options.value.interpolation?.method ?? "linear");
-  const currentMstarMode = $derived(options.value.mstarMode ?? "b");
+  // Get current interpolation values for selects - UNUSED kept for reference
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const currentScale = $derived(options.interpolation?.scale ?? "log");
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const currentMethod = $derived(options.interpolation?.method ?? "linear");
+  const currentMstarMode = $derived(options.mstarMode ?? "b");
+  
+  // Local state for scale select
+  let scaleSelectValue = $state<"log-log" | "lin-lin">("log-log");
+  
+  // Sync scaleSelectValue with advancedOptions on mount and when options change
+  $effect(() => {
+    const internalScale = options.interpolation?.scale;
+    scaleSelectValue = internalScale === "linear" ? "lin-lin" : "log-log";
+  });
+  
+  // Handle scale select change - maps Select values to internal values
+  function handleScaleSelectChange(value: string) {
+    // value is "log-log" or "lin-lin" from Select options
+    const currentInterpolation = advancedOptions.value.interpolation;
+    
+    if (value === "log-log") {
+      // "log-log" selected -> remove scale (use default)
+      if (!currentInterpolation) {
+        // already default
+      } else if (currentInterpolation.method === undefined) {
+        delete options.interpolation;
+      } else {
+        // keep method, remove scale
+        options.interpolation = { method: currentInterpolation.method };
+      }
+    } else {
+      // "lin-lin" selected -> internal scale is "linear"
+      options.interpolation = {
+        ...currentInterpolation,
+        scale: "linear",
+      };
+    }
+  }
+  
+  // Local state for method select (maps internal "linear"/"cubic" to select values "linear"/"spline")
+  let methodSelectValue = $derived.by(() => options.interpolation?.method === "cubic" ? "spline" : "linear");
+  
+  // Handle method select change - maps "spline" -> "cubic", "linear" -> "linear" (delete)
+  function handleMethodSelectChange(value: string) {
+    if (value === "spline") {
+      options.interpolation = {
+        ...options.interpolation,
+        method: "cubic",
+      };
+    } else {
+      // "linear" value means delete the method (use default)
+      if (options.interpolation) {
+        delete options.interpolation.method;
+        if (options.interpolation.scale === undefined) {
+          delete options.interpolation;
+        }
+      }
+    }
+  }
 
   // Get current aggregate state for toggle highlighting
   const currentAggState = $derived(
-    options.value.aggregateState ?? (materialIsGas ? "gas" : "condensed"),
+    options.aggregateState ?? (materialIsGas ? "gas" : "condensed"),
   );
 </script>
 
@@ -417,35 +488,29 @@
             <!-- Axis Scale -->
             <div class="grid gap-1.5">
               <Label for="interp-scale" class="text-xs text-muted-foreground">Axis scale</Label>
-              <Select
-                value={currentScale === "log" ? "log-log" : "lin-lin"}
-                onValueChange={handleInterpolationScaleChange}
-              >
-                <SelectTrigger id="interp-scale" class="w-full">
-                  <span>{currentScale === "log" ? "Log-log" : "Lin-lin"}</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="log-log" label="Log-log" />
-                  <SelectItem value="lin-lin" label="Lin-lin" />
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                id="interp-scale"
+                value={scaleSelectValue}
+                onValueChange={handleScaleSelectChange}
+                options={[
+                  { value: "log-log", label: "Log-log" },
+                  { value: "lin-lin", label: "Lin-lin" },
+                ]}
+              />
             </div>
 
             <!-- Method -->
             <div class="grid gap-1.5">
               <Label for="interp-method" class="text-xs text-muted-foreground">Method</Label>
-              <Select
-                value={currentMethod === "cubic" ? "spline" : "linear"}
-                onValueChange={handleInterpolationMethodChange}
-              >
-                <SelectTrigger id="interp-method" class="w-full">
-                  <span>{currentMethod === "cubic" ? "Spline" : "Linear"}</span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="linear" label="Linear" />
-                  <SelectItem value="spline" label="Spline" />
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                id="interp-method"
+                value={methodSelectValue}
+                onValueChange={handleMethodSelectChange}
+                options={[
+                  { value: "linear", label: "Linear" },
+                  { value: "spline", label: "Spline" },
+                ]}
+              />
             </div>
 
             <p class="text-xs text-muted-foreground">
@@ -458,30 +523,19 @@
           {#if isMstarSelected}
             <div class="grid gap-2">
               <Label for="mstar-mode" class="text-sm font-medium">MSTAR mode</Label>
-              <Select value={currentMstarMode} onValueChange={handleMstarModeChange}>
-                <SelectTrigger id="mstar-mode" class="w-full">
-                  <span>
-                    {#if currentMstarMode === "a"}A — Auto (C for condensed, G for gas)
-                    {:else if currentMstarMode === "b"}B — Auto (D for condensed, H for gas) —
-                      Recommended
-                    {:else if currentMstarMode === "c"}C — Condensed (standard)
-                    {:else if currentMstarMode === "d"}D — Condensed (special)
-                    {:else if currentMstarMode === "g"}G — Gas (standard)
-                    {:else if currentMstarMode === "h"}H — Gas (special){/if}
-                  </span>
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="a" label="A — Auto (C for condensed, G for gas)" />
-                  <SelectItem
-                    value="b"
-                    label="B — Auto (D for condensed, H for gas) — Recommended"
-                  />
-                  <SelectItem value="c" label="C — Condensed (standard)" />
-                  <SelectItem value="d" label="D — Condensed (special)" />
-                  <SelectItem value="g" label="G — Gas (standard)" />
-                  <SelectItem value="h" label="H — Gas (special)" />
-                </SelectContent>
-              </Select>
+              <NativeSelect
+                id="mstar-mode"
+                value={currentMstarMode}
+                onValueChange={handleMstarModeChange}
+                options={[
+                  { value: "a", label: "A — Auto (C for condensed, G for gas)" },
+                  { value: "b", label: "B — Auto (D for condensed, H for gas) — Recommended" },
+                  { value: "c", label: "C — Condensed (standard)" },
+                  { value: "d", label: "D — Condensed (special)" },
+                  { value: "g", label: "G — Gas (standard)" },
+                  { value: "h", label: "H — Gas (special)" },
+                ]}
+              />
             </div>
           {/if}
         </div>
