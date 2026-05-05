@@ -21,14 +21,14 @@ Audited Stage 6 completion status by cross-referencing:
 
 #### Completed in Stage 6 (PRs merged since 21 April 2026)
 
-| Sub-stage | PR(s) | Summary |
-| --- | --- | --- |
-| 6.1 Calculator (basic) | #399 | WASM calculation bug fix (float/double mismatch, param order, CSDA call), URL sync (`calculator-url.ts`), toolbar with Share URL + disabled Export buttons, loading skeleton, restore-defaults button |
-| 6.2 Live calculation | Stage 5.2 | Debounce already wired in `calculator.svelte.ts` |
-| 6.3 Multi-program comparison | #423, #410 | `calculateMulti()`, Basic/Advanced toggle, multi-program picker, grouped result table, quantity focus, column visibility, onboarding hint, URL round-trip, E2E tests; mobile horizontal scroll (#410) |
-| 6.4 Plot page + series comparison | #394 (Stage 5.5) | JSROOT wrapper, multi-series, color pool, smart labels, plot URL sync |
-| 6.5 Shareable URLs | #399, #394, #423 | Calculator + Plot URL sync; advanced mode params (`mode`, `programs`, `hidden_programs`, `qfocus`) |
-| 6.6 CSV + PDF + SVG export (basic mode) | #405, #422 | Calculator CSV/PDF via `export.svelte.ts`; Plot CSV/PDF/SVG via `plot-csv.ts` + `generatePlotPdf()` + `$bindable requestExportSvg` |
+| Sub-stage                               | PR(s)            | Summary                                                                                                                                                                                               |
+| --------------------------------------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6.1 Calculator (basic)                  | #399             | WASM calculation bug fix (float/double mismatch, param order, CSDA call), URL sync (`calculator-url.ts`), toolbar with Share URL + disabled Export buttons, loading skeleton, restore-defaults button |
+| 6.2 Live calculation                    | Stage 5.2        | Debounce already wired in `calculator.svelte.ts`                                                                                                                                                      |
+| 6.3 Multi-program comparison            | #423, #410       | `calculateMulti()`, Basic/Advanced toggle, multi-program picker, grouped result table, quantity focus, column visibility, onboarding hint, URL round-trip, E2E tests; mobile horizontal scroll (#410) |
+| 6.4 Plot page + series comparison       | #394 (Stage 5.5) | JSROOT wrapper, multi-series, color pool, smart labels, plot URL sync                                                                                                                                 |
+| 6.5 Shareable URLs                      | #399, #394, #423 | Calculator + Plot URL sync; advanced mode params (`mode`, `programs`, `hidden_programs`, `qfocus`)                                                                                                    |
+| 6.6 CSV + PDF + SVG export (basic mode) | #405, #422       | Calculator CSV/PDF via `export.svelte.ts`; Plot CSV/PDF/SVG via `plot-csv.ts` + `generatePlotPdf()` + `$bindable requestExportSvg`                                                                    |
 
 #### Not yet implemented (confirmed by source grep)
 

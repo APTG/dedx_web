@@ -78,15 +78,15 @@ Two safe patterns:
 ```ts
 // ✅ SAFE: initialize through a local variable, assign to reactive signal ONCE at the end
 $effect(() => {
-  const newState = createFoo();   // local variable — no reactive signal read
-  newState.setX(1);               // safe — reads/writes only the local var
-  newState.setY(2);               // safe
-  myState = newState;             // ONE write to the reactive signal, at the very end
+  const newState = createFoo(); // local variable — no reactive signal read
+  newState.setX(1); // safe — reads/writes only the local var
+  newState.setY(2); // safe
+  myState = newState; // ONE write to the reactive signal, at the very end
 });
 
 // ✅ SAFE: use untrack() to break a dependency you need to pass through but not react to
 $effect(() => {
-  const next = computeUrl(myValue);     // reactive read: myValue
+  const next = computeUrl(myValue); // reactive read: myValue
   untrack(() => replaceState(next, page.state)); // page.state read is NOT a dependency
 });
 ```
@@ -95,12 +95,13 @@ $effect(() => {
 // ❌ WRONG: reading myState.foo after writing myState → self-dependency → infinite loop
 $effect(() => {
   myState = createFoo();
-  myState.setX(1);   // reads outer reactive myState — registers a dependency on it!
-  myState.setY(2);   // same problem
+  myState.setX(1); // reads outer reactive myState — registers a dependency on it!
+  myState.setY(2); // same problem
 });
 ```
 
 Additional pitfalls:
+
 - `replaceState(url, page.state)` inside a URL-sync `$effect`: wrap in `untrack()`.
   `page.state` is reactive; `replaceState` updates it; without `untrack` the effect
   re-fires every time it runs, creating a loop.
@@ -144,6 +145,7 @@ require WASM should be marked `test.skip` with the comment
 tests the command must run cleanly (exit 0 with all skipped / passed).
 
 If `pnpm exec playwright test` produces failures:
+
 1. Read the failure output carefully — do not assume failures are pre-existing.
 2. Check whether any new test you wrote caused an existing test to regress.
 3. Fix failures caused by your own changes before outputting `TASK DONE`.
@@ -173,6 +175,7 @@ on every `.svelte` file you write before committing.
 ### Tailwind MCP (`tailwindcss-mcp-server`)
 
 When writing Tailwind CSS classes in Svelte components:
+
 - **Before writing a utility class**, query the Tailwind MCP for the correct v4 name,
   spacing/color token, or arbitrary-value syntax.
 - This is especially important for Tailwind v4 — class names and layer syntax differ from v3.
@@ -187,6 +190,7 @@ gives you live browser tools (navigate, click, screenshot, accessibility snapsho
 call manually.
 
 When to use it:
+
 1. After implementing a UI component, start the dev server (`pnpm dev`).
 2. Use the `browser_navigate` tool to open `http://localhost:5173/<route>`.
 3. Use `browser_screenshot` to visually verify layout and rendering.

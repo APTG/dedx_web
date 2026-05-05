@@ -11,7 +11,6 @@
 1. **Moved session transcript** `session-ses_20be.md` → `docs/ai-logs/2026-05-04-stage6-multi-program-qwen-session.md` (the raw Qwen3.5 opencode session for Stage 6 multi-program implementation).
 
 2. **Fixed `effect_update_depth_exceeded`** when clicking the Advanced mode toggle. Root cause was a two-part reactive loop in `src/routes/calculator/+page.svelte`:
-
    - **Part 1** (fixed in previous session): The multiProgState creation `$effect` read `page.url.searchParams` to decode URL params, creating a reactive dependency on `page.url`. Every `replaceState` call from the URL update effect updated `page.url`, re-triggering the creation effect, which destroyed and recreated `multiProgState`, which re-triggered the URL update effect — infinite loop.  
      Fix: replaced `page.url.searchParams` with `new URLSearchParams(window.location.search)` (non-reactive DOM API).
 

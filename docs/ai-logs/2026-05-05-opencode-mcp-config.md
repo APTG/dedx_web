@@ -22,6 +22,7 @@ project's E2E test suite in `tests/e2e/`. The old description ("Browser automati
 test generation") was misleadingly close to the E2E test runner's description.
 
 **Gaps identified:**
+
 - Playwright MCP row in `AGENTS.md §5` did not clearly distinguish it from the E2E runner.
 - Tailwind MCP row gave no instruction to actually query it (just "class reference").
 - Neither Tailwind nor Playwright MCP was mentioned in the implementer agent prompt

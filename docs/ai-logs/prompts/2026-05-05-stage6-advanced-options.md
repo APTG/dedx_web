@@ -81,6 +81,7 @@ export function decodeAdvancedOptionsUrl(params: URLSearchParams): AdvancedOptio
 - Defaults: all fields `undefined` (no override = use libdedx built-in).
 
 **Unit tests** in `src/tests/unit/advanced-options-state.test.ts`:
+
 - `resetAdvancedOptions()` clears all fields.
 - URL encode/decode round-trip for each of the 6 params.
 - Invalid values (negative density, unknown `mstar_mode` string) are silently ignored on
@@ -93,6 +94,7 @@ export function decodeAdvancedOptionsUrl(params: URLSearchParams): AdvancedOptio
 Props: `options: { value: AdvancedOptions }` (writable reactive reference), `materialIsGas: boolean` (determines Gas/Condensed toggle default label), `materialBuiltInDensity: number | undefined`, `materialBuiltInAggregateState: 'gas' | 'condensed' | undefined`.
 
 Accordion structure (per spec wireframe):
+
 1. **Density override** — number input, sci notation supported, placeholder = built-in
    density in g/cm³ (or sci notation if < 0.01). Clear button. Tooltip: gas-specific
    wording if `materialIsGas`. Validation: ρ > 0 only (no upper bound).
@@ -112,6 +114,7 @@ Show density override value in accordion header when active (e.g. "Advanced Opti
 (ρ = 1.20 g/cm³)").
 
 **Component tests** in `src/tests/components/advanced-options-panel.test.ts`:
+
 - Density input: valid number updates `options.value.densityOverride`.
 - Density input: negative value shows validation error, does not update state.
 - Aggregate state toggle: switches between Gas/Condensed.
@@ -135,6 +138,7 @@ Show density override value in accordion header when active (e.g. "Advanced Opti
 - Add the six advanced-options params to `encodeCalculatorUrl()` and `decodeCalculatorUrl()`.
 
 **Unit tests** in `src/tests/unit/calculator-url.test.ts`:
+
 - Round-trip with `density=1.20`, `ival=78`, `mstar_mode=a`, `interp_scale=linlin`,
   `interp_method=spline`, `agg_state=gas`.
 - Partial params (only density set) round-trip correctly.
@@ -165,8 +169,8 @@ Per spec §4:
 export function integrateCsdaFromStp(
   energiesMeVperNucl: Float32Array,
   stpMeVcm2perG: Float32Array,
-  density: number,   // g/cm³
-): Float64Array;     // CSDA range in g/cm²
+  density: number, // g/cm³
+): Float64Array; // CSDA range in g/cm²
 ```
 
 Use trapezoidal integration over `1/S(E)` with the energy grid from the WASM STP call.
@@ -174,6 +178,7 @@ The density is needed only for unit conversion if the result is displayed in cm 
 raw integration gives g/cm².
 
 **Unit tests** in `src/tests/unit/csda-integration.test.ts`:
+
 - Known analytical case: constant STP = S₀ over range [E₀, E₁] → CSDA = (E₁ - E₀) / S₀.
 - Monotonically decreasing STP (like real data) → CSDA increases with integration range.
 
