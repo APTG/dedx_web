@@ -18,9 +18,16 @@
   import { getParticleLabel } from "$lib/utils/particle-label";
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
+  import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
+  import {
+    advancedOptions,
+    loadAdvancedOptionsFromStorage,
+    persistAdvancedOptions,
+  } from "$lib/state/advanced-options.svelte";
 
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
+  let materialIsGas = $state<boolean | undefined>(undefined);
 
   $effect(() => {
     if (wasmReady.value && !entityState) {
@@ -29,6 +36,31 @@
         entityState = createEntitySelectionState(matrix);
       });
     }
+  });
+
+  // Initialize advanced options from localStorage on mount
+  $effect(() => {
+    if (!browser || wasmReady.value) return;
+    loadAdvancedOptionsFromStorage();
+  });
+
+  // Track material changes to determine gas/condensed state for the panel
+  $effect(() => {
+    if (!entityState?.selectedMaterial) {
+      materialIsGas = undefined;
+      return;
+    }
+    getService().then((service) => {
+      const materials = service.getMaterials(entityState.selectedProgram.id);
+      const mat = materials.find((m) => m.id === entityState.selectedMaterial?.id);
+      materialIsGas = mat?.isGasByDefault;
+    });
+  });
+
+  // Persist advanced options to localStorage whenever they change
+  $effect(() => {
+    if (!browser) return;
+    persistAdvancedOptions();
   });
 
   let urlInitialized = $state(false);
@@ -57,11 +89,23 @@
     plotState.setAxisScale("x", decoded.xLog);
     plotState.setAxisScale("y", decoded.yLog);
 
+    // Apply advanced options from URL (URL takes precedence over localStorage)
+    if (Object.keys(decoded.advancedOptions).length > 0) {
+      advancedOptions.value = decoded.advancedOptions;
+    }
+
     getService()
       .then((service) => {
         for (const s of decoded.series) {
           try {
-            const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
+            const result = service.getPlotData(
+              s.programId,
+              s.particleId,
+              s.materialId,
+              500,
+              true,
+              advancedOptions.value,
+            );
             const programs = service.getPrograms();
             const particles = service.getParticles(s.programId);
             const materials = service.getMaterials(s.programId);
@@ -105,6 +149,7 @@
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
+      advancedOptions: advancedOptions.value,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     replaceState(newUrl, page.state);
@@ -146,6 +191,7 @@
           snapshot.materialId,
           500,
           true,
+          advancedOptions.value,
         );
         if (cancelled) return;
         plotState.setPreview({
@@ -540,6 +586,19 @@
               </div>
             {/each}
           </div>
+        {/if}
+
+        <!-- Advanced Options Panel -->
+        {#if entityState.selectedMaterial}
+          <AdvancedOptionsPanel
+            options={advancedOptions}
+            materialIsGas={materialIsGas ?? false}
+            materialBuiltInDensity={entityState.selectedMaterial.density}
+            materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
+            selectedProgram={"resolvedProgram" in entityState.selectedProgram
+              ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
+              : entityState.selectedProgram.name}
+          />
         {/if}
       </div>
     </div>

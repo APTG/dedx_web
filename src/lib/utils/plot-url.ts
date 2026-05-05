@@ -1,4 +1,4 @@
-import type { StpUnit } from "$lib/wasm/types";
+import type { StpUnit, AdvancedOptions } from "$lib/wasm/types";
 
 const STP_TOKENS: Record<StpUnit, string> = {
   "keV/µm": "kev-um",
@@ -26,6 +26,7 @@ export interface PlotUrlInput {
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
+  advancedOptions?: AdvancedOptions;
 }
 
 export interface PlotUrlDecoded {
@@ -36,6 +37,7 @@ export interface PlotUrlDecoded {
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
+  advancedOptions: AdvancedOptions;
 }
 
 export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
@@ -52,6 +54,42 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   params.set("stp_unit", stpUnitToToken(input.stpUnit));
   params.set("xscale", input.xLog ? "log" : "lin");
   params.set("yscale", input.yLog ? "log" : "lin");
+
+  // Encode advanced options (only non-default values)
+  if (input.advancedOptions) {
+    const opts = input.advancedOptions;
+
+    // Aggregate state
+    if (opts.aggregateState !== undefined) {
+      params.set("agg_state", opts.aggregateState);
+    }
+
+    // Interpolation scale - only if not default ("log" is default, "linear" maps to "lin-lin")
+    if (opts.interpolation?.scale !== undefined && opts.interpolation.scale === "linear") {
+      params.set("interp_scale", "lin-lin");
+    }
+
+    // Interpolation method - only if not default ("linear" is default, "cubic" maps to "spline")
+    if (opts.interpolation?.method !== undefined && opts.interpolation.method === "cubic") {
+      params.set("interp_method", "spline");
+    }
+
+    // MSTAR mode - only if not default ("b" is default)
+    if (opts.mstarMode !== undefined && opts.mstarMode !== "b") {
+      params.set("mstar_mode", opts.mstarMode);
+    }
+
+    // Density override
+    if (opts.densityOverride !== undefined) {
+      params.set("density", String(opts.densityOverride));
+    }
+
+    // I-value override
+    if (opts.iValueOverride !== undefined) {
+      params.set("ival", String(opts.iValueOverride));
+    }
+  }
+
   return params;
 }
 
@@ -91,5 +129,63 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
   const xLog = (params.get("xscale") ?? "log") === "log";
   const yLog = (params.get("yscale") ?? "log") === "log";
 
-  return { particleId, materialId, programId, series, stpUnit, xLog, yLog };
+  // Decode advanced options
+  const advancedOptions: AdvancedOptions = {};
+
+  // Aggregate state
+  const aggStateParam = params.get("agg_state");
+  if (aggStateParam && (aggStateParam === "gas" || aggStateParam === "condensed")) {
+    advancedOptions.aggregateState = aggStateParam as "gas" | "condensed";
+  }
+
+  // Interpolation scale - "lin-lin" maps to "linear", default "log-log" is "log"
+  const interpScaleParam = params.get("interp_scale");
+  if (interpScaleParam && interpScaleParam === "lin-lin") {
+    advancedOptions.interpolation = { ...advancedOptions.interpolation, scale: "linear" };
+  }
+
+  // Interpolation method - "spline" maps to "cubic", default is "linear"
+  const interpMethodParam = params.get("interp_method");
+  if (interpMethodParam && interpMethodParam === "spline") {
+    advancedOptions.interpolation = { ...advancedOptions.interpolation, method: "cubic" };
+  }
+
+  // MSTAR mode - must be valid and not default "b"
+  const mstarModeParam = params.get("mstar_mode");
+  if (
+    mstarModeParam &&
+    ["a", "b", "c", "d", "g", "h"].includes(mstarModeParam) &&
+    mstarModeParam !== "b"
+  ) {
+    advancedOptions.mstarMode = mstarModeParam as "a" | "b" | "c" | "d" | "g" | "h";
+  }
+
+  // Density override - must be positive number
+  const densityParam = params.get("density");
+  if (densityParam !== null) {
+    const parsed = Number(densityParam);
+    if (Number.isFinite(parsed) && parsed > 0) {
+      advancedOptions.densityOverride = parsed;
+    }
+  }
+
+  // I-value override - must be positive and <= 10000
+  const ivalParam = params.get("ival");
+  if (ivalParam !== null) {
+    const parsed = Number(ivalParam);
+    if (Number.isFinite(parsed) && parsed > 0 && parsed <= 10000) {
+      advancedOptions.iValueOverride = parsed;
+    }
+  }
+
+  return {
+    particleId,
+    materialId,
+    programId,
+    series,
+    stpUnit,
+    xLog,
+    yLog,
+    advancedOptions,
+  };
 }
