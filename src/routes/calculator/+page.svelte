@@ -79,7 +79,22 @@
     }
   });
 
+  // $derived signal to track nested advancedOptions changes
+  const advOptsKey = $derived(
+    JSON.stringify([
+      advancedOptions.value.interpolation?.scale,
+      advancedOptions.value.interpolation?.method,
+      advancedOptions.value.densityOverride,
+      advancedOptions.value.iValueOverride,
+      advancedOptions.value.aggregateState,
+      advancedOptions.value.mstarMode,
+    ])
+  );
+
   $effect(() => {
+    // Read advOptsKey to establish reactive dependency on nested changes
+    const _key = advOptsKey;
+    
     if (!urlInitialized || !calcState || !state) return;
 
     const urlState = {
