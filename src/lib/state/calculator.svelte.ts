@@ -56,10 +56,10 @@ export function createCalculatorState(
   entitySelection: EntitySelectionState,
   service: LibdedxService,
 ): CalculatorState {
-  let inputState = createEnergyInputState();
+  const inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number }>>(
+  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number | null }>>(
     new Map(),
   );
 
@@ -74,7 +74,7 @@ export function createCalculatorState(
   ): void {
     const rows = inputState.rows;
     for (let i = 0; i < rows.length; i++) {
-      const row = rows[i];
+      const row = rows[i]!;
       const trimmed = row.text.trim();
       if (trimmed === "") continue;
 
@@ -296,12 +296,12 @@ export function createCalculatorState(
         material?.density ??
         1;
 
-      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
+      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
 
       for (let i = 0; i < energies.length; i++) {
-        const stpMass = result.stoppingPowers[i];
-        const csdaGcm2 = result.csdaRanges[i];
-        const { rowId, energy } = energies[i];
+        const stpMass = result.stoppingPowers[i]!;
+        const csdaGcm2 = result.csdaRanges[i]!;
+        const { rowId, energy } = energies[i]!;
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
@@ -364,7 +364,7 @@ export function createCalculatorState(
     return inputState.rows
       .map((row, index) => {
         const parsed = parsedEnergies[index];
-        if (!("value" in parsed) || parsed.value <= 0) {
+        if (!parsed || !("value" in parsed) || parsed.value <= 0) {
           return null;
         }
 

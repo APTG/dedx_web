@@ -48,8 +48,8 @@ export type InterpolationMethod = "linear" | "cubic";
 export interface AdvancedOptions {
   aggregateState?: AggregateState;
   interpolation?: {
-    scale: InterpolationScale;
-    method: InterpolationMethod;
+    scale?: InterpolationScale;
+    method?: InterpolationMethod;
   };
   mstarMode?: MstarMode;
   densityOverride?: number;

@@ -242,7 +242,7 @@ export function createMultiProgramState(): MultiProgramState {
       if (!enabled) {
         // Reset to single program (keep the default)
         if (selectedProgramIds.length > 0) {
-          selectedProgramIds = [selectedProgramIds[0]];
+          selectedProgramIds = [selectedProgramIds[0]!];
         }
         comparisonResults = new Map();
       }

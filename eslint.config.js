@@ -43,6 +43,11 @@ export default tseslint.config(
     rules: {
       "@typescript-eslint/no-explicit-any": "off", // JSROOT uses any for painter objects
       "@typescript-eslint/no-unused-vars": ["warn", { argsIgnorePattern: "^_" }],
+      // TypeScript 6 enables `noUncheckedIndexedAccess` semantics on TypedArrays
+      // and Maps, which makes `!` non-null assertions the most ergonomic way to
+      // express "this index/lookup is guaranteed by an in-bounds loop or prior
+      // `has()` check". Allow them project-wide.
+      "@typescript-eslint/no-non-null-assertion": "off",
       "svelte/no-at-debug-tags": "warn",
       "svelte/valid-compile": "error",
       // Disable rules that are too strict for scaffolding phase

@@ -94,8 +94,8 @@ export class LibdedxServiceImpl implements LibdedxService {
 
   calculate(
     programId: number,
-    particleId: number,
-    materialId: number,
+    _particleId: number,
+    _materialId: number,
     energies: number[],
     _options?: AdvancedOptions,
   ): CalculationResult {
@@ -139,7 +139,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
-    options?: AdvancedOptions,
+    _options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
@@ -228,8 +228,8 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
 
   calculate(
     programId: number,
-    particleId: number,
-    materialId: number,
+    _particleId: number,
+    _materialId: number,
     energies: number[],
     _options?: AdvancedOptions,
   ): CalculationResult {
@@ -273,7 +273,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
-    options?: AdvancedOptions,
+    _options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,

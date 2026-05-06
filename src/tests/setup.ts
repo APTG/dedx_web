@@ -1,5 +1,7 @@
 import "@testing-library/jest-dom/vitest";
 import { vi } from "vitest";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error -- jsdom 29 ships no bundled type declarations.
 import { JSDOM } from "jsdom";
 
 // bits-ui's `isElement` references the global `Element` constructor in internal

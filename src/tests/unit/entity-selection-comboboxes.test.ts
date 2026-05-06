@@ -546,7 +546,7 @@ class MockLibdedxServiceWithElectron {
     ];
   }
 
-  getMaterials(programId: number): MaterialEntity[] {
+  getMaterials(_programId: number): MaterialEntity[] {
     return [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }];
   }
 }
@@ -580,7 +580,7 @@ describe("Material phase badge", () => {
       getPrograms(): ProgramEntity[] {
         return [{ id: 7, name: "ICRU 49", version: "1.0" }];
       }
-      getParticles(programId: number): ParticleEntity[] {
+      getParticles(_programId: number): ParticleEntity[] {
         return [
           {
             id: 1,
@@ -592,7 +592,7 @@ describe("Material phase badge", () => {
           },
         ];
       }
-      getMaterials(programId: number): MaterialEntity[] {
+      getMaterials(_programId: number): MaterialEntity[] {
         return [
           { id: 13, name: "Aluminum", density: 2.7, isGasByDefault: false },
           { id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false },
