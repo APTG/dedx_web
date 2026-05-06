@@ -203,8 +203,10 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
     await page.locator("#density-override").fill("2");
     await page.locator("#density-override").blur();
 
-    // Give time for any reactive updates
-    await page.waitForTimeout(500);
+    // Wait for reactive update to settle: density=2 should appear in URL
+    await page.waitForFunction(() => window.location.search.includes("density=2"), {
+      timeout: 8000,
+    });
     expect(errors).toHaveLength(0);
   });
 

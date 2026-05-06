@@ -1,24 +1,23 @@
-import { describe, it, expect, afterEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, screen, cleanup } from "@testing-library/svelte";
 import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
-import type { AdvancedOptions } from "$lib/wasm/types";
+import { advancedOptions, resetAdvancedOptions } from "$lib/state/advanced-options.svelte";
 
-// Ensure clean DOM between tests
+// Reset module-level singleton and DOM between tests
+beforeEach(() => {
+  resetAdvancedOptions();
+});
+
 afterEach(() => {
   cleanup();
+  resetAdvancedOptions();
 });
 
 describe("AdvancedOptionsPanel", () => {
-  const createOptions = (): { value: AdvancedOptions } => ({
-    value: {},
-  });
-
   describe("Density Override", () => {
     it("renders density input", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           materialBuiltInDensity: 8.96,
         },
@@ -28,10 +27,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows density placeholder when built-in density available", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           materialBuiltInDensity: 8.96,
         },
@@ -42,11 +39,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows dash placeholder when no built-in density", () => {
-      // Create fresh options without any density
-      const options = { value: {} };
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -59,10 +53,8 @@ describe("AdvancedOptionsPanel", () => {
 
   describe("I-Value Override", () => {
     it("renders I-value input", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -71,10 +63,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows example placeholder for I-value", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -86,10 +76,8 @@ describe("AdvancedOptionsPanel", () => {
 
   describe("Aggregate State", () => {
     it("does not render aggregate state section when no built-in state", () => {
-      const options = createOptions();
       const { container } = render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -98,10 +86,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("renders aggregate state section label for gas material", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: true,
           materialBuiltInAggregateState: "gas",
         },
@@ -111,10 +97,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("renders aggregate state toggle for condensed material", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           materialBuiltInAggregateState: "condensed",
         },
@@ -123,60 +107,53 @@ describe("AdvancedOptionsPanel", () => {
       expect(screen.getByText(/built-in: condensed/i)).toBeInTheDocument();
     });
 
-    it("updates aggregate state to gas when handler called", () => {
-      const options = createOptions();
+    it("updates aggregate state to gas via singleton", () => {
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           materialBuiltInAggregateState: "condensed",
         },
       });
 
-      // Test the state update directly since button is in collapsed accordion
-      options.value.aggregateState = "gas";
-      expect(options.value.aggregateState).toBe("gas");
+      // Update singleton — component reads from this
+      advancedOptions.value = { ...advancedOptions.value, aggregateState: "gas" };
+      expect(advancedOptions.value.aggregateState).toBe("gas");
     });
 
-    it("updates aggregate state to condensed when handler called", () => {
-      const options = createOptions();
+    it("updates aggregate state to condensed via singleton", () => {
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: true,
           materialBuiltInAggregateState: "gas",
         },
       });
 
-      // Test the state update directly
-      options.value.aggregateState = "condensed";
-      expect(options.value.aggregateState).toBe("condensed");
+      // Update singleton — component reads from this
+      advancedOptions.value = { ...advancedOptions.value, aggregateState: "condensed" };
+      expect(advancedOptions.value.aggregateState).toBe("condensed");
     });
 
-    it("clears aggregate state when set to built-in value", () => {
-      const options = createOptions();
-      options.value.aggregateState = "gas";
+    it("clears aggregate state when reset to built-in value", () => {
+      advancedOptions.value = { aggregateState: "gas" };
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           materialBuiltInAggregateState: "condensed",
         },
       });
 
-      // Setting to built-in value should clear it (handled by component logic)
-      // Simulate what happens when user clicks the built-in option
-      delete options.value.aggregateState;
-      expect(options.value.aggregateState).toBeUndefined();
+      // Clear via singleton (simulates user clicking built-in option)
+      const next = { ...advancedOptions.value };
+      delete next.aggregateState;
+      advancedOptions.value = next;
+      expect(advancedOptions.value.aggregateState).toBeUndefined();
     });
   });
 
   describe("Interpolation", () => {
     it("renders interpolation section with axis scale and method selects", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -186,10 +163,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows default scale trigger text", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -200,10 +175,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows default method trigger text", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -212,11 +185,9 @@ describe("AdvancedOptionsPanel", () => {
       expect(linearElements.length).toBeGreaterThan(0);
     });
 
-    it("updates interpolation.scale when value changes via handler", async () => {
-      const options = createOptions();
+    it("updates interpolation.scale when value changes via singleton", async () => {
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -226,33 +197,34 @@ describe("AdvancedOptionsPanel", () => {
       // Fire a custom event that mimics what the Select component does
       await fireEvent(scaleSelect, new Event("input", { bubbles: true }));
 
-      // Test the handler by checking the options value is updated
-      // Since jsdom doesn't support the portal-based Select component well, test the handler
-      options.value.interpolation = { scale: "linear", method: "linear" };
-      expect(options.value.interpolation.scale).toBe("linear");
+      // Update singleton to verify it works correctly
+      advancedOptions.value = {
+        ...advancedOptions.value,
+        interpolation: { scale: "linear", method: "linear" },
+      };
+      expect(advancedOptions.value.interpolation?.scale).toBe("linear");
     });
 
-    it("updates interpolation.method when value changes via handler", async () => {
-      const options = createOptions();
+    it("updates interpolation.method when value changes via singleton", async () => {
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
 
-      // Test that setting the value works
-      options.value.interpolation = { scale: "log", method: "cubic" };
-      expect(options.value.interpolation.method).toBe("cubic");
+      // Update singleton — component reads from this
+      advancedOptions.value = {
+        ...advancedOptions.value,
+        interpolation: { scale: "log", method: "cubic" },
+      };
+      expect(advancedOptions.value.interpolation?.method).toBe("cubic");
     });
   });
 
   describe("MSTAR Mode", () => {
     it("does not render MSTAR mode section when MSTAR not selected", () => {
-      const options = createOptions();
       const { container } = render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "PSTAR",
         },
@@ -262,10 +234,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("renders MSTAR mode section when MSTAR selected (uppercase)", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "MSTAR",
         },
@@ -275,10 +245,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("renders MSTAR mode section when mstar selected (lowercase)", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "mstar",
         },
@@ -288,10 +256,8 @@ describe("AdvancedOptionsPanel", () => {
     });
 
     it("shows mode B as default trigger text", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "MSTAR",
         },
@@ -300,44 +266,40 @@ describe("AdvancedOptionsPanel", () => {
       expect(screen.getAllByText(/B — Auto/i).length).toBeGreaterThan(0);
     });
 
-    it("updates mstarMode when value changes via handler", async () => {
-      const options = createOptions();
+    it("updates mstarMode via singleton", async () => {
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "MSTAR",
         },
       });
 
-      // Test that setting the value works
-      options.value.mstarMode = "c";
-      expect(options.value.mstarMode).toBe("c");
+      // Update singleton — component reads from this
+      advancedOptions.value = { ...advancedOptions.value, mstarMode: "c" };
+      expect(advancedOptions.value.mstarMode).toBe("c");
     });
 
-    it("clears mstarMode when set to B (default)", async () => {
-      const options = createOptions();
-      options.value.mstarMode = "c";
+    it("clears mstarMode when set to B (default) via singleton", async () => {
+      advancedOptions.value = { mstarMode: "c" };
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
           selectedProgram: "MSTAR",
         },
       });
 
-      // Simulate selecting B (default)
-      delete options.value.mstarMode;
-      expect(options.value.mstarMode).toBeUndefined();
+      // Clear via singleton (simulates user selecting B)
+      const next = { ...advancedOptions.value };
+      delete next.mstarMode;
+      advancedOptions.value = next;
+      expect(advancedOptions.value.mstarMode).toBeUndefined();
     });
   });
 
   describe("Accordion behavior", () => {
     it("renders as collapsible accordion", () => {
-      const options = createOptions();
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -346,12 +308,11 @@ describe("AdvancedOptionsPanel", () => {
       expect(triggers[0]).toBeInTheDocument();
     });
 
-    it("shows density in header when densityOverride is set initially", () => {
-      const options = createOptions();
-      options.value.densityOverride = 5.5;
+    it("shows density in header when densityOverride is set initially via singleton", () => {
+      // Set singleton state before rendering
+      advancedOptions.value = { densityOverride: 5.5 };
       render(AdvancedOptionsPanel, {
         props: {
-          options,
           materialIsGas: false,
         },
       });
@@ -359,8 +320,6 @@ describe("AdvancedOptionsPanel", () => {
       // The accordion header shows density when set - verify trigger renders
       const triggers = screen.getAllByRole("button", { name: /advanced options/i });
       expect(triggers[0]).toBeInTheDocument();
-      // Note: Svelte 5 reactivity in test environment may not track pre-render prop changes
-      // The component correctly shows density in live usage
     });
   });
 });

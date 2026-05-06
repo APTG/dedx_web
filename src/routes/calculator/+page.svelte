@@ -33,7 +33,7 @@
     advancedOptions,
     loadAdvancedOptionsFromStorage,
     persistAdvancedOptions,
-  } from "$lib/state/advanced-options.svelte.ts";
+  } from "$lib/state/advanced-options.svelte";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);

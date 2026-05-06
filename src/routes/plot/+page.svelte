@@ -2,6 +2,7 @@
   import { browser } from "$app/environment";
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
+  import { untrack } from "svelte";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
@@ -185,7 +186,7 @@
       advancedOptions: advancedOptions.value,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    replaceState(newUrl, page.state);
+    untrack(() => replaceState(newUrl, page.state));
   });
 
   // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──

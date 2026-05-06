@@ -23,7 +23,7 @@
     MstarMode,
   } from "$lib/wasm/types";
 
-  import { advancedOptions } from "$lib/state/advanced-options.svelte.ts";
+  import { advancedOptions } from "$lib/state/advanced-options.svelte";
 
   interface Props {
     materialIsGas: boolean;
