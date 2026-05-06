@@ -44,6 +44,9 @@ jobs:
           mkdir -p static/wasm
           cd wasm && chmod +x build.sh && ./build.sh
 
+      - name: Write deploy.json
+        run: node scripts/deploy.cjs
+
       - name: Build SvelteKit app
         run: pnpm build
         env:
