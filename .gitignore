@@ -22,6 +22,9 @@ yarn-error.log*
 /static/wasm/libdedx.mjs
 /static/wasm/libdedx.wasm
 
+# Build artifacts — generated at build time
+/static/deploy.json
+
 # AI tooling — local agent session state and credentials
 # Keep .opencode/agents/, .opencode/prompts/ tracked; ignore only runtime task state
 .opencode/tasks/
