@@ -1,6 +1,6 @@
 # Feature: Custom Compounds
 
-> **Status:** Final v1 (14 April 2026)
+> **Status:** Final v2 (2026-05-06)
 >
 > **v1** (13 April 2026): Initial draft — compound library (localStorage),
 > compound editor (formula mode + weight-fraction mode), entity-selection
@@ -19,6 +19,12 @@
 > format aligned to `export.md` convention (`ρ =` separator). Promoted
 > Draft v1 → Final v1. All design questions resolved; one Stage 3
 > implementation note retained (MSTAR runtime verification).
+>
+> **v2** (2026-05-06): Added Reactive Triggers Matrix (§ Reactive Triggers
+> Matrix), Acceptance Scenarios with DOM observables and data-testid anchors
+> (§ Acceptance Scenarios), Cross-Page Parity Checklist (§ Cross-Page Parity
+> Checklist), and data-testid appendix — mandatory additions for Stage 6.9+
+> per the spec template introduced in PR #432.
 >
 > **Related specs:**
 >
@@ -897,3 +903,195 @@ If an I-value override is stored on the compound, a line below the table reads:
 - [ ] Weight % column sums to 100.00% (rounded display)
 - [ ] If an I-value override is stored, "I-value override: X eV (built-in Bragg additivity bypassed)" line appears below the composition table
 - [ ] PMMA (C₅H₈O₂, density 1.20 g/cm³): PDF shows H 8 atoms 8.05%, C 5 atoms 59.99%, O 2 atoms 31.96% ± 0.01%
+
+---
+
+## Reactive Triggers Matrix
+
+For every new reactive input this feature adds, the implementer must verify
+that each ✅ cell has a wired `$effect` before declaring `TASK DONE`.
+
+| Input / State | Calculator (Basic) | Calculator (Advanced) | Plot preview | Plot series | Multi-prog table |
+| ------------- | :----------------: | :-------------------: | :----------: | :---------: | :--------------: |
+| Selected custom compound | ❌ (guarded — Basic mode hides custom compounds) | ✅ recalculates | ✅ recalculates preview | ✅ recalculates series | ✅ recalculates all columns |
+| Compound formula / composition (on Save) | N/A (editor not accessible in Basic) | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
+| `mat_density` (compound's stored density) | N/A | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
+| `mat_ival` (compound's stored I-value override) | N/A | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
+| `mat_phase` (compound aggregate state) | N/A | ✅ affects unit defaults + WASM call | N/A | N/A | N/A |
+
+Legend: ✅ = triggers recalculation / update; ❌ = guarded (must not affect);
+N/A = not applicable to this context.
+
+> **Note:** Density override, I-value override, and aggregate-state toggle in
+> the Advanced Options panel are **disabled** when a custom compound is active
+> (see AC-9 above). The compound's own stored values take precedence.
+
+---
+
+## Acceptance Scenarios
+
+> These scenarios supplement the AC-1 – AC-13 checklist above.
+> Each specifies a DOM observable with an explicit `data-testid` for Playwright.
+> The implementer **must** add every listed `data-testid` attribute to the DOM.
+
+### Scenario 1: Create compound and see it calculate @smoke
+
+**Given** the user is on `/calculator` with Advanced mode **on** and Proton /
+Water / PSTAR selected
+
+**When** the user clicks `[data-testid="compound-add-btn"]`
+
+**Then**
+
+- DOM: `[data-testid="compound-editor-modal"]` is visible
+- DOM: `[data-testid="compound-name-input"]` has focus
+
+**When** the user fills in Name = `"TestH2O"`, formula = `"H2O"`,
+density = `"1.0"`, and clicks `[data-testid="compound-save-btn"]`
+
+**Then**
+
+- DOM: `[data-testid="compound-editor-modal"]` is no longer visible
+- DOM: `[data-testid="compound-group"]` contains an item with text `"TestH2O"`
+- The calculation fires and `[data-testid="result-table"]` shows non-empty
+  stopping-power values (the custom H₂O compound produces results within 2%
+  of built-in water)
+
+```typescript
+test("custom compound: create H2O and see calculation @smoke", async ({ page }) => {
+  await page.goto("/calculator?advanced=1&particle=1&material=276");
+  await page.click('[data-testid="compound-add-btn"]');
+  await expect(page.locator('[data-testid="compound-editor-modal"]')).toBeVisible();
+
+  await page.fill('[data-testid="compound-name-input"]', "TestH2O");
+  await page.fill('[data-testid="compound-formula-input"]', "H2O");
+  await page.fill('[data-testid="compound-density-input"]', "1.0");
+  await page.click('[data-testid="compound-save-btn"]');
+
+  await expect(page.locator('[data-testid="compound-editor-modal"]')).not.toBeVisible();
+  await expect(page.locator('[data-testid="compound-group"]')).toContainText("TestH2O");
+
+  // Switch to the new compound and verify calculation fires
+  // (entity-selection interaction — implementation detail)
+  await expect
+    .poll(async () => {
+      const cell = await page.locator('[data-testid="stp-cell-0"]').textContent();
+      return parseFloat(cell ?? "0");
+    }, { timeout: 10000 })
+    .toBeGreaterThan(0);
+});
+```
+
+---
+
+### Scenario 2: URL round-trip — compound survives reload
+
+**Given** a custom compound named `"PMMA-custom"` (C₅H₈O₂, ρ = 1.20 g/cm³)
+exists in `localStorage` and is the active material in Advanced mode
+
+**When** the URL sync fires (≤ 500 ms after selection)
+
+**Then**
+
+- `window.location.search` contains `material=custom`
+- `window.location.search` contains `mat_name=PMMA-custom`
+- `window.location.search` contains `mat_density=1.2`
+- `window.location.search` contains `mat_elements=` with elements in ascending Z order
+
+**When** the user reloads the page
+
+**Then**
+
+- DOM: `[data-testid="compound-group"]` shows `"PMMA-custom"` as selected
+- Stopping-power values reload correctly (same as before reload)
+- DOM: `[data-testid="compound-from-url-banner"]` is **not** shown (compound
+  already in library — only shown for unknown compounds from shared URLs)
+
+---
+
+### Scenario 3: Compound from shared URL — banner + save flow @regression
+
+**Given** the user navigates to a URL with `material=custom&mat_name=LiF-pellet&mat_density=2.64&mat_elements=3:1,9:1`
+and `"LiF-pellet"` is **not** in `localStorage`
+
+**Then**
+
+- DOM: `[data-testid="compound-from-url-banner"]` is visible with text
+  containing `"LiF-pellet"`
+- Calculation runs immediately with the URL-encoded compound values
+- DOM: `[data-testid="result-table"]` shows non-empty results
+
+**When** the user clicks "Save to library" in the banner
+
+**Then**
+
+- `localStorage.customCompounds` contains a new entry with `name: "LiF-pellet"`
+- DOM: `[data-testid="compound-from-url-banner"]` is no longer visible
+- DOM: `[data-testid="compound-group"]` contains `"LiF-pellet"`
+
+---
+
+### Scenario 4: Validation — invalid formula blocks Save @regression
+
+**Given** the compound editor modal is open
+
+**When** the user enters formula `"Xx2O"` (unrecognised element symbol `Xx`)
+and clicks `[data-testid="compound-save-btn"]`
+
+**Then**
+
+- DOM: `[data-testid="compound-editor-modal"]` remains visible
+- DOM: `[data-testid="compound-validation-error"]` is visible with text
+  containing `"Unknown element"` or `"Xx"`
+- No entry is added to `localStorage.customCompounds`
+
+---
+
+## Cross-Page Parity Checklist
+
+> **Rule (from `.opencode/lessons-learned.md` Entry 3 and 9):** Custom Compounds
+> affect both the Calculator page and the Plot page (a custom compound can be
+> the selected material for a plot series). All four Advanced Mode pillars must
+> be wired on **both** pages.
+
+### Pages affected
+
+- [src/routes/calculator/+page.svelte](../../src/routes/calculator/+page.svelte) —
+  entity selection gains "Custom Compounds" group; `calculateCustomCompound()`
+  replaces `calculate()` when a custom compound is active.
+- [src/routes/plot/+page.svelte](../../src/routes/plot/+page.svelte) —
+  series entity selection includes custom compounds; `getPlotDataCustomCompound()`
+  used for the series curve.
+
+### Required pillars (for each affected page)
+
+| Pillar | Calculator | Plot |
+| ------ | ---------- | ---- |
+| Panel gating (`isAdvancedMode.value` guard on custom-compound group) | ✅ required | ✅ required |
+| URL init (`material=custom` + `mat_*` parsed inside the URL `$effect`) | ✅ required | ✅ required |
+| Persistence (`material=custom` + `mat_*` emitted when compound is active) | ✅ required | ✅ required |
+| Reactive-dep snapshot (read compound state before any `.then()`) | ✅ required | ✅ required |
+
+**Implementer contract:** Before declaring `TASK DONE`, verify every ✅ cell
+above and confirm that the Reactive Triggers Matrix rows marked ✅ for Plot have
+their corresponding `$effect` wired in `src/routes/plot/+page.svelte`.
+
+---
+
+## Appendix: data-testid Reference
+
+All `data-testid` attributes listed here **must** be added by the implementer.
+
+| `data-testid` value | Element | Notes |
+| ------------------- | ------- | ----- |
+| `compound-add-btn` | "+ Add compound" button | Absent from DOM in Basic mode |
+| `compound-editor-modal` | Editor modal container | Hidden / removed when closed |
+| `compound-name-input` | Name text input | Receives focus on modal open |
+| `compound-formula-input` | Formula text input (formula mode) | — |
+| `compound-density-input` | Density number input | — |
+| `compound-ival-input` | I-value number input | Optional field |
+| `compound-save-btn` | Save / Create button | Disabled when validation fails |
+| `compound-validation-error` | Inline validation error message | Shown on invalid formula / missing fields |
+| `compound-sum-indicator` | Weight-fraction sum indicator (weight-fraction mode) | Error colour when sum ∉ [99.9, 100.1]% |
+| `compound-group` | "Custom Compounds" group in entity selector | Absent from DOM in Basic mode |
+| `compound-from-url-banner` | "Compound from shared URL" banner | Shown only when compound is not in localStorage |
