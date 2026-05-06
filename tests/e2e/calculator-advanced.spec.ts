@@ -35,8 +35,10 @@ test.describe("Advanced mode", () => {
     const advancedToggle = page.locator('button[aria-label="Switch to Advanced mode"]');
     await advancedToggle.click();
 
-    // Allow effects to settle
-    await page.waitForTimeout(500);
+    // Allow effects to settle — wait for mode URL update instead of fixed delay
+    await page.waitForFunction(() => window.location.search.includes("mode=advanced"), {
+      timeout: 5000,
+    });
 
     expect(errors.filter((e) => e.includes("effect_update_depth_exceeded"))).toHaveLength(0);
   });
@@ -54,11 +56,17 @@ test.describe("Advanced mode", () => {
     const advancedToggle = page.locator('button[aria-label="Switch to Advanced mode"]');
 
     await advancedToggle.click();
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => window.location.search.includes("mode=advanced"), {
+      timeout: 5000,
+    });
     await basicToggle.click();
-    await page.waitForTimeout(300);
+    await page.waitForFunction(() => !window.location.search.includes("mode=advanced"), {
+      timeout: 5000,
+    });
     await advancedToggle.click();
-    await page.waitForTimeout(500);
+    await page.waitForFunction(() => window.location.search.includes("mode=advanced"), {
+      timeout: 5000,
+    });
 
     await expect(page.getByRole("heading", { name: "Calculator" })).toBeVisible();
     expect(errors.filter((e) => e.includes("effect_update_depth_exceeded"))).toHaveLength(0);

@@ -1,5 +1,25 @@
 import { defineConfig, devices } from "@playwright/test";
 
+// ─────────────────────────────────────────────────────────────────
+// Test-tag taxonomy — use in test() or test.describe() names:
+//
+//   @smoke     — primary acceptance scenario for the feature;
+//                fast, run by implementer and reviewer.
+//                Script: pnpm test:e2e:smoke
+//   @regression — edge cases, error states, cross-page parity;
+//                 run on every PR.
+//                 Script: pnpm test:e2e  (default full run)
+//   @nightly   — slow / expensive tests (not yet used).
+//                Script: pnpm test:e2e:nightly
+//
+// Timeout discipline:
+//   - Never use waitForTimeout() — use waitForSelector / waitForFunction /
+//     expect.poll with explicit timeouts. See .opencode/lessons-learned.md
+//     Entry 12.
+//   - Set test.setTimeout(ms) at the top of individual tests that involve
+//     WASM loading (30–60 s) or long debounce chains (5–10 s).
+// ─────────────────────────────────────────────────────────────────
+
 export default defineConfig({
   testDir: "./tests/e2e",
   fullyParallel: true,

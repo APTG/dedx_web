@@ -172,3 +172,38 @@ Tests are written to match those criteria exactly. Cross-reference:
 | Multi-program            | [multi-program.md](04-feature-specs/multi-program.md)       |
 | Inverse lookups          | [inverse-lookups.md](04-feature-specs/inverse-lookups.md)   |
 | Advanced options         | [advanced-options.md](04-feature-specs/advanced-options.md) |
+
+---
+
+## 7. E2E test-tag taxonomy (Playwright)
+
+E2E tests are tagged in the test name using `@tag` suffix. The `playwright.config.ts`
+and `package.json` support three tags:
+
+| Tag | Description | Script | When to run |
+| --- | ----------- | ------ | ----------- |
+| `@smoke` | Primary acceptance scenario — fast, deterministic, covers the core user flow | `pnpm test:e2e:smoke` | Every task (implementer + reviewer), every PR |
+| `@regression` | Edge cases, error states, cross-page parity | `pnpm test:e2e` (default) | Every PR |
+| `@nightly` | Slow / expensive (not yet used) | `pnpm test:e2e:nightly` | Nightly CI (future) |
+
+### Tagging convention
+
+```typescript
+// Inline @tag in the test name (idiomatic for this project):
+test("density 2× halves CSDA range @smoke", async ({ page }) => { ... });
+
+// Or in a describe block name:
+test.describe("Advanced Options @smoke", () => { ... });
+```
+
+### Rules
+
+- Every feature spec must include at least one `@smoke`-tagged E2E test
+  covering the primary acceptance scenario.
+- `@smoke` tests must complete within 30 s (use `test.setTimeout(30000)` if WASM
+  loading is needed).
+- Never use `waitForTimeout()` in any E2E test — use `waitForSelector`,
+  `waitForFunction`, or `expect.poll`. The ESLint config enforces this ban via
+  `no-restricted-syntax`. See `.opencode/lessons-learned.md` Entry 12.
+
+See `playwright.config.ts` for the timeout discipline comment block.

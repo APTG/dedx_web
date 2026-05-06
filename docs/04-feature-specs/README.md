@@ -4,6 +4,19 @@ Detailed per-feature specs for the dEdx Web redesign (Stage 1).
 Each spec follows the template defined in
 [`00-redesign-plan.md`](../00-redesign-plan.md) §7.
 
+> **Stage 6.9+ specs must use [`_template.md`](./_template.md).**
+> This template is mandatory for all new specs written after May 2026.
+> It ensures each spec includes: acceptance scenarios with DOM observables,
+> reactive triggers matrix, URL round-trip table, cross-page parity checklist,
+> and test plan. See `docs/ai-logs/2026-05-06-pr427-postmortem.md` for the
+> rationale.
+
+## Spec Template
+
+| File | Purpose |
+| ---- | ------- |
+| [_template.md](./_template.md) | **Mandatory template for all Stage 6.9+ specs.** Copy this file, rename, and fill in all [REQUIRED] sections before handing to the implementer. |
+
 ## Spec Files
 
 | File                                                 | Status   | Summary                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
