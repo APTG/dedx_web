@@ -78,15 +78,15 @@ Two safe patterns:
 ```ts
 // ✅ SAFE: initialize through a local variable, assign to reactive signal ONCE at the end
 $effect(() => {
-  const newState = createFoo();   // local variable — no reactive signal read
-  newState.setX(1);               // safe — reads/writes only the local var
-  newState.setY(2);               // safe
-  myState = newState;             // ONE write to the reactive signal, at the very end
+  const newState = createFoo(); // local variable — no reactive signal read
+  newState.setX(1); // safe — reads/writes only the local var
+  newState.setY(2); // safe
+  myState = newState; // ONE write to the reactive signal, at the very end
 });
 
 // ✅ SAFE: use untrack() to break a dependency you need to pass through but not react to
 $effect(() => {
-  const next = computeUrl(myValue);     // reactive read: myValue
+  const next = computeUrl(myValue); // reactive read: myValue
   untrack(() => replaceState(next, page.state)); // page.state read is NOT a dependency
 });
 ```
@@ -95,12 +95,13 @@ $effect(() => {
 // ❌ WRONG: reading myState.foo after writing myState → self-dependency → infinite loop
 $effect(() => {
   myState = createFoo();
-  myState.setX(1);   // reads outer reactive myState — registers a dependency on it!
-  myState.setY(2);   // same problem
+  myState.setX(1); // reads outer reactive myState — registers a dependency on it!
+  myState.setY(2); // same problem
 });
 ```
 
 Additional pitfalls:
+
 - `replaceState(url, page.state)` inside a URL-sync `$effect`: wrap in `untrack()`.
   `page.state` is reactive; `replaceState` updates it; without `untrack` the effect
   re-fires every time it runs, creating a loop.
@@ -144,11 +145,100 @@ require WASM should be marked `test.skip` with the comment
 tests the command must run cleanly (exit 0 with all skipped / passed).
 
 If `pnpm exec playwright test` produces failures:
+
 1. Read the failure output carefully — do not assume failures are pre-existing.
 2. Check whether any new test you wrote caused an existing test to regress.
 3. Fix failures caused by your own changes before outputting `TASK DONE`.
 4. If a failure is pre-existing (existed before your task), document it explicitly
    in the `TASK DONE` message.
+
+#### E2E test timeouts — CRITICAL
+
+The E2E suite runs against the real compiled app with WASM. WASM loading, reactive
+effects settling, and debounce delays can all take time. **Never use hard-coded
+`waitForTimeout()` delays** — they are brittle. Use explicit condition waits instead:
+
+```typescript
+// ✅ GOOD: wait for condition
+await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+await page.waitForFunction(() => window.location.search.includes("density=1.2"), { timeout: 5000 });
+await expect.poll(async () => parseFloat(...), { timeout: 8000 }).toBeGreaterThan(0);
+
+// ❌ BAD: fixed delay — flaky in CI
+await page.waitForTimeout(1000);
+```
+
+Individual test timeouts should be set explicitly when a test involves WASM loading
+(30–60 s) or long debounce chains (5–10 s). Use `test.setTimeout(ms)` at the top
+of the test if a single test needs more time.
+
+#### E2E tests for reactive side effects — CRITICAL
+
+Unit tests verify math; E2E tests must verify the **reactive wiring** that connects
+UI input changes to recalculations. Without these, a bug can exist where the math
+is correct but the calculation never retriggers when state changes (as happened in
+Stage 6.8 where density override had no effect in the browser despite correct unit tests).
+
+**Rule:** For every feature that computes a value from reactive state, write an E2E
+test that:
+1. Reads the **baseline** computed value from the DOM.
+2. Changes the reactive input (e.g. density, interpolation method, energy).
+3. Polls the DOM until the computed value **changes** from the baseline.
+4. Asserts the new value is within the expected physical range.
+
+Example pattern (density 2× → CSDA range halves):
+```typescript
+// Read baseline
+const rangeCell = page.locator('[data-testid="range-cell-0"]');
+const baseline = await expect.poll(
+  async () => parseFloat((await rangeCell.textContent()) ?? ""),
+  { timeout: 8000 }
+).toBeGreaterThan(0);
+
+// Change input
+await densityInput.fill("2");
+await densityInput.blur();
+
+// Verify recalculation fired AND the result is physically correct
+await expect.poll(
+  async () => parseFloat((await rangeCell.textContent()) ?? ""),
+  { timeout: 5000 }
+).toBeLessThan(baseline * 0.6); // 2× density → ≈½ range
+```
+
+#### Reactive dep registration in `$effect` — CRITICAL (prevents missed retriggers)
+
+When a `$effect` reads reactive state **only inside an async callback**, Svelte does
+NOT register it as a dependency — the effect will never re-run when that state
+changes. This is the root cause of the Stage 6.8 density override bug.
+
+**Rule:** Snapshot reactive state **synchronously** at the top of the `$effect`,
+before any `await` or `getService().then()` call:
+
+```typescript
+// ✅ CORRECT: snapshotted synchronously → registered as dep, re-runs on change
+$effect(() => {
+  const advOptsSnapshot = advancedOptions.value; // ← reactive dep registered HERE
+  const inputSnapshot = entityState.selectedMaterial;
+  getService().then((svc) => {
+    svc.calculate(inputSnapshot, advOptsSnapshot); // uses frozen snapshot
+  });
+});
+
+// ❌ WRONG: reading reactive state inside .then() → NOT a dep → effect never retriggers
+$effect(() => {
+  getService().then((svc) => {
+    svc.calculate(entityState.selectedMaterial, advancedOptions.value); // ← reads here = no dep
+  });
+});
+```
+
+Similarly, state read only inside a `setTimeout` callback is not tracked.
+
+Also, for multi-page features with a "settings" singleton (like `advancedOptions`),
+add a dedicated `$effect` in each page component that reads a key derived from the
+settings (e.g. `JSON.stringify(advancedOptions.value)`) and calls the recalculation
+function when it changes.
 
 ### Commit format
 
@@ -160,6 +250,45 @@ If `pnpm exec playwright test` produces failures:
 
 Types: `feat`, `fix`, `test`, `chore`, `docs`
 No `--no-verify`. Fix hook failures before committing.
+
+## MCP tool usage
+
+Three MCP servers are available. Use them proactively — do not guess when a tool can answer.
+
+### Svelte MCP (`@sveltejs/opencode` plugin)
+
+Already covered in [Non-negotiable rules](#non-negotiable-rules): call `svelte-autofixer`
+on every `.svelte` file you write before committing.
+
+### Tailwind MCP (`tailwindcss-mcp-server`)
+
+When writing Tailwind CSS classes in Svelte components:
+
+- **Before writing a utility class**, query the Tailwind MCP for the correct v4 name,
+  spacing/color token, or arbitrary-value syntax.
+- This is especially important for Tailwind v4 — class names and layer syntax differ from v3.
+- Example: if you want a specific gray shade or want to know the correct `@layer` syntax, ask the MCP.
+
+### Playwright MCP (`@playwright/mcp`)
+
+**This is for interactive browser control during development — NOT for running the E2E test suite.**
+
+`pnpm exec playwright test` runs the project's test files in `tests/e2e/`. The Playwright MCP
+gives you live browser tools (navigate, click, screenshot, accessibility snapshot) that you
+call manually.
+
+When to use it:
+
+1. After implementing a UI component, start the dev server (`pnpm dev`).
+2. Use the `browser_navigate` tool to open `http://localhost:5173/<route>`.
+3. Use `browser_screenshot` to visually verify layout and rendering.
+4. Use `browser_click` / `browser_type` to verify interactive behavior.
+5. Fix visual issues, then proceed with `pnpm exec playwright test` as usual.
+
+This turns the workflow from "code → test → commit" into "code → **see** → fix → test → commit",
+catching visual regressions before the E2E suite runs.
+
+---
 
 ## Workflow
 

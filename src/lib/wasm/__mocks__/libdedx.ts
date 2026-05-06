@@ -97,6 +97,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     particleId: number,
     materialId: number,
     energies: number[],
+    _options?: AdvancedOptions,
   ): CalculationResult {
     // Simulate error for unknown program IDs
     if (!mockPrograms.some((p) => p.id === programId)) {
@@ -138,6 +139,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
@@ -229,6 +231,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     particleId: number,
     materialId: number,
     energies: number[],
+    _options?: AdvancedOptions,
   ): CalculationResult {
     const knownPrograms = [2, 3, 4]; // PSTAR, ESTAR, MSTAR
     if (!knownPrograms.includes(programId)) {
@@ -270,6 +273,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,

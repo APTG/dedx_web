@@ -41,3 +41,8 @@ prototypes/*/pnpm-lock.yaml
 playwright-report/
 test-results/
 package-lock.json
+
+# Playwright MCP — debug screenshots and session logs (browser_screenshot output lands here)
+.playwright-mcp/
+/*.png
+/plot-page-screenshot

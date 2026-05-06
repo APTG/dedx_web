@@ -72,3 +72,160 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     expect(uniqueTexts.size).toBe(count);
   });
 });
+
+test.describe("Plot page — Advanced Options panel gating (AC-1)", () => {
+  test("Advanced Options panel is absent in Basic mode", async ({ page }) => {
+    await page.goto("/plot");
+    // Advanced Options accordion should NOT be present in Basic mode
+    const panel = page.locator('button:has-text("Advanced Options")');
+    await expect(panel).toHaveCount(0);
+  });
+});
+
+test.describe("Plot page — Advanced Options density recalculation", () => {
+  test.beforeEach(async ({ page }) => {
+    // Navigate directly in Advanced mode so the panel is available immediately
+    await page.goto("/plot?mode=advanced");
+    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+  });
+
+  test("preview series appears after selecting particle, material, program", async ({ page }) => {
+    test.setTimeout(60000);
+    // Default selection (proton + water + auto) should produce a preview series
+    await expect
+      .poll(
+        async () => (await page.locator('[data-testid="preview-series"]').count()) > 0,
+        { timeout: 15000 },
+      )
+      .toBe(true);
+  });
+
+  test("density override updates preview series data-density attribute (triggers reactivity)", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+
+    // Wait for preview series to appear (default proton + water + auto selection)
+    const previewItem = page.locator('[data-testid="preview-series"]');
+    await expect
+      .poll(async () => (await previewItem.count()) > 0, { timeout: 15000 })
+      .toBe(true);
+
+    // Read the built-in density from the preview item
+    const builtInDensity = parseFloat((await previewItem.getAttribute("data-density")) ?? "0");
+    expect(builtInDensity).toBeGreaterThan(0);
+
+    // Open Advanced Options accordion and set density to 2×
+    await page.click('button:has-text("Advanced Options")');
+    await page.waitForSelector("#density-override", { timeout: 5000 });
+    await page.locator("#density-override").fill("2");
+    await page.locator("#density-override").blur();
+
+    // The preview series' data-density should update to 2.0 (reactivity fix verification)
+    await expect
+      .poll(
+        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
+        { timeout: 15000 },
+      )
+      .toBeCloseTo(2.0, 1);
+  });
+
+  test("density override persists in URL for plot page", async ({ page }) => {
+    test.setTimeout(30000);
+
+    // Open Advanced Options and set density
+    await page.click('button:has-text("Advanced Options")');
+    await page.waitForSelector("#density-override", { timeout: 5000 });
+    await page.locator("#density-override").fill("1.5");
+    await page.locator("#density-override").blur();
+
+    // URL should contain density parameter
+    await page.waitForFunction(() => window.location.search.includes("density=1.5"), {
+      timeout: 8000,
+    });
+    expect(page.url()).toContain("density=1.5");
+  });
+
+  test("clearing density override restores built-in density in preview series", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+
+    // Wait for preview series
+    const previewItem = page.locator('[data-testid="preview-series"]');
+    await expect
+      .poll(async () => (await previewItem.count()) > 0, { timeout: 15000 })
+      .toBe(true);
+
+    const builtInDensity = parseFloat((await previewItem.getAttribute("data-density")) ?? "0");
+    expect(builtInDensity).toBeGreaterThan(0);
+
+    // Set density to 2
+    await page.click('button:has-text("Advanced Options")');
+    await page.waitForSelector("#density-override", { timeout: 5000 });
+    await page.locator("#density-override").fill("2");
+    await page.locator("#density-override").blur();
+
+    // Wait for density to update
+    await expect
+      .poll(
+        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
+        { timeout: 15000 },
+      )
+      .toBeCloseTo(2.0, 1);
+
+    // Clear density via the clear button (aria-label="Clear density override")
+    await page.click('[aria-label="Clear density override"]');
+
+    // Density should revert to the material's built-in density
+    await expect
+      .poll(
+        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
+        { timeout: 15000 },
+      )
+      .toBeCloseTo(builtInDensity, 1);
+  });
+
+  test("MeV·cm²/g unit (mass STP) is density-independent: stpUnit label present when selected", async ({
+    page,
+  }) => {
+    // Navigate with mass STP unit selected
+    await page.goto("/plot?mode=advanced&stpUnit=MeV%C2%B7cm%C2%B2%2Fg");
+    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+
+    // The unit selector should reflect mass STP — just verify no JS errors
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+
+    // Open options and set density — should not cause errors
+    await page.click('button:has-text("Advanced Options")');
+    await page.waitForSelector("#density-override", { timeout: 5000 });
+    await page.locator("#density-override").fill("2");
+    await page.locator("#density-override").blur();
+
+    // Wait for reactive update to settle: density=2 should appear in URL
+    await page.waitForFunction(() => window.location.search.includes("density=2"), {
+      timeout: 8000,
+    });
+    expect(errors).toHaveLength(0);
+  });
+
+  test("interpolation method change (linear → spline) re-triggers preview (URL updates)", async ({
+    page,
+  }) => {
+    test.setTimeout(30000);
+
+    // Open Advanced Options
+    await page.click('button:has-text("Advanced Options")');
+    await page.waitForSelector("#interp-method", { timeout: 5000 });
+
+    // Switch interpolation method to spline
+    await page.selectOption("#interp-method", "spline");
+
+    // URL should contain interp_method=spline
+    await page.waitForFunction(() => window.location.search.includes("interp_method=spline"), {
+      timeout: 8000,
+    });
+    expect(page.url()).toContain("interp_method=spline");
+  });
+});

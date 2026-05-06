@@ -11,6 +11,7 @@ import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-alia
 import { getMaterialFriendlyName } from "$lib/config/material-names";
 import { getProgramFriendlyName } from "$lib/config/program-names";
 import { getParticleFriendlyName } from "$lib/config/particle-names";
+import { integrateCsdaFromStp } from "$lib/utils/csda-integration";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -158,15 +159,18 @@ export class LibdedxServiceImpl implements LibdedxService {
     particleId: number,
     materialId: number,
     energies: number[],
-    _options?: AdvancedOptions,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const numEnergies = energies.length;
+
+    // Check if spline interpolation method is active (requires JS-side CSDA integration)
+    const useJsCsda = options?.interpolation?.method === "cubic";
 
     // energies and STP are float (4 bytes each) in the C API.
     // CSDA ranges are double (8 bytes each).
     const energiesPtr = this.module._malloc(numEnergies * 4);
     const stpPtr = this.module._malloc(numEnergies * 4);
-    const csdaPtr = this.module._malloc(numEnergies * 8);
+    const csdaPtr = useJsCsda ? 0 : this.module._malloc(numEnergies * 8);
 
     try {
       const heapF32 = this.module.HEAPF32;
@@ -176,7 +180,9 @@ export class LibdedxServiceImpl implements LibdedxService {
       for (let i = 0; i < numEnergies; i++) {
         heapF32[energiesPtr / 4 + i] = energies[i] ?? 0; // float*
         heapF32[stpPtr / 4 + i] = 0; // float* (zeroed)
-        heapF64[csdaPtr / 8 + i] = 0; // double* (zeroed)
+        if (!useJsCsda) {
+          heapF64[csdaPtr / 8 + i] = 0; // double* (zeroed)
+        }
       }
 
       // Call 1: stopping powers (6 args: program, ion, target, n, energies*, stps*)
@@ -193,52 +199,114 @@ export class LibdedxServiceImpl implements LibdedxService {
       }
 
       // Call 2: CSDA ranges (6 args: program, ion, target, n, energies*, csda*)
-      const csdaErr = this.module._dedx_get_csda_range_table(
-        programId,
-        particleId,
-        materialId,
-        numEnergies,
-        energiesPtr,
-        csdaPtr,
-      );
-      if (csdaErr !== 0) {
-        throw new LibdedxError(csdaErr, "WASM CSDA calculation failed");
+      // Skip this call when using JS-side CSDA integration (spline mode)
+      let csdaErr = 0;
+      if (!useJsCsda) {
+        csdaErr = this.module._dedx_get_csda_range_table(
+          programId,
+          particleId,
+          materialId,
+          numEnergies,
+          energiesPtr,
+          csdaPtr,
+        );
+        if (csdaErr !== 0) {
+          throw new LibdedxError(csdaErr, "WASM CSDA calculation failed");
+        }
       }
 
       const stoppingPowers: number[] = [];
       const csdaRanges: number[] = [];
-      for (let i = 0; i < numEnergies; i++) {
-        const stpMass = heapF32[stpPtr / 4 + i] ?? 0; // read float
-        const csdaGcm2 = heapF64[csdaPtr / 8 + i] ?? 0; // read double
 
-        // Subnormal / non-finite guard — log and continue rather than throw.
-        if (
-          !Number.isFinite(stpMass) ||
-          (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)
-        ) {
-          console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
-            programId,
-            particleId,
-            materialId,
-            energyMevNucl: energies[i],
-            rawValue: stpMass,
-          });
-        }
-        if (
-          !Number.isFinite(csdaGcm2) ||
-          (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)
-        ) {
-          console.warn("[dedx] subnormal/invalid WASM output (CSDA range)", {
-            programId,
-            particleId,
-            materialId,
-            energyMevNucl: energies[i],
-            rawValue: csdaGcm2,
-          });
+      if (useJsCsda) {
+        // JS-side CSDA integration for spline mode
+        // Read STP values from WASM heap
+        const stpValues = new Float32Array(numEnergies);
+        for (let i = 0; i < numEnergies; i++) {
+          stpValues[i] = heapF32[stpPtr / 4 + i] ?? 0;
         }
 
-        stoppingPowers.push(stpMass);
-        csdaRanges.push(csdaGcm2);
+        // Read energy values from WASM heap
+        const energyValues = new Float32Array(numEnergies);
+        for (let i = 0; i < numEnergies; i++) {
+          energyValues[i] = heapF32[energiesPtr / 4 + i] ?? 0;
+        }
+
+        // Get density for integration (density parameter is not used for mass stopping power integration)
+        const material = this.materials.get(programId)?.find((m) => m.id === materialId);
+        const density = material?.density ?? 1.0;
+
+        // Perform JS-side CSDA integration
+        const csdaResult = integrateCsdaFromStp(energyValues, stpValues, density);
+
+        for (let i = 0; i < numEnergies; i++) {
+          const stpMass = stpValues[i];
+          const csdaGcm2 = csdaResult[i];
+
+          // Subnormal / non-finite guard — log and continue rather than throw.
+          if (
+            !Number.isFinite(stpMass) ||
+            (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)
+          ) {
+            console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
+              programId,
+              particleId,
+              materialId,
+              energyMevNucl: energies[i],
+              rawValue: stpMass,
+            });
+          }
+          if (
+            !Number.isFinite(csdaGcm2) ||
+            (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)
+          ) {
+            console.warn("[dedx] subnormal/invalid JS CSDA integration", {
+              programId,
+              particleId,
+              materialId,
+              energyMevNucl: energies[i],
+              rawValue: csdaGcm2,
+            });
+          }
+
+          stoppingPowers.push(stpMass);
+          csdaRanges.push(csdaGcm2);
+        }
+      } else {
+        // WASM-based CSDA calculation (linear interpolation mode)
+        for (let i = 0; i < numEnergies; i++) {
+          const stpMass = heapF32[stpPtr / 4 + i] ?? 0; // read float
+          const csdaGcm2 = heapF64[csdaPtr / 8 + i] ?? 0; // read double
+
+          // Subnormal / non-finite guard — log and continue rather than throw.
+          if (
+            !Number.isFinite(stpMass) ||
+            (Math.abs(stpMass) > 0 && Math.abs(stpMass) < Number.MIN_VALUE * 1e10)
+          ) {
+            console.warn("[dedx] subnormal/invalid WASM output (stopping power)", {
+              programId,
+              particleId,
+              materialId,
+              energyMevNucl: energies[i],
+              rawValue: stpMass,
+            });
+          }
+          if (
+            !Number.isFinite(csdaGcm2) ||
+            (Math.abs(csdaGcm2) > 0 && Math.abs(csdaGcm2) < Number.MIN_VALUE * 1e10)
+          ) {
+            console.warn("[dedx] subnormal/invalid WASM output (CSDA range)", {
+              programId,
+              particleId,
+              materialId,
+              energyMevNucl: energies[i],
+              rawValue: csdaGcm2,
+            });
+          }
+
+          stoppingPowers.push(stpMass);
+          csdaRanges.push(csdaGcm2);
+        }
       }
 
       return {
@@ -249,7 +317,9 @@ export class LibdedxServiceImpl implements LibdedxService {
     } finally {
       this.module._free(energiesPtr);
       this.module._free(stpPtr);
-      this.module._free(csdaPtr);
+      if (csdaPtr !== 0) {
+        this.module._free(csdaPtr);
+      }
     }
   }
 
@@ -286,6 +356,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const minEnergy = 0.001;
     const maxEnergy = 1000;
@@ -299,7 +370,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       energies.push(energy);
     }
 
-    return this.calculate(programId, particleId, materialId, energies);
+    return this.calculate(programId, particleId, materialId, energies, options);
   }
 
   getMinEnergy(programId: number, particleId: number): number {

@@ -2,6 +2,7 @@
   import { browser } from "$app/environment";
   import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
+  import { untrack } from "svelte";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
@@ -18,9 +19,17 @@
   import { getParticleLabel } from "$lib/utils/particle-label";
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
+  import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
+  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
+  import {
+    advancedOptions,
+    loadAdvancedOptionsFromStorage,
+    persistAdvancedOptions,
+  } from "$lib/state/advanced-options.svelte";
 
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
+  let materialIsGas = $state<boolean | undefined>(undefined);
 
   $effect(() => {
     if (wasmReady.value && !entityState) {
@@ -29,6 +38,63 @@
         entityState = createEntitySelectionState(matrix);
       });
     }
+  });
+
+  // Initialize advanced options from localStorage on mount (runs once; browser is a constant)
+  $effect(() => {
+    if (!browser) return;
+    loadAdvancedOptionsFromStorage();
+  });
+
+  // Track material changes to determine gas/condensed state for the panel
+  $effect(() => {
+    if (!entityState?.selectedMaterial) {
+      materialIsGas = undefined;
+      return;
+    }
+    const resolvedId = entityState.resolvedProgramId;
+    const matId = entityState.selectedMaterial.id;
+    if (resolvedId === null) {
+      materialIsGas = undefined;
+      return;
+    }
+    let cancelled = false;
+    getService().then((service) => {
+      if (cancelled) return;
+      const materials = service.getMaterials(resolvedId);
+      const mat = materials.find((m) => m.id === matId);
+      if (cancelled) return;
+      materialIsGas = mat?.isGasByDefault;
+    });
+    return () => {
+      cancelled = true;
+    };
+  });
+
+  // $derived signal to track nested advancedOptions changes.
+  // Svelte 5 fine-grained reactivity only registers a dep when a property
+  // is read synchronously.  Reading advancedOptions.value (the proxy object)
+  // does NOT register a dep on nested mutations such as
+  // `advancedOptions.value.densityOverride = 2`.  By deriving a serialised
+  // key from every relevant nested property we force $effects that read
+  // advOptsKey to re-run whenever ANY option changes.
+  const advOptsKey = $derived(
+    JSON.stringify([
+      advancedOptions.value.interpolation?.scale,
+      advancedOptions.value.interpolation?.method,
+      advancedOptions.value.densityOverride,
+      advancedOptions.value.iValueOverride,
+      advancedOptions.value.aggregateState,
+      advancedOptions.value.mstarMode,
+    ]),
+  );
+
+  // Persist advanced options to localStorage whenever they change
+  $effect(() => {
+    if (!browser) return;
+    // Read advOptsKey to track nested changes (see comment above)
+    const _advOptsKey = advOptsKey;
+    persistAdvancedOptions();
   });
 
   let urlInitialized = $state(false);
@@ -40,6 +106,9 @@
     const state = entityState;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
+
+    // Restore advanced mode from URL (URL param overrides localStorage if present).
+    initAdvancedModeFromUrl(params);
 
     if (decoded.particleId !== null) {
       state.selectParticle(decoded.particleId);
@@ -57,11 +126,23 @@
     plotState.setAxisScale("x", decoded.xLog);
     plotState.setAxisScale("y", decoded.yLog);
 
+    // Apply advanced options from URL (URL takes precedence over localStorage)
+    if (Object.keys(decoded.advancedOptions).length > 0) {
+      advancedOptions.value = decoded.advancedOptions;
+    }
+
     getService()
       .then((service) => {
         for (const s of decoded.series) {
           try {
-            const result = service.getPlotData(s.programId, s.particleId, s.materialId, 500, true);
+            const result = service.getPlotData(
+              s.programId,
+              s.particleId,
+              s.materialId,
+              500,
+              true,
+              advancedOptions.value,
+            );
             const programs = service.getPrograms();
             const particles = service.getParticles(s.programId);
             const materials = service.getMaterials(s.programId);
@@ -105,13 +186,28 @@
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
+      advancedOptions: advancedOptions.value,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
-    replaceState(newUrl, page.state);
+    untrack(() => replaceState(newUrl, page.state));
   });
 
-  // ── Preview series: auto-calculated whenever entity selection changes ──
+  // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
   $effect(() => {
+    // Read advOptsKey synchronously to register reactive deps on ALL nested
+    // advancedOptions properties (density, aggregateState, interpolation, etc.).
+    // Without this, mutating advancedOptions.value.densityOverride does not
+    // re-run the effect because Svelte's fine-grained tracker only records the
+    // read of advancedOptions.value (the object reference) when we do
+    // `const advOptsSnapshot = advancedOptions.value` below, but not the
+    // reads of nested properties that happen inside the async .then() callback.
+    const _advOptsKey = advOptsKey;
+
+    // Also read isAdvancedMode synchronously so switching modes triggers a
+    // re-render (the density formula depends on it, but it was previously only
+    // accessed inside the async callback which is not tracked).
+    const advancedModeActive = isAdvancedMode.value;
+
     if (!entityState) {
       plotState.clearPreview();
       return;
@@ -126,6 +222,11 @@
       "resolvedProgram" in selectedProgram
         ? (selectedProgram.resolvedProgram?.name ?? "Auto")
         : selectedProgram.name;
+
+    // Snapshot advanced options synchronously BEFORE the async call so the
+    // closure uses the options that were active when the effect fired (not
+    // potentially stale ones resolved later after a rapid selection change).
+    const advOptsSnapshot = advancedOptions.value;
 
     // Snapshot the current selection so a slower in-flight getPlotData
     // for an outdated selection cannot clobber a fresher preview (race
@@ -146,6 +247,7 @@
           snapshot.materialId,
           500,
           true,
+          advOptsSnapshot,
         );
         if (cancelled) return;
         plotState.setPreview({
@@ -155,7 +257,11 @@
           programName,
           particleName: getParticleLabel(selectedParticle),
           materialName: selectedMaterial.name,
-          density: selectedMaterial.density,
+          // Use the density override (only in Advanced mode) for correct unit conversion.
+          // advancedModeActive is snapshotted synchronously at the top of this effect.
+          density:
+            (advancedModeActive ? advOptsSnapshot.densityOverride : undefined) ??
+            selectedMaterial.density,
           result,
         });
       } catch (err) {
@@ -213,7 +319,9 @@
       programName: p.programName,
       particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
-      density: selectedMaterial.density,
+      // Preserve the density that was active when the preview was computed
+      // so committed series display the same values as the preview did.
+      density: p.density,
       result: p.result,
     });
 
@@ -495,6 +603,8 @@
             {#if plotState.preview}
               <div
                 role="listitem"
+                data-testid="preview-series"
+                data-density={plotState.preview.density}
                 class="flex items-center gap-2 text-sm italic text-muted-foreground"
               >
                 <span
@@ -540,6 +650,18 @@
               </div>
             {/each}
           </div>
+        {/if}
+
+        <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
+        {#if isAdvancedMode.value && entityState.selectedMaterial}
+          <AdvancedOptionsPanel
+            materialIsGas={materialIsGas ?? false}
+            materialBuiltInDensity={entityState.selectedMaterial.density}
+            materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
+            selectedProgram={"resolvedProgram" in entityState.selectedProgram
+              ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
+              : entityState.selectedProgram.name}
+          />
         {/if}
       </div>
     </div>

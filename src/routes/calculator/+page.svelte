@@ -1,9 +1,7 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
-  import {
-    isAdvancedMode,
-    initAdvancedModeFromUrl,
-  } from "$lib/state/advanced-mode.svelte";
+  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
@@ -15,6 +13,7 @@
     createMultiProgramState,
     type MultiProgramState,
   } from "$lib/state/multi-program.svelte.ts";
+  import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
@@ -27,12 +26,14 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
-  import {
-    decodeCalculatorUrl,
-    calculatorUrlQueryString,
-  } from "$lib/utils/calculator-url";
+  import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
   import { initExportState } from "$lib/state/export.svelte";
+  import {
+    advancedOptions,
+    loadAdvancedOptionsFromStorage,
+    persistAdvancedOptions,
+  } from "$lib/state/advanced-options.svelte";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -47,9 +48,19 @@
         state = createEntitySelectionState(matrix);
         calcState = createCalculatorState(state, service);
 
+        // Load advanced options from localStorage first, then URL will override if present
+        loadAdvancedOptionsFromStorage();
+
         const urlState = decodeCalculatorUrl(page.url.searchParams);
         // Restore advanced mode from URL (URL param overrides localStorage if present).
         initAdvancedModeFromUrl(page.url.searchParams);
+
+        // Restore advanced options from URL (URL takes priority over localStorage which was loaded above)
+        const urlAdvOpts = urlState.advancedOptions;
+        if (urlAdvOpts) {
+          advancedOptions.value = urlAdvOpts;
+        }
+
         if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
         if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
         if (urlState.programId !== null) state.selectProgram(urlState.programId);
@@ -70,7 +81,39 @@
     }
   });
 
+  // $derived signal to track nested advancedOptions changes
+  const advOptsKey = $derived(
+    JSON.stringify([
+      advancedOptions.value.interpolation?.scale,
+      advancedOptions.value.interpolation?.method,
+      advancedOptions.value.densityOverride,
+      advancedOptions.value.iValueOverride,
+      advancedOptions.value.aggregateState,
+      advancedOptions.value.mstarMode,
+    ]),
+  );
+
+  // Persist advanced options to localStorage whenever they change
   $effect(() => {
+    if (!browser) return;
+    // Read advOptsKey to track nested changes
+    const _advOptsKey = advOptsKey;
+    persistAdvancedOptions();
+  });
+
+  // Retrigger single-program calculation when advanced options change (basic mode).
+  // Advanced mode uses its own calculation effect below (multi-program calculateMulti).
+  $effect(() => {
+    // Read advOptsKey to register reactive dep on all advanced option fields.
+    const _advOptsKey = advOptsKey;
+    if (!calcState || !state?.isComplete || isAdvancedMode.value) return;
+    calcState.triggerCalculation();
+  });
+
+  $effect(() => {
+    // Read advOptsKey to establish reactive dependency on nested changes
+    const _advOptsKey = advOptsKey;
+
     if (!urlInitialized || !calcState || !state) return;
 
     const urlState = {
@@ -91,6 +134,9 @@
               (id) => multiProgState.columnVisibility.get(id) === false,
             ),
             quantityFocus: multiProgState.quantityFocus,
+            // Include advanced options when in advanced mode
+            advancedOptions: advancedOptions.value,
+            materialIsGas: state.selectedMaterial?.isGasByDefault,
           }
         : {}),
     };
@@ -347,6 +393,12 @@
 
   // Debounced calculation for multi-program mode
   $effect(() => {
+    // Read advOptsKey to establish reactive dependency on all advanced option fields.
+    // Without this, changing density/aggregate state etc. would not retrigger this
+    // calculation since advancedOptions.value is only read inside the setTimeout
+    // callback (async context), which does not register reactive dependencies.
+    const _advOptsKey = advOptsKey;
+
     if (!multiProgState || !state || !calcState || !state.isComplete) return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
@@ -363,6 +415,9 @@
     if (validRows.length === 0) return;
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
+    // Snapshot advanced options synchronously (before async) so the timer closure
+    // uses the options that were active when the effect fired.
+    const advOptsSnapshot = advancedOptions.value;
 
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
@@ -381,6 +436,7 @@
         particleId: inputSnapshot.particleId,
         materialId: inputSnapshot.materialId,
         energies: inputSnapshot.energies,
+        options: advOptsSnapshot,
       });
 
       if (!cancelled) {
@@ -550,6 +606,21 @@
             </div>
           </div>
         </div>
+        <!-- Advanced Options Panel -->
+        {#if state}
+          <AdvancedOptionsPanel
+            materialIsGas={state.selectedMaterial?.isGasByDefault ?? false}
+            materialBuiltInDensity={state.selectedMaterial?.density}
+            materialBuiltInAggregateState={state.selectedMaterial
+              ? state.selectedMaterial.isGasByDefault
+                ? "gas"
+                : "condensed"
+              : undefined}
+            selectedProgram={"resolvedProgram" in state.selectedProgram
+              ? (state.selectedProgram.resolvedProgram?.name ?? "")
+              : state.selectedProgram.name}
+          />
+        {/if}
       {/if}
       <!-- Advanced mode onboarding hint -->
       {#if showAdvancedHint}

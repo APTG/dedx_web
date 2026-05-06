@@ -1,5 +1,6 @@
 <script lang="ts">
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import { advancedOptions } from "$lib/state/advanced-options.svelte";
   import { autoScaleLengthCm } from "$lib/utils/unit-conversions";
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
@@ -429,7 +430,9 @@
                       {:else if result && row.normalizedMevNucl !== null}
                         {#if result.stoppingPowers && result.stoppingPowers.length > 0}
                           {#if entitySelection.selectedMaterial}
-                            {@const density = entitySelection.selectedMaterial.density}
+                            {@const density =
+                              advancedOptions.value.densityOverride ??
+                              entitySelection.selectedMaterial.density}
                             {@const stpIndex = result.energies.findIndex(
                               (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
                             )}
@@ -479,7 +482,9 @@
                       {:else if result && row.normalizedMevNucl !== null}
                         {#if result.csdaRanges && result.csdaRanges.length > 0}
                           {#if entitySelection.selectedMaterial}
-                            {@const density = entitySelection.selectedMaterial.density}
+                            {@const density =
+                              advancedOptions.value.densityOverride ??
+                              entitySelection.selectedMaterial.density}
                             {@const csdaIndex = result.energies.findIndex(
                               (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
                             )}

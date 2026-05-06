@@ -16,6 +16,8 @@ import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
 import { debounce } from "$lib/utils/debounce";
+import { advancedOptions } from "./advanced-options.svelte";
+import { isAdvancedMode } from "./advanced-mode.svelte";
 
 export interface CalculatedRow {
   id: number;
@@ -146,7 +148,13 @@ export function createCalculatorState(
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
-    if (material?.isGasByDefault) {
+    // Aggregate state override may flip the effective aggregate state (Behavior §3).
+    // Only apply the override when in Advanced mode — Basic mode always uses
+    // the material's built-in aggregate state so switching back to Basic reverts the unit.
+    const aggOverride = isAdvancedMode.value ? advancedOptions.value.aggregateState : undefined;
+    const effectivelyGas =
+      aggOverride === "gas" ? true : aggOverride === "condensed" ? false : material?.isGasByDefault;
+    if (effectivelyGas) {
       return "MeV·cm²/g";
     }
     return "keV/µm";
@@ -269,10 +277,24 @@ export function createCalculatorState(
       }
 
       const energyValues = energies.map((e) => e.energy);
-      const result = service.calculate(resolvedProgramId, particleId, materialId, energyValues);
+      // Only pass advanced options to WASM in Advanced mode — Basic mode uses
+      // defaults so switching back to Basic always reverts to default behaviour.
+      const calculationOptions = isAdvancedMode.value ? advancedOptions.value : undefined;
+      const result = service.calculate(
+        resolvedProgramId,
+        particleId,
+        materialId,
+        energyValues,
+        calculationOptions,
+      );
 
       const material = entitySelection.selectedMaterial;
-      const density = material?.density ?? 1;
+      // Use the density override only in Advanced mode; Basic mode always uses
+      // the material's built-in density so switching back reverts the value.
+      const density =
+        (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
+        material?.density ??
+        1;
 
       const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
 

@@ -2,9 +2,16 @@ name: CI
 
 on:
   push:
-    branches: [master, "feature/**", "fix/**", "qwen/**"]
+    branches: [master, "feature/**", "feat/**", "fix/**", "qwen/**"]
   pull_request:
     branches: [master]
+  workflow_dispatch:
+
+# Cancel in-progress runs when a new commit is pushed to the same branch,
+# preventing stale runs from queuing and blocking CI feedback.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 permissions:
   contents: read

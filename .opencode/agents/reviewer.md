@@ -100,14 +100,14 @@ reads it transitively through another function). This pattern causes an infinite
 // ❌ WRONG — reading myState after writing myState
 $effect(() => {
   myState = createFoo();
-  myState.setX(1);   // reads the outer reactive signal → self-dependency
+  myState.setX(1); // reads the outer reactive signal → self-dependency
 });
 
 // ✅ CORRECT — local variable for all init, assign reactive signal once at end
 $effect(() => {
   const s = createFoo();
   s.setX(1);
-  myState = s;       // ONE write, after all reads are done
+  myState = s; // ONE write, after all reads are done
 });
 ```
 

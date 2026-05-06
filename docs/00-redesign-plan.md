@@ -530,17 +530,46 @@ As a <role>, I want to <action> so that <benefit>.
   in this stage; every PR's test suite must pass before merge.
 - **Status:** Complete. See [`docs/progress/stage-5.md`](progress/stage-5.md) for the consolidated stage summary, [`docs/progress/stage-5-entity-selection.md`](progress/stage-5-entity-selection.md), [`docs/progress/stage-5.4-result-table.md`](progress/stage-5.4-result-table.md), [`docs/progress/stage-5-audit-2026-04-26.md`](progress/stage-5-audit-2026-04-26.md), and the closing [UX review](ux-reviews/2026-04-28-stage5-completion-and-stage6-readiness.md).
 
-### Stage 6: Feature Pages (one at a time)
+### Stage 6: Feature Pages ⏳ (In Progress — May 2026)
 
-- **Who:** AI implements per feature spec.
-- **Order:**
-  1. ⏳ Calculator (basic) — depends on entity selection, energy input, result table; spec [`docs/04-feature-specs/calculator.md`](04-feature-specs/calculator.md). _Already shipped as a side-effect of Stage 5.4 — just needs the toolbar and Share URL plumbing to be marked done._
-  2. ⏳ Live calculation — depends on Calculator + debounce logic. _Already shipped as a side-effect of Stage 5.2 (`debounce` wired in `calculator.svelte.ts`)._
-  3. ⏳ Multi-program mode — depends on Calculator + modified WASM calls; spec [`docs/04-feature-specs/multi-program.md`](04-feature-specs/multi-program.md).
-  4. ⏳ Plot page with JSROOT — depends on JSROOT wrapper + entity selection; spec [`docs/04-feature-specs/plot.md`](04-feature-specs/plot.md). _Already shipped as a side-effect of Stage 5.5._
-  5. ⏳ Data series comparison — depends on Plot page + series management. _Already shipped as a side-effect of Stage 5.5 (color pool + smart labels)._
-  6. ⏳ Shareable URLs — depends on Svelte stores + URL sync; spec [`docs/04-feature-specs/shareable-urls.md`](04-feature-specs/shareable-urls.md). _Plot URL sync done; Calculator URL sync still requires deleting the unwired `src/lib/state/url-sync.ts` and re-implementing per spec canonical params._
-  7. ⏳ CSV + PDF export — depends on Result table data + file generation; spec [`docs/04-feature-specs/export.md`](04-feature-specs/export.md).
+- **Who:** AI implements per feature spec (one sub-stage per session).
+- **Input:** Individual spec files in `docs/04-feature-specs/`.
+- **Status:** Calculator core, live calc, multi-program comparison, Plot page, series
+  comparison, URL sync, basic-mode export, and **Advanced Options (6.8)** are ✅ complete.
+  Inverse Lookups, Custom Compounds, Build Info, and advanced-mode
+  export additions remain ⏳.
+
+#### Completed sub-stages
+
+| #   | Feature                                                       | Status | PR(s)                                                                                                                                                                            | Spec / Log                                                                                                                                           |
+| --- | ------------------------------------------------------------- | ------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 6.1 | Calculator core: URL sync, toolbar, Share URL button          | ✅     | [#399](https://github.com/APTG/dedx_web/pull/399)                                                                                                                                | [`calculator.md`](04-feature-specs/calculator.md), [log](ai-logs/2026-04-28-stage6-calculator-basic.md)                                              |
+| 6.2 | Live calculation (debounced reactive updates)                 | ✅     | (Stage 5.2 — `debounce` wired in `calculator.svelte.ts`)                                                                                                                         | [`calculator.md`](04-feature-specs/calculator.md)                                                                                                    |
+| 6.3 | Multi-program comparison — grouped table, quantity focus, URL | ✅     | [#423](https://github.com/APTG/dedx_web/pull/423), [#410](https://github.com/APTG/dedx_web/pull/410) (mobile scroll)                                                             | [`multi-program.md`](04-feature-specs/multi-program.md), [log](ai-logs/2026-05-04-stage6-multi-program.md)                                           |
+| 6.4 | Plot page with JSROOT + data series comparison                | ✅     | [#394](https://github.com/APTG/dedx_web/pull/394) (Stage 5.5)                                                                                                                    | [`plot.md`](04-feature-specs/plot.md)                                                                                                                |
+| 6.5 | Shareable URLs — Calculator + Plot + Advanced mode round-trip | ✅     | [#399](https://github.com/APTG/dedx_web/pull/399) (calc), [#394](https://github.com/APTG/dedx_web/pull/394) (plot), [#423](https://github.com/APTG/dedx_web/pull/423) (adv mode) | [`shareable-urls.md`](04-feature-specs/shareable-urls.md)                                                                                            |
+| 6.6 | CSV + PDF + SVG export — Calculator + Plot (basic mode)       | ✅     | [#405](https://github.com/APTG/dedx_web/pull/405) (calc), [#422](https://github.com/APTG/dedx_web/pull/422) (plot)                                                               | [`export.md`](04-feature-specs/export.md), [log](ai-logs/2026-04-29-stage6-export-and-e2e-fixes.md), [log](ai-logs/2026-05-04-stage6-plot-export.md) |
+| 6.8 | Advanced Options panel (density, I-value, agg state, interp, MSTAR) | ✅ | [#427](https://github.com/APTG/dedx_web/pull/427)                                                                                                                          | [`advanced-options.md`](04-feature-specs/advanced-options.md), [log](ai-logs/2026-05-06-stage6-8-density-advanced-mode-fix.md)                       |
+
+#### Remaining sub-stages
+
+| #    | Feature                                    | Status | Spec                                                                             | Notes                                                                                                                                                                                                                                                                                |
+| ---- | ------------------------------------------ | ------ | -------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 6.7  | Build info badge (footer)                  | ⏳     | [`build-info.md`](04-feature-specs/build-info.md) Final v1                       | Commit hash link + ISO date + branch/tag in footer. Injected at build time via `deploy.js` → `deploy.json`; silently omitted if file absent. Standalone, no deps.                                                                                                                    |
+| 6.9  | Inverse Lookups (Range + Inverse STP tabs) | ⏳     | [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) Final v4             | Advanced-mode only. Range tab: energy from CSDA range, inline nm/µm/mm/cm/m suffix. Inverse STP tab: E low/E high branches, no-solution `—`. Multi-program: one column per program (Range) / one E-low + E-high pair per program (Inverse STP). Depends on 6.8 ✅.                   |
+| 6.10 | Custom Compounds                           | ⏳     | [`custom-compounds.md`](04-feature-specs/custom-compounds.md) Final v1           | Compound editor (formula mode + weight-fraction mode), localStorage library, WASM `calculateCustomCompound()` / `getInverseStp/Csda/BraggPeak CustomCompound()` via `dedx_extra.{h,c}`, entity-selection "Custom Compounds" group. URL encoding: `material=custom` + `mat_*` params. |
+| 6.11 | Export: advanced mode additions            | ⏳     | [`export.md`](04-feature-specs/export.md) Final v6 §§1.1, 4.1, 6.1               | PNG image export (advanced mode only; basic mode keeps SVG only), advanced-mode PDF metadata block (PARTICLE / MATERIAL / PROGRAMS / SETTINGS / SYSTEM / BUILD), advanced-mode CSV configuration modal (separator, line endings, filename).                                          |
+| 6.12 | Multi-program polish                       | ⏳     | [`multi-program.md`](04-feature-specs/multi-program.md) Final v3 §§5, 6          | Drag-and-drop column reordering synced across STP + CSDA groups, delta/% difference tooltip on hover, advanced-mode CSV + PDF export for multi-program grouped-column layout.                                                                                                        |
+| 6.13 | Formal URL parser (full ABNF conformance)  | ⏳     | [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) Final v6 | `urlv` versioning, major-version mismatch warning + migration, `material=custom` + `mat_*` round-trip (step 9 canonicalization). Depends on 6.10 (custom compounds) being complete. External data (`extdata`) deferred to Stage 7 alongside `external-data.md`.                      |
+
+**Recommended implementation order:** 6.7 (standalone) → 6.9 → 6.11 → 6.10 → 6.12 → 6.13.
+
+#### Notes on deferred items
+
+- **External data** (`external-data.md`, Zarr v3 `.webdedx` format) is a "Later-Stage Spec" and is deferred to Stage 7; its URL grammar (`extdata=` param) is stubbed in `shareable-urls-formal.md` but not yet wired.
+- **Formal URL parser** (6.13) cannot be fully verified until Custom Compounds (6.10) is done, since `material=custom` is the only new grammar production that 6.13 adds over the existing `calculator-url.ts` / `plot-url.ts` implementations.
+- **Multi-program drag-and-drop** (6.12) was explicitly deferred out of scope in the Stage 6.3 session log ([2026-05-04](ai-logs/2026-05-04-stage6-multi-program.md)).
+- **Export advanced-mode additions** (6.11) — PNG and advanced-mode PDF/CSV — were explicitly deferred in the plot-export session log ([2026-05-04](ai-logs/2026-05-04-stage6-plot-export.md)).
 
 ### Stage 7: E2E Tests & Polish
 

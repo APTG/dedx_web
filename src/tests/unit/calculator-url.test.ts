@@ -274,4 +274,182 @@ describe("decodeCalculatorUrl", () => {
     expect(reEncoded.get("hidden_programs")).toBe("2");
     expect(reEncoded.get("qfocus")).toBe("stp");
   });
+
+  it("encodes advanced options agg_state when it differs from materialIsGas", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { aggregateState: "gas" },
+      materialIsGas: false, // material is condensed, but override to gas
+    } as any);
+    expect(p.get("agg_state")).toBe("gas");
+  });
+
+  it("does NOT encode agg_state when it matches materialIsGas (not an override)", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { aggregateState: "condensed" },
+      materialIsGas: false, // matches
+    } as any);
+    expect(p.has("agg_state")).toBe(false);
+  });
+
+  it("encodes interp_scale=lin-lin when interpolation.scale is linear", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { interpolation: { scale: "linear", method: "linear" } },
+      materialIsGas: false,
+    } as any);
+    expect(p.get("interp_scale")).toBe("lin-lin");
+  });
+
+  it("does NOT encode interp_scale when default (log)", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { interpolation: { scale: "log", method: "linear" } },
+      materialIsGas: false,
+    } as any);
+    expect(p.has("interp_scale")).toBe(false);
+  });
+
+  it("encodes interp_method=spline when interpolation.method is cubic", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { interpolation: { scale: "log", method: "cubic" } },
+      materialIsGas: false,
+    } as any);
+    expect(p.get("interp_method")).toBe("spline");
+  });
+
+  it("does NOT encode interp_method when default (linear)", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { interpolation: { scale: "log", method: "linear" } },
+      materialIsGas: false,
+    } as any);
+    expect(p.has("interp_method")).toBe(false);
+  });
+
+  it("encodes mstar_mode when not default 'b'", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { mstarMode: "c" },
+      materialIsGas: false,
+    } as any);
+    expect(p.get("mstar_mode")).toBe("c");
+  });
+
+  it("does NOT encode mstar_mode when default 'b'", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { mstarMode: "b" },
+      materialIsGas: false,
+    } as any);
+    expect(p.has("mstar_mode")).toBe(false);
+  });
+
+  it("encodes density override", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { densityOverride: 1.5 },
+      materialIsGas: false,
+    } as any);
+    expect(p.get("density")).toBe("1.5");
+  });
+
+  it("encodes i-value override", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9],
+      quantityFocus: "both",
+      advancedOptions: { iValueOverride: 85.5 },
+      materialIsGas: false,
+    } as any);
+    expect(p.get("ival")).toBe("85.5");
+  });
+
+  it("URL round-trip: encode(decode(url)) preserves all advanced options", () => {
+    const originalParams = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=gas&interp_scale=lin-lin&interp_method=spline&mstar_mode=a&density=1.5&ival=85.5",
+    );
+    const decoded = decodeCalculatorUrl(originalParams);
+    const reEncoded = encodeCalculatorUrl(decoded);
+
+    expect(reEncoded.get("mode")).toBe("advanced");
+    expect(reEncoded.get("agg_state")).toBe("gas");
+    expect(reEncoded.get("interp_scale")).toBe("lin-lin");
+    expect(reEncoded.get("interp_method")).toBe("spline");
+    expect(reEncoded.get("mstar_mode")).toBe("a");
+    expect(reEncoded.get("density")).toBe("1.5");
+    expect(reEncoded.get("ival")).toBe("85.5");
+  });
+
+  it("URL round-trip with partial params: encode(decode(url)) preserves only density", () => {
+    const originalParams = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&density=1.5",
+    );
+    const decoded = decodeCalculatorUrl(originalParams);
+    const reEncoded = encodeCalculatorUrl(decoded);
+
+    expect(reEncoded.get("mode")).toBe("advanced");
+    expect(reEncoded.get("programs")).toBe("9");
+    expect(reEncoded.get("qfocus")).toBe("both");
+    expect(reEncoded.get("density")).toBe("1.5");
+    // Other advanced options should NOT be present
+    expect(reEncoded.has("agg_state")).toBe(false);
+    expect(reEncoded.has("interp_scale")).toBe(false);
+    expect(reEncoded.has("interp_method")).toBe(false);
+    expect(reEncoded.has("mstar_mode")).toBe(false);
+    expect(reEncoded.has("ival")).toBe(false);
+  });
+
+  it("decodeCalculatorUrl returns advancedOptions only in advanced mode", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&agg_state=gas",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    // Without mode=advanced, agg_state is ignored
+    expect(decoded.advancedOptions).toBeUndefined();
+  });
+
+  it("decodeCalculatorUrl parses all advanced options correctly", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=condensed&interp_scale=lin-lin&interp_method=spline&mstar_mode=c&density=2.0&ival=100",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect(decoded.isAdvancedMode).toBe(true);
+    expect(decoded.advancedOptions?.aggregateState).toBe("condensed");
+    expect(decoded.advancedOptions?.interpolation?.scale).toBe("linear");
+    expect(decoded.advancedOptions?.interpolation?.method).toBe("cubic");
+    expect(decoded.advancedOptions?.mstarMode).toBe("c");
+    expect(decoded.advancedOptions?.densityOverride).toBe(2.0);
+    expect(decoded.advancedOptions?.iValueOverride).toBe(100);
+  });
 });
