@@ -152,6 +152,94 @@ If `pnpm exec playwright test` produces failures:
 4. If a failure is pre-existing (existed before your task), document it explicitly
    in the `TASK DONE` message.
 
+#### E2E test timeouts — CRITICAL
+
+The E2E suite runs against the real compiled app with WASM. WASM loading, reactive
+effects settling, and debounce delays can all take time. **Never use hard-coded
+`waitForTimeout()` delays** — they are brittle. Use explicit condition waits instead:
+
+```typescript
+// ✅ GOOD: wait for condition
+await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+await page.waitForFunction(() => window.location.search.includes("density=1.2"), { timeout: 5000 });
+await expect.poll(async () => parseFloat(...), { timeout: 8000 }).toBeGreaterThan(0);
+
+// ❌ BAD: fixed delay — flaky in CI
+await page.waitForTimeout(1000);
+```
+
+Individual test timeouts should be set explicitly when a test involves WASM loading
+(30–60 s) or long debounce chains (5–10 s). Use `test.setTimeout(ms)` at the top
+of the test if a single test needs more time.
+
+#### E2E tests for reactive side effects — CRITICAL
+
+Unit tests verify math; E2E tests must verify the **reactive wiring** that connects
+UI input changes to recalculations. Without these, a bug can exist where the math
+is correct but the calculation never retriggers when state changes (as happened in
+Stage 6.8 where density override had no effect in the browser despite correct unit tests).
+
+**Rule:** For every feature that computes a value from reactive state, write an E2E
+test that:
+1. Reads the **baseline** computed value from the DOM.
+2. Changes the reactive input (e.g. density, interpolation method, energy).
+3. Polls the DOM until the computed value **changes** from the baseline.
+4. Asserts the new value is within the expected physical range.
+
+Example pattern (density 2× → CSDA range halves):
+```typescript
+// Read baseline
+const rangeCell = page.locator('[data-testid="range-cell-0"]');
+const baseline = await expect.poll(
+  async () => parseFloat((await rangeCell.textContent()) ?? ""),
+  { timeout: 8000 }
+).toBeGreaterThan(0);
+
+// Change input
+await densityInput.fill("2");
+await densityInput.blur();
+
+// Verify recalculation fired AND the result is physically correct
+await expect.poll(
+  async () => parseFloat((await rangeCell.textContent()) ?? ""),
+  { timeout: 5000 }
+).toBeLessThan(baseline * 0.6); // 2× density → ≈½ range
+```
+
+#### Reactive dep registration in `$effect` — CRITICAL (prevents missed retriggers)
+
+When a `$effect` reads reactive state **only inside an async callback**, Svelte does
+NOT register it as a dependency — the effect will never re-run when that state
+changes. This is the root cause of the Stage 6.8 density override bug.
+
+**Rule:** Snapshot reactive state **synchronously** at the top of the `$effect`,
+before any `await` or `getService().then()` call:
+
+```typescript
+// ✅ CORRECT: snapshotted synchronously → registered as dep, re-runs on change
+$effect(() => {
+  const advOptsSnapshot = advancedOptions.value; // ← reactive dep registered HERE
+  const inputSnapshot = entityState.selectedMaterial;
+  getService().then((svc) => {
+    svc.calculate(inputSnapshot, advOptsSnapshot); // uses frozen snapshot
+  });
+});
+
+// ❌ WRONG: reading reactive state inside .then() → NOT a dep → effect never retriggers
+$effect(() => {
+  getService().then((svc) => {
+    svc.calculate(entityState.selectedMaterial, advancedOptions.value); // ← reads here = no dep
+  });
+});
+```
+
+Similarly, state read only inside a `setTimeout` callback is not tracked.
+
+Also, for multi-page features with a "settings" singleton (like `advancedOptions`),
+add a dedicated `$effect` in each page component that reads a key derived from the
+settings (e.g. `JSON.stringify(advancedOptions.value)`) and calls the recalculation
+function when it changes.
+
 ### Commit format
 
 ```
