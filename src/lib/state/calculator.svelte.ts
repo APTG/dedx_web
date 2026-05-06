@@ -16,6 +16,7 @@ import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
 import { debounce } from "$lib/utils/debounce";
+import { advancedOptions } from "./advanced-options.svelte";
 
 export interface CalculatedRow {
   id: number;
@@ -146,7 +147,11 @@ export function createCalculatorState(
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
-    if (material?.isGasByDefault) {
+    // Aggregate state override may flip the effective phase (Behavior §3).
+    const aggOverride = advancedOptions.value.aggregateState;
+    const effectivelyGas =
+      aggOverride === "gas" ? true : aggOverride === "condensed" ? false : material?.isGasByDefault;
+    if (effectivelyGas) {
       return "MeV·cm²/g";
     }
     return "keV/µm";
@@ -269,10 +274,17 @@ export function createCalculatorState(
       }
 
       const energyValues = energies.map((e) => e.energy);
-      const result = service.calculate(resolvedProgramId, particleId, materialId, energyValues);
+      const result = service.calculate(
+        resolvedProgramId,
+        particleId,
+        materialId,
+        energyValues,
+        advancedOptions.value,
+      );
 
       const material = entitySelection.selectedMaterial;
-      const density = material?.density ?? 1;
+      // Use the density override when set; fall back to the material's built-in density.
+      const density = advancedOptions.value.densityOverride ?? material?.density ?? 1;
 
       const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number }>();
 

@@ -19,6 +19,7 @@
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -600,8 +601,8 @@
           </div>
         {/if}
 
-        <!-- Advanced Options Panel -->
-        {#if entityState.selectedMaterial}
+        <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
+        {#if isAdvancedMode.value && entityState.selectedMaterial}
           <AdvancedOptionsPanel
             materialIsGas={materialIsGas ?? false}
             materialBuiltInDensity={entityState.selectedMaterial.density}
