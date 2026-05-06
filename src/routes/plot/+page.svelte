@@ -168,7 +168,7 @@
     replaceState(newUrl, page.state);
   });
 
-  // ── Preview series: auto-calculated whenever entity selection changes ──
+  // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
   $effect(() => {
     if (!entityState) {
       plotState.clearPreview();
@@ -184,6 +184,13 @@
       "resolvedProgram" in selectedProgram
         ? (selectedProgram.resolvedProgram?.name ?? "Auto")
         : selectedProgram.name;
+
+    // Snapshot advanced options synchronously BEFORE the async call.
+    // This registers advancedOptions.value as a reactive dependency so the effect
+    // re-runs (and re-draws the preview) whenever any option changes.  The snapshot
+    // is also passed to getPlotData so the closure uses the options that were active
+    // when the effect fired, not potentially stale ones resolved later.
+    const advOptsSnapshot = advancedOptions.value;
 
     // Snapshot the current selection so a slower in-flight getPlotData
     // for an outdated selection cannot clobber a fresher preview (race
@@ -204,7 +211,7 @@
           snapshot.materialId,
           500,
           true,
-          advancedOptions.value,
+          advOptsSnapshot,
         );
         if (cancelled) return;
         plotState.setPreview({

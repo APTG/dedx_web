@@ -72,3 +72,12 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     expect(uniqueTexts.size).toBe(count);
   });
 });
+
+test.describe("Plot page — Advanced Options panel gating (AC-1)", () => {
+  test("Advanced Options panel is absent in Basic mode", async ({ page }) => {
+    await page.goto("/plot");
+    // Advanced Options accordion should NOT be present in Basic mode
+    const panel = page.locator('button:has-text("Advanced Options")');
+    await expect(panel).toHaveCount(0);
+  });
+});

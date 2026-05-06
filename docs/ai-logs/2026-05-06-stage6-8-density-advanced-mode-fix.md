@@ -15,13 +15,23 @@ User (@grzanka) reported:
 3. Requested tests for the density override and a check that all spec
    acceptance criteria have corresponding test coverage.
 
-**AI response:** Three bugs diagnosed and fixed:
+**AI response:** Three bugs diagnosed and fixed, then a follow-up prompt revealed
+the root reactive trigger was missing.
+
+### Prompt 2: E2E verification; still doesn't work in the browser
+
+User (@grzanka) reported that even after the math fix, the CSDA range still doesn't
+change when density is adjusted in the browser.
+
+**AI response:** Diagnosed the real bug — `performCalculation()` was never called
+reactively when `advancedOptions` changes. Fixed three reactive paths and added
+E2E tests.
 
 ---
 
 ## Tasks
 
-### Bug 1: Density override not applied in Calculator
+### Bug 1: Density override not applied in Calculator (math)
 
 - **Status:** completed
 - **Stage:** 6.8
@@ -33,8 +43,7 @@ User (@grzanka) reported:
   or used in unit conversions.
 - **Files changed:** `src/lib/state/calculator.svelte.ts`
 - **Decision:**
-  - Imported `advancedOptions` singleton at module level (same pattern as other
-    Svelte 5 module singletons in the project).
+  - Imported `advancedOptions` singleton at module level.
   - Passed `advancedOptions.value` as 5th arg to `service.calculate()`.
   - Changed density for unit conversions to
     `advancedOptions.value.densityOverride ?? material?.density ?? 1`.
@@ -65,6 +74,33 @@ User (@grzanka) reported:
   updated.
 - **Files changed:** `src/lib/wasm/__mocks__/libdedx.ts`
 
+### Bug 4 (root reactive trigger): Calculation not retriggered on density change
+
+- **Status:** completed
+- **Stage:** 6.8
+- **Root cause:** The unit math was correct, but nothing in the reactive system
+  called `performCalculation()` (or `triggerCalculation()`) when `advancedOptions`
+  changed:
+  - Single-program mode: `result-table.svelte`'s `$effect` only watched
+    `entitySelection.isComplete`, never `advancedOptions`.
+  - Multi-program mode: the calculator page's multi-program `$effect` read
+    `advancedOptions.value` only inside a `setTimeout` callback (not a reactive
+    dep), so it never re-ran when options changed.
+  - Plot preview: `advancedOptions.value` was read only inside `getService().then()`
+    (async), not as a reactive dep of the enclosing `$effect`.
+- **Files changed:**
+  - `src/routes/calculator/+page.svelte` — two new `$effect` entries:
+    1. Read `advOptsKey` and call `calcState.triggerCalculation()` in basic mode
+    2. Read `advOptsKey` at top of multi-program effect so it retriggers on option changes; snapshot `advancedOptions.value` before the `setTimeout` so the closure uses consistent options
+  - `src/routes/plot/+page.svelte` — preview `$effect` now snapshots
+    `advancedOptions.value` synchronously (`const snapshotAdvOpts = advancedOptions.value`)
+    before the `getService().then()` call, which both registers the reactive dep
+    AND passes a consistent value to `getPlotData`.
+- **Decision:** The `$effect` reactive trigger belongs in the component layer
+  (`+page.svelte`), not in the state factory (`calculator.svelte.ts`). State
+  factories are plain functions called in test code without a component context;
+  adding `$effect` inside them triggers `effect_orphan` errors in Vitest tests.
+
 ### New tests: density override and aggregate state in calculator
 
 - **Status:** completed
@@ -74,13 +110,21 @@ User (@grzanka) reported:
   - Added `afterEach(() => { advancedOptions.value = {}; })` to prevent
     state bleed between tests (singleton pattern).
   - Added describe block `"density override (AC-6)"` with 3 tests:
-    - Half density → half CSDA range (formula: range_cm = range_g/cm² / ρ)
-    - Double density → double keV/µm stopping power (formula: S_kevum = S_mass × ρ / 10)
+    - Half density → half CSDA range
+    - Double density → double keV/µm stopping power
     - Clearing override reverts to built-in density
-  - Added describe block `"aggregate state override → display unit coupling (AC-3, Behavior §3)"` with 4 tests:
-    - Gas material baseline → MeV·cm²/g
-    - aggregateState="condensed" override on gas → keV/µm
-    - aggregateState="gas" override on condensed → MeV·cm²/g
-    - Clear override reverts to material built-in unit
+  - Added describe block `"aggregate state override → display unit coupling (AC-3, Behavior §3)"` with 4 tests
 
-### Total test count: 716 (up from 709)
+### New E2E tests
+
+- **Status:** completed
+- **Stage:** 6.8
+- **Files changed:** `tests/e2e/advanced-options.spec.ts`, `tests/e2e/plot.spec.ts`
+- **Added tests:**
+  - Calculator: density 2× → CSDA range decreases by ≥30%
+  - Calculator: density 2× → keV/µm stopping power increases by ≥50%
+  - Calculator: Advanced Options panel absent in Basic mode (AC-1)
+  - Calculator: panel appears/disappears on mode switch
+  - Plot: Advanced Options panel absent in Basic mode (AC-1)
+
+### Total unit test count: 716 (up from 709)

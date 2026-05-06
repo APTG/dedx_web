@@ -97,13 +97,22 @@
   $effect(() => {
     if (!browser) return;
     // Read advOptsKey to track nested changes
-    const _key = advOptsKey;
+    const _advOptsKey = advOptsKey;
     persistAdvancedOptions();
+  });
+
+  // Retrigger single-program calculation when advanced options change (basic mode).
+  // Advanced mode uses its own calculation effect below (multi-program calculateMulti).
+  $effect(() => {
+    // Read advOptsKey to register reactive dep on all advanced option fields.
+    const _advOptsKey = advOptsKey;
+    if (!calcState || !state?.isComplete || isAdvancedMode.value) return;
+    calcState.triggerCalculation();
   });
 
   $effect(() => {
     // Read advOptsKey to establish reactive dependency on nested changes
-    const _key = advOptsKey;
+    const _advOptsKey = advOptsKey;
 
     if (!urlInitialized || !calcState || !state) return;
 
@@ -384,6 +393,12 @@
 
   // Debounced calculation for multi-program mode
   $effect(() => {
+    // Read advOptsKey to establish reactive dependency on all advanced option fields.
+    // Without this, changing density/aggregate state etc. would not retrigger this
+    // calculation since advancedOptions.value is only read inside the setTimeout
+    // callback (async context), which does not register reactive dependencies.
+    const _advOptsKey = advOptsKey;
+
     if (!multiProgState || !state || !calcState || !state.isComplete) return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
@@ -400,6 +415,9 @@
     if (validRows.length === 0) return;
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
+    // Snapshot advanced options synchronously (before async) so the timer closure
+    // uses the options that were active when the effect fired.
+    const advOptsSnapshot = advancedOptions.value;
 
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
@@ -418,7 +436,7 @@
         particleId: inputSnapshot.particleId,
         materialId: inputSnapshot.materialId,
         energies: inputSnapshot.energies,
-        options: advancedOptions.value,
+        options: advOptsSnapshot,
       });
 
       if (!cancelled) {
