@@ -48,7 +48,7 @@ test.describe("Calculator export — toolbar buttons", () => {
     const content = Buffer.concat(chunks).toString("utf-8");
     // Strip BOM, then split.
     const noBom = content.replace(/^\uFEFF/, "");
-    const header = noBom.split("\r\n")[0]!;
+    const header = noBom.split("\r\n")[0] ?? "";
     expect(header).toContain("Normalized Energy (MeV/nucl)");
     expect(header).toContain("Typed Value");
     expect(header).toContain("Unit");
@@ -139,13 +139,11 @@ test.describe("Plot export", () => {
     await expect(addSeriesButton).toBeEnabled();
     await addSeriesButton.click();
 
-    // Wait for JSROOT to render the series
-    await page.waitForTimeout(2000);
-
+    // Wait for JSROOT to render the series (export buttons become enabled when ready)
     const exportCsv = page.getByRole("button", { name: /export csv/i });
     const exportPdf = page.getByRole("button", { name: /export pdf/i });
-    await expect(exportCsv).toBeEnabled();
-    await expect(exportPdf).toBeEnabled();
+    await expect(exportCsv).toBeEnabled({ timeout: 8000 });
+    await expect(exportPdf).toBeEnabled({ timeout: 8000 });
   });
 
   test("SVG vector download from image dropdown", async ({ page }) => {
@@ -161,13 +159,11 @@ test.describe("Plot export", () => {
     await page.waitForSelector('[role="img"]', { timeout: 10000 });
 
     // Add a series first
-    const addSeriesButton = page.getByRole("button", { name: /add series/i });
-    await addSeriesButton.click();
-    await page.waitForTimeout(2000);
-
-    // Open the image export dropdown
+    const addSeriesButton2 = page.getByRole("button", { name: /add series/i });
+    await addSeriesButton2.click();
+    // Wait for the image export button to appear (series rendered in JSROOT)
     const imageExportButton = page.getByRole("button", { name: /export.*image/i });
-    await expect(imageExportButton).toBeVisible();
+    await expect(imageExportButton).toBeVisible({ timeout: 8000 });
     await imageExportButton.click();
 
     // Select SVG vector
@@ -193,12 +189,11 @@ test.describe("Plot export", () => {
     await page.waitForSelector('[role="img"]', { timeout: 10000 });
 
     // Add a series first
-    const addSeriesButton = page.getByRole("button", { name: /add series/i });
-    await addSeriesButton.click();
-    await page.waitForTimeout(2000);
+    const addSeriesButton3 = page.getByRole("button", { name: /add series/i });
+    await addSeriesButton3.click();
 
     const exportCsv = page.getByRole("button", { name: /export csv/i });
-    await expect(exportCsv).toBeEnabled();
+    await expect(exportCsv).toBeEnabled({ timeout: 8000 });
 
     const [download] = await Promise.all([page.waitForEvent("download"), exportCsv.click()]);
 

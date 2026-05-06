@@ -23,12 +23,13 @@ implementer for a fix round.
 
 ## Model
 
-`Qwen/Qwen3.6-35B-A3B` — smaller/faster model on PLGrid; sufficient for
-read-and-verify work without burning quota on the largest model.
+`Qwen/Qwen3.5-397B-A17B-FP8` — promoted from Qwen3.6-35B-A3B to match the
+implementer's model for better code understanding and more reliable diff checks.
 
 ## Permissions
 
-- `bash`: allow (only used to run `git show` / `git diff` for inspection)
+- `bash`: allow (used to run `git show` / `git diff` for inspection, AND
+  `pnpm exec playwright test --grep @smoke` for the targeted smoke run)
 - `edit`: **deny** (reviewer never modifies files)
 - `webfetch`: **deny** (no network needed for a diff review)
 
@@ -131,14 +132,82 @@ in the diff. Flag missing test coverage by criterion name.
 Imports added but never used; exported functions never called from `src/` or tests.
 Flag.
 
+### 8. Silent no-op test detector
+
+For every new or changed test in the diff that passes props to a component:
+
+1. Find the corresponding component's `$props()` destructuring.
+2. Verify that **every prop name set in the test** appears in the destructuring.
+3. If a test passes `{ options: ... }` but the component's `$props()` has no
+   `options`, flag as a blocker: "Test sets prop `options` but component never
+   reads it — test proves nothing."
+
+**Blocker** if any prop set in a test is absent from the component's `$props()`.
+
+### 9. Service interface arity check
+
+If any `LibdedxService` method (or other interface method) signature changes in
+the diff:
+
+1. Search all call sites: `grep -rn "<methodName>" src/ tests/`.
+2. Search all mocks: `grep -rn "<methodName>" src/lib/wasm/__mocks__/`.
+3. Verify every call site and mock matches the updated signature.
+
+**Blocker** if any call site passes arguments the interface doesn't declare,
+or any mock lacks a parameter the interface requires.
+
+### 10. URL codec round-trip
+
+If the diff touches any URL encoder or decoder (files in `src/lib/utils/calculator-url.ts`,
+`src/lib/utils/plot-url.ts`, or similar):
+
+1. Find the TypeScript union type for every encoded URL field touched in the diff.
+2. Verify the decoder accepts **every** member of the union (not just a subset).
+3. Check whether a round-trip contract test exists; if a new union member was added
+   without updating the test, flag it.
+
+**Blocker** if any union member is missing from the decoder or the contract test.
+
+### 11. Cross-page parity
+
+If the diff touches `src/routes/calculator/+page.svelte`, search
+`src/routes/plot/+page.svelte` for the analogous block (and vice versa).
+Flag any asymmetry in the four pillars:
+
+- Panel gating: `isAdvancedMode.value` guard on advanced-only renders
+- URL init: `initAdvancedModeFromUrl()` called in URL init `$effect`
+- Persistence: `persistAdvancedOptions()` or equivalent `$effect` present
+- Reactive-dep snapshot: async `$effect`s snapshot reactive deps synchronously
+
+**Blocker** if a pillar is present on calculator but absent on plot (or vice versa).
+
+### 12. Convention checks
+
+- Import path style: `$lib/utils` (not `.js`) is banned → must be `$lib/utils.js`.
+  `*.svelte.ts` import specifiers → must be `*.svelte`. Flag violations.
+- No `waitForTimeout(` in any test file. Flag as blocker.
+- No tab characters in any `.ts` or `.svelte` file in the diff. Flag as blocker.
+
+### 13. Targeted smoke E2E run (permitted)
+
+If the diff includes UI changes with a `@smoke`-tagged acceptance test, run:
+
+```sh
+pnpm exec playwright test --grep @smoke
+```
+
+This is the **only** test command the reviewer is permitted to run. If it fails,
+report the failure output verbatim in `REVIEW FAIL`. Do not re-run the full suite.
+
 ## What the reviewer does NOT do
 
-- Does **not** run `pnpm lint`, `pnpm test`, `pnpm exec playwright test`, or `pnpm build`. Trust the implementer.
+- Does **not** run `pnpm lint`, `pnpm test`, or `pnpm build`. Trust the implementer.
+- Does **not** run the full `pnpm exec playwright test` suite (only `--grep @smoke` is allowed).
 - Does **not** suggest refactoring beyond the acceptance criteria.
 - Does **not** edit any file (the `edit` permission is denied in `opencode.json`).
 - Does **not** review the entire codebase — only the diff of the most recent commit.
 
 ## maxSteps
 
-15 steps. A diff-only review should be just a handful of `git show` calls plus the
+15 steps. A diff-only review should be a handful of `git show` calls plus the
 final `REVIEW PASS` / `REVIEW FAIL` output.

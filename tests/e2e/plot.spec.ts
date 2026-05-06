@@ -34,8 +34,8 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     const pstarButton = programPanel.getByRole("button", { name: /PSTAR/i });
     await pstarButton.click();
 
-    // Allow any async reactive work to settle
-    await page.waitForTimeout(300);
+    // Allow any async reactive work to settle — wait for aria-pressed to be set
+    await expect(pstarButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
 
     const duplicateKeyErrors = errors.filter(
       (e) => e.includes("each_key_duplicate") || e.includes("duplicate key"),
@@ -61,7 +61,8 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     // Click ICRU 49 if present, otherwise click the first non-Auto program
     const icruButton = programPanel.getByRole("button", { name: /ICRU/i }).first();
     await icruButton.click();
-    await page.waitForTimeout(200);
+    // Wait for the clicked button to become selected (aria-pressed = true)
+    await expect(icruButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
 
     const buttons = programPanel.getByRole("button");
     const count = await buttons.count();
@@ -100,7 +101,7 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
       .toBe(true);
   });
 
-  test("density override updates preview series data-density attribute (triggers reactivity)", async ({
+  test("density override updates preview series data-density attribute (triggers reactivity) @smoke", async ({
     page,
   }) => {
     test.setTimeout(60000);

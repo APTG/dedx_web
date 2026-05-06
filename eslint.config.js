@@ -50,6 +50,46 @@ export default tseslint.config(
       "svelte/valid-prop-names-in-kit-pages": "off",
       "svelte/prefer-svelte-reactivity": "off", // Allow Map for now; will migrate to SvelteMap later
       "preserve-caught-error": "off",
+      // Enforce .js extension on $lib/utils import (SvelteKit ESM requirement).
+      // NOTE: warn severity — pre-existing violations in product code need fixing
+      // before this can be upgraded to "error". See PR #427 post-mortem.
+      "no-restricted-imports": [
+        "warn",
+        {
+          // Exact-path bans (use `paths` for precise matching, not glob patterns)
+          paths: [
+            {
+              name: "$lib/utils",
+              message:
+                'Import from "$lib/utils.js" (with .js extension) for SvelteKit ESM compatibility.',
+            },
+          ],
+          // Pattern bans: *.svelte.ts import specifiers should use *.svelte
+          patterns: [
+            {
+              group: ["**/*.svelte.ts"],
+              message:
+                'Import from the ".svelte" specifier, not ".svelte.ts" (e.g. "component.svelte").',
+            },
+          ],
+        },
+      ],
+    },
+  },
+  // Ban waitForTimeout() in E2E tests — use waitForSelector/waitForFunction/expect.poll instead.
+  // See .opencode/lessons-learned.md Entry 12.
+  {
+    files: ["tests/e2e/**/*.ts"],
+    rules: {
+      "no-restricted-syntax": [
+        "error",
+        {
+          selector:
+            "CallExpression[callee.type='MemberExpression'][callee.property.name='waitForTimeout']",
+          message:
+            "waitForTimeout() is banned in E2E tests (flaky in CI). Use waitForSelector, waitForFunction, or expect.poll with an explicit timeout. See .opencode/lessons-learned.md Entry 12.",
+        },
+      ],
     },
   },
 );

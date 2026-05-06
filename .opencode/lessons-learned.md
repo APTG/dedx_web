@@ -1,0 +1,383 @@
+# Lessons Learned — dEdx Web
+
+> **Auto-prepended to every implementer prompt.** The orchestrator must reference
+> this file when writing task prompts. Every PR that produces fix-up review comments
+> must add at least one new entry here.
+>
+> Source: post-mortem of PR #427 (Stage 6.8 Advanced Options).
+> See `docs/ai-logs/2026-05-06-pr427-postmortem.md` for the full analysis.
+
+---
+
+## Entry 1 — Reactive dep not registered when read inside `.then()` / `setTimeout`
+
+**Symptom:** Density override had no visible effect in the browser. Unit tests for
+the math passed. The bug only appeared in E2E: changing density left the CSDA range
+unchanged.
+
+**Root cause:** `advancedOptions.value` was read inside a `.then()` callback, so
+Svelte's fine-grained tracker never registered it as a dependency. The `$effect`
+did not re-run when the option changed.
+
+```typescript
+// ❌ WRONG — reading reactive state inside .then() → NOT a dependency
+$effect(() => {
+  getService().then((svc) => {
+    // advancedOptions.value is read HERE, inside the async callback.
+    // Svelte never sees this read, so the effect never retriggers when
+    // advancedOptions changes.
+    svc.calculate(entityState.selectedMaterial, advancedOptions.value);
+  });
+});
+
+// ✅ CORRECT — snapshot reactive state SYNCHRONOUSLY at the top of the effect
+$effect(() => {
+  const advOptsSnapshot = advancedOptions.value;  // ← registered as dep HERE
+  const inputSnapshot = entityState.selectedMaterial;
+  getService().then((svc) => {
+    svc.calculate(inputSnapshot, advOptsSnapshot); // frozen snapshot, not live ref
+  });
+});
+```
+
+**Rule:** Always snapshot every reactive value **synchronously** at the top of a
+`$effect`, before any `await`, `Promise.then()`, or `setTimeout` call.
+
+---
+
+## Entry 2 — Reading object reference does not track nested mutations
+
+**Symptom:** Density override changed `advancedOptions.value.densityOverride`
+in place. The `$effect` read `advancedOptions.value` (the object reference), which
+didn't change — only a property did. Effect never re-ran.
+
+```typescript
+// ❌ WRONG — reading only the reference; mutations to nested props are invisible
+$effect(() => {
+  const opts = advancedOptions.value;  // object ref — doesn't track .densityOverride
+  doCalculation(opts);
+});
+
+// ✅ CORRECT option A — read every nested property explicitly
+$effect(() => {
+  const density = advancedOptions.value.densityOverride;
+  const aggState = advancedOptions.value.aggregateState;
+  const mstar = advancedOptions.value.mstarMode;
+  // all properties read → all are deps
+  doCalculation({ density, aggState, mstar });
+});
+
+// ✅ CORRECT option B — derive a "key" string that tracks all nested properties
+const advOptsKey = $derived(JSON.stringify(advancedOptions.value));
+$effect(() => {
+  const _key = advOptsKey;          // synchronous read → dep registered
+  const snapshot = advancedOptions.value;
+  getService().then((svc) => svc.calculate(snapshot));
+});
+```
+
+**Rule:** When an effect must re-run on nested mutations of a state object,
+either (a) read every nested property explicitly, or (b) create a `$derived`
+key via `JSON.stringify` and read it synchronously in the effect.
+
+---
+
+## Entry 3 — Cross-page parity gaps
+
+**Symptom:** Calculator correctly had `initAdvancedModeFromUrl`, `persistAdvancedOptions`,
+and the reactive-dep snapshot. Plot page was missing all of them. Bugs only
+surfaced during PR review, not during implementation.
+
+**Root cause:** The implementer implemented the feature on `/calculator` first,
+then copy-forgot several wiring steps when adding it to `/plot`.
+
+**Rule:** When a feature exists on both `/calculator` and `/plot`, verify all
+four pillars are present on **each** page before declaring `TASK DONE`:
+
+```
+Cross-page parity audit checklist (run for every feature touching both pages):
+
+[ ] Panel gating:      isAdvancedMode.value guard on every advanced-only read/render
+[ ] URL init:          initAdvancedModeFromUrl() called in the URL init $effect
+[ ] Persistence:       persistAdvancedOptions() or equivalent $effect present
+[ ] Reactive-dep snapshot: every async $effect snapshots all reactive deps synchronously
+```
+
+Grep audit:
+```sh
+grep -n "initAdvancedModeFromUrl" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "persistAdvancedOptions\|loadAdvancedOptions" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "advOptsKey\|advancedOptions.value" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "isAdvancedMode.value" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+```
+
+**Rule:** If diff touches `src/routes/calculator/+page.svelte`, the reviewer must
+search `src/routes/plot/+page.svelte` for the analogous block (and vice versa).
+
+---
+
+## Entry 4 — Service interface arity drift
+
+**Symptom:** `getPlotData` was called with `options` at call sites but the
+interface declared it without that parameter. The mock also lacked it. Tests
+passed (mock silently accepted and ignored the extra argument); browser silently
+used default options.
+
+**Root cause:** New parameter added at call site without updating the interface
+AND the mock.
+
+**Rule:** Whenever you add or change a method signature:
+1. Update the `LibdedxService` interface in `src/lib/wasm/types.ts`.
+2. Update the real implementation in `src/lib/wasm/libdedx.ts`.
+3. `grep` for the method name — update **every** mock in `src/lib/wasm/__mocks__/`.
+4. Confirm no call site passes arguments the interface doesn't declare.
+
+```sh
+grep -rn "getPlotData\|calculate\|calculateMulti" src/lib/wasm/__mocks__/ src/lib/wasm/types.ts
+```
+
+---
+
+## Entry 5 — URL codec must round-trip every union member
+
+**Symptom:** `mstar_mode` decoder only accepted `a|c|d|g|h` — the `b` member
+(the default, which should be omitted from the URL) was explicitly excluded, but
+so was `b` in a way that would silently drop it if a client ever sent it. The
+union type `MstarMode = "a" | "b" | "c" | "d" | "g" | "h"` had 6 members;
+only 5 were decoded.
+
+**Root cause:** Decoder was written with a hand-maintained string array instead
+of being derived from the type.
+
+**Rule:** Every member of a TS union used in URL encoding must be tested in a
+round-trip contract test. The test map must be keyed by the union type so that
+adding a new union member fails the build:
+
+```typescript
+// ✅ Using `satisfies Record<MstarMode, string>` → adding "i" to MstarMode
+// causes a compile error here, forcing the test to be updated.
+const MSTAR_MODE_URL_VALUES = {
+  a: "a", b: "b", c: "c", d: "d", g: "g", h: "h",
+} satisfies Record<MstarMode, string>;
+
+test.each(Object.entries(MSTAR_MODE_URL_VALUES))(
+  "mstar_mode round-trip: %s",
+  (mode) => { expect(decode(encode({ mstarMode: mode as MstarMode }))).toBe(mode); }
+);
+```
+
+See `src/tests/contracts/url-codec.contract.test.ts` for the live version.
+
+---
+
+## Entry 6 — Silent no-op tests
+
+**Symptom:** `advanced-options-panel.test.ts` passed an `options` prop to the
+component. The component's `$props()` had no `options` in its destructuring.
+The prop was silently ignored; the test proved nothing.
+
+**Root cause:** The test was written against an old API; the component was
+refactored to use module-level singleton state (`advancedOptions` from
+`$lib/state/advanced-mode.svelte.ts`). The test was never updated.
+
+```typescript
+// ❌ WRONG — component uses module singleton, not a prop
+render(AdvancedOptionsPanel, { props: { options: { densityOverride: 1.5 } } });
+// Test is green and proves nothing — the prop is never read.
+
+// ✅ CORRECT — set module-level singleton state directly, reset in beforeEach
+import { advancedOptions } from "$lib/state/advanced-mode.svelte.ts";
+
+beforeEach(() => { advancedOptions.value = defaultAdvancedOptions(); });
+
+test("density override displayed", () => {
+  advancedOptions.value = { ...advancedOptions.value, densityOverride: 1.5 };
+  // now test the component's rendered output
+});
+```
+
+**Rule:** Every prop set in a test must appear in the corresponding component's
+`$props()` destructuring. If the component uses a module-level singleton, set
+that singleton in `beforeEach`/`afterEach` (and reset it).
+
+---
+
+## Entry 7 — `replaceState(url, page.state)` inside URL-sync `$effect` → infinite loop
+
+**Symptom:** `effect_update_depth_exceeded` crash immediately on page load.
+
+**Root cause:** `replaceState(url, page.state)` updates `page.state`, which is
+a reactive dependency. Without `untrack()`, the effect re-runs every time it
+executes, creating an infinite loop.
+
+```typescript
+// ❌ WRONG — page.state is reactive; replaceState updates it → loop
+$effect(() => {
+  const newUrl = buildUrl(myValue);
+  replaceState(newUrl, page.state); // reads page.state → dep registered → loop
+});
+
+// ✅ CORRECT — untrack() breaks the self-dependency
+$effect(() => {
+  const newUrl = buildUrl(myValue);
+  untrack(() => replaceState(newUrl, page.state));
+});
+```
+
+**Rule:** Every `replaceState(url, page.state)` call inside a `$effect` must be
+wrapped in `untrack()`. The reviewer must flag any violation as a blocker.
+
+---
+
+## Entry 8 — `isAdvancedMode` guard on every advanced-only state read
+
+**Symptom:** After switching back to Basic mode, the CSDA range still showed
+the density-overridden value (not the default density). The density override
+"leaked" out of Advanced mode.
+
+**Root cause:** `calculator.svelte.ts` and `result-table.svelte` read
+`advancedOptions.value.densityOverride` unconditionally, without checking
+`isAdvancedMode.value`.
+
+```typescript
+// ❌ WRONG — applies density override in Basic mode too
+const density = advancedOptions.value.densityOverride ?? material.density;
+
+// ✅ CORRECT — guard with isAdvancedMode
+const density = isAdvancedMode.value && advancedOptions.value.densityOverride
+  ? advancedOptions.value.densityOverride
+  : material.density;
+```
+
+**Rule:** Every read of `advancedOptions.value.*` that affects calculation or
+display must be guarded by `isAdvancedMode.value`. Audit targets:
+- `src/lib/state/calculator.svelte.ts` — density and aggregateState conversions
+- `src/lib/components/result-table.svelte` — density conversion for multi-program
+- `src/routes/plot/+page.svelte` — preview series density field
+
+---
+
+## Entry 9 — Missing `initAdvancedModeFromUrl` on a page
+
+**Symptom:** Navigating to `/plot?mode=advanced` left `isAdvancedMode.value = false`.
+The Advanced Options accordion was never rendered. E2E tests that opened the
+accordion timed out.
+
+**Root cause:** `initAdvancedModeFromUrl` was imported and called in
+`calculator/+page.svelte` but was never added to `plot/+page.svelte`.
+
+**Rule:** When adding `initAdvancedModeFromUrl` support, add it to **every**
+calculation page (calculator AND plot). See Entry 3 (cross-page parity checklist).
+
+The page-init contract test in `src/tests/contracts/page-init.contract.test.ts`
+now asserts that both pages contain the string `initAdvancedModeFromUrl`.
+
+---
+
+## Entry 10 — CI branch trigger drift
+
+**Symptom:** Pushes to `feat/**` branches did not trigger CI. A feature branch
+named `feat/stage-6-8-advanced-options` got no CI feedback.
+
+**Root cause:** The `.github/workflows/ci.yml` push trigger only listed `master`
+and `qwen/**`. When a `feat/**` branch was created, no one updated the trigger.
+
+**Rule:** CI push triggers must use a wildcard that covers all intended patterns:
+```yaml
+on:
+  push:
+    branches: ["master", "qwen/**", "feat/**", "copilot/**", "fix/**"]
+  pull_request:
+    branches: ["master"]
+```
+
+When creating a new branch naming convention, update CI triggers **first**.
+
+---
+
+## Entry 11 — Convention drift: import path style
+
+**Symptom:** `cn` was imported from `$lib/utils` in some files and from
+`$lib/utils.js` in others. ESLint did not catch this inconsistency.
+
+**Root cause:** SvelteKit requires `.js` extensions in imports for ESM
+compatibility, but some older files used the bare specifier. `*.svelte.ts`
+import specifiers were also mixed with `*.svelte`.
+
+**Rules:**
+- Always import from `$lib/utils.js` (not `$lib/utils`)
+- Always import from `component.svelte` (not `component.svelte.ts`)
+
+The ESLint config now enforces both via `no-restricted-imports`.
+
+---
+
+## Entry 12 — `waitForTimeout()` ban in E2E
+
+**Symptom:** `waitForTimeout(500)` in `advanced-options.spec.ts` was the source
+of a flaky test that failed intermittently in CI (WASM load time varied).
+
+**Root cause:** Fixed delays assume a specific execution speed. CI machines are
+slower than dev laptops.
+
+```typescript
+// ❌ WRONG — fixed delay, flaky in CI
+await page.waitForTimeout(500);
+
+// ✅ CORRECT — wait for the observable condition
+await page.waitForFunction(
+  () => window.location.search.includes("density=2"),
+  { timeout: 5000 },
+);
+// or
+await expect.poll(async () => parseFloat(await cell.textContent() ?? ""), {
+  timeout: 8000,
+}).toBeGreaterThan(0);
+```
+
+**Rule:** `waitForTimeout()` is banned in all E2E tests. The ESLint config
+enforces this via `no-restricted-syntax`. Use `waitForSelector`,
+`waitForFunction`, or `expect.poll` with explicit timeouts instead.
+
+---
+
+## Entry 13 — PR description maintenance
+
+**Symptom:** PR #427 description became stale as the scope expanded across
+multiple Copilot fix rounds. Reviewers had to read the full diff to understand
+what changed.
+
+**Root cause:** The PR description was written at the start and never updated
+as follow-up fixes were applied.
+
+**Rule:** Before requesting review (or re-review), update the PR body to reflect
+the actual scope. If scope expands significantly (new files, new behavior), add
+a "Scope expansion" section. Keep the description as the single source of truth
+for reviewers.
+
+---
+
+## Entry 14 — Long opencode sessions cause compaction memory loss
+
+**Symptom:** In the Qwen opencode session for Stage 6.8, later tasks in the
+session produced code that contradicted decisions made in earlier tasks. The
+model appeared to have "forgotten" rules from the beginning of the session.
+
+**Root cause:** opencode has a context window limit. When it fills, the session
+is compacted (summarized). The compaction loses fine-grained details from the
+beginning, including specific rules passed in the first prompt.
+
+**Rules:**
+- Keep implementer tasks to **≤40 steps** (enforced by `maxSteps: 40` in
+  `opencode.json`).
+- Pass the relevant spec section **inline** in each task prompt — do not rely
+  on the model remembering it from earlier in the session.
+- Force a **fresh reviewer session** for each task (the reviewer's `maxSteps`
+  is short enough that compaction is not an issue).
+- If a task hits the step limit, output `TASK BLOCKED: scope too large, propose
+  split` and the orchestrator splits it before retrying.
+
+---
+
+*Last updated: 2026-05-06. Links: [implementer.md](.opencode/agents/implementer.md) •
+[reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)*

@@ -125,6 +125,9 @@ Branch naming: `qwen/<stage-or-feature>` (see [`docs/00-redesign-plan.md §4.2`]
 
 ### Other working rules
 
+- **MUST READ before each task:** [`.opencode/lessons-learned.md`](.opencode/lessons-learned.md)
+  — concrete pitfalls with ✅/❌ code examples from past PRs. Every PR-review fix
+  you produce must add at least one new entry to that file.
 - **Check progress first:** [`docs/progress/`](docs/progress/) lists completed stages.
 - **One feature per session** — reference the spec file, do not re-explain.
 - **Commit after each working increment** using Conventional Commits

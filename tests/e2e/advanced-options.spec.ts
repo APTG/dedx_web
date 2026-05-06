@@ -61,7 +61,7 @@ test.describe("Advanced Options Panel", () => {
       expect(page.url()).toContain("density=1.2");
     });
 
-    test("density override changes CSDA range (AC-6: 2× density → ~½ range)", async ({ page }) => {
+    test("density override changes CSDA range (AC-6: 2× density → ~½ range) @smoke", async ({ page }) => {
       test.setTimeout(50000);
       // Wait for result table to appear with a valid calculation in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });

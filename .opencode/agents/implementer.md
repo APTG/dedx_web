@@ -4,6 +4,10 @@ This file documents the `implementer` subagent defined in `opencode.json`.
 It is a human-readable reference; the active prompt is in the `agent.implementer.prompt`
 field of `opencode.json`.
 
+> **⚠ MUST READ before each task:** [`.opencode/lessons-learned.md`](.opencode/lessons-learned.md)
+> — concrete pitfalls with ✅/❌ code examples from PR #427. Every PR-review fix you
+> produce must add at least one new entry to that file.
+
 ---
 
 ## Role
@@ -35,6 +39,11 @@ The final message must be EXACTLY one of:
 
 ```
 TASK DONE: <task name>
+What changed (5 bullets max):
+- <file or area 1>: <one-line summary>
+- <file or area 2>: <one-line summary>
+...
+Smoke test: <PASS / SKIP — reason> — <one-line summary of what was exercised>
 ```
 
 or
@@ -42,6 +51,10 @@ or
 ```
 TASK BLOCKED: <one-sentence reason>
 ```
+
+The "What changed" summary and "Smoke test" line are **mandatory** in every
+`TASK DONE` message. This gives the orchestrator a clean handoff summary that
+survives context compaction without depending on chat history.
 
 No other final output is acceptable. The main agent parses these signals to decide
 whether to move to the reviewer or to retry.
@@ -290,22 +303,74 @@ catching visual regressions before the E2E suite runs.
 
 ---
 
+## Cross-page parity checklist
+
+When a feature exists on both `/calculator` and `/plot`, verify all four pillars
+on **each** page before declaring `TASK DONE` (see also
+[`.opencode/lessons-learned.md` Entry 3](../lessons-learned.md)):
+
+```
+[ ] Panel gating:          isAdvancedMode.value guard on every advanced-only read/render
+[ ] URL init:              initAdvancedModeFromUrl() called in the URL init $effect
+[ ] Persistence:           persistAdvancedOptions() or equivalent $effect present
+[ ] Reactive-dep snapshot: every async $effect snapshots all reactive deps synchronously
+```
+
+Quick audit:
+```sh
+grep -n "initAdvancedModeFromUrl" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "persistAdvancedOptions\|loadAdvancedOptions" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "advOptsKey\|advancedOptions.value" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+grep -n "isAdvancedMode.value" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
+```
+
 ## Workflow
 
-1. Read the task description and acceptance criteria.
-2. Read the referenced spec section in `docs/04-feature-specs/`.
-3. Read existing related files to understand current patterns.
-4. Implement code.
-5. Write/update tests (unit + component).
-6. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
-7. Fix all errors. Repeat from step 6 until clean.
+1. **Read `.opencode/lessons-learned.md`** — pitfalls with code examples from past PRs.
+2. Read the task description and acceptance criteria.
+3. Read the referenced spec section in `docs/04-feature-specs/`.
+4. Read existing related files to understand current patterns.
+5. Implement code.
+6. Write/update tests (unit + component).
+7. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
+   Fix all errors. Repeat until clean. After two failed fix attempts → `TASK BLOCKED`.
 8. **Run `pnpm exec playwright test`.** Fix any E2E failures caused by your changes.
-9. Commit.
-10. Output `TASK DONE: <task name>`.
 
-If step 6 or step 8 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
+### Step 8a — User-flow smoke (Playwright MCP)
+
+For any task that touches reactive UI:
+
+1. Start the dev server: `pnpm dev` (or `pnpm preview` if you just ran `pnpm build`).
+2. Use the Playwright MCP `browser_navigate` tool to open the relevant route.
+3. Execute the spec's primary Acceptance Scenario verbatim:
+   - Change an input.
+   - Poll the DOM (use `browser_snapshot` or evaluate JS) until the expected value appears.
+   - Capture an accessibility snapshot of the changed region.
+4. Record the smoke run result in your `TASK DONE` message under "Smoke test:".
+
+If the Playwright MCP is unavailable (offline session), skip and write
+`Smoke test: SKIP — Playwright MCP offline`.
+
+### Step 8b — Reactive-trigger checklist
+
+For every reactive input added or modified, verify and document in `TASK DONE`:
+
+- Which `$effect`s depend on this input?
+- Which pages consume it (calculator, plot, …)?
+- Is each `$effect` snapshotting the value synchronously before any async call?
+- Did the DOM actually change (polled via MCP or E2E) when the input changed?
+
+Reject `TASK DONE` if any reactive input lacks this documentation.
+
+9. If the task touches `/calculator` or `/plot`, run the cross-page parity checklist.
+10. Commit.
+11. Output `TASK DONE: <task name>` (with mandatory "What changed" and "Smoke test" lines).
+
+If step 7 or step 8 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
 
 ## maxSteps
 
-80 steps. If the step counter approaches the limit and the task is not done,
-output `TASK BLOCKED: step limit reached — partial work committed on current branch`.
+**40 steps.** If the step counter approaches 40 and the task is not complete,
+output `TASK BLOCKED: scope too large, propose split` rather than continuing.
+The orchestrator will split the task and retry. Do not attempt to rush or skip
+steps to fit within the limit — a blocked task is better than an incomplete one.

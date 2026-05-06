@@ -19,6 +19,8 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:e2e": "playwright test",
+    "test:e2e:smoke": "playwright test --grep @smoke",
+    "test:e2e:nightly": "playwright test --grep @nightly",
     "wasm:build": "cd wasm && ./build.sh",
     "wasm:verify": "node wasm/verify.mjs",
     "deploy-info": "node scripts/deploy.cjs"
