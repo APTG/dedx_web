@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Final v4 (12 April 2026)
+> **Status:** Final v5 (2026-05-06)
 >
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
@@ -32,6 +32,11 @@
 > approach): each program gets an `{ProgramName} E low` and `{ProgramName} E high`
 > column; sub-row expansion removed; §3 "Programs and Multi-Program Mode", §5.2
 > Table Columns, §5.5 Wireframe, and §8 Export updated accordingly.
+>
+> **v5** (2026-05-06): Added Acceptance Scenarios with DOM observables and
+> data-testid anchors (§ Acceptance Scenarios), Cross-Page Parity Checklist
+> (§ Cross-Page Parity Checklist), and `data-testid` appendix — mandatory
+> additions for Stage 6.9+ per the spec template introduced in PR #432.
 >
 > **Related specs:**
 >
@@ -791,6 +796,172 @@ this material."
 - [ ] Hidden programs are excluded from all CSV exports.
 - [ ] Single-program filenames: `dedx_range_{particle}_{material}_{program}.csv` / `dedx_inverse_stp_{particle}_{material}_{program}.csv`.
 - [ ] Multi-program filenames omit the program segment: `dedx_range_{particle}_{material}.csv` / `dedx_inverse_stp_{particle}_{material}.csv`.
+
+---
+
+## Acceptance Scenarios
+
+> These scenarios supplement the Acceptance Criteria checklist above.
+> Each scenario specifies a DOM observable with an explicit `data-testid` so
+> that Playwright tests have unambiguous targets. The implementer **must** add
+> every listed `data-testid` attribute to the rendered DOM.
+
+### Scenario 1: Range tab — energy from CSDA range (primary flow) @smoke
+
+**Given** the user is on `/calculator` with Advanced mode **on**, Proton /
+Water (Liquid) / PSTAR selected, and the **Range** tab active
+(URL: `?particle=1&material=276&imode=csda&ivalues=7.718:cm`)
+
+**When** the page finishes loading (WASM ready)
+
+**Then**
+
+- DOM: `[data-testid="inverse-tab-range"]` has `aria-selected="true"`
+- DOM: `[data-testid="inverse-range-input-0"]` value is `"7.718"` with unit `cm`
+- DOM: `[data-testid="inverse-range-result-0"]` text is a non-empty number
+  followed by a unit (`MeV/nucl`, `keV/nucl`, etc.) — indicating a valid
+  energy result for a 7.718 cm water range (expected ≈ 100 MeV/nucl for proton)
+
+**When** the user clears `[data-testid="inverse-range-input-0"]` and types `15.4`
+(300 ms debounce elapses)
+
+**Then**
+
+- DOM: `[data-testid="inverse-range-result-0"]` updates to a new numeric value
+  (the result approximately doubles relative to 7.718 cm, reflecting the
+  monotonic range-to-energy relationship)
+
+```typescript
+test("Range tab: energy from CSDA range @smoke", async ({ page }) => {
+  await page.goto("/calculator?particle=1&material=276&imode=csda&ivalues=7.718:cm&advanced=1");
+  await page.waitForSelector('[data-testid="inverse-range-result-0"]');
+
+  const result = page.locator('[data-testid="inverse-range-result-0"]');
+
+  // Baseline result must be a non-empty number
+  await expect
+    .poll(async () => (await result.textContent())?.trim(), { timeout: 8000 })
+    .toMatch(/\d/);
+
+  // Change range input; result must update
+  await page.fill('[data-testid="inverse-range-input-0"]', "15.4");
+  const before = await result.textContent();
+  await page.blur('[data-testid="inverse-range-input-0"]');
+  await expect
+    .poll(async () => (await result.textContent())?.trim(), { timeout: 8000 })
+    .not.toBe(before?.trim());
+});
+```
+
+---
+
+### Scenario 2: URL round-trip — Range tab persists across reload
+
+**Given** the user is on `/calculator` with Advanced mode on, Range tab active,
+and has typed `3.5` in row 0 with master unit `mm`
+
+**When** 500 ms have elapsed (URL sync fires)
+
+**Then**
+
+- `window.location.search` contains `imode=csda`
+- `window.location.search` contains `ivalues=3.5` (or `3.5:mm`)
+- `window.location.search` contains `iunit=mm`
+
+**When** the user reloads the page
+
+**Then**
+
+- DOM: `[data-testid="inverse-tab-range"]` has `aria-selected="true"`
+- DOM: `[data-testid="inverse-range-input-0"]` value is `"3.5"` with unit `mm`
+- DOM: `[data-testid="inverse-range-result-0"]` shows a valid energy result
+
+---
+
+### Scenario 3: Inverse STP — no-solution cell shows em-dash @regression
+
+**Given** the user is on `/calculator` with Advanced mode on, Proton / Water /
+PSTAR selected, and the **Inverse STP** tab active
+
+**When** the user types a stopping power value **above the Bragg peak** for
+proton in water (e.g., `500 keV/µm`, which exceeds the Bragg peak ≈ 80 keV/µm)
+
+**Then**
+
+- DOM: `[data-testid="inverse-stp-result-low-0"]` text content is `"—"` (em-dash)
+- DOM: `[data-testid="inverse-stp-result-high-0"]` text content is `"—"` (em-dash)
+- The row is **not** highlighted (no error colour) — this is a valid physical
+  outcome, not a user error
+
+---
+
+### Scenario 4: Advanced-mode gate — tabs absent in Basic mode @regression
+
+**Given** the user is on `/calculator` with Advanced mode **off**
+
+**Then**
+
+- DOM: `[data-testid="inverse-tab-range"]` is **not present** in the DOM
+- DOM: `[data-testid="inverse-tab-stp"]` is **not present** in the DOM
+
+**When** the user enables Advanced mode
+
+**Then**
+
+- DOM: `[data-testid="inverse-tab-range"]` becomes present immediately (no
+  page reload required)
+
+---
+
+## Cross-Page Parity Checklist
+
+> **Rule (from `.opencode/lessons-learned.md` Entry 3 and 9):** Inverse Lookups
+> exist **only on the Calculator page**. There is no Plot-page equivalent.
+> However, all four pillars of the Advanced Mode contract must still be present
+> on the Calculator page itself.
+
+### Pages affected
+
+- [src/routes/calculator/+page.svelte](../../src/routes/calculator/+page.svelte) —
+  adds Range tab, Inverse STP tab, and their reactive result columns to the
+  existing unified table.
+
+### Required pillars
+
+| Pillar | Calculator |
+| ------ | ---------- |
+| Panel gating (`isAdvancedMode.value` guard on tab rendering) | ✅ required |
+| URL init (`imode` / `ivalues` / `iunit` parsed inside the URL `$effect`) | ✅ required |
+| Persistence (URL updated when tab, values, or unit changes) | ✅ required |
+| Reactive-dep snapshot (all reactive state read **before** any `.then()`) | ✅ required |
+
+**Implementer contract:** Before declaring `TASK DONE`, verify that every ✅
+cell above has a corresponding wired `$effect` or reactive binding, and that
+none of them reads reactive state _inside_ a `.then()` callback (see
+`.opencode/lessons-learned.md` Entry 1).
+
+---
+
+## Appendix: data-testid Reference
+
+All `data-testid` attributes listed here **must** be added by the implementer.
+The Playwright acceptance scenarios above depend on their exact string values.
+
+| `data-testid` value | Element | Notes |
+| ------------------- | ------- | ----- |
+| `inverse-tab-forward` | Tab button — "Forward" | `aria-selected="true"` when active |
+| `inverse-tab-range` | Tab button — "Range" | `aria-selected="true"` when active |
+| `inverse-tab-stp` | Tab button — "Inverse STP" | `aria-selected="true"` when active |
+| `inverse-range-input-{i}` | Range tab input cell, row `i` (0-based) | `value` = typed text |
+| `inverse-range-unit` | Range tab master unit selector | — |
+| `inverse-range-result-{i}` | Range tab result cell, row `i`, single-program | text = energy + unit |
+| `inverse-range-result-{i}-{programId}` | Range tab result cell, row `i`, multi-program | — |
+| `inverse-stp-input-{i}` | Inverse STP input cell, row `i` | — |
+| `inverse-stp-unit` | Inverse STP master unit selector | — |
+| `inverse-stp-result-low-{i}` | Inverse STP E-low cell, row `i`, single-program | `"—"` when no solution |
+| `inverse-stp-result-high-{i}` | Inverse STP E-high cell, row `i`, single-program | `"—"` when no solution |
+| `inverse-stp-result-low-{i}-{programId}` | E-low, row `i`, multi-program | — |
+| `inverse-stp-result-high-{i}-{programId}` | E-high, row `i`, multi-program | — |
 
 ---
 
