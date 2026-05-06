@@ -52,20 +52,19 @@ without having to compute them manually.
 ### Scenario 1: Drag column to new position — both groups update @smoke
 
 **Given** the user is on `/calculator` in advanced mode with three programs
-selected: ICRU 90 (default, id=3), PSTAR (id=3 equivalent, distinct),
-and Bethe (id=N)
+selected: ICRU 90 (id=3, default), PSTAR (id=5), and Bethe (id=8)
 
 > For concreteness: assume the initial order is [ICRU 90, PSTAR, Bethe] in
 > both the Stopping Power and CSDA Range groups.
 
-**When** the user drags `[data-testid="mp-drag-handle-pstar"]` past
-`[data-testid="mp-drag-handle-bethe"]` and drops it
+**When** the user drags `[data-testid="mp-drag-handle-5"]` past
+`[data-testid="mp-drag-handle-8"]` and drops it
 
 **Then**
 
 - DOM: the PSTAR column appears **after** the Bethe column in the Stopping
-  Power group — `[data-testid="mp-column-header-pstar"]` has a higher DOM
-  index than `[data-testid="mp-column-header-bethe"]` within the STP group
+  Power group — `[data-testid="mp-column-header-5"]` has a higher DOM
+  index than `[data-testid="mp-column-header-8"]` within the STP group
 - DOM: the same order is mirrored in the CSDA Range group
 - URL: `programs=` encodes IDs in new order within ≤ 500 ms
 

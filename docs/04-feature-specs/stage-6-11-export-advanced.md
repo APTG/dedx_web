@@ -306,8 +306,8 @@ without a page reload.
 - **Multi-program CSV/PDF layout** (drag-reordered columns, delta/% tooltip
   inclusion in CSV) — covered in `stage-6-12-multi-program-polish.md`.
 - **Advanced PDF for Plot page** — the export spec §5.3 covers this; it is
-  already implemented as part of 6.6. This spec only adds the Calculator
-  advanced PDF (§6.3).
+  already implemented as part of 6.6. This spec adds the Calculator PDF
+  button and advanced-mode metadata block (§6.1 of `export.md`).
 - **External data in Plot CSV** (`export.md` §4.3) — deferred to Stage 7
   alongside `external-data.md` implementation.
 - **Accessibility audit of the CSV modal** — covered by the general WCAG

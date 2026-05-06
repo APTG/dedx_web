@@ -53,7 +53,7 @@ custom compound and calculation,
 **so that** collaborative work with non-standard materials is reproducible.
 
 **As a** developer,
-**I want to** the URL encode/decode to follow a deterministic step ordering
+**I want** the URL encoding/decoding to follow a deterministic step ordering
 (steps 1–14 per `shareable-urls-formal.md` §3.1) with duplicate resolution,
 unknown-param dropping, and canonical output,
 **so that** URL round-trips are stable and do not produce spurious history
@@ -219,9 +219,9 @@ is derived.
 
 ### New parameters (stage 6.13 additions)
 
-| Parameter | TypeScript type | Allowed values | Default (omitted) | Encode as |
-| --------- | --------------- | -------------- | ----------------- | --------- |
-| `urlv` | `number` | Positive integer; currently `1` | `1` (always emitted per canonicalization step 1) | `"1"` |
+| Parameter | TypeScript type | Allowed values | Default / emit rule | Encode as |
+| --------- | --------------- | -------------- | ------------------- | --------- |
+| `urlv` | `number` | Positive integer; currently `1` | n/a — always emitted (step 1 of canonicalization; never omitted even when value equals the current default) | `"1"` |
 
 ### Custom compound parameters (from 6.10, formalized in 6.13 step 9)
 
