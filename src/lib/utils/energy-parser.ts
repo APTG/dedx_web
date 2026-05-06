@@ -109,7 +109,7 @@ export function parseEnergyInput(raw: string): ParseResult {
   }
 
   const [, numberStr, unitStr] = numberMatch;
-  const value = parseFloat(numberStr);
+  const value = parseFloat(numberStr!);
 
   if (isNaN(value)) {
     return { error: "invalid number" };

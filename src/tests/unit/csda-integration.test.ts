@@ -30,7 +30,7 @@ describe("integrateCsdaFromStp", () => {
 
     // Verify monotonic increase
     for (let i = 1; i < result.length; i++) {
-      expect(result[i]).toBeGreaterThan(result[i - 1]);
+      expect(result[i]!).toBeGreaterThan(result[i - 1]!);
     }
   });
 
@@ -126,7 +126,7 @@ describe("integrateCsdaFromStp", () => {
     expect(result[0]).toBe(0);
     // Verify CSDA range is monotonically increasing
     for (let i = 1; i < result.length; i++) {
-      expect(result[i]).toBeGreaterThan(result[i - 1]);
+      expect(result[i]!).toBeGreaterThan(result[i - 1]!);
     }
     // Verify all values are positive
     result.forEach((val) => expect(val).toBeGreaterThanOrEqual(0));

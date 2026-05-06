@@ -24,7 +24,7 @@ describe("createEnergyInputState", () => {
   test("initializes with default energy value", () => {
     const state = createEnergyInputState();
     expect(state.rows).toHaveLength(1);
-    expect(state.rows[0].text).toBe("100");
+    expect(state.rows[0]!.text).toBe("100");
   });
 
   test("master unit defaults to MeV", () => {
@@ -37,16 +37,16 @@ describe("createEnergyInputState", () => {
     const initialLength = state.rows.length;
     state.addRow();
     expect(state.rows).toHaveLength(initialLength + 1);
-    expect(state.rows[state.rows.length - 1].text).toBe("");
+    expect(state.rows[state.rows.length - 1]!.text).toBe("");
   });
 
   test("removeRow removes row by index", () => {
     const state = createEnergyInputState();
     state.addRow();
-    const secondRowText = state.rows[1].text;
+    const secondRowText = state.rows[1]!.text;
     state.removeRow(1);
     expect(state.rows).toHaveLength(1);
-    expect(state.rows[0].text).not.toBe(secondRowText);
+    expect(state.rows[0]!.text).not.toBe(secondRowText);
   });
 
   test("cannot remove last row", () => {
@@ -61,7 +61,7 @@ describe("createEnergyInputState", () => {
   test("updateRowText updates row text", () => {
     const state = createEnergyInputState();
     state.updateRowText(0, "5.0");
-    expect(state.rows[0].text).toBe("5.0");
+    expect(state.rows[0]!.text).toBe("5.0");
   });
 
   test("setMasterUnit changes master unit", () => {
@@ -79,7 +79,7 @@ describe("createEnergyInputState", () => {
     const state = createEnergyInputState();
     state.updateRowText(0, "100 keV");
     const parsed = state.getParsedEnergies();
-    const val = getValue(parsed[0]);
+    const val = getValue(parsed[0]!);
     expect(val).not.toBeNull();
     if (val == null) throw new Error("Value should not be null");
     expect(val.value).toBe(100);
@@ -90,14 +90,14 @@ describe("createEnergyInputState", () => {
     const state = createEnergyInputState();
     state.updateRowText(0, "invalid");
     const parsed = state.getParsedEnergies();
-    expect(hasError(parsed[0])).toBe(true);
+    expect(hasError(parsed[0]!)).toBe(true);
   });
 
   test("parsed energies for empty row", () => {
     const state = createEnergyInputState();
     state.updateRowText(0, "");
     const parsed = state.getParsedEnergies();
-    expect(isEmpty(parsed[0])).toBe(true);
+    expect(isEmpty(parsed[0]!)).toBe(true);
   });
 
   test("clearAllRows resets to defaults", () => {
@@ -106,6 +106,6 @@ describe("createEnergyInputState", () => {
     state.addRow();
     state.clearAllRows();
     expect(state.rows).toHaveLength(1);
-    expect(state.rows[0].text).toBe("100");
+    expect(state.rows[0]!.text).toBe("100");
   });
 });

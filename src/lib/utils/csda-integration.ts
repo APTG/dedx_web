@@ -51,9 +51,9 @@ export function integrateCsdaFromStp(
   // This correctly integrates 1/S(E) using the trapezoidal rule on the reciprocal values.
   // Units: energies in MeV/u, STP in MeV·cm²/g → result in g/cm²
   for (let i = 1; i < n; i++) {
-    const dE = energiesMeVperNucl[i] - energiesMeVperNucl[i - 1];
-    const sPrev = stpMeVcm2perG[i - 1];
-    const sCurr = stpMeVcm2perG[i];
+    const dE = energiesMeVperNucl[i]! - energiesMeVperNucl[i - 1]!;
+    const sPrev = stpMeVcm2perG[i - 1]!;
+    const sCurr = stpMeVcm2perG[i]!;
 
     // Guard against zero or negative STP values (unphysical but possible in edge cases)
     if (sPrev <= 0 || sCurr <= 0) {
@@ -63,7 +63,7 @@ export function integrateCsdaFromStp(
         energyPrev: energiesMeVperNucl[i - 1],
         energyCurr: energiesMeVperNucl[i],
       });
-      csdaRanges[i] = csdaRanges[i - 1];
+      csdaRanges[i] = csdaRanges[i - 1]!;
       continue;
     }
 
@@ -72,7 +72,7 @@ export function integrateCsdaFromStp(
     const invSCurr = 1 / sCurr;
     const integral = (dE * (invSPrev + invSCurr)) / 2;
 
-    csdaRanges[i] = csdaRanges[i - 1] + integral;
+    csdaRanges[i] = csdaRanges[i - 1]! + integral;
   }
 
   return csdaRanges;

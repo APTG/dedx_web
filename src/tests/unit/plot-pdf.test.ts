@@ -58,9 +58,10 @@ function setupSvgToPngMocks() {
   };
   vi.spyOn(document, "createElement").mockImplementation((tag: string) => {
     if (tag === "canvas") return mockCanvas as unknown as HTMLElement;
-    return document.createElement.wrappedMethod
-      ? (document.createElement.wrappedMethod as typeof document.createElement)(tag)
-      : document.createElement(tag);
+    const ce = document.createElement as typeof document.createElement & {
+      wrappedMethod?: typeof document.createElement;
+    };
+    return ce.wrappedMethod ? ce.wrappedMethod(tag) : document.createElement(tag);
   });
 
   // Image mock: triggers onload after the src setter is called.
@@ -123,7 +124,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     expect(mockDoc.save).toHaveBeenCalledWith("dedx_plot_report.pdf");
   });
 
@@ -140,7 +141,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     const textCalls = mockDoc.text.mock.calls;
     const headerTexts = textCalls.slice(0, 5).flat().join(" ");
     expect(headerTexts).toContain("dEdx Web");
@@ -173,7 +174,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     const textCalls = mockDoc.text.mock.calls.map((c: any[]) => c[0]);
 
     // Should contain visible series labels in legend
@@ -201,7 +202,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
 
     // Must use addImage (canvas-based PNG), never doc.html() which triggers
     // html2canvas and crashes on oklch colors from Tailwind CSS v4.
@@ -248,7 +249,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     const textCalls = mockDoc.text.mock.calls.map((c: any[]) => c[0]);
     const pageFooterTexts = textCalls.filter((t: string) => t && t.includes("Page"));
 
@@ -269,7 +270,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     const textCalls = mockDoc.text.mock.calls.map((c: any[]) => c[0]);
     const headerTexts = textCalls.slice(0, 5).flat().join(" ");
 
@@ -290,7 +291,7 @@ describe("generatePlotPdf", () => {
     });
 
     const { default: jsPDF } = await import("jspdf");
-    const mockDoc = (jsPDF as any).mock.results[0].value;
+    const mockDoc = (jsPDF as any).mock.results[0]!.value;
     expect(mockDoc.textWithLink).toHaveBeenCalledWith(
       url,
       expect.anything(),

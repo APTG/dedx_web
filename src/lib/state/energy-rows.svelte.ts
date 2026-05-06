@@ -50,13 +50,19 @@ export function createEnergyInputState(): EnergyInputState {
 
   function updateRowText(index: number, text: string): void {
     const parsed = parseEnergyInput(text);
-    let error: string | undefined;
+    const error = "error" in parsed ? parsed.error : undefined;
 
-    if ("error" in parsed) {
-      error = parsed.error;
-    }
-
-    rows = rows.map((row, i) => (i === index ? { ...row, text, error } : row));
+    rows = rows.map((row, i) => {
+      if (i !== index) return row;
+      // exactOptionalPropertyTypes: only set `error` when defined; otherwise
+      // clone-and-`delete` so we don't write `error: undefined` onto a
+      // property typed `error?: string`. Avoid destructure-rest patterns —
+      // they introduce an unused binding under noUnusedLocals.
+      if (error !== undefined) return { ...row, text, error };
+      const rowWithoutError = { ...row, text };
+      delete rowWithoutError.error;
+      return rowWithoutError;
+    });
 
     if (index === rows.length - 1 && text.trim() !== "") {
       addRow();

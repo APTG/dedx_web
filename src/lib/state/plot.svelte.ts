@@ -70,7 +70,7 @@ export function createPlotState(): PlotState {
       ...data,
       seriesId: nextSeriesId,
       label: "",
-      color: COLOR_PALETTE[colorIndex],
+      color: COLOR_PALETTE[colorIndex]!,
       colorIndex,
       visible: true,
     };

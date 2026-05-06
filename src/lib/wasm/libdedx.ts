@@ -240,8 +240,8 @@ export class LibdedxServiceImpl implements LibdedxService {
         const csdaResult = integrateCsdaFromStp(energyValues, stpValues, density);
 
         for (let i = 0; i < numEnergies; i++) {
-          const stpMass = stpValues[i];
-          const csdaGcm2 = csdaResult[i];
+          const stpMass = stpValues[i]!;
+          const csdaGcm2 = csdaResult[i]!;
 
           // Subnormal / non-finite guard — log and continue rather than throw.
           if (

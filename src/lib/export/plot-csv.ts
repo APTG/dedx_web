@@ -26,7 +26,7 @@ function isSharedEnergyGrid(series: PlotSeries[]): boolean {
   if (series.length === 0) return true;
   if (series.length === 1) return true;
 
-  const firstCount = series[0].result.energies.length;
+  const firstCount = series[0]!.result.energies.length;
   for (const s of series) {
     // Case B if any series has ext: prefix
     if (s.programName.startsWith("ext:")) {
@@ -112,7 +112,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
 
     if (caseA) {
       // Case A: single shared Energy column (from first series)
-      const firstSeries = visibleSeries[0];
+      const firstSeries = visibleSeries[0]!;
       if (rowIdx < firstSeries.result.energies.length) {
         rowCells.push(formatValue(firstSeries.result.energies[rowIdx] ?? 0));
       } else {
@@ -122,7 +122,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
 
     // Add columns for each series
     for (let si = 0; si < visibleSeries.length; si++) {
-      const s = visibleSeries[si];
+      const s = visibleSeries[si]!;
       const energyCount = s.result.energies.length;
 
       if (!caseA) {
