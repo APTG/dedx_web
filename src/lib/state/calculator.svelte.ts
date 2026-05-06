@@ -148,9 +148,9 @@ export function createCalculatorState(
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
-    // Aggregate state override may flip the effective phase (Behavior §3).
+    // Aggregate state override may flip the effective aggregate state (Behavior §3).
     // Only apply the override when in Advanced mode — Basic mode always uses
-    // the material's built-in phase so switching back to Basic reverts the unit.
+    // the material's built-in aggregate state so switching back to Basic reverts the unit.
     const aggOverride = isAdvancedMode.value ? advancedOptions.value.aggregateState : undefined;
     const effectivelyGas =
       aggOverride === "gas" ? true : aggOverride === "condensed" ? false : material?.isGasByDefault;

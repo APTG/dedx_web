@@ -62,7 +62,7 @@ test.describe("Advanced Options Panel", () => {
     });
 
     test("density override changes CSDA range (AC-6: 2× density → ~½ range)", async ({ page }) => {
-      test.setTimeout(60000);
+      test.setTimeout(50000);
       // Wait for result table to appear with a valid calculation in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
@@ -100,7 +100,7 @@ test.describe("Advanced Options Panel", () => {
     test("switching back to Basic mode after density override reverts to default density", async ({
       page,
     }) => {
-      test.setTimeout(60000);
+      test.setTimeout(50000);
       // Get baseline in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
       const basicRangeCell = page.locator('[data-testid="range-cell-0"]');
@@ -135,7 +135,7 @@ test.describe("Advanced Options Panel", () => {
     test("density override changes stopping power (AC-6: 2× density → ~2× keV/µm)", async ({
       page,
     }) => {
-      test.setTimeout(60000);
+      test.setTimeout(50000);
       // Wait for result table with a numeric STP value in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
