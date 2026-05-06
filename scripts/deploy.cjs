@@ -1,7 +1,7 @@
 // CommonJS — intentionally NOT a module so it works with plain `node`.
 const { execSync } = require("child_process");
 const { writeFileSync, mkdirSync } = require("fs");
-const { resolve, dirname } = require("path");
+const { resolve } = require("path");
 
 function stripHeadsPrefix(ref) {
   return ref.startsWith("heads/") ? ref.slice("heads/".length) : ref;

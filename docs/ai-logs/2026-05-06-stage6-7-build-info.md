@@ -22,7 +22,7 @@ Implemented the complete Build Info Badge feature according to the spec in `docs
 - `package.json` — Added `"deploy-info": "node scripts/deploy.cjs"` script
 - `eslint.config.js` — Added `scripts/**` to ignores
 
-**Commit:** `6e55ade feat(build): add scripts/deploy.js — writes static/deploy.json at build time`
+**Commit:** `6e55ade feat(build): add scripts/deploy.cjs — writes static/deploy.json at build time`
 
 **Key implementation details:**
 - `stripHeadsPrefix(ref)` strips `heads/` prefix from git refs, keeps `tags/` intact
@@ -98,6 +98,18 @@ Implemented the complete Build Info Badge feature according to the spec in `docs
 **Commit:** `d7491c9 chore(gitignore): add static/deploy.json to gitignore`
 
 Added `/static/deploy.json` to `.gitignore` (build artifact, not committed)
+
+---
+
+### PR review fixes (2026-05-06, Claude Sonnet 4.5 via GitHub Copilot)
+
+Addressed review feedback on PR #431:
+
+- `git rm --cached static/deploy.json` — removed the accidentally-committed build artifact; `.gitignore` entry was already present but tracked files bypass it.
+- Removed unused `dirname` import from `scripts/deploy.cjs` (only `resolve` is used).
+- Updated `docs/ai-logs/prompts/2026-05-06-stage6-7-build-info-badge.md` — all `scripts/deploy.js` and `node scripts/deploy.js` references corrected to `deploy.cjs`.
+- Corrected Task 1 commit description in this log (was `deploy.js`, actual file is `deploy.cjs`).
+- Marked Stage 6.7 as ✅ in `docs/00-redesign-plan.md`; also fixed the `deploy.js` reference there to `deploy.cjs`.
 
 ---
 

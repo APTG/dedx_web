@@ -45,13 +45,13 @@ Attribution: `(Qwen3.5-397B-A17B-FP8 via opencode)`.
 
 ---
 
-## Task 1 — `scripts/deploy.js` — git metadata → `static/deploy.json`
+## Task 1 — `scripts/deploy.cjs` — git metadata → `static/deploy.json`
 
 **Spec:** `docs/04-feature-specs/build-info.md` §4 "Build-Time Injection".
 
 ### Acceptance criteria
 
-- Running `node scripts/deploy.js` inside a git repo creates/overwrites
+- Running `node scripts/deploy.cjs` inside a git repo creates/overwrites
   `static/deploy.json` with valid JSON matching the schema below.
 - `branch` has `heads/` prefix stripped (e.g. `heads/master` → `master`);
   tag refs are kept as-is (e.g. `tags/v1.0` → `tags/v1.0`).
@@ -72,16 +72,16 @@ Create the file with a `describe("stripHeadsPrefix")` block:
 ""                   → ""
 ```
 
-The function must be importable from `scripts/deploy.js` as a named export
+The function must be importable from `scripts/deploy.cjs` as a named export
 (CommonJS `exports.stripHeadsPrefix = ...`).
 
 > Vitest handles `require()` via the `commonjs` plugin or direct import with
-> `createRequire`. Simplest: write `deploy.js` as CommonJS and import via
-> `import { createRequire } from 'module'; const req = createRequire(import.meta.url); const { stripHeadsPrefix } = req('../../../scripts/deploy.js');`
+> `createRequire`. Simplest: write `deploy.cjs` as CommonJS and import via
+> `import { createRequire } from 'module'; const req = createRequire(import.meta.url); const { stripHeadsPrefix } = req('../../../scripts/deploy.cjs');`
 > inside the test (guard the `main()` call so it only runs when
 > `require.main === module`).
 
-### Step 1b — implement (`scripts/deploy.js`)
+### Step 1b — implement (`scripts/deploy.cjs`)
 
 ```javascript
 // CommonJS — intentionally NOT a module so it works with plain `node`.
@@ -126,7 +126,7 @@ if (require.main === module) {
 Add to `package.json` scripts:
 
 ```json
-"deploy-info": "node scripts/deploy.js"
+"deploy-info": "node scripts/deploy.cjs"
 ```
 
 ### Done when
@@ -134,7 +134,7 @@ Add to `package.json` scripts:
 `pnpm test` is green (unit tests for `stripHeadsPrefix` pass), then commit:
 
 ```
-feat(build): add scripts/deploy.js — writes static/deploy.json at build time
+feat(build): add scripts/deploy.cjs — writes static/deploy.json at build time
 ```
 
 ---
@@ -230,9 +230,9 @@ feat(ui): add BuildInfoBadge component — fetches deploy.json, renders commit/d
 ### Acceptance criteria
 
 - The badge appears bottom-left in the footer on every page.
-- `deploy.yml` runs `node scripts/deploy.js` before `pnpm build` so the
+- `deploy.yml` runs `node scripts/deploy.cjs` before `pnpm build` so the
   deployed site always has an up-to-date `deploy.json`.
-- `pnpm dev` still works without running `deploy.js` first — the badge is
+- `pnpm dev` still works without running `deploy.cjs` first — the badge is
   simply absent (the `fetch('/deploy.json')` returns 404 and is silently
   swallowed).
 
@@ -283,12 +283,12 @@ In the `deploy-dev` job, add a step immediately before "Build SvelteKit app":
 
 ```yaml
       - name: Write deploy.json
-        run: node scripts/deploy.js
+        run: node scripts/deploy.cjs
 ```
 
 ### Done when
 
-`pnpm test` is green and `pnpm build` succeeds (may need `node scripts/deploy.js`
+`pnpm test` is green and `pnpm build` succeeds (may need `node scripts/deploy.cjs`
 first locally), then commit:
 
 ```
@@ -434,7 +434,7 @@ test(e2e): add Playwright tests for build info badge (footer visibility + 404 fa
 - [ ] `pnpm test` green (Vitest unit + component)
 - [ ] `pnpm exec playwright test tests/e2e/build-info.spec.ts` green (6 E2E tests)
 - [ ] `pnpm lint` clean
-- [ ] `node scripts/deploy.js && pnpm build` succeeds end-to-end
+- [ ] `node scripts/deploy.cjs && pnpm build` succeeds end-to-end
 - [ ] `static/deploy.json` is listed in `.gitignore` (generated file, not committed)
 - [ ] Each task has a Conventional Commit
 - [ ] `CHANGELOG-AI.md` has one new row at the top
