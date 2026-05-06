@@ -20,7 +20,7 @@
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
-  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -106,6 +106,9 @@
     const state = entityState;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
+
+    // Restore advanced mode from URL (URL param overrides localStorage if present).
+    initAdvancedModeFromUrl(params);
 
     if (decoded.particleId !== null) {
       state.selectParticle(decoded.particleId);
