@@ -221,7 +221,10 @@
           programName,
           particleName: getParticleLabel(selectedParticle),
           materialName: selectedMaterial.name,
-          density: selectedMaterial.density,
+          // Use the density override (only in Advanced mode) for correct unit conversion
+          density:
+            (isAdvancedMode.value ? advOptsSnapshot.densityOverride : undefined) ??
+            selectedMaterial.density,
           result,
         });
       } catch (err) {
@@ -279,7 +282,9 @@
       programName: p.programName,
       particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
-      density: selectedMaterial.density,
+      // Preserve the density that was active when the preview was computed
+      // so committed series display the same values as the preview did.
+      density: p.density,
       result: p.result,
     });
 

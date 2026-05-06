@@ -8,6 +8,7 @@ import {
   formatRangeValue,
 } from "$lib/state/calculator.svelte";
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
+import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
 describe("CalculatorState", () => {
   let service: LibdedxServiceImpl;
@@ -24,6 +25,8 @@ describe("CalculatorState", () => {
   afterEach(() => {
     // Reset advancedOptions singleton so tests don't bleed state into each other
     advancedOptions.value = {};
+    // Reset advanced mode so tests start in Basic mode by default
+    isAdvancedMode.value = false;
   });
 
   it("initializes with one pre-filled row and correct stpDisplayUnit for water", () => {
@@ -520,7 +523,8 @@ describe("CalculatorState", () => {
       const baseRange = calcState.rows[0].csdaRangeCm;
       expect(baseRange).not.toBeNull();
 
-      // Apply density override
+      // Advanced options only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { densityOverride: 2.0 };
 
       await calcState.triggerCalculation();
@@ -542,6 +546,8 @@ describe("CalculatorState", () => {
       expect(baseStp).not.toBeNull();
       expect(calcState.stpDisplayUnit).toBe("keV/µm"); // water is condensed
 
+      // Advanced options only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { densityOverride: 2.0 };
 
       await calcState.triggerCalculation();
@@ -554,6 +560,8 @@ describe("CalculatorState", () => {
     });
 
     it("reverts to built-in density when densityOverride is cleared", async () => {
+      // Advanced options only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { densityOverride: 2.0 };
 
       await calcState.triggerCalculation();
@@ -589,6 +597,8 @@ describe("CalculatorState", () => {
       entitySelection.selectMaterial(airMaterial.id);
       expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
 
+      // Aggregate state overrides only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { aggregateState: "condensed" };
       expect(calcState.stpDisplayUnit).toBe("keV/µm");
     });
@@ -597,16 +607,28 @@ describe("CalculatorState", () => {
       // Water is condensed (isGasByDefault = false)
       expect(calcState.stpDisplayUnit).toBe("keV/µm");
 
+      // Aggregate state overrides only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { aggregateState: "gas" };
       expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
     });
 
     it("reverts stpDisplayUnit to built-in when override is cleared", () => {
+      // Aggregate state overrides only apply in Advanced mode
+      isAdvancedMode.value = true;
       advancedOptions.value = { aggregateState: "gas" };
       expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
 
       advancedOptions.value = {};
       expect(calcState.stpDisplayUnit).toBe("keV/µm"); // back to condensed (water)
+    });
+
+    it("aggregate state override does NOT apply in Basic mode", () => {
+      // Water is condensed; override to gas should be ignored in Basic mode
+      expect(isAdvancedMode.value).toBe(false);
+      advancedOptions.value = { aggregateState: "gas" };
+      // Should still be keV/µm because Basic mode ignores the override
+      expect(calcState.stpDisplayUnit).toBe("keV/µm");
     });
   });
 });

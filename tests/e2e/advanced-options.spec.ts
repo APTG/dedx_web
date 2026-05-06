@@ -62,47 +62,91 @@ test.describe("Advanced Options Panel", () => {
     });
 
     test("density override changes CSDA range (AC-6: 2× density → ~½ range)", async ({ page }) => {
-      // Wait for result table to appear with a valid calculation
+      test.setTimeout(60000);
+      // Wait for result table to appear with a valid calculation in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
-      const rangeCell = page.locator('[data-testid="range-cell-0"]');
-      // Wait until range cell has a numeric value
-      const baseline = await waitForPositiveValue(rangeCell);
+      const basicRangeCell = page.locator('[data-testid="range-cell-0"]');
+      // Wait until range cell has a numeric value (proton/water default)
+      const basicBaseline = await waitForPositiveValue(basicRangeCell, 15000);
 
       // Switch to Advanced mode and open Advanced Options
       await page.locator('button[aria-label="Switch to Advanced mode"]').click();
       await page.waitForSelector('button:has-text("Advanced Options")', { timeout: 5000 });
       await page.click('button:has-text("Advanced Options")');
-      await page.waitForSelector("#density-override", { timeout: 3000 });
+      await page.waitForSelector("#density-override", { timeout: 5000 });
+
+      // In Advanced mode, CSDA is shown in multi-program columns (data-program-id attribute).
+      // Wait for the default-program CSDA cell to appear and have a positive value.
+      const advRangeCell = page
+        .locator('td[data-program-id][data-testid^="range-cell-"]')
+        .first();
+      await waitForPositiveValue(advRangeCell, 15000);
 
       // Set density to 2× (water default ~1.0 g/cm³ → 2.0)
       const densityInput = page.locator("#density-override");
       await densityInput.fill("2");
       await densityInput.blur();
 
-      // Range should now be roughly half the baseline (2× density → ½ range)
+      // Range should now be roughly half the basic-mode baseline (2× density → ½ range).
       // Threshold is 60% of baseline (slightly permissive to account for
       // display unit rounding and auto-scale, while still catching the bug
       // where density had zero effect).
       await expect
-        .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 5000 })
-        .toBeLessThan(baseline * 0.6);
+        .poll(async () => parseFloat((await advRangeCell.textContent()) ?? ""), { timeout: 15000 })
+        .toBeLessThan(basicBaseline * 0.6);
+    });
+
+    test("switching back to Basic mode after density override reverts to default density", async ({
+      page,
+    }) => {
+      test.setTimeout(60000);
+      // Get baseline in Basic mode
+      await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+      const basicRangeCell = page.locator('[data-testid="range-cell-0"]');
+      const basicBaseline = await waitForPositiveValue(basicRangeCell, 15000);
+
+      // Switch to Advanced mode and set density to 2
+      await page.locator('button[aria-label="Switch to Advanced mode"]').click();
+      await page.waitForSelector('button:has-text("Advanced Options")', { timeout: 5000 });
+      await page.click('button:has-text("Advanced Options")');
+      await page.waitForSelector("#density-override", { timeout: 5000 });
+      await page.locator("#density-override").fill("2");
+      await page.locator("#density-override").blur();
+
+      // Wait for Advanced mode CSDA cell to reflect density=2 (roughly half baseline)
+      const advRangeCell = page
+        .locator('td[data-program-id][data-testid^="range-cell-"]')
+        .first();
+      await expect
+        .poll(async () => parseFloat((await advRangeCell.textContent()) ?? ""), { timeout: 15000 })
+        .toBeLessThan(basicBaseline * 0.6);
+
+      // Switch back to Basic mode
+      await page.locator('button[aria-label="Switch to Basic mode"]').click();
+
+      // Basic mode should restore the original density — range must be close to original
+      // (within 20% to allow for unit auto-scale differences on the same row).
+      await expect
+        .poll(async () => parseFloat((await basicRangeCell.textContent()) ?? ""), { timeout: 15000 })
+        .toBeGreaterThan(basicBaseline * 0.8);
     });
 
     test("density override changes stopping power (AC-6: 2× density → ~2× keV/µm)", async ({
       page,
     }) => {
-      // Wait for result table with a numeric STP value
+      test.setTimeout(60000);
+      // Wait for result table with a numeric STP value in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
-      const stpCell = page.locator('[data-testid="stp-cell-0"]');
-      const baselineStp = await waitForPositiveValue(stpCell);
+      const basicStpCell = page.locator('[data-testid="stp-cell-0"]');
+      const basicBaselineStp = await waitForPositiveValue(basicStpCell, 15000);
 
       // Switch to Advanced mode and open panel
       await page.locator('button[aria-label="Switch to Advanced mode"]').click();
       await page.waitForSelector('button:has-text("Advanced Options")', { timeout: 5000 });
       await page.click('button:has-text("Advanced Options")');
-      await page.waitForSelector("#density-override", { timeout: 3000 });
+      await page.waitForSelector("#density-override", { timeout: 5000 });
 
       // The unit shown for water (condensed) should be keV/µm.
       // Only proceed if the material is condensed (aggregate state selector absent
@@ -110,15 +154,20 @@ test.describe("Advanced Options Panel", () => {
       const aggSelect = page.locator("#agg-state");
       const isGas = (await aggSelect.count()) > 0 && (await aggSelect.inputValue()) === "gas";
       if (!isGas) {
-        const densityInput = page.locator("#density-override");
-        await densityInput.fill("2");
-        await densityInput.blur();
+        // In Advanced mode, STP is shown in multi-program columns (data-program-id attribute).
+        const advStpCell = page
+          .locator('td[data-program-id][data-testid^="stp-cell-"]')
+          .first();
+        await waitForPositiveValue(advStpCell, 15000);
+
+        await page.locator("#density-override").fill("2");
+        await page.locator("#density-override").blur();
 
         // STP (keV/µm) should be roughly doubled when density doubles.
         // Threshold 1.8× (slightly conservative to allow for display rounding).
         await expect
-          .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 5000 })
-          .toBeGreaterThan(baselineStp * 1.8);
+          .poll(async () => parseFloat((await advStpCell.textContent()) ?? ""), { timeout: 15000 })
+          .toBeGreaterThan(basicBaselineStp * 1.8);
       }
     });
 
