@@ -28,7 +28,7 @@
     "@lucide/svelte": "^1.14.0",
     "@playwright/test": "^1.59.1",
     "@sveltejs/adapter-static": "^3.0.9",
-    "@sveltejs/kit": "^2.59.0",
+    "@sveltejs/kit": "^2.59.1",
     "@sveltejs/vite-plugin-svelte": "^7.0.0",
     "@tailwindcss/vite": "^4.1.10",
     "@testing-library/jest-dom": "^6.9.1",
