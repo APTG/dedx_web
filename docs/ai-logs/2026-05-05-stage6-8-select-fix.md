@@ -61,7 +61,14 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
     class?: string;
   }
 
-  let { value, onValueChange, options, placeholder, class: className, ...restProps }: Props = $props();
+  let {
+    value,
+    onValueChange,
+    options,
+    placeholder,
+    class: className,
+    ...restProps
+  }: Props = $props();
 
   function handleChange(event: Event) {
     const select = event.target as HTMLSelectElement;
@@ -73,7 +80,7 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
 
 <select
   class={cn("flex h-10 w-full items-center...", className)}
-  value={value}
+  {value}
   onchange={handleChange}
   {...restProps}
 >
@@ -89,6 +96,7 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
 ```
 
 **Key features:**
+
 - Standard HTML `<select>` with native `onchange` event (reliable in all browsers)
 - Accepts `options` prop for dynamic options
 - Supports `onValueChange` callback
@@ -100,13 +108,16 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
 ## Changes Made
 
 ### Files Created
+
 - `src/lib/components/ui/native-select/native-select.svelte` — native select component
 - `src/lib/components/ui/native-select/index.ts` — exports
 
 ### Files Removed
+
 - `src/lib/components/ui/select/select.svelte` — broken bits-ui wrapper
 
 ### Files Modified
+
 - `src/lib/components/advanced-options-panel.svelte`:
   - Replaced 3 bits-ui Select instances with NativeSelect:
     1. Interpolation scale (log-log/lin-lin)
@@ -123,16 +134,19 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
 ## Test Results
 
 ### E2E Tests
+
 - ✅ 96 E2E tests pass (4 skipped — unrelated pending tests)
 - ✅ Scale select: URL updates with `interp_scale=lin-lin`
 - ✅ Method select: URL updates with `interp_method=spline`
 - ✅ Both working on Calculator and Plot pages
 
 ### Lint
+
 - ✅ No new lint errors introduced
 - ✅ Fixed 6 warnings in `advanced-options-panel.svelte`
 
 ### Pre-existing Lint Errors
+
 44 pre-existing lint errors remain in unrelated files (mostly `@typescript-eslint/no-non-null-assertion` in test files and config files).
 
 ---
@@ -140,17 +154,19 @@ Replaced bits-ui Select with a native HTML `<select>` element wrapped in a `Nati
 ## Verification
 
 ### Manual Testing
+
 ```bash
 # Scale select
 page.selectOption("#interp-scale", "lin-lin")
 # URL: ...&interp_scale=lin-lin
 
-# Method select  
+# Method select
 page.selectOption("#interp-method", "spline")
 # URL: ...&interp_method=spline
 ```
 
 ### Debug Tests Created (then removed)
+
 - `tests/e2e/debug-page-load.spec.ts` — confirmed JS errors
 - `tests/e2e/debug-select8.spec.ts` — confirmed options not found
 - `tests/e2e/debug-native-select2.spec.ts` — confirmed native select has options
@@ -173,18 +189,19 @@ All debug tests removed after verification.
 6. ✅ **DONE** — Create session log
 
 **Stage 6.8 COMPLETE.** All Select components now properly trigger URL sync for:
+
 - `interp_scale` (log/linear)
 - `interp_method` (cubic spline)
 - `mstar_mode` (a/b/c/d/g/h)
 
 ## Files Summary
 
-| File | Action | Reason |
-|------|--------|--------|
-| `src/lib/components/ui/native-select/native-select.svelte` | Created | Native select replacement |
-| `src/lib/components/ui/native-select/index.ts` | Created | Exports |
-| `src/lib/components/ui/select/select.svelte` | Removed | Broken bits-ui wrapper |
-| `src/lib/components/advanced-options-panel.svelte` | Modified | Use NativeSelect |
-| `tests/e2e/advanced-options.spec.ts` | Modified | Fix E2E test |
-| `CHANGELOG-AI.md` | Modified | Add session entry |
-| `docs/ai-logs/2026-05-05-stage6-8-select-fix.md` | Created | This file |
+| File                                                       | Action   | Reason                    |
+| ---------------------------------------------------------- | -------- | ------------------------- |
+| `src/lib/components/ui/native-select/native-select.svelte` | Created  | Native select replacement |
+| `src/lib/components/ui/native-select/index.ts`             | Created  | Exports                   |
+| `src/lib/components/ui/select/select.svelte`               | Removed  | Broken bits-ui wrapper    |
+| `src/lib/components/advanced-options-panel.svelte`         | Modified | Use NativeSelect          |
+| `tests/e2e/advanced-options.spec.ts`                       | Modified | Fix E2E test              |
+| `CHANGELOG-AI.md`                                          | Modified | Add session entry         |
+| `docs/ai-logs/2026-05-05-stage6-8-select-fix.md`           | Created  | This file                 |

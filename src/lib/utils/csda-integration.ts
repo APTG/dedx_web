@@ -70,7 +70,7 @@ export function integrateCsdaFromStp(
     // Trapezoidal rule: integral of 1/S(E) over [E_{i-1}, E_i]
     const invSPrev = 1 / sPrev;
     const invSCurr = 1 / sCurr;
-    const integral = dE * (invSPrev + invSCurr) / 2;
+    const integral = (dE * (invSPrev + invSCurr)) / 2;
 
     csdaRanges[i] = csdaRanges[i - 1] + integral;
   }

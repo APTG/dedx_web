@@ -138,6 +138,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,
@@ -270,6 +271,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const energies = Array.from({ length: numPoints }, (_, i) =>
       logScale ? Math.exp(i * 0.1) : (i + 1) * 10,

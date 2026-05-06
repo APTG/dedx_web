@@ -109,6 +109,7 @@ export interface LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult;
   getMinEnergy(programId: number, particleId: number): number;
   getMaxEnergy(programId: number, particleId: number): number;

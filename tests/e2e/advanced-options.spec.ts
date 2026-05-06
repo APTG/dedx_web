@@ -109,8 +109,7 @@ test.describe("Advanced Options Panel", () => {
   test.describe("URL Round-trip", () => {
     test("full advanced options URL round-trip encodes and decodes correctly", async ({ page }) => {
       // Navigate directly with all advanced options params
-      const fullUrl =
-        "/calculator?mode=advanced&density=1.20&ival=85&interp_method=spline";
+      const fullUrl = "/calculator?mode=advanced&density=1.20&ival=85&interp_method=spline";
       await page.goto(fullUrl);
       await page.waitForTimeout(1000);
 

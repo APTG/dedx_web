@@ -14,7 +14,7 @@
     TooltipProvider,
   } from "$lib/components/ui/tooltip";
   import { NativeSelect } from "$lib/components/ui/native-select";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
   import Info from "@lucide/svelte/icons/info";
   import type {
     AggregateState,
@@ -38,9 +38,6 @@
     materialBuiltInAggregateState,
     selectedProgram,
   }: Props = $props();
-  
-  // Use module-level state directly for reactivity
-  const options = advancedOptions.value;
 
   // Local state for input values and validation
   let densityInput = $state("");
@@ -50,8 +47,14 @@
 
   // Sync local state with reactive options on mount and when options change
   $effect(() => {
-    const densityVal = options.densityOverride !== undefined ? String(options.densityOverride) : "";
-    const ivalVal = options.iValueOverride !== undefined ? String(options.iValueOverride) : "";
+    const densityVal =
+      advancedOptions.value.densityOverride !== undefined
+        ? String(advancedOptions.value.densityOverride)
+        : "";
+    const ivalVal =
+      advancedOptions.value.iValueOverride !== undefined
+        ? String(advancedOptions.value.iValueOverride)
+        : "";
     // Use untracked assignment pattern - these are intentional synchronizations
     densityInput = densityVal;
     iValueInput = ivalVal;
@@ -132,9 +135,9 @@
 
     densityError = null;
     if (validation.parsedValue !== undefined) {
-      options.densityOverride = validation.parsedValue;
+      advancedOptions.value.densityOverride = validation.parsedValue;
     } else {
-      delete options.densityOverride;
+      delete advancedOptions.value.densityOverride;
     }
   }
 
@@ -152,9 +155,9 @@
 
     iValueError = null;
     if (validation.parsedValue !== undefined) {
-      options.iValueOverride = validation.parsedValue;
+      advancedOptions.value.iValueOverride = validation.parsedValue;
     } else {
-      delete options.iValueOverride;
+      delete advancedOptions.value.iValueOverride;
     }
   }
 
@@ -162,23 +165,23 @@
   function clearDensity() {
     densityInput = "";
     densityError = null;
-    delete options.densityOverride;
+    delete advancedOptions.value.densityOverride;
   }
 
   // Clear I-value override
   function clearIValue() {
     iValueInput = "";
     iValueError = null;
-    delete options.iValueOverride;
+    delete advancedOptions.value.iValueOverride;
   }
 
   // Handle aggregate state toggle
   function handleAggStateChange(newState: AggregateState) {
     const builtInPhase: AggregateState | undefined = materialBuiltInAggregateState;
     if (builtInPhase && newState === builtInPhase) {
-      delete options.aggregateState;
+      delete advancedOptions.value.aggregateState;
     } else {
-      options.aggregateState = newState;
+      advancedOptions.value.aggregateState = newState;
     }
   }
 
@@ -187,7 +190,7 @@
   function handleInterpolationScaleChange(value: string) {
     const scale = value as InterpolationScale;
     const currentInterpolation = advancedOptions.value.interpolation;
-    
+
     let newInterpolation: typeof currentInterpolation;
     if (scale === "log") {
       if (!currentInterpolation) {
@@ -205,7 +208,7 @@
         scale,
       };
     }
-    
+
     // Create new state object to force reactivity
     advancedOptions.value = {
       ...advancedOptions.value,
@@ -218,15 +221,15 @@
   function handleInterpolationMethodChange(value: string) {
     const method = value as InterpolationMethod;
     if (method === "linear") {
-      if (options.interpolation) {
-        delete options.interpolation.method;
-        if (options.interpolation.scale === undefined) {
-          delete options.interpolation;
+      if (advancedOptions.value.interpolation) {
+        delete advancedOptions.value.interpolation.method;
+        if (advancedOptions.value.interpolation.scale === undefined) {
+          delete advancedOptions.value.interpolation;
         }
       }
     } else {
-      options.interpolation = {
-        ...options.interpolation,
+      advancedOptions.value.interpolation = {
+        ...advancedOptions.value.interpolation,
         method,
       };
     }
@@ -236,9 +239,9 @@
   function handleMstarModeChange(value: string) {
     const mode = value as MstarMode;
     if (mode === "b") {
-      delete options.mstarMode;
+      delete advancedOptions.value.mstarMode;
     } else {
-      options.mstarMode = mode;
+      advancedOptions.value.mstarMode = mode;
     }
   }
 
@@ -251,7 +254,7 @@
   // Get accordion header text
   const headerText = $derived.by(() => {
     let text = "Advanced Options";
-    const density = options.densityOverride;
+    const density = advancedOptions.value.densityOverride;
     if (density !== undefined) {
       text += ` (ρ = ${formatDensityForDisplay(density)} g/cm³)`;
     }
@@ -260,60 +263,62 @@
 
   // Get current interpolation values for selects - UNUSED kept for reference
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const currentScale = $derived(options.interpolation?.scale ?? "log");
+  const currentScale = $derived(advancedOptions.value.interpolation?.scale ?? "log");
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const currentMethod = $derived(options.interpolation?.method ?? "linear");
-  const currentMstarMode = $derived(options.mstarMode ?? "b");
-  
+  const currentMethod = $derived(advancedOptions.value.interpolation?.method ?? "linear");
+  const currentMstarMode = $derived(advancedOptions.value.mstarMode ?? "b");
+
   // Local state for scale select
   let scaleSelectValue = $state<"log-log" | "lin-lin">("log-log");
-  
+
   // Sync scaleSelectValue with advancedOptions on mount and when options change
   $effect(() => {
-    const internalScale = options.interpolation?.scale;
+    const internalScale = advancedOptions.value.interpolation?.scale;
     scaleSelectValue = internalScale === "linear" ? "lin-lin" : "log-log";
   });
-  
+
   // Handle scale select change - maps Select values to internal values
   function handleScaleSelectChange(value: string) {
     // value is "log-log" or "lin-lin" from Select options
     const currentInterpolation = advancedOptions.value.interpolation;
-    
+
     if (value === "log-log") {
       // "log-log" selected -> remove scale (use default)
       if (!currentInterpolation) {
         // already default
       } else if (currentInterpolation.method === undefined) {
-        delete options.interpolation;
+        delete advancedOptions.value.interpolation;
       } else {
         // keep method, remove scale
-        options.interpolation = { method: currentInterpolation.method };
+        advancedOptions.value.interpolation = { method: currentInterpolation.method };
       }
     } else {
       // "lin-lin" selected -> internal scale is "linear"
-      options.interpolation = {
+      advancedOptions.value.interpolation = {
         ...currentInterpolation,
         scale: "linear",
       };
     }
   }
-  
+
   // Local state for method select (maps internal "linear"/"cubic" to select values "linear"/"spline")
-  let methodSelectValue = $derived.by(() => options.interpolation?.method === "cubic" ? "spline" : "linear");
-  
+  let methodSelectValue = $derived.by(() =>
+    advancedOptions.value.interpolation?.method === "cubic" ? "spline" : "linear",
+  );
+
   // Handle method select change - maps "spline" -> "cubic", "linear" -> "linear" (delete)
   function handleMethodSelectChange(value: string) {
     if (value === "spline") {
-      options.interpolation = {
-        ...options.interpolation,
+      advancedOptions.value.interpolation = {
+        ...advancedOptions.value.interpolation,
         method: "cubic",
       };
     } else {
       // "linear" value means delete the method (use default)
-      if (options.interpolation) {
-        delete options.interpolation.method;
-        if (options.interpolation.scale === undefined) {
-          delete options.interpolation;
+      if (advancedOptions.value.interpolation) {
+        delete advancedOptions.value.interpolation.method;
+        if (advancedOptions.value.interpolation.scale === undefined) {
+          delete advancedOptions.value.interpolation;
         }
       }
     }
@@ -321,7 +326,7 @@
 
   // Get current aggregate state for toggle highlighting
   const currentAggState = $derived(
-    options.aggregateState ?? (materialIsGas ? "gas" : "condensed"),
+    advancedOptions.value.aggregateState ?? (materialIsGas ? "gas" : "condensed"),
   );
 </script>
 

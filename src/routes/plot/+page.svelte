@@ -38,9 +38,9 @@
     }
   });
 
-  // Initialize advanced options from localStorage on mount
+  // Initialize advanced options from localStorage on mount (runs once; browser is a constant)
   $effect(() => {
-    if (!browser || wasmReady.value) return;
+    if (!browser) return;
     loadAdvancedOptionsFromStorage();
   });
 
@@ -50,11 +50,23 @@
       materialIsGas = undefined;
       return;
     }
+    const resolvedId = entityState.resolvedProgramId;
+    const matId = entityState.selectedMaterial.id;
+    if (resolvedId === null) {
+      materialIsGas = undefined;
+      return;
+    }
+    let cancelled = false;
     getService().then((service) => {
-      const materials = service.getMaterials(entityState.selectedProgram.id);
-      const mat = materials.find((m) => m.id === entityState.selectedMaterial?.id);
+      if (cancelled) return;
+      const materials = service.getMaterials(resolvedId);
+      const mat = materials.find((m) => m.id === matId);
+      if (cancelled) return;
       materialIsGas = mat?.isGasByDefault;
     });
+    return () => {
+      cancelled = true;
+    };
   });
 
   // Persist advanced options to localStorage whenever they change
@@ -591,7 +603,6 @@
         <!-- Advanced Options Panel -->
         {#if entityState.selectedMaterial}
           <AdvancedOptionsPanel
-            options={advancedOptions}
             materialIsGas={materialIsGas ?? false}
             materialBuiltInDensity={entityState.selectedMaterial.density}
             materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}

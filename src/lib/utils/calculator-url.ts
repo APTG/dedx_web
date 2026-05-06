@@ -1,4 +1,4 @@
-import type { EnergyUnit } from "$lib/wasm/types";
+import type { EnergyUnit, MstarMode } from "$lib/wasm/types";
 import { parseEnergyInput, type EnergySuffixUnit } from "$lib/utils/energy-parser";
 import type { AdvancedOptions } from "$lib/wasm/types";
 
@@ -301,15 +301,15 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
       };
     }
 
-    const mstarMode = params.get("mstar_mode") as "a" | "b" | "c" | null;
-    if (mstarMode === "a" || mstarMode === "c") {
-      opts.mstarMode = mstarMode;
+    const mstarMode = params.get("mstar_mode");
+    if (mstarMode && mstarMode !== "b" && ["a", "c", "d", "g", "h"].includes(mstarMode)) {
+      opts.mstarMode = mstarMode as MstarMode;
     }
 
     const density = params.get("density");
     if (density !== null) {
       const d = parseFloat(density);
-      if (!Number.isNaN(d) && d > 0) {
+      if (Number.isFinite(d) && d > 0) {
         opts.densityOverride = d;
       }
     }
@@ -317,7 +317,7 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     const ival = params.get("ival");
     if (ival !== null) {
       const i = parseFloat(ival);
-      if (!Number.isNaN(i) && i > 0) {
+      if (Number.isFinite(i) && i > 0 && i <= 10000) {
         opts.iValueOverride = i;
       }
     }

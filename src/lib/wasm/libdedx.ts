@@ -356,6 +356,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     materialId: number,
     numPoints: number,
     logScale: boolean,
+    options?: AdvancedOptions,
   ): CalculationResult {
     const minEnergy = 0.001;
     const maxEnergy = 1000;
@@ -369,7 +370,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       energies.push(energy);
     }
 
-    return this.calculate(programId, particleId, materialId, energies);
+    return this.calculate(programId, particleId, materialId, energies, options);
   }
 
   getMinEnergy(programId: number, particleId: number): number {

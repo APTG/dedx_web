@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import {
@@ -31,6 +32,7 @@
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
+    persistAdvancedOptions,
   } from "$lib/state/advanced-options.svelte.ts";
 
   let state = $state<EntitySelectionState | null>(null);
@@ -88,13 +90,21 @@
       advancedOptions.value.iValueOverride,
       advancedOptions.value.aggregateState,
       advancedOptions.value.mstarMode,
-    ])
+    ]),
   );
+
+  // Persist advanced options to localStorage whenever they change
+  $effect(() => {
+    if (!browser) return;
+    // Read advOptsKey to track nested changes
+    const _key = advOptsKey;
+    persistAdvancedOptions();
+  });
 
   $effect(() => {
     // Read advOptsKey to establish reactive dependency on nested changes
     const _key = advOptsKey;
-    
+
     if (!urlInitialized || !calcState || !state) return;
 
     const urlState = {
@@ -581,11 +591,16 @@
         <!-- Advanced Options Panel -->
         {#if state}
           <AdvancedOptionsPanel
-            options={advancedOptions.value}
             materialIsGas={state.selectedMaterial?.isGasByDefault ?? false}
-            materialBuiltInDensity={state.selectedMaterial?.builtInDensity}
-            materialBuiltInAggregateState={state.selectedMaterial?.builtInAggregateState}
-            selectedProgram={state.selectedProgram?.id ?? null}
+            materialBuiltInDensity={state.selectedMaterial?.density}
+            materialBuiltInAggregateState={state.selectedMaterial
+              ? state.selectedMaterial.isGasByDefault
+                ? "gas"
+                : "condensed"
+              : undefined}
+            selectedProgram={"resolvedProgram" in state.selectedProgram
+              ? (state.selectedProgram.resolvedProgram?.name ?? "")
+              : state.selectedProgram.name}
           />
         {/if}
       {/if}
