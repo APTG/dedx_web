@@ -13,6 +13,7 @@
     exportPlotCsv,
     exportPlotPdf,
   } from "$lib/state/export.svelte";
+  import BuildInfoBadge from "$lib/components/build-info-badge.svelte";
 
   let { children } = $props();
   let pathname = $derived(page.url.pathname);
@@ -205,7 +206,10 @@
   <footer class="border-t bg-card mt-auto">
     <div class="container mx-auto px-4 py-4">
       <div class="flex items-center justify-between text-xs text-muted-foreground">
-        <p>webdedx — Stopping power calculations</p>
+        <div class="flex flex-col gap-0.5">
+          <p>webdedx — Stopping power calculations</p>
+          <BuildInfoBadge />
+        </div>
         <p>Built with Svelte 5 + WASM</p>
       </div>
     </div>

@@ -14,6 +14,7 @@ export default tseslint.config(
       "build/**",
       "static/wasm/**",
       "wasm/output/**",
+      "scripts/**",
     ],
   },
   js.configs.recommended,
