@@ -70,9 +70,29 @@
     };
   });
 
+  // $derived signal to track nested advancedOptions changes.
+  // Svelte 5 fine-grained reactivity only registers a dep when a property
+  // is read synchronously.  Reading advancedOptions.value (the proxy object)
+  // does NOT register a dep on nested mutations such as
+  // `advancedOptions.value.densityOverride = 2`.  By deriving a serialised
+  // key from every relevant nested property we force $effects that read
+  // advOptsKey to re-run whenever ANY option changes.
+  const advOptsKey = $derived(
+    JSON.stringify([
+      advancedOptions.value.interpolation?.scale,
+      advancedOptions.value.interpolation?.method,
+      advancedOptions.value.densityOverride,
+      advancedOptions.value.iValueOverride,
+      advancedOptions.value.aggregateState,
+      advancedOptions.value.mstarMode,
+    ]),
+  );
+
   // Persist advanced options to localStorage whenever they change
   $effect(() => {
     if (!browser) return;
+    // Read advOptsKey to track nested changes (see comment above)
+    const _advOptsKey = advOptsKey;
     persistAdvancedOptions();
   });
 
@@ -170,6 +190,20 @@
 
   // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
   $effect(() => {
+    // Read advOptsKey synchronously to register reactive deps on ALL nested
+    // advancedOptions properties (density, aggregateState, interpolation, etc.).
+    // Without this, mutating advancedOptions.value.densityOverride does not
+    // re-run the effect because Svelte's fine-grained tracker only records the
+    // read of advancedOptions.value (the object reference) when we do
+    // `const advOptsSnapshot = advancedOptions.value` below, but not the
+    // reads of nested properties that happen inside the async .then() callback.
+    const _advOptsKey = advOptsKey;
+
+    // Also read isAdvancedMode synchronously so switching modes triggers a
+    // re-render (the density formula depends on it, but it was previously only
+    // accessed inside the async callback which is not tracked).
+    const advancedModeActive = isAdvancedMode.value;
+
     if (!entityState) {
       plotState.clearPreview();
       return;
@@ -185,11 +219,9 @@
         ? (selectedProgram.resolvedProgram?.name ?? "Auto")
         : selectedProgram.name;
 
-    // Snapshot advanced options synchronously BEFORE the async call.
-    // This registers advancedOptions.value as a reactive dependency so the effect
-    // re-runs (and re-draws the preview) whenever any option changes.  The snapshot
-    // is also passed to getPlotData so the closure uses the options that were active
-    // when the effect fired, not potentially stale ones resolved later.
+    // Snapshot advanced options synchronously BEFORE the async call so the
+    // closure uses the options that were active when the effect fired (not
+    // potentially stale ones resolved later after a rapid selection change).
     const advOptsSnapshot = advancedOptions.value;
 
     // Snapshot the current selection so a slower in-flight getPlotData
@@ -221,9 +253,10 @@
           programName,
           particleName: getParticleLabel(selectedParticle),
           materialName: selectedMaterial.name,
-          // Use the density override (only in Advanced mode) for correct unit conversion
+          // Use the density override (only in Advanced mode) for correct unit conversion.
+          // advancedModeActive is snapshotted synchronously at the top of this effect.
           density:
-            (isAdvancedMode.value ? advOptsSnapshot.densityOverride : undefined) ??
+            (advancedModeActive ? advOptsSnapshot.densityOverride : undefined) ??
             selectedMaterial.density,
           result,
         });
@@ -566,6 +599,8 @@
             {#if plotState.preview}
               <div
                 role="listitem"
+                data-testid="preview-series"
+                data-density={plotState.preview.density}
                 class="flex items-center gap-2 text-sm italic text-muted-foreground"
               >
                 <span
