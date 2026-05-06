@@ -20,7 +20,8 @@
     "test:watch": "vitest",
     "test:e2e": "playwright test",
     "wasm:build": "cd wasm && ./build.sh",
-    "wasm:verify": "node wasm/verify.mjs"
+    "wasm:verify": "node wasm/verify.mjs",
+    "deploy-info": "node scripts/deploy.cjs"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
