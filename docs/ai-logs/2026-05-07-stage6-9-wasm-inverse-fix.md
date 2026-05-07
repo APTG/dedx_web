@@ -65,6 +65,28 @@ The 3 previously failing tests (smoke, URL round-trip, 'm' suffix) had already
 been corrected in the Qwen session to use `toHaveText()` + separate
 `textContent()` instead of capturing the void return of `expect.poll().toMatch()`.
 
+### Stage 5 — Fix `*err` initialisation bug (commit 1a6f29a)
+
+User reported that visiting
+`?imode=csda&ivalues=2&iunit=cm&program=7&particle=1&material=276`
+still produced `"Inverse CSDA lookup failed for range=2"` (twice) even after
+the WASM recompile.
+
+Root cause: `_malloc(4)` returns uninitialised memory, and the flat wrappers
+passed the caller's `err` pointer directly to the core functions without
+zeroing it first.  Both `dedx_get_csda` (called inside `dedx_get_inverse_csda`)
+and `dedx_get_inverse_stp` check `if (*err != 0) return -1` on entry — so any
+garbage value in `errPtr` caused an immediate false failure.
+
+Two-line fix:
+- `wasm/dedx_extra.c` — added `*err = 0;` in both `dedx_get_inverse_csda_flat`
+  and `dedx_get_inverse_stp_flat` before delegating to the core functions.
+- `src/lib/wasm/libdedx.ts` — added `HEAP32[errPtr >>> 2] = 0` before each
+  call in the `getInverseCsda` and `getInverseStp` loops (prevents stale error
+  codes from leaking across iterations).
+
+WASM rebuilt, 826 unit tests pass, all 6 inverse-lookup E2E tests pass.
+
 ## Tasks
 
 ### Add flat C wrappers + rebuild WASM
