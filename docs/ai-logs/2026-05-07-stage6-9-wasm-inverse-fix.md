@@ -87,6 +87,31 @@ Two-line fix:
 
 WASM rebuilt, 826 unit tests pass, all 6 inverse-lookup E2E tests pass.
 
+### Stage 6 — Remove mock escape hatches + E2E with real WASM (commit 98c6f23)
+
+User observed that the E2E tests injected `__MOCK_INVERSE_CSDA_RESULTS` and
+`__MOCK_INVERSE_CSDA_CALCULATOR` via `page.addInitScript`, bypassing WASM even
+when the binary was present.  Two additional bugs were found during cleanup:
+
+**Bug 2 — missing `ion_a`** (root cause of "Inverse CSDA lookup failed"):  
+`dedx_get_inverse_csda` and `dedx_get_inverse_stp` check `config->ion_a <= 0`
+at entry and return `DEDX_ERR_ION_A_REQUIRED (209)` if unset.
+`dedx_load_config` does NOT populate `ion_a` — callers must set it explicitly
+(as `dedx_wrappers.c:229` does with `dedx_internal_get_nucleon`).  All three
+flat C wrappers now call `dedx_internal_get_nucleon` before `dedx_load_config`.
+
+**Bug 3 — duplicate computation + wrong unit conversion** in state file:  
+`inverse-lookups.svelte.ts` had `performRangeCalculation` which raced with the
+page `$effect` (canonical computation path).  The state file path computed
+`rangesGcm2` using `cmToGcm2(r.value!, density)`, which ignored `r.unit` and
+treated mm/nm values as cm — wrong by up to 10x.  Worse, on WASM error it set
+`row.status = "error"`, which caused the page `$effect`'s result loop to skip
+the row (it filters by `status === "valid"`), permanently blocking the correct
+result.  Removed both debounced calc functions from the state file; the page
+`$effect` is the sole computation path.
+
+After all fixes: 121/121 E2E tests pass with real WASM, no mocks.
+
 ## Tasks
 
 ### Add flat C wrappers + rebuild WASM
