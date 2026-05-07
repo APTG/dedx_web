@@ -426,6 +426,7 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       for (const stp of stoppingPowers) {
+        this.module.HEAP32[errPtr >>> 2] = 0;
         const energy = this.module._dedx_get_inverse_stp_flat(
           programId,
           particleId,
@@ -464,6 +465,7 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       for (const range of ranges) {
+        this.module.HEAP32[errPtr >>> 2] = 0;
         const energy = this.module._dedx_get_inverse_csda_flat(
           programId,
           particleId,

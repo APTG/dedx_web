@@ -241,6 +241,8 @@ double dedx_get_inverse_csda_flat(int program, int ion, int target,
         return -1.0;
     }
 
+    /* Zero *err before the bisection loop — dedx_get_csda checks *err != 0 on entry. */
+    *err = 0;
     double result = dedx_get_inverse_csda(ws, &cfg, (float)range, err);
 
     int fe = 0;
@@ -273,6 +275,8 @@ double dedx_get_inverse_stp_flat(int program, int ion, int target,
         return -1.0;
     }
 
+    /* Zero *err before the bisection loop — dedx_get_inverse_stp checks *err != 0 on entry. */
+    *err = 0;
     double result = dedx_get_inverse_stp(ws, &cfg, (float)stp, side, err);
 
     int fe = 0;
