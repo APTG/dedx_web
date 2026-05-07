@@ -56,14 +56,16 @@ describe("Page-init contract — reactive dep snapshot pattern", () => {
     // Either a dedicated advOptsKey $derived, or explicit sync snapshot reads.
     // We check for the advOptsKey pattern that was added in Stage 6.8.
     const hasAdvOptsKey = source.includes("advOptsKey");
-    const hasAdvOptsSnapshot = source.includes("advancedOptions.value") && source.includes("$derived");
+    const hasAdvOptsSnapshot =
+      source.includes("advancedOptions.value") && source.includes("$derived");
     expect(hasAdvOptsKey || hasAdvOptsSnapshot).toBe(true);
   });
 
   it("plot/+page.svelte uses advOptsKey or equivalent snapshot pattern", () => {
     const source = readSource(PLOT_PAGE);
     const hasAdvOptsKey = source.includes("advOptsKey");
-    const hasAdvOptsSnapshot = source.includes("advancedOptions.value") && source.includes("$derived");
+    const hasAdvOptsSnapshot =
+      source.includes("advancedOptions.value") && source.includes("$derived");
     expect(hasAdvOptsKey || hasAdvOptsSnapshot).toBe(true);
   });
 });

@@ -234,6 +234,7 @@ feat(wasm): add getInverseStp, getInverseCsda, getBraggPeakStp, getDensity, conv
 - `pnpm test` green.
 
 ### Step 2a — tests first (`src/tests/unit/calculator-url.test.ts` and
+
 `src/tests/contracts/url-codec.contract.test.ts`)
 
 Fixture table — all rows must round-trip:
@@ -268,7 +269,7 @@ Add near the top of `calculator-url.ts`:
 ```typescript
 export interface InverseLookupUrlRow {
   rawInput: string;
-  unit: string;       // length suffix (nm/um/mm/cm/m) or STP unit token
+  unit: string; // length suffix (nm/um/mm/cm/m) or STP unit token
   unitFromSuffix: boolean;
 }
 
@@ -432,21 +433,15 @@ test("Range tab: URL round-trip @regression", async ({ page }) => {
   // verbatim from spec §Scenario 2
 });
 
-test("Advanced-mode gate: inverse tabs absent in Basic mode @regression", async ({
-  page,
-}) => {
+test("Advanced-mode gate: inverse tabs absent in Basic mode @regression", async ({ page }) => {
   // verbatim from spec §Scenario 4
 });
 
-test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({
-  page,
-}) => {
+test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {
   // verbatim from spec §Scenario 6
 });
 
-test("Range tab: rejects negative and non-numeric input @regression", async ({
-  page,
-}) => {
+test("Range tab: rejects negative and non-numeric input @regression", async ({ page }) => {
   // verbatim from spec §Scenario 7 — Range parts only
 });
 ```
@@ -463,8 +458,8 @@ Basic mode gate) do not need WASM.
    ```typescript
    let activeTab = $state<"forward" | "range" | "stp">("forward");
    ```
-   
 2. Add inverse lookup input state (follow `energy-rows.svelte.ts` row pattern):
+
    ```typescript
    let rangeRows = $state<RangeRow[]>([{ id: 0, text: "", unit: "cm" }]);
    let rangeResults = $state<(string | "—" | null)[]>([]);
@@ -472,18 +467,31 @@ Basic mode gate) do not need WASM.
 
 3. Tab switcher markup (inside the `{#if isAdvancedMode.value}` guard, below the
    Advanced Options accordion, above the result content):
+
    ```svelte
    <div role="tablist" aria-label="Calculation mode">
-     <button role="tab" aria-selected={activeTab === "forward"}
-       data-testid="inverse-tab-forward" onclick={() => (activeTab = "forward")}>
+     <button
+       role="tab"
+       aria-selected={activeTab === "forward"}
+       data-testid="inverse-tab-forward"
+       onclick={() => (activeTab = "forward")}
+     >
        Forward
      </button>
-     <button role="tab" aria-selected={activeTab === "range"}
-       data-testid="inverse-tab-range" onclick={() => (activeTab = "range")}>
+     <button
+       role="tab"
+       aria-selected={activeTab === "range"}
+       data-testid="inverse-tab-range"
+       onclick={() => (activeTab = "range")}
+     >
        Range
      </button>
-     <button role="tab" aria-selected={activeTab === "stp"}
-       data-testid="inverse-tab-stp" onclick={() => (activeTab = "stp")}>
+     <button
+       role="tab"
+       aria-selected={activeTab === "stp"}
+       data-testid="inverse-tab-stp"
+       onclick={() => (activeTab = "stp")}
+     >
        Inverse STP
      </button>
    </div>
@@ -493,6 +501,7 @@ Basic mode gate) do not need WASM.
    reset `activeTab = "forward"` in a `$effect`.
 
 5. Range tab calculation `$effect` — **follow lessons-learned Entry 1 EXACTLY**:
+
    ```typescript
    $effect(() => {
      // Snapshot ALL reactive deps synchronously before any async call
@@ -500,7 +509,7 @@ Basic mode gate) do not need WASM.
      const particle = state?.selectedParticle;
      const material = state?.selectedMaterial;
      const program = state?.selectedProgram;
-     const advOpts = advancedOptions.value;        // ← snapshot, not live ref
+     const advOpts = advancedOptions.value; // ← snapshot, not live ref
      const density = material?.density;
      if (!particle || !material || !program || activeTab !== "range") return;
      getService().then((svc) => {
@@ -583,21 +592,15 @@ feat(calculator): add tab switcher and Range tab (inverse CSDA lookup)
 Append the remaining Playwright snippets from the spec:
 
 ```typescript
-test("Inverse STP: no-solution cell shows em-dash @regression", async ({
-  page,
-}) => {
+test("Inverse STP: no-solution cell shows em-dash @regression", async ({ page }) => {
   // verbatim from spec §Scenario 3
 });
 
-test("Inverse STP: dual-branch energies at 30 keV/µm @smoke", async ({
-  page,
-}) => {
+test("Inverse STP: dual-branch energies at 30 keV/µm @smoke", async ({ page }) => {
   // verbatim from spec §Scenario 5
 });
 
-test("Inverse STP tab: rejects zero and non-numeric input @regression", async ({
-  page,
-}) => {
+test("Inverse STP tab: rejects zero and non-numeric input @regression", async ({ page }) => {
   // verbatim from spec §Scenario 7 — STP parts
 });
 
@@ -619,6 +622,7 @@ test("Inverse STP tab: multi-program shows E-low and E-high per program @regress
 **In `src/routes/calculator/+page.svelte`:**
 
 1. Add Inverse STP reactive state analogous to Range tab:
+
    ```typescript
    let stpRows = $state<StpRow[]>([{ id: 0, text: "" }]);
    let stpUnit = $state<"keV/µm" | "MeV/cm" | "MeV·cm²/g">("keV/µm");

@@ -32,7 +32,7 @@ $effect(() => {
 
 // ✅ CORRECT — snapshot reactive state SYNCHRONOUSLY at the top of the effect
 $effect(() => {
-  const advOptsSnapshot = advancedOptions.value;  // ← registered as dep HERE
+  const advOptsSnapshot = advancedOptions.value; // ← registered as dep HERE
   const inputSnapshot = entityState.selectedMaterial;
   getService().then((svc) => {
     svc.calculate(inputSnapshot, advOptsSnapshot); // frozen snapshot, not live ref
@@ -54,7 +54,7 @@ didn't change — only a property did. Effect never re-ran.
 ```typescript
 // ❌ WRONG — reading only the reference; mutations to nested props are invisible
 $effect(() => {
-  const opts = advancedOptions.value;  // object ref — doesn't track .densityOverride
+  const opts = advancedOptions.value; // object ref — doesn't track .densityOverride
   doCalculation(opts);
 });
 
@@ -70,7 +70,7 @@ $effect(() => {
 // ✅ CORRECT option B — derive a "key" string that tracks all nested properties
 const advOptsKey = $derived(JSON.stringify(advancedOptions.value));
 $effect(() => {
-  const _key = advOptsKey;          // synchronous read → dep registered
+  const _key = advOptsKey; // synchronous read → dep registered
   const snapshot = advancedOptions.value;
   getService().then((svc) => svc.calculate(snapshot));
 });
@@ -104,6 +104,7 @@ Cross-page parity audit checklist (run for every feature touching both pages):
 ```
 
 Grep audit:
+
 ```sh
 grep -n "initAdvancedModeFromUrl" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
 grep -n "persistAdvancedOptions\|loadAdvancedOptions" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
@@ -127,6 +128,7 @@ used default options.
 AND the mock.
 
 **Rule:** Whenever you add or change a method signature:
+
 1. Update the `LibdedxService` interface in `src/lib/wasm/types.ts`.
 2. Update the real implementation in `src/lib/wasm/libdedx.ts`.
 3. `grep` for the method name — update **every** mock in `src/lib/wasm/__mocks__/`.
@@ -157,13 +159,17 @@ adding a new union member fails the build:
 // ✅ Using `satisfies Record<MstarMode, string>` → adding "i" to MstarMode
 // causes a compile error here, forcing the test to be updated.
 const MSTAR_MODE_URL_VALUES = {
-  a: "a", b: "b", c: "c", d: "d", g: "g", h: "h",
+  a: "a",
+  b: "b",
+  c: "c",
+  d: "d",
+  g: "g",
+  h: "h",
 } satisfies Record<MstarMode, string>;
 
-test.each(Object.entries(MSTAR_MODE_URL_VALUES))(
-  "mstar_mode round-trip: %s",
-  (mode) => { expect(decode(encode({ mstarMode: mode as MstarMode }))).toBe(mode); }
-);
+test.each(Object.entries(MSTAR_MODE_URL_VALUES))("mstar_mode round-trip: %s", (mode) => {
+  expect(decode(encode({ mstarMode: mode as MstarMode }))).toBe(mode);
+});
 ```
 
 See `src/tests/contracts/url-codec.contract.test.ts` for the live version.
@@ -188,7 +194,9 @@ render(AdvancedOptionsPanel, { props: { options: { densityOverride: 1.5 } } });
 // ✅ CORRECT — set module-level singleton state directly, reset in beforeEach
 import { advancedOptions } from "$lib/state/advanced-mode.svelte.ts";
 
-beforeEach(() => { advancedOptions.value = defaultAdvancedOptions(); });
+beforeEach(() => {
+  advancedOptions.value = defaultAdvancedOptions();
+});
 
 test("density override displayed", () => {
   advancedOptions.value = { ...advancedOptions.value, densityOverride: 1.5 };
@@ -244,13 +252,15 @@ the density-overridden value (not the default density). The density override
 const density = advancedOptions.value.densityOverride ?? material.density;
 
 // ✅ CORRECT — guard with isAdvancedMode
-const density = isAdvancedMode.value && advancedOptions.value.densityOverride
-  ? advancedOptions.value.densityOverride
-  : material.density;
+const density =
+  isAdvancedMode.value && advancedOptions.value.densityOverride
+    ? advancedOptions.value.densityOverride
+    : material.density;
 ```
 
 **Rule:** Every read of `advancedOptions.value.*` that affects calculation or
 display must be guarded by `isAdvancedMode.value`. Audit targets:
+
 - `src/lib/state/calculator.svelte.ts` — density and aggregateState conversions
 - `src/lib/components/result-table.svelte` — density conversion for multi-program
 - `src/routes/plot/+page.svelte` — preview series density field
@@ -283,6 +293,7 @@ named `feat/stage-6-8-advanced-options` got no CI feedback.
 and `qwen/**`. When a `feat/**` branch was created, no one updated the trigger.
 
 **Rule:** CI push triggers must use a wildcard that covers all intended patterns:
+
 ```yaml
 on:
   push:
@@ -305,6 +316,7 @@ compatibility, but some older files used the bare specifier. `*.svelte.ts`
 import specifiers were also mixed with `*.svelte`.
 
 **Rules:**
+
 - Always import from `$lib/utils.js` (not `$lib/utils`)
 - Always import from `component.svelte` (not `component.svelte.ts`)
 
@@ -325,14 +337,13 @@ slower than dev laptops.
 await page.waitForTimeout(500);
 
 // ✅ CORRECT — wait for the observable condition
-await page.waitForFunction(
-  () => window.location.search.includes("density=2"),
-  { timeout: 5000 },
-);
+await page.waitForFunction(() => window.location.search.includes("density=2"), { timeout: 5000 });
 // or
-await expect.poll(async () => parseFloat(await cell.textContent() ?? ""), {
-  timeout: 8000,
-}).toBeGreaterThan(0);
+await expect
+  .poll(async () => parseFloat((await cell.textContent()) ?? ""), {
+    timeout: 8000,
+  })
+  .toBeGreaterThan(0);
 ```
 
 **Rule:** `waitForTimeout()` is banned in all E2E tests. The ESLint config
@@ -368,6 +379,7 @@ is compacted (summarized). The compaction loses fine-grained details from the
 beginning, including specific rules passed in the first prompt.
 
 **Rules:**
+
 - Keep implementer tasks to **≤40 steps** (enforced by `maxSteps: 40` in
   `opencode.json`).
 - Pass the relevant spec section **inline** in each task prompt — do not rely
@@ -375,9 +387,9 @@ beginning, including specific rules passed in the first prompt.
 - Force a **fresh reviewer session** for each task (the reviewer's `maxSteps`
   is short enough that compaction is not an issue).
 - If a task hits the step limit, output `TASK BLOCKED: scope too large, propose
-  split` and the orchestrator splits it before retrying.
+split` and the orchestrator splits it before retrying.
 
 ---
 
-*Last updated: 2026-05-06. Links: [implementer.md](.opencode/agents/implementer.md) •
-[reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)*
+_Last updated: 2026-05-06. Links: [implementer.md](.opencode/agents/implementer.md) •
+[reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

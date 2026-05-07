@@ -94,10 +94,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
     test.setTimeout(60000);
     // Default selection (proton + water + auto) should produce a preview series
     await expect
-      .poll(
-        async () => (await page.locator('[data-testid="preview-series"]').count()) > 0,
-        { timeout: 15000 },
-      )
+      .poll(async () => (await page.locator('[data-testid="preview-series"]').count()) > 0, {
+        timeout: 15000,
+      })
       .toBe(true);
   });
 
@@ -108,9 +107,7 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
 
     // Wait for preview series to appear (default proton + water + auto selection)
     const previewItem = page.locator('[data-testid="preview-series"]');
-    await expect
-      .poll(async () => (await previewItem.count()) > 0, { timeout: 15000 })
-      .toBe(true);
+    await expect.poll(async () => (await previewItem.count()) > 0, { timeout: 15000 }).toBe(true);
 
     // Read the built-in density from the preview item
     const builtInDensity = parseFloat((await previewItem.getAttribute("data-density")) ?? "0");
@@ -124,10 +121,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
 
     // The preview series' data-density should update to 2.0 (reactivity fix verification)
     await expect
-      .poll(
-        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
-        { timeout: 15000 },
-      )
+      .poll(async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"), {
+        timeout: 15000,
+      })
       .toBeCloseTo(2.0, 1);
   });
 
@@ -154,9 +150,7 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
 
     // Wait for preview series
     const previewItem = page.locator('[data-testid="preview-series"]');
-    await expect
-      .poll(async () => (await previewItem.count()) > 0, { timeout: 15000 })
-      .toBe(true);
+    await expect.poll(async () => (await previewItem.count()) > 0, { timeout: 15000 }).toBe(true);
 
     const builtInDensity = parseFloat((await previewItem.getAttribute("data-density")) ?? "0");
     expect(builtInDensity).toBeGreaterThan(0);
@@ -169,10 +163,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
 
     // Wait for density to update
     await expect
-      .poll(
-        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
-        { timeout: 15000 },
-      )
+      .poll(async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"), {
+        timeout: 15000,
+      })
       .toBeCloseTo(2.0, 1);
 
     // Clear density via the clear button (aria-label="Clear density override")
@@ -180,10 +173,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
 
     // Density should revert to the material's built-in density
     await expect
-      .poll(
-        async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"),
-        { timeout: 15000 },
-      )
+      .poll(async () => parseFloat((await previewItem.getAttribute("data-density")) ?? "0"), {
+        timeout: 15000,
+      })
       .toBeCloseTo(builtInDensity, 1);
   });
 

@@ -17,10 +17,7 @@ import type { LibdedxService } from "$lib/wasm/types";
 // Import both mock implementations — these must satisfy LibdedxService at
 // compile time. If a method signature drifts, the `satisfies` below produces
 // a TS error.
-import {
-  LibdedxServiceImpl,
-  MockLibdedxServiceWithElectron,
-} from "$lib/wasm/__mocks__/libdedx";
+import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from "$lib/wasm/__mocks__/libdedx";
 
 describe("Service interface arity contract", () => {
   it("LibdedxServiceImpl satisfies LibdedxService interface", () => {

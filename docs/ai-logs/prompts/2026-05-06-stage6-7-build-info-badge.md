@@ -85,36 +85,36 @@ The function must be importable from `scripts/deploy.cjs` as a named export
 
 ```javascript
 // CommonJS — intentionally NOT a module so it works with plain `node`.
-const { execSync } = require('child_process');
-const { writeFileSync, mkdirSync } = require('fs');
-const { resolve, dirname } = require('path');
+const { execSync } = require("child_process");
+const { writeFileSync, mkdirSync } = require("fs");
+const { resolve, dirname } = require("path");
 
 function stripHeadsPrefix(ref) {
-  return ref.startsWith('heads/') ? ref.slice('heads/'.length) : ref;
+  return ref.startsWith("heads/") ? ref.slice("heads/".length) : ref;
 }
 exports.stripHeadsPrefix = stripHeadsPrefix;
 
 function main() {
-  const run = (cmd) => execSync(cmd, { encoding: 'utf8' }).trim();
+  const run = (cmd) => execSync(cmd, { encoding: "utf8" }).trim();
 
   // All three git calls — fail loudly if git is unavailable.
-  const commitFull = run('git rev-parse HEAD');
-  const commit     = run('git rev-parse --short HEAD');
-  const rawRef     = run('git describe --all');
-  const branch     = stripHeadsPrefix(rawRef);
-  const date       = new Date().toISOString().slice(0, 10);
+  const commitFull = run("git rev-parse HEAD");
+  const commit = run("git rev-parse --short HEAD");
+  const rawRef = run("git describe --all");
+  const branch = stripHeadsPrefix(rawRef);
+  const date = new Date().toISOString().slice(0, 10);
 
   const info = {
     date,
     commit,
     commitFull,
     branch,
-    repoUrl: 'https://github.com/APTG/dedx_web',
+    repoUrl: "https://github.com/APTG/dedx_web",
   };
 
-  const outDir  = resolve(__dirname, '..', 'static');
+  const outDir = resolve(__dirname, "..", "static");
   mkdirSync(outDir, { recursive: true });
-  writeFileSync(resolve(outDir, 'deploy.json'), JSON.stringify(info, null, 2));
+  writeFileSync(resolve(outDir, "deploy.json"), JSON.stringify(info, null, 2));
   console.log(`deploy.json written: ${commit} · ${date} · ${branch}`);
 }
 
@@ -177,7 +177,7 @@ fetch throws      → renders nothing
 
 ```svelte
 <script lang="ts">
-  import { base } from '$app/paths';
+  import { base } from "$app/paths";
 
   interface DeployInfo {
     date: string;
@@ -192,8 +192,12 @@ fetch throws      → renders nothing
   $effect(() => {
     fetch(`${base}/deploy.json`)
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then((data: DeployInfo) => { info = data; })
-      .catch(() => { info = null; });
+      .then((data: DeployInfo) => {
+        info = data;
+      })
+      .catch(() => {
+        info = null;
+      });
   });
 </script>
 
@@ -204,8 +208,8 @@ fetch throws      → renders nothing
       href={`${info.repoUrl}/commit/${info.commitFull}`}
       target="_blank"
       rel="noopener noreferrer"
-      class="underline hover:text-foreground"
-    >{info.commit}</a>
+      class="underline hover:text-foreground">{info.commit}</a
+    >
     · {info.date} · {info.branch}
   </span>
 {/if}
@@ -261,7 +265,7 @@ Replace with:
 ```svelte
 <script>
   // add to existing imports at the top of the <script> block:
-  import BuildInfoBadge from '$lib/components/build-info-badge.svelte';
+  import BuildInfoBadge from "$lib/components/build-info-badge.svelte";
 </script>
 
 <footer class="border-t bg-card mt-auto">
@@ -282,8 +286,8 @@ Replace with:
 In the `deploy-dev` job, add a step immediately before "Build SvelteKit app":
 
 ```yaml
-      - name: Write deploy.json
-        run: node scripts/deploy.cjs
+- name: Write deploy.json
+  run: node scripts/deploy.cjs
 ```
 
 ### Done when
@@ -333,7 +337,7 @@ async function gotoWithBadge(page: import("@playwright/test").Page, path = "/") 
       status: 200,
       contentType: "application/json",
       body: JSON.stringify(MOCK_DEPLOY),
-    })
+    }),
   );
   await page.goto(path);
 }
@@ -360,7 +364,7 @@ test.describe("Build info badge", () => {
     await expect(link).toBeVisible();
     await expect(link).toHaveAttribute(
       "href",
-      "https://github.com/APTG/dedx_web/commit/abc1234def5678901234567890123456789012345"
+      "https://github.com/APTG/dedx_web/commit/abc1234def5678901234567890123456789012345",
     );
     await expect(link).toHaveAttribute("target", "_blank");
   });
@@ -385,7 +389,14 @@ test.describe("Build info badge", () => {
 
     // Give the fetch time to settle (poll instead of waitForTimeout).
     await expect
-      .poll(() => page.locator("footer").getByText(/^Deployed:/).count(), { timeout: 3000 })
+      .poll(
+        () =>
+          page
+            .locator("footer")
+            .getByText(/^Deployed:/)
+            .count(),
+        { timeout: 3000 },
+      )
       .toBe(0);
 
     // No error text visible either.
@@ -394,12 +405,19 @@ test.describe("Build info badge", () => {
 
   test("badge absent when deploy.json returns malformed JSON", async ({ page }) => {
     await page.route("**/deploy.json", (route) =>
-      route.fulfill({ status: 200, contentType: "application/json", body: "NOT_JSON{{" })
+      route.fulfill({ status: 200, contentType: "application/json", body: "NOT_JSON{{" }),
     );
     await page.goto("/calculator");
 
     await expect
-      .poll(() => page.locator("footer").getByText(/^Deployed:/).count(), { timeout: 3000 })
+      .poll(
+        () =>
+          page
+            .locator("footer")
+            .getByText(/^Deployed:/)
+            .count(),
+        { timeout: 3000 },
+      )
       .toBe(0);
   });
 });

@@ -67,7 +67,14 @@ test.describe("Build info badge", () => {
 
     // Give the fetch time to settle (poll instead of waitForTimeout).
     await expect
-      .poll(() => page.locator("footer").getByText(/^Deployed:/).count(), { timeout: 3000 })
+      .poll(
+        () =>
+          page
+            .locator("footer")
+            .getByText(/^Deployed:/)
+            .count(),
+        { timeout: 3000 },
+      )
       .toBe(0);
 
     // No error text visible either.
@@ -81,7 +88,14 @@ test.describe("Build info badge", () => {
     await page.goto("/calculator");
 
     await expect
-      .poll(() => page.locator("footer").getByText(/^Deployed:/).count(), { timeout: 3000 })
+      .poll(
+        () =>
+          page
+            .locator("footer")
+            .getByText(/^Deployed:/)
+            .count(),
+        { timeout: 3000 },
+      )
       .toBe(0);
   });
 });

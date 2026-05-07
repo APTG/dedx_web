@@ -59,9 +59,9 @@ export function createCalculatorState(
   const inputState = createEnergyInputState();
   let isCalculating = $state(false);
   let error = $state<LibdedxError | null>(null);
-  let calculationResults = $state<Map<string, { stoppingPower: number; csdaRangeCm: number | null }>>(
-    new Map(),
-  );
+  let calculationResults = $state<
+    Map<string, { stoppingPower: number; csdaRangeCm: number | null }>
+  >(new Map());
 
   const debouncedCalculate = debounce(async () => {
     const energies = getValidEnergies();

@@ -9,6 +9,7 @@
 **AI response**: Read the canonical prompt schema from
 `docs/opencode-prompt-authoring.md` and the Final v6 spec from
 `docs/04-feature-specs/inverse-lookups.md`. Also read the two reference commits:
+
 - `1048631` (PR #432 post-mortem — lessons-learned, agent contracts, contract tests)
 - `cb08e1a` (PR #433 — spec prep for Stages 6.9–6.13 including inverse-lookups v5+v6)
 
@@ -16,6 +17,7 @@ Explored the current codebase state to identify what exists vs. what needs to be
 built:
 
 **Already exists:**
+
 - `InverseStpResult` and `InverseCsdaResult` types in `types.ts` (scalar fields)
 - Unit-conversion helpers in `unit-conversions.ts` (stpMassToKevUm, csdaGcm2ToCm)
 - `LibdedxService` interface (9 methods — but missing all 5 inverse-lookup methods)
@@ -23,6 +25,7 @@ built:
 - Calculator page (697 lines, no tab switcher or inverse tabs)
 
 **Needs to be built (5 tasks):**
+
 1. WASM service interface + mock: add getInverseStp, getInverseCsda,
    getBraggPeakStp, getDensity, convertEnergy
 2. URL codec extension: imode/ivalues/iunit round-trip

@@ -13,9 +13,9 @@ Each spec follows the template defined in
 
 ## Spec Template
 
-| File | Purpose |
-| ---- | ------- |
-| [_template.md](./_template.md) | **Mandatory template for all Stage 6.9+ specs.** Copy this file, rename, and fill in all [REQUIRED] sections before handing to the implementer. |
+| File                            | Purpose                                                                                                                                         |
+| ------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------- |
+| [\_template.md](./_template.md) | **Mandatory template for all Stage 6.9+ specs.** Copy this file, rename, and fill in all [REQUIRED] sections before handing to the implementer. |
 
 ## Spec Files
 
@@ -45,11 +45,11 @@ Each spec follows the template defined in
 These are **companion docs** for stage 6.11–6.13. Each follows the full
 `_template.md` format and references the parent behavioral spec for detail.
 
-| File | Stage | Summary |
-| ---- | ----- | ------- |
-| [stage-6-11-export-advanced.md](stage-6-11-export-advanced.md) | 6.11 | Advanced-mode export additions: CSV config modal (separator/line-endings/filename, `export.md` §1.1); PNG image export Plot controls bar (`export.md` §4.1); Calculator PDF wired with jsPDF + jspdf-autotable v5.x (`export.md` §6.1). Full template with 5 acceptance scenarios (2 @smoke), 13 data-testid anchors. |
-| [stage-6-12-multi-program-polish.md](stage-6-12-multi-program-polish.md) | 6.12 | Drag-and-drop column reordering synced across STP + CSDA groups (`multi-program.md` §5); delta/% tooltip on non-default cells (`multi-program.md` §6). Full template with 6 acceptance scenarios (2 @smoke), 7 testid patterns. |
-| [stage-6-13-url-parser.md](stage-6-13-url-parser.md) | 6.13 | Formal URL parser upgrades: `urlv` major-version negotiation + warning banner; `material=custom` + `mat_*` round-trip (step 9 canonicalization, depends on 6.10); parse-pipeline conformance. Compact template with 6 acceptance scenarios (2 @smoke), 3 testids. |
+| File                                                                     | Stage | Summary                                                                                                                                                                                                                                                                                                               |
+| ------------------------------------------------------------------------ | ----- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [stage-6-11-export-advanced.md](stage-6-11-export-advanced.md)           | 6.11  | Advanced-mode export additions: CSV config modal (separator/line-endings/filename, `export.md` §1.1); PNG image export Plot controls bar (`export.md` §4.1); Calculator PDF wired with jsPDF + jspdf-autotable v5.x (`export.md` §6.1). Full template with 5 acceptance scenarios (2 @smoke), 13 data-testid anchors. |
+| [stage-6-12-multi-program-polish.md](stage-6-12-multi-program-polish.md) | 6.12  | Drag-and-drop column reordering synced across STP + CSDA groups (`multi-program.md` §5); delta/% tooltip on non-default cells (`multi-program.md` §6). Full template with 6 acceptance scenarios (2 @smoke), 7 testid patterns.                                                                                       |
+| [stage-6-13-url-parser.md](stage-6-13-url-parser.md)                     | 6.13  | Formal URL parser upgrades: `urlv` major-version negotiation + warning banner; `material=custom` + `mat_*` round-trip (step 9 canonicalization, depends on 6.10); parse-pipeline conformance. Compact template with 6 acceptance scenarios (2 @smoke), 3 testids.                                                     |
 
 ## Later-Stage Specs (specified now, implementation deferred)
 

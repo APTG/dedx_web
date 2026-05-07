@@ -61,6 +61,64 @@ const VALID_CSDA_MASTER_UNITS = new Set(["nm", "um", "mm", "cm", "m"]);
 /** Valid STP unit tokens for inverse STP mode (imode=stp). */
 const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
 
+/**
+ * Decoded inverse mode from URL params.
+ */
+export interface InverseModeUrlState {
+  imode: "csda" | "stp";
+  ivalues?: InverseLookupUrlRow[];
+  iunit?: string;
+}
+
+/**
+ * Decode inverse mode from URLSearchParams.
+ * Returns { imode, ivalues, iunit } or undefined if not present/invalid.
+ */
+export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUrlState | undefined {
+  const imodeRaw = params.get("imode");
+  const imode: "csda" | "stp" | undefined =
+    imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+
+  if (!imode) return undefined;
+
+  let ivalues: InverseLookupUrlRow[] | undefined;
+  let iunit: string | undefined;
+
+  const ivaluesParam = params.get("ivalues");
+  if (ivaluesParam) {
+    ivalues = [];
+    for (const part of ivaluesParam.split(",")) {
+      const colonIdx = part.lastIndexOf(":");
+      if (colonIdx > 0) {
+        const rawInput = part.slice(0, colonIdx);
+        const unitStr = part.slice(colonIdx + 1);
+        ivalues.push({ rawInput, unit: unitStr, unitFromSuffix: true });
+      } else {
+        ivalues.push({ rawInput: part, unit: "", unitFromSuffix: false });
+      }
+    }
+  }
+
+  // Validate and default iunit based on imode
+  const iunitRaw = params.get("iunit") ?? undefined;
+  if (imode === "csda") {
+    iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
+  } else if (imode === "stp") {
+    iunit = iunitRaw && VALID_STP_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "kev-um";
+  }
+
+  // Assign default unit to rows that don't have per-row suffix
+  if (ivalues && iunit) {
+    for (const row of ivalues) {
+      if (!row.unitFromSuffix) {
+        row.unit = iunit;
+      }
+    }
+  }
+
+  return { imode, ivalues, iunit };
+}
+
 export interface CalculatorUrlRow {
   /**
    * The user-typed text without any `:unit` suffix — i.e. the bare

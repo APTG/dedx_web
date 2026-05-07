@@ -61,7 +61,9 @@ test.describe("Advanced Options Panel", () => {
       expect(page.url()).toContain("density=1.2");
     });
 
-    test("density override changes CSDA range (AC-6: 2× density → ~½ range) @smoke", async ({ page }) => {
+    test("density override changes CSDA range (AC-6: 2× density → ~½ range) @smoke", async ({
+      page,
+    }) => {
       test.setTimeout(50000);
       // Wait for result table to appear with a valid calculation in Basic mode
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
@@ -78,9 +80,7 @@ test.describe("Advanced Options Panel", () => {
 
       // In Advanced mode, CSDA is shown in multi-program columns (data-program-id attribute).
       // Wait for the default-program CSDA cell to appear and have a positive value.
-      const advRangeCell = page
-        .locator('td[data-program-id][data-testid^="range-cell-"]')
-        .first();
+      const advRangeCell = page.locator('td[data-program-id][data-testid^="range-cell-"]').first();
       await waitForPositiveValue(advRangeCell, 15000);
 
       // Set density to 2× (water default ~1.0 g/cm³ → 2.0)
@@ -115,9 +115,7 @@ test.describe("Advanced Options Panel", () => {
       await page.locator("#density-override").blur();
 
       // Wait for Advanced mode CSDA cell to reflect density=2 (roughly half baseline)
-      const advRangeCell = page
-        .locator('td[data-program-id][data-testid^="range-cell-"]')
-        .first();
+      const advRangeCell = page.locator('td[data-program-id][data-testid^="range-cell-"]').first();
       await expect
         .poll(async () => parseFloat((await advRangeCell.textContent()) ?? ""), { timeout: 15000 })
         .toBeLessThan(basicBaseline * 0.6);
@@ -128,7 +126,9 @@ test.describe("Advanced Options Panel", () => {
       // Basic mode should restore the original density — range must be close to original
       // (within 20% to allow for unit auto-scale differences on the same row).
       await expect
-        .poll(async () => parseFloat((await basicRangeCell.textContent()) ?? ""), { timeout: 15000 })
+        .poll(async () => parseFloat((await basicRangeCell.textContent()) ?? ""), {
+          timeout: 15000,
+        })
         .toBeGreaterThan(basicBaseline * 0.8);
     });
 
@@ -155,9 +155,7 @@ test.describe("Advanced Options Panel", () => {
       const isGas = (await aggSelect.count()) > 0 && (await aggSelect.inputValue()) === "gas";
       if (!isGas) {
         // In Advanced mode, STP is shown in multi-program columns (data-program-id attribute).
-        const advStpCell = page
-          .locator('td[data-program-id][data-testid^="stp-cell-"]')
-          .first();
+        const advStpCell = page.locator('td[data-program-id][data-testid^="stp-cell-"]').first();
         await waitForPositiveValue(advStpCell, 15000);
 
         await page.locator("#density-override").fill("2");

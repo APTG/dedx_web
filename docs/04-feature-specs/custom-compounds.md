@@ -302,14 +302,14 @@ The compound editor is a **modal dialog** triggered by:
 
 ### 3.1 Field summary
 
-| Field        | Type                          | Required | Constraints                                  |
-| ------------ | ----------------------------- | -------- | -------------------------------------------- |
-| Name         | Text input                    | Yes      | Non-empty, ≤ 80 characters                   |
+| Field        | Type                          | Required | Constraints                                           |
+| ------------ | ----------------------------- | -------- | ----------------------------------------------------- |
+| Name         | Text input                    | Yes      | Non-empty, ≤ 80 characters                            |
 | Density      | Numeric input + "g/cm³" label | Yes      | > 0 and ≤ 25; accepts decimal and scientific notation |
-| I-Value      | Numeric input + "eV" label    | No       | If provided: > 0 and ≤ 10 000 eV             |
-| Phase        | Two-option segmented control  | Yes      | Gas / Condensed; default Condensed           |
-| Input mode   | Toggle                        | Yes      | Formula / Weight fraction; default Formula   |
-| Element rows | Dynamic list (1–20 rows)      | Yes      | ≥ 1 valid row required                       |
+| I-Value      | Numeric input + "eV" label    | No       | If provided: > 0 and ≤ 10 000 eV                      |
+| Phase        | Two-option segmented control  | Yes      | Gas / Condensed; default Condensed                    |
+| Input mode   | Toggle                        | Yes      | Formula / Weight fraction; default Formula            |
+| Element rows | Dynamic list (1–20 rows)      | Yes      | ≥ 1 valid row required                                |
 
 ### 3.2 Element rows — Formula mode
 
@@ -391,11 +391,11 @@ not unique keys (IDs are). The warning does not block saving.
 
 ### 4.2 Density
 
-| Rule                                    | Error message                              |
-| --------------------------------------- | ------------------------------------------ |
-| Non-empty and parses as a finite number | "Density is required."                     |
-| > 0                                     | "Density must be greater than zero."       |
-| ≤ 25 g/cm³                              | "Density must be ≤ 25 g/cm³."              |
+| Rule                                    | Error message                        |
+| --------------------------------------- | ------------------------------------ |
+| Non-empty and parses as a finite number | "Density is required."               |
+| > 0                                     | "Density must be greater than zero." |
+| ≤ 25 g/cm³                              | "Density must be ≤ 25 g/cm³."        |
 
 Accepts decimal (`1.19`) and scientific notation (`8.99e-5`).
 
@@ -845,19 +845,19 @@ If an I-value override is stored on the compound, a line below the table reads:
 
 ## 9. Edge Cases
 
-| Scenario                                             | Behaviour                                                                                                                                                                              |
-| ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Custom compound active → user switches to Basic mode (Calculator) | Material reverts to default (liquid water). Custom compound selection held in memory. Switching back to Advanced mode restores it. URL in Basic mode never contains `material=custom`. |
-| Custom compound series active → user switches to Basic mode (Plot) | Series using custom compounds are removed from the series list. They are not automatically restored on Advanced mode re-entry. |
-| User deletes the currently selected compound         | Falls back to the last-used built-in material (or liquid water if none). Toast: "Compound 'X' deleted — switched to Liquid Water."                                                     |
-| User edits the currently selected compound           | Recalculates immediately on save using the updated definition. URL updates to reflect new `mat_*` params.                                                                              |
-| Multi-program mode with a custom compound            | Each program calls `calculateCustomCompound()` independently. One program's runtime error does not suppress others.                                                                    |
-| Custom compound selected on Plot page                | `getPlotDataCustomCompound()` or equivalent is used to generate the dense energy grid. The series label shows the compound name with the "(custom)" badge.                             |
-| Compound name contains `&`, `=`, `%`                 | Percent-encoded in the URL via `encodeURIComponent`. Decoded transparently on parse.                                                                                                   |
-| `localStorage` quota exceeded on save                | Editor shows: "Cannot save: browser storage is full. Delete unused compounds first." The new compound is not persisted.                                                                |
-| WASM call fails for custom compound                  | Error displayed inline (human-friendly message, "Show details" for C error code). Result cells show "—". Other programs in multi-program mode are unaffected.                          |
-| URL parsed in Basic mode contains `material=custom`  | `mat_*` params silently dropped; material defaults to liquid water. No warning shown (Basic-mode URL is expected to lack advanced params).                                             |
-| Two elements with same Z entered by user             | Editor shows inline error on the duplicate row; Save blocked.                                                                                                                          |
+| Scenario                                                           | Behaviour                                                                                                                                                                              |
+| ------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Custom compound active → user switches to Basic mode (Calculator)  | Material reverts to default (liquid water). Custom compound selection held in memory. Switching back to Advanced mode restores it. URL in Basic mode never contains `material=custom`. |
+| Custom compound series active → user switches to Basic mode (Plot) | Series using custom compounds are removed from the series list. They are not automatically restored on Advanced mode re-entry.                                                         |
+| User deletes the currently selected compound                       | Falls back to the last-used built-in material (or liquid water if none). Toast: "Compound 'X' deleted — switched to Liquid Water."                                                     |
+| User edits the currently selected compound                         | Recalculates immediately on save using the updated definition. URL updates to reflect new `mat_*` params.                                                                              |
+| Multi-program mode with a custom compound                          | Each program calls `calculateCustomCompound()` independently. One program's runtime error does not suppress others.                                                                    |
+| Custom compound selected on Plot page                              | `getPlotDataCustomCompound()` or equivalent is used to generate the dense energy grid. The series label shows the compound name with the "(custom)" badge.                             |
+| Compound name contains `&`, `=`, `%`                               | Percent-encoded in the URL via `encodeURIComponent`. Decoded transparently on parse.                                                                                                   |
+| `localStorage` quota exceeded on save                              | Editor shows: "Cannot save: browser storage is full. Delete unused compounds first." The new compound is not persisted.                                                                |
+| WASM call fails for custom compound                                | Error displayed inline (human-friendly message, "Show details" for C error code). Result cells show "—". Other programs in multi-program mode are unaffected.                          |
+| URL parsed in Basic mode contains `material=custom`                | `mat_*` params silently dropped; material defaults to liquid water. No warning shown (Basic-mode URL is expected to lack advanced params).                                             |
+| Two elements with same Z entered by user                           | Editor shows inline error on the duplicate row; Save blocked.                                                                                                                          |
 
 ---
 
@@ -1014,13 +1014,13 @@ that each ✅ cell has a wired `$effect` before declaring `TASK DONE`.
 > mode — no `$effect` tied to custom-compound state should fire while
 > Basic mode is active on either page.
 
-| Input / State | Calculator (Basic) | Calculator (Advanced) | Plot preview (Adv. only) | Plot series (Adv. only) | Multi-prog table |
-| ------------- | :----------------: | :-------------------: | :----------------------: | :---------------------: | :--------------: |
-| Selected custom compound | ❌ (guarded — Basic mode hides custom compounds) | ✅ recalculates | ✅ recalculates preview | ✅ recalculates series | ✅ recalculates all columns |
-| Compound formula / composition (on Save) | N/A (editor not accessible in Basic) | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
-| `mat_density` (compound's stored density) | N/A | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
-| `mat_ival` (compound's stored I-value override) | N/A | ✅ recalculates if compound is active | ✅ | ✅ | ✅ |
-| `mat_phase` (compound aggregate state) | N/A | ✅ affects unit defaults + WASM call | N/A | N/A | N/A |
+| Input / State                                   |                Calculator (Basic)                |         Calculator (Advanced)         | Plot preview (Adv. only) | Plot series (Adv. only) |      Multi-prog table       |
+| ----------------------------------------------- | :----------------------------------------------: | :-----------------------------------: | :----------------------: | :---------------------: | :-------------------------: |
+| Selected custom compound                        | ❌ (guarded — Basic mode hides custom compounds) |            ✅ recalculates            | ✅ recalculates preview  | ✅ recalculates series  | ✅ recalculates all columns |
+| Compound formula / composition (on Save)        |       N/A (editor not accessible in Basic)       | ✅ recalculates if compound is active |            ✅            |           ✅            |             ✅              |
+| `mat_density` (compound's stored density)       |                       N/A                        | ✅ recalculates if compound is active |            ✅            |           ✅            |             ✅              |
+| `mat_ival` (compound's stored I-value override) |                       N/A                        | ✅ recalculates if compound is active |            ✅            |           ✅            |             ✅              |
+| `mat_phase` (compound aggregate state)          |                       N/A                        | ✅ affects unit defaults + WASM call  |           N/A            |           N/A           |             N/A             |
 
 Legend: ✅ = triggers recalculation / update; ❌ = guarded (must not
 affect — applies to Basic mode on both Calculator and Plot pages);
@@ -1052,6 +1052,7 @@ user story (5 MeV alpha, CSDA range verification)
 - DOM: `[data-testid="compound-name-input"]` has focus
 
 **When** the user fills in:
+
 - Name = `"LiF-pellet"`
 - Formula = `"LiF"` (Li: Z=3, count=1; F: Z=9, count=1)
 - Density = `"2.20"` (cold-pressed pellet density, lower than bulk 2.635 g/cm³)
@@ -1096,10 +1097,13 @@ test("custom compound: create LiF-pellet and verify CSDA range @smoke", async ({
   //  then type 5 in the energy input row)
 
   await expect
-    .poll(async () => {
-      const cell = await page.locator('[data-testid="csda-cell-0"]').textContent();
-      return parseFloat(cell ?? "0");
-    }, { timeout: 10000 })
+    .poll(
+      async () => {
+        const cell = await page.locator('[data-testid="csda-cell-0"]').textContent();
+        return parseFloat(cell ?? "0");
+      },
+      { timeout: 10000 },
+    )
     .toBeGreaterThan(0);
 });
 ```
@@ -1146,10 +1150,13 @@ test("custom compound: create H2O and see calculation @smoke", async ({ page }) 
   // Switch to the new compound and verify calculation fires
   // (entity-selection interaction — implementation detail)
   await expect
-    .poll(async () => {
-      const cell = await page.locator('[data-testid="stp-cell-0"]').textContent();
-      return parseFloat(cell ?? "0");
-    }, { timeout: 10000 })
+    .poll(
+      async () => {
+        const cell = await page.locator('[data-testid="stp-cell-0"]').textContent();
+        return parseFloat(cell ?? "0");
+      },
+      { timeout: 10000 },
+    )
     .toBeGreaterThan(0);
 });
 ```
@@ -1296,7 +1303,9 @@ been created on the Calculator page and saved to `localStorage`
 - The `"PMMA-custom"` series is removed from the series list
 
 ```typescript
-test("custom compound: created on Calculator is available on Plot @regression", async ({ page }) => {
+test("custom compound: created on Calculator is available on Plot @regression", async ({
+  page,
+}) => {
   // Step 1: Create compound on Calculator page
   await page.goto("/calculator?advanced=1");
   await page.click('[data-testid="compound-add-btn"]');
@@ -1317,9 +1326,12 @@ test("custom compound: created on Calculator is available on Plot @regression", 
   // (implementation detail: click the PMMA-custom entry to add it as a series)
 
   await expect
-    .poll(async () => {
-      return page.locator('[data-testid="plot-series-list"] li').count();
-    }, { timeout: 10000 })
+    .poll(
+      async () => {
+        return page.locator('[data-testid="plot-series-list"] li').count();
+      },
+      { timeout: 10000 },
+    )
     .toBeGreaterThan(0);
 
   // Step 4: Switch to Basic mode — custom compound group must disappear
@@ -1348,12 +1360,12 @@ test("custom compound: created on Calculator is available on Plot @regression", 
 
 ### Required pillars (for each affected page)
 
-| Pillar | Calculator | Plot |
-| ------ | ---------- | ---- |
-| Panel gating (`isAdvancedMode.value` guard on custom-compound group) | ✅ required | ✅ required |
-| URL init (`material=custom` + `mat_*` parsed inside the URL `$effect`) | ✅ required | ✅ required |
+| Pillar                                                                    | Calculator  | Plot        |
+| ------------------------------------------------------------------------- | ----------- | ----------- |
+| Panel gating (`isAdvancedMode.value` guard on custom-compound group)      | ✅ required | ✅ required |
+| URL init (`material=custom` + `mat_*` parsed inside the URL `$effect`)    | ✅ required | ✅ required |
 | Persistence (`material=custom` + `mat_*` emitted when compound is active) | ✅ required | ✅ required |
-| Reactive-dep snapshot (read compound state before any `.then()`) | ✅ required | ✅ required |
+| Reactive-dep snapshot (read compound state before any `.then()`)          | ✅ required | ✅ required |
 
 **Implementer contract:** Before declaring `TASK DONE`, verify every ✅ cell
 above and confirm that the Reactive Triggers Matrix rows marked ✅ for Plot have
@@ -1365,17 +1377,17 @@ their corresponding `$effect` wired in `src/routes/plot/+page.svelte`.
 
 All `data-testid` attributes listed here **must** be added by the implementer.
 
-| `data-testid` value | Element | Notes |
-| ------------------- | ------- | ----- |
-| `compound-add-btn` | "+ Add compound" button | Absent from DOM in Basic mode |
-| `compound-editor-modal` | Editor modal container | Hidden / removed when closed |
-| `compound-name-input` | Name text input | Receives focus on modal open |
-| `compound-formula-input` | Formula text input (formula mode) | — |
-| `compound-density-input` | Density number input | — |
-| `compound-ival-input` | I-value number input | Optional field |
-| `compound-save-btn` | Save / Create button | Disabled when validation fails |
-| `compound-validation-error` | Inline validation error message | Shown on invalid formula / missing fields / out-of-range density or atom count |
-| `compound-sum-indicator` | Weight-fraction sum indicator (weight-fraction mode) | Error colour when sum ∉ [99.9, 100.1]% |
-| `compound-group` | "Custom Compounds" group in entity selector (Calculator) | Absent from DOM in Basic mode |
-| `plot-compound-group` | "Custom" sub-list in the materials panel (Plot page) | Absent from DOM in Basic mode |
-| `compound-from-url-banner` | "Compound from shared URL" banner | Shown only when compound is not in localStorage |
+| `data-testid` value         | Element                                                  | Notes                                                                          |
+| --------------------------- | -------------------------------------------------------- | ------------------------------------------------------------------------------ |
+| `compound-add-btn`          | "+ Add compound" button                                  | Absent from DOM in Basic mode                                                  |
+| `compound-editor-modal`     | Editor modal container                                   | Hidden / removed when closed                                                   |
+| `compound-name-input`       | Name text input                                          | Receives focus on modal open                                                   |
+| `compound-formula-input`    | Formula text input (formula mode)                        | —                                                                              |
+| `compound-density-input`    | Density number input                                     | —                                                                              |
+| `compound-ival-input`       | I-value number input                                     | Optional field                                                                 |
+| `compound-save-btn`         | Save / Create button                                     | Disabled when validation fails                                                 |
+| `compound-validation-error` | Inline validation error message                          | Shown on invalid formula / missing fields / out-of-range density or atom count |
+| `compound-sum-indicator`    | Weight-fraction sum indicator (weight-fraction mode)     | Error colour when sum ∉ [99.9, 100.1]%                                         |
+| `compound-group`            | "Custom Compounds" group in entity selector (Calculator) | Absent from DOM in Basic mode                                                  |
+| `plot-compound-group`       | "Custom" sub-list in the materials panel (Plot page)     | Absent from DOM in Basic mode                                                  |
+| `compound-from-url-banner`  | "Compound from shared URL" banner                        | Shown only when compound is not in localStorage                                |

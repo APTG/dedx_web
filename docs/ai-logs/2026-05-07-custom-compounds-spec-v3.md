@@ -7,6 +7,7 @@
 ### Prompt 1: Spec updates to custom-compounds.md and TOC additions
 
 **User request:** Adjust `custom-compounds.md` to:
+
 1. Explicitly state that in Basic mode custom compounds are unavailable on the **Plot page** too (not just Calculator), and update the Reactive Triggers Matrix accordingly.
 2. Add clickable Tables of Contents to `custom-compounds.md` and other key specs.
 3. Replace Scenario 1 (H₂O smoke test) with the LiF pellet from the user story; keep Custom Water as the next scenario.

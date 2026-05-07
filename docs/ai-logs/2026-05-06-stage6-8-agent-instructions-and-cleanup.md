@@ -8,7 +8,8 @@
 
 ### Prompt 1: Protect agents from reactive trigger bugs; add E2E timeout guidance; ensure Advanced Options is only in Advanced mode; fill AI logs; adjust redesign plan
 
-**User request (comment_id 4386137644):**  
+**User request (comment_id 4386137644):**
+
 > modify agent instructions especially for opencode to protect from such situations in
 > the future. It seems more e2e tests are needed to protect from problems like lack of
 > triggering. Check also e2e total running time and instruct agents to have proper

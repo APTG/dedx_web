@@ -53,10 +53,12 @@ on actual DOM elements). At least one scenario must be tagged `@smoke`.
 **Given** the user is on `/calculator` with default selection (Proton / Water / Auto-select)
 **When** [user action]
 **Then**
+
 - DOM: `[data-testid="<testid>"]` text becomes `<expected value>`
 - URL: `window.location.search` contains `<param>=<value>`
 
 **Example E2E pattern:**
+
 ```typescript
 test("density 2× halves CSDA range @smoke", async ({ page }) => {
   // Read baseline CSDA value
@@ -81,6 +83,7 @@ test("density 2× halves CSDA range @smoke", async ({ page }) => {
 **Given** [starting state]
 **When** the user changes [input] to `<value>`
 **Then**
+
 - URL contains `<param>=<value>` within 5 s
 - Reloading the page preserves [behavior] (DOM observable: `[data-testid="..."]`)
 
@@ -89,6 +92,7 @@ test("density 2× halves CSDA range @smoke", async ({ page }) => {
 **Given** [starting state]
 **When** the user enters an invalid value (e.g., `0` or `-1`)
 **Then**
+
 - DOM: `[data-testid="<error-testid>"]` becomes visible with text `<error message>`
 - Calculation is NOT triggered (observable: [data-testid="result-table"] value unchanged)
 
@@ -102,20 +106,20 @@ declaring `TASK DONE`.
 
 | Option / Input | Calculator (Basic) | Calculator (Advanced) | Plot preview | Plot series | Multi-prog table |
 | -------------- | :----------------: | :-------------------: | :----------: | :---------: | :--------------: |
-| [Input A]      | ❌ / N/A           | ✅                    | ✅           | ✅          | ✅               |
-| [Input B]      | N/A                | ✅                    | N/A          | N/A         | N/A              |
+| [Input A]      |      ❌ / N/A      |          ✅           |      ✅      |     ✅      |        ✅        |
+| [Input B]      |        N/A         |          ✅           |     N/A      |     N/A     |       N/A        |
 
 Legend: ✅ = triggers recalculation / update; ❌ = should not affect; N/A = feature
 does not apply to this context.
 
 **Example (density override from advanced-options.md):**
 
-| Option             | Calculator (Basic) | Calculator (Advanced) | Plot preview | Plot series | Multi-prog table |
-| ------------------ | :----------------: | :-------------------: | :----------: | :---------: | :--------------: |
-| Density override   | ❌ (guarded)       | ✅                    | ✅           | ✅          | ✅               |
-| Aggregate state    | ❌ (guarded)       | ✅                    | ✅           | ✅          | ✅               |
-| Interpolation scale | N/A               | ✅                    | ✅           | ✅          | N/A              |
-| MSTAR mode         | N/A                | ✅                    | ✅           | ✅          | N/A              |
+| Option              | Calculator (Basic) | Calculator (Advanced) | Plot preview | Plot series | Multi-prog table |
+| ------------------- | :----------------: | :-------------------: | :----------: | :---------: | :--------------: |
+| Density override    |    ❌ (guarded)    |          ✅           |      ✅      |     ✅      |        ✅        |
+| Aggregate state     |    ❌ (guarded)    |          ✅           |      ✅      |     ✅      |        ✅        |
+| Interpolation scale |        N/A         |          ✅           |      ✅      |     ✅      |       N/A        |
+| MSTAR mode          |        N/A         |          ✅           |      ✅      |     ✅      |       N/A        |
 
 ---
 
@@ -124,9 +128,9 @@ does not apply to this context.
 [REQUIRED if the feature adds URL state] Every URL-encoded field, its allowed
 values, its TypeScript type, and the value that is omitted (default).
 
-| Parameter | TypeScript type | Allowed values | Default (omitted) | Encode as |
-| --------- | --------------- | -------------- | ----------------- | --------- |
-| `param`   | `MyUnionType`   | `"a" \| "b" \| "c"` | `"b"` | `"a"` / `"c"` |
+| Parameter | TypeScript type | Allowed values      | Default (omitted) | Encode as     |
+| --------- | --------------- | ------------------- | ----------------- | ------------- |
+| `param`   | `MyUnionType`   | `"a" \| "b" \| "c"` | `"b"`             | `"a"` / `"c"` |
 
 **⚠ Round-trip rule:** Every member of the TS union must be tested in a
 `decode(encode(v)) === v` contract test keyed by `satisfies Record<MyUnionType, string>`
@@ -135,13 +139,13 @@ for the pattern.
 
 **Example (from advanced-options.md):**
 
-| Parameter      | TypeScript type        | Allowed values                  | Default (omitted) | Encode as         |
-| -------------- | ---------------------- | ------------------------------- | ----------------- | ----------------- |
-| `density`      | `number`               | Any positive float              | unset             | JS number string  |
-| `ival`         | `number`               | `0 < I ≤ 10000`                 | unset             | JS number string  |
-| `mstar_mode`   | `MstarMode`            | `"a" \| "b" \| "c" \| "d" \| "g" \| "h"` | `"b"` | same as value |
-| `interp_scale` | `InterpolationScale`   | `"log" \| "linear"`             | `"log"`           | `"lin-lin"` for linear |
-| `interp_method`| `InterpolationMethod`  | `"linear" \| "cubic"`           | `"linear"`        | `"spline"` for cubic |
+| Parameter       | TypeScript type       | Allowed values                           | Default (omitted) | Encode as              |
+| --------------- | --------------------- | ---------------------------------------- | ----------------- | ---------------------- |
+| `density`       | `number`              | Any positive float                       | unset             | JS number string       |
+| `ival`          | `number`              | `0 < I ≤ 10000`                          | unset             | JS number string       |
+| `mstar_mode`    | `MstarMode`           | `"a" \| "b" \| "c" \| "d" \| "g" \| "h"` | `"b"`             | same as value          |
+| `interp_scale`  | `InterpolationScale`  | `"log" \| "linear"`                      | `"log"`           | `"lin-lin"` for linear |
+| `interp_method` | `InterpolationMethod` | `"linear" \| "cubic"`                    | `"linear"`        | `"spline"` for cubic   |
 
 ---
 
@@ -160,12 +164,12 @@ feature touches and the four pillars that must be present on each.
 
 ### Required pillars (for each affected page)
 
-| Pillar | Calculator | Plot |
-| ------ | ---------- | ---- |
-| Panel gating (`isAdvancedMode.value` guard) | ✅ required | ✅ required |
+| Pillar                                                  | Calculator  | Plot        |
+| ------------------------------------------------------- | ----------- | ----------- |
+| Panel gating (`isAdvancedMode.value` guard)             | ✅ required | ✅ required |
 | URL init (`initAdvancedModeFromUrl()` in URL `$effect`) | ✅ required | ✅ required |
-| Persistence (`persistAdvancedOptions()` effect) | ✅ required | ✅ required |
-| Reactive-dep snapshot (sync snapshot before `.then()`) | ✅ required | ✅ required |
+| Persistence (`persistAdvancedOptions()` effect)         | ✅ required | ✅ required |
+| Reactive-dep snapshot (sync snapshot before `.then()`)  | ✅ required | ✅ required |
 
 ---
 
