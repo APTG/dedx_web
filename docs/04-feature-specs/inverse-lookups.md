@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Final v5 (2026-05-06)
+> **Status:** Final v6 (2026-05-07)
 >
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
@@ -37,6 +37,13 @@
 > data-testid anchors (§ Acceptance Scenarios), Cross-Page Parity Checklist
 > (§ Cross-Page Parity Checklist), and `data-testid` appendix — mandatory
 > additions for Stage 6.9+ per the spec template introduced in PR #432.
+>
+> **v6** (2026-05-07): Added Acceptance Scenarios 5–8 — Inverse STP primary
+> flow at 30 keV/µm (Scenario 5 @smoke), Range tab metre-suffix parsing and
+> `km` rejection (Scenario 6 @regression), invalid-input validation for both
+> tabs (Scenario 7 @regression), multi-program column layout for both tabs
+> (Scenario 8 @regression); two new `data-testid` anchors:
+> `inverse-range-row-error-{i}` and `inverse-stp-row-error-{i}`.
 >
 > **Related specs:**
 >
@@ -108,6 +115,10 @@
   - [Scenario 2: URL round-trip — Range tab persists across reload](#scenario-2-url-round-trip--range-tab-persists-across-reload)
   - [Scenario 3: Inverse STP — no-solution cell shows em-dash @regression](#scenario-3-inverse-stp--no-solution-cell-shows-em-dash-regression)
   - [Scenario 4: Advanced-mode gate — tabs absent in Basic mode @regression](#scenario-4-advanced-mode-gate--tabs-absent-in-basic-mode-regression)
+  - [Scenario 5: Inverse STP — dual-branch energies (primary flow) @smoke](#scenario-5-inverse-stp--dual-branch-energies-primary-flow-smoke)
+  - [Scenario 6: Range tab — non-standard length unit (30 m, proton in air) @regression](#scenario-6-range-tab--non-standard-length-unit-30-m-proton-in-air-regression)
+  - [Scenario 7: Invalid input — out-of-range and non-numeric rejection @regression](#scenario-7-invalid-input--out-of-range-and-non-numeric-rejection-regression)
+  - [Scenario 8: Multi-program mode — one column per program (Range and Inverse STP) @regression](#scenario-8-multi-program-mode--one-column-per-program-range-and-inverse-stp-regression)
 - [Cross-Page Parity Checklist](#cross-page-parity-checklist)
   - [Pages affected](#pages-affected)
   - [Required pillars](#required-pillars)
@@ -980,6 +991,367 @@ proton in water (e.g., `500 keV/µm`, which exceeds the Bragg peak ≈ 80 keV/µ
 
 ---
 
+### Scenario 5: Inverse STP — dual-branch energies (primary flow) @smoke
+
+Directly exercises the third user story: entering 30 keV/µm for proton in
+water returns two distinct energies, one below and one above the Bragg peak.
+The Bragg peak for proton in water (PSTAR) is approximately 80–90 keV/µm,
+so 30 keV/µm lies well below it and both branches have valid solutions.
+
+**Given** the user is on `/calculator` with Advanced mode **on**, Proton /
+Water (Liquid) / PSTAR selected, and the **Inverse STP** tab active
+(URL: `?particle=1&material=276&imode=stp&ivalues=30&iunit=kev-um&advanced=1`)
+
+**When** the page finishes loading (WASM ready)
+
+**Then**
+
+- DOM: `[data-testid="inverse-tab-stp"]` has `aria-selected="true"`
+- DOM: `[data-testid="inverse-stp-result-low-0"]` text contains a numeric
+  value (ascending branch — lower energy, below the Bragg peak energy)
+- DOM: `[data-testid="inverse-stp-result-high-0"]` text contains a numeric
+  value (descending branch — higher energy, above the Bragg peak energy)
+- Neither cell shows `"—"` — 30 keV/µm is below the proton/water Bragg peak
+- The two displayed values are **not equal** — low and high branches return
+  distinct energies
+
+**When** the user replaces the input with `85` (keV/µm, above the Bragg peak)
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid="inverse-stp-result-low-0"]` text is `"—"`
+- DOM: `[data-testid="inverse-stp-result-high-0"]` text is `"—"`
+- The row is **not** highlighted — no-solution is a valid physical outcome,
+  not a user error
+
+```typescript
+test("Inverse STP: dual-branch energies at 30 keV/µm @smoke", async ({ page }) => {
+  await page.goto(
+    "/calculator?particle=1&material=276&imode=stp&ivalues=30&iunit=kev-um&advanced=1"
+  );
+  const eLow = page.locator('[data-testid="inverse-stp-result-low-0"]');
+  const eHigh = page.locator('[data-testid="inverse-stp-result-high-0"]');
+
+  // Both branches must resolve to a numeric value
+  await expect
+    .poll(async () => (await eLow.textContent())?.trim(), { timeout: 8000 })
+    .toMatch(/\d/);
+  await expect
+    .poll(async () => (await eHigh.textContent())?.trim(), { timeout: 8000 })
+    .toMatch(/\d/);
+
+  // Neither branch is the no-solution marker
+  expect((await eLow.textContent())?.trim()).not.toBe("—");
+  expect((await eHigh.textContent())?.trim()).not.toBe("—");
+
+  // Low and high branches must be distinct energies
+  expect((await eLow.textContent())?.trim()).not.toBe(
+    (await eHigh.textContent())?.trim()
+  );
+
+  // Change to above-Bragg-peak value — both cells must show em-dash
+  await page.fill('[data-testid="inverse-stp-input-0"]', "85");
+  await expect
+    .poll(async () => (await eLow.textContent())?.trim(), { timeout: 8000 })
+    .toBe("—");
+  await expect
+    .poll(async () => (await eHigh.textContent())?.trim(), { timeout: 8000 })
+    .toBe("—");
+});
+```
+
+---
+
+### Scenario 6: Range tab — non-standard length unit (30 m, proton in air) @regression
+
+Exercises the metre (`m`) suffix parser with a physically meaningful value:
+30 m of proton range in dry air corresponds to a kinetic energy of roughly
+120–130 MeV — well within the tabulated PSTAR range. Also verifies that the
+unsupported `km` suffix is rejected with a clear error.
+
+> **Material note:** Use the material ID for "Air, Dry (NIST)" from
+> `LibdedxService.getMaterials(1)`. Verify the exact ID against the WASM
+> entity list at implementation time.
+
+**Given** the user is on `/calculator` with Advanced mode **on**, Proton /
+Air (Dry) / PSTAR selected, and the **Range** tab active
+
+**When** the user types `30 m` in `[data-testid="inverse-range-input-0"]`
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid="inverse-range-result-0"]` text contains a numeric
+  energy value with a unit (expected ≈ 100–150 MeV — physically plausible
+  for protons stopping in 30 metres of air at standard density)
+- DOM: `[data-testid="inverse-range-unit"]` is **disabled** — typing a
+  length suffix activates per-row mode and the master selector is greyed out
+
+**When** the user clears the input and types `0.03 km`
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid="inverse-range-row-error-0"]` text contains `"km"` —
+  `km` is not in the supported suffix list; the row is marked invalid
+
+```typescript
+test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {
+  // Replace airMaterialId with the verified WASM entity ID for Air (Dry)
+  const airMaterialId = /* TODO: verify */ 104;
+  await page.goto(`/calculator?particle=1&material=${airMaterialId}&advanced=1`);
+  await page.click('[data-testid="inverse-tab-range"]');
+
+  // '30 m' — valid metre suffix; must produce a numeric result
+  await page.fill('[data-testid="inverse-range-input-0"]', "30 m");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-range-result-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 8000 }
+    )
+    .toMatch(/\d/);
+
+  // Per-row mode active → master unit selector disabled
+  await expect(
+    page.locator('[data-testid="inverse-range-unit"]')
+  ).toBeDisabled();
+
+  // '0.03 km' — unrecognised suffix → inline error mentioning 'km'
+  await page.fill('[data-testid="inverse-range-input-0"]', "0.03 km");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-range-row-error-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 5000 }
+    )
+    .toMatch(/km/);
+});
+```
+
+---
+
+### Scenario 7: Invalid input — out-of-range and non-numeric rejection @regression
+
+Verifies that both inverse tabs enforce input constraints: negative values,
+zero, non-numeric text, and values that exceed the tabulated data range are
+rejected with the appropriate inline messages.
+
+**Range tab — negative value**
+
+**Given** the Range tab is active (Proton / Water (Liquid) / PSTAR,
+Advanced mode on)
+
+**When** the user types `-5` in `[data-testid="inverse-range-input-0"]`
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid="inverse-range-row-error-0"]` text contains `"positive"`
+- DOM: `[data-testid="inverse-range-result-0"]` is empty or absent
+
+**Range tab — non-numeric text**
+
+**When** the user replaces the input with `abc`
+
+**Then**
+
+- DOM: `[data-testid="inverse-range-row-error-0"]` text contains `"numeric"`
+
+**Range tab — value beyond tabulated maximum**
+
+**When** the user replaces the input with `1000000` (1 × 10⁶ cm, beyond any
+tabulated proton CSDA range)
+
+**Then**
+
+- The row is highlighted with the out-of-range style (⚠️, not ❌)
+- A valid-range hint is visible below or within the row (e.g.
+  "Valid range: 0.001–10000 MeV/nucl")
+
+**Inverse STP tab — zero value**
+
+**Given** the Inverse STP tab is active (same entity selection)
+
+**When** the user types `0` in `[data-testid="inverse-stp-input-0"]`
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid="inverse-stp-row-error-0"]` text contains `"positive"`
+- DOM: `[data-testid="inverse-stp-result-low-0"]` is empty or absent
+- DOM: `[data-testid="inverse-stp-result-high-0"]` is empty or absent
+
+**Inverse STP tab — non-numeric text**
+
+**When** the user replaces the input with `xyz`
+
+**Then**
+
+- DOM: `[data-testid="inverse-stp-row-error-0"]` text contains `"numeric"`
+
+```typescript
+test("Range tab: rejects negative and non-numeric input @regression", async ({ page }) => {
+  await page.goto("/calculator?particle=1&material=276&advanced=1");
+  await page.click('[data-testid="inverse-tab-range"]');
+
+  await page.fill('[data-testid="inverse-range-input-0"]', "-5");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-range-row-error-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 5000 }
+    )
+    .toMatch(/positive/i);
+
+  await page.fill('[data-testid="inverse-range-input-0"]', "abc");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-range-row-error-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 5000 }
+    )
+    .toMatch(/numeric/i);
+});
+
+test("Inverse STP tab: rejects zero and non-numeric input @regression", async ({ page }) => {
+  await page.goto("/calculator?particle=1&material=276&advanced=1");
+  await page.click('[data-testid="inverse-tab-stp"]');
+
+  await page.fill('[data-testid="inverse-stp-input-0"]', "0");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-stp-row-error-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 5000 }
+    )
+    .toMatch(/positive/i);
+
+  await page.fill('[data-testid="inverse-stp-input-0"]', "xyz");
+  await expect
+    .poll(
+      async () =>
+        (
+          await page
+            .locator('[data-testid="inverse-stp-row-error-0"]')
+            .textContent()
+        )?.trim(),
+      { timeout: 5000 }
+    )
+    .toMatch(/numeric/i);
+});
+```
+
+---
+
+### Scenario 8: Multi-program mode — one column per program (Range and Inverse STP) @regression
+
+Verifies the column-per-program layout for both inverse tabs when two programs
+are simultaneously selected. The Range tab must show one energy column per
+visible program; the Inverse STP tab must show one E-low and one E-high column
+per visible program, all on a single row (no sub-row expansion).
+
+**Given** the user is on `/calculator` with Advanced mode **on**, Proton /
+Water (Liquid) selected, and **two programs active** — PSTAR and ICRU 90
+(enabled via the multi-program selector)
+
+**When** the user switches to the **Range** tab and types `7.718 cm` in row 0
+and the 300 ms debounce elapses
+
+**Then**
+
+- DOM: `[data-testid^="inverse-range-result-0-"]` — at least **two** cells
+  matching this prefix exist, one per selected program
+- Both cells contain a numeric energy value (both programs return ≈ 100 MeV
+  for a 7.718 cm proton range in water)
+
+**When** the user switches to the **Inverse STP** tab and types `30` (keV/µm)
+in row 0 and the debounce elapses
+
+**Then**
+
+- DOM: `[data-testid^="inverse-stp-result-low-0-"]` — at least **two** cells
+  present (one E-low per program), each with a numeric value
+- DOM: `[data-testid^="inverse-stp-result-high-0-"]` — at least **two** cells
+  present (one E-high per program), each with a numeric value
+- Each input value occupies exactly **one row** — no sub-row expansion
+- Column headers contain the `{ProgramName} E low` / `{ProgramName} E high`
+  pattern (see §5.2)
+
+```typescript
+test("Range tab: multi-program shows one result column per program @regression", async ({
+  page,
+}) => {
+  await page.goto("/calculator?particle=1&material=276&advanced=1");
+  // Enable multi-program: select PSTAR + ICRU 90 via the program picker UI
+  // (implementer adds the exact interaction steps here)
+  await page.click('[data-testid="inverse-tab-range"]');
+  await page.fill('[data-testid="inverse-range-input-0"]', "7.718 cm");
+
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('[data-testid^="inverse-range-result-0-"]')
+          .count(),
+      { timeout: 8000 }
+    )
+    .toBeGreaterThanOrEqual(2);
+});
+
+test("Inverse STP tab: multi-program shows E-low and E-high per program @regression", async ({
+  page,
+}) => {
+  await page.goto("/calculator?particle=1&material=276&advanced=1");
+  // Enable multi-program: select PSTAR + ICRU 90 via the program picker UI
+  await page.click('[data-testid="inverse-tab-stp"]');
+  await page.fill('[data-testid="inverse-stp-input-0"]', "30");
+
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('[data-testid^="inverse-stp-result-low-0-"]')
+          .count(),
+      { timeout: 8000 }
+    )
+    .toBeGreaterThanOrEqual(2);
+
+  await expect
+    .poll(
+      async () =>
+        await page
+          .locator('[data-testid^="inverse-stp-result-high-0-"]')
+          .count(),
+      { timeout: 8000 }
+    )
+    .toBeGreaterThanOrEqual(2);
+});
+```
+
+---
+
 ## Cross-Page Parity Checklist
 
 > **Rule (from `.opencode/lessons-learned.md` Entry 3 and 9):** Inverse Lookups
@@ -1029,6 +1401,8 @@ The Playwright acceptance scenarios above depend on their exact string values.
 | `inverse-stp-result-high-{i}` | Inverse STP E-high cell, row `i`, single-program | `"—"` when no solution |
 | `inverse-stp-result-low-{i}-{programId}` | E-low, row `i`, multi-program | — |
 | `inverse-stp-result-high-{i}-{programId}` | E-high, row `i`, multi-program | — |
+| `inverse-range-row-error-{i}` | Range tab inline validation error, row `i` | text = error message; absent when row is valid |
+| `inverse-stp-row-error-{i}` | Inverse STP inline validation error, row `i` | text = error message; absent when row is valid |
 
 ---
 
