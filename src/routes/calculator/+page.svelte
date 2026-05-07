@@ -45,7 +45,6 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
   let inverseLookupState = $state<InverseLookupState | null>(null);
 
   $effect(() => {
-    console.log("[calculator+page] $effect triggered, wasmReady.value:", wasmReady.value, "state:", state, "calcState:", calcState);
     // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
     // async getService() callback runs. This ensures the tabs render correctly when
     // the page loads with ?advanced=1 — otherwise the component renders with
@@ -93,13 +92,10 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
 
         // Restore inverse lookup mode from URL (AFTER particle/material selected)
         const inverseMode = decodeInverseModeFromUrl(page.url.searchParams);
-        console.log("[calculator+page] URL searchParams:", page.url.searchParams.toString());
-        console.log("[calculator+page] inverseMode:", inverseMode, "isAdvancedMode.value:", isAdvancedMode.value);
         if (inverseMode && isAdvancedMode.value) {
           inverseLookupState.setActiveTab(inverseMode.imode);
           // Initialize inverse rows from URL
           if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
-            console.log("[calculator+page] initializing", inverseMode.ivalues.length, "inverse rows");
             // Clear default empty rows
             inverseLookupState.rangeRows.length = 0;
             inverseLookupState.stpRows.length = 0;
@@ -107,7 +103,6 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
             for (let i = 0; i < inverseMode.ivalues.length; i++) {
               const ival = inverseMode.ivalues[i];
               const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
-              console.log("[calculator+page] row", i, "text:", text);
               if (inverseMode.imode === "csda") {
                 if (i === 0) {
                   inverseLookupState.addRangeRow();
@@ -603,11 +598,8 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
       (r) => r.status === "valid" || r.status === "out-of-range",
     );
     if (validRows.length === 0) {
-      console.log("[calculator+page] Range $effect: no valid rows, skipping calculation");
       return;
     }
-
-    console.log("[calculator+page] Range $effect: calculating for", validRows.length, "valid rows");
 
     let cancelled = false;
 
@@ -616,14 +608,11 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
       const service = await getService();
       if (cancelled) return;
 
-      console.log("[calculator+page] Range $effect (async): getService() completed");
-
       const material = state?.selectedMaterial;
       const density =
         (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
 
       if (density <= 0) {
-        console.log("[calculator+page] Range $effect (async): density <= 0, skipping");
         // Mark all non-empty rows as invalid due to missing density
         for (const r of inverseLookupState.rangeRows) {
           if (r.text.trim()) {
@@ -641,12 +630,9 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
         return rangeCm * density;
       });
 
-      console.log("[calculator+page] Range $effect (async): rangesGcm2:", rangesGcm2);
-
       // Check for mock data (for E2E tests)
       const mockInverseCsdaResults = (globalThis as any).__MOCK_INVERSE_CSDA_RESULTS;
       const mockInverseCsdaCalculator = (globalThis as any).__MOCK_INVERSE_CSDA_CALCULATOR;
-      console.log("[calculator+page] Range $effect (async): mockInverseCsdaResults:", mockInverseCsdaResults);
 
       try {
         let results: (InverseCsdaResult | Error)[];
@@ -656,19 +642,16 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
             // Use dynamic calculator if available (for testing range input changes)
             if (mockInverseCsdaCalculator && typeof mockInverseCsdaCalculator === "function") {
               const calculated = mockInverseCsdaCalculator(rangesGcm2[idx]);
-              console.log("[calculator+page] Range $effect (async): using mock calculator for row", idx, "range:", rangesGcm2[idx], "→ energy:", calculated.energy);
               return calculated;
             }
             // Fallback to static mock array
             const mockResult = mockInverseCsdaResults?.[idx];
             if (mockResult && typeof mockResult.energy === "number" && mockResult.energy > 0) {
-              console.log("[calculator+page] Range $effect (async): using mock energy", mockResult.energy, "for row", idx);
               return { energy: mockResult.energy, csdaRange: mockResult.csdaRange || rangesGcm2[idx] };
             }
             return { energy: Math.sqrt(rangesGcm2[idx]) * 10, csdaRange: rangesGcm2[idx] };
           });
         } else {
-          console.log("[calculator+page] Range $effect (async): calling WASM getInverseCsda");
           results = service.getInverseCsda({
             programId,
             particleId,
@@ -678,23 +661,18 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
           });
         }
 
-        console.log("[calculator+page] Range $effect (async): results:", results);
-
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             const result = results[resultIdx++];
             if (result instanceof Error) {
-              console.log("[calculator+page] Range $effect (async): row", resultIdx-1, "got error:", result.message);
               r.energyMevNucl = null;
             } else {
-              console.log("[calculator+page] Range $effect (async): row", resultIdx-1, "got energy:", result.energy);
               r.energyMevNucl = result.energy;
             }
           }
         }
       } catch (e) {
-        console.log("[calculator+page] Range $effect (async): error:", e);
         // Error handling - keep existing row states
       }
     }, 300);
