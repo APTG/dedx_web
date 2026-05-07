@@ -1,5 +1,7 @@
 # 2026-05-07 — custom-compounds.md v3 + spec TOCs
 
+**Model:** Claude Sonnet 4.6 via GitHub Copilot coding agent
+
 ## Session Narrative
 
 ### Prompt 1: Spec updates to custom-compounds.md and TOC additions

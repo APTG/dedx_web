@@ -924,7 +924,7 @@ test("Range tab: energy from CSDA range @smoke", async ({ page }) => {
   // Change range input; result must update
   await page.fill('[data-testid="inverse-range-input-0"]', "15.4");
   const before = await result.textContent();
-  await page.blur('[data-testid="inverse-range-input-0"]');
+  await page.locator('[data-testid="inverse-range-input-0"]').blur();
   await expect
     .poll(async () => (await result.textContent())?.trim(), { timeout: 8000 })
     .not.toBe(before?.trim());

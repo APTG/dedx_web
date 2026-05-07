@@ -1,5 +1,7 @@
 # 2026-05-07 — redesign-plan.md: Stage 6 table consolidation + Stage 7 external data
 
+**Model:** Claude Sonnet 4.6 via GitHub Copilot coding agent
+
 ## Session Narrative
 
 ### Prompt 1: Fix Stage 6 table and add external data to Stage 7

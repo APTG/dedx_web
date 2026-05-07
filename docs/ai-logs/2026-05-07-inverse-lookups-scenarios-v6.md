@@ -1,5 +1,7 @@
 # 2026-05-07 — inverse-lookups.md v6: expanded acceptance scenarios
 
+**Model:** Claude Sonnet 4.6 via GitHub Copilot coding agent
+
 ## Session Narrative
 
 ### Prompt 1: Add acceptance scenarios covering Inverse STP primary flow, non-standard units, invalid input, and multi-program mode
