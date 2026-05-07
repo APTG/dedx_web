@@ -76,6 +76,7 @@ echo "--- [3/3] emcc link (Stage 3: full TypeScript wrapper contract) ---"
 emcc "$LIBDEDX_A" /src/wasm/dedx_extra.c \
     -o /src/output/libdedx.mjs \
     -I/src/wasm \
+    -I/src/libdedx/include \
     -s EXPORT_ES6=1 \
     -s MODULARIZE=1 \
     -s WASM=1 \
