@@ -1,9 +1,4 @@
 import type { EntitySelectionState } from "./entity-selection.svelte";
-import type { InverseCsdaResult } from "$lib/wasm/types";
-import { isAdvancedMode } from "./advanced-mode.svelte";
-import { advancedOptions } from "./advanced-options.svelte";
-import { getService } from "$lib/wasm/loader";
-import { debounce } from "$lib/utils/debounce";
 
 /**
  * Range row for inverse CSDA lookup.
@@ -184,173 +179,6 @@ export function createInverseLookupState(
   rangeRows.push({ id: ++rangeRowIdCounter, text: "", value: null, unit: "cm", unitFromSuffix: false, status: "empty", energyMevNucl: null });
   stpRows.push({ id: ++stpRowIdCounter, text: "", value: null, unit: "kev-um", status: "empty", energyLowMevNucl: null, energyHighMevNucl: null });
 
-  let rangeCalculationAbort: AbortController | null = null;
-
-  const debouncedRangeCalculation = debounce(async () => {
-    // Abort any pending calculation
-    rangeCalculationAbort?.abort();
-    rangeCalculationAbort = new AbortController();
-    await performRangeCalculation(rangeCalculationAbort.signal);
-  }, 300);
-
-  const debouncedStpCalculation = debounce(async () => {
-    await performStpCalculation();
-  }, 300);
-
-  async function performRangeCalculation(signal?: AbortSignal): Promise<void> {
-    if (!entitySelection.isComplete) {
-      return;
-    }
-
-    const mockInverseCsdaResults = (globalThis as any).__MOCK_INVERSE_CSDA_RESULTS;
-
-    const service = await getService();
-    if (signal?.aborted) return;
-    const programId = entitySelection.resolvedProgramId;
-    const particleId = entitySelection.selectedParticle?.id;
-    const materialId = entitySelection.selectedMaterial?.id;
-
-    if (programId === null || particleId === null || materialId === null) {
-      return;
-    }
-
-    const material = entitySelection.selectedMaterial;
-    const density =
-      (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
-      material?.density ??
-      1;
-
-    if (density <= 0) {
-      for (const row of rangeRows) {
-        if (row.text.trim()) {
-          row.status = "invalid";
-          row.message = "Density not available for this material";
-          row.energyMevNucl = null;
-        }
-      }
-      return;
-    }
-
-    const validRows = rangeRows.filter(
-      (r) => r.status === "valid" || r.status === "out-of-range" || r.status === "error",
-    );
-    if (validRows.length === 0) {
-      return;
-    }
-
-    const rangesGcm2 = validRows.map((r) => cmToGcm2(r.value!, density));
-
-    try {
-      let results: (InverseCsdaResult | Error)[];
-
-      if (mockInverseCsdaResults) {
-        results = validRows.map((_, idx) => {
-          const mockResult = mockInverseCsdaResults[idx];
-          if (mockResult && typeof mockResult.energy === "number" && mockResult.energy > 0) {
-            return { energy: mockResult.energy, csdaRange: mockResult.csdaRange || rangesGcm2[idx] };
-          }
-          return { energy: Math.sqrt(rangesGcm2[idx]) * 10, csdaRange: rangesGcm2[idx] };
-        });
-      } else {
-        results = service.getInverseCsda({
-          programId,
-          particleId,
-          materialId,
-          ranges: rangesGcm2,
-          options: isAdvancedMode.value ? advancedOptions.value : undefined,
-        });
-      }
-
-      if (signal?.aborted) {
-        return;
-      }
-
-      let resultIdx = 0;
-      for (const row of rangeRows) {
-        if (row.status !== "valid" && row.status !== "out-of-range" && row.status !== "error") {
-          continue;
-        }
-        const result = results[resultIdx++];
-        if (result instanceof Error) {
-          row.energyMevNucl = null;
-          row.status = "error";
-          row.message = result.message;
-        } else {
-          row.energyMevNucl = result.energy;
-          row.status = "valid";
-          delete row.message;
-        }
-      }
-    } catch (e) {
-      error = e instanceof Error ? e : new Error("Range calculation failed");
-    }
-  }
-
-  async function performStpCalculation(): Promise<void> {
-    if (!entitySelection.isComplete) return;
-
-    const service = await getService();
-    const programId = entitySelection.resolvedProgramId;
-    const particleId = entitySelection.selectedParticle?.id;
-    const materialId = entitySelection.selectedMaterial?.id;
-
-    if (programId === null || particleId === null || materialId === null) return;
-
-    const material = entitySelection.selectedMaterial;
-    const density =
-      (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
-      material?.density ??
-      1;
-
-    const validRows = stpRows.filter((r) => r.status === "valid" || r.status === "no-solution");
-    if (validRows.length === 0) return;
-
-    const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
-
-    try {
-      const lowResults = service.getInverseStp({
-        programId,
-        particleId,
-        materialId,
-        stoppingPowers: stpMevCm2g,
-        side: 0,
-        options: isAdvancedMode.value ? advancedOptions.value : undefined,
-      });
-
-      const highResults = service.getInverseStp({
-        programId,
-        particleId,
-        materialId,
-        stoppingPowers: stpMevCm2g,
-        side: 1,
-        options: isAdvancedMode.value ? advancedOptions.value : undefined,
-      });
-
-      let resultIdx = 0;
-
-      for (const row of validRows) {
-        const lowResult = lowResults[resultIdx];
-        const highResult = highResults[resultIdx];
-
-        if (lowResult instanceof Error) {
-          row.energyLowMevNucl = null;
-        } else {
-          row.energyLowMevNucl = lowResult.energy;
-        }
-
-        if (highResult instanceof Error) {
-          row.energyHighMevNucl = null;
-        } else {
-          row.energyHighMevNucl = highResult.energy;
-        }
-
-        resultIdx++;
-      }
-    } catch (e) {
-      error = e instanceof Error ? e : new Error("STP calculation failed");
-    }
-  }
-
   function validateRangeRow(row: RangeRow): void {
     const trimmed = row.text.trim();
     if (!trimmed) {
@@ -469,7 +297,6 @@ export function createInverseLookupState(
         rangeMasterUnit = "cm";
       }
 
-      debouncedRangeCalculation();
     },
     setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m") {
       rangeMasterUnit = unit;
@@ -491,11 +318,9 @@ export function createInverseLookupState(
       if (!row) return;
       row.text = text;
       validateStpRow(row);
-      debouncedStpCalculation();
     },
     setStpMasterUnit(unit: "kev-um" | "mev-cm" | "mev-cm2-g") {
       stpMasterUnit = unit;
-      debouncedStpCalculation();
     },
     addStpRow() {
       const newRow: InverseStpRow = {

@@ -630,36 +630,14 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
         return rangeCm * density;
       });
 
-      // Check for mock data (for E2E tests)
-      const mockInverseCsdaResults = (globalThis as any).__MOCK_INVERSE_CSDA_RESULTS;
-      const mockInverseCsdaCalculator = (globalThis as any).__MOCK_INVERSE_CSDA_CALCULATOR;
-
       try {
-        let results: (InverseCsdaResult | Error)[];
-
-        if (mockInverseCsdaResults || mockInverseCsdaCalculator) {
-          results = validRows.map((_, idx) => {
-            // Use dynamic calculator if available (for testing range input changes)
-            if (mockInverseCsdaCalculator && typeof mockInverseCsdaCalculator === "function") {
-              const calculated = mockInverseCsdaCalculator(rangesGcm2[idx]);
-              return calculated;
-            }
-            // Fallback to static mock array
-            const mockResult = mockInverseCsdaResults?.[idx];
-            if (mockResult && typeof mockResult.energy === "number" && mockResult.energy > 0) {
-              return { energy: mockResult.energy, csdaRange: mockResult.csdaRange || rangesGcm2[idx] };
-            }
-            return { energy: Math.sqrt(rangesGcm2[idx]) * 10, csdaRange: rangesGcm2[idx] };
-          });
-        } else {
-          results = service.getInverseCsda({
-            programId,
-            particleId,
-            materialId,
-            ranges: rangesGcm2,
-            options: advOptsSnapshot,
-          });
-        }
+        const results: (InverseCsdaResult | Error)[] = service.getInverseCsda({
+          programId,
+          particleId,
+          materialId,
+          ranges: rangesGcm2,
+          options: advOptsSnapshot,
+        });
 
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {

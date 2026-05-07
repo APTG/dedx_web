@@ -232,7 +232,16 @@ double dedx_get_inverse_csda_flat(int program, int ion, int target,
     cfg.ion     = ion;
     cfg.target  = target;
 
-    /* Load config to populate ion_a (required by dedx_get_inverse_csda). */
+    /* ion_a (nucleon number) must be set before dedx_load_config and the
+     * inverse functions — dedx_get_inverse_csda checks ion_a <= 0 on entry. */
+    cfg.ion_a = dedx_internal_get_nucleon(ion, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
     dedx_load_config(ws, &cfg, &local_err);
     if (local_err != 0) {
         int fe = 0;
@@ -266,7 +275,15 @@ double dedx_get_inverse_stp_flat(int program, int ion, int target,
     cfg.ion     = ion;
     cfg.target  = target;
 
-    /* Load config to populate ion_a before the core function checks it. */
+    /* ion_a must be set before dedx_load_config — dedx_get_inverse_stp checks it on entry. */
+    cfg.ion_a = dedx_internal_get_nucleon(ion, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
     dedx_load_config(ws, &cfg, &local_err);
     if (local_err != 0) {
         int fe = 0;
@@ -298,6 +315,14 @@ double dedx_get_bragg_peak_stp(int program, int ion, int target, int *err) {
     cfg.program = program;
     cfg.ion     = ion;
     cfg.target  = target;
+
+    cfg.ion_a = dedx_internal_get_nucleon(ion, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
 
     dedx_load_config(ws, &cfg, &local_err);
     if (local_err != 0) {
