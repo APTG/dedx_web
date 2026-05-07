@@ -63,6 +63,61 @@
 
 ---
 
+## Table of Contents
+
+- [User Story](#user-story)
+- [Page Layout Overview](#page-layout-overview)
+- [Inputs](#inputs)
+  - [1. Entity Selection (compact mode)](#1-entity-selection-compact-mode)
+  - [2. Energy Unit Selector](#2-energy-unit-selector)
+  - [3. Unified Input/Result Table](#3-unified-inputresult-table)
+  - [4. Advanced Options (future)](#4-advanced-options-future)
+- [Behavior](#behavior)
+  - [Default State on First Load](#default-state-on-first-load)
+  - [Live Calculation (Debounced)](#live-calculation-debounced)
+  - [Recalculation Triggers](#recalculation-triggers)
+  - [Per-Row Validation](#per-row-validation)
+  - [Energy Range Display](#energy-range-display)
+  - [Handling Entity Selection Changes](#handling-entity-selection-changes)
+- [Output](#output)
+  - [Inline Results](#inline-results)
+  - [Resolved Program Label](#resolved-program-label)
+  - [Export](#export)
+- [Error Handling](#error-handling)
+  - [WASM Initialization Failure](#wasm-initialization-failure)
+  - [Calculation Errors (from LibdedxService.calculate())](#calculation-errors-from-libdedxservicecalculate)
+  - [Invalid Entity State](#invalid-entity-state)
+  - [Large Input](#large-input)
+- [URL State Encoding](#url-state-encoding)
+  - [Mixed-Unit URL Encoding](#mixed-unit-url-encoding)
+- [Responsive Layout](#responsive-layout)
+  - [Desktop (≥900px)](#desktop-900px)
+  - [Tablet (600–899px)](#tablet-600899px)
+  - [Mobile (<600px)](#mobile-600px)
+- [State Management](#state-management)
+  - [Derived State (via `$derived`)](#derived-state-via-derived)
+  - [Reactivity Chain](#reactivity-chain)
+- [Acceptance Criteria](#acceptance-criteria)
+  - [Default State](#default-state)
+  - [Unified Input/Result Table](#unified-inputresult-table-1)
+  - [Energy Input](#energy-input)
+  - [Per-Row Validation](#per-row-validation-1)
+  - [Live Calculation](#live-calculation)
+  - [Output Units — Stopping Power](#output-units--stopping-power)
+  - [Output Units — CSDA Range](#output-units--csda-range)
+  - [Material Phase Badge](#material-phase-badge)
+  - [Energy Unit Selector](#energy-unit-selector)
+  - [Entity Selection Integration](#entity-selection-integration)
+  - [Error Handling](#error-handling-1)
+  - [Responsive](#responsive)
+  - [URL State](#url-state)
+  - [Export](#export-1)
+  - [Performance](#performance)
+  - [Accessibility](#accessibility)
+- [Dependencies](#dependencies)
+
+---
+
 ## User Story
 
 **As a** medical physicist,

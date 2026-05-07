@@ -60,6 +60,54 @@
 
 ---
 
+## Table of Contents
+
+- [User Stories](#user-stories)
+- [Panel Overview](#panel-overview)
+- [Inputs](#inputs)
+  - [1. Density Override](#1-density-override)
+  - [2. I-Value Override](#2-i-value-override)
+  - [3. Aggregate State Override](#3-aggregate-state-override)
+  - [4. Interpolation](#4-interpolation)
+  - [5. MSTAR Mode](#5-mstar-mode)
+  - [6. Reset to Defaults Button](#6-reset-to-defaults-button)
+- [Behavior](#behavior)
+  - [1. Panel Placement per Page](#1-panel-placement-per-page)
+  - [2. Reactivity — Recalculation Triggers](#2-reactivity--recalculation-triggers)
+  - [3. Aggregate State → Display Unit Coupling](#3-aggregate-state--display-unit-coupling)
+  - [4. Density Override → Unit Conversion Scope](#4-density-override--unit-conversion-scope)
+  - [5. Input Validation](#5-input-validation)
+  - [6. Material Switch — Override Clearing](#6-material-switch--override-clearing)
+  - [7. MSTAR Mode — Program Dependency](#7-mstar-mode--program-dependency)
+  - [8. Persistence](#8-persistence)
+- [Output](#output)
+  - [Effect on Calculations](#effect-on-calculations)
+  - [Effect on Unit Display](#effect-on-unit-display)
+  - [Active-Override Indicator](#active-override-indicator)
+  - [Series Metadata (Plot page)](#series-metadata-plot-page)
+  - [URL Encoding for Plot Series with Per-Series Options](#url-encoding-for-plot-series-with-per-series-options)
+- [URL State Encoding](#url-state-encoding)
+  - [New Parameters](#new-parameters)
+  - [Canonical URL Examples](#canonical-url-examples)
+  - [Updated Canonical Ordering](#updated-canonical-ordering)
+  - [Round-trip Stability](#round-trip-stability)
+- [Acceptance Criteria](#acceptance-criteria)
+  - [AC-1: Panel gating](#ac-1-panel-gating)
+  - [AC-2: Accordion state and header](#ac-2-accordion-state-and-header)
+  - [AC-3: Aggregate state](#ac-3-aggregate-state)
+  - [AC-4: Interpolation (axis scale and method)](#ac-4-interpolation-axis-scale-and-method)
+  - [AC-5: MSTAR mode](#ac-5-mstar-mode)
+  - [AC-6: Density override](#ac-6-density-override)
+  - [AC-7: I-value override](#ac-7-i-value-override)
+  - [AC-8: Reset button](#ac-8-reset-button)
+  - [AC-9: Material switch](#ac-9-material-switch)
+  - [AC-10: URL encoding](#ac-10-url-encoding)
+  - [AC-11: localStorage persistence](#ac-11-localstorage-persistence)
+  - [AC-12: Plot series label and metadata](#ac-12-plot-series-label-and-metadata)
+- [Open Questions](#open-questions)
+
+---
+
 ## User Stories
 
 **As a** researcher working with a material sample whose density differs
