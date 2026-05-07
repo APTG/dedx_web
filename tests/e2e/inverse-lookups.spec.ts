@@ -35,15 +35,31 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const wasmPresent = await checkWasmpresent(page);
     test.skip(!wasmPresent, "WASM binary absent");
 
-    await page.goto("/calculator?particle=1&material=276&imode=csda&ivalues=7.718:cm&advanced=1");
+    // Capture console messages
+    const consoleMessages: string[] = [];
+    page.on("console", (msg) => {
+      console.log("CONSOLE:", msg.text());
+      consoleMessages.push(msg.text());
+    });
+
+    // Use Air (Dry) material (104) with PSTAR (program 2) which has valid inverse CSDA data
+    // Note: Water liquid (276) doesn't have inverse CSDA tables in libdedx for PSTAR/ICRU49
+    await page.goto("/calculator?particle=1&material=104&program=2&imode=csda&ivalues=100:cm&advanced=1");
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
+
+    // Log console messages for debugging
+    console.log("Browser console messages:", consoleMessages);
+    console.log("Total messages:", consoleMessages.length);
 
     const result = page.locator('[data-testid="inverse-range-result-0"]');
 
-    // Baseline result must be a non-empty number
-    await expect
+    // Baseline result must be a positive number (not an error message like "-1")
+    const energyText = await expect
       .poll(async () => (await result.textContent())?.trim(), { timeout: 15000 })
-      .toMatch(/\d/);
+      .toMatch(/^\d+(\.\d+)?$/);
+
+    // Parse and verify the energy value is actually > 0
+    expect(parseFloat(energyText!)).toBeGreaterThan(0);
 
     // Change range input; result must update
     await page.fill('[data-testid="inverse-range-input-0"]', "15.4");
@@ -65,12 +81,15 @@ test.describe("Inverse Lookups — Range Tab", () => {
     // Click Range tab
     await page.click('[data-testid="inverse-tab-range"]');
 
-    // Enter value in mm
+    // Select mm as master unit
+    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+
+    // Enter value
     await page.fill('[data-testid="inverse-range-input-0"]', "3.5");
     await page.locator('[data-testid="inverse-range-input-0"]').blur();
 
     // Wait for URL sync (debounce + URL update)
-    await page.waitForFunction(() => window.location.search.includes("imode=csda"), { timeout: 5000 });
+    await page.waitForFunction(() => window.location.search.includes("imode=csda") && window.location.search.includes("iunit=mm"), { timeout: 5000 });
 
     // Verify URL contains inverse lookup params
     const url = page.url();
@@ -78,8 +97,9 @@ test.describe("Inverse Lookups — Range Tab", () => {
     expect(url).toContain("ivalues=3.5");
     expect(url).toContain("iunit=mm");
 
-    // Reload page
+    // Reload page and wait for URL sync
     await page.reload();
+    await page.waitForFunction(() => window.location.search.includes("iunit=mm"), { timeout: 10000 });
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
     // Verify tab is still active
@@ -90,12 +110,13 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const input = page.locator('[data-testid="inverse-range-input-0"]');
     await expect(input).toHaveValue("3.5");
 
-    // Verify result is displayed
-    await expect
+    // Verify result is a positive number (not an error value)
+    const resultText = await expect
       .poll(async () => (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(), {
         timeout: 15000,
       })
-      .toMatch(/\d/);
+      .toMatch(/^\d+(\.\d+)?$/);
+    expect(parseFloat(resultText!)).toBeGreaterThan(0);
   });
 
   test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {
@@ -111,15 +132,16 @@ test.describe("Inverse Lookups — Range Tab", () => {
     // Click Range tab
     await page.click('[data-testid="inverse-tab-range"]');
 
-    // '30 m' — valid metre suffix; must produce a numeric result
+    // '30 m' — valid metre suffix; must produce a positive numeric result
     await page.fill('[data-testid="inverse-range-input-0"]', "30 m");
-    await expect
+    const resultText = await expect
       .poll(
         async () =>
           (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 15000 },
       )
-      .toMatch(/\d/);
+      .toMatch(/^\d+(\.\d+)?$/);
+    expect(parseFloat(resultText!)).toBeGreaterThan(0);
 
     // Per-row mode active → master unit selector disabled
     await expect(page.locator('[data-testid="inverse-range-unit"]')).toBeDisabled();
