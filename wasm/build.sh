@@ -69,8 +69,9 @@ echo "--- [3/3] emcc link (Stage 3: full TypeScript wrapper contract) ---"
 # Stage 3 additions:
 # - dedx_extra.h/c wrappers: dedx_get_ion_nucleon_number, dedx_get_ion_atom_mass, dedx_target_is_gas
 # - Stateful API: dedx_allocate_workspace, dedx_free_workspace, dedx_load_config, dedx_free_config
-# - Tools: dedx_get_csda, dedx_get_inverse_stp, dedx_get_inverse_csda, convert_units
-# - Bragg peak: dedx_get_bragg_peak_stp
+# - Tools: dedx_get_csda, convert_units
+# - Flat inverse-lookup wrappers (manage workspace/config internally, callable with plain IDs):
+#     dedx_get_inverse_csda_flat, dedx_get_inverse_stp_flat, dedx_get_bragg_peak_stp
 # - Runtime: HEAPF64 added to EXPORTED_RUNTIME_METHODS
 emcc "$LIBDEDX_A" /src/wasm/dedx_extra.c \
     -o /src/output/libdedx.mjs \
@@ -79,7 +80,7 @@ emcc "$LIBDEDX_A" /src/wasm/dedx_extra.c \
     -s MODULARIZE=1 \
     -s WASM=1 \
     -s ENVIRONMENT='web,node' \
-    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_dedx_get_ion_nucleon_number","_dedx_get_ion_atom_mass","_dedx_target_is_gas","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_free_config","_dedx_get_csda","_dedx_get_inverse_stp","_dedx_get_inverse_csda","_convert_units","_dedx_get_stp","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_fill_program_list","_dedx_fill_ion_list","_dedx_fill_material_list","_dedx_fill_default_energy_stp_table","_dedx_get_error_code","_dedx_get_density","_malloc","_free"]' \
+    -s 'EXPORTED_FUNCTIONS=["_dedx_get_program_list","_dedx_get_material_list","_dedx_get_ion_list","_dedx_get_program_name","_dedx_get_program_version","_dedx_get_ion_name","_dedx_get_material_name","_dedx_get_version_string","_dedx_get_min_energy","_dedx_get_max_energy","_dedx_get_stp_table_size","_dedx_get_simple_stp_for_program","_dedx_get_i_value","_dedx_get_composition","_dedx_internal_read_density","_dedx_get_ion_nucleon_number","_dedx_get_ion_atom_mass","_dedx_target_is_gas","_dedx_allocate_workspace","_dedx_free_workspace","_dedx_load_config","_dedx_free_config","_dedx_get_csda","_convert_units","_dedx_get_stp","_dedx_get_stp_table","_dedx_get_csda_range_table","_dedx_fill_program_list","_dedx_fill_ion_list","_dedx_fill_material_list","_dedx_fill_default_energy_stp_table","_dedx_get_error_code","_dedx_get_density","_dedx_get_inverse_csda_flat","_dedx_get_inverse_stp_flat","_dedx_get_bragg_peak_stp","_malloc","_free"]' \
     -s 'EXPORTED_RUNTIME_METHODS=["ccall","cwrap","UTF8ToString","HEAP32","HEAPF32","HEAPF64"]' \
     -s ALLOW_MEMORY_GROWTH=1 \
     -O2

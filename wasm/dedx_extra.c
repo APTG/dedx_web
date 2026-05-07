@@ -1,5 +1,8 @@
 #include "dedx_extra.h"
+#include "dedx_tools.h"
+#include <math.h>
 #include <stddef.h>
+#include <string.h>
 
 /* Forward-declare the public material-name function from dedx.c */
 extern const char *dedx_get_material_name(int material);
@@ -205,4 +208,126 @@ static const char *dedx_get_material_friendly_name(int material) {
 
         default: return dedx_get_material_name(material);
     }
+}
+
+/* -------------------------------------------------------------------------
+ * Flat inverse-lookup wrappers
+ * Each function allocates a fresh workspace, loads the configuration (which
+ * populates ion_a and other derived fields required by the core functions),
+ * calls the core routine, then frees all resources before returning.
+ * -------------------------------------------------------------------------*/
+
+double dedx_get_inverse_csda_flat(int program, int ion, int target,
+                                  double range, int *err) {
+    int local_err = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.program = program;
+    cfg.ion     = ion;
+    cfg.target  = target;
+
+    /* Load config to populate ion_a (required by dedx_get_inverse_csda). */
+    dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    double result = dedx_get_inverse_csda(ws, &cfg, (float)range, err);
+
+    int fe = 0;
+    dedx_free_config(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+    return result;
+}
+
+double dedx_get_inverse_stp_flat(int program, int ion, int target,
+                                 double stp, int side, int *err) {
+    int local_err = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.program = program;
+    cfg.ion     = ion;
+    cfg.target  = target;
+
+    /* Load config to populate ion_a before the core function checks it. */
+    dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    double result = dedx_get_inverse_stp(ws, &cfg, (float)stp, side, err);
+
+    int fe = 0;
+    dedx_free_config(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+    return result;
+}
+
+double dedx_get_bragg_peak_stp(int program, int ion, int target, int *err) {
+    int local_err = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    memset(&cfg, 0, sizeof(cfg));
+    cfg.program = program;
+    cfg.ion     = ion;
+    cfg.target  = target;
+
+    dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        int fe = 0;
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    /* Sample 300 log-spaced energies to find the Bragg-peak STP. */
+    float emin = dedx_get_min_energy(program, ion);
+    float emax = dedx_get_max_energy(program, ion);
+    double log_emin = log((double)emin);
+    double log_emax = log((double)emax);
+    int n = 300;
+    double peak_stp = -1.0;
+
+    for (int i = 0; i < n; i++) {
+        float energy = (float)exp(log_emin + (log_emax - log_emin) * i / (n - 1));
+        int stp_err = 0;
+        float stp = (float)dedx_get_stp(ws, &cfg, energy, &stp_err);
+        if (stp_err == 0 && (double)stp > peak_stp) {
+            peak_stp = (double)stp;
+        }
+    }
+
+    int fe = 0;
+    dedx_free_config(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+
+    if (peak_stp < 0.0) {
+        *err = -1;
+        return -1.0;
+    }
+    *err = 0;
+    return peak_stp;
 }
