@@ -34,12 +34,15 @@
     loadAdvancedOptionsFromStorage,
     persistAdvancedOptions,
   } from "$lib/state/advanced-options.svelte";
+  import { createInverseLookupState, type InverseLookupState, type ActiveTab } from "$lib/state/inverse-lookups.svelte";
+  import { decodeInverseModeFromUrl, encodeInverseModeToUrl, type InverseModeUrlState } from "$lib/utils/calculator-url";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlInitialized = $state(false);
   let multiProgState = $state<MultiProgramState | null>(null);
+  let inverseLookupState = $state<InverseLookupState | null>(null);
 
   $effect(() => {
     if (wasmReady.value && !state && !calcState) {
@@ -47,6 +50,7 @@
         const matrix = buildCompatibilityMatrix(service);
         state = createEntitySelectionState(matrix);
         calcState = createCalculatorState(state, service);
+        inverseLookupState = createInverseLookupState(state);
 
         // Load advanced options from localStorage first, then URL will override if present
         loadAdvancedOptionsFromStorage();
@@ -76,6 +80,46 @@
             }
           });
         }
+
+        // Restore inverse lookup mode from URL
+        const inverseMode = decodeInverseModeFromUrl(page.url.searchParams);
+        if (inverseMode && isAdvancedMode.value) {
+          inverseLookupState.setActiveTab(inverseMode.imode);
+          // Initialize inverse rows from URL
+          if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
+            // Clear default empty rows
+            inverseLookupState.rangeRows.length = 0;
+            inverseLookupState.stpRows.length = 0;
+            
+            for (let i = 0; i < inverseMode.ivalues.length; i++) {
+              const ival = inverseMode.ivalues[i];
+              const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
+              if (inverseMode.imode === "csda") {
+                if (i === 0) {
+                  inverseLookupState.updateRangeRowText(0, text);
+                } else {
+                  inverseLookupState.addRangeRow();
+                  inverseLookupState.updateRangeRowText(i, text);
+                }
+              } else if (inverseMode.imode === "stp") {
+                if (i === 0) {
+                  inverseLookupState.updateStpRowText(0, text);
+                } else {
+                  inverseLookupState.addStpRow();
+                  inverseLookupState.updateStpRowText(i, text);
+                }
+              }
+            }
+          }
+          // Set master unit for STP mode
+          if (inverseMode.imode === "stp" && inverseMode.iunit) {
+            const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
+            if (validStpUnits.includes(inverseMode.iunit as any)) {
+              inverseLookupState.setStpMasterUnit(inverseMode.iunit as any);
+            }
+          }
+        }
+
         urlInitialized = true;
       });
     }
@@ -116,6 +160,36 @@
 
     if (!urlInitialized || !calcState || !state) return;
 
+    // Build inverse mode state for URL encoding
+    let inverseModeState: InverseModeUrlState | undefined;
+    if (inverseLookupState && isAdvancedMode.value) {
+      if (inverseLookupState.activeTab === "csda") {
+        inverseModeState = {
+          imode: "csda",
+          ivalues: inverseLookupState.rangeRows
+            .filter((r) => r.text.trim() !== "")
+            .map((r) => ({
+              rawInput: r.text.trim(),
+              unit: r.unit,
+              unitFromSuffix: r.unitFromSuffix,
+            })),
+          iunit: inverseLookupState.rangeMasterUnit,
+        };
+      } else if (inverseLookupState.activeTab === "stp") {
+        inverseModeState = {
+          imode: "stp",
+          ivalues: inverseLookupState.stpRows
+            .filter((r) => r.text.trim() !== "")
+            .map((r) => ({
+              rawInput: r.text.trim(),
+              unit: r.unit,
+              unitFromSuffix: false, // STP doesn't use inline suffix detection
+            })),
+          iunit: inverseLookupState.stpMasterUnit,
+        };
+      }
+    }
+
     const urlState = {
       particleId: state.selectedParticle?.id ?? null,
       materialId: state.selectedMaterial?.id ?? null,
@@ -139,6 +213,8 @@
             materialIsGas: state.selectedMaterial?.isGasByDefault,
           }
         : {}),
+      // Include inverse mode state when active
+      ...(inverseModeState || {}),
     };
     // Use calculatorUrlQueryString so `:` and `,` are written literally
     // (RFC 3986 §3.4 permits them unencoded in the query component).
@@ -391,6 +467,34 @@
     }
   });
 
+  /**
+   * Format energy with auto-scaling (eV/keV/MeV/GeV).
+   * Input is in MeV/nucl. Returns string with unit.
+   */
+  function formatEnergy(energyMevNucl: number): string {
+    const absVal = Math.abs(energyMevNucl);
+    let value: number;
+    let unit: string;
+
+    if (absVal >= 1000) {
+      value = energyMevNucl / 1000;
+      unit = "GeV";
+    } else if (absVal >= 1) {
+      value = energyMevNucl;
+      unit = "MeV";
+    } else if (absVal >= 0.001) {
+      value = energyMevNucl * 1000;
+      unit = "keV";
+    } else {
+      value = energyMevNucl * 1e6;
+      unit = "eV";
+    }
+
+    // Format with 4 significant figures
+    const formatted = value.toPrecision(4);
+    return `${formatted} ${unit}`;
+  }
+
   // Debounced calculation for multi-program mode
   $effect(() => {
     // Read advOptsKey to establish reactive dependency on all advanced option fields.
@@ -449,6 +553,218 @@
       clearTimeout(timer);
     };
   });
+
+  // Inverse lookup calculation effects - snapshot deps synchronously before async
+  $effect(() => {
+    // Read advOptsKey and activeTab to establish reactive dependencies
+    const _advOptsKey = advOptsKey;
+    if (!inverseLookupState || !state || !calcState || !state.isComplete) return;
+    if (inverseLookupState.activeTab !== "csda") return;
+
+    // Snapshot all reactive deps synchronously at the top
+    const advOptsSnapshot = advancedOptions.value;
+    const particleId = state.selectedParticle?.id;
+    const materialId = state.selectedMaterial?.id;
+    const programId = state.resolvedProgramId;
+    const rowsSnapshot = inverseLookupState.rangeRows.map((r) => ({
+      id: r.id,
+      text: r.text,
+      value: r.value,
+      unit: r.unit,
+      status: r.status,
+    }));
+
+    if (particleId === null || materialId === null || programId === null) return;
+
+    const validRows = rowsSnapshot.filter(
+      (r) => r.status === "valid" || r.status === "out-of-range",
+    );
+    if (validRows.length === 0) return;
+
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      const service = await getService();
+      if (cancelled) return;
+
+      const material = state?.selectedMaterial;
+      const density =
+        (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
+
+      if (density <= 0) {
+        // Mark all non-empty rows as invalid due to missing density
+        for (const r of inverseLookupState.rangeRows) {
+          if (r.text.trim()) {
+            r.status = "invalid";
+            r.message = "Density not available for this material";
+            r.energyMevNucl = null;
+          }
+        }
+        return;
+      }
+
+      // Convert to g/cm²
+      const rangesGcm2 = validRows.map((r) => {
+        const rangeCm = r.value! * getUnitToCmFactor(r.unit);
+        return rangeCm * density;
+      });
+
+      try {
+        const results = service.getInverseCsda({
+          programId,
+          particleId,
+          materialId,
+          ranges: rangesGcm2,
+          options: advOptsSnapshot,
+        });
+
+        let resultIdx = 0;
+        for (const r of inverseLookupState.rangeRows) {
+          if (r.status === "valid" || r.status === "out-of-range") {
+            const result = results[resultIdx++];
+            if (result instanceof Error) {
+              r.energyMevNucl = null;
+            } else {
+              r.energyMevNucl = result.energy;
+            }
+          }
+        }
+      } catch (e) {
+        // Error handling - keep existing row states
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  });
+
+  $effect(() => {
+    // Read advOptsKey and activeTab to establish reactive dependencies
+    const _advOptsKey = advOptsKey;
+    if (!inverseLookupState || !state || !calcState || !state.isComplete) return;
+    if (inverseLookupState.activeTab !== "stp") return;
+
+    // Snapshot all reactive deps synchronously at the top
+    const advOptsSnapshot = advancedOptions.value;
+    const particleId = state.selectedParticle?.id;
+    const materialId = state.selectedMaterial?.id;
+    const programId = state.resolvedProgramId;
+    const rowsSnapshot = inverseLookupState.stpRows.map((r) => ({
+      id: r.id,
+      text: r.text,
+      value: r.value,
+      unit: r.unit,
+      status: r.status,
+    }));
+
+    if (particleId === null || materialId === null || programId === null) return;
+
+    const validRows = rowsSnapshot.filter((r) => r.status === "valid" || r.status === "no-solution");
+    if (validRows.length === 0) return;
+
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      const service = await getService();
+      if (cancelled) return;
+
+      const material = state?.selectedMaterial;
+      const density =
+        (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
+
+      // Convert to MeV·cm²/g
+      const stpMevCm2g = validRows.map((r) =>
+        stpToMevCm2g(r.value!, r.unit, density),
+      );
+
+      try {
+        // Call for low branch (side=0)
+        const lowResults = service.getInverseStp({
+          programId,
+          particleId,
+          materialId,
+          stoppingPowers: stpMevCm2g,
+          side: 0,
+          options: advOptsSnapshot,
+        });
+
+        // Call for high branch (side=1)
+        const highResults = service.getInverseStp({
+          programId,
+          particleId,
+          materialId,
+          stoppingPowers: stpMevCm2g,
+          side: 1,
+          options: advOptsSnapshot,
+        });
+
+        let resultIdx = 0;
+        for (const r of inverseLookupState.stpRows) {
+          if (r.status === "valid" || r.status === "no-solution") {
+            const lowResult = lowResults[resultIdx];
+            const highResult = highResults[resultIdx];
+
+            if (lowResult instanceof Error) {
+              r.energyLowMevNucl = null;
+            } else {
+              r.energyLowMevNucl = lowResult.energy;
+            }
+
+            if (highResult instanceof Error) {
+              r.energyHighMevNucl = null;
+            } else {
+              r.energyHighMevNucl = highResult.energy;
+            }
+
+            resultIdx++;
+          }
+        }
+      } catch (e) {
+        // Error handling - keep existing row states
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  });
+
+  // Helper: convert length unit to cm factor
+  function getUnitToCmFactor(unit: "nm" | "um" | "mm" | "cm" | "m"): number {
+    switch (unit) {
+      case "nm":
+        return 1e-7;
+      case "um":
+        return 1e-4;
+      case "mm":
+        return 0.1;
+      case "cm":
+        return 1;
+      case "m":
+        return 100;
+    }
+  }
+
+  // Helper: STP to MeV·cm²/g conversion
+  function stpToMevCm2g(
+    value: number,
+    unit: "kev-um" | "mev-cm" | "mev-cm2-g",
+    density: number,
+  ): number {
+    switch (unit) {
+      case "kev-um":
+        return value / (10 * density);
+      case "mev-cm":
+        return value / density;
+      case "mev-cm2-g":
+        return value;
+    }
+  }
 </script>
 
 <svelte:head>
@@ -666,14 +982,229 @@
         disabled={calcState.isPerRowMode}
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />
-      <div class="rounded-lg border bg-card p-3 sm:p-6">
-        <ResultTable
-          state={calcState}
-          entitySelection={state}
-          multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
-          comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
-        />
-      </div>
+
+      {#if isAdvancedMode.value}
+        <!-- Tab switcher for Advanced mode -->
+        <div class="border-b">
+          <div class="flex gap-2" role="tablist" aria-label="Calculator mode">
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "forward"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "forward"}
+              class:border-transparent={inverseLookupState?.activeTab !== "forward"}
+              class:text-foreground={inverseLookupState?.activeTab === "forward"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
+              onclick={() => inverseLookupState?.setActiveTab("forward")}
+            >
+              Forward
+            </button>
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "csda"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "csda"}
+              class:border-transparent={inverseLookupState?.activeTab !== "csda"}
+              class:text-foreground={inverseLookupState?.activeTab === "csda"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
+              onclick={() => inverseLookupState?.setActiveTab("csda")}
+            >
+              Range
+            </button>
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "stp"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "stp"}
+              class:border-transparent={inverseLookupState?.activeTab !== "stp"}
+              class:text-foreground={inverseLookupState?.activeTab === "stp"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
+              onclick={() => inverseLookupState?.setActiveTab("stp")}
+            >
+              Inverse STP
+            </button>
+          </div>
+        </div>
+      {/if}
+
+      <!-- Forward tab content (default) -->
+      {#if !inverseLookupState || inverseLookupState.activeTab === "forward"}
+        <div class="rounded-lg border bg-card p-3 sm:p-6">
+          <ResultTable
+            state={calcState}
+            entitySelection={state}
+            multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
+            comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
+          />
+        </div>
+      {/if}
+
+      <!-- Range tab content -->
+      {#if inverseLookupState && inverseLookupState.activeTab === "csda"}
+        <div class="rounded-lg border bg-card p-3 sm:p-6">
+          <div class="space-y-4">
+            <div class="text-sm text-muted-foreground">
+              Enter a CSDA range value to find the corresponding particle energy.
+            </div>
+            
+            <!-- Range table header -->
+            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
+              <div>Range</div>
+              <div>Unit</div>
+              <div>→ Energy</div>
+            </div>
+
+            <!-- Range rows -->
+            <div class="space-y-2">
+              {#each inverseLookupState.rangeRows as row, i (row.id)}
+                <div class="grid grid-cols-3 gap-2" data-testid="inverse-range-row-{i}">
+                  <input
+                    type="text"
+                    value={row.text}
+                    placeholder="Enter range (e.g., 7.718 cm)"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    oninput={(e) => inverseLookupState.updateRangeRowText(i, e.currentTarget.value)}
+                    data-testid={`inverse-range-input-${i}`}
+                  />
+                  {#if row.unitFromSuffix}
+                    <select
+                      value={row.unit}
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      disabled
+                    >
+                      <option value="nm">nm</option>
+                      <option value="um">µm</option>
+                      <option value="mm">mm</option>
+                      <option value="cm">cm</option>
+                      <option value="m">m</option>
+                    </select>
+                  {:else}
+                    <select
+                      value={row.unit}
+                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                      onchange={(e) => {
+                        const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
+                        // Update row with master unit
+                        const text = row.text.trim() ? `${row.text.trim()}` : "";
+                        inverseLookupState.updateRangeRowText(i, text);
+                      }}
+                    >
+                      <option value="nm">nm</option>
+                      <option value="um">µm</option>
+                      <option value="mm">mm</option>
+                      <option value="cm">cm</option>
+                      <option value="m">m</option>
+                    </select>
+                  {/if}
+                  <div class="flex items-center" data-testid={`inverse-range-energy-${i}`}>
+                    {#if row.status === "valid" && row.energyMevNucl !== null}
+                      <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
+                    {:else if row.status === "invalid" || row.status === "out-of-range"}
+                      <span class="text-sm text-destructive">{row.message}</span>
+                    {:else if row.status === "empty"}
+                      <span class="text-sm text-muted-foreground"></span>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+              <!-- Add row button -->
+              <button
+                type="button"
+                class="text-sm text-primary hover:underline mt-2"
+                onclick={() => inverseLookupState.addRangeRow()}
+              >
+                + Add row
+              </button>
+            </div>
+
+            <!-- Valid range hint -->
+            {#if state.isComplete && energyRangeLabel}
+              <p class="text-xs text-muted-foreground mt-4">
+                Valid range: {energyRangeLabel}
+              </p>
+            {/if}
+          </div>
+        </div>
+      {/if}
+
+      <!-- Inverse STP tab content -->
+      {#if inverseLookupState && inverseLookupState.activeTab === "stp"}
+        <div class="rounded-lg border bg-card p-3 sm:p-6">
+          <div class="space-y-4">
+            <div class="text-sm text-muted-foreground">
+              Enter a stopping power value to find the corresponding energies (low and high branches).
+            </div>
+            
+            <!-- STP table header -->
+            <div class="grid grid-cols-4 gap-2 text-sm font-medium mb-2">
+              <div>Stopping Power</div>
+              <div>Unit</div>
+              <div>E low</div>
+              <div>E high</div>
+            </div>
+
+            <!-- STP rows -->
+            <div class="space-y-2">
+              {#each inverseLookupState.stpRows as row, i (row.id)}
+                <div class="grid grid-cols-4 gap-2" data-testid="inverse-stp-row-{i}">
+                  <input
+                    type="text"
+                    value={row.text}
+                    placeholder="Enter stopping power"
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                    oninput={(e) => inverseLookupState.updateStpRowText(i, e.currentTarget.value)}
+                    data-testid={`inverse-stp-input-${i}`}
+                  />
+                  <select
+                    value={row.unit}
+                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
+                    onchange={(e) => {
+                      inverseLookupState.setStpMasterUnit(e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g");
+                    }}
+                  >
+                    <option value="kev-um">keV/µm</option>
+                    <option value="mev-cm">MeV/cm</option>
+                    <option value="mev-cm2-g">MeV·cm²/g</option>
+                  </select>
+                  <div class="flex items-center" data-testid={`inverse-stp-elow-${i}`}>
+                    {#if row.status === "valid" && row.energyLowMevNucl !== null}
+                      <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
+                    {:else if row.status === "invalid" || row.status === "no-solution"}
+                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                    {:else if row.status === "empty"}
+                      <span class="text-sm text-muted-foreground"></span>
+                    {/if}
+                  </div>
+                  <div class="flex items-center" data-testid={`inverse-stp-ehigh-${i}`}>
+                    {#if row.status === "valid" && row.energyHighMevNucl !== null}
+                      <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
+                    {:else if row.status === "invalid" || row.status === "no-solution"}
+                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                    {:else if row.status === "empty"}
+                      <span class="text-sm text-muted-foreground"></span>
+                    {/if}
+                  </div>
+                </div>
+              {/each}
+              <!-- Add row button -->
+              <button
+                type="button"
+                class="text-sm text-primary hover:underline mt-2"
+                onclick={() => inverseLookupState.addStpRow()}
+              >
+                + Add row
+              </button>
+            </div>
+
+            <!-- Valid STP range hint -->
+            {#if state.isComplete && energyRangeLabel}
+              <p class="text-xs text-muted-foreground mt-4">
+                Particle/material: {state.selectedParticle?.name} in {state.selectedMaterial?.name}
+              </p>
+            {/if}
+          </div>
+        </div>
+      {/if}
       {#if programLabel}
         <p class="text-sm text-muted-foreground -mt-2">{programLabel}</p>
       {/if}
