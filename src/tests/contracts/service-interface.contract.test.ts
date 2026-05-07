@@ -47,6 +47,11 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getPlotData).toBe("function");
     expect(typeof service.getMinEnergy).toBe("function");
     expect(typeof service.getMaxEnergy).toBe("function");
+    expect(typeof service.getInverseStp).toBe("function");
+    expect(typeof service.getInverseCsda).toBe("function");
+    expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.getDensity).toBe("function");
+    expect(typeof service.convertEnergy).toBe("function");
   });
 
   it("MockLibdedxServiceWithElectron instance has all required LibdedxService methods", () => {
@@ -60,5 +65,10 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getPlotData).toBe("function");
     expect(typeof service.getMinEnergy).toBe("function");
     expect(typeof service.getMaxEnergy).toBe("function");
+    expect(typeof service.getInverseStp).toBe("function");
+    expect(typeof service.getInverseCsda).toBe("function");
+    expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.getDensity).toBe("function");
+    expect(typeof service.convertEnergy).toBe("function");
   });
 });

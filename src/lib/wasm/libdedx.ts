@@ -5,13 +5,20 @@ import type {
   MaterialEntity,
   CalculationResult,
   AdvancedOptions,
-} from "./types";
-import { LibdedxError } from "./types";
-import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases";
-import { getMaterialFriendlyName } from "$lib/config/material-names";
-import { getProgramFriendlyName } from "$lib/config/program-names";
-import { getParticleFriendlyName } from "$lib/config/particle-names";
-import { integrateCsdaFromStp } from "$lib/utils/csda-integration";
+  InverseStpResult,
+  InverseCsdaResult,
+  EnergyUnit,
+} from "./types.js";
+import { LibdedxError } from "./types.js";
+import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases.js";
+import { getMaterialFriendlyName } from "$lib/config/material-names.js";
+import { getProgramFriendlyName } from "$lib/config/program-names.js";
+import { getParticleFriendlyName } from "$lib/config/particle-names.js";
+import { integrateCsdaFromStp } from "$lib/utils/csda-integration.js";
+import {
+  convertEnergyFromMeVperNucl,
+  convertEnergyFromMeVperU,
+} from "$lib/utils/energy-conversions.js";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -48,6 +55,28 @@ interface EmscriptenModule {
   ): number;
   _dedx_get_min_energy(program_id: number, ion_id: number): number;
   _dedx_get_max_energy(program_id: number, ion_id: number): number;
+  // Inverse lookup functions
+  _dedx_get_inverse_stp(
+    program_id: number,
+    particle_id: number,
+    material_id: number,
+    stopping_power: number,
+    side: number,
+    err_ptr: number,
+  ): number;
+  _dedx_get_inverse_csda(
+    program_id: number,
+    particle_id: number,
+    material_id: number,
+    range: number,
+    err_ptr: number,
+  ): number;
+  _dedx_get_bragg_peak_stp(
+    program_id: number,
+    particle_id: number,
+    material_id: number,
+    err_ptr: number,
+  ): number;
   _malloc(size: number): number;
   _free(ptr: number): void;
   UTF8ToString(ptr: number): string;
@@ -379,6 +408,160 @@ export class LibdedxServiceImpl implements LibdedxService {
 
   getMaxEnergy(programId: number, particleId: number): number {
     return this.module._dedx_get_max_energy(programId, particleId);
+  }
+
+  getInverseStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+    options?: AdvancedOptions;
+  }): (InverseStpResult | LibdedxError)[] {
+    const { programId, particleId, materialId, stoppingPowers, side } = params;
+    const results: (InverseStpResult | LibdedxError)[] = [];
+
+    // Allocate error pointer once and reuse for all calls
+    const errPtr = this.module._malloc(4);
+
+    try {
+      for (const stp of stoppingPowers) {
+        const energy = this.module._dedx_get_inverse_stp(
+          programId,
+          particleId,
+          materialId,
+          stp,
+          side,
+          errPtr,
+        );
+
+        const errCode = this.module.HEAP32[errPtr >>> 2];
+        if (errCode !== 0) {
+          results.push(new LibdedxError(errCode, `Inverse STP lookup failed for stp=${stp}`));
+        } else {
+          results.push({ energy, stoppingPower: stp });
+        }
+      }
+    } finally {
+      this.module._free(errPtr);
+    }
+
+    return results;
+  }
+
+  getInverseCsda(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    ranges: number[];
+    options?: AdvancedOptions;
+  }): (InverseCsdaResult | LibdedxError)[] {
+    const { programId, particleId, materialId, ranges } = params;
+    const results: (InverseCsdaResult | LibdedxError)[] = [];
+
+    // Allocate error pointer once and reuse for all calls
+    const errPtr = this.module._malloc(4);
+
+    try {
+      for (const range of ranges) {
+        const energy = this.module._dedx_get_inverse_csda(
+          programId,
+          particleId,
+          materialId,
+          range,
+          errPtr,
+        );
+
+        const errCode = this.module.HEAP32[errPtr >>> 2];
+        if (errCode !== 0) {
+          results.push(new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`));
+        } else {
+          results.push({ energy, csdaRange: range });
+        }
+      }
+    } finally {
+      this.module._free(errPtr);
+    }
+
+    return results;
+  }
+
+  getBraggPeakStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    options?: AdvancedOptions;
+  }): number {
+    const { programId, particleId, materialId } = params;
+    const errPtr = this.module._malloc(4);
+
+    try {
+      const braggPeakStp = this.module._dedx_get_bragg_peak_stp(
+        programId,
+        particleId,
+        materialId,
+        errPtr,
+      );
+
+      const errCode = this.module.HEAP32[errPtr >>> 2];
+      if (errCode !== 0) {
+        throw new LibdedxError(errCode, "Bragg peak STP lookup failed");
+      }
+
+      return braggPeakStp;
+    } finally {
+      this.module._free(errPtr);
+    }
+  }
+
+  getDensity(materialId: number): number | undefined {
+    const errPtr = this.module._malloc(4);
+
+    try {
+      const density = this.module._dedx_get_density(materialId, errPtr);
+      const errCode = this.module.HEAP32[errPtr >>> 2];
+      if (errCode !== 0) {
+        return undefined;
+      }
+      return density;
+    } finally {
+      this.module._free(errPtr);
+    }
+  }
+
+  convertEnergy(params: {
+    fromUnit: EnergyUnit;
+    toUnit: EnergyUnit;
+    massNumber: number;
+    atomicMass: number;
+    values: number[];
+  }): number[] {
+    const { fromUnit, toUnit, massNumber, atomicMass, values } = params;
+
+    return values.map((value) => {
+      // First convert from source unit to MeV/nucl as intermediate
+      let valueInMeVperNucl: number;
+
+      if (fromUnit === "MeV/nucl") {
+        valueInMeVperNucl = value;
+      } else if (fromUnit === "MeV/u") {
+        // MeV/u to MeV/nucl: multiply by atomicMass/massNumber
+        valueInMeVperNucl = (value * atomicMass) / massNumber;
+      } else {
+        // MeV (total) to MeV/nucl: divide by massNumber
+        valueInMeVperNucl = value / massNumber;
+      }
+
+      // Then convert from MeV/nucl to target unit
+      if (toUnit === "MeV/nucl") {
+        return valueInMeVperNucl;
+      } else if (toUnit === "MeV/u") {
+        return convertEnergyFromMeVperU(valueInMeVperNucl, "MeV/u", massNumber, atomicMass);
+      } else {
+        // toUnit === "MeV" (total energy)
+        return convertEnergyFromMeVperNucl(valueInMeVperNucl, "MeV", massNumber, atomicMass);
+      }
+    });
   }
 }
 

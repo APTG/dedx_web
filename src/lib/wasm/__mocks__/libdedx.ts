@@ -5,6 +5,9 @@ import type {
   MaterialEntity,
   CalculationResult,
   AdvancedOptions,
+  InverseStpResult,
+  InverseCsdaResult,
+  EnergyUnit,
 } from "../types";
 import { LibdedxError } from "../types";
 
@@ -154,6 +157,53 @@ export class LibdedxServiceImpl implements LibdedxService {
   getMaxEnergy(_programId: number, _particleId: number): number {
     return 1000;
   }
+
+  getInverseStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+    options?: AdvancedOptions;
+  }): (InverseStpResult | LibdedxError)[] {
+    return params.stoppingPowers.map((stp) => ({
+      energy: params.side === 0 ? stp * 2 : stp * 10,
+      stoppingPower: stp,
+    }));
+  }
+
+  getInverseCsda(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    ranges: number[];
+    options?: AdvancedOptions;
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return params.ranges.map((r) => ({ energy: r * 13, csdaRange: r }));
+  }
+
+  getBraggPeakStp(_params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    options?: AdvancedOptions;
+  }): number {
+    return 80.0;
+  }
+
+  getDensity(_materialId: number): number {
+    return 1.0;
+  }
+
+  convertEnergy(params: {
+    fromUnit: EnergyUnit;
+    toUnit: EnergyUnit;
+    massNumber: number;
+    atomicMass: number;
+    values: number[];
+  }): number[] {
+    return params.values;
+  }
 }
 
 export class MockLibdedxServiceWithElectron implements LibdedxService {
@@ -287,5 +337,52 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
 
   getMaxEnergy(_programId: number, _particleId: number): number {
     return 1000;
+  }
+
+  getInverseStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+    options?: AdvancedOptions;
+  }): (InverseStpResult | LibdedxError)[] {
+    return params.stoppingPowers.map((stp) => ({
+      energy: params.side === 0 ? stp * 2 : stp * 10,
+      stoppingPower: stp,
+    }));
+  }
+
+  getInverseCsda(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    ranges: number[];
+    options?: AdvancedOptions;
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return params.ranges.map((r) => ({ energy: r * 13, csdaRange: r }));
+  }
+
+  getBraggPeakStp(_params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    options?: AdvancedOptions;
+  }): number {
+    return 80.0;
+  }
+
+  getDensity(_materialId: number): number {
+    return 1.0;
+  }
+
+  convertEnergy(params: {
+    fromUnit: EnergyUnit;
+    toUnit: EnergyUnit;
+    massNumber: number;
+    atomicMass: number;
+    values: number[];
+  }): number[] {
+    return params.values;
   }
 }
