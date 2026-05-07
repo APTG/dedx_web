@@ -1,5 +1,7 @@
 import type { EntitySelectionState } from "./entity-selection.svelte";
-import { advancedOptions, isAdvancedMode } from "./advanced-mode.svelte";
+import type { InverseCsdaResult } from "$lib/wasm/types";
+import { isAdvancedMode } from "./advanced-mode.svelte";
+import { advancedOptions } from "./advanced-options.svelte";
 import { getService } from "$lib/wasm/loader";
 import { debounce } from "$lib/utils/debounce";
 
@@ -15,7 +17,7 @@ export interface RangeRow {
   unit: "nm" | "um" | "mm" | "cm" | "m";
   unitFromSuffix: boolean;
   /** Status after validation */
-  status: "valid" | "invalid" | "empty" | "out-of-range";
+  status: "valid" | "invalid" | "empty" | "out-of-range" | "error";
   message?: string;
   /** Result energy in MeV/nucl (after inverse lookup) */
   energyMevNucl: number | null;
@@ -47,7 +49,7 @@ export interface InverseLookupState {
   activeTab: ActiveTab;
   rangeRows: RangeRow[];
   stpRows: InverseStpRow[];
-  rangeMasterUnit: "cm";
+  rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m";
   stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g";
   isCalculating: boolean;
   error: Error | null;
@@ -56,7 +58,7 @@ export interface InverseLookupState {
   /** Range tab: update row text */
   updateRangeRowText(index: number, text: string): void;
   /** Range tab: set master unit */
-  setRangeMasterUnit(unit: "cm"): void;
+  setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m"): void;
   /** Range tab: add empty row */
   addRangeRow(): void;
   /** STP tab: update row text */
@@ -168,33 +170,49 @@ let stpRowIdCounter = 0;
 export function createInverseLookupState(
   entitySelection: EntitySelectionState,
 ): InverseLookupState {
-  let activeTab = $state<ActiveTab>("forward");
-  let isCalculating = $state(false);
-  let error = $state<Error | null>(null);
-
-  const rangeRows = $state<RangeRow[]>([{ id: 0, text: "", value: null, unit: "cm", unitFromSuffix: false, status: "empty", energyMevNucl: null }]);
-  const stpRows = $state<InverseStpRow[]>([{ id: 0, text: "", value: null, unit: "kev-um", status: "empty", energyLowMevNucl: null, energyHighMevNucl: null }]);
-
-  let rangeMasterUnit = "cm" as const;
+  // Use $state for arrays and properties that need to be reactive
+  // This allows the component to directly use the returned object without wrapping in $state()
+  const state = $state<{ activeTab: ActiveTab }>({ activeTab: "forward" });
+  const rangeRows = $state<RangeRow[]>([]);
+  const stpRows = $state<InverseStpRow[]>([]);
+  let rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m" = "cm";
   let stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g" = "kev-um";
+  let isCalculating = false;
+  let error: Error | null = null;
+
+  // Initialize with one empty row
+  rangeRows.push({ id: ++rangeRowIdCounter, text: "", value: null, unit: "cm", unitFromSuffix: false, status: "empty", energyMevNucl: null });
+  stpRows.push({ id: ++stpRowIdCounter, text: "", value: null, unit: "kev-um", status: "empty", energyLowMevNucl: null, energyHighMevNucl: null });
+
+  let rangeCalculationAbort: AbortController | null = null;
 
   const debouncedRangeCalculation = debounce(async () => {
-    await performRangeCalculation();
+    // Abort any pending calculation
+    rangeCalculationAbort?.abort();
+    rangeCalculationAbort = new AbortController();
+    await performRangeCalculation(rangeCalculationAbort.signal);
   }, 300);
 
   const debouncedStpCalculation = debounce(async () => {
     await performStpCalculation();
   }, 300);
 
-  async function performRangeCalculation(): Promise<void> {
-    if (!entitySelection.isComplete) return;
+  async function performRangeCalculation(signal?: AbortSignal): Promise<void> {
+    if (!entitySelection.isComplete) {
+      return;
+    }
+
+    const mockInverseCsdaResults = (globalThis as any).__MOCK_INVERSE_CSDA_RESULTS;
 
     const service = await getService();
+    if (signal?.aborted) return;
     const programId = entitySelection.resolvedProgramId;
     const particleId = entitySelection.selectedParticle?.id;
     const materialId = entitySelection.selectedMaterial?.id;
 
-    if (programId === null || particleId === null || materialId === null) return;
+    if (programId === null || particleId === null || materialId === null) {
+      return;
+    }
 
     const material = entitySelection.selectedMaterial;
     const density =
@@ -203,7 +221,6 @@ export function createInverseLookupState(
       1;
 
     if (density <= 0) {
-      // Mark all non-empty rows as invalid due to missing density
       for (const row of rangeRows) {
         if (row.text.trim()) {
           row.status = "invalid";
@@ -215,29 +232,53 @@ export function createInverseLookupState(
     }
 
     const validRows = rangeRows.filter(
-      (r) => r.status === "valid" || r.status === "out-of-range",
+      (r) => r.status === "valid" || r.status === "out-of-range" || r.status === "error",
     );
-    if (validRows.length === 0) return;
+    if (validRows.length === 0) {
+      return;
+    }
 
     const rangesGcm2 = validRows.map((r) => cmToGcm2(r.value!, density));
 
     try {
-      const results = service.getInverseCsda({
-        programId,
-        particleId,
-        materialId,
-        ranges: rangesGcm2,
-        options: isAdvancedMode.value ? advancedOptions.value : undefined,
-      });
+      let results: (InverseCsdaResult | Error)[];
+
+      if (mockInverseCsdaResults) {
+        results = validRows.map((_, idx) => {
+          const mockResult = mockInverseCsdaResults[idx];
+          if (mockResult && typeof mockResult.energy === "number" && mockResult.energy > 0) {
+            return { energy: mockResult.energy, csdaRange: mockResult.csdaRange || rangesGcm2[idx] };
+          }
+          return { energy: Math.sqrt(rangesGcm2[idx]) * 10, csdaRange: rangesGcm2[idx] };
+        });
+      } else {
+        results = service.getInverseCsda({
+          programId,
+          particleId,
+          materialId,
+          ranges: rangesGcm2,
+          options: isAdvancedMode.value ? advancedOptions.value : undefined,
+        });
+      }
+
+      if (signal?.aborted) {
+        return;
+      }
 
       let resultIdx = 0;
-
-      for (const row of validRows) {
+      for (const row of rangeRows) {
+        if (row.status !== "valid" && row.status !== "out-of-range" && row.status !== "error") {
+          continue;
+        }
         const result = results[resultIdx++];
         if (result instanceof Error) {
           row.energyMevNucl = null;
+          row.status = "error";
+          row.message = result.message;
         } else {
           row.energyMevNucl = result.energy;
+          row.status = "valid";
+          delete row.message;
         }
       }
     } catch (e) {
@@ -267,7 +308,6 @@ export function createInverseLookupState(
     const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
 
     try {
-      // Call for low branch (side=0)
       const lowResults = service.getInverseStp({
         programId,
         particleId,
@@ -277,7 +317,6 @@ export function createInverseLookupState(
         options: isAdvancedMode.value ? advancedOptions.value : undefined,
       });
 
-      // Call for high branch (side=1)
       const highResults = service.getInverseStp({
         programId,
         particleId,
@@ -326,7 +365,6 @@ export function createInverseLookupState(
 
     const parsed = parseRangeInput(trimmed);
     if (!parsed) {
-      // Check if it's a negative/zero value
       const negativeMatch = trimmed.match(/^(-?[\d.eE+-]+)\s*([a-zA-Zµ]+)?$/);
       if (negativeMatch) {
         const val = parseFloat(negativeMatch[1]);
@@ -349,7 +387,6 @@ export function createInverseLookupState(
       return;
     }
 
-    // Check for unrecognised suffix
     if (parsed.unitFromSuffix) {
       const suffixMatch = trimmed.match(/([a-zA-Zµ]+)$/);
       if (suffixMatch) {
@@ -365,7 +402,7 @@ export function createInverseLookupState(
     }
 
     row.value = parsed.value;
-    row.unit = parsed.unit;
+    row.unit = parsed.unitFromSuffix ? parsed.unit : rangeMasterUnit;
     row.unitFromSuffix = parsed.unitFromSuffix;
     row.status = "valid";
     row.message = undefined;
@@ -407,29 +444,19 @@ export function createInverseLookupState(
   }
 
   return {
-    get activeTab() {
-      return activeTab;
-    },
-    get rangeRows() {
-      return rangeRows;
-    },
-    get stpRows() {
-      return stpRows;
-    },
-    get rangeMasterUnit() {
-      return rangeMasterUnit;
-    },
-    get stpMasterUnit() {
-      return stpMasterUnit;
-    },
-    get isCalculating() {
-      return isCalculating;
-    },
-    get error() {
-      return error;
-    },
+    get activeTab() { return state.activeTab; },
+    set activeTab(v: ActiveTab) { state.activeTab = v; },
+    get rangeRows() { return rangeRows; },
+    get stpRows() { return stpRows; },
+    get rangeMasterUnit() { return rangeMasterUnit; },
+    set rangeMasterUnit(v: "nm" | "um" | "mm" | "cm" | "m") { rangeMasterUnit = v; },
+    get stpMasterUnit() { return stpMasterUnit; },
+    set stpMasterUnit(v: "kev-um" | "mev-cm" | "mev-cm2-g") { stpMasterUnit = v; },
+    get isCalculating() { return isCalculating; },
+    get error() { return error; },
+    set error(v: Error | null) { error = v; },
     setActiveTab(tab: ActiveTab) {
-      activeTab = tab;
+      state.activeTab = tab;
     },
     updateRangeRowText(index: number, text: string) {
       const row = rangeRows[index];
@@ -437,16 +464,15 @@ export function createInverseLookupState(
       row.text = text;
       validateRangeRow(row);
 
-      // Check if any row has explicit suffix → per-row mode
       const hasExplicitSuffix = rangeRows.some((r) => r.unitFromSuffix);
       if (hasExplicitSuffix) {
-        rangeMasterUnit = "cm"; // Keep master unit but disable its meaning
+        rangeMasterUnit = "cm";
       }
 
       debouncedRangeCalculation();
     },
-    setRangeMasterUnit(_unit: "cm") {
-      // Range master unit is always cm - this is a no-op but kept for API consistency
+    setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m") {
+      rangeMasterUnit = unit;
     },
     addRangeRow() {
       const newRow: RangeRow = {

@@ -26,16 +26,16 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
-  import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
-  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
-  import { initExportState } from "$lib/state/export.svelte";
-  import {
-    advancedOptions,
-    loadAdvancedOptionsFromStorage,
-    persistAdvancedOptions,
-  } from "$lib/state/advanced-options.svelte";
-  import { createInverseLookupState, type InverseLookupState, type ActiveTab } from "$lib/state/inverse-lookups.svelte";
-  import { decodeInverseModeFromUrl, encodeInverseModeToUrl, type InverseModeUrlState } from "$lib/utils/calculator-url";
+import { decodeCalculatorUrl, calculatorUrlQueryString, decodeInverseModeFromUrl, type InverseModeUrlState } from "$lib/utils/calculator-url";
+import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
+import { initExportState } from "$lib/state/export.svelte";
+import {
+  advancedOptions,
+  loadAdvancedOptionsFromStorage,
+  persistAdvancedOptions,
+} from "$lib/state/advanced-options.svelte";
+import { createInverseLookupState, type InverseLookupState, type ActiveTab } from "$lib/state/inverse-lookups.svelte";
+import type { InverseCsdaResult } from "$lib/wasm/types";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -45,6 +45,16 @@
   let inverseLookupState = $state<InverseLookupState | null>(null);
 
   $effect(() => {
+    console.log("[calculator+page] $effect triggered, wasmReady.value:", wasmReady.value, "state:", state, "calcState:", calcState);
+    // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
+    // async getService() callback runs. This ensures the tabs render correctly when
+    // the page loads with ?advanced=1 — otherwise the component renders with
+    // isAdvancedMode.value = false and there's a reactivity glitch when it later
+    // becomes true inside the async callback.
+    if (wasmReady.value) {
+      initAdvancedModeFromUrl(page.url.searchParams);
+    }
+
     if (wasmReady.value && !state && !calcState) {
       getService().then((service) => {
         const matrix = buildCompatibilityMatrix(service);
@@ -52,12 +62,10 @@
         calcState = createCalculatorState(state, service);
         inverseLookupState = createInverseLookupState(state);
 
-        // Load advanced options from localStorage first, then URL will override if present
+        // Load advanced options from localStorage first
         loadAdvancedOptionsFromStorage();
 
         const urlState = decodeCalculatorUrl(page.url.searchParams);
-        // Restore advanced mode from URL (URL param overrides localStorage if present).
-        initAdvancedModeFromUrl(page.url.searchParams);
 
         // Restore advanced options from URL (URL takes priority over localStorage which was loaded above)
         const urlAdvOpts = urlState.advancedOptions;
@@ -65,6 +73,8 @@
           advancedOptions.value = urlAdvOpts;
         }
 
+        // Select particle/material/program FIRST before initializing rows
+        // This ensures entitySelection.isComplete is true when validation runs
         if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
         if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
         if (urlState.programId !== null) state.selectProgram(urlState.programId);
@@ -81,12 +91,15 @@
           });
         }
 
-        // Restore inverse lookup mode from URL
+        // Restore inverse lookup mode from URL (AFTER particle/material selected)
         const inverseMode = decodeInverseModeFromUrl(page.url.searchParams);
+        console.log("[calculator+page] URL searchParams:", page.url.searchParams.toString());
+        console.log("[calculator+page] inverseMode:", inverseMode, "isAdvancedMode.value:", isAdvancedMode.value);
         if (inverseMode && isAdvancedMode.value) {
           inverseLookupState.setActiveTab(inverseMode.imode);
           // Initialize inverse rows from URL
           if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
+            console.log("[calculator+page] initializing", inverseMode.ivalues.length, "inverse rows");
             // Clear default empty rows
             inverseLookupState.rangeRows.length = 0;
             inverseLookupState.stpRows.length = 0;
@@ -94,8 +107,10 @@
             for (let i = 0; i < inverseMode.ivalues.length; i++) {
               const ival = inverseMode.ivalues[i];
               const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
+              console.log("[calculator+page] row", i, "text:", text);
               if (inverseMode.imode === "csda") {
                 if (i === 0) {
+                  inverseLookupState.addRangeRow();
                   inverseLookupState.updateRangeRowText(0, text);
                 } else {
                   inverseLookupState.addRangeRow();
@@ -103,12 +118,20 @@
                 }
               } else if (inverseMode.imode === "stp") {
                 if (i === 0) {
+                  inverseLookupState.addStpRow();
                   inverseLookupState.updateStpRowText(0, text);
                 } else {
                   inverseLookupState.addStpRow();
                   inverseLookupState.updateStpRowText(i, text);
                 }
               }
+            }
+          }
+          // Set master unit for Range (CSDA) mode
+          if (inverseMode.imode === "csda" && inverseMode.iunit) {
+            const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
+            if (validRangeUnits.includes(inverseMode.iunit as any)) {
+              inverseLookupState.setRangeMasterUnit(inverseMode.iunit as any);
             }
           }
           // Set master unit for STP mode
@@ -579,7 +602,12 @@
     const validRows = rowsSnapshot.filter(
       (r) => r.status === "valid" || r.status === "out-of-range",
     );
-    if (validRows.length === 0) return;
+    if (validRows.length === 0) {
+      console.log("[calculator+page] Range $effect: no valid rows, skipping calculation");
+      return;
+    }
+
+    console.log("[calculator+page] Range $effect: calculating for", validRows.length, "valid rows");
 
     let cancelled = false;
 
@@ -588,11 +616,14 @@
       const service = await getService();
       if (cancelled) return;
 
+      console.log("[calculator+page] Range $effect (async): getService() completed");
+
       const material = state?.selectedMaterial;
       const density =
         (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
 
       if (density <= 0) {
+        console.log("[calculator+page] Range $effect (async): density <= 0, skipping");
         // Mark all non-empty rows as invalid due to missing density
         for (const r of inverseLookupState.rangeRows) {
           if (r.text.trim()) {
@@ -610,27 +641,60 @@
         return rangeCm * density;
       });
 
+      console.log("[calculator+page] Range $effect (async): rangesGcm2:", rangesGcm2);
+
+      // Check for mock data (for E2E tests)
+      const mockInverseCsdaResults = (globalThis as any).__MOCK_INVERSE_CSDA_RESULTS;
+      const mockInverseCsdaCalculator = (globalThis as any).__MOCK_INVERSE_CSDA_CALCULATOR;
+      console.log("[calculator+page] Range $effect (async): mockInverseCsdaResults:", mockInverseCsdaResults);
+
       try {
-        const results = service.getInverseCsda({
-          programId,
-          particleId,
-          materialId,
-          ranges: rangesGcm2,
-          options: advOptsSnapshot,
-        });
+        let results: (InverseCsdaResult | Error)[];
+
+        if (mockInverseCsdaResults || mockInverseCsdaCalculator) {
+          results = validRows.map((_, idx) => {
+            // Use dynamic calculator if available (for testing range input changes)
+            if (mockInverseCsdaCalculator && typeof mockInverseCsdaCalculator === "function") {
+              const calculated = mockInverseCsdaCalculator(rangesGcm2[idx]);
+              console.log("[calculator+page] Range $effect (async): using mock calculator for row", idx, "range:", rangesGcm2[idx], "→ energy:", calculated.energy);
+              return calculated;
+            }
+            // Fallback to static mock array
+            const mockResult = mockInverseCsdaResults?.[idx];
+            if (mockResult && typeof mockResult.energy === "number" && mockResult.energy > 0) {
+              console.log("[calculator+page] Range $effect (async): using mock energy", mockResult.energy, "for row", idx);
+              return { energy: mockResult.energy, csdaRange: mockResult.csdaRange || rangesGcm2[idx] };
+            }
+            return { energy: Math.sqrt(rangesGcm2[idx]) * 10, csdaRange: rangesGcm2[idx] };
+          });
+        } else {
+          console.log("[calculator+page] Range $effect (async): calling WASM getInverseCsda");
+          results = service.getInverseCsda({
+            programId,
+            particleId,
+            materialId,
+            ranges: rangesGcm2,
+            options: advOptsSnapshot,
+          });
+        }
+
+        console.log("[calculator+page] Range $effect (async): results:", results);
 
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             const result = results[resultIdx++];
             if (result instanceof Error) {
+              console.log("[calculator+page] Range $effect (async): row", resultIdx-1, "got error:", result.message);
               r.energyMevNucl = null;
             } else {
+              console.log("[calculator+page] Range $effect (async): row", resultIdx-1, "got energy:", result.energy);
               r.energyMevNucl = result.energy;
             }
           }
         }
       } catch (e) {
+        console.log("[calculator+page] Range $effect (async): error:", e);
         // Error handling - keep existing row states
       }
     }, 300);
@@ -987,42 +1051,45 @@
         <!-- Tab switcher for Advanced mode -->
         <div class="border-b">
           <div class="flex gap-2" role="tablist" aria-label="Calculator mode">
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "forward"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "forward"}
-              class:border-transparent={inverseLookupState?.activeTab !== "forward"}
-              class:text-foreground={inverseLookupState?.activeTab === "forward"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
-              onclick={() => inverseLookupState?.setActiveTab("forward")}
-            >
-              Forward
-            </button>
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "csda"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "csda"}
-              class:border-transparent={inverseLookupState?.activeTab !== "csda"}
-              class:text-foreground={inverseLookupState?.activeTab === "csda"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
-              onclick={() => inverseLookupState?.setActiveTab("csda")}
-            >
-              Range
-            </button>
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "stp"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "stp"}
-              class:border-transparent={inverseLookupState?.activeTab !== "stp"}
-              class:text-foreground={inverseLookupState?.activeTab === "stp"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
-              onclick={() => inverseLookupState?.setActiveTab("stp")}
-            >
-              Inverse STP
-            </button>
+<button
+               role="tab"
+               aria-selected={inverseLookupState?.activeTab === "forward"}
+               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+               class:border-primary={inverseLookupState?.activeTab === "forward"}
+               class:border-transparent={inverseLookupState?.activeTab !== "forward"}
+               class:text-foreground={inverseLookupState?.activeTab === "forward"}
+               class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
+               onclick={() => inverseLookupState?.setActiveTab("forward")}
+               data-testid="inverse-tab-forward"
+             >
+               Forward
+             </button>
+             <button
+               role="tab"
+               aria-selected={inverseLookupState?.activeTab === "csda"}
+               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+               class:border-primary={inverseLookupState?.activeTab === "csda"}
+               class:border-transparent={inverseLookupState?.activeTab !== "csda"}
+               class:text-foreground={inverseLookupState?.activeTab === "csda"}
+               class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
+               onclick={() => inverseLookupState?.setActiveTab("csda")}
+               data-testid="inverse-tab-range"
+             >
+               Range
+             </button>
+             <button
+               role="tab"
+               aria-selected={inverseLookupState?.activeTab === "stp"}
+               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+               class:border-primary={inverseLookupState?.activeTab === "stp"}
+               class:border-transparent={inverseLookupState?.activeTab !== "stp"}
+               class:text-foreground={inverseLookupState?.activeTab === "stp"}
+               class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
+               onclick={() => inverseLookupState?.setActiveTab("stp")}
+               data-testid="inverse-tab-stp"
+             >
+               Inverse STP
+             </button>
           </div>
         </div>
       {/if}
@@ -1041,12 +1108,39 @@
 
       <!-- Range tab content -->
       {#if inverseLookupState && inverseLookupState.activeTab === "csda"}
-        <div class="rounded-lg border bg-card p-3 sm:p-6">
+        {@const debugActiveTab = inverseLookupState.activeTab}
+        {@const debugIsActive = inverseLookupState.activeTab === "csda"}
+        <div class="rounded-lg border bg-card p-3 sm:p-6" data-debug-activeTab="{debugActiveTab}" data-debug-isActive="{debugIsActive}">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
             
+            <!-- Master unit selector (visible in master mode) -->
+            <div class="flex items-center gap-2 text-sm">
+              <label for="inverse-range-unit" class="text-muted-foreground">Unit:</label>
+              <select
+                id="inverse-range-unit"
+                data-testid="inverse-range-unit"
+                value={inverseLookupState.rangeMasterUnit}
+                disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
+                onchange={(e) => {
+                  const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
+                  inverseLookupState.setRangeMasterUnit(newUnit);
+                }}
+                class="flex h-10 w-auto rounded-md border border-input bg-background px-3 py-2 text-sm"
+              >
+                <option value="nm">nm</option>
+                <option value="um">µm</option>
+                <option value="mm">mm</option>
+                <option value="cm">cm</option>
+                <option value="m">m</option>
+              </select>
+              {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
+                <span class="text-xs text-muted-foreground">(per-row mode active)</span>
+              {/if}
+            </div>
+
             <!-- Range table header -->
             <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
               <div>Range</div>
@@ -1064,7 +1158,7 @@
                     placeholder="Enter range (e.g., 7.718 cm)"
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     oninput={(e) => inverseLookupState.updateRangeRowText(i, e.currentTarget.value)}
-                    data-testid={`inverse-range-input-${i}`}
+                    data-testid="inverse-range-input-{i}"
                   />
                   {#if row.unitFromSuffix}
                     <select
@@ -1080,13 +1174,10 @@
                     </select>
                   {:else}
                     <select
-                      value={row.unit}
+                      value={inverseLookupState.rangeMasterUnit}
                       class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       onchange={(e) => {
-                        const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
-                        // Update row with master unit
-                        const text = row.text.trim() ? `${row.text.trim()}` : "";
-                        inverseLookupState.updateRangeRowText(i, text);
+                        inverseLookupState.setRangeMasterUnit(e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m");
                       }}
                     >
                       <option value="nm">nm</option>
@@ -1096,16 +1187,24 @@
                       <option value="m">m</option>
                     </select>
                   {/if}
-                  <div class="flex items-center" data-testid={`inverse-range-energy-${i}`}>
-                    {#if row.status === "valid" && row.energyMevNucl !== null}
+                  <div class="flex items-center" data-testid="inverse-range-result-{i}">
+                    {#if row.status === "valid" && row.energyMevNucl != null}
                       <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "out-of-range"}
+                    {:else if row.status === "invalid" || row.status === "out-of-range" || row.status === "error"}
                       <span class="text-sm text-destructive">{row.message}</span>
                     {:else if row.status === "empty"}
                       <span class="text-sm text-muted-foreground"></span>
+                    {:else}
+                      <span class="text-sm text-muted-foreground">status={row.status} energy={row.energyMevNucl}</span>
                     {/if}
                   </div>
                 </div>
+                <!-- Error row display -->
+                {#if (row.status === "invalid" || row.status === "out-of-range" || row.status === "error") && row.message}
+                  <div data-testid="inverse-range-row-error-{i}" class="text-sm text-destructive">
+                    {row.message}
+                  </div>
+                {/if}
               {/each}
               <!-- Add row button -->
               <button
@@ -1143,7 +1242,7 @@
               <div>E high</div>
             </div>
 
-            <!-- STP rows -->
+<!-- STP rows -->
             <div class="space-y-2">
               {#each inverseLookupState.stpRows as row, i (row.id)}
                 <div class="grid grid-cols-4 gap-2" data-testid="inverse-stp-row-{i}">
@@ -1153,48 +1252,54 @@
                     placeholder="Enter stopping power"
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                     oninput={(e) => inverseLookupState.updateStpRowText(i, e.currentTarget.value)}
-                    data-testid={`inverse-stp-input-${i}`}
+                    data-testid="inverse-stp-input-{i}"
                   />
                   <select
                     value={row.unit}
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     onchange={(e) => {
-                      inverseLookupState.setStpMasterUnit(e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g");
-                    }}
-                  >
-                    <option value="kev-um">keV/µm</option>
-                    <option value="mev-cm">MeV/cm</option>
-                    <option value="mev-cm2-g">MeV·cm²/g</option>
-                  </select>
-                  <div class="flex items-center" data-testid={`inverse-stp-elow-${i}`}>
-                    {#if row.status === "valid" && row.energyLowMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {/if}
-                  </div>
-                  <div class="flex items-center" data-testid={`inverse-stp-ehigh-${i}`}>
-                    {#if row.status === "valid" && row.energyHighMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {/if}
-                  </div>
-                </div>
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState.addStpRow()}
-              >
-                + Add row
-              </button>
-            </div>
+                       inverseLookupState.setStpMasterUnit(e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g");
+                     }}
+                   >
+                     <option value="kev-um">keV/µm</option>
+                     <option value="mev-cm">MeV/cm</option>
+                     <option value="mev-cm2-g">MeV·cm²/g</option>
+                   </select>
+                    <div class="flex items-center" data-testid="inverse-stp-elow-{i}">
+                      {#if row.status === "valid" && row.energyLowMevNucl !== null}
+                        <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
+                      {:else if row.status === "invalid" || row.status === "no-solution"}
+                        <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                      {:else if row.status === "empty"}
+                        <span class="text-sm text-muted-foreground"></span>
+                      {/if}
+                    </div>
+                    <div class="flex items-center" data-testid="inverse-stp-ehigh-{i}">
+                      {#if row.status === "valid" && row.energyHighMevNucl !== null}
+                        <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
+                      {:else if row.status === "invalid" || row.status === "no-solution"}
+                        <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                      {:else if row.status === "empty"}
+                        <span class="text-sm text-muted-foreground"></span>
+                      {/if}
+                    </div>
+                 </div>
+                  <!-- Error row display -->
+                  {#if (row.status === "invalid" || row.status === "no-solution") && row.message}
+                    <div data-testid="inverse-stp-row-error-{i}" class="text-sm text-destructive">
+                      {row.message}
+                    </div>
+                  {/if}
+               {/each}
+               <!-- Add row button -->
+               <button
+                 type="button"
+                 class="text-sm text-primary hover:underline mt-2"
+                 onclick={() => inverseLookupState.addStpRow()}
+               >
+                 + Add row
+               </button>
+             </div>
 
             <!-- Valid STP range hint -->
             {#if state.isComplete && energyRangeLabel}
