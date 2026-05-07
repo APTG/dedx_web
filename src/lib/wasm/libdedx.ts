@@ -55,8 +55,8 @@ interface EmscriptenModule {
   ): number;
   _dedx_get_min_energy(program_id: number, ion_id: number): number;
   _dedx_get_max_energy(program_id: number, ion_id: number): number;
-  // Inverse lookup functions
-  _dedx_get_inverse_stp(
+  // Inverse lookup flat wrappers (manage workspace/config internally)
+  _dedx_get_inverse_stp_flat(
     program_id: number,
     particle_id: number,
     material_id: number,
@@ -64,7 +64,7 @@ interface EmscriptenModule {
     side: number,
     err_ptr: number,
   ): number;
-  _dedx_get_inverse_csda(
+  _dedx_get_inverse_csda_flat(
     program_id: number,
     particle_id: number,
     material_id: number,
@@ -426,7 +426,7 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       for (const stp of stoppingPowers) {
-        const energy = this.module._dedx_get_inverse_stp(
+        const energy = this.module._dedx_get_inverse_stp_flat(
           programId,
           particleId,
           materialId,
@@ -464,7 +464,7 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       for (const range of ranges) {
-        const energy = this.module._dedx_get_inverse_csda(
+        const energy = this.module._dedx_get_inverse_csda_flat(
           programId,
           particleId,
           materialId,
@@ -475,6 +475,8 @@ export class LibdedxServiceImpl implements LibdedxService {
         const errCode = this.module.HEAP32[errPtr >>> 2];
         if (errCode !== 0) {
           results.push(new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`));
+        } else if (energy < 0) {
+          results.push(new LibdedxError(-1, `Inverse CSDA returned invalid energy ${energy} for range=${range}`));
         } else {
           results.push({ energy, csdaRange: range });
         }
