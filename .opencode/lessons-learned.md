@@ -463,5 +463,38 @@ Mocks are allowed only in explicitly labeled mock tests.
 
 ---
 
+## Entry 19 — Always run WASM capability discovery before boundary changes
+
+**Symptom:** Stage 6.9 implementation repeatedly guessed inverse/custom capabilities
+from spec prose and UI intent, then discovered ABI/signature mismatches late.
+
+**Root cause:** Capability checks were done after coding instead of before coding.
+The session did not explicitly verify what `LibdedxService` and wrappers already exposed.
+
+**Rule:** Before touching any feature that may cross the libdedx boundary, inspect:
+
+1. `docs/06-wasm-api-contract.md`
+2. `src/lib/wasm/**` (wrapper + types + mocks)
+3. `LibdedxService` call sites + relevant tests
+4. related ADR/spec references
+
+Then record explicitly: "already exists" vs "requires new WASM change". Do not infer
+WASM behavior from UI/spec prose alone.
+
+---
+
+## Entry 20 — Default to local commit-only (no automatic push)
+
+**Symptom:** Automated pushes made branch contents harder to control when generated
+artifacts or unintended changes were staged.
+
+**Root cause:** Agent docs encoded push as part of normal completion semantics.
+
+**Rule:** Implementers commit locally by default. Push only when the user explicitly
+requests it. Final task output must include branch, commit SHAs, and a manual push
+command so the user stays in control.
+
+---
+
 _Last updated: 2026-05-08. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

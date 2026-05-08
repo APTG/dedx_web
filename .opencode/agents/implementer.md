@@ -44,6 +44,11 @@ What changed (5 bullets max):
 - <file or area 2>: <one-line summary>
 ...
 Smoke test: <PASS / SKIP — reason> — <one-line summary of what was exercised>
+Branch: <branch-name>
+Commits: <sha1>, <sha2>, ...
+Push: not performed (run: git push -u origin <branch-name>)
+WASM capability audit: <existing capability> | <new WASM work required or not>
+  OR: N/A — no WASM boundary touched
 ```
 
 or
@@ -56,8 +61,11 @@ The "What changed" summary and "Smoke test" line are **mandatory** in every
 `TASK DONE` message. This gives the orchestrator a clean handoff summary that
 survives context compaction without depending on chat history.
 
-`TASK DONE` is valid only after successful commit **and** successful push. If push
-fails (auth/network/protection), output `TASK BLOCKED: push/auth failure`.
+`TASK DONE` is valid after a successful local commit on the working branch.
+**Do not push by default.** Push only when the user explicitly requests it.
+
+The WASM capability audit line is required when the task touches libdedx/WASM.
+For non-WASM tasks, use: `WASM capability audit: N/A — no WASM boundary touched`.
 
 No other final output is acceptable. The main agent parses these signals to decide
 whether to move to the reviewer or to retry.
@@ -147,6 +155,23 @@ Additional pitfalls:
 - Svelte component tests (`@testing-library/svelte`) for interactive behaviour.
 - Mock `LibdedxService` — never depend on real WASM in unit tests.
 - Every acceptance criterion from the task must have at least one test.
+
+### WASM capability discovery checklist (MANDATORY when task touches libdedx/WASM)
+
+Before changing any feature that may touch the WASM boundary:
+
+1. Read `docs/06-wasm-api-contract.md`.
+2. Inspect `src/lib/wasm/**` (types, wrapper, mocks).
+3. Verify `LibdedxService` interface + mock signatures match all call sites.
+4. Read relevant tests (`src/tests/**`, `tests/e2e/**`) for current capability.
+5. Read related ADR/spec references for boundary constraints.
+
+Hard rules:
+
+- Do **not** infer WASM behavior from UI/spec prose alone.
+- Do **not** invent new WASM capabilities unless explicitly specified.
+- In `TASK DONE`, explicitly record what capability already exists vs what
+  would require a new WASM change.
 
 ### E2E tests (MANDATORY — do not skip)
 
@@ -341,17 +366,18 @@ grep -n "isAdvancedMode.value" src/routes/calculator/+page.svelte src/routes/plo
 1. **Read `.opencode/lessons-learned.md`** — pitfalls with code examples from past PRs.
 2. Read the task description and acceptance criteria.
 3. Read the referenced spec section in `docs/04-feature-specs/`.
-4. Read existing related files to understand current patterns.
-5. Implement code.
-6. Write/update tests (unit + component).
-7. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
+4. If task may touch libdedx/WASM boundaries, run the WASM capability discovery checklist.
+5. Read existing related files to understand current patterns.
+6. Implement code.
+7. Write/update tests (unit + component).
+8. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
    Fix all errors. Repeat until clean. After two failed fix attempts → `TASK BLOCKED`.
-8. **Run `pnpm exec playwright test`.** Fix any E2E failures caused by your changes.
+9. **Run `pnpm exec playwright test`.** Fix any E2E failures caused by your changes.
    For features that touch WASM-backed acceptance behavior, ensure at least one
    `@smoke` path runs against the real WASM path (no `page.addInitScript` runtime
    mock injection for acceptance tests).
 
-### Step 8a — User-flow smoke (Playwright MCP)
+### Step 9a — User-flow smoke (Playwright MCP)
 
 For any task that touches reactive UI:
 
@@ -366,7 +392,7 @@ For any task that touches reactive UI:
 If the Playwright MCP is unavailable (offline session), skip and write
 `Smoke test: SKIP — Playwright MCP offline`.
 
-### Step 8b — Reactive-trigger checklist
+### Step 9b — Reactive-trigger checklist
 
 For every reactive input added or modified, verify and document in `TASK DONE`:
 
@@ -377,13 +403,16 @@ For every reactive input added or modified, verify and document in `TASK DONE`:
 
 Reject `TASK DONE` if any reactive input lacks this documentation.
 
-9. If the task touches `/calculator` or `/plot`, run the cross-page parity checklist.
-10. Run `pnpm guard:staged` immediately before commit. If it fails, do not commit.
-11. Commit and push.
-12. Output `TASK DONE: <task name>` (with mandatory "What changed" and "Smoke test" lines).
+10. If the task touches `/calculator` or `/plot`, run the cross-page parity checklist.
+11. Run `pnpm guard:staged` immediately before commit. If it fails, do not commit.
+    Guarded paths include generated artifacts like `static/wasm/**`,
+    `static/deploy.json`, `build/**`, `coverage/**`, `.svelte-kit/**`, `.vite/**`,
+    Playwright outputs, and vendor gitlink changes.
+12. Commit locally. Do not push unless explicitly requested by the user.
+13. Output `TASK DONE: <task name>` (with mandatory "What changed", "Smoke test",
+    branch/commit summary, and manual push command lines).
 
-If step 7 or step 8 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
-If push fails in step 11, output `TASK BLOCKED: push/auth failure`.
+If step 8 or step 9 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
 
 ## maxSteps
 

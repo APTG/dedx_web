@@ -111,13 +111,13 @@ See [`docs/opencode-setup.md §2`](docs/opencode-setup.md) for details.
 ### ⚠ Branching (MANDATORY — do this before any code)
 
 **NEVER commit or push directly to `master`.** Branch protection is enabled on
-the remote and will reject any direct push. If you get a rejection, do **NOT**
-force-push — stop and output `TASK BLOCKED: cannot push to master`.
+the remote and will reject any direct push.
 
 Before writing any code:
 
-1. `git checkout -b qwen/<slug>` — create the feature branch.
-2. `git push -u origin qwen/<slug>` — publish it immediately.
+1. `git checkout -b qwen/<slug>` — create the feature branch locally.
+2. Commit locally on that branch.
+3. **Do not push by default.** Push only if the user explicitly asks.
 
 If the branch already exists: `git checkout qwen/<slug>` before making any commits.
 
@@ -132,10 +132,19 @@ Branch naming: `qwen/<stage-or-feature>` (see [`docs/00-redesign-plan.md §4.2`]
 - **One feature per session** — reference the spec file, do not re-explain.
 - **Commit after each working increment** using Conventional Commits
   (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
+- **Run `pnpm guard:staged` before each commit.** It blocks forbidden generated
+  artifacts (`static/wasm/**`, `static/deploy.json`, `build/**`, `coverage/**`,
+  `.svelte-kit/**`, `.vite/**`, Playwright outputs) and vendor gitlink changes.
 - **Log every session** — append a row to `CHANGELOG-AI.md` and create a file in
   `docs/ai-logs/YYYY-MM-DD-<slug>.md`. Include the tool + model attribution in
   every entry — see `.github/copilot-instructions.md § AI Session Logging` for the
   exact format per tool (opencode, Copilot, Claude Code).
+- **WASM capability discovery is mandatory** before implementing any feature that
+  touches libdedx boundaries: inspect `docs/06-wasm-api-contract.md`,
+  `src/lib/wasm/**`, `LibdedxService` interface + mocks, relevant tests, and
+  related ADR/spec docs. Do not infer WASM behavior from UI/spec prose alone.
+  Explicitly record what capability already exists vs what would require a new
+  WASM change.
 
 ---
 
@@ -183,15 +192,15 @@ exists and contains the atomic checklist for this branch.
   session is interrupted.
 - If a task is blocked after 2 retries, mark it blocked and continue to the next.
   Do not spend the whole session on one stuck task.
-- **Completion semantics are strict:** if push/auth fails, output
-  `TASK BLOCKED: push/auth failure` (never `TASK DONE`).
+- **Completion semantics are strict:** `TASK DONE` requires a clean local commit.
+  Do not push unless explicitly requested by the user.
 
 ### Subagent reference
 
 | Agent                | Model        | Role                                                                                                       |
 | -------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
 | `implementer`        | Qwen3.5-397B | Writes code, tests, commits for ONE task                                                                   |
-| `reviewer`           | Qwen3.6-35B  | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
+| `reviewer`           | Qwen3.5-397B | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
 | `svelte-file-editor` | Qwen3.5-397B | (auto) edits `.svelte` files with MCP validation                                                           |
 
 Full agent documentation: [`.opencode/agents/`](.opencode/agents/)
