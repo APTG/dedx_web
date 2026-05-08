@@ -593,6 +593,7 @@
     if (inverseLookupState.activeTab !== "csda") return;
 
     // Snapshot all reactive deps synchronously at the top
+    const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = state.selectedParticle?.id;
     const materialId = state.selectedMaterial?.id;
@@ -686,6 +687,7 @@
     if (inverseLookupState.activeTab !== "stp") return;
 
     // Snapshot all reactive deps synchronously at the top
+    const _stpMasterUnit = inverseLookupState.stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = state.selectedParticle?.id;
     const materialId = state.selectedMaterial?.id;
@@ -745,16 +747,14 @@
             const lowResult = lowResults[resultIdx];
             const highResult = highResults[resultIdx];
 
-            if (lowResult instanceof Error) {
+            if (lowResult instanceof Error && highResult instanceof Error) {
+              r.status = "no-solution";
               r.energyLowMevNucl = null;
-            } else {
-              r.energyLowMevNucl = lowResult.energy;
-            }
-
-            if (highResult instanceof Error) {
               r.energyHighMevNucl = null;
             } else {
-              r.energyHighMevNucl = highResult.energy;
+              r.status = "valid";
+              r.energyLowMevNucl = lowResult instanceof Error ? null : lowResult.energy;
+              r.energyHighMevNucl = highResult instanceof Error ? null : highResult.energy;
             }
 
             resultIdx++;
@@ -1256,6 +1256,8 @@
                       <span class="text-sm text-destructive">{row.message ?? "—"}</span>
                     {:else if row.status === "empty"}
                       <span class="text-sm text-muted-foreground"></span>
+                    {:else}
+                      <span class="text-sm text-muted-foreground">—</span>
                     {/if}
                   </div>
                   <div class="flex items-center" data-testid="inverse-stp-result-high-{i}">
@@ -1265,6 +1267,8 @@
                       <span class="text-sm text-destructive">{row.message ?? "—"}</span>
                     {:else if row.status === "empty"}
                       <span class="text-sm text-muted-foreground"></span>
+                    {:else}
+                      <span class="text-sm text-muted-foreground">—</span>
                     {/if}
                   </div>
                 </div>

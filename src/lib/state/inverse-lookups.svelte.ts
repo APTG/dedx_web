@@ -344,6 +344,11 @@ export function createInverseLookupState(
     },
     setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m") {
       meta.rangeMasterUnit = unit;
+      for (const row of rangeRows) {
+        if (!row.unitFromSuffix) {
+          row.unit = unit;
+        }
+      }
     },
     addRangeRow() {
       const newRow: RangeRow = {
@@ -365,6 +370,9 @@ export function createInverseLookupState(
     },
     setStpMasterUnit(unit: "kev-um" | "mev-cm" | "mev-cm2-g") {
       meta.stpMasterUnit = unit;
+      for (const row of stpRows) {
+        row.unit = unit;
+      }
     },
     addStpRow() {
       const newRow: InverseStpRow = {

@@ -174,6 +174,96 @@ test.describe("Inverse Lookups — Range Tab", () => {
       )
       .toMatch(/numeric/i);
   });
+
+  test("Inverse STP tab: shows E_low and E_high for 30 keV/µm proton/water @smoke", async ({
+    page,
+  }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // Proton (1) in Water (276) via PSTAR (2): 30 keV/µm is below Bragg peak → both branches exist
+    await page.goto(
+      "/calculator?particle=1&material=276&program=2&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-stp-input-0"]', { timeout: 15000 });
+
+    const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
+    const highSpan = page.locator('[data-testid="inverse-stp-result-high-0"] span');
+
+    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+
+    const lowEnergy = parseFloat((await lowSpan.textContent())!.trim());
+    const highEnergy = parseFloat((await highSpan.textContent())!.trim());
+    expect(lowEnergy).toBeGreaterThan(0);
+    expect(highEnergy).toBeGreaterThan(0);
+    // E_high (above Bragg peak) > E_low (below Bragg peak)
+    expect(highEnergy).toBeGreaterThan(lowEnergy);
+  });
+
+  test("Range tab: unit change triggers recalculation @regression", async ({ page }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // Load with 10 cm range for proton in water; read the initial energy
+    await page.goto(
+      "/calculator?particle=1&material=276&program=2&imode=csda&ivalues=10&iunit=cm&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
+
+    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
+    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtCm = parseFloat((await energySpan.textContent())!.trim());
+    expect(energyAtCm).toBeGreaterThan(0);
+
+    // Change master unit to mm; same numeric value (10) now means 10 mm = 1 cm → different energy
+    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+
+    await expect
+      .poll(
+        async () => {
+          const text = (await energySpan.textContent())?.trim();
+          if (!text || !/^\d/.test(text)) return null;
+          return parseFloat(text);
+        },
+        { timeout: 15000 },
+      )
+      .not.toBe(energyAtCm);
+
+    const energyAtMm = parseFloat((await energySpan.textContent())!.trim());
+    expect(energyAtMm).toBeGreaterThan(0);
+    // 10 mm < 10 cm, so energy for 10 mm range must be less than for 10 cm
+    expect(energyAtMm).toBeLessThan(energyAtCm);
+  });
+
+  test("STP tab: unit change triggers recalculation @regression", async ({ page }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // Load with 30 keV/µm; note initial E_low
+    await page.goto(
+      "/calculator?particle=1&material=276&program=2&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-stp-result-low-0"]', { timeout: 15000 });
+
+    const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
+    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtKevUm = parseFloat((await lowSpan.textContent())!.trim());
+
+    // Change unit to MeV/cm; same numeric value (30) now means 30 MeV/cm → different conversion
+    await page.selectOption('[data-testid="inverse-stp-unit"]', "mev-cm");
+
+    await expect
+      .poll(
+        async () => {
+          const text = (await lowSpan.textContent())?.trim();
+          if (!text || !/^\d/.test(text)) return null;
+          return parseFloat(text);
+        },
+        { timeout: 15000 },
+      )
+      .not.toBe(energyAtKevUm);
+  });
 });
 
 test.describe("Advanced Mode Gate", () => {
