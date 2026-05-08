@@ -96,6 +96,18 @@ test("density 2× halves CSDA range @smoke", async ({ page }) => {
 - DOM: `[data-testid="<error-testid>"]` becomes visible with text `<error message>`
 - Calculation is NOT triggered (observable: [data-testid="result-table"] value unchanged)
 
+### Scenario 4: [Mode transition guard] @regression
+
+[REQUIRED for mode-gated features]
+
+**Given** the feature is active in its enabled mode (e.g. Advanced)
+**When** the user switches back to the disabled mode (e.g. Basic)
+**Then**
+
+- Feature-only DOM sections are hidden
+- Baseline/default DOM state is visible again
+- Any mode-specific URL params are removed or ignored as specified
+
 ---
 
 ## Reactive Triggers Matrix
@@ -120,6 +132,13 @@ does not apply to this context.
 | Aggregate state     |    ❌ (guarded)    |          ✅           |      ✅      |     ✅      |        ✅        |
 | Interpolation scale |        N/A         |          ✅           |      ✅      |     ✅      |       N/A        |
 | MSTAR mode          |        N/A         |          ✅           |      ✅      |     ✅      |       N/A        |
+
+### Mode-transition matrix (REQUIRED for mode-gated features)
+
+| Transition | Expected UI state | Expected calculation state | Expected URL state |
+| ---------- | ----------------- | -------------------------- | ------------------ |
+| disabled → enabled | Feature controls visible | Feature effects enabled | Feature params can appear |
+| enabled → disabled | Feature controls hidden | Feature effects disabled | Feature params omitted/ignored |
 
 ---
 
@@ -200,6 +219,10 @@ taxonomy).
 - `tests/e2e/<feature>.spec.ts`
   - `@smoke` — primary user flow (change input → DOM observable → URL sync)
   - `@regression` — edge cases, error states, cross-page parity
+  - For WASM-backed features, at least one `@smoke` scenario must run against the
+    real WASM path (no runtime mock injection via `page.addInitScript` in acceptance tests).
+  - Reviewer evidence: include a short note in the PR/session log that points to
+    the real-WASM smoke test (test name + command) and confirms no runtime mock hook.
 
 ---
 

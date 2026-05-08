@@ -18,7 +18,7 @@
 | Energy units      | **JS-side conversion**                     | For ions (A ≥ 1), C calls use MeV/nucl. For ESTAR electron (particle ID 1001), C calls use MeV. Conversions between MeV, MeV/nucl, and MeV/u require the particle's mass number (A) and atomic mass (m in u). **MeV/nucl ≠ MeV/u** — the distinction matters for CSDA range. Electron uses MeV only (no per-nucleon conversion).                                                                                                                                                                                                                                                                                                                                                                 |
 | Error handling    | **Typed exceptions**                       | C error codes are translated via `dedx_get_error_code()` into `LibdedxError` with code + human-readable message.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 |
 | Custom compounds  | **Supported**                              | Uses the `dedx_config` path with `elements_id` + `elements_atoms` for user-defined materials. Requires the stateful API. `calculateCustomCompound()` covers the forward path. Inverse and Bragg-peak variants (`getInverseStpCustomCompound`, `getInverseCsdaCustomCompound`, `getBraggPeakStpCustomCompound`) are added via thin C wrappers in `wasm/dedx_extra.{h,c}`. Plot-data generation (`getPlotDataCustomCompound`) is JS-side only.                                                                                                                                                                                                                                                     |
-| Inverse functions | **Exposed**                                | `dedx_get_inverse_stp` and `dedx_get_inverse_csda` are available in the core API (`dedx_tools.h`).                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               |
+| Inverse functions | **Exposed**                                | JS-facing calls use flat wrappers from `wasm/dedx_extra.h`: `dedx_get_inverse_stp_flat`, `dedx_get_inverse_csda_flat`, and `dedx_get_bragg_peak_stp`. Core `dedx_tools.h` inverse functions remain internal to wrapper implementation.                                                                                                                                                                                                                                                                                                                                                                                                                                                     |
 | Density           | **Exposed**                                | Needed for stopping power unit conversion (MeV cm²/g ↔ MeV/cm ↔ keV/µm) and density-based CSDA range display. Obtained via new `dedx_get_density()` public wrapper.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                              |
 | ESTAR (electrons) | **Not available (libdedx v1.4.0)**         | ESTAR (program 3) is returned by `dedx_get_program_list()` but `dedx.c:587` explicitly returns `DEDX_ERR_ESTAR_NOT_IMPL` for every calculation. The `dedx_estar.h` tabulated data exists but is compiled out. The TypeScript wrapper exposes ESTAR in the program list so it can be shown in the UI — but must mark it as incompatible for all particle/material combinations (no valid calculations). Electron (particle ID 1001) is included in the particle list but only with ESTAR as its sole program; it must therefore be greyed out at all times until a future libdedx release enables ESTAR. Hard-code `"Electron"` as its display name since `dedx_get_ion_name(1001)` returns `""`. |
 | MSTAR modes       | **Exposed**                                | 6 modes (a/b/c/d/g/h), default "b". Shown as advanced dropdown when MSTAR is active.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
@@ -495,7 +495,7 @@ interface LibdedxService {
 
   /**
    * Find the energy corresponding to a given stopping power value.
-   * Calls: dedx_get_inverse_stp() (requires stateful workspace API).
+   * Calls: dedx_get_inverse_stp_flat() from wasm/dedx_extra.h.
    *
    * @param side — 0 = low-energy branch, 1 = high-energy branch.
    *   Stopping power is non-monotonic; the Bragg peak creates two
@@ -513,7 +513,7 @@ interface LibdedxService {
 
   /**
    * Find the energy corresponding to a given CSDA range.
-   * Calls: dedx_get_inverse_csda() (requires stateful workspace API).
+   * Calls: dedx_get_inverse_csda_flat() from wasm/dedx_extra.h.
    *
    * @throws LibdedxError on C-level errors.
    */
@@ -535,8 +535,7 @@ interface LibdedxService {
    * Used by the Inverse STP tab to display a valid input range hint below the
    * table (see `inverse-lookups.md` §5.4).
    *
-   * Calls: dedx_get_bragg_peak_stp() from dedx_tools.h (requires stateful
-   * workspace API to apply AdvancedOptions).
+   * Calls: dedx_get_bragg_peak_stp() from wasm/dedx_extra.h.
    *
    * @returns Bragg peak stopping power in MeV·cm²/g.
    * @throws LibdedxError if the computation fails.
@@ -698,8 +697,6 @@ These are the C functions that must be exported in the Emscripten build
 | ------------------------------------------------------------ | --------------------------- | ----------------- |
 | `convert_units(old, new, material, n, old_vals*, new_vals*)` | `convertStpUnits()`         | Unit conversion   |
 | `dedx_get_csda(ws*, cfg*, energy, err*)`                     | `calculateCustomCompound()` | Single-point CSDA |
-| `dedx_get_inverse_stp(ws*, cfg*, stp, side, err*)`           | `getInverseStp()`           | Inverse lookup    |
-| `dedx_get_inverse_csda(ws*, cfg*, range, err*)`              | `getInverseCsda()`          | Inverse lookup    |
 
 ### 4.4 From `dedx.h` (metadata)
 
@@ -727,6 +724,9 @@ These wrappers live in this repository and are compiled alongside libdedx.
 | `dedx_get_ion_atom_mass(ion)`               | `getAtomicMass()`, `getParticles()`    | Returns atomic mass in u for Z=1..112                                                                                                                                                                                                                                                                                                                                                                      |
 | `dedx_get_density(material, err*)`          | `getDensity()`, `getMaterials()`       | Returns density in g/cm³                                                                                                                                                                                                                                                                                                                                                                                   |
 | `dedx_target_is_gas(target)`                | `isGasByDefault()`, `getMaterials()`   | Returns 1 if gaseous by default                                                                                                                                                                                                                                                                                                                                                                            |
+| `dedx_get_inverse_stp_flat(...)`            | `getInverseStp()`                      | Flat wrapper for inverse STP (no JS-side workspace/config pointers)                                                                                                                                                                                                                                                                                                                                       |
+| `dedx_get_inverse_csda_flat(...)`           | `getInverseCsda()`                     | Flat wrapper for inverse CSDA (no JS-side workspace/config pointers)                                                                                                                                                                                                                                                                                                                                      |
+| `dedx_get_bragg_peak_stp(...)`              | `getBraggPeakStp()`                    | Flat wrapper returning Bragg-peak STP                                                                                                                                                                                                                                                                                                                                                                      |
 | `dedx_get_material_friendly_name(material)` | Not currently exported to JS           | Planned helper for human-friendly display names. Current C implementation uses an override table for selected IDs (e.g., `276 → "Water (liquid)"`, `277 → "Water Vapor"`), but for unmapped IDs it currently falls back to raw `dedx_get_material_name()` output rather than title-casing it. Use the TS-side `getMaterialFriendlyName()` for `getMaterials()` until this helper is exported and verified. |
 
 ### 4.6 Emscripten Runtime Methods
@@ -747,6 +747,9 @@ Also export `_malloc` and `_free` for heap allocation from JS.
 ---
 
 ## 5. WASM Build Requirements
+
+Inverse-wrapper ABI symbols are tracked in `wasm/contract-manifest.json` and are
+consumed by both `wasm/verify.mjs` and CI doc-contract checks.
 
 | Requirement               | Value                                                                               | Rationale                                                                                                                                                                                                                                                                     |
 | ------------------------- | ----------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

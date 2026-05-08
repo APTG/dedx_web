@@ -420,5 +420,48 @@ row status/message to an explicit error state (no empty catches).
 
 ---
 
+## Entry 16 — Guard generated files and vendor gitlinks before commit
+
+**Symptom:** Gitignored generated files (`static/wasm/libdedx.*`) and vendor
+submodule gitlinks were accidentally committed into a feature PR.
+
+**Root cause:** The workflow had no machine-checkable pre-commit gate for
+forbidden artifact paths or vendor gitlink changes.
+
+**Rule:** Run `pnpm guard:staged` immediately before every commit. The command
+must fail if staged changes include generated artifacts (`static/wasm/**`,
+`static/deploy.json`, Playwright outputs) or vendor gitlink changes under
+`vendor/**`.
+
+---
+
+## Entry 17 — One ABI manifest for verify + wrapper + docs
+
+**Symptom:** CI contract verification drifted from runtime implementation after
+inverse wrappers moved to flat symbols.
+
+**Root cause:** Inverse ABI symbols were duplicated in multiple places (`verify`,
+docs, prompts), then updated inconsistently.
+
+**Rule:** Keep inverse ABI symbols in `wasm/contract-manifest.json` and consume
+that manifest from `wasm/verify.mjs`. Any doc section describing these symbols
+must be validated by `pnpm wasm:check-doc-contract`.
+
+---
+
+## Entry 18 — Acceptance smoke must use real WASM for WASM-backed features
+
+**Symptom:** E2E acceptance tests passed with runtime-injected mocks while real
+WASM behavior still had correctness defects.
+
+**Root cause:** Acceptance flows mixed product behavior checks with
+`page.addInitScript` mock escape hatches.
+
+**Rule:** For WASM-backed features, at least one `@smoke` acceptance path must
+execute against real WASM (no runtime mock injection in acceptance tests).
+Mocks are allowed only in explicitly labeled mock tests.
+
+---
+
 _Last updated: 2026-05-08. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

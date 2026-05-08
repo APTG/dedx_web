@@ -188,7 +188,29 @@ Flag any asymmetry in the four pillars:
 - No `waitForTimeout(` in any test file. Flag as blocker.
 - No tab characters in any `.ts` or `.svelte` file in the diff. Flag as blocker.
 
-### 13. Targeted smoke E2E run (permitted)
+### 13. Forbidden generated-file / vendor-gitlink guard
+
+Inspect the diff for forbidden paths:
+
+- `static/wasm/**`
+- `static/deploy.json`
+- `playwright-report/**`
+- `test-results/**`
+- `.playwright-mcp/**`
+
+Also inspect raw diff metadata for vendor gitlink changes (`mode 160000`) under
+`vendor/**`.
+
+**Blocker** if any forbidden artifact path or vendor gitlink appears unless the
+task acceptance criteria explicitly state dependency/submodule maintenance.
+
+### 14. High-severity review-thread closure gate
+
+If the task was created from a review-fix thread, ensure every high-severity item
+in that thread (correctness, security, data-loss, CI red) is explicitly addressed
+by the diff. Missing any such item is a blocker.
+
+### 15. Targeted smoke E2E run (permitted)
 
 If the diff includes UI changes with a `@smoke`-tagged acceptance test, run:
 
@@ -198,6 +220,7 @@ pnpm exec playwright test --grep @smoke
 
 This is the **only** test command the reviewer is permitted to run. If it fails,
 report the failure output verbatim in `REVIEW FAIL`. Do not re-run the full suite.
+Do not truncate failing output with `head`/`tail`.
 
 ## What the reviewer does NOT do
 

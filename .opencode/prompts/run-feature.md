@@ -41,6 +41,8 @@ Write the task list to .opencode/tasks/{{BRANCH_NAME}}.md using this format:
 ...
 ````
 
+Do not start implementation edits before this task file exists.
+
 ### Step 3 — Implement and review (repeat for each task)
 
 For each task in order:
@@ -58,6 +60,12 @@ Acceptance criteria:
 ```
 
 c. Wait for the implementer to output TASK DONE: or TASK BLOCKED:.
+
+The implementer must:
+- run `pnpm guard:staged` before commit,
+- run at least one real-WASM `@smoke` acceptance path when the feature is
+  WASM-backed (no runtime `page.addInitScript` mock injection in acceptance tests),
+- include full (non-truncated) failure output if any E2E run fails.
 
 d. If TASK DONE:
 
@@ -89,6 +97,13 @@ After all tasks are done or blocked:
    - Task table: task name, status (completed/blocked), files changed
 
 3. Update docs/ai-logs/README.md and docs/README.md indexes.
+
+### Step 5 — Completion semantics
+
+- If any task cannot be pushed due to auth/protection/network, final status must be
+  `TASK BLOCKED: push/auth failure` (never `TASK DONE`).
+- If a guard fails (`pnpm guard:staged` or CI forbidden-file checks), stop and split
+  scope instead of bypassing.
 
 ```
 

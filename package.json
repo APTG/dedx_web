@@ -21,6 +21,8 @@
     "test:e2e": "playwright test",
     "test:e2e:smoke": "playwright test --grep @smoke",
     "test:e2e:nightly": "playwright test --grep @nightly",
+    "guard:staged": "node scripts/guard-forbidden-files.cjs --staged",
+    "wasm:check-doc-contract": "node scripts/check-wasm-contract-docs.cjs",
     "wasm:build": "cd wasm && ./build.sh",
     "wasm:verify": "node wasm/verify.mjs",
     "deploy-info": "node scripts/deploy.cjs"
