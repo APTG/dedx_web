@@ -149,8 +149,8 @@ export function stpToMevCm2g(
 ): number {
   switch (unit) {
     case "kev-um":
-      // keV/µm → MeV·cm²/g: divide by (10 * density)
-      return value / (10 * density);
+      // keV/µm → MeV·cm²/g: 1 keV/µm = 10 MeV/cm; divide by density
+      return (value * 10) / density;
     case "mev-cm":
       // MeV/cm → MeV·cm²/g: divide by density
       return value / density;

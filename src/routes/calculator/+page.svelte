@@ -802,7 +802,8 @@
   ): number {
     switch (unit) {
       case "kev-um":
-        return value / (10 * density);
+        // 1 keV/µm = 10 MeV/cm; divide by density
+        return (value * 10) / density;
       case "mev-cm":
         return value / density;
       case "mev-cm2-g":
