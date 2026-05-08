@@ -11,7 +11,14 @@ const FORBIDDEN_PATH_PATTERNS = [
 ];
 
 function run(command) {
-  return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  try {
+    return execSync(command, { encoding: "utf8", stdio: ["ignore", "pipe", "pipe"] }).trim();
+  } catch (error) {
+    const stderr = error?.stderr?.toString?.().trim();
+    const stdout = error?.stdout?.toString?.().trim();
+    const detail = stderr || stdout || error.message;
+    throw new Error(`Command failed: ${command}\n${detail}`);
+  }
 }
 
 function getArgValue(flag) {

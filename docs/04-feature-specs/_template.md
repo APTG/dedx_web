@@ -221,6 +221,8 @@ taxonomy).
   - `@regression` — edge cases, error states, cross-page parity
   - For WASM-backed features, at least one `@smoke` scenario must run against the
     real WASM path (no runtime mock injection via `page.addInitScript` in acceptance tests).
+  - Reviewer evidence: include a short note in the PR/session log that points to
+    the real-WASM smoke test (test name + command) and confirms no runtime mock hook.
 
 ---
 
