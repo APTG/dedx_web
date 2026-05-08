@@ -402,6 +402,13 @@
     }
   });
 
+  // When basic mode is activated while an inverse tab is open, fall back to the Forward tab.
+  $effect(() => {
+    if (!isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab !== "forward") {
+      inverseLookupState.setActiveTab("forward");
+    }
+  });
+
   // Create/destroy multi-program state when advanced mode toggles or entity selection changes.
   //
   // IMPORTANT: All initialization must go through the local `newState` variable. Never read
@@ -1076,7 +1083,7 @@
       {/if}
 
       <!-- Forward tab content (default) -->
-      {#if !inverseLookupState || inverseLookupState.activeTab === "forward"}
+      {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <ResultTable
             state={calcState}
@@ -1088,7 +1095,7 @@
       {/if}
 
       <!-- Range tab content -->
-      {#if inverseLookupState && inverseLookupState.activeTab === "csda"}
+      {#if isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab === "csda"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
@@ -1208,7 +1215,7 @@
       {/if}
 
       <!-- Inverse STP tab content -->
-      {#if inverseLookupState && inverseLookupState.activeTab === "stp"}
+      {#if isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab === "stp"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">

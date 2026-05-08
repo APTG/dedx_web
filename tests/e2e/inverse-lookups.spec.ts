@@ -316,4 +316,32 @@ test.describe("Advanced Mode Gate", () => {
     await expect(page.locator('[data-testid="inverse-tab-range"]')).toBeVisible();
     await expect(page.locator('[data-testid="inverse-tab-stp"]')).toBeVisible();
   });
+
+  test("Advanced-mode gate: switching to Basic while on Range tab shows Forward content @regression", async ({
+    page,
+  }) => {
+    // Enable advanced mode and switch to Range tab
+    await page.locator('button[aria-label="Switch to Advanced mode"]').click();
+    await page.waitForSelector('[data-testid="inverse-tab-range"]', { timeout: 5000 });
+    await page.click('[data-testid="inverse-tab-range"]');
+    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    // Switch back to basic mode
+    await page.locator('button[aria-label="Switch to Basic mode"]').click();
+    await page.waitForFunction(() => !window.location.search.includes("mode=advanced"), {
+      timeout: 5000,
+    });
+
+    // Tab switcher must be gone
+    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveCount(0);
+    await expect(page.locator('[data-testid="inverse-tab-stp"]')).toHaveCount(0);
+
+    // Forward tab content must be visible — the result table heading or energy input
+    await expect(page.locator('[data-testid="inverse-tab-forward"]')).toHaveCount(0);
+    // The forward result table should be in the DOM (it renders when activeTab === "forward")
+    await expect(page.locator('[data-testid="result-table"]')).toBeVisible({ timeout: 5000 });
+  });
 });
