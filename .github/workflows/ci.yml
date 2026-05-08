@@ -38,6 +38,7 @@ jobs:
           if [ "${{ github.event_name }}" = "pull_request" ]; then
             RANGE="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
           else
+            # GitHub push payload uses all-zero SHA when there is no previous commit on ref
             BEFORE="${{ github.event.before }}"
             if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
               # Initial push event: compare against the empty tree so new files are checked

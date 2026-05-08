@@ -31,12 +31,12 @@ function parseRawDiff(rawText) {
   const gitlinks = [];
   for (const line of rawText.split("\n")) {
     if (!line.startsWith(":")) continue;
-    const tabIdx = line.indexOf("\t");
-    if (tabIdx === -1) continue;
-    const meta = line.slice(1, tabIdx).trim().split(/\s+/);
+    const tabIndex = line.indexOf("\t");
+    if (tabIndex === -1) continue;
+    const meta = line.slice(1, tabIndex).trim().split(/\s+/);
     if (meta.length < 2) continue;
     const [oldMode, newMode] = meta;
-    const path = line.slice(tabIdx + 1).trim();
+    const path = line.slice(tabIndex + 1).trim();
     const isGitlink = oldMode === "160000" || newMode === "160000";
     if (isGitlink && path.startsWith("vendor/")) {
       gitlinks.push(path);

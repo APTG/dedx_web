@@ -172,6 +172,8 @@ If `pnpm exec playwright test` produces failures:
 
 - Never pipe failing E2E runs through `head`, `tail`, or similar truncation.
 - For failures, capture full reporter output and attach the full failing artifact path.
+- Record the artifact path in the task/session log entry and in the final `TASK DONE`
+  summary line.
 - Truncated output is not accepted for root-cause analysis.
 
 #### E2E test timeouts — CRITICAL
