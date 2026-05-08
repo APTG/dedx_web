@@ -17,7 +17,7 @@ function run(command) {
     const stderr = error?.stderr?.toString?.().trim();
     const stdout = error?.stdout?.toString?.().trim();
     const detail = stderr || stdout || error.message;
-    throw new Error(`Command failed: ${command}\n${detail}`);
+    throw new Error(`Command failed while evaluating git diff metadata.\n${detail}`);
   }
 }
 
@@ -77,7 +77,11 @@ function parseMode() {
   }
 
   console.error(
-    "Usage: node scripts/guard-forbidden-files.cjs --staged OR --range <base..head>",
+    [
+      "Usage:",
+      "  node scripts/guard-forbidden-files.cjs --staged            # pre-commit staged-file guard",
+      "  node scripts/guard-forbidden-files.cjs --range <base..head> # CI range-diff guard",
+    ].join("\n"),
   );
   process.exit(2);
 }

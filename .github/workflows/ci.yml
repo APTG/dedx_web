@@ -40,8 +40,8 @@ jobs:
           else
             BEFORE="${{ github.event.before }}"
             if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-              # Initial push event: compare only against direct parent (if present)
-              BEFORE="$(git rev-parse "${{ github.sha }}^" 2>/dev/null || echo "${{ github.sha }}")"
+              # Initial push event: compare against the empty tree so new files are checked
+              BEFORE="4b825dc642cb6eb9a060e54bf8d69288fbee4904"
             fi
             RANGE="$BEFORE..${{ github.sha }}"
           fi
