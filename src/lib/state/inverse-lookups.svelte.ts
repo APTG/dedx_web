@@ -28,7 +28,7 @@ export interface InverseStpRow {
   value: number | null;
   /** STP input unit */
   unit: "kev-um" | "mev-cm" | "mev-cm2-g";
-  status: "valid" | "invalid" | "empty" | "no-solution";
+  status: "valid" | "invalid" | "empty" | "no-solution" | "error";
   message?: string;
   /** Result energies in MeV/nucl */
   energyLowMevNucl: number | null;
@@ -163,21 +163,44 @@ let rangeRowIdCounter = 0;
 let stpRowIdCounter = 0;
 
 export function createInverseLookupState(
-  entitySelection: EntitySelectionState,
+  _entitySelection: EntitySelectionState,
 ): InverseLookupState {
   // Use $state for arrays and properties that need to be reactive
   // This allows the component to directly use the returned object without wrapping in $state()
   const state = $state<{ activeTab: ActiveTab }>({ activeTab: "forward" });
   const rangeRows = $state<RangeRow[]>([]);
   const stpRows = $state<InverseStpRow[]>([]);
-  let rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m" = "cm";
-  let stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g" = "kev-um";
-  let isCalculating = false;
-  let error: Error | null = null;
+  const meta = $state<{
+    rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m";
+    stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g";
+    isCalculating: boolean;
+    error: Error | null;
+  }>({
+    rangeMasterUnit: "cm",
+    stpMasterUnit: "kev-um",
+    isCalculating: false,
+    error: null,
+  });
 
   // Initialize with one empty row
-  rangeRows.push({ id: ++rangeRowIdCounter, text: "", value: null, unit: "cm", unitFromSuffix: false, status: "empty", energyMevNucl: null });
-  stpRows.push({ id: ++stpRowIdCounter, text: "", value: null, unit: "kev-um", status: "empty", energyLowMevNucl: null, energyHighMevNucl: null });
+  rangeRows.push({
+    id: ++rangeRowIdCounter,
+    text: "",
+    value: null,
+    unit: "cm",
+    unitFromSuffix: false,
+    status: "empty",
+    energyMevNucl: null,
+  });
+  stpRows.push({
+    id: ++stpRowIdCounter,
+    text: "",
+    value: null,
+    unit: "kev-um",
+    status: "empty",
+    energyLowMevNucl: null,
+    energyHighMevNucl: null,
+  });
 
   function validateRangeRow(row: RangeRow): void {
     const trimmed = row.text.trim();
@@ -230,7 +253,7 @@ export function createInverseLookupState(
     }
 
     row.value = parsed.value;
-    row.unit = parsed.unitFromSuffix ? parsed.unit : rangeMasterUnit;
+    row.unit = parsed.unitFromSuffix ? parsed.unit : meta.rangeMasterUnit;
     row.unitFromSuffix = parsed.unitFromSuffix;
     row.status = "valid";
     row.message = undefined;
@@ -272,17 +295,39 @@ export function createInverseLookupState(
   }
 
   return {
-    get activeTab() { return state.activeTab; },
-    set activeTab(v: ActiveTab) { state.activeTab = v; },
-    get rangeRows() { return rangeRows; },
-    get stpRows() { return stpRows; },
-    get rangeMasterUnit() { return rangeMasterUnit; },
-    set rangeMasterUnit(v: "nm" | "um" | "mm" | "cm" | "m") { rangeMasterUnit = v; },
-    get stpMasterUnit() { return stpMasterUnit; },
-    set stpMasterUnit(v: "kev-um" | "mev-cm" | "mev-cm2-g") { stpMasterUnit = v; },
-    get isCalculating() { return isCalculating; },
-    get error() { return error; },
-    set error(v: Error | null) { error = v; },
+    get activeTab() {
+      return state.activeTab;
+    },
+    set activeTab(v: ActiveTab) {
+      state.activeTab = v;
+    },
+    get rangeRows() {
+      return rangeRows;
+    },
+    get stpRows() {
+      return stpRows;
+    },
+    get rangeMasterUnit() {
+      return meta.rangeMasterUnit;
+    },
+    set rangeMasterUnit(v: "nm" | "um" | "mm" | "cm" | "m") {
+      meta.rangeMasterUnit = v;
+    },
+    get stpMasterUnit() {
+      return meta.stpMasterUnit;
+    },
+    set stpMasterUnit(v: "kev-um" | "mev-cm" | "mev-cm2-g") {
+      meta.stpMasterUnit = v;
+    },
+    get isCalculating() {
+      return meta.isCalculating;
+    },
+    get error() {
+      return meta.error;
+    },
+    set error(v: Error | null) {
+      meta.error = v;
+    },
     setActiveTab(tab: ActiveTab) {
       state.activeTab = tab;
     },
@@ -294,12 +339,11 @@ export function createInverseLookupState(
 
       const hasExplicitSuffix = rangeRows.some((r) => r.unitFromSuffix);
       if (hasExplicitSuffix) {
-        rangeMasterUnit = "cm";
+        meta.rangeMasterUnit = "cm";
       }
-
     },
     setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m") {
-      rangeMasterUnit = unit;
+      meta.rangeMasterUnit = unit;
     },
     addRangeRow() {
       const newRow: RangeRow = {
@@ -320,14 +364,14 @@ export function createInverseLookupState(
       validateStpRow(row);
     },
     setStpMasterUnit(unit: "kev-um" | "mev-cm" | "mev-cm2-g") {
-      stpMasterUnit = unit;
+      meta.stpMasterUnit = unit;
     },
     addStpRow() {
       const newRow: InverseStpRow = {
         id: ++stpRowIdCounter,
         text: "",
         value: null,
-        unit: stpMasterUnit,
+        unit: meta.stpMasterUnit,
         status: "empty",
         energyLowMevNucl: null,
         energyHighMevNucl: null,
@@ -335,7 +379,7 @@ export function createInverseLookupState(
       stpRows.push(newRow);
     },
     reset() {
-      activeTab = "forward";
+      state.activeTab = "forward";
       rangeRows.length = 0;
       rangeRows.push({
         id: ++rangeRowIdCounter,
@@ -356,8 +400,10 @@ export function createInverseLookupState(
         energyLowMevNucl: null,
         energyHighMevNucl: null,
       });
-      isCalculating = false;
-      error = null;
+      meta.rangeMasterUnit = "cm";
+      meta.stpMasterUnit = "kev-um";
+      meta.isCalculating = false;
+      meta.error = null;
     },
   };
 }

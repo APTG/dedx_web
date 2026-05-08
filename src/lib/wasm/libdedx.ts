@@ -15,10 +15,7 @@ import { getMaterialFriendlyName } from "$lib/config/material-names.js";
 import { getProgramFriendlyName } from "$lib/config/program-names.js";
 import { getParticleFriendlyName } from "$lib/config/particle-names.js";
 import { integrateCsdaFromStp } from "$lib/utils/csda-integration.js";
-import {
-  convertEnergyFromMeVperNucl,
-  convertEnergyFromMeVperU,
-} from "$lib/utils/energy-conversions.js";
+import { convertEnergyFromMeVperNucl } from "$lib/utils/energy-conversions.js";
 
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
@@ -478,7 +475,12 @@ export class LibdedxServiceImpl implements LibdedxService {
         if (errCode !== 0) {
           results.push(new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`));
         } else if (energy < 0) {
-          results.push(new LibdedxError(-1, `Inverse CSDA returned invalid energy ${energy} for range=${range}`));
+          results.push(
+            new LibdedxError(
+              -1,
+              `Inverse CSDA returned invalid energy ${energy} for range=${range}`,
+            ),
+          );
         } else {
           results.push({ energy, csdaRange: range });
         }
@@ -560,7 +562,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       if (toUnit === "MeV/nucl") {
         return valueInMeVperNucl;
       } else if (toUnit === "MeV/u") {
-        return convertEnergyFromMeVperU(valueInMeVperNucl, "MeV/u", massNumber, atomicMass);
+        return convertEnergyFromMeVperNucl(valueInMeVperNucl, "MeV/u", massNumber, atomicMass);
       } else {
         // toUnit === "MeV" (total energy)
         return convertEnergyFromMeVperNucl(valueInMeVperNucl, "MeV", massNumber, atomicMass);

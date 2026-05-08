@@ -30,8 +30,10 @@
       href={`${info.repoUrl}/commit/${info.commitFull}`}
       target="_blank"
       rel="noopener noreferrer"
-      class="underline hover:text-foreground">{info.commit}</a
+      class="underline hover:text-foreground"
     >
+      {info.commit}
+    </a>
     · {info.date} · {info.branch}
   </span>
 {/if}

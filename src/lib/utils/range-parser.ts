@@ -10,7 +10,10 @@
  */
 export function parseLengthInput(
   text: string,
-): { value: number; unit: string; toCm: number } | { error: string } | { empty: true } {
+):
+  | { value: number; unit: string | null; toCm: number | null }
+  | { error: string }
+  | { empty: true } {
   const trimmed = text.trim();
 
   // Empty input

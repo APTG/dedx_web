@@ -26,16 +26,25 @@
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
-import { decodeCalculatorUrl, calculatorUrlQueryString, decodeInverseModeFromUrl, type InverseModeUrlState } from "$lib/utils/calculator-url";
-import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
-import { initExportState } from "$lib/state/export.svelte";
-import {
-  advancedOptions,
-  loadAdvancedOptionsFromStorage,
-  persistAdvancedOptions,
-} from "$lib/state/advanced-options.svelte";
-import { createInverseLookupState, type InverseLookupState, type ActiveTab } from "$lib/state/inverse-lookups.svelte";
-import type { InverseCsdaResult } from "$lib/wasm/types";
+  import {
+    decodeCalculatorUrl,
+    calculatorUrlQueryString,
+    decodeInverseModeFromUrl,
+    type InverseModeUrlState,
+  } from "$lib/utils/calculator-url";
+  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
+  import { initExportState } from "$lib/state/export.svelte";
+  import {
+    advancedOptions,
+    loadAdvancedOptionsFromStorage,
+    persistAdvancedOptions,
+  } from "$lib/state/advanced-options.svelte";
+  import {
+    createInverseLookupState,
+    type InverseLookupState,
+    type ActiveTab,
+  } from "$lib/state/inverse-lookups.svelte";
+  import type { InverseCsdaResult } from "$lib/wasm/types";
 
   let state = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -99,7 +108,7 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
             // Clear default empty rows
             inverseLookupState.rangeRows.length = 0;
             inverseLookupState.stpRows.length = 0;
-            
+
             for (let i = 0; i < inverseMode.ivalues.length; i++) {
               const ival = inverseMode.ivalues[i];
               const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
@@ -186,11 +195,15 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
           imode: "csda",
           ivalues: inverseLookupState.rangeRows
             .filter((r) => r.text.trim() !== "")
-            .map((r) => ({
-              rawInput: r.text.trim(),
-              unit: r.unit,
-              unitFromSuffix: r.unitFromSuffix,
-            })),
+            .map((r) => {
+              const trimmed = r.text.trim();
+              const numeric = trimmed.match(/^([\d.eE+-]+)/)?.[1] ?? trimmed;
+              return {
+                rawInput: r.unitFromSuffix ? numeric : trimmed,
+                unit: r.unit,
+                unitFromSuffix: r.unitFromSuffix,
+              };
+            }),
           iunit: inverseLookupState.rangeMasterUnit,
         };
       } else if (inverseLookupState.activeTab === "stp") {
@@ -609,8 +622,7 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
       if (cancelled) return;
 
       const material = state?.selectedMaterial;
-      const density =
-        (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
+      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
 
       if (density <= 0) {
         // Mark all non-empty rows as invalid due to missing density
@@ -650,8 +662,14 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
             }
           }
         }
-      } catch (e) {
-        // Error handling - keep existing row states
+      } catch {
+        for (const r of inverseLookupState.rangeRows) {
+          if (r.status === "valid" || r.status === "out-of-range") {
+            r.status = "error";
+            r.message = "Inverse range lookup failed";
+            r.energyMevNucl = null;
+          }
+        }
       }
     }, 300);
 
@@ -682,7 +700,9 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
 
     if (particleId === null || materialId === null || programId === null) return;
 
-    const validRows = rowsSnapshot.filter((r) => r.status === "valid" || r.status === "no-solution");
+    const validRows = rowsSnapshot.filter(
+      (r) => r.status === "valid" || r.status === "no-solution",
+    );
     if (validRows.length === 0) return;
 
     let cancelled = false;
@@ -693,13 +713,10 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
       if (cancelled) return;
 
       const material = state?.selectedMaterial;
-      const density =
-        (advOptsSnapshot.densityOverride ?? undefined) ?? material?.density ?? 1;
+      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
 
       // Convert to MeV·cm²/g
-      const stpMevCm2g = validRows.map((r) =>
-        stpToMevCm2g(r.value!, r.unit, density),
-      );
+      const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
 
       try {
         // Call for low branch (side=0)
@@ -743,8 +760,15 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
             resultIdx++;
           }
         }
-      } catch (e) {
-        // Error handling - keep existing row states
+      } catch {
+        for (const r of inverseLookupState.stpRows) {
+          if (r.status === "valid" || r.status === "no-solution") {
+            r.status = "error";
+            r.message = "Inverse STP lookup failed";
+            r.energyLowMevNucl = null;
+            r.energyHighMevNucl = null;
+          }
+        }
       }
     }, 300);
 
@@ -1007,45 +1031,45 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
         <!-- Tab switcher for Advanced mode -->
         <div class="border-b">
           <div class="flex gap-2" role="tablist" aria-label="Calculator mode">
-<button
-               role="tab"
-               aria-selected={inverseLookupState?.activeTab === "forward"}
-               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-               class:border-primary={inverseLookupState?.activeTab === "forward"}
-               class:border-transparent={inverseLookupState?.activeTab !== "forward"}
-               class:text-foreground={inverseLookupState?.activeTab === "forward"}
-               class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
-               onclick={() => inverseLookupState?.setActiveTab("forward")}
-               data-testid="inverse-tab-forward"
-             >
-               Forward
-             </button>
-             <button
-               role="tab"
-               aria-selected={inverseLookupState?.activeTab === "csda"}
-               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-               class:border-primary={inverseLookupState?.activeTab === "csda"}
-               class:border-transparent={inverseLookupState?.activeTab !== "csda"}
-               class:text-foreground={inverseLookupState?.activeTab === "csda"}
-               class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
-               onclick={() => inverseLookupState?.setActiveTab("csda")}
-               data-testid="inverse-tab-range"
-             >
-               Range
-             </button>
-             <button
-               role="tab"
-               aria-selected={inverseLookupState?.activeTab === "stp"}
-               class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
-               class:border-primary={inverseLookupState?.activeTab === "stp"}
-               class:border-transparent={inverseLookupState?.activeTab !== "stp"}
-               class:text-foreground={inverseLookupState?.activeTab === "stp"}
-               class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
-               onclick={() => inverseLookupState?.setActiveTab("stp")}
-               data-testid="inverse-tab-stp"
-             >
-               Inverse STP
-             </button>
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "forward"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "forward"}
+              class:border-transparent={inverseLookupState?.activeTab !== "forward"}
+              class:text-foreground={inverseLookupState?.activeTab === "forward"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
+              onclick={() => inverseLookupState?.setActiveTab("forward")}
+              data-testid="inverse-tab-forward"
+            >
+              Forward
+            </button>
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "csda"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "csda"}
+              class:border-transparent={inverseLookupState?.activeTab !== "csda"}
+              class:text-foreground={inverseLookupState?.activeTab === "csda"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
+              onclick={() => inverseLookupState?.setActiveTab("csda")}
+              data-testid="inverse-tab-range"
+            >
+              Range
+            </button>
+            <button
+              role="tab"
+              aria-selected={inverseLookupState?.activeTab === "stp"}
+              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class:border-primary={inverseLookupState?.activeTab === "stp"}
+              class:border-transparent={inverseLookupState?.activeTab !== "stp"}
+              class:text-foreground={inverseLookupState?.activeTab === "stp"}
+              class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
+              onclick={() => inverseLookupState?.setActiveTab("stp")}
+              data-testid="inverse-tab-stp"
+            >
+              Inverse STP
+            </button>
           </div>
         </div>
       {/if}
@@ -1064,14 +1088,12 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
 
       <!-- Range tab content -->
       {#if inverseLookupState && inverseLookupState.activeTab === "csda"}
-        {@const debugActiveTab = inverseLookupState.activeTab}
-        {@const debugIsActive = inverseLookupState.activeTab === "csda"}
-        <div class="rounded-lg border bg-card p-3 sm:p-6" data-debug-activeTab="{debugActiveTab}" data-debug-isActive="{debugIsActive}">
+        <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
-            
+
             <!-- Master unit selector (visible in master mode) -->
             <div class="flex items-center gap-2 text-sm">
               <label for="inverse-range-unit" class="text-muted-foreground">Unit:</label>
@@ -1133,7 +1155,9 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
                       value={inverseLookupState.rangeMasterUnit}
                       class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       onchange={(e) => {
-                        inverseLookupState.setRangeMasterUnit(e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m");
+                        inverseLookupState.setRangeMasterUnit(
+                          e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m",
+                        );
                       }}
                     >
                       <option value="nm">nm</option>
@@ -1151,7 +1175,7 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
                     {:else if row.status === "empty"}
                       <span class="text-sm text-muted-foreground"></span>
                     {:else}
-                      <span class="text-sm text-muted-foreground">status={row.status} energy={row.energyMevNucl}</span>
+                      <span class="text-sm text-muted-foreground">—</span>
                     {/if}
                   </div>
                 </div>
@@ -1187,9 +1211,10 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
-              Enter a stopping power value to find the corresponding energies (low and high branches).
+              Enter a stopping power value to find the corresponding energies (low and high
+              branches).
             </div>
-            
+
             <!-- STP table header -->
             <div class="grid grid-cols-4 gap-2 text-sm font-medium mb-2">
               <div>Stopping Power</div>
@@ -1198,7 +1223,7 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
               <div>E high</div>
             </div>
 
-<!-- STP rows -->
+            <!-- STP rows -->
             <div class="space-y-2">
               {#each inverseLookupState.stpRows as row, i (row.id)}
                 <div class="grid grid-cols-4 gap-2" data-testid="inverse-stp-row-{i}">
@@ -1211,51 +1236,54 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
                     data-testid="inverse-stp-input-{i}"
                   />
                   <select
+                    data-testid="inverse-stp-unit"
                     value={row.unit}
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     onchange={(e) => {
-                       inverseLookupState.setStpMasterUnit(e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g");
-                     }}
-                   >
-                     <option value="kev-um">keV/µm</option>
-                     <option value="mev-cm">MeV/cm</option>
-                     <option value="mev-cm2-g">MeV·cm²/g</option>
-                   </select>
-                    <div class="flex items-center" data-testid="inverse-stp-elow-{i}">
-                      {#if row.status === "valid" && row.energyLowMevNucl !== null}
-                        <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
-                      {:else if row.status === "invalid" || row.status === "no-solution"}
-                        <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                      {:else if row.status === "empty"}
-                        <span class="text-sm text-muted-foreground"></span>
-                      {/if}
-                    </div>
-                    <div class="flex items-center" data-testid="inverse-stp-ehigh-{i}">
-                      {#if row.status === "valid" && row.energyHighMevNucl !== null}
-                        <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
-                      {:else if row.status === "invalid" || row.status === "no-solution"}
-                        <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                      {:else if row.status === "empty"}
-                        <span class="text-sm text-muted-foreground"></span>
-                      {/if}
-                    </div>
-                 </div>
-                  <!-- Error row display -->
-                  {#if (row.status === "invalid" || row.status === "no-solution") && row.message}
-                    <div data-testid="inverse-stp-row-error-{i}" class="text-sm text-destructive">
-                      {row.message}
-                    </div>
-                  {/if}
-               {/each}
-               <!-- Add row button -->
-               <button
-                 type="button"
-                 class="text-sm text-primary hover:underline mt-2"
-                 onclick={() => inverseLookupState.addStpRow()}
-               >
-                 + Add row
-               </button>
-             </div>
+                      inverseLookupState.setStpMasterUnit(
+                        e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g",
+                      );
+                    }}
+                  >
+                    <option value="kev-um">keV/µm</option>
+                    <option value="mev-cm">MeV/cm</option>
+                    <option value="mev-cm2-g">MeV·cm²/g</option>
+                  </select>
+                  <div class="flex items-center" data-testid="inverse-stp-result-low-{i}">
+                    {#if row.status === "valid" && row.energyLowMevNucl !== null}
+                      <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
+                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
+                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                    {:else if row.status === "empty"}
+                      <span class="text-sm text-muted-foreground"></span>
+                    {/if}
+                  </div>
+                  <div class="flex items-center" data-testid="inverse-stp-result-high-{i}">
+                    {#if row.status === "valid" && row.energyHighMevNucl !== null}
+                      <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
+                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
+                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
+                    {:else if row.status === "empty"}
+                      <span class="text-sm text-muted-foreground"></span>
+                    {/if}
+                  </div>
+                </div>
+                <!-- Error row display -->
+                {#if (row.status === "invalid" || row.status === "no-solution" || row.status === "error") && row.message}
+                  <div data-testid="inverse-stp-row-error-{i}" class="text-sm text-destructive">
+                    {row.message}
+                  </div>
+                {/if}
+              {/each}
+              <!-- Add row button -->
+              <button
+                type="button"
+                class="text-sm text-primary hover:underline mt-2"
+                onclick={() => inverseLookupState.addStpRow()}
+              >
+                + Add row
+              </button>
+            </div>
 
             <!-- Valid STP range hint -->
             {#if state.isComplete && energyRangeLabel}

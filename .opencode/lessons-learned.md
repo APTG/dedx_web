@@ -391,5 +391,34 @@ split` and the orchestrator splits it before retrying.
 
 ---
 
-_Last updated: 2026-05-06. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 15 — Never swallow inverse-lookup exceptions
+
+**Symptom:** Range/Inverse STP rows sometimes showed stale values after a failed
+WASM call. The UI looked "valid" even though no fresh result was produced.
+
+**Root cause:** Empty `catch {}` blocks in the calculator inverse-lookup effects
+silently ignored `getInverseCsda`/`getInverseStp` failures.
+
+```typescript
+// ❌ WRONG — swallows failure, stale UI state remains
+try {
+  const results = service.getInverseCsda(...);
+} catch {}
+
+// ✅ CORRECT — mark affected rows as error with a user-facing message
+try {
+  const results = service.getInverseCsda(...);
+} catch {
+  row.status = "error";
+  row.message = "Inverse range lookup failed";
+  row.energyMevNucl = null;
+}
+```
+
+**Rule:** In calculator inverse-lookup flows, every caught exception must update
+row status/message to an explicit error state (no empty catches).
+
+---
+
+_Last updated: 2026-05-08. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
