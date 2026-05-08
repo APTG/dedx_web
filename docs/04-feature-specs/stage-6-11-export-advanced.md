@@ -86,7 +86,11 @@ test("CSV modal: opens in advanced mode, semicolon separator persists @smoke", a
   await page.goto("/calculator?advanced=1&particle=1&material=276");
   // Wait for at least one result
   await expect
-    .poll(async () => parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""), { timeout: 8000 })
+    .poll(
+      async () =>
+        parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
+      { timeout: 8000 },
+    )
     .toBeGreaterThan(0);
 
   await page.click('[data-testid="export-csv-btn"]');
@@ -210,11 +214,11 @@ Export is a **one-shot action** — it captures the current state at the moment
 the user clicks Download. It is not reactive (no `$effect` needed for export
 itself). The modal's localStorage persistence is not a reactive computation.
 
-| Feature | Calculator (Basic) | Calculator (Advanced) | Plot (Basic) | Plot (Advanced) |
-| ------- | :----------------: | :-------------------: | :----------: | :-------------: |
-| CSV modal | ❌ (direct download) | ✅ modal opens | ❌ (direct download) | ✅ modal opens |
-| PNG export | N/A | N/A | ❌ option absent | ✅ option present |
-| Advanced PDF | N/A | ✅ metadata block appended | N/A | N/A |
+| Feature      |  Calculator (Basic)  |   Calculator (Advanced)    |     Plot (Basic)     |  Plot (Advanced)  |
+| ------------ | :------------------: | :------------------------: | :------------------: | :---------------: |
+| CSV modal    | ❌ (direct download) |       ✅ modal opens       | ❌ (direct download) |  ✅ modal opens   |
+| PNG export   |         N/A          |            N/A             |   ❌ option absent   | ✅ option present |
+| Advanced PDF |         N/A          | ✅ metadata block appended |         N/A          |        N/A        |
 
 Legend: ✅ = behaviour active; ❌ = must not activate / option must be absent;
 N/A = not applicable.
@@ -226,10 +230,10 @@ N/A = not applicable.
 Export features add no URL parameters. The CSV modal settings are stored in
 `localStorage`, not the URL.
 
-| `localStorage` key | Type | Values | Default |
-| ------------------ | ---- | ------ | ------- |
-| `csvExportSeparator` | `"comma" \| "semicolon" \| "tab"` | as listed | `"comma"` |
-| `csvExportLineEndings` | `"crlf" \| "lf"` | as listed | `"crlf"` |
+| `localStorage` key     | Type                              | Values    | Default   |
+| ---------------------- | --------------------------------- | --------- | --------- |
+| `csvExportSeparator`   | `"comma" \| "semicolon" \| "tab"` | as listed | `"comma"` |
+| `csvExportLineEndings` | `"crlf" \| "lf"`                  | as listed | `"crlf"`  |
 
 ---
 
@@ -249,12 +253,12 @@ Export features add no URL parameters. The CSV modal settings are stored in
 
 ### Required pillars
 
-| Pillar | Calculator | Plot |
-| ------ | ---------- | ---- |
-| CSV modal only in advanced mode (`isAdvancedMode.value` guard) | ✅ required | ✅ required |
-| PNG option only in advanced mode (`isAdvancedMode.value` guard on dropdown item) | N/A | ✅ required |
-| Advanced PDF metadata block only in advanced mode | ✅ required | N/A |
-| `localStorage` persistence of separator + line-endings restored on modal open | ✅ required | ✅ required |
+| Pillar                                                                           | Calculator  | Plot        |
+| -------------------------------------------------------------------------------- | ----------- | ----------- |
+| CSV modal only in advanced mode (`isAdvancedMode.value` guard)                   | ✅ required | ✅ required |
+| PNG option only in advanced mode (`isAdvancedMode.value` guard on dropdown item) | N/A         | ✅ required |
+| Advanced PDF metadata block only in advanced mode                                | ✅ required | N/A         |
+| `localStorage` persistence of separator + line-endings restored on modal open    | ✅ required | ✅ required |
 
 **Implementer contract:** Verify that opening the CSV modal in basic mode
 **never** shows the modal (test Scenario 3 above). Verify that switching from
@@ -275,7 +279,7 @@ without a page reload.
 
 - `src/tests/unit/calculator-pdf.test.ts` (extend existing PDF tests)
   - [ ] Advanced mode PDF output includes `"PARTICLE"`, `"MATERIAL"`, `"PROGRAMS"`,
-    `"SETTINGS"`, `"SYSTEM"`, `"BUILD"` metadata fields in that order
+        `"SETTINGS"`, `"SYSTEM"`, `"BUILD"` metadata fields in that order
   - [ ] Advanced mode PDF metadata block appears **after** the results table
 
 ### Component tests (`@testing-library/svelte`)
@@ -324,18 +328,18 @@ None. All behavioral detail is in `export.md` Final v6.
 
 ## Appendix: data-testid Reference
 
-| `data-testid` value | Element | Notes |
-| ------------------- | ------- | ----- |
-| `export-csv-btn` | "Export CSV ↓" button in app toolbar | Present on both Calculator and Plot |
-| `csv-export-modal` | CSV configuration modal container | Shown only in advanced mode |
-| `csv-separator-comma` | Comma radio button | Default selection |
-| `csv-separator-semicolon` | Semicolon radio button | — |
-| `csv-separator-tab` | Tab radio button | — |
-| `csv-line-endings-crlf` | CRLF radio button | Default selection |
-| `csv-line-endings-lf` | LF radio button | — |
-| `csv-filename-input` | Filename text input | Pre-filled with canonical default |
-| `csv-export-confirm` | "Download CSV" button | Triggers download + closes modal |
-| `csv-export-cancel` | "Cancel" button | Closes without download |
-| `export-image-btn` | "Export image ▾" dropdown button | Plot controls bar only |
-| `export-image-png` | PNG dropdown option | Visible only in advanced mode |
-| `export-image-svg` | SVG dropdown option | Visible in both modes |
+| `data-testid` value       | Element                              | Notes                               |
+| ------------------------- | ------------------------------------ | ----------------------------------- |
+| `export-csv-btn`          | "Export CSV ↓" button in app toolbar | Present on both Calculator and Plot |
+| `csv-export-modal`        | CSV configuration modal container    | Shown only in advanced mode         |
+| `csv-separator-comma`     | Comma radio button                   | Default selection                   |
+| `csv-separator-semicolon` | Semicolon radio button               | —                                   |
+| `csv-separator-tab`       | Tab radio button                     | —                                   |
+| `csv-line-endings-crlf`   | CRLF radio button                    | Default selection                   |
+| `csv-line-endings-lf`     | LF radio button                      | —                                   |
+| `csv-filename-input`      | Filename text input                  | Pre-filled with canonical default   |
+| `csv-export-confirm`      | "Download CSV" button                | Triggers download + closes modal    |
+| `csv-export-cancel`       | "Cancel" button                      | Closes without download             |
+| `export-image-btn`        | "Export image ▾" dropdown button     | Plot controls bar only              |
+| `export-image-png`        | PNG dropdown option                  | Visible only in advanced mode       |
+| `export-image-svg`        | SVG dropdown option                  | Visible in both modes               |

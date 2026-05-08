@@ -24,14 +24,14 @@ review thread (`pullrequestreview-4244062720`) on PR #433, as requested by
    (`2026-04-29-stage6-export-and-e2e-fixes.md`) and the Plot export PR-review
    fixes log (`2026-05-04-stage6-plot-export-copilot-fixes.md`).
 
-3. **Add `**Model:**` line to `2026-05-07-redesign-plan-stage6-table-fix.md`** —
+3. **Add `**Model:**`line to`2026-05-07-redesign-plan-stage6-table-fix.md`** —
    The session log was missing the required top-level attribution line. Added
    `**Model:** Claude Sonnet 4.6 via GitHub Copilot coding agent` after the H1.
 
-4. **Add `**Model:**` line to `2026-05-07-inverse-lookups-scenarios-v6.md`** —
+4. **Add `**Model:**`line to`2026-05-07-inverse-lookups-scenarios-v6.md`** —
    Same fix for the inverse-lookups v6 scenarios session log.
 
-5. **Add `**Model:**` line to `2026-05-07-custom-compounds-spec-v3.md`** — Same
+5. **Add `**Model:**`line to`2026-05-07-custom-compounds-spec-v3.md`** — Same
    fix for the custom-compounds v3 session log.
 
 6. **Fix `page.blur(selector)` API call** —

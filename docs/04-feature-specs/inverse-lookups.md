@@ -1028,7 +1028,7 @@ and the 300 ms debounce elapses
 ```typescript
 test("Inverse STP: dual-branch energies at 30 keV/µm @smoke", async ({ page }) => {
   await page.goto(
-    "/calculator?particle=1&material=276&imode=stp&ivalues=30&iunit=kev-um&advanced=1"
+    "/calculator?particle=1&material=276&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
   );
   const eLow = page.locator('[data-testid="inverse-stp-result-low-0"]');
   const eHigh = page.locator('[data-testid="inverse-stp-result-high-0"]');
@@ -1046,18 +1046,12 @@ test("Inverse STP: dual-branch energies at 30 keV/µm @smoke", async ({ page }) 
   expect((await eHigh.textContent())?.trim()).not.toBe("—");
 
   // Low and high branches must be distinct energies
-  expect((await eLow.textContent())?.trim()).not.toBe(
-    (await eHigh.textContent())?.trim()
-  );
+  expect((await eLow.textContent())?.trim()).not.toBe((await eHigh.textContent())?.trim());
 
   // Change to above-Bragg-peak value — both cells must show em-dash
   await page.fill('[data-testid="inverse-stp-input-0"]', "85");
-  await expect
-    .poll(async () => (await eLow.textContent())?.trim(), { timeout: 8000 })
-    .toBe("—");
-  await expect
-    .poll(async () => (await eHigh.textContent())?.trim(), { timeout: 8000 })
-    .toBe("—");
+  await expect.poll(async () => (await eLow.textContent())?.trim(), { timeout: 8000 }).toBe("—");
+  await expect.poll(async () => (await eHigh.textContent())?.trim(), { timeout: 8000 }).toBe("—");
 });
 ```
 
@@ -1108,31 +1102,21 @@ test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page 
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-range-result-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 8000 }
+        (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
+      { timeout: 8000 },
     )
     .toMatch(/\d/);
 
   // Per-row mode active → master unit selector disabled
-  await expect(
-    page.locator('[data-testid="inverse-range-unit"]')
-  ).toBeDisabled();
+  await expect(page.locator('[data-testid="inverse-range-unit"]')).toBeDisabled();
 
   // '0.03 km' — unrecognised suffix → inline error mentioning 'km'
   await page.fill('[data-testid="inverse-range-input-0"]', "0.03 km");
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-range-row-error-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 5000 }
+        (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+      { timeout: 5000 },
     )
     .toMatch(/km/);
 });
@@ -1208,12 +1192,8 @@ test("Range tab: rejects negative and non-numeric input @regression", async ({ p
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-range-row-error-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 5000 }
+        (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+      { timeout: 5000 },
     )
     .toMatch(/positive/i);
 
@@ -1221,12 +1201,8 @@ test("Range tab: rejects negative and non-numeric input @regression", async ({ p
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-range-row-error-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 5000 }
+        (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+      { timeout: 5000 },
     )
     .toMatch(/numeric/i);
 });
@@ -1239,12 +1215,8 @@ test("Inverse STP tab: rejects zero and non-numeric input @regression", async ({
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-stp-row-error-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 5000 }
+        (await page.locator('[data-testid="inverse-stp-row-error-0"]').textContent())?.trim(),
+      { timeout: 5000 },
     )
     .toMatch(/positive/i);
 
@@ -1252,12 +1224,8 @@ test("Inverse STP tab: rejects zero and non-numeric input @regression", async ({
   await expect
     .poll(
       async () =>
-        (
-          await page
-            .locator('[data-testid="inverse-stp-row-error-0"]')
-            .textContent()
-        )?.trim(),
-      { timeout: 5000 }
+        (await page.locator('[data-testid="inverse-stp-row-error-0"]').textContent())?.trim(),
+      { timeout: 5000 },
     )
     .toMatch(/numeric/i);
 });
@@ -1310,13 +1278,9 @@ test("Range tab: multi-program shows one result column per program @regression",
   await page.fill('[data-testid="inverse-range-input-0"]', "7.718 cm");
 
   await expect
-    .poll(
-      async () =>
-        await page
-          .locator('[data-testid^="inverse-range-result-0-"]')
-          .count(),
-      { timeout: 8000 }
-    )
+    .poll(async () => await page.locator('[data-testid^="inverse-range-result-0-"]').count(), {
+      timeout: 8000,
+    })
     .toBeGreaterThanOrEqual(2);
 });
 
@@ -1329,23 +1293,15 @@ test("Inverse STP tab: multi-program shows E-low and E-high per program @regress
   await page.fill('[data-testid="inverse-stp-input-0"]', "30");
 
   await expect
-    .poll(
-      async () =>
-        await page
-          .locator('[data-testid^="inverse-stp-result-low-0-"]')
-          .count(),
-      { timeout: 8000 }
-    )
+    .poll(async () => await page.locator('[data-testid^="inverse-stp-result-low-0-"]').count(), {
+      timeout: 8000,
+    })
     .toBeGreaterThanOrEqual(2);
 
   await expect
-    .poll(
-      async () =>
-        await page
-          .locator('[data-testid^="inverse-stp-result-high-0-"]')
-          .count(),
-      { timeout: 8000 }
-    )
+    .poll(async () => await page.locator('[data-testid^="inverse-stp-result-high-0-"]').count(), {
+      timeout: 8000,
+    })
     .toBeGreaterThanOrEqual(2);
 });
 ```
@@ -1367,11 +1323,11 @@ test("Inverse STP tab: multi-program shows E-low and E-high per program @regress
 
 ### Required pillars
 
-| Pillar | Calculator |
-| ------ | ---------- |
-| Panel gating (`isAdvancedMode.value` guard on tab rendering) | ✅ required |
+| Pillar                                                                   | Calculator  |
+| ------------------------------------------------------------------------ | ----------- |
+| Panel gating (`isAdvancedMode.value` guard on tab rendering)             | ✅ required |
 | URL init (`imode` / `ivalues` / `iunit` parsed inside the URL `$effect`) | ✅ required |
-| Persistence (URL updated when tab, values, or unit changes) | ✅ required |
+| Persistence (URL updated when tab, values, or unit changes)              | ✅ required |
 | Reactive-dep snapshot (all reactive state read **before** any `.then()`) | ✅ required |
 
 **Implementer contract:** Before declaring `TASK DONE`, verify that every ✅
@@ -1386,23 +1342,23 @@ none of them reads reactive state _inside_ a `.then()` callback (see
 All `data-testid` attributes listed here **must** be added by the implementer.
 The Playwright acceptance scenarios above depend on their exact string values.
 
-| `data-testid` value | Element | Notes |
-| ------------------- | ------- | ----- |
-| `inverse-tab-forward` | Tab button — "Forward" | `aria-selected="true"` when active |
-| `inverse-tab-range` | Tab button — "Range" | `aria-selected="true"` when active |
-| `inverse-tab-stp` | Tab button — "Inverse STP" | `aria-selected="true"` when active |
-| `inverse-range-input-{i}` | Range tab input cell, row `i` (0-based) | `value` = typed text |
-| `inverse-range-unit` | Range tab master unit selector | — |
-| `inverse-range-result-{i}` | Range tab result cell, row `i`, single-program | text = energy + unit |
-| `inverse-range-result-{i}-{programId}` | Range tab result cell, row `i`, multi-program | — |
-| `inverse-stp-input-{i}` | Inverse STP input cell, row `i` | — |
-| `inverse-stp-unit` | Inverse STP master unit selector | — |
-| `inverse-stp-result-low-{i}` | Inverse STP E-low cell, row `i`, single-program | `"—"` when no solution |
-| `inverse-stp-result-high-{i}` | Inverse STP E-high cell, row `i`, single-program | `"—"` when no solution |
-| `inverse-stp-result-low-{i}-{programId}` | E-low, row `i`, multi-program | — |
-| `inverse-stp-result-high-{i}-{programId}` | E-high, row `i`, multi-program | — |
-| `inverse-range-row-error-{i}` | Range tab inline validation error, row `i` | text = error message; absent when row is valid |
-| `inverse-stp-row-error-{i}` | Inverse STP inline validation error, row `i` | text = error message; absent when row is valid |
+| `data-testid` value                       | Element                                          | Notes                                          |
+| ----------------------------------------- | ------------------------------------------------ | ---------------------------------------------- |
+| `inverse-tab-forward`                     | Tab button — "Forward"                           | `aria-selected="true"` when active             |
+| `inverse-tab-range`                       | Tab button — "Range"                             | `aria-selected="true"` when active             |
+| `inverse-tab-stp`                         | Tab button — "Inverse STP"                       | `aria-selected="true"` when active             |
+| `inverse-range-input-{i}`                 | Range tab input cell, row `i` (0-based)          | `value` = typed text                           |
+| `inverse-range-unit`                      | Range tab master unit selector                   | —                                              |
+| `inverse-range-result-{i}`                | Range tab result cell, row `i`, single-program   | text = energy + unit                           |
+| `inverse-range-result-{i}-{programId}`    | Range tab result cell, row `i`, multi-program    | —                                              |
+| `inverse-stp-input-{i}`                   | Inverse STP input cell, row `i`                  | —                                              |
+| `inverse-stp-unit`                        | Inverse STP master unit selector                 | —                                              |
+| `inverse-stp-result-low-{i}`              | Inverse STP E-low cell, row `i`, single-program  | `"—"` when no solution                         |
+| `inverse-stp-result-high-{i}`             | Inverse STP E-high cell, row `i`, single-program | `"—"` when no solution                         |
+| `inverse-stp-result-low-{i}-{programId}`  | E-low, row `i`, multi-program                    | —                                              |
+| `inverse-stp-result-high-{i}-{programId}` | E-high, row `i`, multi-program                   | —                                              |
+| `inverse-range-row-error-{i}`             | Range tab inline validation error, row `i`       | text = error message; absent when row is valid |
+| `inverse-stp-row-error-{i}`               | Inverse STP inline validation error, row `i`     | text = error message; absent when row is valid |
 
 ---
 

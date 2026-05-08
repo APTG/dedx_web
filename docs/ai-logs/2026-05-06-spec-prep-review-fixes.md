@@ -19,7 +19,7 @@ review thread on PR #433, as requested by @grzanka:
    read "`1` (always emitted per canonicalization step 1)". The two
    statements contradict each other. Updated the value to
    `n/a — always emitted (step 1 of canonicalization; never omitted even
-   when value equals the current default)` to make the exception explicit
+when value equals the current default)` to make the exception explicit
    without renaming the column (which applies to all other params correctly).
 
 3. **Inconsistent `data-testid` conventions** — `stage-6-12-multi-program-polish.md`

@@ -1,4 +1,4 @@
-import type { EnergyUnit, MstarMode } from "$lib/wasm/types";
+import type { EnergyUnit, MstarMode, InverseMode } from "$lib/wasm/types";
 import { parseEnergyInput, type EnergySuffixUnit } from "$lib/utils/energy-parser";
 import type { AdvancedOptions } from "$lib/wasm/types";
 
@@ -41,6 +41,84 @@ const VALID_ROW_UNITS: ReadonlySet<EnergySuffixUnit> = new Set<EnergySuffixUnit>
   "keV/u",
 ]);
 
+/**
+ * Inverse lookup row — similar to CalculatorUrlRow but for inverse mode inputs.
+ * The unit is either a length suffix (nm/um/mm/cm/m for csda) or an STP unit
+ * token (kev-um/mev-cm/mev-cm2-g for stp).
+ */
+export interface InverseLookupUrlRow {
+  /** The user-typed text without any `:unit` suffix — i.e. the bare numeric portion. */
+  rawInput: string;
+  /** The unit detected for this row — length suffix or STP unit token. */
+  unit: string;
+  /** Whether the unit was carried as an explicit `:unit` URL suffix (per-row mode) or inherited from the master `iunit` (master mode). */
+  unitFromSuffix: boolean;
+}
+
+/** Valid length units for CSDA range inverse mode (imode=csda). */
+const VALID_CSDA_MASTER_UNITS = new Set(["nm", "um", "mm", "cm", "m"]);
+
+/** Valid STP unit tokens for inverse STP mode (imode=stp). */
+const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
+
+/**
+ * Decoded inverse mode from URL params.
+ */
+export interface InverseModeUrlState {
+  imode: "csda" | "stp";
+  ivalues?: InverseLookupUrlRow[];
+  iunit?: string;
+}
+
+/**
+ * Decode inverse mode from URLSearchParams.
+ * Returns { imode, ivalues, iunit } or undefined if not present/invalid.
+ */
+export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUrlState | undefined {
+  const imodeRaw = params.get("imode");
+  const imode: "csda" | "stp" | undefined =
+    imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+
+  if (!imode) return undefined;
+
+  let ivalues: InverseLookupUrlRow[] | undefined;
+  let iunit: string | undefined;
+
+  const ivaluesParam = params.get("ivalues");
+  if (ivaluesParam) {
+    ivalues = [];
+    for (const part of ivaluesParam.split(",")) {
+      const colonIdx = part.lastIndexOf(":");
+      if (colonIdx > 0) {
+        const rawInput = part.slice(0, colonIdx);
+        const unitStr = part.slice(colonIdx + 1);
+        ivalues.push({ rawInput, unit: unitStr, unitFromSuffix: true });
+      } else {
+        ivalues.push({ rawInput: part, unit: "", unitFromSuffix: false });
+      }
+    }
+  }
+
+  // Validate and default iunit based on imode
+  const iunitRaw = params.get("iunit") ?? undefined;
+  if (imode === "csda") {
+    iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
+  } else if (imode === "stp") {
+    iunit = iunitRaw && VALID_STP_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "kev-um";
+  }
+
+  // Assign default unit to rows that don't have per-row suffix
+  if (ivalues && iunit) {
+    for (const row of ivalues) {
+      if (!row.unitFromSuffix) {
+        row.unit = iunit;
+      }
+    }
+  }
+
+  return { imode, ivalues, iunit };
+}
+
 export interface CalculatorUrlRow {
   /**
    * The user-typed text without any `:unit` suffix — i.e. the bare
@@ -75,6 +153,11 @@ export interface CalculatorUrlState {
   /** Advanced options (optional — only present when encoding/decoding advanced options) */
   advancedOptions?: AdvancedOptions;
   materialIsGas?: boolean; // Used when encoding to determine if agg_state is an override
+
+  /** Inverse lookup fields (optional — only present when encoding/decoding inverse mode) */
+  imode?: InverseMode;
+  ivalues?: InverseLookupUrlRow[];
+  iunit?: string;
 }
 
 function isMasterUnit(s: string): s is EnergyUnit {
@@ -211,6 +294,32 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     }
   }
 
+  // Inverse lookup params (only when imode is set)
+  if (state.imode) {
+    params.set("imode", state.imode);
+
+    if (state.ivalues?.length) {
+      const encodedIvalues: string[] = [];
+      for (const row of state.ivalues) {
+        const trimmed = row.rawInput.trim();
+        if (trimmed === "") continue;
+        // Encode as `rawInput:unit` when unitFromSuffix, else bare `rawInput`
+        if (row.unitFromSuffix) {
+          encodedIvalues.push(`${trimmed}:${row.unit}`);
+        } else {
+          encodedIvalues.push(trimmed);
+        }
+      }
+      if (encodedIvalues.length > 0) {
+        params.set("ivalues", encodedIvalues.join(","));
+      }
+    }
+
+    if (state.iunit) {
+      params.set("iunit", state.iunit);
+    }
+  }
+
   return params;
 }
 
@@ -328,6 +437,48 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
     }
   }
 
+  // Parse inverse lookup params (imode, ivalues, iunit)
+  const imodeRaw = params.get("imode");
+  const imode: InverseMode | undefined =
+    imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
+
+  let ivalues: InverseLookupUrlRow[] | undefined;
+  let iunit: string | undefined;
+
+  if (imode) {
+    const ivaluesParam = params.get("ivalues");
+    if (ivaluesParam) {
+      ivalues = [];
+      for (const part of ivaluesParam.split(",")) {
+        const colonIdx = part.lastIndexOf(":");
+        if (colonIdx > 0) {
+          const rawInput = part.slice(0, colonIdx);
+          const unitStr = part.slice(colonIdx + 1);
+          ivalues.push({ rawInput, unit: unitStr, unitFromSuffix: true });
+        } else {
+          ivalues.push({ rawInput: part, unit: "", unitFromSuffix: false });
+        }
+      }
+    }
+
+    // Validate and default iunit based on imode
+    const iunitRaw = params.get("iunit") ?? undefined;
+    if (imode === "csda") {
+      iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
+    } else if (imode === "stp") {
+      iunit = iunitRaw && VALID_STP_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "kev-um";
+    }
+
+    // Assign default unit to rows that don't have per-row suffix
+    if (ivalues && iunit) {
+      for (const row of ivalues) {
+        if (!row.unitFromSuffix) {
+          row.unit = iunit;
+        }
+      }
+    }
+  }
+
   const result: CalculatorUrlState = {
     particleId: parseId(params.get("particle")),
     materialId: parseId(params.get("material")),
@@ -350,6 +501,15 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
   }
   if (advancedOptions) {
     result.advancedOptions = advancedOptions;
+  }
+  if (imode) {
+    result.imode = imode;
+  }
+  if (ivalues) {
+    result.ivalues = ivalues;
+  }
+  if (iunit) {
+    result.iunit = iunit;
   }
   return result;
 }

@@ -26,6 +26,7 @@ sets a property on the SAME proxy object, so the effect's dep on `value`
 
 The calculator page already fixed this with `advOptsKey` — a `$derived` that
 explicitly reads every nested property:
+
 ```js
 const advOptsKey = $derived(
   JSON.stringify([

@@ -14,6 +14,7 @@ User reported two bugs with density override in the Advanced Options panel:
    mode should always use the material's built-in density, ignoring any override.
 
 User also asked to:
+
 - Fix CI so E2E tests run automatically on `feat/**` branches without prompting
 - Add E2E tests for both scenarios
 - Fill AI logs
@@ -27,7 +28,7 @@ User also asked to:
 built-in density) when converting the multi-program comparison columns from `g/cm²` to `cm`
 and from `MeV·cm²/g` to `keV/µm`. The density override from `advancedOptions.value.densityOverride`
 was never consulted. Even though `calculateMulti()` was correctly retriggered on density changes
-(the reactive dep was set up), the *display* conversion always used the built-in density, so the
+(the reactive dep was set up), the _display_ conversion always used the built-in density, so the
 shown values were unchanged.
 
 **Bug 2 (Basic mode leaks density override):**
@@ -53,12 +54,14 @@ The `on.push.branches` list contained `feature/**` but not `feat/**`. The active
 ### Fixes applied
 
 **`src/lib/components/result-table.svelte`**
+
 - Added `import { advancedOptions } from "$lib/state/advanced-options.svelte"`
 - Both multi-program column density variables changed to
   `advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density`
   so the density override is used when set.
 
 **`src/lib/state/calculator.svelte.ts`**
+
 - Added `import { isAdvancedMode } from "./advanced-mode.svelte"`
 - `getStpDisplayUnit()`: aggregate state override now guarded —
   `const aggOverride = isAdvancedMode.value ? advancedOptions.value.aggregateState : undefined`
@@ -67,12 +70,14 @@ The `on.push.branches` list contained `feature/**` but not `feat/**`. The active
 - Density override: `(isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ?? material?.density ?? 1`
 
 **`src/routes/plot/+page.svelte`**
+
 - Preview series `density` changed to
   `(isAdvancedMode.value ? advOptsSnapshot.densityOverride : undefined) ?? selectedMaterial.density`
 - `handleAddSeries()` changed to preserve `p.density` (the density that was active when the
   preview was computed) rather than re-reading `selectedMaterial.density`.
 
 **`tests/e2e/advanced-options.spec.ts`**
+
 - Two failing density tests rewritten:
   - Now check `td[data-program-id][data-testid^="range-cell-"]` (multi-program columns) in
     Advanced mode instead of `range-cell-0` (basic-mode single-program cell, absent in
@@ -84,12 +89,14 @@ The `on.push.branches` list contained `feature/**` but not `feat/**`. The active
 - STP density test also updated to use `td[data-program-id][data-testid^="stp-cell-"]`.
 
 **`src/tests/unit/calculator-state.test.ts`**
+
 - Added `import { isAdvancedMode }` and `isAdvancedMode.value = false` reset in `afterEach`
 - All density override and aggregate-state override tests now set `isAdvancedMode.value = true`
   before exercising advanced-mode-only behavior
 - Added new test: "aggregate state override does NOT apply in Basic mode"
 
 **`.github/workflows/ci.yml`**
+
 - Added `"feat/**"` to `on.push.branches` list so every push to `feat/…` branches triggers
   the full CI pipeline (unit tests + E2E tests) automatically.
 

@@ -15,9 +15,13 @@ export function toggleAdvancedMode(): void {
 }
 
 export function initAdvancedModeFromUrl(searchParams: URLSearchParams): void {
-  if (searchParams.has("mode")) {
+  // Check for both `mode=advanced` (canonical) and `advanced=1` (legacy) URL params
+  const modeParam = searchParams.get("mode");
+  const advancedParam = searchParams.get("advanced");
+
+  if (modeParam !== null || advancedParam !== null) {
     // URL param takes precedence over localStorage when present in the URL.
-    isAdvancedMode.value = searchParams.get("mode") === "advanced";
+    isAdvancedMode.value = modeParam === "advanced" || advancedParam === "1";
     // Guard with `browser` in case this module is ever imported during SSR
     // (currently it is only called from a page component's $effect, but the
     // defensive check future-proofs the export).

@@ -7,6 +7,7 @@
 ### Prompt 1: Add acceptance scenarios covering Inverse STP primary flow, non-standard units, invalid input, and multi-program mode
 
 **User request:** Expand the acceptance scenarios in `inverse-lookups.md` to:
+
 1. Add a scenario that directly exercises the third user story ("entering a stopping power value, seeing both energies") — use 30 keV/µm for protons in liquid water on the default (PSTAR) program.
 2. Improve Range tab coverage with non-standard length units — include 30 m for protons in air as a primary test case.
 3. Add out-of-bounds and nonsense input validation scenarios for both tabs.

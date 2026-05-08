@@ -85,7 +85,9 @@ entries.
 - Calculation fires and `[data-testid="stp-cell-0"]` shows a numeric value
 
 ```typescript
-test("urlv mismatch: warning banner blocks calculation, load-defaults works @smoke", async ({ page }) => {
+test("urlv mismatch: warning banner blocks calculation, load-defaults works @smoke", async ({
+  page,
+}) => {
   await page.goto("/calculator?urlv=999&particle=1&material=276&energies=100");
 
   const banner = page.locator('[data-testid="url-version-warning"]');
@@ -164,9 +166,15 @@ test("custom compound URL round-trip: mat_* params restore compound @smoke", asy
     "&mat_density=2.64&mat_elements=3%3A1%2C9%3A1&mode=advanced&program=auto&energies=100";
 
   await page.goto(url);
-  await expect(page.locator('[data-testid="compound-from-url-banner"]')).toBeVisible({ timeout: 5000 });
+  await expect(page.locator('[data-testid="compound-from-url-banner"]')).toBeVisible({
+    timeout: 5000,
+  });
   await expect
-    .poll(async () => parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""), { timeout: 10000 })
+    .poll(
+      async () =>
+        parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
+      { timeout: 10000 },
+    )
     .toBeGreaterThan(0);
 });
 ```
@@ -206,12 +214,12 @@ URL parsing runs at page load (inside the URL `$effect`). It is not a reactive
 input that triggers recalculation — it is the source from which initial state
 is derived.
 
-| Input | Calculator | Plot |
-| ----- | :--------: | :--: |
-| `urlv` version check | ✅ blocking + banner | ✅ blocking + banner |
+| Input                             |             Calculator             |                Plot                |
+| --------------------------------- | :--------------------------------: | :--------------------------------: |
+| `urlv` version check              |        ✅ blocking + banner        |        ✅ blocking + banner        |
 | `material=custom` + `mat_*` parse | ✅ feeds compound into calculation | ✅ feeds compound into plot series |
-| Duplicate param resolution | ✅ parse-time only | ✅ parse-time only |
-| Unknown param drop | ✅ at canonicalization | ✅ at canonicalization |
+| Duplicate param resolution        |         ✅ parse-time only         |         ✅ parse-time only         |
+| Unknown param drop                |       ✅ at canonicalization       |       ✅ at canonicalization       |
 
 ---
 
@@ -219,20 +227,20 @@ is derived.
 
 ### New parameters (stage 6.13 additions)
 
-| Parameter | TypeScript type | Allowed values | Default / emit rule | Encode as |
-| --------- | --------------- | -------------- | ------------------- | --------- |
-| `urlv` | `number` | Positive integer; currently `1` | n/a — always emitted (step 1 of canonicalization; never omitted even when value equals the current default) | `"1"` |
+| Parameter | TypeScript type | Allowed values                  | Default / emit rule                                                                                         | Encode as |
+| --------- | --------------- | ------------------------------- | ----------------------------------------------------------------------------------------------------------- | --------- |
+| `urlv`    | `number`        | Positive integer; currently `1` | n/a — always emitted (step 1 of canonicalization; never omitted even when value equals the current default) | `"1"`     |
 
 ### Custom compound parameters (from 6.10, formalized in 6.13 step 9)
 
-| Parameter | TypeScript type | Allowed values | Default (omitted) | Encode as |
-| --------- | --------------- | -------------- | ----------------- | --------- |
-| `material` | `"custom" \| number` | `"custom"` sentinel or numeric ID | — | `"custom"` |
-| `mat_name` | `string` | Any string (percent-encoded) | Required when `material=custom` | percent-encoded |
-| `mat_density` | `number` | Positive float | Required when `material=custom` | JS number string |
-| `mat_elements` | `string` | `Z:count` pairs, comma-separated, ascending Z | Required when `material=custom` | e.g. `"3:1,9:1"` (percent-encoded) |
-| `mat_ival` | `number \| undefined` | Positive float or absent | Absent (omitted) | JS number string |
-| `mat_phase` | `"gas" \| "condensed" \| undefined` | as listed | Absent (condensed default) | `"gas"` only |
+| Parameter      | TypeScript type                     | Allowed values                                | Default (omitted)               | Encode as                          |
+| -------------- | ----------------------------------- | --------------------------------------------- | ------------------------------- | ---------------------------------- |
+| `material`     | `"custom" \| number`                | `"custom"` sentinel or numeric ID             | —                               | `"custom"`                         |
+| `mat_name`     | `string`                            | Any string (percent-encoded)                  | Required when `material=custom` | percent-encoded                    |
+| `mat_density`  | `number`                            | Positive float                                | Required when `material=custom` | JS number string                   |
+| `mat_elements` | `string`                            | `Z:count` pairs, comma-separated, ascending Z | Required when `material=custom` | e.g. `"3:1,9:1"` (percent-encoded) |
+| `mat_ival`     | `number \| undefined`               | Positive float or absent                      | Absent (omitted)                | JS number string                   |
+| `mat_phase`    | `"gas" \| "condensed" \| undefined` | as listed                                     | Absent (condensed default)      | `"gas"` only                       |
 
 **⚠ Round-trip rule:** The `material` field used in URL encoding acts as a
 discriminated union (`"custom"` vs numeric ID). Both branches must be covered
@@ -241,8 +249,8 @@ in `url-codec.contract.test.ts`:
 ```typescript
 // Required contract test pattern (add to url-codec.contract.test.ts):
 const MATERIAL_URL_ROUNDTRIP = {
-  builtin: "276",       // numeric material ID
-  custom: "custom",     // custom compound sentinel
+  builtin: "276", // numeric material ID
+  custom: "custom", // custom compound sentinel
 } satisfies Record<"builtin" | "custom", string>;
 ```
 
@@ -262,15 +270,15 @@ const MATERIAL_URL_ROUNDTRIP = {
 
 ### Required pillars
 
-| Pillar | Calculator | Plot |
-| ------ | ---------- | ---- |
-| `urlv` negotiation runs before any state decode | ✅ required | ✅ required |
+| Pillar                                                               | Calculator  | Plot        |
+| -------------------------------------------------------------------- | ----------- | ----------- |
+| `urlv` negotiation runs before any state decode                      | ✅ required | ✅ required |
 | Warning banner shown for mismatch (`urlv > CURRENT` or `urlv < MIN`) | ✅ required | ✅ required |
-| Calculation blocked until user dismisses mismatch | ✅ required | ✅ required |
-| `material=custom` with valid `mat_*` → compound loaded before calc | ✅ required | ✅ required |
-| Canonical URL emits `urlv=1` always (step 1) | ✅ required | ✅ required |
-| Unknown params dropped from canonical URL (step 3) | ✅ required | ✅ required |
-| Duplicate params resolved to last occurrence (§3.2) | ✅ required | ✅ required |
+| Calculation blocked until user dismisses mismatch                    | ✅ required | ✅ required |
+| `material=custom` with valid `mat_*` → compound loaded before calc   | ✅ required | ✅ required |
+| Canonical URL emits `urlv=1` always (step 1)                         | ✅ required | ✅ required |
+| Unknown params dropped from canonical URL (step 3)                   | ✅ required | ✅ required |
+| Duplicate params resolved to last occurrence (§3.2)                  | ✅ required | ✅ required |
 
 ---
 
@@ -333,16 +341,16 @@ const MATERIAL_URL_ROUNDTRIP = {
 ## Open Questions
 
 - [ ] **`urlv` increment policy** — when should `CURRENT_URL_MAJOR` be bumped?
-  Proposal: bump only on a breaking change (param renamed, semantics changed,
-  old URL cannot be migrated). Adding new params is non-breaking (unknown
-  params are dropped). — @grzanka, due: before shipping 6.13.
+      Proposal: bump only on a breaking change (param renamed, semantics changed,
+      old URL cannot be migrated). Adding new params is non-breaking (unknown
+      params are dropped). — @grzanka, due: before shipping 6.13.
 
 ---
 
 ## Appendix: data-testid Reference
 
-| `data-testid` value | Element | Notes |
-| ------------------- | ------- | ----- |
-| `url-version-warning` | Version mismatch warning banner | Visible only on major-version mismatch; absent when version matches |
-| `url-version-warning-load-defaults` | "Load defaults" button inside the banner | Dismisses banner and resets to defaults |
-| `url-version-warning-try-migration` | "Try migration" button inside the banner | Optional; show only when a migration path exists |
+| `data-testid` value                 | Element                                  | Notes                                                               |
+| ----------------------------------- | ---------------------------------------- | ------------------------------------------------------------------- |
+| `url-version-warning`               | Version mismatch warning banner          | Visible only on major-version mismatch; absent when version matches |
+| `url-version-warning-load-defaults` | "Load defaults" button inside the banner | Dismisses banner and resets to defaults                             |
+| `url-version-warning-try-migration` | "Try migration" button inside the banner | Optional; show only when a migration path exists                    |

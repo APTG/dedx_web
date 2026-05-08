@@ -194,29 +194,29 @@ Stage 6.8 where density override had no effect in the browser despite correct un
 
 **Rule:** For every feature that computes a value from reactive state, write an E2E
 test that:
+
 1. Reads the **baseline** computed value from the DOM.
 2. Changes the reactive input (e.g. density, interpolation method, energy).
 3. Polls the DOM until the computed value **changes** from the baseline.
 4. Asserts the new value is within the expected physical range.
 
 Example pattern (density 2× → CSDA range halves):
+
 ```typescript
 // Read baseline
 const rangeCell = page.locator('[data-testid="range-cell-0"]');
-const baseline = await expect.poll(
-  async () => parseFloat((await rangeCell.textContent()) ?? ""),
-  { timeout: 8000 }
-).toBeGreaterThan(0);
+const baseline = await expect
+  .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 8000 })
+  .toBeGreaterThan(0);
 
 // Change input
 await densityInput.fill("2");
 await densityInput.blur();
 
 // Verify recalculation fired AND the result is physically correct
-await expect.poll(
-  async () => parseFloat((await rangeCell.textContent()) ?? ""),
-  { timeout: 5000 }
-).toBeLessThan(baseline * 0.6); // 2× density → ≈½ range
+await expect
+  .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 5000 })
+  .toBeLessThan(baseline * 0.6); // 2× density → ≈½ range
 ```
 
 #### Reactive dep registration in `$effect` — CRITICAL (prevents missed retriggers)
@@ -317,6 +317,7 @@ on **each** page before declaring `TASK DONE` (see also
 ```
 
 Quick audit:
+
 ```sh
 grep -n "initAdvancedModeFromUrl" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte
 grep -n "persistAdvancedOptions\|loadAdvancedOptions" src/routes/calculator/+page.svelte src/routes/plot/+page.svelte

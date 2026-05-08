@@ -24,16 +24,19 @@ The introductory Status bullet was stale — it listed "Build Info" as still rem
 #### 2. Two split tables merged into one unified table
 
 The original design used two separate tables with different schemas:
+
 - "Completed sub-stages": columns `#`, `Feature`, `Status`, `PR(s)`, `Spec / Log`
 - "Remaining sub-stages": columns `#`, `Feature`, `Status`, `Spec`, `Notes`
 
 Problems with the split:
+
 - 6.7 (Build Info badge) was ✅ complete but listed in "Remaining" — confusing
 - Different column schemas made cross-reference awkward
 - "Notes on deferred items" section duplicated info already captured per-row
 
 Replacement: single `#### Sub-stages` table with columns `#`, `Feature`, `Status`,
 `Spec`, `Notes / PR(s)`. Key fixes in the merge:
+
 - 6.7 moved to correct position (between 6.6 and 6.8), status ✅
 - 6.9 spec version updated Final v4 → Final v6 (updated in this session)
 - 6.10 spec version updated Final v1 → Final v3 (updated in previous session)
@@ -51,6 +54,7 @@ A brief blockquote at the end of the table now points to Stage 7 for external da
 #### 3. Stage 7 updated with External Data task
 
 `stage-6-13-url-parser.md` explicitly defers two items to Stage 7:
+
 - External data (`external-data.md`, Zarr v3 `.webdedx` format)
 - `extdata=` URL param and `ext-ref` entity grammar in `shareable-urls-formal.md`
 

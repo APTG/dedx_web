@@ -14,16 +14,14 @@
  */
 
 import { describe, it, expect } from "vitest";
-import {
-  encodeCalculatorUrl,
-  decodeCalculatorUrl,
-} from "$lib/utils/calculator-url";
+import { encodeCalculatorUrl, decodeCalculatorUrl } from "$lib/utils/calculator-url";
 import type { CalculatorUrlState } from "$lib/utils/calculator-url";
 import type {
   MstarMode,
   AggregateState,
   InterpolationScale,
   InterpolationMethod,
+  InverseMode,
 } from "$lib/wasm/types";
 
 /** Minimal valid state to act as a base for codec tests. */
@@ -159,6 +157,88 @@ describe("URL codec round-trip — InterpolationMethod", () => {
       } else {
         expect(decoded.advancedOptions?.interpolation?.method).toBe(interpolationMethod);
       }
+    },
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// InverseMode round-trip (imode parameter)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const INVERSE_MODE_ROUNDTRIP = {
+  csda: "csda",
+  stp: "stp",
+} satisfies Record<InverseMode, string>;
+
+describe("URL codec round-trip — InverseMode", () => {
+  it.each(Object.entries(INVERSE_MODE_ROUNDTRIP))(
+    'imode="%s" round-trips through encode→decode',
+    (mode) => {
+      const imode = mode as InverseMode;
+      const encoded = encodeCalculatorUrl({
+        ...baseState,
+        imode,
+        ivalues: [{ rawInput: "7.718", unit: "cm", unitFromSuffix: false }],
+        iunit: "cm",
+      } as any);
+      const decoded = decodeCalculatorUrl(encoded);
+      expect((decoded as any).imode).toBe(imode);
+    },
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// CSDA iunit round-trip (length units)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const CSDA_IUNIT_ROUNDTRIP = {
+  nm: "nm",
+  um: "um",
+  mm: "mm",
+  cm: "cm",
+  m: "m",
+} satisfies Record<"nm" | "um" | "mm" | "cm" | "m", string>;
+
+describe("URL codec round-trip — CSDA iunit (length units)", () => {
+  it.each(Object.entries(CSDA_IUNIT_ROUNDTRIP))(
+    'iunit="%s" (csda) round-trips through encode→decode',
+    (unit) => {
+      const iunit = unit as "nm" | "um" | "mm" | "cm" | "m";
+      const encoded = encodeCalculatorUrl({
+        ...baseState,
+        imode: "csda",
+        ivalues: [{ rawInput: "7.718", unit: iunit, unitFromSuffix: false }],
+        iunit,
+      } as any);
+      const decoded = decodeCalculatorUrl(encoded);
+      expect((decoded as any).iunit).toBe(iunit);
+    },
+  );
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// STP iunit round-trip (STP unit tokens)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const STP_IUNIT_ROUNDTRIP = {
+  "kev-um": "kev-um",
+  "mev-cm": "mev-cm",
+  "mev-cm2-g": "mev-cm2-g",
+} satisfies Record<"kev-um" | "mev-cm" | "mev-cm2-g", string>;
+
+describe("URL codec round-trip — STP iunit (STP unit tokens)", () => {
+  it.each(Object.entries(STP_IUNIT_ROUNDTRIP))(
+    'iunit="%s" (stp) round-trips through encode→decode',
+    (unit) => {
+      const iunit = unit as "kev-um" | "mev-cm" | "mev-cm2-g";
+      const encoded = encodeCalculatorUrl({
+        ...baseState,
+        imode: "stp",
+        ivalues: [{ rawInput: "45.76", unit: iunit, unitFromSuffix: false }],
+        iunit,
+      } as any);
+      const decoded = decodeCalculatorUrl(encoded);
+      expect((decoded as any).iunit).toBe(iunit);
     },
   );
 });

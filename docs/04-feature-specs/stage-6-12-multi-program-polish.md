@@ -81,7 +81,7 @@ test("drag-and-drop reorder syncs across STP and CSDA groups @smoke", async ({ p
   // Verify order in STP group
   const stpHeaders = page.locator('[data-testid^="mp-column-header-"]');
   const stpOrder = await stpHeaders.evaluateAll((els) =>
-    els.map((el) => el.getAttribute("data-testid"))
+    els.map((el) => el.getAttribute("data-testid")),
   );
   const idx5 = stpOrder.indexOf("mp-column-header-5");
   const idx8 = stpOrder.indexOf("mp-column-header-8");
@@ -90,15 +90,14 @@ test("drag-and-drop reorder syncs across STP and CSDA groups @smoke", async ({ p
   // Same order in CSDA group
   const csdaHeaders = page.locator('[data-testid^="mp-csda-column-header-"]');
   const csdaOrder = await csdaHeaders.evaluateAll((els) =>
-    els.map((el) => el.getAttribute("data-testid"))
+    els.map((el) => el.getAttribute("data-testid")),
   );
-  expect(csdaOrder.indexOf("mp-csda-column-header-5"))
-    .toBeGreaterThan(csdaOrder.indexOf("mp-csda-column-header-8"));
+  expect(csdaOrder.indexOf("mp-csda-column-header-5")).toBeGreaterThan(
+    csdaOrder.indexOf("mp-csda-column-header-8"),
+  );
 
   // URL updated
-  await expect
-    .poll(() => page.url(), { timeout: 3000 })
-    .toContain("programs=");
+  await expect.poll(() => page.url(), { timeout: 3000 }).toContain("programs=");
 });
 ```
 
@@ -152,10 +151,13 @@ test("delta tooltip shows on hover over non-default cell @smoke", async ({ page 
   await page.goto("/calculator?advanced=1&particle=1&material=276&programs=3,5");
   // Wait for PSTAR column to have a numeric value
   await expect
-    .poll(async () => {
-      const cell = await page.locator('[data-testid="mp-stp-cell-0-5"]').textContent();
-      return parseFloat(cell ?? "0");
-    }, { timeout: 10000 })
+    .poll(
+      async () => {
+        const cell = await page.locator('[data-testid="mp-stp-cell-0-5"]').textContent();
+        return parseFloat(cell ?? "0");
+      },
+      { timeout: 10000 },
+    )
     .toBeGreaterThan(0);
 
   await page.locator('[data-testid="mp-stp-cell-0-5"]').hover();
@@ -197,10 +199,10 @@ test("delta tooltip shows on hover over non-default cell @smoke", async ({ page 
 Drag-and-drop reordering and delta tooltips are **UI-state** changes that do
 not trigger recalculation.
 
-| Input / State | Calculator (Basic) | Calculator (Advanced) | Multi-prog table |
-| ------------- | :----------------: | :-------------------: | :--------------: |
-| `programDisplayOrder` (drag-drop) | N/A | ❌ (no recalculation; column reorder only) | ✅ columns re-rendered |
-| Tooltip visibility (hover) | N/A | ❌ | ❌ (client-side only; no WASM call) |
+| Input / State                     | Calculator (Basic) |           Calculator (Advanced)            |          Multi-prog table           |
+| --------------------------------- | :----------------: | :----------------------------------------: | :---------------------------------: |
+| `programDisplayOrder` (drag-drop) |        N/A         | ❌ (no recalculation; column reorder only) |       ✅ columns re-rendered        |
+| Tooltip visibility (hover)        |        N/A         |                     ❌                     | ❌ (client-side only; no WASM call) |
 
 Legend: ✅ = UI update triggered; ❌ = no recalculation; N/A = not applicable.
 
@@ -216,9 +218,9 @@ Drag-and-drop order is persisted via the existing `programs` URL parameter
 (already implemented in 6.3). This spec confirms the round-trip contract
 for the reordering case.
 
-| Parameter | TypeScript type | Allowed values | Default (omitted) | Encode as |
-| --------- | --------------- | -------------- | ----------------- | --------- |
-| `programs` | `number[]` | Ordered list of program IDs | Default program only | Comma-separated integers in display order |
+| Parameter  | TypeScript type | Allowed values              | Default (omitted)    | Encode as                                 |
+| ---------- | --------------- | --------------------------- | -------------------- | ----------------------------------------- |
+| `programs` | `number[]`      | Ordered list of program IDs | Default program only | Comma-separated integers in display order |
 
 **⚠ Round-trip rule:** After drag-and-drop, `encode(decode(url)) === url`
 must hold for the `programs` parameter. Verify in a contract test in
@@ -239,11 +241,11 @@ must hold for the `programs` parameter. Verify in a contract test in
 
 ### Required pillars
 
-| Pillar | Calculator |
-| ------ | ---------- |
+| Pillar                                                                          | Calculator  |
+| ------------------------------------------------------------------------------- | ----------- |
 | Panel gating (`isAdvancedMode.value` guard — drag handles absent in Basic mode) | ✅ required |
-| URL init (`programs` order applied on page load before first render) | ✅ required |
-| Persistence (`programs` URL param updated within 500 ms of drop) | ✅ required |
+| URL init (`programs` order applied on page load before first render)            | ✅ required |
+| Persistence (`programs` URL param updated within 500 ms of drop)                | ✅ required |
 | Reactive-dep snapshot (order state read synchronously; no `.then()` dependency) | ✅ required |
 
 ---
@@ -309,12 +311,12 @@ None. All behavioral detail is in `multi-program.md` Final v3.
 
 ## Appendix: data-testid Reference
 
-| `data-testid` value | Element | Notes |
-| ------------------- | ------- | ----- |
-| `mp-drag-handle-{programId}` | Drag handle on program column sub-header | Absent for default program; absent in Basic mode |
-| `mp-drag-handle-default` | Drag handle on default program (for testing absence) | Must be absent or `cursor: not-allowed` |
-| `mp-column-header-{programId}` | Column header cell in STP group | Used to verify DOM order after drag |
-| `mp-csda-column-header-{programId}` | Column header cell in CSDA group | Mirror of STP group; must stay in sync |
-| `mp-stp-cell-{rowIndex}-{programId}` | Stopping-power result cell | Hover triggers delta tooltip |
-| `mp-csda-cell-{rowIndex}-{programId}` | CSDA range result cell | Hover triggers delta tooltip |
-| `mp-delta-tooltip` | Delta/% tooltip element | Visible on hover; must be absent for default + error cells |
+| `data-testid` value                   | Element                                              | Notes                                                      |
+| ------------------------------------- | ---------------------------------------------------- | ---------------------------------------------------------- |
+| `mp-drag-handle-{programId}`          | Drag handle on program column sub-header             | Absent for default program; absent in Basic mode           |
+| `mp-drag-handle-default`              | Drag handle on default program (for testing absence) | Must be absent or `cursor: not-allowed`                    |
+| `mp-column-header-{programId}`        | Column header cell in STP group                      | Used to verify DOM order after drag                        |
+| `mp-csda-column-header-{programId}`   | Column header cell in CSDA group                     | Mirror of STP group; must stay in sync                     |
+| `mp-stp-cell-{rowIndex}-{programId}`  | Stopping-power result cell                           | Hover triggers delta tooltip                               |
+| `mp-csda-cell-{rowIndex}-{programId}` | CSDA range result cell                               | Hover triggers delta tooltip                               |
+| `mp-delta-tooltip`                    | Delta/% tooltip element                              | Visible on hover; must be absent for default + error cells |

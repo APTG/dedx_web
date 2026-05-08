@@ -17,10 +17,7 @@ import type { LibdedxService } from "$lib/wasm/types";
 // Import both mock implementations — these must satisfy LibdedxService at
 // compile time. If a method signature drifts, the `satisfies` below produces
 // a TS error.
-import {
-  LibdedxServiceImpl,
-  MockLibdedxServiceWithElectron,
-} from "$lib/wasm/__mocks__/libdedx";
+import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from "$lib/wasm/__mocks__/libdedx";
 
 describe("Service interface arity contract", () => {
   it("LibdedxServiceImpl satisfies LibdedxService interface", () => {
@@ -47,6 +44,11 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getPlotData).toBe("function");
     expect(typeof service.getMinEnergy).toBe("function");
     expect(typeof service.getMaxEnergy).toBe("function");
+    expect(typeof service.getInverseStp).toBe("function");
+    expect(typeof service.getInverseCsda).toBe("function");
+    expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.getDensity).toBe("function");
+    expect(typeof service.convertEnergy).toBe("function");
   });
 
   it("MockLibdedxServiceWithElectron instance has all required LibdedxService methods", () => {
@@ -60,5 +62,10 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getPlotData).toBe("function");
     expect(typeof service.getMinEnergy).toBe("function");
     expect(typeof service.getMaxEnergy).toBe("function");
+    expect(typeof service.getInverseStp).toBe("function");
+    expect(typeof service.getInverseCsda).toBe("function");
+    expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.getDensity).toBe("function");
+    expect(typeof service.convertEnergy).toBe("function");
   });
 });

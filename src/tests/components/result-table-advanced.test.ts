@@ -5,10 +5,7 @@ import { LibdedxError } from "$lib/wasm/types";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { createCalculatorState } from "$lib/state/calculator.svelte";
-import {
-  createMultiProgramState,
-  type MultiProgramState,
-} from "$lib/state/multi-program.svelte";
+import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
 import ResultTable from "$lib/components/result-table.svelte";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";

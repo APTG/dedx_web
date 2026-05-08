@@ -50,7 +50,7 @@ observables in acceptance criteria, a reactive triggers matrix, and cross-page
 parity checklists — making it harder for the implementer to self-verify.
 
 **Are specs detailed enough?** No. The analysis found that `advanced-options.md`
-described the *what* (inputs, URL params) but not the *how to test*
+described the _what_ (inputs, URL params) but not the _how to test_
 (DOM selectors, polling patterns, cross-page pillars). Future specs need explicit
 Acceptance Scenarios with `data-testid` observables, a reactive triggers matrix,
 and a cross-page parity checklist.
@@ -97,7 +97,7 @@ a single PR. See "What this PR changes" below.
 - **Decision**: Promoted model from Qwen3.6-35B to Qwen3.5-397B. Added 5 new diff
   checks: silent no-op tests, service interface arity, URL codec round-trip,
   cross-page parity, convention checks. Permitted `pnpm exec playwright test --grep
-  @smoke` in reviewer bash permissions.
+@smoke` in reviewer bash permissions.
 
 ### (d) Spec template
 

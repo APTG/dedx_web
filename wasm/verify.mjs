@@ -627,8 +627,8 @@ console.log("--- 4.3 dedx_tools.h ---");
 const toolsFunctions = [
   { name: "convert_units", expectedReturn: "number" },
   { name: "dedx_get_csda", expectedReturn: "number" },
-  { name: "dedx_get_inverse_stp", expectedReturn: "number" },
-  { name: "dedx_get_inverse_csda", expectedReturn: "number" },
+  { name: "dedx_get_inverse_stp_flat", expectedReturn: "number" },
+  { name: "dedx_get_inverse_csda_flat", expectedReturn: "number" },
 ];
 
 for (const fn of toolsFunctions) {
@@ -696,6 +696,7 @@ const extraFunctions = [
   { name: "dedx_get_ion_atom_mass", expectedReturn: "number" },
   { name: "dedx_get_density", expectedReturn: "number" },
   { name: "dedx_target_is_gas", expectedReturn: "number" },
+  { name: "dedx_get_bragg_peak_stp", expectedReturn: "number" },
 ];
 
 for (const fn of extraFunctions) {
@@ -792,24 +793,17 @@ const serviceMethods = [
   {
     name: "getInverseStp",
     category: "Inverse Lookups",
-    cFunctions: [
-      "dedx_allocate_workspace",
-      "dedx_load_config",
-      "dedx_get_inverse_stp",
-      "dedx_free_config",
-      "dedx_free_workspace",
-    ],
+    cFunctions: ["dedx_get_inverse_stp_flat"],
   },
   {
     name: "getInverseCsda",
     category: "Inverse Lookups",
-    cFunctions: [
-      "dedx_allocate_workspace",
-      "dedx_load_config",
-      "dedx_get_inverse_csda",
-      "dedx_free_config",
-      "dedx_free_workspace",
-    ],
+    cFunctions: ["dedx_get_inverse_csda_flat"],
+  },
+  {
+    name: "getBraggPeakStp",
+    category: "Inverse Lookups",
+    cFunctions: ["dedx_get_bragg_peak_stp"],
   },
   { name: "convertStpUnits", category: "Unit Conversion", cFunctions: ["convert_units"] },
   { name: "getDensity", category: "Material Properties", cFunctions: ["dedx_get_density"] },

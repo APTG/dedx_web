@@ -45,6 +45,13 @@ export type MstarMode = "a" | "b" | "c" | "d" | "g" | "h";
 export type InterpolationScale = "linear" | "log";
 export type InterpolationMethod = "linear" | "cubic";
 
+/**
+ * Inverse mode — which inverse tab is active.
+ * "csda" = Range tab; "stp" = Inverse STP tab.
+ * See docs/04-feature-specs/inverse-lookups.md §9 URL State Encoding.
+ */
+export type InverseMode = "csda" | "stp";
+
 export interface AdvancedOptions {
   aggregateState?: AggregateState;
   interpolation?: {
@@ -113,6 +120,35 @@ export interface LibdedxService {
   ): CalculationResult;
   getMinEnergy(programId: number, particleId: number): number;
   getMaxEnergy(programId: number, particleId: number): number;
+  getInverseStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+    options?: AdvancedOptions;
+  }): (InverseStpResult | LibdedxError)[];
+  getInverseCsda(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    ranges: number[];
+    options?: AdvancedOptions;
+  }): (InverseCsdaResult | LibdedxError)[];
+  getBraggPeakStp(params: {
+    programId: number;
+    particleId: number;
+    materialId: number;
+    options?: AdvancedOptions;
+  }): number;
+  getDensity(materialId: number): number | undefined;
+  convertEnergy(params: {
+    fromUnit: EnergyUnit;
+    toUnit: EnergyUnit;
+    massNumber: number;
+    atomicMass: number;
+    values: number[];
+  }): number[];
 }
 
 export interface CompatibilityMatrix {
