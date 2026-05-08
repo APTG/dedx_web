@@ -171,6 +171,9 @@ That prompt tells you the spec path, branch name, and acceptance criteria.
 3. When all tasks complete → write CHANGELOG-AI.md row + session log
 ```
 
+**Mandatory gate:** do not start implementation edits before `.opencode/tasks/<branch>.md`
+exists and contains the atomic checklist for this branch.
+
 ### Rules for the orchestrator
 
 - **Never ask for confirmation between tasks.** Proceed autonomously.
@@ -180,6 +183,8 @@ That prompt tells you the spec path, branch name, and acceptance criteria.
   session is interrupted.
 - If a task is blocked after 2 retries, mark it blocked and continue to the next.
   Do not spend the whole session on one stuck task.
+- **Completion semantics are strict:** if push/auth fails, output
+  `TASK BLOCKED: push/auth failure` (never `TASK DONE`).
 
 ### Subagent reference
 

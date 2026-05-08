@@ -18,9 +18,41 @@ permissions:
   actions: read
 
 jobs:
+  workflow-guards:
+    name: Workflow Guards
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+
+      - name: Guard forbidden generated files / vendor gitlinks
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            RANGE="${{ github.event.pull_request.base.sha }}..${{ github.sha }}"
+          else
+            BEFORE="${{ github.event.before }}"
+            if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
+              BEFORE="$(git rev-list --max-parents=0 HEAD | tail -n1)"
+            fi
+            RANGE="$BEFORE..${{ github.sha }}"
+          fi
+          node scripts/guard-forbidden-files.cjs --range "$RANGE"
+
+      - name: Check WASM contract docs drift
+        run: node scripts/check-wasm-contract-docs.cjs
+
   wasm-verify:
     name: WASM Build + Contract Verification
     runs-on: ubuntu-latest
+    needs: [workflow-guards]
 
     steps:
       - name: Checkout
@@ -66,6 +98,7 @@ jobs:
   unit-tests:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
+    needs: [workflow-guards]
 
     steps:
       - name: Checkout
@@ -97,7 +130,7 @@ jobs:
   e2e-tests:
     name: E2E Tests (Playwright)
     runs-on: ubuntu-latest
-    needs: [wasm-verify]
+    needs: [workflow-guards, wasm-verify]
 
     steps:
       - name: Checkout

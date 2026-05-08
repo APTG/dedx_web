@@ -1,0 +1,22 @@
+{
+  "exports": {
+    "dedx_tools_flat_inverse": [
+      "dedx_get_inverse_stp_flat",
+      "dedx_get_inverse_csda_flat"
+    ],
+    "dedx_extra_inverse": [
+      "dedx_get_bragg_peak_stp"
+    ]
+  },
+  "serviceBacking": {
+    "getInverseStp": [
+      "dedx_get_inverse_stp_flat"
+    ],
+    "getInverseCsda": [
+      "dedx_get_inverse_csda_flat"
+    ],
+    "getBraggPeakStp": [
+      "dedx_get_bragg_peak_stp"
+    ]
+  }
+}

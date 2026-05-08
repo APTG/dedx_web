@@ -56,6 +56,9 @@ The "What changed" summary and "Smoke test" line are **mandatory** in every
 `TASK DONE` message. This gives the orchestrator a clean handoff summary that
 survives context compaction without depending on chat history.
 
+`TASK DONE` is valid only after successful commit **and** successful push. If push
+fails (auth/network/protection), output `TASK BLOCKED: push/auth failure`.
+
 No other final output is acceptable. The main agent parses these signals to decide
 whether to move to the reviewer or to retry.
 
@@ -164,6 +167,12 @@ If `pnpm exec playwright test` produces failures:
 3. Fix failures caused by your own changes before outputting `TASK DONE`.
 4. If a failure is pre-existing (existed before your task), document it explicitly
    in the `TASK DONE` message.
+
+#### E2E output policy — CRITICAL
+
+- Never pipe failing E2E runs through `head`, `tail`, or similar truncation.
+- For failures, capture full reporter output and attach the full failing artifact path.
+- Truncated output is not accepted for root-cause analysis.
 
 #### E2E test timeouts — CRITICAL
 
@@ -336,6 +345,9 @@ grep -n "isAdvancedMode.value" src/routes/calculator/+page.svelte src/routes/plo
 7. Run `pnpm lint && pnpm format && pnpm test && pnpm build`.
    Fix all errors. Repeat until clean. After two failed fix attempts → `TASK BLOCKED`.
 8. **Run `pnpm exec playwright test`.** Fix any E2E failures caused by your changes.
+   For features that touch WASM-backed acceptance behavior, ensure at least one
+   `@smoke` path runs against the real WASM path (no `page.addInitScript` runtime
+   mock injection for acceptance tests).
 
 ### Step 8a — User-flow smoke (Playwright MCP)
 
@@ -364,10 +376,12 @@ For every reactive input added or modified, verify and document in `TASK DONE`:
 Reject `TASK DONE` if any reactive input lacks this documentation.
 
 9. If the task touches `/calculator` or `/plot`, run the cross-page parity checklist.
-10. Commit.
-11. Output `TASK DONE: <task name>` (with mandatory "What changed" and "Smoke test" lines).
+10. Run `pnpm guard:staged` immediately before commit. If it fails, do not commit.
+11. Commit and push.
+12. Output `TASK DONE: <task name>` (with mandatory "What changed" and "Smoke test" lines).
 
 If step 7 or step 8 fails after two full fix attempts, output `TASK BLOCKED: <reason>`.
+If push fails in step 11, output `TASK BLOCKED: push/auth failure`.
 
 ## maxSteps
 

@@ -25,10 +25,14 @@ import { pathToFileURL } from "url";
 import { dirname, join, resolve } from "path";
 import { fileURLToPath } from "url";
 import { existsSync, mkdirSync, statSync, writeFileSync } from "fs";
+import wasmContractManifest from "./contract-manifest.json" with { type: "json" };
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const outputDir = resolve(__dirname, "..", "static", "wasm");
 const mjsPath = join(outputDir, "libdedx.mjs");
+const flatInverseToolsFunctions = wasmContractManifest.exports.dedx_tools_flat_inverse;
+const flatInverseExtraFunctions = wasmContractManifest.exports.dedx_extra_inverse;
+const inverseServiceBacking = wasmContractManifest.serviceBacking;
 
 if (!existsSync(mjsPath)) {
   console.error(`ERROR: ${mjsPath} not found.`);
@@ -627,8 +631,7 @@ console.log("--- 4.3 dedx_tools.h ---");
 const toolsFunctions = [
   { name: "convert_units", expectedReturn: "number" },
   { name: "dedx_get_csda", expectedReturn: "number" },
-  { name: "dedx_get_inverse_stp_flat", expectedReturn: "number" },
-  { name: "dedx_get_inverse_csda_flat", expectedReturn: "number" },
+  ...flatInverseToolsFunctions.map((name) => ({ name, expectedReturn: "number" })),
 ];
 
 for (const fn of toolsFunctions) {
@@ -696,7 +699,7 @@ const extraFunctions = [
   { name: "dedx_get_ion_atom_mass", expectedReturn: "number" },
   { name: "dedx_get_density", expectedReturn: "number" },
   { name: "dedx_target_is_gas", expectedReturn: "number" },
-  { name: "dedx_get_bragg_peak_stp", expectedReturn: "number" },
+  ...flatInverseExtraFunctions.map((name) => ({ name, expectedReturn: "number" })),
 ];
 
 for (const fn of extraFunctions) {
@@ -793,17 +796,17 @@ const serviceMethods = [
   {
     name: "getInverseStp",
     category: "Inverse Lookups",
-    cFunctions: ["dedx_get_inverse_stp_flat"],
+    cFunctions: inverseServiceBacking.getInverseStp,
   },
   {
     name: "getInverseCsda",
     category: "Inverse Lookups",
-    cFunctions: ["dedx_get_inverse_csda_flat"],
+    cFunctions: inverseServiceBacking.getInverseCsda,
   },
   {
     name: "getBraggPeakStp",
     category: "Inverse Lookups",
-    cFunctions: ["dedx_get_bragg_peak_stp"],
+    cFunctions: inverseServiceBacking.getBraggPeakStp,
   },
   { name: "convertStpUnits", category: "Unit Conversion", cFunctions: ["convert_units"] },
   { name: "getDensity", category: "Material Properties", cFunctions: ["dedx_get_density"] },
