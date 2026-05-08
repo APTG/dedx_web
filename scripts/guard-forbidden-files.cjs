@@ -5,6 +5,10 @@ const { execSync } = require("node:child_process");
 const FORBIDDEN_PATH_PATTERNS = [
   /^static\/wasm\//,
   /^static\/deploy\.json$/,
+  /^build\//,
+  /^coverage\//,
+  /^\.svelte-kit\//,
+  /^\.vite\//,
   /^playwright-report\//,
   /^test-results\//,
   /^\.playwright-mcp\//,

@@ -184,6 +184,13 @@ Time-box each attempt (suggested: one working day per stage). If the branch
 does not pass `pnpm lint && pnpm test && pnpm build` within the time-box,
 abandon and resume on `master` with Copilot.
 
+Push policy for this repo:
+
+- Work on a local `qwen/<slug>` branch.
+- Commit locally in small increments.
+- **Do not push by default.** Push only when explicitly requested by the user.
+- In final status output, include branch name, commit SHAs, and a manual push command.
+
 ---
 
 ## 6. Multi-agent workflow
@@ -201,7 +208,7 @@ The solution is the **orchestrator + subagent pattern**:
 Your session (Qwen3.5-397B acts as orchestrator)
 ├── decomposes spec into 3–7 atomic tasks
 ├── calls 'implementer' subagent → task 1   (fresh context, Qwen3.5-397B)
-├── calls 'reviewer'    subagent → task 1   (fresh context, Qwen3.6-35B)
+├── calls 'reviewer'    subagent → task 1   (fresh context, Qwen3.5-397B)
 ├── calls 'implementer' subagent → task 2
 ├── calls 'reviewer'    subagent → task 2
 └── writes CHANGELOG-AI.md + session log
@@ -262,15 +269,15 @@ Write CHANGELOG-AI.md entry and docs/ai-logs/YYYY-MM-DD-export-csv-pdf.md.
 
 | Agent                | Model        | `maxSteps` | Role                                               |
 | -------------------- | ------------ | ---------- | -------------------------------------------------- |
-| `implementer`        | Qwen3.5-397B | 80         | Writes code + tests, runs lint/test/build, commits |
-| `reviewer`           | Qwen3.6-35B  | 30         | Runs lint/test, reports issues, does not edit      |
+| `implementer`        | Qwen3.5-397B | 40         | Writes code + tests, runs lint/test/build, commits locally |
+| `reviewer`           | Qwen3.5-397B | 15         | Diff review + targeted smoke check, does not edit  |
 | `svelte-file-editor` | Qwen3.5-397B | 30         | Auto-invoked for `.svelte` file edits              |
 
 Full agent documentation: [`.opencode/agents/`](../.opencode/agents/)
 
 ### The `maxSteps` guard
 
-Each subagent has a step limit. If the implementer hits 80 steps without
+Each subagent has a step limit. If the implementer hits 40 steps without
 finishing it outputs `TASK BLOCKED: step limit reached`. This prevents infinite
 loops. If you see this regularly for a particular task, break that task into
 two smaller ones.

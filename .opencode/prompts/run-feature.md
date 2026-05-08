@@ -24,6 +24,11 @@ Read in order:
 3. docs/06-wasm-api-contract.md (LibdedxService interface)
 4. docs/progress/ — check what is already done so you do not reimplement it
 
+For tasks that may touch libdedx boundaries, also inspect:
+5. `src/lib/wasm/**`
+6. `src/lib/wasm/types.ts` (`LibdedxService`) and `src/lib/wasm/__mocks__/`
+7. relevant ADR/spec references before writing code
+
 ### Step 2 — Decompose
 
 Identify 3–7 atomic implementation tasks from the spec.
@@ -65,7 +70,9 @@ The implementer must:
 - run `pnpm guard:staged` before commit,
 - run at least one real-WASM `@smoke` acceptance path when the feature is
   WASM-backed (no runtime `page.addInitScript` mock injection in acceptance tests),
-- include full (non-truncated) failure output if any E2E run fails.
+- include full (non-truncated) failure output if any E2E run fails,
+- include a `WASM capability audit` line in `TASK DONE` that states what already
+  exists vs what would require new WASM changes.
 
 d. If TASK DONE:
 
@@ -100,8 +107,8 @@ After all tasks are done or blocked:
 
 ### Step 5 — Completion semantics
 
-- If any task cannot be pushed due to auth/protection/network, final status must be
-  `TASK BLOCKED: push/auth failure` (never `TASK DONE`).
+- Implementers commit locally by default and do **not** push unless the user explicitly requests it.
+- Final summary must include branch and commit SHAs plus a manual push command.
 - If a guard fails (`pnpm guard:staged` or CI forbidden-file checks), stop and split
   scope instead of bypassing.
 

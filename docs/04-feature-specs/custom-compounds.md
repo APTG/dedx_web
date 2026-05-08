@@ -1,6 +1,6 @@
 # Feature: Custom Compounds
 
-> **Status:** Final v3 (2026-05-07)
+> **Status:** Final v4 (2026-05-08)
 >
 > **v1** (13 April 2026): Initial draft — compound library (localStorage),
 > compound editor (formula mode + weight-fraction mode), entity-selection
@@ -37,6 +37,15 @@
 > Custom Water remains as Scenario 2; added Scenario 6 (custom compound
 > created on Calculator page is available on Plot page). Added
 > `plot-compound-group` data-testid to appendix.
+>
+> **v4** (2026-05-08): Added Stage 6.10 preflight hardening addendum with:
+> (1) implementation-gate acceptance scenarios for create/edit/duplicate/delete/
+> select/use/reload/missing-reference flows with DOM observables, (2) explicit
+> TypeScript-facing storage/reference model and stable ID policy, (3) validation
+> matrix examples and canonicalization rules, (4) strict frontend-vs-WASM
+> boundary contract and out-of-scope rules, (5) persistence/migration contract
+> including schema versioning and missing-reference recovery, and (6) test-plan
+> expectations for smoke vs regression coverage.
 >
 > **Related specs:**
 >
@@ -102,6 +111,7 @@
 - [Reactive Triggers Matrix](#reactive-triggers-matrix)
 - [Acceptance Scenarios](#acceptance-scenarios)
 - [Cross-Page Parity Checklist](#cross-page-parity-checklist)
+- [Stage 6.10 Preflight Addendum (Implementation Gate)](#stage-610-preflight-addendum-implementation-gate)
 - [Appendix: data-testid Reference](#appendix-data-testid-reference)
 
 ---
@@ -168,14 +178,16 @@ compound is selected, `calculateCustomCompound()` is called instead of
 ### 1.1 Storage
 
 Custom compounds are stored under the `localStorage` key `customCompounds`
-as a JSON array of `StoredCompound` objects:
+as a JSON envelope with schema version:
 
 ```typescript
-interface StoredCompound {
-  /** Stable UUID v4 identifier. Generated at creation time. */
+interface StoredCustomCompoundV1 {
+  /** Stable opaque identifier. New records use cc_ + uuidv7. */
   id: string;
   /** Display name shown in the material selector (non-empty, ≤ 80 chars). */
   name: string;
+  /** Normalized duplicate-detection key: trim+lowercase(name). */
+  normalizedName: string;
   /**
    * Elemental composition.
    * atomCount is the number of atoms of this element per formula unit.
@@ -195,8 +207,15 @@ interface StoredCompound {
    * "gas" → MeV·cm²/g default unit.
    */
   phase: "gas" | "condensed";
-  /** ISO 8601 creation/last-edit timestamp. */
+  /** ISO 8601 creation timestamp. */
   createdAt: string;
+  /** ISO 8601 last-edit timestamp. */
+  updatedAt: string;
+}
+
+interface CustomCompoundStoreEnvelopeV1 {
+  schemaVersion: 1;
+  compounds: StoredCustomCompoundV1[];
 }
 ```
 
@@ -752,36 +771,30 @@ When a URL contains `material=custom` with all required `mat_*` params:
 ## 7. localStorage Schema
 
 ```json
-[
-  {
-    "id": "550e8400-e29b-41d4-a716-446655440000",
-    "name": "PMMA",
-    "elements": [
-      { "atomicNumber": 1, "atomCount": 8 },
-      { "atomicNumber": 6, "atomCount": 5 },
-      { "atomicNumber": 8, "atomCount": 2 }
-    ],
-    "density": 1.19,
-    "phase": "condensed",
-    "createdAt": "2026-04-13T10:00:00Z"
-  },
-  {
-    "id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
-    "name": "Borated PE",
-    "elements": [
-      { "atomicNumber": 1, "atomCount": 2.0 },
-      { "atomicNumber": 5, "atomCount": 0.0435 },
-      { "atomicNumber": 6, "atomCount": 1.0 }
-    ],
-    "density": 0.95,
-    "phase": "condensed",
-    "createdAt": "2026-04-13T11:30:00Z"
-  }
-]
+{
+  "schemaVersion": 1,
+  "compounds": [
+    {
+      "id": "cc_0196b5e6-2ad4-7d57-b42a-c0f4bca9966e",
+      "name": "PMMA",
+      "normalizedName": "pmma",
+      "elements": [
+        { "atomicNumber": 1, "atomCount": 8 },
+        { "atomicNumber": 6, "atomCount": 5 },
+        { "atomicNumber": 8, "atomCount": 2 }
+      ],
+      "density": 1.19,
+      "phase": "condensed",
+      "createdAt": "2026-04-13T10:00:00Z",
+      "updatedAt": "2026-04-13T10:00:00Z"
+    }
+  ]
+}
 ```
 
 Elements are stored in ascending Z order. Fractional atom counts (from
-weight-fraction input) are stored as-is without rounding.
+weight-fraction input) are stored as-is without rounding. Legacy array-only
+payloads are migrated to the v1 envelope at load time.
 
 ---
 
@@ -1370,6 +1383,142 @@ test("custom compound: created on Calculator is available on Plot @regression", 
 **Implementer contract:** Before declaring `TASK DONE`, verify every ✅ cell
 above and confirm that the Reactive Triggers Matrix rows marked ✅ for Plot have
 their corresponding `$effect` wired in `src/routes/plot/+page.svelte`.
+
+---
+
+## Stage 6.10 Preflight Addendum (Implementation Gate)
+
+This section is the mandatory preflight gate for Stage 6.10 implementation work.
+
+### 6.10.1 Acceptance scenarios (DOM-observable, Given/When/Then)
+
+1. **Create**
+   - **Given** Advanced mode on and compound editor closed
+   - **When** user saves a valid new compound
+   - **Then** `[data-testid="compound-editor-modal"]` closes and `[data-testid="compound-group"]` contains the new name.
+2. **Edit**
+   - **Given** existing custom compound row is visible
+   - **When** user edits density/name and saves
+   - **Then** row text updates in `[data-testid="compound-group"]` and active result cells in `[data-testid="result-table"]` change after recalculation.
+3. **Duplicate**
+   - **Given** existing custom compound row is visible
+   - **When** user duplicates it and saves as a new entry
+   - **Then** two distinct rows are visible (same or similar name allowed per duplicate-name policy) and stored IDs differ.
+4. **Delete**
+   - **Given** selected custom compound is active
+   - **When** user confirms delete
+   - **Then** row is removed from DOM and material falls back to built-in default; `material=custom` is removed from URL.
+5. **Select and use in Calculator**
+   - **Given** at least one saved custom compound
+   - **When** user selects it and enters energy
+   - **Then** calculation path runs and result cells become non-empty numeric values.
+6. **Persistence after reload**
+   - **Given** saved custom compound is selected
+   - **When** user reloads `/calculator` or `/plot`
+   - **Then** compound remains available in selector and can be re-selected without re-creation.
+7. **Referenced custom compound missing**
+   - **Given** URL/state references a custom compound ID/name not present in storage
+   - **When** page initializes
+   - **Then** app falls back to built-in default material, renders warning banner, and avoids crashes/stale selection DOM.
+
+### 6.10.2 Data model (TypeScript-facing storage + references)
+
+```typescript
+type CustomCompoundId = `cc_${string}`; // new IDs: cc_ + uuidv7 (stable, opaque)
+
+interface StoredCustomCompoundV1 {
+  id: CustomCompoundId | string; // migration accepts legacy uuid v4 strings
+  name: string; // display label, not unique
+  normalizedName: string; // lowercased+trimmed for duplicate detection
+  elements: Array<{ atomicNumber: number; atomCount: number }>; // sorted by atomicNumber asc
+  density: number; // g/cm³
+  iValue?: number; // eV
+  phase: "gas" | "condensed";
+  createdAt: string; // ISO 8601
+  updatedAt: string; // ISO 8601
+}
+
+interface CustomCompoundStoreEnvelopeV1 {
+  schemaVersion: 1;
+  compounds: StoredCustomCompoundV1[];
+}
+
+type MaterialRef =
+  | { kind: "builtin"; id: number }
+  | { kind: "custom"; id: string }; // persisted UI selection references by id
+```
+
+- **Stable ID strategy:** ID generated once at create-time; rename/edit never changes ID.
+- **Name uniqueness:** names are not unique keys; duplicate names allowed with warning.
+- **Duplicate-name policy:** case-insensitive + trim comparison warns but does not block save.
+- **URL/reference representation:** canonical URL uses `material=custom` + `mat_*` payload; persisted UI selection uses `{ kind:"custom", id }`.
+
+### 6.10.3 Validation matrix
+
+| Category | Valid examples | Invalid examples | Rule |
+| --- | --- | --- | --- |
+| Formula tokens | `H2O`, `C5H8O2`, `LiF` | `Xx2O`, `H0`, `C-1H4` | Elements must resolve to Z 1..118 and counts > 0 |
+| Weight fractions | `H=11.19, O=88.81` | `H=50, O=30` (sum 80), `H=-1, O=101` | Sum must be 99.9..100.1; each fraction > 0 |
+| Density | `1.0`, `2.20`, `8.99e-5` | `0`, `-1`, `30`, `abc` | finite, >0, ≤25 |
+| I-value | `74`, `150`, blank | `0`, `-5`, `20000`, `abc` | optional; if present finite, >0, ≤10000 |
+| Duplicate names | `PMMA` + `PMMA` | N/A (warning-only) | Warn on normalized match; IDs keep entries distinct |
+
+Normalization/canonicalization rules:
+
+- Trim leading/trailing whitespace from name; collapse internal repeated spaces.
+- Store `normalizedName = name.trim().toLowerCase()`.
+- Sort elements ascending by `atomicNumber` before persist/URL encode.
+- Serialize numeric fields with `Number.toString()` (no locale formatting).
+
+### 6.10.4 WASM boundary contract
+
+Frontend-only (must **not** require new WASM behavior):
+
+- CRUD, duplicate flow, local validation, name normalization.
+- localStorage persistence/migration and missing-reference fallback UX.
+- URL parse/encode for `mat_*` payload and warning banners.
+
+Requires existing libdedx/WASM capability (must verify before implementation):
+
+- Forward calculations for selected custom compound.
+- Plot/inverse/custom lookup paths only if already exposed by current `LibdedxService`.
+
+Mandatory rule for implementers:
+
+- Verify capability from `docs/06-wasm-api-contract.md`, `src/lib/wasm/**`,
+  interface + mocks + tests before coding.
+- If capability is missing, stop and record as "requires new WASM contract change";
+  do not invent or silently assume a new WASM function in Stage 6.10.
+
+### 6.10.5 Persistence and migration
+
+- **Primary key:** `localStorage["customCompounds"]` stores `CustomCompoundStoreEnvelopeV1`.
+- **Schema key:** `schemaVersion` inside envelope (not separate key).
+- **Migration expectation:** unknown/legacy shape migrates best-effort to v1; invalid rows are dropped with warning, never crash startup.
+- **Rename semantics:** rename updates `name`, `normalizedName`, `updatedAt`; keeps `id` stable.
+- **Deletion semantics:** remove by `id`; if deleted compound is selected/referenced, fallback to default built-in and clear stale custom reference.
+- **Missing/deleted references (URL or persisted selection):**
+  - show one-time warning banner,
+  - fallback to built-in default material,
+  - remove stale custom reference from persisted selection state on next save.
+- **Backward compatibility:** accept legacy array-only storage by wrapping into v1 envelope.
+- **Forward compatibility:** if `schemaVersion` is newer than supported, read-only fallback (do not mutate unknown fields), custom selection disabled with warning.
+
+### 6.10.6 Test plan (coverage expectations)
+
+- **Unit tests (required):**
+  - data-model validation, normalization, migration transforms, duplicate-name warning logic.
+- **Component tests (required):**
+  - editor create/edit/duplicate/delete states, warning/error rendering, disabled-save conditions.
+- **E2E smoke (`@smoke`, required minimal set):**
+  - create + select + calculate,
+  - persistence after reload,
+  - missing-reference fallback flow.
+- **E2E regression (`@regression`):**
+  - edit, duplicate, delete edge cases,
+  - URL round-trip and malformed `mat_*` recovery,
+  - duplicate-name warning flow.
+- **CI expectation:** smoke tests run on every PR; full regression remains in main E2E suite.
 
 ---
 

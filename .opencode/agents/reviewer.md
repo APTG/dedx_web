@@ -194,6 +194,10 @@ Inspect the diff for forbidden paths:
 
 - `static/wasm/**`
 - `static/deploy.json`
+- `build/**`
+- `coverage/**`
+- `.svelte-kit/**`
+- `.vite/**`
 - `playwright-report/**`
 - `test-results/**`
 - `.playwright-mcp/**`
