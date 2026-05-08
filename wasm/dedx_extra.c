@@ -275,7 +275,6 @@ double dedx_get_inverse_stp_flat(int program, int ion, int target,
     cfg.ion     = ion;
     cfg.target  = target;
 
-    /* ion_a must be set before dedx_load_config — dedx_get_inverse_stp checks it on entry. */
     cfg.ion_a = dedx_internal_get_nucleon(ion, &local_err);
     if (local_err != 0) {
         int fe = 0;
@@ -292,13 +291,106 @@ double dedx_get_inverse_stp_flat(int program, int ion, int target,
         return -1.0;
     }
 
-    /* Zero *err before the bisection loop — dedx_get_inverse_stp checks *err != 0 on entry. */
-    *err = 0;
-    double result = dedx_get_inverse_stp(ws, &cfg, (float)stp, side, err);
+    /* Robust bisection over the physically correct branch.
+     *
+     * dedx_get_inverse_stp() in dedx_tools.c uses find_min() to locate the
+     * Bragg-peak energy.  For monotonically decreasing STP curves (e.g.
+     * proton/water ICRU 49) find_min() returns -1, which becomes x2=-1 in
+     * the bisection, eventually producing negative intermediate energies and
+     * a spurious dedx_get_stp() error.
+     *
+     * Strategy: sample STP at N log-spaced energies to locate the peak.
+     *   - If peak is at the leftmost sample (monotone curve): bisect the full
+     *     range [emin, emax] on the single descending branch.
+     *   - If peak is interior (curve has a Bragg peak within the range):
+     *       side == 0  → low (ascending)  branch [emin,  e_peak]
+     *       side == 1  → high (descending) branch [e_peak, emax]
+     *     If the requested STP is below STP(emin) on the ascending branch
+     *     there is no low-branch solution; the descending branch is used.
+     *
+     * TypeScript passes side=0 for E_low and side=1 for E_high.  The C
+     * function dedx_get_inverse_stp() maps side<0 → low branch, which never
+     * matches side∈{0,1} — so both TS sides would return the descending
+     * result.  This wrapper fixes that by treating side==0 as "low branch".
+     */
+    double emin = (double)dedx_get_min_energy(program, ion);
+    double emax = (double)dedx_get_max_energy(program, ion);
+
+    /* Sample the curve to find the Bragg-peak energy. */
+#define INV_STP_N 40
+    double log_emin = log(emin);
+    double log_emax = log(emax);
+    double log_step = (log_emax - log_emin) / (INV_STP_N - 1);
+
+    int    stp_err   = 0;
+    double max_stp   = 0.0;
+    double e_peak    = emin;
+    double stp_emin  = 0.0;  /* STP at the first (leftmost) sample */
+
+    for (int i = 0; i < INV_STP_N; i++) {
+        double e = exp(log_emin + i * log_step);
+        stp_err = 0;
+        double s = dedx_get_stp(ws, &cfg, (float)e, &stp_err);
+        if (stp_err != 0) continue;
+        if (i == 0) stp_emin = s;
+        if (s > max_stp) { max_stp = s; e_peak = e; }
+    }
+#undef INV_STP_N
+
+    /* STP at emax (lower bound of the achievable range). */
+    stp_err = 0;
+    double stp_at_emax = dedx_get_stp(ws, &cfg, (float)emax, &stp_err);
+    if (stp_err != 0 || max_stp == 0.0 || stp > max_stp || stp < stp_at_emax) {
+        int fe = 0;
+        dedx_free_config(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = (stp_err != 0) ? stp_err : -1;
+        return -1.0;
+    }
+
+    /* Determine which branch to bisect. */
+    int has_peak = (e_peak > emin * exp(log_step));  /* peak not at first sample */
+    double x_lo, x_hi;
+    int ascending;  /* 1 → STP increases in [x_lo, x_hi] */
+
+    if (!has_peak) {
+        /* Monotone descending: single branch over full range. */
+        x_lo = emin; x_hi = emax; ascending = 0;
+    } else if (side == 0 && stp >= stp_emin) {
+        /* Low (ascending) branch: STP rises from stp_emin to max_stp. */
+        x_lo = emin; x_hi = e_peak; ascending = 1;
+    } else {
+        /* High (descending) branch, or stp < stp_emin (no ascending solution). */
+        x_lo = e_peak; x_hi = emax; ascending = 0;
+    }
+
+    double acc = 1e-5;
+    while ((x_hi - x_lo) > acc) {
+        double x_mid = (x_lo + x_hi) / 2.0;
+        stp_err = 0;
+        double stp_mid = dedx_get_stp(ws, &cfg, (float)x_mid, &stp_err);
+        if (stp_err != 0) {
+            int fe = 0;
+            dedx_free_config(&cfg, &fe);
+            dedx_free_workspace(ws, &fe);
+            *err = stp_err;
+            return -1.0;
+        }
+        if (ascending) {
+            if (stp_mid <= stp) x_lo = x_mid;
+            else                x_hi = x_mid;
+        } else {
+            if (stp_mid >= stp) x_lo = x_mid;
+            else                x_hi = x_mid;
+        }
+    }
+
+    double result = (x_lo + x_hi) / 2.0;
 
     int fe = 0;
     dedx_free_config(&cfg, &fe);
     dedx_free_workspace(ws, &fe);
+    *err = 0;
     return result;
 }
 

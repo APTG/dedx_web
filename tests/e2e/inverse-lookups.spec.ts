@@ -16,6 +16,17 @@ async function checkWasmPresent(page: import("@playwright/test").Page): Promise<
   }
 }
 
+/** Parse an auto-scaled energy label ("5.033 keV", "100 MeV", "2.5 GeV") to MeV. */
+function parseEnergyMeV(text: string): number {
+  const m = text.trim().match(/^(\d+(?:\.\d+)?)\s*(keV|MeV|GeV)?$/);
+  if (!m) return NaN;
+  const v = parseFloat(m[1]);
+  const u = m[2] ?? "MeV";
+  if (u === "keV") return v / 1000;
+  if (u === "GeV") return v * 1000;
+  return v;
+}
+
 test.describe("Inverse Lookups — Range Tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
@@ -190,15 +201,37 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
     const highSpan = page.locator('[data-testid="inverse-stp-result-high-0"] span');
 
-    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
 
-    const lowEnergy = parseFloat((await lowSpan.textContent())!.trim());
-    const highEnergy = parseFloat((await highSpan.textContent())!.trim());
-    expect(lowEnergy).toBeGreaterThan(0);
-    expect(highEnergy).toBeGreaterThan(0);
-    // E_high (above Bragg peak) > E_low (below Bragg peak)
-    expect(highEnergy).toBeGreaterThan(lowEnergy);
+    const lowEnergyMeV = parseEnergyMeV((await lowSpan.textContent())!);
+    const highEnergyMeV = parseEnergyMeV((await highSpan.textContent())!);
+    expect(lowEnergyMeV).toBeGreaterThan(0);
+    expect(highEnergyMeV).toBeGreaterThan(0);
+    // E_high (above Bragg peak, descending branch) > E_low (below Bragg peak, ascending branch)
+    expect(highEnergyMeV).toBeGreaterThan(lowEnergyMeV);
+  });
+
+  test("Inverse STP tab: monotone branch — 1 keV/µm proton/water ICRU49 @smoke", async ({
+    page,
+  }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // Proton (1) in Water (276) via ICRU49 (7): monotone STP over the tabulated range.
+    // 1 keV/µm = 10 MeV·cm²/g (water density 1 g/cm³).  The old bisection returned -1
+    // here because find_min() returned -1 for the monotone curve (no Bragg peak in range).
+    await page.goto(
+      "/calculator?particle=1&material=276&program=7&imode=stp&ivalues=1&iunit=kev-um&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-stp-input-0"]', { timeout: 15000 });
+
+    const highSpan = page.locator('[data-testid="inverse-stp-result-high-0"] span');
+    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    const energyMeV = parseEnergyMeV((await highSpan.textContent())!);
+    // 10 MeV·cm²/g corresponds to ~65–70 MeV in ICRU49 for proton in water
+    expect(energyMeV).toBeGreaterThan(40);
+    expect(energyMeV).toBeLessThan(120);
   });
 
   test("Range tab: unit change triggers recalculation @regression", async ({ page }) => {
@@ -247,7 +280,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await page.waitForSelector('[data-testid="inverse-stp-result-low-0"]', { timeout: 15000 });
 
     const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
-    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
     const energyAtKevUm = parseFloat((await lowSpan.textContent())!.trim());
 
     // Change unit to MeV/cm; same numeric value (30) now means 30 MeV/cm → different conversion
