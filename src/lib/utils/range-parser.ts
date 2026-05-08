@@ -21,9 +21,10 @@ export function parseLengthInput(
     return { empty: true };
   }
 
+  const strictNumberPattern = "[+-]?\\d*\\.?\\d+(?:[eE][+-]?\\d+)?";
   // Regex: number (with optional scientific notation) followed by optional suffix
   // Capture groups: [1] = number, [2] = optional suffix
-  const match = trimmed.match(/^([\d.eE+-]+)\s*([a-zµ]+)?$/i);
+  const match = trimmed.match(new RegExp(`^(${strictNumberPattern})\\s*([a-zµ]+)?$`, "i"));
 
   if (!match) {
     return { error: "Enter a numeric value" };

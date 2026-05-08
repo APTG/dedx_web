@@ -76,6 +76,9 @@ const LENGTH_SUFFIXES: Record<string, "nm" | "um" | "mm" | "cm" | "m"> = {
   m: "m",
 };
 
+const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
+const RANGE_WITH_SUFFIX_RE = /^([+-]?\d*\.?\d+(?:[eE][+-]?\d+)?)\s*([a-zA-Zµ]+)$/;
+
 /**
  * Parse a range input string like "7.718 cm" or "45 µm".
  * Returns { value, unit, unitFromSuffix } or null if invalid.
@@ -89,7 +92,7 @@ export function parseRangeInput(text: string): {
   if (!trimmed) return null;
 
   // Try to find a suffix at the end
-  const match = trimmed.match(/^([\d.eE+-]+)\s*([a-zA-Zµ]+)$/);
+  const match = trimmed.match(RANGE_WITH_SUFFIX_RE);
   if (match) {
     const numStr = match[1];
     const suffix = match[2].toLowerCase();
@@ -108,6 +111,9 @@ export function parseRangeInput(text: string): {
   }
 
   // No suffix - treat as plain number with master unit
+  if (!STRICT_NUMBER_RE.test(trimmed)) {
+    return null;
+  }
   const value = parseFloat(trimmed);
   if (!Number.isFinite(value) || value <= 0) {
     return null;
@@ -125,6 +131,9 @@ export function parseRangeInput(text: string): {
 export function parseStpInput(text: string): { value: number } | null {
   const trimmed = text.trim();
   if (!trimmed) return null;
+  if (!STRICT_NUMBER_RE.test(trimmed)) {
+    return null;
+  }
   const value = parseFloat(trimmed);
   if (!Number.isFinite(value) || value <= 0) {
     return null;
@@ -216,22 +225,28 @@ export function createInverseLookupState(
 
     const parsed = parseRangeInput(trimmed);
     if (!parsed) {
-      const negativeMatch = trimmed.match(/^(-?[\d.eE+-]+)\s*([a-zA-Zµ]+)?$/);
-      if (negativeMatch) {
-        const val = parseFloat(negativeMatch[1]);
-        if (!Number.isFinite(val)) {
+      const suffixTokenMatch = trimmed.match(/\s*([a-zA-Zµ]+)$/);
+      if (suffixTokenMatch) {
+        const suffix = suffixTokenMatch[1];
+        const numberPart = trimmed.slice(0, trimmed.length - suffixTokenMatch[0].length).trim();
+        if (!STRICT_NUMBER_RE.test(numberPart)) {
           row.status = "invalid";
           row.message = "Enter a numeric value";
-        } else if (val <= 0) {
+        } else if (parseFloat(numberPart) <= 0) {
           row.status = "invalid";
           row.message = "Range must be positive";
         } else {
           row.status = "invalid";
-          row.message = "Unrecognized unit";
+          row.message = `Unrecognized unit '${suffix}'`;
         }
       } else {
-        row.status = "invalid";
-        row.message = "Enter a numeric value";
+        if (!STRICT_NUMBER_RE.test(trimmed)) {
+          row.status = "invalid";
+          row.message = "Enter a numeric value";
+        } else if (parseFloat(trimmed) <= 0) {
+          row.status = "invalid";
+          row.message = "Range must be positive";
+        }
       }
       row.value = null;
       row.energyMevNucl = null;
@@ -272,11 +287,10 @@ export function createInverseLookupState(
 
     const parsed = parseStpInput(trimmed);
     if (!parsed) {
-      const val = parseFloat(trimmed);
-      if (!Number.isFinite(val)) {
+      if (!STRICT_NUMBER_RE.test(trimmed)) {
         row.status = "invalid";
         row.message = "Enter a numeric value";
-      } else if (val <= 0) {
+      } else if (parseFloat(trimmed) <= 0) {
         row.status = "invalid";
         row.message = "Stopping power must be positive";
       } else {

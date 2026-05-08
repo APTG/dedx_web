@@ -283,11 +283,13 @@ Replace with:
 
 ### Step 3c — implement: `.github/workflows/deploy.yml`
 
-In the `deploy-dev` job, add a step immediately before "Build SvelteKit app":
+In the `deploy-dev` job, add a step immediately before "Build SvelteKit app"
+inside the job `steps:` list:
 
 ```yaml
-- name: Write deploy.json
-  run: node scripts/deploy.cjs
+steps:
+  - name: Write deploy.json
+    run: node scripts/deploy.cjs
 ```
 
 ### Done when

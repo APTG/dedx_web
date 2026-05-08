@@ -37,17 +37,17 @@ describe("parseLengthInput", () => {
     expect(result).toEqual({ error: "Unrecognized unit 'km'" });
   });
 
-  test('allows negative values at parse level', () => {
+  test("allows negative values at parse level", () => {
     const result = parseLengthInput("-5 cm");
     expect(result).toEqual({ value: -5, unit: "cm", toCm: 1 });
   });
 
-  test('returns empty marker for empty string', () => {
+  test("returns empty marker for empty string", () => {
     const result = parseLengthInput("");
     expect(result).toEqual({ empty: true });
   });
 
-  test('returns empty marker for whitespace-only', () => {
+  test("returns empty marker for whitespace-only", () => {
     const result = parseLengthInput("   ");
     expect(result).toEqual({ empty: true });
   });
@@ -87,7 +87,7 @@ describe("parseLengthInput", () => {
     expect(result).toEqual({ value: 0.001, unit: "cm", toCm: 1 });
   });
 
-  test('handles leading and trailing whitespace', () => {
+  test("handles leading and trailing whitespace", () => {
     const result = parseLengthInput("  7.718 cm  ");
     expect(result).toEqual({ value: 7.718, unit: "cm", toCm: 1 });
   });
@@ -105,6 +105,16 @@ describe("parseLengthInput", () => {
   test('rejects partially matching unit "cms"', () => {
     const result = parseLengthInput("5 cms");
     expect(result).toEqual({ error: "Unrecognized unit 'cms'" });
+  });
+
+  test('rejects malformed exponent "1e cm"', () => {
+    const result = parseLengthInput("1e cm");
+    expect(result).toEqual({ error: "Enter a numeric value" });
+  });
+
+  test('rejects malformed numeric "1..2 cm"', () => {
+    const result = parseLengthInput("1..2 cm");
+    expect(result).toEqual({ error: "Enter a numeric value" });
   });
 
   test('handles decimal values: "0.5 mm"', () => {

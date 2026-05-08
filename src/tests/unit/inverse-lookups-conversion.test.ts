@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { stpToMevCm2g } from "$lib/state/inverse-lookups.svelte";
+import { parseRangeInput, parseStpInput, stpToMevCm2g } from "$lib/state/inverse-lookups.svelte";
 
 describe("stpToMevCm2g", () => {
   describe("kev-um → MeV·cm²/g", () => {
@@ -41,5 +41,23 @@ describe("stpToMevCm2g", () => {
       expect(stpToMevCm2g(7.286, "mev-cm2-g", 1.0)).toBe(7.286);
       expect(stpToMevCm2g(7.286, "mev-cm2-g", 2.0)).toBe(7.286);
     });
+  });
+});
+
+describe("inverse input parsing", () => {
+  it("rejects malformed range exponent input", () => {
+    expect(parseRangeInput("1e cm")).toBeNull();
+  });
+
+  it("rejects malformed range numeric input", () => {
+    expect(parseRangeInput("1..2 cm")).toBeNull();
+  });
+
+  it("rejects malformed STP exponent input", () => {
+    expect(parseStpInput("1e")).toBeNull();
+  });
+
+  it("rejects malformed STP numeric input", () => {
+    expect(parseStpInput("1..2")).toBeNull();
   });
 });
