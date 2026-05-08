@@ -200,7 +200,7 @@ exists and contains the atomic checklist for this branch.
 | Agent                | Model        | Role                                                                                                       |
 | -------------------- | ------------ | ---------------------------------------------------------------------------------------------------------- |
 | `implementer`        | Qwen3.5-397B | Writes code, tests, commits for ONE task                                                                   |
-| `reviewer`           | Qwen3.6-35B  | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
+| `reviewer`           | Qwen3.5-397B | **Diff-only** review against acceptance criteria — does NOT re-run lint/test (the implementer already did) |
 | `svelte-file-editor` | Qwen3.5-397B | (auto) edits `.svelte` files with MCP validation                                                           |
 
 Full agent documentation: [`.opencode/agents/`](.opencode/agents/)

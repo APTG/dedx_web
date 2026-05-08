@@ -161,7 +161,7 @@ In the opencode UI, select the **PLGrid** provider and one of:
 | ---------------------------- | ------- | --------------------------------------- |
 | `Qwen/Qwen3.5-397B-A17B-FP8` | 131 K   | Main orchestrator, implementer subagent |
 | `Qwen/Qwen3.5-122B-A10B`     | 131 K   | Medium tasks, fallback                  |
-| `Qwen/Qwen3.6-35B-A3B`       | 80 K    | Quick fixes, reviewer subagent          |
+| `Qwen/Qwen3.6-35B-A3B`       | 80 K    | Quick fixes only (not the reviewer subagent) |
 
 **Always use `Qwen3.5-397B` as your main session model.** The subagents
 `implementer` and `reviewer` have their models fixed in `opencode.json` regardless
@@ -362,7 +362,7 @@ pnpm exec playwright install chromium
 
 ### Implementer subagent outputs `TASK BLOCKED: step limit reached`
 
-**Cause:** The task is too large for 80 steps.
+**Cause:** The task is too large for 40 steps.
 **Fix:** Break the task into two smaller subtasks in the orchestrator decomposition.
 Alternatively, raise `maxSteps` for the `implementer` in `opencode.json` (but
 prefer smaller tasks — it produces cleaner commits).

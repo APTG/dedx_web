@@ -71,8 +71,8 @@ The implementer must:
 - run at least one real-WASM `@smoke` acceptance path when the feature is
   WASM-backed (no runtime `page.addInitScript` mock injection in acceptance tests),
 - include full (non-truncated) failure output if any E2E run fails,
-- include a `WASM capability audit` line in `TASK DONE` that states what already
-  exists vs what would require new WASM changes.
+- for WASM-boundary tasks include a `WASM capability audit` line in `TASK DONE`
+  (for non-WASM tasks use `WASM capability audit: N/A — no WASM boundary touched`).
 
 d. If TASK DONE:
 

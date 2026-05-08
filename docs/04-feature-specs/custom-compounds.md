@@ -1407,7 +1407,7 @@ This section is the mandatory preflight gate for Stage 6.10 implementation work.
 4. **Delete**
    - **Given** selected custom compound is active
    - **When** user confirms delete
-   - **Then** row is removed from DOM and material falls back to built-in default; `material=custom` is removed from URL.
+   - **Then** row is removed from DOM and material falls back to built-in default; `material=custom` and all `mat_*` params are removed from URL.
 5. **Select and use in Calculator**
    - **Given** at least one saved custom compound
    - **When** user selects it and enters energy
@@ -1419,7 +1419,7 @@ This section is the mandatory preflight gate for Stage 6.10 implementation work.
 7. **Referenced custom compound missing**
    - **Given** URL/state references a custom compound ID/name not present in storage
    - **When** page initializes
-   - **Then** app falls back to built-in default material, renders warning banner, and avoids crashes/stale selection DOM.
+   - **Then** app falls back to built-in default material, renders `[data-testid="compound-from-url-banner"]` warning, and avoids crashes/stale selection DOM.
 
 ### 6.10.2 Data model (TypeScript-facing storage + references)
 
@@ -1429,7 +1429,7 @@ type CustomCompoundId = `cc_${string}`; // new IDs: cc_ + uuidv7 (stable, opaque
 interface StoredCustomCompoundV1 {
   id: CustomCompoundId | string; // migration accepts legacy uuid v4 strings
   name: string; // display label, not unique
-  normalizedName: string; // lowercased+trimmed for duplicate detection
+  normalizedName: string; // lowercased+trimmed+space-collapsed for duplicate detection
   elements: Array<{ atomicNumber: number; atomCount: number }>; // sorted by atomicNumber asc
   density: number; // g/cm³
   iValue?: number; // eV
@@ -1450,7 +1450,7 @@ type MaterialRef =
 
 - **Stable ID strategy:** ID generated once at create-time; rename/edit never changes ID.
 - **Name uniqueness:** names are not unique keys; duplicate names allowed with warning.
-- **Duplicate-name policy:** case-insensitive + trim comparison warns but does not block save.
+- **Duplicate-name policy:** case-insensitive + trim + collapsed-space comparison warns but does not block save.
 - **URL/reference representation:** canonical URL uses `material=custom` + `mat_*` payload; persisted UI selection uses `{ kind:"custom", id }`.
 
 ### 6.10.3 Validation matrix
@@ -1466,7 +1466,7 @@ type MaterialRef =
 Normalization/canonicalization rules:
 
 - Trim leading/trailing whitespace from name; collapse internal repeated spaces.
-- Store `normalizedName = name.trim().toLowerCase()`.
+- Store `normalizedName = name.trim().replace(/\s+/g, " ").toLowerCase()`.
 - Sort elements ascending by `atomicNumber` before persist/URL encode.
 - Serialize numeric fields with `Number.toString()` (no locale formatting).
 

@@ -48,6 +48,7 @@ Branch: <branch-name>
 Commits: <sha1>, <sha2>, ...
 Push: not performed (run: git push -u origin <branch-name>)
 WASM capability audit: <existing capability> | <new WASM work required or not>
+  OR: N/A — no WASM boundary touched
 ```
 
 or
@@ -62,6 +63,9 @@ survives context compaction without depending on chat history.
 
 `TASK DONE` is valid after a successful local commit on the working branch.
 **Do not push by default.** Push only when the user explicitly requests it.
+
+The WASM capability audit line is required when the task touches libdedx/WASM.
+For non-WASM tasks, use: `WASM capability audit: N/A — no WASM boundary touched`.
 
 No other final output is acceptable. The main agent parses these signals to decide
 whether to move to the reviewer or to retry.
