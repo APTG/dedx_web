@@ -250,33 +250,37 @@ export interface CustomCompoundsStore {
 
 /** Create the custom compounds store */
 export function createCustomCompoundsStore(): CustomCompoundsStore {
-  // Initialize reactive state
-  let envelope = $state(storage.get());
+  const initial = storage.get();
 
-  // Derived reactive properties
-  const store: CustomCompoundsStore = {
-    get compounds(): StoredCompoundInternal[] {
-      return envelope.compounds;
-    },
+  const compounds = $state<StoredCompoundInternal[]>(initial.compounds);
+  const version = $state({ count: 0 });
+
+  const store = {
+    compounds,
 
     get count(): number {
-      return envelope.compounds.length;
+      void version.count;
+      return compounds.length;
     },
 
     get hasReachedWarningThreshold(): boolean {
-      return envelope.compounds.length >= LIBRARY_WARNING_THRESHOLD;
+      void version.count;
+      return compounds.length >= LIBRARY_WARNING_THRESHOLD;
     },
 
     get isAtLimit(): boolean {
-      return envelope.compounds.length >= LIBRARY_SOFT_LIMIT;
+      void version.count;
+      return compounds.length >= LIBRARY_SOFT_LIMIT;
     },
 
     getById(id: string): StoredCompoundInternal | undefined {
-      return envelope.compounds.find((c) => c.id === id);
+      void version.count;
+      return compounds.find((c) => c.id === id);
     },
 
     get(index: number): StoredCompoundInternal | undefined {
-      return envelope.compounds[index];
+      void version.count;
+      return compounds[index];
     },
 
     create(params): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] } {
@@ -287,9 +291,6 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
 
       const now = new Date().toISOString();
       const normalizedName = normalizeName(params.name);
-
-      // Check for warning (not blocking) on duplicate name
-      // Names are not unique - IDs are the primary key
 
       const compound: StoredCompoundInternal = {
         id: generateCompoundId(),
@@ -303,7 +304,10 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
         updatedAt: now,
       };
 
-      envelope.compounds.push(compound);
+      compounds.push(compound);
+      version.count++;
+
+      const envelope: CustomCompoundStoreEnvelope = { schemaVersion: 1, compounds };
       storage.set(envelope);
 
       return { success: true, compound };
@@ -313,7 +317,7 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
       id: string,
       params,
     ): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] } {
-      const existing = envelope.compounds.find((c) => c.id === id);
+      const existing = compounds.find((c) => c.id === id);
       if (!existing) {
         return {
           success: false,
@@ -326,10 +330,8 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
         return { success: false, errors };
       }
 
-      // Ensure updatedAt is always different from createdAt
       let now = new Date().toISOString();
       while (now === existing.createdAt) {
-        // Force a 1ms difference if timestamps collide
         now = new Date(Date.now() + 1).toISOString();
       }
       const normalizedName = normalizeName(params.name);
@@ -342,30 +344,35 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
       existing.phase = params.phase;
       existing.updatedAt = now;
 
+      version.count++;
+
+      const envelope: CustomCompoundStoreEnvelope = { schemaVersion: 1, compounds };
       storage.set(envelope);
 
       return { success: true, compound: existing };
     },
 
     delete(id: string): boolean {
-      const index = envelope.compounds.findIndex((c) => c.id === id);
+      const index = compounds.findIndex((c) => c.id === id);
       if (index === -1) {
         return false;
       }
 
-      envelope.compounds.splice(index, 1);
+      compounds.splice(index, 1);
+      version.count++;
+
+      const envelope: CustomCompoundStoreEnvelope = { schemaVersion: 1, compounds };
       storage.set(envelope);
       return true;
     },
 
     nameExists(name: string, excludeId?: string): boolean {
       const normalized = normalizeName(name);
-      return envelope.compounds.some(
-        (c) => c.normalizedName === normalized && c.id !== excludeId,
-      );
+      return compounds.some((c) => c.normalizedName === normalized && c.id !== excludeId);
     },
 
     export(): string {
+      const envelope: CustomCompoundStoreEnvelope = { schemaVersion: 1, compounds };
       return JSON.stringify(envelope, null, 2);
     },
 
@@ -389,17 +396,14 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
 
         let imported = 0;
         for (const compound of newCompounds) {
-          // Basic validation on import
           if (!compound.id || !compound.name || !compound.elements || !compound.density) {
             continue;
           }
 
-          // Skip if already exists (by ID)
-          if (envelope.compounds.some((c) => c.id === compound.id)) {
+          if (compounds.some((c) => c.id === compound.id)) {
             continue;
           }
 
-          // Ensure required fields
           const toImport: StoredCompoundInternal = {
             id: compound.id,
             name: compound.name,
@@ -412,10 +416,12 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
             updatedAt: compound.updatedAt ?? new Date().toISOString(),
           };
 
-          envelope.compounds.push(toImport);
+          compounds.push(toImport);
           imported++;
         }
 
+        version.count++;
+        const envelope: CustomCompoundStoreEnvelope = { schemaVersion: 1, compounds };
         storage.set(envelope);
         return { success: true, count: imported };
       } catch (err) {

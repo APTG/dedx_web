@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends { id: number; name: string }">
+<script lang="ts" generics="T extends { id: number | string; name: string }">
   import { tick, untrack } from "svelte";
   import { Combobox } from "bits-ui";
   import { cn } from "$lib/utils";
@@ -16,14 +16,21 @@
     description?: string;
     searchText?: string;
     isElectron?: boolean;
+    actions?: Array<{ label: string; icon?: "edit" | "delete" | "trash"; onClick: () => void }>;
   }
 
-  type ComboboxEntry<T> = EntityItem<T> | SectionHeader;
+  interface AddButton {
+    type: "add-button";
+    label?: string;
+    onClick: () => void;
+  }
 
-  interface Props<T extends { id: number; name: string }> {
+  type ComboboxEntry<T> = EntityItem<T> | SectionHeader | AddButton;
+
+  interface Props<T extends { id: number | string; name: string }> {
     label: string;
     items: ComboboxEntry<T>[];
-    selectedId: number | null;
+    selectedId: number | string | null;
     placeholder?: string;
     disabled?: boolean;
     onItemSelect: (entity: T) => void;
@@ -55,6 +62,10 @@
     return (item as SectionHeader).type === "section";
   }
 
+  function isAddButton(item: ComboboxEntry<T>): item is AddButton {
+    return (item as AddButton).type === "add-button";
+  }
+
   let open = $state(false);
   let inputValue = $state("");
   let inputRef = $state<HTMLInputElement | null>(null);
@@ -64,9 +75,11 @@
 
   // Keep valueStr in sync when selectedId changes externally (e.g., resetAll)
   $effect(() => {
-    valueStr = selectedId !== null ? String(selectedId) : "";
+    const newValue = selectedId !== null ? String(selectedId) : "";
+    console.log("[entity-combobox] $effect: selectedId changed, valueStr=", valueStr, "->", newValue, "selectedId=", selectedId);
+    valueStr = newValue;
   });
-
+  
   // Reset the search term and focus the input whenever the dropdown opens.
   // Note: bind:inputValue on Combobox.Root does not propagate typed values back
   // (bits-ui's inputValue prop is not $bindable), so we track the typed text via
@@ -79,19 +92,29 @@
   });
 
   const selectedItem = $derived.by(() => {
-    if (selectedId === null) return undefined;
+    if (selectedId === null) {
+      console.log("[entity-combobox] selectedItem: selectedId is null");
+      return undefined;
+    }
+    console.log("[entity-combobox] selectedItem: searching for selectedId=", selectedId, "type=", typeof selectedId, "items.length=", items.length);
     for (const item of items) {
-      if (!isSection(item) && (item as EntityItem<T>).entity.id === selectedId) {
-        return item as EntityItem<T>;
+      if (!isSection(item)) {
+        const entityItem = item as EntityItem<T>;
+        console.log("[entity-combobox] checking item: entity.id=", entityItem.entity.id, "type=", typeof entityItem.entity.id, "label=", entityItem.label);
+        if (entityItem.entity.id === selectedId) {
+          console.log("[entity-combobox] FOUND match!");
+          return item as EntityItem<T>;
+        }
       }
     }
+    console.log("[entity-combobox] selectedItem: no match found");
     return undefined;
   });
 
   // Flat item list for Bits UI keyboard navigation and label resolution
   const bitsItems = $derived.by(() =>
     items
-      .filter((item) => !isSection(item))
+      .filter((item) => !isSection(item) && !isAddButton(item))
       .map((item) => ({
         value: String((item as EntityItem<T>).entity.id),
         label: (item as EntityItem<T>).label,
@@ -101,16 +124,22 @@
 
   // Items grouped by preceding section header, filtered by current search term.
   // `searchText` lets callers inject domain-specific keywords (aliases/symbols/IDs)
-  // without polluting the visible label shown in the trigger/list.
   const filteredGroups = $derived.by(() => {
     const term = inputValue.toLowerCase().trim();
-    const groups: Array<{ label: string; items: EntityItem<T>[] }> = [];
-    let current: { label: string; items: EntityItem<T>[] } | null = null;
+    const groups: Array<{ label: string; items: (EntityItem<T> | AddButton)[] }> = [];
+    let current: { label: string; items: (EntityItem<T> | AddButton)[] } | null = null;
 
     for (const raw of items) {
       if (isSection(raw)) {
         current = { label: raw.label, items: [] };
         groups.push(current);
+      } else if (isAddButton(raw)) {
+        // Always include add button, don't filter by search term
+        if (!current) {
+          current = { label: "", items: [] };
+          groups.push(current);
+        }
+        current.items.push(raw);
       } else {
         const ei = raw as EntityItem<T>;
         const searchableText =
@@ -125,22 +154,27 @@
       }
     }
 
-    return groups.filter((g) => g.items.length > 0);
+    const result = groups.filter((g) => g.items.length > 0);
+    return result;
   });
 
   const totalMatchCount = $derived(filteredGroups.flatMap((g) => g.items).length);
 
   function handleValueChange(newValue: string) {
-    const numId = Number(newValue);
+    console.log("[entity-combobox] handleValueChange called with newValue=", newValue);
     for (const item of items) {
       if (!isSection(item)) {
         const ei = item as EntityItem<T>;
-        if (ei.entity.id === numId) {
+        const entityIdStr = String(ei.entity.id);
+        console.log("[entity-combobox] comparing entityIdStr=", entityIdStr, "with newValue=", newValue, "match=", entityIdStr === newValue);
+        if (entityIdStr === newValue) {
+          console.log("[entity-combobox] MATCH FOUND, calling onItemSelect with entity=", ei.entity);
           onItemSelect(ei.entity);
           return;
         }
       }
     }
+    console.log("[entity-combobox] handleValueChange: no matching entity found");
   }
 </script>
 
@@ -230,14 +264,15 @@
     <!--
       ContentStatic with forceMount keeps the listbox element in the DOM at all
       times so EscapeLayer / DismissibleLayer remain active even before the first
-      open. {#if open} inside means items are only rendered when the dropdown is
-      actually visible, keeping the DOM lean when closed.
+      open. The PopperLayer handles open/close visibility, so we don't need {#if open}.
+      
+      NOTE: The PopperLayer already handles positioning, so we don't use absolute
+      positioning here. The wrapper div just provides styling.
     -->
     <Combobox.ContentStatic forceMount={true}>
-      {#if open}
-        <div
-          class="absolute z-50 mt-1 w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
-        >
+      <div
+        class="w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
+      >
           <Combobox.Input
             bind:ref={inputRef}
             class="flex h-10 w-full border-b border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
@@ -269,51 +304,98 @@
                       {group.label}
                     </Combobox.GroupHeading>
                   {/if}
-                  {#each group.items as item, itemIndex (item.entity.id)}
-                    {#if item.isElectron}
-                      {#if itemIndex > 0}
-                        <Combobox.Separator class="my-1 border-t border-muted" />
-                      {/if}
-                    {/if}
-                    <Combobox.Item
-                      value={String(item.entity.id)}
-                      disabled={!item.available}
-                      label={item.label}
-                      title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
-                      class={cn(
-                        "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                        !item.available && "cursor-not-allowed opacity-50",
-                      )}
-                    >
-                      {item.label}
-                      {#if item.description}
-                        <span class="ml-2 text-xs text-muted-foreground">{item.description}</span>
-                      {/if}
-                      {#if item.entity.id === selectedId}
-                        <svg
-                          xmlns="http://www.w3.org/2000/svg"
-                          width="16"
-                          height="16"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          stroke-width="2"
-                          stroke-linecap="round"
-                          stroke-linejoin="round"
-                          class="ml-2 shrink-0 text-primary"
-                          aria-label="Selected"
-                        >
-                          <polyline points="20 6 9 17 4 12" />
+                  {#each group.items as item, itemIndex (isAddButton(item) ? 'add' : item.entity.id)}
+                    {#if isAddButton(item)}
+                      <button
+                        type="button"
+                        class="relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none hover:bg-accent hover:text-accent-foreground"
+                        onclick={(e) => {
+                          e.stopPropagation();
+                          item.onClick();
+                        }}
+                        data-testid="add-compound-button"
+                      >
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                          <line x1="12" y1="5" x2="12" y2="19" />
+                          <line x1="5" y1="12" x2="19" y2="12" />
                         </svg>
+                        {item.label ?? "+ Add compound"}
+                      </button>
+                    {:else}
+                      {#if item.isElectron}
+                        {#if itemIndex > 0}
+                          <Combobox.Separator class="my-1 border-t border-muted" />
+                        {/if}
                       {/if}
-                    </Combobox.Item>
+                      <Combobox.Item
+                        value={String(item.entity.id)}
+                        disabled={!item.available}
+                        label={item.label}
+                        title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
+                        class={cn(
+                          "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                          !item.available && "cursor-not-allowed opacity-50",
+                        )}
+                        data-disabled={!item.available ? "" : undefined}
+                      >
+                        <span class="flex items-center gap-2">
+                          {item.label}
+                          {#if item.description}
+                            <span class="text-xs text-muted-foreground" data-testid="item-description">{item.description}</span>
+                          {/if}
+                        </span>
+                        <div class="flex items-center gap-1">
+                          {#if item.entity.id === selectedId}
+                            <svg
+                              xmlns="http://www.w3.org/2000/svg"
+                              width="16"
+                              height="16"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              stroke-width="2"
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              class="shrink-0 text-primary"
+                              aria-label="Selected"
+                            >
+                              <polyline points="20 6 9 17 4 12" />
+                            </svg>
+                          {/if}
+                          {#if item.actions}
+                            {#each item.actions as action}
+                              <button
+                                type="button"
+                                class="rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                                title={action.label}
+                                onclick={(e) => {
+                                  e.stopPropagation();
+                                  open = false;
+                                  action.onClick();
+                                }}
+                              >
+                                {#if action.icon === "edit" || action.icon === "delete"}
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+                                  </svg>
+                                {:else}
+                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                                    <polyline points="3 6 5 6 21 6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                  </svg>
+                                {/if}
+                              </button>
+                            {/each}
+                          {/if}
+                        </div>
+                      </Combobox.Item>
+                    {/if}
                   {/each}
                 </Combobox.Group>
               {/each}
             {/if}
           </div>
         </div>
-      {/if}
     </Combobox.ContentStatic>
   </Combobox.Root>
 </div>

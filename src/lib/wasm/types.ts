@@ -3,7 +3,7 @@ export type StpUnit = "MeV·cm²/g" | "MeV/cm" | "keV/µm";
 export type RangeUnit = "g/cm²" | "cm";
 
 export interface LibdedxEntity {
-  id: number;
+  id: number | string;
   name: string;
 }
 

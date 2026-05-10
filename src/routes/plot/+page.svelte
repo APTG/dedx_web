@@ -9,6 +9,7 @@
   import {
     createEntitySelectionState,
     type EntitySelectionState,
+    WATER_ID,
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
@@ -44,6 +45,17 @@
   $effect(() => {
     if (!browser) return;
     loadAdvancedOptionsFromStorage();
+  });
+
+  // Handle mode switch fallback: custom compound → water when switching to Basic mode
+  $effect(() => {
+    const mode = isAdvancedMode.value;
+    if (!mode && entityState?.selectedMaterial) {
+      const matId = entityState.selectedMaterial.id;
+      if (typeof matId === "string" && matId.startsWith("cc_")) {
+        entityState.selectMaterial(WATER_ID);
+      }
+    }
   });
 
   // Track material changes to determine gas/condensed state for the panel
@@ -99,11 +111,10 @@
 
   let urlInitialized = $state(false);
 
-  $effect(() => {
+   $effect(() => {
     if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
     // Mark in-flight so the URL-write effect cannot run while we are
     // restoring (it would otherwise wipe `series=...` from the address bar).
-    const state = entityState;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
 
@@ -111,13 +122,13 @@
     initAdvancedModeFromUrl(params);
 
     if (decoded.particleId !== null) {
-      state.selectParticle(decoded.particleId);
+      entityState.selectParticle(decoded.particleId);
     }
     if (decoded.materialId !== null) {
-      state.selectMaterial(decoded.materialId);
+      entityState.selectMaterial(decoded.materialId);
     }
     if (decoded.programId !== -1) {
-      state.selectProgram(decoded.programId);
+      entityState.selectProgram(decoded.programId);
     }
 
     if (decoded.stpUnit) {

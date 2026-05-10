@@ -6,11 +6,20 @@ import { browser } from "$app/environment";
 const storedValue = browser ? localStorage.getItem("dedx_advanced_mode") === "1" : false;
 export const isAdvancedMode = $state({ value: storedValue });
 
-export function toggleAdvancedMode(): void {
+/**
+ * Toggle advanced mode and optionally apply fallback logic when switching to Basic mode.
+ * @param onSwitchToBasic - Callback invoked when switching from Advanced to Basic mode
+ */
+export function toggleAdvancedMode(onSwitchToBasic?: () => void): void {
+  const wasAdvanced = isAdvancedMode.value;
   isAdvancedMode.value = !isAdvancedMode.value;
   if (browser) {
     if (isAdvancedMode.value) localStorage.setItem("dedx_advanced_mode", "1");
     else localStorage.removeItem("dedx_advanced_mode");
+  }
+  // Invoke callback after state update when switching to Basic mode
+  if (wasAdvanced && !isAdvancedMode.value && onSwitchToBasic) {
+    onSwitchToBasic();
   }
 }
 
