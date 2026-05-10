@@ -71,13 +71,14 @@
   let inputRef = $state<HTMLInputElement | null>(null);
   // untrack: Svelte would warn that this captures the initial prop value; the
   // $effect below handles subsequent changes, so the snapshot is intentional.
+  // eslint-disable-next-line svelte/prefer-writable-derived
   let valueStr = $state(untrack(() => (selectedId !== null ? String(selectedId) : "")));
 
   // Keep valueStr in sync when selectedId changes externally (e.g., resetAll)
   $effect(() => {
     valueStr = selectedId !== null ? String(selectedId) : "";
   });
-  
+
   // Reset the search term and focus the input whenever the dropdown opens.
   // Note: bind:inputValue on Combobox.Root does not propagate typed values back
   // (bits-ui's inputValue prop is not $bindable), so we track the typed text via
@@ -257,129 +258,165 @@
       <div
         class="w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
       >
-          <Combobox.Input
-            bind:ref={inputRef}
-            class="flex h-10 w-full border-b border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
-            placeholder={getSearchPlaceholder()}
-            oninput={(e: Event) => {
-              inputValue = (e.currentTarget as HTMLInputElement).value;
-            }}
-          />
-          {#if inputValue.toLowerCase().trim()}
-            <div data-match-count class="px-3 py-2 text-xs text-muted-foreground">
-              {totalMatchCount}
-              {totalMatchCount === 1 ? "result" : "results"}
-            </div>
-          {/if}
-          <div
-            data-testid="dropdown-scroll-container"
-            class="max-h-[300px] overflow-y-auto p-1"
-            style="mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);"
-          >
-            {#if filteredGroups.length === 0}
-              <div class="px-3 py-2 text-sm text-muted-foreground">No results</div>
-            {:else}
-              {#each filteredGroups as group (group.label)}
-                <Combobox.Group>
-                  {#if group.label}
-                    <Combobox.GroupHeading
-                      class="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
-                    >
-                      {group.label}
-                    </Combobox.GroupHeading>
-                  {/if}
-                  {#each group.items as item, itemIndex (isAddButton(item) ? 'add' : item.entity.id)}
-                    {#if isAddButton(item)}
-                      <button
-                        type="button"
-                        class="relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none hover:bg-accent hover:text-accent-foreground"
-                        onclick={(e) => {
-                          e.stopPropagation();
-                          item.onClick();
-                        }}
-                        data-testid="add-compound-button"
-                      >
-                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                          <line x1="12" y1="5" x2="12" y2="19" />
-                          <line x1="5" y1="12" x2="19" y2="12" />
-                        </svg>
-                        {item.label ?? "+ Add compound"}
-                      </button>
-                    {:else}
-                      {#if item.isElectron}
-                        {#if itemIndex > 0}
-                          <Combobox.Separator class="my-1 border-t border-muted" />
-                        {/if}
-                      {/if}
-                      <Combobox.Item
-                        value={String(item.entity.id)}
-                        disabled={!item.available}
-                        label={item.label}
-                        title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
-                        class={cn(
-                          "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
-                          !item.available && "cursor-not-allowed opacity-50",
-                        )}
-                        data-disabled={!item.available ? "" : undefined}
-                      >
-                        <span class="flex items-center gap-2">
-                          {item.label}
-                          {#if item.description}
-                            <span class="text-xs text-muted-foreground" data-testid="item-description">{item.description}</span>
-                          {/if}
-                        </span>
-                        <div class="flex items-center gap-1">
-                          {#if item.entity.id === selectedId}
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              width="16"
-                              height="16"
-                              viewBox="0 0 24 24"
-                              fill="none"
-                              stroke="currentColor"
-                              stroke-width="2"
-                              stroke-linecap="round"
-                              stroke-linejoin="round"
-                              class="shrink-0 text-primary"
-                              aria-label="Selected"
-                            >
-                              <polyline points="20 6 9 17 4 12" />
-                            </svg>
-                          {/if}
-                          {#if item.actions}
-                            {#each item.actions as action}
-                              <button
-                                type="button"
-                                class="rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
-                                title={action.label}
-                                onclick={(e) => {
-                                  e.stopPropagation();
-                                  open = false;
-                                  action.onClick();
-                                }}
-                              >
-                                {#if action.icon === "edit" || action.icon === "delete"}
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-                                  </svg>
-                                {:else}
-                                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                                    <polyline points="3 6 5 6 21 6" />
-                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                                  </svg>
-                                {/if}
-                              </button>
-                            {/each}
-                          {/if}
-                        </div>
-                      </Combobox.Item>
-                    {/if}
-                  {/each}
-                </Combobox.Group>
-              {/each}
-            {/if}
+        <Combobox.Input
+          bind:ref={inputRef}
+          class="flex h-10 w-full border-b border-input bg-background px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          placeholder={getSearchPlaceholder()}
+          oninput={(e: Event) => {
+            inputValue = (e.currentTarget as HTMLInputElement).value;
+          }}
+        />
+        {#if inputValue.toLowerCase().trim()}
+          <div data-match-count class="px-3 py-2 text-xs text-muted-foreground">
+            {totalMatchCount}
+            {totalMatchCount === 1 ? "result" : "results"}
           </div>
+        {/if}
+        <div
+          data-testid="dropdown-scroll-container"
+          class="max-h-[300px] overflow-y-auto p-1"
+          style="mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);"
+        >
+          {#if filteredGroups.length === 0}
+            <div class="px-3 py-2 text-sm text-muted-foreground">No results</div>
+          {:else}
+            {#each filteredGroups as group (group.label)}
+              <Combobox.Group>
+                {#if group.label}
+                  <Combobox.GroupHeading
+                    class="px-2 py-1 text-xs font-semibold uppercase tracking-wide text-muted-foreground"
+                  >
+                    {group.label}
+                  </Combobox.GroupHeading>
+                {/if}
+                {#each group.items as item, itemIndex (isAddButton(item) ? "add" : item.entity.id)}
+                  {#if isAddButton(item)}
+                    <button
+                      type="button"
+                      class="relative flex w-full cursor-pointer items-center gap-2 rounded-sm px-2 py-1.5 text-sm text-primary outline-none hover:bg-accent hover:text-accent-foreground"
+                      onclick={(e) => {
+                        e.stopPropagation();
+                        item.onClick();
+                      }}
+                      data-testid="add-compound-button"
+                    >
+                      <svg
+                        xmlns="http://www.w3.org/2000/svg"
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        fill="none"
+                        stroke="currentColor"
+                        stroke-width="2"
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                      >
+                        <line x1="12" y1="5" x2="12" y2="19" />
+                        <line x1="5" y1="12" x2="19" y2="12" />
+                      </svg>
+                      {item.label ?? "+ Add compound"}
+                    </button>
+                  {:else}
+                    {#if item.isElectron}
+                      {#if itemIndex > 0}
+                        <Combobox.Separator class="my-1 border-t border-muted" />
+                      {/if}
+                    {/if}
+                    <Combobox.Item
+                      value={String(item.entity.id)}
+                      disabled={!item.available}
+                      label={item.label}
+                      title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
+                      class={cn(
+                        "relative flex cursor-default select-none items-center justify-between rounded-sm px-2 py-1.5 text-sm outline-none data-[highlighted]:bg-accent data-[highlighted]:text-accent-foreground",
+                        !item.available && "cursor-not-allowed opacity-50",
+                      )}
+                      data-disabled={!item.available ? "" : undefined}
+                    >
+                      <span class="flex items-center gap-2">
+                        {item.label}
+                        {#if item.description}
+                          <span class="text-xs text-muted-foreground" data-testid="item-description"
+                            >{item.description}</span
+                          >
+                        {/if}
+                      </span>
+                      <div class="flex items-center gap-1">
+                        {#if item.entity.id === selectedId}
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="16"
+                            height="16"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            class="shrink-0 text-primary"
+                            aria-label="Selected"
+                          >
+                            <polyline points="20 6 9 17 4 12" />
+                          </svg>
+                        {/if}
+                        {#if item.actions}
+                          {#each item.actions as action (action.label)}
+                            <button
+                              type="button"
+                              class="rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-foreground"
+                              title={action.label}
+                              onclick={(e) => {
+                                e.stopPropagation();
+                                open = false;
+                                action.onClick();
+                              }}
+                            >
+                              {#if action.icon === "edit" || action.icon === "delete"}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                >
+                                  <path
+                                    d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
+                                  />
+                                </svg>
+                              {:else}
+                                <svg
+                                  xmlns="http://www.w3.org/2000/svg"
+                                  width="14"
+                                  height="14"
+                                  viewBox="0 0 24 24"
+                                  fill="none"
+                                  stroke="currentColor"
+                                  stroke-width="2"
+                                  stroke-linecap="round"
+                                  stroke-linejoin="round"
+                                >
+                                  <polyline points="3 6 5 6 21 6" />
+                                  <path
+                                    d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"
+                                  />
+                                </svg>
+                              {/if}
+                            </button>
+                          {/each}
+                        {/if}
+                      </div>
+                    </Combobox.Item>
+                  {/if}
+                {/each}
+              </Combobox.Group>
+            {/each}
+          {/if}
         </div>
+      </div>
     </Combobox.ContentStatic>
   </Combobox.Root>
 </div>

@@ -15,6 +15,7 @@ interface PlotStateView {
 
 interface ExportEntity {
   name: string;
+  id?: number | string;
 }
 
 interface EntitySelectionView {

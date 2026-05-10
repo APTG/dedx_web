@@ -18,6 +18,10 @@ import type { ParticleEntity } from "$lib/wasm/types";
 import { debounce } from "$lib/utils/debounce";
 import { advancedOptions } from "./advanced-options.svelte";
 import { isAdvancedMode } from "./advanced-mode.svelte";
+import {
+  customMaterialElementsForWasm,
+  isCustomMaterial,
+} from "$lib/utils/custom-compound-material";
 
 export interface CalculatedRow {
   id: number;
@@ -148,6 +152,9 @@ export function createCalculatorState(
 
   function getStpDisplayUnit(): StpUnit {
     const material = entitySelection.selectedMaterial;
+    if (isCustomMaterial(material)) {
+      return material.isGasByDefault ? "MeV·cm²/g" : "keV/µm";
+    }
     // Aggregate state override may flip the effective aggregate state (Behavior §3).
     // Only apply the override when in Advanced mode — Basic mode always uses
     // the material's built-in aggregate state so switching back to Basic reverts the unit.
@@ -202,7 +209,7 @@ export function createCalculatorState(
     const effectiveUnit: EnergyUnit = conversionUnit;
     const unitFromSuffix = parsed.unit !== null;
 
-    let normalizedMevNucl: number | null = null;
+    let normalizedMevNucl: number;
     try {
       normalizedMevNucl = convertEnergyToMeVperNucl(
         parsed.value,
@@ -268,7 +275,9 @@ export function createCalculatorState(
     try {
       const resolvedProgramId = entitySelection.resolvedProgramId;
       const particleId = entitySelection.selectedParticle?.id;
-      const materialId = entitySelection.selectedMaterial?.id;
+      const material = entitySelection.selectedMaterial;
+      const materialId = material?.id;
+      const customMaterial = isCustomMaterial(material) ? material : null;
 
       if (!resolvedProgramId || !particleId || !materialId) {
         calculationResults = new Map();
@@ -279,20 +288,39 @@ export function createCalculatorState(
       const energyValues = energies.map((e) => e.energy);
       // Only pass advanced options to WASM in Advanced mode — Basic mode uses
       // defaults so switching back to Basic always reverts to default behaviour.
-      const calculationOptions = isAdvancedMode.value ? advancedOptions.value : undefined;
-      const result = service.calculate(
-        resolvedProgramId,
-        particleId,
-        materialId,
-        energyValues,
-        calculationOptions,
-      );
+      const calculationOptions =
+        isAdvancedMode.value && !customMaterial ? advancedOptions.value : undefined;
+      const result = customMaterial
+        ? service.calculateCustomCompound({
+            programId: resolvedProgramId,
+            particleId,
+            elements: customMaterialElementsForWasm(customMaterial),
+            density: customMaterial.density,
+            iValue: customMaterial.iValue,
+            energies: energyValues,
+          })
+        : typeof materialId === "number"
+          ? service.calculate(
+              resolvedProgramId,
+              particleId,
+              materialId,
+              energyValues,
+              calculationOptions,
+            )
+          : null;
 
-      const material = entitySelection.selectedMaterial;
+      if (!result) {
+        calculationResults = new Map();
+        isCalculating = false;
+        return;
+      }
+
       // Use the density override only in Advanced mode; Basic mode always uses
       // the material's built-in density so switching back reverts the value.
       const density =
-        (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
+        (isAdvancedMode.value && !customMaterial
+          ? advancedOptions.value.densityOverride
+          : undefined) ??
         material?.density ??
         1;
 

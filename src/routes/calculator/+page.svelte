@@ -24,6 +24,12 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+  import {
+    customMaterialElementsForWasm,
+    customMaterialUrlFields,
+    isCustomMaterial,
+  } from "$lib/utils/custom-compound-material";
+  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
@@ -53,6 +59,51 @@
   let urlInitialized = $state(false);
   let multiProgState = $state<MultiProgramState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
+  let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
+  let sharedUrlWarning = $state<string | null>(null);
+
+  function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
+    sharedUrlWarning = urlState.fromUrlWarning ?? null;
+    if (
+      !urlState.materialIsCustom ||
+      !urlState.matName ||
+      urlState.matDensity === undefined ||
+      !urlState.matElements?.length
+    ) {
+      return null;
+    }
+
+    const compound = customCompounds.addTransient({
+      name: urlState.matName,
+      density: urlState.matDensity,
+      iValue: urlState.matIval,
+      elements: urlState.matElements,
+      phase: urlState.matPhase ?? "condensed",
+    });
+    sharedUrlCompound = compound;
+    return compound;
+  }
+
+  function saveSharedUrlCompound() {
+    if (!sharedUrlCompound || !entityState) return;
+    const result = customCompounds.create({
+      name: sharedUrlCompound.name,
+      density: sharedUrlCompound.density,
+      iValue: sharedUrlCompound.iValue,
+      elements: sharedUrlCompound.elements,
+      phase: sharedUrlCompound.phase,
+    });
+    if (result.success) {
+      customCompounds.removeTransient(sharedUrlCompound.id);
+      entityState.selectMaterial(result.compound.id);
+      sharedUrlCompound = null;
+    }
+  }
+
+  function dismissSharedUrlCompound() {
+    sharedUrlCompound = null;
+    sharedUrlWarning = null;
+  }
 
   $effect(() => {
     // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
@@ -85,7 +136,12 @@
         // Select particle/material/program FIRST before initializing rows
         // This ensures entitySelection.isComplete is true when validation runs
         if (urlState.particleId !== null) entityState.selectParticle(urlState.particleId);
-        if (urlState.materialId !== null) entityState.selectMaterial(urlState.materialId);
+        const customFromUrl = restoreCustomCompoundFromUrl(urlState);
+        if (customFromUrl) {
+          entityState.selectMaterial(customFromUrl.id);
+        } else if (urlState.materialId !== null) {
+          entityState.selectMaterial(urlState.materialId);
+        }
         if (urlState.programId !== null) entityState.selectProgram(urlState.programId);
         calcState.setMasterUnit(urlState.masterUnit);
         if (page.url.searchParams.has("energies") && calcState) {
@@ -233,12 +289,19 @@
       }
     }
 
+    const selectedMaterial = entityState.selectedMaterial;
+    const customUrlFields = isCustomMaterial(selectedMaterial)
+      ? customMaterialUrlFields(selectedMaterial)
+      : {};
+
     const urlState = {
       particleId: entityState.selectedParticle?.id ?? null,
-      materialId: entityState.selectedMaterial?.id ?? null,
+      materialId:
+        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
       programId: entityState.resolvedProgramId,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
+      ...customUrlFields,
       // Include advanced mode state when active
       ...(multiProgState
         ? {
@@ -559,7 +622,9 @@
     if (selectedProgramIds.length === 0) return;
 
     const particleId = entityState.selectedParticle?.id;
-    const materialId = entityState.selectedMaterial?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
     if (particleId === null || materialId === null) return;
 
     const validRows = calcState.rows.filter(
@@ -576,7 +641,13 @@
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
     // overwrite the current state with results computed for different inputs.
-    const inputSnapshot = { selectedProgramIds, particleId, materialId, energies };
+    const inputSnapshot = {
+      selectedProgramIds,
+      particleId,
+      materialId,
+      energies,
+      customMaterial,
+    };
     let cancelled = false;
 
     // Debounce the calculation
@@ -585,13 +656,37 @@
       const service = await getService();
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
-      const results = service.calculateMulti({
-        programIds: inputSnapshot.selectedProgramIds,
-        particleId: inputSnapshot.particleId,
-        materialId: inputSnapshot.materialId,
-        energies: inputSnapshot.energies,
-        options: advOptsSnapshot,
-      });
+      const results = new Map();
+      if (inputSnapshot.customMaterial) {
+        for (const programId of inputSnapshot.selectedProgramIds) {
+          try {
+            results.set(
+              programId,
+              service.calculateCustomCompound({
+                programId,
+                particleId: inputSnapshot.particleId,
+                elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
+                density: inputSnapshot.customMaterial.density,
+                iValue: inputSnapshot.customMaterial.iValue,
+                energies: inputSnapshot.energies,
+              }),
+            );
+          } catch (e) {
+            results.set(programId, e instanceof Error ? e : new Error(String(e)));
+          }
+        }
+      } else if (typeof inputSnapshot.materialId === "number") {
+        const builtInResults = service.calculateMulti({
+          programIds: inputSnapshot.selectedProgramIds,
+          particleId: inputSnapshot.particleId,
+          materialId: inputSnapshot.materialId,
+          energies: inputSnapshot.energies,
+          options: advOptsSnapshot,
+        });
+        for (const [programId, result] of builtInResults) {
+          results.set(programId, result);
+        }
+      }
 
       if (!cancelled) {
         multiProgState.setComparisonResults(results);
@@ -615,7 +710,9 @@
     const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = entityState.selectedParticle?.id;
-    const materialId = entityState.selectedMaterial?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
     const programId = entityState.resolvedProgramId;
     const rowsSnapshot = inverseLookupState.rangeRows.map((r) => ({
       id: r.id,
@@ -642,7 +739,11 @@
       if (cancelled) return;
 
       const material = entityState?.selectedMaterial;
-      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
+      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const density =
+        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
+        material?.density ??
+        1;
 
       if (density <= 0) {
         // Mark all non-empty rows as invalid due to missing density
@@ -663,13 +764,25 @@
       });
 
       try {
-        const results: (InverseCsdaResult | Error)[] = service.getInverseCsda({
-          programId,
-          particleId,
-          materialId,
-          ranges: rangesGcm2,
-          options: advOptsSnapshot,
-        });
+        const results: (InverseCsdaResult | Error)[] =
+          customMaterial || currentCustomMaterial
+            ? service.getInverseCsdaCustomCompound({
+                programId,
+                particleId,
+                elements: customMaterialElementsForWasm((customMaterial ?? currentCustomMaterial)!),
+                density,
+                iValue: (customMaterial ?? currentCustomMaterial)!.iValue,
+                ranges: rangesGcm2,
+              })
+            : typeof materialId === "number"
+              ? service.getInverseCsda({
+                  programId,
+                  particleId,
+                  materialId,
+                  ranges: rangesGcm2,
+                  options: advOptsSnapshot,
+                })
+              : [];
 
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {
@@ -709,7 +822,9 @@
     const _stpMasterUnit = inverseLookupState.stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = entityState.selectedParticle?.id;
-    const materialId = entityState.selectedMaterial?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
     const programId = entityState.resolvedProgramId;
     const rowsSnapshot = inverseLookupState.stpRows.map((r) => ({
       id: r.id,
@@ -734,31 +849,59 @@
       if (cancelled) return;
 
       const material = entityState?.selectedMaterial;
-      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
+      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const density =
+        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
+        material?.density ??
+        1;
 
       // Convert to MeV·cm²/g
       const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
 
       try {
-        // Call for low branch (side=0)
-        const lowResults = service.getInverseStp({
-          programId,
-          particleId,
-          materialId,
-          stoppingPowers: stpMevCm2g,
-          side: 0,
-          options: advOptsSnapshot,
-        });
+        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
+        // Call for low/high branches
+        const lowResults = activeCustomMaterial
+          ? service.getInverseStpCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              stoppingPowers: stpMevCm2g,
+              side: 0,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseStp({
+                programId,
+                particleId,
+                materialId,
+                stoppingPowers: stpMevCm2g,
+                side: 0,
+                options: advOptsSnapshot,
+              })
+            : [];
 
-        // Call for high branch (side=1)
-        const highResults = service.getInverseStp({
-          programId,
-          particleId,
-          materialId,
-          stoppingPowers: stpMevCm2g,
-          side: 1,
-          options: advOptsSnapshot,
-        });
+        const highResults = activeCustomMaterial
+          ? service.getInverseStpCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              stoppingPowers: stpMevCm2g,
+              side: 1,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseStp({
+                programId,
+                particleId,
+                materialId,
+                stoppingPowers: stpMevCm2g,
+                side: 1,
+                options: advOptsSnapshot,
+              })
+            : [];
 
         let resultIdx = 0;
         for (const r of inverseLookupState.stpRows) {
@@ -923,7 +1066,9 @@
                 >
                   <div class="space-y-2">
                     {#each multiProgState.selectedProgramIds as programId (programId)}
-                      {@const program = entityState.availablePrograms.find((p) => p.id === programId)}
+                      {@const program = entityState.availablePrograms.find(
+                        (p) => p.id === programId,
+                      )}
                       {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
                       {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
                       <label
@@ -996,6 +1141,7 @@
                 ? "gas"
                 : "condensed"
               : undefined}
+            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}
@@ -1038,6 +1184,28 @@
           >
             ×
           </button>
+        </div>
+      {/if}
+      {#if sharedUrlCompound || sharedUrlWarning}
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 rounded border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-900"
+          data-testid="compound-from-url-banner"
+        >
+          <span role="status" aria-live="polite">
+            {#if sharedUrlCompound}
+              Loaded custom compound “{sharedUrlCompound.name}” from shared URL.
+            {:else}
+              Custom compound URL parameters could not be restored: {sharedUrlWarning}
+            {/if}
+          </span>
+          <div class="flex items-center gap-2">
+            {#if sharedUrlCompound}
+              <Button size="sm" variant="outline" onclick={saveSharedUrlCompound}>
+                Save to library
+              </Button>
+            {/if}
+            <Button size="sm" variant="ghost" onclick={dismissSharedUrlCompound}>Dismiss</Button>
+          </div>
         </div>
       {/if}
       <EnergyUnitSelector
@@ -1312,7 +1480,8 @@
             <!-- Valid STP range hint -->
             {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
-                Particle/material: {entityState.selectedParticle?.name} in {entityState.selectedMaterial?.name}
+                Particle/material: {entityState.selectedParticle?.name} in {entityState
+                  .selectedMaterial?.name}
               </p>
             {/if}
           </div>

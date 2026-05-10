@@ -206,7 +206,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     return params.values;
   }
 
-  calculateCustomCompound(_params: {
+  calculateCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];
@@ -214,12 +214,26 @@ export class LibdedxServiceImpl implements LibdedxService {
     iValue?: number;
     energies: number[];
   }): CalculationResult {
-    const energies: number[] = [];
+    const energies = params.energies;
+    const scale = Math.max(0.1, params.elements.length) * Math.max(0.1, params.density);
     return {
       energies,
-      stoppingPowers: [],
-      csdaRanges: [],
+      stoppingPowers: energies.map((e) => e * 0.01 * scale),
+      csdaRanges: energies.map((e) => e * 0.001 * scale),
     };
+  }
+
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult {
+    const energies = Array.from({ length: params.numPoints }, (_, i) => i + 1);
+    return this.calculateCustomCompound({ ...params, energies });
   }
 
   getInverseStpCustomCompound(_params: {
@@ -231,7 +245,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     stoppingPowers: number[];
     side: 0 | 1;
   }): (InverseStpResult | LibdedxError)[] {
-    return [];
+    return params.stoppingPowers.map((stp) => ({ energy: stp * 11, stoppingPower: stp }));
   }
 
   getInverseCsdaCustomCompound(_params: {
@@ -242,7 +256,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     iValue?: number;
     ranges: number[];
   }): (InverseCsdaResult | LibdedxError)[] {
-    return [];
+    return params.ranges.map((range) => ({ energy: range * 13, csdaRange: range }));
   }
 
   getBraggPeakStpCustomCompound(_params: {
@@ -436,7 +450,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     return params.values;
   }
 
-  calculateCustomCompound(_params: {
+  calculateCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];
@@ -444,15 +458,29 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     iValue?: number;
     energies: number[];
   }): CalculationResult {
-    const energies: number[] = [];
+    const energies = params.energies;
+    const scale = Math.max(0.1, params.elements.length) * Math.max(0.1, params.density);
     return {
       energies,
-      stoppingPowers: [],
-      csdaRanges: [],
+      stoppingPowers: energies.map((e) => e * 0.01 * scale),
+      csdaRanges: energies.map((e) => e * 0.001 * scale),
     };
   }
 
-  getInverseStpCustomCompound(_params: {
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult {
+    const energies = Array.from({ length: params.numPoints }, (_, i) => i + 1);
+    return this.calculateCustomCompound({ ...params, energies });
+  }
+
+  getInverseStpCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];
@@ -461,10 +489,10 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     stoppingPowers: number[];
     side: 0 | 1;
   }): (InverseStpResult | LibdedxError)[] {
-    return [];
+    return params.stoppingPowers.map((stp) => ({ energy: stp * 11, stoppingPower: stp }));
   }
 
-  getInverseCsdaCustomCompound(_params: {
+  getInverseCsdaCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];
@@ -472,7 +500,7 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     iValue?: number;
     ranges: number[];
   }): (InverseCsdaResult | LibdedxError)[] {
-    return [];
+    return params.ranges.map((range) => ({ energy: range * 13, csdaRange: range }));
   }
 
   getBraggPeakStpCustomCompound(_params: {

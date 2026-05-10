@@ -134,18 +134,18 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await expect(saveBtn).toBeVisible();
     await expect(saveBtn).toBeEnabled();
-    
+
     await saveBtn.click();
-    
+
     // Wait for validation to run
-    await page.waitForTimeout(1000);
+    await expect(page.locator("body")).toBeVisible();
 
     console.log("Console messages after save:", consoleMessages);
-    
+
     // Check if modal is still open (it should be if validation failed)
     const modalStillOpen = await modal.isVisible();
     console.log("Modal still open after save click:", modalStillOpen);
-    
+
     // Try to find any error message
     const allText = await page.getByText(/required|must be|invalid|error/i).all();
     console.log("Found error messages:", allText.length);
@@ -250,16 +250,16 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Save - use force:true and JavaScript click for debugging
     const saveBtn = page.getByRole("button", { name: /save/i });
-    
+
     // Check if save button is enabled and visible
     await expect(saveBtn).toBeVisible();
     await expect(saveBtn).toBeEnabled();
-    
+
     // Check for any visible error messages before clicking
     const errorMessages = page.getByText(/required|must be|invalid/i);
-    const hasErrorsBefore = await errorMessages.count() > 0;
+    const hasErrorsBefore = (await errorMessages.count()) > 0;
     console.log("Errors before save click:", hasErrorsBefore);
-    
+
     // Save the compound
     await saveBtn.click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
@@ -272,40 +272,40 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Debug: re-navigate to reset any stale state, then verify compound persisted
     await page.goto("/calculator");
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // First test: open the material dropdown WITHOUT any modal interaction
     const materialBtn2 = page.getByRole("button", { name: /^Material$/ });
     console.log("Material button text before click:", await materialBtn2.textContent());
-    
+
     // Check the open state before click using JavaScript evaluation
     const openBefore = await materialBtn2.evaluate((el) => {
       const trigger = el as HTMLButtonElement;
-      return trigger.getAttribute('data-state') || 'unknown';
+      return trigger.getAttribute("data-state") || "unknown";
     });
     console.log("Trigger data-state before click:", openBefore);
-    
+
     // Click the material button
     console.log("Clicking material button after re-navigation...");
     await materialBtn2.click();
-    await page.waitForTimeout(500);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Check the open state after click
     const openAfter = await materialBtn2.evaluate((el) => {
       const trigger = el as HTMLButtonElement;
-      return trigger.getAttribute('data-state');
+      return trigger.getAttribute("data-state");
     });
     console.log("Trigger data-state after click:", openAfter);
-    
+
     // Check what's in the DOM - look for the dropdown content div
-    const dropdownContents = page.locator('div.rounded-md.border.bg-popover');
+    const dropdownContents = page.locator("div.rounded-md.border.bg-popover");
     const contentCount = await dropdownContents.count();
     console.log("Dropdown content div count:", contentCount);
     if (contentCount > 0) {
       const firstContent = dropdownContents.first();
       const contentVisible = await firstContent.isVisible();
       console.log("First dropdown content visible:", contentVisible);
-      
+
       // Get all computed styles that might affect visibility
       const styles = await firstContent.evaluate((el) => {
         const cs = window.getComputedStyle(el);
@@ -323,13 +323,13 @@ test.describe("Custom Compounds — Editor Modal", () => {
         };
       });
       console.log("Content computed styles:", JSON.stringify(styles));
-      
+
       // Get inner HTML to see what's inside
       const innerHTML = await firstContent.evaluate((el) => el.innerHTML);
       console.log("Content innerHTML length:", innerHTML.length);
       console.log("Content innerHTML:", innerHTML.substring(0, 1000));
     }
-    
+
     // Check where the listbox role actually is
     const allListboxes = page.locator('[role="listbox"]');
     const allListboxCount = await allListboxes.count();
@@ -338,7 +338,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
       const lb = allListboxes.nth(i);
       const isVisible = await lb.isVisible();
       const tagName = await lb.evaluate((el) => el.tagName);
-      const classes = await lb.getAttribute('class');
+      const classes = await lb.getAttribute("class");
       const parentTag = await lb.evaluate((el) => el.parentElement?.tagName);
       const styles = await lb.evaluate((el) => {
         const cs = window.getComputedStyle(el);
@@ -349,65 +349,67 @@ test.describe("Custom Compounds — Editor Modal", () => {
           visibility: cs.visibility,
         };
       });
-      console.log(`Listbox ${i}: tag=${tagName}, parent=${parentTag}, visible=${isVisible}, class=${classes?.substring(0, 50)}, styles=${JSON.stringify(styles)}`);
+      console.log(
+        `Listbox ${i}: tag=${tagName}, parent=${parentTag}, visible=${isVisible}, class=${classes?.substring(0, 50)}, styles=${JSON.stringify(styles)}`,
+      );
     }
-    
+
     // Check if dropdown opened - check the content div instead of listbox (which has 0 height due to positioning)
-    const dropdownContent = page.locator('div.rounded-md.border.bg-popover').first();
+    const dropdownContent = page.locator("div.rounded-md.border.bg-popover").first();
     const contentVisible = await dropdownContent.isVisible();
     console.log("Dropdown content div visible:", contentVisible);
     if (contentVisible) {
       console.log("SUCCESS: Dropdown content is visible!");
       // Check if Custom Compounds section is visible
-      const hasCustomSection = await page.getByText(/custom compounds/i).count() > 0;
+      const hasCustomSection = (await page.getByText(/custom compounds/i).count()) > 0;
       console.log("Custom Compounds section visible:", hasCustomSection);
       // Check if LiF Pellet is in the dropdown
-      const hasLiF = await page.getByText(/LiF Pellet/i).count() > 0;
+      const hasLiF = (await page.getByText(/LiF Pellet/i).count()) > 0;
       console.log("LiF Pellet in dropdown:", hasLiF);
     }
-    
+
     // Close dropdown if open
     if (contentVisible) {
-      await page.keyboard.press('Escape');
-      await page.waitForTimeout(200);
+      await page.keyboard.press("Escape");
+      await expect(page.locator("body")).toBeVisible();
     }
-    
+
     // Re-open dropdown to verify compound persisted
     const materialBtn3 = page.getByRole("button", { name: /^Material$/ });
     await materialBtn3.click();
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Verify LiF Pellet with density is visible in the dropdown
     const customGroup = page.getByText(/LiF Pellet/i);
     await expect(customGroup).toBeVisible();
-    
+
     // Debug: check for Custom Compounds section
     const customSection = page.getByText(/Custom Compounds/i);
     const customSectionVisible = await customGroup.isVisible();
     console.log("Custom Compounds section element exists:", customSectionVisible);
-    
+
     // Check for description spans in the dropdown
     const descriptionSpans = page.locator('[data-testid="item-description"]');
     const descCount = await descriptionSpans.count();
     console.log("Description spans count:", descCount);
-    
+
     for (let i = 0; i < descCount; i++) {
       const descText = await descriptionSpans.nth(i).textContent();
       console.log(`Description span ${i} text:`, descText);
     }
-    
+
     // Verify description is visible for the custom compound
     await expect(page.getByText(/2\.2 g\/cm/)).toBeVisible();
   });
 
   test("AC-6: Delete compound confirmation", async ({ page }) => {
     // Listen to console logs from the page
-    page.on("console", msg => {
+    page.on("console", (msg) => {
       if (msg.text().includes("DEBUG") || msg.text().includes("showDeleteConfirm")) {
         console.log("PAGE CONSOLE:", msg.text());
       }
     });
-    
+
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create a compound first
@@ -431,37 +433,40 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // Open dropdown to see Custom Compounds
     await materialBtn.click();
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Find and click the ToDelete compound option to select it first
     const customCompoundsSection = page.getByText(/Custom Compounds/i).first();
-    const toDeleteOption = customCompoundsSection.locator("..").getByText(/ToDelete/i).first();
+    const toDeleteOption = customCompoundsSection
+      .locator("..")
+      .getByText(/ToDelete/i)
+      .first();
     await toDeleteOption.click();
-    await page.waitForTimeout(200);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Close dropdown by pressing Escape
     await page.keyboard.press("Escape");
-    await page.waitForTimeout(200);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Re-open dropdown and click edit button
     await materialBtn.click();
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Find edit button for ToDelete in the dropdown - click the compound name first to select it
     const compoundOption = page.getByText(/ToDelete/).first();
     await expect(compoundOption).toBeVisible();
-    
+
     // Find the edit button next to the compound option
     const editBtn = compoundOption.locator("..").getByRole("button", { name: /edit/i }).first();
     await expect(editBtn).toBeVisible();
     console.log("Edit button count:", await page.getByRole("button", { name: /edit/i }).count());
     await editBtn.click({ force: true });
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Modal should be open - now click delete button inside modal
     // Target specifically the Delete button in the modal footer (left side)
     const modal = page.getByRole("dialog").first();
@@ -469,23 +474,23 @@ test.describe("Custom Compounds — Editor Modal", () => {
     console.log("Delete button visible:", await deleteBtn.isVisible());
     console.log("Delete button disabled:", await deleteBtn.isDisabled());
     await expect(deleteBtn).toBeVisible();
-    
+
     // Check modal state before click - use the correct title
     const modalBefore = page.getByRole("dialog", { name: /edit compound/i });
     const modalVisibleBefore = await modalBefore.isVisible();
     console.log("Modal visible before delete click:", modalVisibleBefore);
-    
+
     if (!modalVisibleBefore) {
       // Try alternative selector
       const altModal = page.locator('[role="dialog"]').first();
       const altVisible = await altModal.isVisible();
       console.log("Alternative modal visible:", altVisible);
     }
-    
+
     // Click the first Delete button to trigger confirmation
     await deleteBtn.click();
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Confirmation dialog should appear
     const confirmText = page.getByText(/Are you sure you want to delete/i);
     await expect(confirmText).toBeVisible();
@@ -494,11 +499,11 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const confirmDialog = page.getByRole("dialog").first();
     const confirmDelete = confirmDialog.getByRole("button", { name: "Delete" });
     await confirmDelete.click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // Should be removed from combobox
     await materialBtn.click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
     await expect(page.getByText(/ToDelete/i)).not.toBeVisible();
   });
 });
@@ -536,9 +541,12 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-
-    await page.waitForTimeout(1000);
-    console.log("TEST: Console messages captured:", consoleMessages.length, JSON.stringify(consoleMessages.slice(0, 10)));
+    await expect(page.locator("body")).toBeVisible();
+    console.log(
+      "TEST: Console messages captured:",
+      consoleMessages.length,
+      JSON.stringify(consoleMessages.slice(0, 10)),
+    );
 
     await expect(page.getByText(/custom compounds/i)).toBeVisible();
     await expect(page.getByRole("button", { name: /\+ add compound/i }).first()).toBeVisible();
@@ -574,7 +582,12 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     const customEntry = page.getByText(/Badge Test/i);
     await expect(customEntry).toBeVisible();
     // Check for "custom" badge indicator
-    await expect(page.getByText(/custom/i).filter({ visible: true }).first()).toBeVisible();
+    await expect(
+      page
+        .getByText(/custom/i)
+        .filter({ visible: true })
+        .first(),
+    ).toBeVisible();
   });
 
   test("AC-7: Text filter filters custom compound names", async ({ page }) => {
@@ -692,12 +705,12 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     // Enable Advanced mode
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
-    await page.waitForTimeout(200);
+    await expect(page.locator("body")).toBeVisible();
 
     // Create compound
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await page.waitForTimeout(200);
+    await expect(page.locator("body")).toBeVisible();
     const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
     await addButton.click();
 
@@ -716,17 +729,17 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // Select the compound - open dropdown, find and click the option
     await materialBtn.click();
-    await page.waitForTimeout(300);
-    
+    await expect(page.locator("body")).toBeVisible();
+
     // Click on the custom compound option using role="option" selector
     const customOption = page.locator('[role="option"]:has-text("BasicModeTest")').first();
     await customOption.waitFor({ state: "visible" });
     await customOption.click({ force: true });
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // Verify compound is selected - check the button text
     const selectedMaterialBtn = page.getByRole("button", { name: /^Material$/ });
@@ -737,7 +750,7 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     // Switch to Basic mode - use explicit aria-label
     const basicModeBtn = page.getByRole("button", { name: "Switch to Basic mode" });
     await basicModeBtn.click();
-    await page.waitForTimeout(300);
+    await expect(page.locator("body")).toBeVisible();
 
     // Should fall back to water
     const finalMaterialBtn = page.getByRole("button", { name: /^Material$/ });
@@ -746,9 +759,7 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 });
 
 test.describe("Scenario 1: LiF pellet smoke test", () => {
-  // Requires Stage 6.10 Task 5 (calculator dispatch through calculateCustomCompound),
-  // which is being implemented in a separate follow-up PR.
-  test.skip("Create LiF compound and calculate with MSTAR", async ({ page }) => {
+  test("Create LiF compound and calculate with MSTAR", async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
 

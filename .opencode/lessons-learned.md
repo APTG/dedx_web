@@ -521,5 +521,21 @@ an emergency fallback when no merge-base exists.
 
 ---
 
+## Entry 22 — Do not hide missing feature work behind skipped acceptance tests
+
+**Symptom:** The LiF custom-compound E2E smoke test was skipped because Calculator
+dispatch to `calculateCustomCompound` had not been wired yet.
+
+**Root cause:** The test correctly described Stage 6.10 acceptance behavior, but
+the implementation stopped at editor/URL plumbing and deferred the calculation
+path.
+
+**Rule:** If an acceptance test depends on a remaining task in the same feature
+scope, implement the missing task and re-enable the test before marking the
+feature complete. Use `test.skip()` only for behavior explicitly outside the
+current feature scope.
+
+---
+
 _Last updated: 2026-05-10. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

@@ -36,11 +36,11 @@ export interface PlotUrlInput {
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
-  matName?: string;
-  matDensity?: number;
-  matElements?: MatElementUrl[];
-  matIval?: number;
-  matPhase?: "gas" | "condensed";
+  matName?: string | undefined;
+  matDensity?: number | undefined;
+  matElements?: MatElementUrl[] | undefined;
+  matIval?: number | undefined;
+  matPhase?: "gas" | "condensed" | undefined;
 }
 
 export interface PlotUrlDecoded {
@@ -55,12 +55,12 @@ export interface PlotUrlDecoded {
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
-  matName?: string;
-  matDensity?: number;
-  matElements?: MatElementUrl[];
-  matIval?: number;
-  matPhase?: "gas" | "condensed";
-  fromUrlWarning?: string; // Set by decoder when validation fails
+  matName?: string | undefined;
+  matDensity?: number | undefined;
+  matElements?: MatElementUrl[] | undefined;
+  matIval?: number | undefined;
+  matPhase?: "gas" | "condensed" | undefined;
+  fromUrlWarning?: string | undefined; // Set by decoder when validation fails
 }
 
 export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
@@ -219,7 +219,12 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
         ? `${fromUrlWarning}; mat_name missing`
         : "mat_name: required";
     }
-    if (matDensity === undefined || !Number.isFinite(matDensity) || matDensity <= 0 || matDensity > 25) {
+    if (
+      matDensity === undefined ||
+      !Number.isFinite(matDensity) ||
+      matDensity <= 0 ||
+      matDensity > 25
+    ) {
       fromUrlWarning = fromUrlWarning
         ? `${fromUrlWarning}; mat_density invalid`
         : "mat_density: required (0, 25]";

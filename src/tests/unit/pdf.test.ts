@@ -57,4 +57,13 @@ describe("buildPdfFilename", () => {
     const filename = pdfModule.buildPdfFilename(particle, makeMockMaterial(), makeMockProgram());
     expect(filename).toBe(filename.toLowerCase());
   });
+
+  test("marks custom compound material filenames", () => {
+    const filename = pdfModule.buildPdfFilename(
+      makeMockParticle(),
+      makeMockMaterial({ id: "cc_test", name: "LiF Pellet" }),
+      makeMockProgram(),
+    );
+    expect(filename).toBe("dedx_calculator_proton_lif_pellet_custom_pstar.pdf");
+  });
 });

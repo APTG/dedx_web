@@ -21,7 +21,10 @@ export interface ProgramEntity extends LibdedxEntity {
 export interface MaterialEntity extends LibdedxEntity {
   density: number;
   isGasByDefault: boolean;
-  atomicNumber?: number;
+  atomicNumber?: number | undefined;
+  elements?: Array<{ atomicNumber: number; atomCount: number }> | undefined;
+  iValue?: number | undefined;
+  phase?: "gas" | "condensed" | undefined;
 }
 
 export interface CalculationResult {
@@ -73,7 +76,7 @@ export interface CustomCompound {
   name: string;
   elements: CompoundElement[];
   density: number;
-  iValue?: number;
+  iValue?: number | undefined;
 }
 
 export interface StoredCompound extends CustomCompound {
@@ -118,6 +121,15 @@ export interface LibdedxService {
     logScale: boolean,
     options?: AdvancedOptions,
   ): CalculationResult;
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number | undefined;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult;
   getMinEnergy(programId: number, particleId: number): number;
   getMaxEnergy(programId: number, particleId: number): number;
   getInverseStp(params: {

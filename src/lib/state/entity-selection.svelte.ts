@@ -34,7 +34,7 @@ export interface EntitySelectionState {
   lastAutoFallbackMessage: string | null;
   selectProgram(programId: number): void;
   selectParticle(particleId: number | null): void;
-  selectMaterial(materialId: number | null): void;
+  selectMaterial(materialId: number | string | null): void;
   clearParticle(): void;
   clearMaterial(): void;
   resetAll(): void;
@@ -83,11 +83,18 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let selectedProgramId = $state<number>(-1);
   let lastAutoFallbackMessage = $state<string | null>(null);
 
-  function resolveAutoSelect(particleId: number | null, materialId: number | string | null): number | null {
+  function resolveAutoSelect(
+    particleId: number | null,
+    materialId: number | string | null,
+  ): number | null {
     if (particleId === null || materialId === null) return null;
     if (particleId === ELECTRON_ID) return null;
     const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
-    const availablePrograms = getAvailablePrograms(matrix, particleId, materialId);
+    const availablePrograms = getAvailablePrograms(
+      matrix,
+      particleId,
+      typeof materialId === "number" ? materialId : undefined,
+    );
     const availableProgramIds = new Set(availablePrograms.map((program) => program.id));
     // Preferred chain first (accuracy-ordered for this particle type).
     for (const pid of chain) {
@@ -112,7 +119,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     return getAvailablePrograms(
       matrix,
       selectedParticleId ?? undefined,
-      selectedMaterialId ?? undefined,
+      typeof selectedMaterialId === "number" ? selectedMaterialId : undefined,
     );
   }
 
@@ -120,7 +127,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     return getAvailableParticles(
       matrix,
       selectedProgramId === -1 ? undefined : selectedProgramId,
-      selectedMaterialId ?? undefined,
+      typeof selectedMaterialId === "number" ? selectedMaterialId : undefined,
     );
   }
 
@@ -174,11 +181,11 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
     get selectedMaterial(): MaterialEntity | null {
       if (selectedMaterialId === null) return null;
-      
+
       // Check built-in materials first
       const builtinMaterial = matrix.allMaterials.find((m) => m.id === selectedMaterialId);
       if (builtinMaterial) return builtinMaterial;
-      
+
       // Check custom compounds (string id)
       if (typeof selectedMaterialId === "string") {
         const customCompound = customCompounds.compounds.find((c) => c.id === selectedMaterialId);
@@ -194,7 +201,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
           } satisfies MaterialEntity;
         }
       }
-      
+
       return null;
     },
 
@@ -309,7 +316,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       }
     },
 
-    selectMaterial(materialId: number | null): void {
+    selectMaterial(materialId: number | string | null): void {
       if (materialId === null) {
         selectedMaterialId = null;
         return;

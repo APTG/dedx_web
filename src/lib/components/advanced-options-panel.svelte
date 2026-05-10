@@ -30,6 +30,7 @@
     materialBuiltInDensity?: number;
     materialBuiltInAggregateState?: "gas" | "condensed";
     selectedProgram?: string;
+    isCustomCompoundActive?: boolean;
   }
 
   let {
@@ -37,6 +38,7 @@
     materialBuiltInDensity,
     materialBuiltInAggregateState,
     selectedProgram,
+    isCustomCompoundActive = false,
   }: Props = $props();
 
   // Local state for input values and validation
@@ -78,6 +80,9 @@
 
   // Get tooltip text for density based on material type
   function getDensityTooltip(): string {
+    if (isCustomCompoundActive) {
+      return "Custom compounds carry their own density. Edit the compound to change density.";
+    }
     if (materialIsGas) {
       return "Gas density depends on pressure and temperature. The built-in value is at standard conditions (STP). Override for non-standard conditions.";
     }
@@ -123,6 +128,7 @@
 
   // Handle density input change
   function handleDensityChange(event: Event) {
+    if (isCustomCompoundActive) return;
     const input = event.target as HTMLInputElement;
     const value = input.value;
     densityInput = value;
@@ -143,6 +149,7 @@
 
   // Handle I-value input change
   function handleIValueChange(event: Event) {
+    if (isCustomCompoundActive) return;
     const input = event.target as HTMLInputElement;
     const value = input.value;
     iValueInput = value;
@@ -163,6 +170,7 @@
 
   // Clear density override
   function clearDensity() {
+    if (isCustomCompoundActive) return;
     densityInput = "";
     densityError = null;
     delete advancedOptions.value.densityOverride;
@@ -170,6 +178,7 @@
 
   // Clear I-value override
   function clearIValue() {
+    if (isCustomCompoundActive) return;
     iValueInput = "";
     iValueError = null;
     delete advancedOptions.value.iValueOverride;
@@ -177,6 +186,7 @@
 
   // Handle aggregate state toggle
   function handleAggStateChange(newState: AggregateState) {
+    if (isCustomCompoundActive) return;
     const builtInPhase: AggregateState | undefined = materialBuiltInAggregateState;
     if (builtInPhase && newState === builtInPhase) {
       delete advancedOptions.value.aggregateState;
@@ -358,6 +368,10 @@
                   type="text"
                   placeholder={getDensityPlaceholder()}
                   value={densityInput}
+                  disabled={isCustomCompoundActive}
+                  title={isCustomCompoundActive
+                    ? "Custom compounds carry their own density. Edit the compound to change density."
+                    : undefined}
                   oninput={handleDensityChange}
                   class={cn(
                     "pr-16",
@@ -407,6 +421,10 @@
                   type="text"
                   placeholder="e.g., 75.0"
                   value={iValueInput}
+                  disabled={isCustomCompoundActive}
+                  title={isCustomCompoundActive
+                    ? "Custom compounds carry their own I-value. Edit the compound to change it."
+                    : undefined}
                   oninput={handleIValueChange}
                   class={cn(
                     "pr-16",
@@ -458,6 +476,10 @@
               <div class="flex gap-1">
                 <button
                   type="button"
+                  disabled={isCustomCompoundActive}
+                  title={isCustomCompoundActive
+                    ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
+                    : undefined}
                   onclick={() => handleAggStateChange("gas")}
                   class={cn(
                     "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
@@ -471,6 +493,10 @@
                 </button>
                 <button
                   type="button"
+                  disabled={isCustomCompoundActive}
+                  title={isCustomCompoundActive
+                    ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
+                    : undefined}
                   onclick={() => handleAggStateChange("condensed")}
                   class={cn(
                     "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",

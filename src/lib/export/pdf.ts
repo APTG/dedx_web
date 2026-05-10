@@ -8,6 +8,7 @@ import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
  */
 export interface PdfEntity {
   name: string;
+  id?: number | string;
 }
 
 /**
@@ -25,7 +26,9 @@ export function buildPdfFilename(
   }
 
   const p = particle ? slug(particle.name) : "unknown_particle";
-  const m = material ? slug(material.name) : "unknown_material";
+  const customSuffix =
+    material && typeof material.id === "string" && material.id.startsWith("cc_") ? "_custom" : "";
+  const m = material ? `${slug(material.name)}${customSuffix}` : "unknown_material";
   const pr = program ? slug(program.name) : "unknown_program";
   return `dedx_calculator_${p}_${m}_${pr}.pdf`;
 }

@@ -461,6 +461,46 @@ export class LibdedxServiceImpl implements LibdedxService {
     return this.calculate(programId, particleId, materialId, energies, options);
   }
 
+  getPlotDataCustomCompound({
+    programId,
+    particleId,
+    elements,
+    density,
+    iValue,
+    numPoints,
+    logScale,
+  }: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult {
+    const minEnergy = 0.001;
+    const maxEnergy = 1000;
+    const energies: number[] = [];
+
+    for (let i = 0; i < numPoints; i++) {
+      const t = i / (numPoints - 1);
+      energies.push(
+        logScale
+          ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
+          : minEnergy + t * (maxEnergy - minEnergy),
+      );
+    }
+
+    return this.calculateCustomCompound({
+      programId,
+      particleId,
+      elements,
+      density,
+      iValue,
+      energies,
+    });
+  }
+
   getMinEnergy(programId: number, particleId: number): number {
     return this.module._dedx_get_min_energy(programId, particleId);
   }
@@ -755,7 +795,10 @@ export class LibdedxServiceImpl implements LibdedxService {
         const errCode = this.module.HEAP32[errPtr >>> 2];
         if (errCode !== 0 || energy < 0) {
           results.push(
-            new LibdedxError(errCode, `Inverse STP lookup failed for stp=${stp} (energy=${energy})`),
+            new LibdedxError(
+              errCode,
+              `Inverse STP lookup failed for stp=${stp} (energy=${energy})`,
+            ),
           );
         } else {
           results.push({ energy, stoppingPower: stp });
@@ -803,7 +846,10 @@ export class LibdedxServiceImpl implements LibdedxService {
         const errCode = this.module.HEAP32[errPtr >>> 2];
         if (errCode !== 0 || energy < 0) {
           results.push(
-            new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range} (energy=${energy})`),
+            new LibdedxError(
+              errCode,
+              `Inverse CSDA lookup failed for range=${range} (energy=${energy})`,
+            ),
           );
         } else {
           results.push({ energy, csdaRange: range });

@@ -172,6 +172,14 @@ describe("generateCalculatorCsv — filename", () => {
     const { filename } = generateCalculatorCsv(mockValidRows, "keV/µm", mockMeta);
     expect(filename).not.toMatch(/[\s]/);
   });
+
+  test("marks custom compound material filenames", () => {
+    const { filename } = generateCalculatorCsv(mockValidRows, "keV/µm", {
+      ...mockMeta,
+      material: { id: "cc_test", name: "LiF Pellet" },
+    });
+    expect(filename).toBe("dedx_calculator_proton_lif_pellet_custom_pstar.csv");
+  });
 });
 
 describe("generateCalculatorCsv — sanitization", () => {

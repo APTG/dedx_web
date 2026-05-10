@@ -3,7 +3,7 @@ import { COLOR_PALETTE } from "./plot-utils";
 interface SeriesForLabel {
   programId: number;
   particleId: number;
-  materialId: number;
+  materialId: number | string;
   programName: string;
   particleName: string;
   materialName: string;

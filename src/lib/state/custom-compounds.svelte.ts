@@ -8,7 +8,7 @@
  */
 
 import { browser } from "$app/environment";
-import type { CustomCompound, StoredCompound } from "$lib/wasm/types";
+import type { CustomCompound } from "$lib/wasm/types";
 
 /** Compound element with atomic number and atom count */
 export interface CompoundElementEntry {
@@ -32,7 +32,7 @@ export interface StoredCompoundInternal {
   /** Material density in g/cm³ */
   density: number;
   /** Optional mean excitation potential in eV */
-  iValue?: number;
+  iValue?: number | undefined;
   /** Aggregate phase for default unit selection */
   phase: "gas" | "condensed";
   /** Creation timestamp (ISO 8601) */
@@ -208,6 +208,21 @@ export interface CustomCompoundsStore {
   /** Get compound by index */
   get(index: number): StoredCompoundInternal | undefined;
 
+  /** Add a session-only compound reconstructed from a shared URL. */
+  addTransient(params: {
+    name: string;
+    density: number;
+    iValue?: number;
+    elements: Array<{ atomicNumber: number; atomCount: number }>;
+    phase: "gas" | "condensed";
+  }): StoredCompoundInternal;
+
+  /** Remove a session-only compound. */
+  removeTransient(id: string): boolean;
+
+  /** Whether a compound id is session-only and not persisted in localStorage. */
+  isTransient(id: string): boolean;
+
   /**
    * Create a new compound.
    * @returns Success status and either compound or validation errors
@@ -218,7 +233,9 @@ export interface CustomCompoundsStore {
     iValue?: number;
     elements: Array<{ atomicNumber: number; atomCount: number }>;
     phase: "gas" | "condensed";
-  }): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] };
+  }):
+    | { success: true; compound: StoredCompoundInternal }
+    | { success: false; errors: CompoundValidationError[] };
 
   /**
    * Update an existing compound.
@@ -233,7 +250,9 @@ export interface CustomCompoundsStore {
       elements: Array<{ atomicNumber: number; atomCount: number }>;
       phase: "gas" | "condensed";
     },
-  ): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] };
+  ):
+    | { success: true; compound: StoredCompoundInternal }
+    | { success: false; errors: CompoundValidationError[] };
 
   /** Delete a compound by ID. Returns true if found and deleted. */
   delete(id: string): boolean;
@@ -253,10 +272,14 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
   const initial = storage.get();
 
   const compounds = $state<StoredCompoundInternal[]>(initial.compounds);
+  const transientCompounds = $state<StoredCompoundInternal[]>([]);
   const version = $state({ count: 0 });
 
-  const store = {
-    compounds,
+  const store: CustomCompoundsStore = {
+    get compounds(): StoredCompoundInternal[] {
+      void version.count;
+      return [...compounds, ...transientCompounds];
+    },
 
     get count(): number {
       void version.count;
@@ -275,15 +298,51 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
 
     getById(id: string): StoredCompoundInternal | undefined {
       void version.count;
-      return compounds.find((c) => c.id === id);
+      return compounds.find((c) => c.id === id) ?? transientCompounds.find((c) => c.id === id);
     },
 
     get(index: number): StoredCompoundInternal | undefined {
       void version.count;
-      return compounds[index];
+      return [...compounds, ...transientCompounds][index];
     },
 
-    create(params): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] } {
+    addTransient(params): StoredCompoundInternal {
+      const now = new Date().toISOString();
+      const normalizedName = normalizeName(params.name);
+      const compound: StoredCompoundInternal = {
+        id: `cc_url_${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`,
+        name: params.name.trim(),
+        normalizedName,
+        elements: [...params.elements].sort((a, b) => a.atomicNumber - b.atomicNumber),
+        density: params.density,
+        iValue: params.iValue,
+        phase: params.phase,
+        createdAt: now,
+        updatedAt: now,
+      };
+      transientCompounds.push(compound);
+      version.count++;
+      return compound;
+    },
+
+    removeTransient(id: string): boolean {
+      const index = transientCompounds.findIndex((c) => c.id === id);
+      if (index === -1) return false;
+      transientCompounds.splice(index, 1);
+      version.count++;
+      return true;
+    },
+
+    isTransient(id: string): boolean {
+      void version.count;
+      return transientCompounds.some((c) => c.id === id);
+    },
+
+    create(
+      params,
+    ):
+      | { success: true; compound: StoredCompoundInternal }
+      | { success: false; errors: CompoundValidationError[] } {
       const errors = validateCompound(params);
       if (errors.length > 0) {
         return { success: false, errors };
@@ -316,7 +375,9 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
     update(
       id: string,
       params,
-    ): { success: true; compound: StoredCompoundInternal } | { success: false; errors: CompoundValidationError[] } {
+    ):
+      | { success: true; compound: StoredCompoundInternal }
+      | { success: false; errors: CompoundValidationError[] } {
       const existing = compounds.find((c) => c.id === id);
       if (!existing) {
         return {
@@ -355,7 +416,7 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
     delete(id: string): boolean {
       const index = compounds.findIndex((c) => c.id === id);
       if (index === -1) {
-        return false;
+        return this.removeTransient(id);
       }
 
       compounds.splice(index, 1);

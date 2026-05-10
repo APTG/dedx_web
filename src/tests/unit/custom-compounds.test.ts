@@ -15,7 +15,9 @@ const localStorageMock = (() => {
       store[key] = value;
     }),
     removeItem: vi.fn((key: string) => {
-      delete store[key];
+      const { [key]: removed, ...rest } = store;
+      void removed;
+      store = rest;
     }),
     clear: vi.fn(() => {
       store = {};
@@ -281,7 +283,7 @@ describe("custom-compounds", () => {
       if (createResult.success) {
         const updateResult = store.update(createResult.compound.id, {
           name: "PMMA Updated",
-          density: 1.20,
+          density: 1.2,
           elements: [{ atomicNumber: 6, atomCount: 6 }],
           phase: "condensed",
         });
@@ -289,7 +291,7 @@ describe("custom-compounds", () => {
         expect(updateResult.success).toBe(true);
         if (updateResult.success) {
           expect(updateResult.compound.name).toBe("PMMA Updated");
-          expect(updateResult.compound.density).toBe(1.20);
+          expect(updateResult.compound.density).toBe(1.2);
           expect(updateResult.compound.updatedAt).not.toBe(updateResult.compound.createdAt);
         }
       }

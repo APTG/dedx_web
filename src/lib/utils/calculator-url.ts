@@ -162,12 +162,12 @@ export interface CalculatorUrlState {
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
-  matName?: string;
-  matDensity?: number;
-  matElements?: MatElementUrl[];
-  matIval?: number;
-  matPhase?: "gas" | "condensed";
-  fromUrlWarning?: string; // Set by decoder when validation fails
+  matName?: string | undefined;
+  matDensity?: number | undefined;
+  matElements?: MatElementUrl[] | undefined;
+  matIval?: number | undefined;
+  matPhase?: "gas" | "condensed" | undefined;
+  fromUrlWarning?: string | undefined; // Set by decoder when validation fails
 
   /** Inverse lookup fields (optional — only present when encoding/decoding inverse mode) */
   imode?: InverseMode;
@@ -504,7 +504,12 @@ export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState
           ? `${fromUrlWarning}; mat_name missing`
           : "mat_name: required";
       }
-      if (matDensity === undefined || !Number.isFinite(matDensity) || matDensity <= 0 || matDensity > 25) {
+      if (
+        matDensity === undefined ||
+        !Number.isFinite(matDensity) ||
+        matDensity <= 0 ||
+        matDensity > 25
+      ) {
         fromUrlWarning = fromUrlWarning
           ? `${fromUrlWarning}; mat_density invalid`
           : "mat_density: required (0, 25]";
