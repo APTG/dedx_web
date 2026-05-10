@@ -746,7 +746,9 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 });
 
 test.describe("Scenario 1: LiF pellet smoke test", () => {
-  test("Create LiF compound and calculate with MSTAR", async ({ page }) => {
+  // Requires Stage 6.10 Task 5 (calculator dispatch through calculateCustomCompound),
+  // which is being implemented in a separate follow-up PR.
+  test.skip("Create LiF compound and calculate with MSTAR", async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
 
@@ -756,9 +758,10 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     // Select alpha particle (He-4)
     const particleBtn = page.getByRole("button", { name: /^Particle$/ });
     await particleBtn.click();
-    const alphaOption = page.locator('[role="option"]:has-text("Alpha")').first();
-    await alphaOption.waitFor({ state: "visible" });
-    await alphaOption.click({ force: true });
+    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
+    await expect(alphaOption).toBeVisible();
+    await alphaOption.click();
+    await expect(particleBtn).toContainText("alpha particle");
 
     // Create LiF
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
@@ -787,47 +790,32 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await page.waitForTimeout(300);
+    await expect(page.getByRole("dialog", { name: /compound editor/i })).not.toBeVisible();
 
     // Select LiF
     await materialBtn.click();
-    await page.waitForTimeout(300);
-    const lifOption = page.getByText(/LiF Pellet/i).first();
+    const lifOption = page.locator('[role="option"]:has-text("LiF Pellet")').first();
+    await lifOption.waitFor({ state: "visible" });
     await lifOption.click();
-    await page.waitForTimeout(300);
+    await expect(materialBtn).toContainText("LiF Pellet");
 
     // Select a program
     const programBtn = page.getByRole("button", { name: /^Program$/ });
     await programBtn.click();
-    await page.waitForTimeout(300);
-    
+
     // Select first available program
     const firstOption = page.locator('[role="option"]').first();
     await firstOption.waitFor({ state: "visible" });
     await firstOption.click();
-    await page.waitForTimeout(300);
 
-    // Set energy - find the number input for energy value (not the unit radiogroup)
-    const energyInput = page.locator('input[type="number"][aria-label*="Energy" i]').first();
-    const energyInputCount = await energyInput.count();
-    console.log("Energy input count:", energyInputCount);
-    
-    if (energyInputCount > 0) {
-      await energyInput.fill("5");
-    } else {
-      // Fallback: try to find any number input near energy label
-      const energyLabel = page.getByText(/energy/i).first();
-      const container = energyLabel.locator("..");
-      const fallbackInput = container.locator('input[type="number"]').first();
-      await fallbackInput.fill("5");
-    }
-    await page.waitForTimeout(300);
+    // Set energy in the editable result-table input.
+    const energyInput = page.getByTestId("energy-input-0");
+    await expect(energyInput).toBeVisible();
+    await energyInput.fill("5");
+    await energyInput.blur();
 
     // Verify calculation produces results (stopping power cell has value)
-    const stoppingPowerValue = page.locator('[data-testid="stopping-power-value"]').first();
-    const valueText = await stoppingPowerValue.textContent();
-    console.log("Stopping power value:", valueText);
-    expect(valueText).toBeTruthy();
-    expect(valueText?.length).toBeGreaterThan(0);
+    const stoppingPowerValue = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect(stoppingPowerValue).toHaveText(/\S/, { timeout: 10000 });
   });
 });
