@@ -138,7 +138,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await saveBtn.click();
 
     // Wait for validation to run
-    await expect(page.locator("body")).toBeVisible();
 
     console.log("Console messages after save:", consoleMessages);
 
@@ -272,7 +271,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Debug: re-navigate to reset any stale state, then verify compound persisted
     await page.goto("/calculator");
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
-    await expect(page.locator("body")).toBeVisible();
 
     // First test: open the material dropdown WITHOUT any modal interaction
     const materialBtn2 = page.getByRole("button", { name: /^Material$/ });
@@ -288,7 +286,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Click the material button
     console.log("Clicking material button after re-navigation...");
     await materialBtn2.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Check the open state after click
     const openAfter = await materialBtn2.evaluate((el) => {
@@ -371,13 +368,11 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Close dropdown if open
     if (contentVisible) {
       await page.keyboard.press("Escape");
-      await expect(page.locator("body")).toBeVisible();
     }
 
     // Re-open dropdown to verify compound persisted
     const materialBtn3 = page.getByRole("button", { name: /^Material$/ });
     await materialBtn3.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Verify LiF Pellet with density is visible in the dropdown
     const customGroup = page.getByText(/LiF Pellet/i);
@@ -433,11 +428,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Open dropdown to see Custom Compounds
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Find and click the ToDelete compound option to select it first
     const customCompoundsSection = page.getByText(/Custom Compounds/i).first();
@@ -446,15 +439,12 @@ test.describe("Custom Compounds — Editor Modal", () => {
       .getByText(/ToDelete/i)
       .first();
     await toDeleteOption.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Close dropdown by pressing Escape
     await page.keyboard.press("Escape");
-    await expect(page.locator("body")).toBeVisible();
 
     // Re-open dropdown and click edit button
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Find edit button for ToDelete in the dropdown - click the compound name first to select it
     const compoundOption = page.getByText(/ToDelete/).first();
@@ -465,7 +455,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await expect(editBtn).toBeVisible();
     console.log("Edit button count:", await page.getByRole("button", { name: /edit/i }).count());
     await editBtn.click({ force: true });
-    await expect(page.locator("body")).toBeVisible();
 
     // Modal should be open - now click delete button inside modal
     // Target specifically the Delete button in the modal footer (left side)
@@ -489,7 +478,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Click the first Delete button to trigger confirmation
     await deleteBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Confirmation dialog should appear
     const confirmText = page.getByText(/Are you sure you want to delete/i);
@@ -499,11 +487,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const confirmDialog = page.getByRole("dialog").first();
     const confirmDelete = confirmDialog.getByRole("button", { name: "Delete" });
     await confirmDelete.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Should be removed from combobox
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
     await expect(page.getByText(/ToDelete/i)).not.toBeVisible();
   });
 });
@@ -541,7 +527,6 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
     console.log(
       "TEST: Console messages captured:",
       consoleMessages.length,
@@ -705,12 +690,10 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     // Enable Advanced mode
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Create compound
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
     const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
     await addButton.click();
 
@@ -729,17 +712,14 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Select the compound - open dropdown, find and click the option
     await materialBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Click on the custom compound option using role="option" selector
     const customOption = page.locator('[role="option"]:has-text("BasicModeTest")').first();
     await customOption.waitFor({ state: "visible" });
     await customOption.click({ force: true });
-    await expect(page.locator("body")).toBeVisible();
 
     // Verify compound is selected - check the button text
     const selectedMaterialBtn = page.getByRole("button", { name: /^Material$/ });
@@ -750,7 +730,6 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     // Switch to Basic mode - use explicit aria-label
     const basicModeBtn = page.getByRole("button", { name: "Switch to Basic mode" });
     await basicModeBtn.click();
-    await expect(page.locator("body")).toBeVisible();
 
     // Should fall back to water
     const finalMaterialBtn = page.getByRole("button", { name: /^Material$/ });

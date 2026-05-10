@@ -1,11 +1,13 @@
 import type { CompoundElement, MaterialEntity } from "$lib/wasm/types";
 
-export function isCustomMaterial(
-  material: MaterialEntity | null | undefined,
-): material is MaterialEntity & {
+export type CustomMaterialEntity = MaterialEntity & {
   id: string;
   elements: Array<{ atomicNumber: number; atomCount: number }>;
-} {
+};
+
+export function isCustomMaterial(
+  material: MaterialEntity | null | undefined,
+): material is CustomMaterialEntity {
   return (
     !!material &&
     typeof material.id === "string" &&
@@ -14,9 +16,7 @@ export function isCustomMaterial(
   );
 }
 
-export function customMaterialElementsForWasm(
-  material: MaterialEntity & { elements: Array<{ atomicNumber: number; atomCount: number }> },
-): CompoundElement[] {
+export function customMaterialElementsForWasm(material: CustomMaterialEntity): CompoundElement[] {
   return material.elements.map((element) => ({
     atomicNumber: element.atomicNumber,
     fraction: element.atomCount,
@@ -24,11 +24,7 @@ export function customMaterialElementsForWasm(
   }));
 }
 
-export function customMaterialUrlFields(
-  material: MaterialEntity & {
-    elements: Array<{ atomicNumber: number; atomCount: number }>;
-  },
-) {
+export function customMaterialUrlFields(material: CustomMaterialEntity) {
   return {
     materialIsCustom: true,
     materialId: null,

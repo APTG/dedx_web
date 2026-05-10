@@ -764,25 +764,25 @@
       });
 
       try {
-        const results: (InverseCsdaResult | Error)[] =
-          customMaterial || currentCustomMaterial
-            ? service.getInverseCsdaCustomCompound({
+        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
+        const results: (InverseCsdaResult | Error)[] = activeCustomMaterial
+          ? service.getInverseCsdaCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              ranges: rangesGcm2,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseCsda({
                 programId,
                 particleId,
-                elements: customMaterialElementsForWasm((customMaterial ?? currentCustomMaterial)!),
-                density,
-                iValue: (customMaterial ?? currentCustomMaterial)!.iValue,
+                materialId,
                 ranges: rangesGcm2,
+                options: advOptsSnapshot,
               })
-            : typeof materialId === "number"
-              ? service.getInverseCsda({
-                  programId,
-                  particleId,
-                  materialId,
-                  ranges: rangesGcm2,
-                  options: advOptsSnapshot,
-                })
-              : [];
+            : [];
 
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {

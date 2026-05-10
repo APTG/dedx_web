@@ -105,10 +105,21 @@ const storage = {
 
 /** Generate a stable ID with cc_ prefix and uuidv7-style identifier */
 function generateCompoundId(): string {
-  // Simple uuid-like generator (cc_ prefix + timestamp + random)
-  const timestamp = Date.now().toString(16);
-  const random = Math.random().toString(16).slice(2, 10);
-  return `cc_${timestamp}${random}`;
+  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
+    return `cc_${crypto.randomUUID()}`;
+  }
+  const values = new Uint32Array(4);
+  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
+    crypto.getRandomValues(values);
+  } else {
+    values[0] = Date.now();
+    values[1] = performance.now() * 1000;
+  }
+  return `cc_${Array.from(values, (value) => value.toString(16).padStart(8, "0")).join("")}`;
+}
+
+function generateTransientCompoundId(): string {
+  return generateCompoundId().replace("cc_", "cc_url_");
 }
 
 /** Normalize name for duplicate detection */
@@ -310,7 +321,7 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
       const now = new Date().toISOString();
       const normalizedName = normalizeName(params.name);
       const compound: StoredCompoundInternal = {
-        id: `cc_url_${Date.now().toString(16)}${Math.random().toString(16).slice(2, 8)}`,
+        id: generateTransientCompoundId(),
         name: params.name.trim(),
         normalizedName,
         elements: [...params.elements].sort((a, b) => a.atomicNumber - b.atomicNumber),
