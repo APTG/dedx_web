@@ -75,9 +75,7 @@
 
   // Keep valueStr in sync when selectedId changes externally (e.g., resetAll)
   $effect(() => {
-    const newValue = selectedId !== null ? String(selectedId) : "";
-    console.log("[entity-combobox] $effect: selectedId changed, valueStr=", valueStr, "->", newValue, "selectedId=", selectedId);
-    valueStr = newValue;
+    valueStr = selectedId !== null ? String(selectedId) : "";
   });
   
   // Reset the search term and focus the input whenever the dropdown opens.
@@ -92,22 +90,14 @@
   });
 
   const selectedItem = $derived.by(() => {
-    if (selectedId === null) {
-      console.log("[entity-combobox] selectedItem: selectedId is null");
-      return undefined;
-    }
-    console.log("[entity-combobox] selectedItem: searching for selectedId=", selectedId, "type=", typeof selectedId, "items.length=", items.length);
+    if (selectedId === null) return undefined;
     for (const item of items) {
-      if (!isSection(item)) {
-        const entityItem = item as EntityItem<T>;
-        console.log("[entity-combobox] checking item: entity.id=", entityItem.entity.id, "type=", typeof entityItem.entity.id, "label=", entityItem.label);
-        if (entityItem.entity.id === selectedId) {
-          console.log("[entity-combobox] FOUND match!");
-          return item as EntityItem<T>;
-        }
+      if (isSection(item) || isAddButton(item)) continue;
+      const entityItem = item as EntityItem<T>;
+      if (entityItem.entity.id === selectedId) {
+        return entityItem;
       }
     }
-    console.log("[entity-combobox] selectedItem: no match found");
     return undefined;
   });
 
@@ -161,20 +151,14 @@
   const totalMatchCount = $derived(filteredGroups.flatMap((g) => g.items).length);
 
   function handleValueChange(newValue: string) {
-    console.log("[entity-combobox] handleValueChange called with newValue=", newValue);
     for (const item of items) {
-      if (!isSection(item)) {
-        const ei = item as EntityItem<T>;
-        const entityIdStr = String(ei.entity.id);
-        console.log("[entity-combobox] comparing entityIdStr=", entityIdStr, "with newValue=", newValue, "match=", entityIdStr === newValue);
-        if (entityIdStr === newValue) {
-          console.log("[entity-combobox] MATCH FOUND, calling onItemSelect with entity=", ei.entity);
-          onItemSelect(ei.entity);
-          return;
-        }
+      if (isSection(item) || isAddButton(item)) continue;
+      const ei = item as EntityItem<T>;
+      if (String(ei.entity.id) === newValue) {
+        onItemSelect(ei.entity);
+        return;
       }
     }
-    console.log("[entity-combobox] handleValueChange: no matching entity found");
   }
 </script>
 

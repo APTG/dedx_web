@@ -149,7 +149,7 @@
   }
 
   function handleAtomCountChange(index: number, count: string) {
-    const num = parseInt(count, 10);
+    const num = parseFloat(count);
     if (!isNaN(num) && num > 0) {
       formData.elements[index].atomCount = num;
     }
@@ -329,8 +329,9 @@
                       {#if mode === "formula"}
                         <Input
                           type="number"
-                          min="1"
+                          min="0"
                           max="1000"
+                          step="any"
                           placeholder="Count"
                           value={String(element.atomCount)}
                           oninput={(e) => handleAtomCountChange(index, (e.currentTarget as HTMLInputElement).value)}

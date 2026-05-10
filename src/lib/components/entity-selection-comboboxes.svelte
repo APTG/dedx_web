@@ -60,9 +60,10 @@
     compoundModalOpen = false;
   }
 
-  function handleDeleteCompound() {
-    if (editingCompound) {
-      customCompounds.delete(editingCompound.id);
+  function handleDeleteCompound(compound?: StoredCompoundInternal | null) {
+    const target = compound ?? editingCompound;
+    if (target) {
+      customCompounds.delete(target.id);
       compoundModalOpen = false;
       editingCompound = null;
     }
@@ -163,7 +164,7 @@
           {
             label: "Delete compound",
             icon: "trash",
-            onClick: () => handleDeleteCompound(),
+            onClick: () => handleDeleteCompound(compound),
           },
         ],
       };

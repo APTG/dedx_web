@@ -665,17 +665,16 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     const { idsPtr, atomsPtr, nElements } = this.prepareCompoundElements(elements);
 
-    const energiesPtr = this.module._malloc(nEnergies * 4);
-    const stpPtr = this.module._malloc(nEnergies * 4);
+    const energiesPtr = this.module._malloc(nEnergies * 8);
+    const stpPtr = this.module._malloc(nEnergies * 8);
     const csdaPtr = this.module._malloc(nEnergies * 8);
     const errPtr = this.module._malloc(4);
 
     try {
-      const heapF32 = this.module.HEAPF32;
       const heapF64 = this.module.HEAPF64;
 
       for (let i = 0; i < nEnergies; i++) {
-        heapF32[(energiesPtr >>> 2) + i] = energies[i]!;
+        heapF64[(energiesPtr >>> 3) + i] = energies[i]!;
       }
 
       const err = this.module._dedx_calculate_custom_forward_flat(
@@ -702,7 +701,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       const csdaRanges: number[] = [];
 
       for (let i = 0; i < nEnergies; i++) {
-        stoppingPowers.push(heapF32[(stpPtr >>> 2) + i]!);
+        stoppingPowers.push(heapF64[(stpPtr >>> 3) + i]!);
         csdaRanges.push(heapF64[(csdaPtr >>> 3) + i]!);
       }
 

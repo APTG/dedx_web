@@ -498,7 +498,23 @@ int dedx_internal_setup_custom_compound(
 
     for (int i = 0; i < n_elements; i++) {
         cfg->elements_id[i]    = elements_id[i];
-        cfg->elements_atoms[i] = (int)elements_atoms[i];  /* Note: truncates fractional counts */
+        /* libdedx's dedx_config stores atom counts as int. We accept double
+         * counts at the wrapper boundary so callers can pass formula parser
+         * output directly. Fractional counts are rounded (banker's rounding via
+         * lround) to the nearest integer; for true non-integer stoichiometries
+         * the caller should normalize to integer ratios before invoking the
+         * wrapper (e.g. H2.5O -> H5O2). This is documented in dedx_extra.h. */
+        cfg->elements_atoms[i] = (int)lround(elements_atoms[i]);
+        if (cfg->elements_atoms[i] <= 0) {
+            /* Reject zero/negative after rounding to avoid divide-by-zero
+             * inside libdedx's Bragg additivity loop. */
+            free(cfg->elements_id);
+            free(cfg->elements_atoms);
+            cfg->elements_id = NULL;
+            cfg->elements_atoms = NULL;
+            *err = -1;
+            return *err;
+        }
     }
 
     /* Set density and optional I-value */

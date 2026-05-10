@@ -165,7 +165,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("renders three comboboxes: Particle, Material, Program", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     expect(screen.getByLabelText("Particle")).toBeInTheDocument();
     expect(screen.getByLabelText("Material")).toBeInTheDocument();
@@ -173,7 +173,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("uses a non-overlapping desktop one-row grid layout for selectors", () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const root = container.firstElementChild as HTMLElement;
 
     expect(root).toHaveClass("grid");
@@ -182,7 +182,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("displays default selections: proton, Water (liquid), Auto-select", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     const particleCombobox = screen.getByLabelText("Particle");
     const materialCombobox = screen.getByLabelText("Material");
@@ -195,7 +195,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Auto-select shows resolved program name when particle+material are set", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     // With proton+water, Auto-select resolves to one runtime-compatible program.
     // This must include the concrete program name, not only the "Auto-select →" prefix.
@@ -205,7 +205,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Auto-select resolved label updates when selected entities change", () => {
-    const { rerender } = render(EntitySelectionComboboxes, { props: { state } });
+    const { rerender } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     const programCombobox = screen.getByLabelText("Program");
     expect(programCombobox).toHaveTextContent(/Auto-select → ICRU 49/);
@@ -218,7 +218,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("selecting a particle updates the selection state", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -231,7 +231,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("particle search matches aliases from enriched search text", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -246,7 +246,7 @@ describe("EntitySelectionComboboxes", () => {
   test("selecting carbon preserves water and keeps selected program when still compatible", async () => {
     state.selectProgram(4); // MSTAR
 
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -261,7 +261,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("clicking Restore defaults restores defaults", async () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     state.selectParticle(6);
@@ -277,14 +277,14 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Restore defaults button has tooltip", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     const resetButton = screen.getByRole("button", { name: /restore defaults/i });
     expect(resetButton).toHaveAttribute("title", "Restores Proton / Water / Auto-select");
   });
 
   test("Restore defaults button uses secondary styling", () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     const resetButton = container.querySelector(
       'button[title="Restores Proton / Water / Auto-select"]',
@@ -298,7 +298,7 @@ describe("EntitySelectionComboboxes", () => {
     const electronMatrix = buildCompatibilityMatrix(electronService as any);
     const electronState = createEntitySelectionState(electronMatrix);
 
-    const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -313,7 +313,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Material dropdown shows Elements and Compounds section headers", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const materialCombobox = container.querySelector('[aria-label="Material"]')!;
@@ -326,7 +326,7 @@ describe("EntitySelectionComboboxes", () => {
   test("Program combobox uses spec grouping labels", async () => {
     state.selectParticle(2); // helium — ASTAR/MSTAR/ICRU49 available
 
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const programCombobox = container.querySelector('[aria-label="Program"]')!;
@@ -337,7 +337,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("isComplete reflects valid selection state", () => {
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
     // Initial state should be complete
     expect(state.isComplete).toBe(true);
@@ -350,7 +350,7 @@ describe("EntitySelectionComboboxes", () => {
   // --- Keyboard / ARIA (RED until Bits UI component is in place) ---
 
   test("search input has role=combobox and aria-expanded", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const trigger = container.querySelector('[aria-label="Particle"]')!;
@@ -366,7 +366,7 @@ describe("EntitySelectionComboboxes", () => {
     state.clearParticle();
     expect(state.selectedParticle).toBeNull();
 
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const trigger = container.querySelector('[aria-label="Particle"]')!;
@@ -381,7 +381,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("Escape key closes the dropdown", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const trigger = container.querySelector('[aria-label="Particle"]')!;
@@ -395,7 +395,7 @@ describe("EntitySelectionComboboxes", () => {
   });
 
   test("aria-activedescendant on search input tracks highlighted item", async () => {
-    const { container } = render(EntitySelectionComboboxes, { props: { state } });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     const trigger = container.querySelector('[aria-label="Particle"]')!;
@@ -416,7 +416,7 @@ describe("EntitySelectionComboboxes", () => {
 
   describe("Particle combobox", () => {
     test("Proton label is 'proton' (not 'Hydrogen (H)')", async () => {
-      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -428,7 +428,7 @@ describe("EntitySelectionComboboxes", () => {
     });
 
     test("Helium label is 'alpha particle' (not 'Helium (He)')", async () => {
-      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -444,7 +444,7 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -457,7 +457,7 @@ describe("EntitySelectionComboboxes", () => {
 
     test("Carbon label is 'Carbon (C)'", async () => {
       state.selectParticle(6);
-      render(EntitySelectionComboboxes, { props: { state } });
+      render(EntitySelectionComboboxes, { props: { selectionState: state } });
 
       const particleCombobox = screen.getByLabelText("Particle");
       expect(particleCombobox).toHaveTextContent("Carbon (C)");
@@ -468,7 +468,7 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { state: electronState } });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -484,7 +484,7 @@ describe("EntitySelectionComboboxes", () => {
     });
 
     test("'Ions' group exists and contains 'Carbon (C)'", async () => {
-      const { container } = render(EntitySelectionComboboxes, { props: { state } });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -561,7 +561,7 @@ describe("Material phase badge", () => {
     const matrix = buildCompatibilityMatrix(service as any);
     const state = createEntitySelectionState(matrix);
     state.selectMaterial(1); // Hydrogen (gas)
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
     expect(screen.getByTestId("phase-badge")).toHaveTextContent("gas");
   });
 
@@ -570,7 +570,7 @@ describe("Material phase badge", () => {
     const matrix = buildCompatibilityMatrix(service as any);
     const state = createEntitySelectionState(matrix);
     state.selectMaterial(276); // Water (liquid)
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
     expect(screen.getByTestId("phase-badge")).toHaveTextContent("liquid");
   });
 
@@ -603,7 +603,7 @@ describe("Material phase badge", () => {
     const matrix = buildCompatibilityMatrix(service as any);
     const state = createEntitySelectionState(matrix);
     state.selectMaterial(13); // Aluminum
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
     expect(screen.getByTestId("phase-badge")).toHaveTextContent("solid");
   });
 
@@ -612,7 +612,7 @@ describe("Material phase badge", () => {
     const matrix = buildCompatibilityMatrix(service as any);
     const state = createEntitySelectionState(matrix);
     state.selectMaterial(null);
-    render(EntitySelectionComboboxes, { props: { state } });
+    render(EntitySelectionComboboxes, { props: { selectionState: state } });
     expect(screen.queryByTestId("phase-badge")).not.toBeInTheDocument();
   });
 });

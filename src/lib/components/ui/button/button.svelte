@@ -64,7 +64,7 @@
     {onkeyup}
     {onfocus}
     {onblur}
-    onclick
+    {onclick}
     {...restProps}
   >
     {@render children?.()}
