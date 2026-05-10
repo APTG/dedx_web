@@ -209,15 +209,19 @@ export function createCalculatorState(
     const effectiveUnit: EnergyUnit = conversionUnit;
     const unitFromSuffix = parsed.unit !== null;
 
-    let normalizedMevNucl: number;
-    try {
-      normalizedMevNucl = convertEnergyToMeVperNucl(
-        parsed.value,
-        parsed.unit ?? inputState.masterUnit,
-        particleMassNumber,
-        particleAtomicMass,
-      );
-    } catch {
+    const normalizedMevNucl = (() => {
+      try {
+        return convertEnergyToMeVperNucl(
+          parsed.value,
+          parsed.unit ?? inputState.masterUnit,
+          particleMassNumber,
+          particleAtomicMass,
+        );
+      } catch {
+        return null;
+      }
+    })();
+    if (normalizedMevNucl === null) {
       return {
         id: row.id,
         rawInput: row.text,

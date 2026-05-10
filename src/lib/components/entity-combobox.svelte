@@ -360,7 +360,7 @@
                           </svg>
                         {/if}
                         {#if item.actions}
-                          {#each item.actions as action (action.label)}
+                          {#each item.actions as action (`${action.icon ?? "action"}-${action.label}`)}
                             <button
                               type="button"
                               class="rounded-sm p-1 text-muted-foreground hover:bg-accent hover:text-foreground"

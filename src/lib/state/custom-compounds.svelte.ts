@@ -113,7 +113,9 @@ function generateCompoundId(): string {
     crypto.getRandomValues(values);
   } else {
     values[0] = Date.now();
-    values[1] = performance.now() * 1000;
+    values[1] = typeof performance !== "undefined" ? performance.now() * 1000 : Date.now() >>> 8;
+    values[2] = Math.floor(Math.random() * 0xffffffff);
+    values[3] = Math.floor(Math.random() * 0xffffffff);
   }
   return `cc_${Array.from(values, (value) => value.toString(16).padStart(8, "0")).join("")}`;
 }
