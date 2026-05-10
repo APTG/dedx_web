@@ -167,6 +167,19 @@ export function createCalculatorState(
     return "keV/µm";
   }
 
+  function convertRowEnergyToMevNucl(
+    value: number,
+    unit: string,
+    particleMassNumber: number,
+    particleAtomicMass?: number,
+  ): number | null {
+    try {
+      return convertEnergyToMeVperNucl(value, unit, particleMassNumber, particleAtomicMass);
+    } catch {
+      return null;
+    }
+  }
+
   function parseRow(
     row: EnergyRow,
     particleMassNumber: number,
@@ -209,18 +222,12 @@ export function createCalculatorState(
     const effectiveUnit: EnergyUnit = conversionUnit;
     const unitFromSuffix = parsed.unit !== null;
 
-    const normalizedMevNucl = (() => {
-      try {
-        return convertEnergyToMeVperNucl(
-          parsed.value,
-          parsed.unit ?? inputState.masterUnit,
-          particleMassNumber,
-          particleAtomicMass,
-        );
-      } catch {
-        return null;
-      }
-    })();
+    const normalizedMevNucl = convertRowEnergyToMevNucl(
+      parsed.value,
+      parsed.unit ?? inputState.masterUnit,
+      particleMassNumber,
+      particleAtomicMass,
+    );
     if (normalizedMevNucl === null) {
       return {
         id: row.id,

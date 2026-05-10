@@ -121,7 +121,7 @@ function generateCompoundId(): string {
 }
 
 function generateTransientCompoundId(): string {
-  return generateCompoundId().replace("cc_", "cc_url_");
+  return generateCompoundId().replace(/^cc_/, "cc_url_");
 }
 
 /** Normalize name for duplicate detection */
