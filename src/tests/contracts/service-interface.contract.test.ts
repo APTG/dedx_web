@@ -47,6 +47,10 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getInverseStp).toBe("function");
     expect(typeof service.getInverseCsda).toBe("function");
     expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.calculateCustomCompound).toBe("function");
+    expect(typeof service.getInverseStpCustomCompound).toBe("function");
+    expect(typeof service.getInverseCsdaCustomCompound).toBe("function");
+    expect(typeof service.getBraggPeakStpCustomCompound).toBe("function");
     expect(typeof service.getDensity).toBe("function");
     expect(typeof service.convertEnergy).toBe("function");
   });
@@ -65,6 +69,10 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getInverseStp).toBe("function");
     expect(typeof service.getInverseCsda).toBe("function");
     expect(typeof service.getBraggPeakStp).toBe("function");
+    expect(typeof service.calculateCustomCompound).toBe("function");
+    expect(typeof service.getInverseStpCustomCompound).toBe("function");
+    expect(typeof service.getInverseCsdaCustomCompound).toBe("function");
+    expect(typeof service.getBraggPeakStpCustomCompound).toBe("function");
     expect(typeof service.getDensity).toBe("function");
     expect(typeof service.convertEnergy).toBe("function");
   });

@@ -8,6 +8,7 @@ import type {
   InverseStpResult,
   InverseCsdaResult,
   EnergyUnit,
+  CompoundElement,
 } from "./types.js";
 import { LibdedxError } from "./types.js";
 import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases.js";
@@ -74,6 +75,67 @@ interface EmscriptenModule {
     material_id: number,
     err_ptr: number,
   ): number;
+  /* Custom compound wrappers */
+  _dedx_calculate_custom_forward_flat(
+    program_id: number,
+    ion_id: number,
+    elements_id: number,
+    elements_atoms: number,
+    n_elements: number,
+    density: number,
+    iValue: number,
+    energies: number,
+    stp_out: number,
+    csda_out: number,
+    n_energies: number,
+    err_ptr: number,
+  ): number;
+  _dedx_get_inverse_stp_custom_compound_flat(
+    program_id: number,
+    ion_id: number,
+    elements_id: number,
+    elements_atoms: number,
+    n_elements: number,
+    density: number,
+    iValue: number,
+    stopping_power: number,
+    side: number,
+    err_ptr: number,
+  ): number;
+  _dedx_get_inverse_csda_custom_compound_flat(
+    program_id: number,
+    ion_id: number,
+    elements_id: number,
+    elements_atoms: number,
+    n_elements: number,
+    density: number,
+    iValue: number,
+    range: number,
+    err_ptr: number,
+  ): number;
+  _dedx_get_bragg_peak_stp_custom_compound(
+    program_id: number,
+    ion_id: number,
+    elements_id: number,
+    elements_atoms: number,
+    n_elements: number,
+    density: number,
+    iValue: number,
+    err_ptr: number,
+  ): number;
+  /* Internal custom compound helpers */
+  _dedx_internal_setup_custom_compound(
+    cfg_ptr: number,
+    program_id: number,
+    ion_id: number,
+    elements_id: number,
+    elements_atoms: number,
+    n_elements: number,
+    density: number,
+    iValue: number,
+    err_ptr: number,
+  ): number;
+  _dedx_internal_cleanup_custom_compound(cfg_ptr: number, err_ptr: number): void;
   _malloc(size: number): number;
   _free(ptr: number): void;
   UTF8ToString(ptr: number): string;
@@ -568,6 +630,230 @@ export class LibdedxServiceImpl implements LibdedxService {
         return convertEnergyFromMeVperNucl(valueInMeVperNucl, "MeV", massNumber, atomicMass);
       }
     });
+  }
+
+  private prepareCompoundElements(elements: CompoundElement[]): {
+    idsPtr: number;
+    atomsPtr: number;
+    nElements: number;
+  } {
+    const nElements = elements.length;
+    const idsPtr = this.module._malloc(nElements * 4); // int32
+    const atomsPtr = this.module._malloc(nElements * 8); // float64
+
+    const heap32 = this.module.HEAP32;
+    const heap64 = this.module.HEAPF64;
+
+    for (let i = 0; i < nElements; i++) {
+      heap32[(idsPtr >>> 2) + i] = elements[i]!.atomicNumber;
+      heap64[(atomsPtr >>> 3) + i] = elements[i]!.fraction;
+    }
+
+    return { idsPtr, atomsPtr, nElements };
+  }
+
+  calculateCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult {
+    const { programId, particleId, elements, density, iValue = 0.0, energies } = params;
+    const nEnergies = energies.length;
+
+    const { idsPtr, atomsPtr, nElements } = this.prepareCompoundElements(elements);
+
+    const energiesPtr = this.module._malloc(nEnergies * 4);
+    const stpPtr = this.module._malloc(nEnergies * 4);
+    const csdaPtr = this.module._malloc(nEnergies * 8);
+    const errPtr = this.module._malloc(4);
+
+    try {
+      const heapF32 = this.module.HEAPF32;
+      const heapF64 = this.module.HEAPF64;
+
+      for (let i = 0; i < nEnergies; i++) {
+        heapF32[(energiesPtr >>> 2) + i] = energies[i]!;
+      }
+
+      const err = this.module._dedx_calculate_custom_forward_flat(
+        programId,
+        particleId,
+        idsPtr,
+        atomsPtr,
+        nElements,
+        density,
+        iValue,
+        energiesPtr,
+        stpPtr,
+        csdaPtr,
+        nEnergies,
+        errPtr,
+      );
+
+      const errCode = this.module.HEAP32[errPtr >>> 2];
+      if (err !== 0 || errCode !== 0) {
+        throw new LibdedxError(errCode || err, "Custom compound forward calculation failed");
+      }
+
+      const stoppingPowers: number[] = [];
+      const csdaRanges: number[] = [];
+
+      for (let i = 0; i < nEnergies; i++) {
+        stoppingPowers.push(heapF32[(stpPtr >>> 2) + i]!);
+        csdaRanges.push(heapF64[(csdaPtr >>> 3) + i]!);
+      }
+
+      return {
+        energies: [...energies],
+        stoppingPowers,
+        csdaRanges,
+      };
+    } finally {
+      this.module._free(idsPtr);
+      this.module._free(atomsPtr);
+      this.module._free(energiesPtr);
+      this.module._free(stpPtr);
+      this.module._free(csdaPtr);
+      this.module._free(errPtr);
+    }
+  }
+
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[] {
+    const { programId, particleId, elements, density, iValue = 0.0, stoppingPowers, side } = params;
+    const results: (InverseStpResult | LibdedxError)[] = [];
+
+    const { idsPtr, atomsPtr, nElements } = this.prepareCompoundElements(elements);
+    const errPtr = this.module._malloc(4);
+
+    try {
+      for (const stp of stoppingPowers) {
+        this.module.HEAP32[errPtr >>> 2] = 0;
+
+        const energy = this.module._dedx_get_inverse_stp_custom_compound_flat(
+          programId,
+          particleId,
+          idsPtr,
+          atomsPtr,
+          nElements,
+          density,
+          iValue,
+          stp,
+          side,
+          errPtr,
+        );
+
+        const errCode = this.module.HEAP32[errPtr >>> 2];
+        if (errCode !== 0 || energy < 0) {
+          results.push(
+            new LibdedxError(errCode, `Inverse STP lookup failed for stp=${stp} (energy=${energy})`),
+          );
+        } else {
+          results.push({ energy, stoppingPower: stp });
+        }
+      }
+    } finally {
+      this.module._free(idsPtr);
+      this.module._free(atomsPtr);
+      this.module._free(errPtr);
+    }
+
+    return results;
+  }
+
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[] {
+    const { programId, particleId, elements, density, iValue = 0.0, ranges } = params;
+    const results: (InverseCsdaResult | LibdedxError)[] = [];
+
+    const { idsPtr, atomsPtr, nElements } = this.prepareCompoundElements(elements);
+    const errPtr = this.module._malloc(4);
+
+    try {
+      for (const range of ranges) {
+        this.module.HEAP32[errPtr >>> 2] = 0;
+
+        const energy = this.module._dedx_get_inverse_csda_custom_compound_flat(
+          programId,
+          particleId,
+          idsPtr,
+          atomsPtr,
+          nElements,
+          density,
+          iValue,
+          range,
+          errPtr,
+        );
+
+        const errCode = this.module.HEAP32[errPtr >>> 2];
+        if (errCode !== 0 || energy < 0) {
+          results.push(
+            new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range} (energy=${energy})`),
+          );
+        } else {
+          results.push({ energy, csdaRange: range });
+        }
+      }
+    } finally {
+      this.module._free(idsPtr);
+      this.module._free(atomsPtr);
+      this.module._free(errPtr);
+    }
+
+    return results;
+  }
+
+  getBraggPeakStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number {
+    const { programId, particleId, elements, density, iValue = 0.0 } = params;
+
+    const { idsPtr, atomsPtr, nElements } = this.prepareCompoundElements(elements);
+    const errPtr = this.module._malloc(4);
+
+    try {
+      const braggPeakStp = this.module._dedx_get_bragg_peak_stp_custom_compound(
+        programId,
+        particleId,
+        idsPtr,
+        atomsPtr,
+        nElements,
+        density,
+        iValue,
+        errPtr,
+      );
+
+      const errCode = this.module.HEAP32[errPtr >>> 2];
+      if (errCode !== 0) {
+        throw new LibdedxError(errCode, "Bragg peak STP lookup failed for custom compound");
+      }
+
+      return braggPeakStp;
+    } finally {
+      this.module._free(idsPtr);
+      this.module._free(atomsPtr);
+      this.module._free(errPtr);
+    }
   }
 }
 

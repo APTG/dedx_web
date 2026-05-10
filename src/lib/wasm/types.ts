@@ -141,6 +141,38 @@ export interface LibdedxService {
     materialId: number;
     options?: AdvancedOptions;
   }): number;
+  calculateCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult;
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[];
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[];
+  getBraggPeakStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number;
   getDensity(materialId: number): number | undefined;
   convertEnergy(params: {
     fromUnit: EnergyUnit;

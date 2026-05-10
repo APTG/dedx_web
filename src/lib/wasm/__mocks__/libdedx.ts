@@ -8,6 +8,7 @@ import type {
   InverseStpResult,
   InverseCsdaResult,
   EnergyUnit,
+  CompoundElement,
 } from "../types";
 import { LibdedxError } from "../types";
 
@@ -204,6 +205,55 @@ export class LibdedxServiceImpl implements LibdedxService {
   }): number[] {
     return params.values;
   }
+
+  calculateCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult {
+    const energies: number[] = [];
+    return {
+      energies,
+      stoppingPowers: [],
+      csdaRanges: [],
+    };
+  }
+
+  getInverseStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[] {
+    return [];
+  }
+
+  getInverseCsdaCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return [];
+  }
+
+  getBraggPeakStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number {
+    return 80.0;
+  }
 }
 
 export class MockLibdedxServiceWithElectron implements LibdedxService {
@@ -384,5 +434,54 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     values: number[];
   }): number[] {
     return params.values;
+  }
+
+  calculateCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult {
+    const energies: number[] = [];
+    return {
+      energies,
+      stoppingPowers: [],
+      csdaRanges: [],
+    };
+  }
+
+  getInverseStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[] {
+    return [];
+  }
+
+  getInverseCsdaCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return [];
+  }
+
+  getBraggPeakStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number {
+    return 80.0;
   }
 }

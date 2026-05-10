@@ -3,6 +3,7 @@
 #include <math.h>
 #include <stddef.h>
 #include <string.h>
+#include <stdlib.h>
 
 /* Forward-declare the public material-name function from dedx.c */
 extern const char *dedx_get_material_name(int material);
@@ -443,6 +444,336 @@ double dedx_get_bragg_peak_stp(int program, int ion, int target, int *err) {
 
     int fe = 0;
     dedx_free_config(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+
+    if (peak_stp < 0.0) {
+        *err = -1;
+        return -1.0;
+    }
+    *err = 0;
+    return peak_stp;
+}
+
+/* -------------------------------------------------------------------------
+ * Custom compound wrappers — stateful dedx_config path for user-defined
+ * materials. These follow the same pattern as the flat inverse wrappers:
+ * allocate workspace, load config with compound elements, evaluate, free.
+ * -------------------------------------------------------------------------*/
+
+/* Internal helper: set up a dedx_config for a custom compound.
+ * Returns 0 on success, error code on failure. */
+int dedx_internal_setup_custom_compound(
+    dedx_config *cfg,
+    int program, int ion,
+    const int *elements_id, const double *elements_atoms, int n_elements,
+    double density, double iValue,
+    int *err)
+{
+    memset(cfg, 0, sizeof(*cfg));
+    cfg->program = program;
+    cfg->ion     = ion;
+    cfg->target  = 0;  /* 0 indicates custom compound */
+
+    /* Set nucleon number — required before dedx_load_config */
+    int local_err = 0;
+    cfg->ion_a = dedx_internal_get_nucleon(ion, &local_err);
+    if (local_err != 0) {
+        *err = local_err;
+        return *err;
+    }
+
+    /* Allocate and populate element arrays (libdedx expects int* for both) */
+    cfg->elements_length = (unsigned int)n_elements;
+    cfg->elements_id     = (int *)malloc(n_elements * sizeof(int));
+    cfg->elements_atoms  = (int *)malloc(n_elements * sizeof(int));
+
+    if (!cfg->elements_id || !cfg->elements_atoms) {
+        free(cfg->elements_id);
+        free(cfg->elements_atoms);
+        cfg->elements_id = NULL;
+        cfg->elements_atoms = NULL;
+        *err = DEDX_ERR_NO_MEMORY;
+        return *err;
+    }
+
+    for (int i = 0; i < n_elements; i++) {
+        cfg->elements_id[i]    = elements_id[i];
+        cfg->elements_atoms[i] = (int)elements_atoms[i];  /* Note: truncates fractional counts */
+    }
+
+    /* Set density and optional I-value */
+    cfg->rho = (float)density;
+    if (iValue > 0.0) {
+        cfg->i_value = (float)iValue;
+    }
+
+    *err = 0;
+    return 0;
+}
+
+/* Internal helper: clean up a custom compound config */
+void dedx_internal_cleanup_custom_compound(dedx_config *cfg, int *err) {
+    if (cfg->elements_id) {
+        free(cfg->elements_id);
+        cfg->elements_id = NULL;
+    }
+    if (cfg->elements_atoms) {
+        free(cfg->elements_atoms);
+        cfg->elements_atoms = NULL;
+    }
+    dedx_free_config(cfg, err);
+}
+
+int dedx_calculate_custom_forward_flat(
+    int program, int ion,
+    const int *elements_id, const double *elements_atoms, int n_elements,
+    double density, double iValue,
+    const double *energies, double *stp_out, double *csda_out, int n_energies,
+    int *err)
+{
+    int local_err = 0;
+    int fe = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return *err;
+    }
+
+    dedx_config cfg;
+    local_err = dedx_internal_setup_custom_compound(
+        &cfg, program, ion, elements_id, elements_atoms, n_elements, density, iValue, err);
+    if (local_err != 0) {
+        dedx_free_workspace(ws, &fe);
+        return local_err;
+    }
+
+    local_err = dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        dedx_internal_cleanup_custom_compound(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return *err;
+    }
+
+    /* Evaluate STP and CSDA at each energy */
+    for (int i = 0; i < n_energies; i++) {
+        int stp_err = 0;
+        stp_out[i] = (double)dedx_get_stp(ws, &cfg, (float)energies[i], &stp_err);
+        if (stp_err != 0) {
+            dedx_internal_cleanup_custom_compound(&cfg, &fe);
+            dedx_free_workspace(ws, &fe);
+            *err = stp_err;
+            return *err;
+        }
+
+        csda_out[i] = dedx_get_csda(ws, &cfg, (float)energies[i], &stp_err);
+        if (stp_err != 0) {
+            dedx_internal_cleanup_custom_compound(&cfg, &fe);
+            dedx_free_workspace(ws, &fe);
+            *err = stp_err;
+            return *err;
+        }
+    }
+
+    dedx_internal_cleanup_custom_compound(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+    *err = 0;
+    return 0;
+}
+
+double dedx_get_inverse_stp_custom_compound_flat(
+    int program, int ion,
+    const int *elements_id, const double *elements_atoms, int n_elements,
+    double density, double iValue,
+    double stp, int side, int *err)
+{
+    int local_err = 0;
+    int fe = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    local_err = dedx_internal_setup_custom_compound(
+        &cfg, program, ion, elements_id, elements_atoms, n_elements, density, iValue, &local_err);
+    if (local_err != 0) {
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    local_err = dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        dedx_internal_cleanup_custom_compound(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    /* Use the same robust bisection strategy as dedx_get_inverse_stp_flat */
+    float emin = dedx_get_min_energy(program, ion);
+    float emax = dedx_get_max_energy(program, ion);
+
+#define INV_STP_N 40
+    double log_emin = log((double)emin);
+    double log_emax = log((double)emax);
+    double log_step = (log_emax - log_emin) / (INV_STP_N - 1);
+
+    int    stp_err   = 0;
+    double max_stp   = 0.0;
+    double e_peak    = emin;
+    double stp_emin  = 0.0;
+
+    for (int i = 0; i < INV_STP_N; i++) {
+        double e = exp(log_emin + i * log_step);
+        stp_err = 0;
+        double s = (double)dedx_get_stp(ws, &cfg, (float)e, &stp_err);
+        if (stp_err != 0) continue;
+        if (i == 0) stp_emin = s;
+        if (s > max_stp) { max_stp = s; e_peak = e; }
+    }
+#undef INV_STP_N
+
+    stp_err = 0;
+    double stp_at_emax = (double)dedx_get_stp(ws, &cfg, (float)emax, &stp_err);
+    if (stp_err != 0 || max_stp == 0.0 || stp > max_stp || stp < stp_at_emax) {
+        dedx_internal_cleanup_custom_compound(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = (stp_err != 0) ? stp_err : -1;
+        return -1.0;
+    }
+
+    int has_peak = (e_peak > emin * exp(log_step));
+    double x_lo, x_hi;
+    int ascending;
+
+    if (!has_peak) {
+        x_lo = emin; x_hi = emax; ascending = 0;
+    } else if (side == 0 && stp >= stp_emin) {
+        x_lo = emin; x_hi = e_peak; ascending = 1;
+    } else {
+        x_lo = e_peak; x_hi = emax; ascending = 0;
+    }
+
+    double acc = 1e-5;
+    while ((x_hi - x_lo) > acc) {
+        double x_mid = (x_lo + x_hi) / 2.0;
+        stp_err = 0;
+        double stp_mid = (double)dedx_get_stp(ws, &cfg, (float)x_mid, &stp_err);
+        if (stp_err != 0) {
+            dedx_internal_cleanup_custom_compound(&cfg, &fe);
+            dedx_free_workspace(ws, &fe);
+            *err = stp_err;
+            return -1.0;
+        }
+        if (ascending) {
+            if (stp_mid <= stp) x_lo = x_mid;
+            else                x_hi = x_mid;
+        } else {
+            if (stp_mid >= stp) x_lo = x_mid;
+            else                x_hi = x_mid;
+        }
+    }
+
+    double result = (x_lo + x_hi) / 2.0;
+
+    dedx_internal_cleanup_custom_compound(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+    *err = 0;
+    return result;
+}
+
+double dedx_get_inverse_csda_custom_compound_flat(
+    int program, int ion,
+    const int *elements_id, const double *elements_atoms, int n_elements,
+    double density, double iValue,
+    double range, int *err)
+{
+    int local_err = 0;
+    int fe = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    local_err = dedx_internal_setup_custom_compound(
+        &cfg, program, ion, elements_id, elements_atoms, n_elements, density, iValue, &local_err);
+    if (local_err != 0) {
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    local_err = dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        dedx_internal_cleanup_custom_compound(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    /* Zero *err before calling dedx_get_inverse_csda */
+    *err = 0;
+    double result = dedx_get_inverse_csda(ws, &cfg, (float)range, err);
+
+    dedx_internal_cleanup_custom_compound(&cfg, &fe);
+    dedx_free_workspace(ws, &fe);
+    return result;
+}
+
+double dedx_get_bragg_peak_stp_custom_compound(
+    int program, int ion,
+    const int *elements_id, const double *elements_atoms, int n_elements,
+    double density, double iValue,
+    int *err)
+{
+    int local_err = 0;
+    int fe = 0;
+    dedx_workspace *ws = dedx_allocate_workspace(1, &local_err);
+    if (!ws || local_err != 0) {
+        *err = local_err ? local_err : -1;
+        return -1.0;
+    }
+
+    dedx_config cfg;
+    local_err = dedx_internal_setup_custom_compound(
+        &cfg, program, ion, elements_id, elements_atoms, n_elements, density, iValue, &local_err);
+    if (local_err != 0) {
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    local_err = dedx_load_config(ws, &cfg, &local_err);
+    if (local_err != 0) {
+        dedx_internal_cleanup_custom_compound(&cfg, &fe);
+        dedx_free_workspace(ws, &fe);
+        *err = local_err;
+        return -1.0;
+    }
+
+    /* Sample 300 log-spaced energies to find the Bragg-peak STP */
+    float emin = dedx_get_min_energy(program, ion);
+    float emax = dedx_get_max_energy(program, ion);
+    double log_emin = log((double)emin);
+    double log_emax = log((double)emax);
+    int n = 300;
+    double peak_stp = -1.0;
+
+    for (int i = 0; i < n; i++) {
+        float energy = (float)exp(log_emin + (log_emax - log_emin) * i / (n - 1));
+        int stp_err = 0;
+        float stp_val = (float)dedx_get_stp(ws, &cfg, energy, &stp_err);
+        if (stp_err == 0 && (double)stp_val > peak_stp) {
+            peak_stp = (double)stp_val;
+        }
+    }
+
+    dedx_internal_cleanup_custom_compound(&cfg, &fe);
     dedx_free_workspace(ws, &fe);
 
     if (peak_stp < 0.0) {
