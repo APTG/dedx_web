@@ -496,5 +496,30 @@ command so the user stays in control.
 
 ---
 
-_Last updated: 2026-05-08. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 21 — Empty-tree diff on first branch push causes false-positive vendor gitlink failures
+
+**Symptom:** `workflow-guards` failed on the first push of a new docs-only branch
+with:
+
+```text
+forbidden vendor gitlink change: vendor/bits-ui
+... vendor/jsroot ...
+```
+
+even though the branch had not changed any vendor submodule pointers relative to
+`master`.
+
+**Root cause:** GitHub sets `github.event.before` to all zeroes on the first push
+to a new branch. Comparing `empty-tree..HEAD` makes every tracked path on the
+branch look newly added, including inherited `vendor/*` gitlinks from the branch
+point.
+
+**Rule:** For initial `push` events, never use the empty tree for repo-wide guard
+diffs that validate submodule pointers. Fetch the default branch and diff from
+`git merge-base HEAD origin/<default-branch>` instead; use the empty tree only as
+an emergency fallback when no merge-base exists.
+
+---
+
+_Last updated: 2026-05-10. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
