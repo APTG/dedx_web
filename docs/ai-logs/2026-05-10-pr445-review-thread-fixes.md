@@ -89,9 +89,29 @@ into this branch.
   correct without forcing a WASM rebuild policy decision in this PR.
 - **Issue**: Two pre-existing unit-test failures in
   `entity-selection-comboboxes.test.ts` (`Escape key closes the dropdown`,
-  `electron (id=1001) cannot be selected`) are unrelated to the review
-  comments — they pre-date this fix pass and stem from the
-  `Combobox.ContentStatic forceMount` refactor in the entity combobox.
+  `electron (id=1001) cannot be selected`) — fixed in follow-up commit (see
+  next section).
+
+### Fix two pre-existing unit-test failures in entity-selection-comboboxes
+
+- **Status**: completed
+- **Stage**: 6.10 (test maintenance)
+- **Files changed**:
+  - `src/tests/unit/entity-selection-comboboxes.test.ts`
+- **Decision**:
+  - `electron (id=1001) cannot be selected`: `screen.getByText(/Electron/i)`
+    matched both the disabled particle item ("electron") **and** the program
+    trigger label ("ESTAR — electrons (NIST, N/A)"). Scoped the lookup to the
+    open `[role="listbox"]` via `within(...)` and matched the exact lowercase
+    `"electron"` particle label. The `data-disabled=""` attribute lives on the
+    `Combobox.Item` (`role="option"`), so `electronItem.closest('[role="option"]')`
+    is used for the `toHaveAttribute` and `click` assertions.
+  - `Escape key closes the dropdown`: Bits UI's `ContentStatic forceMount`
+    keeps the listbox subtree mounted after Escape and only flips
+    `data-state` and `aria-expanded`, so the input is still "visible" in the
+    JSDOM sense. Replaced the `.toBeVisible()` assertions with
+    `aria-expanded="true"` (open) → `aria-expanded="false"` + `data-state="closed"`
+    (after Escape), which reflects the actual contract of the closed state.
 
 ### Move opencode transcript + fill AI logs
 

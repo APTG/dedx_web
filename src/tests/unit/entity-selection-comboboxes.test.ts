@@ -304,11 +304,15 @@ describe("EntitySelectionComboboxes", () => {
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
     await user.click(particleCombobox);
 
-    const electronItem = screen.getByText(/Electron/i);
+    // Scope to the open listbox to avoid matching the program-trigger label
+    // ("ESTAR — electrons (NIST, N/A)"). The particle item label is exactly "electron".
+    const listbox = document.querySelector('[role="listbox"]') as HTMLElement;
+    const electronItem = within(listbox).getByText("electron");
     expect(electronItem).toBeInTheDocument();
-    expect(electronItem).toHaveAttribute("data-disabled", "");
+    const electronOption = electronItem.closest('[role="option"]') as HTMLElement;
+    expect(electronOption).toHaveAttribute("data-disabled", "");
 
-    await user.click(electronItem);
+    await user.click(electronOption);
     expect(electronState.selectedParticle?.id).toBe(1); // Still proton
   });
 
@@ -388,10 +392,12 @@ describe("EntitySelectionComboboxes", () => {
     await user.click(trigger);
 
     const searchInput = container.querySelector('[role="listbox"] input')!;
-    expect(searchInput).toBeVisible();
+    expect(searchInput).toHaveAttribute("aria-expanded", "true");
 
     await user.keyboard("{Escape}");
-    expect(searchInput).not.toBeVisible();
+    // Bits UI keeps the listbox mounted but flips data-state/aria-expanded.
+    expect(searchInput).toHaveAttribute("aria-expanded", "false");
+    expect(searchInput).toHaveAttribute("data-state", "closed");
   });
 
   test("aria-activedescendant on search input tracks highlighted item", async () => {
