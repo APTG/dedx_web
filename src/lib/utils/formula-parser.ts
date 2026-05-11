@@ -85,7 +85,9 @@ function splitHydrateParts(formula: string): string[] {
       const hydrateMatch = afterDot.match(/^(\d+)([A-Z][a-z]?)(.*)$/);
       
       if (hydrateMatch) {
-        const [, digits, elementSymbol, rest] = hydrateMatch;
+        const [, _digits, _elementSymbol, rest] = hydrateMatch;
+        void _digits;
+        void _elementSymbol;
         // If there's more after the element (like "2O" in "5H2O"), it's hydrate
         // If it's just digits+element (like "5O"), it's fractional
         if (rest && rest.length > 0) {

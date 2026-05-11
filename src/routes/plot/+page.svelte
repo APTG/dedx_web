@@ -141,6 +141,7 @@
     if (!browser) return;
     // Read advOptsKey to track nested changes (see comment above)
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
     persistAdvancedOptions();
   });
 
@@ -262,6 +263,7 @@
     // `const advOptsSnapshot = advancedOptions.value` below, but not the
     // reads of nested properties that happen inside the async .then() callback.
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
 
     // Also read isAdvancedMode synchronously so switching modes triggers a
     // re-render (the density formula depends on it, but it was previously only

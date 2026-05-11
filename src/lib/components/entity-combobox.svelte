@@ -1,7 +1,7 @@
 <script lang="ts" generics="T extends { id: number | string; name: string }">
   import { tick, untrack } from "svelte";
   import { Combobox } from "bits-ui";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
   import { ELECTRON_UNSUPPORTED_TITLE } from "$lib/config/libdedx-version";
 
   interface SectionHeader {

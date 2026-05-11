@@ -37,7 +37,7 @@
     monospace?: boolean;
   }
 
-  import type { MultiProgramState } from "$lib/state/multi-program.svelte.ts";
+  import type { MultiProgramState } from "$lib/state/multi-program.svelte";
   import type { CalculationResult } from "$lib/wasm/types";
   import { LibdedxError } from "$lib/wasm/types";
 

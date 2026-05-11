@@ -1,6 +1,6 @@
 <script lang="ts">
   import EntityCombobox from "./entity-combobox.svelte";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
   import { getProgramDescription } from "$lib/config/program-names";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";

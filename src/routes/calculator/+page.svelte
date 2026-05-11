@@ -13,7 +13,7 @@
   import {
     createMultiProgramState,
     type MultiProgramState,
-  } from "$lib/state/multi-program.svelte.ts";
+  } from "$lib/state/multi-program.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
@@ -39,7 +39,7 @@
     decodeInverseModeFromUrl,
     type InverseModeUrlState,
   } from "$lib/utils/calculator-url";
-  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte.ts";
+  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte";
   import { initExportState } from "$lib/state/export.svelte";
   import {
     advancedOptions,
@@ -49,7 +49,6 @@
   import {
     createInverseLookupState,
     type InverseLookupState,
-    type ActiveTab,
   } from "$lib/state/inverse-lookups.svelte";
   import type { InverseCsdaResult } from "$lib/wasm/types";
 
@@ -236,7 +235,7 @@
   $effect(() => {
     if (!browser) return;
     // Read advOptsKey to track nested changes
-    const _advOptsKey = advOptsKey;
+    void advOptsKey;
     persistAdvancedOptions();
   });
 
@@ -245,6 +244,7 @@
   $effect(() => {
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
     if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
     calcState.triggerCalculation();
   });
@@ -252,6 +252,7 @@
   $effect(() => {
     // Read advOptsKey to establish reactive dependency on nested changes
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
 
     if (!urlInitialized || !calcState || !entityState) return;
 
@@ -615,6 +616,7 @@
     // calculation since advancedOptions.value is only read inside the setTimeout
     // callback (async context), which does not register reactive dependencies.
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
 
     if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
 
@@ -703,11 +705,13 @@
   $effect(() => {
     // Read advOptsKey and activeTab to establish reactive dependencies
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
     if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
     if (inverseLookupState.activeTab !== "csda") return;
 
     // Snapshot all reactive deps synchronously at the top
     const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
+    void _rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = entityState.selectedParticle?.id;
     const material = entityState.selectedMaterial;
@@ -815,11 +819,13 @@
   $effect(() => {
     // Read advOptsKey and activeTab to establish reactive dependencies
     const _advOptsKey = advOptsKey;
+    void _advOptsKey;
     if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
     if (inverseLookupState.activeTab !== "stp") return;
 
     // Snapshot all reactive deps synchronously at the top
     const _stpMasterUnit = inverseLookupState.stpMasterUnit;
+    void _stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const particleId = entityState.selectedParticle?.id;
     const material = entityState.selectedMaterial;
