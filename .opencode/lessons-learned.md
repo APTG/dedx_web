@@ -496,5 +496,78 @@ command so the user stays in control.
 
 ---
 
-_Last updated: 2026-05-08. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 21 — Empty-tree diff on first branch push causes false-positive vendor gitlink failures
+
+**Symptom:** `workflow-guards` failed on the first push of a new docs-only branch
+with:
+
+```text
+forbidden vendor gitlink change: vendor/bits-ui
+... vendor/jsroot ...
+```
+
+even though the branch had not changed any vendor submodule pointers relative to
+`master`.
+
+**Root cause:** GitHub sets `github.event.before` to all zeroes on the first push
+to a new branch. Comparing `empty-tree..HEAD` makes every tracked path on the
+branch look newly added, including inherited `vendor/*` gitlinks from the branch
+point.
+
+**Rule:** For initial `push` events, never use the empty tree for repo-wide guard
+diffs that validate submodule pointers. Fetch the default branch and diff from
+`git merge-base HEAD origin/<default-branch>` instead; use the empty tree only as
+an emergency fallback when no merge-base exists.
+
+---
+
+## Entry 22 — Do not hide missing feature work behind skipped acceptance tests
+
+**Symptom:** The LiF custom-compound E2E smoke test was skipped because Calculator
+dispatch to `calculateCustomCompound` had not been wired yet.
+
+**Root cause:** The test correctly described Stage 6.10 acceptance behavior, but
+the implementation stopped at editor/URL plumbing and deferred the calculation
+path.
+
+**Rule:** If an acceptance test depends on a remaining task in the same feature
+scope, implement the missing task and re-enable the test before marking the
+feature complete. Use `test.skip()` only for behavior explicitly outside the
+current feature scope.
+
+---
+
+## Entry 23 — Mock method parameter names must match runtime references
+
+**Symptom:** Custom inverse mock methods declared `_params` but referenced
+`params`, which TypeScript did not catch in the interface-shape contract and
+would throw only when tests executed those paths.
+
+**Root cause:** Contract tests checked method presence/signatures but did not
+exercise newly added mock method bodies.
+
+**Rule:** When adding mock service methods, include at least one runtime contract
+test that calls each new method with representative inputs. This catches
+undefined variable references and return-shape drift that structural typing alone
+does not cover.
+
+---
+
+## Entry 24 — URL numeric parsing must reject partial tokens
+
+**Symptom:** Custom-compound URL decoding used `parseFloat()` / `parseInt()`, so
+malformed values such as `mat_density=2.64foo`, `mat_ival=65foo`, or
+`mat_elements=1abc:2` were accepted as valid numeric prefixes.
+
+**Root cause:** JavaScript numeric prefix parsers are permissive by design and
+do not validate that the full user/URL token is numeric.
+
+**Rule:** Decode URL/user numeric fields with a strict full-token regex before
+converting to `Number`. For custom compound URLs, malformed density, I-value,
+atomic-number, or atom-count tokens must set `fromUrlWarning` and use the
+existing fallback path instead of silently accepting the prefix.
+
+---
+
+_Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

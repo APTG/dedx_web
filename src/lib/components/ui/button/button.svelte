@@ -20,6 +20,13 @@
     type = "button",
     disabled,
     children,
+    onclick,
+    onmousedown,
+    onmouseup,
+    onkeydown,
+    onkeyup,
+    onfocus,
+    onblur,
     ...restProps
   }: ButtonProps = $props();
 </script>
@@ -33,6 +40,13 @@
     aria-disabled={disabled}
     role={disabled ? "link" : undefined}
     tabindex={disabled ? -1 : undefined}
+    {onclick}
+    {onmousedown}
+    {onmouseup}
+    {onkeydown}
+    {onkeyup}
+    {onfocus}
+    {onblur}
     {...restProps}
   >
     {@render children?.()}
@@ -44,6 +58,13 @@
     class={cn(buttonVariants({ variant, size }), className)}
     {type}
     {disabled}
+    {onmousedown}
+    {onmouseup}
+    {onkeydown}
+    {onkeyup}
+    {onfocus}
+    {onblur}
+    {onclick}
     {...restProps}
   >
     {@render children?.()}

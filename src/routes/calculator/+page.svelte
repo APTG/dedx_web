@@ -6,6 +6,7 @@
     createEntitySelectionState,
     type EntitySelectionState,
     type AutoSelectProgram,
+    WATER_ID,
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
@@ -23,6 +24,12 @@
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+  import {
+    customMaterialElementsForWasm,
+    customMaterialUrlFields,
+    isCustomMaterial,
+  } from "$lib/utils/custom-compound-material";
+  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { page } from "$app/state";
   import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
@@ -46,12 +53,57 @@
   } from "$lib/state/inverse-lookups.svelte";
   import type { InverseCsdaResult } from "$lib/wasm/types";
 
-  let state = $state<EntitySelectionState | null>(null);
+  let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlInitialized = $state(false);
   let multiProgState = $state<MultiProgramState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
+  let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
+  let sharedUrlWarning = $state<string | null>(null);
+
+  function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
+    sharedUrlWarning = urlState.fromUrlWarning ?? null;
+    if (
+      !urlState.materialIsCustom ||
+      !urlState.matName ||
+      urlState.matDensity === undefined ||
+      !urlState.matElements?.length
+    ) {
+      return null;
+    }
+
+    const compound = customCompounds.addTransient({
+      name: urlState.matName,
+      density: urlState.matDensity,
+      iValue: urlState.matIval,
+      elements: urlState.matElements,
+      phase: urlState.matPhase ?? "condensed",
+    });
+    sharedUrlCompound = compound;
+    return compound;
+  }
+
+  function saveSharedUrlCompound() {
+    if (!sharedUrlCompound || !entityState) return;
+    const result = customCompounds.create({
+      name: sharedUrlCompound.name,
+      density: sharedUrlCompound.density,
+      iValue: sharedUrlCompound.iValue,
+      elements: sharedUrlCompound.elements,
+      phase: sharedUrlCompound.phase,
+    });
+    if (result.success) {
+      customCompounds.removeTransient(sharedUrlCompound.id);
+      entityState.selectMaterial(result.compound.id);
+      sharedUrlCompound = null;
+    }
+  }
+
+  function dismissSharedUrlCompound() {
+    sharedUrlCompound = null;
+    sharedUrlWarning = null;
+  }
 
   $effect(() => {
     // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
@@ -63,12 +115,12 @@
       initAdvancedModeFromUrl(page.url.searchParams);
     }
 
-    if (wasmReady.value && !state && !calcState) {
+    if (wasmReady.value && !entityState && !calcState) {
       getService().then((service) => {
         const matrix = buildCompatibilityMatrix(service);
-        state = createEntitySelectionState(matrix);
-        calcState = createCalculatorState(state, service);
-        inverseLookupState = createInverseLookupState(state);
+        entityState = createEntitySelectionState(matrix);
+        calcState = createCalculatorState(entityState, service);
+        inverseLookupState = createInverseLookupState(entityState);
 
         // Load advanced options from localStorage first
         loadAdvancedOptionsFromStorage();
@@ -83,9 +135,14 @@
 
         // Select particle/material/program FIRST before initializing rows
         // This ensures entitySelection.isComplete is true when validation runs
-        if (urlState.particleId !== null) state.selectParticle(urlState.particleId);
-        if (urlState.materialId !== null) state.selectMaterial(urlState.materialId);
-        if (urlState.programId !== null) state.selectProgram(urlState.programId);
+        if (urlState.particleId !== null) entityState.selectParticle(urlState.particleId);
+        const customFromUrl = restoreCustomCompoundFromUrl(urlState);
+        if (customFromUrl) {
+          entityState.selectMaterial(customFromUrl.id);
+        } else if (urlState.materialId !== null) {
+          entityState.selectMaterial(urlState.materialId);
+        }
+        if (urlState.programId !== null) entityState.selectProgram(urlState.programId);
         calcState.setMasterUnit(urlState.masterUnit);
         if (page.url.searchParams.has("energies") && calcState) {
           urlState.rows.forEach((r, i) => {
@@ -152,6 +209,17 @@
     }
   });
 
+  // Handle mode switch fallback: custom compound → water when switching to Basic mode
+  $effect(() => {
+    const mode = isAdvancedMode.value;
+    if (!mode && entityState?.selectedMaterial) {
+      const matId = entityState.selectedMaterial.id;
+      if (typeof matId === "string" && matId.startsWith("cc_")) {
+        entityState.selectMaterial(WATER_ID);
+      }
+    }
+  });
+
   // $derived signal to track nested advancedOptions changes
   const advOptsKey = $derived(
     JSON.stringify([
@@ -177,7 +245,7 @@
   $effect(() => {
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
-    if (!calcState || !state?.isComplete || isAdvancedMode.value) return;
+    if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
     calcState.triggerCalculation();
   });
 
@@ -185,7 +253,7 @@
     // Read advOptsKey to establish reactive dependency on nested changes
     const _advOptsKey = advOptsKey;
 
-    if (!urlInitialized || !calcState || !state) return;
+    if (!urlInitialized || !calcState || !entityState) return;
 
     // Build inverse mode state for URL encoding
     let inverseModeState: InverseModeUrlState | undefined;
@@ -221,12 +289,19 @@
       }
     }
 
+    const selectedMaterial = entityState.selectedMaterial;
+    const customUrlFields = isCustomMaterial(selectedMaterial)
+      ? customMaterialUrlFields(selectedMaterial)
+      : {};
+
     const urlState = {
-      particleId: state.selectedParticle?.id ?? null,
-      materialId: state.selectedMaterial?.id ?? null,
-      programId: state.resolvedProgramId,
+      particleId: entityState.selectedParticle?.id ?? null,
+      materialId:
+        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
+      programId: entityState.resolvedProgramId,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
+      ...customUrlFields,
       // Include advanced mode state when active
       ...(multiProgState
         ? {
@@ -241,7 +316,7 @@
             quantityFocus: multiProgState.quantityFocus,
             // Include advanced options when in advanced mode
             advancedOptions: advancedOptions.value,
-            materialIsGas: state.selectedMaterial?.isGasByDefault,
+            materialIsGas: entityState.selectedMaterial?.isGasByDefault,
           }
         : {}),
       // Include inverse mode state when active
@@ -266,9 +341,9 @@
   });
 
   $effect(() => {
-    if (calcState && state?.isComplete) {
-      const programId = state.resolvedProgramId;
-      const particleId = state.selectedParticle?.id;
+    if (calcState && entityState?.isComplete) {
+      const programId = entityState.resolvedProgramId;
+      const particleId = entityState.selectedParticle?.id;
       if (programId !== null && particleId !== null) {
         // Snapshot the (programId, particleId) we're querying for so a
         // slower in-flight `getService()` resolution cannot overwrite a
@@ -279,8 +354,8 @@
         getService().then((service) => {
           if (cancelled) return;
           if (
-            snapshot.programId !== state?.resolvedProgramId ||
-            snapshot.particleId !== state?.selectedParticle?.id
+            snapshot.programId !== entityState?.resolvedProgramId ||
+            snapshot.particleId !== entityState?.selectedParticle?.id
           ) {
             return;
           }
@@ -296,8 +371,8 @@
   });
 
   let programLabel = $derived.by(() => {
-    if (!state) return "";
-    const program = state.selectedProgram;
+    if (!entityState) return "";
+    const program = entityState.selectedProgram;
     if (program.id === -1) {
       const resolvedName = (program as AutoSelectProgram).resolvedProgram?.name;
       if (resolvedName) {
@@ -397,8 +472,8 @@
   }
 
   $effect(() => {
-    if (calcState && state) {
-      initExportState(calcState, state);
+    if (calcState && entityState) {
+      initExportState(calcState, entityState);
     }
   });
 
@@ -416,7 +491,7 @@
   // creates a self-dependency (the effect reads `multiProgState`, which it also writes, causing
   // it to re-schedule itself on every run → effect_update_depth_exceeded).
   $effect(() => {
-    if (!isAdvancedMode.value || !state || !calcState) {
+    if (!isAdvancedMode.value || !entityState || !calcState) {
       multiProgState = null;
       return;
     }
@@ -434,7 +509,7 @@
     const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
 
     // Initialize with the resolved program as default
-    const defaultProgramId = state.resolvedProgramId;
+    const defaultProgramId = entityState.resolvedProgramId;
     if (defaultProgramId !== null && defaultProgramId !== -1) {
       newState.addProgram(defaultProgramId);
     }
@@ -442,7 +517,7 @@
     // Restore selected programs from URL
     if (multiParams.mode === "advanced" && multiParams.parsedProgramIds) {
       // Filter to only include valid programs (available and compatible)
-      const availableIds = new Set(state.availablePrograms.map((p) => p.id));
+      const availableIds = new Set(entityState.availablePrograms.map((p) => p.id));
       const validProgramIds = multiParams.parsedProgramIds.filter((id) => availableIds.has(id));
 
       // Add programs from URL (excluding default which is already added)
@@ -490,9 +565,9 @@
 
   // Update default program when resolvedProgramId changes
   $effect(() => {
-    if (!multiProgState || !state) return;
+    if (!multiProgState || !entityState) return;
 
-    const defaultProgramId = state.resolvedProgramId;
+    const defaultProgramId = entityState.resolvedProgramId;
     if (defaultProgramId !== null && defaultProgramId !== -1) {
       // Only update if the default program has changed
       const currentDefault = multiProgState.selectedProgramIds[0];
@@ -541,13 +616,15 @@
     // callback (async context), which does not register reactive dependencies.
     const _advOptsKey = advOptsKey;
 
-    if (!multiProgState || !state || !calcState || !state.isComplete) return;
+    if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
     if (selectedProgramIds.length === 0) return;
 
-    const particleId = state.selectedParticle?.id;
-    const materialId = state.selectedMaterial?.id;
+    const particleId = entityState.selectedParticle?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
     if (particleId === null || materialId === null) return;
 
     const validRows = calcState.rows.filter(
@@ -564,7 +641,13 @@
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
     // overwrite the current state with results computed for different inputs.
-    const inputSnapshot = { selectedProgramIds, particleId, materialId, energies };
+    const inputSnapshot = {
+      selectedProgramIds,
+      particleId,
+      materialId,
+      energies,
+      customMaterial,
+    };
     let cancelled = false;
 
     // Debounce the calculation
@@ -573,13 +656,37 @@
       const service = await getService();
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
-      const results = service.calculateMulti({
-        programIds: inputSnapshot.selectedProgramIds,
-        particleId: inputSnapshot.particleId,
-        materialId: inputSnapshot.materialId,
-        energies: inputSnapshot.energies,
-        options: advOptsSnapshot,
-      });
+      const results = new Map();
+      if (inputSnapshot.customMaterial) {
+        for (const programId of inputSnapshot.selectedProgramIds) {
+          try {
+            results.set(
+              programId,
+              service.calculateCustomCompound({
+                programId,
+                particleId: inputSnapshot.particleId,
+                elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
+                density: inputSnapshot.customMaterial.density,
+                iValue: inputSnapshot.customMaterial.iValue,
+                energies: inputSnapshot.energies,
+              }),
+            );
+          } catch (e) {
+            results.set(programId, e instanceof Error ? e : new Error(String(e)));
+          }
+        }
+      } else if (typeof inputSnapshot.materialId === "number") {
+        const builtInResults = service.calculateMulti({
+          programIds: inputSnapshot.selectedProgramIds,
+          particleId: inputSnapshot.particleId,
+          materialId: inputSnapshot.materialId,
+          energies: inputSnapshot.energies,
+          options: advOptsSnapshot,
+        });
+        for (const [programId, result] of builtInResults) {
+          results.set(programId, result);
+        }
+      }
 
       if (!cancelled) {
         multiProgState.setComparisonResults(results);
@@ -596,15 +703,17 @@
   $effect(() => {
     // Read advOptsKey and activeTab to establish reactive dependencies
     const _advOptsKey = advOptsKey;
-    if (!inverseLookupState || !state || !calcState || !state.isComplete) return;
+    if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
     if (inverseLookupState.activeTab !== "csda") return;
 
     // Snapshot all reactive deps synchronously at the top
     const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
-    const particleId = state.selectedParticle?.id;
-    const materialId = state.selectedMaterial?.id;
-    const programId = state.resolvedProgramId;
+    const particleId = entityState.selectedParticle?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
+    const programId = entityState.resolvedProgramId;
     const rowsSnapshot = inverseLookupState.rangeRows.map((r) => ({
       id: r.id,
       text: r.text,
@@ -629,8 +738,12 @@
       const service = await getService();
       if (cancelled) return;
 
-      const material = state?.selectedMaterial;
-      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
+      const material = entityState?.selectedMaterial;
+      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const density =
+        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
+        material?.density ??
+        1;
 
       if (density <= 0) {
         // Mark all non-empty rows as invalid due to missing density
@@ -651,13 +764,25 @@
       });
 
       try {
-        const results: (InverseCsdaResult | Error)[] = service.getInverseCsda({
-          programId,
-          particleId,
-          materialId,
-          ranges: rangesGcm2,
-          options: advOptsSnapshot,
-        });
+        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
+        const results: (InverseCsdaResult | Error)[] = activeCustomMaterial
+          ? service.getInverseCsdaCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              ranges: rangesGcm2,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseCsda({
+                programId,
+                particleId,
+                materialId,
+                ranges: rangesGcm2,
+                options: advOptsSnapshot,
+              })
+            : [];
 
         let resultIdx = 0;
         for (const r of inverseLookupState.rangeRows) {
@@ -690,15 +815,17 @@
   $effect(() => {
     // Read advOptsKey and activeTab to establish reactive dependencies
     const _advOptsKey = advOptsKey;
-    if (!inverseLookupState || !state || !calcState || !state.isComplete) return;
+    if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
     if (inverseLookupState.activeTab !== "stp") return;
 
     // Snapshot all reactive deps synchronously at the top
     const _stpMasterUnit = inverseLookupState.stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
-    const particleId = state.selectedParticle?.id;
-    const materialId = state.selectedMaterial?.id;
-    const programId = state.resolvedProgramId;
+    const particleId = entityState.selectedParticle?.id;
+    const material = entityState.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
+    const programId = entityState.resolvedProgramId;
     const rowsSnapshot = inverseLookupState.stpRows.map((r) => ({
       id: r.id,
       text: r.text,
@@ -721,32 +848,60 @@
       const service = await getService();
       if (cancelled) return;
 
-      const material = state?.selectedMaterial;
-      const density = advOptsSnapshot.densityOverride ?? undefined ?? material?.density ?? 1;
+      const material = entityState?.selectedMaterial;
+      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const density =
+        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
+        material?.density ??
+        1;
 
       // Convert to MeV·cm²/g
       const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
 
       try {
-        // Call for low branch (side=0)
-        const lowResults = service.getInverseStp({
-          programId,
-          particleId,
-          materialId,
-          stoppingPowers: stpMevCm2g,
-          side: 0,
-          options: advOptsSnapshot,
-        });
+        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
+        // Call for low/high branches
+        const lowResults = activeCustomMaterial
+          ? service.getInverseStpCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              stoppingPowers: stpMevCm2g,
+              side: 0,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseStp({
+                programId,
+                particleId,
+                materialId,
+                stoppingPowers: stpMevCm2g,
+                side: 0,
+                options: advOptsSnapshot,
+              })
+            : [];
 
-        // Call for high branch (side=1)
-        const highResults = service.getInverseStp({
-          programId,
-          particleId,
-          materialId,
-          stoppingPowers: stpMevCm2g,
-          side: 1,
-          options: advOptsSnapshot,
-        });
+        const highResults = activeCustomMaterial
+          ? service.getInverseStpCustomCompound({
+              programId,
+              particleId,
+              elements: customMaterialElementsForWasm(activeCustomMaterial),
+              density,
+              iValue: activeCustomMaterial.iValue,
+              stoppingPowers: stpMevCm2g,
+              side: 1,
+            })
+          : typeof materialId === "number"
+            ? service.getInverseStp({
+                programId,
+                particleId,
+                materialId,
+                stoppingPowers: stpMevCm2g,
+                side: 1,
+                options: advOptsSnapshot,
+              })
+            : [];
 
         let resultIdx = 0;
         for (const r of inverseLookupState.stpRows) {
@@ -857,7 +1012,7 @@
         <pre class="mt-1 whitespace-pre-wrap">{wasmError.value.message}</pre>
       </details>
     </div>
-  {:else if !wasmReady.value || !state || !calcState}
+  {:else if !wasmReady.value || !entityState || !calcState}
     <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading calculator">
       <div class="flex flex-wrap gap-3">
         <Skeleton class="h-10 w-44 rounded-md" />
@@ -873,17 +1028,17 @@
     </div>
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
-      <SelectionLiveRegion {state} />
+      <SelectionLiveRegion state={entityState} />
       <EntitySelectionComboboxes
-        {state}
+        selectionState={entityState}
         onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
       />
-      {#if isAdvancedMode.value && multiProgState && state}
+      {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
             state={multiProgState}
-            availablePrograms={state.availablePrograms}
-            compatibleIds={new Set(state.availablePrograms.map((p) => p.id))}
+            availablePrograms={entityState.availablePrograms}
+            compatibleIds={new Set(entityState.availablePrograms.map((p) => p.id))}
             onInteraction={handleProgramPickerInteraction}
           />
           <!-- Table toolbar -->
@@ -911,7 +1066,9 @@
                 >
                   <div class="space-y-2">
                     {#each multiProgState.selectedProgramIds as programId (programId)}
-                      {@const program = state.availablePrograms.find((p) => p.id === programId)}
+                      {@const program = entityState.availablePrograms.find(
+                        (p) => p.id === programId,
+                      )}
                       {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
                       {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
                       <label
@@ -975,18 +1132,19 @@
           </div>
         </div>
         <!-- Advanced Options Panel -->
-        {#if state}
+        {#if entityState}
           <AdvancedOptionsPanel
-            materialIsGas={state.selectedMaterial?.isGasByDefault ?? false}
-            materialBuiltInDensity={state.selectedMaterial?.density}
-            materialBuiltInAggregateState={state.selectedMaterial
-              ? state.selectedMaterial.isGasByDefault
+            materialIsGas={entityState.selectedMaterial?.isGasByDefault ?? false}
+            materialBuiltInDensity={entityState.selectedMaterial?.density}
+            materialBuiltInAggregateState={entityState.selectedMaterial
+              ? entityState.selectedMaterial.isGasByDefault
                 ? "gas"
                 : "condensed"
               : undefined}
-            selectedProgram={"resolvedProgram" in state.selectedProgram
-              ? (state.selectedProgram.resolvedProgram?.name ?? "")
-              : state.selectedProgram.name}
+            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
+            selectedProgram={"resolvedProgram" in entityState.selectedProgram
+              ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
+              : entityState.selectedProgram.name}
           />
         {/if}
       {/if}
@@ -1014,23 +1172,45 @@
           </button>
         </div>
       {/if}
-      {#if state.lastAutoFallbackMessage}
+      {#if entityState.lastAutoFallbackMessage}
         <div
           class="flex items-center justify-between rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
         >
-          <span role="status" aria-live="polite">{state.lastAutoFallbackMessage}</span>
+          <span role="status" aria-live="polite">{entityState.lastAutoFallbackMessage}</span>
           <button
             class="ml-2 text-amber-600 hover:text-amber-800 text-lg leading-none"
             aria-label="Dismiss"
-            onclick={() => state.clearAutoFallbackMessage()}
+            onclick={() => entityState.clearAutoFallbackMessage()}
           >
             ×
           </button>
         </div>
       {/if}
+      {#if sharedUrlCompound || sharedUrlWarning}
+        <div
+          class="flex flex-wrap items-center justify-between gap-3 rounded border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-900"
+          data-testid="compound-from-url-banner"
+        >
+          <span role="status" aria-live="polite">
+            {#if sharedUrlCompound}
+              Loaded custom compound “{sharedUrlCompound.name}” from shared URL.
+            {:else}
+              Custom compound URL parameters could not be restored: {sharedUrlWarning}
+            {/if}
+          </span>
+          <div class="flex items-center gap-2">
+            {#if sharedUrlCompound}
+              <Button size="sm" variant="outline" onclick={saveSharedUrlCompound}>
+                Save to library
+              </Button>
+            {/if}
+            <Button size="sm" variant="ghost" onclick={dismissSharedUrlCompound}>Dismiss</Button>
+          </div>
+        </div>
+      {/if}
       <EnergyUnitSelector
         value={calcState.masterUnit}
-        availableUnits={getAvailableEnergyUnits(state.selectedParticle, isAdvancedMode.value)}
+        availableUnits={getAvailableEnergyUnits(entityState.selectedParticle, isAdvancedMode.value)}
         disabled={calcState.isPerRowMode}
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />
@@ -1087,7 +1267,7 @@
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <ResultTable
             state={calcState}
-            entitySelection={state}
+            entitySelection={entityState}
             multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
             comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
           />
@@ -1205,7 +1385,7 @@
             </div>
 
             <!-- Valid range hint -->
-            {#if state.isComplete && energyRangeLabel}
+            {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
               </p>
@@ -1298,9 +1478,10 @@
             </div>
 
             <!-- Valid STP range hint -->
-            {#if state.isComplete && energyRangeLabel}
+            {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
-                Particle/material: {state.selectedParticle?.name} in {state.selectedMaterial?.name}
+                Particle/material: {entityState.selectedParticle?.name} in {entityState
+                  .selectedMaterial?.name}
               </p>
             {/if}
           </div>
@@ -1309,13 +1490,13 @@
       {#if programLabel}
         <p class="text-sm text-muted-foreground -mt-2">{programLabel}</p>
       {/if}
-      {#if state.isComplete && energyRangeLabel}
+      {#if entityState.isComplete && energyRangeLabel}
         <p class="text-xs text-muted-foreground">
           Valid range: {energyRangeLabel}
-          ({state.selectedProgram.id === -1
-            ? ((state.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-            : state.selectedProgram.name},
-          {state.selectedParticle?.name ?? ""})
+          ({entityState.selectedProgram.id === -1
+            ? ((entityState.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+            : entityState.selectedProgram.name},
+          {entityState.selectedParticle?.name ?? ""})
         </p>
       {/if}
       {#if calcState?.hasLargeInput}

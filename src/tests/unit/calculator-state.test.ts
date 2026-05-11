@@ -9,6 +9,7 @@ import {
 } from "$lib/state/calculator.svelte";
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+import { customCompounds } from "$lib/state/custom-compounds.svelte";
 
 describe("CalculatorState", () => {
   let service: LibdedxServiceImpl;
@@ -48,6 +49,40 @@ describe("CalculatorState", () => {
 
     expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
     expect(calcState.rows[0]!.csdaRangeCm).not.toBeNull();
+  });
+
+  it("dispatches custom compound calculations through calculateCustomCompound", async () => {
+    const created = customCompounds.create({
+      name: "LiF Unit Test",
+      density: 2.2,
+      elements: [
+        { atomicNumber: 3, atomCount: 1 },
+        { atomicNumber: 9, atomCount: 1 },
+      ],
+      phase: "condensed",
+    });
+    expect(created.success).toBe(true);
+    if (!created.success) return;
+
+    const spy = vi.spyOn(service, "calculateCustomCompound");
+    entitySelection.selectMaterial(created.compound.id);
+
+    await calcState.triggerCalculation();
+    calcState.flushCalculation();
+
+    expect(spy).toHaveBeenCalledWith(
+      expect.objectContaining({
+        density: 2.2,
+        elements: [
+          { atomicNumber: 3, fraction: 1, type: "atomic" },
+          { atomicNumber: 9, fraction: 1, type: "atomic" },
+        ],
+      }),
+    );
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
+
+    customCompounds.delete(created.compound.id);
+    spy.mockRestore();
   });
 
   it("handles invalid input with appropriate status", () => {

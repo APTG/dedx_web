@@ -1,13 +1,13 @@
 {
   "metadata": {
-    "generated_at": "2026-04-22T20:38:22.761Z",
+    "generated_at": "2026-05-10T10:12:03.072Z",
     "analysis_type": "typescript_wrapper_contract_verification_stage3",
     "wasm_environment": "web,node",
     "build_script": "wasm/build.sh",
     "contract_version": "Final v3 (docs/06-wasm-api-contract.md)",
-    "checks_passed": 67,
+    "checks_passed": 69,
     "checks_failed": 0,
-    "checks_total": 67
+    "checks_total": 69
   },
   "exported_functions": {
     "dedx_fill_program_list": {
@@ -70,11 +70,11 @@
       "category": "dedx_tools.h",
       "exported": true
     },
-    "dedx_get_inverse_stp": {
+    "dedx_get_inverse_stp_flat": {
       "category": "dedx_tools.h",
       "exported": true
     },
-    "dedx_get_inverse_csda": {
+    "dedx_get_inverse_csda_flat": {
       "category": "dedx_tools.h",
       "exported": true
     },
@@ -143,6 +143,10 @@
     "dedx_target_is_gas": {
       "category": "wasm/dedx_extra.h",
       "exported": true
+    },
+    "dedx_get_bragg_peak_stp": {
+      "category": "wasm/dedx_extra.h",
+      "exported": true
     }
   },
   "runtime_methods": {
@@ -203,17 +207,24 @@
     },
     "getMinEnergy": {
       "category": "Energy Bounds",
-      "c_functions": ["dedx_get_min_energy"],
+      "c_functions": [
+        "dedx_get_min_energy"
+      ],
       "c_functions_available": true
     },
     "getMaxEnergy": {
       "category": "Energy Bounds",
-      "c_functions": ["dedx_get_max_energy"],
+      "c_functions": [
+        "dedx_get_max_energy"
+      ],
       "c_functions_available": true
     },
     "calculate": {
       "category": "Stopping Power",
-      "c_functions": ["dedx_get_stp_table", "dedx_get_csda_range_table"],
+      "c_functions": [
+        "dedx_get_stp_table",
+        "dedx_get_csda_range_table"
+      ],
       "c_functions_available": true
     },
     "calculateCustomCompound": {
@@ -231,63 +242,78 @@
     "getInverseStp": {
       "category": "Inverse Lookups",
       "c_functions": [
-        "dedx_allocate_workspace",
-        "dedx_load_config",
-        "dedx_get_inverse_stp",
-        "dedx_free_config",
-        "dedx_free_workspace"
+        "dedx_get_inverse_stp_flat"
       ],
       "c_functions_available": true
     },
     "getInverseCsda": {
       "category": "Inverse Lookups",
       "c_functions": [
-        "dedx_allocate_workspace",
-        "dedx_load_config",
-        "dedx_get_inverse_csda",
-        "dedx_free_config",
-        "dedx_free_workspace"
+        "dedx_get_inverse_csda_flat"
+      ],
+      "c_functions_available": true
+    },
+    "getBraggPeakStp": {
+      "category": "Inverse Lookups",
+      "c_functions": [
+        "dedx_get_bragg_peak_stp"
       ],
       "c_functions_available": true
     },
     "convertStpUnits": {
       "category": "Unit Conversion",
-      "c_functions": ["convert_units"],
+      "c_functions": [
+        "convert_units"
+      ],
       "c_functions_available": true
     },
     "getDensity": {
       "category": "Material Properties",
-      "c_functions": ["dedx_get_density"],
+      "c_functions": [
+        "dedx_get_density"
+      ],
       "c_functions_available": true
     },
     "isGasByDefault": {
       "category": "Material Properties",
-      "c_functions": ["dedx_target_is_gas"],
+      "c_functions": [
+        "dedx_target_is_gas"
+      ],
       "c_functions_available": true
     },
     "getNucleonNumber": {
       "category": "Material Properties",
-      "c_functions": ["dedx_get_ion_nucleon_number"],
+      "c_functions": [
+        "dedx_get_ion_nucleon_number"
+      ],
       "c_functions_available": true
     },
     "getAtomicMass": {
       "category": "Material Properties",
-      "c_functions": ["dedx_get_ion_atom_mass"],
+      "c_functions": [
+        "dedx_get_ion_atom_mass"
+      ],
       "c_functions_available": true
     },
     "getIValue": {
       "category": "Material Properties",
-      "c_functions": ["dedx_get_i_value"],
+      "c_functions": [
+        "dedx_get_i_value"
+      ],
       "c_functions_available": true
     },
     "getComposition": {
       "category": "Material Properties",
-      "c_functions": ["dedx_get_composition"],
+      "c_functions": [
+        "dedx_get_composition"
+      ],
       "c_functions_available": true
     },
     "getVersion": {
       "category": "Library Metadata",
-      "c_functions": ["dedx_get_version_string"],
+      "c_functions": [
+        "dedx_get_version_string"
+      ],
       "c_functions_available": true
     }
   },

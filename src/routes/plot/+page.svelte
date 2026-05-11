@@ -9,6 +9,7 @@
   import {
     createEntitySelectionState,
     type EntitySelectionState,
+    WATER_ID,
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
@@ -17,6 +18,12 @@
   import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
   import { getParticleLabel } from "$lib/utils/particle-label";
+  import {
+    customMaterialElementsForWasm,
+    customMaterialUrlFields,
+    isCustomMaterial,
+  } from "$lib/utils/custom-compound-material";
+  import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
@@ -30,6 +37,24 @@
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
   let materialIsGas = $state<boolean | undefined>(undefined);
+
+  function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
+    if (
+      !decoded.materialIsCustom ||
+      !decoded.matName ||
+      decoded.matDensity === undefined ||
+      !decoded.matElements?.length
+    ) {
+      return null;
+    }
+    return customCompounds.addTransient({
+      name: decoded.matName,
+      density: decoded.matDensity,
+      iValue: decoded.matIval,
+      elements: decoded.matElements,
+      phase: decoded.matPhase ?? "condensed",
+    });
+  }
 
   $effect(() => {
     if (wasmReady.value && !entityState) {
@@ -46,6 +71,24 @@
     loadAdvancedOptionsFromStorage();
   });
 
+  // Handle mode switch fallback: custom compound → water when switching to Basic mode
+  $effect(() => {
+    const mode = isAdvancedMode.value;
+    if (!mode && entityState?.selectedMaterial) {
+      const matId = entityState.selectedMaterial.id;
+      if (typeof matId === "string" && matId.startsWith("cc_")) {
+        entityState.selectMaterial(WATER_ID);
+      }
+    }
+    if (!mode) {
+      for (const series of [...plotState.series]) {
+        if (typeof series.materialId === "string" && series.materialId.startsWith("cc_")) {
+          plotState.removeSeries(series.seriesId);
+        }
+      }
+    }
+  });
+
   // Track material changes to determine gas/condensed state for the panel
   $effect(() => {
     if (!entityState?.selectedMaterial) {
@@ -54,6 +97,10 @@
     }
     const resolvedId = entityState.resolvedProgramId;
     const matId = entityState.selectedMaterial.id;
+    if (isCustomMaterial(entityState.selectedMaterial)) {
+      materialIsGas = entityState.selectedMaterial.isGasByDefault;
+      return;
+    }
     if (resolvedId === null) {
       materialIsGas = undefined;
       return;
@@ -103,7 +150,6 @@
     if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
     // Mark in-flight so the URL-write effect cannot run while we are
     // restoring (it would otherwise wipe `series=...` from the address bar).
-    const state = entityState;
     const params = new URLSearchParams(window.location.search);
     const decoded = decodePlotUrl(params);
 
@@ -111,13 +157,16 @@
     initAdvancedModeFromUrl(params);
 
     if (decoded.particleId !== null) {
-      state.selectParticle(decoded.particleId);
+      entityState.selectParticle(decoded.particleId);
     }
-    if (decoded.materialId !== null) {
-      state.selectMaterial(decoded.materialId);
+    const customFromUrl = restorePlotCustomCompoundFromUrl(decoded);
+    if (customFromUrl) {
+      entityState.selectMaterial(customFromUrl.id);
+    } else if (decoded.materialId !== null) {
+      entityState.selectMaterial(decoded.materialId);
     }
     if (decoded.programId !== -1) {
-      state.selectProgram(decoded.programId);
+      entityState.selectProgram(decoded.programId);
     }
 
     if (decoded.stpUnit) {
@@ -174,19 +223,30 @@
 
   $effect(() => {
     if (!browser || !entityState || !urlInitialized) return;
+    const selectedMaterial = entityState.selectedMaterial;
+    const customUrlFields = isCustomMaterial(selectedMaterial)
+      ? customMaterialUrlFields(selectedMaterial)
+      : {};
     const params = encodePlotUrl({
       particleId: entityState.selectedParticle?.id ?? null,
-      materialId: entityState.selectedMaterial?.id ?? null,
+      materialId:
+        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
       programId: entityState.selectedProgram.id,
-      series: plotState.series.map((s) => ({
-        programId: s.programId,
-        particleId: s.particleId,
-        materialId: s.materialId,
-      })),
+      series: plotState.series
+        .map((s) => ({
+          programId: s.programId,
+          particleId: s.particleId,
+          materialId: s.materialId,
+        }))
+        .filter(
+          (s): s is { programId: number; particleId: number; materialId: number } =>
+            typeof s.materialId === "number",
+        ),
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
       advancedOptions: advancedOptions.value,
+      ...customUrlFields,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
     untrack(() => replaceState(newUrl, page.state));
@@ -235,20 +295,37 @@
       programId: resolvedProgramId,
       particleId: selectedParticle.id,
       materialId: selectedMaterial.id,
+      customMaterial: isCustomMaterial(selectedMaterial) ? selectedMaterial : null,
     };
     let cancelled = false;
 
     getService().then((service) => {
       if (cancelled) return;
       try {
-        const result = service.getPlotData(
-          snapshot.programId,
-          snapshot.particleId,
-          snapshot.materialId,
-          500,
-          true,
-          advOptsSnapshot,
-        );
+        const result = snapshot.customMaterial
+          ? service.getPlotDataCustomCompound({
+              programId: snapshot.programId,
+              particleId: snapshot.particleId,
+              elements: customMaterialElementsForWasm(snapshot.customMaterial),
+              density: snapshot.customMaterial.density,
+              iValue: snapshot.customMaterial.iValue,
+              numPoints: 500,
+              logScale: true,
+            })
+          : typeof snapshot.materialId === "number"
+            ? service.getPlotData(
+                snapshot.programId,
+                snapshot.particleId,
+                snapshot.materialId,
+                500,
+                true,
+                advOptsSnapshot,
+              )
+            : null;
+        if (!result) {
+          plotState.clearPreview();
+          return;
+        }
         if (cancelled) return;
         plotState.setPreview({
           programId: snapshot.programId,
@@ -260,8 +337,9 @@
           // Use the density override (only in Advanced mode) for correct unit conversion.
           // advancedModeActive is snapshotted synchronously at the top of this effect.
           density:
-            (advancedModeActive ? advOptsSnapshot.densityOverride : undefined) ??
-            selectedMaterial.density,
+            (advancedModeActive && !snapshot.customMaterial
+              ? advOptsSnapshot.densityOverride
+              : undefined) ?? selectedMaterial.density,
           result,
         });
       } catch (err) {
@@ -658,6 +736,7 @@
             materialIsGas={materialIsGas ?? false}
             materialBuiltInDensity={entityState.selectedMaterial.density}
             materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
+            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}

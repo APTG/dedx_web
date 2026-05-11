@@ -5,6 +5,8 @@
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
+  import { customCompounds } from "$lib/state/custom-compounds.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
   interface Props {
     state: EntitySelectionState;
@@ -66,6 +68,25 @@
         label: material.name,
         searchText: `${material.id} ${material.name}`,
       }));
+  });
+
+  const customCompoundItems = $derived.by(() => {
+    if (!isAdvancedMode.value) return [];
+    return customCompounds.compounds.map((compound) => ({
+      entity: {
+        id: compound.id,
+        name: compound.name,
+        density: compound.density,
+        iValue: compound.iValue,
+        phase: compound.phase,
+        elements: compound.elements,
+        isGasByDefault: compound.phase === "gas",
+      } satisfies MaterialEntity,
+      available: true,
+      label: compound.name,
+      searchText: `${compound.id} ${compound.name}`,
+      description: `${compound.density} g/cm³`,
+    }));
   });
 
   const programItems = $derived.by(() => {
@@ -136,6 +157,7 @@
       groups={[
         { groupName: "Elements", items: elements },
         { groupName: "Compounds", items: compounds },
+        ...(isAdvancedMode.value ? [{ groupName: "Custom", items: customCompoundItems }] : []),
       ]}
       selectedId={state.selectedMaterial?.id ?? null}
       maxHeight="260px"

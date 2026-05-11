@@ -31,7 +31,7 @@ export function makeCsvCell(value: string): string {
  */
 export interface CsvExportMeta {
   particle: { name: string } | null;
-  material: { name: string } | null;
+  material: { id?: number | string; name: string } | null;
   program: { name: string } | null;
 }
 
@@ -96,7 +96,7 @@ export function generateCalculatorCsv(
  */
 function buildCsvFilename(
   particle: { name: string } | null,
-  material: { name: string } | null,
+  material: { id?: number | string; name: string } | null,
   program: { name: string } | null,
 ): string {
   function slug(name: string): string {
@@ -104,7 +104,9 @@ function buildCsvFilename(
   }
 
   const p = particle ? slug(particle.name) : "unknown_particle";
-  const m = material ? slug(material.name) : "unknown_material";
+  const customSuffix =
+    material && typeof material.id === "string" && material.id.startsWith("cc_") ? "_custom" : "";
+  const m = material ? `${slug(material.name)}${customSuffix}` : "unknown_material";
   const pr = program ? slug(program.name) : "unknown_program";
 
   return `dedx_calculator_${p}_${m}_${pr}.csv`;

@@ -10,14 +10,17 @@
     AutoSelectProgram,
   } from "$lib/state/entity-selection.svelte";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
+  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
+  import CompoundEditorModal from "./compound-editor-modal.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
   interface Props {
-    state: EntitySelectionState;
+    selectionState: EntitySelectionState;
     class?: string;
     onParticleSelect?: (particleId: number) => void;
   }
 
-  let { state, class: className, onParticleSelect }: Props = $props();
+  let { selectionState, class: className, onParticleSelect }: Props = $props();
 
   function getMaterialPhase(material: MaterialEntity | null): "gas" | "liquid" | "solid" | null {
     if (!material) return null;
@@ -26,12 +29,50 @@
     return "solid";
   }
 
-  let materialPhase = $derived.by(() => getMaterialPhase(state.selectedMaterial));
+  let materialPhase = $derived.by(() => getMaterialPhase(selectionState.selectedMaterial));
+
+  // Compound editor modal state
+  let compoundModalOpen = $state(false);
+  let editingCompound = $state<StoredCompoundInternal | null>(null);
+
+  function handleAddCompound() {
+    editingCompound = null;
+    compoundModalOpen = true;
+  }
+
+  function handleEditCompound(compound: StoredCompoundInternal) {
+    editingCompound = compound;
+    compoundModalOpen = true;
+  }
+
+  function handleSaveCompound(data: {
+    name: string;
+    density: number;
+    iValue?: number;
+    elements: Array<{ atomicNumber: number; atomCount: number }>;
+    phase: "gas" | "condensed";
+  }) {
+    if (editingCompound) {
+      customCompounds.update(editingCompound.id, data);
+    } else {
+      customCompounds.create(data);
+    }
+    compoundModalOpen = false;
+  }
+
+  function handleDeleteCompound(compound?: StoredCompoundInternal | null) {
+    const target = compound ?? editingCompound;
+    if (target) {
+      customCompounds.delete(target.id);
+      compoundModalOpen = false;
+      editingCompound = null;
+    }
+  }
 
   const particleItems = $derived.by(() => {
     // "Common particles" group: proton (1), alpha (2), electron (1001)
     const COMMON_IDS = new Set([1, 2, 1001]);
-    const commonParticles = state.allParticles
+    const commonParticles = selectionState.allParticles
       .filter((p) => COMMON_IDS.has(p.id))
       .sort((a, b) => {
         // fixed order: proton, alpha particle, electron
@@ -39,7 +80,7 @@
         return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
       });
 
-    const ionParticles = state.allParticles
+    const ionParticles = selectionState.allParticles
       .filter((p) => !COMMON_IDS.has(p.id))
       .sort((a, b) => a.id - b.id);
 
@@ -47,7 +88,7 @@
       return {
         entity: particle,
         available:
-          particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
+          particle.id !== 1001 && selectionState.availableParticles.some((p) => p.id === particle.id),
         label: getParticleLabel(particle),
         description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
         searchText: getParticleSearchText(particle),
@@ -73,25 +114,68 @@
     entity: MaterialEntity;
     available: boolean;
     label: string;
+    description?: string;
     searchText: string;
+    actions?: Array<{ label: string; icon?: "edit" | "delete" | "trash"; onClick: () => void }>;
   }
 
-  type MaterialEntry = MaterialGroup | MaterialItem;
+  interface MaterialAddButton {
+    type: "add-button";
+    label?: string;
+    onClick: () => void;
+  }
 
-  const materialItems = $derived.by<MaterialEntry[]>(() => {
-    const elements = state.allMaterials
+  type MaterialEntry = MaterialGroup | MaterialItem | MaterialAddButton;
+
+  let materialItems = $state<MaterialEntry[]>([]);
+
+  $effect(() => {
+    const compoundsArray = customCompounds.compounds;
+    const elements = selectionState.allMaterials
       .filter((m) => m.id >= 1 && m.id <= 98)
       .sort((a, b) => a.id - b.id);
-    const compounds = state.allMaterials
+    const compounds = selectionState.allMaterials
       .filter((m) => m.id > 98 || m.id === 906)
       .sort((a, b) => a.name.localeCompare(b.name));
+
+    const customCompoundsItems: MaterialItem[] = compoundsArray.map((compound) => {
+      const desc = `${compound.density} g/cm³`;
+      return {
+        type: "item" as const,
+        entity: {
+          id: compound.id,
+          name: compound.name,
+          density: compound.density,
+          iValue: compound.iValue,
+          phase: compound.phase,
+          elements: compound.elements,
+          isGasByDefault: compound.phase === "gas",
+        } satisfies MaterialEntity,
+        available: true,
+        label: compound.name,
+        description: desc,
+        searchText: `${compound.id} ${compound.name}`,
+        actions: [
+          {
+            label: "Edit compound",
+            icon: "edit",
+            onClick: () => handleEditCompound(compound),
+          },
+          {
+            label: "Delete compound",
+            icon: "trash",
+            onClick: () => handleDeleteCompound(compound),
+          },
+        ],
+      };
+    });
 
     const result: MaterialEntry[] = [
       { type: "section", label: "Elements" },
       ...elements.map((material) => ({
         type: "item" as const,
         entity: material,
-        available: state.availableMaterials.some((m) => m.id === material.id),
+        available: selectionState.availableMaterials.some((m) => m.id === material.id),
         label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
@@ -99,13 +183,24 @@
       ...compounds.map((material) => ({
         type: "item" as const,
         entity: material,
-        available: state.availableMaterials.some((m) => m.id === material.id),
+        available: selectionState.availableMaterials.some((m) => m.id === material.id),
         label: material.name,
         searchText: `${material.id} ${material.name}`,
       })),
+      ...(isAdvancedMode.value
+        ? [
+            { type: "section" as const, label: "Custom Compounds" },
+            ...customCompoundsItems,
+            {
+              type: "add-button" as const,
+              label: "+ Add compound",
+              onClick: handleAddCompound,
+            },
+          ]
+        : []),
     ];
 
-    return result;
+    materialItems = result;
   });
 
   interface ProgramGroup {
@@ -129,7 +224,7 @@
 
     // Auto-select is always shown at the top; resolvedProgram only populated when currently
     // in auto-select mode so the trigger can display "Auto-select → <resolved program>"
-    const currentProgram = state.selectedProgram;
+    const currentProgram = selectionState.selectedProgram;
     const autoSelectEntity: AutoSelectProgram = {
       id: -1,
       name: "Auto-select",
@@ -150,8 +245,8 @@
 
     // availablePrograms is already filtered in compatibility-matrix.ts to hide
     // DEDX_ICRU (id=9). The UI must only show the synthetic Auto-select entry.
-    const tabulatedPrograms = state.availablePrograms.filter((p) => p.id <= 90);
-    const analyticalPrograms = state.availablePrograms.filter((p) => p.id > 90);
+    const tabulatedPrograms = selectionState.availablePrograms.filter((p) => p.id <= 90);
+    const analyticalPrograms = selectionState.availablePrograms.filter((p) => p.id > 90);
 
     result.push({ type: "section", label: "Tabulated data" });
 
@@ -190,7 +285,7 @@
     <EntityCombobox
       label="Particle"
       items={particleItems}
-      selectedId={state.selectedParticle?.id ?? null}
+      selectedId={selectionState.selectedParticle?.id ?? null}
       placeholder="Select particle"
       onItemSelect={(particle: ParticleEntity) => {
         if (particle.id === 1001) {
@@ -199,10 +294,10 @@
         if (onParticleSelect) {
           onParticleSelect(particle.id);
         } else {
-          state.selectParticle(particle.id);
+          selectionState.selectParticle(particle.id);
         }
       }}
-      onClear={() => state.clearParticle()}
+      onClear={() => selectionState.clearParticle()}
     />
   </div>
 
@@ -211,12 +306,12 @@
       <EntityCombobox
         label="Material"
         items={materialItems}
-        selectedId={state.selectedMaterial?.id ?? null}
+        selectedId={selectionState.selectedMaterial?.id ?? null}
         placeholder="Select material"
         onItemSelect={(material: MaterialEntity) => {
-          state.selectMaterial(material.id);
+          selectionState.selectMaterial(material.id);
         }}
-        onClear={() => state.clearMaterial()}
+        onClear={() => selectionState.clearMaterial()}
       />
     </div>
     {#if materialPhase}
@@ -234,10 +329,10 @@
     <EntityCombobox
       label="Program"
       items={programItems}
-      selectedId={state.selectedProgram?.id ?? null}
+      selectedId={selectionState.selectedProgram?.id ?? null}
       placeholder="Select program"
       onItemSelect={(program: SelectedProgram | ProgramEntity) => {
-        state.selectProgram(program.id);
+        selectionState.selectProgram(program.id);
       }}
     />
   </div>
@@ -248,10 +343,21 @@
       title="Restores Proton / Water / Auto-select"
       class="text-sm text-muted-foreground hover:text-foreground"
       onclick={() => {
-        state.resetAll();
+        selectionState.resetAll();
       }}
     >
       Restore defaults
     </button>
   </div>
 </div>
+
+<CompoundEditorModal
+  open={compoundModalOpen}
+  compound={editingCompound}
+  onOpenChange={(open) => {
+    compoundModalOpen = open;
+    if (!open) editingCompound = null;
+  }}
+  onSave={handleSaveCompound}
+  onDelete={handleDeleteCompound}
+/>

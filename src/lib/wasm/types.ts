@@ -3,7 +3,7 @@ export type StpUnit = "MeV·cm²/g" | "MeV/cm" | "keV/µm";
 export type RangeUnit = "g/cm²" | "cm";
 
 export interface LibdedxEntity {
-  id: number;
+  id: number | string;
   name: string;
 }
 
@@ -21,7 +21,10 @@ export interface ProgramEntity extends LibdedxEntity {
 export interface MaterialEntity extends LibdedxEntity {
   density: number;
   isGasByDefault: boolean;
-  atomicNumber?: number;
+  atomicNumber?: number | undefined;
+  elements?: Array<{ atomicNumber: number; atomCount: number }> | undefined;
+  iValue?: number | undefined;
+  phase?: "gas" | "condensed" | undefined;
 }
 
 export interface CalculationResult {
@@ -73,7 +76,7 @@ export interface CustomCompound {
   name: string;
   elements: CompoundElement[];
   density: number;
-  iValue?: number;
+  iValue?: number | undefined;
 }
 
 export interface StoredCompound extends CustomCompound {
@@ -118,6 +121,15 @@ export interface LibdedxService {
     logScale: boolean,
     options?: AdvancedOptions,
   ): CalculationResult;
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number | undefined;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult;
   getMinEnergy(programId: number, particleId: number): number;
   getMaxEnergy(programId: number, particleId: number): number;
   getInverseStp(params: {
@@ -140,6 +152,38 @@ export interface LibdedxService {
     particleId: number;
     materialId: number;
     options?: AdvancedOptions;
+  }): number;
+  calculateCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult;
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[];
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[];
+  getBraggPeakStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
   }): number;
   getDensity(materialId: number): number | undefined;
   convertEnergy(params: {

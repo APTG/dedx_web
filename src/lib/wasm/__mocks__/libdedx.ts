@@ -8,6 +8,7 @@ import type {
   InverseStpResult,
   InverseCsdaResult,
   EnergyUnit,
+  CompoundElement,
 } from "../types";
 import { LibdedxError } from "../types";
 
@@ -204,6 +205,69 @@ export class LibdedxServiceImpl implements LibdedxService {
   }): number[] {
     return params.values;
   }
+
+  calculateCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult {
+    const energies = params.energies;
+    const scale = Math.max(0.1, params.elements.length) * Math.max(0.1, params.density);
+    return {
+      energies,
+      stoppingPowers: energies.map((e) => e * 0.01 * scale),
+      csdaRanges: energies.map((e) => e * 0.001 * scale),
+    };
+  }
+
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult {
+    const energies = Array.from({ length: params.numPoints }, (_, i) => i + 1);
+    return this.calculateCustomCompound({ ...params, energies });
+  }
+
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[] {
+    return params.stoppingPowers.map((stp) => ({ energy: stp * 11, stoppingPower: stp }));
+  }
+
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return params.ranges.map((range) => ({ energy: range * 13, csdaRange: range }));
+  }
+
+  getBraggPeakStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number {
+    return 80.0;
+  }
 }
 
 export class MockLibdedxServiceWithElectron implements LibdedxService {
@@ -384,5 +448,68 @@ export class MockLibdedxServiceWithElectron implements LibdedxService {
     values: number[];
   }): number[] {
     return params.values;
+  }
+
+  calculateCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    energies: number[];
+  }): CalculationResult {
+    const energies = params.energies;
+    const scale = Math.max(0.1, params.elements.length) * Math.max(0.1, params.density);
+    return {
+      energies,
+      stoppingPowers: energies.map((e) => e * 0.01 * scale),
+      csdaRanges: energies.map((e) => e * 0.001 * scale),
+    };
+  }
+
+  getPlotDataCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    numPoints: number;
+    logScale: boolean;
+  }): CalculationResult {
+    const energies = Array.from({ length: params.numPoints }, (_, i) => i + 1);
+    return this.calculateCustomCompound({ ...params, energies });
+  }
+
+  getInverseStpCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    stoppingPowers: number[];
+    side: 0 | 1;
+  }): (InverseStpResult | LibdedxError)[] {
+    return params.stoppingPowers.map((stp) => ({ energy: stp * 11, stoppingPower: stp }));
+  }
+
+  getInverseCsdaCustomCompound(params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+    ranges: number[];
+  }): (InverseCsdaResult | LibdedxError)[] {
+    return params.ranges.map((range) => ({ energy: range * 13, csdaRange: range }));
+  }
+
+  getBraggPeakStpCustomCompound(_params: {
+    programId: number;
+    particleId: number;
+    elements: CompoundElement[];
+    density: number;
+    iValue?: number;
+  }): number {
+    return 80.0;
   }
 }

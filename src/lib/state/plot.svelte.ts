@@ -6,7 +6,7 @@ import { allocateColor, releaseColor } from "$lib/utils/series-labels";
 export interface PlotSeriesData {
   programId: number;
   particleId: number;
-  materialId: number;
+  materialId: number | string;
   programName: string;
   particleName: string;
   materialName: string;
