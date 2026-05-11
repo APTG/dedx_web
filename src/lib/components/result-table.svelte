@@ -4,6 +4,7 @@
   import { autoScaleLengthCm } from "$lib/utils/unit-conversions";
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+  import { computeDelta } from "$lib/utils/delta.js";
   import type { EnergyUnit } from "$lib/wasm/types";
   import type { CalculatorState, CalculatedRow } from "$lib/state/calculator.svelte";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -42,7 +43,7 @@
   import { LibdedxError } from "$lib/wasm/types";
 
   interface Props {
-    state: CalculatorState;
+    calcState: CalculatorState;
     entitySelection: EntitySelectionState;
     columns?: ColumnDef[];
     class?: string;
@@ -52,7 +53,7 @@
   }
 
   let {
-    state,
+    calcState,
     entitySelection,
     columns = getDefaultColumns(),
     class: className = "",
@@ -78,6 +79,59 @@
   const defaultProgramId = $derived(
     isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null,
   );
+
+  // Delta tooltip state
+  let hoveredCell = $state<string | null>(null);
+
+  // Drag-and-drop column reorder state
+  let draggingProgramId = $state<number | null>(null);
+  let dragOverProgramId = $state<number | null>(null);
+  let reorderAnnouncement = $state<string>("");
+
+  // Column visibility dropdown state
+  let showColumnsDropdown = $state<boolean>(false);
+
+  // Derived once — used in both STP and CSDA delta computations
+  const defaultProgramName = $derived(
+    defaultProgramId !== null ? getProgramName(defaultProgramId) : "",
+  );
+
+  // Helper functions for delta tooltip (depend on component's state and entitySelection props)
+
+  /**
+   * Returns the STP display value (already unit-converted) for a given result row, or null if the row energy doesn't match.
+   */
+  function getStpDisplayValue(
+    result: CalculationResult | LibdedxError | undefined,
+    mevNucl: number,
+    density: number,
+    displayUnit: string,
+  ): number | null {
+    if (!result || result instanceof LibdedxError) return null;
+    const idx = result.energies.findIndex((e) => Math.abs(e - mevNucl) < 0.0001);
+    if (idx === -1) return null;
+    const mass = result.stoppingPowers[idx] ?? null;
+    if (mass === null) return null;
+    if (displayUnit === "keV/µm") return (mass * density) / 10;
+    if (displayUnit === "MeV/cm") return mass * density;
+    return mass; // MeV·cm²/g
+  }
+
+  /**
+   * Returns the CSDA range value in cm for a given result row, or null.
+   */
+  function getCsdaDisplayCm(
+    result: CalculationResult | LibdedxError | undefined,
+    mevNucl: number,
+    density: number,
+  ): number | null {
+    if (!result || result instanceof LibdedxError) return null;
+    const idx = result.energies.findIndex((e) => Math.abs(e - mevNucl) < 0.0001);
+    if (idx === -1) return null;
+    const gcm2 = result.csdaRanges[idx] ?? null;
+    if (gcm2 === null) return null;
+    return density > 0 ? gcm2 / density : gcm2;
+  }
 
   function getDefaultColumns(): ColumnDef[] {
     return [
@@ -149,7 +203,7 @@
   function handleInputKeyDown(event: KeyboardEvent, index: number) {
     if (event.key === "Enter") {
       event.preventDefault();
-      state.handleBlur(index);
+     calcState.handleBlur(index);
       const moved = focusRowInput(index + 1);
       if (moved) {
         return;
@@ -165,7 +219,7 @@
       const targetInput = inputs[targetIndex];
       if (targetInput) {
         event.preventDefault();
-        state.handleBlur(index);
+       calcState.handleBlur(index);
         targetInput.focus();
       }
       // Otherwise let Tab do its default thing so users can leave the table.
@@ -174,8 +228,8 @@
 
   function handleInputChange(event: Event, index: number) {
     const target = event.target as HTMLInputElement;
-    state.updateRowText(index, target.value);
-    state.triggerCalculation();
+   calcState.updateRowText(index, target.value);
+   calcState.triggerCalculation();
   }
 
   function handlePaste(event: ClipboardEvent, index: number) {
@@ -191,23 +245,23 @@
     for (let i = 0; i < lines.length; i++) {
       const targetIndex = index + i;
       // updateRowText auto-adds a new row when last row gets text.
-      if (targetIndex >= state.rows.length) {
-        state.updateRowText(state.rows.length - 1, lines[i]);
+      if (targetIndex >= calcState.rows.length) {
+        calcState.updateRowText(calcState.rows.length - 1, lines[i]);
       } else {
-        state.updateRowText(targetIndex, lines[i]);
+        calcState.updateRowText(targetIndex, lines[i]);
       }
     }
-    state.triggerCalculation();
+    calcState.triggerCalculation();
   }
 
   function handleUnitChange(event: Event, index: number) {
     const target = event.target as HTMLSelectElement;
-    state.setRowUnit(index, target.value as EnergyUnit);
-    state.triggerCalculation();
+   calcState.setRowUnit(index, target.value as EnergyUnit);
+   calcState.triggerCalculation();
   }
 
   function canShowPerRowUnitSelector(row: CalculatedRow): boolean {
-    if (!state.isPerRowMode) return false;
+    if (!calcState.isPerRowMode) return false;
     const particle = entitySelection.selectedParticle;
     if (!particle) return false;
     if (particle.massNumber <= 1) return false;
@@ -218,13 +272,13 @@
     if (row.unitFromSuffix) {
       return row.unit;
     }
-    return state.masterUnit;
+    return calcState.masterUnit;
   }
 
   // Trigger initial calculation when entity selection becomes complete.
   $effect(() => {
     if (entitySelection.isComplete) {
-      state.triggerCalculation();
+      calcState.triggerCalculation();
     }
   });
 
@@ -233,6 +287,110 @@
     const program = entitySelection.availablePrograms.find((p) => p.id === programId);
     return program?.name ?? `Program ${programId}`;
   }
+
+  // Drag-and-drop column reorder handlers
+  function handleDragStart(programId: number, event: DragEvent) {
+    draggingProgramId = programId;
+    reorderAnnouncement = `Started dragging ${getProgramName(programId)}`;
+    // Set drag data
+    event.dataTransfer.setData("text/plain", String(programId));
+    event.dataTransfer.effectAllowed = "move";
+  }
+
+  function handleDragOver(programId: number, event: DragEvent) {
+    event.preventDefault();
+    if (draggingProgramId !== null && draggingProgramId !== programId) {
+      dragOverProgramId = programId;
+      event.dataTransfer.dropEffect = "move";
+    }
+  }
+
+  function handleDragLeave() {
+    dragOverProgramId = null;
+  }
+
+  function handleDrop(targetProgramId: number, event: DragEvent) {
+    event.preventDefault();
+    dragOverProgramId = null;
+
+    const draggedId = draggingProgramId;
+    if (draggedId === null || draggedId === targetProgramId) {
+      draggingProgramId = null;
+      return;
+    }
+
+    // Calculate target position
+    const currentOrder = multiProgramState?.programDisplayOrder || [];
+    const targetIndex = currentOrder.indexOf(targetProgramId);
+    const draggedIndex = currentOrder.indexOf(draggedId);
+
+    // Move dragged program to target position
+    if (multiProgramState && targetIndex !== -1 && draggedIndex !== -1) {
+      // Determine new position: if dragging right, targetIndex - 1; if dragging left, targetIndex
+      const newPosition = draggedIndex < targetIndex ? targetIndex : targetIndex - 1;
+      multiProgramState.reorderPrograms(draggedId, newPosition);
+      reorderAnnouncement = `Moved ${getProgramName(draggedId)} to position ${newPosition + 1}`;
+    }
+
+    draggingProgramId = null;
+  }
+
+  function handleDragEnd() {
+    draggingProgramId = null;
+    dragOverProgramId = null;
+  }
+
+  // Keyboard column reorder (Alt+Arrow)
+  function handleColumnKeydown(programId: number, event: KeyboardEvent) {
+    if (!multiProgramState || programId === defaultProgramId) return;
+
+    const currentOrder = multiProgramState.programDisplayOrder;
+    const currentIndex = currentOrder.indexOf(programId);
+    if (currentIndex === -1) return;
+
+    if (event.altKey && event.key === "ArrowRight") {
+      event.preventDefault();
+      // Move right (increase index)
+      if (currentIndex < currentOrder.length - 1) {
+        const newPosition = currentIndex + 1;
+        multiProgramState.reorderPrograms(programId, newPosition);
+        reorderAnnouncement = `Moved ${getProgramName(programId)} to position ${newPosition + 1}`;
+      }
+    } else if (event.altKey && event.key === "ArrowLeft") {
+      event.preventDefault();
+      // Move left (decrease index, but not before default at index 0)
+      if (currentIndex > 1) {
+        const newPosition = currentIndex - 1;
+        multiProgramState.reorderPrograms(programId, newPosition);
+        reorderAnnouncement = `Moved ${getProgramName(programId)} to position ${newPosition + 1}`;
+      }
+    }
+  }
+
+  // Column visibility toggle handler
+  function handleToggleColumnVisibility(programId: number) {
+    if (!multiProgramState || programId === defaultProgramId) return;
+    multiProgramState.toggleColumnVisibility(programId);
+  }
+
+  function toggleColumnsDropdown() {
+    showColumnsDropdown = !showColumnsDropdown;
+  }
+
+  // Close dropdown when clicking outside
+  function handleOutsideClick(event: MouseEvent) {
+    const target = event.target as HTMLElement;
+    if (showColumnsDropdown && !target.closest('[data-columns-dropdown]')) {
+      showColumnsDropdown = false;
+    }
+  }
+
+  $effect(() => {
+    if (showColumnsDropdown) {
+      document.addEventListener("click", handleOutsideClick);
+      return () => document.removeEventListener("click", handleOutsideClick);
+    }
+  });
 </script>
 
 <div class={`overflow-x-auto ${className}`}>
@@ -249,6 +407,52 @@
       {/if}
     </div>
   {:else}
+    {#if isAdvanced}
+      <!-- Toolbar for advanced mode -->
+      <div class="mb-2 flex justify-end relative" data-columns-dropdown>
+        <button
+          type="button"
+          class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+          aria-label="Toggle column visibility"
+          aria-expanded={showColumnsDropdown}
+          aria-haspopup="menu"
+          onclick={toggleColumnsDropdown}
+        >
+          Columns…
+        </button>
+
+        {#if showColumnsDropdown}
+          <!-- Column visibility dropdown menu -->
+          <div
+            class="absolute right-0 mt-1 w-48 rounded-md border bg-popover p-2 shadow-lg z-50"
+            role="menu"
+            aria-label="Column visibility"
+          >
+            {#each multiProgramState?.selectedProgramIds || [] as programId (programId)}
+              <div class="flex items-center gap-2 px-2 py-1.5">
+                <input
+                  type="checkbox"
+                  id={`column-toggle-${programId}`}
+                  checked={multiProgramState?.columnVisibility.get(programId) !== false}
+                  disabled={programId === defaultProgramId}
+                  onchange={() => handleToggleColumnVisibility(programId)}
+                  class="h-4 w-4 rounded border-input"
+                />
+                <label
+                  for={`column-toggle-${programId}`}
+                  class={`text-sm cursor-pointer ${programId === defaultProgramId ? "text-muted-foreground" : ""}`}
+                >
+                  {getProgramName(programId)}
+                  {#if programId === defaultProgramId}
+                    <span class="ml-1 text-xs">(default)</span>
+                  {/if}
+                </label>
+              </div>
+            {/each}
+          </div>
+        {/if}
+      </div>
+    {/if}
     <table class="w-full min-w-[560px] text-sm" data-testid="result-table">
       {#if isAdvanced}
         <!-- Advanced mode: two-row grouped header -->
@@ -261,7 +465,7 @@
               rowspan="2"
               class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b border-r"
             >
-              Energy ({state.masterUnit})
+              Energy ({calcState.masterUnit})
             </th>
             <th
               scope="col"
@@ -284,7 +488,7 @@
                 colspan={visibleProgramIds.length}
                 class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
               >
-                Stopping Power ({state.stpDisplayUnit})
+                Stopping Power ({calcState.stpDisplayUnit})
               </th>
             {/if}
             <!-- CSDA Range group header (conditional) -->
@@ -305,11 +509,24 @@
                 <th
                   scope="col"
                   data-program-id={programId}
-                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                  draggable={programId !== defaultProgramId ? "true" : "false"}
+                  aria-disabled={programId === defaultProgramId ? "true" : "false"}
+                  tabindex={programId !== defaultProgramId ? "0" : "-1"}
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap cursor-${
+                    programId === defaultProgramId ? "not-allowed" : "grab"
+                  } ${
                     programId === defaultProgramId
                       ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
-                      : "bg-background"
-                  }`}
+                      : draggingProgramId === programId
+                        ? "opacity-50"
+                        : "bg-background"
+                  } ${dragOverProgramId === programId ? "border-l-2 border-l-blue-400" : ""}`}
+                  ondragstart={(e) => handleDragStart(programId, e)}
+                  ondragover={(e) => handleDragOver(programId, e)}
+                  ondragleave={handleDragLeave}
+                  ondrop={(e) => handleDrop(programId, e)}
+                  ondragend={handleDragEnd}
+                  onkeydown={(e) => handleColumnKeydown(programId, e)}
                 >
                   {getProgramName(programId)}
                   {#if programId === defaultProgramId}
@@ -323,11 +540,24 @@
                 <th
                   scope="col"
                   data-program-id={programId}
-                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                  draggable={programId !== defaultProgramId ? "true" : "false"}
+                  aria-disabled={programId === defaultProgramId ? "true" : "false"}
+                  tabindex={programId !== defaultProgramId ? "0" : "-1"}
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap cursor-${
+                    programId === defaultProgramId ? "not-allowed" : "grab"
+                  } ${
                     programId === defaultProgramId
                       ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
-                      : "bg-background"
-                  }`}
+                      : draggingProgramId === programId
+                        ? "opacity-50"
+                        : "bg-background"
+                  } ${dragOverProgramId === programId ? "border-l-2 border-l-blue-400" : ""}`}
+                  ondragstart={(e) => handleDragStart(programId, e)}
+                  ondragover={(e) => handleDragOver(programId, e)}
+                  ondragleave={handleDragLeave}
+                  ondrop={(e) => handleDrop(programId, e)}
+                  ondragend={handleDragEnd}
+                  onkeydown={(e) => handleColumnKeydown(programId, e)}
                 >
                   {getProgramName(programId)}
                   {#if programId === defaultProgramId}
@@ -347,14 +577,14 @@
                 scope="col"
                 class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}
               >
-                {col.header(state)}
+                {col.header(calcState)}
               </th>
             {/each}
           </tr>
         </thead>
       {/if}
       <tbody>
-        {#each state.rows as row, i (row.id)}
+        {#each calcState.rows as row, i (row.id)}
           <tr class="even:bg-muted/30">
             <!-- Input columns (always rendered the same way) -->
             {#each columns.slice(0, 3) as col (col.id)}
@@ -379,7 +609,7 @@
                     onkeydown={(e) => handleInputKeyDown(e, i)}
                     oninput={(e) => handleInputChange(e, i)}
                     onpaste={(e) => handlePaste(e, i)}
-                    disabled={state.isCalculating}
+                    disabled={calcState.isCalculating}
                   />
                   {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
                     <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
@@ -393,7 +623,7 @@
                       class="px-2 py-1 border border-input rounded text-sm bg-background focus:outline-none focus:ring-2 focus:ring-primary"
                       value={formatRowUnit(row)}
                       onchange={(e) => handleUnitChange(e, i)}
-                      disabled={state.isCalculating}
+                      disabled={calcState.isCalculating}
                     >
                       {#each getAvailableUnits() as unitOption (unitOption)}
                         <option value={unitOption}>{unitOption}</option>
@@ -404,10 +634,10 @@
                   {/if}
                 {:else if col.id === "mev-nucl"}
                   <span data-testid={`mev-nucl-cell-${i}`}>
-                    {col.getValue(row, state, entitySelection)}
+                    {col.getValue(row, calcState, entitySelection)}
                   </span>
                 {:else}
-                  {col.getValue(row, state, entitySelection)}
+                  {col.getValue(row, calcState, entitySelection)}
                 {/if}
               </td>
             {/each}
@@ -416,12 +646,38 @@
               <!-- Stopping Power columns per program -->
               {#if showStp}
                 {#each visibleProgramIds as programId (programId)}
+                  {@const stpDisplay = entitySelection.selectedMaterial && row.normalizedMevNucl !== null
+                    ? getStpDisplayValue(
+                        comparisonResults?.get(programId) as CalculationResult,
+                        row.normalizedMevNucl,
+                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
+                       calcState.stpDisplayUnit,
+                      )
+                    : null}
+                  {@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
+                  {@const defaultStpDisplay = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+                    ? getStpDisplayValue(
+                        defaultResult,
+                        row.normalizedMevNucl,
+                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
+                       calcState.stpDisplayUnit,
+                      )
+                    : null}
+                  {@const delta = programId !== defaultProgramId && stpDisplay !== null && defaultStpDisplay !== null
+                    ? computeDelta(stpDisplay, defaultStpDisplay,calcState.stpDisplayUnit, defaultProgramName)
+                    : null}
                   <td
                     data-program-id={programId}
                     data-testid={`stp-cell-${programId}-${i}`}
-                    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
+                    class={`relative px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
                       programId === defaultProgramId ? "bg-blue-50" : ""
                     }`}
+                    aria-describedby={delta ? `delta-desc-${programId}-${i}` : undefined}
+                    onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}
+                    onmouseleave={() => { hoveredCell = null; }}
+                    onfocus={() => { hoveredCell = `${programId}-${i}`; }}
+                    onblur={() => { hoveredCell = null; }}
+                    tabindex="0"
                   >
                     {#if comparisonResults && comparisonResults.has(programId)}
                       {@const result = comparisonResults.get(programId)}
@@ -438,10 +694,10 @@
                             )}
                             {#if stpIndex !== -1}
                               {@const stpMass = result.stoppingPowers[stpIndex]}
-                              {#if state.stpDisplayUnit === "keV/µm"}
+                              {#if calcState.stpDisplayUnit === "keV/µm"}
                                 {@const stpLinear = (stpMass * density) / 10}
                                 {formatSigFigs(stpLinear, 4)}
-                              {:else if state.stpDisplayUnit === "MeV/cm"}
+                              {:else if calcState.stpDisplayUnit === "MeV/cm"}
                                 {@const stpLinear = stpMass * density}
                                 {formatSigFigs(stpLinear, 4)}
                               {:else}
@@ -462,18 +718,56 @@
                     {:else}
                       —
                     {/if}
+                    {#if delta}
+                      <span id="delta-desc-{programId}-{i}" class="sr-only">{delta.label}</span>
+                      {#if hoveredCell === `${programId}-${i}`}
+                        <div
+                          data-testid="delta-tooltip-{programId}-{i}"
+                          role="tooltip"
+                          class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
+                                 rounded bg-popover text-popover-foreground text-xs shadow-md
+                                 whitespace-nowrap border pointer-events-none"
+                        >
+                          {delta.label}
+                        </div>
+                      {/if}
+                    {/if}
                   </td>
                 {/each}
               {/if}
               <!-- CSDA Range columns per program -->
               {#if showCsda}
                 {#each visibleProgramIds as programId (programId)}
+                  {@const csdaCm = entitySelection.selectedMaterial && row.normalizedMevNucl !== null
+                    ? getCsdaDisplayCm(
+                        comparisonResults?.get(programId) as CalculationResult,
+                        row.normalizedMevNucl,
+                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
+                      )
+                    : null}
+                  {@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
+                  {@const defaultCsdaCm = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+                    ? getCsdaDisplayCm(
+                        defaultResult,
+                        row.normalizedMevNucl,
+                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
+                      )
+                    : null}
+                  {@const csdaDelta = programId !== defaultProgramId && csdaCm !== null && defaultCsdaCm !== null
+                    ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
+                    : null}
                   <td
                     data-program-id={programId}
                     data-testid={`range-cell-${programId}-${i}`}
-                    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
+                    class={`relative px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
                       programId === defaultProgramId ? "bg-blue-50" : ""
                     }`}
+                    aria-describedby={csdaDelta ? `delta-desc-${programId}-${i}` : undefined}
+                    onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}
+                    onmouseleave={() => { hoveredCell = null; }}
+                    onfocus={() => { hoveredCell = `${programId}-${i}`; }}
+                    onblur={() => { hoveredCell = null; }}
+                    tabindex="0"
                   >
                     {#if comparisonResults && comparisonResults.has(programId)}
                       {@const result = comparisonResults.get(programId)}
@@ -490,8 +784,8 @@
                             )}
                             {#if csdaIndex !== -1}
                               {@const csdaGcm2 = result.csdaRanges[csdaIndex]}
-                              {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
-                              {@const scaled = autoScaleLengthCm(csdaCm)}
+                              {@const csdaCmVal = density > 0 ? csdaGcm2 / density : csdaGcm2}
+                              {@const scaled = autoScaleLengthCm(csdaCmVal)}
                               {formatSigFigs(scaled.value, 4)}
                               {scaled.unit}
                             {:else}
@@ -509,6 +803,20 @@
                     {:else}
                       —
                     {/if}
+                    {#if csdaDelta}
+                      <span id="delta-desc-{programId}-{i}" class="sr-only">{csdaDelta.label}</span>
+                      {#if hoveredCell === `${programId}-${i}`}
+                        <div
+                          data-testid="delta-tooltip-{programId}-{i}"
+                          role="tooltip"
+                          class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
+                                 rounded bg-popover text-popover-foreground text-xs shadow-md
+                                 whitespace-nowrap border pointer-events-none"
+                        >
+                          {csdaDelta.label}
+                        </div>
+                      {/if}
+                    {/if}
                   </td>
                 {/each}
               {/if}
@@ -521,14 +829,14 @@
                 >
                   {#if col.id === "stopping-power"}
                     <span data-testid={`stp-cell-${i}`}>
-                      {col.getValue(row, state, entitySelection)}
+                      {col.getValue(row, calcState, entitySelection)}
                     </span>
                   {:else if col.id === "csda-range"}
                     <span data-testid={`range-cell-${i}`}>
-                      {col.getValue(row, state, entitySelection)}
+                      {col.getValue(row, calcState, entitySelection)}
                     </span>
                   {:else}
-                    {col.getValue(row, state, entitySelection)}
+                    {col.getValue(row, calcState, entitySelection)}
                   {/if}
                 </td>
               {/each}
@@ -538,18 +846,23 @@
       </tbody>
     </table>
 
-    {#if state.validationSummary.invalid > 0 || state.validationSummary.outOfRange > 0}
+    <!-- Aria-live region for column reorder announcements -->
+    <div role="status" aria-live="polite" aria-atomic="true" class="sr-only">
+      {reorderAnnouncement}
+    </div>
+
+    {#if calcState.validationSummary.invalid > 0 || calcState.validationSummary.outOfRange > 0}
       <div class="p-3 text-sm text-muted-foreground border-t">
-        {state.validationSummary.invalid + state.validationSummary.outOfRange} of {state
+        {calcState.validationSummary.invalid + calcState.validationSummary.outOfRange} of {calcState
           .validationSummary.total}
         values excluded (
-        {#if state.validationSummary.invalid > 0}
-          {state.validationSummary.invalid} invalid
-          {#if state.validationSummary.outOfRange > 0},
+        {#if calcState.validationSummary.invalid > 0}
+          {calcState.validationSummary.invalid} invalid
+          {#if calcState.validationSummary.outOfRange > 0},
           {/if}
         {/if}
-        {#if state.validationSummary.outOfRange > 0}
-          {state.validationSummary.outOfRange} out of range
+        {#if calcState.validationSummary.outOfRange > 0}
+          {calcState.validationSummary.outOfRange} out of range
         {/if}
         )
       </div>
@@ -559,7 +872,7 @@
       <button
         type="button"
         class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-        onclick={() => state.addRow()}
+        onclick={() => calcState.addRow()}
       >
         + Add row
       </button>
