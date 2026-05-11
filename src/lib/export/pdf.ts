@@ -367,11 +367,15 @@ function addAdvancedMetadataBlock(
       y = margin;
     }
 
-    // Extract text from <td> elements
-    const tdMatch = line.match(/<td[^>]*>([^<]*)<\/td>/g);
-    if (!tdMatch) continue;
-
-    const cells = tdMatch.map((m) => m.replace(/<[^>]*>/g, "").trim());
+    // Extract text from <td> elements using the inner-text capture group.
+    // (Avoid `m.replace(/<[^>]*>/g, "")` — CodeQL flags single-pass tag
+    // stripping as incomplete sanitization because nested constructs like
+    // `<<td>td>` survive one pass.)
+    const cellRegex = /<td[^>]*>([^<]*)<\/td>/g;
+    const cells: string[] = [];
+    for (const m of line.matchAll(cellRegex)) {
+      cells.push((m[1] ?? "").trim());
+    }
     if (cells.length === 0) continue;
 
     // Check if this is a header row (bold) or data row
