@@ -2,7 +2,7 @@
 
 > **Model:** Qwen3.5-397B-A17B-FP8
 > **Session type:** Multi-task implementation (TDD)
-> **Branch:** `feat/stage6-11-export-advanced`
+> **Branch:** `qwen/stage6-11-export-advanced`
 > **MCPs needed:** playwright, tailwind, svelte
 > **TDD rule:** Write the failing test(s) first, then minimal impl. Fix all
 > lint/type errors before committing.
