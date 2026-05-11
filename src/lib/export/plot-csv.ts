@@ -179,12 +179,18 @@ function getLineEnding(lineEndings: "crlf" | "lf"): string {
 /**
  * Trigger a browser file download for the Plot CSV data.
  *
- * Filename: dedx_plot_data.csv (per export.md §4.2)
+ * Default filename: `dedx_plot_data.csv` (per export.md §4.2).
+ * Pass `options` and `filename` from the CSV modal to override defaults.
  */
-export function downloadPlotCsv(series: PlotSeries[], stpUnit: StpUnit): void {
+export function downloadPlotCsv(
+  series: PlotSeries[],
+  stpUnit: StpUnit,
+  options?: CsvOptions,
+  filename: string = "dedx_plot_data.csv",
+): void {
   // Import here to avoid circular dependency issues
   void import("$lib/export/csv").then(({ downloadCsv }) => {
-    const content = formatPlotCsv(series, stpUnit);
-    downloadCsv(content, "dedx_plot_data.csv");
+    const content = formatPlotCsv(series, stpUnit, options);
+    downloadCsv(content, filename);
   });
 }

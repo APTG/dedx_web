@@ -214,7 +214,7 @@
   <!-- CSV Export Modal (advanced mode only) -->
   <CsvExportModal
     open={showCsvModal.value}
-    defaultFilename="dedx_export.csv"
+    defaultFilename={showCsvModal.mode === "plot" ? "dedx_plot_data.csv" : "dedx_export.csv"}
     onConfirm={(options, filename) => {
       performCsvDownload(options, filename);
       showCsvModal.value = false;

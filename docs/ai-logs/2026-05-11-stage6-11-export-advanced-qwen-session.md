@@ -1,8 +1,16 @@
 # Stage 6.11 export-advanced orchestration
 
+**Model:** Qwen3.5-397B-A17B-FP8 via opencode
 **Session ID:** ses_1e92024abffe4uaQdJK22qRaR8
 **Created:** 5/11/2026, 1:50:29 PM
 **Updated:** 5/11/2026, 4:18:42 PM
+
+> Verbatim opencode session transcript for the initial Stage 6.11 implementation
+> work (CSV configuration modal wiring on Calculator, PNG export on Plot,
+> Calculator advanced PDF metadata block). The session was aborted by the user
+> mid-lint after the CSV-modal reactivity bug was fixed; remaining E2E coverage,
+> Plot CSV modal wiring, lessons-learned, and the redesign-plan tick-off were
+> finalized in `2026-05-11-stage6-11-finalization.md`.
 
 ---
 

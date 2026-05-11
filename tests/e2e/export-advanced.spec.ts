@@ -68,7 +68,7 @@ test.describe("Export Advanced Mode", () => {
     await expect(page.getByTestId("csv-separator-semicolon")).toBeChecked();
   });
 
-  test("Plot CSV export in advanced mode (no modal) @regression", async ({ page }) => {
+  test("Plot CSV export in advanced mode opens shared CSV modal @regression", async ({ page }) => {
     await page.goto("/plot?mode=advanced");
     // Wait for plot to render
     await page.waitForSelector('[role="img"]', { timeout: 20000 });
@@ -79,14 +79,27 @@ test.describe("Export Advanced Mode", () => {
     await addSeriesButton.click();
 
     // Wait for export CSV button to be enabled (series rendered)
-    const exportCsvBtn = page.getByRole("button", { name: /export csv/i });
+    const exportCsvBtn = page.getByTestId("export-csv-btn");
     await expect(exportCsvBtn).toBeEnabled({ timeout: 8000 });
 
-    // Plot CSV export is direct download (no modal)
-    const downloadPromise = page.waitForEvent("download");
+    // Open the shared CSV modal (Scenario 2 — same modal as Calculator)
     await exportCsvBtn.click();
+    const modal = page.getByTestId("csv-export-modal");
+    await expect(modal).toBeVisible({ timeout: 5000 });
+
+    // The modal exposes the separator and line-endings options
+    await expect(page.getByTestId("csv-separator-comma")).toBeVisible();
+    await expect(page.getByTestId("csv-separator-semicolon")).toBeVisible();
+    await expect(page.getByTestId("csv-separator-tab")).toBeVisible();
+    await expect(page.getByTestId("csv-line-endings-crlf")).toBeVisible();
+    await expect(page.getByTestId("csv-line-endings-lf")).toBeVisible();
+
+    // Confirm with defaults to trigger the download
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByTestId("csv-export-confirm").click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toBe("dedx_plot_data.csv");
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
+    await expect(modal).not.toBeVisible();
   });
 
   test("CSV modal does NOT open in basic mode — download is immediate @regression", async ({

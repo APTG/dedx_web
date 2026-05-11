@@ -569,5 +569,98 @@ existing fallback path instead of silently accepting the prefix.
 
 ---
 
+## Entry 25 — Cannot set properties on `$state(null)` — wrap nullable state in `{ value: T | null }`
+
+**Symptom:** Stage 6.11 CSV modal opened in the DOM but `pendingCsvOptions`
+properties were silently lost on assignment, and the modal showed empty
+defaults. Earlier, the build also failed with:
+
+```
+RolldownError: src/lib/state/export.svelte.ts:8:0
+  Cannot export state from a module if it is reassigned.
+```
+
+…after an attempt to `pendingCsvOptions = { ... }` reassign a top-level
+`$state` export.
+
+**Root cause:**
+
+1. `$state(null)` returns a `null` value — there is no proxy to attach
+   properties to. `pendingCsvOptions.rows = rows` writes to nothing.
+2. Top-level module `$state(...)` exports cannot be **reassigned** (the
+   compiler enforces this so consumers can rely on the original reference).
+
+**Rule:** For nullable / replaceable shared state, wrap it once and only ever
+mutate the wrapper's `.value` field:
+
+```typescript
+// ✅ CORRECT — wrapper is constant; the slot is freely re-assignable
+export const pendingCsvOptions = $state<{ value: PendingCsv | null }>({ value: null });
+
+// at the call site
+pendingCsvOptions.value = { rows, stpUnit, meta };
+// later
+pendingCsvOptions.value = null;
+```
+
+```typescript
+// ❌ WRONG — sets a property on `null`, no error, value is lost
+export const pendingCsvOptions = $state<PendingCsv | null>(null);
+pendingCsvOptions.rows = rows; // silently lost; reactivity breaks
+
+// ❌ WRONG — top-level $state exports cannot be reassigned
+export let pendingCsvOptions = $state<PendingCsv | null>(null);
+pendingCsvOptions = { rows, ... }; // build error: "Cannot export state ... if it is reassigned"
+```
+
+This pattern matches `canExport`, `wasmReady`, `showCsvModal` and the rest of
+the codebase's shared `$state({ value: ... })` slots.
+
+---
+
+## Entry 26 — Set modal `mode` BEFORE `open` so the layout reads the right defaults
+
+**Symptom:** Plot CSV modal first opened with the Calculator default filename
+(`dedx_export.csv`) for one frame before snapping to `dedx_plot_data.csv`,
+because the layout's `defaultFilename={showCsvModal.mode === "plot" ? ... : ...}`
+was re-evaluated between two reactive writes.
+
+**Root cause:** Writing `showCsvModal.value = true` first caused the dialog to
+mount and read `showCsvModal.mode`, which was still the previous mode.
+
+**Rule:** When opening a modal whose props depend on other state slots, write
+the dependent state slots first and the `open`/visibility flag last:
+
+```typescript
+// ✅ CORRECT
+pendingPlotCsv.value = { series, stpUnit };
+showCsvModal.mode = "plot";
+showCsvModal.value = true;
+
+// ❌ WRONG — modal mounts with stale mode
+showCsvModal.value = true;
+showCsvModal.mode = "plot";
+```
+
+---
+
+## Entry 27 — E2E coverage must mirror the spec, not the easier-to-implement behaviour
+
+**Symptom:** Stage 6.11 Plot CSV scenario was implemented as a direct download
+in advanced mode, and the matching E2E test asserted "no modal appears" — the
+opposite of what `stage-6-11-export-advanced.md` Scenario 2 specifies (modal
+visible, separator + line-endings options shown).
+
+**Root cause:** The implementer/orchestrator pair short-circuited the harder
+modal-wiring path and updated the E2E test to match the implementation rather
+than the spec.
+
+**Rule:** Acceptance scenarios in the feature spec are the contract. If the
+implementation deviates, fix the implementation; do **not** rewrite the test
+to make it pass. Reviewers should diff each E2E scenario against the spec's
+"Then" clauses before approving.
+
+---
+
 _Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

@@ -34,6 +34,10 @@ export const pendingCsvOptions = $state<{ value: {
   stpUnit: string;
   meta: import("./csv.js").CsvExportMeta;
 } | null }>({ value: null });
+export const pendingPlotCsv = $state<{ value: {
+  series: PlotSeries[];
+  stpUnit: StpUnit;
+} | null }>({ value: null });
 
 // Calculator advanced options getter (set by calculator page)
 export const getCalculatorAdvancedMetadata = { value: null as (() => import("$lib/export/pdf.js").AdvancedPdfMetadata | null) | null };
@@ -101,8 +105,8 @@ export function exportCsv(): void {
     const program = selectedProgramEntity(_entitySelection.selectedProgram);
 
     pendingCsvOptions.value = { rows, stpUnit, meta: { particle, material, program } };
-    showCsvModal.value = true;
     showCsvModal.mode = "calculator";
+    showCsvModal.value = true;
   } else {
     const rows = _calcState.rows;
     const stpUnit = _calcState.stpDisplayUnit;
@@ -126,15 +130,35 @@ export function exportCsv(): void {
 /**
  * Perform the actual CSV download with the given options.
  * Called by CsvExportModal after user confirms.
+ *
+ * Dispatches based on `showCsvModal.mode`:
+ *  - "calculator" → uses `pendingCsvOptions` (Calculator results)
+ *  - "plot"       → uses `pendingPlotCsv`     (Plot series)
  */
 export function performCsvDownload(options: CsvOptions, filename: string): void {
-  if (!pendingCsvOptions.value) return;
+  const mode = showCsvModal.mode;
+  const finalFilename = filename.endsWith(".csv") ? filename : `${filename}.csv`;
 
+  if (mode === "plot") {
+    if (!pendingPlotCsv.value) return;
+    const { series, stpUnit } = pendingPlotCsv.value;
+    void import("$lib/export/plot-csv")
+      .then((mod) => {
+        mod.downloadPlotCsv(series, stpUnit, options, finalFilename);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to export plot CSV.", error);
+      })
+      .finally(() => {
+        pendingPlotCsv.value = null;
+      });
+    return;
+  }
+
+  if (!pendingCsvOptions.value) return;
   const { rows, stpUnit, meta } = pendingCsvOptions.value;
   try {
     const { content } = generateCalculatorCsv(rows, stpUnit, meta, options);
-    // Override filename from modal
-    const finalFilename = filename.endsWith(".csv") ? filename : `${filename}.csv`;
     downloadCsv(content, finalFilename);
   } catch (error) {
     console.error("Failed to export CSV.", error);
@@ -185,22 +209,15 @@ export function exportPdf(): void {
 export function exportPlotCsv(): void {
   if (!_plotState) return;
 
-  // Advanced mode: open modal (same modal as calculator, just different context)
+  const series = _plotState.series;
+  const stpUnit = _plotState.stpUnit;
+
   if (isAdvancedMode.value) {
-    // For now, close the modal immediately and download directly
-    // Plot CSV doesn't use the same structure as Calculator CSV
-    const series = _plotState.series;
-    const stpUnit = _plotState.stpUnit;
-    void import("$lib/export/plot-csv")
-      .then((mod) => {
-        mod.downloadPlotCsv(series, stpUnit);
-      })
-      .catch((error: unknown) => {
-        console.error("Failed to export plot CSV.", error);
-      });
+    // Stage the data and open the shared CSV modal (spec stage-6-11 §Scenario 2)
+    pendingPlotCsv.value = { series, stpUnit };
+    showCsvModal.mode = "plot";
+    showCsvModal.value = true;
   } else {
-    const series = _plotState.series;
-    const stpUnit = _plotState.stpUnit;
     void import("$lib/export/plot-csv")
       .then((mod) => {
         mod.downloadPlotCsv(series, stpUnit);
