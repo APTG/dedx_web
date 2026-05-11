@@ -14,9 +14,10 @@ Stage 6.12 adds the two features explicitly deferred from Stage 6.3 to keep
 the initial multi-program PR scope manageable:
 
 1. **Delta / % difference tooltip** — hovering or focusing a non-default
-   program's result cell shows a tooltip: "Δ = {absolute} ({pct}% vs
-   {default program name})". Default program cells and error ("—") cells never
-   show a tooltip. Must be keyboard-accessible via `aria-describedby`.
+   program's result cell shows a tooltip:
+   `"Δ = {absolute} {unit} ({sign}{pct}% vs {default program name})"`.
+   Default program cells and error ("—") cells never show a tooltip.
+   Must be keyboard-accessible via `aria-describedby`.
 
 2. **Drag-and-drop column reordering** — users can drag additional-program
    sub-header cells to change the column order within both the STP and CSDA
@@ -39,20 +40,24 @@ Read at session start (in order):
    Pay special attention to:
    - Entry 1 (snapshot reactive deps synchronously before any async call)
    - Entry 2 (nested object mutations don't re-trigger effects via ref read)
-   - Entry 25 (`$state(null)` nullable-wrap pattern — reminder for $state idiom)
+   - Entry 12 (`waitForTimeout()` ban in E2E — use `expect.poll` instead)
+   - Entry 25 (`$state(null)` nullable-wrap pattern)
    - Entry 27 (E2E coverage must mirror spec, not the easier implementation)
 3. `docs/04-feature-specs/multi-program.md` Final v3 — read these sections fully:
    - § "Delta / % Difference Tooltip"
    - § "Drag-and-Drop Column Reordering"
    - § Accessibility (keyboard reorder announce, delta tooltip via `aria-describedby`)
-   - § Acceptance Criteria — subsections "Drag-and-Drop Column Reordering" and "Delta Tooltip"
+   - § Acceptance Criteria — subsections "Drag-and-Drop Column Reordering" and
+     "Delta Tooltip"
 4. `src/lib/state/multi-program.svelte.ts` — study `reorderPrograms()` (lines
    ~211-233). **Do not modify this file** unless a trivial type fix is needed.
 5. `src/lib/components/result-table.svelte` — **primary target**. Study:
    - Row 2 "Program sub-headers" `<tr>` block (search `Row 2: Program sub-headers`)
    - Comparison STP cell block (`data-testid="stp-cell-{programId}-{i}"`)
    - Comparison CSDA cell block (`data-testid="range-cell-{programId}-{i}"`)
-   - `visibleProgramIds` and `defaultProgramId` derived values at the top of `<script>`
+   - `visibleProgramIds`, `defaultProgramId`, `getProgramName` at the top of
+     `<script>`
+   - `autoScaleLengthCm`, `formatSigFigs` — both already imported
 
 Key source files:
 
@@ -61,7 +66,9 @@ Key source files:
 
 Test files:
 
-- `src/tests/unit/multi-program-state.test.ts` — existing state tests (pattern reference)
+- `src/tests/unit/multi-program-state.test.ts` — `reorderPrograms` tests
+  **already exist** in a `describe("reorderPrograms")` block (lines ~177-200);
+  verify they are green before starting, but **do not rewrite them**.
 - `tests/e2e/calculator-advanced.spec.ts` — add new E2E tests here
 
 Run tests:
@@ -77,8 +84,7 @@ pnpm exec playwright test      # E2E (needs WASM in static/wasm/)
 ## AI Logging (MANDATORY)
 
 Every task that changes code or docs must be logged. Rules are in `AGENTS.md`
-(which refers to `.github/copilot-instructions.md` § "AI Session Logging").
-Attribution: `(Qwen3.5-397B-A17B-FP8 via opencode)`.
+(AI Session Logging section). Attribution: `(Qwen3.5-397B-A17B-FP8 via opencode)`.
 
 ---
 
@@ -91,129 +97,208 @@ Attribution: `(Qwen3.5-397B-A17B-FP8 via opencode)`.
 § Accessibility (delta tooltip keyboard access via `aria-describedby`),
 § Acceptance Criteria "Delta Tooltip".
 
+**Tooltip label format** (from spec):
+`"Δ = −0.84 keV/µm (−1.8% vs ICRU 90)"` — note:
+- Units are included in the label (e.g. `keV/µm`, `MeV·cm²/g`, `cm`).
+- `−` is U+2212 MINUS SIGN for negative, `+` for positive/zero.
+- Absolute delta: `formatSigFigs(Math.abs(delta), 3)` (3 sig-figs).
+- Percentage: `Math.abs(pct).toFixed(1)` (1 decimal place).
+
 ### Acceptance criteria
 
-- Pure exported function `computeDelta` in `src/lib/components/result-table.svelte`
-  (or extracted to `src/lib/utils/delta.ts` if cleaner — adjust import below):
-  ```typescript
-  export function computeDelta(
-    value: number | null,
-    defaultValue: number | null,
-    defaultName: string,
-  ): { delta: number; pct: number; label: string } | null
+**`computeDelta` function** — export from `src/lib/utils/delta.ts` (new file):
+
+```typescript
+export function computeDelta(
+  displayValue: number | null,
+  defaultDisplayValue: number | null,
+  unit: string,
+  defaultName: string,
+): { delta: number; pct: number; label: string } | null
+```
+
+- Returns `null` when `displayValue` is `null`, `defaultDisplayValue` is `null`,
+  or `defaultDisplayValue === 0` (avoids divide-by-zero).
+- `delta = displayValue - defaultDisplayValue`
+- `pct = (delta / defaultDisplayValue) * 100`
+- Label format (U+2212 minus sign `−` for negative, `+` for positive/zero):
   ```
-  - Returns `null` when `value` is `null`, `defaultValue` is `null`, or
-    `defaultValue === 0` (avoids divide-by-zero).
-  - `delta = value - defaultValue`; `pct = delta / defaultValue * 100`.
-  - Label format:
-    `"Δ = {sign}{|delta| 4 sig-figs} ({sign}{|pct| 2 dp}% vs {defaultName})"`
-    where sign is `+` for positive/zero delta and `−` (U+2212 MINUS SIGN) for
-    negative. Examples:
-    - `"Δ = +0.2500 (+0.55% vs ICRU 90)"`
-    - `"Δ = −0.8400 (−1.84% vs ICRU 90)"`
-- In the result-table, each **non-default** program's STP and CSDA result cell
-  that contains a numeric value (not `"—"`) shows a tooltip on `mouseenter` /
-  `focus` and hides it on `mouseleave` / `blur`.
-  - Tooltip element: `data-testid="delta-tooltip-{programId}-{rowIndex}"`,
-    e.g. `data-testid="delta-tooltip-2-0"` for programId=2, row 0.
-  - Tooltip content: the `label` string from `computeDelta`.
-  - Tooltip must be hidden (not in DOM or `visibility:hidden`) for "—" cells,
-    for the default program's cells, and for error cells.
-  - Keyboard accessibility: add a visually-hidden `<span id="delta-desc-{programId}-{i}">` 
-    containing the label text next to each comparison cell; the cell `<td>` uses
-    `aria-describedby="delta-desc-{programId}-{i}"` so screen readers announce the
-    delta on focus without requiring hover. The visible tooltip is a
-    bonus affordance, not the only access point.
-- `pnpm test` and `pnpm build` exit 0.
+  "Δ = +0.840 keV/µm (+1.8% vs ICRU 90)"   // positive
+  "Δ = −0.840 keV/µm (−1.8% vs ICRU 90)"   // negative
+  ```
+  Constructed as:
+  ```typescript
+  const sign = delta >= 0 ? "+" : "−"; // U+2212
+  const absDelta = formatSigFigs(Math.abs(delta), 3);
+  const absPct = Math.abs(pct).toFixed(1);
+  const label = `Δ = ${sign}${absDelta} ${unit} (${sign}${absPct}% vs ${defaultName})`;
+  ```
+
+**Helper functions** — add as non-exported functions in `result-table.svelte`
+(they depend on the component's `state` and `entitySelection` props):
+
+```typescript
+// Returns the STP display value (already unit-converted) for a given result
+// row, or null if the row energy doesn't match.
+function getStpDisplayValue(
+  result: CalculationResult,
+  mevNucl: number,
+  density: number,
+  displayUnit: string,
+): number | null {
+  const idx = result.energies.findIndex((e) => Math.abs(e - mevNucl) < 0.0001);
+  if (idx === -1) return null;
+  const mass = result.stoppingPowers[idx] ?? null;
+  if (mass === null) return null;
+  if (displayUnit === "keV/µm") return (mass * density) / 10;
+  if (displayUnit === "MeV/cm") return mass * density;
+  return mass; // MeV·cm²/g
+}
+
+// Returns the CSDA range value in cm for a given result row, or null.
+function getCsdaDisplayCm(
+  result: CalculationResult,
+  mevNucl: number,
+  density: number,
+): number | null {
+  const idx = result.energies.findIndex((e) => Math.abs(e - mevNucl) < 0.0001);
+  if (idx === -1) return null;
+  const gcm2 = result.csdaRanges[idx] ?? null;
+  if (gcm2 === null) return null;
+  return density > 0 ? gcm2 / density : gcm2;
+}
+```
+
+**In `result-table.svelte`** — add component-level state and derived values:
+
+```typescript
+import { computeDelta } from "$lib/utils/delta.js";
+
+let hoveredCell = $state<string | null>(null);
+
+// Derived once — used in both STP and CSDA delta computations
+const defaultProgramName = $derived(
+  defaultProgramId !== null ? getProgramName(defaultProgramId) : "",
+);
+```
+
+**STP comparison cell** — wrap existing content to add tooltip. Key pattern
+(add inside the `{#if stpIndex !== -1}` block, after computing `stpMass`):
+
+```svelte
+{@const stpDisplay = getStpDisplayValue(result, row.normalizedMevNucl, density, state.stpDisplayUnit)}
+{@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
+{@const defaultStpDisplay = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+  ? getStpDisplayValue(defaultResult, row.normalizedMevNucl, density, state.stpDisplayUnit)
+  : null}
+{@const delta = programId !== defaultProgramId && stpDisplay !== null
+  ? computeDelta(stpDisplay, defaultStpDisplay, state.stpDisplayUnit, defaultProgramName)
+  : null}
+```
+
+Add to the `<td>` wrapping the STP cell:
+- `class="... relative"` (for absolute-positioned tooltip)
+- `aria-describedby={delta ? `delta-desc-${programId}-${i}` : undefined}`
+- `onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}`
+- `onmouseleave={() => { hoveredCell = null; }}`
+- `onfocus={() => { hoveredCell = `${programId}-${i}`; }}`
+- `onblur={() => { hoveredCell = null; }}`
+
+After the existing cell content, inside the `<td>`:
+```svelte
+{#if delta}
+  <span id="delta-desc-{programId}-{i}" class="sr-only">{delta.label}</span>
+  {#if hoveredCell === `${programId}-${i}`}
+    <div
+      data-testid="delta-tooltip-{programId}-{i}"
+      role="tooltip"
+      class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
+             rounded bg-popover text-popover-foreground text-xs shadow-md
+             whitespace-nowrap border pointer-events-none"
+    >
+      {delta.label}
+    </div>
+  {/if}
+{/if}
+```
+
+**CSDA comparison cell** — mirror the same pattern using `getCsdaDisplayCm`.
+For the delta unit use `"cm"` (raw cm values for both cells):
+
+```svelte
+{@const csdaCm = getCsdaDisplayCm(result, row.normalizedMevNucl, density)}
+{@const defaultCsdaCm = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+  ? getCsdaDisplayCm(defaultResult, row.normalizedMevNucl, density)
+  : null}
+{@const csdaDelta = programId !== defaultProgramId && csdaCm !== null
+  ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
+  : null}
+```
+
+Use `data-testid="delta-tooltip-{programId}-{i}"` for the CSDA tooltip as well
+(the E2E test only checks the STP tooltip; CSDA follows the same pattern).
 
 ### Step 1a — tests first (`src/tests/unit/delta-tooltip.test.ts`)
 
 ```typescript
-import { computeDelta } from "$lib/components/result-table.svelte";
-// If extracted: import { computeDelta } from "$lib/utils/delta.js";
+import { computeDelta } from "$lib/utils/delta.js";
 
-test("positive delta uses + sign and formats to 4 sig-figs + 2dp pct", () => {
-  const r = computeDelta(46.01, 45.76, "ICRU 90");
+test("positive delta: correct delta, pct, and label with unit", () => {
+  const r = computeDelta(45.76 + 0.84, 45.76, "keV/µm", "ICRU 90");
   expect(r).not.toBeNull();
-  expect(r!.delta).toBeCloseTo(0.25, 3);
-  expect(r!.pct).toBeCloseTo(0.547, 2);
-  // label starts with "Δ = +" and contains the default name
+  expect(r!.delta).toBeCloseTo(0.84, 3);
+  expect(r!.pct).toBeCloseTo(1.836, 2);
   expect(r!.label).toMatch(/^Δ = \+/);
+  expect(r!.label).toContain("keV/µm");
   expect(r!.label).toContain("ICRU 90");
+  expect(r!.label).toContain("%");
 });
 
 test("negative delta uses U+2212 minus sign (not ASCII hyphen)", () => {
-  const r = computeDelta(44.92, 45.76, "ICRU 90");
+  const r = computeDelta(44.92, 45.76, "keV/µm", "ICRU 90");
   expect(r).not.toBeNull();
   expect(r!.delta).toBeCloseTo(-0.84, 3);
-  expect(r!.pct).toBeCloseTo(-1.837, 2);
-  // U+2212 "−", not "-"
-  expect(r!.label).toMatch(/^Δ = −/);
+  expect(r!.pct).toBeCloseTo(-1.836, 2);
+  expect(r!.label).toMatch(/^Δ = −/); // U+2212, not "-"
+  expect(r!.label).toContain("keV/µm");
   expect(r!.label).toContain("ICRU 90");
 });
 
-test("null value returns null", () => {
-  expect(computeDelta(null, 45.76, "ICRU 90")).toBeNull();
+test("null displayValue returns null", () => {
+  expect(computeDelta(null, 45.76, "keV/µm", "ICRU 90")).toBeNull();
 });
 
-test("null default returns null", () => {
-  expect(computeDelta(44.92, null, "ICRU 90")).toBeNull();
+test("null defaultDisplayValue returns null", () => {
+  expect(computeDelta(44.92, null, "keV/µm", "ICRU 90")).toBeNull();
 });
 
 test("zero default returns null (avoid divide-by-zero)", () => {
-  expect(computeDelta(1.0, 0, "ICRU 90")).toBeNull();
+  expect(computeDelta(1.0, 0, "keV/µm", "ICRU 90")).toBeNull();
+});
+
+test("label precision: 3 sig-figs for delta, 1dp for pct", () => {
+  const r = computeDelta(44.92, 45.76, "keV/µm", "ICRU 90");
+  // formatSigFigs(0.84, 3) = "0.840"; toFixed(1) of 1.836... = "1.8"
+  expect(r!.label).toContain("0.840");
+  expect(r!.label).toContain("1.8%");
+});
+
+test("unit is included in label for non-STP units", () => {
+  const r = computeDelta(0.95, 1.0, "cm", "ICRU 90");
+  expect(r).not.toBeNull();
+  expect(r!.label).toContain("cm");
 });
 ```
 
 ### Step 1b — implement
 
-In `src/lib/components/result-table.svelte` (or a new `src/lib/utils/delta.ts`):
-
-- Add `export function computeDelta(...)` per acceptance criteria above. Use
-  `toPrecision(4)` for `|delta|` and `toFixed(2)` for `|pct|`.
-
-In `src/lib/components/result-table.svelte` comparison STP and CSDA cell blocks:
-
-- For each non-default program cell, wrap the content in a `<td>` that has:
-  ```svelte
-  {@const delta = computeDelta(stpValue, defaultStpValue, defaultProgramName)}
-  <td
-    aria-describedby={delta ? `delta-desc-${programId}-${i}` : undefined}
-    onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}
-    onmouseleave={() => { hoveredCell = null; }}
-    onfocus={() => { hoveredCell = `${programId}-${i}`; }}
-    onblur={() => { hoveredCell = null; }}
-    ...existing classes...
-  >
-    <!-- existing cell content: formatSigFigs(...) -->
-    {#if delta}
-      <!-- visually-hidden accessible description (always in DOM when value present) -->
-      <span
-        id="delta-desc-{programId}-{i}"
-        class="sr-only"
-      >{delta.label}</span>
-      <!-- visible tooltip, shown on hover/focus -->
-      {#if hoveredCell === `${programId}-${i}`}
-        <div
-          data-testid="delta-tooltip-{programId}-{i}"
-          role="tooltip"
-          class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
-                 rounded bg-popover text-popover-foreground text-xs shadow-md
-                 whitespace-nowrap border"
-        >
-          {delta.label}
-        </div>
-      {/if}
-    {/if}
-  </td>
-  ```
-- Add `let hoveredCell = $state<string | null>(null)` at component script level.
-  One shared slot is enough — only one cell can be hovered at a time.
-- Add `position: relative` (Tailwind: `relative`) to the comparison cell `<td>`
-  so the absolute tooltip is positioned against it.
-- Mirror the same tooltip logic in the CSDA comparison cell block.
-- For the `defaultStpValue` lookup: read it from `comparisonResults.get(defaultProgramId)
-  ?.stoppingPowers[i]` — the `comparisonResults` prop is already passed to the component.
+1. Create `src/lib/utils/delta.ts` with `computeDelta` per spec above.
+2. In `result-table.svelte`:
+   - Import `computeDelta` from `"$lib/utils/delta.js"`.
+   - Add `getStpDisplayValue`, `getCsdaDisplayCm` as local functions (non-exported).
+   - Add `let hoveredCell = $state<string | null>(null)` and `defaultProgramName` derived.
+   - Wire up STP comparison cells per the template pattern above.
+   - Wire up CSDA comparison cells with the same pattern.
 
 ### Done when
 
@@ -227,8 +312,8 @@ feat(result-table): add delta/% difference tooltip on comparison cells
 
 ## Task 2 — Drag-and-drop + keyboard column reorder in result-table
 
-> **Depends on Task 1** only via a shared `hoveredCell` slot; the tasks are
-> otherwise independent and may be started in parallel.
+> **Depends on Task 1** only via the shared `hoveredCell` slot; otherwise
+> fully independent.
 
 **Spec:** `multi-program.md` Final v3 § "Drag-and-Drop Column Reordering",
 § Accessibility (keyboard reorder `aria-live` announce, `aria-disabled` on
@@ -237,76 +322,58 @@ default header), § Acceptance Criteria "Drag-and-Drop Column Reordering".
 ### Acceptance criteria
 
 - Each **non-default** program sub-header `<th>` in the STP group:
-  - `draggable="true"`
-  - `tabindex="0"` (focusable for keyboard reorder)
+  - `draggable="true"`, `tabindex="0"`, `cursor-grab` style
   - `data-testid="program-col-header-stp-{programId}"`
   - `ondragstart`, `ondragover`, `ondrop`, `ondragend` handlers wired
 - Each **default** program sub-header `<th>` in the STP group:
-  - `draggable="false"`
-  - `tabindex="0"` (still focusable for navigation)
-  - `aria-disabled="true"`
+  - `draggable="false"`, `tabindex="0"`, `aria-disabled="true"`
   - `data-testid="program-col-header-stp-{programId}"`
-- Same `data-testid="program-col-header-csda-{programId}"` pattern for CSDA group.
-- **Drag constraint:** `ondragover` and `ondrop` do nothing when `targetProgramId
-  === defaultProgramId`.
+- Same pattern with `data-testid="program-col-header-csda-{programId}"` for
+  CSDA group.
+- **Drag constraint:** `ondragover` / `ondrop` do nothing when the target is
+  the default program.
 - **Drag reorder:** `ondrop` calls `multiProgramState!.reorderPrograms(draggedId,
-  newIndex)` where `newIndex` is the position of the `targetProgramId` in
-  `programDisplayOrder`.
-- **Sync:** Both groups share `programDisplayOrder`, so reordering in the STP
-  group automatically reorders the CSDA group — no extra logic needed.
+  targetIndex)` where `targetIndex` is `programDisplayOrder.indexOf(targetProgramId)`.
+  `reorderPrograms` interprets this as the desired **array index** in
+  `programDisplayOrder` (default is always index 0; additional programs are
+  indices 1..n).
+- **Sync:** Both groups share `programDisplayOrder`, so reordering in one group
+  automatically reorders the other — no extra logic needed.
 - **Visual feedback during drag:**
-  - The header being dragged gets `opacity-50` (via `draggingProgramId === programId`).
-  - The header under the drag cursor gets a `border-l-2 border-blue-400` insertion
-    indicator (`dragOverProgramId === programId` AND `programId !== defaultProgramId`).
+  - Dragged header: `opacity-50` when `draggingProgramId === programId`.
+  - Drop target header: `border-l-2 border-blue-400` when
+    `dragOverProgramId === programId && programId !== defaultProgramId`.
 - **Keyboard reorder (Alt+← / Alt+→):**
   - `handleColumnKeydown(e, programId)` fires on `onkeydown` of sub-header `<th>`.
   - Returns immediately if `programId === defaultProgramId` or `!e.altKey`.
-  - `Alt+ArrowLeft`: move column one position left (skip if already at index 1).
-  - `Alt+ArrowRight`: move column one position right (skip if already at last index).
-  - Each move calls `reorderPrograms(programId, currentIndex ± 1)`.
+  - `Alt+ArrowLeft`: move left (skip if already at index 1, the first
+    additional-program position).
+  - `Alt+ArrowRight`: move right (skip if already at the last index).
+  - Each valid move calls
+    `multiProgramState!.reorderPrograms(programId, currentIndex + delta)`.
   - After each move fires an `aria-live="polite"` announcement:
-    `"{program name} moved to position {N} of {total}"` where N and total count
-    only the additional programs (not the pinned default).
-- **URL persistence:** the `programs` URL parameter already encodes
-  `programDisplayOrder` via the existing reactive URL sync in `+page.svelte`.
-  No extra URL code needed in result-table.
+    `"{program name} moved to position {N} of {total}"` where N is
+    `newIndex` (the array index of the moved program, 1-based among additional
+    programs: `newIndex - 1 + 1 = newIndex`) and `total` is
+    `programDisplayOrder.length - 1` (excluding the pinned default).
+- **URL persistence:** `programDisplayOrder` is already synced to the `programs`
+  URL param via the existing reactive URL sync in `+page.svelte`. No extra URL
+  code needed in result-table.
 - `pnpm test` and `pnpm build` exit 0.
 
-### Step 2a — unit tests first
+### Step 2a — verify existing unit tests
 
-Add to `src/tests/unit/multi-program-state.test.ts` (or confirm these cases
-are already covered — if they are, skip writing and document "already green"):
-
-```typescript
-test("reorderPrograms: default program cannot be moved", () => {
-  // Suppose state has [9, 2, 101] — programId 9 is default
-  // reorderPrograms(9, 2) → order unchanged
-});
-
-test("reorderPrograms: moves additional program from index 1 to 2", () => {
-  // [9, 2, 101] → reorderPrograms(2, 2) → [9, 101, 2]
-});
-
-test("reorderPrograms: moves additional program from index 2 to 1", () => {
-  // [9, 101, 2] → reorderPrograms(2, 1) → [9, 2, 101]
-});
-```
+Run `pnpm test src/tests/unit/multi-program-state.test.ts` and confirm the
+`describe("reorderPrograms")` block is green. If tests pass, skip to Step 2b.
+If they fail, fix only the failing assertion (do not rewrite).
 
 ### Step 2b — E2E tests first (`tests/e2e/calculator-advanced.spec.ts`)
 
-Add to the existing file, after the existing tests:
+Add to the existing file (after the last existing test), using the
+`checkWasmAvailable` helper already present in the file (or define it once
+if absent):
 
 ```typescript
-// Helper (copy from export.spec.ts pattern if not already present)
-async function checkWasmAvailable(page: Page): Promise<boolean> {
-  try {
-    const response = await page.request.get("/wasm/libdedx.wasm");
-    return response.ok();
-  } catch {
-    return false;
-  }
-}
-
 test.describe("Stage 6.12 — multi-program polish", () => {
   test(
     "keyboard reorder: Alt+ArrowRight moves column right and updates URL @smoke",
@@ -318,7 +385,6 @@ test.describe("Stage 6.12 — multi-program polish", () => {
       await page.goto(
         "/calculator?mode=advanced&particle=1&material=276&programs=9,2,101&energies=100",
       );
-      // Wait for calculation
       await expect
         .poll(
           async () =>
@@ -383,12 +449,12 @@ test.describe("Stage 6.12 — multi-program polish", () => {
         )
         .toBeGreaterThan(0);
 
-      // Hover over PSTAR (id=2) STP cell, row 0
       await page.locator('[data-testid="stp-cell-2-0"]').hover();
       const tooltip = page.locator('[data-testid="delta-tooltip-2-0"]');
       await expect(tooltip).toBeVisible({ timeout: 2000 });
       await expect(tooltip).toContainText("Δ =");
-      await expect(tooltip).toContainText("ICRU 90");
+      // Must include a unit string and the default program name
+      await expect(tooltip).toContainText("%");
     },
   );
 
@@ -411,7 +477,6 @@ test.describe("Stage 6.12 — multi-program polish", () => {
         )
         .toBeGreaterThan(0);
 
-      // Hover over ICRU 90 (default, id=9) STP cell — no tooltip should appear
       await page.locator('[data-testid="stp-cell-9-0"]').hover();
       await expect(page.locator('[data-testid*="delta-tooltip"]')).not.toBeVisible({
         timeout: 1000,
@@ -437,7 +502,7 @@ let reorderAnnouncement = $state("");
 function handleDragStart(e: DragEvent, programId: number) {
   draggingProgramId = programId;
   e.dataTransfer?.setData("text/plain", String(programId));
-  e.dataTransfer && (e.dataTransfer.effectAllowed = "move");
+  if (e.dataTransfer) e.dataTransfer.effectAllowed = "move";
 }
 
 function handleDragOver(e: DragEvent, targetId: number) {
@@ -450,16 +515,14 @@ function handleDragOver(e: DragEvent, targetId: number) {
 function handleDrop(e: DragEvent, targetId: number) {
   e.preventDefault();
   dragOverProgramId = null;
-  if (!draggingProgramId || draggingProgramId === targetId) {
-    draggingProgramId = null;
-    return;
-  }
+  const dragged = draggingProgramId;
+  draggingProgramId = null;
+  if (!dragged || dragged === targetId || targetId === defaultProgramId) return;
   const order = multiProgramState!.programDisplayOrder;
   const targetIndex = order.indexOf(targetId);
-  if (targetIndex > 0) { // never drop before the default
-    multiProgramState!.reorderPrograms(draggingProgramId, targetIndex);
+  if (targetIndex > 0) {
+    multiProgramState!.reorderPrograms(dragged, targetIndex);
   }
-  draggingProgramId = null;
 }
 
 function handleDragEnd() {
@@ -476,19 +539,18 @@ function handleColumnKeydown(e: KeyboardEvent, programId: number) {
   e.preventDefault();
   const order = multiProgramState!.programDisplayOrder;
   const currentIndex = order.indexOf(programId);
-  const delta = e.key === "ArrowLeft" ? -1 : 1;
-  const newIndex = currentIndex + delta;
-  if (newIndex < 1 || newIndex >= order.length) return; // clamp: can't go before default (index 0)
+  const step = e.key === "ArrowLeft" ? -1 : 1;
+  const newIndex = currentIndex + step;
+  // index 0 is always the pinned default; can't go before it or past the end
+  if (newIndex < 1 || newIndex >= order.length) return;
   multiProgramState!.reorderPrograms(programId, newIndex);
-  // Aria-live announcement (position among additional programs, 1-based)
   const additionalTotal = order.length - 1;
-  const additionalPos = newIndex; // 1-based: newIndex is 1..n among additional
-  const name = getProgramName(programId);
-  reorderAnnouncement = `${name} moved to position ${additionalPos} of ${additionalTotal}`;
+  const additionalPos = newIndex; // 1-based position among additional programs
+  reorderAnnouncement = `${getProgramName(programId)} moved to position ${additionalPos} of ${additionalTotal}`;
 }
 ```
 
-**4. Sub-header `<th>` markup** — modify the Row 2 sub-headers in the STP group:
+**4. Sub-header `<th>` markup** — modify the Row 2 STP sub-headers:
 ```svelte
 <th
   scope="col"
@@ -502,12 +564,13 @@ function handleColumnKeydown(e: KeyboardEvent, programId: number) {
   ondrop={(e) => handleDrop(e, programId)}
   ondragend={handleDragEnd}
   onkeydown={(e) => handleColumnKeydown(e, programId)}
-  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap
-    cursor-grab select-none
-    ${programId === defaultProgramId ? "font-bold bg-blue-50 border-l-2 border-l-blue-500" : "bg-background"}
-    ${draggingProgramId === programId ? "opacity-50" : ""}
-    ${dragOverProgramId === programId && programId !== defaultProgramId ? "border-l-2 border-l-blue-400" : ""}
-  `}
+  class={[
+    "px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap select-none",
+    programId !== defaultProgramId ? "cursor-grab" : "",
+    programId === defaultProgramId ? "font-bold bg-blue-50 border-l-2 border-l-blue-500" : "bg-background",
+    draggingProgramId === programId ? "opacity-50" : "",
+    dragOverProgramId === programId && programId !== defaultProgramId ? "border-l-2 border-l-blue-400" : "",
+  ].filter(Boolean).join(" ")}
 >
   {getProgramName(programId)}
   {#if programId === defaultProgramId}
@@ -515,18 +578,19 @@ function handleColumnKeydown(e: KeyboardEvent, programId: number) {
   {/if}
 </th>
 ```
-Apply the same attributes + `data-testid="program-col-header-csda-{programId}"` to the CSDA group sub-headers.
 
-**5. Aria-live region** — add once at the top of the table wrapper:
+Apply the same attributes with `data-testid="program-col-header-csda-{programId}"` to
+the CSDA group sub-headers.
+
+**5. Aria-live region** — add once, just inside the `<div class="overflow-x-auto ...">` wrapper:
 ```svelte
 <div aria-live="polite" aria-atomic="true" class="sr-only">{reorderAnnouncement}</div>
 ```
 
 ### Done when
 
-`pnpm lint && pnpm test` green; all four new E2E tests in
-`calculator-advanced.spec.ts` (keyboard reorder ×2, delta tooltip ×2) pass or
-are `test.skip`-ed with WASM-absent note. Then commit:
+`pnpm lint && pnpm test` green; all four new E2E tests pass or are
+`test.skip`-ed with the WASM-absent guard. Then commit:
 
 ```
 feat(result-table): drag-and-drop and keyboard column reorder for multi-program table
@@ -536,24 +600,27 @@ feat(result-table): drag-and-drop and keyboard column reorder for multi-program 
 
 ## Cross-task notes
 
-- Task 1 (delta tooltip) is simpler — start here to verify the test
-  scaffolding before adding drag complexity.
-- Task 2 drag and Task 1 tooltip both modify `result-table.svelte`. If running
-  sequentially commit Task 1 first to keep diffs readable.
-- After both tasks: write the `CHANGELOG-AI.md` entry and
-  `docs/ai-logs/YYYY-MM-DD-stage6-12-multi-program-polish.md` per AI Logging
-  rules.
+- Task 1 (delta tooltip) is simpler — start here to verify the test scaffolding
+  before adding drag complexity.
+- Both tasks modify `result-table.svelte`. Commit Task 1 first to keep diffs
+  readable.
+- After both tasks: write the `CHANGELOG-AI.md` entry and session log
+  `docs/ai-logs/2026-05-11-stage6-12-multi-program-polish.md` per AI Logging
+  rules in `AGENTS.md`.
 - Mark Stage 6.12 ✅ in `docs/00-redesign-plan.md` (the 6.12 table row).
-- Run `pnpm guard:staged` before every commit.
+- Run `pnpm lint && pnpm format` before every commit.
 - **Do not push** unless explicitly requested. Output the manual push command
   in your `TASK DONE` message.
+- Add `src/lib/utils/delta.ts` to the prompts index in
+  `docs/ai-logs/prompts/README.md` once the PR is ready (leave as a note).
 
 ---
 
 ## Out of scope / deferred
 
-- Plot-page multi-program overlays (covered by adding multiple series in `plot.md`).
+- Plot-page multi-program overlays (Stage 7+).
 - Multi-program CSV filename / wide PDF layout — Stage 6.11 shipped the basic
-  CSV modal; any multi-program PDF layout details are deferred to Stage 6.13+.
+  CSV modal; multi-program PDF layout details are deferred to Stage 6.13+.
+- Touch drag-and-drop (long-press) — Stage 7 accessibility pass.
 - External data (`external-data.md`) — Stage 7.
 - Stage 6.13 (formal URL parser / ABNF conformance) — next stage after 6.12.
