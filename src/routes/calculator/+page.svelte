@@ -10,10 +10,7 @@
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
-  import {
-    createMultiProgramState,
-    type MultiProgramState,
-  } from "$lib/state/multi-program.svelte";
+  import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
@@ -1315,7 +1312,7 @@
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <ResultTable
-            state={calcState}
+            {calcState}
             entitySelection={entityState}
             multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
             comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}

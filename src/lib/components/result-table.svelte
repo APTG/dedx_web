@@ -203,7 +203,7 @@
   function handleInputKeyDown(event: KeyboardEvent, index: number) {
     if (event.key === "Enter") {
       event.preventDefault();
-     calcState.handleBlur(index);
+      calcState.handleBlur(index);
       const moved = focusRowInput(index + 1);
       if (moved) {
         return;
@@ -219,7 +219,7 @@
       const targetInput = inputs[targetIndex];
       if (targetInput) {
         event.preventDefault();
-       calcState.handleBlur(index);
+        calcState.handleBlur(index);
         targetInput.focus();
       }
       // Otherwise let Tab do its default thing so users can leave the table.
@@ -228,8 +228,8 @@
 
   function handleInputChange(event: Event, index: number) {
     const target = event.target as HTMLInputElement;
-   calcState.updateRowText(index, target.value);
-   calcState.triggerCalculation();
+    calcState.updateRowText(index, target.value);
+    calcState.triggerCalculation();
   }
 
   function handlePaste(event: ClipboardEvent, index: number) {
@@ -256,8 +256,8 @@
 
   function handleUnitChange(event: Event, index: number) {
     const target = event.target as HTMLSelectElement;
-   calcState.setRowUnit(index, target.value as EnergyUnit);
-   calcState.triggerCalculation();
+    calcState.setRowUnit(index, target.value as EnergyUnit);
+    calcState.triggerCalculation();
   }
 
   function canShowPerRowUnitSelector(row: CalculatedRow): boolean {
@@ -290,19 +290,28 @@
 
   // Drag-and-drop column reorder handlers
   function handleDragStart(programId: number, event: DragEvent) {
+    if (programId === defaultProgramId || !event.dataTransfer) {
+      return;
+    }
+
     draggingProgramId = programId;
-    reorderAnnouncement = `Started dragging ${getProgramName(programId)}`;
-    // Set drag data
     event.dataTransfer.setData("text/plain", String(programId));
     event.dataTransfer.effectAllowed = "move";
   }
 
   function handleDragOver(programId: number, event: DragEvent) {
-    event.preventDefault();
-    if (draggingProgramId !== null && draggingProgramId !== programId) {
-      dragOverProgramId = programId;
-      event.dataTransfer.dropEffect = "move";
+    if (
+      !event.dataTransfer ||
+      programId === defaultProgramId ||
+      draggingProgramId === null ||
+      draggingProgramId === programId
+    ) {
+      return;
     }
+
+    event.preventDefault();
+    dragOverProgramId = programId;
+    event.dataTransfer.dropEffect = "move";
   }
 
   function handleDragLeave() {
@@ -314,7 +323,11 @@
     dragOverProgramId = null;
 
     const draggedId = draggingProgramId;
-    if (draggedId === null || draggedId === targetProgramId) {
+    if (
+      draggedId === null ||
+      draggedId === targetProgramId ||
+      targetProgramId === defaultProgramId
+    ) {
       draggingProgramId = null;
       return;
     }
@@ -326,10 +339,10 @@
 
     // Move dragged program to target position
     if (multiProgramState && targetIndex !== -1 && draggedIndex !== -1) {
-      // Determine new position: if dragging right, targetIndex - 1; if dragging left, targetIndex
-      const newPosition = draggedIndex < targetIndex ? targetIndex : targetIndex - 1;
+      const newPosition = targetIndex;
       multiProgramState.reorderPrograms(draggedId, newPosition);
-      reorderAnnouncement = `Moved ${getProgramName(draggedId)} to position ${newPosition + 1}`;
+      const announcedPosition = Math.min(Math.max(1, newPosition), currentOrder.length - 1) + 1;
+      reorderAnnouncement = `${getProgramName(draggedId)} moved to position ${announcedPosition} of ${currentOrder.length}.`;
     }
 
     draggingProgramId = null;
@@ -354,7 +367,7 @@
       if (currentIndex < currentOrder.length - 1) {
         const newPosition = currentIndex + 1;
         multiProgramState.reorderPrograms(programId, newPosition);
-        reorderAnnouncement = `Moved ${getProgramName(programId)} to position ${newPosition + 1}`;
+        reorderAnnouncement = `${getProgramName(programId)} moved to position ${newPosition + 1} of ${currentOrder.length}.`;
       }
     } else if (event.altKey && event.key === "ArrowLeft") {
       event.preventDefault();
@@ -362,7 +375,7 @@
       if (currentIndex > 1) {
         const newPosition = currentIndex - 1;
         multiProgramState.reorderPrograms(programId, newPosition);
-        reorderAnnouncement = `Moved ${getProgramName(programId)} to position ${newPosition + 1}`;
+        reorderAnnouncement = `${getProgramName(programId)} moved to position ${newPosition + 1} of ${currentOrder.length}.`;
       }
     }
   }
@@ -380,7 +393,7 @@
   // Close dropdown when clicking outside
   function handleOutsideClick(event: MouseEvent) {
     const target = event.target as HTMLElement;
-    if (showColumnsDropdown && !target.closest('[data-columns-dropdown]')) {
+    if (showColumnsDropdown && !target.closest("[data-columns-dropdown]")) {
       showColumnsDropdown = false;
     }
   }
@@ -511,9 +524,9 @@
                   data-program-id={programId}
                   draggable={programId !== defaultProgramId ? "true" : "false"}
                   aria-disabled={programId === defaultProgramId ? "true" : "false"}
-                  tabindex={programId !== defaultProgramId ? "0" : "-1"}
-                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap cursor-${
-                    programId === defaultProgramId ? "not-allowed" : "grab"
+                  tabindex="0"
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                    programId === defaultProgramId ? "cursor-not-allowed" : "cursor-grab"
                   } ${
                     programId === defaultProgramId
                       ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
@@ -542,9 +555,9 @@
                   data-program-id={programId}
                   draggable={programId !== defaultProgramId ? "true" : "false"}
                   aria-disabled={programId === defaultProgramId ? "true" : "false"}
-                  tabindex={programId !== defaultProgramId ? "0" : "-1"}
-                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap cursor-${
-                    programId === defaultProgramId ? "not-allowed" : "grab"
+                  tabindex="0"
+                  class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${
+                    programId === defaultProgramId ? "cursor-not-allowed" : "cursor-grab"
                   } ${
                     programId === defaultProgramId
                       ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
@@ -646,37 +659,64 @@
               <!-- Stopping Power columns per program -->
               {#if showStp}
                 {#each visibleProgramIds as programId (programId)}
-                  {@const stpDisplay = entitySelection.selectedMaterial && row.normalizedMevNucl !== null
-                    ? getStpDisplayValue(
-                        comparisonResults?.get(programId) as CalculationResult,
-                        row.normalizedMevNucl,
-                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
-                       calcState.stpDisplayUnit,
-                      )
-                    : null}
-                  {@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
-                  {@const defaultStpDisplay = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
-                    ? getStpDisplayValue(
-                        defaultResult,
-                        row.normalizedMevNucl,
-                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
-                       calcState.stpDisplayUnit,
-                      )
-                    : null}
-                  {@const delta = programId !== defaultProgramId && stpDisplay !== null && defaultStpDisplay !== null
-                    ? computeDelta(stpDisplay, defaultStpDisplay,calcState.stpDisplayUnit, defaultProgramName)
-                    : null}
+                  {@const stpDisplay =
+                    entitySelection.selectedMaterial && row.normalizedMevNucl !== null
+                      ? getStpDisplayValue(
+                          comparisonResults?.get(programId) as CalculationResult,
+                          row.normalizedMevNucl,
+                          advancedOptions.value.densityOverride ??
+                            entitySelection.selectedMaterial.density,
+                          calcState.stpDisplayUnit,
+                        )
+                      : null}
+                  {@const defaultResult =
+                    defaultProgramId !== null
+                      ? comparisonResults?.get(defaultProgramId)
+                      : undefined}
+                  {@const defaultStpDisplay =
+                    defaultResult &&
+                    !(defaultResult instanceof LibdedxError) &&
+                    row.normalizedMevNucl !== null
+                      ? getStpDisplayValue(
+                          defaultResult,
+                          row.normalizedMevNucl,
+                          advancedOptions.value.densityOverride ??
+                            entitySelection.selectedMaterial.density,
+                          calcState.stpDisplayUnit,
+                        )
+                      : null}
+                  {@const delta =
+                    programId !== defaultProgramId &&
+                    stpDisplay !== null &&
+                    defaultStpDisplay !== null
+                      ? computeDelta(
+                          stpDisplay,
+                          defaultStpDisplay,
+                          calcState.stpDisplayUnit,
+                          defaultProgramName,
+                        )
+                      : null}
+                  {@const stpCellKey = `stp-${programId}-${i}`}
+                  {@const stpTooltipId = `delta-desc-${stpCellKey}`}
                   <td
                     data-program-id={programId}
                     data-testid={`stp-cell-${programId}-${i}`}
                     class={`relative px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
                       programId === defaultProgramId ? "bg-blue-50" : ""
                     }`}
-                    aria-describedby={delta ? `delta-desc-${programId}-${i}` : undefined}
-                    onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}
-                    onmouseleave={() => { hoveredCell = null; }}
-                    onfocus={() => { hoveredCell = `${programId}-${i}`; }}
-                    onblur={() => { hoveredCell = null; }}
+                    aria-describedby={delta ? stpTooltipId : undefined}
+                    onmouseenter={() => {
+                      hoveredCell = stpCellKey;
+                    }}
+                    onmouseleave={() => {
+                      hoveredCell = null;
+                    }}
+                    onfocus={() => {
+                      hoveredCell = stpCellKey;
+                    }}
+                    onblur={() => {
+                      hoveredCell = null;
+                    }}
                     tabindex="0"
                   >
                     {#if comparisonResults && comparisonResults.has(programId)}
@@ -719,13 +759,13 @@
                       —
                     {/if}
                     {#if delta}
-                      <span id="delta-desc-{programId}-{i}" class="sr-only">{delta.label}</span>
-                      {#if hoveredCell === `${programId}-${i}`}
+                      <span id={stpTooltipId} class="sr-only">{delta.label}</span>
+                      {#if hoveredCell === stpCellKey}
                         <div
-                          data-testid="delta-tooltip-{programId}-{i}"
+                          data-testid={`delta-tooltip-${stpCellKey}`}
                           role="tooltip"
                           class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
-                                 rounded bg-popover text-popover-foreground text-xs shadow-md
+                                  rounded bg-popover text-popover-foreground text-xs shadow-md
                                  whitespace-nowrap border pointer-events-none"
                         >
                           {delta.label}
@@ -738,35 +778,55 @@
               <!-- CSDA Range columns per program -->
               {#if showCsda}
                 {#each visibleProgramIds as programId (programId)}
-                  {@const csdaCm = entitySelection.selectedMaterial && row.normalizedMevNucl !== null
-                    ? getCsdaDisplayCm(
-                        comparisonResults?.get(programId) as CalculationResult,
-                        row.normalizedMevNucl,
-                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
-                      )
-                    : null}
-                  {@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
-                  {@const defaultCsdaCm = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
-                    ? getCsdaDisplayCm(
-                        defaultResult,
-                        row.normalizedMevNucl,
-                        advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial.density,
-                      )
-                    : null}
-                  {@const csdaDelta = programId !== defaultProgramId && csdaCm !== null && defaultCsdaCm !== null
-                    ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
-                    : null}
+                  {@const csdaCm =
+                    entitySelection.selectedMaterial && row.normalizedMevNucl !== null
+                      ? getCsdaDisplayCm(
+                          comparisonResults?.get(programId) as CalculationResult,
+                          row.normalizedMevNucl,
+                          advancedOptions.value.densityOverride ??
+                            entitySelection.selectedMaterial.density,
+                        )
+                      : null}
+                  {@const defaultResult =
+                    defaultProgramId !== null
+                      ? comparisonResults?.get(defaultProgramId)
+                      : undefined}
+                  {@const defaultCsdaCm =
+                    defaultResult &&
+                    !(defaultResult instanceof LibdedxError) &&
+                    row.normalizedMevNucl !== null
+                      ? getCsdaDisplayCm(
+                          defaultResult,
+                          row.normalizedMevNucl,
+                          advancedOptions.value.densityOverride ??
+                            entitySelection.selectedMaterial.density,
+                        )
+                      : null}
+                  {@const csdaDelta =
+                    programId !== defaultProgramId && csdaCm !== null && defaultCsdaCm !== null
+                      ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
+                      : null}
+                  {@const csdaCellKey = `csda-${programId}-${i}`}
+                  {@const csdaTooltipId = `delta-desc-${csdaCellKey}`}
                   <td
                     data-program-id={programId}
                     data-testid={`range-cell-${programId}-${i}`}
                     class={`relative px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${
                       programId === defaultProgramId ? "bg-blue-50" : ""
                     }`}
-                    aria-describedby={csdaDelta ? `delta-desc-${programId}-${i}` : undefined}
-                    onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}
-                    onmouseleave={() => { hoveredCell = null; }}
-                    onfocus={() => { hoveredCell = `${programId}-${i}`; }}
-                    onblur={() => { hoveredCell = null; }}
+                    aria-describedby={csdaDelta ? csdaTooltipId : undefined}
+                    onmouseenter={() => {
+                      hoveredCell = csdaCellKey;
+                    }}
+                    onmouseleave={() => {
+                      hoveredCell = null;
+                    }}
+                    onfocus={() => {
+                      hoveredCell = csdaCellKey;
+                    }}
+                    onblur={() => {
+                      hoveredCell = null;
+                    }}
                     tabindex="0"
                   >
                     {#if comparisonResults && comparisonResults.has(programId)}
@@ -804,13 +864,13 @@
                       —
                     {/if}
                     {#if csdaDelta}
-                      <span id="delta-desc-{programId}-{i}" class="sr-only">{csdaDelta.label}</span>
-                      {#if hoveredCell === `${programId}-${i}`}
+                      <span id={csdaTooltipId} class="sr-only">{csdaDelta.label}</span>
+                      {#if hoveredCell === csdaCellKey}
                         <div
-                          data-testid="delta-tooltip-{programId}-{i}"
+                          data-testid={`delta-tooltip-${csdaCellKey}`}
                           role="tooltip"
                           class="absolute z-50 left-1/2 -translate-x-1/2 bottom-full mb-1 px-2 py-1
-                                 rounded bg-popover text-popover-foreground text-xs shadow-md
+                                  rounded bg-popover text-popover-foreground text-xs shadow-md
                                  whitespace-nowrap border pointer-events-none"
                         >
                           {csdaDelta.label}

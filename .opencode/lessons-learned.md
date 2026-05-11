@@ -662,5 +662,22 @@ to make it pass. Reviewers should diff each E2E scenario against the spec's
 
 ---
 
+## Entry 28 — Program-column E2E tests must use real program IDs and observable outcomes
+
+**Symptom:** Stage 6.12 Playwright tests waited for headers such as
+`data-program-id="101"` / `"9"` and for a non-existent `[data-dragging]`
+attribute, so the tests timed out or masked reorder races.
+
+**Root cause:** Test selectors were copied from spec examples/placeholders
+instead of the runtime enum in `entity-selection.svelte.ts`, and drag/drop tests
+waited on implementation details that were never rendered.
+
+**Rule:** For multi-program table E2E tests, use the actual runtime program IDs
+(`PSTAR=2`, `MSTAR=4`, `ICRU49=7`) or locate by visible header text, and wait for
+observable outcomes such as header order, URL `programs=`, or `aria-live`
+announcements. Do not wait for invented drag state attributes.
+
+---
+
 _Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

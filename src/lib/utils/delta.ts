@@ -3,7 +3,7 @@
  */
 function formatSigFigsFixed(value: number, sigFigs: number): string {
   if (!Number.isFinite(value) || Number.isNaN(value)) return "—";
-  if (value === 0) return "0".padEnd(sigFigs + 1, "0");
+  if (value === 0) return sigFigs <= 1 ? "0" : `0.${"0".repeat(sigFigs - 1)}`;
 
   const absValue = Math.abs(value);
   const magnitude = Math.floor(Math.log10(absValue));
