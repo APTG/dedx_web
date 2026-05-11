@@ -1,5 +1,5 @@
 <script lang="ts" generics="T extends { id: number; name: string }">
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
 
   interface EntityItem<T> {
     entity: T;

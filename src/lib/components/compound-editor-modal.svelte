@@ -5,7 +5,7 @@
   import { Label } from "$lib/components/ui/label";
   import type { StoredCompoundInternal, CompoundElementEntry } from "$lib/state/custom-compounds.svelte";
   import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts } from "$lib/utils/element-data";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
 
   interface CompoundEditorFormData {
     name: string;

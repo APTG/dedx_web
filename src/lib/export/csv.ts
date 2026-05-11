@@ -2,6 +2,14 @@ import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
 
 /**
+ * CSV export options for customizing separator and line endings.
+ */
+export interface CsvOptions {
+  separator: "comma" | "semicolon" | "tab";
+  lineEndings: "crlf" | "lf";
+}
+
+/**
  * CSV injection prevention: values starting with =, +, -, @ are prefixed
  * with a single quote to stop spreadsheet apps from executing them.
  */
@@ -54,14 +62,19 @@ export function generateCalculatorCsv(
   rows: CalculatedRow[],
   stpUnit: string,
   meta: CsvExportMeta,
+  options?: CsvOptions,
 ): { content: string; filename: string } {
+  // Derive separator and line ending strings from options
+  const separator = getSeparatorChar(options?.separator ?? "comma");
+  const lineEnding = getLineEnding(options?.lineEndings ?? "crlf");
+
   const header = [
     makeCsvCell("Normalized Energy (MeV/nucl)"),
     makeCsvCell("Typed Value"),
     makeCsvCell("Unit"),
     makeCsvCell("CSDA Range"),
     makeCsvCell(`Stopping Power (${stpUnit})`),
-  ].join(",");
+  ].join(separator);
 
   const lines: string[] = [header];
 
@@ -82,13 +95,34 @@ export function generateCalculatorCsv(
         makeCsvCell(sanitizeCsvCell(unit)),
         makeCsvCell(sanitizeCsvCell(csdaStr)),
         makeCsvCell(sanitizeCsvCell(stpStr)),
-      ].join(","),
+      ].join(separator),
     );
   }
 
   const filename = buildCsvFilename(meta.particle, meta.material, meta.program);
 
-  return { content: lines.join("\r\n"), filename };
+  return { content: lines.join(lineEnding), filename };
+}
+
+/**
+ * Get the separator character from the separator type.
+ */
+function getSeparatorChar(separator: "comma" | "semicolon" | "tab"): string {
+  switch (separator) {
+    case "comma":
+      return ",";
+    case "semicolon":
+      return ";";
+    case "tab":
+      return "\t";
+  }
+}
+
+/**
+ * Get the line ending string from the line endings type.
+ */
+function getLineEnding(lineEndings: "crlf" | "lf"): string {
+  return lineEndings === "crlf" ? "\r\n" : "\n";
 }
 
 /**

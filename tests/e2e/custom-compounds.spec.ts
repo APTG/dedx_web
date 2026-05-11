@@ -170,8 +170,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
     await addButton.click();
 
-    const modal = page.getByRole("dialog", { name: /compound editor/i });
-
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("Duplicate");
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
@@ -378,8 +376,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const customGroup = page.getByText(/LiF Pellet/i);
     await expect(customGroup).toBeVisible();
 
-    // Debug: check for Custom Compounds section
-    const customSection = page.getByText(/Custom Compounds/i);
     const customSectionVisible = await customGroup.isVisible();
     console.log("Custom Compounds section element exists:", customSectionVisible);
 

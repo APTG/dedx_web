@@ -1,9 +1,14 @@
-import { describe, test, expect, vi } from "vitest";
-import { render, fireEvent } from "@testing-library/svelte";
+import { afterEach, describe, test, expect, vi } from "vitest";
+import { render, fireEvent, cleanup } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import EntityCombobox from "$lib/components/entity-combobox.svelte";
 
 describe("EntityCombobox component - UX fixes", () => {
+  afterEach(async () => {
+    cleanup();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+  });
+
   const mockItems = [
     { type: "section" as const, label: "Test Section" },
     {

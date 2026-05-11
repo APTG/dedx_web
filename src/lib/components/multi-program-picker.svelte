@@ -1,8 +1,8 @@
 <script lang="ts">
   import type { ProgramEntity } from "$lib/wasm/types";
-  import type { MultiProgramState } from "$lib/state/multi-program.svelte.ts";
+  import type { MultiProgramState } from "$lib/state/multi-program.svelte";
   import { Button } from "$lib/components/ui/button";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
 
   interface Props {
     state: MultiProgramState;

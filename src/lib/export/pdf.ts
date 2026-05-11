@@ -1,6 +1,7 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
-import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
+import type { AdvancedOptions } from "$lib/wasm/types";
+import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions.js";
 
 /**
  * Lightweight identity used for filename construction and entity labels in
@@ -9,6 +10,35 @@ import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
 export interface PdfEntity {
   name: string;
   id?: number | string;
+}
+
+/**
+ * Advanced mode metadata for Calculator PDF export.
+ * Includes particle, material, and program details for the metadata block.
+ */
+export interface AdvancedPdfMetadata {
+  particle: {
+    name: string;
+    massNumber: number;
+    atomicNumber?: number;
+  };
+  material: {
+    name: string;
+    density?: number;
+    densityUnit?: string;
+    phase?: string;
+  };
+  programs: Array<{
+    name: string;
+    type: "built-in" | "external";
+    url?: string;
+  }>;
+  advancedOptions?: AdvancedOptions;
+  buildInfo?: {
+    commit: string;
+    date: string;
+    branch: string;
+  };
 }
 
 /**
@@ -44,6 +74,7 @@ export interface PdfExportContext {
   program: PdfEntity | null;
   filename: string;
   url: string;
+  advancedMetadata?: AdvancedPdfMetadata;
 }
 
 type JsPdf = import("jspdf").jsPDF;
@@ -59,7 +90,7 @@ type JsPdf = import("jspdf").jsPDF;
  *   4. Page-number footer "Page n / N"
  */
 export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void> {
-  const { rows, stpUnit, particle, material, program, filename, url } = ctx;
+  const { rows, stpUnit, particle, material, program, filename, url, advancedMetadata } = ctx;
 
   const { default: jsPDF } = await import("jspdf");
   const doc = new jsPDF({ unit: "mm", format: "a4" });
@@ -72,14 +103,20 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
     (r) => r.status === "valid" && r.stoppingPower !== null && r.csdaRangeCm !== null,
   );
 
+  // Check if we have advanced mode metadata
+  const isAdvancedMode = !!advancedMetadata;
+
   // --- Header block ---
   const headerLeft = margin;
   let y = margin;
 
-  // App name
+  // App name — include "(Advanced Mode)" when advanced metadata is provided
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  doc.text("dEdx Web \u2014 Calculator", headerLeft, y);
+  const appTitle = isAdvancedMode
+    ? "dEdx Web — Calculator (Advanced Mode)"
+    : "dEdx Web — Calculator";
+  doc.text(appTitle, headerLeft, y);
   y += 8;
 
   // Generated timestamp
@@ -137,17 +174,10 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   doc.setFont("helvetica", "normal");
 
   let rowY = tableTop + 9;
-  const rowsPerPage = Math.max(1, Math.floor((pageHeight - rowY - bottomMargin) / cellHeight));
-  const totalPages = Math.max(1, Math.ceil(validRows.length / rowsPerPage));
-
-  let currentPage = 1;
-
   for (const r of validRows) {
     // Check if we need a new page
     if (rowY + cellHeight > pageHeight - bottomMargin) {
-      addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
       doc.addPage();
-      currentPage += 1;
       rowY = margin + 5;
     }
 
@@ -178,11 +208,197 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
     rowY += cellHeight;
   }
 
-  // Footer on the last (or only) page.
-  addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
+  // Add advanced mode metadata block if in advanced mode (after the table per export.md §6.3)
+  if (isAdvancedMode && advancedMetadata) {
+    addAdvancedMetadataBlock(doc, advancedMetadata, margin, pageWidth, rowY + 6);
+  }
+
+  stampPageFooters(doc, margin, pageWidth);
 
   // Save PDF
   doc.save(filename);
+}
+
+/**
+ * Build an HTML table string for advanced mode metadata.
+ * Used for generating the metadata block in Calculator PDF export.
+ * Returns HTML markup suitable for jsPDF's html() method.
+ */
+export function buildMetadataTable(metadata: AdvancedPdfMetadata): string {
+  const lines: string[] = [];
+
+  // PARTICLE section
+  lines.push(`<tr><td style="font-weight:bold;">PARTICLE</td><td></td></tr>`);
+  const particleZ =
+    metadata.particle.atomicNumber !== undefined ? `Z=${metadata.particle.atomicNumber}` : "";
+  const particleA = `A=${metadata.particle.massNumber}`;
+  lines.push(
+    `<tr><td>${metadata.particle.name}</td><td>${[particleZ, particleA].filter(Boolean).join("  ")}</td></tr>`,
+  );
+  lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
+
+  // MATERIAL section
+  lines.push(`<tr><td style="font-weight:bold;">MATERIAL</td><td></td></tr>`);
+  const materialPhase = metadata.material.phase ? `(${metadata.material.phase})` : "";
+  const materialDensity =
+    metadata.material.density !== undefined
+      ? `ρ = ${formatSigFigs(metadata.material.density, 4)} ${metadata.material.densityUnit || "g/cm³"}`
+      : "";
+  lines.push(
+    `<tr><td>${metadata.material.name} ${materialPhase}</td><td>${materialDensity}</td></tr>`,
+  );
+  lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
+
+  // PROGRAMS section
+  lines.push(`<tr><td style="font-weight:bold;">PROGRAMS</td><td></td></tr>`);
+  for (const prog of metadata.programs) {
+    const progType =
+      prog.type === "external" ? ["(external)", prog.url].filter(Boolean).join(" ") : "(built-in)";
+    lines.push(`<tr><td colspan="2">${prog.name} ${progType}</td></tr>`);
+  }
+  lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
+
+  // SETTINGS section (only if advanced options are provided)
+  if (metadata.advancedOptions) {
+    const opts = metadata.advancedOptions;
+    const settings: string[] = [];
+    if (opts.interpolation?.method || opts.interpolation?.scale) {
+      const parts = [opts.interpolation.method, opts.interpolation.scale].filter(Boolean);
+      settings.push(`Interpolation: ${parts.join(" / ")}`);
+    }
+    if (opts.aggregateState) {
+      settings.push(`Aggregate state: ${opts.aggregateState}`);
+    }
+    if (opts.densityOverride !== undefined) {
+      settings.push(`Density override: ${formatSigFigs(opts.densityOverride, 4)} g/cm³`);
+    }
+    if (opts.iValueOverride !== undefined) {
+      settings.push(`I-value override: ${opts.iValueOverride} eV`);
+    }
+    if (settings.length > 0) {
+      lines.push(`<tr><td style="font-weight:bold;">SETTINGS</td><td></td></tr>`);
+      lines.push(`<tr><td colspan="2">${settings.join("; ")}</td></tr>`);
+      lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
+    }
+  }
+
+  // SYSTEM section (browser info)
+  lines.push(`<tr><td style="font-weight:bold;">SYSTEM</td><td></td></tr>`);
+  const userAgent = typeof navigator !== "undefined" ? navigator.userAgent : "Unknown";
+  const browserInfo = parseUserAgent(userAgent);
+  lines.push(`<tr><td colspan="2">${browserInfo}</td></tr>`);
+  lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
+
+  // BUILD section (only if build info is available)
+  if (metadata.buildInfo) {
+    lines.push(`<tr><td style="font-weight:bold;">BUILD</td><td></td></tr>`);
+    lines.push(
+      `<tr><td colspan="2">${metadata.buildInfo.commit} · ${metadata.buildInfo.date} · ${metadata.buildInfo.branch}</td></tr>`,
+    );
+  }
+
+  return lines.join("");
+}
+
+/**
+ * Simple user agent parser to extract browser and OS info.
+ */
+function parseUserAgent(userAgent: string): string {
+  // Extract browser
+  let browser = "Unknown Browser";
+  if (/\bEdg\//.test(userAgent) || userAgent.includes("Edge")) browser = "Edge";
+  else if (userAgent.includes("Chrome")) browser = "Chrome";
+  else if (userAgent.includes("Firefox")) browser = "Firefox";
+  else if (userAgent.includes("Safari")) browser = "Safari";
+
+  // Extract OS
+  let os = "Unknown OS";
+  if (userAgent.includes("Windows")) os = "Windows";
+  else if (/\b(iPhone|iPad|iPod)\b/.test(userAgent)) os = "iOS";
+  else if (userAgent.includes("Mac")) os = "macOS";
+  else if (userAgent.includes("Android")) os = "Android";
+  else if (userAgent.includes("Linux")) os = "Linux";
+
+  return `${browser} / ${os}`;
+}
+
+/**
+ * Add the advanced mode metadata block to the PDF.
+ * Appends content after the current page, handling page breaks as needed.
+ */
+function addAdvancedMetadataBlock(
+  doc: import("jspdf").jsPDF,
+  metadata: AdvancedPdfMetadata,
+  margin: number,
+  pageWidth: number,
+  startY: number,
+): void {
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const bottomMargin = 12;
+
+  let y = startY;
+  if (y + 18 > pageHeight - bottomMargin) {
+    doc.addPage();
+    y = margin;
+  }
+
+  // Section divider
+  doc.setFontSize(10);
+  doc.setFont("helvetica", "bold");
+  doc.text("── Advanced Mode Details ──", margin, y);
+  y += 8;
+
+  // Parse and render the HTML table
+  // We'll manually render each row since jsPDF's html() method can be unreliable
+  const lines = buildMetadataTable(metadata)
+    .split("<tr>")
+    .filter((l) => l.trim() !== "");
+
+  doc.setFontSize(9);
+  doc.setFont("helvetica", "normal");
+
+  for (const line of lines) {
+    // Check if we need a new page
+    if (y + 5 > pageHeight - bottomMargin) {
+      doc.addPage();
+      y = margin;
+    }
+
+    // Extract text from <td> elements using the inner-text capture group.
+    // (Avoid `m.replace(/<[^>]*>/g, "")` — CodeQL flags single-pass tag
+    // stripping as incomplete sanitization because nested constructs like
+    // `<<td>td>` survive one pass.)
+    const cellRegex = /<td[^>]*>([^<]*)<\/td>/g;
+    const cells: string[] = [];
+    for (const m of line.matchAll(cellRegex)) {
+      cells.push((m[1] ?? "").trim());
+    }
+    if (cells.length === 0) continue;
+
+    // Check if this is a header row (bold) or data row
+    const isHeader = line.includes('style="font-weight:bold;"');
+    if (isHeader) {
+      doc.setFont("helvetica", "bold");
+      doc.text(cells[0] ?? "", margin, y);
+      doc.setFont("helvetica", "normal");
+      y += 6;
+    } else if (cells.length === 2 && cells[0] === "" && cells[1] === "") {
+      // Spacer row
+      y += 4;
+    } else {
+      // Data row - concatenate cells
+      const text = cells.join("  ");
+      const wrappedLines = wrapText(text, pageWidth - 2 * margin, 9);
+      for (const wrappedLine of wrappedLines) {
+        if (y + 5 > pageHeight - bottomMargin) {
+          doc.addPage();
+          y = margin;
+        }
+        doc.text(wrappedLine, margin, y);
+        y += 4;
+      }
+    }
+  }
 }
 
 /**
@@ -281,6 +497,14 @@ function addPageFooter(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(pageNumText, pageWidth - margin, footerY, { align: "right" });
+}
+
+function stampPageFooters(doc: JsPdf, margin: number, pageWidth: number): void {
+  const totalPages = doc.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    addPageFooter(doc, margin, pageWidth, page, totalPages);
+  }
 }
 
 /**

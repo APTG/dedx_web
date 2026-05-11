@@ -6,12 +6,15 @@
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, toggleAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import { Button } from "$lib/components/ui/button";
+  import CsvExportModal from "$lib/components/CsvExportModal.svelte";
   import {
     canExport,
     exportCsv,
     exportPdf,
     exportPlotCsv,
     exportPlotPdf,
+    showCsvModal,
+    performCsvDownload,
   } from "$lib/state/export.svelte";
   import BuildInfoBadge from "$lib/components/build-info-badge.svelte";
 
@@ -136,6 +139,7 @@
           </div>
           <div class="hidden sm:flex items-center gap-2">
             <Button
+              data-testid="export-pdf-btn"
               variant="outline"
               size="sm"
               disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
@@ -149,14 +153,18 @@
               Export PDF
             </Button>
             <Button
+              data-testid="export-csv-btn"
               variant="outline"
               size="sm"
               disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
                 !canExport.value}
               aria-label="Export CSV"
               onclick={() => {
-                if (routePath === "/calculator") exportCsv();
-                else if (routePath === "/plot") exportPlotCsv();
+                if (routePath === "/calculator") {
+                  exportCsv();
+                } else if (routePath === "/plot") {
+                  exportPlotCsv();
+                }
               }}
             >
               Export CSV
@@ -202,6 +210,19 @@
   <main class="container mx-auto px-4 py-6">
     {@render children()}
   </main>
+
+  <!-- CSV Export Modal (advanced mode only) -->
+  <CsvExportModal
+    open={showCsvModal.value}
+    defaultFilename={showCsvModal.mode === "plot" ? "dedx_plot_data.csv" : "dedx_export.csv"}
+    onConfirm={(options, filename) => {
+      performCsvDownload(options, filename);
+      showCsvModal.value = false;
+    }}
+    onCancel={() => {
+      showCsvModal.value = false;
+    }}
+  />
 
   <footer class="border-t bg-card mt-auto">
     <div class="container mx-auto px-4 py-4">

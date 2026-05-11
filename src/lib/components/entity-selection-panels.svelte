@@ -1,6 +1,6 @@
 <script lang="ts">
   import EntityPanel from "./entity-panel.svelte";
-  import { cn } from "$lib/utils";
+  import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
