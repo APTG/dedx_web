@@ -236,7 +236,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     return this.calculateCustomCompound({ ...params, energies });
   }
 
-  getInverseStpCustomCompound(_params: {
+  getInverseStpCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];
@@ -248,7 +248,7 @@ export class LibdedxServiceImpl implements LibdedxService {
     return params.stoppingPowers.map((stp) => ({ energy: stp * 11, stoppingPower: stp }));
   }
 
-  getInverseCsdaCustomCompound(_params: {
+  getInverseCsdaCustomCompound(params: {
     programId: number;
     particleId: number;
     elements: CompoundElement[];

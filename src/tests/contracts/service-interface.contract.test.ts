@@ -76,4 +76,36 @@ describe("Service interface arity contract", () => {
     expect(typeof service.getDensity).toBe("function");
     expect(typeof service.convertEnergy).toBe("function");
   });
+
+  it("LibdedxServiceImpl mock custom inverse methods return mapped results", () => {
+    const service = new LibdedxServiceImpl() satisfies LibdedxService;
+    const elements = [{ atomicNumber: 3, fraction: 1, type: "atomic" as const }];
+
+    expect(
+      service.getInverseStpCustomCompound({
+        programId: 4,
+        particleId: 1,
+        elements,
+        density: 2.2,
+        stoppingPowers: [1, 2],
+        side: 0,
+      }),
+    ).toEqual([
+      { energy: 11, stoppingPower: 1 },
+      { energy: 22, stoppingPower: 2 },
+    ]);
+
+    expect(
+      service.getInverseCsdaCustomCompound({
+        programId: 4,
+        particleId: 1,
+        elements,
+        density: 2.2,
+        ranges: [0.5, 1],
+      }),
+    ).toEqual([
+      { energy: 6.5, csdaRange: 0.5 },
+      { energy: 13, csdaRange: 1 },
+    ]);
+  });
 });

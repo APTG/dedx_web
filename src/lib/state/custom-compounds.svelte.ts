@@ -368,7 +368,7 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
         id: generateCompoundId(),
         name: params.name.trim(),
         normalizedName,
-        elements: params.elements.sort((a, b) => a.atomicNumber - b.atomicNumber),
+        elements: [...params.elements].sort((a, b) => a.atomicNumber - b.atomicNumber),
         density: params.density,
         iValue: params.iValue,
         phase: params.phase,
@@ -412,7 +412,7 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
 
       existing.name = params.name.trim();
       existing.normalizedName = normalizedName;
-      existing.elements = params.elements.sort((a, b) => a.atomicNumber - b.atomicNumber);
+      existing.elements = [...params.elements].sort((a, b) => a.atomicNumber - b.atomicNumber);
       existing.density = params.density;
       existing.iValue = params.iValue;
       existing.phase = params.phase;

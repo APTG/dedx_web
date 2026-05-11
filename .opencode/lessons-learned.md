@@ -537,5 +537,21 @@ current feature scope.
 
 ---
 
-_Last updated: 2026-05-10. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 23 — Mock method parameter names must match runtime references
+
+**Symptom:** Custom inverse mock methods declared `_params` but referenced
+`params`, which TypeScript did not catch in the interface-shape contract and
+would throw only when tests executed those paths.
+
+**Root cause:** Contract tests checked method presence/signatures but did not
+exercise newly added mock method bodies.
+
+**Rule:** When adding mock service methods, include at least one runtime contract
+test that calls each new method with representative inputs. This catches
+undefined variable references and return-shape drift that structural typing alone
+does not cover.
+
+---
+
+_Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

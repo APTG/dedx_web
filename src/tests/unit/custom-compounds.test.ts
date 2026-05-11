@@ -249,13 +249,14 @@ describe("custom-compounds", () => {
       Object.defineProperty(global, "localStorage", { value: localStorageMock });
       const store = createCustomCompoundsStore();
 
+      const elements = [
+        { atomicNumber: 8, atomCount: 1 },
+        { atomicNumber: 1, atomCount: 2 },
+      ];
       const result = store.create({
         name: "H2O",
         density: 1.0,
-        elements: [
-          { atomicNumber: 8, atomCount: 1 },
-          { atomicNumber: 1, atomCount: 2 },
-        ],
+        elements,
         phase: "condensed",
       });
 
@@ -264,6 +265,7 @@ describe("custom-compounds", () => {
         expect(result.compound.elements[0].atomicNumber).toBe(1);
         expect(result.compound.elements[1].atomicNumber).toBe(8);
       }
+      expect(elements.map((e) => e.atomicNumber)).toEqual([8, 1]);
     });
 
     test("updates an existing compound", () => {
@@ -293,6 +295,38 @@ describe("custom-compounds", () => {
           expect(updateResult.compound.updatedAt).not.toBe(updateResult.compound.createdAt);
         }
       }
+    });
+
+    test("sorts updated elements without mutating caller-owned arrays", () => {
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+      const store = createCustomCompoundsStore();
+
+      const createResult = store.create({
+        name: "Water",
+        density: 1,
+        elements: [{ atomicNumber: 1, atomCount: 2 }],
+        phase: "condensed",
+      });
+
+      expect(createResult.success).toBe(true);
+      if (!createResult.success) return;
+
+      const elements = [
+        { atomicNumber: 8, atomCount: 1 },
+        { atomicNumber: 1, atomCount: 2 },
+      ];
+      const updateResult = store.update(createResult.compound.id, {
+        name: "Water",
+        density: 1,
+        elements,
+        phase: "condensed",
+      });
+
+      expect(updateResult.success).toBe(true);
+      if (updateResult.success) {
+        expect(updateResult.compound.elements.map((e) => e.atomicNumber)).toEqual([1, 8]);
+      }
+      expect(elements.map((e) => e.atomicNumber)).toEqual([8, 1]);
     });
 
     test("fails to update non-existent compound", () => {
