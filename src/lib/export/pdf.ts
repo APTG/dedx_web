@@ -113,7 +113,9 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   // App name — include "(Advanced Mode)" when advanced metadata is provided
   doc.setFontSize(14);
   doc.setFont("helvetica", "bold");
-  const appTitle = isAdvancedMode ? "dEdx Web — Calculator (Advanced Mode)" : "dEdx Web — Calculator";
+  const appTitle = isAdvancedMode
+    ? "dEdx Web — Calculator (Advanced Mode)"
+    : "dEdx Web — Calculator";
   doc.text(appTitle, headerLeft, y);
   y += 8;
 
@@ -172,17 +174,10 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
   doc.setFont("helvetica", "normal");
 
   let rowY = tableTop + 9;
-  const rowsPerPage = Math.max(1, Math.floor((pageHeight - rowY - bottomMargin) / cellHeight));
-  const totalPages = Math.max(1, Math.ceil(validRows.length / rowsPerPage));
-
-  let currentPage = 1;
-
   for (const r of validRows) {
     // Check if we need a new page
     if (rowY + cellHeight > pageHeight - bottomMargin) {
-      addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
       doc.addPage();
-      currentPage += 1;
       rowY = margin + 5;
     }
 
@@ -213,13 +208,12 @@ export async function generateCalculatorPdf(ctx: PdfExportContext): Promise<void
     rowY += cellHeight;
   }
 
-  // Footer on the last (or only) page.
-  addPageFooter(doc, margin, pageWidth, currentPage, totalPages);
-
   // Add advanced mode metadata block if in advanced mode (after the table per export.md §6.3)
   if (isAdvancedMode && advancedMetadata) {
-    addAdvancedMetadataBlock(doc, advancedMetadata, margin, pageWidth);
+    addAdvancedMetadataBlock(doc, advancedMetadata, margin, pageWidth, rowY + 6);
   }
+
+  stampPageFooters(doc, margin, pageWidth);
 
   // Save PDF
   doc.save(filename);
@@ -235,7 +229,8 @@ export function buildMetadataTable(metadata: AdvancedPdfMetadata): string {
 
   // PARTICLE section
   lines.push(`<tr><td style="font-weight:bold;">PARTICLE</td><td></td></tr>`);
-  const particleZ = metadata.particle.atomicNumber !== undefined ? `Z=${metadata.particle.atomicNumber}` : "";
+  const particleZ =
+    metadata.particle.atomicNumber !== undefined ? `Z=${metadata.particle.atomicNumber}` : "";
   const particleA = `A=${metadata.particle.massNumber}`;
   lines.push(
     `<tr><td>${metadata.particle.name}</td><td>${[particleZ, particleA].filter(Boolean).join("  ")}</td></tr>`,
@@ -257,7 +252,8 @@ export function buildMetadataTable(metadata: AdvancedPdfMetadata): string {
   // PROGRAMS section
   lines.push(`<tr><td style="font-weight:bold;">PROGRAMS</td><td></td></tr>`);
   for (const prog of metadata.programs) {
-    const progType = prog.type === "external" && prog.url ? `(external) ${prog.url}` : `(built-in)`;
+    const progType =
+      prog.type === "external" ? ["(external)", prog.url].filter(Boolean).join(" ") : "(built-in)";
     lines.push(`<tr><td colspan="2">${prog.name} ${progType}</td></tr>`);
   }
   lines.push(`<tr><td colspan="2" style="height:8px;"></td></tr>`); // spacer
@@ -266,11 +262,9 @@ export function buildMetadataTable(metadata: AdvancedPdfMetadata): string {
   if (metadata.advancedOptions) {
     const opts = metadata.advancedOptions;
     const settings: string[] = [];
-    if (opts.interpolation?.method) {
-      settings.push(`Interpolation: ${opts.interpolation.method}`);
-    }
-    if (opts.interpolation?.scale) {
-      settings[settings.length - 1] += ` / ${opts.interpolation.scale}`;
+    if (opts.interpolation?.method || opts.interpolation?.scale) {
+      const parts = [opts.interpolation.method, opts.interpolation.scale].filter(Boolean);
+      settings.push(`Interpolation: ${parts.join(" / ")}`);
     }
     if (opts.aggregateState) {
       settings.push(`Aggregate state: ${opts.aggregateState}`);
@@ -312,18 +306,18 @@ export function buildMetadataTable(metadata: AdvancedPdfMetadata): string {
 function parseUserAgent(userAgent: string): string {
   // Extract browser
   let browser = "Unknown Browser";
-  if (userAgent.includes("Chrome")) browser = "Chrome";
+  if (/\bEdg\//.test(userAgent) || userAgent.includes("Edge")) browser = "Edge";
+  else if (userAgent.includes("Chrome")) browser = "Chrome";
   else if (userAgent.includes("Firefox")) browser = "Firefox";
   else if (userAgent.includes("Safari")) browser = "Safari";
-  else if (userAgent.includes("Edge")) browser = "Edge";
 
   // Extract OS
   let os = "Unknown OS";
   if (userAgent.includes("Windows")) os = "Windows";
+  else if (/\b(iPhone|iPad|iPod)\b/.test(userAgent)) os = "iOS";
   else if (userAgent.includes("Mac")) os = "macOS";
-  else if (userAgent.includes("Linux")) os = "Linux";
   else if (userAgent.includes("Android")) os = "Android";
-  else if (userAgent.includes("iOS")) os = "iOS";
+  else if (userAgent.includes("Linux")) os = "Linux";
 
   return `${browser} / ${os}`;
 }
@@ -337,13 +331,16 @@ function addAdvancedMetadataBlock(
   metadata: AdvancedPdfMetadata,
   margin: number,
   pageWidth: number,
+  startY: number,
 ): void {
   const pageHeight = doc.internal.pageSize.getHeight();
   const bottomMargin = 12;
 
-  // Add page break and start metadata on a new page
-  doc.addPage();
-  let y = margin;
+  let y = startY;
+  if (y + 18 > pageHeight - bottomMargin) {
+    doc.addPage();
+    y = margin;
+  }
 
   // Section divider
   doc.setFontSize(10);
@@ -500,6 +497,14 @@ function addPageFooter(
   doc.setFontSize(8);
   doc.setFont("helvetica", "normal");
   doc.text(pageNumText, pageWidth - margin, footerY, { align: "right" });
+}
+
+function stampPageFooters(doc: JsPdf, margin: number, pageWidth: number): void {
+  const totalPages = doc.getNumberOfPages();
+  for (let page = 1; page <= totalPages; page += 1) {
+    doc.setPage(page);
+    addPageFooter(doc, margin, pageWidth, page, totalPages);
+  }
 }
 
 /**

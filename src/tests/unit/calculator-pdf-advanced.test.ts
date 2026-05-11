@@ -1,7 +1,11 @@
-import { describe, test, expect } from "vitest";
+import { afterEach, describe, test, expect, vi } from "vitest";
 import { buildMetadataTable, type AdvancedPdfMetadata } from "$lib/export/pdf";
 
 describe("buildMetadataTable", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
   test("builds metadata table with density", () => {
     const metadata: AdvancedPdfMetadata = {
       particle: {
@@ -120,6 +124,51 @@ describe("buildMetadataTable", () => {
 
     expect(html).toContain("ICRU 90 (built-in)");
     expect(html).toContain("NIST (external) https://example.com/nist.webdedx");
+  });
+
+  test("labels external program without URL as external", () => {
+    const metadata: AdvancedPdfMetadata = {
+      particle: { name: "Proton", massNumber: 1, atomicNumber: 1 },
+      material: { name: "Water", density: 1.0 },
+      programs: [{ name: "Uploaded table", type: "external" }],
+    };
+
+    const html = buildMetadataTable(metadata);
+
+    expect(html).toContain("Uploaded table (external)");
+    expect(html).not.toContain("Uploaded table (built-in)");
+  });
+
+  test("handles partial interpolation settings", () => {
+    const metadata: AdvancedPdfMetadata = {
+      particle: { name: "Proton", massNumber: 1, atomicNumber: 1 },
+      material: { name: "Water", density: 1.0 },
+      programs: [{ name: "PSTAR", type: "built-in" }],
+      advancedOptions: {
+        interpolation: { scale: "log" },
+      },
+    };
+
+    const html = buildMetadataTable(metadata);
+
+    expect(html).toContain("Interpolation: log");
+  });
+
+  test("detects Edge before Chrome and iOS before macOS", () => {
+    vi.stubGlobal("navigator", {
+      userAgent:
+        "Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 " +
+        "(KHTML, like Gecko) CriOS/120.0 Mobile/15E148 Safari/604.1 Edg/120.0",
+    });
+    const metadata: AdvancedPdfMetadata = {
+      particle: { name: "Proton", massNumber: 1, atomicNumber: 1 },
+      material: { name: "Water", density: 1.0 },
+      programs: [{ name: "PSTAR", type: "built-in" }],
+    };
+
+    const html = buildMetadataTable(metadata);
+
+    expect(html).toContain("Edge / iOS");
   });
 
   test("handles missing atomic number gracefully", () => {

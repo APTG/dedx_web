@@ -1,7 +1,12 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
-import { generateCalculatorCsv, downloadCsv, type CsvOptions } from "$lib/export/csv";
+import {
+  generateCalculatorCsv,
+  downloadCsv,
+  type CsvExportMeta,
+  type CsvOptions,
+} from "$lib/export/csv";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
 interface CalcStateView {
@@ -29,18 +34,24 @@ export const canExport = $state({ value: false });
 
 // CSV modal state
 export const showCsvModal = $state({ value: false, mode: "calculator" as "calculator" | "plot" });
-export const pendingCsvOptions = $state<{ value: {
-  rows: CalculatedRow[];
-  stpUnit: string;
-  meta: import("./csv.js").CsvExportMeta;
-} | null }>({ value: null });
-export const pendingPlotCsv = $state<{ value: {
-  series: PlotSeries[];
-  stpUnit: StpUnit;
-} | null }>({ value: null });
+export const pendingCsvOptions = $state<{
+  value: {
+    rows: CalculatedRow[];
+    stpUnit: string;
+    meta: CsvExportMeta;
+  } | null;
+}>({ value: null });
+export const pendingPlotCsv = $state<{
+  value: {
+    series: PlotSeries[];
+    stpUnit: StpUnit;
+  } | null;
+}>({ value: null });
 
 // Calculator advanced options getter (set by calculator page)
-export const getCalculatorAdvancedMetadata = { value: null as (() => import("$lib/export/pdf.js").AdvancedPdfMetadata | null) | null };
+export const getCalculatorAdvancedMetadata = {
+  value: null as (() => import("$lib/export/pdf.js").AdvancedPdfMetadata | null) | null,
+};
 
 let _calcState: CalcStateView | null = null;
 let _entitySelection: EntitySelectionView | null = null;
@@ -181,10 +192,10 @@ export function exportPdf(): void {
       const program = selectedProgramEntity(sel.selectedProgram);
 
       const filename = mod.buildPdfFilename(particle, material, program);
-      
+
       // Get advanced metadata if available (from calculator page callback)
       const advancedMetadata = getCalculatorAdvancedMetadata.value?.();
-      
+
       return mod.generateCalculatorPdf({
         rows,
         stpUnit,

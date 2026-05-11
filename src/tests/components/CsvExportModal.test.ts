@@ -6,8 +6,13 @@ describe("CsvExportModal", () => {
   let mockOnConfirm: ReturnType<typeof vi.fn>;
   let mockOnCancel: ReturnType<typeof vi.fn>;
 
-  beforeEach(() => {
+  async function cleanupDialogTimers() {
     cleanup();
+    await new Promise((resolve) => setTimeout(resolve, 30));
+  }
+
+  beforeEach(async () => {
+    await cleanupDialogTimers();
     // Clear localStorage between tests
     localStorage.clear();
     // Reset mocks between tests
@@ -15,8 +20,8 @@ describe("CsvExportModal", () => {
     mockOnCancel = vi.fn();
   });
 
-  afterEach(() => {
-    cleanup();
+  afterEach(async () => {
+    await cleanupDialogTimers();
   });
 
   describe("modal visibility", () => {

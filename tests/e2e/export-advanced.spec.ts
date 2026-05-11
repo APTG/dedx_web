@@ -4,19 +4,16 @@ test.describe("Export Advanced Mode", () => {
   test("CSV modal: opens in advanced mode, semicolon separator persists @smoke", async ({
     page,
   }) => {
-    // Collect console messages
-    const consoleMessages: string[] = [];
-    page.on("console", (msg) => {
-      consoleMessages.push(msg.text());
-    });
-    
     // Navigate directly to advanced mode calculator
     await page.goto("/calculator?mode=advanced");
-    
+
     // Wait for advanced mode to be initialized (toggle shows "Advanced" selected)
     // Use getByRole with aria-pressed attribute for the Advanced mode toggle button
-    await page.waitForSelector('button[aria-label="Switch to Advanced mode"][aria-pressed="true"]', { timeout: 10000 });
-    
+    await page.waitForSelector(
+      'button[aria-label="Switch to Advanced mode"][aria-pressed="true"]',
+      { timeout: 10000 },
+    );
+
     // Fill energy first (triggers auto-select and debounced calculation)
     const energyInput = page.locator('[data-testid="energy-input-0"]');
     await energyInput.fill("100 MeV");
@@ -24,16 +21,19 @@ test.describe("Export Advanced Mode", () => {
 
     // Wait for result table to appear
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
-    
+
     // In advanced mode, STP cells have format stp-cell-{programId}-{rowIndex}
     // Wait for any STP cell to have content (auto-select resolves to ICRU49 for proton+water)
     await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
     const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
     await expect
-      .poll(async () => {
-        const text = await stpCell.textContent();
-        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
-      }, { timeout: 15000 })
+      .poll(
+        async () => {
+          const text = await stpCell.textContent();
+          return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+        },
+        { timeout: 15000 },
+      )
       .toBeGreaterThan(0);
 
     // Wait for export button to be enabled (use test ID like PDF test uses role)
@@ -42,13 +42,10 @@ test.describe("Export Advanced Mode", () => {
 
     // Scroll to top first - header may have scrolled out of view
     await page.evaluate(() => window.scrollTo(0, 0));
-    
+
     // Click the button
     await exportCsvBtn.click();
-    
-    // Debug: log all console messages
-    console.log("Console messages:", consoleMessages);
-    
+
     // Wait for modal to appear
     const modal = page.getByTestId("csv-export-modal");
     await expect(modal).toBeVisible({ timeout: 5000 });
@@ -116,10 +113,13 @@ test.describe("Export Advanced Mode", () => {
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
     const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
     await expect
-      .poll(async () => {
-        const text = await stpCell.textContent();
-        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
-      }, { timeout: 15000 })
+      .poll(
+        async () => {
+          const text = await stpCell.textContent();
+          return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+        },
+        { timeout: 15000 },
+      )
       .toBeGreaterThan(0);
 
     // Wait for export button to be enabled
@@ -130,7 +130,9 @@ test.describe("Export Advanced Mode", () => {
     await exportCsvBtn.click();
 
     // Modal should never appear
-    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible({ timeout: 500 });
+    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible({
+      timeout: 500,
+    });
 
     // Download should have triggered
     const download = await downloadPromise;
@@ -188,9 +190,12 @@ test.describe("Export Advanced Mode", () => {
   test("Calculator PDF triggers download in advanced mode @regression", async ({ page }) => {
     // Navigate directly to advanced mode calculator
     await page.goto("/calculator?mode=advanced");
-    
+
     // Wait for advanced mode to be initialized
-    await page.waitForSelector('button[aria-label="Switch to Advanced mode"][aria-pressed="true"]', { timeout: 10000 });
+    await page.waitForSelector(
+      'button[aria-label="Switch to Advanced mode"][aria-pressed="true"]',
+      { timeout: 10000 },
+    );
 
     // Fill energy first (triggers auto-select and debounced calculation)
     const energyInput = page.locator('[data-testid="energy-input-0"]');
@@ -204,10 +209,13 @@ test.describe("Export Advanced Mode", () => {
     await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
     const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
     await expect
-      .poll(async () => {
-        const text = await stpCell.textContent();
-        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
-      }, { timeout: 15000 })
+      .poll(
+        async () => {
+          const text = await stpCell.textContent();
+          return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+        },
+        { timeout: 15000 },
+      )
       .toBeGreaterThan(0);
 
     // Wait for export button to be enabled
