@@ -1,0 +1,210 @@
+import { test, expect } from "@playwright/test";
+
+test.describe("Export Advanced Mode", () => {
+  test("CSV modal: opens in advanced mode, semicolon separator persists @smoke", async ({
+    page,
+  }) => {
+    // Collect console messages
+    const consoleMessages: string[] = [];
+    page.on("console", (msg) => {
+      consoleMessages.push(msg.text());
+    });
+    
+    // Navigate directly to advanced mode calculator
+    await page.goto("/calculator?mode=advanced");
+    
+    // Wait for advanced mode to be initialized (toggle shows "Advanced" selected)
+    // Use getByRole with aria-pressed attribute for the Advanced mode toggle button
+    await page.waitForSelector('button[aria-label="Switch to Advanced mode"][aria-pressed="true"]', { timeout: 10000 });
+    
+    // Fill energy first (triggers auto-select and debounced calculation)
+    const energyInput = page.locator('[data-testid="energy-input-0"]');
+    await energyInput.fill("100 MeV");
+    await energyInput.blur();
+
+    // Wait for result table to appear
+    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+    
+    // In advanced mode, STP cells have format stp-cell-{programId}-{rowIndex}
+    // Wait for any STP cell to have content (auto-select resolves to ICRU49 for proton+water)
+    await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect
+      .poll(async () => {
+        const text = await stpCell.textContent();
+        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+      }, { timeout: 15000 })
+      .toBeGreaterThan(0);
+
+    // Wait for export button to be enabled (use test ID like PDF test uses role)
+    const exportCsvBtn = page.getByTestId("export-csv-btn");
+    await expect(exportCsvBtn).toBeEnabled({ timeout: 5000 });
+
+    // Scroll to top first - header may have scrolled out of view
+    await page.evaluate(() => window.scrollTo(0, 0));
+    
+    // Click the button
+    await exportCsvBtn.click();
+    
+    // Debug: log all console messages
+    console.log("Console messages:", consoleMessages);
+    
+    // Wait for modal to appear
+    const modal = page.getByTestId("csv-export-modal");
+    await expect(modal).toBeVisible({ timeout: 5000 });
+    await expect(page.getByTestId("csv-separator-comma")).toBeChecked();
+
+    await page.click('[data-testid="csv-separator-semicolon"]');
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.click('[data-testid="csv-export-confirm"]');
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
+
+    await expect(modal).not.toBeVisible();
+
+    // Re-open: separator persists
+    await page.getByTestId("export-csv-btn").click();
+    await expect(page.getByTestId("csv-separator-semicolon")).toBeChecked();
+  });
+
+  test("Plot CSV export in advanced mode (no modal) @regression", async ({ page }) => {
+    await page.goto("/plot?mode=advanced");
+    // Wait for plot to render
+    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+
+    // Add a series using the default selection
+    const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await expect(addSeriesButton).toBeEnabled();
+    await addSeriesButton.click();
+
+    // Wait for export CSV button to be enabled (series rendered)
+    const exportCsvBtn = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsvBtn).toBeEnabled({ timeout: 8000 });
+
+    // Plot CSV export is direct download (no modal)
+    const downloadPromise = page.waitForEvent("download");
+    await exportCsvBtn.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("dedx_plot_data.csv");
+  });
+
+  test("CSV modal does NOT open in basic mode — download is immediate @regression", async ({
+    page,
+  }) => {
+    await page.goto("/calculator");
+
+    // Fill energy first (triggers auto-select and calculation)
+    const energyInput = page.locator('[data-testid="energy-input-0"]');
+    await energyInput.fill("100 MeV");
+    await energyInput.blur();
+
+    // Wait for result table AND STP data
+    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect
+      .poll(async () => {
+        const text = await stpCell.textContent();
+        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+      }, { timeout: 15000 })
+      .toBeGreaterThan(0);
+
+    // Wait for export button to be enabled
+    const exportCsvBtn = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsvBtn).toBeEnabled({ timeout: 5000 });
+
+    const downloadPromise = page.waitForEvent("download");
+    await exportCsvBtn.click();
+
+    // Modal should never appear
+    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible({ timeout: 500 });
+
+    // Download should have triggered
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
+  });
+
+  test("PNG export only in advanced mode @smoke", async ({ page }) => {
+    // Basic mode: navigate directly
+    await page.goto("/plot");
+    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+
+    // Add a series first
+    const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await addSeriesButton.click();
+
+    // Wait for the image export button to appear
+    const imageExportBtn = page.getByRole("button", { name: /export.*image/i });
+    await expect(imageExportBtn).toBeVisible({ timeout: 8000 });
+    await imageExportBtn.click();
+
+    // Wait for menu to open and check SVG option exists
+    await page.waitForSelector('[role="menu"]', { timeout: 3000 });
+    const svgOption = page.getByRole("menuitem", { name: /svg vector/i });
+    await expect(svgOption).toBeVisible();
+    // PNG option should NOT exist in basic mode
+    const pngOptionBasic = page.getByRole("menuitem", { name: /png image/i });
+    await expect(pngOptionBasic).not.toBeVisible();
+    await page.keyboard.press("Escape");
+
+    // Advanced mode: navigate directly
+    await page.goto("/plot?mode=advanced");
+    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+
+    // Add a series in advanced mode
+    const addSeriesButtonAdvanced = page.getByRole("button", { name: /add series/i });
+    await addSeriesButtonAdvanced.click();
+
+    // Wait for image export button to be visible again
+    const imageExportBtnAdvanced = page.getByRole("button", { name: /export.*image/i });
+    await expect(imageExportBtnAdvanced).toBeVisible({ timeout: 8000 });
+    await imageExportBtnAdvanced.click();
+
+    await page.waitForSelector('[role="menu"]', { timeout: 3000 });
+
+    // PNG option should now be visible
+    const pngOption = page.getByRole("menuitem", { name: /png image/i });
+    await expect(pngOption).toBeVisible();
+
+    const downloadPromise = page.waitForEvent("download");
+    await pngOption.click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toBe("dedx_plot.png");
+  });
+
+  test("Calculator PDF triggers download in advanced mode @regression", async ({ page }) => {
+    // Navigate directly to advanced mode calculator
+    await page.goto("/calculator?mode=advanced");
+    
+    // Wait for advanced mode to be initialized
+    await page.waitForSelector('button[aria-label="Switch to Advanced mode"][aria-pressed="true"]', { timeout: 10000 });
+
+    // Fill energy first (triggers auto-select and debounced calculation)
+    const energyInput = page.locator('[data-testid="energy-input-0"]');
+    await energyInput.fill("100 MeV");
+    await energyInput.blur();
+
+    // Wait for result table
+    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+
+    // In advanced mode, STP cells have format stp-cell-{programId}-{rowIndex}
+    await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect
+      .poll(async () => {
+        const text = await stpCell.textContent();
+        return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
+      }, { timeout: 15000 })
+      .toBeGreaterThan(0);
+
+    // Wait for export button to be enabled
+    const exportPdfBtn = page.getByRole("button", { name: /export pdf/i });
+    await expect(exportPdfBtn).toBeEnabled({ timeout: 5000 });
+
+    const downloadPromise = page.waitForEvent("download");
+    await exportPdfBtn.click();
+
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/dedx_calculator_.*\.pdf$/);
+  });
+});

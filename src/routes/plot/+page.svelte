@@ -461,6 +461,29 @@
     showExportMenu = false;
   }
 
+  async function downloadPng() {
+    if (!getSvg) return;
+    const svgString = await getSvg();
+    if (!svgString) return;
+
+    // Import svgToPng helper and convert
+    const { svgToPng } = await import("$lib/export/pdf.js");
+    const pngDataUrl = await svgToPng(svgString, 210, 148); // A5 landscape approx
+    if (!pngDataUrl) {
+      console.error("Failed to convert SVG to PNG");
+      return;
+    }
+
+    // Create download link
+    const a = document.createElement("a");
+    a.href = pngDataUrl;
+    a.download = "dedx_plot.png";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    showExportMenu = false;
+  }
+
   function toggleExportMenu() {
     if (!getSvg) return;
     showExportMenu = !showExportMenu;
@@ -634,6 +657,7 @@
           <!-- Right: Export image dropdown -->
           <div class="relative">
             <button
+              data-testid="export-image-btn"
               aria-label="Export plot as image"
               aria-haspopup="true"
               aria-expanded={showExportMenu}
@@ -653,12 +677,23 @@
                 class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-md border bg-popover p-1 shadow-md"
               >
                 <button
+                  data-testid="export-image-svg"
                   role="menuitem"
                   onclick={downloadSvg}
                   class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
                   SVG vector
                 </button>
+                {#if isAdvancedMode.value}
+                  <button
+                    data-testid="export-image-png"
+                    role="menuitem"
+                    onclick={downloadPng}
+                    class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
+                  >
+                    PNG image
+                  </button>
+                {/if}
               </div>
             {/if}
           </div>

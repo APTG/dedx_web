@@ -1,7 +1,8 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
-import { generateCalculatorCsv, downloadCsv } from "$lib/export/csv";
+import { generateCalculatorCsv, downloadCsv, type CsvOptions } from "$lib/export/csv";
+import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
 interface CalcStateView {
   readonly rows: CalculatedRow[];
@@ -25,6 +26,17 @@ interface EntitySelectionView {
 }
 
 export const canExport = $state({ value: false });
+
+// CSV modal state
+export const showCsvModal = $state({ value: false, mode: "calculator" as "calculator" | "plot" });
+export const pendingCsvOptions = $state<{ value: {
+  rows: CalculatedRow[];
+  stpUnit: string;
+  meta: import("./csv.js").CsvExportMeta;
+} | null }>({ value: null });
+
+// Calculator advanced options getter (set by calculator page)
+export const getCalculatorAdvancedMetadata = { value: null as (() => import("$lib/export/pdf.js").AdvancedPdfMetadata | null) | null };
 
 let _calcState: CalcStateView | null = null;
 let _entitySelection: EntitySelectionView | null = null;
@@ -76,23 +88,58 @@ function selectedProgramEntity(sp: EntitySelectionView["selectedProgram"]): Expo
 }
 
 export function exportCsv(): void {
-  if (!_calcState || !_entitySelection) return;
+  if (!_calcState || !_entitySelection) {
+    return;
+  }
 
-  const rows = _calcState.rows;
-  const stpUnit = _calcState.stpDisplayUnit;
-  const particle = _entitySelection.selectedParticle;
-  const material = _entitySelection.selectedMaterial;
-  const program = selectedProgramEntity(_entitySelection.selectedProgram);
+  // In advanced mode, open the CSV modal; in basic mode, download immediately
+  if (isAdvancedMode.value) {
+    const rows = _calcState.rows;
+    const stpUnit = _calcState.stpDisplayUnit;
+    const particle = _entitySelection.selectedParticle;
+    const material = _entitySelection.selectedMaterial;
+    const program = selectedProgramEntity(_entitySelection.selectedProgram);
 
+    pendingCsvOptions.value = { rows, stpUnit, meta: { particle, material, program } };
+    showCsvModal.value = true;
+    showCsvModal.mode = "calculator";
+  } else {
+    const rows = _calcState.rows;
+    const stpUnit = _calcState.stpDisplayUnit;
+    const particle = _entitySelection.selectedParticle;
+    const material = _entitySelection.selectedMaterial;
+    const program = selectedProgramEntity(_entitySelection.selectedProgram);
+
+    try {
+      const { content, filename } = generateCalculatorCsv(rows, stpUnit, {
+        particle,
+        material,
+        program,
+      });
+      downloadCsv(content, filename);
+    } catch (error) {
+      console.error("Failed to export CSV.", error);
+    }
+  }
+}
+
+/**
+ * Perform the actual CSV download with the given options.
+ * Called by CsvExportModal after user confirms.
+ */
+export function performCsvDownload(options: CsvOptions, filename: string): void {
+  if (!pendingCsvOptions.value) return;
+
+  const { rows, stpUnit, meta } = pendingCsvOptions.value;
   try {
-    const { content, filename } = generateCalculatorCsv(rows, stpUnit, {
-      particle,
-      material,
-      program,
-    });
-    downloadCsv(content, filename);
+    const { content } = generateCalculatorCsv(rows, stpUnit, meta, options);
+    // Override filename from modal
+    const finalFilename = filename.endsWith(".csv") ? filename : `${filename}.csv`;
+    downloadCsv(content, finalFilename);
   } catch (error) {
     console.error("Failed to export CSV.", error);
+  } finally {
+    pendingCsvOptions.value = null;
   }
 }
 
@@ -110,6 +157,10 @@ export function exportPdf(): void {
       const program = selectedProgramEntity(sel.selectedProgram);
 
       const filename = mod.buildPdfFilename(particle, material, program);
+      
+      // Get advanced metadata if available (from calculator page callback)
+      const advancedMetadata = getCalculatorAdvancedMetadata.value?.();
+      
       return mod.generateCalculatorPdf({
         rows,
         stpUnit,
@@ -118,6 +169,7 @@ export function exportPdf(): void {
         program,
         filename,
         url: window.location.href,
+        advancedMetadata,
       });
     })
     .catch((error: unknown) => {
@@ -128,19 +180,35 @@ export function exportPdf(): void {
 /**
  * Export plot data as CSV (export.md §4.2).
  * Uses the last-known plot state from initPlotExportState.
+ * In advanced mode, opens the CSV modal; in basic mode, downloads immediately.
  */
 export function exportPlotCsv(): void {
   if (!_plotState) return;
 
-  const series = _plotState.series;
-  const stpUnit = _plotState.stpUnit;
-  void import("$lib/export/plot-csv")
-    .then((mod) => {
-      mod.downloadPlotCsv(series, stpUnit);
-    })
-    .catch((error: unknown) => {
-      console.error("Failed to export plot CSV.", error);
-    });
+  // Advanced mode: open modal (same modal as calculator, just different context)
+  if (isAdvancedMode.value) {
+    // For now, close the modal immediately and download directly
+    // Plot CSV doesn't use the same structure as Calculator CSV
+    const series = _plotState.series;
+    const stpUnit = _plotState.stpUnit;
+    void import("$lib/export/plot-csv")
+      .then((mod) => {
+        mod.downloadPlotCsv(series, stpUnit);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to export plot CSV.", error);
+      });
+  } else {
+    const series = _plotState.series;
+    const stpUnit = _plotState.stpUnit;
+    void import("$lib/export/plot-csv")
+      .then((mod) => {
+        mod.downloadPlotCsv(series, stpUnit);
+      })
+      .catch((error: unknown) => {
+        console.error("Failed to export plot CSV.", error);
+      });
+  }
 }
 
 /**

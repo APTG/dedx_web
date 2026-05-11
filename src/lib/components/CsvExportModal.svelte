@@ -65,8 +65,7 @@
   }
 </script>
 
-{#if open}
-  <Dialog.Root open={open} onOpenChange={(newOpen) => !newOpen && handleCancel()} onkeydown={handleKeyDown}>
+<Dialog.Root open={open} onOpenChange={(newOpen) => !newOpen && handleCancel()} onkeydown={handleKeyDown}>
     <Dialog.Portal>
       <Dialog.Overlay
         class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
@@ -211,4 +210,3 @@
       </Dialog.Content>
     </Dialog.Portal>
   </Dialog.Root>
-{/if}

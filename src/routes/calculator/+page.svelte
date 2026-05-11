@@ -476,6 +476,49 @@
     if (calcState && entityState) {
       initExportState(calcState, entityState);
     }
+    // Set the advanced metadata getter callback for PDF export
+    import("$lib/state/export.svelte").then((mod) => {
+      mod.getCalculatorAdvancedMetadata.value = () => {
+        if (!isAdvancedMode.value) return null;
+        if (!entityState || !calcState) return null;
+
+        const particle = entityState.selectedParticle;
+        const material = entityState.selectedMaterial;
+        const program = entityState.selectedProgram;
+
+        if (!particle || !material) return null;
+
+        // Build programs array (single program in basic mode, multiple in advanced)
+        const programs = [];
+        if ("resolvedProgram" in program && program.resolvedProgram) {
+          programs.push({
+            name: program.resolvedProgram.name,
+            type: "built-in" as const,
+          });
+        } else {
+          programs.push({
+            name: program.name,
+            type: "built-in" as const,
+          });
+        }
+
+        return {
+          particle: {
+            name: particle.name,
+            massNumber: particle.massNum,
+            atomicNumber: particle.chargeNum,
+          },
+          material: {
+            name: material.name,
+            density: material.density,
+            densityUnit: "g/cm³",
+            phase: material.isGasByDefault ? "gas" : "condensed",
+          },
+          programs,
+          advancedOptions: advancedOptions.value,
+        };
+      };
+    });
   });
 
   // When basic mode is activated while an inverse tab is open, fall back to the Forward tab.
