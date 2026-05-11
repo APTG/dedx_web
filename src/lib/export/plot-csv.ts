@@ -1,5 +1,6 @@
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
+import type { CsvOptions } from "$lib/export/csv";
 import { convertStpForDisplay } from "$lib/utils/plot-utils";
 import { makeCsvCell } from "$lib/export/csv";
 
@@ -64,13 +65,12 @@ function formatValue(value: number): string {
  * Format Plot series data as CSV string per export.md §4.2/§4.3.
  *
  * - UTF-8 with BOM
- * - CRLF line endings
  * - Case A: single shared Energy column if all series have same point count AND no ext: prefix
  * - Case B: each series gets its own Energy column before its Stp column
  * - Hidden series (visible === false) are excluded
  * - Shorter series in Case B are padded with empty cells
  */
-export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
+export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: CsvOptions): string {
   // Filter out hidden series
   const visibleSeries = series.filter((s) => s.visible);
 
@@ -105,7 +105,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
   const displayValues = visibleSeries.map((s) =>
     convertStpForDisplay(s.result.stoppingPowers, s.density, stpUnit),
   );
-  const rows: string[] = [];
+  const rowCellArrays: string[][] = [];
 
   for (let rowIdx = 0; rowIdx < maxRows; rowIdx++) {
     const rowCells: string[] = [];
@@ -143,12 +143,37 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit): string {
       }
     }
 
-    rows.push(rowCells.join(","));
+    rowCellArrays.push(rowCells);
   }
 
+  // Derive separator and line ending from options
+  const separator = getSeparatorChar(options?.separator ?? "comma");
+  const lineEnding = getLineEnding(options?.lineEndings ?? "crlf");
+
   // Build final CSV content (no BOM - added by downloadCsv())
-  const content = [headerCells.join(","), ...rows].join("\r\n");
+  const content = [headerCells.join(separator), ...rowCellArrays.map((r) => r.join(separator))].join(lineEnding);
   return content;
+}
+
+/**
+ * Get the separator character from the separator type.
+ */
+function getSeparatorChar(separator: "comma" | "semicolon" | "tab"): string {
+  switch (separator) {
+    case "comma":
+      return ",";
+    case "semicolon":
+      return ";";
+    case "tab":
+      return "\t";
+  }
+}
+
+/**
+ * Get the line ending string from the line endings type.
+ */
+function getLineEnding(lineEndings: "crlf" | "lf"): string {
+  return lineEndings === "crlf" ? "\r\n" : "\n";
 }
 
 /**
