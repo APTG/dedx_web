@@ -215,8 +215,7 @@ describe("decodeCalculatorUrl — custom compounds", () => {
 
   it("sets fromUrlWarning when mat_density is missing", () => {
     const params = new URLSearchParams(
-      "material=custom&mode=advanced&programs=9&qfocus=both" +
-        "&mat_name=LiF&mat_elements=3:1,9:1",
+      "material=custom&mode=advanced&programs=9&qfocus=both" + "&mat_name=LiF&mat_elements=3:1,9:1",
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).fromUrlWarning).toMatch(/mat_density/);
@@ -243,10 +242,19 @@ describe("decodeCalculatorUrl — custom compounds", () => {
     expect(s.materialId).toBe(276);
   });
 
-  it("sets fromUrlWarning when mat_elements is missing", () => {
+  it("sets fromUrlWarning when mat_density is not a strict number", () => {
     const params = new URLSearchParams(
       "material=custom&mode=advanced&programs=9&qfocus=both" +
-        "&mat_name=LiF&mat_density=2.64",
+        "&mat_name=LiF&mat_density=2.64foo&mat_elements=3:1,9:1",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).fromUrlWarning).toMatch(/mat_density/);
+    expect(s.materialId).toBe(276);
+  });
+
+  it("sets fromUrlWarning when mat_elements is missing", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" + "&mat_name=LiF&mat_density=2.64",
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).fromUrlWarning).toMatch(/mat_elements/);
@@ -272,6 +280,26 @@ describe("decodeCalculatorUrl — custom compounds", () => {
     const params = new URLSearchParams(
       "material=custom&mode=advanced&programs=9&qfocus=both" +
         "&mat_name=Test&mat_density=1.0&mat_elements=0:1,119:1,999:1",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).fromUrlWarning).toMatch(/mat_elements/);
+    expect(s.materialId).toBe(276);
+  });
+
+  it("sets fromUrlWarning when mat_elements contains partial numeric tokens", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1abc:2,8:1",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).fromUrlWarning).toMatch(/mat_elements/);
+    expect(s.materialId).toBe(276);
+  });
+
+  it("sets fromUrlWarning when mat_elements contains partial atom counts", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1:2foo,8:1",
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).fromUrlWarning).toMatch(/mat_elements/);
@@ -318,6 +346,16 @@ describe("decodeCalculatorUrl — custom compounds", () => {
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).matIval).toBeUndefined();
+  });
+
+  it("sets fromUrlWarning when mat_ival is not a strict number", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1:1&mat_ival=65foo",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).fromUrlWarning).toMatch(/mat_ival/);
+    expect(s.materialId).toBe(276);
   });
 
   it("silently ignores mat_phase when unknown token", () => {

@@ -199,7 +199,7 @@ export function formulaFromElements(
       ? atomCount.toString()
       : atomCount.toFixed(4).replace(/\.?0+$/, "");
 
-    parts.push(`${symbol}${countStr > 1 ? countStr : ""}`);
+    parts.push(`${symbol}${Math.abs(atomCount - 1) > 1e-12 ? countStr : ""}`);
   }
 
   return parts.join("");

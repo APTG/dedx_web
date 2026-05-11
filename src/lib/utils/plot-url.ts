@@ -16,6 +16,24 @@ const TOKEN_TO_STP: Record<string, StpUnit> = Object.fromEntries(
   Object.entries(STP_TOKENS).map(([k, v]) => [v, k as StpUnit]),
 );
 
+const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
+const STRICT_INTEGER_RE = /^\d+$/;
+
+function parseStrictFiniteNumber(raw: string | null): number | undefined {
+  if (raw === null) return undefined;
+  const trimmed = raw.trim();
+  if (!STRICT_NUMBER_RE.test(trimmed)) return undefined;
+  const value = Number(trimmed);
+  return Number.isFinite(value) ? value : undefined;
+}
+
+function parseStrictAtomicNumber(raw: string): number | undefined {
+  const trimmed = raw.trim();
+  if (!STRICT_INTEGER_RE.test(trimmed)) return undefined;
+  const value = Number(trimmed);
+  return Number.isInteger(value) && value >= 1 && value <= 118 ? value : undefined;
+}
+
 export function stpUnitToToken(unit: StpUnit): string {
   return STP_TOKENS[unit];
 }
@@ -166,7 +184,7 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
     materialIsCustom = true;
     matName = params.get("mat_name") ?? undefined;
     const matDensityRaw = params.get("mat_density");
-    matDensity = matDensityRaw ? parseFloat(matDensityRaw) : undefined;
+    matDensity = parseStrictFiniteNumber(matDensityRaw);
     const matElementsRaw = params.get("mat_elements");
     const matIvalRaw = params.get("mat_ival");
     const matPhaseRaw = params.get("mat_phase");
@@ -185,12 +203,23 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
         }
         const zStr = entry.slice(0, colonIdx);
         const countStr = entry.slice(colonIdx + 1);
-        const z = parseInt(zStr, 10);
-        const count = parseFloat(countStr);
-        if (!Number.isFinite(z) || z < 1 || z > 118) {
+        const z = parseStrictAtomicNumber(zStr);
+        const count = parseStrictFiniteNumber(countStr);
+        if (z === undefined) {
+          if (!STRICT_INTEGER_RE.test(zStr.trim())) {
+            fromUrlWarning = fromUrlWarning
+              ? `${fromUrlWarning}; malformed mat_elements entry`
+              : "mat_elements: malformed entries";
+          }
           continue;
         }
-        if (!Number.isFinite(count) || count <= 0) {
+        if (count === undefined) {
+          fromUrlWarning = fromUrlWarning
+            ? `${fromUrlWarning}; malformed mat_elements entry`
+            : "mat_elements: malformed entries";
+          continue;
+        }
+        if (count <= 0) {
           continue;
         }
         elementMap.set(z, (elementMap.get(z) ?? 0) + count);
@@ -206,7 +235,10 @@ export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
       }
     }
 
-    matIval = matIvalRaw ? parseFloat(matIvalRaw) : undefined;
+    matIval = parseStrictFiniteNumber(matIvalRaw);
+    if (matIvalRaw !== null && matIval === undefined) {
+      fromUrlWarning = fromUrlWarning ? `${fromUrlWarning}; mat_ival invalid` : "mat_ival: invalid";
+    }
     if (matIval !== undefined && (matIval <= 0 || matIval > 10000)) {
       matIval = undefined;
     }

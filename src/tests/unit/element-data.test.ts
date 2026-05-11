@@ -124,6 +124,11 @@ describe("element-data", () => {
       expect(resolveElement("119")).toBeUndefined();
     });
 
+    test("does not parse partial numeric prefixes as atomic numbers", () => {
+      expect(resolveElement("1abc")).toBeUndefined();
+      expect(resolveElement("26.5")).toBeUndefined();
+    });
+
     test("returns undefined for unknown symbol", () => {
       expect(resolveElement("Xx")).toBeUndefined();
     });

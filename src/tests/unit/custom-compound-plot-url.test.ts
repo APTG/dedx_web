@@ -142,6 +142,16 @@ describe("decodePlotUrl — custom compounds", () => {
     expect(s.materialId).toBe(276);
   });
 
+  it("sets fromUrlWarning when mat_density is not a strict number", () => {
+    const params = new URLSearchParams(
+      "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
+        "&mat_name=LiF&mat_density=2.64foo&mat_elements=3:1,9:1",
+    );
+    const s = decodePlotUrl(params);
+    expect(s.fromUrlWarning).toMatch(/mat_density/);
+    expect(s.materialId).toBe(276);
+  });
+
   it("sets fromUrlWarning when mat_elements is missing", () => {
     const params = new URLSearchParams(
       "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
@@ -175,6 +185,26 @@ describe("decodePlotUrl — custom compounds", () => {
     expect(s.materialId).toBe(276);
   });
 
+  it("sets fromUrlWarning when mat_elements contains partial numeric tokens", () => {
+    const params = new URLSearchParams(
+      "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1abc:2,8:1",
+    );
+    const s = decodePlotUrl(params);
+    expect(s.fromUrlWarning).toMatch(/mat_elements/);
+    expect(s.materialId).toBe(276);
+  });
+
+  it("sets fromUrlWarning when mat_elements contains partial atom counts", () => {
+    const params = new URLSearchParams(
+      "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1:2foo,8:1",
+    );
+    const s = decodePlotUrl(params);
+    expect(s.fromUrlWarning).toMatch(/mat_elements/);
+    expect(s.materialId).toBe(276);
+  });
+
   it("collapses duplicate Z by summing counts", () => {
     const params = new URLSearchParams(
       "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
@@ -194,6 +224,16 @@ describe("decodePlotUrl — custom compounds", () => {
     );
     const s = decodePlotUrl(params);
     expect(s.matIval).toBeUndefined();
+  });
+
+  it("sets fromUrlWarning when mat_ival is not a strict number", () => {
+    const params = new URLSearchParams(
+      "material=custom&program=9&series=&stp_unit=kev-um&xscale=log&yscale=log" +
+        "&mat_name=Test&mat_density=1.0&mat_elements=1:1&mat_ival=65foo",
+    );
+    const s = decodePlotUrl(params);
+    expect(s.fromUrlWarning).toMatch(/mat_ival/);
+    expect(s.materialId).toBe(276);
   });
 
   it("silently ignores mat_phase when unknown token", () => {

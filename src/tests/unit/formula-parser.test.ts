@@ -174,6 +174,14 @@ describe("formula-parser", () => {
       expect(formulaFromElements(elements, false)).toBe("H2.5O");
     });
 
+    test("includes fractional atom counts below one", () => {
+      const elements = [
+        { atomicNumber: 1, atomCount: 0.5 },
+        { atomicNumber: 8, atomCount: 1 },
+      ];
+      expect(formulaFromElements(elements, false)).toBe("H0.5O");
+    });
+
     test("returns empty string for empty array", () => {
       expect(formulaFromElements([])).toBe("");
     });

@@ -81,7 +81,7 @@
       }
     }
     if (!mode) {
-      for (const series of plotState.series) {
+      for (const series of [...plotState.series]) {
         if (typeof series.materialId === "string" && series.materialId.startsWith("cc_")) {
           plotState.removeSeries(series.seriesId);
         }

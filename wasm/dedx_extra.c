@@ -500,10 +500,10 @@ int dedx_internal_setup_custom_compound(
         cfg->elements_id[i]    = elements_id[i];
         /* libdedx's dedx_config stores atom counts as int. We accept double
          * counts at the wrapper boundary so callers can pass formula parser
-         * output directly. Fractional counts are rounded (banker's rounding via
-         * lround) to the nearest integer; for true non-integer stoichiometries
-         * the caller should normalize to integer ratios before invoking the
-         * wrapper (e.g. H2.5O -> H5O2). */
+         * output directly. Fractional counts are rounded to the nearest integer
+         * with halfway cases rounded away from zero via lround(); for true
+         * non-integer stoichiometries the caller should normalize to integer
+         * ratios before invoking the wrapper (e.g. H2.5O -> H5O2). */
         cfg->elements_atoms[i] = (int)lround(elements_atoms[i]);
         if (cfg->elements_atoms[i] <= 0) {
             /* Reject zero/negative after rounding to avoid divide-by-zero

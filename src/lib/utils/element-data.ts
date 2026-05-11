@@ -179,9 +179,11 @@ export function resolveElement(input: string): ElementData | undefined {
   if (!trimmed) return undefined;
 
   // Try parsing as atomic number (Z)
-  const z = parseInt(trimmed, 10);
-  if (!isNaN(z) && z >= 1 && z <= 118) {
-    return ELEMENT_BY_Z.get(z);
+  if (/^\d+$/.test(trimmed)) {
+    const z = parseInt(trimmed, 10);
+    if (z >= 1 && z <= 118) {
+      return ELEMENT_BY_Z.get(z);
+    }
   }
 
   // Try symbol lookup (case-insensitive)

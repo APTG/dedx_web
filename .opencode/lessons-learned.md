@@ -553,5 +553,21 @@ does not cover.
 
 ---
 
+## Entry 24 — URL numeric parsing must reject partial tokens
+
+**Symptom:** Custom-compound URL decoding used `parseFloat()` / `parseInt()`, so
+malformed values such as `mat_density=2.64foo`, `mat_ival=65foo`, or
+`mat_elements=1abc:2` were accepted as valid numeric prefixes.
+
+**Root cause:** JavaScript numeric prefix parsers are permissive by design and
+do not validate that the full user/URL token is numeric.
+
+**Rule:** Decode URL/user numeric fields with a strict full-token regex before
+converting to `Number`. For custom compound URLs, malformed density, I-value,
+atomic-number, or atom-count tokens must set `fromUrlWarning` and use the
+existing fallback path instead of silently accepting the prefix.
+
+---
+
 _Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
