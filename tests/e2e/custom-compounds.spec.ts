@@ -737,6 +737,209 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
   });
 });
 
+test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanity check", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/calculator");
+    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+  });
+
+  test("Create water via formula mode (H:2, O:1) and verify reasonable stopping power", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    // Select alpha particle (well-known stopping power in water)
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
+    await expect(alphaOption).toBeVisible();
+    await alphaOption.click();
+    await expect(particleBtn).toContainText("alpha particle");
+
+    // Open compound editor
+    const materialBtn = page.getByRole("button", { name: /^Material$/ });
+    await materialBtn.click();
+    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
+    await addButton.click();
+
+    const modal = page.getByRole("dialog", { name: /compound editor/i });
+    await expect(modal).toBeVisible();
+
+    // Fill: name and density
+    await page.getByRole("textbox", { name: /name/i }).fill("Water H2O formula");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
+
+    // First element: H with atom count 2
+    const el0 = page.getByPlaceholder(/symbol or z/i).first();
+    await el0.fill("H");
+    await el0.blur(); // normalize to "H"
+    const count0 = page.getByPlaceholder(/count/i).first();
+    await count0.fill("2");
+
+    // Add oxygen
+    await page.getByRole("button", { name: /add element/i }).click();
+    const el1 = page.getByPlaceholder(/symbol or z/i).nth(1);
+    await el1.fill("O");
+    await el1.blur();
+    const count1 = page.getByPlaceholder(/count/i).nth(1);
+    await count1.fill("1");
+
+    // Save
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(modal).not.toBeVisible({ timeout: 5000 });
+
+    // Select the water compound
+    await materialBtn.click();
+    const waterOption = page.locator('[role="option"]:has-text("Water H2O formula")').first();
+    await waterOption.waitFor({ state: "visible" });
+    await waterOption.click();
+    await expect(materialBtn).toContainText("Water H2O formula");
+
+    // Select first available program
+    const programBtn = page.getByRole("button", { name: /^Program$/ });
+    await programBtn.click();
+    const firstProgramOption = page.locator('[role="option"]').first();
+    await firstProgramOption.waitFor({ state: "visible" });
+    await firstProgramOption.click();
+
+    // Set energy to 5 MeV
+    const energyInput = page.getByTestId("energy-input-0");
+    await expect(energyInput).toBeVisible();
+    await energyInput.fill("5");
+    await energyInput.blur();
+
+    // Verify a non-empty stopping power result is produced
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    // Wait for a numeric result (not a dash placeholder)
+    await expect(stpCell).toHaveText(/\d/, { timeout: 10000 });
+
+    // Parse value and check it's in a physically plausible range.
+    // Alpha at 5 MeV in water: ~83 MeV·cm²/g or ~8 keV/µm depending on display unit.
+    // Range [1, 500] covers all supported display units.
+    const stpText = await stpCell.textContent();
+    const stpValue = parseFloat(stpText?.trim() ?? "");
+    expect(stpValue).toBeGreaterThan(1);
+    expect(stpValue).toBeLessThan(500);
+  });
+
+  test("Create water via weight-fraction mode (H:11.19%, O:88.81%) and verify calculation", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    // Open compound editor
+    const materialBtn = page.getByRole("button", { name: /^Material$/ });
+    await materialBtn.click();
+    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+
+    const modal = page.getByRole("dialog", { name: /compound editor/i });
+    await expect(modal).toBeVisible();
+
+    // Fill name and density
+    await page.getByRole("textbox", { name: /name/i }).fill("Water H2O weight");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
+
+    // First element: H with a placeholder atom count (will be replaced by weight mode)
+    const el0 = page.getByPlaceholder(/symbol or z/i).first();
+    await el0.fill("H");
+    await el0.blur();
+
+    // Switch to weight fraction mode
+    const weightTab = page.getByRole("tab", { name: /weight fraction/i });
+    await weightTab.click();
+    await expect(weightTab).toHaveAttribute("aria-selected", "true");
+
+    // The weight fraction input for H should now be editable
+    const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
+    await expect(wf0).toBeVisible();
+    await expect(wf0).toBeEnabled();
+    await wf0.fill("11.19");
+
+    // Add oxygen element
+    await page.getByRole("button", { name: /add element/i }).click();
+    const el1 = page.getByPlaceholder(/symbol or z/i).nth(1);
+    await el1.fill("O");
+    await el1.blur();
+
+    // Set oxygen weight fraction
+    const wf1 = page.getByRole("spinbutton", { name: /weight fraction.*element 2/i }).first();
+    await expect(wf1).toBeVisible();
+    await wf1.fill("88.81");
+
+    // Save — fractions sum to 100%, should succeed
+    await page.getByRole("button", { name: /save/i }).click();
+    await expect(modal).not.toBeVisible({ timeout: 5000 });
+
+    // Compound appears in material list
+    await materialBtn.click();
+    const waterOption = page.locator('[role="option"]:has-text("Water H2O weight")').first();
+    await expect(waterOption).toBeVisible();
+    await waterOption.click();
+    await expect(materialBtn).toContainText("Water H2O weight");
+
+    // Select alpha particle
+    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
+    await particleBtn.click();
+    await page.getByRole("option", { name: /^alpha particle$/ }).click();
+
+    // Select first available program
+    const programBtn = page.getByRole("button", { name: /^Program$/ });
+    await programBtn.click();
+    const firstProgramOption2 = page.locator('[role="option"]').first();
+    await firstProgramOption2.waitFor({ state: "visible" });
+    await firstProgramOption2.click();
+
+    // Set energy and verify result
+    const energyInput = page.getByTestId("energy-input-0");
+    await energyInput.fill("5");
+    await energyInput.blur();
+
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect(stpCell).toHaveText(/\d/, { timeout: 10000 });
+
+    // Weight fraction input should yield the same physical result as formula mode.
+    // Alpha at 5 MeV in water: ~83 MeV·cm²/g or ~8 keV/µm depending on display unit.
+    // Range [1, 500] covers all supported display units.
+    const stpText = await stpCell.textContent();
+    const stpValue = parseFloat(stpText?.trim() ?? "");
+    expect(stpValue).toBeGreaterThan(1);
+    expect(stpValue).toBeLessThan(500);
+  });
+
+  test("Weight fraction sum ≠ 100% blocks Save", async ({ page }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    const materialBtn = page.getByRole("button", { name: /^Material$/ });
+    await materialBtn.click();
+    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+
+    const modal = page.getByRole("dialog", { name: /compound editor/i });
+
+    await page.getByRole("textbox", { name: /name/i }).fill("Bad Fractions");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
+
+    const el0 = page.getByPlaceholder(/symbol or z/i).first();
+    await el0.fill("H");
+    await el0.blur();
+
+    // Switch to weight fraction mode
+    await page.getByRole("tab", { name: /weight fraction/i }).click();
+
+    // Set fraction to only 50% (doesn't sum to 100)
+    const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
+    await wf0.fill("50");
+
+    await page.getByRole("button", { name: /save/i }).click();
+
+    // Validation error should appear and modal should stay open.
+    // Target the destructive error paragraph specifically (not the hint text).
+    await expect(
+      page.locator("p.text-destructive").filter({ hasText: /must sum to 100%/i }).first()
+    ).toBeVisible();
+    await expect(modal).toBeVisible();
+  });
+});
+
 test.describe("Scenario 1: LiF pellet smoke test", () => {
   test("Create LiF compound and calculate with MSTAR", async ({ page }) => {
     await page.goto("/calculator");

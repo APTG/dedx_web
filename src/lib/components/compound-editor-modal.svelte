@@ -4,7 +4,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import type { StoredCompoundInternal, CompoundElementEntry } from "$lib/state/custom-compounds.svelte";
-  import { ELEMENTS, resolveElement } from "$lib/utils/element-data";
+  import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts } from "$lib/utils/element-data";
   import { cn } from "$lib/utils";
 
   interface CompoundEditorFormData {
@@ -34,6 +34,8 @@
   };
 
   let formData = $state<CompoundEditorFormData>({ ...initialData });
+  let elementTexts = $state<string[]>(["H"]);
+  let weightTexts = $state<string[]>(["100"]);
   let errors = $state<Record<string, string>>({});
   let mode = $state<"formula" | "weight">("formula");
   let showDeleteConfirm = $state(false);
@@ -45,21 +47,57 @@
       formData.iValue = compound.iValue ? String(compound.iValue) : "";
       formData.phase = compound.phase;
       formData.elements = compound.elements.map((e) => ({ ...e }));
+      elementTexts = compound.elements.map((e) => getLocalSymbol(e.atomicNumber));
+      weightTexts = computeInitialWeightTexts(compound.elements);
       mode = "formula";
       errors = {};
     } else if (open && !compound) {
       formData = { ...initialData };
+      elementTexts = ["H"];
+      weightTexts = ["100"];
       errors = {};
       mode = "formula";
     }
   });
 
-  function getElementSymbol(z: number): string {
-    return ELEMENTS.find((e) => e.atomicNumber === z)?.symbol ?? "";
+  function getLocalSymbol(z: number): string {
+    return ELEMENTS.find((e) => e.atomicNumber === z)?.symbol ?? String(z);
   }
 
-  function getElementName(z: number): string {
+  function getLocalName(z: number): string {
     return ELEMENTS.find((e) => e.atomicNumber === z)?.name ?? "";
+  }
+
+  function computeInitialWeightTexts(elements: CompoundElementEntry[]): string[] {
+    const fractions = computeWeightFractions(elements);
+    if (!fractions) return elements.map(() => "");
+    return fractions.map((f) => (f.weightFraction * 100).toFixed(2));
+  }
+
+  function switchMode(newMode: "formula" | "weight") {
+    if (newMode === mode) return;
+    errors = {};
+    if (newMode === "weight") {
+      weightTexts = computeInitialWeightTexts(formData.elements);
+    } else {
+      // Convert weight fractions → atom counts and update formula state
+      const converted = convertWeightFractionsToAtomCounts();
+      if (converted) {
+        formData.elements = converted;
+        elementTexts = converted.map((e) => getLocalSymbol(e.atomicNumber));
+      }
+    }
+    mode = newMode;
+  }
+
+  function convertWeightFractionsToAtomCounts(): CompoundElementEntry[] | null {
+    const wfs = weightTexts.map((t, i) => ({
+      atomicNumber: formData.elements[i]?.atomicNumber ?? 1,
+      weightFraction: (parseFloat(t) || 0) / 100,
+    }));
+    const result = computeAtomCounts(wfs);
+    if (!result) return null;
+    return result;
   }
 
   function validate(): boolean {
@@ -89,26 +127,38 @@
       }
     }
 
-    if (!formData.elements || formData.elements.length === 0) {
-      newErrors.elements = "At least one element is required.";
+    if (mode === "weight") {
+      // Validate weight fractions
+      const sum = weightTexts.reduce((s, t) => s + (parseFloat(t) || 0), 0);
+      if (weightTexts.some((t) => isNaN(parseFloat(t)) || parseFloat(t) <= 0)) {
+        newErrors.elements = "All weight fractions must be positive numbers.";
+      } else if (Math.abs(sum - 100) > 0.5) {
+        newErrors.elements = `Weight fractions must sum to 100% (current: ${sum.toFixed(1)}%).`;
+      } else if (!formData.elements || formData.elements.length === 0) {
+        newErrors.elements = "At least one element is required.";
+      }
     } else {
-      const seenZ = new Set<number>();
-      for (const elem of formData.elements) {
-        if (elem.atomicNumber < 1 || elem.atomicNumber > 118) {
-          newErrors.elements = `Unknown element: Z=${elem.atomicNumber}.`;
-          break;
-        }
-        if (seenZ.has(elem.atomicNumber)) {
-          newErrors.elements = `Element Z=${elem.atomicNumber} is listed more than once. Combine into a single row.`;
-          break;
-        }
-        seenZ.add(elem.atomicNumber);
-        if (elem.atomCount <= 0) {
-          newErrors.elements = "Atom count must be greater than zero.";
-          break;
-        } else if (elem.atomCount > 1000) {
-          newErrors.elements = "Atom count must be ≤ 1000.";
-          break;
+      if (!formData.elements || formData.elements.length === 0) {
+        newErrors.elements = "At least one element is required.";
+      } else {
+        const seenZ = new Set<number>();
+        for (const elem of formData.elements) {
+          if (elem.atomicNumber < 1 || elem.atomicNumber > 118) {
+            newErrors.elements = `Unknown element: Z=${elem.atomicNumber}.`;
+            break;
+          }
+          if (seenZ.has(elem.atomicNumber)) {
+            newErrors.elements = `Element Z=${elem.atomicNumber} is listed more than once. Combine into a single row.`;
+            break;
+          }
+          seenZ.add(elem.atomicNumber);
+          if (elem.atomCount <= 0) {
+            newErrors.elements = "Atom count must be greater than zero.";
+            break;
+          } else if (elem.atomCount > 1000) {
+            newErrors.elements = "Atom count must be ≤ 1000.";
+            break;
+          }
         }
       }
     }
@@ -118,6 +168,19 @@
   }
 
   function handleSave() {
+    let elementsToSave = formData.elements;
+
+    if (mode === "weight") {
+      const converted = convertWeightFractionsToAtomCounts();
+      if (converted) {
+        elementsToSave = converted;
+      }
+    }
+
+    // Temporarily update formData.elements for validation
+    const savedElements = formData.elements;
+    formData.elements = elementsToSave;
+
     const valid = validate();
     if (valid) {
       const data = {
@@ -128,24 +191,37 @@
         elements: formData.elements,
       };
       onSave(data);
+    } else {
+      formData.elements = savedElements;
     }
   }
 
   function handleAddElement() {
     formData.elements.push({ atomicNumber: 1, atomCount: 1 });
+    elementTexts.push("H");
+    if (mode === "weight") {
+      weightTexts.push("0");
+    }
   }
 
   function handleRemoveElement(index: number) {
     if (formData.elements.length > 1) {
       formData.elements.splice(index, 1);
+      elementTexts.splice(index, 1);
+      weightTexts.splice(index, 1);
     }
   }
 
-  function handleElementChange(index: number, input: string) {
-    const element = resolveElement(input);
-    if (element) {
-      formData.elements[index].atomicNumber = element.atomicNumber;
+  function handleElementTextInput(index: number) {
+    const resolved = resolveElement(elementTexts[index]);
+    if (resolved) {
+      formData.elements[index].atomicNumber = resolved.atomicNumber;
     }
+  }
+
+  function handleElementTextBlur(index: number) {
+    // Normalize to official symbol; if unresolved, reset to current element's symbol
+    elementTexts[index] = getLocalSymbol(formData.elements[index].atomicNumber);
   }
 
   function handleAtomCountChange(index: number, count: string) {
@@ -284,7 +360,7 @@
                         "text-xs font-medium transition-colors hover:text-foreground",
                         mode === "formula" ? "text-foreground" : "text-muted-foreground"
                       )}
-                      onclick={() => (mode = "formula")}
+                      onclick={() => switchMode("formula")}
                     >
                       Formula
                     </button>
@@ -300,7 +376,7 @@
                         "text-xs font-medium transition-colors hover:text-foreground",
                         mode === "weight" ? "text-foreground" : "text-muted-foreground"
                       )}
-                      onclick={() => (mode = "weight")}
+                      onclick={() => switchMode("weight")}
                     >
                       Weight fraction
                     </button>
@@ -311,16 +387,19 @@
                   <p class="text-sm text-destructive">{errors.elements}</p>
                 {/if}
 
-                <div class="grid gap-2">
+                <div class="grid gap-2" id="elements-panel" role="tabpanel"
+                  aria-labelledby={mode === "formula" ? "formula-tab" : "weight-tab"}>
                   {#each formData.elements as element, index (index)}
                     <div class="flex items-center gap-2">
                       <div class="relative flex-1">
                         <Input
                           type="text"
                           placeholder="Symbol or Z"
-                          value={getElementSymbol(element.atomicNumber)}
-                          oninput={(e) => handleElementChange(index, (e.currentTarget as HTMLInputElement).value)}
+                          bind:value={elementTexts[index]}
+                          oninput={() => handleElementTextInput(index)}
+                          onblur={() => handleElementTextBlur(index)}
                           class="pr-12"
+                          aria-label={`Element ${index + 1}: ${getLocalName(element.atomicNumber)}`}
                         />
                         <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-muted-foreground">
                           Z={element.atomicNumber}
@@ -336,12 +415,22 @@
                           value={String(element.atomCount)}
                           oninput={(e) => handleAtomCountChange(index, (e.currentTarget as HTMLInputElement).value)}
                           class="w-20"
+                          aria-label={`Atom count for element ${index + 1}`}
                         />
                       {:else}
-                        <span class="w-20 text-right text-sm text-muted-foreground">
-                          {((element.atomCount * (ELEMENTS.find(e => e.atomicNumber === element.atomicNumber)?.atomicWeight ?? 0)) / 
-                            formData.elements.reduce((sum, e) => sum + (e.atomCount * (ELEMENTS.find(el => el.atomicNumber === e.atomicNumber)?.atomicWeight ?? 0)), 0) * 100).toFixed(1)}%
-                        </span>
+                        <div class="flex items-center gap-1">
+                          <Input
+                            type="number"
+                            min="0"
+                            max="100"
+                            step="0.01"
+                            placeholder="Weight %"
+                            bind:value={weightTexts[index]}
+                            class="w-20 text-right"
+                            aria-label={`Weight fraction % for element ${index + 1}`}
+                          />
+                          <span class="text-xs text-muted-foreground">%</span>
+                        </div>
                       {/if}
                       <button
                         type="button"
@@ -358,6 +447,12 @@
                     </div>
                   {/each}
                 </div>
+
+                {#if mode === "weight"}
+                  <p class="text-xs text-muted-foreground">
+                    Fractions must total 100%. Values are stored as atomic ratios (w/M).
+                  </p>
+                {/if}
 
                 <button
                   type="button"
