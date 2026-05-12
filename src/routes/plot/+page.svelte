@@ -75,6 +75,17 @@
     loadAdvancedOptionsFromStorage();
   });
 
+  // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
+  // main URL init effect runs. This ensures the tabs render correctly when
+  // the page loads with ?mode=advanced — otherwise the component renders with
+  // isAdvancedMode.value = false and there's a reactivity glitch when it later
+  // becomes true inside the async callback.
+  $effect(() => {
+    if (wasmReady.value) {
+      initAdvancedModeFromUrl(page.url.searchParams);
+    }
+  });
+
   // Handle mode switch fallback: custom compound → water when switching to Basic mode
   $effect(() => {
     const mode = isAdvancedMode.value;
@@ -167,9 +178,6 @@
     }
 
     const decoded = decodePlotUrl(params);
-
-    // Restore advanced mode from URL (URL param overrides localStorage if present).
-    initAdvancedModeFromUrl(params);
 
     if (decoded.particleId !== null) {
       entityState.selectParticle(decoded.particleId);
