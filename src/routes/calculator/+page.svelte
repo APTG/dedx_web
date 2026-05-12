@@ -121,8 +121,9 @@
       initAdvancedModeFromUrl(page.url.searchParams);
     }
 
-    if (wasmReady.value && !entityState && !calcState) {
-      // Negotiate URL version BEFORE any state decode
+    // Negotiate URL version IMMEDIATELY (before WASM is ready) — this should show
+    // the banner even if WASM fails to load
+    if (!urlInitialized) {
       const urlvRaw = parseInt(page.url.searchParams.get("urlv") ?? "1", 10);
       const negotiationResult = negotiateVersion(urlvRaw);
       if (negotiationResult.status === "mismatch") {
@@ -130,7 +131,10 @@
       } else {
         urlVersionMismatch = null;
       }
+      urlInitialized = true;
+    }
 
+    if (wasmReady.value && !entityState && !calcState) {
       getService().then((service) => {
         const matrix = buildCompatibilityMatrix(service);
         entityState = createEntitySelectionState(matrix);

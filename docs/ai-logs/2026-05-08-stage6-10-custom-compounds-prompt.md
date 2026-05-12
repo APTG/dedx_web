@@ -13,6 +13,7 @@ branch to work on and which prompt to paste into opencode.
 **AI response:**
 
 Read the following at session start:
+
 - `docs/00-redesign-plan.md` — confirmed Stage 6.10 is next; recommended order is
   6.10 before 6.11–6.13 per the updated plan.
 - `CHANGELOG-AI.md` — confirmed 6.9 Inverse Lookups is the last completed sub-stage
@@ -36,6 +37,7 @@ Produced `docs/ai-logs/prompts/2026-05-08-stage6-10-custom-compounds.md` — a 5
 TDD prompt for Qwen3.5-397B on branch `qwen/stage6-10-custom-compounds`.
 
 Tasks:
+
 1. Pure TypeScript utilities + compound store (`element-data.ts`, `formula-parser.ts`,
    `custom-compounds.svelte.ts` with localStorage CRUD + validation + migration +
    `getCompatiblePrograms`).
@@ -54,6 +56,7 @@ Tasks:
    custom compound variants) + export behavior (CSV filenames, PDF composition table).
 
 Key decisions made during prompt authoring:
+
 - **WASM work required**: 4 new C functions + WASM rebuild are necessary for Tasks 2 and 5.
   The prompt includes the full C signatures derived from the `dedx_config` field analysis.
 - **Task ordering**: Tasks 1, 2, 3 are independent and can run in parallel; Task 4 depends

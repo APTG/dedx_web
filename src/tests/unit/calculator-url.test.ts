@@ -614,13 +614,17 @@ describe("decodeCalculatorUrl", () => {
 
 describe("duplicate params — last wins (§3.2)", () => {
   it("duplicate particle uses last value", () => {
-    const params = new URLSearchParams("particle=1&particle=2&material=276&program=auto&energies=100&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&particle=2&material=276&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.particleId).toBe(2);
   });
 
   it("duplicate material uses last value", () => {
-    const params = new URLSearchParams("particle=1&material=100&material=276&program=auto&energies=100&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&material=100&material=276&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.materialId).toBe(276);
   });
@@ -632,7 +636,9 @@ describe("duplicate params — last wins (§3.2)", () => {
 
 describe("unknown params dropped from canonical URL", () => {
   it("unknown foo=bar is absent from encoded output", () => {
-    const params = new URLSearchParams("urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz");
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz",
+    );
     const state = decodeCalculatorUrl(params);
     const encoded = encodeCalculatorUrl(state);
     const encodedStr = encoded.toString();

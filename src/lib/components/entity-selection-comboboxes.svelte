@@ -88,7 +88,8 @@
       return {
         entity: particle,
         available:
-          particle.id !== 1001 && selectionState.availableParticles.some((p) => p.id === particle.id),
+          particle.id !== 1001 &&
+          selectionState.availableParticles.some((p) => p.id === particle.id),
         label: getParticleLabel(particle),
         description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
         searchText: getParticleSearchText(particle),

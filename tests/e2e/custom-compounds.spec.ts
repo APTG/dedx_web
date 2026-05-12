@@ -826,7 +826,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     // Open compound editor
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+    await page
+      .getByRole("button", { name: /\+ add compound/i })
+      .first()
+      .click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -907,7 +910,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+    await page
+      .getByRole("button", { name: /\+ add compound/i })
+      .first()
+      .click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -930,7 +936,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     // Validation error should appear and modal should stay open.
     // Target the destructive error paragraph specifically (not the hint text).
     await expect(
-      page.locator("p.text-destructive").filter({ hasText: /must sum to 100%/i }).first()
+      page
+        .locator("p.text-destructive")
+        .filter({ hasText: /must sum to 100%/i })
+        .first(),
     ).toBeVisible();
     await expect(modal).toBeVisible();
   });

@@ -168,7 +168,9 @@ describe("ResultTable", () => {
     calcState.flushCalculation();
     await Promise.resolve();
 
-    render(ResultTable, { props: { calcState: calcState, entitySelection, columns: customColumns } });
+    render(ResultTable, {
+      props: { calcState: calcState, entitySelection, columns: customColumns },
+    });
 
     expect(screen.getByText(/Energy \(MeV\)/)).toBeInTheDocument();
     expect(screen.getByText(/Stopping Power \(keV\/µm\)/)).toBeInTheDocument();

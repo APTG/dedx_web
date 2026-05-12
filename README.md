@@ -4,10 +4,10 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 
 ## Try it
 
-|                      | URL                                                       | What's there                                                                                    | Deployment             |
-| -------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------- |
+|                      | URL                                                       | What's there                                                                       | Deployment             |
+| -------------------- | --------------------------------------------------------- | ---------------------------------------------------------------------------------- | ---------------------- |
 | **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — Stage 6 feature pages and advanced Calculator workflows | Continuous on `master` |
-| **v1.1.0 (stable)**  | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release — fully functional but based on the old React stack                         | Released 1 April 2022  |
+| **v1.1.0 (stable)**  | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release — fully functional but based on the old React stack            | Released 1 April 2022  |
 
 ## Why v2?
 

@@ -16,8 +16,8 @@ the current state:
 
 1. **`urlv` major-version negotiation + warning banner** — `calculator-url.ts`
    already parses `urlv` but throws it away (`void _urlv`). Wire it up.
-2. **Parse-pipeline conformance** — `URLSearchParams.get()` returns the *first*
-   duplicate value; the spec mandates *last* wins (§3.2). Fix the decoder.
+2. **Parse-pipeline conformance** — `URLSearchParams.get()` returns the _first_
+   duplicate value; the spec mandates _last_ wins (§3.2). Fix the decoder.
    Unknown params are already dropped implicitly by the encode/decode cycle;
    add explicit tests.
 3. **`material=custom` + `mat_*` round-trip** — already implemented in 6.10.
@@ -126,9 +126,7 @@ test("negotiateVersion(0) → mismatch with version 0", () => {
 export const CURRENT_URL_MAJOR = 1;
 export const MIN_SUPPORTED_URL_MAJOR = 1;
 
-export type VersionNegotiationResult =
-  | { status: "ok" }
-  | { status: "mismatch"; version: number };
+export type VersionNegotiationResult = { status: "ok" } | { status: "mismatch"; version: number };
 
 export function negotiateVersion(version: number | undefined): VersionNegotiationResult {
   const v = version ?? CURRENT_URL_MAJOR;
@@ -177,13 +175,17 @@ Add to the existing test file:
 ```typescript
 describe("duplicate params — last wins (§3.2)", () => {
   it("duplicate particle uses last value", () => {
-    const params = new URLSearchParams("particle=1&particle=2&material=276&program=auto&energies=100&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&particle=2&material=276&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.particleId).toBe(2);
   });
 
   it("duplicate material uses last value", () => {
-    const params = new URLSearchParams("particle=1&material=100&material=276&program=auto&energies=100&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&material=100&material=276&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.materialId).toBe(276);
   });
@@ -191,7 +193,9 @@ describe("duplicate params — last wins (§3.2)", () => {
 
 describe("unknown params dropped from canonical URL", () => {
   it("unknown foo=bar is absent from encoded output", () => {
-    const params = new URLSearchParams("urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz");
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz",
+    );
     const state = decodeCalculatorUrl(params);
     const encoded = calculatorUrlQueryString(state);
     expect(encoded).not.toContain("foo=");
@@ -208,7 +212,9 @@ Extend `src/tests/contracts/url-codec.contract.test.ts`:
 // urlv always present
 test("encoded URL always contains urlv param", () => {
   const params = encodeCalculatorUrl({
-    particleId: 1, materialId: 276, programId: null,
+    particleId: 1,
+    materialId: 276,
+    programId: null,
     rows: [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
     masterUnit: "MeV",
   });
@@ -355,8 +361,8 @@ Create `src/lib/components/url-version-warning-banner.svelte`:
          bg-yellow-50 px-4 py-3 text-sm text-yellow-900"
 >
   <span>
-    This link was created with a newer version of the app
-    (<strong>{version}</strong>). Some settings may not load correctly.
+    This link was created with a newer version of the app (<strong>{version}</strong>). Some
+    settings may not load correctly.
   </span>
   <button
     data-testid="url-version-warning-load-defaults"
@@ -432,6 +438,7 @@ column), Scenario 1 and Scenario 2 acceptance criteria.
 ### Step 4a — read the page first
 
 Read `src/routes/calculator/+page.svelte` fully. Locate:
+
 1. The URL-parsing `$effect` — search for `_urlv` or `decodeCalculatorUrl`.
 2. The calculation trigger `$effect` — search for `calculate` or `getService`.
 3. The template area near the top of the main content — where to insert the banner.
@@ -533,9 +540,7 @@ test.describe("Stage 6.13 — URL parser", () => {
     const banner = page.locator('[data-testid="url-version-warning"]');
     await expect(banner).toBeVisible({ timeout: 5000 });
     await expect(banner).toContainText("999");
-    await expect(
-      page.locator('[data-testid="url-version-warning-load-defaults"]'),
-    ).toBeVisible();
+    await expect(page.locator('[data-testid="url-version-warning-load-defaults"]')).toBeVisible();
   });
 
   // ── Scenario 1b: load-defaults restores calculation (WASM needed) @smoke ──
@@ -562,30 +567,24 @@ test.describe("Stage 6.13 — URL parser", () => {
 
   // ── Scenario 2: urlv=1 (current) — no warning @regression ────────────────
   test("urlv=1: no warning banner shown @regression", async ({ page }) => {
-    await page.goto(
-      "/calculator?urlv=1&particle=1&material=276&energies=100&eunit=MeV",
-    );
+    await page.goto("/calculator?urlv=1&particle=1&material=276&energies=100&eunit=MeV");
     await page.waitForLoadState("domcontentloaded");
-    await expect(
-      page.locator('[data-testid="url-version-warning"]'),
-    ).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
   // ── Scenario 3: missing urlv — assumed 1, no warning @regression ──────────
-  test("missing urlv: no warning banner (assumed version 1) @regression", async ({
-    page,
-  }) => {
+  test("missing urlv: no warning banner (assumed version 1) @regression", async ({ page }) => {
     await page.goto("/calculator?particle=1&material=276&energies=100");
     await page.waitForLoadState("domcontentloaded");
-    await expect(
-      page.locator('[data-testid="url-version-warning"]'),
-    ).not.toBeVisible({ timeout: 3000 });
+    await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
+      timeout: 3000,
+    });
   });
 
   // ── Scenario 4: custom compound round-trip (WASM needed) @smoke ──────────
-  test("custom compound URL round-trip: mat_* params restore compound @smoke", async ({
-    page,
-  }) => {
+  test("custom compound URL round-trip: mat_* params restore compound @smoke", async ({ page }) => {
     const wasmOk = await checkWasmAvailable(page);
     test.skip(!wasmOk, "WASM binary absent — skip custom compound E2E");
 
@@ -594,42 +593,30 @@ test.describe("Stage 6.13 — URL parser", () => {
       "&mat_density=2.64&mat_elements=3%3A1%2C9%3A1&mode=advanced&program=auto&energies=100";
 
     await page.goto(url);
-    await expect(
-      page.locator('[data-testid="compound-from-url-banner"]'),
-    ).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="compound-from-url-banner"]')).toBeVisible({
+      timeout: 5000,
+    });
     await expect
       .poll(
         async () =>
-          parseFloat(
-            (await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? "",
-          ),
+          parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
         { timeout: 10000 },
       )
       .toBeGreaterThan(0);
   });
 
   // ── Scenario 5: duplicate params use last value @regression ───────────────
-  test("duplicate particle param: last value (2) used @regression", async ({
-    page,
-  }) => {
-    await page.goto(
-      "/calculator?particle=1&particle=2&material=276&energies=100",
-    );
-    await expect
-      .poll(async () => page.url(), { timeout: 5000 })
-      .toMatch(/particle=2/);
+  test("duplicate particle param: last value (2) used @regression", async ({ page }) => {
+    await page.goto("/calculator?particle=1&particle=2&material=276&energies=100");
+    await expect.poll(async () => page.url(), { timeout: 5000 }).toMatch(/particle=2/);
     const searchParams = new URL(page.url()).searchParams;
     expect(searchParams.getAll("particle")).toHaveLength(1);
     expect(searchParams.get("particle")).toBe("2");
   });
 
   // ── Scenario 6: unknown params dropped @regression ────────────────────────
-  test("unknown params dropped from canonical URL @regression", async ({
-    page,
-  }) => {
-    await page.goto(
-      "/calculator?urlv=1&particle=1&material=276&energies=100&foo=bar&unknown=xyz",
-    );
+  test("unknown params dropped from canonical URL @regression", async ({ page }) => {
+    await page.goto("/calculator?urlv=1&particle=1&material=276&energies=100&foo=bar&unknown=xyz");
     await page.waitForFunction(() => !window.location.search.includes("foo="), {
       timeout: 5000,
     });

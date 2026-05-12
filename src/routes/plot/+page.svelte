@@ -162,13 +162,10 @@
 
   let urlInitialized = $state(false);
 
+  // URL version negotiation runs IMMEDIATELY (before WASM is ready)
   $effect(() => {
-    if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
-    // Mark in-flight so the URL-write effect cannot run while we are
-    // restoring (it would otherwise wipe `series=...` from the address bar).
+    if (!browser || urlInitialized) return;
     const params = new URLSearchParams(window.location.search);
-
-    // Negotiate URL version BEFORE any state decode
     const urlvRaw = parseInt(params.get("urlv") ?? "1", 10);
     const negotiationResult = negotiateVersion(urlvRaw);
     if (negotiationResult.status === "mismatch") {
@@ -176,6 +173,14 @@
     } else {
       urlVersionMismatch = null;
     }
+    urlInitialized = true;
+  });
+
+  $effect(() => {
+    if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
+    // Mark in-flight so the URL-write effect cannot run while we are
+    // restoring (it would otherwise wipe `series=...` from the address bar).
+    const params = new URLSearchParams(window.location.search);
 
     const decoded = decodePlotUrl(params);
 

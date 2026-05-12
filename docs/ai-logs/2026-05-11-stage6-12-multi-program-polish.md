@@ -7,7 +7,6 @@
 
 ---
 
-
 ## Completion Addendum — PR review follow-up
 
 Stage 6.12 is complete after PR #452 review follow-up (`73f63fe`). The follow-up fixed zero-delta formatting, the Calculator `ResultTable` prop wiring, drag/drop null/default handling, spec-aligned aria-live announcements, static Tailwind cursor classes, unique STP/CSDA tooltip IDs, corrected E2E program selectors, and archived the raw opencode transcript in `docs/ai-logs/2026-05-11-stage6-12-multi-program-polish-qwen-session.md`.
@@ -46,6 +45,7 @@ Validation after the follow-up: `pnpm test` (1059 passed), `pnpm lint`, `pnpm bu
    - Made helper functions handle `undefined | LibdedxError | CalculationResult`
 
 ### Tests
+
 - 7 new unit tests in `delta-tooltip.test.ts`
 - Updated `result-table.test.ts` and `result-table-advanced.test.ts` for `calcState` prop
 - All 1058 tests pass
@@ -93,12 +93,14 @@ Validation after the follow-up: `pnpm test` (1059 passed), `pnpm lint`, `pnpm bu
 ### E2E Tests (`tests/e2e/calculator-advanced.spec.ts`)
 
 Added 4 new E2E tests:
+
 1. **Column drag-and-drop reordering**: drag MSTAR column, verify default (PSTAR) stays first
 2. **Keyboard column reordering**: Alt+Arrow triggers move, aria-live announcement visible
 3. **Default program column cannot be dragged**: verify `draggable="false"`, `aria-disabled="true"`
 4. **Column visibility toggle**: "Columns..." button opens dropdown, uncheck hides column, URL contains `hidden_programs=`
 
 ### Tests
+
 - All 1058 unit tests pass
 - Lint passes
 - Fixed E2E tests to not use banned `waitForTimeout()` (use `waitForSelector` instead)

@@ -70,7 +70,11 @@ function formatValue(value: number): string {
  * - Hidden series (visible === false) are excluded
  * - Shorter series in Case B are padded with empty cells
  */
-export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: CsvOptions): string {
+export function formatPlotCsv(
+  series: PlotSeries[],
+  stpUnit: StpUnit,
+  options?: CsvOptions,
+): string {
   // Filter out hidden series
   const visibleSeries = series.filter((s) => s.visible);
 
@@ -151,7 +155,10 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: 
   const lineEnding = getLineEnding(options?.lineEndings ?? "crlf");
 
   // Build final CSV content (no BOM - added by downloadCsv())
-  const content = [headerCells.join(separator), ...rowCellArrays.map((r) => r.join(separator))].join(lineEnding);
+  const content = [
+    headerCells.join(separator),
+    ...rowCellArrays.map((r) => r.join(separator)),
+  ].join(lineEnding);
   return content;
 }
 

@@ -29,17 +29,17 @@ export function parseFormula(formula: string): ParseFormulaResult {
 
 function parseFormulaInternal(formula: string): ParsedElement[] {
   const result = new Map<number, number>();
-  
+
   // Split by dot for hydrate notation (e.g., "CuSO4.5H2O")
   // But NOT for fractional counts (e.g., "H2.5O" should NOT be split)
   // Hydrate notation: dot followed by digit then element (e.g., ".5H2O" or ".H2O")
   // Fractional count: digit(s), dot, digit(s) with no element after dot immediately
   const parts = splitHydrateParts(formula);
-  
+
   for (let partIdx = 0; partIdx < parts.length; partIdx++) {
     let part = parts[partIdx]!;
     if (!part) continue;
-    
+
     // Check for leading multiplier (hydrate notation like "5H2O")
     let multiplier = 1;
     const multMatch = part.match(/^(\d+)/);
@@ -48,10 +48,10 @@ function parseFormulaInternal(formula: string): ParsedElement[] {
       part = part.slice(multMatch[0]!.length);
     }
     if (!part) continue;
-    
+
     // Parse this part
     const partElements = parsePart(part);
-    
+
     // Add to result with multiplier
     for (const elem of partElements) {
       const existing = result.get(elem.atomicNumber) || 0;
@@ -72,18 +72,18 @@ function splitHydrateParts(formula: string): string[] {
   const parts: string[] = [];
   let current = "";
   let i = 0;
-  
+
   while (i < formula.length) {
     const char = formula[i]!;
-    
+
     if (char === ".") {
       // Look ahead to determine if this is hydrate or fractional notation
       const afterDot = formula.slice(i + 1);
-      
+
       // Hydrate pattern: digits + element + more formula (e.g., "5H2O" in "CuSO4.5H2O")
       // Fractional pattern: digits + element only (e.g., "5O" in "H2.5O")
       const hydrateMatch = afterDot.match(/^(\d+)([A-Z][a-z]?)(.*)$/);
-      
+
       if (hydrateMatch) {
         const [, _digits, _elementSymbol, rest] = hydrateMatch;
         void _digits;
@@ -98,7 +98,7 @@ function splitHydrateParts(formula: string): string[] {
           continue;
         }
       }
-      
+
       // Fractional or other: include dot in current part
       current += char;
       i++;
@@ -107,21 +107,21 @@ function splitHydrateParts(formula: string): string[] {
       i++;
     }
   }
-  
+
   if (current) {
     parts.push(current);
   }
-  
+
   return parts;
 }
 
 function parsePart(formula: string): ParsedElement[] {
   const result = new Map<number, number>();
   let i = 0;
-  
+
   while (i < formula.length) {
     const char = formula[i];
-    
+
     if (char === "(") {
       // Find matching closing paren
       let depth = 1;
@@ -133,7 +133,7 @@ function parsePart(formula: string): ParsedElement[] {
         i++;
       }
       const inner = formula.slice(start, i - 1);
-      
+
       // Get multiplier after closing paren
       let mult = 1;
       const multMatch = formula.slice(i).match(/^(\d+)/);
@@ -141,7 +141,7 @@ function parsePart(formula: string): ParsedElement[] {
         mult = parseInt(multMatch[1]!, 10);
         i += multMatch[0]!.length;
       }
-      
+
       // Recursively parse inner formula
       const innerElements = parsePart(inner);
       for (const elem of innerElements) {
@@ -157,13 +157,13 @@ function parsePart(formula: string): ParsedElement[] {
         symbol += formula[i];
         i++;
       }
-      
+
       // Get atomic number
       const elementData = resolveElement(symbol);
       if (!elementData) {
         throw new Error(`Unknown element: '${symbol}'`);
       }
-      
+
       // Get count (can be fractional, e.g., "H2.5O" → 2.5)
       let count = 1;
       const countMatch = formula.slice(i).match(/^(\d+(?:\.\d+)?)/);
@@ -171,14 +171,14 @@ function parsePart(formula: string): ParsedElement[] {
         count = parseFloat(countMatch[1]!);
         i += countMatch[0]!.length;
       }
-      
+
       const existing = result.get(elementData.atomicNumber) || 0;
       result.set(elementData.atomicNumber, existing + count);
     } else {
       i++;
     }
   }
-  
+
   return Array.from(result.entries())
     .map(([atomicNumber, atomCount]) => ({ atomicNumber, atomCount }))
     .sort((a, b) => a.atomicNumber - b.atomicNumber);
@@ -197,9 +197,10 @@ export function formulaFromElements(
     const symbol = getElementSymbol(atomicNumber);
     if (!symbol) continue;
 
-    const countStr = formatIntegers && Number.isInteger(atomCount)
-      ? atomCount.toString()
-      : atomCount.toFixed(4).replace(/\.?0+$/, "");
+    const countStr =
+      formatIntegers && Number.isInteger(atomCount)
+        ? atomCount.toString()
+        : atomCount.toFixed(4).replace(/\.?0+$/, "");
 
     parts.push(`${symbol}${Math.abs(atomCount - 1) > 1e-12 ? countStr : ""}`);
   }
