@@ -7,6 +7,15 @@
 
 ---
 
+
+## Completion Addendum — PR review follow-up
+
+Stage 6.12 is complete after PR #452 review follow-up (`73f63fe`). The follow-up fixed zero-delta formatting, the Calculator `ResultTable` prop wiring, drag/drop null/default handling, spec-aligned aria-live announcements, static Tailwind cursor classes, unique STP/CSDA tooltip IDs, corrected E2E program selectors, and archived the raw opencode transcript in `docs/ai-logs/2026-05-11-stage6-12-multi-program-polish-qwen-session.md`.
+
+Validation after the follow-up: `pnpm test` (1059 passed), `pnpm lint`, `pnpm build`, targeted Playwright advanced column tests (4 passed), code review, and CodeQL all passed.
+
+---
+
 ## Task 1 — Delta / % difference tooltip
 
 ### Implementation
