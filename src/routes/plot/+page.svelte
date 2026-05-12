@@ -28,6 +28,9 @@
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
+  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import { goto } from "$app/navigation";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -37,6 +40,7 @@
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
   let materialIsGas = $state<boolean | undefined>(undefined);
+  let urlVersionMismatch = $state<{ version: number } | null>(null);
 
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
     if (
@@ -152,6 +156,16 @@
     // Mark in-flight so the URL-write effect cannot run while we are
     // restoring (it would otherwise wipe `series=...` from the address bar).
     const params = new URLSearchParams(window.location.search);
+
+    // Negotiate URL version BEFORE any state decode
+    const urlvRaw = parseInt(params.get("urlv") ?? "1", 10);
+    const negotiationResult = negotiateVersion(urlvRaw);
+    if (negotiationResult.status === "mismatch") {
+      urlVersionMismatch = { version: negotiationResult.version };
+    } else {
+      urlVersionMismatch = null;
+    }
+
     const decoded = decodePlotUrl(params);
 
     // Restore advanced mode from URL (URL param overrides localStorage if present).
@@ -269,6 +283,12 @@
     // re-render (the density formula depends on it, but it was previously only
     // accessed inside the async callback which is not tracked).
     const advancedModeActive = isAdvancedMode.value;
+
+    // Block preview calculation when URL version mismatch is pending
+    if (urlVersionMismatch !== null) {
+      plotState.clearPreview();
+      return;
+    }
 
     if (!entityState) {
       plotState.clearPreview();
@@ -427,6 +447,12 @@
     showResetConfirm = false;
   }
 
+  function handleLoadDefaults() {
+    // Navigate to /plot without params to clear the mismatch URL
+    goto("/plot", { replaceState: true });
+    urlVersionMismatch = null;
+  }
+
   // ── SVG Export ──
   // Bound from JsrootPlot requestExportSvg, set by component's $effect
   let getSvg: (() => Promise<string | null>) | null = $state(null);
@@ -557,6 +583,14 @@
 {:else}
   <div class="space-y-4">
     <h1 class="text-3xl font-bold">Plot</h1>
+
+    {#if urlVersionMismatch}
+      <UrlVersionWarningBanner
+        version={urlVersionMismatch.version}
+        onLoadDefaults={handleLoadDefaults}
+      />
+    {/if}
+
     <!-- Desktop: sidebar + main grid -->
     <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
       <!-- ── SIDEBAR ── -->

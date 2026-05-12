@@ -93,4 +93,9 @@ describe("Page-init contract — urlv negotiation", () => {
     const source = readSource(CALCULATOR_PAGE);
     expect(source).toContain("negotiateVersion");
   });
+
+  it("plot page source contains negotiateVersion call", () => {
+    const source = readSource(PLOT_PAGE);
+    expect(source).toContain("negotiateVersion");
+  });
 });
