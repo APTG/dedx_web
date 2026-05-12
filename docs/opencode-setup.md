@@ -157,10 +157,10 @@ loads `AGENTS.md` as context.
 
 In the opencode UI, select the **PLGrid** provider and one of:
 
-| Model                        | Context | Best for                                     |
-| ---------------------------- | ------- | -------------------------------------------- |
-| `Qwen/Qwen3.5-397B-A17B-FP8` | 131 K   | Main orchestrator, implementer subagent      |
-| `Qwen/Qwen3.5-122B-A10B`     | 131 K   | Medium tasks, fallback                       |
+| Model                        | Context | Best for                                |
+| ---------------------------- | ------- | --------------------------------------- |
+| `Qwen/Qwen3.5-397B-A17B-FP8` | 131 K   | Main orchestrator, implementer subagent |
+| `Qwen/Qwen3.5-122B-A10B`     | 131 K   | Medium tasks, fallback                  |
 | `Qwen/Qwen3.6-35B-A3B`       | 80 K    | Quick fixes only (not the reviewer subagent) |
 
 **Always use `Qwen3.5-397B` as your main session model.** The subagents
@@ -267,11 +267,11 @@ Write CHANGELOG-AI.md entry and docs/ai-logs/YYYY-MM-DD-export-csv-pdf.md.
 
 ### Agent reference
 
-| Agent                | Model        | `maxSteps` | Role                                                       |
-| -------------------- | ------------ | ---------- | ---------------------------------------------------------- |
+| Agent                | Model        | `maxSteps` | Role                                               |
+| -------------------- | ------------ | ---------- | -------------------------------------------------- |
 | `implementer`        | Qwen3.5-397B | 40         | Writes code + tests, runs lint/test/build, commits locally |
-| `reviewer`           | Qwen3.5-397B | 15         | Diff review + targeted smoke check, does not edit          |
-| `svelte-file-editor` | Qwen3.5-397B | 30         | Auto-invoked for `.svelte` file edits                      |
+| `reviewer`           | Qwen3.5-397B | 15         | Diff review + targeted smoke check, does not edit  |
+| `svelte-file-editor` | Qwen3.5-397B | 30         | Auto-invoked for `.svelte` file edits              |
 
 Full agent documentation: [`.opencode/agents/`](../.opencode/agents/)
 

@@ -81,6 +81,21 @@ pnpm lint           # clean
 - `src/tests/unit/url-version.test.ts` (4 unit tests)
 - `.opencode/tasks/qwen/stage6-13-url-parser.md` (task tracker)
 
-## Follow-ups
+## Review follow-up (GPT-5.5 via GitHub Copilot coding agent)
 
-None — Stage 6.13 complete.
+Applied PR #457 review-thread fixes:
+
+- Removed unrelated formatting churn from prior commits and archived the raw
+  opencode transcript as
+  `docs/ai-logs/2026-05-12-stage6-13-url-parser-qwen-session.md`.
+- Split Plot URL negotiation state (`urlVersionChecked`) from URL restore/write
+  state (`urlInitialized`) so `decodePlotUrl()` still runs before canonical URL
+  writes.
+- Gated Calculator advanced-only URL params on `isAdvancedMode.value` and
+  `multiProgState`, fixing Advanced→Basic URL canonicalization after opening an
+  advanced share URL.
+- Gated the custom-compound E2E scenario on WASM availability and asserted a
+  positive stopping-power result when WASM is present.
+- Used `MATERIAL_URL_ROUNDTRIP` to drive the material round-trip contract test.
+- Added a regression E2E for loading the requested advanced URL and switching
+  back to Basic mode.

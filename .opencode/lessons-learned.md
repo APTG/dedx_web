@@ -679,5 +679,24 @@ announcements. Do not wait for invented drag state attributes.
 
 ---
 
-_Last updated: 2026-05-11. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 29 — Keep URL version checks separate from URL restore/write gates
+
+**Symptom:** Stage 6.13 Plot URL restoration was skipped because the immediate
+`urlv` negotiation effect set the same `urlInitialized` flag used to mean
+"initial URL restore has completed". On Calculator, switching from an
+advanced-mode share URL back to Basic could re-emit `mode=advanced` while the
+multi-program state was still being torn down.
+
+**Root cause:** One flag/state branch represented multiple phases of URL
+handling, and URL canonicalization inferred Advanced mode from the presence of
+`multiProgState` instead of the actual `isAdvancedMode.value`.
+
+**Rule:** Use separate state for URL version negotiation vs URL restore
+completion (for example `urlVersionChecked` and `urlInitialized`). When encoding
+mode-specific URL params, gate them on the current mode flag and the supporting
+state object, not on the supporting object alone.
+
+---
+
+_Last updated: 2026-05-12. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

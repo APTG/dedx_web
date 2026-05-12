@@ -41,6 +41,7 @@
   let entityState = $state<EntitySelectionState | null>(null);
   let materialIsGas = $state<boolean | undefined>(undefined);
   let urlVersionMismatch = $state<{ version: number } | null>(null);
+  let advancedModeInitializedFromUrl = $state(false);
 
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
     if (
@@ -81,8 +82,9 @@
   // isAdvancedMode.value = false and there's a reactivity glitch when it later
   // becomes true inside the async callback.
   $effect(() => {
-    if (wasmReady.value) {
+    if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
+      advancedModeInitializedFromUrl = true;
     }
   });
 
@@ -160,11 +162,12 @@
     persistAdvancedOptions();
   });
 
+  let urlVersionChecked = $state(false);
   let urlInitialized = $state(false);
 
   // URL version negotiation runs IMMEDIATELY (before WASM is ready)
   $effect(() => {
-    if (!browser || urlInitialized) return;
+    if (!browser || urlVersionChecked) return;
     const params = new URLSearchParams(window.location.search);
     const urlvRaw = parseInt(params.get("urlv") ?? "1", 10);
     const negotiationResult = negotiateVersion(urlvRaw);
@@ -173,7 +176,7 @@
     } else {
       urlVersionMismatch = null;
     }
-    urlInitialized = true;
+    urlVersionChecked = true;
   });
 
   $effect(() => {

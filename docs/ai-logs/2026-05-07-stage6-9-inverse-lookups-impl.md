@@ -55,7 +55,7 @@ const energyText = await expect
   .poll(async () => (await result.textContent())?.trim(), { timeout: 15000 })
   .toMatch(/^\d+(\.\d+)?\s*(MeV|GeV)?$/);
 // ↑ Playwright assertion returns void — energyText is undefined
-expect(parseFloat(energyText!)).toBeGreaterThan(0); // NaN > 0 → fails
+expect(parseFloat(energyText!)).toBeGreaterThan(0);  // NaN > 0 → fails
 ```
 
 `expect.poll().toMatch()` is a `void`-returning assertion; the variable capture
@@ -125,14 +125,12 @@ Implement inverse lookups entirely in TypeScript using the existing forward
 `calculate()` call that already correctly retrieves STP and CSDA tables:
 
 **Inverse CSDA** (monotonic — range increases with energy):
-
 1. Call `calculate()` on a dense energy grid (e.g. 500 log-spaced points from
    E_min to E_max).
 2. Binary search the returned `csdaRanges` array for the target range value.
 3. Linearly interpolate between adjacent grid points.
 
 **Inverse STP** (non-monotonic — has Bragg peak):
-
 1. Call `calculate()` on the same dense grid.
 2. Find the index of the maximum STP value = Bragg peak position.
 3. For `side=0` (low-energy branch): binary search in `[0, braggIdx]`.
@@ -142,7 +140,6 @@ Implement inverse lookups entirely in TypeScript using the existing forward
 **Bragg peak STP**: `Math.max(...result.stoppingPowers)` from the grid.
 
 This approach:
-
 - Requires no WASM rebuild
 - Avoids the workspace/config struct layout complexity
 - Works with all interpolation modes already handled by `calculate()`

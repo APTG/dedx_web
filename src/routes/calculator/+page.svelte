@@ -56,6 +56,7 @@
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlInitialized = $state(false);
+  let advancedModeInitializedFromUrl = $state(false);
   let urlVersionMismatch = $state<{ version: number } | null>(null);
   let multiProgState = $state<MultiProgramState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
@@ -117,8 +118,9 @@
     // the page loads with ?advanced=1 — otherwise the component renders with
     // isAdvancedMode.value = false and there's a reactivity glitch when it later
     // becomes true inside the async callback.
-    if (wasmReady.value) {
+    if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
+      advancedModeInitializedFromUrl = true;
     }
 
     // Negotiate URL version IMMEDIATELY (before WASM is ready) — this should show
@@ -326,7 +328,7 @@
       masterUnit: calcState.masterUnit,
       ...customUrlFields,
       // Include advanced mode state when active
-      ...(multiProgState
+      ...(isAdvancedMode.value && multiProgState
         ? {
             isAdvancedMode: true,
             // Emit ALL selected programs in display order (default program first)

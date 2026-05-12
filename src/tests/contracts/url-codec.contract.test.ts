@@ -270,21 +270,20 @@ const MATERIAL_URL_ROUNDTRIP = {
 } satisfies Record<"builtin" | "custom", string>;
 
 describe("URL codec contract — material discriminated-union round-trip", () => {
-  it("material round-trip: builtin → 276", () => {
+  it.each(Object.entries(MATERIAL_URL_ROUNDTRIP))("material round-trip: %s", (kind, material) => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&qfocus=both",
+      `urlv=1&particle=1&material=${material}&program=auto&energies=100&eunit=MeV&mode=advanced&qfocus=both` +
+        (kind === "custom"
+          ? "&mat_name=Custom%20Material&mat_density=1.5&mat_elements=6:2,8:1"
+          : ""),
     );
     const state = decodeCalculatorUrl(params);
-    expect(state.materialId).toBe(276);
-  });
-
-  it("material round-trip: custom → null (with valid custom compound fields)", () => {
-    const params = new URLSearchParams(
-      "urlv=1&particle=1&material=custom&program=auto&energies=100&eunit=MeV&mode=advanced&qfocus=both&mat_name=Custom%20Material&mat_density=1.5&mat_elements=6:2,8:1",
-    );
-    const state = decodeCalculatorUrl(params);
-    // "custom" with valid fields decodes to materialId=null (custom compound mode)
-    expect(state.materialId).toBeNull();
-    expect(state.materialIsCustom).toBe(true);
+    if (kind === "custom") {
+      expect(state.materialId).toBeNull();
+      expect(state.materialIsCustom).toBe(true);
+    } else {
+      expect(state.materialId).toBe(276);
+      expect(state.materialIsCustom).toBeFalsy();
+    }
   });
 });

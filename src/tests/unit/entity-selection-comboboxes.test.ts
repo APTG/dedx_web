@@ -298,9 +298,7 @@ describe("EntitySelectionComboboxes", () => {
     const electronMatrix = buildCompatibilityMatrix(electronService as any);
     const electronState = createEntitySelectionState(electronMatrix);
 
-    const { container } = render(EntitySelectionComboboxes, {
-      props: { selectionState: electronState },
-    });
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -452,9 +450,7 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, {
-        props: { selectionState: electronState },
-      });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -478,9 +474,7 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, {
-        props: { selectionState: electronState },
-      });
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;

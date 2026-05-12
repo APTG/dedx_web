@@ -93,9 +93,10 @@ test.describe("Inverse Lookups — Range Tab", () => {
     expect(url).toContain("iunit=mm");
 
     await page.reload();
-    await page.waitForFunction(() => window.location.search.includes("iunit=mm"), {
-      timeout: 10000,
-    });
+    await page.waitForFunction(
+      () => window.location.search.includes("iunit=mm"),
+      { timeout: 10000 },
+    );
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
     await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(

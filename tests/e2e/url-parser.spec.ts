@@ -85,9 +85,12 @@ test.describe("Stage 6.13 — URL parser", () => {
   test("custom compound URL round-trip: mat_* params restore compound @smoke", async ({
     page,
   }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip custom compound round-trip");
+
     const url =
-      "/calculator?urlv=1&particle=1&material=custom&mat_name=LiF-test" +
-      "&mat_density=2.64&mat_elements=3%3A1%2C9%3A1&mode=advanced&program=auto&energies=100";
+      "/calculator?urlv=1&particle=2&material=custom&mat_name=LiF-test" +
+      "&mat_density=2.64&mat_elements=3%3A1%2C9%3A1&mode=advanced&program=4&programs=4&energies=5";
 
     await page.goto(url);
     // Wait for the banner text to appear (more reliable than waiting for testid alone)
@@ -98,12 +101,46 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(
       page.locator('[data-testid="compound-from-url-banner"]'),
     ).toBeVisible({ timeout: 5000 });
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), {
+        timeout: 10000,
+      })
+      .toBeGreaterThan(0);
+  });
+
+  test("advanced URL can switch back to Basic mode @regression", async ({
+    page,
+  }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip advanced mode URL restore");
+
+    await page.goto(
+      "/calculator?urlv=1&particle=1&material=276&program=7&energies=12&eunit=MeV&mode=advanced&programs=7&qfocus=both",
+    );
+    await page.waitForFunction(() => window.location.search.includes("mode=advanced"), {
+      timeout: 10000,
+    });
+
+    await page.locator('button[aria-label="Switch to Basic mode"]').click();
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get("mode") !== "advanced",
+      { timeout: 5000 },
+    );
+
+    await expect(page.locator('button[aria-label="Switch to Basic mode"]')).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
   });
 
   // ── Scenario 5: duplicate params use last value @regression ───────────────
   test("duplicate particle param: last value (2) used @regression", async ({
     page,
   }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip canonical URL sync assertion");
+
     await page.goto(
       "/calculator?particle=1&particle=2&material=276&energies=100",
     );
@@ -120,6 +157,9 @@ test.describe("Stage 6.13 — URL parser", () => {
   test("unknown params dropped from canonical URL @regression", async ({
     page,
   }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip canonical URL sync assertion");
+
     await page.goto(
       "/calculator?urlv=1&particle=1&material=276&energies=100&foo=bar&unknown=xyz",
     );
