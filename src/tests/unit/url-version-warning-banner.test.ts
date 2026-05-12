@@ -23,6 +23,7 @@ test("Load defaults button present and fires callback", async () => {
   });
   await user.click(getByTestId("url-version-warning-load-defaults"));
   expect(fn).toHaveBeenCalledOnce();
+  expect(getByTestId("url-version-warning-load-defaults")).toHaveAttribute("type", "button");
 });
 
 test("Try migration button absent when onTryMigration not provided", () => {
@@ -36,5 +37,8 @@ test("Try migration button present when onTryMigration provided", () => {
   render(UrlVersionWarningBanner, {
     props: { version: 5, onLoadDefaults: vi.fn(), onTryMigration: vi.fn() },
   });
-  expect(screen.getByTestId("url-version-warning-try-migration")).toBeInTheDocument();
+  expect(screen.getByTestId("url-version-warning-try-migration")).toHaveAttribute(
+    "type",
+    "button",
+  );
 });

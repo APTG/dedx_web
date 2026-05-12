@@ -698,5 +698,21 @@ state object, not on the supporting object alone.
 
 ---
 
+## Entry 30 — Parse `urlv` as a strict positive integer token
+
+**Symptom:** `urlv=1abc` was accepted as version 1 because the page used
+`parseInt(...)` before calling `negotiateVersion()`, so malformed URLs could
+silently bypass the version-mismatch banner.
+
+**Root cause:** JavaScript prefix parsers are permissive and stop at the first
+invalid character. The URL grammar requires `urlv` to be a positive integer
+token, and malformed/non-positive values must be treated as unsupported.
+
+**Rule:** Pass the raw `urlv` token to a strict parser/negotiator. Validate with
+a full-token integer regex before `Number(...)`; never use `parseInt()` for
+URL version negotiation.
+
+---
+
 _Last updated: 2026-05-12. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

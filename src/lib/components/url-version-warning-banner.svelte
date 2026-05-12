@@ -1,6 +1,6 @@
 <script lang="ts">
   interface Props {
-    version: number;
+    version: number | string;
     onLoadDefaults: () => void;
     onTryMigration?: (() => void) | undefined;
   }
@@ -17,6 +17,7 @@
     settings may not load correctly.
   </span>
   <button
+    type="button"
     data-testid="url-version-warning-load-defaults"
     onclick={onLoadDefaults}
     class="rounded bg-yellow-200 px-3 py-1 font-medium hover:bg-yellow-300"
@@ -25,6 +26,7 @@
   </button>
   {#if onTryMigration}
     <button
+      type="button"
       data-testid="url-version-warning-try-migration"
       onclick={onTryMigration}
       class="rounded bg-yellow-100 px-3 py-1 font-medium hover:bg-yellow-200"

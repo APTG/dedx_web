@@ -35,6 +35,13 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(
       page.locator('[data-testid="url-version-warning-load-defaults"]'),
     ).toBeVisible();
+    await page.waitForFunction(
+      () => {
+        const cell = document.querySelector('[data-testid="stp-cell-0"]');
+        return !cell || Number.isNaN(parseFloat(cell.textContent ?? ""));
+      },
+      { timeout: 2000 },
+    );
   });
 
   // ── Scenario 1b: load-defaults restores calculation (WASM needed) @smoke ──
@@ -60,6 +67,15 @@ test.describe("Stage 6.13 — URL parser", () => {
   });
 
   // ── Scenario 2: urlv=1 (current) — no warning @regression ────────────────
+  test("malformed urlv: version-mismatch banner visible @regression", async ({
+    page,
+  }) => {
+    await page.goto("/calculator?urlv=1abc&particle=1&material=276&energies=100");
+    const banner = page.locator('[data-testid="url-version-warning"]');
+    await expect(banner).toBeVisible({ timeout: 5000 });
+    await expect(banner).toContainText("1abc");
+  });
+
   test("urlv=1: no warning banner shown @regression", async ({ page }) => {
     await page.goto(
       "/calculator?urlv=1&particle=1&material=276&energies=100&eunit=MeV",

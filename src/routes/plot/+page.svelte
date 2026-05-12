@@ -40,7 +40,7 @@
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
   let materialIsGas = $state<boolean | undefined>(undefined);
-  let urlVersionMismatch = $state<{ version: number } | null>(null);
+  let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let advancedModeInitializedFromUrl = $state(false);
 
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
@@ -169,7 +169,7 @@
   $effect(() => {
     if (!browser || urlVersionChecked) return;
     const params = new URLSearchParams(window.location.search);
-    const urlvRaw = parseInt(params.get("urlv") ?? "1", 10);
+    const urlvRaw = params.get("urlv");
     const negotiationResult = negotiateVersion(urlvRaw);
     if (negotiationResult.status === "mismatch") {
       urlVersionMismatch = { version: negotiationResult.version };

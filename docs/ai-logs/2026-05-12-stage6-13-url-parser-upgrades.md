@@ -2,7 +2,7 @@
 
 **Date:** 2026-05-12
 **Stage:** 6.13 (URL version negotiation, duplicate-param resolution, unknown-param drop)
-**Model:** Qwen3.5-397B-A17B-FP8 via opencode
+**Model:** (Qwen3.5-397B-A17B-FP8 via opencode)
 **Branch:** `qwen/stage6-13-url-parser`
 
 ## Summary
@@ -13,9 +13,9 @@ Implemented URL parser upgrades per spec revision v5: (1) urlv version negotiati
 
 ### Task 1: negotiateVersion() utility
 - Created `src/lib/utils/url-version.ts` with `CURRENT_URL_MAJOR=1`, `MIN_SUPPORTED_URL_MAJOR=1`
-- Implemented `negotiateVersion(urlv: string | null): VersionNegotiationResult` — returns `{ compatible: boolean, major: number, raw: string | null }`
-- Handles missing urlv (compatible), valid urlv=1 (compatible), urlv=999 (incompatible), malformed urlv (incompatible)
-- 4 unit tests in `src/tests/unit/url-version.test.ts`
+- Implemented `negotiateVersion(version: string | null | undefined): VersionNegotiationResult` — returns `{ status: "ok" }` or `{ status: "mismatch"; version: number | string }`
+- Handles missing urlv (compatible), valid urlv=1 (compatible), urlv=999 (incompatible), malformed urlv (incompatible with the raw token preserved)
+- 5 unit tests in `src/tests/unit/url-version.test.ts`
 
 ### Task 2: Duplicate-param + unknown-param resolution
 - Added `resolveLastWins(params: URLSearchParams): URLSearchParams` helper to `src/lib/utils/calculator-url.ts` and `src/lib/utils/plot-url.ts`
@@ -30,13 +30,13 @@ Implemented URL parser upgrades per spec revision v5: (1) urlv version negotiati
 - 4 component tests
 
 ### Task 4: Calculator page urlv wiring
-- Added `urlVersionMismatch` state and `urlInitialized` flag
+- Added `urlVersionMismatch`, `urlVersionChecked`, and `urlInitialized` state so negotiation stays separate from URL restore/write gating
 - Separate `$effect` for URL version negotiation that runs BEFORE WASM loads (critical for banner visibility even if WASM fails)
 - Moved URL init logic into `$effect` with `untrack()` for `replaceState` call (Entry 7 compliance)
 - Banner renders at lines 1068-1073
 
 ### Task 5: Plot page urlv wiring
-- Cross-page parity with Calculator: separate `$effect` for URL version check using `urlInitialized` flag
+- Cross-page parity with Calculator: separate `$effect` for URL version check using `urlVersionChecked`
 - Advanced mode URL init in separate `$effect` (no more mode-switch infinite loop risk)
 - Banner renders at lines 595-598
 
@@ -55,9 +55,9 @@ Implemented URL parser upgrades per spec revision v5: (1) urlv version negotiati
 
 1. **Separate $effect for URL version negotiation:** Required on both pages — must run immediately on page load, independent of WASM state, to show banner even if WASM fails to load.
 
-2. **urlInitialized flag prevents re-initialization:** Both pages use this flag to prevent URL init from re-running on state changes.
+2. **Separate negotiation and restore flags:** Both pages keep `urlVersionChecked` separate from `urlInitialized` so version negotiation cannot enable URL writes before initial URL restore has completed.
 
-3. **Scenario 4 simplified:** Only verifies banner visibility (not WASM calculation) because dynamic WASM import fails in test environment (file exists but fetch fails).
+3. **Scenario 4 exercises WASM when available:** The custom-compound round-trip E2E skips only when local WASM binaries are absent; when present it asserts a positive stopping-power cell.
 
 4. **resolveLastWins uses set():** `URLSearchParams.set()` automatically implements last-wins semantics — each subsequent call with same key overwrites previous value.
 
@@ -99,3 +99,13 @@ Applied PR #457 review-thread fixes:
 - Used `MATERIAL_URL_ROUNDTRIP` to drive the material round-trip contract test.
 - Added a regression E2E for loading the requested advanced URL and switching
   back to Basic mode.
+
+## Second review follow-up (GPT-5.5 via GitHub Copilot coding agent)
+
+Applied the follow-up comments from PR #457 review thread 4272107104:
+
+- Switched `urlv` handling to strict full-token integer validation, preserving malformed tokens such as `1abc` in the mismatch result.
+- Split Calculator `urlVersionChecked` from `urlInitialized`, matching the Plot gating pattern from Entry 29.
+- Added `type="button"` to both warning-banner actions and component assertions for the attributes.
+- Added Scenario 1a E2E coverage that the stopping-power cell is not numeric while the mismatch banner is visible.
+- Corrected this log's model attribution and `negotiateVersion()` API narrative to match the implementation.
