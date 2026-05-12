@@ -536,7 +536,7 @@ As a <role>, I want to <action> so that <benefit>.
 - **Input:** Individual spec files in `docs/04-feature-specs/`.
 - **Status:** Sub-stages 6.1–6.9 are ✅ complete (Calculator core, live calc,
   multi-program comparison, Plot page, shareable URLs, basic-mode export,
-  Build Info badge, Advanced Options, and Inverse Lookups). Sub-stages 6.10–6.13 remain ⏳.
+  Build Info badge, Advanced Options, and Inverse Lookups). Sub-stages 6.10–6.12 are ✅ complete; 6.13 remains ⏳.
 
 #### Sub-stages
 
@@ -553,10 +553,10 @@ As a <role>, I want to <action> so that <benefit>.
 | 6.9  | Inverse Lookups (Range + Inverse STP tabs)                          | ✅     | [`inverse-lookups.md`](04-feature-specs/inverse-lookups.md) Final v6             | [#439](https://github.com/APTG/dedx_web/pull/439). Advanced-mode only; tab-content guards also fixed to hide inverse content when switching back to basic mode. 11/11 E2E pass. Dep: 6.8 ✅.                                               |
 | 6.10 | Custom Compounds                                                    | ✅     | [`custom-compounds.md`](04-feature-specs/custom-compounds.md) Final v3           | Compound editor (formula + weight-fraction), localStorage, `calculateCustomCompound()`. URL: `material=custom` + `mat_*`.                                                                                                                   |
 | 6.11 | Export: advanced mode additions                                     | ✅     | [`export.md`](04-feature-specs/export.md) Final v6 §§1.1, 4.1, 6.1               | CSV configuration modal (Calculator + Plot, advanced only) with separator + line-endings + `localStorage` persistence; PNG export (Plot, advanced only); Calculator advanced PDF metadata block (PARTICLE/MATERIAL/PROGRAMS/SETTINGS/SYSTEM/BUILD). Dep: 6.8 ✅.                                                  |
-| 6.12 | Multi-program polish                                                | ⏳     | [`multi-program.md`](04-feature-specs/multi-program.md) Final v3 §§5, 6          | Drag-and-drop column reorder (STP + CSDA groups) + delta/% tooltip. Deferred from 6.3.                                                                                                                                                      |
+| 6.12 | Multi-program polish                                                | ✅     | [`multi-program.md`](04-feature-specs/multi-program.md) Final v3 §§5, 6          | [#452](https://github.com/APTG/dedx_web/pull/452). Drag-and-drop column reorder (STP + CSDA groups), keyboard Alt+Arrow reorder, column visibility dropdown, and delta/% tooltip. Deferred from 6.3.                                     |
 | 6.13 | Formal URL parser (full ABNF conformance)                           | ⏳     | [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) Final v6 | `urlv` negotiation + warning banner; `material=custom` + `mat_*` round-trip (step 9). Dep: 6.10.                                                                                                                                            |
 
-**Recommended implementation order for remaining work:** 6.12 → 6.13.
+**Recommended implementation order for remaining work:** 6.13.
 
 > **Deferred to Stage 7:** External data (`external-data.md`, Zarr v3 `.webdedx` format) and its
 > URL grammar (`extdata=` param, `ext-ref` entity grammar in `shareable-urls-formal.md`) are

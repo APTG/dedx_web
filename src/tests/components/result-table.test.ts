@@ -22,7 +22,7 @@ describe("ResultTable", () => {
   });
 
   it("renders 5 column headers including the master unit in col-1 header", () => {
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     expect(screen.getByText(/Energy \(MeV\)/)).toBeInTheDocument();
     expect(screen.getByText(/→ MeV\/nucl/)).toBeInTheDocument();
@@ -33,7 +33,7 @@ describe("ResultTable", () => {
 
   it('shows "Select a particle and material to calculate" when entity selection is incomplete', () => {
     entitySelection.clearParticle();
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     expect(screen.getByText(/Select a particle and material to calculate/)).toBeInTheDocument();
   });
@@ -46,7 +46,7 @@ describe("ResultTable", () => {
     // Force a tick for reactivity
     await Promise.resolve();
 
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     // Mock returns Math.log(100 + 1) ≈ 4.615, converted to keV/µm with density 1.0 = 0.4615
     expect(screen.getAllByText(/0\.4615/)[0]).toBeInTheDocument();
@@ -60,7 +60,7 @@ describe("ResultTable", () => {
 
     await Promise.resolve();
 
-    render(ResultTable, { props: { state: freshCalcState, entitySelection } });
+    render(ResultTable, { props: { calcState: freshCalcState, entitySelection } });
 
     // Mock returns Math.pow(100, 1.5) = 1000, converted to cm = 1000 / 1.0 = 1000 cm = 10 m
     const ranges = screen.getAllByText(/10\s*m/);
@@ -69,7 +69,7 @@ describe("ResultTable", () => {
 
   it("shows red styling on input when row is invalid", () => {
     calcState.updateRowText(0, "abc");
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     const input = screen.getByDisplayValue("abc");
     expect(input).toHaveClass("border-red-500");
@@ -84,13 +84,13 @@ describe("ResultTable", () => {
     // Force per-row mode by typing a unit suffix
     calcState.updateRowText(0, "100 MeV/nucl");
 
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     expect(screen.getByRole("combobox")).toBeInTheDocument();
   });
 
   it("shows plain text in Unit column in master mode", () => {
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     // Should NOT have a select dropdown in master mode for proton
     // Use the first table found since we're testing the first rendered component
@@ -104,7 +104,7 @@ describe("ResultTable", () => {
     freshCalcState.updateRowText(0, "abc");
     freshCalcState.handleBlur(0);
 
-    render(ResultTable, { props: { state: freshCalcState, entitySelection } });
+    render(ResultTable, { props: { calcState: freshCalcState, entitySelection } });
 
     const summary = screen.getAllByText(/excluded/)[0]!;
     expect(summary).toBeInTheDocument();
@@ -118,7 +118,7 @@ describe("ResultTable", () => {
 
     calcState.updateRowText(0, "120 MeV");
 
-    render(ResultTable, { props: { state: calcState, entitySelection } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection } });
 
     const select = screen.getByRole("combobox") as HTMLSelectElement;
     await fireEvent.change(select, { target: { value: "MeV/nucl" } });
@@ -136,7 +136,7 @@ describe("ResultTable", () => {
     fresh.updateRowText(1, "0"); // out of range
     fresh.handleBlur(1);
 
-    render(ResultTable, { props: { state: fresh, entitySelection } });
+    render(ResultTable, { props: { calcState: fresh, entitySelection } });
 
     const summary = screen.getAllByText(/excluded/)[0]!;
     expect(summary).toBeInTheDocument();
@@ -168,7 +168,7 @@ describe("ResultTable", () => {
     calcState.flushCalculation();
     await Promise.resolve();
 
-    render(ResultTable, { props: { state: calcState, entitySelection, columns: customColumns } });
+    render(ResultTable, { props: { calcState: calcState, entitySelection, columns: customColumns } });
 
     expect(screen.getByText(/Energy \(MeV\)/)).toBeInTheDocument();
     expect(screen.getByText(/Stopping Power \(keV\/µm\)/)).toBeInTheDocument();

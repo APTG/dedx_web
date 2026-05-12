@@ -1,4 +1,36 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
+
+const ICRU49_ID = 7;
+const ICRU73_OLD_ID = 5;
+const PSTAR_ID = 2;
+const MSTAR_ID = 4;
+
+async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
+  await page.goto(`/calculator?${query}&mode=advanced&qfocus=both`);
+  await page.waitForFunction(
+    () => new URLSearchParams(window.location.search).get("mode") === "advanced",
+    {
+      timeout: 15000,
+    },
+  );
+  await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible();
+}
+
+async function selectComparisonProgram(page: Page, programName: RegExp, programId: number) {
+  await page.getByRole("button", { name: /Programs/ }).click();
+  const listbox = page.getByRole("listbox", { name: "Select comparison programs" });
+  await listbox.getByRole("option", { name: programName }).click();
+  await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(listbox).toBeHidden();
+}
+
+async function stpHeaderOrder(page: Page): Promise<string[]> {
+  return page.locator("thead tr:nth-child(2) th").evaluateAll((headers) => {
+    const half = headers.length / 2;
+    return headers.slice(0, half).map((header) => header.textContent?.trim() ?? "");
+  });
+}
 
 /**
  * E2E tests for Calculator Advanced Mode (Multi-Program Comparison).
@@ -85,5 +117,86 @@ test.describe("Advanced mode", () => {
       timeout: 5000,
     });
     expect(page.url()).toContain("mode=advanced");
+  });
+
+  test("Column drag-and-drop reordering", async ({ page }) => {
+    await gotoAdvanced(page);
+    await selectComparisonProgram(page, /PSTAR/, PSTAR_ID);
+
+    const stpGroup = page.getByRole("columnheader", { name: /Stopping Power/ });
+    await expect(stpGroup).toBeVisible();
+
+    const defaultHeader = page
+      .locator(`th[data-program-id="${ICRU49_ID}"]:has-text("ICRU 49")`)
+      .first();
+    const pstarHeader = page.locator(`th[data-program-id="${PSTAR_ID}"]:has-text("PSTAR")`).first();
+    await expect(defaultHeader).toBeVisible();
+    await expect(pstarHeader).toBeVisible();
+
+    const initialOrder = await stpHeaderOrder(page);
+    await pstarHeader.dragTo(defaultHeader, {
+      sourcePosition: { x: 50, y: 10 },
+      targetPosition: { x: 10, y: 10 },
+    });
+
+    await expect.poll(() => stpHeaderOrder(page)).toEqual(initialOrder);
+  });
+
+  test("Keyboard column reordering with Alt+Arrow", async ({ page }) => {
+    await gotoAdvanced(page, "particle=6&material=276");
+    await selectComparisonProgram(page, /ICRU 73 \(old\)/, ICRU73_OLD_ID);
+    await selectComparisonProgram(page, /MSTAR/, MSTAR_ID);
+
+    const oldIcruHeader = page
+      .locator(`th[data-program-id="${ICRU73_OLD_ID}"]:has-text("ICRU 73 (old)")`)
+      .first();
+    await oldIcruHeader.focus();
+
+    await page.keyboard.press("Alt+ArrowRight");
+
+    await expect.poll(() => stpHeaderOrder(page)).toEqual(["ICRU 73 ◆", "MSTAR", "ICRU 73 (old)"]);
+    await expect(page.locator('[role="status"][aria-atomic="true"]')).toHaveText(
+      "ICRU 73 (old) moved to position 3 of 3.",
+    );
+  });
+
+  test("Default program column cannot be dragged", async ({ page }) => {
+    await gotoAdvanced(page);
+    await selectComparisonProgram(page, /PSTAR/, PSTAR_ID);
+
+    const defaultHeader = page
+      .locator(`th[data-program-id="${ICRU49_ID}"]:has-text("ICRU 49")`)
+      .first();
+    await expect(defaultHeader).toHaveAttribute("draggable", "false");
+    await expect(defaultHeader).toHaveAttribute("aria-disabled", "true");
+
+    const pstarHeader = page.locator(`th[data-program-id="${PSTAR_ID}"]:has-text("PSTAR")`).first();
+    await expect(pstarHeader).toHaveAttribute("draggable", "true");
+  });
+
+  test("Column visibility toggle - hide/show program", async ({ page }) => {
+    await gotoAdvanced(page, "particle=6&material=276");
+    await selectComparisonProgram(page, /MSTAR/, MSTAR_ID);
+
+    // Find and click the "Columns..." button
+    const columnsButton = page.getByRole("button", { name: /Columns/ });
+    await expect(columnsButton).toBeVisible();
+    await columnsButton.click();
+
+    // MSTAR checkbox should be visible in the dropdown
+    const mstarCheckbox = page.getByRole("checkbox", { name: /MSTAR/ });
+    await expect(mstarCheckbox).toBeChecked();
+
+    // Uncheck MSTAR to hide it
+    await mstarCheckbox.click();
+
+    const mstarHeaders = page.locator(`th[data-program-id="${MSTAR_ID}"]`);
+    await expect(mstarHeaders).toHaveCount(0);
+
+    // URL should contain hidden_programs parameter
+    await page.waitForFunction(
+      () => new URLSearchParams(window.location.search).get("hidden_programs") === "4",
+      { timeout: 5000 },
+    );
   });
 });

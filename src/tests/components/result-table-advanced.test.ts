@@ -67,7 +67,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -79,8 +79,14 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     expect(screen.getByText(/CSDA Range/)).toBeInTheDocument();
 
     // Both program columns should be present in sub-headers (twice each - once in STP group, once in CSDA group)
-    expect(screen.queryAllByText(/PSTAR/)).toHaveLength(2);
-    expect(screen.queryAllByText(/MSTAR/)).toHaveLength(2);
+    // Query only within thead to avoid matching delta tooltip text in tbody
+    const thead = document.querySelector("thead");
+    const thElements = thead?.querySelectorAll("th") || [];
+    const thTexts = Array.from(thElements).map((th) => th.textContent);
+    // Filter to only count th elements in the sub-header row (not group headers)
+    const programHeaders = thTexts.filter((t) => t?.includes("PSTAR") || t?.includes("MSTAR"));
+    expect(programHeaders.filter((t) => t?.includes("PSTAR"))).toHaveLength(2);
+    expect(programHeaders.filter((t) => t?.includes("MSTAR"))).toHaveLength(2);
   });
 
   it("shows 4 result data cells per row in advanced mode (2 stp + 2 csda) with 2 programs", async () => {
@@ -92,7 +98,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -123,7 +129,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -148,7 +154,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -169,7 +175,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -190,7 +196,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -220,7 +226,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
 
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
         multiProgramState: multiProgState,
         comparisonResults,
@@ -253,7 +259,7 @@ describe("ResultTable basic mode (no multi-program props)", () => {
   it("renders standard 5-column layout without group headers", () => {
     render(ResultTable, {
       props: {
-        state: calcState,
+        calcState: calcState,
         entitySelection,
       },
     });
