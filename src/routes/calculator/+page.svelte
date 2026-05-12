@@ -48,11 +48,15 @@
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
   import type { InverseCsdaResult } from "$lib/wasm/types";
+  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import { goto } from "$app/navigation";
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlInitialized = $state(false);
+  let urlVersionMismatch = $state<{ version: number } | null>(null);
   let multiProgState = $state<MultiProgramState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
   let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
@@ -101,6 +105,12 @@
     sharedUrlWarning = null;
   }
 
+  function handleLoadDefaults() {
+    // Navigate to /calculator without params to clear the mismatch URL
+    goto("/calculator", { replaceState: true });
+    urlVersionMismatch = null;
+  }
+
   $effect(() => {
     // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
     // async getService() callback runs. This ensures the tabs render correctly when
@@ -112,6 +122,15 @@
     }
 
     if (wasmReady.value && !entityState && !calcState) {
+      // Negotiate URL version BEFORE any state decode
+      const urlvRaw = parseInt(page.url.searchParams.get("urlv") ?? "1", 10);
+      const negotiationResult = negotiateVersion(urlvRaw);
+      if (negotiationResult.status === "mismatch") {
+        urlVersionMismatch = { version: negotiationResult.version };
+      } else {
+        urlVersionMismatch = null;
+      }
+
       getService().then((service) => {
         const matrix = buildCompatibilityMatrix(service);
         entityState = createEntitySelectionState(matrix);
@@ -242,6 +261,8 @@
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
+    // Block calculation while URL version mismatch is pending
+    if (urlVersionMismatch !== null) return;
     if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
     calcState.triggerCalculation();
   });
@@ -658,6 +679,8 @@
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
 
+    // Block calculation while URL version mismatch is pending
+    if (urlVersionMismatch !== null) return;
     if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
@@ -1041,6 +1064,13 @@
   <p class="text-muted-foreground">
     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
   </p>
+
+  {#if urlVersionMismatch}
+    <UrlVersionWarningBanner
+      version={urlVersionMismatch.version}
+      onLoadDefaults={handleLoadDefaults}
+    />
+  {/if}
 
   {#if wasmError.value}
     <div
