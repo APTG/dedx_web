@@ -19,6 +19,18 @@ const TOKEN_TO_STP: Record<string, StpUnit> = Object.fromEntries(
 const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
 const STRICT_INTEGER_RE = /^\d+$/;
 
+/**
+ * Resolve duplicate URL params using "last wins" semantics per §3.2.
+ * Iterates all params and uses set() which overwrites earlier values.
+ */
+function resolveLastWins(params: URLSearchParams): URLSearchParams {
+  const out = new URLSearchParams();
+  for (const [key, value] of params) {
+    out.set(key, value);
+  }
+  return out;
+}
+
 function parseStrictFiniteNumber(raw: string | null): number | undefined {
   if (raw === null) return undefined;
   const trimmed = raw.trim();
@@ -160,7 +172,10 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   return params;
 }
 
-export function decodePlotUrl(params: URLSearchParams): PlotUrlDecoded {
+export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
+  // Resolve duplicate params using "last wins" semantics per §3.2
+  const params = resolveLastWins(rawParams);
+
   const parseFiniteInt = (raw: string | null): number | null => {
     if (raw === null) return null;
     const n = Number(raw);

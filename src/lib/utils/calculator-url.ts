@@ -44,6 +44,18 @@ const VALID_ROW_UNITS: ReadonlySet<EnergySuffixUnit> = new Set<EnergySuffixUnit>
 const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
 const STRICT_INTEGER_RE = /^\d+$/;
 
+/**
+ * Resolve duplicate URL params using "last wins" semantics per §3.2.
+ * Iterates all params and uses set() which overwrites earlier values.
+ */
+function resolveLastWins(params: URLSearchParams): URLSearchParams {
+  const out = new URLSearchParams();
+  for (const [key, value] of params) {
+    out.set(key, value);
+  }
+  return out;
+}
+
 function parseStrictFiniteNumber(raw: string | null): number | undefined {
   if (raw === null) return undefined;
   const trimmed = raw.trim();
@@ -392,7 +404,10 @@ export function calculatorUrlQueryString(state: CalculatorUrlState): string {
   return params.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
 }
 
-export function decodeCalculatorUrl(params: URLSearchParams): CalculatorUrlState {
+export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlState {
+  // Resolve duplicate params using "last wins" semantics per §3.2
+  const params = resolveLastWins(rawParams);
+
   const parseId = (v: string | null): number | null => {
     if (!v) return null;
     const n = parseInt(v, 10);
