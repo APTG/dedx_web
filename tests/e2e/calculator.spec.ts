@@ -6,20 +6,19 @@ test.describe("Calculator Page - Smoke Test", () => {
     await expect(page.getByRole("heading", { name: "Calculator" })).toBeVisible();
   });
 
-  test("energy input component renders after WASM loads", async ({ page }) => {
-    test.skip(true, "SKIP: WASM loading timeout in E2E environment - tracked separately");
-
+  test("energy input and controls render after WASM loads @smoke", async ({ page }) => {
+    test.setTimeout(60000);
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 30000 });
-    await page.waitForSelector('button:has-text("Add row")', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
-    const energyInputs = page.locator('input[aria-label*="Energy value"]');
-    await expect(energyInputs).toHaveCount(3);
+    await expect(page.locator('[data-testid="energy-input-0"]')).toBeVisible();
+    await expect(page.getByRole("button", { name: /\+ Add row/i })).toBeVisible();
+    await expect(page.locator('[aria-label="Particle"]')).toBeVisible();
   });
 });
 
 test.describe("WASM calculation produces real values", () => {
-  test("100 MeV proton in Water (PSTAR) shows non-zero STP and range", async ({ page }) => {
+  test("100 MeV proton in Water (PSTAR) shows non-zero STP and range @smoke", async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
