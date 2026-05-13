@@ -714,5 +714,23 @@ URL version negotiation.
 
 ---
 
-_Last updated: 2026-05-12. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 31 — Combobox popup labels must not duplicate trigger labels
+
+**Symptom:** Adding `aria-labelledby={labelId}` to force-mounted Bits UI
+combobox listboxes fixed axe's missing-name violation, but unit tests using
+`getByLabelText("Particle")` / `"Program"` started failing because both the
+trigger button and hidden listbox had the same accessible name.
+
+**Root cause:** Force-mounted popups remain in the test DOM even when closed.
+Giving the popup the exact same accessible name as the trigger creates
+ambiguous label queries and can also confuse selector-based tests.
+
+**Rule:** Label force-mounted combobox popups with a distinct name such as
+`"${label} options"` and label nested scroll regions with an even more specific
+name such as `"${label} options scroll area"`. Keep the trigger's accessible
+name as the visible field label.
+
+---
+
+_Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

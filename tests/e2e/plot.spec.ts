@@ -3,7 +3,7 @@ import { test, expect } from "@playwright/test";
 const WASM_TIMEOUT = 20000;
 
 test.describe("Plot page", () => {
-  test("plot page loads", async ({ page }) => {
+  test("plot page loads @smoke", async ({ page }) => {
     await page.goto("/plot");
     await expect(page).toHaveURL(/\/plot/);
     await expect(page.getByRole("heading", { name: "Plot" })).toBeVisible();
