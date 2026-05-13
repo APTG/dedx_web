@@ -219,6 +219,11 @@
     hist.fMaximum = opts.axisRanges.yMax;
     hist.fXaxis.InvertBit(JSROOT_any.BIT(12));
     hist.fYaxis.InvertBit(JSROOT_any.BIT(12));
+    // 14 pt-equivalent font size (NDC fraction of pad height; 0.04 ≈ 14 pt at ~500 px)
+    hist.fXaxis.fLabelSize = 0.04;
+    hist.fXaxis.fTitleSize = 0.04;
+    hist.fYaxis.fLabelSize = 0.04;
+    hist.fYaxis.fTitleSize = 0.04;
     hist.fTitle = "";
     mg.fHistogram = hist;
 

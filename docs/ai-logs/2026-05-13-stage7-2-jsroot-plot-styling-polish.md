@@ -1,0 +1,75 @@
+# 2026-05-13 — Stage 7.2 JSROOT Plot Styling Polish
+
+## Session Narrative
+
+### Prompt 1: Analyse task 7.2 from the redesign plan — is there anything left to do or can we mark it as complete?
+
+**AI response**: Launched two parallel Explore agents — one to read the redesign plan and `plot.md` spec, one to audit the live JSROOT implementation. Then read `jsroot-plot.svelte`, `plot-utils.ts`, the JSROOT Integration section of `plot.md`, and the progress files directly.
+
+Findings:
+
+The redesign plan lists task 7.2 as ⏳ "not started," but the audit revealed that the bulk of the "physics-grade defaults" had been implemented in earlier stages:
+
+| Requirement | Status found |
+|---|---|
+| Log-log axes as default (`xLog: true`, `yLog: true`) | ✅ Done (earlier stages) |
+| Axis labels with units | ✅ Done — "Energy [MeV/nucl]", "Stopping Power [{unit}]" |
+| Line width 2 committed / width 1 preview | ✅ Done |
+| Color palette (9 colors, exact hex values) | ✅ Done |
+| Grid + tick draw options (`gridx;gridy;tickx;ticky`) | ✅ Done |
+| Wheel zoom disabled | ✅ Done — `JSROOT.settings.ZoomWheel = false` |
+| Touch zoom disabled on mobile/tablet | ✅ Done |
+| No JSROOT canvas legend — series list as legend | ✅ Done |
+| **14 pt fonts** | ❌ Missing — no `fLabelSize`/`fTitleSize` set anywhere |
+
+Additionally, the redesign plan task note contained a contradiction: it said "legend top-right," but `plot.md`'s acceptance criteria explicitly state "No JSROOT-rendered legend on the canvas (the series list below the canvas serves as the legend)." The implementation correctly follows the spec (no canvas legend). The redesign plan note was stale.
+
+Plan produced:
+1. Add `fLabelSize = fTitleSize = 0.04` to `buildMultigraph()` in `jsroot-plot.svelte`
+2. Update `plot.md` spec: add font-size lines to the JSROOT Integration code block and a new AC item
+3. Correct the "legend top-right" contradiction in the redesign plan; mark 7.2 ✅
+4. Create progress record `docs/progress/stage-7.2.md`
+5. Verify with `pnpm test`
+
+### Prompt 2: Create a branch for this task and commit your work. Add detailed AI log according to needed specification in this project.
+
+**AI response**: Created branch `feature/7.2-jsroot-plot-styling-polish`, wrote this AI log, updated `docs/ai-logs/README.md`, and committed all changes.
+
+---
+
+## Tasks
+
+### Stage 7.2 — Implement explicit 14 pt-equivalent font sizes
+
+- **Status**: completed
+- **Stage**: 7.2 — JSROOT plot styling polish
+- **Files changed**:
+  - `src/lib/components/jsroot-plot.svelte`
+- **Decision**: Used `0.04` as the NDC font-size value for both label and title sizes on both axes. In ROOT/JSROOT, font sizes are specified as a fraction of the pad height. `0.04 × 500 px × (1 pt / 1.333 px) ≈ 15 pt` at a ~500 px canvas (the midpoint of the `min(60vh, 600px)` range). This matches the standard ROOT physics-plot convention and approximates the "14 pt" target in the redesign plan.
+- **Issue**: JSROOT NDC font sizes are not pixel-exact across all canvas heights. At the min (400 px) the effective size is ~12 pt; at max (600 px) ~18 pt. This is inherent to ROOT's NDC font model and cannot be solved without a resize observer that redraws on every size change — which would be disproportionate complexity for a cosmetic requirement. `0.04` is the accepted physics-community convention.
+
+### Stage 7.2 — Update plot.md spec with font-size requirement
+
+- **Status**: completed
+- **Stage**: 7.2
+- **Files changed**:
+  - `docs/04-feature-specs/plot.md`
+- **Decision**: Added the font-size lines directly to the existing `buildMultigraph()` code block in the JSROOT Integration section, so spec and implementation stay in sync as a single source of truth. Added one AC item under "JSROOT Canvas": `fLabelSize = fTitleSize = 0.04 NDC`.
+
+### Stage 7.2 — Resolve redesign plan contradiction and mark complete
+
+- **Status**: completed
+- **Stage**: 7.2
+- **Files changed**:
+  - `docs/00-redesign-plan.md`
+- **Decision**: The redesign plan note "legend top-right" conflicted with `plot.md`'s AC. Since `plot.md` is the authoritative spec, the redesign plan note was updated to reflect the correct behavior (no canvas legend, series list serves as legend). Status changed ⏳ → ✅.
+
+### Stage 7.2 — Progress record and changelog
+
+- **Status**: completed
+- **Stage**: 7.2
+- **Files changed**:
+  - `docs/progress/stage-7.2.md` (new)
+  - `docs/ai-logs/2026-05-13-stage7-2-jsroot-plot-styling-polish.md` (this file, new)
+  - `docs/ai-logs/README.md`
+  - `CHANGELOG-AI.md`
