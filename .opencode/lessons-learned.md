@@ -765,5 +765,22 @@ names shard-specific to avoid upload collisions.
 
 ---
 
+## Entry 34 — Pass Playwright options through pnpm scripts without a separator
+
+**Symptom:** CI ran `pnpm test:e2e -- --shard=1/2`, which expanded to
+`playwright test -- --shard=1/2` and failed immediately with
+`Error: No tests found.`
+
+**Root cause:** For Playwright, arguments after the literal `--` separator are
+treated as positional test-file filters, so `--shard=1/2` was no longer parsed
+as a Playwright option.
+
+**Rule:** When invoking package scripts that wrap Playwright, pass Playwright
+options directly after the script name, for example
+`pnpm test:e2e --shard=1/2`. Validate CI command changes with the exact script
+form plus `--list`, not only with `pnpm exec playwright ...`.
+
+---
+
 _Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
