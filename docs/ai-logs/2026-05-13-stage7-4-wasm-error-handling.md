@@ -54,6 +54,37 @@ Four new unit tests using `OutOfRangeLibdedxService` (extends `LibdedxServiceImp
 LibdedxError(101) for energies ≥ 1e5 MeV) cover: OOR status display, no-freeze scenario,
 WASM call count (cache hit = 0 extra calls), and mixed valid+OOR rows. Total tests: 1080.
 
+### Prompt 4: Fix app freeze on first load in advanced mode with 1 TeV
+
+**Bug**: Loading `http://localhost:5173/calculator?urlv=1&particle=1&material=276&program=7&energies=1:TeV&eunit=MeV&mode=advanced&programs=7` immediately froze the browser. Screenshot showed "This page is slowing down Firefox" and a "Calculation error: Calculation failed" error panel.
+
+**Root cause**: In advanced mode `triggerCalculation()` is never called (guarded by
+`!isAdvancedMode.value`), so the OOR cache is never populated. The multi-program calc
+effect (line ~681 in `+page.svelte`) reads `calcState.rows`, sees row 0 as `status: "valid"`
+(URL-loaded energy is parsed but not yet validated against WASM limits), captures 1e6 MeV,
+and fires `service.calculateMulti([1e6])` after 300 ms. For program 7 (ICRU 49),
+`_dedx_get_stp_table` with 1 TeV **hangs indefinitely** rather than returning error code 101.
+The OOR cache fix from Prompt 3 didn't help because the multi-program path bypasses
+`performCalculation` entirely.
+
+**AI response**: Added a range pre-check in two places:
+
+1. **`calculator.svelte.ts` `performCalculation()`**: After the OOR-cache classification,
+   and before the WASM batch call, use `service.getMinEnergy` / `service.getMaxEnergy`
+   (safe C table-lookups that do not iterate) to classify any remaining uncached energies
+   as in-range or OOR. OOR ones are added to `outOfRangeRowIds` and `outOfRangeCache`
+   immediately; only in-range energies reach the WASM call. If all energies are OOR after
+   this check the function returns early with no WASM involvement.
+
+2. **`+page.svelte` multi-program timer callback**: Before calling `service.calculateMulti()`,
+   check that every energy is within the tabulated range for every selected program. If any
+   is out of range, return early without calling WASM at all. This is the direct guard that
+   prevents the advanced-mode hang.
+
+`OutOfRangeLibdedxService` in tests was updated to override `getMaxEnergy()` to return `1e10`
+so the existing four OOR tests still exercise the LibdedxError(101) per-row retry path rather
+than the new range pre-check path. All 1080 tests pass.
+
 ## Tasks
 
 ### Stage 7.4: WASM error handling
@@ -72,4 +103,7 @@ WASM call count (cache hit = 0 extra calls), and mixed valid+OOR rows. Total tes
   cache prevents the C library hang by ensuring the same out-of-range energy is never sent
   to WASM twice within the same state instance. Cache keys embed (program, particle, material)
   so context switches naturally produce cache misses without requiring explicit invalidation.
+  The range pre-check (`getMinEnergy`/`getMaxEnergy`) is a belt-and-suspenders defence that
+  catches programs (like ICRU 49) that hang rather than returning 101; it also makes the OOR
+  cache warm on first calculation so the per-row retry path is rarely reached in practice.
 - **Issue**: none unresolved
