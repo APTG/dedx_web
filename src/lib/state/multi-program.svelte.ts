@@ -1,4 +1,6 @@
 import { LibdedxError, type CalculationResult } from "$lib/wasm/types";
+import type { EntityId } from "$lib/external-data/types";
+import { parseEntityIdList } from "$lib/external-data/ids";
 
 /**
  * Multi-program comparison state for Stage 6 advanced mode.
@@ -338,10 +340,14 @@ export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrl
 export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiProgramUrlParams> & {
   parsedProgramIds?: number[];
   parsedHiddenIds?: number[];
+  parsedProgramEntityIds?: EntityId[];
+  parsedHiddenEntityIds?: EntityId[];
 } {
   const result: MultiProgramUrlParams & {
     parsedProgramIds?: number[];
     parsedHiddenIds?: number[];
+    parsedProgramEntityIds?: EntityId[];
+    parsedHiddenEntityIds?: EntityId[];
   } = {};
 
   const mode = params.get("mode");
@@ -352,19 +358,19 @@ export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiPro
   const programs = params.get("programs");
   if (programs) {
     result.programs = programs;
-    result.parsedProgramIds = programs
-      .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !Number.isNaN(n));
+    const entityIds = parseEntityIdList(programs);
+    result.parsedProgramEntityIds = entityIds;
+    // Backward-compat: numeric-only subset for existing callers.
+    result.parsedProgramIds = entityIds.filter((id): id is number => typeof id === "number");
   }
 
   const hidden = params.get("hidden_programs");
   if (hidden) {
     result.hidden_programs = hidden;
-    result.parsedHiddenIds = hidden
-      .split(",")
-      .map((s) => parseInt(s.trim(), 10))
-      .filter((n) => !Number.isNaN(n));
+    const entityIds = parseEntityIdList(hidden);
+    result.parsedHiddenEntityIds = entityIds;
+    // Backward-compat: numeric-only subset for existing callers.
+    result.parsedHiddenIds = entityIds.filter((id): id is number => typeof id === "number");
   }
 
   const qfocus = params.get("qfocus") as QuantityFocus | null;
@@ -374,3 +380,10 @@ export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiPro
 
   return result;
 }
+
+/**
+ * Format a mixed EntityId[] list for the `programs` or `hidden_programs` URL param.
+ * Re-exported here so multi-program URL helpers are co-located.
+ */
+export { parseEntityIdList, formatEntityIdList } from "$lib/external-data/ids";
+export type { EntityId } from "$lib/external-data/types";

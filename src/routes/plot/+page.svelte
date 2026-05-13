@@ -231,6 +231,13 @@
     getService()
       .then((service) => {
         for (const s of decoded.series) {
+          // External-source triplets are not yet dispatched to WASM — Slice 3/4.
+          if (
+            typeof s.programId !== "number" ||
+            typeof s.particleId !== "number" ||
+            typeof s.materialId !== "number"
+          )
+            continue;
           try {
             const result = service.getPlotData(
               s.programId,
