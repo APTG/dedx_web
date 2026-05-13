@@ -2,6 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 const ICRU49_ID = 7;
 const ICRU73_OLD_ID = 5;
+const ASTAR_ID = 1;
 const PSTAR_ID = 2;
 const MSTAR_ID = 4;
 
@@ -197,6 +198,34 @@ test.describe("Advanced mode", () => {
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get("hidden_programs") === "4",
       { timeout: 5000 },
+    );
+  });
+
+  test("out-of-range comparison program shows an error without hiding safe program results", async ({
+    page,
+  }) => {
+    await gotoAdvanced(page, "particle=2&material=276&program=4");
+    await expect(page.locator(`[data-testid="stp-cell-${MSTAR_ID}-0"]`)).toContainText(/\d/, {
+      timeout: 15000,
+    });
+
+    await selectComparisonProgram(page, /ASTAR/, ASTAR_ID);
+    await expect(page.locator(`[data-testid="stp-cell-${ASTAR_ID}-0"]`)).toContainText(/\d/, {
+      timeout: 15000,
+    });
+
+    await page.locator('[data-testid="energy-input-0"]').fill("2000");
+    await page.locator('[data-testid="energy-input-0"]').blur();
+
+    const safeCell = page.locator(`[data-testid="stp-cell-${MSTAR_ID}-0"]`);
+    await expect(safeCell).toContainText(/\d/, { timeout: 15000 });
+    await expect(safeCell).not.toContainText("⚠️");
+
+    const outOfRangeCell = page.locator(`[data-testid="stp-cell-${ASTAR_ID}-0"]`);
+    await expect(outOfRangeCell).toContainText("⚠️", { timeout: 15000 });
+    await expect(outOfRangeCell.locator("span")).toHaveAttribute(
+      "title",
+      /Energy out of tabulated range/,
     );
   });
 });

@@ -47,7 +47,7 @@
     createInverseLookupState,
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
-  import type { InverseCsdaResult } from "$lib/wasm/types";
+  import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import { goto } from "$app/navigation";
@@ -729,23 +729,39 @@
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
 
-      // Range pre-check: skip WASM if any submitted energy is outside the tabulated
-      // range for any selected program. Some programs (e.g. ICRU 49) hang in
+      // Range pre-check: skip WASM per program if any submitted energy is outside
+      // that program's tabulated range. Some programs (e.g. ICRU 49) hang in
       // _dedx_get_stp_table on out-of-range inputs rather than returning error code 101.
+      let safeProgramIds = inputSnapshot.selectedProgramIds;
+      const results = new Map();
       if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
-        const allInRange = inputSnapshot.energies.every((energy) =>
-          inputSnapshot.selectedProgramIds.every(
-            (programId) =>
-              energy >= service.getMinEnergy(programId, inputSnapshot.particleId) &&
-              energy <= service.getMaxEnergy(programId, inputSnapshot.particleId),
-          ),
-        );
-        if (!allInRange) return;
+        safeProgramIds = [];
+        for (const programId of inputSnapshot.selectedProgramIds) {
+          const minEnergy = service.getMinEnergy(programId, inputSnapshot.particleId);
+          const maxEnergy = service.getMaxEnergy(programId, inputSnapshot.particleId);
+          const allEnergiesInRange = inputSnapshot.energies.every(
+            (energy) => energy >= minEnergy && energy <= maxEnergy,
+          );
+          if (allEnergiesInRange) {
+            safeProgramIds.push(programId);
+          } else {
+            results.set(
+              programId,
+              new LibdedxError(
+                101,
+                `Energy out of tabulated range (${minEnergy} – ${maxEnergy} MeV/nucl)`,
+              ),
+            );
+          }
+        }
+        if (safeProgramIds.length === 0) {
+          multiProgState.setComparisonResults(results);
+          return;
+        }
       }
 
-      const results = new Map();
       if (inputSnapshot.customMaterial) {
-        for (const programId of inputSnapshot.selectedProgramIds) {
+        for (const programId of safeProgramIds) {
           try {
             results.set(
               programId,
@@ -759,12 +775,17 @@
               }),
             );
           } catch (e) {
-            results.set(programId, e instanceof Error ? e : new Error(String(e)));
+            results.set(
+              programId,
+              e instanceof LibdedxError
+                ? e
+                : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+            );
           }
         }
       } else if (typeof inputSnapshot.materialId === "number") {
         const builtInResults = service.calculateMulti({
-          programIds: inputSnapshot.selectedProgramIds,
+          programIds: safeProgramIds,
           particleId: inputSnapshot.particleId,
           materialId: inputSnapshot.materialId,
           energies: inputSnapshot.energies,

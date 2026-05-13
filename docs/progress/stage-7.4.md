@@ -43,6 +43,7 @@ Per-row retry is the only way to identify the offending rows without changes to 
 
 When `calcState.error` is non-null (a non-101 `LibdedxError` from the WASM layer), a panel
 appears below the validation summary with:
+
 - Human-readable error message in destructive colour
 - `<details>` / `<summary>` "Show details" toggle revealing `LibdedxError code: N`
 
@@ -58,9 +59,22 @@ and an inline `<p class="text-xs text-destructive">Preview failed: …</p>` appe
 the series legend. The error is cleared (`previewError = null`) at the start of each
 preview recalculation.
 
+### 4. Multi-program out-of-range pre-check hardening
+
+**File:** `src/routes/calculator/+page.svelte`
+
+The advanced multi-program calculation effect now pre-checks the selected
+program ranges per program before calling WASM. Programs whose current energies
+are outside their tabulated range receive an explicit `LibdedxError(101, ...)`
+comparison result so their cells show "— ⚠️" with the error message, while
+programs whose ranges are safe still calculate normally for the current input.
+This prevents stale comparison results from remaining visible when only some
+selected programs are out of range.
+
 ## Files changed
 
 - `src/lib/state/calculator.svelte.ts` — `outOfRangeRowIds` state, `parseRow()` check, refactored `performCalculation()`
 - `src/lib/components/result-table.svelte` — `calcState.error` display panel
+- `src/routes/calculator/+page.svelte` — multi-program per-program range pre-check errors
 - `src/routes/plot/+page.svelte` — `previewError` state + display
 - `docs/00-redesign-plan.md` — Stage 7.4 marked ✅

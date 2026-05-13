@@ -782,5 +782,23 @@ form plus `--list`, not only with `pnpm exec playwright ...`.
 
 ---
 
+## Entry 35 — Range pre-checks must update visible error state
+
+**Symptom:** A multi-program range guard returned before calling WASM when one
+selected program could not handle the current energy. That avoided a libdedx
+hang, but it also risked leaving users with blank or stale comparison cells and
+no per-program explanation.
+
+**Root cause:** The guard treated "unsafe to call WASM" as a control-flow exit
+instead of converting the condition into the same `LibdedxError` result shape
+used for normal per-program failures.
+
+**Rule:** If a pre-check suppresses a calculation, write an explicit UI state
+first (for example a per-program `LibdedxError(101, ...)`) and continue any
+safe partial calculations. Never silently `return` from a debounced calculation
+after inputs changed.
+
+---
+
 _Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
