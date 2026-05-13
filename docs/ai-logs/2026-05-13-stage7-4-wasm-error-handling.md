@@ -35,6 +35,25 @@ with no per-row feedback.
 All 1076 unit tests pass. No new TypeScript errors introduced (pre-existing TS errors
 in `compatibility-matrix.ts` and the inline `materialId` type narrowing were already present).
 
+### Prompt 3: Fix app freeze when invalid input is typed after an out-of-range row
+
+**Bug**: typing "=" in a second row while row 0 shows "1 TeV" (out-of-range) caused the app
+to freeze. Root cause: `performCalculation()` cleared `outOfRangeRowIds` at the start of every
+recalculation, then called WASM again with the same out-of-range energy. The real C library
+hangs on the second call with the same out-of-range input.
+
+**AI response**: Added a persistent `outOfRangeCache: Set<string>` inside `createCalculatorState`.
+Keys are `"programId:particleId:materialId:energy"`. Before any WASM call, `performCalculation`
+pre-classifies energies: cached OOR entries are moved to `cachedOorItems` and their rows are
+immediately added to `outOfRangeRowIds` without a WASM call; only `uncachedItems` go to the
+batch. If all items are cached (the exact freeze scenario), the function returns immediately
+with no WASM involvement. New OOR energies found in the per-row retry are added to the cache.
+The cache is cleared in `resetAll()`.
+
+Four new unit tests using `OutOfRangeLibdedxService` (extends `LibdedxServiceImpl`, throws
+LibdedxError(101) for energies ≥ 1e5 MeV) cover: OOR status display, no-freeze scenario,
+WASM call count (cache hit = 0 extra calls), and mixed valid+OOR rows. Total tests: 1080.
+
 ## Tasks
 
 ### Stage 7.4: WASM error handling
@@ -45,10 +64,12 @@ in `compatibility-matrix.ts` and the inline `materialId` type narrowing were alr
   - `src/lib/state/calculator.svelte.ts`
   - `src/lib/components/result-table.svelte`
   - `src/routes/plot/+page.svelte`
+  - `src/tests/unit/calculator-state.test.ts`
   - `docs/00-redesign-plan.md`
   - `docs/progress/stage-7.4.md`
 - **Decision**: Per-row retry is the only way to identify which energies are out of range
-  because the C library returns a single error code for the whole batch. The retry adds
-  N WASM calls when a batch fails, but this only happens when at least one energy is
-  out of range (a rare user error), not on normal calculation paths.
+  because the C library returns a single error code for the whole batch. The persistent OOR
+  cache prevents the C library hang by ensuring the same out-of-range energy is never sent
+  to WASM twice within the same state instance. Cache keys embed (program, particle, material)
+  so context switches naturally produce cache misses without requiring explicit invalidation.
 - **Issue**: none unresolved
