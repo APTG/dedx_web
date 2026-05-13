@@ -47,13 +47,20 @@ export default defineConfig({
       name: "chromium",
       use: { ...devices["Desktop Chrome"] },
     },
+    // Mobile and tablet projects only run @responsive-tagged tests. The
+    // remaining suites are designed for desktop viewports and are exercised
+    // by the chromium project. This keeps cross-device CI fast (no 3× test
+    // multiplier) and avoids false negatives from tests not designed for
+    // narrow viewports.
     {
       name: "mobile-chrome",
       use: { ...devices["Pixel 5"] },
+      grep: /@responsive/,
     },
     {
       name: "tablet",
       use: { ...devices["iPad Air"] },
+      grep: /@responsive/,
     },
   ],
   webServer: {

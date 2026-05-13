@@ -30,7 +30,8 @@ test.describe("Responsive layout — Calculator @smoke", () => {
     // the top of materialCombo must be ≥ bottom of particleCombo
     const pBox = await particleCombo.boundingBox();
     const mBox = await materialCombo.boundingBox();
-    if (pBox && mBox && page.viewportSize()!.width < 900) {
+    const viewport = page.viewportSize();
+    if (pBox && mBox && viewport && viewport.width < 900) {
       expect(mBox.y).toBeGreaterThanOrEqual(pBox.y + pBox.height - 4); // 4px tolerance
     }
   });

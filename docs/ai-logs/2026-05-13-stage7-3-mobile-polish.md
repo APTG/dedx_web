@@ -65,5 +65,5 @@
 
 - **Status**: completed
 - **Stage**: 7.3
-- **Files changed**: `playwright.config.ts`, `e2e/responsive.spec.ts` (new)
+- **Files changed**: `playwright.config.ts`, `tests/e2e/responsive.spec.ts` (new)
 - **Decision**: Added Pixel 5 and iPad Air projects. New spec covers no-overflow check, entity panel collapse on mobile, sticky column check, and canvas height verification.

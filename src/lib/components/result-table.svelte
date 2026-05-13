@@ -603,7 +603,7 @@
             {#each columns.slice(0, 3) as col, colIdx (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
               <td
-                class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""} ${colIdx === 0 ? "sticky left-0 z-10 bg-background shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]" : ""}`}
+                class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""} ${colIdx === 0 ? `sticky left-0 z-10 ${i % 2 === 1 ? "bg-muted/30" : "bg-background"} shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]` : ""}`}
               >
                 {#if col.id === "energy"}
                   <input
