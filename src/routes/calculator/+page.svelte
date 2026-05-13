@@ -728,6 +728,21 @@
       const service = await getService();
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
+
+      // Range pre-check: skip WASM if any submitted energy is outside the tabulated
+      // range for any selected program. Some programs (e.g. ICRU 49) hang in
+      // _dedx_get_stp_table on out-of-range inputs rather than returning error code 101.
+      if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
+        const allInRange = inputSnapshot.energies.every((energy) =>
+          inputSnapshot.selectedProgramIds.every(
+            (programId) =>
+              energy >= service.getMinEnergy(programId, inputSnapshot.particleId) &&
+              energy <= service.getMaxEnergy(programId, inputSnapshot.particleId),
+          ),
+        );
+        if (!allInRange) return;
+      }
+
       const results = new Map();
       if (inputSnapshot.customMaterial) {
         for (const programId of inputSnapshot.selectedProgramIds) {

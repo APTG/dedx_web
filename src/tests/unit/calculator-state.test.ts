@@ -670,13 +670,19 @@ describe("CalculatorState", () => {
   });
 });
 
-// Service that throws LibdedxError(101) for any batch containing an energy >= threshold,
-// matching the real C library behaviour where the whole batch fails when any energy is OOR.
+// Service that simulates WASM throwing LibdedxError(101) for energies >= threshold,
+// with getMaxEnergy returning 1e10 so the range pre-check is bypassed and the
+// LibdedxError(101) per-row retry path is exercised directly.
 class OutOfRangeLibdedxService extends LibdedxServiceImpl {
   readonly threshold: number;
   constructor(threshold = 1e5) {
     super();
     this.threshold = threshold;
+  }
+  // Return a large max-energy so the range pre-check in performCalculation doesn't
+  // intercept these test cases — we want to exercise the LibdedxError(101) path.
+  override getMaxEnergy(_programId: number, _particleId: number): number {
+    return 1e10;
   }
   override calculate(
     programId: number,

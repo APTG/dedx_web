@@ -414,7 +414,7 @@ export function createCalculatorState(
     // context — skip WASM for them to prevent redundant calls that may hang the
     // C library on repeated out-of-range inputs.
     const cachedOorItems: { rowId: string; energy: number }[] = [];
-    const uncachedItems: { rowId: string; energy: number }[] = [];
+    let uncachedItems: { rowId: string; energy: number }[] = [];
     for (const item of energies) {
       if (outOfRangeCache.has(oorCacheKey(item.energy))) {
         cachedOorItems.push(item);
@@ -425,8 +425,26 @@ export function createCalculatorState(
 
     const newOutOfRange = new Set<string>(cachedOorItems.map((item) => item.rowId));
 
+    // Range pre-check: classify items outside the tabulated energy limits as OOR
+    // without calling WASM. Some programs (e.g. ICRU 49) hang in _dedx_get_stp_table
+    // on out-of-range energies rather than returning error code 101.
+    if (!customMaterial && typeof materialId === "number") {
+      const minE = service.getMinEnergy(resolvedProgramId!, particleId!);
+      const maxE = service.getMaxEnergy(resolvedProgramId!, particleId!);
+      const inRange: { rowId: string; energy: number }[] = [];
+      for (const item of uncachedItems) {
+        if (item.energy < minE || item.energy > maxE) {
+          newOutOfRange.add(item.rowId);
+          outOfRangeCache.add(oorCacheKey(item.energy));
+        } else {
+          inRange.push(item);
+        }
+      }
+      uncachedItems = inRange;
+    }
+
     if (uncachedItems.length === 0) {
-      // All submitted energies are already known OOR — skip WASM entirely.
+      // All energies are OOR (from cache or range pre-check) — skip WASM entirely.
       calculationResults = new Map();
       outOfRangeRowIds = newOutOfRange;
       isCalculating = false;
