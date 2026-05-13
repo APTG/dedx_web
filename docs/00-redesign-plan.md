@@ -562,7 +562,7 @@ As a <role>, I want to <action> so that <benefit>.
 
 - **Who:** AI implements per sub-stage spec (one per session).
 - **Input:** [`docs/07-testing-strategy.md`](07-testing-strategy.md), [`docs/09-non-functional-requirements.md`](09-non-functional-requirements.md), and individual spec files in [`docs/04-feature-specs/`](04-feature-specs/).
-- **Status:** In progress. Stage 7.1 is implemented in [PR #459](https://github.com/APTG/dedx_web/pull/459); Stages 7.2–7.5 are not started.
+- **Status:** In progress. Stage 7.1 is implemented in [PR #459](https://github.com/APTG/dedx_web/pull/459); Stages 7.2–7.6 are not started.
 
 #### Sub-stages
 
@@ -573,6 +573,7 @@ As a <role>, I want to <action> so that <benefit>.
 | 7.3 | Mobile responsive polish                            | ⏳     | [`09-non-functional-requirements.md`](09-non-functional-requirements.md)                            | No PR yet. Calculator + Plot + multi-program table on small screens; WCAG 2.1 AA touch targets; tested with Playwright device emulation                                                   |
 | 7.4 | WASM error handling                                 | ⏳     | [`calculator.md`](04-feature-specs/calculator.md), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) | No PR yet. Typed `LibdedxError` propagated to UI; user-visible error states for load failure, calculation failure, and invalid input; no silent swallowing                                |
 | 7.5 | External data (Zarr v3 `.webdedx` user-hosted data) | ⏳     | [`external-data.md`](04-feature-specs/external-data.md), [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) | No PR yet. **Gate:** Spike 4 `VERDICT.md` must pass first (see Stage 2.5). `extdata=` URL param, `ext-ref` entity grammar, user-hosted Zarr v3 data files                                |
+| 7.6 | Beta feedback & stabilization (release gate)        | ⏳     | [`ux-reviews/`](ux-reviews/)                                                                                                     | No PR yet. **Gate for Stage 8.** Demo v2 on `web_dev`; collect layout/UX/bug reports from users; triage into must-fix (close before release), nice-to-have (post-v2 backlog → Stage 10), and spec updates. Each review round logged in `docs/ux-reviews/`. Only advance to Stage 8 when the must-fix list is empty. |
 
 ### Stage 8: CI/CD — Deploy job
 
@@ -581,6 +582,7 @@ As a <role>, I want to <action> so that <benefit>.
   to `APTG/web` on `v*` tag. See [`docs/08-deployment.md §5`](08-deployment.md)
   for the full workflow YAML.
 - **First production release:** tag `v2.0.0` → deploys to `APTG/web`, replacing v1.1.0.
+- **Gate:** Stage 7.6 (beta stabilization) must be complete — the must-fix list closed — before tagging `v2.0.0`.
 
 ### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
 
@@ -590,6 +592,17 @@ As a <role>, I want to <action> so that <benefit>.
 - No separate Stage 9 cleanup remains in `package.json`; Stage 4 replaces it wholesale
   when the SvelteKit app is scaffolded.
 - The old code is preserved in git history; the last commit containing it is referenced in §11.
+
+### Stage 10: Post-v2 Backlog
+
+- Requests collected during Stage 7.6 beta that were triaged as **nice-to-have** (not required for the
+  v2.0.0 release) live here.
+- After `v2.0.0` ships to `APTG/web`, this stage is a rolling backlog.  Each item becomes its own
+  sub-stage (10.1, 10.2, …) following the same spec → implementation → review workflow.
+- Items are added by creating a `docs/ux-reviews/YYYY-MM-DD-<scope>.md` entry during Stage 7.6 with
+  priority **P2** or lower, or by upgrading a must-fix to post-release during the triage process.
+- There is no planned completion date — Stage 10 is the permanent improvement lane after the initial
+  production release.
 
 ---
 
