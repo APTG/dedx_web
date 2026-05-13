@@ -242,3 +242,48 @@ describe("URL codec round-trip — STP iunit (STP unit tokens)", () => {
     },
   );
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// URLv presence contract
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("URL codec contract — urlv always present", () => {
+  it("encoded URL always contains urlv param", () => {
+    const encoded = encodeCalculatorUrl({
+      particleId: 1,
+      materialId: 276,
+      programId: null,
+      rows: [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
+      masterUnit: "MeV",
+    });
+    expect(encoded.get("urlv")).toBe("1");
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Material discriminated-union round-trip (builtin vs "custom")
+// ─────────────────────────────────────────────────────────────────────────────
+
+const MATERIAL_URL_ROUNDTRIP = {
+  builtin: "276",
+  custom: "custom",
+} satisfies Record<"builtin" | "custom", string>;
+
+describe("URL codec contract — material discriminated-union round-trip", () => {
+  it.each(Object.entries(MATERIAL_URL_ROUNDTRIP))("material round-trip: %s", (kind, material) => {
+    const params = new URLSearchParams(
+      `urlv=1&particle=1&material=${material}&program=auto&energies=100&eunit=MeV&mode=advanced&qfocus=both` +
+        (kind === "custom"
+          ? "&mat_name=Custom%20Material&mat_density=1.5&mat_elements=6:2,8:1"
+          : ""),
+    );
+    const state = decodeCalculatorUrl(params);
+    if (kind === "custom") {
+      expect(state.materialId).toBeNull();
+      expect(state.materialIsCustom).toBe(true);
+    } else {
+      expect(state.materialId).toBe(276);
+      expect(state.materialIsCustom).toBeFalsy();
+    }
+  });
+});

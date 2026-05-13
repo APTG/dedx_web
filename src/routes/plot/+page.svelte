@@ -28,6 +28,9 @@
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
+  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import { goto } from "$app/navigation";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -37,6 +40,8 @@
   const plotState = createPlotState();
   let entityState = $state<EntitySelectionState | null>(null);
   let materialIsGas = $state<boolean | undefined>(undefined);
+  let urlVersionMismatch = $state<{ version: number | string } | null>(null);
+  let advancedModeInitializedFromUrl = $state(false);
 
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
     if (
@@ -69,6 +74,18 @@
   $effect(() => {
     if (!browser) return;
     loadAdvancedOptionsFromStorage();
+  });
+
+  // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
+  // main URL init effect runs. This ensures the tabs render correctly when
+  // the page loads with ?mode=advanced — otherwise the component renders with
+  // isAdvancedMode.value = false and there's a reactivity glitch when it later
+  // becomes true inside the async callback.
+  $effect(() => {
+    if (wasmReady.value && !advancedModeInitializedFromUrl) {
+      initAdvancedModeFromUrl(page.url.searchParams);
+      advancedModeInitializedFromUrl = true;
+    }
   });
 
   // Handle mode switch fallback: custom compound → water when switching to Basic mode
@@ -145,17 +162,30 @@
     persistAdvancedOptions();
   });
 
+  let urlVersionChecked = $state(false);
   let urlInitialized = $state(false);
+
+  // URL version negotiation runs IMMEDIATELY (before WASM is ready)
+  $effect(() => {
+    if (!browser || urlVersionChecked) return;
+    const params = new URLSearchParams(window.location.search);
+    const urlvRaw = params.get("urlv");
+    const negotiationResult = negotiateVersion(urlvRaw);
+    if (negotiationResult.status === "mismatch") {
+      urlVersionMismatch = { version: negotiationResult.version };
+    } else {
+      urlVersionMismatch = null;
+    }
+    urlVersionChecked = true;
+  });
 
   $effect(() => {
     if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
     // Mark in-flight so the URL-write effect cannot run while we are
     // restoring (it would otherwise wipe `series=...` from the address bar).
     const params = new URLSearchParams(window.location.search);
-    const decoded = decodePlotUrl(params);
 
-    // Restore advanced mode from URL (URL param overrides localStorage if present).
-    initAdvancedModeFromUrl(params);
+    const decoded = decodePlotUrl(params);
 
     if (decoded.particleId !== null) {
       entityState.selectParticle(decoded.particleId);
@@ -269,6 +299,12 @@
     // re-render (the density formula depends on it, but it was previously only
     // accessed inside the async callback which is not tracked).
     const advancedModeActive = isAdvancedMode.value;
+
+    // Block preview calculation when URL version mismatch is pending
+    if (urlVersionMismatch !== null) {
+      plotState.clearPreview();
+      return;
+    }
 
     if (!entityState) {
       plotState.clearPreview();
@@ -427,6 +463,12 @@
     showResetConfirm = false;
   }
 
+  function handleLoadDefaults() {
+    // Navigate to /plot without params to clear the mismatch URL
+    goto("/plot", { replaceState: true });
+    urlVersionMismatch = null;
+  }
+
   // ── SVG Export ──
   // Bound from JsrootPlot requestExportSvg, set by component's $effect
   let getSvg: (() => Promise<string | null>) | null = $state(null);
@@ -557,6 +599,14 @@
 {:else}
   <div class="space-y-4">
     <h1 class="text-3xl font-bold">Plot</h1>
+
+    {#if urlVersionMismatch}
+      <UrlVersionWarningBanner
+        version={urlVersionMismatch.version}
+        onLoadDefaults={handleLoadDefaults}
+      />
+    {/if}
+
     <!-- Desktop: sidebar + main grid -->
     <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
       <!-- ── SIDEBAR ── -->

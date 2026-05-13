@@ -48,11 +48,17 @@
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
   import type { InverseCsdaResult } from "$lib/wasm/types";
+  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import { goto } from "$app/navigation";
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
+  let urlVersionChecked = $state(false);
   let urlInitialized = $state(false);
+  let advancedModeInitializedFromUrl = $state(false);
+  let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let multiProgState = $state<MultiProgramState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
   let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
@@ -101,14 +107,34 @@
     sharedUrlWarning = null;
   }
 
+  function handleLoadDefaults() {
+    // Navigate to /calculator without params to clear the mismatch URL
+    goto("/calculator", { replaceState: true });
+    urlVersionMismatch = null;
+  }
+
   $effect(() => {
     // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
     // async getService() callback runs. This ensures the tabs render correctly when
     // the page loads with ?advanced=1 — otherwise the component renders with
     // isAdvancedMode.value = false and there's a reactivity glitch when it later
     // becomes true inside the async callback.
-    if (wasmReady.value) {
+    if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
+      advancedModeInitializedFromUrl = true;
+    }
+
+    // Negotiate URL version IMMEDIATELY (before WASM is ready) — this should show
+    // the banner even if WASM fails to load
+    if (!urlVersionChecked) {
+      const urlvRaw = page.url.searchParams.get("urlv");
+      const negotiationResult = negotiateVersion(urlvRaw);
+      if (negotiationResult.status === "mismatch") {
+        urlVersionMismatch = { version: negotiationResult.version };
+      } else {
+        urlVersionMismatch = null;
+      }
+      urlVersionChecked = true;
     }
 
     if (wasmReady.value && !entityState && !calcState) {
@@ -242,6 +268,8 @@
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
+    // Block calculation while URL version mismatch is pending
+    if (urlVersionMismatch !== null) return;
     if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
     calcState.triggerCalculation();
   });
@@ -301,7 +329,7 @@
       masterUnit: calcState.masterUnit,
       ...customUrlFields,
       // Include advanced mode state when active
-      ...(multiProgState
+      ...(isAdvancedMode.value && multiProgState
         ? {
             isAdvancedMode: true,
             // Emit ALL selected programs in display order (default program first)
@@ -658,6 +686,8 @@
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
 
+    // Block calculation while URL version mismatch is pending
+    if (urlVersionMismatch !== null) return;
     if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
@@ -1041,6 +1071,13 @@
   <p class="text-muted-foreground">
     Select a particle, material, and program to calculate stopping powers and CSDA ranges.
   </p>
+
+  {#if urlVersionMismatch}
+    <UrlVersionWarningBanner
+      version={urlVersionMismatch.version}
+      onLoadDefaults={handleLoadDefaults}
+    />
+  {/if}
 
   {#if wasmError.value}
     <div

@@ -87,3 +87,15 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
     }
   });
 });
+
+describe("Page-init contract — urlv negotiation", () => {
+  it("calculator/+page.svelte source contains negotiateVersion call", () => {
+    const source = readSource(CALCULATOR_PAGE);
+    expect(source).toContain("negotiateVersion");
+  });
+
+  it("plot page source contains negotiateVersion call", () => {
+    const source = readSource(PLOT_PAGE);
+    expect(source).toContain("negotiateVersion");
+  });
+});
