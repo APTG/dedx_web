@@ -472,11 +472,11 @@
         <thead class="sticky top-0 bg-background">
           <!-- Row 1: Group headers -->
           <tr>
-            <!-- Input columns (3 columns, row-spanning) -->
+            <!-- Input columns (3 columns, row-spanning); first column sticky -->
             <th
               scope="col"
               rowspan="2"
-              class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b border-r"
+              class="sticky left-0 z-20 bg-background shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)] px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b border-r"
             >
               Energy ({calcState.masterUnit})
             </th>
@@ -585,10 +585,10 @@
         <!-- Basic mode: single-row header -->
         <thead class="sticky top-0 bg-background">
           <tr>
-            {#each columns as col (col.id)}
+            {#each columns as col, colIdx (col.id)}
               <th
                 scope="col"
-                class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"}`}
+                class={`px-2 sm:px-4 py-2 font-medium whitespace-nowrap ${col.align === "right" ? "text-right" : "text-left"} ${colIdx === 0 ? "sticky left-0 z-20 bg-background shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]" : ""}`}
               >
                 {col.header(calcState)}
               </th>
@@ -599,11 +599,11 @@
       <tbody>
         {#each calcState.rows as row, i (row.id)}
           <tr class="even:bg-muted/30">
-            <!-- Input columns (always rendered the same way) -->
-            {#each columns.slice(0, 3) as col (col.id)}
+            <!-- Input columns (always rendered the same way); first column sticky -->
+            {#each columns.slice(0, 3) as col, colIdx (col.id)}
               {@const useMonospace = col.monospace ?? col.align === "right"}
               <td
-                class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""}`}
+                class={`px-2 sm:px-4 py-2 ${col.align === "right" ? "text-right whitespace-nowrap" : ""} ${useMonospace ? "font-mono" : ""} ${colIdx === 0 ? `sticky left-0 z-10 ${i % 2 === 1 ? "bg-muted/30" : "bg-background"} shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]` : ""}`}
               >
                 {#if col.id === "energy"}
                   <input

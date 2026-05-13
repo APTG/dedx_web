@@ -177,8 +177,8 @@ describe("EntitySelectionComboboxes", () => {
     const root = container.firstElementChild as HTMLElement;
 
     expect(root).toHaveClass("grid");
-    expect(root).toHaveClass("lg:grid-cols-3");
-    expect(root).not.toHaveClass("lg:flex-nowrap");
+    expect(root).toHaveClass("desktop:grid-cols-3");
+    expect(root).not.toHaveClass("desktop:flex-nowrap");
   });
 
   test("displays default selections: proton, Water (liquid), Auto-select", () => {

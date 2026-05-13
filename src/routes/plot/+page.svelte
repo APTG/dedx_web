@@ -43,6 +43,22 @@
   let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let advancedModeInitializedFromUrl = $state(false);
 
+  // Mobile responsive: track viewport width to collapse entity panels on small screens
+  let isMobile = $state(false);
+  let entityPanelsOpen = $state(false);
+
+  $effect(() => {
+    if (!browser) return;
+    const mq = window.matchMedia("(max-width: 599px)");
+    isMobile = mq.matches;
+    const handler = (e: MediaQueryListEvent) => {
+      isMobile = e.matches;
+      if (!e.matches) entityPanelsOpen = false;
+    };
+    mq.addEventListener("change", handler);
+    return () => mq.removeEventListener("change", handler);
+  });
+
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
     if (
       !decoded.materialIsCustom ||
@@ -409,6 +425,20 @@
     ),
   );
 
+  // Summary shown in the mobile collapsed entity-panel header
+  const selectionSummary = $derived.by(() => {
+    if (!entityState) return "";
+    const particlePart = entityState.selectedParticle
+      ? getParticleLabel(entityState.selectedParticle)
+      : "—";
+    const materialPart = entityState.selectedMaterial?.name ?? "—";
+    const programPart =
+      "resolvedProgram" in entityState.selectedProgram
+        ? (entityState.selectedProgram.resolvedProgram?.name ?? "Auto")
+        : entityState.selectedProgram.name;
+    return `${particlePart} / ${materialPart} / ${programPart}`;
+  });
+
   // ── Add Series ──
   function handleAddSeries() {
     if (!entityState) return;
@@ -607,18 +637,33 @@
       />
     {/if}
 
-    <!-- Desktop: sidebar + main grid -->
-    <div class="grid gap-4 lg:grid-cols-[minmax(520px,5fr)_7fr]">
+    <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
+    <div class="grid gap-4 desktop:grid-cols-[minmax(520px,5fr)_7fr]">
       <!-- ── SIDEBAR ── -->
       <aside class="flex flex-col gap-4">
-        <EntitySelectionPanels state={entityState} />
+        {#if isMobile}
+          <!-- Mobile: collapsed disclosure button showing current selection -->
+          <button
+            type="button"
+            aria-expanded={entityPanelsOpen}
+            onclick={() => (entityPanelsOpen = !entityPanelsOpen)}
+            class="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-3 text-sm font-medium min-h-[44px]"
+          >
+            <span>{entityPanelsOpen ? "▼" : "▶"} Select Entities</span>
+            <span class="ml-2 truncate text-xs text-muted-foreground">{selectionSummary}</span>
+          </button>
+        {/if}
+
+        {#if !isMobile || entityPanelsOpen}
+          <EntitySelectionPanels state={entityState} />
+        {/if}
 
         <!-- Add Series button -->
         <button
           disabled={!entityState.isComplete}
           aria-disabled={!entityState.isComplete}
           onclick={handleAddSeries}
-          class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50"
+          class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 min-h-[44px]"
         >
           ＋ Add Series
         </button>
@@ -630,7 +675,7 @@
         {/if}
 
         <button
-          class="text-sm text-muted-foreground underline hover:no-underline"
+          class="text-sm text-muted-foreground underline hover:no-underline min-h-[44px]"
           onclick={handleResetAll}
         >
           Reset all
@@ -647,7 +692,7 @@
             <div role="radiogroup" aria-label="Stopping power unit" class="flex gap-1">
               {#each ["keV/µm", "MeV/cm", "MeV·cm²/g"] as const as unit (unit)}
                 <label
-                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-2.5 text-sm min-h-[44px]
                 {plotState.stpUnit === unit
                     ? 'bg-primary text-primary-foreground'
                     : 'bg-background'}"
@@ -669,7 +714,7 @@
             <div role="radiogroup" aria-label="X axis scale" class="flex gap-1">
               {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
                 <label
-                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-2.5 text-sm min-h-[44px]
                 {plotState.xLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
                 >
                   <input
@@ -688,7 +733,7 @@
             <div role="radiogroup" aria-label="Y axis scale" class="flex gap-1">
               {#each [["Log", true], ["Lin", false]] as [label, isLog] (label)}
                 <label
-                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-1 text-sm
+                  class="flex cursor-pointer items-center gap-1 rounded border px-2 py-2.5 text-sm min-h-[44px]
                 {plotState.yLog === isLog ? 'bg-primary text-primary-foreground' : 'bg-background'}"
                 >
                   <input
@@ -749,8 +794,12 @@
           </div>
         </div>
 
-        <!-- JSROOT canvas -->
-        <div style="width: 100%; height: min(60vh, 600px); min-height: 400px;">
+        <!-- JSROOT canvas — 50vh on mobile (<600px), min(60vh,600px) on desktop -->
+        <div
+          style:width="100%"
+          style:height={isMobile ? "50vh" : "min(60vh, 600px)"}
+          style:min-height={isMobile ? "300px" : "400px"}
+        >
           <JsrootPlot
             series={plotState.series}
             preview={plotState.preview}
