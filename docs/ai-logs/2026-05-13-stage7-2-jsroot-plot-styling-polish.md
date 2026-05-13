@@ -41,20 +41,20 @@ Plan produced:
 
 ### Stage 7.2 — Implement explicit 14 pt-equivalent font sizes
 
-- **Status**: completed
+- **Status**: superseded (reverted in Prompt 3)
 - **Stage**: 7.2 — JSROOT plot styling polish
 - **Files changed**:
   - `src/lib/components/jsroot-plot.svelte`
 - **Decision**: Used `0.04` as the NDC font-size value for both label and title sizes on both axes. In ROOT/JSROOT, font sizes are specified as a fraction of the pad height. `0.04 × 500 px × (1 pt / 1.333 px) ≈ 15 pt` at a ~500 px canvas (the midpoint of the `min(60vh, 600px)` range). This matches the standard ROOT physics-plot convention and approximates the "14 pt" target in the redesign plan.
-- **Issue**: JSROOT NDC font sizes are not pixel-exact across all canvas heights. At the min (400 px) the effective size is ~12 pt; at max (600 px) ~18 pt. This is inherent to ROOT's NDC font model and cannot be solved without a resize observer that redraws on every size change — which would be disproportionate complexity for a cosmetic requirement. `0.04` is the accepted physics-community convention.
+- **Issue**: Superseded later in this same session after visual inspection. **Net result for Stage 7.2 is JSROOT defaults (no explicit font-size override).**
 
 ### Stage 7.2 — Update plot.md spec with font-size requirement
 
-- **Status**: completed
+- **Status**: superseded (reverted in Prompt 3)
 - **Stage**: 7.2
 - **Files changed**:
   - `docs/04-feature-specs/plot.md`
-- **Decision**: Added the font-size lines directly to the existing `buildMultigraph()` code block in the JSROOT Integration section, so spec and implementation stay in sync as a single source of truth. Added one AC item under "JSROOT Canvas": `fLabelSize = fTitleSize = 0.04 NDC`.
+- **Decision**: Initial requirement update was intentionally undone in Prompt 3 to match the final visual decision. **Net result for Stage 7.2 is the opposite: `plot.md` now requires JSROOT default axis font sizes with no explicit override.**
 
 ### Stage 7.2 — Resolve redesign plan contradiction and mark complete
 

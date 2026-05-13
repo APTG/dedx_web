@@ -1119,7 +1119,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] On mobile/tablet (touch devices), touch gestures on the canvas scroll the page — JSROOT touch zoom/pan is disabled.
 - [ ] The canvas resizes correctly when the browser window is resized.
 - [ ] No JSROOT-rendered legend on the canvas (the series list below the canvas serves as the legend).
-- [ ] Axis font sizes use JSROOT defaults (no explicit `fLabelSize`/`fTitleSize` override). Visual inspection confirmed the defaults produce better readability than a forced 0.04 NDC value.
+- [ ] Axis font sizes use JSROOT defaults (do not set explicit `fLabelSize`/`fTitleSize` overrides).
 
 ### Axis Scale Controls
 

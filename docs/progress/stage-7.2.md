@@ -28,9 +28,11 @@ The redesign plan mentioned "14 pt fonts." `fLabelSize = fTitleSize = 0.04` NDC 
 
 **Decision:** Do not set `fLabelSize` or `fTitleSize`. JSROOT's built-in defaults produce better readability on this canvas at the `min(60vh, 600px)` size range. The "14 pt" note in the redesign plan was a guideline, not a hard constraint — the visual result matters more.
 
-**Files changed (net result — no font-size change from baseline):**
-- `src/lib/components/jsroot-plot.svelte` — no explicit font-size properties set
-- `docs/04-feature-specs/plot.md` — AC updated to document the use of JSROOT defaults
+**Net result in this PR:** no code changes required for font sizing (`jsroot-plot.svelte` remains without explicit `fLabelSize`/`fTitleSize`).
+
+**Files changed for the final Stage 7.2 outcome:**
+- `docs/04-feature-specs/plot.md` — AC updated to document use of JSROOT defaults
+- `docs/00-redesign-plan.md` — Stage 7.2 notes aligned with final decision
 
 ### Redesign plan contradiction resolved
 

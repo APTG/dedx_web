@@ -732,5 +732,21 @@ name as the visible field label.
 
 ---
 
+## Entry 32 — Stage docs/logs must describe final net behavior, not transient attempts
+
+**Symptom:** Stage 7.2 changelog/log index/task summaries said explicit
+`fLabelSize`/`fTitleSize` overrides were implemented, while the final committed
+state had that change reverted and documented JSROOT defaults.
+
+**Root cause:** Documentation captured intermediate steps but did not clearly
+mark superseded tasks, so quick readers could infer the wrong final behavior.
+
+**Rule:** For PR review follow-ups and stage completion docs, always align
+`CHANGELOG-AI.md`, `docs/ai-logs/README.md`, progress files, and task summaries
+to the **net merged outcome**. Mark reverted work as `superseded/reverted` and
+keep PR links in the redesign stage table current.
+
+---
+
 _Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
