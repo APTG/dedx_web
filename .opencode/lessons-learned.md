@@ -748,5 +748,22 @@ keep PR links in the redesign stage table current.
 
 ---
 
+## Entry 33 — Preserve E2E coverage by sharding before reducing test scope
+
+**Symptom:** After responsive device projects were added, E2E runtime dropped from
+the accidental 26-minute all-device run but still took about 3.2 minutes for the
+Playwright phase on a single CI worker.
+
+**Root cause:** The suite was correctly filtered to desktop full coverage plus
+responsive mobile/tablet coverage, but `playwright.config.ts` still forced one
+CI worker and `.github/workflows/ci.yml` ran the whole suite in one job.
+
+**Rule:** When E2E coverage is already appropriate and the goal is shorter CI
+wall-clock time, prefer Playwright sharding across GitHub Actions matrix jobs
+(`--shard=N/M`) before dropping tests or broadening tag filters. Make artifact
+names shard-specific to avoid upload collisions.
+
+---
+
 _Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
