@@ -67,6 +67,11 @@ export function createCalculatorState(
     Map<string, { stoppingPower: number; csdaRangeCm: number | null }>
   >(new Map());
   let outOfRangeRowIds = $state<Set<string>>(new Set());
+  // Persistent across calculations within this state instance — once an energy
+  // is identified as OOR for a given (program, particle, material) context, we
+  // skip calling WASM again. Prevents the C library from hanging on a second
+  // call with the same out-of-range energy. Key: "programId:particleId:materialId:energy".
+  const outOfRangeCache = new Set<string>();
 
   const debouncedCalculate = debounce(async () => {
     const energies = getValidEnergies();
@@ -328,6 +333,10 @@ export function createCalculatorState(
       material?.density ??
       1;
 
+    function oorCacheKey(energy: number): string {
+      return `${resolvedProgramId}:${particleId}:${materialId}:${energy}`;
+    }
+
     function callService(energyValues: number[]) {
       return customMaterial
         ? service.calculateCustomCompound({
@@ -400,24 +409,48 @@ export function createCalculatorState(
       return map;
     }
 
+    // Pre-classify energies using the persistent OOR cache.
+    // Cached OOR entries are known to fail for this (program, particle, material)
+    // context — skip WASM for them to prevent redundant calls that may hang the
+    // C library on repeated out-of-range inputs.
+    const cachedOorItems: { rowId: string; energy: number }[] = [];
+    const uncachedItems: { rowId: string; energy: number }[] = [];
+    for (const item of energies) {
+      if (outOfRangeCache.has(oorCacheKey(item.energy))) {
+        cachedOorItems.push(item);
+      } else {
+        uncachedItems.push(item);
+      }
+    }
+
+    const newOutOfRange = new Set<string>(cachedOorItems.map((item) => item.rowId));
+
+    if (uncachedItems.length === 0) {
+      // All submitted energies are already known OOR — skip WASM entirely.
+      calculationResults = new Map();
+      outOfRangeRowIds = newOutOfRange;
+      isCalculating = false;
+      return;
+    }
+
     try {
-      const result = callService(energies.map((e) => e.energy));
+      const result = callService(uncachedItems.map((e) => e.energy));
       if (!result) {
         calculationResults = new Map();
         isCalculating = false;
         return;
       }
       // Reassign to a new Map so Svelte detects the change.
-      calculationResults = processResults(result, energies);
+      calculationResults = processResults(result, uncachedItems);
+      outOfRangeRowIds = newOutOfRange;
     } catch (e) {
       if (e instanceof LibdedxError && e.code === 101 /* DEDX_ERR_ENERGY_OUT_OF_RANGE */) {
         // Retry per-row to identify which energies are out of the tabulated range.
         // This lets valid rows show results while out-of-range rows are marked individually.
         const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
-        const newOutOfRange = new Set<string>();
         let fatalError: LibdedxError | null = null;
 
-        for (const item of energies) {
+        for (const item of uncachedItems) {
           if (fatalError) break;
           try {
             const result = callService([item.energy]);
@@ -428,6 +461,7 @@ export function createCalculatorState(
           } catch (rowErr) {
             if (rowErr instanceof LibdedxError && rowErr.code === 101) {
               newOutOfRange.add(item.rowId);
+              outOfRangeCache.add(oorCacheKey(item.energy));
             } else {
               fatalError =
                 rowErr instanceof LibdedxError
@@ -597,6 +631,7 @@ export function createCalculatorState(
       inputState.resetRows([{ text: "100" }]);
       calculationResults = new Map();
       outOfRangeRowIds = new Set();
+      outOfRangeCache.clear();
       isCalculating = false;
       error = null;
     },
