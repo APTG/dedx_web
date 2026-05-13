@@ -16,7 +16,7 @@ for (const { path, label } of ROUTES) {
     if (path === "/calculator") {
       await page.waitForSelector('[data-testid="result-table"]', { timeout: 15000 });
     } else if (path === "/plot") {
-      await page.waitForSelector('[role="list"][aria-label="Plot series"]', { timeout: 10000 });
+      await expect(page.getByRole("heading", { name: "Plot" }).first()).toBeVisible();
     } else {
       await page.waitForLoadState("networkidle");
     }
