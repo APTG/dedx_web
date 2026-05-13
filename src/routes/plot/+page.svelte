@@ -773,6 +773,7 @@
                 class="flex items-center gap-2 text-sm italic text-muted-foreground"
               >
                 <span
+                  role="img"
                   class="inline-block h-4 w-4 rounded-sm border border-dashed"
                   style="background-color: #000; opacity: 0.5"
                   aria-label="Black, dashed line (preview)"

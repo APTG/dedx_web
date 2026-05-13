@@ -254,7 +254,7 @@
       NOTE: The PopperLayer already handles positioning, so we don't use absolute
       positioning here. The wrapper div just provides styling.
     -->
-    <Combobox.ContentStatic forceMount={true}>
+    <Combobox.ContentStatic forceMount={true} aria-labelledby={labelId}>
       <div
         class="w-full min-w-[8rem] max-w-[calc(100vw-2rem)] overflow-hidden overflow-x-hidden rounded-md border bg-popover text-popover-foreground shadow-md"
       >
@@ -272,10 +272,15 @@
             {totalMatchCount === 1 ? "result" : "results"}
           </div>
         {/if}
+        <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+        <!-- WCAG 2.4.3 / axe scrollable-region-focusable: keyboard users must be
+             able to scroll this container; tabindex="0" is the recommended fix. -->
         <div
           data-testid="dropdown-scroll-container"
           class="max-h-[300px] overflow-y-auto p-1"
           style="mask-image: linear-gradient(to bottom, black calc(100% - 24px), transparent 100%);"
+          tabindex="0"
+          aria-label="{label} options"
         >
           {#if filteredGroups.length === 0}
             <div class="px-3 py-2 text-sm text-muted-foreground">No results</div>
@@ -325,6 +330,7 @@
                     <Combobox.Item
                       value={String(item.entity.id)}
                       disabled={!item.available}
+                      aria-disabled={!item.available ? true : undefined}
                       label={item.label}
                       title={item.isElectron ? ELECTRON_UNSUPPORTED_TITLE : undefined}
                       class={cn(
