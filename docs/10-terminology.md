@@ -488,7 +488,7 @@ Used in: [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
 
 ### CI/CD
 
-**Continuous Integration / Continuous Deployment** — the planned Stage 8
+**Continuous Integration / Continuous Deployment** — the planned Stage 9
 automated pipeline for this project, intended to run via **GitHub Actions**.
 
 | Phase  | Planned trigger                | Planned steps                                                                     |

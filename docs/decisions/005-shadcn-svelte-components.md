@@ -156,7 +156,7 @@ to this project.
 | Stage 5 (Entity selection)   | Add `combobox`, `command`, `popover`, `scroll-area`            |
 | Stage 6 (Calculator + Plot)  | Add `table`, `badge`, `separator`                              |
 | Stage 7 (Advanced options)   | Add `accordion`, `checkbox`, `radio-group`, `select`, `slider` |
-| Stage 8 (Export + Compounds) | Add `dialog`, `sheet`, `dropdown-menu`, `sonner` (toast)       |
+| Stage 6 (Export + Compounds) ✅ | `dialog`, `sheet`, `dropdown-menu` added; `sonner` deferred |
 | All stages                   | `button`, `label`, `input`, `tooltip` — add as needed          |
 
 ---

@@ -380,7 +380,7 @@ check` and in CI before the build step.
 
 ### GitHub Actions
 
-All CI runs in GitHub-hosted runners. The pipeline (Stage 8) will execute:
+All CI runs in GitHub-hosted runners. The pipeline (Stage 9) will execute:
 
 1. `eslint .` — lint
 2. `prettier --check .` — format check

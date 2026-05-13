@@ -7,7 +7,7 @@
 > stage definitions listed below. The legacy CI workflow
 > (`.github/workflows/test_and_deploy.yml`) is **deleted at the start of
 > Stage 3** — it was written for the old React/CRA app. The replacement
-> `ci.yml` is added in Stage 3 and expanded through Stage 8 (see §5).
+> `ci.yml` is added in Stage 3 and expanded through Stage 9 (see §5).
 
 ---
 
@@ -23,7 +23,7 @@ preserved in the redesign):
 | Environment             | Repository     | Trigger                                                                |
 | ----------------------- | -------------- | ---------------------------------------------------------------------- |
 | Development (`web_dev`) | `APTG/web_dev` | Push to `master`                                                       |
-| Production (`web`)      | `APTG/web`     | Git tag `v*` _(planned for Stage 8; not yet implemented in this repo)_ |
+| Production (`web`)      | `APTG/web`     | Git tag `v*` _(planned for Stage 9; not yet implemented in this repo)_ |
 
 **Decision rationale:** [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)
 chose SvelteKit with its static adapter precisely because GitHub Pages
@@ -50,12 +50,12 @@ pre-renders all routes at build time.
 └────────────────────────┬────────────────────────────────────────┘
                          │
 ┌────────────────────────▼────────────────────────────────────────┐
-│ Stages 3–8 — CI (GitHub Actions, phased — see §5)              │
+│ Stages 3–9 — CI (GitHub Actions, phased — see §5)              │
 │   Stage 3: node wasm/verify.mjs                                 │
 │   Stage 4: + lint + check + build                               │
 │   Stage 5: + pnpm test (Vitest)                                 │
 │   Stage 7: + pnpm exec playwright test                          │
-│   Stage 8: + deploy → APTG/web_dev (master) / APTG/web (tag)   │
+│   Stage 9: + deploy → APTG/web_dev (master) / APTG/web (tag)   │
 └─────────────────────────────────────────────────────────────────┘
 ```
 
@@ -110,11 +110,11 @@ stage so that every PR has a gate matching the current scope of the project:
 | **4** | `pnpm install`, `pnpm lint`, `pnpm check` (svelte-check + tsc), `pnpm build`               |
 | **5** | `pnpm test` (Vitest — first unit tests written in this stage)                              |
 | **7** | `pnpm exec playwright install --with-deps`, `pnpm exec playwright test`                    |
-| **8** | Production deploy job added to `deploy.yml`: tag `v*` → build + push `build/` → `APTG/web` |
+| **9** | Production deploy job added to `deploy.yml`: tag `v*` → build + push `build/` → `APTG/web` |
 
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
 The deploy job in `deploy.yml` runs only on `master` push — never on PRs.
-Production deploy (to `APTG/web`) will be added in Stage 8, triggered by `v*` tags.
+Production deploy (to `APTG/web`) will be added in Stage 9, triggered by `v*` tags.
 
 ### §5.1 deploy.yml — continuous deployment to web_dev
 
@@ -138,10 +138,10 @@ in the GitHub UI.
 3. In `dedx_web` repo: Settings → Environments → New environment → name `dev`.
    Protection rules are optional at this stage.
 
-**Stage 8 addition:** add a production deploy job targeting `APTG/web`,
+**Stage 9 addition:** add a production deploy job targeting `APTG/web`,
 triggered by `v*` tags alongside the existing `master` trigger.
 
-### Final pipeline (Stage 8)
+### Final pipeline (Stage 9)
 
 ```yaml
 on:
@@ -209,5 +209,5 @@ for the reasoning.
 | Performance budgets (FCP, TTI)          | [09-non-functional-requirements.md §3](09-non-functional-requirements.md)         |
 | Browser caching details                 | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)       |
 | Browser support matrix                  | [09-non-functional-requirements.md §4](09-non-functional-requirements.md)         |
-| Stage 8 scope                           | [00-redesign-plan.md §8](00-redesign-plan.md)                                     |
+| Stage 9 scope                           | [00-redesign-plan.md §8](00-redesign-plan.md)                                     |
 | Legacy CI workflow (deleted in Stage 3) | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |
