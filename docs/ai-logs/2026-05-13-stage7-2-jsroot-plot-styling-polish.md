@@ -73,3 +73,18 @@ Plan produced:
   - `docs/ai-logs/2026-05-13-stage7-2-jsroot-plot-styling-polish.md` (this file, new)
   - `docs/ai-logs/README.md`
   - `CHANGELOG-AI.md`
+
+### Prompt 3: Visual inspection showed JSROOT defaults look better — revert font sizes, update spec and docs
+
+**AI response**: Reverted the `fLabelSize`/`fTitleSize` override in `buildMultigraph()`. Updated `plot.md` spec (removed font-size lines from code block; updated AC to document that JSROOT defaults are intentionally used). Updated `docs/00-redesign-plan.md` notes and `docs/progress/stage-7.2.md` with the finding. Appended to this log.
+
+### Stage 7.2 — Revert explicit font sizes after visual inspection
+
+- **Status**: completed
+- **Stage**: 7.2
+- **Files changed**:
+  - `src/lib/components/jsroot-plot.svelte` — removed `fLabelSize`/`fTitleSize` lines
+  - `docs/04-feature-specs/plot.md` — removed font-size override from code block; AC updated to "JSROOT defaults, no explicit override"
+  - `docs/00-redesign-plan.md` — task 7.2 note updated to reflect visual-inspection finding
+  - `docs/progress/stage-7.2.md` — font-size section rewritten with outcome
+- **Decision**: The `0.04` NDC override inflated labels visually relative to the canvas and the surrounding UI. JSROOT's built-in defaults are more balanced. The "14 pt" guideline in the redesign plan was aspirational; the visual result is the actual acceptance criterion. No `fLabelSize`/`fTitleSize` is set — this is a deliberate, documented choice, not an oversight.

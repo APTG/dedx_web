@@ -22,20 +22,15 @@ The bulk of the "physics-grade defaults" described in the redesign plan had been
 
 ## What this session added
 
-### Explicit 14 pt-equivalent font sizes
+### Font sizes: explicit override attempted then reverted after visual inspection
 
-**Files changed:**
-- `src/lib/components/jsroot-plot.svelte` — added `fLabelSize`/`fTitleSize` to `buildMultigraph()`
-- `docs/04-feature-specs/plot.md` — added font-size lines to JSROOT Integration code block and new AC item
+The redesign plan mentioned "14 pt fonts." `fLabelSize = fTitleSize = 0.04` NDC was added to `buildMultigraph()` as the closest ROOT-standard approximation. After visual inspection of the running app, the override made labels noticeably larger and less visually balanced than the JSROOT defaults. The explicit values were **reverted**; JSROOT defaults are used instead.
 
-JSROOT/ROOT font sizes are specified as NDC fractions of the pad height. `0.04` corresponds to approximately 14 pt at a ~500 px canvas height (midpoint of the `min(60vh, 600px)` range) and is the standard value for physics ROOT plots.
+**Decision:** Do not set `fLabelSize` or `fTitleSize`. JSROOT's built-in defaults produce better readability on this canvas at the `min(60vh, 600px)` size range. The "14 pt" note in the redesign plan was a guideline, not a hard constraint — the visual result matters more.
 
-```typescript
-hist.fXaxis.fLabelSize = 0.04;
-hist.fXaxis.fTitleSize = 0.04;
-hist.fYaxis.fLabelSize = 0.04;
-hist.fYaxis.fTitleSize = 0.04;
-```
+**Files changed (net result — no font-size change from baseline):**
+- `src/lib/components/jsroot-plot.svelte` — no explicit font-size properties set
+- `docs/04-feature-specs/plot.md` — AC updated to document the use of JSROOT defaults
 
 ### Redesign plan contradiction resolved
 
@@ -49,4 +44,4 @@ The redesign plan task 7.2 notes mentioned "legend top-right," which contradicts
 pnpm test            # unit tests pass (no logic changes)
 ```
 
-Visual check: load the plot page and confirm axis tick labels and titles are clearly readable at physics-publication quality.
+Visual check: axis tick labels and titles are readable using JSROOT default font sizes. Explicit `fLabelSize`/`fTitleSize` override was tried and reverted — defaults are visually superior at this canvas size.

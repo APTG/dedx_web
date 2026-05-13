@@ -499,11 +499,6 @@ function buildMultigraph(
   // Center axis labels
   hist.fXaxis.InvertBit(JSROOT.BIT(12));
   hist.fYaxis.InvertBit(JSROOT.BIT(12));
-  // 14 pt-equivalent font sizes (NDC fraction of pad height; 0.04 ≈ 14 pt at ~500 px)
-  hist.fXaxis.fLabelSize = 0.04;
-  hist.fXaxis.fTitleSize = 0.04;
-  hist.fYaxis.fLabelSize = 0.04;
-  hist.fYaxis.fTitleSize = 0.04;
   hist.fTitle = "";
   mg.fHistogram = hist;
 
@@ -1124,7 +1119,7 @@ When entity selection is incomplete (`isComplete === false`):
 - [ ] On mobile/tablet (touch devices), touch gestures on the canvas scroll the page — JSROOT touch zoom/pan is disabled.
 - [ ] The canvas resizes correctly when the browser window is resized.
 - [ ] No JSROOT-rendered legend on the canvas (the series list below the canvas serves as the legend).
-- [ ] Axis tick labels and axis titles use a 14 pt-equivalent font size (`fLabelSize = fTitleSize = 0.04` NDC).
+- [ ] Axis font sizes use JSROOT defaults (no explicit `fLabelSize`/`fTitleSize` override). Visual inspection confirmed the defaults produce better readability than a forced 0.04 NDC value.
 
 ### Axis Scale Controls
 
