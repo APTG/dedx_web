@@ -110,7 +110,7 @@ was removed so this progress log matches the actual Stage 5 code.
 | Spec requirement                             | Actual behaviour                                                   | Why accepted                                                                                                                                |
 | -------------------------------------------- | ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------- |
 | Electron appears greyed out in particle list | Electron absent — ESTAR returns empty particle list from real WASM | libdedx v1.4.0 doesn't populate electron in the ion list; spec was written before runtime verification. E2E test documents actual behavior. |
-| Notifications on auto-fallback               | Not implemented                                                    | No notification system yet (Sonner/toast deferred to Stage 8 per ADR 005 §Integration plan)                                                 |
+| Notifications on auto-fallback               | Not implemented                                                    | No notification system yet (Sonner/toast deferred; see ADR 005 §Integration plan)                                                           |
 
 ---
 

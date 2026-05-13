@@ -15,7 +15,7 @@
 | **v1.1.0** | Released 1 April 2022 | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release; legacy React 17 app   |
 | **v2.x**   | In development        | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | This rewrite — SvelteKit + Svelte 5 + WASM |
 
-The first production release of v2 will be tagged `v2.0.0` and deployed to `APTG/web` (see Stage 8).
+The first production release of v2 will be tagged `v2.0.0` and deployed to `APTG/web` (see Stage 9).
 
 ### What is being rewritten and why
 
@@ -464,7 +464,7 @@ As a <role>, I want to <action> so that <benefit>.
 
 ### Stage 3.7: Legacy Code Removal ✅ (21 April 2026)
 
-- **Rationale:** Moved forward from Stage 9. The old React codebase conflicts with
+- **Rationale:** Moved forward from Stage 10. The old React codebase conflicts with
   Stage 3 work (wrong `src/` structure, broken `package.json` scripts, CRA artefacts
   in `public/`). The new SvelteKit project cannot coexist with these files.
 - **Removed:**
@@ -491,14 +491,14 @@ As a <role>, I want to <action> so that <benefit>.
     WASM + SvelteKit app and deploys to `APTG/web_dev` via
     `peaceiris/actions-gh-pages@v4`.
   - `docs/08-deployment.md §5.1` — documents early deploy phase, one-time
-    repo setup, and Stage 8 migration path.
+    repo setup, and Stage 9 migration path.
 - **One-time repo setup (human step):** Create a fine-grained PAT with
   `Contents: Read and write` on `APTG/web_dev`, store as
   `WEB_DEV_DEPLOY_TOKEN` secret; enable GitHub Pages on `APTG/web_dev`
   (source: `gh-pages` branch); create `dev` environment in `dedx_web` repo
   settings. See [`docs/08-deployment.md §5.1`](08-deployment.md) for the
   full checklist.
-- **Stage 8 migration:** add `v*` tag trigger and a production deploy job to
+- **Stage 9 migration:** add `v*` tag trigger and a production deploy job to
   `deploy.yml` that builds and pushes `build/` to `APTG/web`.
 
 ### Stage 4: Project Scaffolding + Full AI Config
@@ -574,7 +574,25 @@ As a <role>, I want to <action> so that <benefit>.
 | 7.4 | WASM error handling                                 | ⏳     | [`calculator.md`](04-feature-specs/calculator.md), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) | No PR yet. Typed `LibdedxError` propagated to UI; user-visible error states for load failure, calculation failure, and invalid input; no silent swallowing                                |
 | 7.5 | External data (Zarr v3 `.webdedx` user-hosted data) | ⏳     | [`external-data.md`](04-feature-specs/external-data.md), [`shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md) | No PR yet. **Gate:** Spike 4 `VERDICT.md` must pass first (see Stage 2.5). `extdata=` URL param, `ext-ref` entity grammar, user-hosted Zarr v3 data files                                |
 
-### Stage 8: CI/CD — Deploy job
+### Stage 8: Open Beta & User Feedback ⏳
+
+- **Who:** You (human) collects feedback; AI implements fixes per issue.
+- **When:** After Stage 7 is complete; `APTG/web_dev` is already live on every `master` push.
+- **Goal:** Catch visual/layout bugs and UX annoyances before the production release.
+  During this window both apps are live for side-by-side comparison:
+  - `aptg.github.io/web` — v1.1.0 (old React app, still works as reference)
+  - `aptg.github.io/web_dev` — v2.x (new SvelteKit app, receiving feedback)
+  Once Stage 9 tags `v2.0.0`, `APTG/web` gets overwritten and the comparison
+  window closes — so this stage must happen first.
+- **Process:**
+  1. Share the `web_dev` URL with users and invite feedback.
+  2. File issues on GitHub with a `beta-feedback` label; tag critical ones `must-fix`.
+  3. Fix issues in `master` — each push auto-deploys to `web_dev`.
+  4. Repeat until all `must-fix` issues are resolved and the team is satisfied.
+- **Gate (Stage 9):** No open `beta-feedback` issues tagged `must-fix`; team sign-off.
+- **Verify:** `web_dev` reflects all fixes; acceptance from at least one external user.
+
+### Stage 9: CI/CD — Deploy job
 
 - `ci.yml` already has lint, type-check, Vitest, Playwright, and build from Stages 3–7.
 - This stage adds the **deploy job**: push `build/` to `APTG/web_dev` on `master`,
@@ -582,12 +600,12 @@ As a <role>, I want to <action> so that <benefit>.
   for the full workflow YAML.
 - **First production release:** tag `v2.0.0` → deploys to `APTG/web`, replacing v1.1.0.
 
-### Stage 9: Legacy Code Removal ✅ (completed early as Stage 3.7)
+### Stage 10: Legacy Code Removal ✅ (completed early as Stage 3.7)
 
 - Legacy React source, CRA public artefacts, and `build_wasm.sh` were removed on
   21 April 2026 as Stage 3.7, ahead of the originally planned post-deployment window.
   See §8 Stage 3.7 for the complete file list and rationale.
-- No separate Stage 9 cleanup remains in `package.json`; Stage 4 replaces it wholesale
+- No separate Stage 10 cleanup remains in `package.json`; Stage 4 replaces it wholesale
   when the SvelteKit app is scaffolded.
 - The old code is preserved in git history; the last commit containing it is referenced in §11.
 
@@ -634,7 +652,7 @@ When starting a new LLM session on any machine:
 
 The current (old) code has useful reference material despite being broken.
 The last commit on `master` containing this code should be tagged or noted
-before Stage 9 (legacy removal). You can find it with `git log master --oneline -1`.
+before Stage 10 (legacy removal). You can find it with `git log master --oneline -1`.
 
 > **Legacy code last commit:** `0330233` (`docs: add AI session logging system`)
 
