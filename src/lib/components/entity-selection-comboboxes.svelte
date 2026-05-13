@@ -280,7 +280,7 @@
   });
 </script>
 
-<div class={cn("grid grid-cols-1 items-start gap-3 lg:grid-cols-3", className)}>
+<div class={cn("grid grid-cols-1 items-start gap-3 desktop:grid-cols-3", className)}>
   <div class="w-full">
     <EntityCombobox
       label="Particle"
@@ -337,7 +337,7 @@
     />
   </div>
 
-  <div class="lg:col-span-3 lg:text-right">
+  <div class="desktop:col-span-3 desktop:text-right">
     <button
       type="button"
       title="Restores Proton / Water / Auto-select"
