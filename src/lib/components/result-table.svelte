@@ -928,6 +928,19 @@
       </div>
     {/if}
 
+    {#if calcState.error}
+      <div
+        class="p-3 text-sm border-t border-destructive/20 bg-destructive/5 space-y-1"
+        role="alert"
+      >
+        <p class="text-destructive font-medium">Calculation error: {calcState.error.message}</p>
+        <details class="text-xs text-muted-foreground">
+          <summary class="cursor-pointer select-none">Show details</summary>
+          <code class="mt-1 block">LibdedxError code: {calcState.error.code}</code>
+        </details>
+      </div>
+    {/if}
+
     <div class="mt-2 flex justify-start">
       <button
         type="button"

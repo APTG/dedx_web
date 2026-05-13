@@ -46,6 +46,7 @@
   // Mobile responsive: track viewport width to collapse entity panels on small screens
   let isMobile = $state(false);
   let entityPanelsOpen = $state(false);
+  let previewError = $state<string | null>(null);
 
   $effect(() => {
     if (!browser) return;
@@ -316,6 +317,8 @@
     // accessed inside the async callback which is not tracked).
     const advancedModeActive = isAdvancedMode.value;
 
+    previewError = null;
+
     // Block preview calculation when URL version mismatch is pending
     if (urlVersionMismatch !== null) {
       plotState.clearPreview();
@@ -398,7 +401,7 @@
         });
       } catch (err) {
         if (cancelled) return;
-        console.error("Preview series error:", err);
+        previewError = err instanceof Error ? err.message : String(err);
         plotState.clearPreview();
       }
     });
@@ -812,6 +815,9 @@
         </div>
 
         <!-- Series list (legend) -->
+        {#if previewError}
+          <p class="text-xs text-destructive" role="alert">Preview failed: {previewError}</p>
+        {/if}
         {#if plotState.series.length > 0 || plotState.preview}
           <div role="list" aria-label="Plot series" class="flex flex-col gap-1">
             {#if plotState.preview}

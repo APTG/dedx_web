@@ -66,6 +66,12 @@ export function createCalculatorState(
   let calculationResults = $state<
     Map<string, { stoppingPower: number; csdaRangeCm: number | null }>
   >(new Map());
+  let outOfRangeRowIds = $state<Set<string>>(new Set());
+  // Persistent across calculations within this state instance — once an energy
+  // is identified as OOR for a given (program, particle, material) context, we
+  // skip calling WASM again. Prevents the C library from hanging on a second
+  // call with the same out-of-range energy. Key: "programId:particleId:materialId:energy".
+  const outOfRangeCache = new Set<string>();
 
   const debouncedCalculate = debounce(async () => {
     const energies = getValidEnergies();
@@ -242,7 +248,22 @@ export function createCalculatorState(
       };
     }
 
-    const resultData = calculationResults.get(String(row.id));
+    const rowKey = String(row.id);
+    const resultData = calculationResults.get(rowKey);
+
+    if (!resultData && outOfRangeRowIds.has(rowKey)) {
+      return {
+        id: row.id,
+        rawInput: row.text,
+        normalizedMevNucl,
+        unit: effectiveUnit,
+        unitFromSuffix,
+        status: "out-of-range",
+        message: "Energy out of tabulated range",
+        stoppingPower: null,
+        csdaRangeCm: null,
+      };
+    }
 
     return {
       id: row.id,
@@ -277,70 +298,75 @@ export function createCalculatorState(
   async function performCalculation(energies: { rowId: string; energy: number }[]): Promise<void> {
     if (energies.length === 0) {
       calculationResults = new Map();
+      outOfRangeRowIds = new Set();
       return;
     }
 
     isCalculating = true;
     error = null;
+    outOfRangeRowIds = new Set();
 
-    try {
-      const resolvedProgramId = entitySelection.resolvedProgramId;
-      const particleId = entitySelection.selectedParticle?.id;
-      const material = entitySelection.selectedMaterial;
-      const materialId = material?.id;
-      const customMaterial = isCustomMaterial(material) ? material : null;
+    // Resolved outside try/catch so the per-row retry path can reuse them.
+    const resolvedProgramId = entitySelection.resolvedProgramId;
+    const particleId = entitySelection.selectedParticle?.id;
+    const material = entitySelection.selectedMaterial;
+    const materialId = material?.id;
+    const customMaterial = isCustomMaterial(material) ? material : null;
 
-      if (!resolvedProgramId || !particleId || !materialId) {
-        calculationResults = new Map();
-        isCalculating = false;
-        return;
-      }
+    if (!resolvedProgramId || !particleId || !materialId) {
+      calculationResults = new Map();
+      isCalculating = false;
+      return;
+    }
 
-      const energyValues = energies.map((e) => e.energy);
-      // Only pass advanced options to WASM in Advanced mode — Basic mode uses
-      // defaults so switching back to Basic always reverts to default behaviour.
-      const calculationOptions =
-        isAdvancedMode.value && !customMaterial ? advancedOptions.value : undefined;
-      const result = customMaterial
+    // Only pass advanced options to WASM in Advanced mode — Basic mode uses
+    // defaults so switching back to Basic always reverts to default behaviour.
+    const calculationOptions =
+      isAdvancedMode.value && !customMaterial ? advancedOptions.value : undefined;
+
+    // Use the density override only in Advanced mode; Basic mode always uses
+    // the material's built-in density so switching back reverts the value.
+    const density =
+      (isAdvancedMode.value && !customMaterial
+        ? advancedOptions.value.densityOverride
+        : undefined) ??
+      material?.density ??
+      1;
+
+    function oorCacheKey(energy: number): string {
+      return `${resolvedProgramId}:${particleId}:${materialId}:${energy}`;
+    }
+
+    function callService(energyValues: number[]) {
+      return customMaterial
         ? service.calculateCustomCompound({
-            programId: resolvedProgramId,
-            particleId,
-            elements: customMaterialElementsForWasm(customMaterial),
-            density: customMaterial.density,
-            iValue: customMaterial.iValue,
+            programId: resolvedProgramId!,
+            particleId: particleId!,
+            elements: customMaterialElementsForWasm(customMaterial!),
+            density: customMaterial!.density,
+            iValue: customMaterial!.iValue,
             energies: energyValues,
           })
         : typeof materialId === "number"
           ? service.calculate(
-              resolvedProgramId,
-              particleId,
+              resolvedProgramId!,
+              particleId!,
               materialId,
               energyValues,
               calculationOptions,
             )
           : null;
+    }
 
-      if (!result) {
-        calculationResults = new Map();
-        isCalculating = false;
-        return;
-      }
-
-      // Use the density override only in Advanced mode; Basic mode always uses
-      // the material's built-in density so switching back reverts the value.
-      const density =
-        (isAdvancedMode.value && !customMaterial
-          ? advancedOptions.value.densityOverride
-          : undefined) ??
-        material?.density ??
-        1;
-
-      const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
-
-      for (let i = 0; i < energies.length; i++) {
+    function processResults(
+      result: { stoppingPowers: number[]; csdaRanges: number[] },
+      items: { rowId: string; energy: number }[],
+    ): Map<string, { stoppingPower: number; csdaRangeCm: number | null }> {
+      const map = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
+      for (let i = 0; i < items.length; i++) {
         const stpMass = result.stoppingPowers[i]!;
         const csdaGcm2 = result.csdaRanges[i]!;
-        const { rowId, energy } = energies[i]!;
+        const { rowId, energy } = items[i]!;
 
         // Debug logging for subnormal/invalid WASM output values.
         // This helps diagnose physics issues when WASM returns nonsensical values.
@@ -378,17 +404,97 @@ export function createCalculatorState(
         }
 
         const csdaCm = csdaGcm2ToCm(csdaGcm2, density);
-
-        newResults.set(rowId, {
-          stoppingPower: stpDisplay,
-          csdaRangeCm: csdaCm,
-        });
+        map.set(rowId, { stoppingPower: stpDisplay, csdaRangeCm: csdaCm });
       }
+      return map;
+    }
 
+    // Pre-classify energies using the persistent OOR cache.
+    // Cached OOR entries are known to fail for this (program, particle, material)
+    // context — skip WASM for them to prevent redundant calls that may hang the
+    // C library on repeated out-of-range inputs.
+    const cachedOorItems: { rowId: string; energy: number }[] = [];
+    let uncachedItems: { rowId: string; energy: number }[] = [];
+    for (const item of energies) {
+      if (outOfRangeCache.has(oorCacheKey(item.energy))) {
+        cachedOorItems.push(item);
+      } else {
+        uncachedItems.push(item);
+      }
+    }
+
+    const newOutOfRange = new Set<string>(cachedOorItems.map((item) => item.rowId));
+
+    // Range pre-check: classify items outside the tabulated energy limits as OOR
+    // without calling WASM. Some programs (e.g. ICRU 49) hang in _dedx_get_stp_table
+    // on out-of-range energies rather than returning error code 101.
+    if (!customMaterial && typeof materialId === "number") {
+      const minE = service.getMinEnergy(resolvedProgramId!, particleId!);
+      const maxE = service.getMaxEnergy(resolvedProgramId!, particleId!);
+      const inRange: { rowId: string; energy: number }[] = [];
+      for (const item of uncachedItems) {
+        if (item.energy < minE || item.energy > maxE) {
+          newOutOfRange.add(item.rowId);
+          outOfRangeCache.add(oorCacheKey(item.energy));
+        } else {
+          inRange.push(item);
+        }
+      }
+      uncachedItems = inRange;
+    }
+
+    if (uncachedItems.length === 0) {
+      // All energies are OOR (from cache or range pre-check) — skip WASM entirely.
+      calculationResults = new Map();
+      outOfRangeRowIds = newOutOfRange;
+      isCalculating = false;
+      return;
+    }
+
+    try {
+      const result = callService(uncachedItems.map((e) => e.energy));
+      if (!result) {
+        calculationResults = new Map();
+        isCalculating = false;
+        return;
+      }
       // Reassign to a new Map so Svelte detects the change.
-      calculationResults = newResults;
+      calculationResults = processResults(result, uncachedItems);
+      outOfRangeRowIds = newOutOfRange;
     } catch (e) {
-      error = e instanceof LibdedxError ? e : new LibdedxError(-1, "Calculation failed");
+      if (e instanceof LibdedxError && e.code === 101 /* DEDX_ERR_ENERGY_OUT_OF_RANGE */) {
+        // Retry per-row to identify which energies are out of the tabulated range.
+        // This lets valid rows show results while out-of-range rows are marked individually.
+        const newResults = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
+        let fatalError: LibdedxError | null = null;
+
+        for (const item of uncachedItems) {
+          if (fatalError) break;
+          try {
+            const result = callService([item.energy]);
+            if (result) {
+              const entry = processResults(result, [item]).get(item.rowId);
+              if (entry) newResults.set(item.rowId, entry);
+            }
+          } catch (rowErr) {
+            if (rowErr instanceof LibdedxError && rowErr.code === 101) {
+              newOutOfRange.add(item.rowId);
+              outOfRangeCache.add(oorCacheKey(item.energy));
+            } else {
+              fatalError =
+                rowErr instanceof LibdedxError
+                  ? rowErr
+                  : new LibdedxError(-1, "Calculation failed");
+            }
+          }
+        }
+
+        calculationResults = newResults;
+        outOfRangeRowIds = newOutOfRange;
+        if (fatalError) error = fatalError;
+      } else {
+        error = e instanceof LibdedxError ? e : new LibdedxError(-1, "Calculation failed");
+      }
     } finally {
       isCalculating = false;
     }
@@ -535,12 +641,15 @@ export function createCalculatorState(
     },
     clearResults() {
       calculationResults = new Map();
+      outOfRangeRowIds = new Set();
       isCalculating = false;
     },
     resetAll() {
       entitySelection.resetAll();
       inputState.resetRows([{ text: "100" }]);
       calculationResults = new Map();
+      outOfRangeRowIds = new Set();
+      outOfRangeCache.clear();
       isCalculating = false;
       error = null;
     },

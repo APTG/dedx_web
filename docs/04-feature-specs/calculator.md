@@ -528,6 +528,11 @@ a `calculate()` call:
 - If the error applies to specific energy values: those values are marked
   as out-of-range (reported in the validation summary below the table,
   excluded from results). Remaining valid values still produce results.
+- In advanced multi-program mode, an out-of-range input for one selected
+  program must not leave stale comparison values visible or block other
+  in-range programs. The out-of-range program's cells show the
+  per-program error marker defined in [`multi-program.md`](multi-program.md),
+  while in-range programs recalculate for the current input.
 - If the error is fatal (unexpected C error): show an error message below
   the result table with the human-readable message. Include a "Show details"
   toggle that reveals the C error code (e.g., `LibdedxError code: 103`).

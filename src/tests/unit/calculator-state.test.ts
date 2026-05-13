@@ -1,5 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { LibdedxServiceImpl, MockLibdedxServiceWithElectron } from "$lib/wasm/__mocks__/libdedx";
+import { LibdedxError } from "$lib/wasm/types";
+import type { AdvancedOptions, CalculationResult } from "$lib/wasm/types";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import {
@@ -665,6 +667,113 @@ describe("CalculatorState", () => {
       // Should still be keV/µm because Basic mode ignores the override
       expect(calcState.stpDisplayUnit).toBe("keV/µm");
     });
+  });
+});
+
+// Service that simulates WASM throwing LibdedxError(101) for energies >= threshold,
+// with getMaxEnergy returning 1e10 so the range pre-check is bypassed and the
+// LibdedxError(101) per-row retry path is exercised directly.
+class OutOfRangeLibdedxService extends LibdedxServiceImpl {
+  readonly threshold: number;
+  constructor(threshold = 1e5) {
+    super();
+    this.threshold = threshold;
+  }
+  // Return a large max-energy so the range pre-check in performCalculation doesn't
+  // intercept these test cases — we want to exercise the LibdedxError(101) path.
+  override getMaxEnergy(_programId: number, _particleId: number): number {
+    return 1e10;
+  }
+  override calculate(
+    programId: number,
+    particleId: number,
+    materialId: number,
+    energies: number[],
+    options?: AdvancedOptions,
+  ): CalculationResult {
+    if (energies.some((e) => e >= this.threshold)) {
+      throw new LibdedxError(101, "WASM STP calculation failed");
+    }
+    return super.calculate(programId, particleId, materialId, energies, options);
+  }
+}
+
+describe("WASM out-of-range energy (LibdedxError code 101)", () => {
+  let outOfRangeService: OutOfRangeLibdedxService;
+  let entitySelection: ReturnType<typeof createEntitySelectionState>;
+  let calcState: ReturnType<typeof createCalculatorState>;
+
+  beforeEach(() => {
+    outOfRangeService = new OutOfRangeLibdedxService();
+    const matrix = buildCompatibilityMatrix(outOfRangeService);
+    entitySelection = createEntitySelectionState(matrix);
+    calcState = createCalculatorState(entitySelection, outOfRangeService);
+  });
+
+  afterEach(() => {
+    advancedOptions.value = {};
+    isAdvancedMode.value = false;
+  });
+
+  it("row shows out-of-range status for energy above tabulated maximum (1 TeV)", async () => {
+    calcState.updateRowText(0, "1000000"); // 1 TeV in MeV
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("out-of-range");
+    expect(calcState.rows[0]!.message).toBe("Energy out of tabulated range");
+    expect(calcState.rows[0]!.stoppingPower).toBeNull();
+  });
+
+  it("does not hang when invalid input is added to a row after an out-of-range row", async () => {
+    calcState.updateRowText(0, "1000000"); // 1 TeV — out-of-range
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("out-of-range");
+
+    // Row 1 is the auto-added empty row; typing invalid content re-triggers calculation
+    calcState.updateRowText(1, "=");
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("out-of-range");
+    expect(calcState.rows[1]!.status).toBe("invalid");
+  });
+
+  it("skips WASM for a previously-identified out-of-range energy on re-calculation (cache hit)", async () => {
+    const spy = vi.spyOn(outOfRangeService, "calculate");
+
+    calcState.updateRowText(0, "1000000"); // 1 TeV
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    // First calculation: 1 batch call fails → 1 per-row retry = 2 total WASM calls
+    expect(spy).toHaveBeenCalledTimes(2);
+
+    // Second calculation triggered by invalid input — same energy is now cached
+    calcState.updateRowText(1, "=");
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    // Row 0's energy is served from cache — no additional WASM calls
+    expect(spy).toHaveBeenCalledTimes(2);
+
+    spy.mockRestore();
+  });
+
+  it("valid rows show results when mixed with an out-of-range row", async () => {
+    calcState.updateRowText(0, "100"); // 100 MeV — in range
+    calcState.handleBlur(0);
+    calcState.updateRowText(1, "1000000"); // 1 TeV — out-of-range
+
+    calcState.triggerCalculation();
+    await calcState.flushCalculation();
+
+    expect(calcState.rows[0]!.status).toBe("valid");
+    expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
+    expect(calcState.rows[1]!.status).toBe("out-of-range");
+    expect(calcState.rows[1]!.stoppingPower).toBeNull();
   });
 });
 

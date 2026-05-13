@@ -412,16 +412,21 @@ result cell, a tooltip shows the difference from the default program:
 
 1. Parse and validate rows exactly as in Calculator.
 2. Normalize energies to MeV/nucl per [`unit-handling.md`](unit-handling.md).
-3. Call `LibdedxService.calculateMulti()` with:
-   - `programIds`: all selected program IDs
+3. Before calling WASM for built-in materials, pre-check each selected
+   program's energy bounds using `getMinEnergy()` / `getMaxEnergy()`.
+   Programs with any out-of-range input receive a per-program
+   `LibdedxError(101, ...)` result and are not passed to WASM; in-range
+   programs still calculate normally.
+4. Call `LibdedxService.calculateMulti()` with:
+   - `programIds`: selected program IDs whose inputs are in range
    - `particleId`, `materialId`: from entity selection
    - `energies`: normalized MeV/nucl array
    - `options`: reserved for future `AdvancedOptions` compatibility
-4. Receive `Map<number, CalculationResult | LibdedxError>`.
-5. Distribute results into the per-program columns within each group.
-6. Hidden columns still receive data (calculated but not rendered) so
+5. Receive `Map<number, CalculationResult | LibdedxError>`.
+6. Distribute results into the per-program columns within each group.
+7. Hidden columns still receive data (calculated but not rendered) so
    that showing a hidden column is instant — no recalculation needed.
-7. Live debounced recalculation applies to all selected programs
+8. Live debounced recalculation applies to all selected programs
    simultaneously (same 300ms debounce as Calculator).
 
 ### Partial Success / Partial Failure
@@ -430,12 +435,12 @@ One failing program does not block the others. Per the WASM contract,
 `calculateMulti()` returns `CalculationResult | LibdedxError` per
 program.
 
-| Scenario                          | Behavior                                                                                                                                                                |
-| --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Program succeeds                  | Its columns show numeric results normally.                                                                                                                              |
-| Program fails                     | Its columns show "—" (em dash) in every row. A tooltip on the column header shows the error message from `LibdedxError`. A subtle error icon (⚠) appears in the header. |
-| All programs fail                 | All result columns show "—". A banner above the table states: "All programs returned errors for the current selection."                                                 |
-| Program fails, then input changes | On the next recalculation, the failed program is retried automatically. If it succeeds, its columns update normally.                                                    |
+| Scenario                          | Behavior                                                                                                             |
+| --------------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| Program succeeds                  | Its columns show numeric results normally.                                                                           |
+| Program fails                     | Its cells show "— ⚠️" in every row. The cell title shows the error message from `LibdedxError`.                      |
+| All programs fail                 | All result columns show "— ⚠️" with each cell title containing the corresponding error message.                      |
+| Program fails, then input changes | On the next recalculation, the failed program is retried automatically. If it succeeds, its columns update normally. |
 
 Failed programs remain selected. The user can uncheck them in the
 picker if they want to remove them.
@@ -599,12 +604,10 @@ are excluded from the `calculateMulti()` call. Invalid rows show
 
 ### Error Presentation
 
-- Per-program errors are shown via the "—" + tooltip pattern described
+- Per-program errors are shown via the "— ⚠️" + cell-title pattern described
   in § Partial Success / Partial Failure.
-- `LibdedxError.message` is shown in the tooltip. The numeric error
-  code is not displayed in the UI but is logged to the browser console.
-- If the user hovers or focuses the error icon in the column header,
-  the full error message is displayed in a popover.
+- `LibdedxError.message` is shown in the title. The numeric error
+  code is not displayed in the multi-program cells.
 
 ---
 
