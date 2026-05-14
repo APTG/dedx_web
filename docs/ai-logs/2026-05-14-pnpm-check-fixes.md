@@ -8,7 +8,7 @@
 
 ### Prompt 2: Apply minimal fixes and validate
 
-**AI response**: Applied type-only and behavior-preserving fixes: broadened shared `cn` class handling, added missing shadcn helper types, tightened built-in entity ID types, added explicit guards/non-null assertions where tests already prove values exist, avoided exact-optional `undefined` properties, fixed DOM type narrowing in Playwright evaluates, and added root `@sveltejs/adapter-auto` so `svelte-check` can load the checked prototype config. Validated `pnpm check`, lint, unit tests, and build successfully. Installed Chromium and attempted the impacted Playwright specs, but the local build lacks generated `static/wasm/libdedx.mjs`, causing repeated `/wasm/libdedx.mjs` 404s; the run was stopped after confirming the environment blocker.
+**AI response**: Applied type-only and behavior-preserving fixes: broadened shared `cn` class handling, added missing shadcn helper types, tightened built-in entity ID types, added explicit guards/non-null assertions where tests already prove values exist, avoided exact-optional `undefined` properties, fixed DOM type narrowing in Playwright evaluates, then later replaced the root-wide `svelte-check` invocation with a first-party-only `svelte-check --workspace src` plus `tsc --noEmit`, so vendor/prototype submodule configs are ignored instead of requiring their docs-app dependencies. Validated `pnpm check`, lint, unit tests, and build successfully. Installed Chromium and attempted the impacted Playwright specs, but the local build lacks generated `static/wasm/libdedx.mjs`, causing repeated `/wasm/libdedx.mjs` 404s; the run was stopped after confirming the environment blocker.
 
 ### Prompt 3: Address automated validation feedback
 
@@ -22,6 +22,10 @@
 
 **AI response**: Added short source comments documenting that built-in particle/program IDs are populated by the existing WASM wrapper list calls, why the Accordion wrapper consumes the legacy `collapsible` prop, and why `cn` normalizes Svelte/shadcn class values. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
 
+### Prompt 6: Address PR review comment and local vendor config errors
+
+**AI response**: Moved the AI changelog row to the top of the table body, changed `pnpm check` to run `svelte-check --workspace src --tsconfig tsconfig.svelte-check.json` plus `tsc --noEmit -p tsconfig.json`, removed the unnecessary `@sveltejs/adapter-auto` dependency, added PR #470 to the Stage 8 redesign-plan table, and recorded a lessons-learned entry about avoiding vendored Svelte config discovery.
+
 ## Tasks
 
 ### Resolve pnpm check diagnostics
@@ -29,5 +33,5 @@
 - **Status**: completed
 - **Stage**: maintenance / Stage 8
 - **Files changed**: `package.json`, `pnpm-lock.yaml`, `src/lib/**`, `src/routes/calculator/+page.svelte`, `src/tests/**`, `tests/e2e/**`
-- **Decision**: Kept TypeScript strictness enabled and fixed call sites/types instead of weakening `tsconfig`; added `@sveltejs/adapter-auto` after advisory check because `svelte-check` loads `prototypes/jsroot-svelte5/svelte.config.js`.
+- **Decision**: Kept TypeScript strictness enabled and fixed call sites/types instead of weakening `tsconfig`; scoped `svelte-check` to `src/` with `src/tsconfig.svelte-check.json` and added `tsc --noEmit` so first-party TS/tests remain checked while vendored submodule configs are ignored.
 - **Issue**: Full impacted E2E execution is blocked locally until generated WASM files are available under `static/wasm/`.

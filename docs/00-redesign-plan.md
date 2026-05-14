@@ -592,6 +592,12 @@ As a <role>, I want to <action> so that <benefit>.
 - **Gate (Stage 9):** No open `beta-feedback` issues tagged `must-fix`; team sign-off.
 - **Verify:** `web_dev` reflects all fixes; acceptance from at least one external user.
 
+#### Stage 8 PRs
+
+| PR | Area | Status | Notes |
+| --- | --- | --- | --- |
+| [#470](https://github.com/APTG/dedx_web/pull/470) | Tooling / type-check cleanup | ✅ | Fixed repository-wide `pnpm check` diagnostics and scoped `svelte-check` to app sources so vendor/prototype submodules are ignored. |
+
 ### Stage 9: CI/CD — Deploy job
 
 - `ci.yml` already has lint, type-check, Vitest, Playwright, and build from Stages 3–7.
