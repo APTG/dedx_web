@@ -484,6 +484,8 @@ def resolve_icru_duplicates(
             continue
         densities = [round(float(m.get("density") or 0.0), 3) for m in group]
         if len(set(densities)) == 1:
+            # Prefer an exportable (complete) representative so complete copies are not
+            # dropped when the first sorted entry for this ICRU group is incomplete.
             representative = next(
                 (material for material in group if material["sourceKey"] not in incomplete_keys),
                 group[0],

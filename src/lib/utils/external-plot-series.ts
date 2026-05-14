@@ -6,7 +6,8 @@ export function externalEntriesToCalculationResult(
   csdaEntry: CsdaTableEntry | null,
   particleA: number,
 ): CalculationResult {
-  const energies = Array.from(stpEntry.energyGridMev).map((e) => (particleA > 0 ? e / particleA : e));
+  const energyDivisor = particleA > 0 ? particleA : 1;
+  const energies = Array.from(stpEntry.energyGridMev).map((e) => e / energyDivisor);
   return {
     energies,
     stoppingPowers: stpEntry.values.map((v) => v ?? 0),
