@@ -1,7 +1,11 @@
 import type { StpUnit, AdvancedOptions } from "$lib/wasm/types";
 import type { EntityId, ExternalSourceDescriptor } from "$lib/external-data/types";
 import { parseEntityId, formatEntityId } from "$lib/external-data/ids";
-import { parseExtdataParams, externalDataQuerySegments } from "$lib/external-data/url";
+import {
+  appendExtdataParams,
+  parseExtdataParams,
+  externalDataQuerySegments,
+} from "$lib/external-data/url";
 
 const STP_TOKENS: Record<StpUnit, string> = {
   "keV/µm": "kev-um",
@@ -111,6 +115,10 @@ export interface PlotUrlDecoded {
 
 export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   const params = new URLSearchParams();
+  if (input.externalSources && input.externalSources.length > 0) {
+    appendExtdataParams(params, input.externalSources);
+  }
+
   if (input.particleId !== null) params.set("particle", String(input.particleId));
 
   // Custom compound material params (only when materialIsCustom=true)
@@ -208,7 +216,12 @@ export function plotUrlQueryString(input: PlotUrlInput): string {
     parts.push(...externalDataQuerySegments(input.externalSources));
   }
 
-  const restStr = params.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  const paramsNoExtdata = new URLSearchParams();
+  for (const [key, value] of params) {
+    if (key !== "extdata") paramsNoExtdata.append(key, value);
+  }
+
+  const restStr = paramsNoExtdata.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
   if (restStr) parts.push(restStr);
 
   return parts.join("&");

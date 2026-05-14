@@ -4,7 +4,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import type { StoredCompoundInternal, CompoundElementEntry } from "$lib/state/custom-compounds.svelte";
-  import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts } from "$lib/utils/element-data";
+  import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts, normalizeAtomCounts } from "$lib/utils/element-data";
   import { cn } from "$lib/utils.js";
 
   interface CompoundEditorFormData {
@@ -105,7 +105,7 @@
     }));
     const result = computeAtomCounts(wfs);
     if (!result) return null;
-    return result;
+    return normalizeAtomCounts(result);
   }
 
   function validate(): boolean {

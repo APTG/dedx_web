@@ -20,7 +20,11 @@ import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "$lib/external-da
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
-function makeMetadata(label: string, hasCsdaRange = false): ExternalStoreMetadata {
+function makeMetadata(
+  label: string,
+  hasCsdaRange = false,
+  energyUnit: ExternalStoreMetadata["energyUnit"] = "MeV",
+): ExternalStoreMetadata {
   return {
     label,
     url: `https://example.com/${label}.webdedx`,
@@ -35,7 +39,7 @@ function makeMetadata(label: string, hasCsdaRange = false): ExternalStoreMetadat
       { id: "air", name: "Air", index: 1, linearUnitsAvailable: false },
     ],
     energyGrid: [1.0, 10.0, 100.0],
-    energyUnit: "MeV",
+    energyUnit,
     stpUnit: "MeV·cm²/g",
     hasCsdaRange,
   };
@@ -61,7 +65,10 @@ describe("ExternalDataService", () => {
       const meta = makeMetadata("srim");
       mockLoadStoreMetadata.mockResolvedValueOnce(meta);
 
-      const result = await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      const result = await svc.loadSource({
+        label: "srim",
+        url: "https://example.com/srim.webdedx",
+      });
       expect(result).toBe(meta);
       expect(mockLoadStoreMetadata).toHaveBeenCalledOnce();
     });
@@ -80,7 +87,9 @@ describe("ExternalDataService", () => {
       const meta = makeMetadata("srim");
       let resolveLoad!: (value: ExternalStoreMetadata) => void;
       mockLoadStoreMetadata.mockReturnValueOnce(
-        new Promise<ExternalStoreMetadata>((r) => { resolveLoad = r; }),
+        new Promise<ExternalStoreMetadata>((r) => {
+          resolveLoad = r;
+        }),
       );
 
       const p1 = svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
@@ -99,7 +108,10 @@ describe("ExternalDataService", () => {
 
       await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
       // A second call should use the cache, not the in-flight map.
-      const result = await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      const result = await svc.loadSource({
+        label: "srim",
+        url: "https://example.com/srim.webdedx",
+      });
       expect(result).toBe(meta);
       expect(mockLoadStoreMetadata).toHaveBeenCalledOnce();
     });
@@ -110,9 +122,14 @@ describe("ExternalDataService", () => {
       const meta = makeMetadata("srim");
       mockLoadStoreMetadata.mockResolvedValueOnce(meta);
 
-      await expect(svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" })).rejects.toThrow();
+      await expect(
+        svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" }),
+      ).rejects.toThrow();
       // Second attempt should succeed.
-      const result = await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      const result = await svc.loadSource({
+        label: "srim",
+        url: "https://example.com/srim.webdedx",
+      });
       expect(result).toBe(meta);
       expect(mockLoadStoreMetadata).toHaveBeenCalledTimes(2);
     });
@@ -127,6 +144,25 @@ describe("ExternalDataService", () => {
       await expect(
         svc.loadSource({ label: "src5", url: "https://example.com/src5.webdedx" }),
       ).rejects.toMatchObject({ code: "validation-error" });
+    });
+
+    it("counts in-flight loads toward MAX_SOURCES", async () => {
+      mockLoadStoreMetadata.mockImplementation(
+        (d) =>
+          new Promise<ExternalStoreMetadata>((resolve) => {
+            setTimeout(() => resolve(makeMetadata(d.label)), 0);
+          }),
+      );
+
+      const pending = Array.from({ length: 5 }, (_, i) =>
+        svc.loadSource({ label: `src${i}`, url: `https://example.com/src${i}.webdedx` }),
+      );
+
+      await expect(
+        svc.loadSource({ label: "src5", url: "https://example.com/src5.webdedx" }),
+      ).rejects.toMatchObject({ code: "validation-error" });
+
+      await Promise.all(pending);
     });
   });
 
@@ -177,6 +213,24 @@ describe("ExternalDataService", () => {
 
     it("evict is a no-op for unknown label", () => {
       expect(() => svc.evict("nonexistent")).not.toThrow();
+    });
+
+    it("does not cache metadata when an in-flight load is evicted before it resolves", async () => {
+      let resolveLoad!: (value: ExternalStoreMetadata) => void;
+      mockLoadStoreMetadata.mockReturnValueOnce(
+        new Promise<ExternalStoreMetadata>((resolve) => {
+          resolveLoad = resolve;
+        }),
+      );
+
+      const pending = svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      svc.evict("srim");
+      const meta = makeMetadata("srim");
+      resolveLoad(meta);
+
+      await expect(pending).resolves.toBe(meta);
+      expect(svc.getMetadata("srim")).toBeUndefined();
+      expect(svc.isLoaded("srim")).toBe(false);
     });
   });
 
@@ -229,8 +283,8 @@ describe("ExternalDataService", () => {
       expect(mockLoadStpSlice).toHaveBeenCalledWith(
         "https://example.com/srim.webdedx",
         "prog1",
-        0,  // particle index
-        0,  // material index
+        0, // particle index
+        0, // material index
       );
     });
 
@@ -246,6 +300,16 @@ describe("ExternalDataService", () => {
       // alpha particle: energyUnit=MeV, A=4 → no multiplication (already total MeV)
       const entry = await svc.getStp("srim", "prog1", "alpha", "water");
       expect(Array.from(entry!.energyGridMev)).toEqual([1.0, 10.0, 100.0]);
+    });
+
+    it("converts per-nucleon energy grid to total MeV for alpha (A=4)", async () => {
+      svc = new ExternalDataService();
+      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", false, "MeV/nucl"));
+      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      mockLoadStpSlice.mockResolvedValueOnce(new Float32Array([10.0, 5.0, 2.5]));
+
+      const entry = await svc.getStp("srim", "prog1", "alpha", "water");
+      expect(Array.from(entry!.energyGridMev)).toEqual([4.0, 40.0, 400.0]);
     });
 
     it("caches result on second call", async () => {
@@ -328,14 +392,12 @@ describe("ExternalDataService", () => {
       await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
     });
 
-    it("returns { stp: null, csda: null } when no STP data", async () => {
+    it("propagates STP slice load errors", async () => {
       // getStp will fail: loadStpSlice throws
       mockLoadStpSlice.mockRejectedValueOnce(new Error("network fail"));
       mockLoadCsdaSlice.mockResolvedValueOnce(null);
 
-      await expect(
-        svc.interpolateAt("srim", "prog1", "p", "water", 5.0),
-      ).rejects.toThrow();
+      await expect(svc.interpolateAt("srim", "prog1", "p", "water", 5.0)).rejects.toThrow();
     });
 
     it("returns interpolated stp and null csda when no csda data", async () => {

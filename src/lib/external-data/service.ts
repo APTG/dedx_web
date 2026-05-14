@@ -7,7 +7,11 @@
  */
 
 import type { ExternalSourceDescriptor } from "./types.js";
-import type { ExternalStoreMetadata, ExternalParticleEntry, ExternalMaterialEntry } from "./schema.js";
+import type {
+  ExternalStoreMetadata,
+  ExternalParticleEntry,
+  ExternalMaterialEntry,
+} from "./schema.js";
 import { ExternalDataError } from "./errors.js";
 import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
 import { convertEnergyGrid, convertStpColumn, convertCsdaColumn } from "./units.js";
@@ -71,21 +75,27 @@ export class ExternalDataService {
     const inflight = this._loading.get(label);
     if (inflight) return inflight;
 
-    if (this._metadata.size >= MAX_SOURCES) {
+    if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
       throw new ExternalDataError(
         "validation-error",
         `Too many external sources: maximum is ${MAX_SOURCES}`,
       );
     }
 
-    const promise = loadStoreMetadata(descriptor).then((meta) => {
-      this._loading.delete(label);
-      this._metadata.set(label, meta);
-      return meta;
-    }).catch((err) => {
-      this._loading.delete(label);
-      throw err;
-    });
+    const promise = loadStoreMetadata(descriptor)
+      .then((meta) => {
+        if (this._loading.get(label) === promise) {
+          this._loading.delete(label);
+          this._metadata.set(label, meta);
+        }
+        return meta;
+      })
+      .catch((err) => {
+        if (this._loading.get(label) === promise) {
+          this._loading.delete(label);
+        }
+        throw err;
+      });
 
     this._loading.set(label, promise);
     return promise;
@@ -201,15 +211,13 @@ export class ExternalDataService {
       this.getCsda(label, programId, particleLocalId, materialLocalId),
     ]);
 
-    const stp =
-      stpEntry
-        ? interpolate(stpEntry.energyGridMev, stpEntry.values as number[], energyMev, scale)
-        : null;
+    const stp = stpEntry
+      ? interpolate(stpEntry.energyGridMev, stpEntry.values as number[], energyMev, scale)
+      : null;
 
-    const csda =
-      csdaEntry
-        ? interpolate(csdaEntry.energyGridMev, csdaEntry.values as number[], energyMev, scale)
-        : null;
+    const csda = csdaEntry
+      ? interpolate(csdaEntry.energyGridMev, csdaEntry.values as number[], energyMev, scale)
+      : null;
 
     return { stp, csda };
   }

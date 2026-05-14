@@ -7,7 +7,11 @@
  * Materials merge by icruId (primary), atomicNumber, or name fallback.
  */
 
-import type { ExternalStoreMetadata, ExternalParticleEntry, ExternalMaterialEntry } from "$lib/external-data/schema";
+import type {
+  ExternalStoreMetadata,
+  ExternalParticleEntry,
+  ExternalMaterialEntry,
+} from "$lib/external-data/schema";
 import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 import { formatExtRef } from "$lib/external-data/ids";
 
@@ -122,7 +126,7 @@ export interface ExternalCompatibilityContext {
 /** Compute a PDG code for a built-in libdedx particle. */
 function builtinParticlePdg(libdedxId: number, massNumber: number): number | null {
   if (libdedxId === 1001) return 11; // electron
-  if (libdedxId === 1) return 2212; // proton (special baryon, not nucleus PDG)
+  if (libdedxId === 1 && massNumber === 1) return 2212; // proton (special baryon, not nucleus PDG)
   // For ions Z >= 2: ion PDG = 1000000000 + Z * 10000 + A * 10
   const Z = libdedxId;
   return 1000000000 + Z * 10000 + massNumber * 10;
@@ -163,7 +167,9 @@ function matchBuiltinMaterial(
 ): number | null {
   // 1. ICRU ID (primary)
   if (extMaterial.icruId !== undefined) {
-    const match = builtinMaterials.find((m) => typeof m.id === "number" && m.id === extMaterial.icruId);
+    const match = builtinMaterials.find(
+      (m) => typeof m.id === "number" && m.id === extMaterial.icruId,
+    );
     if (match) return match.id as number;
   }
 
@@ -292,6 +298,8 @@ export function buildExternalCompatibilityContext(
         localId: ep.id,
       });
 
+      // webdedx v1 declares source-level particle/material arrays, so every
+      // program is assumed to cover the full particle×material grid.
       const particleSet = new Set<number | string>(
         meta.particles.map((p) => particleIdByExtLocalId.get(p.id)!),
       );

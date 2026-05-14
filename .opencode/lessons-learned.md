@@ -800,5 +800,24 @@ after inputs changed.
 
 ---
 
-_Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 36 — Custom-compound E2E fixtures need supported program/compound pairs
+
+**Symptom:** A custom-compound URL smoke test restored the compound banner but
+timed out waiting for numeric stopping power; the cell rendered `— ⚠️` because
+the chosen LiF + alpha + program combination failed at runtime.
+
+**Root cause:** The test was asserting URL restoration and calculation in the
+same scenario, but its fixture used a compound/program pair that is not a stable
+positive-control calculation. Separately, weight-fraction compounds saved raw
+`w_i / M_i` atom counts instead of a normalized stoichiometric ratio, making
+some WASM custom-compound calls fragile.
+
+**Rule:** For custom-compound E2E calculation smoke tests, use a known supported
+positive-control pair (for example alpha in water) and normalize weight-fraction
+inputs before saving. Do not assume that a program listed in the selector will
+produce a valid custom-compound calculation for every compound.
+
+---
+
+_Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

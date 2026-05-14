@@ -21,7 +21,8 @@ export function parseExtdataParams(params: URLSearchParams): ParsedExtdataParams
   const sources: ExternalSourceDescriptor[] = [];
   const errors: ExternalDataUrlError[] = [];
 
-  // Count label occurrences to detect duplicates in one pass.
+  // Count only syntactically valid labels for duplicate detection. Invalid
+  // labels cannot bind to entity refs and are reported per occurrence below.
   const labelCounts = new Map<string, number>();
   for (const value of params.getAll("extdata")) {
     const colonIdx = value.indexOf(":");

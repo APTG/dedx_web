@@ -57,6 +57,7 @@
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalSourceDescriptor } from "$lib/external-data/types";
   import { parseExtdataParams } from "$lib/external-data/url";
+  import { parseExtRef } from "$lib/external-data/ids";
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -419,7 +420,12 @@
       if (programId !== null && particleId !== null) {
         if (typeof programId === "string") {
           // External program: read energy grid from external service metadata
-          const { label } = { label: programId.split(":")[1] ?? "" };
+          const parsedProgram = parseExtRef(programId);
+          if (!parsedProgram) {
+            energyRangeLabel = "";
+            return;
+          }
+          const { label } = parsedProgram;
           const meta = externalDataService.getMetadata(label);
           if (meta) {
             const grid = meta.energyGrid;
@@ -1270,7 +1276,11 @@
           <MultiProgramPicker
             state={multiProgState}
             availablePrograms={entityState.availablePrograms}
-            compatibleIds={new Set(entityState.availablePrograms.flatMap((p) => typeof p.id === "number" ? [p.id] : []))}
+            compatibleIds={new Set(
+              entityState.availablePrograms.flatMap((p) =>
+                typeof p.id === "number" ? [p.id] : [],
+              ),
+            )}
             onInteraction={handleProgramPickerInteraction}
           />
           <!-- Table toolbar -->

@@ -16,10 +16,7 @@ import {
   externalDataQuerySegments,
 } from "$lib/external-data/url";
 import type { ExternalSourceDescriptor } from "$lib/external-data/types";
-import {
-  decodeCalculatorUrl,
-  calculatorUrlQueryString,
-} from "$lib/utils/calculator-url";
+import { decodeCalculatorUrl, calculatorUrlQueryString } from "$lib/utils/calculator-url";
 import type { CalculatorUrlState } from "$lib/utils/calculator-url";
 import { encodePlotUrl, decodePlotUrl, plotUrlQueryString } from "$lib/utils/plot-url";
 import type { PlotUrlInput } from "$lib/utils/plot-url";
@@ -77,10 +74,10 @@ describe("isExtRef", () => {
   });
 
   it("rejects missing parts", () => {
-    expect(isExtRef("ext:srim")).toBe(false);   // no second colon
-    expect(isExtRef("ext::p")).toBe(false);     // empty label
-    expect(isExtRef("ext:srim:")).toBe(false);  // empty localId
-    expect(isExtRef("srim:p:q")).toBe(false);   // no ext: prefix
+    expect(isExtRef("ext:srim")).toBe(false); // no second colon
+    expect(isExtRef("ext::p")).toBe(false); // empty label
+    expect(isExtRef("ext:srim:")).toBe(false); // empty localId
+    expect(isExtRef("srim:p:q")).toBe(false); // no ext: prefix
     expect(isExtRef("")).toBe(false);
     expect(isExtRef(42)).toBe(false);
     expect(isExtRef(null)).toBe(false);
@@ -475,7 +472,9 @@ describe("decodeCalculatorUrl — mixed EntityId programs", () => {
   });
 
   it("ordinary duplicate non-extdata params use last-wins", () => {
-    const raw = new URLSearchParams("particle=1&particle=5&material=276&program=auto&energies=100&eunit=MeV");
+    const raw = new URLSearchParams(
+      "particle=1&particle=5&material=276&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(raw);
     // last occurrence wins
     expect(state.particleId).toBe(5);
@@ -519,7 +518,7 @@ describe("Plot URL — mixed EntityId series round-trip", () => {
       ],
     };
     const decoded = decodePlotUrl(encodePlotUrl(input));
-    // Note: encodePlotUrl only adds the series to params, extdata comes via plotUrlQueryString.
+    expect(decoded.externalSources).toEqual(input.externalSources);
     expect(decoded.series).toEqual([
       {
         programId: "ext:srim:srim-2013",
@@ -540,6 +539,7 @@ describe("Plot URL — mixed EntityId series round-trip", () => {
     };
     const params = encodePlotUrl(input);
     const decoded = decodePlotUrl(params);
+    expect(decoded.externalSources).toEqual(input.externalSources);
     expect(decoded.series).toHaveLength(2);
     expect(decoded.series[0]).toEqual({ programId: 4, particleId: 1, materialId: 276 });
     expect(decoded.series[1]).toEqual({
@@ -550,7 +550,9 @@ describe("Plot URL — mixed EntityId series round-trip", () => {
   });
 
   it("drops invalid triplets (wrong part count)", () => {
-    const raw = new URLSearchParams("series=4.1.276.extra,1.2.3&stp_unit=kev-um&xscale=log&yscale=log");
+    const raw = new URLSearchParams(
+      "series=4.1.276.extra,1.2.3&stp_unit=kev-um&xscale=log&yscale=log",
+    );
     const decoded = decodePlotUrl(raw);
     // "4.1.276.extra" has 4 parts — dropped. "1.2.3" is valid.
     expect(decoded.series).toHaveLength(1);
@@ -586,5 +588,16 @@ describe("plotUrlQueryString — extdata ordering and encoding", () => {
     const qs = plotUrlQueryString(input);
     const decoded = decodePlotUrl(new URLSearchParams(qs));
     expect(decoded.externalSources).toEqual(sources);
+  });
+
+  it("does not duplicate extdata when encodePlotUrl also contains sources", () => {
+    const input: PlotUrlInput = {
+      ...basePlotInput,
+      externalSources: [{ label: "srim", url: "https://example.com/srim.webdedx" }],
+    };
+    const extdataCount = plotUrlQueryString(input)
+      .split("&")
+      .filter((part) => part.startsWith("extdata=")).length;
+    expect(extdataCount).toBe(1);
   });
 });

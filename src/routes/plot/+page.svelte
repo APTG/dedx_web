@@ -313,7 +313,8 @@
   $effect(() => {
     if (!browser || !entityState || !urlInitialized) return;
     const selectedMaterial = entityState.selectedMaterial;
-    const builtinUrlMat = selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+    const builtinUrlMat =
+      selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
     const customUrlFields = isCustomMaterial(builtinUrlMat)
       ? customMaterialUrlFields(builtinUrlMat)
       : {};
@@ -321,8 +322,7 @@
     const selectedProgramId = entityState.selectedProgram.id;
     const params = encodePlotUrl({
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
-      materialId:
-        builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
+      materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
       programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
       series: plotState.series
         .map((s) => ({
@@ -457,7 +457,10 @@
           density:
             (advancedModeActive && !snapshot.customMaterial
               ? advOptsSnapshot.densityOverride
-              : undefined) ?? (builtinPreviewMat?.density ?? selectedMaterial.density ?? 1),
+              : undefined) ??
+            builtinPreviewMat?.density ??
+            selectedMaterial.density ??
+            1,
           result,
         });
       } catch (err) {
@@ -690,11 +693,7 @@
         <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
           Retry
         </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => goto("/plot", { replaceState: true })}
-        >
+        <Button variant="outline" size="sm" onclick={() => goto("/plot", { replaceState: true })}>
           Load without external data
         </Button>
       </div>
@@ -703,7 +702,12 @@
 {:else if !wasmReady.value || !entityState}
   <div class="space-y-6">
     <h1 class="text-3xl font-bold">Plot</h1>
-    <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading plot page">
+    <div
+      class="mx-auto max-w-4xl space-y-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading plot page"
+    >
       {#if externalLoading}
         <p class="text-sm text-muted-foreground">Loading external data sources…</p>
       {/if}

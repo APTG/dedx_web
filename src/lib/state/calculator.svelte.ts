@@ -31,7 +31,8 @@ function resolveParticleMass(
   particle: ParticleEntity | ExternalOnlyParticle | null | undefined,
 ): { massNumber: number; atomicMass: number } | null {
   if (!particle) return null;
-  if ("massNumber" in particle) return { massNumber: particle.massNumber, atomicMass: particle.atomicMass };
+  if ("massNumber" in particle)
+    return { massNumber: particle.massNumber, atomicMass: particle.atomicMass };
   return { massNumber: particle.A, atomicMass: particle.atomicMass };
 }
 
@@ -364,7 +365,10 @@ export function createCalculatorState(
     }
 
     const parsed = parseExtRef(programExtRef);
-    if (!parsed) { isCalculating = false; return; }
+    if (!parsed) {
+      isCalculating = false;
+      return;
+    }
     const { label, localId: localProgramId } = parsed;
 
     const extCtx = entitySelection.externalContext;
@@ -388,19 +392,26 @@ export function createCalculatorState(
     const massA = mass?.massNumber ?? 1;
 
     const results = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
+    const externalOutOfRange = new Set<string>();
     try {
       for (const { rowId, energy } of energies) {
         // energy is MeV/nucl; external service expects total MeV
         const totalMev = energy * massA;
         const result = await extService.interpolateAt(
-          label, localProgramId, particleLocalId, materialLocalId, totalMev,
+          label,
+          localProgramId,
+          particleLocalId,
+          materialLocalId,
+          totalMev,
         );
         if (result.stp !== null) {
           results.set(rowId, { stoppingPower: result.stp, csdaRangeCm: result.csda });
+        } else {
+          externalOutOfRange.add(rowId);
         }
-        // null stp = energy outside external grid → row stays without result (OOR style)
       }
       calculationResults = results;
+      outOfRangeRowIds = externalOutOfRange;
     } catch (e) {
       error = new LibdedxError(-1, e instanceof Error ? e.message : String(e));
     } finally {
