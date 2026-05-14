@@ -196,7 +196,7 @@ export interface CalculatorUrlState {
 
   /** Advanced options (optional — only present when encoding/decoding advanced options) */
   advancedOptions?: AdvancedOptions;
-  materialIsGas?: boolean; // Used when encoding to determine if agg_state is an override
+  materialIsGas?: boolean | undefined; // Used when encoding to determine if agg_state is an override
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;

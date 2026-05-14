@@ -15,6 +15,7 @@ import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService, MaterialEntity } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
+import type { ExternalOnlyParticle, ExternalOnlyMaterial } from "./external-compatibility";
 import { debounce } from "$lib/utils/debounce";
 import { advancedOptions } from "./advanced-options.svelte";
 import { isAdvancedMode } from "./advanced-mode.svelte";
@@ -22,18 +23,20 @@ import {
   customMaterialElementsForWasm,
   isCustomMaterial,
 } from "$lib/utils/custom-compound-material";
+import { parseExtRef } from "$lib/external-data/ids";
+import type { ExternalDataService } from "$lib/external-data/service";
 
-/**
- * Returns the mass number (A) for a particle entity, supporting both built-in
- * (ParticleEntity.massNumber) and external-only particles (ExternalOnlyParticle.A).
- */
-function particleMassNumber(particle: ParticleEntity): number {
-  return particle.massNumber;
+/** Resolve mass fields (massNumber, atomicMass) from built-in or external-only particle. */
+function resolveParticleMass(
+  particle: ParticleEntity | ExternalOnlyParticle | null | undefined,
+): { massNumber: number; atomicMass: number } | null {
+  if (!particle) return null;
+  if ("massNumber" in particle) return { massNumber: particle.massNumber, atomicMass: particle.atomicMass };
+  return { massNumber: particle.A, atomicMass: particle.atomicMass };
 }
 
 /**
  * Narrow a material to a built-in MaterialEntity (null if external-only or absent).
- * The calculator state only handles built-in calculations — external ones are done at the page level.
  */
 function asBuiltinMaterial(material: unknown): MaterialEntity | null {
   if (!material) return null;
@@ -90,6 +93,7 @@ export interface CalculatorState {
 export function createCalculatorState(
   entitySelection: EntitySelectionState,
   service: LibdedxService,
+  extService?: ExternalDataService,
 ): CalculatorState {
   const inputState = createEnergyInputState();
   let isCalculating = $state(false);
@@ -311,8 +315,8 @@ export function createCalculatorState(
   }
 
   function computeRows(): CalculatedRow[] {
-    const particle = asBuiltinParticle(entitySelection.selectedParticle);
-    if (!particle) {
+    const mass = resolveParticleMass(entitySelection.selectedParticle);
+    if (!mass) {
       return inputState.rows.map((row) => ({
         id: row.id,
         rawInput: row.text,
@@ -325,7 +329,83 @@ export function createCalculatorState(
       }));
     }
 
-    return inputState.rows.map((row) => parseRow(row, particleMassNumber(particle), particle.atomicMass));
+    return inputState.rows.map((row) => parseRow(row, mass.massNumber, mass.atomicMass));
+  }
+
+  /** Find the local ID of a particle or material within a specific external source. */
+  function resolveExtLocalId(
+    entityId: number | string,
+    label: string,
+    refMap: Map<number, string[]> | Map<number | string, string[]>,
+  ): string | null {
+    if (typeof entityId === "string" && entityId.startsWith("ext:")) {
+      // External-only entity: localId is already encoded in the ExtRef
+      const parsed = parseExtRef(entityId);
+      return parsed && parsed.label === label ? parsed.localId : null;
+    }
+    if (typeof entityId === "number") {
+      const refs = (refMap as Map<number, string[]>).get(entityId) ?? [];
+      for (const ref of refs) {
+        const p = parseExtRef(ref);
+        if (p && p.label === label) return p.localId;
+      }
+    }
+    return null;
+  }
+
+  /** Route calculation through ExternalDataService when an external program is selected. */
+  async function performExternalCalculation(
+    energies: { rowId: string; energy: number }[],
+    programExtRef: string,
+  ): Promise<void> {
+    if (!extService) {
+      isCalculating = false;
+      return;
+    }
+
+    const parsed = parseExtRef(programExtRef);
+    if (!parsed) { isCalculating = false; return; }
+    const { label, localId: localProgramId } = parsed;
+
+    const extCtx = entitySelection.externalContext;
+    const selectedParticle = entitySelection.selectedParticle;
+    const selectedMaterial = entitySelection.selectedMaterial;
+
+    const particleLocalId = selectedParticle
+      ? resolveExtLocalId(selectedParticle.id, label, extCtx.externalRefsForBuiltinParticle)
+      : null;
+    const materialLocalId = selectedMaterial
+      ? resolveExtLocalId(selectedMaterial.id, label, extCtx.externalRefsForBuiltinMaterial)
+      : null;
+
+    if (!particleLocalId || !materialLocalId) {
+      calculationResults = new Map();
+      isCalculating = false;
+      return;
+    }
+
+    const mass = resolveParticleMass(selectedParticle);
+    const massA = mass?.massNumber ?? 1;
+
+    const results = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
+    try {
+      for (const { rowId, energy } of energies) {
+        // energy is MeV/nucl; external service expects total MeV
+        const totalMev = energy * massA;
+        const result = await extService.interpolateAt(
+          label, localProgramId, particleLocalId, materialLocalId, totalMev,
+        );
+        if (result.stp !== null) {
+          results.set(rowId, { stoppingPower: result.stp, csdaRangeCm: result.csda });
+        }
+        // null stp = energy outside external grid → row stays without result (OOR style)
+      }
+      calculationResults = results;
+    } catch (e) {
+      error = new LibdedxError(-1, e instanceof Error ? e.message : String(e));
+    } finally {
+      isCalculating = false;
+    }
   }
 
   async function performCalculation(energies: { rowId: string; energy: number }[]): Promise<void> {
@@ -341,9 +421,8 @@ export function createCalculatorState(
 
     // Resolved outside try/catch so the per-row retry path can reuse them.
     const resolvedProgramId = entitySelection.resolvedProgramId;
-    // External programs are handled at the page level, not here.
     if (typeof resolvedProgramId === "string") {
-      isCalculating = false;
+      await performExternalCalculation(energies, resolvedProgramId);
       return;
     }
     const particleId = entitySelection.selectedParticle?.id;
@@ -544,8 +623,8 @@ export function createCalculatorState(
   }
 
   function getValidEnergies(): { rowId: string; energy: number }[] {
-    const particle = asBuiltinParticle(entitySelection.selectedParticle);
-    if (!particle) return [];
+    const mass = resolveParticleMass(entitySelection.selectedParticle);
+    if (!mass) return [];
 
     const parsedEnergies = inputState.getParsedEnergies();
 
@@ -560,8 +639,8 @@ export function createCalculatorState(
           const energy = convertEnergyToMeVperNucl(
             parsed.value,
             parsed.unit ?? inputState.masterUnit,
-            particle.massNumber,
-            particle.atomicMass,
+            mass.massNumber,
+            mass.atomicMass,
           );
           return { rowId: String(row.id), energy };
         } catch {
@@ -622,8 +701,8 @@ export function createCalculatorState(
         return;
       }
 
-      const particle = asBuiltinParticle(entitySelection.selectedParticle);
-      if (!particle) {
+      const mass = resolveParticleMass(entitySelection.selectedParticle);
+      if (!mass) {
         return;
       }
 
@@ -639,14 +718,14 @@ export function createCalculatorState(
       const mevNucl = convertEnergyToMeVperNucl(
         parsed.value,
         currentUnit,
-        particle.massNumber,
-        particle.atomicMass,
+        mass.massNumber,
+        mass.atomicMass,
       );
       const converted = convertEnergyFromMeVperNucl(
         mevNucl,
         unit,
-        particle.massNumber,
-        particle.atomicMass,
+        mass.massNumber,
+        mass.atomicMass,
       );
       inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
     },

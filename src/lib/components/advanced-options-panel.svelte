@@ -27,10 +27,10 @@
 
   interface Props {
     materialIsGas: boolean;
-    materialBuiltInDensity?: number;
-    materialBuiltInAggregateState?: "gas" | "condensed";
-    selectedProgram?: string;
-    isCustomCompoundActive?: boolean;
+    materialBuiltInDensity?: number | undefined;
+    materialBuiltInAggregateState?: "gas" | "condensed" | undefined;
+    selectedProgram?: string | undefined;
+    isCustomCompoundActive?: boolean | undefined;
   }
 
   let {
