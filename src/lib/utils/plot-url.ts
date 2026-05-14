@@ -1,4 +1,11 @@
 import type { StpUnit, AdvancedOptions } from "$lib/wasm/types";
+import type { EntityId, ExternalSourceDescriptor } from "$lib/external-data/types";
+import { parseEntityId, formatEntityId } from "$lib/external-data/ids";
+import {
+  appendExtdataParams,
+  parseExtdataParams,
+  externalDataQuerySegments,
+} from "$lib/external-data/url";
 
 const STP_TOKENS: Record<StpUnit, string> = {
   "keV/µm": "kev-um",
@@ -54,15 +61,25 @@ export function tokenToStpUnit(token: string): StpUnit {
   return TOKEN_TO_STP[token] ?? "keV/µm";
 }
 
+/** A plot series triplet — each component is a built-in numeric ID or an ext-ref. */
+export interface PlotSeriesTriplet {
+  programId: EntityId;
+  particleId: EntityId;
+  materialId: EntityId;
+}
+
 export interface PlotUrlInput {
   particleId: number | null;
   materialId: number | null;
   programId: number;
-  series: Array<{ programId: number; particleId: number; materialId: number }>;
+  series: PlotSeriesTriplet[];
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
   advancedOptions?: AdvancedOptions;
+
+  /** External data sources declared via `extdata` URL params (in declaration order). */
+  externalSources?: ExternalSourceDescriptor[];
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
@@ -77,11 +94,14 @@ export interface PlotUrlDecoded {
   particleId: number | null;
   materialId: number | null;
   programId: number;
-  series: Array<{ programId: number; particleId: number; materialId: number }>;
+  series: PlotSeriesTriplet[];
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
   advancedOptions: AdvancedOptions;
+
+  /** External data sources declared via `extdata` URL params (in declaration order). */
+  externalSources?: ExternalSourceDescriptor[];
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
@@ -95,6 +115,10 @@ export interface PlotUrlDecoded {
 
 export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   const params = new URLSearchParams();
+  if (input.externalSources && input.externalSources.length > 0) {
+    appendExtdataParams(params, input.externalSources);
+  }
+
   if (input.particleId !== null) params.set("particle", String(input.particleId));
 
   // Custom compound material params (only when materialIsCustom=true)
@@ -127,7 +151,12 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   if (input.series.length > 0) {
     params.set(
       "series",
-      input.series.map((s) => `${s.programId}.${s.particleId}.${s.materialId}`).join(","),
+      input.series
+        .map(
+          (s) =>
+            `${formatEntityId(s.programId)}.${formatEntityId(s.particleId)}.${formatEntityId(s.materialId)}`,
+        )
+        .join(","),
     );
   }
   params.set("stp_unit", stpUnitToToken(input.stpUnit));
@@ -172,9 +201,43 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   return params;
 }
 
+/**
+ * Build the plot query string for the URL bar.
+ * Mirrors `calculatorUrlQueryString`: urlv is not part of plot URLs, so the
+ * canonical order is extdata first, then the rest with `:` and `,` kept literal.
+ * The external URL portion stays percent-encoded (see calculatorUrlQueryString
+ * for the full explanation).
+ */
+export function plotUrlQueryString(input: PlotUrlInput): string {
+  const params = encodePlotUrl(input);
+  const parts: string[] = [];
+
+  if (input.externalSources && input.externalSources.length > 0) {
+    parts.push(...externalDataQuerySegments(input.externalSources));
+  }
+
+  const paramsNoExtdata = new URLSearchParams();
+  for (const [key, value] of params) {
+    if (key !== "extdata") paramsNoExtdata.append(key, value);
+  }
+
+  const restStr = paramsNoExtdata.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  if (restStr) parts.push(restStr);
+
+  return parts.join("&");
+}
+
 export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
+  // Extract extdata BEFORE resolveLastWins (last-wins would collapse the list).
+  const { sources: externalSources } = parseExtdataParams(rawParams);
+
+  const paramsNoExtdata = new URLSearchParams();
+  for (const [key, value] of rawParams) {
+    if (key !== "extdata") paramsNoExtdata.append(key, value);
+  }
+
   // Resolve duplicate params using "last wins" semantics per §3.2
-  const params = resolveLastWins(rawParams);
+  const params = resolveLastWins(paramsNoExtdata);
 
   const parseFiniteInt = (raw: string | null): number | null => {
     if (raw === null) return null;
@@ -308,17 +371,21 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   }
 
   const seriesParam = params.get("series") ?? "";
-  const series = seriesParam
+  const series: PlotSeriesTriplet[] = seriesParam
     ? seriesParam
         .split(",")
-        .map((triplet) => {
-          const parts = triplet.split(".").map(Number);
-          if (parts.length !== 3 || parts.some((p) => !Number.isFinite(p))) return null;
-          return { programId: parts[0], particleId: parts[1], materialId: parts[2] };
+        .map((triplet): PlotSeriesTriplet | null => {
+          // Split on "." only. ext-refs use ":" not ".", so this is unambiguous.
+          const parts = triplet.split(".");
+          if (parts.length !== 3) return null;
+          const [rawProg, rawPart, rawMat] = parts;
+          const prog = parseEntityId(rawProg ?? null);
+          const part = parseEntityId(rawPart ?? null);
+          const mat = parseEntityId(rawMat ?? null);
+          if (prog === null || part === null || mat === null) return null;
+          return { programId: prog, particleId: part, materialId: mat };
         })
-        .filter(
-          (s): s is { programId: number; particleId: number; materialId: number } => s !== null,
-        )
+        .filter((s): s is PlotSeriesTriplet => s !== null)
     : [];
 
   const stpUnit = tokenToStpUnit(params.get("stp_unit") ?? "");
@@ -384,6 +451,9 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
     yLog,
     advancedOptions,
   };
+  if (externalSources.length > 0) {
+    result.externalSources = externalSources;
+  }
 
   // Always include fromUrlWarning if set
   if (fromUrlWarning) {

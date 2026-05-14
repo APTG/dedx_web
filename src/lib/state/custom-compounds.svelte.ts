@@ -138,7 +138,7 @@ export interface CompoundValidationError {
 export function validateCompound(params: {
   name: string;
   density: number;
-  iValue?: number;
+  iValue?: number | undefined;
   elements: Array<{ atomicNumber: number; atomCount: number }>;
   phase: "gas" | "condensed";
 }): CompoundValidationError[] {
@@ -225,7 +225,7 @@ export interface CustomCompoundsStore {
   addTransient(params: {
     name: string;
     density: number;
-    iValue?: number;
+    iValue?: number | undefined;
     elements: Array<{ atomicNumber: number; atomCount: number }>;
     phase: "gas" | "condensed";
   }): StoredCompoundInternal;
@@ -243,7 +243,7 @@ export interface CustomCompoundsStore {
   create(params: {
     name: string;
     density: number;
-    iValue?: number;
+    iValue?: number | undefined;
     elements: Array<{ atomicNumber: number; atomCount: number }>;
     phase: "gas" | "condensed";
   }):
@@ -259,7 +259,7 @@ export interface CustomCompoundsStore {
     params: {
       name: string;
       density: number;
-      iValue?: number;
+      iValue?: number | undefined;
       elements: Array<{ atomicNumber: number; atomCount: number }>;
       phase: "gas" | "condensed";
     },

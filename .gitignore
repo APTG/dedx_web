@@ -2,6 +2,7 @@
 /node_modules
 /.pnp
 .pnp.js
+/.venv/
 
 # testing
 /coverage
@@ -12,6 +13,8 @@
 
 # misc
 .DS_Store
+__pycache__/
+*.pyc
 .env
 .env.*
 npm-debug.log*
@@ -24,6 +27,11 @@ yarn-error.log*
 
 # Build artifacts — generated at build time
 /static/deploy.json
+
+# Generated external-data reference stores and inspection reports
+/data/*.webdedx/
+/data/srim-reference-inspection/
+/data/srim-reference-conversion/
 
 # AI tooling — local agent session state and credentials
 # Keep .opencode/agents/, .opencode/prompts/ tracked; ignore only runtime task state

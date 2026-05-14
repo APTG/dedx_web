@@ -50,7 +50,14 @@
   import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
   import { goto } from "$app/navigation";
+  import { externalDataService } from "$lib/external-data/service";
+  import type { ExternalDataError } from "$lib/external-data/errors";
+  import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+  import { parseExtdataParams } from "$lib/external-data/url";
+  import { parseExtRef } from "$lib/external-data/ids";
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -63,6 +70,11 @@
   let inverseLookupState = $state<InverseLookupState | null>(null);
   let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
   let sharedUrlWarning = $state<string | null>(null);
+
+  // External data state
+  let externalLoading = $state(false);
+  let externalError = $state<ExternalDataError | null>(null);
+  let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
     sharedUrlWarning = urlState.fromUrlWarning ?? null;
@@ -138,96 +150,123 @@
     }
 
     if (wasmReady.value && !entityState && !calcState) {
-      getService().then((service) => {
-        const matrix = buildCompatibilityMatrix(service);
-        entityState = createEntitySelectionState(matrix);
-        calcState = createCalculatorState(entityState, service);
-        inverseLookupState = createInverseLookupState(entityState);
+      // Snapshot URL params synchronously before async work (constraint: must snapshot before await)
+      const currentSearchParams = page.url.searchParams;
+      const extdataResult = parseExtdataParams(currentSearchParams);
+      const extSources = extdataResult.sources;
+      const urlState = decodeCalculatorUrl(currentSearchParams);
+      const hasEnergies = currentSearchParams.has("energies");
 
-        // Load advanced options from localStorage first
-        loadAdvancedOptionsFromStorage();
+      externalLoading = extSources.length > 0;
 
-        const urlState = decodeCalculatorUrl(page.url.searchParams);
+      Promise.all([
+        getService(),
+        Promise.all(extSources.map((s) => externalDataService.loadSource(s))),
+      ])
+        .then(([service, extMetadatas]) => {
+          externalLoading = false;
+          externalError = null;
+          loadedExternalSources = extSources;
 
-        // Restore advanced options from URL (URL takes priority over localStorage which was loaded above)
-        const urlAdvOpts = urlState.advancedOptions;
-        if (urlAdvOpts) {
-          advancedOptions.value = urlAdvOpts;
-        }
+          const matrix = buildCompatibilityMatrix(service);
+          const extCtx = buildExternalCompatibilityContext(
+            extMetadatas,
+            matrix.allParticles,
+            matrix.allMaterials,
+          );
 
-        // Select particle/material/program FIRST before initializing rows
-        // This ensures entitySelection.isComplete is true when validation runs
-        if (urlState.particleId !== null) entityState.selectParticle(urlState.particleId);
-        const customFromUrl = restoreCustomCompoundFromUrl(urlState);
-        if (customFromUrl) {
-          entityState.selectMaterial(customFromUrl.id);
-        } else if (urlState.materialId !== null) {
-          entityState.selectMaterial(urlState.materialId);
-        }
-        if (urlState.programId !== null) entityState.selectProgram(urlState.programId);
-        calcState.setMasterUnit(urlState.masterUnit);
-        if (page.url.searchParams.has("energies") && calcState) {
-          urlState.rows.forEach((r, i) => {
-            const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
-            if (i === 0) {
-              calcState.updateRowText(0, text);
-            } else {
-              calcState.addRow();
-              calcState.updateRowText(i, text);
-            }
-          });
-        }
+          entityState = createEntitySelectionState(matrix);
+          entityState.setExternalContext(extCtx);
+          calcState = createCalculatorState(entityState, service, externalDataService);
+          inverseLookupState = createInverseLookupState(entityState);
 
-        // Restore inverse lookup mode from URL (AFTER particle/material selected)
-        const inverseMode = decodeInverseModeFromUrl(page.url.searchParams);
-        if (inverseMode && isAdvancedMode.value) {
-          inverseLookupState.setActiveTab(inverseMode.imode);
-          // Initialize inverse rows from URL
-          if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
-            // Clear default empty rows
-            inverseLookupState.rangeRows.length = 0;
-            inverseLookupState.stpRows.length = 0;
+          // Load advanced options from localStorage first
+          loadAdvancedOptionsFromStorage();
 
-            for (let i = 0; i < inverseMode.ivalues.length; i++) {
-              const ival = inverseMode.ivalues[i];
-              const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
-              if (inverseMode.imode === "csda") {
-                if (i === 0) {
-                  inverseLookupState.addRangeRow();
-                  inverseLookupState.updateRangeRowText(0, text);
-                } else {
-                  inverseLookupState.addRangeRow();
-                  inverseLookupState.updateRangeRowText(i, text);
-                }
-              } else if (inverseMode.imode === "stp") {
-                if (i === 0) {
-                  inverseLookupState.addStpRow();
-                  inverseLookupState.updateStpRowText(0, text);
-                } else {
-                  inverseLookupState.addStpRow();
-                  inverseLookupState.updateStpRowText(i, text);
+          // Restore advanced options from URL (URL takes priority over localStorage)
+          const urlAdvOpts = urlState.advancedOptions;
+          if (urlAdvOpts) {
+            advancedOptions.value = urlAdvOpts;
+          }
+
+          // Select particle/material/program FIRST before initializing rows
+          if (urlState.particleId !== null) entityState.selectParticle(urlState.particleId);
+          const customFromUrl = restoreCustomCompoundFromUrl(urlState);
+          if (customFromUrl) {
+            entityState.selectMaterial(customFromUrl.id);
+          } else if (urlState.materialId !== null) {
+            entityState.selectMaterial(urlState.materialId);
+          }
+          if (urlState.programId !== null) entityState.selectProgram(urlState.programId);
+          calcState.setMasterUnit(urlState.masterUnit);
+          if (hasEnergies) {
+            urlState.rows.forEach((r, i) => {
+              const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
+              if (i === 0) {
+                calcState!.updateRowText(0, text);
+              } else {
+                calcState!.addRow();
+                calcState!.updateRowText(i, text);
+              }
+            });
+          }
+
+          // Restore inverse lookup mode from URL (AFTER particle/material selected)
+          const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
+          if (inverseMode && isAdvancedMode.value) {
+            inverseLookupState!.setActiveTab(inverseMode.imode);
+            if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
+              inverseLookupState!.rangeRows.length = 0;
+              inverseLookupState!.stpRows.length = 0;
+
+              for (let i = 0; i < inverseMode.ivalues.length; i++) {
+                const ival = inverseMode.ivalues[i]!;
+                const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
+                if (inverseMode.imode === "csda") {
+                  if (i === 0) {
+                    inverseLookupState!.addRangeRow();
+                    inverseLookupState!.updateRangeRowText(0, text);
+                  } else {
+                    inverseLookupState!.addRangeRow();
+                    inverseLookupState!.updateRangeRowText(i, text);
+                  }
+                } else if (inverseMode.imode === "stp") {
+                  if (i === 0) {
+                    inverseLookupState!.addStpRow();
+                    inverseLookupState!.updateStpRowText(0, text);
+                  } else {
+                    inverseLookupState!.addStpRow();
+                    inverseLookupState!.updateStpRowText(i, text);
+                  }
                 }
               }
             }
-          }
-          // Set master unit for Range (CSDA) mode
-          if (inverseMode.imode === "csda" && inverseMode.iunit) {
-            const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
-            if (validRangeUnits.includes(inverseMode.iunit as any)) {
-              inverseLookupState.setRangeMasterUnit(inverseMode.iunit as any);
+            // Set master unit for Range (CSDA) mode
+            if (inverseMode.imode === "csda" && inverseMode.iunit) {
+              const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
+              if (validRangeUnits.includes(inverseMode.iunit as (typeof validRangeUnits)[number])) {
+                inverseLookupState!.setRangeMasterUnit(
+                  inverseMode.iunit as (typeof validRangeUnits)[number],
+                );
+              }
+            }
+            // Set master unit for STP mode
+            if (inverseMode.imode === "stp" && inverseMode.iunit) {
+              const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
+              if (validStpUnits.includes(inverseMode.iunit as (typeof validStpUnits)[number])) {
+                inverseLookupState!.setStpMasterUnit(
+                  inverseMode.iunit as (typeof validStpUnits)[number],
+                );
+              }
             }
           }
-          // Set master unit for STP mode
-          if (inverseMode.imode === "stp" && inverseMode.iunit) {
-            const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
-            if (validStpUnits.includes(inverseMode.iunit as any)) {
-              inverseLookupState.setStpMasterUnit(inverseMode.iunit as any);
-            }
-          }
-        }
 
-        urlInitialized = true;
-      });
+          urlInitialized = true;
+        })
+        .catch((err: unknown) => {
+          externalLoading = false;
+          externalError = err as ExternalDataError;
+        });
     }
   });
 
@@ -316,17 +355,25 @@
     }
 
     const selectedMaterial = entityState.selectedMaterial;
-    const customUrlFields = isCustomMaterial(selectedMaterial)
-      ? customMaterialUrlFields(selectedMaterial)
+    // Narrow to built-in MaterialEntity; ExternalOnlyMaterial lacks isGasByDefault
+    const builtinMaterial =
+      selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+    const customUrlFields = isCustomMaterial(builtinMaterial)
+      ? customMaterialUrlFields(builtinMaterial)
       : {};
 
+    const selectedParticleId = entityState.selectedParticle?.id;
+
     const urlState = {
-      particleId: entityState.selectedParticle?.id ?? null,
+      particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId:
-        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
-      programId: entityState.resolvedProgramId,
+        builtinMaterial && typeof builtinMaterial.id === "number" ? builtinMaterial.id : null,
+      // External program IDs are not yet URL-encoded in programId; null means auto-select
+      programId:
+        typeof entityState.resolvedProgramId === "number" ? entityState.resolvedProgramId : null,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
+      externalSources: loadedExternalSources,
       ...customUrlFields,
       // Include advanced mode state when active
       ...(isAdvancedMode.value && multiProgState
@@ -342,7 +389,7 @@
             quantityFocus: multiProgState.quantityFocus,
             // Include advanced options when in advanced mode
             advancedOptions: advancedOptions.value,
-            materialIsGas: entityState.selectedMaterial?.isGasByDefault,
+            materialIsGas: builtinMaterial?.isGasByDefault,
           }
         : {}),
       // Include inverse mode state when active
@@ -371,10 +418,27 @@
       const programId = entityState.resolvedProgramId;
       const particleId = entityState.selectedParticle?.id;
       if (programId !== null && particleId !== null) {
-        // Snapshot the (programId, particleId) we're querying for so a
-        // slower in-flight `getService()` resolution cannot overwrite a
-        // fresher selection (race when the user changes particle or
-        // program quickly).
+        if (typeof programId === "string") {
+          // External program: read energy grid from external service metadata
+          const parsedProgram = parseExtRef(programId);
+          if (!parsedProgram) {
+            energyRangeLabel = "";
+            return;
+          }
+          const { label } = parsedProgram;
+          const meta = externalDataService.getMetadata(label);
+          if (meta) {
+            const grid = meta.energyGrid;
+            const minE = grid[0] ?? 0;
+            const maxE = grid[grid.length - 1] ?? 0;
+            energyRangeLabel = `${minE.toLocaleString()} – ${maxE.toLocaleString()} ${meta.energyUnit} (external)`;
+          } else {
+            energyRangeLabel = "";
+          }
+          return;
+        }
+
+        // Built-in program: query WASM for energy range
         const snapshot = { programId, particleId };
         let cancelled = false;
         getService().then((service) => {
@@ -385,8 +449,8 @@
           ) {
             return;
           }
-          const min = service.getMinEnergy(programId, particleId);
-          const max = service.getMaxEnergy(programId, particleId);
+          const min = service.getMinEnergy(programId as number, particleId as number);
+          const max = service.getMaxEnergy(programId as number, particleId as number);
           energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
         });
         return () => {
@@ -527,17 +591,24 @@
           });
         }
 
+        const builtinParticle = "massNumber" in particle ? particle : null;
+        const builtinPdfMat = "isGasByDefault" in material ? material : null;
         return {
           particle: {
             name: particle.name,
-            massNumber: particle.massNum,
-            atomicNumber: particle.chargeNum,
+            massNumber: builtinParticle?.massNumber ?? ("A" in particle ? particle.A : 0),
+            atomicNumber:
+              builtinParticle && typeof builtinParticle.id === "number"
+                ? builtinParticle.id
+                : "Z" in particle
+                  ? particle.Z
+                  : 0,
           },
           material: {
             name: material.name,
-            density: material.density,
+            density: builtinPdfMat?.density ?? material.density ?? 0,
             densityUnit: "g/cm³",
-            phase: material.isGasByDefault ? "gas" : "condensed",
+            phase: builtinPdfMat?.isGasByDefault ? "gas" : "condensed",
           },
           programs,
           advancedOptions: advancedOptions.value,
@@ -578,29 +649,33 @@
     const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
 
     // Initialize with the resolved program as default
+    // External programs (string IDs) are not supported in multi-program mode
     const defaultProgramId = entityState.resolvedProgramId;
-    if (defaultProgramId !== null && defaultProgramId !== -1) {
-      newState.addProgram(defaultProgramId);
+    const numericDefaultId = typeof defaultProgramId === "number" ? defaultProgramId : null;
+    if (numericDefaultId !== null && numericDefaultId !== -1) {
+      newState.addProgram(numericDefaultId);
     }
 
     // Restore selected programs from URL
     if (multiParams.mode === "advanced" && multiParams.parsedProgramIds) {
-      // Filter to only include valid programs (available and compatible)
+      // Filter to only numeric (built-in) program IDs that are available
       const availableIds = new Set(entityState.availablePrograms.map((p) => p.id));
-      const validProgramIds = multiParams.parsedProgramIds.filter((id) => availableIds.has(id));
+      const validProgramIds = multiParams.parsedProgramIds.filter(
+        (id): id is number => typeof id === "number" && availableIds.has(id),
+      );
 
       // Add programs from URL (excluding default which is already added)
       for (const programId of validProgramIds) {
-        if (programId !== defaultProgramId) {
+        if (programId !== numericDefaultId) {
           newState.addProgram(programId);
         }
       }
 
       // Restore display order (default must be first)
       if (validProgramIds.length > 0) {
-        const orderedIds = [
-          defaultProgramId !== null ? defaultProgramId : validProgramIds[0],
-          ...validProgramIds.filter((id) => id !== defaultProgramId),
+        const orderedIds: number[] = [
+          numericDefaultId !== null ? numericDefaultId : validProgramIds[0]!,
+          ...validProgramIds.filter((id) => id !== numericDefaultId),
         ];
         newState.setProgramDisplayOrder(orderedIds);
       }
@@ -636,16 +711,18 @@
   $effect(() => {
     if (!multiProgState || !entityState) return;
 
-    const defaultProgramId = entityState.resolvedProgramId;
-    if (defaultProgramId !== null && defaultProgramId !== -1) {
-      // Only update if the default program has changed
-      const currentDefault = multiProgState.selectedProgramIds[0];
-      if (currentDefault !== defaultProgramId) {
-        if (!multiProgState.selectedProgramIds.includes(defaultProgramId)) {
-          multiProgState.addProgram(defaultProgramId);
-        }
-        multiProgState.setDefaultProgram(defaultProgramId);
+    const resolvedId = entityState.resolvedProgramId;
+    // External programs (string IDs) are not supported in multi-program mode
+    if (typeof resolvedId !== "number" || resolvedId === -1) return;
+    const defaultProgramId: number = resolvedId;
+
+    // Only update if the default program has changed
+    const currentDefault = multiProgState.selectedProgramIds[0];
+    if (currentDefault !== defaultProgramId) {
+      if (!multiProgState.selectedProgramIds.includes(defaultProgramId)) {
+        multiProgState.addProgram(defaultProgramId);
       }
+      multiProgState.setDefaultProgram(defaultProgramId);
     }
   });
 
@@ -693,11 +770,16 @@
     const selectedProgramIds = multiProgState.selectedProgramIds;
     if (selectedProgramIds.length === 0) return;
 
-    const particleId = entityState.selectedParticle?.id;
+    const rawParticleId = entityState.selectedParticle?.id;
+    // External-only particles have string IDs — multi-program mode only supports built-in
+    if (typeof rawParticleId !== "number") return;
+    const particleId: number = rawParticleId;
     const material = entityState.selectedMaterial;
+    // Narrow to built-in material; external-only materials skip WASM multi-program calc
+    const builtinMat = material && "isGasByDefault" in material ? material : null;
+    const customMaterial = isCustomMaterial(builtinMat) ? builtinMat : null;
     const materialId = material?.id;
-    const customMaterial = isCustomMaterial(material) ? material : null;
-    if (particleId === null || materialId === null) return;
+    if (materialId === null || materialId === undefined) return;
 
     const validRows = calcState.rows.filter(
       (r) => r.status === "valid" && r.normalizedMevNucl !== null,
@@ -819,11 +901,17 @@
     const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
     void _rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
-    const particleId = entityState.selectedParticle?.id;
+    const rawParticleId = entityState.selectedParticle?.id;
+    // External-only particles/programs do not support inverse CSDA lookup
+    if (typeof rawParticleId !== "number") return;
+    const particleId: number = rawParticleId;
     const material = entityState.selectedMaterial;
+    const builtinRangeMat = material && "isGasByDefault" in material ? material : null;
+    const customMaterial = isCustomMaterial(builtinRangeMat) ? builtinRangeMat : null;
     const materialId = material?.id;
-    const customMaterial = isCustomMaterial(material) ? material : null;
-    const programId = entityState.resolvedProgramId;
+    const rawProgramId = entityState.resolvedProgramId;
+    if (typeof rawProgramId === "string") return; // external program, no inverse lookup
+    const programId = rawProgramId;
     const rowsSnapshot = inverseLookupState.rangeRows.map((r) => ({
       id: r.id,
       text: r.text,
@@ -848,11 +936,12 @@
       const service = await getService();
       if (cancelled) return;
 
-      const material = entityState?.selectedMaterial;
-      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const asyncMat = entityState?.selectedMaterial;
+      const asyncBuiltinMat = asyncMat && "isGasByDefault" in asyncMat ? asyncMat : null;
+      const currentCustomMaterial = isCustomMaterial(asyncBuiltinMat) ? asyncBuiltinMat : null;
       const density =
         (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
-        material?.density ??
+        asyncMat?.density ??
         1;
 
       if (density <= 0) {
@@ -933,11 +1022,17 @@
     const _stpMasterUnit = inverseLookupState.stpMasterUnit;
     void _stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
-    const particleId = entityState.selectedParticle?.id;
+    const rawParticleIdStp = entityState.selectedParticle?.id;
+    // External-only particles/programs do not support inverse STP lookup
+    if (typeof rawParticleIdStp !== "number") return;
+    const particleId: number = rawParticleIdStp;
     const material = entityState.selectedMaterial;
+    const builtinStpMat = material && "isGasByDefault" in material ? material : null;
+    const customMaterial = isCustomMaterial(builtinStpMat) ? builtinStpMat : null;
     const materialId = material?.id;
-    const customMaterial = isCustomMaterial(material) ? material : null;
-    const programId = entityState.resolvedProgramId;
+    const rawProgramIdStp = entityState.resolvedProgramId;
+    if (typeof rawProgramIdStp === "string") return; // external program, no inverse lookup
+    const programId = rawProgramIdStp;
     const rowsSnapshot = inverseLookupState.stpRows.map((r) => ({
       id: r.id,
       text: r.text,
@@ -960,11 +1055,12 @@
       const service = await getService();
       if (cancelled) return;
 
-      const material = entityState?.selectedMaterial;
-      const currentCustomMaterial = isCustomMaterial(material) ? material : null;
+      const stpAsyncMat = entityState?.selectedMaterial;
+      const stpBuiltinMat = stpAsyncMat && "isGasByDefault" in stpAsyncMat ? stpAsyncMat : null;
+      const currentCustomMaterial = isCustomMaterial(stpBuiltinMat) ? stpBuiltinMat : null;
       const density =
         (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
-        material?.density ??
+        stpAsyncMat?.density ??
         1;
 
       // Convert to MeV·cm²/g
@@ -1131,8 +1227,30 @@
         <pre class="mt-1 whitespace-pre-wrap">{wasmError.value.message}</pre>
       </details>
     </div>
+  {:else if externalError}
+    <div
+      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
+    >
+      <p class="font-semibold text-destructive">Failed to load external data source.</p>
+      <p class="text-sm text-muted-foreground">{externalError.message}</p>
+      <div class="flex justify-center gap-2">
+        <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
+          Retry
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => goto("/calculator", { replaceState: true })}
+        >
+          Load without external data
+        </Button>
+      </div>
+    </div>
   {:else if !wasmReady.value || !entityState || !calcState}
     <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading calculator">
+      {#if externalLoading}
+        <p class="text-sm text-muted-foreground">Loading external data sources…</p>
+      {/if}
       <div class="flex flex-wrap gap-3">
         <Skeleton class="h-10 w-44 rounded-md" />
         <Skeleton class="h-10 w-44 rounded-md" />
@@ -1152,12 +1270,17 @@
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
       />
+      <ExternalSourcesBadge sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
             state={multiProgState}
             availablePrograms={entityState.availablePrograms}
-            compatibleIds={new Set(entityState.availablePrograms.map((p) => p.id))}
+            compatibleIds={new Set(
+              entityState.availablePrograms.flatMap((p) =>
+                typeof p.id === "number" ? [p.id] : [],
+              ),
+            )}
             onInteraction={handleProgramPickerInteraction}
           />
           <!-- Table toolbar -->
@@ -1252,15 +1375,17 @@
         </div>
         <!-- Advanced Options Panel -->
         {#if entityState}
+          {@const selMatAdv = entityState.selectedMaterial}
+          {@const builtinMatAdv = selMatAdv && "isGasByDefault" in selMatAdv ? selMatAdv : null}
           <AdvancedOptionsPanel
-            materialIsGas={entityState.selectedMaterial?.isGasByDefault ?? false}
-            materialBuiltInDensity={entityState.selectedMaterial?.density}
-            materialBuiltInAggregateState={entityState.selectedMaterial
-              ? entityState.selectedMaterial.isGasByDefault
+            materialIsGas={builtinMatAdv?.isGasByDefault ?? false}
+            materialBuiltInDensity={builtinMatAdv?.density}
+            materialBuiltInAggregateState={builtinMatAdv
+              ? builtinMatAdv.isGasByDefault
                 ? "gas"
                 : "condensed"
               : undefined}
-            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
+            isCustomCompoundActive={isCustomMaterial(builtinMatAdv)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}
@@ -1329,7 +1454,12 @@
       {/if}
       <EnergyUnitSelector
         value={calcState.masterUnit}
-        availableUnits={getAvailableEnergyUnits(entityState.selectedParticle, isAdvancedMode.value)}
+        availableUnits={getAvailableEnergyUnits(
+          entityState.selectedParticle && "massNumber" in entityState.selectedParticle
+            ? entityState.selectedParticle
+            : null,
+          isAdvancedMode.value,
+        )}
         disabled={calcState.isPerRowMode}
         onValueChange={(unit) => calcState.setMasterUnit(unit)}
       />

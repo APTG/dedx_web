@@ -4,16 +4,16 @@ Calculate **charged-particle stopping powers** (dE/dx) and **CSDA ranges** direc
 
 ## Try it
 
-|                      | URL                                                       | What's there                                                                                    | Deployment             |
-| -------------------- | --------------------------------------------------------- | ----------------------------------------------------------------------------------------------- | ---------------------- |
-| **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Work-in-progress rewrite — Stage 6 complete; Stage 7 (E2E tests, polish, external data) in progress | Continuous on `master` |
-| **v1.1.0 (stable)**  | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release — fully functional but based on the old React stack                         | Released 1 April 2022  |
+|                      | URL                                                       | What's there                                                               | Deployment             |
+| -------------------- | --------------------------------------------------------- | -------------------------------------------------------------------------- | ---------------------- |
+| **v2 (development)** | [aptg.github.io/web_dev](https://aptg.github.io/web_dev/) | Open beta candidate — Stage 7 complete; Stage 8 user-feedback cycle active | Continuous on `master` |
+| **v1.1.0 (stable)**  | [aptg.github.io/web](https://aptg.github.io/web/)         | Last stable release — fully functional but based on the old React stack    | Released 1 April 2022  |
 
 ## Why v2?
 
 v1.1.0 (April 2022) has several limitations: no unit handling, React 17 class components with no TypeScript, and plots that do not meet the needs of typical physics workflows.
 
-v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development** — the codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Currently in Stage 7 of 8 (E2E tests, UI polish, and external data). Stage 6 (all 13 feature-page sub-stages) is complete. v2.0.0 will replace the stable site on first production release.
+v2 is a ground-up rewrite addressing all of the above. It is also an experiment in **AI-assisted (vibe-coded) development** — the codebase is written by AI agents (GitHub Copilot, Claude Code, opencode) guided by spec-driven prompts, with human review. Stage 7 (E2E tests, UI polish, WASM error handling, and external `.webdedx` data) is complete; the app is now entering Stage 8 open beta and user feedback. v2.0.0 will replace the stable site on first production release.
 
 ## Related tools
 

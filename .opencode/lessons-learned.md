@@ -800,5 +800,41 @@ after inputs changed.
 
 ---
 
-_Last updated: 2026-05-13. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 36 — Custom-compound E2E fixtures need supported program/compound pairs
+
+**Symptom:** A custom-compound URL smoke test restored the compound banner but
+timed out waiting for numeric stopping power; the cell rendered `— ⚠️` because
+the chosen LiF + alpha + program combination failed at runtime.
+
+**Root cause:** The test was asserting URL restoration and calculation in the
+same scenario, but its fixture used a compound/program pair that is not a stable
+positive-control calculation. Separately, weight-fraction compounds saved raw
+`w_i / M_i` atom counts instead of a normalized stoichiometric ratio, making
+some WASM custom-compound calls fragile.
+
+**Rule:** For custom-compound E2E calculation smoke tests, use a known supported
+positive-control pair (for example alpha in water) and normalize weight-fraction
+inputs before saving. Do not assume that a program listed in the selector will
+produce a valid custom-compound calculation for every compound.
+
+---
+
+## Entry 37 — Resolve static-analysis cleanup comments before review handoff
+
+**Symptom:** Follow-up review threads from `github-code-quality` remained open
+for unused constants/imports and redundant type guards even after functional PR
+review comments were handled.
+
+**Root cause:** The functional fix pass validated runtime behavior but did not
+explicitly audit every static-analysis review thread for unresolved status and
+current-line applicability.
+
+**Rule:** Before handing off a PR-review fix, enumerate all unresolved bot
+review threads and apply behavior-preserving cleanup (unused symbols, redundant
+guards, dead defensive checks) or explicitly document why a thread is not
+applicable.
+
+---
+
+_Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

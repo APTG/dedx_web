@@ -105,13 +105,13 @@ test.describe("Stage 6.13 — URL parser", () => {
     test.skip(!wasmOk, "WASM binary absent — skip custom compound round-trip");
 
     const url =
-      "/calculator?urlv=1&particle=2&material=custom&mat_name=LiF-test" +
-      "&mat_density=2.64&mat_elements=3%3A1%2C9%3A1&mode=advanced&program=4&programs=4&energies=5";
+      "/calculator?urlv=1&particle=2&material=custom&mat_name=Water-url-test" +
+      "&mat_density=1&mat_elements=1%3A2%2C8%3A1&mode=advanced&program=1&programs=1&energies=5";
 
     await page.goto(url);
     // Wait for the banner text to appear (more reliable than waiting for testid alone)
     await page.waitForFunction(
-      () => document.querySelector('[data-testid="compound-from-url-banner"]')?.textContent?.includes("LiF-test"),
+      () => document.querySelector('[data-testid="compound-from-url-banner"]')?.textContent?.includes("Water-url-test"),
       { timeout: 10000 },
     );
     await expect(

@@ -4,7 +4,7 @@
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
   import type { StoredCompoundInternal, CompoundElementEntry } from "$lib/state/custom-compounds.svelte";
-  import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts } from "$lib/utils/element-data";
+  import { ELEMENTS, resolveElement, computeWeightFractions, computeAtomCounts, normalizeAtomCounts } from "$lib/utils/element-data";
   import { cn } from "$lib/utils.js";
 
   interface CompoundEditorFormData {
@@ -15,11 +15,19 @@
     elements: CompoundElementEntry[];
   }
 
+  interface SavedCompoundData {
+    name: string;
+    density: number;
+    iValue?: number;
+    phase: "gas" | "condensed";
+    elements: CompoundElementEntry[];
+  }
+
   interface Props {
     open: boolean;
     compound: StoredCompoundInternal | null;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<CompoundEditorFormData, "iValue"> & { iValue?: number }) => void;
+    onSave: (data: SavedCompoundData) => void;
     onDelete: () => void;
   }
 
@@ -97,7 +105,7 @@
     }));
     const result = computeAtomCounts(wfs);
     if (!result) return null;
-    return result;
+    return normalizeAtomCounts(result);
   }
 
   function validate(): boolean {
@@ -183,10 +191,10 @@
 
     const valid = validate();
     if (valid) {
-      const data = {
+      const data: SavedCompoundData = {
         name: formData.name,
         density: parseFloat(formData.density),
-        iValue: formData.iValue ? parseFloat(formData.iValue) : undefined,
+        ...(formData.iValue ? { iValue: parseFloat(formData.iValue) } : {}),
         phase: formData.phase,
         elements: formData.elements,
       };

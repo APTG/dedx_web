@@ -826,7 +826,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     // Open compound editor
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+    await page
+      .getByRole("button", { name: /\+ add compound/i })
+      .first()
+      .click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -878,12 +881,13 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await particleBtn.click();
     await page.getByRole("option", { name: /^alpha particle$/ }).click();
 
-    // Select first available program
+    // Select ASTAR: custom compounds are evaluated through the elemental
+    // compound path, which is supported for this alpha-particle sanity check.
     const programBtn = page.getByRole("button", { name: /^Program$/ });
     await programBtn.click();
-    const firstProgramOption2 = page.locator('[role="option"]').first();
-    await firstProgramOption2.waitFor({ state: "visible" });
-    await firstProgramOption2.click();
+    const astarOption = page.getByRole("option", { name: /ASTAR/i }).first();
+    await astarOption.waitFor({ state: "visible" });
+    await astarOption.click();
 
     // Set energy and verify result
     const energyInput = page.getByTestId("energy-input-0");
@@ -907,7 +911,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 
     const materialBtn = page.getByRole("button", { name: /^Material$/ });
     await materialBtn.click();
-    await page.getByRole("button", { name: /\+ add compound/i }).first().click();
+    await page
+      .getByRole("button", { name: /\+ add compound/i })
+      .first()
+      .click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -930,7 +937,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     // Validation error should appear and modal should stay open.
     // Target the destructive error paragraph specifically (not the hint text).
     await expect(
-      page.locator("p.text-destructive").filter({ hasText: /must sum to 100%/i }).first()
+      page
+        .locator("p.text-destructive")
+        .filter({ hasText: /must sum to 100%/i })
+        .first(),
     ).toBeVisible();
     await expect(modal).toBeVisible();
   });

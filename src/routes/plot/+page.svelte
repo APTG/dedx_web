@@ -30,7 +30,13 @@
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
   import { goto } from "$app/navigation";
+  import { externalDataService } from "$lib/external-data/service";
+  import type { ExternalDataError } from "$lib/external-data/errors";
+  import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+  import { parseExtdataParams } from "$lib/external-data/url";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -42,6 +48,9 @@
   let materialIsGas = $state<boolean | undefined>(undefined);
   let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let advancedModeInitializedFromUrl = $state(false);
+  let externalLoading = $state(false);
+  let externalError = $state<ExternalDataError | null>(null);
+  let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
 
   // Mobile responsive: track viewport width to collapse entity panels on small screens
   let isMobile = $state(false);
@@ -79,12 +88,34 @@
   }
 
   $effect(() => {
-    if (wasmReady.value && !entityState) {
-      getService().then((service) => {
+    if (!wasmReady.value || entityState) return;
+    const currentSearchParams = page.url.searchParams;
+    const extdataResult = parseExtdataParams(currentSearchParams);
+    const extSources = extdataResult.sources;
+    externalLoading = extSources.length > 0;
+
+    Promise.all([
+      getService(),
+      Promise.all(extSources.map((s) => externalDataService.loadSource(s))),
+    ])
+      .then(([service, extMetadatas]) => {
+        externalLoading = false;
+        externalError = null;
+        loadedExternalSources = extSources;
+
         const matrix = buildCompatibilityMatrix(service);
+        const extCtx = buildExternalCompatibilityContext(
+          extMetadatas,
+          matrix.allParticles,
+          matrix.allMaterials,
+        );
         entityState = createEntitySelectionState(matrix);
+        entityState.setExternalContext(extCtx);
+      })
+      .catch((err) => {
+        externalLoading = false;
+        externalError = err as ExternalDataError;
       });
-    }
   });
 
   // Initialize advanced options from localStorage on mount (runs once; browser is a constant)
@@ -130,19 +161,22 @@
       return;
     }
     const resolvedId = entityState.resolvedProgramId;
-    const matId = entityState.selectedMaterial.id;
-    if (isCustomMaterial(entityState.selectedMaterial)) {
-      materialIsGas = entityState.selectedMaterial.isGasByDefault;
+    const selMat = entityState.selectedMaterial;
+    const builtinMat = "isGasByDefault" in selMat ? selMat : null;
+    const matId = selMat.id;
+    if (isCustomMaterial(builtinMat)) {
+      materialIsGas = builtinMat.isGasByDefault;
       return;
     }
-    if (resolvedId === null) {
+    if (resolvedId === null || typeof resolvedId !== "number") {
       materialIsGas = undefined;
       return;
     }
     let cancelled = false;
+    const numericResolvedId = resolvedId;
     getService().then((service) => {
       if (cancelled) return;
-      const materials = service.getMaterials(resolvedId);
+      const materials = service.getMaterials(numericResolvedId);
       const mat = materials.find((m) => m.id === matId);
       if (cancelled) return;
       materialIsGas = mat?.isGasByDefault;
@@ -231,6 +265,13 @@
     getService()
       .then((service) => {
         for (const s of decoded.series) {
+          // External-source triplets are not yet dispatched to WASM — Slice 3/4.
+          if (
+            typeof s.programId !== "number" ||
+            typeof s.particleId !== "number" ||
+            typeof s.materialId !== "number"
+          )
+            continue;
           try {
             const result = service.getPlotData(
               s.programId,
@@ -272,14 +313,17 @@
   $effect(() => {
     if (!browser || !entityState || !urlInitialized) return;
     const selectedMaterial = entityState.selectedMaterial;
-    const customUrlFields = isCustomMaterial(selectedMaterial)
-      ? customMaterialUrlFields(selectedMaterial)
+    const builtinUrlMat =
+      selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+    const customUrlFields = isCustomMaterial(builtinUrlMat)
+      ? customMaterialUrlFields(builtinUrlMat)
       : {};
+    const selectedParticleId = entityState.selectedParticle?.id;
+    const selectedProgramId = entityState.selectedProgram.id;
     const params = encodePlotUrl({
-      particleId: entityState.selectedParticle?.id ?? null,
-      materialId:
-        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
-      programId: entityState.selectedProgram.id,
+      particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
+      materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
+      programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
       series: plotState.series
         .map((s) => ({
           programId: s.programId,
@@ -294,6 +338,7 @@
       xLog: plotState.xLog,
       yLog: plotState.yLog,
       advancedOptions: advancedOptions.value,
+      externalSources: loadedExternalSources,
       ...customUrlFields,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -345,14 +390,30 @@
     // potentially stale ones resolved later after a rapid selection change).
     const advOptsSnapshot = advancedOptions.value;
 
+    // Skip preview for external programs — they don't expose getPlotData
+    if (typeof resolvedProgramId === "string") {
+      plotState.clearPreview();
+      return;
+    }
+    const numericProgramId: number = resolvedProgramId;
+
+    // Narrow particle to built-in type for WASM calls
+    const builtinPreviewParticle = "massNumber" in selectedParticle ? selectedParticle : null;
+    if (!builtinPreviewParticle) {
+      plotState.clearPreview();
+      return;
+    }
+
+    const builtinPreviewMat = "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+
     // Snapshot the current selection so a slower in-flight getPlotData
     // for an outdated selection cannot clobber a fresher preview (race
     // when the user changes particle/material/program quickly).
     const snapshot = {
-      programId: resolvedProgramId,
-      particleId: selectedParticle.id,
+      programId: numericProgramId,
+      particleId: builtinPreviewParticle.id as number,
       materialId: selectedMaterial.id,
-      customMaterial: isCustomMaterial(selectedMaterial) ? selectedMaterial : null,
+      customMaterial: isCustomMaterial(builtinPreviewMat) ? builtinPreviewMat : null,
     };
     let cancelled = false;
 
@@ -389,14 +450,17 @@
           particleId: snapshot.particleId,
           materialId: snapshot.materialId,
           programName,
-          particleName: getParticleLabel(selectedParticle),
+          particleName: getParticleLabel(builtinPreviewParticle),
           materialName: selectedMaterial.name,
           // Use the density override (only in Advanced mode) for correct unit conversion.
           // advancedModeActive is snapshotted synchronously at the top of this effect.
           density:
             (advancedModeActive && !snapshot.customMaterial
               ? advOptsSnapshot.densityOverride
-              : undefined) ?? selectedMaterial.density,
+              : undefined) ??
+            builtinPreviewMat?.density ??
+            selectedMaterial.density ??
+            1,
           result,
         });
       } catch (err) {
@@ -461,12 +525,14 @@
       return;
     }
 
+    const builtinAddParticle = "massNumber" in selectedParticle ? selectedParticle : null;
+    if (!builtinAddParticle || typeof resolvedProgramId === "string") return;
     const added = plotState.addSeries({
       programId: resolvedProgramId,
-      particleId: selectedParticle.id,
+      particleId: builtinAddParticle.id as number,
       materialId: selectedMaterial.id,
       programName: p.programName,
-      particleName: getParticleLabel(selectedParticle),
+      particleName: getParticleLabel(builtinAddParticle),
       materialName: selectedMaterial.name,
       // Preserve the density that was active when the preview was computed
       // so committed series display the same values as the preview did.
@@ -615,10 +681,36 @@
       </details>
     </div>
   </div>
+{:else if externalError}
+  <div class="space-y-6">
+    <h1 class="text-3xl font-bold">Plot</h1>
+    <div
+      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
+    >
+      <p class="font-semibold text-destructive">Failed to load external data source.</p>
+      <p class="text-sm text-muted-foreground">{externalError.message}</p>
+      <div class="flex justify-center gap-2">
+        <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
+          Retry
+        </Button>
+        <Button variant="outline" size="sm" onclick={() => goto("/plot", { replaceState: true })}>
+          Load without external data
+        </Button>
+      </div>
+    </div>
+  </div>
 {:else if !wasmReady.value || !entityState}
   <div class="space-y-6">
     <h1 class="text-3xl font-bold">Plot</h1>
-    <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading plot page">
+    <div
+      class="mx-auto max-w-4xl space-y-6"
+      role="status"
+      aria-busy="true"
+      aria-label="Loading plot page"
+    >
+      {#if externalLoading}
+        <p class="text-sm text-muted-foreground">Loading external data sources…</p>
+      {/if}
       <div class="flex flex-wrap gap-3">
         <Skeleton class="h-10 w-44 rounded-md" />
         <Skeleton class="h-10 w-44 rounded-md" />
@@ -639,6 +731,8 @@
         onLoadDefaults={handleLoadDefaults}
       />
     {/if}
+
+    <ExternalSourcesBadge sources={loadedExternalSources} />
 
     <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
     <div class="grid gap-4 desktop:grid-cols-[minmax(520px,5fr)_7fr]">
@@ -875,11 +969,13 @@
 
         <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
         {#if isAdvancedMode.value && entityState.selectedMaterial}
+          {@const plotSelMat = entityState.selectedMaterial}
+          {@const plotBuiltinMat = "isGasByDefault" in plotSelMat ? plotSelMat : null}
           <AdvancedOptionsPanel
             materialIsGas={materialIsGas ?? false}
-            materialBuiltInDensity={entityState.selectedMaterial.density}
+            materialBuiltInDensity={plotBuiltinMat?.density}
             materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
-            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
+            isCustomCompoundActive={isCustomMaterial(plotBuiltinMat)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}

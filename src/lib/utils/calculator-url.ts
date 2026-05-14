@@ -1,6 +1,9 @@
 import type { EnergyUnit, MstarMode, InverseMode } from "$lib/wasm/types";
 import { parseEnergyInput, type EnergySuffixUnit } from "$lib/utils/energy-parser";
 import type { AdvancedOptions } from "$lib/wasm/types";
+import type { EntityId, ExternalSourceDescriptor } from "$lib/external-data/types";
+import { parseEntityIdList, formatEntityIdList } from "$lib/external-data/ids";
+import { parseExtdataParams, externalDataQuerySegments } from "$lib/external-data/url";
 
 /**
  * URL contract major version. Bump only on breaking changes to query
@@ -180,15 +183,20 @@ export interface CalculatorUrlState {
   rows: CalculatorUrlRow[];
   masterUnit: EnergyUnit;
 
+  /** External data sources declared via `extdata` URL params (in declaration order). */
+  externalSources?: ExternalSourceDescriptor[];
+
   /** Advanced mode fields (optional — only present when encoding/decoding advanced mode) */
   isAdvancedMode?: boolean;
-  selectedProgramIds?: number[];
-  hiddenProgramIds?: number[];
+  /** Supports mixed built-in numeric IDs and external `ext:{label}:{id}` refs. */
+  selectedProgramIds?: EntityId[];
+  /** Supports mixed built-in numeric IDs and external `ext:{label}:{id}` refs. */
+  hiddenProgramIds?: EntityId[];
   quantityFocus?: "both" | "stp" | "csda";
 
   /** Advanced options (optional — only present when encoding/decoding advanced options) */
   advancedOptions?: AdvancedOptions;
-  materialIsGas?: boolean; // Used when encoding to determine if agg_state is an override
+  materialIsGas?: boolean | undefined; // Used when encoding to determine if agg_state is an override
 
   /** Custom compound material fields (optional — only present when materialIsCustom=true) */
   materialIsCustom?: boolean;
@@ -266,6 +274,10 @@ function isUrlSafeNumeric(s: string): boolean {
 export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams {
   const params = new URLSearchParams();
   params.set("urlv", String(CALCULATOR_URL_VERSION));
+  // extdata is NOT added to URLSearchParams here; it is emitted by
+  // calculatorUrlQueryString using externalDataQuerySegments so that the
+  // URL portion stays correctly percent-encoded (see the serializer warning
+  // in shareable-urls-formal.md §2 and the implementation plan).
   if (state.particleId !== null) params.set("particle", String(state.particleId));
   if (state.materialId !== null) params.set("material", String(state.materialId));
   params.set("program", state.programId === null ? "auto" : String(state.programId));
@@ -287,11 +299,11 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("mode", "advanced");
 
     if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
-      params.set("programs", state.selectedProgramIds.join(","));
+      params.set("programs", formatEntityIdList(state.selectedProgramIds));
     }
 
     if (state.hiddenProgramIds && state.hiddenProgramIds.length > 0) {
-      params.set("hidden_programs", state.hiddenProgramIds.join(","));
+      params.set("hidden_programs", formatEntityIdList(state.hiddenProgramIds));
     }
 
     // Always emit qfocus in advanced mode for canonical form
@@ -393,32 +405,63 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
 }
 
 /**
- * Build the query string for the URL bar. We intentionally emit `:` and
- * `,` literally (both are reserved-but-permitted in the query component
- * per RFC 3986 §3.4 / 2.2) so shareable URLs stay human-readable —
- * `?energies=100,500:keV` instead of the percent-encoded
- * `?energies=100%2C500%3AkeV` that `URLSearchParams.toString()` produces.
+ * Build the query string for the URL bar.
+ *
+ * Canonical order: `urlv`, then `extdata` (one per source), then the rest.
+ *
+ * For extdata, the URL portion is kept percent-encoded via `encodeURIComponent`
+ * so that `https:` in the external store URL stays as `https%3A` and never
+ * appears as a literal colon — which would break the formal grammar's
+ * `extdata-pair` rule. Only the label separator colon is emitted literally.
+ *
+ * For all other params we keep `:` and `,` literal (both are
+ * reserved-but-permitted in the query component per RFC 3986 §3.4/2.2)
+ * so shareable URLs stay human-readable.
  */
 export function calculatorUrlQueryString(state: CalculatorUrlState): string {
   const params = encodeCalculatorUrl(state);
-  return params.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  const parts: string[] = [];
+
+  // 1. urlv first.
+  const urlv = params.get("urlv");
+  if (urlv !== null) parts.push(`urlv=${urlv}`);
+
+  // 2. extdata in source declaration order (specially encoded).
+  if (state.externalSources && state.externalSources.length > 0) {
+    parts.push(...externalDataQuerySegments(state.externalSources));
+  }
+
+  // 3. Remaining params (excluding urlv which is already emitted).
+  const remaining = new URLSearchParams();
+  for (const [key, value] of params) {
+    if (key !== "urlv") {
+      remaining.append(key, value);
+    }
+  }
+  const restStr = remaining.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  if (restStr) parts.push(restStr);
+
+  return parts.join("&");
 }
 
 export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlState {
+  // Extract extdata BEFORE resolveLastWins; last-wins would drop all but the
+  // last occurrence, collapsing the ordered source list.
+  const { sources: externalSources } = parseExtdataParams(rawParams);
+
+  // Strip extdata from the params we pass to last-wins resolution.
+  const paramsNoExtdata = new URLSearchParams();
+  for (const [key, value] of rawParams) {
+    if (key !== "extdata") paramsNoExtdata.append(key, value);
+  }
+
   // Resolve duplicate params using "last wins" semantics per §3.2
-  const params = resolveLastWins(rawParams);
+  const params = resolveLastWins(paramsNoExtdata);
 
   const parseId = (v: string | null): number | null => {
     if (!v) return null;
     const n = parseInt(v, 10);
     return Number.isFinite(n) && n > 0 ? n : null;
-  };
-
-  const parseProgramIds = (s: string): number[] => {
-    return s
-      .split(",")
-      .map((id) => parseInt(id.trim(), 10))
-      .filter((n) => !Number.isNaN(n) && n > 0);
   };
 
   // urlv is parsed-but-defaulted: missing → 1 (back-compat per
@@ -453,10 +496,12 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   const mode = params.get("mode");
   const isAdvancedMode = mode === "advanced";
   const programsParam = params.get("programs");
-  const selectedProgramIds =
-    isAdvancedMode && programsParam ? parseProgramIds(programsParam) : undefined;
+  const selectedProgramIds: EntityId[] | undefined =
+    isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
   const hiddenParam = params.get("hidden_programs");
-  const hiddenProgramIds = hiddenParam ? parseProgramIds(hiddenParam) : undefined;
+  const hiddenProgramIds: EntityId[] | undefined = hiddenParam
+    ? parseEntityIdList(hiddenParam)
+    : undefined;
   const qfocus = params.get("qfocus") as "both" | "stp" | "csda" | null;
   const quantityFocus =
     isAdvancedMode && (qfocus === "both" || qfocus === "stp" || qfocus === "csda")
@@ -692,6 +737,9 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     masterUnit,
     isAdvancedMode,
   };
+  if (externalSources.length > 0) {
+    result.externalSources = externalSources;
+  }
   if (selectedProgramIds) {
     result.selectedProgramIds = selectedProgramIds;
   }
