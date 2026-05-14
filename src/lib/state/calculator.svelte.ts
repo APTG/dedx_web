@@ -15,7 +15,7 @@ import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService, MaterialEntity } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
-import type { ExternalOnlyParticle, ExternalOnlyMaterial } from "./external-compatibility";
+import type { ExternalOnlyParticle } from "./external-compatibility";
 import { debounce } from "$lib/utils/debounce";
 import { advancedOptions } from "./advanced-options.svelte";
 import { isAdvancedMode } from "./advanced-mode.svelte";

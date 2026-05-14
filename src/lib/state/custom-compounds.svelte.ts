@@ -138,7 +138,7 @@ export interface CompoundValidationError {
 export function validateCompound(params: {
   name: string;
   density: number;
-  iValue?: number;
+  iValue?: number | undefined;
   elements: Array<{ atomicNumber: number; atomCount: number }>;
   phase: "gas" | "condensed";
 }): CompoundValidationError[] {
