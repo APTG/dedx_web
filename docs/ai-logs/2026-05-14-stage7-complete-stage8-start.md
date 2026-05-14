@@ -4,7 +4,7 @@
 
 ### Prompt 1: Mark Stage 7 complete and update app status
 
-**AI response**: Updated the redesign plan to mark Stage 7 and Stage 7.5 complete, linked PR #465 from the Stage 7.5 row, and marked Stage 8 as the active open-beta/user-feedback phase. Updated the main README and `/docs` project-status text so the deployed docs no longer say Stage 7 is in progress. Added a Stage 7.5 progress summary and logged the session.
+**AI response**: Updated the redesign plan to mark Stage 7 and Stage 7.5 complete, linked PR #465 from the Stage 7.5 row, and marked Stage 8 as the active open beta/user-feedback phase. Updated the main README and `/docs` project-status text so the deployed docs no longer say Stage 7 is in progress. Added a Stage 7.5 progress summary and logged the session.
 
 ## Tasks
 
