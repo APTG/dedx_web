@@ -260,6 +260,7 @@ class SourceInfo:
     srim_versions: Counter[str]
     calc_dates: Counter[str]
     incomplete_material_keys: set[str]
+    duplicate_material_keys: set[str]
     expected_row_count: int
 
 
@@ -421,6 +422,7 @@ def collect_source_info(source_dir: Path) -> SourceInfo:
         ),
     )
     assign_material_ids(materials)
+    duplicate_material_keys = resolve_icru_duplicates(materials)
 
     return SourceInfo(
         paths=paths,
@@ -434,17 +436,12 @@ def collect_source_info(source_dir: Path) -> SourceInfo:
         srim_versions=srim_versions,
         calc_dates=calc_dates,
         incomplete_material_keys=incomplete_material_keys,
+        duplicate_material_keys=duplicate_material_keys,
         expected_row_count=expected_row_count,
     )
 
 
 def assign_material_ids(materials: list[dict[str, Any]]) -> None:
-    icru_counts: Counter[int] = Counter()
-    for material in materials:
-        icru_match = ICRU_ID_PATTERN.search(material["name"])
-        if material["sourceType"] == "compound" and icru_match:
-            icru_counts[int(icru_match.group(1))] += 1
-
     used_ids: set[str] = set()
     for material in materials:
         if material["sourceType"] == "element":
@@ -457,16 +454,49 @@ def assign_material_ids(materials: list[dict[str, Any]]) -> None:
 
         icru_match = ICRU_ID_PATTERN.search(material["name"])
         if material["sourceType"] == "compound" and icru_match:
-            icru_id = int(icru_match.group(1))
-            if icru_counts[icru_id] == 1:
-                material["icruId"] = icru_id
+            material["icruId"] = int(icru_match.group(1))
+
+
+def resolve_icru_duplicates(materials: list[dict[str, Any]]) -> set[str]:
+    """Resolve groups of materials that share an icruId (modifies materials in-place).
+
+    Same icruId + same density (rounded to 3 decimal places):
+        True duplicates — keep the first entry, mark the rest for exclusion.
+
+    Same icruId + different densities:
+        Distinct formulations — remove icruId from ALL entries and append
+        " ({density:.3f} g/cm³)" to each name so they remain distinguishable
+        as external-only materials without merging into the built-in list.
+
+    Returns the set of sourceKeys that should be excluded from the output.
+    """
+    icru_groups: dict[int, list[dict[str, Any]]] = defaultdict(list)
+    for material in materials:
+        if "icruId" in material:
+            icru_groups[material["icruId"]].append(material)
+
+    duplicate_keys: set[str] = set()
+    for group in icru_groups.values():
+        if len(group) == 1:
+            continue
+        densities = [round(float(m.get("density") or 0.0), 3) for m in group]
+        if len(set(densities)) == 1:
+            for material in group[1:]:
+                duplicate_keys.add(material["sourceKey"])
+        else:
+            for material in group:
+                density = float(material.get("density") or 0.0)
+                material["name"] = f"{material['name']} ({density:.3f} g/cm³)"
+                del material["icruId"]
+    return duplicate_keys
 
 
 def kept_materials(source_info: SourceInfo) -> list[dict[str, Any]]:
+    excluded = source_info.incomplete_material_keys | source_info.duplicate_material_keys
     return [
         material
         for material in source_info.materials
-        if material["sourceKey"] not in source_info.incomplete_material_keys
+        if material["sourceKey"] not in excluded
     ]
 
 
@@ -490,6 +520,7 @@ def source_summary(source_info: SourceInfo) -> dict[str, Any]:
         "rowCounts": dict(source_info.row_counts),
         "expectedRowCount": source_info.expected_row_count,
         "incompleteMaterialCount": len(source_info.incomplete_material_keys),
+        "duplicateMaterialCount": len(source_info.duplicate_material_keys),
         "projectileCount": len(source_info.projectiles),
         "projectileZMin": source_info.projectiles[0]["Z"],
         "projectileZMax": source_info.projectiles[-1]["Z"],
@@ -532,6 +563,7 @@ def write_source_inspection(source_info: SourceInfo, label: str, output_dir: Pat
             "atomicNumber",
             "icruId",
             "keptForWebdedx",
+            "isDuplicate",
             "sourceCompositionJson",
         ]
         writer = csv.DictWriter(csv_file, fieldnames=fieldnames)
@@ -548,6 +580,7 @@ def write_source_inspection(source_info: SourceInfo, label: str, output_dir: Pat
                     "atomicNumber": material.get("atomicNumber", ""),
                     "icruId": material.get("icruId", ""),
                     "keptForWebdedx": material["sourceKey"] in kept_keys,
+                    "isDuplicate": material["sourceKey"] in source_info.duplicate_material_keys,
                     "sourceCompositionJson": json.dumps(
                         material["sourceComposition"], separators=(",", ":")
                     ),
@@ -796,6 +829,7 @@ def write_webdedx_store(
             "keptMaterialCount": len(selected_materials),
             "droppedIncompleteMaterialCount": len(excluded_materials),
             "droppedIncompleteMaterials": excluded_materials,
+            "droppedDuplicateMaterialCount": len(source_info.duplicate_material_keys),
             "csdaRangeExported": False,
             "csdaRangeReason": "SRIM range_A is projected range, not CSDA range.",
             "stpConversion": "(Se + Sn) * 1000 from MeV/(mg/cm2) to MeV cm2/g",
@@ -822,6 +856,7 @@ def write_webdedx_store(
         "particles": len(source_info.projectiles),
         "materials": len(selected_materials),
         "droppedIncompleteMaterials": len(excluded_materials),
+        "droppedDuplicateMaterials": len(source_info.duplicate_material_keys),
         "fileCount": file_count,
         "totalBytes": total_bytes,
         "shardSizeMinBytes": min(shard_sizes),
