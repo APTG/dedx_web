@@ -43,6 +43,14 @@
 - Fixed URL encoding to pass numeric-only IDs
 - Fixed `AdvancedOptionsPanel` props in plot template with `{@const}` narrowing
 
+**Slice 7 — Verification**:
+- Confirmed both external stores are accessible and return valid zarr v3 JSON metadata
+- Loaded STP arrays via zarrita in Node; read proton + liquid water STP at 1–200 MeV total
+- SRIM-GUI values vs PSTAR: differences 0.4–6.5% (within expected SRIM/NIST systematic spread)
+- Alpha (He-4) in water at 4–100 MeV total: values physically consistent (Z²-scaling gives ~4× higher STP than proton at same velocity, Bragg curve peak visible around 1 MeV/nucl)
+- Energy conversion (MeV/nucl × massA → total MeV for external lookup) confirmed correct
+- `pnpm build` succeeds, 1237 unit tests pass, 61 pre-existing TypeScript errors (none new)
+
 ## Tasks
 
 ### Slice 3: External entity merging
