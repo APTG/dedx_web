@@ -1,7 +1,12 @@
 """Unit tests for ICRU deduplication logic in srim_reference_to_webdedx.py."""
 
-import pytest
-from srim_reference_to_webdedx import assign_material_ids, resolve_icru_duplicates
+import json
+
+from srim_reference_to_webdedx import (
+    assign_material_ids,
+    resolve_icru_duplicates,
+    write_inspection_readme,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -165,6 +170,15 @@ class TestResolveIcruDuplicates:
         dup_keys = resolve_icru_duplicates(mats)
         assert len(dup_keys) == 1
 
+    def test_same_density_prefers_complete_representative(self):
+        mats = [
+            _compound("276a", "Water Liquid (ICRU-276)", 1.0),
+            _compound("276b", "Water_Liquid (ICRU-276)", 1.0),
+        ]
+        assign_material_ids(mats)
+        dup_keys = resolve_icru_duplicates(mats, {"compound:276a"})
+        assert dup_keys == {"compound:276a"}
+
     def test_density_rounding_threshold_triggers_variant(self):
         """Two entries with densities differing by >=0.001 are distinct formulations."""
         mats = [
@@ -247,3 +261,31 @@ class TestFullPipeline:
         assert dup_keys == set()
         assert "icruId" not in mats[0]
         assert "g/cm³" not in mats[0]["name"]
+
+
+def test_write_inspection_readme_reports_duplicate_drops(tmp_path):
+    summary_path = tmp_path / "demo-summary.json"
+    summary_path.write_text(
+        json.dumps(
+            {
+                "indexSource": "srim-reference",
+                "srimVersions": {"SRIM-2013": 1},
+                "projectileCount": 2,
+                "projectileZMin": 1,
+                "projectileZMax": 2,
+                "projectileCsv": "demo-projectiles.csv",
+                "materialCount": 3,
+                "keptMaterialCount": 1,
+                "incompleteMaterialCount": 1,
+                "incompleteMaterialKeys": ["compound:broken"],
+                "duplicateMaterialCount": 1,
+                "duplicateMaterialKeys": ["compound:dup"],
+                "materialCsv": "demo-materials.csv",
+                "stoppingUnitsRaw": {"MeV/(mg/cm2)": 1},
+            }
+        )
+    )
+    write_inspection_readme(tmp_path)
+    readme = (tmp_path / "README.md").read_text()
+    assert "1 dropped as duplicate same-density ICRU entries" in readme
+    assert "Dropped duplicate material keys: `['compound:dup']`" in readme

@@ -38,8 +38,8 @@
   import type { ExternalSourceDescriptor } from "$lib/external-data/types";
   import { parseExtdataParams } from "$lib/external-data/url";
   import { parseExtRef } from "$lib/external-data/ids";
-  import type { CalculationResult } from "$lib/wasm/types";
   import type { EntityId } from "$lib/external-data/types";
+  import { loadExternalCalculationResult } from "$lib/utils/external-plot-series";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -286,7 +286,8 @@
     }
 
     getService()
-      .then((service) => {
+      .then(async (service) => {
+        const externalRestores: Promise<void>[] = [];
         for (const s of decoded.series) {
           if (typeof s.programId === "string") {
             // External series: load via ExternalDataService asynchronously.
@@ -323,34 +324,32 @@
             });
             const materialName = extMat.name;
             const density = extMat.density ?? 1;
-            Promise.all([
-              externalDataService.getStp(label, programLocalId, particleLocalId, materialLocalId),
-              externalDataService.getCsda(label, programLocalId, particleLocalId, materialLocalId),
-            ])
-              .then(([stpEntry, csdaEntry]) => {
-                if (!stpEntry) return;
-                const energies = Array.from(stpEntry.energyGridMev).map((e) =>
-                  particleA > 0 ? e / particleA : e,
-                );
-                const result: CalculationResult = {
-                  energies,
-                  stoppingPowers: stpEntry.values.map((v) => v ?? 0),
-                  csdaRanges: csdaEntry ? csdaEntry.values.map((v) => v ?? 0) : [],
-                };
-                plotState.addSeries({
-                  programId: pId,
-                  particleId: ptId,
-                  materialId: matId,
-                  programName,
-                  particleName,
-                  materialName,
-                  density,
-                  result,
-                });
-              })
-              .catch(() => {
-                // silently skip failed external series restores
-              });
+            externalRestores.push(
+              loadExternalCalculationResult(
+                externalDataService,
+                label,
+                programLocalId,
+                particleLocalId,
+                materialLocalId,
+                particleA,
+              )
+                .then((result) => {
+                  if (!result) return;
+                  plotState.addSeries({
+                    programId: pId,
+                    particleId: ptId,
+                    materialId: matId,
+                    programName,
+                    particleName,
+                    materialName,
+                    density,
+                    result,
+                  });
+                })
+                .catch(() => {
+                  // silently skip failed external series restores
+                }),
+            );
             continue;
           }
           // Built-in triplets.
@@ -385,6 +384,7 @@
             // Invalid triplet — silently skip per spec
           }
         }
+        await Promise.allSettled(externalRestores);
       })
       .finally(() => {
         // Only allow URL-writes after every restored series has been added,
@@ -504,24 +504,20 @@
         materialId: selectedMaterial.id as EntityId,
       };
       let extCancelled = false;
-      Promise.all([
-        externalDataService.getStp(label, programLocalId, particleLocalId, materialLocalId),
-        externalDataService.getCsda(label, programLocalId, particleLocalId, materialLocalId),
-      ])
-        .then(([stpEntry, csdaEntry]) => {
+      loadExternalCalculationResult(
+        externalDataService,
+        label,
+        programLocalId,
+        particleLocalId,
+        materialLocalId,
+        particleA,
+      )
+        .then((result) => {
           if (extCancelled) return;
-          if (!stpEntry) {
+          if (!result) {
             plotState.clearPreview();
             return;
           }
-          const energies = Array.from(stpEntry.energyGridMev).map((e) =>
-            particleA > 0 ? e / particleA : e,
-          );
-          const result: CalculationResult = {
-            energies,
-            stoppingPowers: stpEntry.values.map((v) => v ?? 0),
-            csdaRanges: csdaEntry ? csdaEntry.values.map((v) => v ?? 0) : [],
-          };
           if (extCancelled) return;
           plotState.setPreview({
             programId: snapshot.programId,

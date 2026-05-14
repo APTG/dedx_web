@@ -599,6 +599,7 @@ As a <role>, I want to <action> so that <benefit>.
 | [#470](https://github.com/APTG/dedx_web/pull/470) | Tooling / type-check cleanup        | ✅     | Fixed repository-wide `pnpm check` diagnostics and scoped `svelte-check` to app sources so vendor/prototype submodules are ignored.                                                                       |
 | [#474](https://github.com/APTG/dedx_web/pull/474) | Plot / alpha particle beta feedback | ✅     | Fixed alpha stopping-power plot preview recursion by generating plot grids from libdedx tabulated energy ranges; added built-in/custom-compound unit coverage and an E2E regression for the reported URL. |
 | [#476](https://github.com/APTG/dedx_web/pull/476) | External data beta feedback         | ⏳     | Adds user-guide instructions for loading external `.webdedx` datasets and fixes Calculator/Plot selectors so loaded external programs and external-only entities appear in the menus.                     |
+| [#478](https://github.com/APTG/dedx_web/pull/478) | Converter + plot review follow-ups  | ⏳     | Addresses SRIM ICRU duplicate handling edge cases, external plot URL restore race conditions, and related regression coverage requested in PR review.                                                       |
 
 ### Stage 9: CI/CD — Deploy job
 

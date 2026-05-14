@@ -422,7 +422,7 @@ def collect_source_info(source_dir: Path) -> SourceInfo:
         ),
     )
     assign_material_ids(materials)
-    duplicate_material_keys = resolve_icru_duplicates(materials)
+    duplicate_material_keys = resolve_icru_duplicates(materials, incomplete_material_keys)
 
     return SourceInfo(
         paths=paths,
@@ -457,7 +457,9 @@ def assign_material_ids(materials: list[dict[str, Any]]) -> None:
             material["icruId"] = int(icru_match.group(1))
 
 
-def resolve_icru_duplicates(materials: list[dict[str, Any]]) -> set[str]:
+def resolve_icru_duplicates(
+    materials: list[dict[str, Any]], incomplete_material_keys: set[str] | None = None
+) -> set[str]:
     """Resolve groups of materials that share an icruId (modifies materials in-place).
 
     Same icruId + same density (rounded to 3 decimal places):
@@ -476,12 +478,19 @@ def resolve_icru_duplicates(materials: list[dict[str, Any]]) -> set[str]:
             icru_groups[material["icruId"]].append(material)
 
     duplicate_keys: set[str] = set()
+    incomplete_keys = incomplete_material_keys or set()
     for group in icru_groups.values():
         if len(group) == 1:
             continue
         densities = [round(float(m.get("density") or 0.0), 3) for m in group]
         if len(set(densities)) == 1:
-            for material in group[1:]:
+            representative = next(
+                (material for material in group if material["sourceKey"] not in incomplete_keys),
+                group[0],
+            )
+            for material in group:
+                if material is representative:
+                    continue
                 duplicate_keys.add(material["sourceKey"])
         else:
             for material in group:
@@ -520,7 +529,9 @@ def source_summary(source_info: SourceInfo) -> dict[str, Any]:
         "rowCounts": dict(source_info.row_counts),
         "expectedRowCount": source_info.expected_row_count,
         "incompleteMaterialCount": len(source_info.incomplete_material_keys),
+        "incompleteMaterialKeys": sorted(source_info.incomplete_material_keys),
         "duplicateMaterialCount": len(source_info.duplicate_material_keys),
+        "duplicateMaterialKeys": sorted(source_info.duplicate_material_keys),
         "projectileCount": len(source_info.projectiles),
         "projectileZMin": source_info.projectiles[0]["Z"],
         "projectileZMax": source_info.projectiles[-1]["Z"],
@@ -610,8 +621,11 @@ def write_inspection_readme(output_dir: Path) -> None:
                 f"(`{summary['projectileCsv']}`)",
                 f"- Materials: {summary['materialCount']} total; "
                 f"{summary['keptMaterialCount']} kept for rectangular `.webdedx` export, "
-                f"{summary['incompleteMaterialCount']} dropped due to incomplete batches "
+                f"{summary['incompleteMaterialCount']} dropped due to incomplete batches, "
+                f"{summary['duplicateMaterialCount']} dropped as duplicate same-density ICRU entries "
                 f"(`{summary['materialCsv']}`)",
+                f"- Dropped incomplete material keys: `{summary['incompleteMaterialKeys']}`",
+                f"- Dropped duplicate material keys: `{summary['duplicateMaterialKeys']}`",
                 f"- Raw energy: `energy_keV`, converted to `MeV` in `.webdedx` output",
                 f"- Raw stopping: `Se`, `Sn` in `{summary['stoppingUnitsRaw']}`; "
                 "exported as `(Se + Sn) * 1000` in `MeV\u00b7cm\u00b2/g`",
