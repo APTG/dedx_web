@@ -8,8 +8,10 @@ import type { ParticleEntity } from "$lib/wasm/types";
  * - id 2     → "alpha particle"  (lowercase, no symbol)
  * - id 1001  → "electron"        (lowercase, no symbol)
  * - others   → "Element (Symbol)" — e.g. "Carbon (C)", "Tin (Sn)".
+ *
+ * Also accepts ExternalOnlyParticle (shares id, name, symbol fields).
  */
-export function getParticleLabel(particle: ParticleEntity): string {
+export function getParticleLabel(particle: { id: string | number; name: string; symbol: string }): string {
   if (particle.id === 1) return "proton";
   if (particle.id === 2) return "alpha particle";
   if (particle.id === 1001) return "electron";

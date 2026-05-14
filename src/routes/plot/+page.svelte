@@ -130,19 +130,22 @@
       return;
     }
     const resolvedId = entityState.resolvedProgramId;
-    const matId = entityState.selectedMaterial.id;
-    if (isCustomMaterial(entityState.selectedMaterial)) {
-      materialIsGas = entityState.selectedMaterial.isGasByDefault;
+    const selMat = entityState.selectedMaterial;
+    const builtinMat = "isGasByDefault" in selMat ? selMat : null;
+    const matId = selMat.id;
+    if (isCustomMaterial(builtinMat)) {
+      materialIsGas = builtinMat.isGasByDefault;
       return;
     }
-    if (resolvedId === null) {
+    if (resolvedId === null || typeof resolvedId !== "number") {
       materialIsGas = undefined;
       return;
     }
     let cancelled = false;
+    const numericResolvedId = resolvedId;
     getService().then((service) => {
       if (cancelled) return;
-      const materials = service.getMaterials(resolvedId);
+      const materials = service.getMaterials(numericResolvedId);
       const mat = materials.find((m) => m.id === matId);
       if (cancelled) return;
       materialIsGas = mat?.isGasByDefault;
@@ -279,14 +282,17 @@
   $effect(() => {
     if (!browser || !entityState || !urlInitialized) return;
     const selectedMaterial = entityState.selectedMaterial;
-    const customUrlFields = isCustomMaterial(selectedMaterial)
-      ? customMaterialUrlFields(selectedMaterial)
+    const builtinUrlMat = selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+    const customUrlFields = isCustomMaterial(builtinUrlMat)
+      ? customMaterialUrlFields(builtinUrlMat)
       : {};
+    const selectedParticleId = entityState.selectedParticle?.id;
+    const selectedProgramId = entityState.selectedProgram.id;
     const params = encodePlotUrl({
-      particleId: entityState.selectedParticle?.id ?? null,
+      particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId:
-        selectedMaterial && typeof selectedMaterial.id === "number" ? selectedMaterial.id : null,
-      programId: entityState.selectedProgram.id,
+        builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
+      programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
       series: plotState.series
         .map((s) => ({
           programId: s.programId,
@@ -352,14 +358,30 @@
     // potentially stale ones resolved later after a rapid selection change).
     const advOptsSnapshot = advancedOptions.value;
 
+    // Skip preview for external programs — they don't expose getPlotData
+    if (typeof resolvedProgramId === "string") {
+      plotState.clearPreview();
+      return;
+    }
+    const numericProgramId: number = resolvedProgramId;
+
+    // Narrow particle to built-in type for WASM calls
+    const builtinPreviewParticle = "massNumber" in selectedParticle ? selectedParticle : null;
+    if (!builtinPreviewParticle) {
+      plotState.clearPreview();
+      return;
+    }
+
+    const builtinPreviewMat = "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
+
     // Snapshot the current selection so a slower in-flight getPlotData
     // for an outdated selection cannot clobber a fresher preview (race
     // when the user changes particle/material/program quickly).
     const snapshot = {
-      programId: resolvedProgramId,
-      particleId: selectedParticle.id,
+      programId: numericProgramId,
+      particleId: builtinPreviewParticle.id as number,
       materialId: selectedMaterial.id,
-      customMaterial: isCustomMaterial(selectedMaterial) ? selectedMaterial : null,
+      customMaterial: isCustomMaterial(builtinPreviewMat) ? builtinPreviewMat : null,
     };
     let cancelled = false;
 
@@ -396,14 +418,14 @@
           particleId: snapshot.particleId,
           materialId: snapshot.materialId,
           programName,
-          particleName: getParticleLabel(selectedParticle),
+          particleName: getParticleLabel(builtinPreviewParticle),
           materialName: selectedMaterial.name,
           // Use the density override (only in Advanced mode) for correct unit conversion.
           // advancedModeActive is snapshotted synchronously at the top of this effect.
           density:
             (advancedModeActive && !snapshot.customMaterial
               ? advOptsSnapshot.densityOverride
-              : undefined) ?? selectedMaterial.density,
+              : undefined) ?? (builtinPreviewMat?.density ?? selectedMaterial.density ?? 1),
           result,
         });
       } catch (err) {
@@ -468,12 +490,14 @@
       return;
     }
 
+    const builtinAddParticle = "massNumber" in selectedParticle ? selectedParticle : null;
+    if (!builtinAddParticle || typeof resolvedProgramId === "string") return;
     const added = plotState.addSeries({
       programId: resolvedProgramId,
-      particleId: selectedParticle.id,
+      particleId: builtinAddParticle.id as number,
       materialId: selectedMaterial.id,
       programName: p.programName,
-      particleName: getParticleLabel(selectedParticle),
+      particleName: getParticleLabel(builtinAddParticle),
       materialName: selectedMaterial.name,
       // Preserve the density that was active when the preview was computed
       // so committed series display the same values as the preview did.
@@ -882,11 +906,13 @@
 
         <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
         {#if isAdvancedMode.value && entityState.selectedMaterial}
+          {@const plotSelMat = entityState.selectedMaterial}
+          {@const plotBuiltinMat = "isGasByDefault" in plotSelMat ? plotSelMat : null}
           <AdvancedOptionsPanel
             materialIsGas={materialIsGas ?? false}
-            materialBuiltInDensity={entityState.selectedMaterial.density}
+            materialBuiltInDensity={plotBuiltinMat?.density}
             materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
-            isCustomCompoundActive={isCustomMaterial(entityState.selectedMaterial)}
+            isCustomCompoundActive={isCustomMaterial(plotBuiltinMat)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}
