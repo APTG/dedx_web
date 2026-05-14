@@ -1,6 +1,8 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import type { ExternalStoreMetadata } from "$lib/external-data/schema";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Extended mock service for entity selection tests
@@ -155,6 +157,58 @@ class MockLibdedxServiceWithElectron {
     }
     return [];
   }
+}
+
+function makeExternalStore(): ExternalStoreMetadata {
+  return {
+    label: "srim",
+    url: "https://example.test/srim.webdedx/",
+    name: "SRIM GUI reference stopping-power tables",
+    programs: [{ id: "srim-2013-gui", name: "SRIM GUI", version: "SRIM-2013.00" }],
+    particles: [
+      {
+        id: "p",
+        name: "Proton",
+        symbol: "p",
+        Z: 1,
+        A: 1,
+        atomicMass: 1.007,
+        pdgCode: 2212,
+        index: 0,
+      },
+      {
+        id: "mu",
+        name: "Muon",
+        symbol: "μ",
+        Z: 0,
+        A: 0,
+        atomicMass: 0.113,
+        pdgCode: 13,
+        index: 1,
+      },
+    ],
+    materials: [
+      {
+        id: "water",
+        name: "Water (liquid)",
+        icruId: 276,
+        density: 1,
+        index: 0,
+        linearUnitsAvailable: true,
+      },
+      {
+        id: "poly",
+        name: "External Polymer",
+        density: 1.2,
+        index: 1,
+        linearUnitsAvailable: true,
+      },
+    ],
+    energyGrid: [1, 10, 100],
+    energyUnit: "MeV",
+    stpUnit: "MeV·cm²/g",
+    hasCsdaRange: true,
+  };
 }
 
 describe("createEntitySelectionState", () => {
@@ -448,6 +502,41 @@ describe("createEntitySelectionState", () => {
       // Electron with ESTAR is not a valid complete state
       // Per spec: electron is always greyed out because ESTAR is not implemented
       expect(state.isComplete).toBe(false);
+    });
+  });
+
+  describe("External data entity merging", () => {
+    test("adds compatible external programs for the current built-in particle/material", () => {
+      const state = createEntitySelectionState(matrix);
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalStore()],
+          matrix.allParticles,
+          matrix.allMaterials,
+        ),
+      );
+
+      expect(state.availableExternalPrograms.map((program) => program.name)).toContain("SRIM GUI");
+    });
+
+    test("selecting an external program exposes its merged and external-only particles/materials", () => {
+      const state = createEntitySelectionState(matrix);
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalStore()],
+          matrix.allParticles,
+          matrix.allMaterials,
+        ),
+      );
+
+      state.selectProgram("ext:srim:srim-2013-gui");
+
+      expect(state.availableParticles.map((particle) => particle.id)).toEqual(
+        expect.arrayContaining([1, "ext:srim:mu"]),
+      );
+      expect(state.availableMaterials.map((material) => material.id)).toEqual(
+        expect.arrayContaining([276, "ext:srim:poly"]),
+      );
     });
   });
 });

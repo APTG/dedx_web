@@ -3,6 +3,10 @@
   import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import type {
+    ExternalOnlyMaterial,
+    ExternalOnlyParticle,
+  } from "$lib/state/external-compatibility";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import { customCompounds } from "$lib/state/custom-compounds.svelte";
@@ -45,6 +49,16 @@
       .filter((p) => typeof p.id === "number" && !COMMON_PARTICLE_IDS.has(p.id))
       .sort((a, b) => (a.id as number) - (b.id as number))
       .map(toParticleItem),
+  );
+
+  const externalParticles = $derived.by(() =>
+    state.externalOnlyParticles.map((particle) => ({
+      entity: particle,
+      available: state.availableParticles.some((p) => p.id === particle.id),
+      label: particle.name,
+      description: particle.label,
+      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label}`,
+    })),
   );
 
   const elements = $derived.by(() => {
@@ -93,6 +107,16 @@
     }));
   });
 
+  const externalMaterials = $derived.by(() =>
+    state.externalOnlyMaterials.map((material) => ({
+      entity: material,
+      available: state.availableMaterials.some((m) => m.id === material.id),
+      label: material.name,
+      description: material.label,
+      searchText: `${material.localId} ${material.name} ${material.label}`,
+    })),
+  );
+
   const programItems = $derived.by(() => {
     const result = [];
 
@@ -124,6 +148,16 @@
       });
     }
 
+    for (const program of state.availableExternalPrograms) {
+      result.push({
+        entity: program,
+        available: true,
+        label: program.name,
+        description: [program.label, program.version].filter(Boolean).join(" · "),
+        searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
+      });
+    }
+
     return result;
   });
 </script>
@@ -142,10 +176,13 @@
       groups={[
         { groupName: "Common particles", items: commonParticles },
         { groupName: "Ions", items: ionParticles },
+        ...(externalParticles.length > 0
+          ? [{ groupName: "External", items: externalParticles }]
+          : []),
       ]}
       selectedId={state.selectedParticle?.id ?? null}
       maxHeight="260px"
-      onItemSelect={(particle: ParticleEntity) => {
+      onItemSelect={(particle: ParticleEntity | ExternalOnlyParticle) => {
         if (particle.id === 1001) {
           return;
         }
@@ -162,10 +199,13 @@
         { groupName: "Elements", items: elements },
         { groupName: "Compounds", items: compounds },
         ...(isAdvancedMode.value ? [{ groupName: "Custom", items: customCompoundItems }] : []),
+        ...(externalMaterials.length > 0
+          ? [{ groupName: "External", items: externalMaterials }]
+          : []),
       ]}
       selectedId={state.selectedMaterial?.id ?? null}
       maxHeight="260px"
-      onItemSelect={(material: MaterialEntity) => {
+      onItemSelect={(material: MaterialEntity | ExternalOnlyMaterial) => {
         state.selectMaterial(material.id);
       }}
       onClear={() => state.clearMaterial()}

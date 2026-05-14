@@ -2,7 +2,11 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
-  import type { ExternalOnlyMaterial } from "$lib/state/external-compatibility";
+  import type {
+    ExternalOnlyMaterial,
+    ExternalOnlyParticle,
+    ExternalProgramEntity,
+  } from "$lib/state/external-compatibility";
   import { getProgramDescription } from "$lib/config/program-names";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import type {
@@ -15,10 +19,14 @@
   import CompoundEditorModal from "./compound-editor-modal.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
+  type ParticleOption = ParticleEntity | ExternalOnlyParticle;
+  type MaterialOption = MaterialEntity | ExternalOnlyMaterial;
+  type ProgramOption = SelectedProgram | ProgramEntity | ExternalProgramEntity;
+
   interface Props {
     selectionState: EntitySelectionState;
     class?: string;
-    onParticleSelect?: (particleId: number) => void;
+    onParticleSelect?: (particleId: number | string) => void;
   }
 
   let { selectionState, class: className, onParticleSelect }: Props = $props();
@@ -101,12 +109,23 @@
       };
     }
 
+    const externalParticles = selectionState.externalOnlyParticles.map((particle) => ({
+      entity: particle,
+      available: selectionState.availableParticles.some((p) => p.id === particle.id),
+      label: particle.name,
+      description: particle.label,
+      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label}`,
+    }));
+
     // Use same section-header pattern as materialItems
     return [
       { type: "section" as const, label: "Common particles" },
       ...commonParticles.map(toItem),
       { type: "section" as const, label: "Ions" },
       ...ionParticles.map(toItem),
+      ...(externalParticles.length > 0
+        ? [{ type: "section" as const, label: "External" }, ...externalParticles]
+        : []),
     ];
   });
 
@@ -117,7 +136,7 @@
 
   interface MaterialItem {
     type: "item";
-    entity: MaterialEntity;
+    entity: MaterialOption;
     available: boolean;
     label: string;
     description?: string;
@@ -176,6 +195,17 @@
       };
     });
 
+    const externalMaterials: MaterialItem[] = selectionState.externalOnlyMaterials.map(
+      (material) => ({
+        type: "item" as const,
+        entity: material,
+        available: selectionState.availableMaterials.some((m) => m.id === material.id),
+        label: material.name,
+        description: material.label,
+        searchText: `${material.localId} ${material.name} ${material.label}`,
+      }),
+    );
+
     const result: MaterialEntry[] = [
       { type: "section", label: "Elements" },
       ...elements.map((material) => ({
@@ -204,6 +234,9 @@
             },
           ]
         : []),
+      ...(externalMaterials.length > 0
+        ? [{ type: "section" as const, label: "External" }, ...externalMaterials]
+        : []),
     ];
 
     materialItems = result;
@@ -216,7 +249,7 @@
 
   interface ProgramItem {
     type: "item";
-    entity: SelectedProgram | ProgramEntity;
+    entity: ProgramOption;
     available: boolean;
     label: string;
     description?: string;
@@ -287,6 +320,21 @@
       }
     }
 
+    if (selectionState.availableExternalPrograms.length > 0) {
+      result.push({ type: "section", label: "External" });
+
+      for (const program of selectionState.availableExternalPrograms) {
+        result.push({
+          type: "item" as const,
+          entity: program,
+          available: true,
+          label: program.name,
+          description: [program.label, program.version].filter(Boolean).join(" · "),
+          searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
+        });
+      }
+    }
+
     return result;
   });
 </script>
@@ -298,14 +346,14 @@
       items={particleItems}
       selectedId={selectionState.selectedParticle?.id ?? null}
       placeholder="Select particle"
-      onItemSelect={(particle: ParticleEntity) => {
+      onItemSelect={(particle: ParticleOption) => {
         if (particle.id === 1001) {
           return;
         }
         if (onParticleSelect) {
-          onParticleSelect(particle.id as number);
+          onParticleSelect(particle.id);
         } else {
-          selectionState.selectParticle(particle.id as number);
+          selectionState.selectParticle(particle.id);
         }
       }}
       onClear={() => selectionState.clearParticle()}
@@ -319,7 +367,7 @@
         items={materialItems}
         selectedId={selectionState.selectedMaterial?.id ?? null}
         placeholder="Select material"
-        onItemSelect={(material: MaterialEntity) => {
+        onItemSelect={(material: MaterialOption) => {
           selectionState.selectMaterial(material.id);
         }}
         onClear={() => selectionState.clearMaterial()}
@@ -342,7 +390,7 @@
       items={programItems}
       selectedId={selectionState.selectedProgram?.id ?? null}
       placeholder="Select program"
-      onItemSelect={(program: SelectedProgram | ProgramEntity) => {
+      onItemSelect={(program: ProgramOption) => {
         selectionState.selectProgram(program.id);
       }}
     />

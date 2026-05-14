@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import type { ExternalStoreMetadata } from "$lib/external-data/schema";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 class MockLibdedxService {
@@ -154,6 +156,48 @@ class MockLibdedxService {
   }
 }
 
+function makeExternalStore(): ExternalStoreMetadata {
+  return {
+    label: "srim",
+    url: "https://example.test/srim.webdedx/",
+    name: "SRIM GUI reference stopping-power tables",
+    programs: [{ id: "srim-2013-gui", name: "SRIM GUI", version: "SRIM-2013.00" }],
+    particles: [
+      {
+        id: "p",
+        name: "Proton",
+        symbol: "p",
+        Z: 1,
+        A: 1,
+        atomicMass: 1.007,
+        pdgCode: 2212,
+        index: 0,
+      },
+    ],
+    materials: [
+      {
+        id: "water",
+        name: "Water (liquid)",
+        icruId: 276,
+        density: 1,
+        index: 0,
+        linearUnitsAvailable: true,
+      },
+      {
+        id: "poly",
+        name: "External Polymer",
+        density: 1.2,
+        index: 1,
+        linearUnitsAvailable: true,
+      },
+    ],
+    energyGrid: [1, 10, 100],
+    energyUnit: "MeV",
+    stpUnit: "MeV·cm²/g",
+    hasCsdaRange: true,
+  };
+}
+
 describe("EntitySelectionComboboxes", () => {
   let state: ReturnType<typeof createEntitySelectionState>;
 
@@ -298,7 +342,9 @@ describe("EntitySelectionComboboxes", () => {
     const electronMatrix = buildCompatibilityMatrix(electronService as any);
     const electronState = createEntitySelectionState(electronMatrix);
 
-    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+    const { container } = render(EntitySelectionComboboxes, {
+      props: { selectionState: electronState },
+    });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -338,6 +384,42 @@ describe("EntitySelectionComboboxes", () => {
 
     expect(screen.getByRole("group", { name: /^Tabulated data$/i })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /^Analytical models$/i })).toBeInTheDocument();
+  });
+
+  test("Program combobox includes compatible external programs from loaded extdata", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const programCombobox = container.querySelector('[aria-label="Program"]')!;
+    await user.click(programCombobox);
+
+    expect(screen.getAllByRole("group", { name: /^External$/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("option", { name: /SRIM GUI/i })).toBeInTheDocument();
+  });
+
+  test("Material combobox includes external-only materials from loaded extdata", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const materialCombobox = container.querySelector('[aria-label="Material"]')!;
+    await user.click(materialCombobox);
+
+    expect(screen.getAllByRole("group", { name: /^External$/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("option", { name: /External Polymer/i })).toBeInTheDocument();
   });
 
   test("isComplete reflects valid selection state", () => {
@@ -450,7 +532,9 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+      const { container } = render(EntitySelectionComboboxes, {
+        props: { selectionState: electronState },
+      });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -474,7 +558,9 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+      const { container } = render(EntitySelectionComboboxes, {
+        props: { selectionState: electronState },
+      });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;

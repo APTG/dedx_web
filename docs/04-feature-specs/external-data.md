@@ -811,6 +811,11 @@ When external data is loaded:
 
 - External programs appear in the Program combobox (compact mode) under an
   "External" separator/group.
+- External-only particles and materials (those that do not merge with a built-in
+  libdedx entity) appear in the Particle and Material selectors under an
+  "External" separator/group. External particles/materials that merge with
+  built-in entities keep the built-in selector row and make the compatible
+  external programs available for that built-in selection.
 - Auto-select does **not** consider external programs. Auto-select only
   resolves to built-in libdedx programs. Users must explicitly select an
   external program.
@@ -865,6 +870,9 @@ built-in programs. They can be added to the `programs` list, hidden via
 
 External (program, particle, material) triplets can be added as plot series:
 
+- The Plot page entity panels use the same merged external compatibility model
+  as Calculator: compatible external programs appear alongside built-in programs,
+  and external-only particles/materials appear in "External" groups.
 - The series uses the external table's native energy grid (no resampling to
   a common grid). Each series is plotted on its own grid.
 - Line style: dashed (to distinguish from solid built-in series).
