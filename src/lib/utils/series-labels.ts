@@ -1,8 +1,8 @@
 import { COLOR_PALETTE } from "./plot-utils";
 
 interface SeriesForLabel {
-  programId: number;
-  particleId: number;
+  programId: number | string; // EntityId (number | ExtRef), widened to avoid importing branded type
+  particleId: number | string;
   materialId: number | string;
   programName: string;
   particleName: string;

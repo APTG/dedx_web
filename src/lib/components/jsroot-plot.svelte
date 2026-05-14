@@ -200,9 +200,10 @@
       const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
       const tgraph = JSROOT_any.createTGraph(s.result.energies.length, s.result.energies, yData);
       const isPreview = s.seriesId === 0;
+      const isExternal = typeof s.programId === "string";
       tgraph.fLineColor = isPreview ? 1 : s.colorIndex + 2;
       tgraph.fLineWidth = isPreview ? 1 : 2;
-      tgraph.fLineStyle = isPreview ? 2 : 1;
+      tgraph.fLineStyle = isPreview || isExternal ? 2 : 1;
       tgraph.fTitle = "";
       tgraph.InvertBit(JSROOT_any.BIT(18));
       return tgraph;
