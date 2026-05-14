@@ -30,7 +30,13 @@
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
   import { goto } from "$app/navigation";
+  import { externalDataService } from "$lib/external-data/service";
+  import type { ExternalDataError } from "$lib/external-data/errors";
+  import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+  import { parseExtdataParams } from "$lib/external-data/url";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -42,6 +48,9 @@
   let materialIsGas = $state<boolean | undefined>(undefined);
   let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let advancedModeInitializedFromUrl = $state(false);
+  let externalLoading = $state(false);
+  let externalError = $state<ExternalDataError | null>(null);
+  let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
 
   // Mobile responsive: track viewport width to collapse entity panels on small screens
   let isMobile = $state(false);
@@ -79,12 +88,34 @@
   }
 
   $effect(() => {
-    if (wasmReady.value && !entityState) {
-      getService().then((service) => {
+    if (!wasmReady.value || entityState) return;
+    const currentSearchParams = page.url.searchParams;
+    const extdataResult = parseExtdataParams(currentSearchParams);
+    const extSources = extdataResult.sources;
+    externalLoading = extSources.length > 0;
+
+    Promise.all([
+      getService(),
+      Promise.all(extSources.map((s) => externalDataService.loadSource(s))),
+    ])
+      .then(([service, extMetadatas]) => {
+        externalLoading = false;
+        externalError = null;
+        loadedExternalSources = extSources;
+
         const matrix = buildCompatibilityMatrix(service);
+        const extCtx = buildExternalCompatibilityContext(
+          extMetadatas,
+          matrix.allParticles,
+          matrix.allMaterials,
+        );
         entityState = createEntitySelectionState(matrix);
+        entityState.setExternalContext(extCtx);
+      })
+      .catch((err) => {
+        externalLoading = false;
+        externalError = err as ExternalDataError;
       });
-    }
   });
 
   // Initialize advanced options from localStorage on mount (runs once; browser is a constant)
@@ -307,6 +338,7 @@
       xLog: plotState.xLog,
       yLog: plotState.yLog,
       advancedOptions: advancedOptions.value,
+      externalSources: loadedExternalSources,
       ...customUrlFields,
     });
     const newUrl = `${window.location.pathname}?${params.toString()}`;
@@ -646,10 +678,35 @@
       </details>
     </div>
   </div>
+{:else if externalError}
+  <div class="space-y-6">
+    <h1 class="text-3xl font-bold">Plot</h1>
+    <div
+      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
+    >
+      <p class="font-semibold text-destructive">Failed to load external data source.</p>
+      <p class="text-sm text-muted-foreground">{externalError.message}</p>
+      <div class="flex justify-center gap-2">
+        <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
+          Retry
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          onclick={() => goto("/plot", { replaceState: true })}
+        >
+          Load without external data
+        </Button>
+      </div>
+    </div>
+  </div>
 {:else if !wasmReady.value || !entityState}
   <div class="space-y-6">
     <h1 class="text-3xl font-bold">Plot</h1>
     <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading plot page">
+      {#if externalLoading}
+        <p class="text-sm text-muted-foreground">Loading external data sources…</p>
+      {/if}
       <div class="flex flex-wrap gap-3">
         <Skeleton class="h-10 w-44 rounded-md" />
         <Skeleton class="h-10 w-44 rounded-md" />
@@ -670,6 +727,8 @@
         onLoadDefaults={handleLoadDefaults}
       />
     {/if}
+
+    <ExternalSourcesBadge sources={loadedExternalSources} />
 
     <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
     <div class="grid gap-4 desktop:grid-cols-[minmax(520px,5fr)_7fr]">

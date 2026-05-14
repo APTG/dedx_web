@@ -50,6 +50,7 @@
   import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
+  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
@@ -1263,6 +1264,7 @@
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
       />
+      <ExternalSourcesBadge sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
