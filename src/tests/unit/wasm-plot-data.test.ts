@@ -4,6 +4,9 @@ import { LibdedxServiceImpl } from "$lib/wasm/libdedx";
 type EmscriptenModuleArg = ConstructorParameters<typeof LibdedxServiceImpl>[0];
 const INITIAL_HEAP_OFFSET = 128;
 const FLOAT32_ENERGY_RANGE_TOLERANCE = 1e-4;
+const ICRU49_PROGRAM_ID = 7;
+const ALPHA_PARTICLE_ID = 2;
+const WATER_MATERIAL_ID = 276;
 
 function createRangeCheckingModule({
   minEnergy,
@@ -95,7 +98,13 @@ describe("LibdedxServiceImpl.getPlotData", () => {
       createRangeCheckingModule({ minEnergy: 0.01, maxEnergy: 500 }),
     );
 
-    const result = service.getPlotData(7, 2, 276, 5, true);
+    const result = service.getPlotData(
+      ICRU49_PROGRAM_ID,
+      ALPHA_PARTICLE_ID,
+      WATER_MATERIAL_ID,
+      5,
+      true,
+    );
 
     expect(result.energies).toHaveLength(5);
     expect(result.energies[0]).toBeCloseTo(0.01);

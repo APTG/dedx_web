@@ -15,7 +15,7 @@ test.describe("Plot page", () => {
     await expect(page).toHaveURL(/\/plot/);
   });
 
-  test("loads alpha particle stopping-power preview without recursion @regression", async ({
+  test("loads stopping-power plot for alpha particles without recursion @regression", async ({
     page,
   }) => {
     // Real-WASM plot initialization can take multiple seconds in CI.
