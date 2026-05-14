@@ -18,6 +18,7 @@ test.describe("Plot page", () => {
   test("loads alpha particle stopping-power preview without recursion @regression", async ({
     page,
   }) => {
+    // Real-WASM plot initialization can take multiple seconds in CI.
     test.setTimeout(60000);
     const errors: string[] = [];
     page.on("pageerror", (err) => errors.push(err.message));

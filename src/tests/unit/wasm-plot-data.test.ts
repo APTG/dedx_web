@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import { LibdedxServiceImpl } from "$lib/wasm/libdedx";
 
 type EmscriptenModuleArg = ConstructorParameters<typeof LibdedxServiceImpl>[0];
+const INITIAL_HEAP_OFFSET = 128;
+const FLOAT32_ENERGY_RANGE_TOLERANCE = 1e-4;
 
 function createRangeCheckingModule({
   minEnergy,
@@ -14,7 +16,7 @@ function createRangeCheckingModule({
   const heap32 = new Int32Array(buffer);
   const heapF32 = new Float32Array(buffer);
   const heapF64 = new Float64Array(buffer);
-  let nextPtr = 128;
+  let nextPtr = INITIAL_HEAP_OFFSET;
 
   return {
     HEAP32: heap32,
@@ -50,10 +52,12 @@ function createRangeCheckingModule({
       energiesPtr,
       stpPtr,
     ) => {
-      const tolerance = 1e-4;
       for (let i = 0; i < numEnergies; i++) {
         const energy = heapF32[energiesPtr / 4 + i]!;
-        if (energy < minEnergy - tolerance || energy > maxEnergy + tolerance) {
+        if (
+          energy < minEnergy - FLOAT32_ENERGY_RANGE_TOLERANCE ||
+          energy > maxEnergy + FLOAT32_ENERGY_RANGE_TOLERANCE
+        ) {
           throw new Error("too much recursion");
         }
         heapF32[stpPtr / 4 + i] = energy + 1;
