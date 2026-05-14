@@ -247,6 +247,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           materials.push({
             id,
             name,
+            rawName,
             density,
             isGasByDefault: this.module._dedx_target_is_gas(id) !== 0,
           });

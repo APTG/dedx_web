@@ -50,7 +50,7 @@
   import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
-  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
+  import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
@@ -1275,7 +1275,7 @@
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
       />
-      <ExternalSourcesBadge sources={loadedExternalSources} />
+      <ExternalSourcesPanel sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
@@ -1581,7 +1581,8 @@
                     value={row.text}
                     placeholder="Enter range (e.g., 7.718 cm)"
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) => inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
+                    oninput={(e) =>
+                      inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
                     data-testid="inverse-range-input-{i}"
                   />
                   {#if row.unitFromSuffix}

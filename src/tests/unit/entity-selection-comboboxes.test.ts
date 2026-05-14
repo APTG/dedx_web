@@ -359,7 +359,25 @@ describe("EntitySelectionComboboxes", () => {
     await user.click(programCombobox);
 
     expect(screen.getAllByRole("group", { name: /^External$/i }).length).toBeGreaterThan(0);
-    expect(screen.getByRole("option", { name: /SRIM GUI/i })).toBeInTheDocument();
+    // Spec §7.1: external programs render with a 🔗 prefix and "(ext)" suffix
+    expect(screen.getByRole("option", { name: /🔗 SRIM GUI \(ext\)/i })).toBeInTheDocument();
+  });
+
+  test("Material combobox marks external-only materials with the 🔗 visual prefix", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const materialCombobox = container.querySelector('[aria-label="Material"]')!;
+    await user.click(materialCombobox);
+
+    expect(screen.getByRole("option", { name: /🔗 External Polymer/i })).toBeInTheDocument();
   });
 
   test("Material combobox includes external-only materials from loaded extdata", async () => {

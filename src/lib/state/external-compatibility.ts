@@ -160,6 +160,11 @@ function matchBuiltinParticle(
   return null;
 }
 
+/** Normalize a material name for fuzzy matching: lowercase, strip non-alphanumerics. */
+function normalizeMaterialName(name: string): string {
+  return name.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
 /** Match an external material against the built-in list. Returns built-in ID or null. */
 function matchBuiltinMaterial(
   extMaterial: ExternalMaterialEntry,
@@ -181,12 +186,36 @@ function matchBuiltinMaterial(
     if (match) return match.id as number;
   }
 
-  // 3. Case-insensitive name match
+  // 3. Case-insensitive exact match against friendly name (fast path) and the
+  //    libdedx raw all-caps name when available. Many built-in friendly names
+  //    are augmented with disambiguators (e.g. "WATER" → "Water (liquid)"),
+  //    so the raw name is the most reliable equality target.
   const extNameLower = extMaterial.name.toLowerCase();
-  const match = builtinMaterials.find((m) => m.name.toLowerCase() === extNameLower);
-  if (match) return match.id as number;
+  const exact = builtinMaterials.find((m) => {
+    if (m.name.toLowerCase() === extNameLower) return true;
+    return m.rawName !== undefined && m.rawName.toLowerCase() === extNameLower;
+  });
+  if (exact) return exact.id as number;
 
-  return null;
+  // 4. Fuzzy normalized match: strip non-alphanumeric characters from both
+  //    sides. "Water (liquid)" → "waterliquid" still won't equal "water", so
+  //    we additionally accept matches where one normalized form is a prefix
+  //    of the other followed only by the parenthetical disambiguator suffix.
+  const extNorm = normalizeMaterialName(extMaterial.name);
+  if (extNorm.length === 0) return null;
+  const fuzzy = builtinMaterials.find((m) => {
+    if (typeof m.id !== "number") return false;
+    const friendlyNorm = normalizeMaterialName(m.name);
+    const rawNorm = m.rawName ? normalizeMaterialName(m.rawName) : "";
+    if (friendlyNorm === extNorm || rawNorm === extNorm) return true;
+    // Allow extName to be the shorter "core" name (e.g. "Water") of a built-in
+    // disambiguated as "Water (liquid)" — only when the extra characters in
+    // the built-in friendly name come from a parenthetical descriptor.
+    const parenSuffix = m.name.toLowerCase().match(/^(.+?)\s*\([^)]+\)$/);
+    if (parenSuffix && normalizeMaterialName(parenSuffix[1]!) === extNorm) return true;
+    return false;
+  });
+  return fuzzy ? (fuzzy.id as number) : null;
 }
 
 /**

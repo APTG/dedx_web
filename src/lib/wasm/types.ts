@@ -29,6 +29,12 @@ export interface MaterialEntity extends LibdedxEntity {
   elements?: Array<{ atomicNumber: number; atomCount: number }> | undefined;
   iValue?: number | undefined;
   phase?: "gas" | "condensed" | undefined;
+  /** Raw ALL-CAPS name from `dedx_get_material_name()` (e.g. "WATER"). Used
+   * for matching external `.webdedx` materials against built-in entries when
+   * the friendly display name has been augmented with disambiguators like
+   * "(liquid)". Optional because custom compounds and external-only materials
+   * have no libdedx raw name. */
+  rawName?: string | undefined;
 }
 
 export interface CalculationResult {

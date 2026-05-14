@@ -480,7 +480,7 @@ describe("createEntitySelectionState", () => {
       state.selectProgram("ext:srim:srim-2013-gui");
 
       expect(state.availableParticles.map((particle) => particle.id)).toEqual(
-        expect.arrayContaining([1, "ext:srim:mu"]),
+        expect.arrayContaining([1, "ext:srim:antiproton"]),
       );
       expect(state.availableMaterials.map((material) => material.id)).toEqual(
         expect.arrayContaining([276, "ext:srim:poly"]),

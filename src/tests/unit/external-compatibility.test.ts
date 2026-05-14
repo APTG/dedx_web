@@ -26,10 +26,26 @@ function makeStore(overrides: Partial<ExternalStoreMetadata> = {}): ExternalStor
     name: "Test Store",
     programs: [{ id: "prog1", name: "Test Program" }],
     particles: [
-      { id: "p", name: "Proton", symbol: "p", Z: 1, A: 1, atomicMass: 1.00728, pdgCode: 2212, index: 0 },
+      {
+        id: "p",
+        name: "Proton",
+        symbol: "p",
+        Z: 1,
+        A: 1,
+        atomicMass: 1.00728,
+        pdgCode: 2212,
+        index: 0,
+      },
     ],
     materials: [
-      { id: "water", name: "Water, Liquid", icruId: 276, index: 0, linearUnitsAvailable: true, density: 1.0 },
+      {
+        id: "water",
+        name: "Water, Liquid",
+        icruId: 276,
+        index: 0,
+        linearUnitsAvailable: true,
+        density: 1.0,
+      },
     ],
     energyGrid: [1, 10, 100],
     energyUnit: "MeV",
@@ -41,21 +57,33 @@ function makeStore(overrides: Partial<ExternalStoreMetadata> = {}): ExternalStor
 
 describe("buildExternalCompatibilityContext", () => {
   it("merges proton by PDG code (2212 → id 1)", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     expect(ctx.mergedParticleMap.get("ext:test:p")).toBe(1);
     expect(ctx.externalOnlyParticles).toHaveLength(0);
   });
 
   it("merges water by ICRU id (276 → id 276)", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     expect(ctx.mergedMaterialMap.get("ext:test:water")).toBe(276);
     expect(ctx.externalOnlyMaterials).toHaveLength(0);
   });
 
   it("registers external program", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     expect(ctx.programs).toHaveLength(1);
     expect(ctx.programs[0]!.id).toBe("ext:test:prog1");
@@ -63,28 +91,44 @@ describe("buildExternalCompatibilityContext", () => {
   });
 
   it("populates particlesByProgram with merged builtin ID", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     const covered = ctx.particlesByProgram.get("ext:test:prog1");
     expect(covered?.has(1)).toBe(true); // proton builtin id = 1
   });
 
   it("populates materialsByProgram with merged builtin ID", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     const covered = ctx.materialsByProgram.get("ext:test:prog1");
     expect(covered?.has(276)).toBe(true);
   });
 
   it("reverse index: externalProgramsByBuiltinParticle", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     const progs = ctx.externalProgramsByBuiltinParticle.get(1);
     expect(progs?.has("ext:test:prog1")).toBe(true);
   });
 
   it("reverse index: externalRefsForBuiltinParticle", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     const refs = ctx.externalRefsForBuiltinParticle.get(1);
     expect(refs).toContain("ext:test:p");
@@ -105,7 +149,16 @@ describe("buildExternalCompatibilityContext", () => {
   it("registers external-only particle when no match found", () => {
     const store = makeStore({
       particles: [
-        { id: "mu", name: "Muon", symbol: "μ", Z: 0, A: 0, atomicMass: 0.11357, pdgCode: 13, index: 0 },
+        {
+          id: "mu",
+          name: "Muon",
+          symbol: "μ",
+          Z: 0,
+          A: 0,
+          atomicMass: 0.11357,
+          pdgCode: 13,
+          index: 0,
+        },
       ],
     });
     const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
@@ -118,7 +171,13 @@ describe("buildExternalCompatibilityContext", () => {
   it("material falls back to atomic number match", () => {
     const store = makeStore({
       materials: [
-        { id: "al", name: "Aluminium (alt)", atomicNumber: 13, index: 0, linearUnitsAvailable: false },
+        {
+          id: "al",
+          name: "Aluminium (alt)",
+          atomicNumber: 13,
+          index: 0,
+          linearUnitsAvailable: false,
+        },
       ],
     });
     const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
@@ -128,17 +187,58 @@ describe("buildExternalCompatibilityContext", () => {
 
   it("material falls back to case-insensitive name match", () => {
     const store = makeStore({
-      materials: [
-        { id: "al-alt", name: "aluminum", index: 0, linearUnitsAvailable: false },
-      ],
+      materials: [{ id: "al-alt", name: "aluminum", index: 0, linearUnitsAvailable: false }],
     });
     const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
 
     expect(ctx.mergedMaterialMap.get("ext:test:al-alt")).toBe(13);
   });
 
+  it("material matches against built-in rawName when friendly name has parenthetical disambiguator", () => {
+    // Real SRIM datasets export materials with bare names like "Water"; the
+    // built-in libdedx friendly name is "Water (liquid)" but its rawName is
+    // "WATER". Without rawName matching the SRIM "Water" entry would fall
+    // through as external-only, which would empty out `availableExternalPrograms`
+    // for built-in proton+water selections (PR #476 review feedback).
+    const builtinWithRaw: MaterialEntity[] = [
+      { id: 276, name: "Water (liquid)", rawName: "WATER", density: 1.0 } as MaterialEntity,
+      { id: 277, name: "Water Vapor", rawName: "WATERVAPOR", density: 0.0008 } as MaterialEntity,
+    ];
+    const store = makeStore({
+      materials: [
+        { id: "water", name: "Water", index: 0, linearUnitsAvailable: true, density: 1.0 },
+      ],
+    });
+    const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, builtinWithRaw);
+
+    // Should merge to liquid water (276), not vapor (277)
+    expect(ctx.mergedMaterialMap.get("ext:test:water")).toBe(276);
+    expect(ctx.externalOnlyMaterials).toHaveLength(0);
+  });
+
+  it("material matches via parenthetical-suffix fallback when rawName missing", () => {
+    // Defensive fallback: even without rawName plumbed (e.g. older mocks or
+    // tests), a bare external name should still match a friendly built-in
+    // whose only difference is a parenthetical disambiguator.
+    const store = makeStore({
+      materials: [
+        { id: "water", name: "Water", index: 0, linearUnitsAvailable: true, density: 1.0 },
+      ],
+    });
+    const builtin: MaterialEntity[] = [
+      { id: 276, name: "Water (liquid)", density: 1.0 } as MaterialEntity,
+    ];
+    const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, builtin);
+
+    expect(ctx.mergedMaterialMap.get("ext:test:water")).toBe(276);
+  });
+
   it("stores source metadata", () => {
-    const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+    const ctx = buildExternalCompatibilityContext(
+      [makeStore()],
+      BUILTIN_PARTICLES,
+      BUILTIN_MATERIALS,
+    );
 
     expect(ctx.sourceMetadata.has("test")).toBe(true);
   });
@@ -159,7 +259,11 @@ describe("EMPTY_EXTERNAL_CONTEXT", () => {
 });
 
 describe("getAvailableExternalPrograms", () => {
-  const ctx = buildExternalCompatibilityContext([makeStore()], BUILTIN_PARTICLES, BUILTIN_MATERIALS);
+  const ctx = buildExternalCompatibilityContext(
+    [makeStore()],
+    BUILTIN_PARTICLES,
+    BUILTIN_MATERIALS,
+  );
 
   it("returns all programs when no filter", () => {
     expect(getAvailableExternalPrograms(ctx)).toHaveLength(1);

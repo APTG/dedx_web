@@ -112,9 +112,10 @@
     const externalParticles = selectionState.externalOnlyParticles.map((particle) => ({
       entity: particle,
       available: selectionState.availableParticles.some((p) => p.id === particle.id),
-      label: particle.name,
+      // Spec §7.1: external-only particles prefixed with 🔗 icon
+      label: `🔗 ${particle.name}`,
       description: particle.label,
-      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label}`,
+      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
     }));
 
     // Use same section-header pattern as materialItems
@@ -200,9 +201,10 @@
         type: "item" as const,
         entity: material,
         available: selectionState.availableMaterials.some((m) => m.id === material.id),
-        label: material.name,
+        // Spec §7.1: external-only materials prefixed with 🔗 icon
+        label: `🔗 ${material.name}`,
         description: material.label,
-        searchText: `${material.localId} ${material.name} ${material.label}`,
+        searchText: `${material.localId} ${material.name} ${material.label} ext external`,
       }),
     );
 
@@ -328,9 +330,10 @@
           type: "item" as const,
           entity: program,
           available: true,
-          label: program.name,
+          // Spec §7.1: external programs prefixed with 🔗 icon and "(ext)" suffix
+          label: `🔗 ${program.name} (ext)`,
           description: [program.label, program.version].filter(Boolean).join(" · "),
-          searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
+          searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId} ext external`,
         });
       }
     }

@@ -55,9 +55,10 @@
     state.externalOnlyParticles.map((particle) => ({
       entity: particle,
       available: state.availableParticles.some((p) => p.id === particle.id),
-      label: particle.name,
+      // Spec §7.1: external-only particles prefixed with 🔗 icon
+      label: `🔗 ${particle.name}`,
       description: particle.label,
-      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label}`,
+      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
     })),
   );
 
@@ -111,54 +112,69 @@
     state.externalOnlyMaterials.map((material) => ({
       entity: material,
       available: state.availableMaterials.some((m) => m.id === material.id),
-      label: material.name,
+      // Spec §7.1: external-only materials prefixed with 🔗 icon
+      label: `🔗 ${material.name}`,
       description: material.label,
-      searchText: `${material.localId} ${material.name} ${material.label}`,
+      searchText: `${material.localId} ${material.name} ${material.label} ext external`,
     })),
   );
 
-  const programItems = $derived.by(() => {
-    const result = [];
+  // Plot does not yet support external program series (would require
+  // loadStpSlice + interpolation pipeline). Show external programs grouped
+  // separately and mark them unavailable so users can see the dataset is
+  // loaded but won't be confused by a non-functional selection. Spec
+  // §8.1 calls for an "External" separator/group; this preserves the
+  // grouping and signals the limitation explicitly.
+  type ProgramPanelEntity = { id: number | string; name: string };
+  type ProgramPanelItem = {
+    entity: ProgramPanelEntity;
+    available: boolean;
+    label: string;
+    description?: string;
+    searchText?: string;
+  };
 
+  const builtinProgramItems = $derived.by<ProgramPanelItem[]>(() =>
+    state.availablePrograms.map((program) => ({
+      entity: program,
+      available: true,
+      label: `${program.name} — ${program.version}`,
+    })),
+  );
+
+  const externalProgramItems = $derived.by<ProgramPanelItem[]>(() =>
+    state.availableExternalPrograms.map((program) => ({
+      entity: program,
+      available: false,
+      label: `🔗 ${program.name} (ext)`,
+      description: `${program.label}${program.version ? ` · ${program.version}` : ""} — Plot series not yet supported`,
+      searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
+    })),
+  );
+
+  const autoSelectItem = $derived.by<ProgramPanelItem>(() => {
     const selectedProgram = state.selectedProgram;
-
-    // Always push a synthetic Auto-select entry with id=-1.
-    // If we pushed state.selectedProgram directly and a concrete program is
-    // selected (id > 0), that same program entity would also appear in
-    // state.availablePrograms — giving Svelte two items with the same key and
-    // throwing each_key_duplicate.
     const autoLabel =
       selectedProgram.id === -1 &&
       "resolvedProgram" in selectedProgram &&
       selectedProgram.resolvedProgram
         ? `Auto-select → ${selectedProgram.resolvedProgram.name}`
         : "Auto-select";
-
-    result.push({
+    return {
       entity: { id: -1, name: "Auto-select" },
       available: true,
       label: autoLabel,
-    });
+    };
+  });
 
-    for (const program of state.availablePrograms) {
-      result.push({
-        entity: program,
-        available: true,
-        label: `${program.name} — ${program.version}`,
-      });
+  const programGroups = $derived.by(() => {
+    const groups: Array<{ groupName: string; items: ProgramPanelItem[] }> = [
+      { groupName: "Programs", items: [autoSelectItem, ...builtinProgramItems] },
+    ];
+    if (externalProgramItems.length > 0) {
+      groups.push({ groupName: "External", items: externalProgramItems });
     }
-
-    for (const program of state.availableExternalPrograms) {
-      result.push({
-        entity: program,
-        available: true,
-        label: program.name,
-        description: [program.label, program.version].filter(Boolean).join(" · "),
-        searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
-      });
-    }
-
-    return result;
+    return groups;
   });
 </script>
 
@@ -214,9 +230,11 @@
 
   <EntityPanel
     label="③ Program"
-    items={programItems}
+    items={[]}
+    grouped={true}
+    groups={programGroups}
     selectedId={state.selectedProgram?.id ?? null}
-    maxHeight="150px"
+    maxHeight="180px"
     onItemSelect={(item: any) => {
       if ("id" in item) {
         state.selectProgram(item.id);

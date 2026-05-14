@@ -22,13 +22,15 @@ export function makeExternalEntityStore(
       ...(options.includeExternalOnlyParticle
         ? [
             {
-              id: "mu",
-              name: "Muon",
-              symbol: "μ",
-              Z: 0,
-              A: 0,
-              atomicMass: 0.113,
-              pdgCode: 13,
+              // Antiproton: PDG -2212 and Z=-1 don't collide with any built-in
+              // libdedx particle by either PDG primary key or (Z, A) fallback.
+              id: "antiproton",
+              name: "Antiproton",
+              symbol: "p̄",
+              Z: -1,
+              A: 1,
+              atomicMass: 1.007,
+              pdgCode: -2212,
               index: 1,
             },
           ]

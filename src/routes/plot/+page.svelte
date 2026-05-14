@@ -30,7 +30,7 @@
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
-  import ExternalSourcesBadge from "$lib/components/external-sources-badge.svelte";
+  import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
@@ -732,7 +732,7 @@
       />
     {/if}
 
-    <ExternalSourcesBadge sources={loadedExternalSources} />
+    <ExternalSourcesPanel sources={loadedExternalSources} />
 
     <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
     <div class="grid gap-4 desktop:grid-cols-[minmax(520px,5fr)_7fr]">
