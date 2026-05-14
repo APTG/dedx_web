@@ -1,13 +1,12 @@
 <script lang="ts">
-  import { base } from "$app/paths";
+  import { page } from "$app/state";
+  import {
+    buildSrimCalculatorExampleUrl,
+    buildSrimPlotExampleUrl,
+  } from "$lib/utils/external-data-example-urls";
 
-  // Build example URLs relative to the current SvelteKit base path so the
-  // links stay correct in every deployment (localhost dev, GitHub Pages
-  // /web_dev, future hosts) — see review feedback on PR #476.
-  const extdataQuery =
-    "urlv=1&extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F";
-  const calculatorExampleHref = `${base}/calculator?${extdataQuery}&particle=1&material=276&program=7&energies=100&eunit=MeV`;
-  const plotExampleHref = `${base}/plot?${extdataQuery}&particle=1&material=276&program=7`;
+  const calculatorExampleHref = $derived(buildSrimCalculatorExampleUrl(page.url.origin));
+  const plotExampleHref = $derived(buildSrimPlotExampleUrl(page.url.origin));
 </script>
 
 <svelte:head>

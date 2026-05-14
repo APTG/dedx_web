@@ -735,9 +735,9 @@
     <ExternalSourcesPanel sources={loadedExternalSources} />
 
     <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
-    <div class="grid gap-4 desktop:grid-cols-[minmax(520px,5fr)_7fr]">
+    <div class="grid gap-4 desktop:grid-cols-[minmax(360px,5fr)_minmax(0,7fr)]">
       <!-- ── SIDEBAR ── -->
-      <aside class="flex flex-col gap-4">
+      <aside class="flex min-w-0 flex-col gap-4">
         {#if isMobile}
           <!-- Mobile: collapsed disclosure button showing current selection -->
           <button
@@ -780,7 +780,7 @@
       </aside>
 
       <!-- ── MAIN AREA ── -->
-      <div class="flex flex-col gap-4">
+      <div class="flex min-w-0 flex-col gap-4">
         <!-- Controls bar: stp unit + axis scale + export -->
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Left: stp unit + axis scale controls -->

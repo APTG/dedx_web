@@ -91,6 +91,39 @@ attributes).
 `pnpm exec vitest run` passes (1252 tests). `pnpm check` and `pnpm lint`
 both clean.
 
+### Prompt 2: follow-up report that SRIM is still missing and selectors overlap
+
+@grzanka reported that the Calculator URL with the real hosted SRIM dataset
+still showed no SRIM program in the Program combobox, typing `srim` did not
+find it, multiple selector dropdowns visually overlapped, Plot selector content
+overlapped the plot area, and user-guide examples rendered as path-only URLs
+(`/calculator?...`) instead of absolute same-origin URLs
+(`http://localhost:5173/calculator?...` in dev).
+
+**AI response**: Tightened the SRIM material-name matching further. The earlier
+fix handled bare `Water` and rawName matching, but real exported datasets may
+also use phase/name-order variants such as `Water, Liquid` or `Liquid Water`.
+Added token-based material-name matching so those variants match built-in
+`Water (liquid)` while still not matching distinct phases such as `Water
+Vapor`. Updated the shared SRIM-like selector fixture to remove `icruId` and
+use `Liquid Water`, so Calculator/Plot selector tests now exercise this
+real-hosted-data path instead of passing via the primary ICRU-id shortcut.
+
+Fixed selector overlap by making `EntityCombobox` instances mutually exclusive:
+when one combobox opens it dispatches a local browser event and sibling
+comboboxes close themselves. This prevents Particle, Material, and Program
+dropdowns from staying open at the same time and overlapping adjacent
+selectors.
+
+Adjusted the Plot page desktop grid from a hard `minmax(520px, 5fr)` sidebar
+to `minmax(360px, 5fr)` plus `minmax(0, 7fr)` for the plot column, and added
+`min-w-0` to both grid children. This prevents selector/sidebar content from
+forcing the grid wider than the viewport and overlapping the plot area.
+
+Fixed docs examples by adding `external-data-example-urls.ts`, using
+`page.url.origin` plus `$app/paths.base`, so the rendered text and href are
+absolute same-origin URLs in every deployment.
+
 ## Tasks
 
 ### Fix SRIM water → built-in 276 matching
@@ -168,3 +201,43 @@ both clean.
   entity-selection state. Both are UX refinements on otherwise-functional
   paths; deferred to a follow-up so this PR remains focused on the
   user-blocking selector visibility bug and spec §7 implementation.
+
+### Follow-up: real SRIM-style material names
+
+- **Status**: completed
+- **Stage**: 8 (beta feedback)
+- **Files changed**:
+  - `src/lib/state/external-compatibility.ts` — add token-based material-name
+    matching for variants like `Water, Liquid` / `Liquid Water` vs built-in
+    `Water (liquid)`
+  - `src/tests/unit/external-compatibility.test.ts` — regression coverage for
+    those variants
+  - `src/tests/unit/external-entity-fixtures.ts` — make the shared SRIM-like
+    fixture use `Liquid Water` with no `icruId`, matching the real-hosted-data
+    path more closely
+- **Decision**: Token matching compares sorted words, so phase words must still
+  match (`liquid water` does not equal `water vapor`).
+
+### Follow-up: selector overlap
+
+- **Status**: completed
+- **Stage**: 8 (beta feedback)
+- **Files changed**:
+  - `src/lib/components/entity-combobox.svelte` — add a local browser event so
+    opening one entity combobox closes the others
+  - `src/tests/unit/entity-selection-comboboxes.test.ts` — regression test that
+    opening Material closes Particle
+  - `src/routes/plot/+page.svelte` — relax desktop grid sidebar minimum and add
+    `min-w-0` to prevent selector/sidebar overflow into the plot column
+
+### Follow-up: absolute user-guide example URLs
+
+- **Status**: completed
+- **Stage**: 8 (beta feedback)
+- **Files changed**:
+  - `src/lib/utils/external-data-example-urls.ts` — central helper for SRIM
+    Calculator/Plot example URLs
+  - `src/routes/docs/user-guide/+page.svelte` — render URLs from
+    `page.url.origin` + `$app/paths.base`
+  - `src/tests/unit/external-data-example-urls.test.ts` — regression tests for
+    absolute same-origin examples

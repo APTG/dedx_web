@@ -39,8 +39,9 @@ export function makeExternalEntityStore(
     materials: [
       {
         id: "water",
-        name: "Water (liquid)",
-        icruId: 276,
+        // Mirrors real hosted SRIM metadata, which does not provide a libdedx
+        // ICRU id for water and may use a phase/name-order variant.
+        name: "Liquid Water",
         density: 1,
         index: 0,
         linearUnitsAvailable: true,

@@ -344,6 +344,28 @@ describe("EntitySelectionComboboxes", () => {
     expect(screen.getByRole("group", { name: /^Analytical models$/i })).toBeInTheDocument();
   });
 
+  test("opening one combobox closes the previously open combobox to avoid selector overlap", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(container.querySelector('[aria-label="Particle"]')!);
+    expect(screen.getByRole("listbox", { name: "Particle options" })).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+
+    await user.click(container.querySelector('[aria-label="Material"]')!);
+
+    expect(screen.getByRole("listbox", { name: "Particle options" })).toHaveAttribute(
+      "data-state",
+      "closed",
+    );
+    expect(screen.getByRole("listbox", { name: "Material options" })).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+  });
+
   test("Program combobox includes compatible external programs from loaded extdata", async () => {
     state.setExternalContext(
       buildExternalCompatibilityContext(

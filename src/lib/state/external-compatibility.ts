@@ -165,6 +165,17 @@ function normalizeMaterialName(name: string): string {
   return name.toLowerCase().replace(/[^a-z0-9]/g, "");
 }
 
+function materialNameTokens(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9]+/g, " ")
+    .trim()
+    .split(/\s+/)
+    .filter(Boolean)
+    .sort()
+    .join(" ");
+}
+
 /** Match an external material against the built-in list. Returns built-in ID or null. */
 function matchBuiltinMaterial(
   extMaterial: ExternalMaterialEntry,
@@ -208,6 +219,15 @@ function matchBuiltinMaterial(
     const friendlyNorm = normalizeMaterialName(m.name);
     const rawNorm = m.rawName ? normalizeMaterialName(m.rawName) : "";
     if (friendlyNorm === extNorm || rawNorm === extNorm) return true;
+    // Real SRIM exports may use comma/word-order variants such as
+    // "Water, Liquid" or "Liquid Water"; match those to the built-in
+    // disambiguated friendly name "Water (liquid)" without also matching
+    // distinct phases such as "Water Vapor".
+    const extTokens = materialNameTokens(extMaterial.name);
+    if (extTokens) {
+      if (materialNameTokens(m.name) === extTokens) return true;
+      if (m.rawName && materialNameTokens(m.rawName) === extTokens) return true;
+    }
     // Allow extName to be the shorter "core" name (e.g. "Water") of a built-in
     // disambiguated as "Water (liquid)" — only when the extra characters in
     // the built-in friendly name come from a parenthetical descriptor.

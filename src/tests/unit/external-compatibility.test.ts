@@ -233,6 +233,23 @@ describe("buildExternalCompatibilityContext", () => {
     expect(ctx.mergedMaterialMap.get("ext:test:water")).toBe(276);
   });
 
+  it("material matches comma and word-order variants of parenthetical phase names", () => {
+    const builtin: MaterialEntity[] = [
+      { id: 276, name: "Water (liquid)", density: 1.0 } as MaterialEntity,
+      { id: 277, name: "Water Vapor", density: 0.0008 } as MaterialEntity,
+    ];
+
+    for (const name of ["Water, Liquid", "Liquid Water"]) {
+      const store = makeStore({
+        materials: [{ id: "water", name, index: 0, linearUnitsAvailable: true, density: 1.0 }],
+      });
+      const ctx = buildExternalCompatibilityContext([store], BUILTIN_PARTICLES, builtin);
+
+      expect(ctx.mergedMaterialMap.get("ext:test:water")).toBe(276);
+      expect(ctx.externalOnlyMaterials).toHaveLength(0);
+    }
+  });
+
   it("stores source metadata", () => {
     const ctx = buildExternalCompatibilityContext(
       [makeStore()],
