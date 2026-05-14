@@ -157,6 +157,34 @@ function readIdList(heap: Int32Array, ptr: number, maxLen = 600): number[] {
   return result;
 }
 
+function buildPlotEnergies(
+  minEnergy: number,
+  maxEnergy: number,
+  numPoints: number,
+  logScale: boolean,
+): number[] {
+  if (numPoints <= 0) return [];
+  if (numPoints === 1) return [minEnergy];
+
+  const energies: number[] = [];
+  for (let i = 0; i < numPoints; i++) {
+    if (i === 0) {
+      energies.push(minEnergy);
+      continue;
+    }
+    if (i === numPoints - 1) {
+      energies.push(maxEnergy);
+      continue;
+    }
+    const t = i / (numPoints - 1);
+    const energy = logScale
+      ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
+      : minEnergy + t * (maxEnergy - minEnergy);
+    energies.push(Math.min(maxEnergy, Math.max(minEnergy, energy)));
+  }
+  return energies;
+}
+
 export class LibdedxServiceImpl implements LibdedxService {
   private module: EmscriptenModule;
   private programs: ProgramEntity[] = [];
@@ -446,17 +474,9 @@ export class LibdedxServiceImpl implements LibdedxService {
     logScale: boolean,
     options?: AdvancedOptions,
   ): CalculationResult {
-    const minEnergy = 0.001;
-    const maxEnergy = 1000;
-    const energies: number[] = [];
-
-    for (let i = 0; i < numPoints; i++) {
-      const t = i / (numPoints - 1);
-      const energy = logScale
-        ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
-        : minEnergy + t * (maxEnergy - minEnergy);
-      energies.push(energy);
-    }
+    const minEnergy = this.getMinEnergy(programId, particleId);
+    const maxEnergy = this.getMaxEnergy(programId, particleId);
+    const energies = buildPlotEnergies(minEnergy, maxEnergy, numPoints, logScale);
 
     return this.calculate(programId, particleId, materialId, energies, options);
   }
@@ -478,18 +498,9 @@ export class LibdedxServiceImpl implements LibdedxService {
     numPoints: number;
     logScale: boolean;
   }): CalculationResult {
-    const minEnergy = 0.001;
-    const maxEnergy = 1000;
-    const energies: number[] = [];
-
-    for (let i = 0; i < numPoints; i++) {
-      const t = i / (numPoints - 1);
-      energies.push(
-        logScale
-          ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
-          : minEnergy + t * (maxEnergy - minEnergy),
-      );
-    }
+    const minEnergy = this.getMinEnergy(programId, particleId);
+    const maxEnergy = this.getMaxEnergy(programId, particleId);
+    const energies = buildPlotEnergies(minEnergy, maxEnergy, numPoints, logScale);
 
     const params = {
       programId,
@@ -498,9 +509,7 @@ export class LibdedxServiceImpl implements LibdedxService {
       density,
       energies,
     };
-    return this.calculateCustomCompound(
-      iValue === undefined ? params : { ...params, iValue },
-    );
+    return this.calculateCustomCompound(iValue === undefined ? params : { ...params, iValue });
   }
 
   getMinEnergy(programId: number, particleId: number): number {

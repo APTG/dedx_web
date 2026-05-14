@@ -854,5 +854,22 @@ loading.
 
 ---
 
+## Entry 39 — Clamp generated grids before range-sensitive WASM calls
+
+**Symptom:** A plot fix switched from hardcoded bounds to per-program/per-particle
+WASM bounds, but review noted that floating-point recomputation could still place
+first/last generated points just outside those bounds.
+
+**Root cause:** The grid generator treated returned min/max bounds as formula inputs
+instead of immutable constraints. Endpoint and intermediate floating-point drift can
+matter when the downstream WASM API rejects out-of-range energies.
+
+**Rule:** For range-sensitive WASM calls, pin generated endpoints exactly to the
+reported bounds and clamp intermediate generated values before invoking WASM. Add
+coverage for every production path that shares the generator, including custom
+compounds.
+
+---
+
 _Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

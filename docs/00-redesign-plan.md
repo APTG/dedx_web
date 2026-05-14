@@ -594,9 +594,10 @@ As a <role>, I want to <action> so that <benefit>.
 
 #### Stage 8 PRs
 
-| PR | Area | Status | Notes |
-| --- | --- | --- | --- |
-| [#470](https://github.com/APTG/dedx_web/pull/470) | Tooling / type-check cleanup | ✅ | Fixed repository-wide `pnpm check` diagnostics and scoped `svelte-check` to app sources so vendor/prototype submodules are ignored. |
+| PR                                                | Area                                | Status | Notes                                                                                                                                                                                                     |
+| ------------------------------------------------- | ----------------------------------- | ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [#470](https://github.com/APTG/dedx_web/pull/470) | Tooling / type-check cleanup        | ✅     | Fixed repository-wide `pnpm check` diagnostics and scoped `svelte-check` to app sources so vendor/prototype submodules are ignored.                                                                       |
+| [#474](https://github.com/APTG/dedx_web/pull/474) | Plot / alpha particle beta feedback | ✅     | Fixed alpha stopping-power plot preview recursion by generating plot grids from libdedx tabulated energy ranges; added built-in/custom-compound unit coverage and an E2E regression for the reported URL. |
 
 ### Stage 9: CI/CD — Deploy job
 
