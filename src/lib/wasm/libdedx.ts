@@ -168,12 +168,19 @@ function buildPlotEnergies(
 
   const energies: number[] = [];
   for (let i = 0; i < numPoints; i++) {
+    if (i === 0) {
+      energies.push(minEnergy);
+      continue;
+    }
+    if (i === numPoints - 1) {
+      energies.push(maxEnergy);
+      continue;
+    }
     const t = i / (numPoints - 1);
-    energies.push(
-      logScale
-        ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
-        : minEnergy + t * (maxEnergy - minEnergy),
-    );
+    const energy = logScale
+      ? Math.pow(maxEnergy / minEnergy, t) * minEnergy
+      : minEnergy + t * (maxEnergy - minEnergy);
+    energies.push(Math.min(maxEnergy, Math.max(minEnergy, energy)));
   }
   return energies;
 }

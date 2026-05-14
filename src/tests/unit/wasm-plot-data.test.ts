@@ -3,7 +3,7 @@ import { LibdedxServiceImpl } from "$lib/wasm/libdedx";
 
 type EmscriptenModuleArg = ConstructorParameters<typeof LibdedxServiceImpl>[0];
 const INITIAL_HEAP_OFFSET = 128;
-const FLOAT32_ENERGY_RANGE_TOLERANCE = 1e-4;
+const ENERGY_RANGE_TOLERANCE = 1e-4;
 const ICRU49_PROGRAM_ID = 7;
 const ALPHA_PARTICLE_ID = 2;
 const WATER_MATERIAL_ID = 276;
@@ -58,8 +58,8 @@ function createRangeCheckingModule({
       for (let i = 0; i < numEnergies; i++) {
         const energy = heapF32[energiesPtr / 4 + i]!;
         if (
-          energy < minEnergy - FLOAT32_ENERGY_RANGE_TOLERANCE ||
-          energy > maxEnergy + FLOAT32_ENERGY_RANGE_TOLERANCE
+          energy < minEnergy - ENERGY_RANGE_TOLERANCE ||
+          energy > maxEnergy + ENERGY_RANGE_TOLERANCE
         ) {
           throw new Error("too much recursion");
         }
@@ -83,7 +83,34 @@ function createRangeCheckingModule({
     _dedx_get_inverse_stp_flat: () => 0,
     _dedx_get_inverse_csda_flat: () => 0,
     _dedx_get_bragg_peak_stp: () => 0,
-    _dedx_calculate_custom_forward_flat: () => 0,
+    _dedx_calculate_custom_forward_flat: (
+      _programId,
+      _particleId,
+      _elementsId,
+      _elementsAtoms,
+      _nElements,
+      _density,
+      _iValue,
+      energiesPtr,
+      stpPtr,
+      csdaPtr,
+      nEnergies,
+      errPtr,
+    ) => {
+      heap32[errPtr >>> 2] = 0;
+      for (let i = 0; i < nEnergies; i++) {
+        const energy = heapF64[(energiesPtr >>> 3) + i]!;
+        if (
+          energy < minEnergy - ENERGY_RANGE_TOLERANCE ||
+          energy > maxEnergy + ENERGY_RANGE_TOLERANCE
+        ) {
+          throw new Error("too much recursion");
+        }
+        heapF64[(stpPtr >>> 3) + i] = energy + 1;
+        heapF64[(csdaPtr >>> 3) + i] = energy + 2;
+      }
+      return 0;
+    },
     _dedx_get_inverse_stp_custom_compound_flat: () => 0,
     _dedx_get_inverse_csda_custom_compound_flat: () => 0,
     _dedx_get_bragg_peak_stp_custom_compound: () => 0,
@@ -105,6 +132,25 @@ describe("LibdedxServiceImpl.getPlotData", () => {
       5,
       true,
     );
+
+    expect(result.energies).toHaveLength(5);
+    expect(result.energies[0]).toBeCloseTo(0.01);
+    expect(result.energies.at(-1)).toBeCloseTo(500);
+  });
+
+  it("uses the same bounded energy range for custom-compound plot data", () => {
+    const service = new LibdedxServiceImpl(
+      createRangeCheckingModule({ minEnergy: 0.01, maxEnergy: 500 }),
+    );
+
+    const result = service.getPlotDataCustomCompound({
+      programId: ICRU49_PROGRAM_ID,
+      particleId: ALPHA_PARTICLE_ID,
+      elements: [{ atomicNumber: 1, fraction: 2, type: "atomic" }],
+      density: 1,
+      numPoints: 5,
+      logScale: true,
+    });
 
     expect(result.energies).toHaveLength(5);
     expect(result.energies[0]).toBeCloseTo(0.01);
