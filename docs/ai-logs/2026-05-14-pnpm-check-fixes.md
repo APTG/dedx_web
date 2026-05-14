@@ -10,6 +10,10 @@
 
 **AI response**: Applied type-only and behavior-preserving fixes: broadened shared `cn` class handling, added missing shadcn helper types, tightened built-in entity ID types, added explicit guards/non-null assertions where tests already prove values exist, avoided exact-optional `undefined` properties, fixed DOM type narrowing in Playwright evaluates, and added root `@sveltejs/adapter-auto` so `svelte-check` can load the checked prototype config. Validated `pnpm check`, lint, unit tests, and build successfully. Installed Chromium and attempted the impacted Playwright specs, but the local build lacks generated `static/wasm/libdedx.mjs`, causing repeated `/wasm/libdedx.mjs` 404s; the run was stopped after confirming the environment blocker.
 
+### Prompt 3: Address automated validation feedback
+
+**AI response**: Removed redundant runtime type aliases, restored the local Accordion wrapper's `collapsible` compatibility prop while keeping it out of Bits UI props, moved CSV Escape handling to a window-level listener, tightened the crypto fallback guard, and replaced advanced result-table template non-null assertions with typed helper functions. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
+
 ## Tasks
 
 ### Resolve pnpm check diagnostics

@@ -281,7 +281,7 @@
 </script>
 
 <TooltipProvider>
-  <Accordion type="single" class="w-full border rounded-lg bg-card">
+  <Accordion type="single" collapsible class="w-full border rounded-lg bg-card">
     <AccordionItem value="advanced-options" class="border-b-0">
       <AccordionTrigger class="px-4 py-3 hover:no-underline">
         <span class="text-sm font-medium">{headerText}</span>

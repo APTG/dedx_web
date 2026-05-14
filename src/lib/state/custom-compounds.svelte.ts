@@ -105,7 +105,7 @@ const storage = {
 
 /** Generate a stable ID with cc_ prefix and uuidv7-style identifier */
 function generateCompoundId(): string {
-  const cryptoApi: Crypto | undefined = globalThis.crypto;
+  const cryptoApi = typeof globalThis.crypto === "object" ? globalThis.crypto : undefined;
   if (cryptoApi?.randomUUID) {
     return `cc_${cryptoApi.randomUUID()}`;
   }

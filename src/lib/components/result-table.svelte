@@ -133,6 +133,26 @@
     return density > 0 ? gcm2 / density : gcm2;
   }
 
+  function getSelectedDensity(): number {
+    return advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial?.density ?? 1;
+  }
+
+  function getStpDisplayForRow(
+    result: CalculationResult | LibdedxError | undefined,
+    row: CalculatedRow,
+  ): number | null {
+    if (row.normalizedMevNucl === null) return null;
+    return getStpDisplayValue(result, row.normalizedMevNucl, getSelectedDensity(), calcState.stpDisplayUnit);
+  }
+
+  function getCsdaDisplayForRow(
+    result: CalculationResult | LibdedxError | undefined,
+    row: CalculatedRow,
+  ): number | null {
+    if (row.normalizedMevNucl === null) return null;
+    return getCsdaDisplayCm(result, row.normalizedMevNucl, getSelectedDensity());
+  }
+
   function getDefaultColumns(): ColumnDef[] {
     return [
       {
@@ -661,33 +681,15 @@
               <!-- Stopping Power columns per program -->
               {#if showStp}
                 {#each visibleProgramIds as programId (programId)}
-                  {@const stpDisplay =
-                    entitySelection.selectedMaterial && row.normalizedMevNucl !== null
-                      ? getStpDisplayValue(
-                           comparisonResults?.get(programId),
-                           row.normalizedMevNucl!,
-                          advancedOptions.value.densityOverride ??
-                            (entitySelection.selectedMaterial.density ?? 1),
-                          calcState.stpDisplayUnit,
-                        )
-                      : null}
+                  {@const stpDisplay = getStpDisplayForRow(
+                    comparisonResults?.get(programId),
+                    row,
+                  )}
                   {@const defaultResult =
                     defaultProgramId !== null
                       ? comparisonResults?.get(defaultProgramId)
                       : undefined}
-                  {@const defaultStpDisplay =
-                    defaultResult &&
-                    !(defaultResult instanceof LibdedxError) &&
-                     row.normalizedMevNucl !== null &&
-                     entitySelection.selectedMaterial
-                       ? getStpDisplayValue(
-                           defaultResult,
-                           row.normalizedMevNucl!,
-                           advancedOptions.value.densityOverride ??
-                             (entitySelection.selectedMaterial!.density ?? 1),
-                          calcState.stpDisplayUnit,
-                        )
-                      : null}
+                  {@const defaultStpDisplay = getStpDisplayForRow(defaultResult, row)}
                   {@const delta =
                     programId !== defaultProgramId &&
                     stpDisplay !== null &&
@@ -781,31 +783,12 @@
               <!-- CSDA Range columns per program -->
               {#if showCsda}
                 {#each visibleProgramIds as programId (programId)}
-                  {@const csdaCm =
-                    entitySelection.selectedMaterial && row.normalizedMevNucl !== null
-                      ? getCsdaDisplayCm(
-                           comparisonResults?.get(programId),
-                           row.normalizedMevNucl!,
-                          advancedOptions.value.densityOverride ??
-                            (entitySelection.selectedMaterial.density ?? 1),
-                        )
-                      : null}
+                  {@const csdaCm = getCsdaDisplayForRow(comparisonResults?.get(programId), row)}
                   {@const defaultResult =
                     defaultProgramId !== null
                       ? comparisonResults?.get(defaultProgramId)
                       : undefined}
-                  {@const defaultCsdaCm =
-                    defaultResult &&
-                    !(defaultResult instanceof LibdedxError) &&
-                     row.normalizedMevNucl !== null &&
-                     entitySelection.selectedMaterial
-                       ? getCsdaDisplayCm(
-                           defaultResult,
-                           row.normalizedMevNucl!,
-                           advancedOptions.value.densityOverride ??
-                             (entitySelection.selectedMaterial!.density ?? 1),
-                        )
-                      : null}
+                  {@const defaultCsdaCm = getCsdaDisplayForRow(defaultResult, row)}
                   {@const csdaDelta =
                     programId !== defaultProgramId && csdaCm !== null && defaultCsdaCm !== null
                       ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)

@@ -18,8 +18,6 @@ import { getParticleFriendlyName } from "$lib/config/particle-names.js";
 import { integrateCsdaFromStp } from "$lib/utils/csda-integration.js";
 import { convertEnergyFromMeVperNucl } from "$lib/utils/energy-conversions.js";
 
-type RuntimeProgramEntity = ProgramEntity & { id: number };
-
 interface EmscriptenModule {
   // List functions — return pointer to sentinel-terminated int32 array of IDs
   _dedx_get_program_list(): number;
@@ -161,7 +159,7 @@ function readIdList(heap: Int32Array, ptr: number, maxLen = 600): number[] {
 
 export class LibdedxServiceImpl implements LibdedxService {
   private module: EmscriptenModule;
-  private programs: RuntimeProgramEntity[] = [];
+  private programs: ProgramEntity[] = [];
   private particles: Map<number, ParticleEntity[]> = new Map();
   private materials: Map<number, MaterialEntity[]> = new Map();
 
