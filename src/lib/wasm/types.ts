@@ -8,6 +8,7 @@ export interface LibdedxEntity {
 }
 
 export interface ParticleEntity extends LibdedxEntity {
+  /** Built-in particle IDs come from `_dedx_get_ion_list()` in the WASM wrapper. */
   id: number;
   massNumber: number;
   atomicMass: number;
@@ -16,6 +17,7 @@ export interface ParticleEntity extends LibdedxEntity {
 }
 
 export interface ProgramEntity extends LibdedxEntity {
+  /** Built-in program IDs come from `_dedx_get_program_list()` in the WASM wrapper. */
   id: number;
   version: string;
 }

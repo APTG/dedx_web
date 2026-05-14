@@ -18,6 +18,10 @@
 
 **AI response**: Applied the remaining cleanup from validation: made class flattening preserve numeric class values while explicitly filtering null/undefined/booleans, renamed the Accordion compatibility prop, restored inverse-row optional message types by deleting properties instead of assigning `undefined`, and made the inverse range result handling explicit. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
 
+### Prompt 5: Document remaining validation explanations
+
+**AI response**: Added short source comments documenting that built-in particle/program IDs are populated by the existing WASM wrapper list calls, why the Accordion wrapper consumes the legacy `collapsible` prop, and why `cn` normalizes Svelte/shadcn class values. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
+
 ## Tasks
 
 ### Resolve pnpm check diagnostics

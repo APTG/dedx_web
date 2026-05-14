@@ -6,6 +6,8 @@
     ref = $bindable(null),
     value = $bindable(),
     class: className,
+    // shadcn-svelte generated callers may pass `collapsible`; Bits UI 2 no
+    // longer accepts it, so consume it here instead of forwarding to Root.
     collapsible = false,
     ...restProps
   }: AccordionPrimitive.RootProps & { collapsible?: boolean } = $props();

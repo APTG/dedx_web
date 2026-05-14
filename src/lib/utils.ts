@@ -21,6 +21,8 @@ function flattenClass(value: ClassValue | null | undefined | false): string[] {
     .map(([className]) => className);
 }
 
+// shadcn-svelte/Bits UI `class` props use Svelte's broad ClassValue shape,
+// including arrays and object maps, so normalize that shape before joining.
 export function cn(...classes: (ClassValue | null | undefined | false)[]): string {
   return classes.flatMap(flattenClass).join(" ");
 }
