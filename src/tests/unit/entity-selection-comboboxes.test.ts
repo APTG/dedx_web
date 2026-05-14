@@ -4,6 +4,8 @@ import userEvent from "@testing-library/user-event";
 import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 class MockLibdedxService {
@@ -298,7 +300,9 @@ describe("EntitySelectionComboboxes", () => {
     const electronMatrix = buildCompatibilityMatrix(electronService as any);
     const electronState = createEntitySelectionState(electronMatrix);
 
-    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+    const { container } = render(EntitySelectionComboboxes, {
+      props: { selectionState: electronState },
+    });
     const user = userEvent.setup();
 
     const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -338,6 +342,82 @@ describe("EntitySelectionComboboxes", () => {
 
     expect(screen.getByRole("group", { name: /^Tabulated data$/i })).toBeInTheDocument();
     expect(screen.getByRole("group", { name: /^Analytical models$/i })).toBeInTheDocument();
+  });
+
+  test("opening one combobox closes the previously open combobox to avoid selector overlap", async () => {
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(container.querySelector('[aria-label="Particle"]')!);
+    expect(screen.getByRole("listbox", { name: "Particle options" })).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+
+    await user.click(container.querySelector('[aria-label="Material"]')!);
+
+    expect(screen.getByRole("listbox", { name: "Particle options" })).toHaveAttribute(
+      "data-state",
+      "closed",
+    );
+    expect(screen.getByRole("listbox", { name: "Material options" })).toHaveAttribute(
+      "data-state",
+      "open",
+    );
+  });
+
+  test("Program combobox includes compatible external programs from loaded extdata", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const programCombobox = container.querySelector('[aria-label="Program"]')!;
+    await user.click(programCombobox);
+
+    expect(screen.getAllByRole("group", { name: /^External$/i }).length).toBeGreaterThan(0);
+    // Spec §7.1: external programs render with a 🔗 prefix and "(ext)" suffix
+    expect(screen.getByRole("option", { name: /🔗 SRIM GUI \(ext\)/i })).toBeInTheDocument();
+  });
+
+  test("Material combobox marks external-only materials with the 🔗 visual prefix", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const materialCombobox = container.querySelector('[aria-label="Material"]')!;
+    await user.click(materialCombobox);
+
+    expect(screen.getByRole("option", { name: /🔗 External Polymer/i })).toBeInTheDocument();
+  });
+
+  test("Material combobox includes external-only materials from loaded extdata", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const materialCombobox = container.querySelector('[aria-label="Material"]')!;
+    await user.click(materialCombobox);
+
+    expect(screen.getAllByRole("group", { name: /^External$/i }).length).toBeGreaterThan(0);
+    expect(screen.getByRole("option", { name: /External Polymer/i })).toBeInTheDocument();
   });
 
   test("isComplete reflects valid selection state", () => {
@@ -450,7 +530,9 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+      const { container } = render(EntitySelectionComboboxes, {
+        props: { selectionState: electronState },
+      });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
@@ -474,7 +556,9 @@ describe("EntitySelectionComboboxes", () => {
       const electronMatrix = buildCompatibilityMatrix(electronService as any);
       const electronState = createEntitySelectionState(electronMatrix);
 
-      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: electronState } });
+      const { container } = render(EntitySelectionComboboxes, {
+        props: { selectionState: electronState },
+      });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;

@@ -16,6 +16,8 @@ import userEvent from "@testing-library/user-event";
 import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Minimal mock: PSTAR (2) and ICRU49 (7) both support Proton (1) + Water (276).
@@ -114,5 +116,24 @@ describe("EntitySelectionPanels — program panel duplicate-key regression", () 
     expect(texts.some((t) => t.includes("ICRU 49"))).toBe(true);
     // Exactly 3 entries: Auto-select + PSTAR + ICRU 49
     expect(buttons).toHaveLength(3);
+  });
+
+  test("plot panels include compatible external programs and external-only materials", () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
+    );
+    render(EntitySelectionPanels, { props: { state } });
+
+    const programPanel = screen.getByRole("group", { name: /③ Program/i });
+    const materialPanel = screen.getByRole("group", { name: /② Material/i });
+
+    expect(within(programPanel).getByRole("button", { name: /SRIM GUI/i })).toBeInTheDocument();
+    expect(
+      within(materialPanel).getByRole("button", { name: /External Polymer/i }),
+    ).toBeInTheDocument();
   });
 });

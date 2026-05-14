@@ -3,6 +3,10 @@
   import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity } from "$lib/wasm/types";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
+  import type {
+    ExternalOnlyMaterial,
+    ExternalOnlyParticle,
+  } from "$lib/state/external-compatibility";
   import { ELECTRON_UNSUPPORTED_SHORT } from "$lib/config/libdedx-version";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import { customCompounds } from "$lib/state/custom-compounds.svelte";
@@ -45,6 +49,17 @@
       .filter((p) => typeof p.id === "number" && !COMMON_PARTICLE_IDS.has(p.id))
       .sort((a, b) => (a.id as number) - (b.id as number))
       .map(toParticleItem),
+  );
+
+  const externalParticles = $derived.by(() =>
+    state.externalOnlyParticles.map((particle) => ({
+      entity: particle,
+      available: state.availableParticles.some((p) => p.id === particle.id),
+      // Spec §7.1: external-only particles prefixed with 🔗 icon
+      label: `🔗 ${particle.name}`,
+      description: particle.label,
+      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
+    })),
   );
 
   const elements = $derived.by(() => {
@@ -93,38 +108,73 @@
     }));
   });
 
-  const programItems = $derived.by(() => {
-    const result = [];
+  const externalMaterials = $derived.by(() =>
+    state.externalOnlyMaterials.map((material) => ({
+      entity: material,
+      available: state.availableMaterials.some((m) => m.id === material.id),
+      // Spec §7.1: external-only materials prefixed with 🔗 icon
+      label: `🔗 ${material.name}`,
+      description: material.label,
+      searchText: `${material.localId} ${material.name} ${material.label} ext external`,
+    })),
+  );
 
+  // Plot does not yet support external program series (would require
+  // loadStpSlice + interpolation pipeline). Show external programs grouped
+  // separately and mark them unavailable so users can see the dataset is
+  // loaded but won't be confused by a non-functional selection. Spec
+  // §8.1 calls for an "External" separator/group; this preserves the
+  // grouping and signals the limitation explicitly.
+  type ProgramPanelEntity = { id: number | string; name: string };
+  type ProgramPanelItem = {
+    entity: ProgramPanelEntity;
+    available: boolean;
+    label: string;
+    description?: string;
+    searchText?: string;
+  };
+
+  const builtinProgramItems = $derived.by<ProgramPanelItem[]>(() =>
+    state.availablePrograms.map((program) => ({
+      entity: program,
+      available: true,
+      label: `${program.name} — ${program.version}`,
+    })),
+  );
+
+  const externalProgramItems = $derived.by<ProgramPanelItem[]>(() =>
+    state.availableExternalPrograms.map((program) => ({
+      entity: program,
+      available: false,
+      label: `🔗 ${program.name} (ext)`,
+      description: `${program.label}${program.version ? ` · ${program.version}` : ""} — Plot series not yet supported`,
+      searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
+    })),
+  );
+
+  const autoSelectItem = $derived.by<ProgramPanelItem>(() => {
     const selectedProgram = state.selectedProgram;
-
-    // Always push a synthetic Auto-select entry with id=-1.
-    // If we pushed state.selectedProgram directly and a concrete program is
-    // selected (id > 0), that same program entity would also appear in
-    // state.availablePrograms — giving Svelte two items with the same key and
-    // throwing each_key_duplicate.
     const autoLabel =
       selectedProgram.id === -1 &&
       "resolvedProgram" in selectedProgram &&
       selectedProgram.resolvedProgram
         ? `Auto-select → ${selectedProgram.resolvedProgram.name}`
         : "Auto-select";
-
-    result.push({
+    return {
       entity: { id: -1, name: "Auto-select" },
       available: true,
       label: autoLabel,
-    });
+    };
+  });
 
-    for (const program of state.availablePrograms) {
-      result.push({
-        entity: program,
-        available: true,
-        label: `${program.name} — ${program.version}`,
-      });
+  const programGroups = $derived.by(() => {
+    const groups: Array<{ groupName: string; items: ProgramPanelItem[] }> = [
+      { groupName: "Programs", items: [autoSelectItem, ...builtinProgramItems] },
+    ];
+    if (externalProgramItems.length > 0) {
+      groups.push({ groupName: "External", items: externalProgramItems });
     }
-
-    return result;
+    return groups;
   });
 </script>
 
@@ -142,10 +192,13 @@
       groups={[
         { groupName: "Common particles", items: commonParticles },
         { groupName: "Ions", items: ionParticles },
+        ...(externalParticles.length > 0
+          ? [{ groupName: "External", items: externalParticles }]
+          : []),
       ]}
       selectedId={state.selectedParticle?.id ?? null}
       maxHeight="260px"
-      onItemSelect={(particle: ParticleEntity) => {
+      onItemSelect={(particle: ParticleEntity | ExternalOnlyParticle) => {
         if (particle.id === 1001) {
           return;
         }
@@ -162,10 +215,13 @@
         { groupName: "Elements", items: elements },
         { groupName: "Compounds", items: compounds },
         ...(isAdvancedMode.value ? [{ groupName: "Custom", items: customCompoundItems }] : []),
+        ...(externalMaterials.length > 0
+          ? [{ groupName: "External", items: externalMaterials }]
+          : []),
       ]}
       selectedId={state.selectedMaterial?.id ?? null}
       maxHeight="260px"
-      onItemSelect={(material: MaterialEntity) => {
+      onItemSelect={(material: MaterialEntity | ExternalOnlyMaterial) => {
         state.selectMaterial(material.id);
       }}
       onClear={() => state.clearMaterial()}
@@ -174,9 +230,11 @@
 
   <EntityPanel
     label="③ Program"
-    items={programItems}
+    items={[]}
+    grouped={true}
+    groups={programGroups}
     selectedId={state.selectedProgram?.id ?? null}
-    maxHeight="150px"
+    maxHeight="180px"
     onItemSelect={(item: any) => {
       if ("id" in item) {
         state.selectProgram(item.id);

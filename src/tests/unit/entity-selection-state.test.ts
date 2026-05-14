@@ -1,6 +1,8 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Extended mock service for entity selection tests
@@ -448,6 +450,41 @@ describe("createEntitySelectionState", () => {
       // Electron with ESTAR is not a valid complete state
       // Per spec: electron is always greyed out because ESTAR is not implemented
       expect(state.isComplete).toBe(false);
+    });
+  });
+
+  describe("External data entity merging", () => {
+    test("adds compatible external programs for the current built-in particle/material", () => {
+      const state = createEntitySelectionState(matrix);
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalEntityStore({ includeExternalOnlyParticle: true })],
+          matrix.allParticles,
+          matrix.allMaterials,
+        ),
+      );
+
+      expect(state.availableExternalPrograms.map((program) => program.name)).toContain("SRIM GUI");
+    });
+
+    test("selecting an external program exposes its merged and external-only particles/materials", () => {
+      const state = createEntitySelectionState(matrix);
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalEntityStore({ includeExternalOnlyParticle: true })],
+          matrix.allParticles,
+          matrix.allMaterials,
+        ),
+      );
+
+      state.selectProgram("ext:srim:srim-2013-gui");
+
+      expect(state.availableParticles.map((particle) => particle.id)).toEqual(
+        expect.arrayContaining([1, "ext:srim:antiproton"]),
+      );
+      expect(state.availableMaterials.map((material) => material.id)).toEqual(
+        expect.arrayContaining([276, "ext:srim:poly"]),
+      );
     });
   });
 });

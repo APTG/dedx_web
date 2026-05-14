@@ -81,7 +81,7 @@ export interface CalculatorState {
   hasLargeInput: boolean;
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
-  switchParticle(particleId: number | null): void;
+  switchParticle(particleId: number | string | null): void;
   updateRowText(index: number, text: string): void;
   handleBlur(index: number): void;
   addRow(): void;
@@ -740,10 +740,10 @@ export function createCalculatorState(
       );
       inputState.updateRowText(index, `${formatSigFigs(converted, 4)} ${unit}`);
     },
-    switchParticle(particleId: number | null) {
+    switchParticle(particleId: number | string | null) {
       const oldParticle = previousParticle;
       const newParticle =
-        particleId !== null
+        typeof particleId === "number"
           ? entitySelection.allParticles.find((p) => p.id === particleId) || null
           : null;
 

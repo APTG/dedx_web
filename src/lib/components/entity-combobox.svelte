@@ -51,6 +51,8 @@
 
   const labelId = $derived(`label-${label.toLowerCase().replace(/\s+/g, "-")}`);
   const triggerId = $derived(`trigger-${label.toLowerCase().replace(/\s+/g, "-")}`);
+  const instanceId = `${untrack(() => label)}-${Math.random().toString(36).slice(2)}`;
+  const openEventName = "dedx:entity-combobox-open";
 
   function getSearchPlaceholder(): string {
     if (label === "Particle") return "Name, symbol, Z...";
@@ -85,9 +87,28 @@
   // an oninput handler on Combobox.Input directly.
   $effect(() => {
     if (open) {
+      if (typeof window !== "undefined") {
+        window.dispatchEvent(new CustomEvent(openEventName, { detail: instanceId }));
+      }
       inputValue = "";
       tick().then(() => inputRef?.focus());
     }
+  });
+
+  // Only one entity combobox should be open at a time. The dropdowns are
+  // portalled/floating; leaving multiple open makes adjacent selectors overlap
+  // visually and was reported in PR #476 follow-up testing.
+  $effect(() => {
+    if (typeof window === "undefined") return;
+
+    const handleOtherOpen = (event: Event) => {
+      if ((event as CustomEvent<string>).detail !== instanceId) {
+        open = false;
+      }
+    };
+
+    window.addEventListener(openEventName, handleOtherOpen);
+    return () => window.removeEventListener(openEventName, handleOtherOpen);
   });
 
   const selectedItem = $derived.by(() => {

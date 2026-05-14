@@ -1,4 +1,13 @@
-<script lang="ts"></script>
+<script lang="ts">
+  import { page } from "$app/state";
+  import {
+    buildSrimCalculatorExampleUrl,
+    buildSrimPlotExampleUrl,
+  } from "$lib/utils/external-data-example-urls";
+
+  const calculatorExampleHref = $derived(buildSrimCalculatorExampleUrl(page.url.origin));
+  const plotExampleHref = $derived(buildSrimPlotExampleUrl(page.url.origin));
+</script>
 
 <svelte:head>
   <title>User Guide - webdedx</title>
@@ -18,5 +27,43 @@
       <li>Using advanced options (density override, MSTAR modes)</li>
       <li>Loading external .webdedx data files</li>
     </ul>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="text-2xl font-semibold">Loading external datasets</h2>
+      <p class="text-muted-foreground">
+        External stopping-power tables can be loaded by opening Calculator or Plot with an
+        <code>extdata</code> query parameter. The format is
+        <code>extdata=&lt;label&gt;:&lt;encoded dataset URL&gt;</code>, where the dataset URL points
+        to the root of a hosted <code>.webdedx</code> directory.
+      </p>
+      <p class="text-muted-foreground">
+        After loading, the source appears in a collapsible <strong>External Data Sources</strong>
+        panel below the entity selectors. Programs from the loaded source are listed in the
+        <strong>Program</strong>
+        selector under an <strong>External</strong> group with a 🔗 prefix and an <code>(ext)</code>
+        suffix. External-only particles and materials (those that don't merge with a built-in libdedx
+        entry) appear in <strong>External</strong> groups in their respective selectors.
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">Calculator example</h3>
+      <p class="text-muted-foreground">
+        Open Calculator with the public SRIM GUI reference dataset, proton in liquid water, ICRU 49,
+        and a single 100 MeV row:
+      </p>
+      <p>
+        <a class="break-all text-primary underline" href={calculatorExampleHref}
+          >{calculatorExampleHref}</a
+        >
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">Plot example</h3>
+      <p class="text-muted-foreground">
+        Open Plot with the same SRIM dataset, proton in liquid water, and ICRU 49 as the built-in
+        program:
+      </p>
+      <p>
+        <a class="break-all text-primary underline" href={plotExampleHref}>{plotExampleHref}</a>
+      </p>
+    </section>
   </div>
 </div>
