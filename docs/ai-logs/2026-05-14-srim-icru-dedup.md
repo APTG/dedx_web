@@ -46,6 +46,40 @@ keeping the original "(ICRU-NNN)" in the name for human readability. Remove
 
 User asked to log the session.
 
+### Prompt 3: Implement plot series for external programs (Part 4)
+
+User confirmed S3 upload complete and asked to continue with the next stage
+(Part 4 of the plan: enabling plot series for external programs).
+
+**AI response**: Read `plot/+page.svelte`, `plot.svelte.ts`,
+`jsroot-plot.svelte`, `entity-selection-panels.svelte`,
+`external-data/service.ts`, `external-data/ids.ts`,
+`external-compatibility.ts` and `calculator.svelte.ts` to understand the full
+pipeline before implementing.
+
+Key findings:
+- `CalculationResult.energies` uses MeV/nucl; `StpTableEntry.energyGridMev`
+  is MeV total — must divide by particle A when building the result.
+- `EntityId = number | ExtRef` (branded template literal); needed `as EntityId`
+  casts where `resolvedProgramId` (typed as `number | string | null`) is known
+  to be an ExtRef but TypeScript can't narrow it.
+- `resolveExtLocalId()` pattern already exists in `calculator.svelte.ts` — copied
+  the same helper to avoid duplicating logic.
+- JSROOT dashed line: `fLineStyle = 2` used for preview; same value for
+  external series per spec §9.1.
+
+Changes made:
+- `entity-selection-panels.svelte`: removed availability guard and hint text.
+- `jsroot-plot.svelte`: external series (string `programId`) use `fLineStyle=2`.
+- `plot.svelte.ts`: extended `programId` and `particleId` from `number` to
+  `EntityId`; imported `EntityId` from types.
+- `series-labels.ts`: widened same fields to `number | string`.
+- `plot/+page.svelte`: added `parseExtRef` + `EntityId` imports,
+  `resolveExtLocalId` helper, external preview path, external URL-restoration
+  path (async Promise chains within `getService().then()`), removed the
+  `typeof materialId === "number"` filter on URL write, simplified
+  `handleAddSeries` to use `selectedParticle.id` directly.
+
 ## Tasks
 
 ### Fix SRIM converter: ICRU material deduplication
@@ -117,10 +151,18 @@ User asked to log the session.
 - Conversion summary: `shape: [92, 354, 165]`,
   `droppedDuplicateMaterials: 38`, `droppedIncompleteMaterials: 68`
 
-### Issue: Part 4 (plot series for external programs) pending S3 upload
+### Enable plot series for external programs (Part 4)
 
-The plan's Part 4 — enabling plot series for external programs — is deferred
-until the user uploads the regenerated store to S3 and confirms the calculator
-URL works with `?material=276` selecting SRIM. Plot changes:
-- `entity-selection-panels.svelte`: `available: false` → `available: true`
-- `plot/+page.svelte`: wire external triplets to `ExternalDataService.getStp()`
+- **Status**: completed
+- **Branch**: `feat/srim-icru-dedup`
+- **Files changed**:
+  - `src/lib/components/entity-selection-panels.svelte`
+  - `src/lib/components/jsroot-plot.svelte`
+  - `src/lib/state/plot.svelte.ts`
+  - `src/lib/utils/series-labels.ts`
+  - `src/routes/plot/+page.svelte`
+
+External programs now produce a dashed-line preview and can be committed as
+plot series. Energy grid converted from total MeV → MeV/nucl (÷ particle A)
+to match the plot x-axis. URL serialisation includes external series triplets.
+All 1259 tests passing; zero TypeScript errors.
