@@ -989,10 +989,10 @@
         for (const r of inverseState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             const result = results[resultIdx++];
-            if (result instanceof Error) {
+            if (result instanceof Error || result === undefined) {
               r.energyMevNucl = null;
             } else {
-              r.energyMevNucl = result?.energy ?? null;
+              r.energyMevNucl = result.energy;
             }
           }
         }

@@ -11,7 +11,7 @@ type ClassValue =
   | ClassArray;
 
 function flattenClass(value: ClassValue | null | undefined | false): string[] {
-  if (!value) return [];
+  if (value === null || value === undefined || value === false || value === true) return [];
   if (typeof value === "string" || typeof value === "number" || typeof value === "bigint") {
     return [String(value)];
   }

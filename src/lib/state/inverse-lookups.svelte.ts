@@ -13,7 +13,7 @@ export interface RangeRow {
   unitFromSuffix: boolean;
   /** Status after validation */
   status: "valid" | "invalid" | "empty" | "out-of-range" | "error";
-  message?: string | undefined;
+  message?: string;
   /** Result energy in MeV/nucl (after inverse lookup) */
   energyMevNucl: number | null;
 }
@@ -29,7 +29,7 @@ export interface InverseStpRow {
   /** STP input unit */
   unit: "kev-um" | "mev-cm" | "mev-cm2-g";
   status: "valid" | "invalid" | "empty" | "no-solution" | "error";
-  message?: string | undefined;
+  message?: string;
   /** Result energies in MeV/nucl */
   energyLowMevNucl: number | null;
   energyHighMevNucl: number | null;
@@ -219,7 +219,7 @@ export function createInverseLookupState(
       row.value = null;
       row.unit = "cm";
       row.unitFromSuffix = false;
-      row.message = undefined;
+      delete row.message;
       row.energyMevNucl = null;
       return;
     }
@@ -272,7 +272,7 @@ export function createInverseLookupState(
     row.unit = parsed.unitFromSuffix ? parsed.unit : meta.rangeMasterUnit;
     row.unitFromSuffix = parsed.unitFromSuffix;
     row.status = "valid";
-    row.message = undefined;
+    delete row.message;
   }
 
   function validateStpRow(row: InverseStpRow): void {
@@ -280,7 +280,7 @@ export function createInverseLookupState(
     if (!trimmed) {
       row.status = "empty";
       row.value = null;
-      row.message = undefined;
+      delete row.message;
       row.energyLowMevNucl = null;
       row.energyHighMevNucl = null;
       return;
@@ -306,7 +306,7 @@ export function createInverseLookupState(
 
     row.value = parsed.value;
     row.status = "valid";
-    row.message = undefined;
+    delete row.message;
   }
 
   return {

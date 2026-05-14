@@ -6,7 +6,7 @@
     ref = $bindable(null),
     value = $bindable(),
     class: className,
-    collapsible: _collapsible = false,
+    collapsible = false,
     ...restProps
   }: AccordionPrimitive.RootProps & { collapsible?: boolean } = $props();
 </script>
@@ -15,7 +15,7 @@
   bind:ref
   bind:value={value as never}
   data-slot="accordion"
-  data-collapsible={_collapsible ? "true" : undefined}
+  data-collapsible={collapsible ? "true" : undefined}
   class={cn("cn-accordion flex w-full flex-col", className)}
   {...restProps}
 />

@@ -14,6 +14,10 @@
 
 **AI response**: Removed redundant runtime type aliases, restored the local Accordion wrapper's `collapsible` compatibility prop while keeping it out of Bits UI props, moved CSV Escape handling to a window-level listener, tightened the crypto fallback guard, and replaced advanced result-table template non-null assertions with typed helper functions. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
 
+### Prompt 4: Address second automated review pass
+
+**AI response**: Applied the remaining cleanup from validation: made class flattening preserve numeric class values while explicitly filtering null/undefined/booleans, renamed the Accordion compatibility prop, restored inverse-row optional message types by deleting properties instead of assigning `undefined`, and made the inverse range result handling explicit. Re-ran `pnpm check`, `pnpm lint`, `pnpm test`, and `pnpm build` successfully.
+
 ## Tasks
 
 ### Resolve pnpm check diagnostics
