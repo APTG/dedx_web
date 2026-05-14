@@ -13,7 +13,7 @@ export interface RangeRow {
   unitFromSuffix: boolean;
   /** Status after validation */
   status: "valid" | "invalid" | "empty" | "out-of-range" | "error";
-  message?: string;
+  message?: string | undefined;
   /** Result energy in MeV/nucl (after inverse lookup) */
   energyMevNucl: number | null;
 }
@@ -29,7 +29,7 @@ export interface InverseStpRow {
   /** STP input unit */
   unit: "kev-um" | "mev-cm" | "mev-cm2-g";
   status: "valid" | "invalid" | "empty" | "no-solution" | "error";
-  message?: string;
+  message?: string | undefined;
   /** Result energies in MeV/nucl */
   energyLowMevNucl: number | null;
   energyHighMevNucl: number | null;
@@ -94,10 +94,11 @@ export function parseRangeInput(text: string): {
   // Try to find a suffix at the end
   const match = trimmed.match(RANGE_WITH_SUFFIX_RE);
   if (match) {
-    const numStr = match[1];
-    const suffix = match[2].toLowerCase();
+    const numStr = match[1]!;
+    const suffix = match[2]!.toLowerCase();
     const value = parseFloat(numStr);
-    if (!Number.isFinite(value) || !(suffix in LENGTH_SUFFIXES)) {
+    const unit = LENGTH_SUFFIXES[suffix];
+    if (!Number.isFinite(value) || !unit) {
       return null;
     }
     if (value <= 0) {
@@ -105,7 +106,7 @@ export function parseRangeInput(text: string): {
     }
     return {
       value,
-      unit: LENGTH_SUFFIXES[suffix],
+      unit,
       unitFromSuffix: true,
     };
   }
@@ -227,7 +228,7 @@ export function createInverseLookupState(
     if (!parsed) {
       const suffixTokenMatch = trimmed.match(/\s*([a-zA-Zµ]+)$/);
       if (suffixTokenMatch) {
-        const suffix = suffixTokenMatch[1];
+        const suffix = suffixTokenMatch[1]!;
         const numberPart = trimmed.slice(0, trimmed.length - suffixTokenMatch[0].length).trim();
         if (!STRICT_NUMBER_RE.test(numberPart)) {
           row.status = "invalid";
@@ -256,7 +257,7 @@ export function createInverseLookupState(
     if (parsed.unitFromSuffix) {
       const suffixMatch = trimmed.match(/([a-zA-Zµ]+)$/);
       if (suffixMatch) {
-        const suffix = suffixMatch[1].toLowerCase();
+        const suffix = suffixMatch[1]!.toLowerCase();
         if (!(suffix in LENGTH_SUFFIXES)) {
           row.status = "invalid";
           row.message = `Unrecognized unit '${suffix}'`;

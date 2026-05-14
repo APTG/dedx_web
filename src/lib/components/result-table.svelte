@@ -77,7 +77,7 @@
     !isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "stp",
   );
   const defaultProgramId = $derived(
-    isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null,
+    (isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null) ?? null,
   );
 
   // Delta tooltip state
@@ -243,12 +243,14 @@
     if (lines.length === 0) return;
 
     for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (!line) continue;
       const targetIndex = index + i;
       // updateRowText auto-adds a new row when last row gets text.
       if (targetIndex >= calcState.rows.length) {
-        calcState.updateRowText(calcState.rows.length - 1, lines[i]);
+        calcState.updateRowText(calcState.rows.length - 1, line);
       } else {
-        calcState.updateRowText(targetIndex, lines[i]);
+        calcState.updateRowText(targetIndex, line);
       }
     }
     calcState.triggerCalculation();
@@ -264,7 +266,7 @@
     if (!calcState.isPerRowMode) return false;
     const particle = entitySelection.selectedParticle;
     if (!particle) return false;
-    if (particle.massNumber <= 1) return false;
+    if (!("massNumber" in particle) || particle.massNumber <= 1) return false;
     return row.unitFromSuffix;
   }
 
@@ -662,10 +664,10 @@
                   {@const stpDisplay =
                     entitySelection.selectedMaterial && row.normalizedMevNucl !== null
                       ? getStpDisplayValue(
-                          comparisonResults?.get(programId) as CalculationResult,
-                          row.normalizedMevNucl,
+                           comparisonResults?.get(programId),
+                           row.normalizedMevNucl!,
                           advancedOptions.value.densityOverride ??
-                            entitySelection.selectedMaterial.density,
+                            (entitySelection.selectedMaterial.density ?? 1),
                           calcState.stpDisplayUnit,
                         )
                       : null}
@@ -676,12 +678,13 @@
                   {@const defaultStpDisplay =
                     defaultResult &&
                     !(defaultResult instanceof LibdedxError) &&
-                    row.normalizedMevNucl !== null
-                      ? getStpDisplayValue(
-                          defaultResult,
-                          row.normalizedMevNucl,
-                          advancedOptions.value.densityOverride ??
-                            entitySelection.selectedMaterial.density,
+                     row.normalizedMevNucl !== null &&
+                     entitySelection.selectedMaterial
+                       ? getStpDisplayValue(
+                           defaultResult,
+                           row.normalizedMevNucl!,
+                           advancedOptions.value.densityOverride ??
+                             (entitySelection.selectedMaterial!.density ?? 1),
                           calcState.stpDisplayUnit,
                         )
                       : null}
@@ -728,26 +731,26 @@
                           {#if entitySelection.selectedMaterial}
                             {@const density =
                               advancedOptions.value.densityOverride ??
-                              entitySelection.selectedMaterial.density}
+                              (entitySelection.selectedMaterial.density ?? 1)}
                             {@const stpIndex = result.energies.findIndex(
-                              (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
+                              (e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001,
                             )}
                             {#if stpIndex !== -1}
                               {@const stpMass = result.stoppingPowers[stpIndex]}
                               {#if calcState.stpDisplayUnit === "keV/µm"}
-                                {@const stpLinear = (stpMass * density) / 10}
+                                {@const stpLinear = (stpMass! * density) / 10}
                                 {formatSigFigs(stpLinear, 4)}
                               {:else if calcState.stpDisplayUnit === "MeV/cm"}
-                                {@const stpLinear = stpMass * density}
+                                {@const stpLinear = stpMass! * density}
                                 {formatSigFigs(stpLinear, 4)}
                               {:else}
-                                {formatSigFigs(stpMass, 4)}
+                                {formatSigFigs(stpMass!, 4)}
                               {/if}
                             {:else}
                               —
                             {/if}
                           {:else}
-                            {formatSigFigs(result.stoppingPowers[0], 4)}
+                            {formatSigFigs(result.stoppingPowers[0]!, 4)}
                           {/if}
                         {:else}
                           —
@@ -781,10 +784,10 @@
                   {@const csdaCm =
                     entitySelection.selectedMaterial && row.normalizedMevNucl !== null
                       ? getCsdaDisplayCm(
-                          comparisonResults?.get(programId) as CalculationResult,
-                          row.normalizedMevNucl,
+                           comparisonResults?.get(programId),
+                           row.normalizedMevNucl!,
                           advancedOptions.value.densityOverride ??
-                            entitySelection.selectedMaterial.density,
+                            (entitySelection.selectedMaterial.density ?? 1),
                         )
                       : null}
                   {@const defaultResult =
@@ -794,12 +797,13 @@
                   {@const defaultCsdaCm =
                     defaultResult &&
                     !(defaultResult instanceof LibdedxError) &&
-                    row.normalizedMevNucl !== null
-                      ? getCsdaDisplayCm(
-                          defaultResult,
-                          row.normalizedMevNucl,
-                          advancedOptions.value.densityOverride ??
-                            entitySelection.selectedMaterial.density,
+                     row.normalizedMevNucl !== null &&
+                     entitySelection.selectedMaterial
+                       ? getCsdaDisplayCm(
+                           defaultResult,
+                           row.normalizedMevNucl!,
+                           advancedOptions.value.densityOverride ??
+                             (entitySelection.selectedMaterial!.density ?? 1),
                         )
                       : null}
                   {@const csdaDelta =
@@ -838,13 +842,13 @@
                           {#if entitySelection.selectedMaterial}
                             {@const density =
                               advancedOptions.value.densityOverride ??
-                              entitySelection.selectedMaterial.density}
+                              (entitySelection.selectedMaterial.density ?? 1)}
                             {@const csdaIndex = result.energies.findIndex(
-                              (e) => Math.abs(e - row.normalizedMevNucl) < 0.0001,
+                              (e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001,
                             )}
                             {#if csdaIndex !== -1}
                               {@const csdaGcm2 = result.csdaRanges[csdaIndex]}
-                              {@const csdaCmVal = density > 0 ? csdaGcm2 / density : csdaGcm2}
+                              {@const csdaCmVal = density > 0 ? csdaGcm2! / density : csdaGcm2!}
                               {@const scaled = autoScaleLengthCm(csdaCmVal)}
                               {formatSigFigs(scaled.value, 4)}
                               {scaled.unit}
@@ -852,7 +856,7 @@
                               —
                             {/if}
                           {:else}
-                            {formatSigFigs(result.csdaRanges[0], 4)} cm
+                            {formatSigFigs(result.csdaRanges[0]!, 4)} cm
                           {/if}
                         {:else}
                           —

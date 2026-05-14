@@ -1,4 +1,4 @@
-<script lang="ts" generics="T extends { id: number; name: string }">
+<script lang="ts" generics="T extends { id: number | string; name: string }">
   import { cn } from "$lib/utils.js";
 
   interface EntityItem<T> {
@@ -16,10 +16,10 @@
     items: EntityItem<T>[];
   }
 
-  interface Props<T extends { id: number; name: string }> {
+  interface Props<T extends { id: number | string; name: string }> {
     label: string;
     items: EntityItem<T>[];
-    selectedId: number | null;
+    selectedId: number | string | null;
     grouped?: boolean;
     groups?: GroupedItems<T>[];
     placeholder?: string;

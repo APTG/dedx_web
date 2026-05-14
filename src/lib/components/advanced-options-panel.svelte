@@ -16,12 +16,7 @@
   import { NativeSelect } from "$lib/components/ui/native-select";
   import { cn } from "$lib/utils.js";
   import Info from "@lucide/svelte/icons/info";
-  import type {
-    AggregateState,
-    InterpolationScale,
-    InterpolationMethod,
-    MstarMode,
-  } from "$lib/wasm/types";
+  import type { AggregateState, MstarMode } from "$lib/wasm/types";
 
   import { advancedOptions } from "$lib/state/advanced-options.svelte";
 
@@ -195,56 +190,6 @@
     }
   }
 
-  // Handle interpolation scale change - UNUSED kept for reference
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function handleInterpolationScaleChange(value: string) {
-    const scale = value as InterpolationScale;
-    const currentInterpolation = advancedOptions.value.interpolation;
-
-    let newInterpolation: typeof currentInterpolation;
-    if (scale === "log") {
-      if (!currentInterpolation) {
-        newInterpolation = undefined;
-      } else if (currentInterpolation.method === undefined) {
-        newInterpolation = undefined;
-      } else {
-        // Keep method, remove scale
-        newInterpolation = { method: currentInterpolation.method };
-      }
-    } else {
-      // "lin-lin" -> internal "linear"
-      newInterpolation = {
-        ...currentInterpolation,
-        scale,
-      };
-    }
-
-    // Create new state object to force reactivity
-    advancedOptions.value = {
-      ...advancedOptions.value,
-      interpolation: newInterpolation,
-    };
-  }
-
-  // Handle interpolation method change - UNUSED kept for reference
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  function handleInterpolationMethodChange(value: string) {
-    const method = value as InterpolationMethod;
-    if (method === "linear") {
-      if (advancedOptions.value.interpolation) {
-        delete advancedOptions.value.interpolation.method;
-        if (advancedOptions.value.interpolation.scale === undefined) {
-          delete advancedOptions.value.interpolation;
-        }
-      }
-    } else {
-      advancedOptions.value.interpolation = {
-        ...advancedOptions.value.interpolation,
-        method,
-      };
-    }
-  }
-
   // Handle MSTAR mode change
   function handleMstarModeChange(value: string) {
     const mode = value as MstarMode;
@@ -271,11 +216,6 @@
     return text;
   });
 
-  // Get current interpolation values for selects - UNUSED kept for reference
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const currentScale = $derived(advancedOptions.value.interpolation?.scale ?? "log");
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const currentMethod = $derived(advancedOptions.value.interpolation?.method ?? "linear");
   const currentMstarMode = $derived(advancedOptions.value.mstarMode ?? "b");
 
   // Local state for scale select
@@ -341,7 +281,7 @@
 </script>
 
 <TooltipProvider>
-  <Accordion type="single" collapsible class="w-full border rounded-lg bg-card">
+  <Accordion type="single" class="w-full border rounded-lg bg-card">
     <AccordionItem value="advanced-options" class="border-b-0">
       <AccordionTrigger class="px-4 py-3 hover:no-underline">
         <span class="text-sm font-medium">{headerText}</span>
@@ -398,9 +338,9 @@
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
                       <path d="M18 6 6 18" />
                       <path d="m6 6 12 12" />
@@ -455,9 +395,9 @@
                       viewBox="0 0 24 24"
                       fill="none"
                       stroke="currentColor"
-                      strokeWidth="2"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
+                      stroke-width="2"
+                      stroke-linecap="round"
+                      stroke-linejoin="round"
                     >
                       <path d="M18 6 6 18" />
                       <path d="m6 6 12 12" />

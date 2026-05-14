@@ -27,7 +27,7 @@ interface ExportEntity {
 interface EntitySelectionView {
   selectedParticle: ExportEntity | null;
   selectedMaterial: ExportEntity | null;
-  selectedProgram: { id: number; name: string; resolvedProgram?: ExportEntity | null };
+  selectedProgram: { id: number | string; name: string; resolvedProgram?: ExportEntity | null };
 }
 
 export const canExport = $state({ value: false });
@@ -196,7 +196,7 @@ export function exportPdf(): void {
       // Get advanced metadata if available (from calculator page callback)
       const advancedMetadata = getCalculatorAdvancedMetadata.value?.();
 
-      return mod.generateCalculatorPdf({
+      const context: Parameters<typeof mod.generateCalculatorPdf>[0] = {
         rows,
         stpUnit,
         particle,
@@ -204,8 +204,9 @@ export function exportPdf(): void {
         program,
         filename,
         url: window.location.href,
-        advancedMetadata,
-      });
+      };
+      if (advancedMetadata) context.advancedMetadata = advancedMetadata;
+      return mod.generateCalculatorPdf(context);
     })
     .catch((error: unknown) => {
       console.error("Failed to export PDF.", error);

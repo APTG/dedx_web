@@ -8,6 +8,7 @@ export interface LibdedxEntity {
 }
 
 export interface ParticleEntity extends LibdedxEntity {
+  id: number;
   massNumber: number;
   atomicMass: number;
   symbol: string;
@@ -15,6 +16,7 @@ export interface ParticleEntity extends LibdedxEntity {
 }
 
 export interface ProgramEntity extends LibdedxEntity {
+  id: number;
   version: string;
 }
 

@@ -149,7 +149,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const allText = await page.getByText(/required|must be|invalid|error/i).all();
     console.log("Found error messages:", allText.length);
     for (let i = 0; i < allText.length && i < 5; i++) {
-      console.log(`Error ${i}:`, await allText[i].textContent());
+      console.log(`Error ${i}:`, await allText[i]!.textContent());
     }
 
     await expect(page.getByText(/density must be/i)).toBeVisible();
@@ -313,7 +313,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
           overflow: cs.overflow,
           zIndex: cs.zIndex,
           clientHeight: el.clientHeight,
-          offsetHeight: el.offsetHeight,
+          offsetHeight: el instanceof HTMLElement ? el.offsetHeight : 0,
           scrollHeight: el.scrollHeight,
         };
       });

@@ -57,8 +57,8 @@ describe("custom-compounds", () => {
         phase: "condensed",
       });
       expect(errors).toHaveLength(1);
-      expect(errors[0].field).toBe("name");
-      expect(errors[0].message).toBe("Name is required.");
+      expect(errors[0]!.field).toBe("name");
+      expect(errors[0]!.message).toBe("Name is required.");
     });
 
     test("rejects name > 80 characters", () => {
@@ -262,8 +262,8 @@ describe("custom-compounds", () => {
 
       expect(result.success).toBe(true);
       if (result.success) {
-        expect(result.compound.elements[0].atomicNumber).toBe(1);
-        expect(result.compound.elements[1].atomicNumber).toBe(8);
+        expect(result.compound.elements[0]!.atomicNumber).toBe(1);
+        expect(result.compound.elements[1]!.atomicNumber).toBe(8);
       }
       expect(elements.map((e) => e.atomicNumber)).toEqual([8, 1]);
     });
@@ -596,9 +596,9 @@ describe("custom-compounds", () => {
       expect(input.name).toBe("Test Compound");
       expect(input.density).toBe(1.0);
       expect(input.elements.length).toBe(2);
-      expect(input.elements[0].atomicNumber).toBe(1);
-      expect(input.elements[0].fraction).toBe(2);
-      expect(input.elements[0].type).toBe("atomic");
+      expect(input.elements[0]!.atomicNumber).toBe(1);
+      expect(input.elements[0]!.fraction).toBe(2);
+      expect(input.elements[0]!.type).toBe("atomic");
       expect(input.iValue).toBeUndefined();
     });
 

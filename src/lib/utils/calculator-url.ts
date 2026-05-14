@@ -149,7 +149,10 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
     }
   }
 
-  return { imode, ivalues, iunit };
+  const state: InverseModeUrlState = { imode };
+  if (ivalues !== undefined) state.ivalues = ivalues;
+  if (iunit !== undefined) state.iunit = iunit;
+  return state;
 }
 
 export interface CalculatorUrlRow {

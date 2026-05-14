@@ -10,14 +10,17 @@
  */
 import type { EnergyUnit, ParticleEntity } from "$lib/wasm/types";
 
+type EnergyUnitParticle = ParticleEntity | { id: number | string; A: number };
+
 export function getAvailableEnergyUnits(
-  particle: ParticleEntity | null | undefined,
+  particle: EnergyUnitParticle | null | undefined,
   advancedMode: boolean,
 ): EnergyUnit[] {
   if (!particle) return ["MeV"];
 
   const isElectron = particle.id === 1001;
-  const isProton = particle.massNumber === 1 && !isElectron;
+  const massNumber = "massNumber" in particle ? particle.massNumber : particle.A;
+  const isProton = massNumber === 1 && !isElectron;
   if (isElectron || isProton) return ["MeV"];
 
   if (advancedMode) {

@@ -30,7 +30,7 @@ export async function loadStoreMetadata(
   const store = new FetchStore(url);
 
   // Open root group — zarrita fetches `{url}/zarr.json`.
-  let rootGroup: Awaited<ReturnType<typeof open<"group">>>;
+  let rootGroup: Awaited<ReturnType<typeof open>>;
   try {
     rootGroup = await open(root(store), { kind: "group" });
   } catch (err) {
@@ -71,7 +71,7 @@ export async function loadStpSlice(
   materialIndex: number,
 ): Promise<Float32Array> {
   const store = new FetchStore(url);
-  let arr: Awaited<ReturnType<typeof open<"array">>>;
+  let arr: Awaited<ReturnType<typeof open>>;
   try {
     arr = await open(root(store).resolve(`${programId}/stp`), { kind: "array" });
   } catch (err) {
@@ -95,7 +95,7 @@ export async function loadCsdaSlice(
   materialIndex: number,
 ): Promise<Float32Array | null> {
   const store = new FetchStore(url);
-  let arr: Awaited<ReturnType<typeof open<"array">>>;
+  let arr: Awaited<ReturnType<typeof open>>;
   try {
     arr = await open(root(store).resolve(`${programId}/csda_range`), { kind: "array" });
   } catch {

@@ -5,13 +5,14 @@ import type { CsvExportMeta } from "$lib/export/csv";
 
 // Minimal mock row for testing
 const MOCK_ROW: CalculatedRow = {
+  id: 1,
   rawInput: "1.0",
   unit: "MeV/nucl",
+  unitFromSuffix: false,
   normalizedMevNucl: 1.0,
   stoppingPower: 100.5,
   csdaRangeCm: 0.001,
   status: "valid",
-  message: null,
 };
 
 const META: CsvExportMeta = {

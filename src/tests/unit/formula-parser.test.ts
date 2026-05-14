@@ -82,8 +82,8 @@ describe("formula-parser", () => {
 
     test("elements are sorted by atomic number", () => {
       const result = parseFormula("H2O");
-      expect(result.elements![0].atomicNumber).toBe(1); // H
-      expect(result.elements![1].atomicNumber).toBe(8); // O
+      expect(result.elements![0]!.atomicNumber).toBe(1); // H
+      expect(result.elements![1]!.atomicNumber).toBe(8); // O
     });
 
     test("combines duplicate elements HHO → H2O", () => {

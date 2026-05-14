@@ -363,6 +363,7 @@
       : {};
 
     const selectedParticleId = entityState.selectedParticle?.id;
+    const activeMultiProgramState = isAdvancedMode.value ? multiProgState : null;
 
     const urlState = {
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
@@ -376,17 +377,17 @@
       externalSources: loadedExternalSources,
       ...customUrlFields,
       // Include advanced mode state when active
-      ...(isAdvancedMode.value && multiProgState
+      ...(activeMultiProgramState
         ? {
             isAdvancedMode: true,
             // Emit ALL selected programs in display order (default program first)
             // so the URL is the canonical full list and consumers can reconstruct
             // the complete comparison without needing to infer the default.
-            selectedProgramIds: multiProgState.selectedProgramIds,
-            hiddenProgramIds: multiProgState.selectedProgramIds.filter(
-              (id) => multiProgState.columnVisibility.get(id) === false,
+            selectedProgramIds: activeMultiProgramState.selectedProgramIds,
+            hiddenProgramIds: activeMultiProgramState.selectedProgramIds.filter(
+              (id) => activeMultiProgramState.columnVisibility.get(id) === false,
             ),
-            quantityFocus: multiProgState.quantityFocus,
+            quantityFocus: activeMultiProgramState.quantityFocus,
             // Include advanced options when in advanced mode
             advancedOptions: advancedOptions.value,
             materialIsGas: builtinMaterial?.isGasByDefault,
@@ -895,10 +896,11 @@
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
     if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
-    if (inverseLookupState.activeTab !== "csda") return;
+    const inverseState = inverseLookupState;
+    if (inverseState.activeTab !== "csda") return;
 
     // Snapshot all reactive deps synchronously at the top
-    const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;
+    const _rangeMasterUnit = inverseState.rangeMasterUnit;
     void _rangeMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const rawParticleId = entityState.selectedParticle?.id;
@@ -912,7 +914,7 @@
     const rawProgramId = entityState.resolvedProgramId;
     if (typeof rawProgramId === "string") return; // external program, no inverse lookup
     const programId = rawProgramId;
-    const rowsSnapshot = inverseLookupState.rangeRows.map((r) => ({
+    const rowsSnapshot = inverseState.rangeRows.map((r) => ({
       id: r.id,
       text: r.text,
       value: r.value,
@@ -946,7 +948,7 @@
 
       if (density <= 0) {
         // Mark all non-empty rows as invalid due to missing density
-        for (const r of inverseLookupState.rangeRows) {
+        for (const r of inverseState.rangeRows) {
           if (r.text.trim()) {
             r.status = "invalid";
             r.message = "Density not available for this material";
@@ -984,18 +986,18 @@
             : [];
 
         let resultIdx = 0;
-        for (const r of inverseLookupState.rangeRows) {
+        for (const r of inverseState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             const result = results[resultIdx++];
             if (result instanceof Error) {
               r.energyMevNucl = null;
             } else {
-              r.energyMevNucl = result.energy;
+              r.energyMevNucl = result?.energy ?? null;
             }
           }
         }
       } catch {
-        for (const r of inverseLookupState.rangeRows) {
+        for (const r of inverseState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             r.status = "error";
             r.message = "Inverse range lookup failed";
@@ -1016,10 +1018,11 @@
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
     if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
-    if (inverseLookupState.activeTab !== "stp") return;
+    const inverseState = inverseLookupState;
+    if (inverseState.activeTab !== "stp") return;
 
     // Snapshot all reactive deps synchronously at the top
-    const _stpMasterUnit = inverseLookupState.stpMasterUnit;
+    const _stpMasterUnit = inverseState.stpMasterUnit;
     void _stpMasterUnit;
     const advOptsSnapshot = advancedOptions.value;
     const rawParticleIdStp = entityState.selectedParticle?.id;
@@ -1033,7 +1036,7 @@
     const rawProgramIdStp = entityState.resolvedProgramId;
     if (typeof rawProgramIdStp === "string") return; // external program, no inverse lookup
     const programId = rawProgramIdStp;
-    const rowsSnapshot = inverseLookupState.stpRows.map((r) => ({
+    const rowsSnapshot = inverseState.stpRows.map((r) => ({
       id: r.id,
       text: r.text,
       value: r.value,
@@ -1112,7 +1115,7 @@
             : [];
 
         let resultIdx = 0;
-        for (const r of inverseLookupState.stpRows) {
+        for (const r of inverseState.stpRows) {
           if (r.status === "valid" || r.status === "no-solution") {
             const lowResult = lowResults[resultIdx];
             const highResult = highResults[resultIdx];
@@ -1123,15 +1126,17 @@
               r.energyHighMevNucl = null;
             } else {
               r.status = "valid";
-              r.energyLowMevNucl = lowResult instanceof Error ? null : lowResult.energy;
-              r.energyHighMevNucl = highResult instanceof Error ? null : highResult.energy;
+              r.energyLowMevNucl =
+                lowResult instanceof Error || lowResult === undefined ? null : lowResult.energy;
+              r.energyHighMevNucl =
+                highResult instanceof Error || highResult === undefined ? null : highResult.energy;
             }
 
             resultIdx++;
           }
         }
       } catch {
-        for (const r of inverseLookupState.stpRows) {
+        for (const r of inverseState.stpRows) {
           if (r.status === "valid" || r.status === "no-solution") {
             r.status = "error";
             r.message = "Inverse STP lookup failed";
@@ -1193,7 +1198,7 @@
       <Button
         variant="ghost"
         size="sm"
-        onclick={() => calcState.resetAll()}
+        onclick={() => calcState?.resetAll()}
         title="Reset particle, material, program, and energy rows"
       >
         Reset all
@@ -1268,7 +1273,7 @@
       <SelectionLiveRegion state={entityState} />
       <EntitySelectionComboboxes
         selectionState={entityState}
-        onParticleSelect={(particleId) => calcState.switchParticle(particleId)}
+        onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
       />
       <ExternalSourcesBadge sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}
@@ -1321,7 +1326,7 @@
                           type="checkbox"
                           checked={isVisible}
                           disabled={isDefault}
-                          onchange={() => multiProgState.toggleColumnVisibility(programId)}
+                          onchange={() => multiProgState?.toggleColumnVisibility(programId)}
                           class="h-4 w-4 rounded border-input"
                         />
                         <span>{program?.name ?? `Program ${programId}`}</span>
@@ -1346,7 +1351,7 @@
                 aria-checked={multiProgState.quantityFocus === "stp"}
                 class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
                 class:bg-accent={multiProgState.quantityFocus === "stp"}
-                onclick={() => multiProgState.setQuantityFocus("stp")}
+                onclick={() => multiProgState?.setQuantityFocus("stp")}
               >
                 STP only
               </button>
@@ -1356,7 +1361,7 @@
                 aria-checked={multiProgState.quantityFocus === "both"}
                 class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
                 class:bg-accent={multiProgState.quantityFocus === "both"}
-                onclick={() => multiProgState.setQuantityFocus("both")}
+                onclick={() => multiProgState?.setQuantityFocus("both")}
               >
                 Both
               </button>
@@ -1366,7 +1371,7 @@
                 aria-checked={multiProgState.quantityFocus === "csda"}
                 class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
                 class:bg-accent={multiProgState.quantityFocus === "csda"}
-                onclick={() => multiProgState.setQuantityFocus("csda")}
+                onclick={() => multiProgState?.setQuantityFocus("csda")}
               >
                 CSDA only
               </button>
@@ -1424,7 +1429,7 @@
           <button
             class="ml-2 text-amber-600 hover:text-amber-800 text-lg leading-none"
             aria-label="Dismiss"
-            onclick={() => entityState.clearAutoFallbackMessage()}
+            onclick={() => entityState?.clearAutoFallbackMessage()}
           >
             ×
           </button>
@@ -1461,7 +1466,7 @@
           isAdvancedMode.value,
         )}
         disabled={calcState.isPerRowMode}
-        onValueChange={(unit) => calcState.setMasterUnit(unit)}
+        onValueChange={(unit) => calcState?.setMasterUnit(unit)}
       />
 
       {#if isAdvancedMode.value}
@@ -1514,12 +1519,16 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          <ResultTable
-            {calcState}
-            entitySelection={entityState}
-            multiProgramState={isAdvancedMode.value ? (multiProgState ?? undefined) : undefined}
-            comparisonResults={isAdvancedMode.value ? multiProgState?.comparisonResults : undefined}
-          />
+          {#if isAdvancedMode.value && multiProgState}
+            <ResultTable
+              {calcState}
+              entitySelection={entityState}
+              multiProgramState={multiProgState}
+              comparisonResults={multiProgState.comparisonResults}
+            />
+          {:else}
+            <ResultTable {calcState} entitySelection={entityState} />
+          {/if}
         </div>
       {/if}
 
@@ -1541,7 +1550,7 @@
                 disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
                 onchange={(e) => {
                   const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
-                  inverseLookupState.setRangeMasterUnit(newUnit);
+                  inverseLookupState?.setRangeMasterUnit(newUnit);
                 }}
                 class="flex h-10 w-auto rounded-md border border-input bg-background px-3 py-2 text-sm"
               >
@@ -1572,7 +1581,7 @@
                     value={row.text}
                     placeholder="Enter range (e.g., 7.718 cm)"
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) => inverseLookupState.updateRangeRowText(i, e.currentTarget.value)}
+                    oninput={(e) => inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
                     data-testid="inverse-range-input-{i}"
                   />
                   {#if row.unitFromSuffix}
@@ -1592,7 +1601,7 @@
                       value={inverseLookupState.rangeMasterUnit}
                       class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                       onchange={(e) => {
-                        inverseLookupState.setRangeMasterUnit(
+                        inverseLookupState?.setRangeMasterUnit(
                           e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m",
                         );
                       }}
@@ -1627,7 +1636,7 @@
               <button
                 type="button"
                 class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState.addRangeRow()}
+                onclick={() => inverseLookupState?.addRangeRow()}
               >
                 + Add row
               </button>
@@ -1669,7 +1678,7 @@
                     value={row.text}
                     placeholder="Enter stopping power"
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) => inverseLookupState.updateStpRowText(i, e.currentTarget.value)}
+                    oninput={(e) => inverseLookupState?.updateStpRowText(i, e.currentTarget.value)}
                     data-testid="inverse-stp-input-{i}"
                   />
                   <select
@@ -1677,7 +1686,7 @@
                     value={row.unit}
                     class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
                     onchange={(e) => {
-                      inverseLookupState.setStpMasterUnit(
+                      inverseLookupState?.setStpMasterUnit(
                         e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g",
                       );
                     }}
@@ -1720,7 +1729,7 @@
               <button
                 type="button"
                 class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState.addStpRow()}
+                onclick={() => inverseLookupState?.addStpRow()}
               >
                 + Add row
               </button>
