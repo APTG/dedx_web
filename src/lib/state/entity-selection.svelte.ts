@@ -355,7 +355,6 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         const availableMaterials = computeAvailableMaterials();
         if (
           typeof selectedMaterialId === "number" &&
-          selectedMaterialId !== null &&
           !isMaterialAvailable(selectedMaterialId)
         ) {
           const waterAvailable = availableMaterials.some((m) => m.id === WATER_ID);

@@ -11,7 +11,6 @@ import { validateRootAttrs } from "$lib/external-data/validation";
 import { ExternalDataError } from "$lib/external-data/errors";
 import {
   energyToMev,
-  convertEnergyGrid,
   stpToInternal,
   csdaToInternal,
   convertStpColumn,

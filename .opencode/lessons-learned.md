@@ -819,5 +819,22 @@ produce a valid custom-compound calculation for every compound.
 
 ---
 
+## Entry 37 — Resolve static-analysis cleanup comments before review handoff
+
+**Symptom:** Follow-up review threads from `github-code-quality` remained open
+for unused constants/imports and redundant type guards even after functional PR
+review comments were handled.
+
+**Root cause:** The functional fix pass validated runtime behavior but did not
+explicitly audit every static-analysis review thread for unresolved status and
+current-line applicability.
+
+**Rule:** Before handing off a PR-review fix, enumerate all unresolved bot
+review threads and apply behavior-preserving cleanup (unused symbols, redundant
+guards, dead defensive checks) or explicitly document why a thread is not
+applicable.
+
+---
+
 _Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

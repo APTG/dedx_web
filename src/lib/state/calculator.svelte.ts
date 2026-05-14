@@ -41,7 +41,7 @@ function resolveParticleMass(
  */
 function asBuiltinMaterial(material: unknown): MaterialEntity | null {
   if (!material) return null;
-  if (typeof material === "object" && material !== null && "isGasByDefault" in material) {
+  if (typeof material === "object" && "isGasByDefault" in material) {
     return material as MaterialEntity;
   }
   return null;
@@ -52,7 +52,7 @@ function asBuiltinMaterial(material: unknown): MaterialEntity | null {
  */
 function asBuiltinParticle(particle: unknown): ParticleEntity | null {
   if (!particle) return null;
-  if (typeof particle === "object" && particle !== null && "massNumber" in particle) {
+  if (typeof particle === "object" && "massNumber" in particle) {
     return particle as ParticleEntity;
   }
   return null;

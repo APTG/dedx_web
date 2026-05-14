@@ -17,9 +17,6 @@ import type { ExternalSourceDescriptor } from "./types.js";
 import { ExternalDataError } from "./errors.js";
 import { validateRootAttrs } from "./validation.js";
 
-/** Maximum size for the root zarr.json in bytes (1 MiB). */
-const MAX_ROOT_METADATA_BYTES = 1024 * 1024;
-
 /**
  * Load and validate the root metadata of a .webdedx store.
  *

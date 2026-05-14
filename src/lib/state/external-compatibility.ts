@@ -124,7 +124,7 @@ export interface ExternalCompatibilityContext {
 }
 
 /** Compute a PDG code for a built-in libdedx particle. */
-function builtinParticlePdg(libdedxId: number, massNumber: number): number | null {
+function builtinParticlePdg(libdedxId: number, massNumber: number): number {
   if (libdedxId === 1001) return 11; // electron
   if (libdedxId === 1 && massNumber === 1) return 2212; // proton (special baryon, not nucleus PDG)
   // For ions Z >= 2: ion PDG = 1000000000 + Z * 10000 + A * 10
@@ -203,7 +203,7 @@ export function buildExternalCompatibilityContext(
   for (const bp of builtinParticles) {
     const bpId = bp.id as number;
     const pdg = builtinParticlePdg(bpId, bp.massNumber);
-    if (pdg !== null) pdgByBuiltin.set(bpId, pdg);
+    pdgByBuiltin.set(bpId, pdg);
   }
 
   const programs: ExternalProgramEntity[] = [];
