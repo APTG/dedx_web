@@ -37,6 +37,9 @@
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalSourceDescriptor } from "$lib/external-data/types";
   import { parseExtdataParams } from "$lib/external-data/url";
+  import { parseExtRef } from "$lib/external-data/ids";
+  import type { EntityId } from "$lib/external-data/types";
+  import { loadExternalCalculationResult } from "$lib/utils/external-plot-series";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -68,6 +71,26 @@
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   });
+
+  /** Resolve the local ID of a built-in or external entity within a named source. */
+  function resolveExtLocalId(
+    entityId: number | string,
+    label: string,
+    refMap: Map<number, string[]> | Map<number | string, string[]>,
+  ): string | null {
+    if (typeof entityId === "string" && entityId.startsWith("ext:")) {
+      const parsed = parseExtRef(entityId);
+      return parsed && parsed.label === label ? parsed.localId : null;
+    }
+    if (typeof entityId === "number") {
+      const refs = (refMap as Map<number, string[]>).get(entityId) ?? [];
+      for (const ref of refs) {
+        const p = parseExtRef(ref);
+        if (p && p.label === label) return p.localId;
+      }
+    }
+    return null;
+  }
 
   function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
     if (
@@ -263,15 +286,74 @@
     }
 
     getService()
-      .then((service) => {
+      .then(async (service) => {
+        const externalRestores: Promise<void>[] = [];
         for (const s of decoded.series) {
-          // External-source triplets are not yet dispatched to WASM — Slice 3/4.
-          if (
-            typeof s.programId !== "number" ||
-            typeof s.particleId !== "number" ||
-            typeof s.materialId !== "number"
-          )
+          if (typeof s.programId === "string") {
+            // External series: load via ExternalDataService asynchronously.
+            const progParsed = parseExtRef(s.programId);
+            if (!progParsed || !entityState) continue;
+            const { label, localId: programLocalId } = progParsed;
+            const extCtx = entityState.externalContext;
+            const meta = externalDataService.getMetadata(label);
+            if (!meta) continue;
+            const particleLocalId = resolveExtLocalId(
+              s.particleId,
+              label,
+              extCtx.externalRefsForBuiltinParticle,
+            );
+            const materialLocalId = resolveExtLocalId(
+              s.materialId,
+              label,
+              extCtx.externalRefsForBuiltinMaterial,
+            );
+            if (!particleLocalId || !materialLocalId) continue;
+            const extParticle = meta.particles.find((p) => p.id === particleLocalId);
+            const extMat = meta.materials.find((m) => m.id === materialLocalId);
+            const extProg = meta.programs.find((p) => p.id === programLocalId);
+            if (!extParticle || !extMat) continue;
+            const particleA = extParticle.A;
+            const pId = s.programId;
+            const ptId = s.particleId;
+            const matId = s.materialId;
+            const programName = extProg ? `🔗 ${extProg.name}` : `🔗 ${label}`;
+            const particleName = getParticleLabel({
+              id: s.particleId,
+              name: extParticle.name,
+              symbol: extParticle.symbol,
+            });
+            const materialName = extMat.name;
+            const density = extMat.density ?? 1;
+            externalRestores.push(
+              loadExternalCalculationResult(
+                externalDataService,
+                label,
+                programLocalId,
+                particleLocalId,
+                materialLocalId,
+                particleA,
+              )
+                .then((result) => {
+                  if (!result) return;
+                  plotState.addSeries({
+                    programId: pId,
+                    particleId: ptId,
+                    materialId: matId,
+                    programName,
+                    particleName,
+                    materialName,
+                    density,
+                    result,
+                  });
+                })
+                .catch(() => {
+                  // silently skip failed external series restores
+                }),
+            );
             continue;
+          }
+          // Built-in triplets.
+          if (typeof s.particleId !== "number" || typeof s.materialId !== "number") continue;
           try {
             const result = service.getPlotData(
               s.programId,
@@ -302,6 +384,7 @@
             // Invalid triplet — silently skip per spec
           }
         }
+        await Promise.allSettled(externalRestores);
       })
       .finally(() => {
         // Only allow URL-writes after every restored series has been added,
@@ -324,16 +407,11 @@
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
       programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
-      series: plotState.series
-        .map((s) => ({
-          programId: s.programId,
-          particleId: s.particleId,
-          materialId: s.materialId,
-        }))
-        .filter(
-          (s): s is { programId: number; particleId: number; materialId: number } =>
-            typeof s.materialId === "number",
-        ),
+      series: plotState.series.map((s) => ({
+        programId: s.programId,
+        particleId: s.particleId,
+        materialId: s.materialId,
+      })),
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
@@ -390,10 +468,76 @@
     // potentially stale ones resolved later after a rapid selection change).
     const advOptsSnapshot = advancedOptions.value;
 
-    // Skip preview for external programs — they don't expose getPlotData
+    // External program: fetch preview from ExternalDataService
     if (typeof resolvedProgramId === "string") {
-      plotState.clearPreview();
-      return;
+      const extProgRef = parseExtRef(resolvedProgramId);
+      if (!extProgRef) {
+        plotState.clearPreview();
+        return;
+      }
+      const { label, localId: programLocalId } = extProgRef;
+      const extCtx = entityState.externalContext;
+      const particleLocalId = resolveExtLocalId(
+        selectedParticle.id,
+        label,
+        extCtx.externalRefsForBuiltinParticle,
+      );
+      const materialLocalId = resolveExtLocalId(
+        selectedMaterial.id,
+        label,
+        extCtx.externalRefsForBuiltinMaterial,
+      );
+      if (!particleLocalId || !materialLocalId) {
+        plotState.clearPreview();
+        return;
+      }
+      const particleA =
+        "massNumber" in selectedParticle
+          ? selectedParticle.massNumber
+          : "A" in selectedParticle
+            ? (selectedParticle as { A: number }).A
+            : 1;
+      const extProgramName = `🔗 ${programName}`;
+      const snapshot = {
+        programId: resolvedProgramId as EntityId,
+        particleId: selectedParticle.id as EntityId,
+        materialId: selectedMaterial.id as EntityId,
+      };
+      let extCancelled = false;
+      loadExternalCalculationResult(
+        externalDataService,
+        label,
+        programLocalId,
+        particleLocalId,
+        materialLocalId,
+        particleA,
+      )
+        .then((result) => {
+          if (extCancelled) return;
+          if (!result) {
+            plotState.clearPreview();
+            return;
+          }
+          if (extCancelled) return;
+          plotState.setPreview({
+            programId: snapshot.programId,
+            particleId: snapshot.particleId,
+            materialId: snapshot.materialId,
+            programName: extProgramName,
+            particleName: getParticleLabel(selectedParticle),
+            materialName: selectedMaterial.name,
+            density: selectedMaterial.density ?? 1,
+            result,
+          });
+        })
+        .catch((err) => {
+          if (extCancelled) return;
+          previewError = err instanceof Error ? err.message : String(err);
+          plotState.clearPreview();
+        });
+      return () => {
+        extCancelled = true;
+      };
     }
     const numericProgramId: number = resolvedProgramId;
 
@@ -412,7 +556,7 @@
     const snapshot = {
       programId: numericProgramId,
       particleId: builtinPreviewParticle.id as number,
-      materialId: selectedMaterial.id,
+      materialId: selectedMaterial.id as EntityId,
       customMaterial: isCustomMaterial(builtinPreviewMat) ? builtinPreviewMat : null,
     };
     let cancelled = false;
@@ -525,14 +669,12 @@
       return;
     }
 
-    const builtinAddParticle = "massNumber" in selectedParticle ? selectedParticle : null;
-    if (!builtinAddParticle || typeof resolvedProgramId === "string") return;
     const added = plotState.addSeries({
       programId: resolvedProgramId,
-      particleId: builtinAddParticle.id as number,
+      particleId: selectedParticle.id,
       materialId: selectedMaterial.id,
       programName: p.programName,
-      particleName: getParticleLabel(builtinAddParticle),
+      particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
       // Preserve the density that was active when the preview was computed
       // so committed series display the same values as the preview did.

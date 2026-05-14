@@ -119,12 +119,6 @@
     })),
   );
 
-  // Plot does not yet support external program series (would require
-  // loadStpSlice + interpolation pipeline). Show external programs grouped
-  // separately and mark them unavailable so users can see the dataset is
-  // loaded but won't be confused by a non-functional selection. Spec
-  // §8.1 calls for an "External" separator/group; this preserves the
-  // grouping and signals the limitation explicitly.
   type ProgramPanelEntity = { id: number | string; name: string };
   type ProgramPanelItem = {
     entity: ProgramPanelEntity;
@@ -145,9 +139,9 @@
   const externalProgramItems = $derived.by<ProgramPanelItem[]>(() =>
     state.availableExternalPrograms.map((program) => ({
       entity: program,
-      available: false,
+      available: true,
       label: `🔗 ${program.name} (ext)`,
-      description: `${program.label}${program.version ? ` · ${program.version}` : ""} — Plot series not yet supported`,
+      description: `${program.label}${program.version ? ` · ${program.version}` : ""}`,
       searchText: `${program.name} ${program.label} ${program.version ?? ""} ${program.localId}`,
     })),
   );

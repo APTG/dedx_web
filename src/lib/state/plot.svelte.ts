@@ -1,12 +1,13 @@
 import type { CalculationResult, StpUnit } from "$lib/wasm/types";
+import type { EntityId } from "$lib/external-data/types";
 import { computeSeriesLabels } from "$lib/utils/series-labels";
 import { COLOR_PALETTE, PREVIEW_COLOR } from "$lib/utils/plot-utils";
 import { allocateColor, releaseColor } from "$lib/utils/series-labels";
 
 export interface PlotSeriesData {
-  programId: number;
-  particleId: number;
-  materialId: number | string;
+  programId: EntityId;
+  particleId: EntityId;
+  materialId: EntityId;
   programName: string;
   particleName: string;
   materialName: string;

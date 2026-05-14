@@ -871,5 +871,21 @@ compounds.
 
 ---
 
+## Entry 40 — Wait for async external URL restore before enabling URL writes
+
+**Symptom:** Plot URLs that included external `series=` entries were sometimes
+rewritten without those entries right after page load, depending on timing.
+
+**Root cause:** URL restore kicked off asynchronous external-series fetches but
+set the URL-sync gate (`urlInitialized`) immediately in `.finally()`. The URL
+writer effect then ran before restored external series were appended.
+
+**Rule:** During URL restoration, collect async external restore promises and
+`await Promise.allSettled(...)` before setting any "restore complete" gate used
+by URL-writing effects. Add focused unit coverage for external preview/restore
+data mapping so these regressions are caught.
+
+---
+
 _Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
