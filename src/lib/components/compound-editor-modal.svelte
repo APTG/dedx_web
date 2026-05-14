@@ -221,21 +221,27 @@
   }
 
   function handleElementTextInput(index: number) {
-    const resolved = resolveElement(elementTexts[index]);
+    const text = elementTexts[index];
+    const element = formData.elements[index];
+    if (!text || !element) return;
+    const resolved = resolveElement(text);
     if (resolved) {
-      formData.elements[index].atomicNumber = resolved.atomicNumber;
+      element.atomicNumber = resolved.atomicNumber;
     }
   }
 
   function handleElementTextBlur(index: number) {
     // Normalize to official symbol; if unresolved, reset to current element's symbol
-    elementTexts[index] = getLocalSymbol(formData.elements[index].atomicNumber);
+    const element = formData.elements[index];
+    if (!element) return;
+    elementTexts[index] = getLocalSymbol(element.atomicNumber);
   }
 
   function handleAtomCountChange(index: number, count: string) {
     const num = parseFloat(count);
-    if (!isNaN(num) && num > 0) {
-      formData.elements[index].atomCount = num;
+    const element = formData.elements[index];
+    if (!isNaN(num) && num > 0 && element) {
+      element.atomCount = num;
     }
   }
 </script>

@@ -20,7 +20,7 @@ async function checkWasmPresent(page: import("@playwright/test").Page): Promise<
 function parseEnergyMeV(text: string): number {
   const m = text.trim().match(/^(\d+(?:\.\d+)?)\s*(keV|MeV|GeV)?$/);
   if (!m) return NaN;
-  const v = parseFloat(m[1]);
+  const v = parseFloat(m[1]!);
   const u = m[2] ?? "MeV";
   if (u === "keV") return v / 1000;
   if (u === "GeV") return v * 1000;

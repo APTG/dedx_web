@@ -212,7 +212,7 @@ describe("EntitySelectionComboboxes", () => {
 
     state.selectParticle(6);
     state.selectMaterial(267);
-    rerender({ state });
+    rerender({ selectionState: state });
 
     expect(programCombobox).toHaveTextContent(/Auto-select → MSTAR/);
   });

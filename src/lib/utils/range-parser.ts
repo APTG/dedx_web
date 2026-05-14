@@ -30,7 +30,7 @@ export function parseLengthInput(
     return { error: "Enter a numeric value" };
   }
 
-  const [, numStr, suffixRaw] = match;
+  const [, numStr = "", suffixRaw] = match;
 
   // Parse the numeric value
   const value = parseFloat(numStr);

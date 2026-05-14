@@ -24,29 +24,33 @@
       // Electron is intentionally non-selectable until ESTAR is wired up.
       available: particle.id !== 1001 && state.availableParticles.some((p) => p.id === particle.id),
       label: getParticleLabel(particle),
-      description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
       searchText: getParticleSearchText(particle),
+      ...(particle.id === 1001 ? { description: ELECTRON_UNSUPPORTED_SHORT } : {}),
     };
   }
 
   const commonParticles = $derived.by(() =>
     state.allParticles
-      .filter((p) => COMMON_PARTICLE_IDS.has(p.id))
-      .sort((a, b) => COMMON_PARTICLE_ORDER.indexOf(a.id) - COMMON_PARTICLE_ORDER.indexOf(b.id))
+      .filter((p) => typeof p.id === "number" && COMMON_PARTICLE_IDS.has(p.id))
+      .sort(
+        (a, b) =>
+          COMMON_PARTICLE_ORDER.indexOf(a.id as number) -
+          COMMON_PARTICLE_ORDER.indexOf(b.id as number),
+      )
       .map(toParticleItem),
   );
 
   const ionParticles = $derived.by(() =>
     state.allParticles
-      .filter((p) => !COMMON_PARTICLE_IDS.has(p.id))
-      .sort((a, b) => a.id - b.id)
+      .filter((p) => typeof p.id === "number" && !COMMON_PARTICLE_IDS.has(p.id))
+      .sort((a, b) => (a.id as number) - (b.id as number))
       .map(toParticleItem),
   );
 
   const elements = $derived.by(() => {
     return state.allMaterials
-      .filter((m) => m.id >= 1 && m.id <= 98)
-      .sort((a, b) => a.id - b.id)
+      .filter((m) => typeof m.id === "number" && m.id >= 1 && m.id <= 98)
+      .sort((a, b) => (a.id as number) - (b.id as number))
       .map((material) => ({
         entity: material,
         available: state.availableMaterials.some((m) => m.id === material.id),
@@ -60,7 +64,7 @@
 
   const compounds = $derived.by(() => {
     return state.allMaterials
-      .filter((m) => m.id > 98 || m.id === 906)
+      .filter((m) => typeof m.id === "number" && (m.id > 98 || m.id === 906))
       .sort((a, b) => a.name.localeCompare(b.name))
       .map((material) => ({
         entity: material,
@@ -77,10 +81,10 @@
         id: compound.id,
         name: compound.name,
         density: compound.density,
-        iValue: compound.iValue,
         phase: compound.phase,
         elements: compound.elements,
         isGasByDefault: compound.phase === "gas",
+        ...(compound.iValue !== undefined ? { iValue: compound.iValue } : {}),
       } satisfies MaterialEntity,
       available: true,
       label: compound.name,

@@ -491,14 +491,16 @@ export class LibdedxServiceImpl implements LibdedxService {
       );
     }
 
-    return this.calculateCustomCompound({
+    const params = {
       programId,
       particleId,
       elements,
       density,
-      iValue,
       energies,
-    });
+    };
+    return this.calculateCustomCompound(
+      iValue === undefined ? params : { ...params, iValue },
+    );
   }
 
   getMinEnergy(programId: number, particleId: number): number {
@@ -535,7 +537,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           errPtr,
         );
 
-        const errCode = this.module.HEAP32[errPtr >>> 2];
+        const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0) {
           results.push(new LibdedxError(errCode, `Inverse STP lookup failed for stp=${stp}`));
         } else {
@@ -573,7 +575,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           errPtr,
         );
 
-        const errCode = this.module.HEAP32[errPtr >>> 2];
+        const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0) {
           results.push(new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`));
         } else if (energy < 0) {
@@ -611,7 +613,7 @@ export class LibdedxServiceImpl implements LibdedxService {
         errPtr,
       );
 
-      const errCode = this.module.HEAP32[errPtr >>> 2];
+      const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (errCode !== 0) {
         throw new LibdedxError(errCode, "Bragg peak STP lookup failed");
       }
@@ -627,7 +629,7 @@ export class LibdedxServiceImpl implements LibdedxService {
 
     try {
       const density = this.module._dedx_get_density(materialId, errPtr);
-      const errCode = this.module.HEAP32[errPtr >>> 2];
+      const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (errCode !== 0) {
         return undefined;
       }
@@ -732,7 +734,7 @@ export class LibdedxServiceImpl implements LibdedxService {
         errPtr,
       );
 
-      const errCode = this.module.HEAP32[errPtr >>> 2];
+      const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (err !== 0 || errCode !== 0) {
         throw new LibdedxError(errCode || err, "Custom compound forward calculation failed");
       }
@@ -792,7 +794,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           errPtr,
         );
 
-        const errCode = this.module.HEAP32[errPtr >>> 2];
+        const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0 || energy < 0) {
           results.push(
             new LibdedxError(
@@ -843,7 +845,7 @@ export class LibdedxServiceImpl implements LibdedxService {
           errPtr,
         );
 
-        const errCode = this.module.HEAP32[errPtr >>> 2];
+        const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0 || energy < 0) {
           results.push(
             new LibdedxError(
@@ -888,7 +890,7 @@ export class LibdedxServiceImpl implements LibdedxService {
         errPtr,
       );
 
-      const errCode = this.module.HEAP32[errPtr >>> 2];
+      const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (errCode !== 0) {
         throw new LibdedxError(errCode, "Bragg peak STP lookup failed for custom compound");
       }

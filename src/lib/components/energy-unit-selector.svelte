@@ -43,8 +43,9 @@
       focusButton(prevIndex);
     } else if (event.key === "Enter" || event.key === " ") {
       event.preventDefault();
-      if (availableUnits[focusedIndex]) {
-        handleChange(availableUnits[focusedIndex]);
+      const focusedUnit = availableUnits[focusedIndex];
+      if (focusedUnit) {
+        handleChange(focusedUnit);
       }
     }
   }

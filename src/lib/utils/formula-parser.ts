@@ -120,7 +120,7 @@ function parsePart(formula: string): ParsedElement[] {
   let i = 0;
   
   while (i < formula.length) {
-    const char = formula[i];
+    const char = formula[i]!;
     
     if (char === "(") {
       // Find matching closing paren
@@ -154,7 +154,7 @@ function parsePart(formula: string): ParsedElement[] {
       i++;
       // Check for lowercase continuation
       if (i < formula.length && /[a-z]/.test(formula[i]!)) {
-        symbol += formula[i];
+        symbol += formula[i]!;
         i++;
       }
       

@@ -105,12 +105,13 @@ const storage = {
 
 /** Generate a stable ID with cc_ prefix and uuidv7-style identifier */
 function generateCompoundId(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return `cc_${crypto.randomUUID()}`;
+  const cryptoApi = typeof globalThis.crypto === "object" ? globalThis.crypto : undefined;
+  if (cryptoApi?.randomUUID) {
+    return `cc_${cryptoApi.randomUUID()}`;
   }
   const values = new Uint32Array(4);
-  if (typeof crypto !== "undefined" && "getRandomValues" in crypto) {
-    crypto.getRandomValues(values);
+  if (cryptoApi?.getRandomValues) {
+    cryptoApi.getRandomValues(values);
   } else {
     values[0] = Date.now();
     values[1] = typeof performance !== "undefined" ? performance.now() * 1000 : Date.now() >>> 8;

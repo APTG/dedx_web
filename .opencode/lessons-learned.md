@@ -836,5 +836,23 @@ applicable.
 
 ---
 
+## Entry 38 — Scope svelte-check away from vendored submodules
+
+**Symptom:** `pnpm check` passed on a clone with uninitialized vendor submodules
+but printed config-load errors on developer machines where `vendor/` submodules
+were present (for example missing adapters from vendored docs apps).
+
+**Root cause:** Running `svelte-check` at the repository root makes it discover
+nested Svelte projects before TypeScript `include`/`exclude` patterns can limit
+diagnostics to this app.
+
+**Rule:** Keep `pnpm check` scoped to first-party Svelte sources with
+`svelte-check --workspace src --tsconfig ../tsconfig.json`, then run
+`tsc --noEmit -p tsconfig.json` for first-party TypeScript files and tests.
+Do not add vendored docs-app dependencies just to silence submodule config
+loading.
+
+---
+
 _Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

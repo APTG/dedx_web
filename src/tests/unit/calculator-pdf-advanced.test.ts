@@ -173,7 +173,7 @@ describe("buildMetadataTable", () => {
 
   test("handles missing atomic number gracefully", () => {
     const metadata: AdvancedPdfMetadata = {
-      particle: { name: "Custom Particle", massNumber: 12, atomicNumber: undefined },
+      particle: { name: "Custom Particle", massNumber: 12 },
       material: { name: "Custom Material", density: 2.5 },
       programs: [{ name: "Custom Program", type: "built-in" }],
     };

@@ -93,7 +93,7 @@ export function columnHeaderUnit(
   if (prefixes.size === 1) {
     // All rows share the same prefix
     const prefixesArray = Array.from(prefixes);
-    return prefixesArray[0];
+    return prefixesArray[0] ?? "(auto)";
   }
 
   // Mixed prefixes

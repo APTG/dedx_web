@@ -19,6 +19,7 @@ summary table of all sessions.
 
 | Directory              | Purpose                                                                                                                                      |
 | ---------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| [2026-05-14-pnpm-check-fixes.md](2026-05-14-pnpm-check-fixes.md)                                                     | 14 May 2026  | **pnpm check fixes** (GPT-5.5 via GitHub Copilot coding agent): Resolved all Svelte/TypeScript diagnostics from `pnpm check`, scoped `svelte-check` to first-party app sources so vendor/prototype submodules are ignored, and validated check/lint/unit/build; local impacted E2E is blocked by missing generated WASM. |
 | [`prompts/`](prompts/) | opencode prompt and task-list inputs (the things humans paste into the model). Session logs/outputs live in this parent directory, not here. |
 
 ## Log Files
