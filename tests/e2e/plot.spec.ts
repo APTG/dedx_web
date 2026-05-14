@@ -14,6 +14,25 @@ test.describe("Plot page", () => {
     await page.getByRole("link", { name: "Plot" }).click();
     await expect(page).toHaveURL(/\/plot/);
   });
+
+  test("loads alpha particle stopping-power preview without recursion @regression", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    const errors: string[] = [];
+    page.on("pageerror", (err) => errors.push(err.message));
+
+    await page.goto(
+      "/plot?particle=2&material=276&program=auto&stp_unit=kev-um&xscale=log&yscale=log",
+    );
+    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+
+    await expect(page.locator('[data-testid="preview-series"]')).toBeVisible({
+      timeout: 15000,
+    });
+    await expect(page.getByRole("alert").filter({ hasText: "Preview failed" })).toHaveCount(0);
+    expect(errors.filter((e) => e.includes("too much recursion"))).toHaveLength(0);
+  });
 });
 
 test.describe("Plot page — program selection (each_key_duplicate regression)", () => {
