@@ -48,11 +48,13 @@ export function validateRootAttrs(
     fail("Invalid webdedx store: webdedx.magic must be 'webdedx-extdata'", "invalid-format");
   }
 
-  // Format version
-  const fv = attrs["webdedx.formatVersion"];
-  if (typeof fv !== "number" || !Number.isInteger(fv) || fv < 1) {
+  // Format version — svelte-check doesn't narrow `unknown` through local never-returning funcs,
+  // so we cast explicitly after each type-guard + fail() block.
+  const fvRaw = attrs["webdedx.formatVersion"];
+  if (typeof fvRaw !== "number" || !Number.isInteger(fvRaw) || fvRaw < 1) {
     fail("webdedx.formatVersion must be a positive integer");
   }
+  const fv = fvRaw as number;
   if (fv > SUPPORTED_FORMAT_VERSION) {
     fail(
       `Unsupported webdedx.formatVersion ${fv} (max supported: ${SUPPORTED_FORMAT_VERSION})`,
@@ -61,44 +63,62 @@ export function validateRootAttrs(
   }
 
   // Metadata block
-  const meta = attrs["webdedx.metadata"] as Record<string, unknown> | undefined;
-  if (!meta || typeof meta !== "object") {
+  const rawMeta = attrs["webdedx.metadata"];
+  if (!rawMeta || typeof rawMeta !== "object" || Array.isArray(rawMeta)) {
     fail("webdedx.metadata is required");
   }
-  const name = typeof meta["name"] === "string" && meta["name"] ? meta["name"] : fail("webdedx.metadata.name is required");
+  const meta = rawMeta as Record<string, unknown>;
+  const name =
+    typeof meta["name"] === "string" && meta["name"]
+      ? meta["name"]
+      : fail("webdedx.metadata.name is required");
 
   // Units
-  const units = attrs["webdedx.units"] as Record<string, unknown> | undefined;
-  if (!units || typeof units !== "object") fail("webdedx.units is required");
+  const rawUnits = attrs["webdedx.units"];
+  if (!rawUnits || typeof rawUnits !== "object" || Array.isArray(rawUnits)) {
+    fail("webdedx.units is required");
+  }
+  const units = rawUnits as Record<string, unknown>;
 
-  const energyUnit = units["energy"];
-  if (typeof energyUnit !== "string" || !VALID_ENERGY_UNITS.has(energyUnit as ExternalEnergyUnit)) {
+  const energyUnitRaw = units["energy"];
+  if (
+    typeof energyUnitRaw !== "string" ||
+    !VALID_ENERGY_UNITS.has(energyUnitRaw as ExternalEnergyUnit)
+  ) {
     fail(
-      `webdedx.units.energy "${energyUnit}" is not supported. Valid: ${[...VALID_ENERGY_UNITS].join(", ")}`,
+      `webdedx.units.energy "${energyUnitRaw}" is not supported. Valid: ${[...VALID_ENERGY_UNITS].join(", ")}`,
     );
   }
+  const energyUnit = energyUnitRaw as ExternalEnergyUnit;
 
-  const stpUnit = units["stoppingPower"];
-  if (typeof stpUnit !== "string" || !VALID_STP_UNITS.has(stpUnit as ExternalStpUnit)) {
+  const stpUnitRaw = units["stoppingPower"];
+  if (typeof stpUnitRaw !== "string" || !VALID_STP_UNITS.has(stpUnitRaw as ExternalStpUnit)) {
     fail(
-      `webdedx.units.stoppingPower "${stpUnit}" is not supported. Valid: ${[...VALID_STP_UNITS].join(", ")}`,
+      `webdedx.units.stoppingPower "${stpUnitRaw}" is not supported. Valid: ${[...VALID_STP_UNITS].join(", ")}`,
     );
   }
+  const stpUnit = stpUnitRaw as ExternalStpUnit;
 
   const csdaUnitRaw = units["csdaRange"];
   let csdaUnit: ExternalCsdaUnit | undefined;
   if (csdaUnitRaw !== undefined) {
-    if (typeof csdaUnitRaw !== "string" || !VALID_CSDA_UNITS.has(csdaUnitRaw as ExternalCsdaUnit)) {
-      fail(`webdedx.units.csdaRange "${csdaUnitRaw}" is not supported. Valid: ${[...VALID_CSDA_UNITS].join(", ")}`);
+    if (
+      typeof csdaUnitRaw !== "string" ||
+      !VALID_CSDA_UNITS.has(csdaUnitRaw as ExternalCsdaUnit)
+    ) {
+      fail(
+        `webdedx.units.csdaRange "${csdaUnitRaw}" is not supported. Valid: ${[...VALID_CSDA_UNITS].join(", ")}`,
+      );
     }
     csdaUnit = csdaUnitRaw as ExternalCsdaUnit;
   }
 
   // Energy grid
-  const rawGrid = attrs["webdedx.energyGrid"];
-  if (!Array.isArray(rawGrid) || rawGrid.length < 2) {
+  const rawGridUnknown = attrs["webdedx.energyGrid"];
+  if (!Array.isArray(rawGridUnknown) || rawGridUnknown.length < 2) {
     fail("webdedx.energyGrid must be an array with at least 2 elements");
   }
+  const rawGrid = rawGridUnknown as unknown[];
   if (rawGrid.length > MAX_ENERGY_POINTS) {
     fail(`webdedx.energyGrid length ${rawGrid.length} exceeds maximum ${MAX_ENERGY_POINTS}`);
   }
@@ -107,43 +127,51 @@ export function validateRootAttrs(
     if (typeof e !== "number" || !Number.isFinite(e) || e <= 0) {
       fail(`webdedx.energyGrid[${i}] = ${e} is not a positive finite number`);
     }
-    if (i > 0 && e <= rawGrid[i - 1]) {
+    const ePrev = rawGrid[i - 1];
+    if (i > 0 && (e as number) <= (ePrev as number)) {
       fail(
-        `webdedx.energyGrid is not strictly increasing at index ${i} (${rawGrid[i - 1]} >= ${e})`,
+        `webdedx.energyGrid is not strictly increasing at index ${i} (${ePrev} >= ${e})`,
       );
     }
   }
 
   // Programs
-  const rawPrograms = attrs["webdedx.programs"];
-  if (!Array.isArray(rawPrograms) || rawPrograms.length === 0) {
+  const rawProgramsUnknown = attrs["webdedx.programs"];
+  if (!Array.isArray(rawProgramsUnknown) || rawProgramsUnknown.length === 0) {
     fail("webdedx.programs must be a non-empty array");
   }
+  const rawPrograms = rawProgramsUnknown as unknown[];
   if (rawPrograms.length > MAX_PROGRAMS) {
     fail(`webdedx.programs length ${rawPrograms.length} exceeds maximum ${MAX_PROGRAMS}`);
   }
   const programIds = new Set<string>();
   const programs: ExternalProgramEntry[] = [];
   for (let i = 0; i < rawPrograms.length; i++) {
-    const p = rawPrograms[i] as Record<string, unknown>;
-    if (!p || typeof p !== "object") fail(`webdedx.programs[${i}] is not an object`);
-    const id = p["id"];
+    const p = rawPrograms[i];
+    if (!p || typeof p !== "object" || Array.isArray(p)) {
+      fail(`webdedx.programs[${i}] is not an object`);
+    }
+    const prog = p as Record<string, unknown>;
+    const id = prog["id"];
     if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
       fail(`webdedx.programs[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
     }
-    if (programIds.has(id)) fail(`webdedx.programs: duplicate id "${id}"`);
-    programIds.add(id);
-    const pname = p["name"];
+    const idStr = id as string;
+    if (programIds.has(idStr)) fail(`webdedx.programs: duplicate id "${idStr}"`);
+    programIds.add(idStr);
+    const pname = prog["name"];
     if (typeof pname !== "string" || !pname) fail(`webdedx.programs[${i}].name is required`);
-    const version = typeof p["version"] === "string" ? p["version"] : undefined;
-    programs.push({ id, name: pname, version });
+    const pnameStr = pname as string;
+    const version = typeof prog["version"] === "string" ? (prog["version"] as string) : undefined;
+    programs.push({ id: idStr, name: pnameStr, version });
   }
 
   // Particles
-  const rawParticles = attrs["webdedx.particles"];
-  if (!Array.isArray(rawParticles) || rawParticles.length === 0) {
+  const rawParticlesUnknown = attrs["webdedx.particles"];
+  if (!Array.isArray(rawParticlesUnknown) || rawParticlesUnknown.length === 0) {
     fail("webdedx.particles must be a non-empty array");
   }
+  const rawParticles = rawParticlesUnknown as unknown[];
   if (rawParticles.length > MAX_PARTICLES) {
     fail(`webdedx.particles length ${rawParticles.length} exceeds maximum ${MAX_PARTICLES}`);
   }
@@ -151,89 +179,105 @@ export function validateRootAttrs(
   const pdgCodes = new Set<number>();
   const particles: ExternalParticleEntry[] = [];
   for (let i = 0; i < rawParticles.length; i++) {
-    const p = rawParticles[i] as Record<string, unknown>;
-    if (!p || typeof p !== "object") fail(`webdedx.particles[${i}] is not an object`);
-    const id = p["id"];
+    const p = rawParticles[i];
+    if (!p || typeof p !== "object" || Array.isArray(p)) {
+      fail(`webdedx.particles[${i}] is not an object`);
+    }
+    const part = p as Record<string, unknown>;
+    const id = part["id"];
     if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
       fail(`webdedx.particles[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
     }
-    if (particleIds.has(id)) fail(`webdedx.particles: duplicate id "${id}"`);
-    particleIds.add(id);
+    const idStr = id as string;
+    if (particleIds.has(idStr)) fail(`webdedx.particles: duplicate id "${idStr}"`);
+    particleIds.add(idStr);
 
-    const pname = p["name"];
+    const pname = part["name"];
     if (typeof pname !== "string" || !pname) fail(`webdedx.particles[${i}].name is required`);
-    const sym = p["symbol"];
+    const pnameStr = pname as string;
+    const sym = part["symbol"];
     if (typeof sym !== "string") fail(`webdedx.particles[${i}].symbol is required`);
-    const Z = p["Z"];
+    const symStr = sym as string;
+    const Z = part["Z"];
     if (typeof Z !== "number" || !Number.isInteger(Z) || Z < 0) {
       fail(`webdedx.particles[${i}].Z must be a non-negative integer`);
     }
-    const A = p["A"];
+    const ZNum = Z as number;
+    const A = part["A"];
     if (typeof A !== "number" || !Number.isInteger(A) || A < 0) {
       fail(`webdedx.particles[${i}].A must be a non-negative integer`);
     }
-    const atomicMass = p["atomicMass"];
+    const ANum = A as number;
+    const atomicMass = part["atomicMass"];
     if (typeof atomicMass !== "number" || !Number.isFinite(atomicMass) || atomicMass <= 0) {
       fail(`webdedx.particles[${i}].atomicMass must be a positive number`);
     }
+    const atomicMassNum = atomicMass as number;
 
     let pdgCode: number | undefined;
-    if (p["pdgCode"] !== undefined) {
-      const c = p["pdgCode"];
+    if (part["pdgCode"] !== undefined) {
+      const c = part["pdgCode"];
       if (typeof c !== "number" || !Number.isInteger(c) || c <= 0) {
         fail(`webdedx.particles[${i}].pdgCode must be a positive integer`);
       }
-      if (pdgCodes.has(c)) fail(`webdedx.particles: duplicate pdgCode ${c}`);
-      pdgCodes.add(c);
-      pdgCode = c;
+      const cNum = c as number;
+      if (pdgCodes.has(cNum)) fail(`webdedx.particles: duplicate pdgCode ${cNum}`);
+      pdgCodes.add(cNum);
+      pdgCode = cNum;
     }
 
     particles.push({
-      id,
-      name: pname,
-      symbol: sym as string,
-      Z,
-      A,
-      atomicMass,
+      id: idStr,
+      name: pnameStr,
+      symbol: symStr,
+      Z: ZNum,
+      A: ANum,
+      atomicMass: atomicMassNum,
       pdgCode,
       index: i,
     });
   }
 
   // Materials
-  const rawMaterials = attrs["webdedx.materials"];
-  if (!Array.isArray(rawMaterials) || rawMaterials.length === 0) {
+  const rawMaterialsUnknown = attrs["webdedx.materials"];
+  if (!Array.isArray(rawMaterialsUnknown) || rawMaterialsUnknown.length === 0) {
     fail("webdedx.materials must be a non-empty array");
   }
+  const rawMaterials = rawMaterialsUnknown as unknown[];
   if (rawMaterials.length > MAX_MATERIALS) {
     fail(`webdedx.materials length ${rawMaterials.length} exceeds maximum ${MAX_MATERIALS}`);
   }
   const materialIds = new Set<string>();
   const materials: ExternalMaterialEntry[] = [];
   for (let i = 0; i < rawMaterials.length; i++) {
-    const m = rawMaterials[i] as Record<string, unknown>;
-    if (!m || typeof m !== "object") fail(`webdedx.materials[${i}] is not an object`);
-    const id = m["id"];
+    const m = rawMaterials[i];
+    if (!m || typeof m !== "object" || Array.isArray(m)) {
+      fail(`webdedx.materials[${i}] is not an object`);
+    }
+    const mat = m as Record<string, unknown>;
+    const id = mat["id"];
     if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
       fail(`webdedx.materials[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
     }
-    if (materialIds.has(id)) fail(`webdedx.materials: duplicate id "${id}"`);
-    materialIds.add(id);
-    const mname = m["name"];
+    const idStr = id as string;
+    if (materialIds.has(idStr)) fail(`webdedx.materials: duplicate id "${idStr}"`);
+    materialIds.add(idStr);
+    const mname = mat["name"];
     if (typeof mname !== "string" || !mname) fail(`webdedx.materials[${i}].name is required`);
+    const mnameStr = mname as string;
 
     let density: number | undefined;
-    if (m["density"] !== undefined) {
-      const d = m["density"];
+    if (mat["density"] !== undefined) {
+      const d = mat["density"];
       if (typeof d !== "number" || !Number.isFinite(d) || d <= 0) {
         fail(`webdedx.materials[${i}].density must be a positive finite number`);
       }
-      density = d;
+      density = d as number;
     }
 
     let phase: "liquid" | "solid" | "gas" | undefined;
-    if (m["phase"] !== undefined) {
-      const ph = m["phase"];
+    if (mat["phase"] !== undefined) {
+      const ph = mat["phase"];
       if (typeof ph !== "string" || !VALID_PHASE.has(ph)) {
         fail(`webdedx.materials[${i}].phase "${ph}" is invalid (must be liquid, solid, or gas)`);
       }
@@ -242,36 +286,36 @@ export function validateRootAttrs(
 
     let icruId: number | undefined;
     let atomicNumber: number | undefined;
-    if (m["icruId"] !== undefined) {
-      const v = m["icruId"];
+    if (mat["icruId"] !== undefined) {
+      const v = mat["icruId"];
       if (typeof v !== "number" || !Number.isInteger(v) || v <= 0) {
         fail(`webdedx.materials[${i}].icruId must be a positive integer`);
       }
-      icruId = v;
+      icruId = v as number;
     }
-    if (m["atomicNumber"] !== undefined) {
-      const v = m["atomicNumber"];
+    if (mat["atomicNumber"] !== undefined) {
+      const v = mat["atomicNumber"];
       if (typeof v !== "number" || !Number.isInteger(v) || v < 1 || v > 118) {
         fail(`webdedx.materials[${i}].atomicNumber must be an integer in 1..118`);
       }
-      atomicNumber = v;
+      atomicNumber = v as number;
     }
     if (icruId !== undefined && atomicNumber !== undefined) {
       fail(`webdedx.materials[${i}]: cannot specify both icruId and atomicNumber`);
     }
 
     let ival: number | undefined;
-    if (m["ival"] !== undefined) {
-      const v = m["ival"];
+    if (mat["ival"] !== undefined) {
+      const v = mat["ival"];
       if (typeof v !== "number" || !Number.isFinite(v) || v <= 0) {
         fail(`webdedx.materials[${i}].ival must be a positive finite number`);
       }
-      ival = v;
+      ival = v as number;
     }
 
     materials.push({
-      id,
-      name: mname,
+      id: idStr,
+      name: mnameStr,
       density,
       phase,
       icruId,
@@ -282,21 +326,30 @@ export function validateRootAttrs(
     });
   }
 
+  const metaVersion =
+    typeof meta["version"] === "string" ? (meta["version"] as string) : undefined;
+  const metaAuthor =
+    typeof meta["author"] === "string" ? (meta["author"] as string) : undefined;
+  const metaDescription =
+    typeof meta["description"] === "string" ? (meta["description"] as string) : undefined;
+  const metaLicense =
+    typeof meta["license"] === "string" ? (meta["license"] as string) : undefined;
+
   return {
     label,
     url,
     name,
-    version: typeof meta["version"] === "string" ? meta["version"] : undefined,
-    author: typeof meta["author"] === "string" ? meta["author"] : undefined,
-    description: typeof meta["description"] === "string" ? meta["description"] : undefined,
-    license: typeof meta["license"] === "string" ? meta["license"] : undefined,
+    ...(metaVersion !== undefined ? { version: metaVersion } : {}),
+    ...(metaAuthor !== undefined ? { author: metaAuthor } : {}),
+    ...(metaDescription !== undefined ? { description: metaDescription } : {}),
+    ...(metaLicense !== undefined ? { license: metaLicense } : {}),
     programs,
     particles,
     materials,
     energyGrid: rawGrid as number[],
-    energyUnit: energyUnit as ExternalEnergyUnit,
-    stpUnit: stpUnit as ExternalStpUnit,
-    csdaUnit,
+    energyUnit,
+    stpUnit,
+    ...(csdaUnit !== undefined ? { csdaUnit } : {}),
     hasCsdaRange: false, // updated by the loader after checking for csda_range arrays
   };
 }

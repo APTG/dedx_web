@@ -12,7 +12,7 @@ import {
   autoScaleLengthCm,
 } from "$lib/utils/unit-conversions";
 import { LibdedxError } from "$lib/wasm/types";
-import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
+import type { EnergyUnit, StpUnit, LibdedxService, MaterialEntity } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
 import { debounce } from "$lib/utils/debounce";
@@ -22,6 +22,37 @@ import {
   customMaterialElementsForWasm,
   isCustomMaterial,
 } from "$lib/utils/custom-compound-material";
+
+/**
+ * Returns the mass number (A) for a particle entity, supporting both built-in
+ * (ParticleEntity.massNumber) and external-only particles (ExternalOnlyParticle.A).
+ */
+function particleMassNumber(particle: ParticleEntity): number {
+  return particle.massNumber;
+}
+
+/**
+ * Narrow a material to a built-in MaterialEntity (null if external-only or absent).
+ * The calculator state only handles built-in calculations — external ones are done at the page level.
+ */
+function asBuiltinMaterial(material: unknown): MaterialEntity | null {
+  if (!material) return null;
+  if (typeof material === "object" && material !== null && "isGasByDefault" in material) {
+    return material as MaterialEntity;
+  }
+  return null;
+}
+
+/**
+ * Narrow a particle to a built-in ParticleEntity (null if external-only).
+ */
+function asBuiltinParticle(particle: unknown): ParticleEntity | null {
+  if (!particle) return null;
+  if (typeof particle === "object" && particle !== null && "massNumber" in particle) {
+    return particle as ParticleEntity;
+  }
+  return null;
+}
 
 export interface CalculatedRow {
   id: number;
@@ -154,10 +185,12 @@ export function createCalculatorState(
     }
   }
 
-  let previousParticle: ParticleEntity | null = entitySelection.selectedParticle;
+  // Track only built-in particles for unit-rescaling; external particle selection
+  // doesn't rescale energy units (handled at the page level).
+  let previousParticle: ParticleEntity | null = asBuiltinParticle(entitySelection.selectedParticle);
 
   function getStpDisplayUnit(): StpUnit {
-    const material = entitySelection.selectedMaterial;
+    const material = asBuiltinMaterial(entitySelection.selectedMaterial);
     if (isCustomMaterial(material)) {
       return material.isGasByDefault ? "MeV·cm²/g" : "keV/µm";
     }
@@ -278,7 +311,7 @@ export function createCalculatorState(
   }
 
   function computeRows(): CalculatedRow[] {
-    const particle = entitySelection.selectedParticle;
+    const particle = asBuiltinParticle(entitySelection.selectedParticle);
     if (!particle) {
       return inputState.rows.map((row) => ({
         id: row.id,
@@ -292,7 +325,7 @@ export function createCalculatorState(
       }));
     }
 
-    return inputState.rows.map((row) => parseRow(row, particle.massNumber, particle.atomicMass));
+    return inputState.rows.map((row) => parseRow(row, particleMassNumber(particle), particle.atomicMass));
   }
 
   async function performCalculation(energies: { rowId: string; energy: number }[]): Promise<void> {
@@ -308,10 +341,16 @@ export function createCalculatorState(
 
     // Resolved outside try/catch so the per-row retry path can reuse them.
     const resolvedProgramId = entitySelection.resolvedProgramId;
+    // External programs are handled at the page level, not here.
+    if (typeof resolvedProgramId === "string") {
+      isCalculating = false;
+      return;
+    }
     const particleId = entitySelection.selectedParticle?.id;
     const material = entitySelection.selectedMaterial;
     const materialId = material?.id;
-    const customMaterial = isCustomMaterial(material) ? material : null;
+    const builtinMaterial = asBuiltinMaterial(material);
+    const customMaterial = isCustomMaterial(builtinMaterial) ? builtinMaterial : null;
 
     if (!resolvedProgramId || !particleId || !materialId) {
       calculationResults = new Map();
@@ -337,20 +376,24 @@ export function createCalculatorState(
       return `${resolvedProgramId}:${particleId}:${materialId}:${energy}`;
     }
 
+    // resolvedProgramId is guaranteed numeric here (string = external, returned early above)
+    const numericProgramId = resolvedProgramId as number;
+    const numericParticleId = particleId as number;
+
     function callService(energyValues: number[]) {
       return customMaterial
         ? service.calculateCustomCompound({
-            programId: resolvedProgramId!,
-            particleId: particleId!,
+            programId: numericProgramId,
+            particleId: numericParticleId,
             elements: customMaterialElementsForWasm(customMaterial!),
             density: customMaterial!.density,
-            iValue: customMaterial!.iValue,
+            ...(customMaterial!.iValue !== undefined ? { iValue: customMaterial!.iValue } : {}),
             energies: energyValues,
           })
         : typeof materialId === "number"
           ? service.calculate(
-              resolvedProgramId!,
-              particleId!,
+              numericProgramId,
+              numericParticleId,
               materialId,
               energyValues,
               calculationOptions,
@@ -429,8 +472,8 @@ export function createCalculatorState(
     // without calling WASM. Some programs (e.g. ICRU 49) hang in _dedx_get_stp_table
     // on out-of-range energies rather than returning error code 101.
     if (!customMaterial && typeof materialId === "number") {
-      const minE = service.getMinEnergy(resolvedProgramId!, particleId!);
-      const maxE = service.getMaxEnergy(resolvedProgramId!, particleId!);
+      const minE = service.getMinEnergy(numericProgramId, numericParticleId);
+      const maxE = service.getMaxEnergy(numericProgramId, numericParticleId);
       const inRange: { rowId: string; energy: number }[] = [];
       for (const item of uncachedItems) {
         if (item.energy < minE || item.energy > maxE) {
@@ -501,7 +544,7 @@ export function createCalculatorState(
   }
 
   function getValidEnergies(): { rowId: string; energy: number }[] {
-    const particle = entitySelection.selectedParticle;
+    const particle = asBuiltinParticle(entitySelection.selectedParticle);
     if (!particle) return [];
 
     const parsedEnergies = inputState.getParsedEnergies();
@@ -579,7 +622,7 @@ export function createCalculatorState(
         return;
       }
 
-      const particle = entitySelection.selectedParticle;
+      const particle = asBuiltinParticle(entitySelection.selectedParticle);
       if (!particle) {
         return;
       }

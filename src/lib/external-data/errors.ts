@@ -15,7 +15,7 @@ export type ExternalDataErrorCode =
 
 export class ExternalDataError extends Error {
   readonly code: ExternalDataErrorCode;
-  readonly details?: string;
+  readonly details?: string | undefined;
 
   constructor(code: ExternalDataErrorCode, message: string, details?: string) {
     super(message);

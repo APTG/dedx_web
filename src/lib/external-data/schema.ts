@@ -16,7 +16,7 @@ export type ExternalCsdaUnit = "g/cm²" | "cm";
 export interface ExternalProgramEntry {
   id: string;
   name: string;
-  version?: string;
+  version?: string | undefined;
 }
 
 /** Validated particle entry with its position in the shard layout. */
@@ -27,7 +27,7 @@ export interface ExternalParticleEntry {
   Z: number;
   A: number;
   atomicMass: number;
-  pdgCode?: number;
+  pdgCode?: number | undefined;
   /** 0-based shard index — corresponds to shard file c/{index}/0/0. */
   index: number;
 }
@@ -37,11 +37,11 @@ export interface ExternalMaterialEntry {
   id: string;
   name: string;
   /** g/cm³. Undefined ⇒ linear stopping-power units (keV/µm, MeV/cm) are unavailable. */
-  density?: number;
-  phase?: "liquid" | "solid" | "gas";
-  icruId?: number;
-  atomicNumber?: number;
-  ival?: number;
+  density?: number | undefined;
+  phase?: "liquid" | "solid" | "gas" | undefined;
+  icruId?: number | undefined;
+  atomicNumber?: number | undefined;
+  ival?: number | undefined;
   /** 0-based index in the materials dimension of the STP/CSDA arrays. */
   index: number;
   /** false when density is undefined — callers must disable linear STP units. */
@@ -55,10 +55,10 @@ export interface ExternalStoreMetadata {
 
   // Dataset info from webdedx.metadata
   name: string;
-  version?: string;
-  author?: string;
-  description?: string;
-  license?: string;
+  version?: string | undefined;
+  author?: string | undefined;
+  description?: string | undefined;
+  license?: string | undefined;
 
   programs: ExternalProgramEntry[];
   particles: ExternalParticleEntry[];

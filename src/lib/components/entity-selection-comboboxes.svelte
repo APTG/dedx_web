@@ -2,6 +2,7 @@
   import EntityCombobox from "./entity-combobox.svelte";
   import { cn } from "$lib/utils.js";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
+  import type { ExternalOnlyMaterial } from "$lib/state/external-compatibility";
   import { getProgramDescription } from "$lib/config/program-names";
   import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import type {
@@ -22,11 +23,14 @@
 
   let { selectionState, class: className, onParticleSelect }: Props = $props();
 
-  function getMaterialPhase(material: MaterialEntity | null): "gas" | "liquid" | "solid" | null {
+  function getMaterialPhase(
+    material: MaterialEntity | ExternalOnlyMaterial | null,
+  ): "gas" | "liquid" | "solid" | null {
     if (!material) return null;
-    if (material.isGasByDefault) return "gas";
+    if ("isGasByDefault" in material && material.isGasByDefault) return "gas";
     if (material.name.toLowerCase().includes("liquid")) return "liquid";
-    return "solid";
+    if ("isGasByDefault" in material) return "solid";
+    return null; // external-only material: no phase info
   }
 
   let materialPhase = $derived.by(() => getMaterialPhase(selectionState.selectedMaterial));
@@ -71,26 +75,28 @@
 
   const particleItems = $derived.by(() => {
     // "Common particles" group: proton (1), alpha (2), electron (1001)
+    // allParticles are always built-in (numeric IDs) — cast is safe.
     const COMMON_IDS = new Set([1, 2, 1001]);
     const commonParticles = selectionState.allParticles
-      .filter((p) => COMMON_IDS.has(p.id))
+      .filter((p) => COMMON_IDS.has(p.id as number))
       .sort((a, b) => {
         // fixed order: proton, alpha particle, electron
         const ORDER = [1, 2, 1001];
-        return ORDER.indexOf(a.id) - ORDER.indexOf(b.id);
+        return ORDER.indexOf(a.id as number) - ORDER.indexOf(b.id as number);
       });
 
     const ionParticles = selectionState.allParticles
-      .filter((p) => !COMMON_IDS.has(p.id))
-      .sort((a, b) => a.id - b.id);
+      .filter((p) => !COMMON_IDS.has(p.id as number))
+      .sort((a, b) => (a.id as number) - (b.id as number));
 
     function toItem(particle: ParticleEntity) {
+      const isElectron = particle.id === 1001;
       return {
         entity: particle,
         available:
-          particle.id !== 1001 && selectionState.availableParticles.some((p) => p.id === particle.id),
+          !isElectron && selectionState.availableParticles.some((p) => p.id === particle.id),
         label: getParticleLabel(particle),
-        description: particle.id === 1001 ? ELECTRON_UNSUPPORTED_SHORT : undefined,
+        ...(isElectron ? { description: ELECTRON_UNSUPPORTED_SHORT } : {}),
         searchText: getParticleSearchText(particle),
       };
     }
@@ -132,10 +138,10 @@
   $effect(() => {
     const compoundsArray = customCompounds.compounds;
     const elements = selectionState.allMaterials
-      .filter((m) => m.id >= 1 && m.id <= 98)
-      .sort((a, b) => a.id - b.id);
+      .filter((m) => (m.id as number) >= 1 && (m.id as number) <= 98)
+      .sort((a, b) => (a.id as number) - (b.id as number));
     const compounds = selectionState.allMaterials
-      .filter((m) => m.id > 98 || m.id === 906)
+      .filter((m) => (m.id as number) > 98 || m.id === 906)
       .sort((a, b) => a.name.localeCompare(b.name));
 
     const customCompoundsItems: MaterialItem[] = compoundsArray.map((compound) => {
@@ -228,7 +234,8 @@
     const autoSelectEntity: AutoSelectProgram = {
       id: -1,
       name: "Auto-select",
-      resolvedProgram: currentProgram.id === -1 ? currentProgram.resolvedProgram : null,
+      resolvedProgram:
+        currentProgram.id === -1 ? (currentProgram as AutoSelectProgram).resolvedProgram : null,
     };
     const autoSelectLabel = autoSelectEntity.resolvedProgram
       ? `Auto-select → ${autoSelectEntity.resolvedProgram.name}`
@@ -245,13 +252,17 @@
 
     // availablePrograms is already filtered in compatibility-matrix.ts to hide
     // DEDX_ICRU (id=9). The UI must only show the synthetic Auto-select entry.
-    const tabulatedPrograms = selectionState.availablePrograms.filter((p) => p.id <= 90);
-    const analyticalPrograms = selectionState.availablePrograms.filter((p) => p.id > 90);
+    const tabulatedPrograms = selectionState.availablePrograms.filter(
+      (p) => (p.id as number) <= 90,
+    );
+    const analyticalPrograms = selectionState.availablePrograms.filter(
+      (p) => (p.id as number) > 90,
+    );
 
     result.push({ type: "section", label: "Tabulated data" });
 
     for (const program of tabulatedPrograms) {
-      const desc = getProgramDescription(program.id);
+      const desc = getProgramDescription(program.id as number);
       result.push({
         type: "item" as const,
         entity: program,
@@ -265,7 +276,7 @@
       result.push({ type: "section", label: "Analytical models" });
 
       for (const program of analyticalPrograms) {
-        const desc = getProgramDescription(program.id);
+        const desc = getProgramDescription(program.id as number);
         result.push({
           type: "item" as const,
           entity: program,
@@ -292,9 +303,9 @@
           return;
         }
         if (onParticleSelect) {
-          onParticleSelect(particle.id);
+          onParticleSelect(particle.id as number);
         } else {
-          selectionState.selectParticle(particle.id);
+          selectionState.selectParticle(particle.id as number);
         }
       }}
       onClear={() => selectionState.clearParticle()}

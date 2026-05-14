@@ -28,31 +28,35 @@ export function buildCompatibilityMatrix(service: LibdedxService): Compatibility
   const allProgramsFiltered: ProgramEntity[] = [];
 
   for (const program of programs) {
-    const particles = service.getParticles(program.id);
-    const materials = service.getMaterials(program.id);
+    // Built-in program/particle/material IDs are always numeric; cast from LibdedxEntity.id.
+    const progId = program.id as number;
+    const particles = service.getParticles(progId);
+    const materials = service.getMaterials(progId);
 
-    particlesByProgram.set(program.id, new Set(particles.map((p) => p.id)));
-    materialsByProgram.set(program.id, new Set(materials.map((m) => m.id)));
+    particlesByProgram.set(progId, new Set(particles.map((p) => p.id as number)));
+    materialsByProgram.set(progId, new Set(materials.map((m) => m.id as number)));
 
     for (const particle of particles) {
-      allParticlesMap.set(particle.id, particle);
-      if (!programsByParticle.has(particle.id)) {
-        programsByParticle.set(particle.id, new Set());
+      const pid = particle.id as number;
+      allParticlesMap.set(pid, particle);
+      if (!programsByParticle.has(pid)) {
+        programsByParticle.set(pid, new Set());
       }
-      programsByParticle.get(particle.id)!.add(program.id);
+      programsByParticle.get(pid)!.add(progId);
     }
 
     for (const material of materials) {
-      allMaterialsMap.set(material.id, material);
-      if (!programsByMaterial.has(material.id)) {
-        programsByMaterial.set(material.id, new Set());
+      const mid = material.id as number;
+      allMaterialsMap.set(mid, material);
+      if (!programsByMaterial.has(mid)) {
+        programsByMaterial.set(mid, new Set());
       }
-      programsByMaterial.get(material.id)!.add(program.id);
+      programsByMaterial.get(mid)!.add(progId);
     }
 
     const hasParticles = particles.length > 0;
     const hasMaterials = materials.length > 0;
-    const isExcluded = EXCLUDED_FROM_UI.has(program.id);
+    const isExcluded = EXCLUDED_FROM_UI.has(progId);
 
     if (hasParticles && hasMaterials && !isExcluded) {
       allProgramsFiltered.push(program);
@@ -82,7 +86,7 @@ export function getAvailablePrograms(
     if (!programIds || programIds.size === 0) {
       return [];
     }
-    candidates = candidates.filter((p) => programIds.has(p.id));
+    candidates = candidates.filter((p) => programIds.has(p.id as number));
   }
 
   if (materialId !== undefined) {
@@ -90,7 +94,7 @@ export function getAvailablePrograms(
     if (!programIds || programIds.size === 0) {
       return [];
     }
-    candidates = candidates.filter((p) => programIds.has(p.id));
+    candidates = candidates.filter((p) => programIds.has(p.id as number));
   }
 
   return candidates;
@@ -108,7 +112,7 @@ export function getAvailableParticles(
     if (!particleIds || particleIds.size === 0) {
       return [];
     }
-    candidates = candidates.filter((p) => particleIds.has(p.id));
+    candidates = candidates.filter((p) => particleIds.has(p.id as number));
   }
 
   if (materialId !== undefined) {
@@ -117,7 +121,7 @@ export function getAvailableParticles(
       return [];
     }
     candidates = candidates.filter((particle) => {
-      const particlePrograms = matrix.programsByParticle.get(particle.id);
+      const particlePrograms = matrix.programsByParticle.get(particle.id as number);
       if (!particlePrograms) return false;
       for (const progId of particlePrograms) {
         if (materialPrograms.has(progId)) {
@@ -143,7 +147,7 @@ export function getAvailableMaterials(
     if (!materialIds || materialIds.size === 0) {
       return [];
     }
-    candidates = candidates.filter((m) => materialIds.has(m.id));
+    candidates = candidates.filter((m) => materialIds.has(m.id as number));
   }
 
   if (particleId !== undefined) {
@@ -152,7 +156,7 @@ export function getAvailableMaterials(
       return [];
     }
     candidates = candidates.filter((material) => {
-      const materialPrograms = matrix.programsByMaterial.get(material.id);
+      const materialPrograms = matrix.programsByMaterial.get(material.id as number);
       if (!materialPrograms) return false;
       for (const progId of materialPrograms) {
         if (particlePrograms.has(progId)) {

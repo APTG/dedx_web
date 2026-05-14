@@ -15,11 +15,19 @@
     elements: CompoundElementEntry[];
   }
 
+  interface SavedCompoundData {
+    name: string;
+    density: number;
+    iValue?: number;
+    phase: "gas" | "condensed";
+    elements: CompoundElementEntry[];
+  }
+
   interface Props {
     open: boolean;
     compound: StoredCompoundInternal | null;
     onOpenChange: (open: boolean) => void;
-    onSave: (data: Omit<CompoundEditorFormData, "iValue"> & { iValue?: number }) => void;
+    onSave: (data: SavedCompoundData) => void;
     onDelete: () => void;
   }
 
@@ -183,10 +191,10 @@
 
     const valid = validate();
     if (valid) {
-      const data = {
+      const data: SavedCompoundData = {
         name: formData.name,
         density: parseFloat(formData.density),
-        iValue: formData.iValue ? parseFloat(formData.iValue) : undefined,
+        ...(formData.iValue ? { iValue: parseFloat(formData.iValue) } : {}),
         phase: formData.phase,
         elements: formData.elements,
       };
