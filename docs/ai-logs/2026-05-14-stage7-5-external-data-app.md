@@ -1,4 +1,4 @@
-# 2026-05-14 — Stage 7.5 External Data App Integration (Slices 3–5)
+# 2026-05-14 — Stage 7.5 External Data App Integration (Slices 3–6)
 
 ## Session Narrative
 
@@ -26,6 +26,14 @@
 - `resolvedProgramId` widened to `string | number | null` → multi-program effects skip string IDs
 - PDF metadata used wrong field names `massNum`/`chargeNum` (never existed on `ParticleEntity`) — fixed to `massNumber` and guard for external particles
 - `CalculatorUrlState.materialIsGas?: boolean` → changed to `?: boolean | undefined` to accept spread results
+
+**Slice 6 — Source attribution and plot page external loading**:
+- Added `parseExtdataParams` + `externalDataService.loadSource()` call chain to plot page entity state init, mirroring calculator pattern
+- Added `externalError` state + blocking error banner (Retry / Load-without-external-data) to plot page
+- Added `externalSources: loadedExternalSources` to plot URL encoding so extdata params survive navigation
+- Created `ExternalSourcesBadge` component rendering loaded sources as pills with label, name, and optional version
+- Mounted badge below entity selectors on both calculator and plot pages
+- All 1237 unit tests pass; TypeScript error count 168 → 61 (all remaining are pre-existing)
 
 **Slice 5 — Plot page external entity types**:
 - Fixed all new TypeScript errors in `src/routes/plot/+page.svelte` introduced by entity type widening
@@ -57,3 +65,10 @@
 - **Stage**: Stage 7.5
 - **Files changed**: `src/routes/plot/+page.svelte`, `src/lib/utils/particle-label.ts`
 - **Decision**: Plot preview cleared for external programs; series add blocked; URL encoding uses numeric IDs only for built-in compatibility
+
+### Slice 6: Source attribution and plot page external loading
+
+- **Status**: completed
+- **Stage**: Stage 7.5
+- **Files changed**: `src/lib/components/external-sources-badge.svelte` (new), `src/routes/plot/+page.svelte`, `src/routes/calculator/+page.svelte`
+- **Decision**: ExternalSourcesBadge component shows loaded source labels and metadata names (name + optional version) as pills below entity selectors; plot page now mirrors calculator's external source loading (parseExtdataParams + externalDataService + error banner + externalSources in URL state)
