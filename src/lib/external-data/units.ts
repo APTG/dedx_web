@@ -105,6 +105,43 @@ export function convertStpColumn(
 }
 
 /**
+ * Compute a CSDA range column (g/cm²) by trapezoidal integration of 1/S(E)
+ * over the energy grid, using already-converted STP values (MeV·cm²/g).
+ *
+ * Nulls propagate forward: if STP is null or ≤ 0 at either endpoint of a
+ * segment, that segment cannot be integrated and all subsequent values are null.
+ * CSDA at the lowest energy point is defined as 0.
+ */
+export function computeCsdaColumn(
+  energyGridMev: Float64Array,
+  stpValues: (number | null)[],
+): (number | null)[] {
+  const n = energyGridMev.length;
+  const out: (number | null)[] = new Array(n).fill(null);
+  if (n === 0) return out;
+
+  out[0] = 0;
+
+  for (let i = 1; i < n; i++) {
+    const prev = out[i - 1];
+    if (prev === null) {
+      // Gap in previous segment — cannot continue.
+      continue;
+    }
+    const s0 = stpValues[i - 1];
+    const s1 = stpValues[i];
+    if (s0 === null || s1 === null || s0 <= 0 || s1 <= 0) {
+      // Cannot integrate this segment.
+      continue;
+    }
+    const dE = energyGridMev[i]! - energyGridMev[i - 1]!;
+    out[i] = prev + (dE * (1 / s0 + 1 / s1)) / 2;
+  }
+
+  return out;
+}
+
+/**
  * Convert a full CSDA column to internal units (g/cm²).
  */
 export function convertCsdaColumn(

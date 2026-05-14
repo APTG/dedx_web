@@ -14,7 +14,7 @@ import type {
 } from "./schema.js";
 import { ExternalDataError } from "./errors.js";
 import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
-import { convertEnergyGrid, convertStpColumn, convertCsdaColumn } from "./units.js";
+import { convertEnergyGrid, convertStpColumn, convertCsdaColumn, computeCsdaColumn } from "./units.js";
 import { interpolate, type InterpolationScale } from "./interpolation.js";
 
 /** Maximum number of simultaneously loaded external sources. */
@@ -162,7 +162,12 @@ export class ExternalDataService {
   }
 
   /**
-   * Get (or load and cache) the CSDA range table. Returns null when absent.
+   * Get (or load and cache) the CSDA range table.
+   *
+   * When the store contains a csda_range array (hasCsdaRange = true), the
+   * data is loaded from S3. Otherwise CSDA is derived by trapezoidal
+   * integration of 1/S(E) over the already-loaded STP data (Option B).
+   * Returns null only when no STP data is available.
    */
   async getCsda(
     label: string,
@@ -172,7 +177,6 @@ export class ExternalDataService {
   ): Promise<CsdaTableEntry | null> {
     if (!this._metadata.has(label)) return null;
     const meta = this._metadata.get(label)!;
-    if (!meta.hasCsdaRange) return null;
 
     const particle = meta.particles.find((p) => p.id === particleLocalId);
     const material = meta.materials.find((m) => m.id === materialLocalId);
@@ -181,15 +185,28 @@ export class ExternalDataService {
     const cacheKey = `${label}:${programId}:${particle.index}:${material.index}`;
     if (this._csdaCache.has(cacheKey)) return this._csdaCache.get(cacheKey)!;
 
-    const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index);
-    if (raw === null) {
+    if (meta.hasCsdaRange) {
+      // Load CSDA from the zarr store.
+      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index);
+      if (raw === null) {
+        this._csdaCache.set(cacheKey, null);
+        return null;
+      }
+      const energyGridMev = convertEnergyGrid(meta.energyGrid, meta.energyUnit, particle.A);
+      const values = convertCsdaColumn(raw, meta.csdaUnit ?? "g/cm²", material.density);
+      const entry: CsdaTableEntry = { energyGridMev, values };
+      this._csdaCache.set(cacheKey, entry);
+      return entry;
+    }
+
+    // STP-only store: derive CSDA by integrating 1/S(E) over the STP data.
+    const stpEntry = await this.getStp(label, programId, particleLocalId, materialLocalId);
+    if (stpEntry === null) {
       this._csdaCache.set(cacheKey, null);
       return null;
     }
-
-    const energyGridMev = convertEnergyGrid(meta.energyGrid, meta.energyUnit, particle.A);
-    const values = convertCsdaColumn(raw, meta.csdaUnit ?? "g/cm²", material.density);
-    const entry: CsdaTableEntry = { energyGridMev, values };
+    const values = computeCsdaColumn(stpEntry.energyGridMev, stpEntry.values);
+    const entry: CsdaTableEntry = { energyGridMev: stpEntry.energyGridMev, values };
     this._csdaCache.set(cacheKey, entry);
     return entry;
   }
