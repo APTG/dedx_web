@@ -12,7 +12,7 @@
 
 - **Status**: completed
 - **Stage**: 8 (Open Beta & User Feedback)
-- **Files changed**: `src/lib/state/entity-selection.svelte.ts`, `src/lib/state/calculator.svelte.ts`, `src/lib/components/entity-selection-comboboxes.svelte`, `src/lib/components/entity-selection-panels.svelte`, `src/tests/unit/entity-selection-state.test.ts`, `src/tests/unit/entity-selection-comboboxes.test.ts`, `src/tests/unit/entity-selection-panels.test.ts`
+- **Files changed**: `src/lib/state/entity-selection.svelte.ts`, `src/lib/state/calculator.svelte.ts`, `src/lib/components/entity-selection-comboboxes.svelte`, `src/lib/components/entity-selection-panels.svelte`, `src/tests/unit/entity-selection-state.test.ts`, `src/tests/unit/entity-selection-comboboxes.test.ts`, `src/tests/unit/entity-selection-panels.test.ts`, `src/tests/unit/external-entity-fixtures.ts`
 - **Decision**: Kept Auto-select built-in-only per `external-data.md`, but rendered compatible external programs explicitly under an External group. External-only entities are selectable where the loaded external compatibility context supports them.
 - **Issue**: None.
 

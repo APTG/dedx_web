@@ -17,7 +17,7 @@ import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelt
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
-import type { ExternalStoreMetadata } from "$lib/external-data/schema";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 
 // Minimal mock: PSTAR (2) and ICRU49 (7) both support Proton (1) + Water (276).
@@ -46,48 +46,6 @@ class MockService {
   getMaterials(_programId: number): MaterialEntity[] {
     return [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }];
   }
-}
-
-function makeExternalStore(): ExternalStoreMetadata {
-  return {
-    label: "srim",
-    url: "https://example.test/srim.webdedx/",
-    name: "SRIM GUI reference stopping-power tables",
-    programs: [{ id: "srim-2013-gui", name: "SRIM GUI", version: "SRIM-2013.00" }],
-    particles: [
-      {
-        id: "p",
-        name: "Proton",
-        symbol: "p",
-        Z: 1,
-        A: 1,
-        atomicMass: 1.007,
-        pdgCode: 2212,
-        index: 0,
-      },
-    ],
-    materials: [
-      {
-        id: "water",
-        name: "Water (liquid)",
-        icruId: 276,
-        density: 1,
-        index: 0,
-        linearUnitsAvailable: true,
-      },
-      {
-        id: "poly",
-        name: "External Polymer",
-        density: 1.2,
-        index: 1,
-        linearUnitsAvailable: true,
-      },
-    ],
-    energyGrid: [1, 10, 100],
-    energyUnit: "MeV",
-    stpUnit: "MeV·cm²/g",
-    hasCsdaRange: true,
-  };
 }
 
 describe("EntitySelectionPanels — program panel duplicate-key regression", () => {
@@ -163,7 +121,7 @@ describe("EntitySelectionPanels — program panel duplicate-key regression", () 
   test("plot panels include compatible external programs and external-only materials", () => {
     state.setExternalContext(
       buildExternalCompatibilityContext(
-        [makeExternalStore()],
+        [makeExternalEntityStore()],
         state.allParticles,
         state.allMaterials,
       ),

@@ -356,8 +356,8 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         const covered = extCtx.particlesByProgram.get(programId);
         if (covered && selectedParticleId !== null && !covered.has(selectedParticleId)) {
           // Select first covered built-in particle
-          const firstCovered = [...covered][0] ?? null;
-          selectedParticleId = firstCovered ?? null;
+          const firstAvailable = [...covered][0] ?? null;
+          selectedParticleId = firstAvailable;
         }
         const covMat = extCtx.materialsByProgram.get(programId);
         if (covMat && selectedMaterialId !== null && !covMat.has(selectedMaterialId)) {
@@ -371,9 +371,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         const availableParticles = computeAvailableParticles();
         if (selectedParticleId !== null && !isParticleAvailable(selectedParticleId)) {
           const protonAvailable = availableParticles.some((p) => p.id === PROTON_ID);
-          selectedParticleId = protonAvailable
-            ? PROTON_ID
-            : ((availableParticles[0]?.id as number | undefined) ?? null);
+          selectedParticleId = protonAvailable ? PROTON_ID : (availableParticles[0]?.id ?? null);
         }
 
         const availableMaterials = computeAvailableMaterials();
@@ -441,9 +439,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       if (selectedParticleId !== null && !isParticleAvailable(selectedParticleId)) {
         const availableParticles = computeAvailableParticles();
         const protonAvailable = availableParticles.some((p) => p.id === PROTON_ID);
-        selectedParticleId = protonAvailable
-          ? PROTON_ID
-          : ((availableParticles[0]?.id as number | undefined) ?? null);
+        selectedParticleId = protonAvailable ? PROTON_ID : (availableParticles[0]?.id ?? null);
       }
 
       // Don't reset external program based on material change
