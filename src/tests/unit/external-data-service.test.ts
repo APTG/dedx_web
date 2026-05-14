@@ -340,14 +340,7 @@ describe("ExternalDataService", () => {
       expect(await svc.getCsda("srim", "prog1", "p", "water")).toBeNull();
     });
 
-    it("returns null when hasCsdaRange=false", async () => {
-      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", false));
-      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
-
-      const result = await svc.getCsda("srim", "prog1", "p", "water");
-      expect(result).toBeNull();
-      expect(mockLoadCsdaSlice).not.toHaveBeenCalled();
-    });
+    // ── hasCsdaRange=true: load from zarr store ──────────────────────────
 
     it("loads and caches CSDA range when hasCsdaRange=true", async () => {
       mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", true));
@@ -360,7 +353,7 @@ describe("ExternalDataService", () => {
       expect(mockLoadCsdaSlice).toHaveBeenCalledOnce();
     });
 
-    it("caches null when slice returns null", async () => {
+    it("caches null when zarr slice returns null (hasCsdaRange=true)", async () => {
       mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", true));
       await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
       mockLoadCsdaSlice.mockResolvedValueOnce(null);
@@ -372,7 +365,7 @@ describe("ExternalDataService", () => {
       expect(mockLoadCsdaSlice).toHaveBeenCalledOnce();
     });
 
-    it("caches positive result on second call", async () => {
+    it("caches positive result on second call (hasCsdaRange=true)", async () => {
       mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", true));
       await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
       mockLoadCsdaSlice.mockResolvedValueOnce(new Float32Array([0.1, 5.0, 100.0]));
@@ -381,6 +374,51 @@ describe("ExternalDataService", () => {
       const e2 = await svc.getCsda("srim", "prog1", "p", "water");
       expect(e1).toBe(e2);
       expect(mockLoadCsdaSlice).toHaveBeenCalledOnce();
+    });
+
+    // ── hasCsdaRange=false: derive from STP integration ──────────────────
+
+    it("computes CSDA from STP when hasCsdaRange=false", async () => {
+      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", false));
+      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      mockLoadStpSlice.mockResolvedValueOnce(new Float32Array([10.0, 5.0, 2.5]));
+
+      const entry = await svc.getCsda("srim", "prog1", "p", "water");
+
+      expect(entry).not.toBeNull();
+      expect(entry!.values).toHaveLength(3);
+      // First CSDA value is 0 by convention (no integral accumulated yet).
+      expect(entry!.values[0]).toBe(0);
+      // Subsequent values must be non-null and increasing.
+      expect(entry!.values[1]).not.toBeNull();
+      expect(entry!.values[2]).not.toBeNull();
+      expect(entry!.values[2]! as number).toBeGreaterThan(entry!.values[1]! as number);
+      // Never calls the CSDA loader for STP-only stores.
+      expect(mockLoadCsdaSlice).not.toHaveBeenCalled();
+    });
+
+    it("shares energy grid with the STP entry when deriving CSDA", async () => {
+      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", false));
+      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      mockLoadStpSlice.mockResolvedValue(new Float32Array([10.0, 5.0, 2.5]));
+
+      const stpEntry = await svc.getStp("srim", "prog1", "p", "water");
+      const csdaEntry = await svc.getCsda("srim", "prog1", "p", "water");
+
+      expect(csdaEntry!.energyGridMev).toBe(stpEntry!.energyGridMev);
+    });
+
+    it("caches STP-derived CSDA and does not recompute", async () => {
+      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim", false));
+      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      mockLoadStpSlice.mockResolvedValue(new Float32Array([10.0, 5.0, 2.5]));
+
+      const e1 = await svc.getCsda("srim", "prog1", "p", "water");
+      const e2 = await svc.getCsda("srim", "prog1", "p", "water");
+
+      expect(e1).toBe(e2);
+      // getStp itself is cached too; only one slice fetch regardless of call count.
+      expect(mockLoadStpSlice).toHaveBeenCalledOnce();
     });
   });
 
