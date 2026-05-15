@@ -30,6 +30,10 @@ async function makeRepo() {
   return repo;
 }
 
+/**
+ * Commits a synthetic submodule gitlink without checking out a real submodule.
+ * Git stores submodule entries with mode 160000 and a commit SHA.
+ */
 function commitVendorGitlink(
   repo: string,
   sha: string,
@@ -40,6 +44,7 @@ function commitVendorGitlink(
   runGitCommand(["commit", "-q", "-m", message], repo);
 }
 
+/** Runs the guard script against the most recent commit in the test repository. */
 function runGuard(repo: string) {
   return spawnSync(process.execPath, [scriptPath, "--range", "HEAD~1..HEAD"], {
     cwd: repo,

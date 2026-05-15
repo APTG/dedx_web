@@ -53,6 +53,7 @@ function matchesForbiddenPattern(path) {
   return FORBIDDEN_PATH_PATTERNS.some((pattern) => pattern.test(path));
 }
 
+// Allow dedicated submodule-maintenance PRs: every changed path must be a vendor gitlink.
 function isScopedVendorGitlinkOnlyChange(paths, vendorGitlinks) {
   if (vendorGitlinks.length === 0) return false;
   if (paths.length === 0) return true;
