@@ -4,11 +4,11 @@ import {
   buildSrimPlotExampleUrl,
 } from "$lib/utils/external-data-example-urls";
 
-function getExternalDataUrl(url: string): string {
+function getExternalDataUrl(url: string): string | undefined {
   const params = new URL(url).searchParams;
   const extdata = params.get("extdata") ?? "";
   const separatorIndex = extdata.indexOf(":");
-  expect(separatorIndex).toBeGreaterThan(0);
+  if (separatorIndex <= 0) return undefined;
   return decodeURIComponent(extdata.slice(separatorIndex + 1));
 }
 
