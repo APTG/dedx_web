@@ -30,6 +30,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [84.3, 32.5, 13.9]),
@@ -45,7 +46,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
 
     // Header line (no BOM - added by downloadCsv())
     const header = lines[0] ?? "";
-    expect(header).toBe("Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)");
+    expect(header).toBe("Energy [MeV],Stp ICRU 90 — p in Water (keV/µm)");
 
     // 3 data rows
     expect(lines).toHaveLength(4); // 1 header + 3 data
@@ -65,6 +66,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [84.3, 32.5, 13.9]),
@@ -80,6 +82,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
         materialId: 1,
         programName: "PSTAR",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [81.5, 31.2, 13.5]),
@@ -95,7 +98,7 @@ describe("formatPlotCsv — Case A (shared energy grid, no ext: prefix)", () => 
     const header = lines[0] ?? "";
 
     expect(header).toBe(
-      "Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Stp PSTAR — p in Water (keV/µm)",
+      "Energy [MeV],Stp ICRU 90 — p in Water (keV/µm),Stp PSTAR — p in Water (keV/µm)",
     );
     expect(lines).toHaveLength(4); // 1 header + 3 data
     expect(lines[1]).toBe("0.001,84.3,81.5");
@@ -112,6 +115,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [84.3, 32.5, 13.9]),
@@ -166,6 +170,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1], [84.3, 32.5]),
@@ -181,6 +186,7 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
         materialId: 1,
         programName: "ext:NIST",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1], [84.1, 32.1]),
@@ -197,8 +203,54 @@ describe("formatPlotCsv — Case B (different energy grids or ext: prefix)", () 
 
     // Case B: each series gets own Energy column
     expect(header).toBe(
-      "Energy ICRU 90 [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm),Energy ext:NIST [MeV/nucl],Stp ext:NIST — p in Water (keV/µm)",
+      "Energy ICRU 90 [MeV],Stp ICRU 90 — p in Water (keV/µm),Energy ext:NIST [MeV],Stp ext:NIST — p in Water (keV/µm)",
     );
+  });
+
+  test("electron series switch CSV energy headers to MeV and heavy-ion energies to total MeV", () => {
+    const series: PlotSeries[] = [
+      {
+        seriesId: 1,
+        programId: 1,
+        particleId: 2,
+        materialId: 1,
+        programName: "ICRU 90",
+        particleName: "α",
+        particleMassNumber: 4,
+        materialName: "Water",
+        density: 10,
+        result: mockResult([0.001, 0.1], [84.3, 32.5]),
+        label: "ICRU 90 — α in Water",
+        color: "#ff0000",
+        colorIndex: 0,
+        visible: true,
+      },
+      {
+        seriesId: 2,
+        programId: 3,
+        particleId: 1001,
+        materialId: 1,
+        programName: "ESTAR",
+        particleName: "e⁻",
+        particleMassNumber: 0,
+        materialName: "Water",
+        density: 10,
+        result: mockResult([0.001, 0.1], [10, 20]),
+        label: "ESTAR — e⁻ in Water",
+        color: "#00ff00",
+        colorIndex: 1,
+        visible: true,
+      },
+    ];
+
+    const csv = formatPlotCsv(series, "keV/µm");
+    const lines = csv.split("\r\n").filter(Boolean);
+
+    expect(lines[0]).toBe(
+      "Energy ICRU 90 [MeV],Stp ICRU 90 — α in Water (keV/µm),Energy ESTAR [MeV],Stp ESTAR — e⁻ in Water (keV/µm)",
+    );
+    expect(lines[1]).toBe("0.004,84.3,0.001,10");
+    expect(lines[2]).toBe("0.4,32.5,0.1,20");
   });
 });
 
@@ -212,6 +264,7 @@ describe("formatPlotCsv — hidden series exclusion", () => {
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [84.3, 32.5, 13.9]),
@@ -227,6 +280,7 @@ describe("formatPlotCsv — hidden series exclusion", () => {
         materialId: 1,
         programName: "PSTAR",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [81.5, 31.2, 13.5]),
@@ -242,7 +296,7 @@ describe("formatPlotCsv — hidden series exclusion", () => {
     const header = lines[0] ?? "";
 
     // Only ICRU 90 appears (the visible series)
-    expect(header).toBe("Energy [MeV/nucl],Stp ICRU 90 — p in Water (keV/µm)");
+    expect(header).toBe("Energy [MeV],Stp ICRU 90 — p in Water (keV/µm)");
     expect(lines).toHaveLength(4); // 1 header + 3 data
     expect(lines[1]).toBe("0.001,84.3");
   });
@@ -266,6 +320,7 @@ describe("formatPlotCsv — CSV injection prevention", () => {
         materialId: 1,
         programName: "=CMD", // unusual but valid program name
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001], [84.3]),
@@ -296,6 +351,7 @@ describe("formatPlotCsv — CRLF line endings", () => {
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1], [84.3, 32.5]),
@@ -329,6 +385,7 @@ describe("downloadPlotCsv", () => {
         materialId: 1,
         programName: "ICRU 90",
         particleName: "p",
+        particleMassNumber: 1,
         materialName: "Water",
         density: 10,
         result: mockResult([0.001, 0.1, 100], [84.3, 32.5, 13.9]),

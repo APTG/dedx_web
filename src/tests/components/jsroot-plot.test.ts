@@ -58,7 +58,34 @@ vi.mock("jsroot", () => ({
 }));
 
 import JsrootPlot from "$lib/components/jsroot-plot.svelte";
+import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
+
+const ALPHA_MASS_NUMBER = 4;
+
+function makeSeries(overrides: Partial<PlotSeries>): PlotSeries {
+  return {
+    seriesId: 1,
+    programId: 1,
+    particleId: 1,
+    materialId: 1,
+    programName: "ICRU 90",
+    particleName: "p",
+    particleMassNumber: 1,
+    materialName: "Water",
+    density: 1,
+    result: {
+      energies: [1, 2],
+      stoppingPowers: [10, 20],
+      csdaRanges: [1, 1],
+    },
+    label: "ICRU 90 — p in Water",
+    color: "#ff0000",
+    colorIndex: 0,
+    visible: true,
+    ...overrides,
+  };
+}
 
 describe("JsrootPlot", () => {
   it("renders a container div", () => {
@@ -117,6 +144,101 @@ describe("JsrootPlot", () => {
     });
     const canvas = screen.getByRole("img");
     expect(canvas.getAttribute("aria-label")).toContain("Stopping power");
+  });
+
+  it("uses MeV for proton-only energy axis", async () => {
+    const JSROOT = await import("jsroot");
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({ particleId: 1, particleMassNumber: 1 })],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => {
+      const hist = vi.mocked(JSROOT.createHistogram).mock.results.at(-1)?.value as {
+        fXaxis: { fTitle: string };
+      };
+      expect(hist.fXaxis.fTitle).toBe("Energy [MeV]");
+    });
+  });
+
+  it("uses MeV/nucl for mixed proton and heavy-ion energy axis", async () => {
+    const JSROOT = await import("jsroot");
+    render(JsrootPlot, {
+      props: {
+        series: [
+          makeSeries({ particleId: 1, particleName: "p", particleMassNumber: 1 }),
+          makeSeries({
+            seriesId: 2,
+            particleId: 2,
+            particleName: "α",
+            particleMassNumber: ALPHA_MASS_NUMBER,
+          }),
+        ],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => {
+      const hist = vi.mocked(JSROOT.createHistogram).mock.results.at(-1)?.value as {
+        fXaxis: { fTitle: string };
+      };
+      expect(hist.fXaxis.fTitle).toBe("Energy [MeV/nucl]");
+    });
+  });
+
+  it("uses MeV and total heavy-ion energies when an electron series is visible", async () => {
+    const JSROOT = await import("jsroot");
+    render(JsrootPlot, {
+      props: {
+        series: [
+          makeSeries({
+            particleId: 2,
+            particleName: "α",
+            particleMassNumber: ALPHA_MASS_NUMBER,
+            result: { energies: [1, 2], stoppingPowers: [10, 20], csdaRanges: [1, 1] },
+          }),
+          makeSeries({
+            seriesId: 2,
+            particleId: 1001,
+            particleName: "e⁻",
+            particleMassNumber: 0,
+            result: { energies: [1, 2], stoppingPowers: [5, 6], csdaRanges: [1, 1] },
+          }),
+        ],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 8, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => {
+      const graphCalls = vi.mocked(JSROOT.createTGraph).mock.calls as Array<
+        [number, number[], number[]]
+      >;
+      expect(graphCalls.some((call) => call[1][0] === 4)).toBe(true);
+    });
+    const calls = (
+      vi.mocked(JSROOT.createTGraph).mock.calls as Array<[number, number[], number[]]>
+    ).slice(-2);
+    // Alpha (A=4) energies convert from 1,2 MeV/nucl to 4,8 total MeV.
+    expect(calls[0]?.[1]).toEqual([4, 8]);
+    expect(calls[1]?.[1]).toEqual([1, 2]);
+    const hist = vi.mocked(JSROOT.createHistogram).mock.results.at(-1)?.value as {
+      fXaxis: { fTitle: string };
+    };
+    expect(hist.fXaxis.fTitle).toBe("Energy [MeV]");
   });
 
   it("sets requestExportSvg to an async function after container is bound", async () => {

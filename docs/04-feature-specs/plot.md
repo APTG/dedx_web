@@ -150,7 +150,28 @@ The series list is scrollable if it exceeds a maximum height of ~200px.
 > own design principle (§4.2 in the project vision): prefer segmented
 > controls when there are 2–5 mutually exclusive options.
 
-### 5. Axis Scale Controls
+### 5. Energy X-Axis Units
+
+The Plot page does not expose an energy-unit selector. Instead, the X-axis
+unit is derived from the currently visible plot series (including the preview
+series on the canvas):
+
+| Visible particle mix                 | X-axis label        | X data displayed                                                                                            |
+| ------------------------------------ | ------------------- | ----------------------------------------------------------------------------------------------------------- |
+| Protons only (A = 1)                 | `Energy [MeV]`      | Native plot energies; MeV and MeV/nucl are numerically identical for protons.                               |
+| Any electron series                  | `Energy [MeV]`      | Electron energies are already MeV; ion energies are multiplied by their mass number A to display total MeV. |
+| Any heavy ion and no electron series | `Energy [MeV/nucl]` | Native plot energies, matching libdedx ion plot data.                                                       |
+
+Hidden series are ignored for this derivation. CSV export uses the same
+energy-unit derivation for exported energy column headers and values, excluding
+the preview series as usual.
+
+Electron support follows the WASM/API capability contract: built-in ESTAR
+electron calculations are unavailable in libdedx v1.4.0, so built-in electrons
+remain unavailable in the selector. If a compatible external electron series is
+loaded, the Plot page applies the electron rule above.
+
+### 6. Axis Scale Controls
 
 Always visible in the main area, above the plot canvas, inline with the
 stopping power unit selector.
@@ -168,7 +189,7 @@ scale. For log scale, JSROOT uses `logx` / `logy` draw options.
 > data exploration. Segmented controls (not toggles) make the current
 > state unambiguous at a glance.
 
-### 6. "Reset All" Link
+### 7. "Reset All" Link
 
 A small text link below the "Add Series" button: "Reset all".
 
@@ -291,14 +312,15 @@ When the user changes particle, material, or program in the sidebar:
 
 ### Recalculation Triggers
 
-| Trigger                    | What happens                                                                            |
-| -------------------------- | --------------------------------------------------------------------------------------- |
-| Entity selection change    | Preview series recalculates                                                             |
-| "Add Series" click         | Preview promoted to committed series                                                    |
-| Stopping power unit change | All series Y-data re-converted (per-series density); plot redraws; Y-axis label updates |
-| Axis scale change          | Plot redraws with new JSROOT draw options (logx/logy)                                   |
-| Series visibility toggle   | Plot redraws showing/hiding the affected line                                           |
-| Series removal             | Plot redraws without the removed line                                                   |
+| Trigger                      | What happens                                                                            |
+| ---------------------------- | --------------------------------------------------------------------------------------- |
+| Entity selection change      | Preview series recalculates                                                             |
+| "Add Series" click           | Preview promoted to committed series                                                    |
+| Stopping power unit change   | All series Y-data re-converted (per-series density); plot redraws; Y-axis label updates |
+| Visible particle mix changes | X-axis unit/label and X values are re-derived from visible series and preview           |
+| Axis scale change            | Plot redraws with new JSROOT draw options (logx/logy)                                   |
+| Series visibility toggle     | Plot redraws showing/hiding the affected line                                           |
+| Series removal               | Plot redraws without the removed line                                                   |
 
 ---
 

@@ -1,5 +1,9 @@
 import type { StpUnit } from "$lib/wasm/types";
 
+export type PlotEnergyAxisUnit = "MeV" | "MeV/nucl";
+
+const ELECTRON_PARTICLE_ID = 1001;
+
 export const COLOR_PALETTE: readonly string[] = [
   "#e41a1c", // red
   "#377eb8", // blue
@@ -84,8 +88,62 @@ export function buildDrawOptions(xLog: boolean, yLog: boolean): string {
   return opts.join(";");
 }
 
+/**
+ * Minimal series shape needed to derive Plot energy-axis units.
+ * `particleId` identifies libdedx electrons; `particleMassNumber` classifies
+ * protons and heavier ions. Both are optional so older tests and fallback data
+ * default safely to MeV/nucl rather than being misclassified as protons.
+ */
+interface SeriesForEnergyAxis {
+  particleId?: number | string;
+  particleMassNumber?: number | undefined;
+  visible: boolean;
+}
+
+function isElectronSeries(series: SeriesForEnergyAxis): boolean {
+  // External or legacy fixtures may provide only one of these fields, so either
+  // the libdedx electron ID or the electron-only A=0 mass number is sufficient.
+  // If both are missing, fall through to the non-electron default.
+  return series.particleId === ELECTRON_PARTICLE_ID || series.particleMassNumber === 0;
+}
+
+function isProtonSeries(series: SeriesForEnergyAxis): boolean {
+  return series.particleMassNumber === 1;
+}
+
+export function getPlotEnergyAxisUnit(series: SeriesForEnergyAxis[]): PlotEnergyAxisUnit {
+  const visibleSeries = series.filter((s) => s.visible);
+  // Empty/proton/electron displays are all total-energy MeV; heavier ions
+  // without electrons keep libdedx's native per-nucleon energy grid.
+  if (visibleSeries.length === 0) return "MeV";
+  if (visibleSeries.some(isElectronSeries)) return "MeV";
+  if (visibleSeries.every(isProtonSeries)) return "MeV";
+  return "MeV/nucl";
+}
+
+export function getPlotEnergyAxisLabel(series: SeriesForEnergyAxis[]): string {
+  return `Energy [${getPlotEnergyAxisUnit(series)}]`;
+}
+
+export function convertEnergyForDisplay(
+  energies: number[],
+  series: Pick<SeriesForEnergyAxis, "particleMassNumber">,
+  axisUnit: PlotEnergyAxisUnit,
+): number[] {
+  if (axisUnit === "MeV/nucl") return energies;
+  // Undefined mass number, electrons (A=0), and protons (A=1) already display
+  // in MeV; heavier ions need E_total = E_per_nucl × A.
+  const multiplier =
+    series.particleMassNumber !== undefined && series.particleMassNumber > 1
+      ? series.particleMassNumber
+      : 1;
+  return multiplier === 1 ? energies : energies.map((energy) => energy * multiplier);
+}
+
 interface SeriesForRange {
   result: { energies: number[]; stoppingPowers: number[] };
+  particleId?: number | string;
+  particleMassNumber?: number | undefined;
   density: number;
   visible: boolean;
 }
@@ -119,6 +177,7 @@ export function computeAxisRanges(
   ];
 
   if (allVisible.length === 0) return DEFAULT_RANGES;
+  const energyAxisUnit = getPlotEnergyAxisUnit(allVisible);
 
   let xMinRaw = Infinity;
   let xMaxRaw = -Infinity;
@@ -127,9 +186,10 @@ export function computeAxisRanges(
 
   for (const s of allVisible) {
     const { energies, stoppingPowers } = s.result;
+    const xData = convertEnergyForDisplay(energies, s, energyAxisUnit);
     const yData = convertStpForDisplay(stoppingPowers, s.density, stpUnit);
 
-    for (const e of energies) {
+    for (const e of xData) {
       if (e > 0 && e < xMinRaw) xMinRaw = e;
       if (e > xMaxRaw) xMaxRaw = e;
     }
