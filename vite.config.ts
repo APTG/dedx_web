@@ -26,6 +26,8 @@ export default defineConfig({
   },
   resolve: {
     alias: {
+      // Browser-only shim: force @resvg/resvg-js to resolve to a TS shim in browser/test builds
+      // to avoid native Node.js binding resolution (see lessons-learned.md Entry 44).
       "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
     },
     // During Vitest runs, force browser export conditions so module resolution
