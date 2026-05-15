@@ -28,6 +28,8 @@ export default defineConfig({
     alias: {
       "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
     },
+    // During Vitest runs, force browser export conditions so module resolution
+    // matches app/browser behavior (including the @resvg/resvg-js shim path).
     ...(process.env.VITEST ? { conditions: ["browser"] } : {}),
   },
 });
