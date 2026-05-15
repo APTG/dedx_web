@@ -7,7 +7,9 @@ import {
 function getExternalDataUrl(url: string): string {
   const params = new URL(url).searchParams;
   const extdata = params.get("extdata") ?? "";
-  return decodeURIComponent(extdata.slice(extdata.indexOf(":") + 1));
+  const separatorIndex = extdata.indexOf(":");
+  expect(separatorIndex).toBeGreaterThan(0);
+  return decodeURIComponent(extdata.slice(separatorIndex + 1));
 }
 
 describe("external-data user-guide example URLs", () => {
