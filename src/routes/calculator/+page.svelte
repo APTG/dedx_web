@@ -321,6 +321,10 @@
     void _advOptsKey;
 
     if (!urlInitialized || !calcState || !entityState) return;
+    // In advanced mode, wait for multiProgState to be initialized so the URL update
+    // does not overwrite the reloaded URL (which may contain programs= from a previous
+    // session) before the multiProgState effect has had a chance to read it.
+    if (isAdvancedMode.value && multiProgState === null) return;
 
     // Build inverse mode state for URL encoding
     let inverseModeState: InverseModeUrlState | undefined;
