@@ -30,7 +30,10 @@ async function gotoAdvancedWithSrim(page: Page) {
   await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible({ timeout: 30000 });
 }
 
-test.describe("External data in Calculator Advanced Mode", () => {
+// All tests in this suite hit a live S3 endpoint and are slow/potentially
+// flaky in CI — they are tagged @nightly and excluded from default PR runs.
+// Run locally with: pnpm test:e2e:nightly
+test.describe("External data in Calculator Advanced Mode @nightly", () => {
   // External data requires S3 network access — allow 90s per test
   test.setTimeout(90000);
 

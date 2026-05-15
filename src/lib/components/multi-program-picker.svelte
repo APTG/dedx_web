@@ -177,10 +177,15 @@
           {/if}
 
           {#if availableExternalPrograms.length > 0}
-            <p class="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide">
-              External
-            </p>
-            {#each availableExternalPrograms as program (program.id)}
+            <div role="group" aria-label="External">
+              <p
+                class="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                role="presentation"
+                aria-hidden="true"
+              >
+                External
+              </p>
+              {#each availableExternalPrograms as program (program.id)}
               {@const extId = program.id as EntityId}
               {@const selected = isSelected(extId)}
               {@const defaultProg = isDefault(extId)}
@@ -226,6 +231,7 @@
                 </span>
               </button>
             {/each}
+            </div>
           {/if}
         {/if}
       </div>

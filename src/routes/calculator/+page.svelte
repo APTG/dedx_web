@@ -771,7 +771,7 @@
   function resolveExtLocalIdForLabel(
     entityId: number | string,
     label: string,
-    refMap: Map<number | string, string[]>,
+    refMap: Map<number, string[]> | Map<number | string, string[]>,
   ): string | null {
     if (typeof entityId === "string" && entityId.startsWith("ext:")) {
       const parsed = parseExtRef(entityId);
@@ -826,13 +826,15 @@
     const advOptsSnapshot = advancedOptions.value;
 
     // Snapshot external context and particle mass for external program calculations.
+    // Clamp to 1 for particles where massNumber/A is 0 (e.g. electrons), to
+    // prevent totalMev = energy * 0 = 0 which breaks external interpolation.
     const extCtxSnapshot: ExternalCompatibilityContext = entityState.externalContext;
     const selectedParticle = entityState.selectedParticle;
     const massASnapshot =
       selectedParticle && "massNumber" in selectedParticle
-        ? selectedParticle.massNumber
+        ? (selectedParticle.massNumber || 1)
         : selectedParticle && "A" in selectedParticle
-          ? selectedParticle.A
+          ? (selectedParticle.A || 1)
           : 1;
 
     // Capture inputs as snapshot so that a stale `getService()` resolution
@@ -941,7 +943,7 @@
         const particleLocalId = resolveExtLocalIdForLabel(
           inputSnapshot.particleId,
           label,
-          extCtxSnapshot.externalRefsForBuiltinParticle as unknown as Map<number | string, string[]>,
+          extCtxSnapshot.externalRefsForBuiltinParticle,
         );
         const materialLocalId = resolveExtLocalIdForLabel(
           // materialId is number | string at this point (undefined checked above)
