@@ -47,9 +47,8 @@
 
       <h3 class="mt-4 text-xl font-semibold">Calculator example</h3>
       <p class="text-muted-foreground">
-        Open Calculator with an example SRIM-compatible dataset, proton in liquid water, ICRU 49,
-        and a single 100 MeV row. Replace the dataset URL with your own hosted <code>.webdedx</code>
-        store before sharing:
+        Open Calculator with the public SRIM GUI reference dataset, proton in liquid water, ICRU 49,
+        and a single 100 MeV row:
       </p>
       <p>
         <a class="break-all text-primary underline" href={calculatorExampleHref}
@@ -59,7 +58,7 @@
 
       <h3 class="mt-4 text-xl font-semibold">Plot example</h3>
       <p class="text-muted-foreground">
-        Open Plot with the same example dataset, proton in liquid water, and ICRU 49 as the built-in
+        Open Plot with the same SRIM dataset, proton in liquid water, and ICRU 49 as the built-in
         program:
       </p>
       <p>

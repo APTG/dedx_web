@@ -89,10 +89,21 @@ jobs:
               mc anonymous set download local/dedxweb
             '
           curl --fail http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
-          curl --fail --silent --head \
+          cors_headers="$(mktemp)"
+          curl --fail --silent --dump-header "$cors_headers" --output /dev/null \
             -H "Origin: $PLAYWRIGHT_PREVIEW_ORIGIN" \
-            http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json \
-            | grep -i "access-control-allow-origin: $PLAYWRIGHT_PREVIEW_ORIGIN"
+            http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
+          allowed_origin="$(
+            awk 'BEGIN { IGNORECASE = 1 } /^access-control-allow-origin:/ { sub(/\r$/, ""); print substr($0, index($0, ":") + 2) }' "$cors_headers" | tail -n 1
+          )"
+          case "$allowed_origin" in
+            "$PLAYWRIGHT_PREVIEW_ORIGIN"|"*") ;;
+            *)
+              echo "Unexpected Access-Control-Allow-Origin: ${allowed_origin:-<missing>}"
+              cat "$cors_headers"
+              exit 1
+              ;;
+          esac
 
       - name: Run S3 external-data E2E tests
         env:
