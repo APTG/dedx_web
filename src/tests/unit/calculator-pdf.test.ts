@@ -16,35 +16,37 @@ const pdfState = vi.hoisted(() => ({
 }));
 
 vi.mock("jspdf", () => ({
-  default: vi.fn().mockImplementation(() => ({
-    internal: {
-      pageSize: {
-        getWidth: () => 210,
-        getHeight: () => 100,
+  default: vi.fn().mockImplementation(function () {
+    return {
+      internal: {
+        pageSize: {
+          getWidth: () => 210,
+          getHeight: () => 100,
+        },
       },
-    },
-    setFont: vi.fn(),
-    setFontSize: vi.fn(),
-    setDrawColor: vi.fn(),
-    setLineWidth: vi.fn(),
-    setTextColor: vi.fn(),
-    textWithLink: vi.fn(),
-    line: vi.fn(),
-    text: vi.fn((text: string) => {
-      pdfState.textCalls.push({ page: pdfState.currentPage, text });
-    }),
-    addPage: vi.fn(() => {
-      pdfState.pageCount += 1;
-      pdfState.currentPage = pdfState.pageCount;
-    }),
-    setPage: vi.fn((page: number) => {
-      pdfState.currentPage = page;
-    }),
-    getNumberOfPages: vi.fn(() => pdfState.pageCount),
-    save: vi.fn((filename: string) => {
-      pdfState.savedFilename = filename;
-    }),
-  })),
+      setFont: vi.fn(),
+      setFontSize: vi.fn(),
+      setDrawColor: vi.fn(),
+      setLineWidth: vi.fn(),
+      setTextColor: vi.fn(),
+      textWithLink: vi.fn(),
+      line: vi.fn(),
+      text: vi.fn((text: string) => {
+        pdfState.textCalls.push({ page: pdfState.currentPage, text });
+      }),
+      addPage: vi.fn(() => {
+        pdfState.pageCount += 1;
+        pdfState.currentPage = pdfState.pageCount;
+      }),
+      setPage: vi.fn((page: number) => {
+        pdfState.currentPage = page;
+      }),
+      getNumberOfPages: vi.fn(() => pdfState.pageCount),
+      save: vi.fn((filename: string) => {
+        pdfState.savedFilename = filename;
+      }),
+    };
+  }),
 }));
 
 function makeValidRow(): CalculatedRow {

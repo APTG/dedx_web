@@ -902,5 +902,21 @@ Dependabot to update those prototype manifests.
 
 ---
 
+## Entry 42 — Keep pnpm overrides in manifests when lockfiles gain override blocks
+
+**Symptom:** CI unit and E2E jobs failed during `pnpm install --frozen-lockfile`
+immediately after a grouped Dependabot tooling bump.
+
+**Root cause:** The updated lockfiles included an `overrides:` section, but the
+corresponding `pnpm.overrides` config was missing from `package.json`. Frozen
+installs reject this manifest/lockfile mismatch with
+`ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`.
+
+**Rule:** When dependency updates introduce lockfile-level `overrides`, mirror
+the same entries under `pnpm.overrides` in the owning manifest (`package.json`)
+for each workspace that ships that lockfile.
+
+---
+
 _Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
