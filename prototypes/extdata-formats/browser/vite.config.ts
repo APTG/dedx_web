@@ -5,7 +5,11 @@ export default defineConfig({
     rollupOptions: {
       output: {
         // Separate zarrita chunk so its bundle size is reported clearly
-        manualChunks: { zarrita: ["zarrita"] },
+        manualChunks(id) {
+          if (id.includes("node_modules/zarrita")) {
+            return "zarrita";
+          }
+        },
       },
     },
   },
