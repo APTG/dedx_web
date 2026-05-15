@@ -68,7 +68,7 @@
       aria-controls="v8-tab-panel-{tab.id}"
       tabindex={isActive ? 0 : -1}
       class={cn(
-        "flex items-center gap-1 rounded-t-md px-3 py-1.5 text-sm border border-b-0 transition-colors",
+        "flex items-baseline gap-1 rounded-t-md px-3 py-1.5 text-sm border border-b-0 transition-colors",
         isActive
           ? "bg-background border-border font-semibold"
           : "bg-muted/40 border-transparent text-muted-foreground hover:bg-accent",
@@ -78,7 +78,7 @@
     >
       <span class="text-xs text-muted-foreground" aria-hidden="true">{tab.numeral}</span>
       <span>{tab.title}:</span>
-      <span class="font-mono text-xs truncate max-w-[16ch]">{tab.value}</span>
+      <span class="truncate max-w-[16ch]">{tab.value}</span>
     </button>
   {/each}
 </div>

@@ -108,7 +108,7 @@
   <ul
     role="listbox"
     aria-label="Programs"
-    class="max-h-64 overflow-auto space-y-0.5"
+    class="max-h-52 overflow-auto space-y-0.5"
     data-testid="v8-program-list"
   >
     {#each filteredBuiltin as program (program.id)}
@@ -170,7 +170,7 @@
     data-testid="v8-program-legend"
   >
     <span class="font-medium uppercase tracking-wider">Legend</span>
-    <span class="flex items-center gap-1"><ProgramTag kind="TAB" /> tabulated data</span>
+    <span class="flex items-center gap-1"><ProgramTag kind="TAB" /> data tables</span>
     <span class="flex items-center gap-1"><ProgramTag kind="FN" /> analytical model</span>
     <span class="flex items-center gap-1"><ProgramTag kind="EXT" /> external file</span>
   </div>

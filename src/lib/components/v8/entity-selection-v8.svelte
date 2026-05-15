@@ -99,7 +99,7 @@
     id="v8-tab-panel-{activeTab}"
     role="tabpanel"
     aria-labelledby="v8-tab-{activeTab}"
-    class="rounded-b-lg border bg-background p-3 min-h-[320px]"
+    class="rounded-b-lg border bg-background p-3 min-h-[260px]"
     data-testid="v8-tab-panel"
     data-active-tab={activeTab}
   >

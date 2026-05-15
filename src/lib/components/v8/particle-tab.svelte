@@ -171,7 +171,7 @@
     {#if filteredIons.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">Ions</div>
-        <ul class="max-h-64 overflow-auto space-y-0.5">
+        <ul class="max-h-52 overflow-auto space-y-0.5">
           {#each filteredIons as p (p.id)}
             {@const available = isAvailable(p)}
             {@const isSelected = selected?.id === p.id}

@@ -211,14 +211,14 @@ describe("EntitySelectionV8", () => {
     expect(screen.getByTestId("v8-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
-  test("material tab has Elements / Compounds sub-tabs with counts", async () => {
+  test("material tab renders side-by-side Elements/Compounds columns", async () => {
     render(EntitySelectionV8, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("v8-tab-material"));
 
-    expect(screen.getByTestId("v8-material-subtab-elements")).toBeInTheDocument();
-    expect(screen.getByTestId("v8-material-subtab-compounds")).toBeInTheDocument();
+    expect(screen.getByTestId("v8-material-col-elements")).toBeInTheDocument();
+    expect(screen.getByTestId("v8-material-col-compounds")).toBeInTheDocument();
   });
 
   test("gas materials display the (≋) inline glyph", async () => {
@@ -226,7 +226,6 @@ describe("EntitySelectionV8", () => {
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("v8-tab-material"));
-    await user.click(screen.getByTestId("v8-material-subtab-compounds"));
 
     // Air is gas, id 267 → compound bucket via id > 98 rule.
     const airItem = screen.getByTestId("v8-material-item-267");
@@ -253,7 +252,7 @@ describe("EntitySelectionV8", () => {
     await user.click(screen.getByTestId("v8-tab-program"));
 
     const icru49 = screen.getByTestId("v8-program-item-7");
-    expect(within(icru49).getByTestId("v8-program-tag-TAB")).toBeInTheDocument();
+    expect(within(icru49).getByTestId("v8-program-tag-TAB")).toHaveTextContent("DATA");
   });
 
   test("program rows carry inline FN tags for analytical programs", async () => {

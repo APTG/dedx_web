@@ -16,6 +16,8 @@ export interface ProgramKindMeta {
   kind: ProgramKind;
   /** Single-char glyph rendered in the pill badge. */
   glyph: string;
+  /** Short badge text rendered in the UI. */
+  badge: string;
   /** Full description shown on hover / long-press tooltip. */
   description: string;
 }
@@ -24,16 +26,19 @@ const META: Record<ProgramKind, ProgramKindMeta> = {
   TAB: {
     kind: "TAB",
     glyph: "▦",
+    badge: "DATA",
     description: "Tabulated data — interpolated from libdedx tables",
   },
   FN: {
     kind: "FN",
     glyph: "∫",
+    badge: "FN",
     description: "Analytical model — computed from a formula",
   },
   EXT: {
     kind: "EXT",
     glyph: "🔗",
+    badge: "EXT",
     description: "External — loaded from a .webdedx file",
   },
 };

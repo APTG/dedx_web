@@ -52,7 +52,11 @@ test.describe("Calculator page — v8 picker (?v8=1)", () => {
     await expect(page.getByTestId("v8-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
-  test("program tab shows the Auto-select hero card and a TAB/FN/EXT legend", async ({ page }) => {
+  test("material tab shows split columns and program tab legend is visible", async ({ page }) => {
+    await page.getByTestId("v8-tab-material").click();
+    await expect(page.getByTestId("v8-material-col-elements")).toBeVisible();
+    await expect(page.getByTestId("v8-material-col-compounds")).toBeVisible();
+
     await page.getByTestId("v8-tab-program").click();
     await expect(page.getByTestId("v8-program-auto-hero")).toBeVisible();
     await expect(page.getByTestId("v8-program-legend")).toBeVisible();

@@ -26,5 +26,5 @@
   aria-label={meta.description}
 >
   <span aria-hidden="true">{meta.glyph}</span>
-  <span>{kind}</span>
+  <span>{meta.badge}</span>
 </span>

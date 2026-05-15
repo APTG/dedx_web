@@ -3,11 +3,16 @@
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import type { MaterialEntity } from "$lib/wasm/types";
   import type { ExternalOnlyMaterial } from "$lib/state/external-compatibility";
+  import {
+    customCompounds,
+    type StoredCompoundInternal,
+  } from "$lib/state/custom-compounds.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import SelectedPill from "./selected-pill.svelte";
   import SearchInput from "./search-input.svelte";
 
   type Material = MaterialEntity | ExternalOnlyMaterial;
-  type SubTab = "elements" | "compounds";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -17,9 +22,10 @@
 
   let { selectionState, onSelect, onClear }: Props = $props();
 
-  let subTab = $state<SubTab>("elements");
   let query = $state("");
   let inputRef: HTMLInputElement | null = $state(null);
+  let compoundModalOpen = $state(false);
+  let editingCompound = $state<StoredCompoundInternal | null>(null);
 
   $effect(() => {
     inputRef?.focus();
@@ -85,13 +91,25 @@
       .sort((a, b) => a.name.localeCompare(b.name)),
   );
 
+  const customItems = $derived.by(() => {
+    if (!isAdvancedMode.value) return [];
+    return [...customCompounds.compounds]
+      .sort((a, b) => a.name.localeCompare(b.name))
+      .map((compound) => ({
+        id: compound.id,
+        name: compound.name,
+        density: compound.density,
+        phase: compound.phase,
+        elements: compound.elements,
+        iValue: compound.iValue,
+        isGasByDefault: compound.phase === "gas",
+        source: compound,
+      }));
+  });
+
   const filteredElements = $derived(elements.filter((m) => matches(m, query)));
   const filteredCompounds = $derived(compounds.filter((m) => matches(m, query)));
-
-  const elementsExtCount = $derived(elements.filter(isExternal).length);
-  const compoundsExtCount = $derived(compounds.filter(isExternal).length);
-  const elementsBuiltinCount = $derived(elements.length - elementsExtCount);
-  const compoundsBuiltinCount = $derived(compounds.length - compoundsExtCount);
+  const filteredCustom = $derived(customItems.filter((m) => matches(m, query)));
 
   function isAvailable(m: Material): boolean {
     return selectionState.availableMaterials.some((q) => q.id === m.id);
@@ -103,7 +121,38 @@
   }
 
   const selected = $derived(selectionState.selectedMaterial);
-  const activeItems = $derived(subTab === "elements" ? filteredElements : filteredCompounds);
+
+  function handleAddCompound() {
+    editingCompound = null;
+    compoundModalOpen = true;
+  }
+
+  function handleEditCompound(compound: StoredCompoundInternal) {
+    editingCompound = compound;
+    compoundModalOpen = true;
+  }
+
+  function handleSaveCompound(data: {
+    name: string;
+    density: number;
+    iValue?: number;
+    elements: Array<{ atomicNumber: number; atomCount: number }>;
+    phase: "gas" | "condensed";
+  }) {
+    if (editingCompound) {
+      customCompounds.update(editingCompound.id, data);
+    } else {
+      customCompounds.create(data);
+    }
+    compoundModalOpen = false;
+  }
+
+  function handleDeleteCompound() {
+    if (!editingCompound) return;
+    customCompounds.delete(editingCompound.id);
+    compoundModalOpen = false;
+    editingCompound = null;
+  }
 </script>
 
 <div class="space-y-3" data-testid="v8-material-tab">
@@ -126,78 +175,184 @@
     data-testid="v8-material-search"
   />
 
-  <div role="tablist" aria-label="Material sub-tabs" class="flex gap-1 border-b">
-    <button
-      type="button"
-      role="tab"
-      aria-selected={subTab === "elements"}
-      data-testid="v8-material-subtab-elements"
-      class={cn(
-        "px-3 py-1 text-sm rounded-t",
-        subTab === "elements"
-          ? "border border-b-0 bg-background font-medium"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-      onclick={() => (subTab = "elements")}
-    >
-      Elements ({elementsBuiltinCount}{elementsExtCount > 0 ? ` + ${elementsExtCount}🔗` : ""})
-    </button>
-    <button
-      type="button"
-      role="tab"
-      aria-selected={subTab === "compounds"}
-      data-testid="v8-material-subtab-compounds"
-      class={cn(
-        "px-3 py-1 text-sm rounded-t",
-        subTab === "compounds"
-          ? "border border-b-0 bg-background font-medium"
-          : "text-muted-foreground hover:text-foreground",
-      )}
-      onclick={() => (subTab = "compounds")}
-    >
-      Compounds ({compoundsBuiltinCount}{compoundsExtCount > 0 ? ` + ${compoundsExtCount}🔗` : ""})
-    </button>
-  </div>
-
-  <ul
-    role="listbox"
-    aria-label={subTab === "elements" ? "Elements" : "Compounds"}
-    class="max-h-80 overflow-auto space-y-0.5"
-    data-testid="v8-material-list"
+  <div
+    class={cn(
+      "grid gap-3",
+      isAdvancedMode.value
+        ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
+        : "grid-cols-1 md:grid-cols-2",
+    )}
+    data-testid="v8-material-columns"
   >
-    {#each activeItems as m (m.id)}
-      {@const available = isAvailable(m)}
-      {@const isSelected = selected?.id === m.id}
-      {@const dens = formatDensity(m)}
-      <li>
-        <button
-          type="button"
-          role="option"
-          aria-selected={isSelected}
-          aria-disabled={!available}
-          data-testid="v8-material-item-{m.id}"
-          tabindex={-1}
-          disabled={!available}
-          class={cn(
-            "flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-left",
-            available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-            isSelected && "bg-primary/15 font-semibold",
-          )}
-          onclick={() => available && onSelect(m)}
+    <section class="min-w-0" data-testid="v8-material-col-elements">
+      <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Elements</h4>
+      <ul
+        role="listbox"
+        aria-label="Elements"
+        class="max-h-52 overflow-auto space-y-0.5"
+        data-testid="v8-material-list-elements"
+      >
+        {#each filteredElements as m (m.id)}
+          {@const available = isAvailable(m)}
+          {@const isSelected = selected?.id === m.id}
+          {@const dens = formatDensity(m)}
+          <li>
+            <button
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              aria-disabled={!available}
+              data-testid="v8-material-item-{m.id}"
+              tabindex={-1}
+              disabled={!available}
+              class={cn(
+                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
+                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+                isSelected && "bg-primary/15 font-semibold",
+              )}
+              onclick={() => available && onSelect(m)}
+            >
+              <span class="flex min-w-0 items-center gap-2">
+                {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
+                <span class="truncate">
+                  {m.name}
+                  {#if dens}
+                    <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+                  {/if}
+                </span>
+                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+              </span>
+            </button>
+          </li>
+        {/each}
+        {#if filteredElements.length === 0}
+          <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
+        {/if}
+      </ul>
+    </section>
+
+    <section class="min-w-0" data-testid="v8-material-col-compounds">
+      <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Compounds</h4>
+      <ul
+        role="listbox"
+        aria-label="Compounds"
+        class="max-h-52 overflow-auto space-y-0.5"
+        data-testid="v8-material-list-compounds"
+      >
+        {#each filteredCompounds as m (m.id)}
+          {@const available = isAvailable(m)}
+          {@const isSelected = selected?.id === m.id}
+          {@const dens = formatDensity(m)}
+          <li>
+            <button
+              type="button"
+              role="option"
+              aria-selected={isSelected}
+              aria-disabled={!available}
+              data-testid="v8-material-item-{m.id}"
+              tabindex={-1}
+              disabled={!available}
+              class={cn(
+                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
+                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+                isSelected && "bg-primary/15 font-semibold",
+              )}
+              onclick={() => available && onSelect(m)}
+            >
+              <span class="flex min-w-0 items-center gap-2">
+                {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
+                <span class="truncate">
+                  {m.name}
+                  {#if dens}
+                    <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+                  {/if}
+                </span>
+                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+              </span>
+            </button>
+          </li>
+        {/each}
+        {#if filteredCompounds.length === 0}
+          <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
+        {/if}
+      </ul>
+    </section>
+
+    {#if isAdvancedMode.value}
+      <section class="min-w-0" data-testid="v8-material-col-custom">
+        <div class="mb-1 flex items-center justify-between px-2">
+          <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Custom</h4>
+          <button
+            type="button"
+            class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
+            data-testid="v8-material-add-compound"
+            onclick={handleAddCompound}
+          >
+            + Add compound
+          </button>
+        </div>
+        <ul
+          role="listbox"
+          aria-label="Custom compounds"
+          class="max-h-52 overflow-auto space-y-0.5"
+          data-testid="v8-material-list-custom"
         >
-          <span class="flex items-center gap-2">
-            {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
-            <span>{m.name}</span>
-            {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
-          </span>
-          {#if dens}
-            <span class="font-mono text-xs text-muted-foreground">{dens}</span>
+          {#each filteredCustom as m (m.id)}
+            {@const isSelected = selected?.id === m.id}
+            {@const dens = formatDensity(m)}
+            <li>
+              <div class="flex items-center gap-1">
+                <button
+                  type="button"
+                  role="option"
+                  aria-selected={isSelected}
+                  data-testid="v8-material-item-{m.id}"
+                  tabindex={-1}
+                  class={cn(
+                    "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
+                    isSelected && "bg-primary/15 font-semibold",
+                  )}
+                  onclick={() => onSelect(m)}
+                >
+                  <span class="truncate">
+                    {m.name}
+                    {#if dens}
+                      <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+                    {/if}
+                  </span>
+                  {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions"> (≋)</span>{/if}
+                </button>
+                <button
+                  type="button"
+                  class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
+                  title="Edit compound"
+                  aria-label="Edit compound {m.name}"
+                  data-testid="v8-material-edit-compound-{m.id}"
+                  onclick={() => handleEditCompound(m.source)}
+                >
+                  ✎
+                </button>
+              </div>
+            </li>
+          {/each}
+          {#if filteredCustom.length === 0}
+            <li class="px-2 py-4 text-center text-sm text-muted-foreground">
+              No custom compounds yet.
+            </li>
           {/if}
-        </button>
-      </li>
-    {/each}
-    {#if activeItems.length === 0}
-      <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
+        </ul>
+      </section>
     {/if}
-  </ul>
+  </div>
 </div>
+
+<CompoundEditorModal
+  open={compoundModalOpen}
+  compound={editingCompound}
+  onOpenChange={(open) => {
+    compoundModalOpen = open;
+    if (!open) editingCompound = null;
+  }}
+  onSave={handleSaveCompound}
+  onDelete={handleDeleteCompound}
+/>

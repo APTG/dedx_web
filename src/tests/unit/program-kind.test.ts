@@ -26,20 +26,23 @@ describe("programKind", () => {
 });
 
 describe("programKindMeta", () => {
-  test("returns glyph and description for each kind", () => {
-    expect(programKindMeta(2)).toEqual({
+  test("returns glyph, badge and description for each kind", () => {
+    expect(programKindMeta(2)).toMatchObject({
       kind: "TAB",
       glyph: "▦",
+      badge: "DATA",
       description: expect.stringContaining("Tabulated"),
     });
-    expect(programKindMeta(100)).toEqual({
+    expect(programKindMeta(100)).toMatchObject({
       kind: "FN",
       glyph: "∫",
+      badge: "FN",
       description: expect.stringContaining("Analytical"),
     });
-    expect(programKindMeta("ext:foo")).toEqual({
+    expect(programKindMeta("ext:foo")).toMatchObject({
       kind: "EXT",
       glyph: "🔗",
+      badge: "EXT",
       description: expect.stringContaining("External"),
     });
   });

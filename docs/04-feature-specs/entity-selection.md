@@ -77,8 +77,8 @@ v7 is retired.
 │  🔍 search                                                         ↑↓ ↵ /    │
 │                                                                              │
 │  ⟨the active list — Common / Ions for Particle;                              │
-│   Elements / Compounds sub-tabs for Material;                                │
-│   flat list with inline TAB/FN/EXT tags for Program⟩                         │
+│   side-by-side Elements / Compounds / Custom columns for Material;           │
+│   flat list with inline DATA/FN/EXT tags for Program⟩                        │
 └──────────────────────────────────────────────────────────────────────────────┘
    * "⊞ explore compat" link only visible in Advanced mode
 ```
@@ -107,8 +107,8 @@ A small toggle (default Basic) lives in the recipe bar.
 |---|---|---|
 | Particle tab — list with Common + Ions sections | ✅ | ✅ |
 | Particle tab — periodic-grid scan view (Z layout) | — | ✅ |
-| Material tab — Elements / Compounds sub-tabs | ✅ | ✅ |
-| Material tab — **Custom** sub-tab + editor entry point | — | ✅ |
+| Material tab — Elements + Compounds columns | ✅ | ✅ |
+| Material tab — **Custom** column + editor entry point | — | ✅ |
 | Program tab — single-program selection | ✅ | — |
 | Program tab — multi-program (for plot comparison) | — | ✅ (always on) |
 | Compatibility overlay (`⊞ explore compat` link) | — | ✅ |
@@ -137,17 +137,17 @@ alias, bare Z, and (Advanced) `z=N` / `z>=N` operator syntax.
 
 ### Material tab
 
-Sub-tabs: Elements (id 1..98) / Compounds (id ≥ 99 + 906 + external) /
-Custom (Advanced only). External materials inline by ID range with `🔗 `
-prefix. Sub-tab counts read `42 + 3🔗` when external items are present.
+Columns: Elements (id 1..98), Compounds (id ≥ 99 + 906 + external),
+and Custom (Advanced only). External materials stay inline in the
+Compounds column with `🔗 ` prefix.
 
 Inline indicators: gas materials carry an inline `(≋)` glyph next to the
-name (no coloured badge — colour-blind friendly). Density is a
-right-aligned monospace tag on every row.
+name (no coloured badge — colour-blind friendly). Density is shown beside
+the material name as `(ρ=... g/cm³)` to keep name+density visually grouped.
 
-Custom sub-tab (Advanced only): lists user-defined compounds with per-row
-edit / duplicate / delete action links. A `+ Add compound` button opens
-the Custom Compound Editor modal.
+Custom column (Advanced only): lists user-defined compounds with per-row
+edit action and a clearly visible `+ Add compound` button that opens the
+Custom Compound Editor modal.
 
 ### Program tab
 
@@ -155,7 +155,7 @@ No section headers — each row carries its own inline tag:
 
 | Tag | Glyph | Meaning |
 |---|---|---|
-| `TAB` | `▦` | Tabulated data (interpolated from libdedx tables) |
+| `DATA` | `▦` | Tabulated data (interpolated from libdedx tables) |
 | `FN`  | `∫` | Analytical model (e.g. Bethe-Bloch) |
 | `EXT` | `🔗` | External (loaded from a `.webdedx` file) |
 
@@ -163,7 +163,7 @@ Tags render as small pill badges at the right of each row. A legend strip
 below the list seeds the mapping for first-time users.
 
 Auto-select hero card sits at the top of the list, larger and visually
-prominent, showing the resolved program (`✦ Auto-select → ICRU 49 [TAB]`).
+prominent, showing the resolved program (`✦ Auto-select → ICRU 49 [DATA]`).
 
 Advanced mode replaces the single-selection list with a `SELECTED + drag
 to reorder` + `AVAILABLE` checkbox list (the standalone multi-program
@@ -226,17 +226,16 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 
 #### Material
 
-- [ ] Elements / Compounds sub-tabs render with counts including
-      external (`42 + 3🔗`).
+- [ ] Material tab renders side-by-side Elements and Compounds columns.
 - [ ] Gas materials show `(≋)` inline; no coloured badge.
-- [ ] Advanced reveals Custom sub-tab; Basic hides it.
-- [ ] `+ Add compound` and `edit`/`duplicate`/`delete` links open the
-      modal editor.
+- [ ] Density is rendered next to material name as `(ρ=... g/cm³)`.
+- [ ] Advanced reveals Custom column; Basic hides it.
+- [ ] `+ Add compound` and `edit` action open the modal editor.
 
 #### Program
 
 - [ ] No "Tabulated / Analytical / External" section headers.
-- [ ] Each row shows a TAB / FN / EXT tag with hover tooltip.
+- [ ] Each row shows a DATA / FN / EXT tag with hover tooltip.
 - [ ] Auto-select row is visually prominent and shows resolved program.
 - [ ] Advanced mode renders the multi-program checkbox list + SELECTED
       group with drag-handle reorder.
