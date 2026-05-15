@@ -109,6 +109,12 @@ Active CI workflow (`.github/workflows/ci.yml`) runs on pushes to `master`,
 `feature/**`, `fix/**`, and `qwen/**`, and on pull requests targeting
 `master`:
 
+> **Fork/Copilot PR approvals:** the "Approve workflows to run" gate is a
+> repository-level GitHub Actions setting, not a workflow YAML setting. To run
+> fork/Copilot PR workflows without manual approval, maintainers must change:
+> **Settings → Actions → General → Fork pull request workflows** and select a
+> no-approval option.
+
 1. **WASM Build + Contract Verification**
    - builds `static/wasm/libdedx.*` via Docker
    - runs `node wasm/verify.mjs`
