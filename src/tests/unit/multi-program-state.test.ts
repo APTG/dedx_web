@@ -6,6 +6,10 @@ import {
   decodeMultiProgramUrl,
 } from "$lib/state/multi-program.svelte";
 import { LibdedxError, type CalculationResult } from "$lib/wasm/types";
+import type { ExtRef } from "$lib/external-data/types";
+
+const EXT_SRIM = "ext:srim:srim-2013-gui" as ExtRef;
+const EXT_SRIM2 = "ext:srim:srim-2016-mc" as ExtRef;
 
 describe("MultiProgramState — core functionality", () => {
   let state: ReturnType<typeof createMultiProgramState>;
@@ -304,6 +308,69 @@ describe("computeMultiProgramDerived", () => {
   });
 });
 
+describe("MultiProgramState — external program (EntityId) support", () => {
+  let state: ReturnType<typeof createMultiProgramState>;
+
+  beforeEach(() => {
+    state = createMultiProgramState();
+  });
+
+  it("accepts ExtRef string IDs in addProgram", () => {
+    state.addProgram(9);
+    state.addProgram(EXT_SRIM);
+    expect(state.selectedProgramIds).toEqual([9, EXT_SRIM]);
+  });
+
+  it("does not add duplicate ExtRef IDs", () => {
+    state.addProgram(EXT_SRIM);
+    state.addProgram(EXT_SRIM);
+    expect(state.selectedProgramIds.length).toBe(1);
+  });
+
+  it("sets column visibility for external program", () => {
+    state.addProgram(EXT_SRIM);
+    expect(state.columnVisibility.get(EXT_SRIM)).toBe(true);
+  });
+
+  it("removes ExtRef ID from selection", () => {
+    state.addProgram(9);
+    state.addProgram(EXT_SRIM);
+    state.removeProgram(EXT_SRIM);
+    expect(state.selectedProgramIds).toEqual([9]);
+  });
+
+  it("sets ExtRef as default program", () => {
+    state.addProgram(EXT_SRIM);
+    state.addProgram(9);
+    state.setDefaultProgram(EXT_SRIM);
+    expect(state.selectedProgramIds[0]).toBe(EXT_SRIM);
+    expect(state.programDisplayOrder[0]).toBe(EXT_SRIM);
+  });
+
+  it("toggles column visibility for ExtRef ID", () => {
+    state.addProgram(EXT_SRIM);
+    state.addProgram(9);
+    state.toggleColumnVisibility(9);
+    expect(state.columnVisibility.get(9)).toBe(false);
+  });
+
+  it("stores and retrieves comparison results for ExtRef ID", () => {
+    const result: CalculationResult = { energies: [100], stoppingPowers: [5.0], csdaRanges: [20] };
+    state.addProgram(EXT_SRIM);
+    state.setComparisonResults(new Map([[EXT_SRIM, result]]));
+    expect(state.comparisonResults.get(EXT_SRIM)).toBe(result);
+  });
+
+  it("computeMultiProgramDerived works with mixed IDs", () => {
+    state.addProgram(9);
+    state.addProgram(EXT_SRIM);
+    state.setProgramDisplayOrder([9, EXT_SRIM]);
+    const derived = computeMultiProgramDerived(state);
+    expect(derived.visibleProgramIds).toEqual([9, EXT_SRIM]);
+    expect(derived.defaultProgramId).toBe(9);
+  });
+});
+
 describe("encodeMultiProgramUrl", () => {
   let state: ReturnType<typeof createMultiProgramState>;
 
@@ -348,6 +415,37 @@ describe("encodeMultiProgramUrl", () => {
     const params = encodeMultiProgramUrl(state);
     expect(params.qfocus).toBe("stp");
   });
+
+  it("encodes mixed built-in and external programs using formatEntityIdList", () => {
+    state.setAdvancedMode(true);
+    state.addProgram(9);
+    state.addProgram(EXT_SRIM);
+    state.setProgramDisplayOrder([9, EXT_SRIM]);
+
+    const params = encodeMultiProgramUrl(state);
+    expect(params.programs).toBe("9,ext:srim:srim-2013-gui");
+  });
+
+  it("round-trips mixed IDs through encode/decode", () => {
+    state.setAdvancedMode(true);
+    state.addProgram(9);
+    state.addProgram(EXT_SRIM);
+    state.addProgram(EXT_SRIM2);
+    state.setProgramDisplayOrder([9, EXT_SRIM, EXT_SRIM2]);
+    state.columnVisibility.set(EXT_SRIM2, false);
+
+    const encoded = encodeMultiProgramUrl(state);
+    const urlParams = new URLSearchParams();
+    if (encoded.programs) urlParams.set("programs", encoded.programs);
+    if (encoded.hidden_programs) urlParams.set("hidden_programs", encoded.hidden_programs);
+
+    const decoded = decodeMultiProgramUrl(urlParams);
+    expect(decoded.parsedProgramEntityIds).toEqual([9, EXT_SRIM, EXT_SRIM2]);
+    expect(decoded.parsedHiddenEntityIds).toEqual([EXT_SRIM2]);
+    // Backward-compat numeric-only subsets
+    expect(decoded.parsedProgramIds).toEqual([9]);
+    expect(decoded.parsedHiddenIds).toEqual([]);
+  });
 });
 
 describe("decodeMultiProgramUrl", () => {
@@ -385,5 +483,19 @@ describe("decodeMultiProgramUrl", () => {
     const params = new URLSearchParams("?programs=abc,9,xyz");
     const decoded = decodeMultiProgramUrl(params);
     expect(decoded.parsedProgramIds).toEqual([9]);
+  });
+
+  it("parses mixed numeric and ExtRef program IDs", () => {
+    const params = new URLSearchParams(`?programs=9,${EXT_SRIM},2`);
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.parsedProgramEntityIds).toEqual([9, EXT_SRIM, 2]);
+    expect(decoded.parsedProgramIds).toEqual([9, 2]); // numeric-only subset
+  });
+
+  it("parses ExtRef in hidden_programs", () => {
+    const params = new URLSearchParams(`?hidden_programs=${EXT_SRIM}`);
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.parsedHiddenEntityIds).toEqual([EXT_SRIM]);
+    expect(decoded.parsedHiddenIds).toEqual([]); // numeric-only subset is empty
   });
 });

@@ -1,6 +1,6 @@
 import { LibdedxError, type CalculationResult } from "$lib/wasm/types";
 import type { EntityId } from "$lib/external-data/types";
-import { parseEntityIdList } from "$lib/external-data/ids";
+import { formatEntityIdList, parseEntityIdList } from "$lib/external-data/ids";
 
 /**
  * Multi-program comparison state for Stage 6 advanced mode.
@@ -19,11 +19,11 @@ export interface MultiProgramState {
   quantityFocus: QuantityFocus;
 
   /**
-   * Selected program IDs in advanced mode.
+   * Selected program IDs in advanced mode (built-in numeric or external ExtRef string).
    * In basic mode this is always [resolvedProgramId].
    * The first element is always the auto-selected (default) program.
    */
-  selectedProgramIds: number[];
+  selectedProgramIds: EntityId[];
 
   /**
    * Display order of programs within each column group.
@@ -31,35 +31,35 @@ export interface MultiProgramState {
    * reordered via drag-and-drop; this order applies to both the
    * stopping power group and the CSDA range group simultaneously.
    */
-  programDisplayOrder: number[];
+  programDisplayOrder: EntityId[];
 
   /**
    * Column visibility per program. Key = programId, value = visible.
    * Hidden columns are not removed — they exist in state but are
    * not rendered (like hidden columns in a spreadsheet).
    */
-  columnVisibility: Map<number, boolean>;
+  columnVisibility: Map<EntityId, boolean>;
 
   /**
    * Results keyed by programId. Each entry is either a
    * CalculationResult or a LibdedxError (for partial failure).
    */
-  comparisonResults: Map<number, CalculationResult | LibdedxError>;
+  comparisonResults: Map<EntityId, CalculationResult | LibdedxError>;
 
   /** Add a program to the selection (if not already selected). */
-  addProgram(programId: number): void;
+  addProgram(programId: EntityId): void;
 
   /** Remove a program from the selection (cannot remove the default/first program). */
-  removeProgram(programId: number): void;
+  removeProgram(programId: EntityId): void;
 
   /** Set the default (auto-selected) program. */
-  setDefaultProgram(programId: number): void;
+  setDefaultProgram(programId: EntityId): void;
 
   /** Toggle column visibility for a program. */
-  toggleColumnVisibility(programId: number): void;
+  toggleColumnVisibility(programId: EntityId): void;
 
   /** Reorder programs via drag-and-drop (moves programId to new position). */
-  reorderPrograms(programId: number, newPosition: number): void;
+  reorderPrograms(programId: EntityId, newPosition: number): void;
 
   /** Set quantity focus mode. */
   setQuantityFocus(focus: QuantityFocus): void;
@@ -68,25 +68,25 @@ export interface MultiProgramState {
   setAdvancedMode(enabled: boolean): void;
 
   /** Update comparison results map. */
-  setComparisonResults(results: Map<number, CalculationResult | LibdedxError>): void;
+  setComparisonResults(results: Map<EntityId, CalculationResult | LibdedxError>): void;
 
   /** Reset all multi-program state to defaults. */
   reset(): void;
 
   /** Set program display order (for URL restoration). */
-  setProgramDisplayOrder(order: number[]): void;
+  setProgramDisplayOrder(order: EntityId[]): void;
 
   /** Set selected program IDs (for URL restoration). */
-  setSelectedProgramIds(ids: number[]): void;
+  setSelectedProgramIds(ids: EntityId[]): void;
 }
 
 /** Derived state helpers (used by components, not part of the core state) */
 export interface MultiProgramDerivedState {
   /** Ordered list of visible program IDs for rendering. */
-  visibleProgramIds: number[];
+  visibleProgramIds: EntityId[];
 
   /** The auto-selected (default/reference) program ID. */
-  defaultProgramId: number | null;
+  defaultProgramId: EntityId | null;
 
   /** True if any selected program returned an error. */
   hasAnyFailedProgram: boolean;
@@ -101,10 +101,10 @@ export interface MultiProgramDerivedState {
 export function createMultiProgramState(): MultiProgramState {
   let advancedMode = $state<boolean>(false);
   let quantityFocus = $state<QuantityFocus>("both");
-  let selectedProgramIds = $state<number[]>([]);
-  let programDisplayOrder = $state<number[]>([]);
-  let columnVisibility = $state<Map<number, boolean>>(new Map());
-  let comparisonResults = $state<Map<number, CalculationResult | LibdedxError>>(new Map());
+  let selectedProgramIds = $state<EntityId[]>([]);
+  let programDisplayOrder = $state<EntityId[]>([]);
+  let columnVisibility = $state<Map<EntityId, boolean>>(new Map());
+  let comparisonResults = $state<Map<EntityId, CalculationResult | LibdedxError>>(new Map());
 
   const state: MultiProgramState = {
     get advancedMode() {
@@ -131,7 +131,7 @@ export function createMultiProgramState(): MultiProgramState {
       return comparisonResults;
     },
 
-    addProgram(programId: number): void {
+    addProgram(programId: EntityId): void {
       if (selectedProgramIds.includes(programId)) {
         return;
       }
@@ -151,7 +151,7 @@ export function createMultiProgramState(): MultiProgramState {
       columnVisibility.set(programId, true);
     },
 
-    removeProgram(programId: number): void {
+    removeProgram(programId: EntityId): void {
       // Cannot remove the default program (first in list)
       if (selectedProgramIds.length <= 1 && selectedProgramIds[0] === programId) {
         return;
@@ -178,7 +178,7 @@ export function createMultiProgramState(): MultiProgramState {
       }
     },
 
-    setDefaultProgram(programId: number): void {
+    setDefaultProgram(programId: EntityId): void {
       // If program is not selected, add it
       if (!selectedProgramIds.includes(programId)) {
         selectedProgramIds = [programId, ...selectedProgramIds];
@@ -199,7 +199,7 @@ export function createMultiProgramState(): MultiProgramState {
       columnVisibility.set(programId, true);
     },
 
-    toggleColumnVisibility(programId: number): void {
+    toggleColumnVisibility(programId: EntityId): void {
       // Cannot hide the default program
       if (programId === selectedProgramIds[0]) {
         return;
@@ -210,7 +210,7 @@ export function createMultiProgramState(): MultiProgramState {
       columnVisibility.set(programId, !current);
     },
 
-    reorderPrograms(programId: number, newPosition: number): void {
+    reorderPrograms(programId: EntityId, newPosition: number): void {
       // Cannot reorder the default program (must stay first)
       if (programId === selectedProgramIds[0]) {
         return;
@@ -250,7 +250,7 @@ export function createMultiProgramState(): MultiProgramState {
       }
     },
 
-    setComparisonResults(results: Map<number, CalculationResult | LibdedxError>): void {
+    setComparisonResults(results: Map<EntityId, CalculationResult | LibdedxError>): void {
       comparisonResults = new Map(results);
     },
 
@@ -263,11 +263,11 @@ export function createMultiProgramState(): MultiProgramState {
       comparisonResults = new Map();
     },
 
-    setProgramDisplayOrder(order: number[]): void {
+    setProgramDisplayOrder(order: EntityId[]): void {
       programDisplayOrder = order;
     },
 
-    setSelectedProgramIds(ids: number[]): void {
+    setSelectedProgramIds(ids: EntityId[]): void {
       selectedProgramIds = ids;
     },
   };
@@ -320,14 +320,14 @@ export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrl
     params.mode = "advanced";
 
     if (state.programDisplayOrder.length > 0) {
-      params.programs = state.programDisplayOrder.join(",");
+      params.programs = formatEntityIdList(state.programDisplayOrder);
     }
 
     const hiddenIds = state.programDisplayOrder.filter(
       (id) => state.columnVisibility.get(id) === false,
     );
     if (hiddenIds.length > 0) {
-      params.hidden_programs = hiddenIds.join(",");
+      params.hidden_programs = formatEntityIdList(hiddenIds);
     }
 
     // Always emit qfocus in advanced mode for consistency

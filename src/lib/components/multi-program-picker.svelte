@@ -1,13 +1,16 @@
 <script lang="ts">
   import type { ProgramEntity } from "$lib/wasm/types";
   import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+  import type { ExternalProgramEntity } from "$lib/state/external-compatibility";
+  import type { EntityId } from "$lib/external-data/types";
   import { Button } from "$lib/components/ui/button";
   import { cn } from "$lib/utils.js";
 
   interface Props {
     state: MultiProgramState;
     availablePrograms: ProgramEntity[];
-    compatibleIds: Set<number>;
+    availableExternalPrograms?: ExternalProgramEntity[];
+    compatibleIds: Set<EntityId>;
     class?: string;
     onInteraction?: () => void;
   }
@@ -15,6 +18,7 @@
   let {
     state: multiState,
     availablePrograms,
+    availableExternalPrograms = [],
     compatibleIds,
     class: className = "",
     onInteraction,
@@ -22,19 +26,19 @@
 
   let isOpen = $state(false);
 
-  function isSelected(programId: number): boolean {
+  function isSelected(programId: EntityId): boolean {
     return multiState.selectedProgramIds.includes(programId);
   }
 
-  function isDefault(programId: number): boolean {
+  function isDefault(programId: EntityId): boolean {
     return multiState.selectedProgramIds[0] === programId;
   }
 
-  function isIncompatible(programId: number): boolean {
+  function isIncompatible(programId: EntityId): boolean {
     return !compatibleIds.has(programId);
   }
 
-  function toggleProgram(programId: number): void {
+  function toggleProgram(programId: EntityId): void {
     if (isIncompatible(programId)) {
       return;
     }
@@ -121,54 +125,114 @@
       class="absolute z-50 mt-2 w-72 rounded-md border bg-popover p-2 shadow-lg"
     >
       <div class="max-h-64 overflow-y-auto">
-        {#if availablePrograms.length === 0}
+        {#if availablePrograms.length === 0 && availableExternalPrograms.length === 0}
           <p class="px-3 py-2 text-sm text-muted-foreground">No programs available</p>
         {:else}
-          {#each availablePrograms as program (program.id)}
-            {@const selected = isSelected(program.id)}
-            {@const defaultProg = isDefault(program.id)}
-            {@const incompatible = isIncompatible(program.id)}
+          {#if availablePrograms.length > 0}
+            {#each availablePrograms as program (program.id)}
+              {@const selected = isSelected(program.id)}
+              {@const defaultProg = isDefault(program.id)}
+              {@const incompatible = isIncompatible(program.id)}
 
-            <button
-              type="button"
-              role="option"
-              aria-selected={selected}
-              tabindex={incompatible ? -1 : 0}
-              class={cn(
-                "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm",
-                selected && "bg-accent",
-                incompatible && "text-muted-foreground opacity-60 cursor-not-allowed",
-                !incompatible && !selected && "hover:bg-accent/50 focus:bg-accent/50",
-              )}
-              onclick={() => toggleProgram(program.id)}
-              onkeydown={(e) => {
-                if (e.key === "Enter" || e.key === " ") {
-                  e.preventDefault();
-                  toggleProgram(program.id);
-                }
-              }}
-              title={incompatible ? "Not available for current selection" : ""}
-              disabled={incompatible}
-            >
-              <input
-                type="checkbox"
-                checked={selected}
-                disabled={defaultProg || incompatible}
-                class="h-4 w-4 rounded border-input pointer-events-none"
-                aria-label={program.name}
+              <button
+                type="button"
+                role="option"
+                aria-selected={selected}
+                tabindex={incompatible ? -1 : 0}
+                class={cn(
+                  "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm",
+                  selected && "bg-accent",
+                  incompatible && "text-muted-foreground opacity-60 cursor-not-allowed",
+                  !incompatible && !selected && "hover:bg-accent/50 focus:bg-accent/50",
+                )}
+                onclick={() => toggleProgram(program.id)}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleProgram(program.id);
+                  }
+                }}
+                title={incompatible ? "Not available for current selection" : ""}
+                disabled={incompatible}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  disabled={defaultProg || incompatible}
+                  class="h-4 w-4 rounded border-input pointer-events-none"
+                  aria-label={program.name}
+                  aria-hidden="true"
+                />
+                <span class="flex-1 text-left">
+                  {program.name}
+                  {#if defaultProg}
+                    <span class="ml-1 text-xs text-muted-foreground">(default)</span>
+                  {/if}
+                  {#if incompatible}
+                    <span class="ml-1 text-xs text-muted-foreground">(unavailable)</span>
+                  {/if}
+                </span>
+              </button>
+            {/each}
+          {/if}
+
+          {#if availableExternalPrograms.length > 0}
+            <div role="group" aria-label="External">
+              <p
+                class="px-3 pt-2 pb-1 text-xs font-medium text-muted-foreground uppercase tracking-wide"
+                role="presentation"
                 aria-hidden="true"
-              />
-              <span class="flex-1 text-left">
-                {program.name}
-                {#if defaultProg}
-                  <span class="ml-1 text-xs text-muted-foreground">(default)</span>
-                {/if}
-                {#if incompatible}
-                  <span class="ml-1 text-xs text-muted-foreground">(unavailable)</span>
-                {/if}
-              </span>
-            </button>
-          {/each}
+              >
+                External
+              </p>
+              {#each availableExternalPrograms as program (program.id)}
+              {@const extId = program.id as EntityId}
+              {@const selected = isSelected(extId)}
+              {@const defaultProg = isDefault(extId)}
+              {@const incompatible = isIncompatible(extId)}
+
+              <button
+                type="button"
+                role="option"
+                aria-selected={selected}
+                tabindex={incompatible ? -1 : 0}
+                class={cn(
+                  "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm",
+                  selected && "bg-accent",
+                  incompatible && "text-muted-foreground opacity-60 cursor-not-allowed",
+                  !incompatible && !selected && "hover:bg-accent/50 focus:bg-accent/50",
+                )}
+                onclick={() => toggleProgram(extId)}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleProgram(extId);
+                  }
+                }}
+                title={incompatible ? "Not available for current selection" : ""}
+                disabled={incompatible}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  disabled={defaultProg || incompatible}
+                  class="h-4 w-4 rounded border-input pointer-events-none"
+                  aria-label={program.name}
+                  aria-hidden="true"
+                />
+                <span class="flex-1 text-left">
+                  🔗 {program.name}
+                  {#if defaultProg}
+                    <span class="ml-1 text-xs text-muted-foreground">(default)</span>
+                  {/if}
+                  {#if incompatible}
+                    <span class="ml-1 text-xs text-muted-foreground">(unavailable)</span>
+                  {/if}
+                </span>
+              </button>
+            {/each}
+            </div>
+          {/if}
         {/if}
       </div>
     </div>

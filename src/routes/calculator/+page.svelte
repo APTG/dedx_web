@@ -55,9 +55,11 @@
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+  import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
+  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
   import { parseExtdataParams } from "$lib/external-data/url";
   import { parseExtRef } from "$lib/external-data/ids";
+  import type { CalculationResult } from "$lib/wasm/types";
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -319,6 +321,10 @@
     void _advOptsKey;
 
     if (!urlInitialized || !calcState || !entityState) return;
+    // In advanced mode, wait for multiProgState to be initialized so the URL update
+    // does not overwrite the reloaded URL (which may contain programs= from a previous
+    // session) before the multiProgState effect has had a chance to read it.
+    if (isAdvancedMode.value && multiProgState === null) return;
 
     // Build inverse mode state for URL encoding
     let inverseModeState: InverseModeUrlState | undefined;
@@ -649,42 +655,48 @@
     // loop (effect_update_depth_exceeded).
     const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
 
-    // Initialize with the resolved program as default
-    // External programs (string IDs) are not supported in multi-program mode
-    const defaultProgramId = entityState.resolvedProgramId;
-    const numericDefaultId = typeof defaultProgramId === "number" ? defaultProgramId : null;
-    if (numericDefaultId !== null && numericDefaultId !== -1) {
-      newState.addProgram(numericDefaultId);
+    // Initialize with the resolved program as default (built-in or external)
+    const defaultProgramId = entityState.resolvedProgramId as EntityId | null;
+    if (defaultProgramId !== null && defaultProgramId !== -1) {
+      newState.addProgram(defaultProgramId);
     }
 
-    // Restore selected programs from URL
-    if (multiParams.mode === "advanced" && multiParams.parsedProgramIds) {
-      // Filter to only numeric (built-in) program IDs that are available
-      const availableIds = new Set(entityState.availablePrograms.map((p) => p.id));
-      const validProgramIds = multiParams.parsedProgramIds.filter(
-        (id): id is number => typeof id === "number" && availableIds.has(id),
-      );
+    // Restore selected programs from URL (supports both built-in numeric and external ExtRef IDs)
+    if (multiParams.mode === "advanced" && multiParams.parsedProgramEntityIds) {
+      const availableBuiltinIds = new Set(entityState.availablePrograms.map((p) => p.id));
+      const availableExtIds = new Set(entityState.availableExternalPrograms.map((p) => p.id));
+      const validProgramIds = multiParams.parsedProgramEntityIds.filter((id) => {
+        if (typeof id === "number") return availableBuiltinIds.has(id);
+        if (typeof id === "string") return availableExtIds.has(id);
+        return false;
+      });
 
       // Add programs from URL (excluding default which is already added)
       for (const programId of validProgramIds) {
-        if (programId !== numericDefaultId) {
+        if (programId !== defaultProgramId) {
           newState.addProgram(programId);
         }
       }
 
       // Restore display order (default must be first)
       if (validProgramIds.length > 0) {
-        const orderedIds: number[] = [
-          numericDefaultId !== null ? numericDefaultId : validProgramIds[0]!,
-          ...validProgramIds.filter((id) => id !== numericDefaultId),
+        const defaultFirst =
+          defaultProgramId !== null && defaultProgramId !== -1
+            ? defaultProgramId
+            : validProgramIds[0]!;
+        const orderedIds: EntityId[] = [
+          defaultFirst,
+          ...validProgramIds.filter((id) => id !== defaultFirst),
         ];
         newState.setProgramDisplayOrder(orderedIds);
       }
 
       // Restore hidden programs
-      if (multiParams.parsedHiddenIds) {
-        for (const hiddenId of multiParams.parsedHiddenIds) {
-          if (availableIds.has(hiddenId) && hiddenId !== defaultProgramId) {
+      if (multiParams.parsedHiddenEntityIds) {
+        for (const hiddenId of multiParams.parsedHiddenEntityIds) {
+          const isBuiltin = typeof hiddenId === "number" && availableBuiltinIds.has(hiddenId);
+          const isExt = typeof hiddenId === "string" && availableExtIds.has(hiddenId);
+          if ((isBuiltin || isExt) && hiddenId !== defaultProgramId) {
             newState.toggleColumnVisibility(hiddenId);
           }
         }
@@ -713,9 +725,9 @@
     if (!multiProgState || !entityState) return;
 
     const resolvedId = entityState.resolvedProgramId;
-    // External programs (string IDs) are not supported in multi-program mode
-    if (typeof resolvedId !== "number" || resolvedId === -1) return;
-    const defaultProgramId: number = resolvedId;
+    // -1 means "auto" (no explicit program selected) — skip
+    if (resolvedId === null || resolvedId === -1) return;
+    const defaultProgramId = resolvedId as EntityId;
 
     // Only update if the default program has changed
     const currentDefault = multiProgState.selectedProgramIds[0];
@@ -755,6 +767,26 @@
     return `${formatted} ${unit}`;
   }
 
+  /** Find the local ID of an entity (particle or material) within a specific external source. */
+  function resolveExtLocalIdForLabel(
+    entityId: number | string,
+    label: string,
+    refMap: Map<number, string[]> | Map<number | string, string[]>,
+  ): string | null {
+    if (typeof entityId === "string" && entityId.startsWith("ext:")) {
+      const parsed = parseExtRef(entityId);
+      return parsed && parsed.label === label ? parsed.localId : null;
+    }
+    if (typeof entityId === "number") {
+      const refs = refMap.get(entityId) ?? [];
+      for (const ref of refs) {
+        const p = parseExtRef(ref);
+        if (p && p.label === label) return p.localId;
+      }
+    }
+    return null;
+  }
+
   // Debounced calculation for multi-program mode
   $effect(() => {
     // Read advOptsKey to establish reactive dependency on all advanced option fields.
@@ -772,7 +804,7 @@
     if (selectedProgramIds.length === 0) return;
 
     const rawParticleId = entityState.selectedParticle?.id;
-    // External-only particles have string IDs — multi-program mode only supports built-in
+    // External-only particles have string IDs — multi-program mode only supports built-in particles
     if (typeof rawParticleId !== "number") return;
     const particleId: number = rawParticleId;
     const material = entityState.selectedMaterial;
@@ -793,6 +825,18 @@
     // uses the options that were active when the effect fired.
     const advOptsSnapshot = advancedOptions.value;
 
+    // Snapshot external context and particle mass for external program calculations.
+    // Clamp to 1 for particles where massNumber/A is 0 (e.g. electrons), to
+    // prevent totalMev = energy * 0 = 0 which breaks external interpolation.
+    const extCtxSnapshot: ExternalCompatibilityContext = entityState.externalContext;
+    const selectedParticle = entityState.selectedParticle;
+    const massASnapshot =
+      selectedParticle && "massNumber" in selectedParticle
+        ? (selectedParticle.massNumber || 1)
+        : selectedParticle && "A" in selectedParticle
+          ? (selectedParticle.A || 1)
+          : 1;
+
     // Capture inputs as snapshot so that a stale `getService()` resolution
     // (race: user changed selection while the async call was in-flight) cannot
     // overwrite the current state with results computed for different inputs.
@@ -812,14 +856,24 @@
       // Check whether the inputs have already changed since the timer fired.
       if (cancelled) return;
 
+      // Split selected programs into built-in (numeric) and external (ExtRef string)
+      const builtinProgramIds = inputSnapshot.selectedProgramIds.filter(
+        (id): id is number => typeof id === "number",
+      );
+      const extProgramIds = inputSnapshot.selectedProgramIds.filter(
+        (id): id is ExtRef => typeof id === "string",
+      );
+
+      const results = new Map<EntityId, CalculationResult | LibdedxError>();
+
+      // --- Built-in program calculations (WASM) ---
       // Range pre-check: skip WASM per program if any submitted energy is outside
       // that program's tabulated range. Some programs (e.g. ICRU 49) hang in
       // _dedx_get_stp_table on out-of-range inputs rather than returning error code 101.
-      let safeProgramIds = inputSnapshot.selectedProgramIds;
-      const results = new Map();
+      let safeProgramIds = builtinProgramIds;
       if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
         safeProgramIds = [];
-        for (const programId of inputSnapshot.selectedProgramIds) {
+        for (const programId of builtinProgramIds) {
           const minEnergy = service.getMinEnergy(programId, inputSnapshot.particleId);
           const maxEnergy = service.getMaxEnergy(programId, inputSnapshot.particleId);
           const allEnergiesInRange = inputSnapshot.energies.every(
@@ -837,45 +891,118 @@
             );
           }
         }
-        if (safeProgramIds.length === 0) {
-          multiProgState.setComparisonResults(results);
-          return;
+      }
+
+      if (safeProgramIds.length > 0) {
+        if (inputSnapshot.customMaterial) {
+          for (const programId of safeProgramIds) {
+            try {
+              results.set(
+                programId,
+                service.calculateCustomCompound({
+                  programId,
+                  particleId: inputSnapshot.particleId,
+                  elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
+                  density: inputSnapshot.customMaterial.density,
+                  iValue: inputSnapshot.customMaterial.iValue,
+                  energies: inputSnapshot.energies,
+                }),
+              );
+            } catch (e) {
+              results.set(
+                programId,
+                e instanceof LibdedxError
+                  ? e
+                  : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+              );
+            }
+          }
+        } else if (typeof inputSnapshot.materialId === "number") {
+          const builtInResults = service.calculateMulti({
+            programIds: safeProgramIds,
+            particleId: inputSnapshot.particleId,
+            materialId: inputSnapshot.materialId,
+            energies: inputSnapshot.energies,
+            options: advOptsSnapshot,
+          });
+          for (const [programId, result] of builtInResults) {
+            results.set(programId, result);
+          }
         }
       }
 
-      if (inputSnapshot.customMaterial) {
-        for (const programId of safeProgramIds) {
-          try {
-            results.set(
-              programId,
-              service.calculateCustomCompound({
-                programId,
-                particleId: inputSnapshot.particleId,
-                elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
-                density: inputSnapshot.customMaterial.density,
-                iValue: inputSnapshot.customMaterial.iValue,
-                energies: inputSnapshot.energies,
-              }),
-            );
-          } catch (e) {
-            results.set(
-              programId,
-              e instanceof LibdedxError
-                ? e
-                : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-            );
-          }
+      // --- External program calculations (ExternalDataService) ---
+      for (const extProgramId of extProgramIds) {
+        const parsed = parseExtRef(extProgramId);
+        if (!parsed) {
+          results.set(extProgramId, new LibdedxError(-1, "Invalid external program reference"));
+          continue;
         }
-      } else if (typeof inputSnapshot.materialId === "number") {
-        const builtInResults = service.calculateMulti({
-          programIds: safeProgramIds,
-          particleId: inputSnapshot.particleId,
-          materialId: inputSnapshot.materialId,
-          energies: inputSnapshot.energies,
-          options: advOptsSnapshot,
-        });
-        for (const [programId, result] of builtInResults) {
-          results.set(programId, result);
+        const { label, localId: localProgramId } = parsed;
+
+        const particleLocalId = resolveExtLocalIdForLabel(
+          inputSnapshot.particleId,
+          label,
+          extCtxSnapshot.externalRefsForBuiltinParticle,
+        );
+        const materialLocalId = resolveExtLocalIdForLabel(
+          // materialId is number | string at this point (undefined checked above)
+          inputSnapshot.materialId as number | string,
+          label,
+          extCtxSnapshot.externalRefsForBuiltinMaterial,
+        );
+
+        if (!particleLocalId || !materialLocalId) {
+          results.set(
+            extProgramId,
+            new LibdedxError(-1, "Particle or material not covered by this external program"),
+          );
+          continue;
+        }
+
+        try {
+          const stoppingPowers: number[] = [];
+          const csdaValuesGcm2: (number | null)[] = [];
+          const validEnergies: number[] = [];
+
+          for (const energy of inputSnapshot.energies) {
+            const totalMev = energy * massASnapshot;
+            const r = await externalDataService.interpolateAt(
+              label,
+              localProgramId,
+              particleLocalId,
+              materialLocalId,
+              totalMev,
+            );
+            if (r.stp !== null) {
+              validEnergies.push(energy);
+              stoppingPowers.push(r.stp);
+              csdaValuesGcm2.push(r.csda);
+            }
+          }
+
+          if (validEnergies.length === 0) {
+            results.set(
+              extProgramId,
+              new LibdedxError(101, "Energy out of range for this external program"),
+            );
+          } else {
+            // Only include CSDA array when all values are non-null (store has CSDA data)
+            const allCsdaAvailable =
+              csdaValuesGcm2.length > 0 && csdaValuesGcm2.every((v) => v !== null);
+            results.set(extProgramId, {
+              energies: validEnergies,
+              stoppingPowers,
+              csdaRanges: allCsdaAvailable ? (csdaValuesGcm2 as number[]) : [],
+            });
+          }
+        } catch (e) {
+          results.set(
+            extProgramId,
+            e instanceof LibdedxError
+              ? e
+              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+          );
         }
       }
 
@@ -1281,11 +1408,11 @@
           <MultiProgramPicker
             state={multiProgState}
             availablePrograms={entityState.availablePrograms}
-            compatibleIds={new Set(
-              entityState.availablePrograms.flatMap((p) =>
-                typeof p.id === "number" ? [p.id] : [],
-              ),
-            )}
+            availableExternalPrograms={entityState.availableExternalPrograms}
+            compatibleIds={new Set([
+              ...entityState.availablePrograms.map((p) => p.id as EntityId),
+              ...entityState.availableExternalPrograms.map((p) => p.id as EntityId),
+            ])}
             onInteraction={handleProgramPickerInteraction}
           />
           <!-- Table toolbar -->
@@ -1313,9 +1440,9 @@
                 >
                   <div class="space-y-2">
                     {#each multiProgState.selectedProgramIds as programId (programId)}
-                      {@const program = entityState.availablePrograms.find(
-                        (p) => p.id === programId,
-                      )}
+                      {@const program =
+                        entityState.availablePrograms.find((p) => p.id === programId) ??
+                        entityState.availableExternalPrograms.find((p) => p.id === programId)}
                       {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
                       {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
                       <label
@@ -1329,7 +1456,7 @@
                           onchange={() => multiProgState?.toggleColumnVisibility(programId)}
                           class="h-4 w-4 rounded border-input"
                         />
-                        <span>{program?.name ?? `Program ${programId}`}</span>
+                        <span>{program?.name ?? `Program ${String(programId)}`}</span>
                         {#if isDefault}
                           <span class="text-xs text-muted-foreground">(default)</span>
                         {/if}
