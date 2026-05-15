@@ -9,15 +9,16 @@ import { test, expect, type Page } from "@playwright/test";
  */
 
 const EXTERNAL_DATA_URL = process.env.EXTERNAL_DATA_URL;
-const EXTERNAL_DATA_STORE_URL = EXTERNAL_DATA_URL
-  ? EXTERNAL_DATA_URL.endsWith("/")
-    ? EXTERNAL_DATA_URL
-    : `${EXTERNAL_DATA_URL}/`
-  : "";
+const EXTERNAL_DATA_STORE_URL = normalizeStoreUrl(EXTERNAL_DATA_URL);
 const SRIM_EXTDATA = `extdata=srim:${encodeURIComponent(EXTERNAL_DATA_STORE_URL)}`;
 
 // Proton in Liquid Water with ICRU 49, 100 MeV
 const BASE_QUERY = `urlv=1&${SRIM_EXTDATA}&particle=1&material=276&program=7&energies=100&eunit=MeV`;
+
+function normalizeStoreUrl(url: string | undefined): string {
+  if (!url) return "";
+  return url.endsWith("/") ? url : `${url}/`;
+}
 
 async function gotoAdvancedWithSrim(page: Page) {
   await page.goto(`/calculator?${BASE_QUERY}&mode=advanced&qfocus=both`);

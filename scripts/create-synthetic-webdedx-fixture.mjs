@@ -6,7 +6,7 @@ import path from "node:path";
 const outputDir = process.argv[2];
 
 if (!outputDir) {
-  console.error("Usage: node scripts/create-synthetic-webdedx-fixture.mjs <output-dir>");
+  console.error("Usage: node <path-to>/create-synthetic-webdedx-fixture.mjs <output-dir>");
   process.exit(1);
 }
 
@@ -78,9 +78,10 @@ await writeJson(path.join(outputDir, programId, "stp", "zarr.json"), {
 });
 
 const chunk = Buffer.alloc(stpValues.length * Float32Array.BYTES_PER_ELEMENT);
-stpValues.forEach((value, index) =>
-  chunk.writeFloatLE(value, index * Float32Array.BYTES_PER_ELEMENT),
-);
+stpValues.forEach((value, index) => {
+  const byteOffset = index * Float32Array.BYTES_PER_ELEMENT;
+  chunk.writeFloatLE(value, byteOffset);
+});
 await writeFile(path.join(outputDir, programId, "stp", "c", "0", "0", "0"), chunk);
 
 async function writeJson(filePath, data) {

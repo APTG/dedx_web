@@ -11,6 +11,10 @@ jobs:
     name: Runner-hosted S3 external data E2E
     runs-on: ubuntu-latest
     timeout-minutes: 60
+    env:
+      MINIO_READY_ATTEMPTS: "30"
+      MINIO_READY_POLL_SECONDS: "2"
+      PLAYWRIGHT_PREVIEW_ORIGIN: http://127.0.0.1:4173
 
     steps:
       - name: Checkout
@@ -59,11 +63,11 @@ jobs:
             -e MINIO_ROOT_USER=webdedx \
             -e MINIO_ROOT_PASSWORD=webdedx-secret \
             minio/minio:latest server /data --address ":9000"
-          for attempt in {1..30}; do
+          for attempt in $(seq 1 "$MINIO_READY_ATTEMPTS"); do
             if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
               exit 0
             fi
-            sleep 2
+            sleep "$MINIO_READY_POLL_SECONDS"
           done
           docker logs webdedx-minio
           exit 1
@@ -81,9 +85,9 @@ jobs:
             '
           curl --fail http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
           curl --fail --silent --head \
-            -H "Origin: http://127.0.0.1:4173" \
+            -H "Origin: $PLAYWRIGHT_PREVIEW_ORIGIN" \
             http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json \
-            | grep -i "access-control-allow-origin: http://127.0.0.1:4173"
+            | grep -i "access-control-allow-origin: $PLAYWRIGHT_PREVIEW_ORIGIN"
 
       - name: Run S3 external-data E2E tests
         env:
