@@ -1,7 +1,7 @@
 import { base } from "$app/paths";
 
 const SRIM_EXTDATA_QUERY =
-  "urlv=1&extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F";
+  "urlv=1&extdata=srim:https%3A%2F%2Fexample.com%2Fwebdedx%2Fsrim-demo.webdedx%2F";
 
 function joinOriginAndBase(origin: string): string {
   const cleanOrigin = origin.replace(/\/$/, "");

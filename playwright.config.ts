@@ -9,8 +9,11 @@ import { defineConfig, devices } from "@playwright/test";
 //   @regression — edge cases, error states, cross-page parity;
 //                 run on every PR.
 //                 Script: pnpm test:e2e  (default full run)
-//   @nightly   — slow / expensive tests (not yet used).
+//   @nightly   — slow / expensive tests.
 //                Script: pnpm test:e2e:nightly
+//   @s3        — manual S3-compatible external-data tests. Requires
+//                EXTERNAL_DATA_URL and is skipped by default.
+//                Script: pnpm test:e2e:s3
 //
 // Timeout discipline:
 //   - Never use waitForTimeout() — use waitForSelector / waitForFunction /

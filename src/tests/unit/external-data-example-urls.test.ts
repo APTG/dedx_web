@@ -10,8 +10,9 @@ describe("external-data user-guide example URLs", () => {
 
     expect(url).toMatch(/^http:\/\/localhost:5173\/calculator\?/);
     expect(url).toContain(
-      "extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F",
+      "extdata=srim:https%3A%2F%2Fexample.com%2Fwebdedx%2Fsrim-demo.webdedx%2F",
     );
+    expect(url).not.toMatch(/(?:s3|s3p)\.cloud/);
     expect(url).toContain("energies=100");
   });
 
@@ -20,8 +21,9 @@ describe("external-data user-guide example URLs", () => {
 
     expect(url).toMatch(/^http:\/\/localhost:5173\/plot\?/);
     expect(url).toContain(
-      "extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F",
+      "extdata=srim:https%3A%2F%2Fexample.com%2Fwebdedx%2Fsrim-demo.webdedx%2F",
     );
+    expect(url).not.toMatch(/(?:s3|s3p)\.cloud/);
     expect(url).toContain("program=7");
   });
 });

@@ -3,19 +3,18 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * E2E tests for external data sources in Calculator Advanced Mode.
  *
- * These tests require network access to the SRIM .webdedx store at
- * https://s3.cloud.cyfronet.pl/dedxweb/srim-gui.webdedx/
- * and the WASM binary in static/wasm/.
- *
- * URL source: src/lib/utils/external-data-example-urls.ts
- *
- * CORS note: the S3 bucket does not send Access-Control-Allow-Origin headers.
- * The beforeEach hook intercepts S3 requests and injects the required CORS
- * headers so that zarrita (which uses fetch()) can access the store.
+ * These tests require EXTERNAL_DATA_URL to point at a runner-hosted
+ * S3-compatible .webdedx store and the WASM binary in static/wasm/.
+ * They are intended for the manual S3 E2E workflow, not default PR CI.
  */
 
-const SRIM_EXTDATA =
-  "extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F";
+const EXTERNAL_DATA_URL = process.env.EXTERNAL_DATA_URL;
+const EXTERNAL_DATA_STORE_URL = EXTERNAL_DATA_URL
+  ? EXTERNAL_DATA_URL.endsWith("/")
+    ? EXTERNAL_DATA_URL
+    : `${EXTERNAL_DATA_URL}/`
+  : "";
+const SRIM_EXTDATA = `extdata=srim:${encodeURIComponent(EXTERNAL_DATA_STORE_URL)}`;
 
 // Proton in Liquid Water with ICRU 49, 100 MeV
 const BASE_QUERY = `urlv=1&${SRIM_EXTDATA}&particle=1&material=276&program=7&energies=100&eunit=MeV`;
@@ -30,43 +29,15 @@ async function gotoAdvancedWithSrim(page: Page) {
   await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible({ timeout: 30000 });
 }
 
-// All tests in this suite hit a live S3 endpoint and are slow/potentially
-// flaky in CI — they are tagged @nightly and excluded from default PR runs.
-// Run locally with: pnpm test:e2e:nightly
-test.describe("External data in Calculator Advanced Mode @nightly", () => {
-  // External data requires S3 network access — allow 90s per test
-  test.setTimeout(90000);
+// Run manually with: EXTERNAL_DATA_URL=http://127.0.0.1:9000/bucket/store.webdedx pnpm test:e2e:s3
+test.describe("External data in Calculator Advanced Mode @s3", () => {
+  test.skip(
+    !EXTERNAL_DATA_URL,
+    "Set EXTERNAL_DATA_URL to a runner-hosted S3-compatible .webdedx store",
+  );
 
-  test.beforeEach(async ({ page }) => {
-    // The S3 bucket doesn't send CORS headers; inject them so zarrita's fetch() succeeds.
-    await page.route(/s3\.cloud\.cyfronet\.pl\/dedxweb\//, async (route) => {
-      // Respond to OPTIONS preflight directly with CORS approval.
-      if (route.request().method() === "OPTIONS") {
-        await route.fulfill({
-          status: 200,
-          headers: {
-            "Access-Control-Allow-Origin": "*",
-            "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-            "Access-Control-Allow-Headers": "*",
-            "Access-Control-Max-Age": "86400",
-          },
-          body: "",
-        });
-        return;
-      }
-      // For GET/HEAD, forward to S3 and add CORS headers to the response.
-      const response = await route.fetch();
-      await route.fulfill({
-        response,
-        headers: {
-          ...response.headers(),
-          "Access-Control-Allow-Origin": "*",
-          "Access-Control-Allow-Methods": "GET, HEAD, OPTIONS",
-          "Access-Control-Allow-Headers": "*",
-        },
-      });
-    });
-  });
+  // External data requires S3-compatible network access — allow 90s per test
+  test.setTimeout(90000);
 
   test("SRIM program appears in Programs picker when extdata loaded", async ({ page }) => {
     await gotoAdvancedWithSrim(page);
