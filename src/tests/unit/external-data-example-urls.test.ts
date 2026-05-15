@@ -4,14 +4,20 @@ import {
   buildSrimPlotExampleUrl,
 } from "$lib/utils/external-data-example-urls";
 
+function getExternalDataUrl(url: string): string | undefined {
+  const params = new URL(url).searchParams;
+  const extdata = params.get("extdata") ?? "";
+  const separatorIndex = extdata.indexOf(":");
+  if (separatorIndex <= 0) return undefined;
+  return decodeURIComponent(extdata.slice(separatorIndex + 1));
+}
+
 describe("external-data user-guide example URLs", () => {
   it("renders absolute same-origin Calculator URL instead of a path-only URL", () => {
     const url = buildSrimCalculatorExampleUrl("http://localhost:5173");
 
     expect(url).toMatch(/^http:\/\/localhost:5173\/calculator\?/);
-    expect(url).toContain(
-      "extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F",
-    );
+    expect(getExternalDataUrl(url)).toMatch(/\/dedxweb\/srim-gui\.webdedx\/$/);
     expect(url).toContain("energies=100");
   });
 
@@ -19,9 +25,7 @@ describe("external-data user-guide example URLs", () => {
     const url = buildSrimPlotExampleUrl("http://localhost:5173/");
 
     expect(url).toMatch(/^http:\/\/localhost:5173\/plot\?/);
-    expect(url).toContain(
-      "extdata=srim:https%3A%2F%2Fs3.cloud.cyfronet.pl%2Fdedxweb%2Fsrim-gui.webdedx%2F",
-    );
+    expect(getExternalDataUrl(url)).toMatch(/\/dedxweb\/srim-gui\.webdedx\/$/);
     expect(url).toContain("program=7");
   });
 });

@@ -1,0 +1,134 @@
+name: Manual S3 E2E
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  external-data-s3:
+    name: Runner-hosted S3 external data E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    env:
+      MINIO_READY_ATTEMPTS: "30"
+      MINIO_READY_POLL_SECONDS: "2"
+      PLAYWRIGHT_PREVIEW_ORIGIN: http://127.0.0.1:4173
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v4
+
+      - name: Build WASM module
+        run: |
+          mkdir -p static/wasm
+          cd wasm
+          chmod +x build.sh
+          ./build.sh
+
+      - name: Verify WASM contract
+        run: node wasm/verify.mjs
+
+      - name: Install Playwright browsers
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Build app
+        run: pnpm build
+
+      - name: Create synthetic .webdedx fixture
+        run: node scripts/create-synthetic-webdedx-fixture.mjs /tmp/webdedx-s3/srim-synthetic.webdedx
+
+      - name: Start MinIO
+        run: |
+          docker run -d --name webdedx-minio \
+            -p 9000:9000 \
+            -e MINIO_ROOT_USER=webdedx \
+            -e MINIO_ROOT_PASSWORD=webdedx-secret \
+            minio/minio:latest server /data --address ":9000"
+          minio_ready=false
+          for attempt in $(seq 1 "$MINIO_READY_ATTEMPTS"); do
+            if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
+              minio_ready=true
+              break
+            fi
+            sleep "$MINIO_READY_POLL_SECONDS"
+          done
+          if [ "$minio_ready" = true ]; then
+            exit 0
+          fi
+          docker logs webdedx-minio
+          exit 1
+
+      - name: Upload fixture to MinIO
+        run: |
+          docker run --rm --network host \
+            -v /tmp/webdedx-s3:/fixture:ro \
+            --entrypoint /bin/sh \
+            minio/mc:latest -c '
+              mc alias set local http://127.0.0.1:9000 webdedx webdedx-secret
+              mc mb --ignore-existing local/dedxweb
+              mc cp --recursive /fixture/srim-synthetic.webdedx local/dedxweb/
+              mc anonymous set download local/dedxweb
+            '
+          curl --fail http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
+          cors_headers="$(mktemp)"
+          curl --fail --silent --dump-header "$cors_headers" --output /dev/null \
+            -H "Origin: $PLAYWRIGHT_PREVIEW_ORIGIN" \
+            http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
+          allowed_origin="$(
+            awk '
+              BEGIN { IGNORECASE = 1 }
+              /^access-control-allow-origin:/ {
+                sub(/^[^:]+:[[:space:]]*/, "")
+                sub(/[[:space:]\r]+$/, "")
+                print
+              }
+            ' "$cors_headers" | tail -n 1
+          )"
+          case "$allowed_origin" in
+            "$PLAYWRIGHT_PREVIEW_ORIGIN"|"*") ;;
+            *)
+              echo "Unexpected Access-Control-Allow-Origin: ${allowed_origin:-<missing>}"
+              cat "$cors_headers"
+              exit 1
+              ;;
+          esac
+
+      - name: Run S3 external-data E2E tests
+        env:
+          EXTERNAL_DATA_URL: http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx
+        run: pnpm test:e2e:s3
+
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: playwright-report-s3
+          path: playwright-report/
+          retention-days: 7
+
+      - name: Upload test results
+        uses: actions/upload-artifact@v7
+        if: failure()
+        with:
+          name: test-results-s3
+          path: test-results/
+          retention-days: 7
