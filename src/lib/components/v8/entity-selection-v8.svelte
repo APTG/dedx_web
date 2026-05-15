@@ -63,6 +63,9 @@
   }
 
   function handleGlobalKey(event: KeyboardEvent) {
+    // v8 spec § "Anatomy" lists keyboard behaviour: `Esc blur`. The search
+    // input grabs focus on tab change so users need a quick way to exit
+    // back to the page chrome without removing the picker entirely.
     if (event.key === "Escape") {
       const active = document.activeElement;
       if (active instanceof HTMLElement && active.closest("[data-testid='v8-entity-selection']")) {

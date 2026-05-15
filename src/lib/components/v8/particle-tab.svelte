@@ -109,10 +109,10 @@
 
 <div class="space-y-3" data-testid="v8-particle-tab">
   {#if selected}
-    {@const Z = isExternal(selected) ? selected.Z : selected.id}
+    {@const atomicNumber = isExternal(selected) ? selected.Z : selected.id}
     <SelectedPill
       label={getParticleLabel(selected)}
-      meta={Z !== undefined && Z !== null ? `Z=${Z}` : undefined}
+      meta={atomicNumber !== undefined && atomicNumber !== null ? `Z=${atomicNumber}` : undefined}
       glyph={isExternal(selected) ? "🔗" : undefined}
       onClear={onClear}
       data-testid="v8-particle-selected"
@@ -177,7 +177,7 @@
             {@const isSelected = selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
             {@const external = isExternal(p)}
-            {@const Z = external ? p.Z : p.id}
+            {@const atomicNumber = external ? p.Z : p.id}
             <li>
               <button
                 type="button"
@@ -196,8 +196,8 @@
                 onclick={() => available && onSelect(p)}
               >
                 <span>{external ? `🔗 ${p.name}` : getParticleLabel(p)}</span>
-                {#if Z !== undefined && Z !== null}
-                  <span class="font-mono text-xs text-muted-foreground">Z={Z}</span>
+                {#if atomicNumber !== undefined && atomicNumber !== null}
+                  <span class="font-mono text-xs text-muted-foreground">Z={atomicNumber}</span>
                 {/if}
               </button>
             </li>

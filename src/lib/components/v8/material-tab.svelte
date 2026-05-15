@@ -30,8 +30,7 @@
   }
 
   function isGas(m: Material): boolean {
-    if (!isExternal(m) && m.isGasByDefault) return true;
-    return false;
+    return !isExternal(m) && m.isGasByDefault;
   }
 
   function searchText(m: Material): string {
