@@ -887,5 +887,20 @@ data mapping so these regressions are caught.
 
 ---
 
-_Last updated: 2026-05-14. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 41 — Keep Vite manualChunks compatible across prototype bumps
+
+**Symptom:** A Dependabot Vite bump looked safe in main CI but the
+`prototypes/extdata-formats/browser` build failed locally under Vite 8.
+
+**Root cause:** Vite 8's Rolldown-backed build expects `manualChunks` to be a
+function. The old object form (`{ zarrita: ["zarrita"] }`) was still accepted
+by older Vite versions but is incompatible with Vite 8.
+
+**Rule:** When prototypes pin their own Vite dependency, keep shared build
+config patterns compatible with the newest grouped Vite bump before allowing
+Dependabot to update those prototype manifests.
+
+---
+
+_Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

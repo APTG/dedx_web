@@ -12,9 +12,33 @@ updates:
       interval: "weekly"
 
   - package-ecosystem: "npm"
-    directory: "/"
+    directories:
+      - "/"
+      - "/prototypes/extdata-formats/browser"
+      - "/prototypes/jsroot-svelte5"
+      - "/prototypes/svelte5-state"
+      - "/prototypes/wasm-preload/app"
     schedule:
       interval: "daily"
+    groups:
+      svelte-vite-tooling:
+        patterns:
+          - "@lucide/svelte"
+          - "@sveltejs/*"
+          - "@vitejs/*"
+          - "@vitest/*"
+          - "svelte"
+          - "svelte-check"
+          - "vite"
+          - "vitest"
+      javascript-tooling:
+        dependency-type: "development"
+        patterns:
+          - "*"
+      javascript-runtime:
+        dependency-type: "production"
+        patterns:
+          - "*"
     # Add reviewers
     reviewers:
       - "grzanka"
