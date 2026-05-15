@@ -60,18 +60,13 @@ test.describe("Calculator page — v8 picker (?v8=1)", () => {
 
   test("recipe-bar reset restores defaults and activates the Particle tab", async ({ page }) => {
     // First mutate the selection.
-    await page.getByTestId("v8-tab-material").click();
-    const search = page.getByTestId("v8-material-search");
-    await search.fill("air");
-    // Air is gas-phase + compatible with proton on most programs, so the row
-    // is expected to be present and clickable.
-    await page.getByTestId("v8-material-subtab-compounds").click();
-    const airItem = page.getByTestId("v8-material-item-267");
-    await expect(airItem).toBeVisible();
-    await airItem.click();
+    await page.getByTestId("v8-particle-search").fill("alpha");
+    await page.getByTestId("v8-particle-item-2").click();
+    await expect(page.getByTestId("v8-recipe-bar")).toContainText("alpha particle");
 
     await page.getByTestId("v8-recipe-reset").click();
 
+    await expect(page.getByTestId("v8-recipe-bar")).toContainText("proton");
     await expect(page.getByTestId("v8-recipe-bar")).toContainText("Water");
     await expect(page.getByTestId("v8-tab-particle")).toHaveAttribute("aria-selected", "true");
   });

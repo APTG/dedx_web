@@ -29,6 +29,22 @@ covering the new code paths. Stage 5 polish items (Basic/Advanced toggle UI,
 periodic-grid view, inline multi-program list, custom-compound modal editor)
 are scoped as follow-up commits.
 
+### Prompt 2: fix failing v8 E2E test from PR review
+
+**User request**: PR comment reported failing CI for
+`tests/e2e/v8-entity-selection.spec.ts`, where the reset test expected
+`v8-material-item-267` (Air) to be visible. In the real WASM-backed CI data the
+row was not present for the default v8 selection, causing the Playwright shard
+to fail.
+
+**AI response**: Investigated the CI run with GitHub Actions MCP, confirmed the
+failure was isolated to the v8 E2E reset test, and changed that test to mutate
+the selection via the always-visible alpha particle instead of assuming Air has
+id 267. Downloaded the CI `wasm-binaries` artifact for local validation, copied
+it to `static/wasm/`, rebuilt the app, installed Chromium, and validated the
+targeted Playwright spec: `pnpm exec playwright test
+tests/e2e/v8-entity-selection.spec.ts --project=chromium` (10 passed).
+
 ## Tasks
 
 ### Pre-work — v8 spec section + AI log + feature flag + picker-mode store
@@ -101,3 +117,17 @@ are scoped as follow-up commits.
 - Stage 5 inline multi-program SELECTED / AVAILABLE list inside Program tab
 - Stage 5 custom-compound modal editor (atoms↔% mode, autosave, mobile sheet)
 - Advanced search operators (`z=N`, `ρ>1.5`, `tag=FN`)
+
+### PR review follow-up — v8 E2E reset fixture
+
+- **Status**: completed
+- **Stage**: entity-selection v8 PR #1 review/CI fix
+- **Files changed**:
+  - `tests/e2e/v8-entity-selection.spec.ts`
+  - `CHANGELOG-AI.md`
+  - `docs/ai-logs/2026-05-15-entity-selection-v8.md`
+- **Decision**: Keep the reset test's intent (mutate from defaults, click
+  reset, assert defaults and active Particle tab) but mutate with alpha particle
+  instead of Air. Alpha is part of the v8 Common particles section and is stable
+  across WASM datasets; Air id 267 was brittle in CI.
+- **Issue**: none unresolved.
