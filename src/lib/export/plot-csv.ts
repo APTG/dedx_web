@@ -8,6 +8,8 @@ import {
 } from "$lib/utils/plot-utils";
 import { makeCsvCell } from "$lib/export/csv";
 
+const ENERGY_GRID_EPSILON = 1e-12;
+
 /**
  * CSV injection prevention: values starting with =, +, -, @ are prefixed
  * with a single quote to stop spreadsheet apps from executing them.
@@ -28,14 +30,13 @@ function sanitizeCsvCell(value: string): string {
  * (each series gets its own Energy column).
  */
 /**
- * Exact grid equality check for deciding whether CSV export may use one
- * shared Energy column. Display grids are generated from the same numeric
- * arrays used for plotting, so exact equality avoids hiding any conversion
- * differences between per-series X values.
+ * Near-exact grid equality check for deciding whether CSV export may use one
+ * shared Energy column. The small tolerance avoids splitting columns solely
+ * because MeV display conversion introduced insignificant floating-point noise.
  */
 function hasIdenticalEnergyGrid(a: number[], b: number[]): boolean {
   if (a.length !== b.length) return false;
-  return a.every((value, index) => value === b[index]);
+  return a.every((value, index) => Math.abs(value - (b[index] ?? NaN)) <= ENERGY_GRID_EPSILON);
 }
 
 function isSharedEnergyGrid(series: PlotSeries[], displayEnergyValues: number[][]): boolean {

@@ -61,6 +61,8 @@ import JsrootPlot from "$lib/components/jsroot-plot.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
 
+const ALPHA_MASS_NUMBER = 4;
+
 function makeSeries(overrides: Partial<PlotSeries>): PlotSeries {
   return {
     seriesId: 1,
@@ -175,7 +177,7 @@ describe("JsrootPlot", () => {
             seriesId: 2,
             particleId: 2,
             particleName: "α",
-            particleMassNumber: 4,
+            particleMassNumber: ALPHA_MASS_NUMBER,
           }),
         ],
         preview: null,
@@ -202,7 +204,7 @@ describe("JsrootPlot", () => {
           makeSeries({
             particleId: 2,
             particleName: "α",
-            particleMassNumber: 4,
+            particleMassNumber: ALPHA_MASS_NUMBER,
             result: { energies: [1, 2], stoppingPowers: [10, 20], csdaRanges: [1, 1] },
           }),
           makeSeries({

@@ -103,6 +103,7 @@ interface SeriesForEnergyAxis {
 function isElectronSeries(series: SeriesForEnergyAxis): boolean {
   // External or legacy fixtures may provide only one of these fields, so either
   // the libdedx electron ID or the electron-only A=0 mass number is sufficient.
+  // If both are missing, fall through to the non-electron default.
   return series.particleId === ELECTRON_PARTICLE_ID || series.particleMassNumber === 0;
 }
 
@@ -112,6 +113,8 @@ function isProtonSeries(series: SeriesForEnergyAxis): boolean {
 
 export function getPlotEnergyAxisUnit(series: SeriesForEnergyAxis[]): PlotEnergyAxisUnit {
   const visibleSeries = series.filter((s) => s.visible);
+  // Empty/proton/electron displays are all total-energy MeV; heavier ions
+  // without electrons keep libdedx's native per-nucleon energy grid.
   if (visibleSeries.length === 0) return "MeV";
   if (visibleSeries.some(isElectronSeries)) return "MeV";
   if (visibleSeries.every(isProtonSeries)) return "MeV";
