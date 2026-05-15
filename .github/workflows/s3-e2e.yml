@@ -63,12 +63,17 @@ jobs:
             -e MINIO_ROOT_USER=webdedx \
             -e MINIO_ROOT_PASSWORD=webdedx-secret \
             minio/minio:latest server /data --address ":9000"
+          minio_ready=false
           for attempt in $(seq 1 "$MINIO_READY_ATTEMPTS"); do
             if curl --fail --silent http://127.0.0.1:9000/minio/health/ready >/dev/null; then
-              exit 0
+              minio_ready=true
+              break
             fi
             sleep "$MINIO_READY_POLL_SECONDS"
           done
+          if [ "$minio_ready" = true ]; then
+            exit 0
+          fi
           docker logs webdedx-minio
           exit 1
 

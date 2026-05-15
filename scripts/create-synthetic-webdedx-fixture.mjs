@@ -85,6 +85,5 @@ stpValues.forEach((value, index) => {
 await writeFile(path.join(outputDir, programId, "stp", "c", "0", "0", "0"), chunk);
 
 async function writeJson(filePath, data) {
-  await mkdir(path.dirname(filePath), { recursive: true });
   await writeFile(filePath, `${JSON.stringify(data, null, 2)}\n`);
 }
