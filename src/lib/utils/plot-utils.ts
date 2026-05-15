@@ -101,6 +101,8 @@ interface SeriesForEnergyAxis {
 }
 
 function isElectronSeries(series: SeriesForEnergyAxis): boolean {
+  // External or legacy fixtures may provide only one of these fields, so either
+  // the libdedx electron ID or the electron-only A=0 mass number is sufficient.
   return series.particleId === ELECTRON_PARTICLE_ID || series.particleMassNumber === 0;
 }
 
@@ -126,6 +128,8 @@ export function convertEnergyForDisplay(
   axisUnit: PlotEnergyAxisUnit,
 ): number[] {
   if (axisUnit === "MeV/nucl") return energies;
+  // Undefined mass number, electrons (A=0), and protons (A=1) already display
+  // in MeV; heavier ions need E_total = E_per_nucl × A.
   const multiplier =
     series.particleMassNumber !== undefined && series.particleMassNumber > 1
       ? series.particleMassNumber

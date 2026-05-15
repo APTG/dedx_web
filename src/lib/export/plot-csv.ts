@@ -33,7 +33,7 @@ function sanitizeCsvCell(value: string): string {
  * arrays used for plotting, so exact equality avoids hiding any conversion
  * differences between per-series X values.
  */
-function hasSameEnergyGrid(a: number[], b: number[]): boolean {
+function hasIdenticalEnergyGrid(a: number[], b: number[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((value, index) => value === b[index]);
 }
@@ -51,7 +51,7 @@ function isSharedEnergyGrid(series: PlotSeries[], displayEnergyValues: number[][
   }
   for (const grid of displayEnergyValues) {
     // Case B if any series has a different displayed energy grid.
-    if (!hasSameEnergyGrid(grid, firstGrid)) {
+    if (!hasIdenticalEnergyGrid(grid, firstGrid)) {
       return false;
     }
   }
