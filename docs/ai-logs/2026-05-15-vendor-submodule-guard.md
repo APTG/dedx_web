@@ -32,4 +32,13 @@
 - **Stage**: maintenance
 - **Files changed**: none
 - **Decision**: Validated the exact guard behavior with focused tests and manual guard invocations before broader checks.
-- **Issue**: Local validation runs under Node 20 in the sandbox, so `pnpm install` reports the repository's expected Node 24 engine warning.
+- **Commands run**:
+  - `corepack pnpm install --frozen-lockfile` ✅ (with expected local Node 20 vs required Node 24 engine warning)
+  - `corepack pnpm exec vitest --run src/tests/unit/guard-forbidden-files.test.ts` ✅
+  - `node scripts/guard-forbidden-files.cjs --range HEAD..HEAD` ✅
+  - `corepack pnpm guard:staged` ✅
+  - `corepack pnpm lint` ✅
+  - `corepack pnpm test` ✅ (67 files passed, 1 skipped; 1289 tests passed, 3 skipped)
+  - `corepack pnpm build` ✅
+  - `corepack pnpm check` ❌ pre-existing unrelated diagnostics in `src/lib/external-data/units.ts` and `src/tests/components/CsvExportModal.test.ts`
+- **Issue**: Local validation runs under Node 20 in the sandbox, so `pnpm install` reports the repository's expected Node 24 engine warning. `pnpm check` remains blocked by unrelated TypeScript diagnostics outside this change.
