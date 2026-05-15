@@ -2,6 +2,8 @@
   import { browser } from "$app/environment";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
+  import { isPickerV8, initPickerV8FromUrl } from "$lib/state/picker-flag.svelte";
+  import { initPickerModeFromUrl } from "$lib/state/picker-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
@@ -13,6 +15,7 @@
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
+  import EntitySelectionV8 from "$lib/components/v8/entity-selection-v8.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
@@ -135,6 +138,8 @@
     // becomes true inside the async callback.
     if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
+      initPickerV8FromUrl(page.url.searchParams);
+      initPickerModeFromUrl(page.url.searchParams);
       advancedModeInitializedFromUrl = true;
     }
 
@@ -1398,10 +1403,17 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion state={entityState} />
-      <EntitySelectionComboboxes
-        selectionState={entityState}
-        onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
-      />
+      {#if isPickerV8.value}
+        <EntitySelectionV8
+          selectionState={entityState}
+          onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
+        />
+      {:else}
+        <EntitySelectionComboboxes
+          selectionState={entityState}
+          onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
+        />
+      {/if}
       <ExternalSourcesPanel sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">

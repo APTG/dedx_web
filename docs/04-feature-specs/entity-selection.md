@@ -1,10 +1,275 @@
 # Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** Final v7 (27 April 2026 — particle group heading resolved)
+> **Status:** v8 draft (2026-05-15) — in active redesign, see issue
+> [#504](https://github.com/APTG/dedx_web/issues/504). v7 (below) remains the
+> production behaviour until the v8 feature flag is flipped.
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
 > for choosing _what_ to calculate.
+
+---
+
+## v8 (draft) — Tabbed picker redesign
+
+> **Status:** Draft v8 (2026-05-15) — supersedes the layout sections of v7.
+> **The compatibility-matrix data model and bidirectional filtering rules from
+> v7 are unchanged** — only the rendering layer is replaced. Acceptance
+> criteria around defaults, persistence, search, ARIA, and error handling
+> carry over from v7 verbatim unless noted.
+>
+> Roll-out: behind a `?v8=1` URL feature flag during PR #1 — v7 stays the
+> default. PR #2 ships the adaptive compatibility overlay and flips the
+> default. v7 components are removed in a third clean-up PR.
+
+### Why a v8
+
+1. Three side-by-side panels overwhelm on mobile — all three lists fight
+   for the same vertical space.
+2. No sense of progress — order `Particle → Material → Program` only
+   exists in the labels, not in the interaction.
+3. External / Custom items get buried as an "External" group at the end of
+   long lists.
+4. "Tabulated / Analytical / External" grouping in the Program panel is
+   categorical, not physics-meaningful — adds three section headers to a
+   list of ~6 rows.
+
+### Goals
+
+- Recover mobile screen estate for results.
+- Keep keyboard- and search-first interaction on desktop.
+- Soft `① ② ③` ordering — visualised but never enforced.
+- Preserve all v7 behaviour: bidirectional filtering, greying out, fallback,
+  Auto-select, shareable URL encoding.
+- First-class External (`🔗`) and Custom items, surfaced where they belong
+  rather than as orphan groups.
+- Move custom-compound editing out of an inline panel and into a modal —
+  the v7 inline editor competes with the picker for space.
+
+### Non-goals (deferred)
+
+- **Electron / ESTAR support.** Drop the greyed-out electron row entirely.
+  Re-add once ESTAR ships in libdedx ≥ 2.0.
+- **Isotope selection.** Particles are elements (Z) + the named common
+  particles (proton, alpha).
+- **Multi-program toggle as a runtime switch.** Multi-select is always on
+  in Advanced mode; never offered in Basic.
+
+### The shape
+
+One tabbed picker replaces both v7 layouts:
+
+- Calculator page = compact tabbed picker on its own row.
+- Plot page = same tabbed picker plus a persistent series list beneath.
+
+The two pages share the same `EntitySelectionState` store and tabbed
+component; only the surrounding chrome differs. The full-panel sidebar from
+v7 is retired.
+
+### Anatomy
+
+```
+┌─ RECIPE  proton → Water (liquid) → ICRU 49 ───── reset · [⊞ explore compat]* ─┐
+├─[① Particle: proton]─[② Material: Water ★]─[③ Program: Auto → ICRU 49]──────┤
+│                                                                              │
+│  ⟨selected pill — full metadata for the active tab's selection⟩              │
+│                                                                              │
+│  🔍 search                                                         ↑↓ ↵ /    │
+│                                                                              │
+│  ⟨the active list — Common / Ions for Particle;                              │
+│   Elements / Compounds sub-tabs for Material;                                │
+│   flat list with inline TAB/FN/EXT tags for Program⟩                         │
+└──────────────────────────────────────────────────────────────────────────────┘
+   * "⊞ explore compat" link only visible in Advanced mode
+```
+
+- The **recipe bar** at the top is the single fixed reference to the full
+  selection. Clicking any segment activates the matching tab.
+- **Tabs**: each tab label is `① Particle: <current value>`. Switching tabs
+  is keyboard-driven via `Tab`/`Shift+Tab` or arrow keys, or mouse.
+- **Selected pill**: the first row of every tab shows the current selection
+  for that dimension with full metadata. Clicking it clears the selection
+  (toggle behaviour from v7).
+- **Search**: focused by default on tab change. `↵` selects the highlighted
+  result and auto-advances to the next non-empty tab.
+
+### Soft ordering
+
+`① ② ③` chips on the tab labels are a hint, not a gate. All three tabs are
+clickable at any time. We do not prevent the user from picking Program
+first.
+
+### Basic vs Advanced mode
+
+A small toggle (default Basic) lives in the recipe bar.
+
+| Feature | Basic | Advanced |
+|---|---|---|
+| Particle tab — list with Common + Ions sections | ✅ | ✅ |
+| Particle tab — periodic-grid scan view (Z layout) | — | ✅ |
+| Material tab — Elements / Compounds sub-tabs | ✅ | ✅ |
+| Material tab — **Custom** sub-tab + editor entry point | — | ✅ |
+| Program tab — single-program selection | ✅ | — |
+| Program tab — multi-program (for plot comparison) | — | ✅ (always on) |
+| Compatibility overlay (`⊞ explore compat` link) | — | ✅ |
+| Advanced filter syntax in search (`z=6`, `v=2013`) | — | ✅ |
+
+Mode persists in `localStorage` and is reflected in the URL so shared
+links keep their context.
+
+### Particle tab
+
+Display rules:
+
+| ID | Label | Notes |
+|---|---|---|
+| 1 | `proton` | lowercase, no symbol |
+| 2 | `alpha particle` | lowercase, no symbol |
+| 3..118 | `Element (Symbol)` | e.g. `Carbon (C)`, `Tin (Sn)` |
+| 1001 | — | **omitted** — electron not selectable until ESTAR ships |
+
+External-only particles use the `🔗 <name>` prefix and mix into the
+existing sections by Z; they do NOT form an "External" group.
+
+Basic mode renders two sections (Common particles / Ions). Advanced mode
+adds a periodic-grid scan view toggle. Search supports name, symbol,
+alias, bare Z, and (Advanced) `z=N` / `z>=N` operator syntax.
+
+### Material tab
+
+Sub-tabs: Elements (id 1..98) / Compounds (id ≥ 99 + 906 + external) /
+Custom (Advanced only). External materials inline by ID range with `🔗 `
+prefix. Sub-tab counts read `42 + 3🔗` when external items are present.
+
+Inline indicators: gas materials carry an inline `(≋)` glyph next to the
+name (no coloured badge — colour-blind friendly). Density is a
+right-aligned monospace tag on every row.
+
+Custom sub-tab (Advanced only): lists user-defined compounds with per-row
+edit / duplicate / delete action links. A `+ Add compound` button opens
+the Custom Compound Editor modal.
+
+### Program tab
+
+No section headers — each row carries its own inline tag:
+
+| Tag | Glyph | Meaning |
+|---|---|---|
+| `TAB` | `▦` | Tabulated data (interpolated from libdedx tables) |
+| `FN`  | `∫` | Analytical model (e.g. Bethe-Bloch) |
+| `EXT` | `🔗` | External (loaded from a `.webdedx` file) |
+
+Tags render as small pill badges at the right of each row. A legend strip
+below the list seeds the mapping for first-time users.
+
+Auto-select hero card sits at the top of the list, larger and visually
+prominent, showing the resolved program (`✦ Auto-select → ICRU 49 [TAB]`).
+
+Advanced mode replaces the single-selection list with a `SELECTED + drag
+to reorder` + `AVAILABLE` checkbox list (the standalone multi-program
+dropdown picker is removed). The first program in `SELECTED` is the
+default for the Calculator result table and Plot primary series.
+
+### Custom Compound Editor (modal — new)
+
+The v7 inline editor is replaced by a focus-trapped modal. Defining a
+compound has its own cognitive load (composition + density + I-value) and
+deserves a full-focus surface.
+
+Two input modes: atom counts (default) and % by mass — switching converts
+in place via atomic masses. % mode shows a live sum tracker (green ±0.5%
+of 100, red otherwise); Save is disabled when red with an `auto-rescale
+to 100%` one-click fix. Duplicate-Z detection flags both rows red with
+a Merge / Remove banner.
+
+Quick-start helpers: paste-formula tokenizer (`[A-Z][a-z]?\d*`), preset
+seeds (Water, A-150, Bone, Muscle, Lung, Air), `.csv` / `.json` import.
+Autosave to `localStorage.webdedx.customCompounds.v1` (250ms debounce).
+
+Mobile = full-screen sheet in two steps (Basics → Composition).
+
+### Recipe bar
+
+Always-visible strip above the tabs:
+
+```
+RECIPE  proton  →  Water (liquid)  →  ICRU 49    reset · ⊞ explore compat*
+```
+
+`reset` restores defaults (proton / Water / Auto). `⊞ explore compat`
+opens the adaptive compatibility overlay (PR #2, Advanced only).
+
+### Plot page differences
+
+The Plot page wraps the tabbed picker with a series list beneath it.
+"Add series" pushes the current `EntitySelectionState` into the series
+array and seeds a fresh selection. No sidebar, no full-panel mode.
+
+### Acceptance criteria (delta from v7)
+
+#### Layout
+
+- [ ] Calculator page replaces the three inline comboboxes with a single
+      tabbed picker (when `v8` flag on).
+- [ ] Plot page replaces the sidebar+canvas split with `tabbed picker +
+      series list` above the canvas.
+- [ ] Recipe bar visible on both pages.
+- [ ] Each tab label displays current selection.
+- [ ] One list visible at a time inside the tabbed picker.
+
+#### Particle
+
+- [ ] Electron (id 1001) does not appear in any list, periodic-grid,
+      or search result.
+- [ ] Advanced mode renders the periodic-grid scan view.
+- [ ] Filter syntax `z=N` and `z>=N` work in Advanced.
+
+#### Material
+
+- [ ] Elements / Compounds sub-tabs render with counts including
+      external (`42 + 3🔗`).
+- [ ] Gas materials show `(≋)` inline; no coloured badge.
+- [ ] Advanced reveals Custom sub-tab; Basic hides it.
+- [ ] `+ Add compound` and `edit`/`duplicate`/`delete` links open the
+      modal editor.
+
+#### Program
+
+- [ ] No "Tabulated / Analytical / External" section headers.
+- [ ] Each row shows a TAB / FN / EXT tag with hover tooltip.
+- [ ] Auto-select row is visually prominent and shows resolved program.
+- [ ] Advanced mode renders the multi-program checkbox list + SELECTED
+      group with drag-handle reorder.
+
+#### Mode + persistence
+
+- [ ] Basic / Advanced toggle persists in `localStorage` and the URL.
+- [ ] Compatibility overlay, multi-program, periodic-grid, Custom
+      sub-tab — none are available in Basic.
+
+### Cross-spec touch points
+
+- `calculator.md` — replace the inline-combobox wireframe with the
+  tabbed-picker recipe-bar wireframe (after flag flip in PR #2).
+- `plot.md` — series-list section above plot canvas.
+- `custom-compounds.md` — replace inline editor section with modal editor.
+- `multi-program.md` — note that Advanced mode multi-select moves into
+  the Program tab itself; the standalone multi-program-picker dropdown
+  is removed after the flag flips.
+- `unit-handling.md` — unchanged.
+- `06-wasm-api-contract.md` — unchanged.
+
+---
+
+## Previous behaviour — v7 (production until v8 flag flip)
+
+> **Status:** Final v7 (27 April 2026 — particle group heading resolved)
+>
+> The sections below describe the behaviour rendered when the v8 feature
+> flag is OFF (the default through PR #1). They remain authoritative for
+> the existing `entity-selection-comboboxes.svelte` (calculator) and
+> `entity-selection-panels.svelte` (plot) components and all existing
+> tests targeting them.
 >
 > **v2 changes:** Reversed the visual and logical order from Program-first
 > to Particle → Material → Program. Added bidirectional filtering via a
