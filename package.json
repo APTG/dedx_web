@@ -63,7 +63,7 @@
   },
   "dependencies": {
     "jspdf": "^4.2.1",
-    "jsroot": "^7.9.0",
+    "jsroot": "^7.11.0",
     "zarrita": "^0.7.3"
   },
   "pnpm": {
