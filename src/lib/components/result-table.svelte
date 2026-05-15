@@ -41,6 +41,7 @@
   import type { MultiProgramState } from "$lib/state/multi-program.svelte";
   import type { CalculationResult } from "$lib/wasm/types";
   import { LibdedxError } from "$lib/wasm/types";
+  import type { EntityId } from "$lib/external-data/types";
 
   interface Props {
     calcState: CalculatorState;
@@ -49,7 +50,7 @@
     class?: string;
     // Multi-program comparison props (advanced mode)
     multiProgramState?: MultiProgramState;
-    comparisonResults?: Map<number, CalculationResult | LibdedxError>;
+    comparisonResults?: Map<EntityId, CalculationResult | LibdedxError>;
   }
 
   let {
@@ -63,7 +64,7 @@
 
   // Derived helpers for advanced mode
   const isAdvanced = $derived(multiProgramState !== undefined);
-  const visibleProgramIds = $derived<number[]>(
+  const visibleProgramIds = $derived<EntityId[]>(
     isAdvanced && multiProgramState
       ? multiProgramState.programDisplayOrder.filter(
           (id) => multiProgramState.columnVisibility.get(id) !== false,
@@ -84,8 +85,8 @@
   let hoveredCell = $state<string | null>(null);
 
   // Drag-and-drop column reorder state
-  let draggingProgramId = $state<number | null>(null);
-  let dragOverProgramId = $state<number | null>(null);
+  let draggingProgramId = $state<EntityId | null>(null);
+  let dragOverProgramId = $state<EntityId | null>(null);
   let reorderAnnouncement = $state<string>("");
 
   // Column visibility dropdown state
@@ -304,14 +305,16 @@
     }
   });
 
-  // Helper to get program name by ID
-  function getProgramName(programId: number): string {
-    const program = entitySelection.availablePrograms.find((p) => p.id === programId);
-    return program?.name ?? `Program ${programId}`;
+  // Helper to get program name by ID (built-in or external)
+  function getProgramName(programId: EntityId): string {
+    const builtin = entitySelection.availablePrograms.find((p) => p.id === programId);
+    if (builtin) return builtin.name;
+    const external = entitySelection.availableExternalPrograms.find((p) => p.id === programId);
+    return external?.name ?? `Program ${String(programId)}`;
   }
 
   // Drag-and-drop column reorder handlers
-  function handleDragStart(programId: number, event: DragEvent) {
+  function handleDragStart(programId: EntityId, event: DragEvent) {
     if (programId === defaultProgramId || !event.dataTransfer) {
       return;
     }
@@ -321,7 +324,7 @@
     event.dataTransfer.effectAllowed = "move";
   }
 
-  function handleDragOver(programId: number, event: DragEvent) {
+  function handleDragOver(programId: EntityId, event: DragEvent) {
     if (
       !event.dataTransfer ||
       programId === defaultProgramId ||
@@ -340,7 +343,7 @@
     dragOverProgramId = null;
   }
 
-  function handleDrop(targetProgramId: number, event: DragEvent) {
+  function handleDrop(targetProgramId: EntityId, event: DragEvent) {
     event.preventDefault();
     dragOverProgramId = null;
 
@@ -376,7 +379,7 @@
   }
 
   // Keyboard column reorder (Alt+Arrow)
-  function handleColumnKeydown(programId: number, event: KeyboardEvent) {
+  function handleColumnKeydown(programId: EntityId, event: KeyboardEvent) {
     if (!multiProgramState || programId === defaultProgramId) return;
 
     const currentOrder = multiProgramState.programDisplayOrder;
@@ -403,7 +406,7 @@
   }
 
   // Column visibility toggle handler
-  function handleToggleColumnVisibility(programId: number) {
+  function handleToggleColumnVisibility(programId: EntityId) {
     if (!multiProgramState || programId === defaultProgramId) return;
     multiProgramState.toggleColumnVisibility(programId);
   }
