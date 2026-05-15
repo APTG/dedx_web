@@ -230,6 +230,7 @@ describe("JsrootPlot", () => {
     const calls = (
       vi.mocked(JSROOT.createTGraph).mock.calls as Array<[number, number[], number[]]>
     ).slice(-2);
+    // Alpha (A=4) energies convert from 1,2 MeV/nucl to 4,8 total MeV.
     expect(calls[0]?.[1]).toEqual([4, 8]);
     expect(calls[1]?.[1]).toEqual([1, 2]);
     const hist = vi.mocked(JSROOT.createHistogram).mock.results.at(-1)?.value as {

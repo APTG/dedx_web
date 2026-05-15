@@ -2,6 +2,8 @@ import type { StpUnit } from "$lib/wasm/types";
 
 export type PlotEnergyAxisUnit = "MeV" | "MeV/nucl";
 
+const ELECTRON_PARTICLE_ID = 1001;
+
 export const COLOR_PALETTE: readonly string[] = [
   "#e41a1c", // red
   "#377eb8", // blue
@@ -86,6 +88,12 @@ export function buildDrawOptions(xLog: boolean, yLog: boolean): string {
   return opts.join(";");
 }
 
+/**
+ * Minimal series shape needed to derive Plot energy-axis units.
+ * `particleId` identifies libdedx electrons; `particleMassNumber` classifies
+ * protons and heavier ions. Both are optional so older tests and fallback data
+ * default safely to MeV/nucl rather than being misclassified as protons.
+ */
 interface SeriesForEnergyAxis {
   particleId?: number | string;
   particleMassNumber?: number | undefined;
@@ -93,7 +101,7 @@ interface SeriesForEnergyAxis {
 }
 
 function isElectronSeries(series: SeriesForEnergyAxis): boolean {
-  return series.particleId === 1001 || series.particleMassNumber === 0;
+  return series.particleId === ELECTRON_PARTICLE_ID || series.particleMassNumber === 0;
 }
 
 function isProtonSeries(series: SeriesForEnergyAxis): boolean {

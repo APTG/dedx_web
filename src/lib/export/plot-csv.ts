@@ -27,6 +27,12 @@ function sanitizeCsvCell(value: string): string {
  * Returns true for Case A (single shared Energy column), false for Case B
  * (each series gets its own Energy column).
  */
+/**
+ * Exact grid equality check for deciding whether CSV export may use one
+ * shared Energy column. Display grids are generated from the same numeric
+ * arrays used for plotting, so exact equality avoids hiding any conversion
+ * differences between per-series X values.
+ */
 function hasSameEnergyGrid(a: number[], b: number[]): boolean {
   if (a.length !== b.length) return false;
   return a.every((value, index) => value === b[index]);
