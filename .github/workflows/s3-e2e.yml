@@ -94,7 +94,7 @@ jobs:
             -H "Origin: $PLAYWRIGHT_PREVIEW_ORIGIN" \
             http://127.0.0.1:9000/dedxweb/srim-synthetic.webdedx/zarr.json
           allowed_origin="$(
-            awk 'BEGIN { IGNORECASE = 1 } /^access-control-allow-origin:/ { sub(/\r$/, ""); print substr($0, index($0, ":") + 2) }' "$cors_headers" | tail -n 1
+            awk 'BEGIN { IGNORECASE = 1 } /^access-control-allow-origin:/ { value = substr($0, index($0, ":") + 1); gsub(/^[[:space:]]+|[[:space:]\r]+$/, "", value); print value }' "$cors_headers" | tail -n 1
           )"
           case "$allowed_origin" in
             "$PLAYWRIGHT_PREVIEW_ORIGIN"|"*") ;;
