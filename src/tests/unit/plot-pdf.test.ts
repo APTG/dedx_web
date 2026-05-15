@@ -5,7 +5,7 @@ import * as pdfModule from "$lib/export/pdf";
 // Mock jsPDF
 vi.mock("jspdf", () => {
   return {
-    default: vi.fn().mockImplementation(() => {
+    default: vi.fn().mockImplementation(function () {
       return {
         internal: {
           pageSize: {

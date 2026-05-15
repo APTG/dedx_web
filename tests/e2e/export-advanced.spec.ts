@@ -146,11 +146,16 @@ test.describe("Export Advanced Mode", () => {
 
     // Add a series first
     const addSeriesButton = page.getByRole("button", { name: /add series/i });
+    await expect(addSeriesButton).toBeEnabled({ timeout: 8000 });
     await addSeriesButton.click();
+
+    const exportCsvBtnBasic = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsvBtnBasic).toBeEnabled({ timeout: 8000 });
 
     // Wait for the image export button to appear
     const imageExportBtn = page.getByRole("button", { name: /export.*image/i });
     await expect(imageExportBtn).toBeVisible({ timeout: 8000 });
+    await expect(imageExportBtn).toBeEnabled({ timeout: 8000 });
     await imageExportBtn.click();
 
     // Wait for menu to open and check SVG option exists
@@ -168,11 +173,16 @@ test.describe("Export Advanced Mode", () => {
 
     // Add a series in advanced mode
     const addSeriesButtonAdvanced = page.getByRole("button", { name: /add series/i });
+    await expect(addSeriesButtonAdvanced).toBeEnabled({ timeout: 8000 });
     await addSeriesButtonAdvanced.click();
+
+    const exportCsvBtnAdvanced = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsvBtnAdvanced).toBeEnabled({ timeout: 8000 });
 
     // Wait for image export button to be visible again
     const imageExportBtnAdvanced = page.getByRole("button", { name: /export.*image/i });
     await expect(imageExportBtnAdvanced).toBeVisible({ timeout: 8000 });
+    await expect(imageExportBtnAdvanced).toBeEnabled({ timeout: 8000 });
     await imageExportBtnAdvanced.click();
 
     await page.waitForSelector('[role="menu"]', { timeout: 3000 });
