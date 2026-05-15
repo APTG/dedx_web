@@ -53,6 +53,14 @@ function matchesForbiddenPattern(path) {
   return FORBIDDEN_PATH_PATTERNS.some((pattern) => pattern.test(path));
 }
 
+// Allow dedicated submodule-maintenance PRs: every changed path must be a vendor gitlink.
+function isScopedVendorGitlinkOnlyChange(paths, vendorGitlinks) {
+  if (vendorGitlinks.length === 0) return false;
+  if (paths.length === 0) return true;
+  const vendorGitlinkSet = new Set(vendorGitlinks);
+  return paths.every((path) => vendorGitlinkSet.has(path));
+}
+
 function listChangedFiles(mode, range) {
   if (mode === "staged") {
     const changed = run("git diff --cached --name-only --diff-filter=ACMRDTUXB");
@@ -95,13 +103,16 @@ function main() {
   const { paths, vendorGitlinks } = listChangedFiles(mode, range);
 
   const pathViolations = paths.filter(matchesForbiddenPattern);
+  const allowScopedVendorGitlinks = isScopedVendorGitlinkOnlyChange(paths, vendorGitlinks);
   const allViolations = [];
 
   for (const path of pathViolations) {
     allViolations.push(`forbidden generated/artifact path: ${path}`);
   }
-  for (const path of vendorGitlinks) {
-    allViolations.push(`forbidden vendor gitlink change: ${path}`);
+  if (!allowScopedVendorGitlinks) {
+    for (const path of vendorGitlinks) {
+      allViolations.push(`forbidden vendor gitlink change: ${path}`);
+    }
   }
 
   if (allViolations.length > 0) {

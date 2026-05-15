@@ -950,5 +950,21 @@ bundle native resvg bindings.
 
 ---
 
+## Entry 45 — Vendor-only submodule bumps are scoped maintenance PRs
+
+**Symptom:** Dependabot submodule PRs for `vendor/svelte`,
+`vendor/shadcn-svelte`, and `vendor/svelte-ai-tools` failed the workflow guard
+with `forbidden vendor gitlink change`, even though each PR contained only the
+intended vendor gitlink bump.
+
+**Root cause:** The guard treated every `vendor/**` gitlink diff as accidental.
+That was correct for feature PRs, but it contradicted the guard's own guidance
+that intentional vendor maintenance should happen in a separate scoped PR.
+
+**Rule:** Guard vendor gitlinks by diff scope: allow diffs where every changed
+path is a vendor gitlink, and keep rejecting mixed first-party/vendor changes.
+
+---
+
 _Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
