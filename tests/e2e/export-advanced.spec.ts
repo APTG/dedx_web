@@ -149,7 +149,7 @@ test.describe("Export Advanced Mode", () => {
     await expect(addSeriesButton).toBeEnabled({ timeout: 8000 });
     await addSeriesButton.click();
 
-    const exportCsvBtnBasic = page.getByTestId("export-csv-btn");
+    const exportCsvBtnBasic = page.getByRole("button", { name: /export csv/i });
     await expect(exportCsvBtnBasic).toBeEnabled({ timeout: 8000 });
 
     // Wait for the image export button to appear
@@ -176,7 +176,7 @@ test.describe("Export Advanced Mode", () => {
     await expect(addSeriesButtonAdvanced).toBeEnabled({ timeout: 8000 });
     await addSeriesButtonAdvanced.click();
 
-    const exportCsvBtnAdvanced = page.getByTestId("export-csv-btn");
+    const exportCsvBtnAdvanced = page.getByRole("button", { name: /export csv/i });
     await expect(exportCsvBtnAdvanced).toBeEnabled({ timeout: 8000 });
 
     // Wait for image export button to be visible again

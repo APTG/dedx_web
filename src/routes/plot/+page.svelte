@@ -730,6 +730,8 @@
   // Dropdown state
   let showExportMenu = $state(false);
   let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
+  const FALLBACK_EXPORT_WIDTH = 800;
+  const FALLBACK_EXPORT_HEIGHT = 600;
 
   function getSvgFromRenderedPlot(): string | null {
     const svgEl = document.querySelector('[role="img"] svg');
@@ -742,13 +744,15 @@
       const svg = await getSvg();
       if (svg) return svg;
     }
+    // Fallback path: serialize the currently rendered plot SVG from the DOM
+    // when JSROOT callback export is temporarily unavailable.
     return getSvgFromRenderedPlot();
   }
 
   async function downloadSvg() {
     const svgString =
       (await resolveSvgForExport()) ??
-      '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"></svg>';
+      `<svg xmlns="http://www.w3.org/2000/svg" width="${FALLBACK_EXPORT_WIDTH}" height="${FALLBACK_EXPORT_HEIGHT}"></svg>`;
 
     // Create blob and trigger download
     const blob = new Blob([svgString], { type: "image/svg+xml" });
@@ -772,6 +776,8 @@
       const { svgToPng } = await import("$lib/export/pdf.js");
       pngDataUrl = await svgToPng(svgString, 210, 148); // A5 landscape approx
     } else {
+      // Fallback path: if SVG export isn't available, export from the rendered
+      // canvas output directly.
       const renderedCanvas = document.querySelector('[role="img"] canvas');
       if (renderedCanvas instanceof HTMLCanvasElement) {
         pngDataUrl = renderedCanvas.toDataURL("image/png");
@@ -780,8 +786,8 @@
 
     if (!pngDataUrl) {
       const fallbackCanvas = document.createElement("canvas");
-      fallbackCanvas.width = 1;
-      fallbackCanvas.height = 1;
+      fallbackCanvas.width = FALLBACK_EXPORT_WIDTH;
+      fallbackCanvas.height = FALLBACK_EXPORT_HEIGHT;
       pngDataUrl = fallbackCanvas.toDataURL("image/png");
     }
 

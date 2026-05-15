@@ -164,8 +164,8 @@ test.describe("Plot export", () => {
     await addSeriesButton2.click();
 
     // Wait for series calculation/rendering to finish before opening image export
-    const exportCsv = page.getByRole("button", { name: /export csv/i });
-    await expect(exportCsv).toBeEnabled({ timeout: 8000 });
+    const exportCsvButton = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsvButton).toBeEnabled({ timeout: 8000 });
 
     // Wait for the image export button to appear (series rendered in JSROOT)
     const imageExportButton = page.getByRole("button", { name: /export.*image/i });
