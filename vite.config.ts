@@ -1,5 +1,6 @@
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
+import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
@@ -23,9 +24,10 @@ export default defineConfig({
   optimizeDeps: {
     include: ["svelte", "@testing-library/svelte"],
   },
-  resolve: process.env.VITEST
-    ? {
-        conditions: ["browser"],
-      }
-    : undefined,
+  resolve: {
+    alias: {
+      "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
+    },
+    ...(process.env.VITEST ? { conditions: ["browser"] } : {}),
+  },
 });

@@ -934,5 +934,21 @@ from rendered DOM (SVG/canvas) when the JSROOT callback returns `null`.
 
 ---
 
+## Entry 44 — Alias JSROOT's Node-only resvg backend out of browser builds
+
+**Symptom:** A JSROOT minor bump made the SvelteKit production build fail in
+Rolldown while loading `@resvg/resvg-js` native `.node` bindings from the
+browser bundle.
+
+**Root cause:** JSROOT 7.11 dynamically imports `@resvg/resvg-js` for Node.js
+SVG-to-image conversion. Rolldown still resolves that dependency during the
+client build, even though the branch is guarded by JSROOT's Node detection.
+
+**Rule:** For browser-only JSROOT usage, keep a Vite alias for
+`@resvg/resvg-js` to a local throwing browser shim so client builds never try to
+bundle native resvg bindings.
+
+---
+
 _Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
