@@ -918,5 +918,21 @@ for each workspace that ships that lockfile.
 
 ---
 
+## Entry 43 — Do not gate plot image export UI on JSROOT callback wiring alone
+
+**Symptom:** Playwright export tests timed out clicking “Export image” because
+the button stayed disabled even after adding a visible series.
+
+**Root cause:** The image-export button enablement relied on `getSvg` callback
+binding from `JsrootPlot`. Under tooling/runtime changes this callback can be
+temporarily null even when plot data is exportable, so UI stayed disabled and
+downloads never triggered.
+
+**Rule:** Gate plot image-export interactivity on plot export state
+(`canExport.value` / visible committed series), and keep a fallback export path
+from rendered DOM (SVG/canvas) when the JSROOT callback returns `null`.
+
+---
+
 _Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

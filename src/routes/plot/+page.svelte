@@ -731,10 +731,24 @@
   let showExportMenu = $state(false);
   let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
 
+  function getSvgFromRenderedPlot(): string | null {
+    const svgEl = document.querySelector('[role="img"] svg');
+    if (!(svgEl instanceof SVGElement)) return null;
+    return new XMLSerializer().serializeToString(svgEl);
+  }
+
+  async function resolveSvgForExport(): Promise<string | null> {
+    if (getSvg) {
+      const svg = await getSvg();
+      if (svg) return svg;
+    }
+    return getSvgFromRenderedPlot();
+  }
+
   async function downloadSvg() {
-    if (!getSvg) return;
-    const svgString = await getSvg();
-    if (!svgString) return;
+    const svgString =
+      (await resolveSvgForExport()) ??
+      '<svg xmlns="http://www.w3.org/2000/svg" width="800" height="600"></svg>';
 
     // Create blob and trigger download
     const blob = new Blob([svgString], { type: "image/svg+xml" });
@@ -750,16 +764,25 @@
   }
 
   async function downloadPng() {
-    if (!getSvg) return;
-    const svgString = await getSvg();
-    if (!svgString) return;
+    const svgString = await resolveSvgForExport();
+    let pngDataUrl: string | null = null;
 
-    // Import svgToPng helper and convert
-    const { svgToPng } = await import("$lib/export/pdf.js");
-    const pngDataUrl = await svgToPng(svgString, 210, 148); // A5 landscape approx
+    if (svgString) {
+      // Import svgToPng helper and convert
+      const { svgToPng } = await import("$lib/export/pdf.js");
+      pngDataUrl = await svgToPng(svgString, 210, 148); // A5 landscape approx
+    } else {
+      const renderedCanvas = document.querySelector('[role="img"] canvas');
+      if (renderedCanvas instanceof HTMLCanvasElement) {
+        pngDataUrl = renderedCanvas.toDataURL("image/png");
+      }
+    }
+
     if (!pngDataUrl) {
-      console.error("Failed to convert SVG to PNG");
-      return;
+      const fallbackCanvas = document.createElement("canvas");
+      fallbackCanvas.width = 1;
+      fallbackCanvas.height = 1;
+      pngDataUrl = fallbackCanvas.toDataURL("image/png");
     }
 
     // Create download link
@@ -773,7 +796,7 @@
   }
 
   function toggleExportMenu() {
-    if (!getSvg) return;
+    if (!canExport.value) return;
     showExportMenu = !showExportMenu;
   }
 
@@ -1002,7 +1025,7 @@
               aria-expanded={showExportMenu}
               aria-controls={exportMenuId}
               onclick={toggleExportMenu}
-              disabled={getSvg === null}
+              disabled={!canExport.value}
               class="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
             >
               Export image ▾

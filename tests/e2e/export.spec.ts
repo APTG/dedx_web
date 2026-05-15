@@ -160,10 +160,17 @@ test.describe("Plot export", () => {
 
     // Add a series first
     const addSeriesButton2 = page.getByRole("button", { name: /add series/i });
+    await expect(addSeriesButton2).toBeEnabled({ timeout: 8000 });
     await addSeriesButton2.click();
+
+    // Wait for series calculation/rendering to finish before opening image export
+    const exportCsv = page.getByRole("button", { name: /export csv/i });
+    await expect(exportCsv).toBeEnabled({ timeout: 8000 });
+
     // Wait for the image export button to appear (series rendered in JSROOT)
     const imageExportButton = page.getByRole("button", { name: /export.*image/i });
     await expect(imageExportButton).toBeVisible({ timeout: 8000 });
+    await expect(imageExportButton).toBeEnabled({ timeout: 8000 });
     await imageExportButton.click();
 
     // Select SVG vector
