@@ -342,6 +342,7 @@
                     programName,
                     particleName,
                     materialName,
+                    particleMassNumber: particleA,
                     density,
                     result,
                   });
@@ -377,6 +378,7 @@
               programName: prog.name,
               particleName: getParticleLabel(part),
               materialName: mat.name,
+              particleMassNumber: part.massNumber,
               density: mat.density,
               result,
             });
@@ -526,6 +528,7 @@
             programName: extProgramName,
             particleName: getParticleLabel(selectedParticle),
             materialName: selectedMaterial.name,
+            particleMassNumber: particleA,
             density: selectedMaterial.density ?? 1,
             result,
           });
@@ -596,6 +599,7 @@
           programName,
           particleName: getParticleLabel(builtinPreviewParticle),
           materialName: selectedMaterial.name,
+          particleMassNumber: builtinPreviewParticle.massNumber,
           // Use the density override (only in Advanced mode) for correct unit conversion.
           // advancedModeActive is snapshotted synchronously at the top of this effect.
           density:
@@ -676,6 +680,7 @@
       programName: p.programName,
       particleName: getParticleLabel(selectedParticle),
       materialName: selectedMaterial.name,
+      particleMassNumber: p.particleMassNumber,
       // Preserve the density that was active when the preview was computed
       // so committed series display the same values as the preview did.
       density: p.density,

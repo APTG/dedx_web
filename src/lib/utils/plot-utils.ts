@@ -1,5 +1,7 @@
 import type { StpUnit } from "$lib/wasm/types";
 
+export type PlotEnergyAxisUnit = "MeV" | "MeV/nucl";
+
 export const COLOR_PALETTE: readonly string[] = [
   "#e41a1c", // red
   "#377eb8", // blue
@@ -84,8 +86,49 @@ export function buildDrawOptions(xLog: boolean, yLog: boolean): string {
   return opts.join(";");
 }
 
+interface SeriesForEnergyAxis {
+  particleId?: number | string;
+  particleMassNumber?: number | undefined;
+  visible: boolean;
+}
+
+function isElectronSeries(series: SeriesForEnergyAxis): boolean {
+  return series.particleId === 1001 || series.particleMassNumber === 0;
+}
+
+function isProtonSeries(series: SeriesForEnergyAxis): boolean {
+  return series.particleMassNumber === 1;
+}
+
+export function getPlotEnergyAxisUnit(series: SeriesForEnergyAxis[]): PlotEnergyAxisUnit {
+  const visibleSeries = series.filter((s) => s.visible);
+  if (visibleSeries.length === 0) return "MeV";
+  if (visibleSeries.some(isElectronSeries)) return "MeV";
+  if (visibleSeries.every(isProtonSeries)) return "MeV";
+  return "MeV/nucl";
+}
+
+export function getPlotEnergyAxisLabel(series: SeriesForEnergyAxis[]): string {
+  return `Energy [${getPlotEnergyAxisUnit(series)}]`;
+}
+
+export function convertEnergyForDisplay(
+  energies: number[],
+  series: Pick<SeriesForEnergyAxis, "particleMassNumber">,
+  axisUnit: PlotEnergyAxisUnit,
+): number[] {
+  if (axisUnit === "MeV/nucl") return energies;
+  const multiplier =
+    series.particleMassNumber !== undefined && series.particleMassNumber > 1
+      ? series.particleMassNumber
+      : 1;
+  return multiplier === 1 ? energies : energies.map((energy) => energy * multiplier);
+}
+
 interface SeriesForRange {
   result: { energies: number[]; stoppingPowers: number[] };
+  particleId?: number | string;
+  particleMassNumber?: number | undefined;
   density: number;
   visible: boolean;
 }
@@ -119,6 +162,7 @@ export function computeAxisRanges(
   ];
 
   if (allVisible.length === 0) return DEFAULT_RANGES;
+  const energyAxisUnit = getPlotEnergyAxisUnit(allVisible);
 
   let xMinRaw = Infinity;
   let xMaxRaw = -Infinity;
@@ -127,9 +171,10 @@ export function computeAxisRanges(
 
   for (const s of allVisible) {
     const { energies, stoppingPowers } = s.result;
+    const xData = convertEnergyForDisplay(energies, s, energyAxisUnit);
     const yData = convertStpForDisplay(stoppingPowers, s.density, stpUnit);
 
-    for (const e of energies) {
+    for (const e of xData) {
       if (e > 0 && e < xMinRaw) xMinRaw = e;
       if (e > xMaxRaw) xMaxRaw = e;
     }

@@ -11,6 +11,7 @@ export interface PlotSeriesData {
   programName: string;
   particleName: string;
   materialName: string;
+  particleMassNumber?: number | undefined;
   density: number;
   result: CalculationResult;
 }

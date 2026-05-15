@@ -1,7 +1,13 @@
 <script lang="ts">
   import type { PlotSeries } from "$lib/state/plot.svelte";
   import type { StpUnit } from "$lib/wasm/types";
-  import { convertStpForDisplay, buildDrawOptions } from "$lib/utils/plot-utils";
+  import {
+    convertEnergyForDisplay,
+    convertStpForDisplay,
+    buildDrawOptions,
+    getPlotEnergyAxisLabel,
+    getPlotEnergyAxisUnit,
+  } from "$lib/utils/plot-utils";
 
   interface AxisRanges {
     xMin: number;
@@ -196,9 +202,12 @@
       ...opts.series.filter((s) => s.visible),
     ];
 
+    const energyAxisUnit = getPlotEnergyAxisUnit(allVisible);
+
     const graphs = allVisible.map((s) => {
+      const xData = convertEnergyForDisplay(s.result.energies, s, energyAxisUnit);
       const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
-      const tgraph = JSROOT_any.createTGraph(s.result.energies.length, s.result.energies, yData);
+      const tgraph = JSROOT_any.createTGraph(xData.length, xData, yData);
       const isPreview = s.seriesId === 0;
       const isExternal = typeof s.programId === "string";
       tgraph.fLineColor = isPreview ? 1 : s.colorIndex + 2;
@@ -212,7 +221,7 @@
     const mg = JSROOT_any.createTMultiGraph(...graphs);
 
     const hist = JSROOT_any.createHistogram("TH1F", 20);
-    hist.fXaxis.fTitle = "Energy [MeV/nucl]";
+    hist.fXaxis.fTitle = getPlotEnergyAxisLabel(allVisible);
     hist.fXaxis.fXmin = opts.axisRanges.xMin;
     hist.fXaxis.fXmax = opts.axisRanges.xMax;
     hist.fYaxis.fTitle = `Stopping Power [${opts.stpUnit}]`;

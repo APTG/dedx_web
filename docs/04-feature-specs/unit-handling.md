@@ -552,6 +552,10 @@ Auto-scaling examples from cm:
 - Calculator + water (non-gas): stopping power defaults to `keV/µm`.
 - Calculator + air (gas): stopping power defaults to `MeV·cm²/g`.
 - Plot (any material mix): initial selected unit is `keV/µm` until changed by user.
+- Plot energy X-axis units are derived from the visible particle mix: protons
+  only → `MeV`; any electron series → `MeV` with ion X values converted to
+  total MeV; heavy ions without electrons → `MeV/nucl`. See
+  [`plot.md`](plot.md#5-energy-x-axis-units).
 
 ---
 

@@ -1,7 +1,11 @@
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { StpUnit } from "$lib/wasm/types";
 import type { CsvOptions } from "$lib/export/csv";
-import { convertStpForDisplay } from "$lib/utils/plot-utils";
+import {
+  convertEnergyForDisplay,
+  convertStpForDisplay,
+  getPlotEnergyAxisUnit,
+} from "$lib/utils/plot-utils";
 import { makeCsvCell } from "$lib/export/csv";
 
 /**
@@ -23,18 +27,25 @@ function sanitizeCsvCell(value: string): string {
  * Returns true for Case A (single shared Energy column), false for Case B
  * (each series gets its own Energy column).
  */
-function isSharedEnergyGrid(series: PlotSeries[]): boolean {
+function hasSameEnergyGrid(a: number[], b: number[]): boolean {
+  if (a.length !== b.length) return false;
+  return a.every((value, index) => value === b[index]);
+}
+
+function isSharedEnergyGrid(series: PlotSeries[], displayEnergyValues: number[][]): boolean {
   if (series.length === 0) return true;
   if (series.length === 1) return true;
 
-  const firstCount = series[0]!.result.energies.length;
+  const firstGrid = displayEnergyValues[0]!;
   for (const s of series) {
     // Case B if any series has ext: prefix
     if (s.programName.startsWith("ext:")) {
       return false;
     }
-    // Case B if any series has different point count
-    if (s.result.energies.length !== firstCount) {
+  }
+  for (const grid of displayEnergyValues) {
+    // Case B if any series has a different displayed energy grid.
+    if (!hasSameEnergyGrid(grid, firstGrid)) {
       return false;
     }
   }
@@ -70,7 +81,11 @@ function formatValue(value: number): string {
  * - Hidden series (visible === false) are excluded
  * - Shorter series in Case B are padded with empty cells
  */
-export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: CsvOptions): string {
+export function formatPlotCsv(
+  series: PlotSeries[],
+  stpUnit: StpUnit,
+  options?: CsvOptions,
+): string {
   // Filter out hidden series
   const visibleSeries = series.filter((s) => s.visible);
 
@@ -79,18 +94,22 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: 
     return "\uFEFF";
   }
 
-  const caseA = isSharedEnergyGrid(visibleSeries);
+  const energyAxisUnit = getPlotEnergyAxisUnit(visibleSeries);
+  const displayEnergyValues = visibleSeries.map((s) =>
+    convertEnergyForDisplay(s.result.energies, s, energyAxisUnit),
+  );
+  const caseA = isSharedEnergyGrid(visibleSeries, displayEnergyValues);
 
   // Build header
   const headerCells: string[] = [];
   if (caseA) {
-    headerCells.push(makeCsvCell(`Energy [MeV/nucl]`));
+    headerCells.push(makeCsvCell(`Energy [${energyAxisUnit}]`));
   }
 
   for (const s of visibleSeries) {
     if (!caseA) {
       // Case B: each series gets its own Energy column
-      const energyHeader = `Energy ${s.programName} [MeV/nucl]`;
+      const energyHeader = `Energy ${s.programName} [${energyAxisUnit}]`;
       headerCells.push(makeCsvCell(sanitizeCsvCell(energyHeader)));
     }
     const stpHeader = `Stp ${s.programName} — ${s.particleName} in ${s.materialName} (${stpUnit})`;
@@ -114,7 +133,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: 
       // Case A: single shared Energy column (from first series)
       const firstSeries = visibleSeries[0]!;
       if (rowIdx < firstSeries.result.energies.length) {
-        rowCells.push(formatValue(firstSeries.result.energies[rowIdx] ?? 0));
+        rowCells.push(formatValue(displayEnergyValues[0]?.[rowIdx] ?? 0));
       } else {
         rowCells.push("");
       }
@@ -128,7 +147,7 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: 
       if (!caseA) {
         // Case B: each series gets its own Energy column
         if (rowIdx < energyCount) {
-          rowCells.push(formatValue(s.result.energies[rowIdx] ?? 0));
+          rowCells.push(formatValue(displayEnergyValues[si]?.[rowIdx] ?? 0));
         } else {
           rowCells.push("");
         }
@@ -151,7 +170,10 @@ export function formatPlotCsv(series: PlotSeries[], stpUnit: StpUnit, options?: 
   const lineEnding = getLineEnding(options?.lineEndings ?? "crlf");
 
   // Build final CSV content (no BOM - added by downloadCsv())
-  const content = [headerCells.join(separator), ...rowCellArrays.map((r) => r.join(separator))].join(lineEnding);
+  const content = [
+    headerCells.join(separator),
+    ...rowCellArrays.map((r) => r.join(separator)),
+  ].join(lineEnding);
   return content;
 }
 
