@@ -54,7 +54,8 @@ function matchesForbiddenPattern(path) {
 }
 
 function isScopedVendorGitlinkOnlyChange(paths, vendorGitlinks) {
-  if (vendorGitlinks.length === 0 || paths.length === 0) return false;
+  if (vendorGitlinks.length === 0) return false;
+  if (paths.length === 0) return true;
   const vendorGitlinkSet = new Set(vendorGitlinks);
   return paths.every((path) => vendorGitlinkSet.has(path));
 }

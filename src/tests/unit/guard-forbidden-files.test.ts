@@ -7,7 +7,8 @@ import { afterEach, describe, expect, test } from "vitest";
 const scriptPath = path.join(process.cwd(), "scripts/guard-forbidden-files.cjs");
 const tempRepos: string[] = [];
 
-function run(command: string, args: string[], cwd: string) {
+function runGitCommand(args: string[], cwd: string) {
+  const command = "git";
   const result = spawnSync(command, args, { cwd, encoding: "utf8" });
   if (result.status !== 0) {
     throw new Error(
@@ -20,18 +21,23 @@ function run(command: string, args: string[], cwd: string) {
 async function makeRepo() {
   const repo = await mkdtemp(path.join(tmpdir(), "dedx-guard-test-"));
   tempRepos.push(repo);
-  run("git", ["init", "-q"], repo);
-  run("git", ["config", "user.email", "guard@example.test"], repo);
-  run("git", ["config", "user.name", "Guard Test"], repo);
+  runGitCommand(["init", "-q"], repo);
+  runGitCommand(["config", "user.email", "guard@example.test"], repo);
+  runGitCommand(["config", "user.name", "Guard Test"], repo);
   await writeFile(path.join(repo, "README.md"), "baseline\n");
-  run("git", ["add", "README.md"], repo);
-  run("git", ["commit", "-q", "-m", "baseline"], repo);
+  runGitCommand(["add", "README.md"], repo);
+  runGitCommand(["commit", "-q", "-m", "baseline"], repo);
   return repo;
 }
 
-function commitVendorGitlink(repo: string, sha: string, message: string) {
-  run("git", ["update-index", "--add", "--cacheinfo", `160000,${sha},vendor/svelte`], repo);
-  run("git", ["commit", "-q", "-m", message], repo);
+function commitVendorGitlink(
+  repo: string,
+  sha: string,
+  message: string,
+  gitlinkPath = "vendor/svelte",
+) {
+  runGitCommand(["update-index", "--add", "--cacheinfo", `160000,${sha},${gitlinkPath}`], repo);
+  runGitCommand(["commit", "-q", "-m", message], repo);
 }
 
 function runGuard(repo: string) {
@@ -64,8 +70,7 @@ describe("guard-forbidden-files", () => {
     commitVendorGitlink(repo, "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa", "add vendor gitlink");
     await mkdir(path.join(repo, "src"), { recursive: true });
     await writeFile(path.join(repo, "src", "app.ts"), "export const value = 1;\n");
-    run(
-      "git",
+    runGitCommand(
       [
         "update-index",
         "--cacheinfo",
@@ -73,8 +78,8 @@ describe("guard-forbidden-files", () => {
       ],
       repo,
     );
-    run("git", ["add", "src/app.ts"], repo);
-    run("git", ["commit", "-q", "-m", "mix app and vendor changes"], repo);
+    runGitCommand(["add", "src/app.ts"], repo);
+    runGitCommand(["commit", "-q", "-m", "mix app and vendor changes"], repo);
 
     const result = runGuard(repo);
 
@@ -86,8 +91,8 @@ describe("guard-forbidden-files", () => {
     const repo = await makeRepo();
     await mkdir(path.join(repo, "build"), { recursive: true });
     await writeFile(path.join(repo, "build", "artifact.txt"), "generated\n");
-    run("git", ["add", "build/artifact.txt"], repo);
-    run("git", ["commit", "-q", "-m", "add generated artifact"], repo);
+    runGitCommand(["add", "build/artifact.txt"], repo);
+    runGitCommand(["commit", "-q", "-m", "add generated artifact"], repo);
 
     const result = runGuard(repo);
 
