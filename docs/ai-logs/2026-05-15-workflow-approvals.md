@@ -21,5 +21,5 @@
   - `docs/07-testing-strategy.md`
   - `docs/ai-logs/2026-05-15-workflow-approvals.md`
   - `docs/ai-logs/README.md`
-- **Decision**: kept CI workflow triggers unchanged because changing to `pull_request_target` introduces known security risks; documented the correct repository-level fix instead.
+- **Decision**: kept CI workflow triggers unchanged because changing to `pull_request_target` would execute untrusted fork PR code in a privileged workflow context; documented the correct repository-level fix instead.
 - **Issue**: applying the setting still requires a maintainer/admin action in GitHub repository settings.
