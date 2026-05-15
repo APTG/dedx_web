@@ -20,7 +20,7 @@ const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
   await page.goto("/calculator");
-  await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+  await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
 
 async function waitForTable(page: import("@playwright/test").Page) {

@@ -12,7 +12,6 @@
     WATER_ID,
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
-  import EntitySelectionPanels from "$lib/components/entity-selection-panels.svelte";
   import EntitySelectionV8 from "$lib/components/v8/entity-selection-v8.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
@@ -29,9 +28,7 @@
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import { isPickerV8, initPickerV8FromUrl } from "$lib/state/picker-flag.svelte";
-  import { initPickerModeFromUrl } from "$lib/state/picker-mode.svelte";
-  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import { initPickerModeFromUrl } from "$lib/state/picker-mode.svelte";  import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
@@ -158,7 +155,6 @@
   $effect(() => {
     if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
-      initPickerV8FromUrl(page.url.searchParams);
       initPickerModeFromUrl(page.url.searchParams);
       advancedModeInitializedFromUrl = true;
     }
@@ -933,11 +929,7 @@
         {/if}
 
         {#if !isMobile || entityPanelsOpen}
-          {#if isPickerV8.value}
-            <EntitySelectionV8 selectionState={entityState} />
-          {:else}
-            <EntitySelectionPanels state={entityState} />
-          {/if}
+          <EntitySelectionV8 selectionState={entityState} />
         {/if}
 
         <!-- Add Series button -->

@@ -68,7 +68,7 @@
       aria-controls="v8-tab-panel-{tab.id}"
       tabindex={isActive ? 0 : -1}
       class={cn(
-        "flex items-baseline gap-1 rounded-t-md px-3 py-1.5 text-sm border border-b-0 transition-colors",
+        "flex items-start sm:items-baseline gap-1 rounded-t-md px-2 sm:px-3 py-1.5 text-sm border border-b-0 transition-colors",
         isActive
           ? "bg-background border-border font-semibold"
           : "bg-muted/40 border-transparent text-muted-foreground hover:bg-accent",
@@ -76,9 +76,11 @@
       onclick={() => onActivate(tab.id)}
       onkeydown={(e) => handleKeyDown(e, tab.id)}
     >
-      <span class="text-xs text-muted-foreground" aria-hidden="true">{tab.numeral}</span>
-      <span>{tab.title}:</span>
-      <span class="truncate max-w-[16ch]">{tab.value}</span>
+      <span class="text-xs text-muted-foreground leading-none mt-0.5" aria-hidden="true">{tab.numeral}</span>
+      <span class="flex min-w-0 flex-col sm:flex-row sm:items-baseline sm:gap-1">
+        <span class="leading-tight">{tab.title}<span class="hidden sm:inline">:</span></span>
+        <span class="truncate max-w-[12ch] text-xs font-normal text-muted-foreground sm:text-inherit sm:font-[inherit] sm:max-w-[16ch]">{tab.value}</span>
+      </span>
     </button>
   {/each}
 </div>

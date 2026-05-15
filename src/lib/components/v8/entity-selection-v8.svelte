@@ -24,11 +24,29 @@
     selectionState: EntitySelectionState;
     onParticleSelect?: (particleId: number | string) => void;
     class?: string;
+    /**
+     * When true (Calculator page), the tab panel auto-collapses once all
+     * three selections are complete, reclaiming vertical space. Clicking any
+     * tab or recipe-bar item re-expands it. Plot page keeps panels always open.
+     */
+    collapsible?: boolean;
   }
 
-  let { selectionState, onParticleSelect, class: className }: Props = $props();
+  let { selectionState, onParticleSelect, class: className, collapsible = false }: Props = $props();
 
   let activeTab = $state<V8Tab>("particle");
+  let panelOpen = $state(true);
+
+  $effect(() => {
+    if (collapsible && selectionState.isComplete) {
+      panelOpen = false;
+    }
+  });
+
+  function openPanel(tab: V8Tab): void {
+    activeTab = tab;
+    panelOpen = true;
+  }
 
   /**
    * Auto-advance to the next "non-completed" tab after a selection.
@@ -83,43 +101,46 @@
 >
   <RecipeBar
     {selectionState}
-    onActivateTab={(tab) => (activeTab = tab)}
+    onActivateTab={(tab) => openPanel(tab)}
     onReset={() => {
       selectionState.resetAll();
       activeTab = "particle";
+      panelOpen = true;
     }}
   />
   <TabBar
     {activeTab}
     {selectionState}
-    onActivate={(tab) => (activeTab = tab)}
+    onActivate={(tab) => openPanel(tab)}
   />
 
-  <div
-    id="v8-tab-panel-{activeTab}"
-    role="tabpanel"
-    aria-labelledby="v8-tab-{activeTab}"
-    class="rounded-b-lg border bg-background p-3 min-h-[260px]"
-    data-testid="v8-tab-panel"
-    data-active-tab={activeTab}
-  >
-    {#if activeTab === "particle"}
-      <ParticleTab
-        {selectionState}
-        onSelect={handleParticleSelect}
-        onClear={() => selectionState.clearParticle()}
-      />
-    {:else if activeTab === "material"}
-      <MaterialTab
-        {selectionState}
-        onSelect={handleMaterialSelect}
-        onClear={() => selectionState.clearMaterial()}
-      />
-    {:else if activeTab === "program"}
-      <ProgramTab
-        {selectionState}
-        onSelect={handleProgramSelect}
-      />
-    {/if}
-  </div>
+  {#if panelOpen}
+    <div
+      id="v8-tab-panel-{activeTab}"
+      role="tabpanel"
+      aria-labelledby="v8-tab-{activeTab}"
+      class="rounded-b-lg border bg-background p-3 min-h-[260px]"
+      data-testid="v8-tab-panel"
+      data-active-tab={activeTab}
+    >
+      {#if activeTab === "particle"}
+        <ParticleTab
+          {selectionState}
+          onSelect={handleParticleSelect}
+          onClear={() => { selectionState.clearParticle(); panelOpen = true; }}
+        />
+      {:else if activeTab === "material"}
+        <MaterialTab
+          {selectionState}
+          onSelect={handleMaterialSelect}
+          onClear={() => { selectionState.clearMaterial(); panelOpen = true; }}
+        />
+      {:else if activeTab === "program"}
+        <ProgramTab
+          {selectionState}
+          onSelect={handleProgramSelect}
+        />
+      {/if}
+    </div>
+  {/if}
 </div>

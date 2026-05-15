@@ -21,15 +21,15 @@ test.describe("Responsive layout — Calculator @smoke", () => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
-    const particleCombo = page.locator('[aria-label="Particle"]');
-    const materialCombo = page.locator('[aria-label="Material"]');
-    await expect(particleCombo).toBeVisible();
-    await expect(materialCombo).toBeVisible();
+    const particleTab = page.locator('[data-testid="v8-tab-particle"]');
+    const materialTab = page.locator('[data-testid="v8-tab-material"]');
+    await expect(particleTab).toBeVisible();
+    await expect(materialTab).toBeVisible();
 
-    // On mobile viewports entity comboboxes stack vertically:
-    // the top of materialCombo must be ≥ bottom of particleCombo
-    const pBox = await particleCombo.boundingBox();
-    const mBox = await materialCombo.boundingBox();
+    // On mobile viewports entity tabs stack vertically:
+    // the top of materialTab must be ≥ bottom of particleTab
+    const pBox = await particleTab.boundingBox();
+    const mBox = await materialTab.boundingBox();
     const viewport = page.viewportSize();
     if (pBox && mBox && viewport && viewport.width < 900) {
       expect(mBox.y).toBeGreaterThanOrEqual(pBox.y + pBox.height - 4); // 4px tolerance

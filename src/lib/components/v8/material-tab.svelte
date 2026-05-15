@@ -159,8 +159,7 @@
   {#if selected}
     {@const dens = formatDensity(selected)}
     <SelectedPill
-      label={selected.name}
-      meta={dens ? `ρ=${dens} g/cm³` : undefined}
+      label={dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}
       glyph={isGas(selected) ? "≋" : isExternal(selected) ? "🔗" : undefined}
       onClear={onClear}
       data-testid="v8-material-selected"

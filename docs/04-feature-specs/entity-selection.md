@@ -1,8 +1,8 @@
 # Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** v8 draft (2026-05-15) — in active redesign, see issue
-> [#504](https://github.com/APTG/dedx_web/issues/504). v7 (below) remains the
-> production behaviour until the v8 feature flag is flipped.
+> **Status:** v8 production (2026-05-15) — the v8 tabbed picker is now the
+> default on both the Calculator and Plot pages. v7 combobox/panel components
+> have been removed.
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -10,17 +10,51 @@
 
 ---
 
-## v8 (draft) — Tabbed picker redesign
+## v8 — Tabbed picker
 
-> **Status:** Draft v8 (2026-05-15) — supersedes the layout sections of v7.
-> **The compatibility-matrix data model and bidirectional filtering rules from
-> v7 are unchanged** — only the rendering layer is replaced. Acceptance
+> **Status:** Production (2026-05-15) — v7 removed.
+> **The compatibility-matrix data model and bidirectional filtering rules are
+> unchanged** — only the rendering layer was replaced. Acceptance
 > criteria around defaults, persistence, search, ARIA, and error handling
 > carry over from v7 verbatim unless noted.
->
-> Roll-out: behind a `?v8=1` URL feature flag during PR #1 — v7 stays the
-> default. PR #2 ships the adaptive compatibility overlay and flips the
-> default. v7 components are removed in a third clean-up PR.
+
+### Collapsible panel (Calculator only)
+
+On the Calculator page the tab panel auto-collapses once all three selections
+are complete, recovering vertical space for the results table. Clicking any tab
+or recipe-bar segment re-expands the panel. The Plot page keeps panels always
+expanded. The `collapsible` prop on `<EntitySelectionV8>` controls this:
+
+```svelte
+<!-- Calculator — panel auto-collapses when complete -->
+<EntitySelectionV8 selectionState={entityState} collapsible={true} />
+
+<!-- Plot — always expanded -->
+<EntitySelectionV8 selectionState={entityState} />
+```
+
+### Particle list Z display
+
+Atomic number is shown inline within the particle name rather than as a
+separate far-right column:
+
+- Proton → `proton (Z=1)`
+- Alpha → `alpha particle (Z=2)`
+- Ions with symbol bracket → `Lithium (Li, Z=3)`
+
+The selected-pill label also includes Z inline (no separate `meta` prop).
+
+### Mobile tab layout
+
+At narrow viewports (`< sm / 640px`) the selected-value in each tab button
+is stacked below the tab title rather than inline to the right:
+
+```
+① Particle
+proton (Z=1)
+```
+
+At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 
 ### Why a v8
 

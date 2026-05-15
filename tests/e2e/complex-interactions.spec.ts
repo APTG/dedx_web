@@ -12,7 +12,7 @@ const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
   await page.goto("/calculator");
-  await page.waitForSelector('[aria-label="Particle"]', { timeout: WASM_TIMEOUT });
+  await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
 
 /** Wait until the result table is visible (entity selection is complete). */
@@ -184,17 +184,16 @@ test.describe("Calculator — auto-select and program resolution", () => {
   test("switching to Urea (if available): either shows results or a clear no-program message", async ({
     page,
   }) => {
-    // Open material dropdown and search for Urea
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const searchInput = page.locator('input[placeholder="Name or ID..."]').first();
+    // Open material tab and search for Urea
+    await page.getByTestId("v8-tab-material").click();
+    const searchInput = page.getByTestId("v8-material-search");
     await searchInput.fill("Urea");
 
-    const ureaOption = page.getByRole("option", { name: /Urea/i }).first();
-    const ureaExists = await ureaOption.isVisible({ timeout: 2000 }).catch(() => false);
+    const ureaItem = page.locator('[data-testid^="v8-material-item-"]', { hasText: /Urea/i }).first();
+    const ureaExists = await ureaItem.isVisible({ timeout: 2000 }).catch(() => false);
 
     if (ureaExists) {
-      await ureaOption.click();
+      await ureaItem.click();
       // With auto-select fallback: table should be visible (any program took over)
       // OR a clear explanation message is shown (no program at all)
       const tableVisible = await page
@@ -263,11 +262,7 @@ test.describe("Calculator — no crashes during typical interactions", () => {
   });
 
   test("switching particle to Carbon then editing energy does not crash", async ({ page }) => {
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
-    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
-    await carbonOption.click();
+    await selectParticle(page, "carbon", "v8-particle-item-6");
 
     await waitForTable(page);
     await typeInRow(page, 0, "100");
@@ -275,6 +270,17 @@ test.describe("Calculator — no crashes during typical interactions", () => {
     await expect(page.locator("body")).not.toContainText("RangeError");
   });
 });
+
+/** Helper: select a particle by search term (v8 UI). */
+async function selectParticle(
+  page: import("@playwright/test").Page,
+  query: string,
+  itemTestId: string,
+) {
+  await page.getByTestId("v8-tab-particle").click();
+  await page.getByTestId("v8-particle-search").fill(query);
+  await page.getByTestId(itemTestId).click();
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Heavy-ion calculations (Carbon, Helium)
@@ -287,11 +293,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   });
 
   test("Carbon + Water + 100 MeV/nucl shows numeric STP result", async ({ page }) => {
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
-    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
-    await carbonOption.click();
+    await selectParticle(page, "carbon", "v8-particle-item-6");
 
     await waitForTable(page);
     await typeInRow(page, 0, "100 MeV/nucl");
@@ -304,11 +306,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   });
 
   test("Helium + Water + 50 MeV/nucl shows numeric STP result", async ({ page }) => {
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("alpha");
-    const heliumOption = page.getByRole("option", { name: /alpha particle/i }).first();
-    await heliumOption.click();
+    await selectParticle(page, "alpha", "v8-particle-item-2");
 
     await waitForTable(page);
     await typeInRow(page, 0, "50 MeV/nucl");
@@ -323,11 +321,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   test("Carbon: per-row unit selector shows MeV/nucl column with correct value", async ({
     page,
   }) => {
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
-    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
-    await carbonOption.click();
+    await selectParticle(page, "carbon", "v8-particle-item-6");
 
     await waitForTable(page);
     // Type explicit MeV/nucl unit to get 1:1 mapping
@@ -340,11 +334,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   test("switching from Proton to Carbon with value entered does not crash", async ({ page }) => {
     await typeInRow(page, 0, "50");
 
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
-    const carbonOption = page.getByRole("option", { name: /carbon/i }).first();
-    await carbonOption.click();
+    await selectParticle(page, "carbon", "v8-particle-item-6");
 
     await waitForTable(page);
     await expect(page.locator("table")).toBeVisible();

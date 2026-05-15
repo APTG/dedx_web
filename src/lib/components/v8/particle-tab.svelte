@@ -4,7 +4,7 @@
   import type { ParticleEntity } from "$lib/wasm/types";
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
-  import { getParticleLabel, getParticleSearchText } from "$lib/utils/particle-label";
+  import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import SelectedPill from "./selected-pill.svelte";
   import SearchInput from "./search-input.svelte";
 
@@ -109,10 +109,9 @@
 
 <div class="space-y-3" data-testid="v8-particle-tab">
   {#if selected}
-    {@const atomicNumber = isExternal(selected) ? selected.Z : selected.id}
+    {@const atomicNumber = isExternal(selected) ? selected.Z : (selected.id as number)}
     <SelectedPill
-      label={getParticleLabel(selected)}
-      meta={atomicNumber !== undefined && atomicNumber !== null ? `Z=${atomicNumber}` : undefined}
+      label={getParticleListLabel(selected, atomicNumber)}
       glyph={isExternal(selected) ? "🔗" : undefined}
       onClear={onClear}
       data-testid="v8-particle-selected"
@@ -150,17 +149,14 @@
                 tabindex={-1}
                 disabled={!available}
                 class={cn(
-                  "flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-left",
+                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
                   isSelected && "bg-primary/15 font-semibold",
                   isHighlighted && available && !isSelected && "bg-accent",
                 )}
                 onclick={() => available && onSelect(p)}
               >
-                <span>{getParticleLabel(p)}</span>
-                {#if !isExternal(p)}
-                  <span class="font-mono text-xs text-muted-foreground">Z={p.id}</span>
-                {/if}
+                <span>{getParticleListLabel(p)}</span>
               </button>
             </li>
           {/each}
@@ -177,7 +173,7 @@
             {@const isSelected = selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
             {@const external = isExternal(p)}
-            {@const atomicNumber = external ? p.Z : p.id}
+            {@const atomicNumber = external ? p.Z : (p.id as number)}
             <li>
               <button
                 type="button"
@@ -188,17 +184,15 @@
                 tabindex={-1}
                 disabled={!available}
                 class={cn(
-                  "flex w-full items-center justify-between gap-2 rounded px-2 py-1.5 text-sm text-left",
+                  "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
                   isSelected && "bg-primary/15 font-semibold",
                   isHighlighted && available && !isSelected && "bg-accent",
                 )}
                 onclick={() => available && onSelect(p)}
               >
-                <span>{external ? `🔗 ${p.name}` : getParticleLabel(p)}</span>
-                {#if atomicNumber !== undefined && atomicNumber !== null}
-                  <span class="font-mono text-xs text-muted-foreground">Z={atomicNumber}</span>
-                {/if}
+                {#if external}<span aria-hidden="true">🔗</span>{/if}
+                <span>{getParticleListLabel(p, atomicNumber)}</span>
               </button>
             </li>
           {/each}

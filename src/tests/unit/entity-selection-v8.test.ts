@@ -318,4 +318,58 @@ describe("EntitySelectionV8", () => {
 
     expect(screen.getByTestId("v8-tab-material")).toHaveAttribute("aria-selected", "true");
   });
+
+  test("particle list items show Z inline in name (no separate Z column)", () => {
+    render(EntitySelectionV8, { props: { selectionState: state } });
+
+    // proton → "proton (Z=1)" in the list
+    expect(screen.getByTestId("v8-particle-item-1")).toHaveTextContent("proton (Z=1)");
+    // alpha → "alpha particle (Z=2)"
+    expect(screen.getByTestId("v8-particle-item-2")).toHaveTextContent("alpha particle (Z=2)");
+    // Carbon ion → "Carbon (C, Z=6)"
+    expect(screen.getByTestId("v8-particle-item-6")).toHaveTextContent("Carbon (C, Z=6)");
+  });
+
+  test("selected-pill includes Z inline in label (no separate meta)", () => {
+    render(EntitySelectionV8, { props: { selectionState: state } });
+
+    // Default: proton is selected — pill should show "proton (Z=1)"
+    expect(screen.getByTestId("v8-particle-selected")).toHaveTextContent("proton (Z=1)");
+  });
+
+  describe("collapsible mode", () => {
+    test("panel is hidden when collapsible=true and selection is complete (defaults)", () => {
+      // Default state has proton + Water + Auto → isComplete = true
+      render(EntitySelectionV8, {
+        props: { selectionState: state, collapsible: true },
+      });
+
+      // Tab bar still visible
+      expect(screen.getByTestId("v8-tab-bar")).toBeInTheDocument();
+      // But the panel content is gone
+      expect(screen.queryByTestId("v8-tab-panel")).not.toBeInTheDocument();
+    });
+
+    test("clicking a tab re-opens the panel in collapsible mode", async () => {
+      render(EntitySelectionV8, {
+        props: { selectionState: state, collapsible: true },
+      });
+      const user = userEvent.setup();
+
+      // Panel starts hidden (defaults are complete)
+      expect(screen.queryByTestId("v8-tab-panel")).not.toBeInTheDocument();
+
+      await user.click(screen.getByTestId("v8-tab-material"));
+
+      expect(screen.getByTestId("v8-tab-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("v8-material-tab")).toBeInTheDocument();
+    });
+
+    test("panel is always open when collapsible=false (default)", () => {
+      render(EntitySelectionV8, { props: { selectionState: state } });
+
+      // Even with complete defaults, panel stays visible
+      expect(screen.getByTestId("v8-tab-panel")).toBeInTheDocument();
+    });
+  });
 });
