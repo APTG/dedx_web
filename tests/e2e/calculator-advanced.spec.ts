@@ -14,16 +14,25 @@ async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
       timeout: 15000,
     },
   );
-  await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible();
+  expect(page.url()).toContain("mode=advanced");
+  // The advanced toolbar is rendered by EntitySelection when isAdvancedMode.value is true,
+  // which happens synchronously after initAdvancedModeFromUrl() processes the URL param.
+  // Waiting for it ensures the entity picker has fully hydrated advanced-mode state before
+  // we interact with program multi-select.
+  await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible();
 }
 
 async function selectComparisonProgram(page: Page, programName: RegExp, programId: number) {
-  await page.getByRole("button", { name: /Programs/ }).click();
-  const listbox = page.getByRole("listbox", { name: "Select comparison programs" });
-  await listbox.getByRole("option", { name: programName }).click();
+  // Programs are now selected via the program tab in the entity picker (multi-select mode).
+  await page.getByTestId("picker-tab-program").click();
+  await page
+    .getByTestId("picker-program-list")
+    .getByRole("option", { name: programName })
+    .click();
   await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
+  // Collapse the picker panel via Escape (the same handler used by keyboard users) so
+  // the panel does not obscure subsequent drag-and-drop or column-header interactions.
   await page.keyboard.press("Escape");
-  await expect(listbox).toBeHidden();
 }
 
 async function stpHeaderOrder(page: Page): Promise<string[]> {

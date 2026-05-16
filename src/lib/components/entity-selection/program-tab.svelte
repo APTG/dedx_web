@@ -9,7 +9,6 @@
   import type { ExternalProgramEntity } from "$lib/state/external-compatibility";
   import { getProgramDescription } from "$lib/config/program-names";
   import { programKind } from "$lib/utils/program-kind";
-  import SelectedPill from "./selected-pill.svelte";
   import ProgramTag from "./program-tag.svelte";
 
   type AnyProgram = SelectedProgram | ProgramEntity | ExternalProgramEntity;
@@ -19,9 +18,11 @@
     onSelect: (program: AnyProgram) => void;
     /** Shared search query owned by `<EntitySelection>` (picker-level row). */
     query?: string;
+    /** Whether the advanced toolbar (Compare-across) is visible. Multi-select mode is only active when this is true. */
+    showAdvancedToolbar?: boolean;
   }
 
-  let { selectionState, onSelect, query = "" }: Props = $props();
+  let { selectionState, onSelect, query = "", showAdvancedToolbar = false }: Props = $props();
 
   function matches(p: { name: string; version?: string | undefined }, q: string): boolean {
     const trimmed = q.trim().toLowerCase();
@@ -44,105 +45,202 @@
     const p = currentProgram as AutoSelectProgram;
     return p.resolvedProgram;
   });
+
+  // Multi-select mode: active only when the advanced toolbar is visible AND across=program.
+  const isMultiMode = $derived(showAdvancedToolbar && selectionState.across === "program");
+  const multiIds = $derived(selectionState.multiSelected.program);
+
+  function isMultiSelected(id: number | string): boolean {
+    return multiIds.includes(id);
+  }
+
+  function isAnchor(id: number | string): boolean {
+    return multiIds[0] === id;
+  }
+
+  function getProgramName(id: number | string): string {
+    const b = builtin.find((p) => p.id === id);
+    if (b) return b.name;
+    const e = external.find((p) => p.id === id);
+    return e?.name ?? String(id);
+  }
 </script>
 
 <div class="space-y-3" data-testid="picker-program-tab">
-  {#if !isAuto}
-    <SelectedPill
-      label={currentProgram.name}
-      meta={typeof currentProgram.id === "string"
-        ? undefined
-        : (getProgramDescription(currentProgram.id as number) ?? undefined)}
-      onClear={() => selectionState.selectProgram(-1)}
+  {#if isMultiMode}
+    {#if multiIds.length > 0}
+      <div
+        class="flex flex-wrap gap-1.5"
+        aria-label="Selected programs for comparison"
+        data-testid="picker-program-multi-selected"
+      >
+        {#each multiIds as id (id)}
+          {@const anchor = isAnchor(id)}
+          <span
+            class={cn(
+              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+              anchor
+                ? "border-primary bg-primary/15 text-primary"
+                : "border-muted bg-muted text-muted-foreground",
+            )}
+          >
+            {getProgramName(id)}
+            {#if !anchor}
+              <button
+                type="button"
+                aria-label="Remove {getProgramName(id)} from comparison"
+                class="ml-0.5 rounded-full hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                onclick={() => selectionState.toggleMulti("program", id)}
+              >×</button>
+            {/if}
+          </span>
+        {/each}
+      </div>
+    {/if}
+  {:else if !isAuto}
+    <button
+      type="button"
+      class="flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15"
       data-testid="picker-program-selected"
-    />
+      aria-label="Selected: {currentProgram.name}. Click to clear."
+      onclick={() => selectionState.selectProgram(-1)}
+    >
+      <span class="font-medium">{currentProgram.name}</span>
+      {#if typeof currentProgram.id !== "string"}
+        {@const desc = getProgramDescription(currentProgram.id as number)}
+        {#if desc}
+          <span class="font-mono text-xs text-muted-foreground">{desc}</span>
+        {/if}
+      {/if}
+      <span
+        class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+        aria-hidden="true"
+      >× clear</span>
+    </button>
   {/if}
 
-  <button
-    type="button"
-    class={cn(
-      "flex w-full items-start gap-3 rounded-md border-2 px-3 py-2.5 text-left text-sm transition-colors",
-      isAuto
-        ? "border-primary bg-primary/10"
-        : "border-primary/30 bg-primary/5 hover:bg-primary/10",
-    )}
-    data-testid="picker-program-auto-hero"
-    aria-pressed={isAuto}
-    onclick={() => selectionState.selectProgram(-1)}
-  >
-    <span class="text-base" aria-hidden="true">✦</span>
-    <span class="flex-1">
-      <span class="font-semibold">Auto-select</span>
-      {#if autoResolved}
-        <span class="text-muted-foreground"> → </span>
-        <span>{autoResolved.name}</span>
-      {/if}
-      <p class="text-xs text-muted-foreground mt-0.5">
+  {#if !isMultiMode}
+    <button
+      type="button"
+      class={cn(
+        "flex w-full items-start gap-3 rounded-md border-2 px-3 py-2.5 text-left text-sm transition-colors",
+        isAuto
+          ? "border-primary bg-primary/10"
+          : "border-primary/30 bg-primary/5 hover:bg-primary/10",
+      )}
+      data-testid="picker-program-auto-hero"
+      aria-pressed={isAuto}
+      onclick={() => selectionState.selectProgram(-1)}
+    >
+      <span class="text-base" aria-hidden="true">✦</span>
+      <span class="flex-1">
+        <span class="font-semibold">Auto-select</span>
         {#if autoResolved}
-          {getProgramDescription(autoResolved.id) ??
-            "Recommended for the current particle/material."}
-        {:else}
-          No compatible program for the current particle / material.
+          <span class="text-muted-foreground"> → </span>
+          <span>{autoResolved.name}</span>
         {/if}
-      </p>
-    </span>
-    {#if autoResolved}
-      <ProgramTag kind={programKind(autoResolved.id)} />
-    {/if}
-  </button>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {#if autoResolved}
+            {getProgramDescription(autoResolved.id) ??
+              "Recommended for the current particle/material."}
+          {:else}
+            No compatible program for the current particle / material.
+          {/if}
+        </p>
+      </span>
+      {#if autoResolved}
+        <ProgramTag kind={programKind(autoResolved.id)} />
+      {/if}
+    </button>
+  {/if}
 
   <ul
     role="listbox"
     aria-label="Programs"
+    aria-multiselectable={isMultiMode}
     tabindex="0"
     class="max-h-52 overflow-auto space-y-0.5"
     data-testid="picker-program-list"
   >
     {#each filteredBuiltin as program (program.id)}
-      {@const isSelected = currentProgram.id === program.id}
+      {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
+      {@const inMulti = isMultiMode && isMultiSelected(program.id)}
+      {@const anchor = isMultiMode && isAnchor(program.id)}
       {@const desc = getProgramDescription(program.id)}
       <li role="presentation">
         <button
           type="button"
           role="option"
-          aria-selected={isSelected}
+          aria-selected={isMultiMode ? inMulti : isSingleSelected}
+          aria-disabled={isMultiMode && anchor}
           data-testid="picker-program-item-{program.id}"
           tabindex={-1}
+          disabled={isMultiMode && anchor}
           class={cn(
-            "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            isSelected && "bg-primary/15 font-semibold",
+            "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
+            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
           )}
-          onclick={() => onSelect(program)}
+          onclick={() => {
+            if (isMultiMode) {
+              if (!anchor) selectionState.toggleMulti("program", program.id);
+            } else {
+              onSelect(program);
+            }
+          }}
         >
-          <span class="flex-1">
-            <span>{program.name}</span>
-            {#if desc}<span class="text-muted-foreground"> · {desc}</span>{/if}
+          {#if isMultiMode}
+            <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+          {/if}
+          <span class="flex-1 justify-between gap-3 flex items-center">
+            <span>
+              <span>{program.name}</span>
+              {#if desc}<span class="text-muted-foreground"> · {desc}</span>{/if}
+            </span>
+            <ProgramTag kind={programKind(program.id)} />
           </span>
-          <ProgramTag kind={programKind(program.id)} />
+          {#if isMultiMode && anchor}
+            <span class="text-xs text-muted-foreground">(anchor)</span>
+          {/if}
         </button>
       </li>
     {/each}
 
     {#each filteredExternal as program (program.id)}
-      {@const isSelected = currentProgram.id === program.id}
+      {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
+      {@const inMulti = isMultiMode && isMultiSelected(program.id)}
+      {@const anchor = isMultiMode && isAnchor(program.id)}
       <li role="presentation">
         <button
           type="button"
           role="option"
-          aria-selected={isSelected}
+          aria-selected={isMultiMode ? inMulti : isSingleSelected}
+          aria-disabled={isMultiMode && anchor}
           data-testid="picker-program-item-{program.id}"
           tabindex={-1}
+          disabled={isMultiMode && anchor}
           class={cn(
-            "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            isSelected && "bg-primary/15 font-semibold",
+            "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
+            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
           )}
-          onclick={() => onSelect(program)}
+          onclick={() => {
+            if (isMultiMode) {
+              if (!anchor) selectionState.toggleMulti("program", program.id);
+            } else {
+              onSelect(program);
+            }
+          }}
         >
-          <span class="flex-1">
+          {#if isMultiMode}
+            <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+          {/if}
+          <span class="flex-1 justify-between gap-3 flex items-center">
             <span>🔗 {program.name}</span>
             {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}
+            <ProgramTag kind="EXT" />
           </span>
-          <ProgramTag kind="EXT" />
+          {#if isMultiMode && anchor}
+            <span class="text-xs text-muted-foreground">(anchor)</span>
+          {/if}
         </button>
       </li>
     {/each}

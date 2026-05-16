@@ -6,7 +6,6 @@
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
-  import SelectedPill from "./selected-pill.svelte";
 
   type Material = MaterialEntity | ExternalOnlyMaterial;
 
@@ -203,12 +202,24 @@
     {/if}
   {:else if selected}
     {@const dens = formatDensity(selected)}
-    <SelectedPill
-      label={dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}
-      glyph={isGas(selected) ? "≋" : isExternal(selected) ? "🔗" : undefined}
-      {onClear}
+    <button
+      type="button"
+      class="flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15"
       data-testid="picker-material-selected"
-    />
+      aria-label="Selected: {dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}. Click to clear."
+      onclick={onClear}
+    >
+      {#if isGas(selected)}
+        <span aria-hidden="true">≋</span>
+      {:else if isExternal(selected)}
+        <span aria-hidden="true">🔗</span>
+      {/if}
+      <span class="font-medium">{dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}</span>
+      <span
+        class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+        aria-hidden="true"
+      >× clear</span>
+    </button>
   {/if}
 
   <div
