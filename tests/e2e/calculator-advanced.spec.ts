@@ -15,8 +15,10 @@ async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
     },
   );
   expect(page.url()).toContain("mode=advanced");
-  // The advanced toolbar replaces the old MultiProgramPicker "Programs" button as the readiness
-  // signal; it becomes visible as soon as advanced mode is active.
+  // The advanced toolbar is rendered by EntitySelection when isAdvancedMode.value is true,
+  // which happens synchronously after initAdvancedModeFromUrl() processes the URL param.
+  // Waiting for it ensures the entity picker has fully hydrated advanced-mode state before
+  // we interact with program multi-select.
   await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible();
 }
 
@@ -28,7 +30,8 @@ async function selectComparisonProgram(page: Page, programName: RegExp, programI
     .getByRole("option", { name: programName })
     .click();
   await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
-  // Collapse the picker panel so it does not obscure subsequent interactions.
+  // Collapse the picker panel via Escape (the same handler used by keyboard users) so
+  // the panel does not obscure subsequent drag-and-drop or column-header interactions.
   await page.keyboard.press("Escape");
 }
 
