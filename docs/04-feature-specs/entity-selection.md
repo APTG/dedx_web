@@ -17,11 +17,127 @@
 > defaults, persistence, search, ARIA, and error handling carry over
 > verbatim unless noted.
 
+### Entity-selector chrome rework (2026-05-16)
+
+The recipe bar (`particle → material → program`) was removed. The header
+chrome is now a single tab strip per page; the currently-selected value for
+each tab is rendered inline in the tab button. Reset and the Advanced-mode
+affordances moved into a dedicated `advanced-toolbar.svelte` that renders
+above the tab strip in Advanced mode only.
+
+**State model** (`EntitySelectionState`, see
+`src/lib/state/entity-selection.svelte.ts`):
+
+- `activeTarget: "particle" | "material" | "program"` — which tab the search
+  bar and the coral underline are bound to. Settable via `setActiveTarget`.
+- `expanded: boolean` — whether the list panel below the tab strip is
+  visible. Settable via `setExpanded`.
+- `across: "particle" | "material" | "program"` — Compare-across dimension
+  (Advanced only; forced to `"program"` in Basic). Settable via
+  `setAcross` which also seeds `multiSelected[newAcross]` from the current
+  single value, sets `activeTarget`, and expands the panel.
+- `multiSelected: { particle, material, program: (number|string)[] }` —
+  ordered selection arrays. Element 0 is the "default" used for the
+  primary single-value calculation; subsequent entries drive multi-program
+  comparison results. Toggle via `toggleMulti(dim, id)` — element 0 cannot
+  be deselected without first reordering.
+
+**Active-target rules**
+
+- A. User actions
+  1. Click a tab title → `setActiveTarget(tab); setExpanded(true)`.
+  2. Focus the search input → `setExpanded(true)` (target unchanged).
+  3. Select a row in the list → calls `selectParticle / selectMaterial /
+selectProgram`, then `afterSelection` advances `activeTarget` to the
+     next empty tab in `① → ② → ③` order with `expanded = true`.
+  4. If all three tabs are non-empty after a selection: `activeTarget`
+     stays put. On Calculator (`collapsible=true`) the panel collapses;
+     on Plot it stays open.
+  5. Clearing a value (via the existing selected-pill `× clear` button
+     inside the panel) sets `activeTarget` back to that tab and
+     `expanded = true`.
+  6. The Advanced toolbar `↺` button calls `resetAll()` which restores
+     proton/Water/Auto and re-targets the Particle tab.
+  7. Pressing Esc while focus is inside the picker blurs the focused
+     element and (on Calculator) collapses the panel.
+- B. Initial render
+  - Calculator (`collapsible=true`): `expanded = !isComplete` on first mount.
+  - Plot (`collapsible=false`): `expanded = true` always.
+
+**Tab styling**
+
+- The currently-active tab keeps its existing background-swap treatment.
+- The `activeTarget` tab additionally renders a coral underline (the
+  "squiggle" in the wireframes; currently rendered as a flat coral
+  rounded bar — the squiggle SVG is a follow-up polish item).
+- An empty tab — particle/material null, or `Auto-select` with no
+  resolved program — gets a red dashed border and a small `!` badge with
+  `data-testid="picker-tab-{id}-empty"` so E2E tests can assert it.
+
+**Advanced toolbar**
+
+`advanced-toolbar.svelte` renders above the tab strip when `isAdvancedMode`
+is true **and** the host page opts in via `showAdvancedToolbar` (defaults
+to `collapsible`, so Calculator shows it and Plot hides it — Plot's
+Advanced mode only needs part+mat+program selection for the next "Add
+series"). Contents:
+
+- `Compare across:` dropdown — `Programs` is the only enabled option this
+  PR. `Materials` and `Particles` are present but disabled with a "ships
+  in a follow-up PR" tooltip so the dropdown surface doesn't shift later.
+- `🔗 Load external` — disabled placeholder; opens the load-external
+  modal in a follow-up PR.
+- `⊞ Explore compat` — disabled placeholder; wires up to the
+  compatibility-matrix overlay in a follow-up PR.
+- `↺` reset — calls `state.resetAll()` and, on Calculator, also collapses
+  the panel (defaults are complete after reset).
+
+**Multi-list rendering (deferred)**
+
+The original wireframes drew a SELECTED + AVAILABLE multi-list on the
+Program tab when `across === "program"` in Advanced. That rendering
+branch is **not shipped in this PR** because nothing consumes
+`multiSelected.program` yet — multi-program comparison is still driven
+by `MultiProgramState` above the Calculator results table. The state
+setters (`setAcross`, `toggleMulti`, `multiSelected.*`) remain wired so
+the follow-up issue can light up the UI without re-deriving the data
+model. See follow-up issue "Compare across — Programs end-to-end".
+
+**Custom-material pill**
+
+The Material tab renders a coral `+ New custom material` pill **below**
+the Elements / Compounds / Custom columns in Advanced mode (less
+prominent than the columns themselves; the columns are the primary
+selection path, the pill is a less-common "create new" affordance).
+
+**Deferred to follow-up issues** (intentionally out of scope for the
+chrome+state rework PR):
+
+1. Persistent picker-level search row with chevron + dynamic placeholder
+   (the per-tab `SearchInput` instances are still the canonical search
+   today; lifting them to a single shared input is mechanical but
+   touches all three tab components).
+2. Move + redesign `external-sources-panel.svelte` into
+   `entity-selection/` with collapsible attribution rows and per-source
+   remove buttons.
+3. Build `load-external-modal.svelte` (URL paste + drag-drop file +
+   localStorage recents) and wire it to the disabled `Load external`
+   button.
+4. Complete `<MultiList>` interactive reorder (drag + `Alt+ArrowUp/Down`)
+   with `aria-live` announcements.
+5. Wire `Compare across = Materials` / `Particles` end-to-end through
+   the calculation/plot pipelines.
+6. Delete `selected-pill.svelte` and `multi-program-picker.svelte` once
+   the chrome's tab-bar inline display fully replaces the in-panel pill
+   and the Calculator results-table dropdown is reworked.
+7. Mobile Material-tab card polish (bounded scrolling, fade shadows,
+   full-screen-sheet promotion via `⤢`).
+
 ### Collapsible panel (Calculator only)
 
 On the Calculator page the tab panel auto-collapses once all three selections
 are complete, recovering vertical space for the results table. Clicking any tab
-or recipe-bar segment re-expands the panel. The Plot page keeps panels always
+re-expands the panel. The Plot page keeps panels always
 expanded. The `collapsible` prop on `<EntitySelection>` controls this:
 
 ```svelte

@@ -134,13 +134,18 @@ describe("EntitySelection", () => {
     state = createEntitySelectionState(matrix);
   });
 
-  test("renders recipe bar with current particle/material/program", () => {
+  test("recipe bar is gone — chrome uses tabs only", () => {
     render(EntitySelection, { props: { selectionState: state } });
 
-    const recipe = screen.getByTestId("picker-recipe-bar");
-    expect(recipe).toHaveTextContent("proton");
-    expect(recipe).toHaveTextContent("Water (liquid)");
-    expect(recipe).toHaveTextContent(/Auto/);
+    // RecipeBar removed in the entity-selector rework.
+    expect(screen.queryByTestId("picker-recipe-bar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-recipe-particle")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-recipe-program")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-recipe-reset")).not.toBeInTheDocument();
+
+    // Tabs still show the current selection inline.
+    expect(screen.getByTestId("picker-tab-particle")).toHaveTextContent(/proton/);
+    expect(screen.getByTestId("picker-tab-material")).toHaveTextContent(/Water/);
   });
 
   test("renders three tabs in order: Particle, Material, Program", () => {
@@ -165,12 +170,14 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-material-tab")).toBeInTheDocument();
   });
 
-  test("clicking a recipe-bar segment activates the matching tab", async () => {
+  test("clicking a tab activates it and sets activeTarget on state", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("picker-recipe-program"));
+    await user.click(screen.getByTestId("picker-tab-program"));
 
+    expect(state.activeTarget).toBe("program");
+    expect(state.expanded).toBe(true);
     expect(screen.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
@@ -200,15 +207,16 @@ describe("EntitySelection", () => {
     expect(screen.queryByTestId("picker-particle-item-1")).not.toBeInTheDocument();
   });
 
-  test("selecting a particle updates state and auto-advances the active tab", async () => {
+  test("selecting a particle when all tabs are non-empty stays put (rule A.4)", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("picker-particle-item-2"));
 
     expect(state.selectedParticle?.id).toBe(2);
-    // Material is already selected (default Water) → should advance to Program tab.
-    expect(screen.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
+    // Material is already selected (default Water) and Program auto-resolves →
+    // all three are non-empty, so activeTarget stays on Particle per rule A.4.
+    expect(state.activeTarget).toBe("particle");
   });
 
   test("material tab renders side-by-side Elements/Compounds columns", async () => {
@@ -275,37 +283,27 @@ describe("EntitySelection", () => {
     expect(state.selectedProgram.id).toBe(7);
   });
 
-  test("recipe-bar reset restores defaults and activates Particle tab", async () => {
+  test("state.resetAll restores defaults and re-targets Particle tab", async () => {
     render(EntitySelection, { props: { selectionState: state } });
-    const user = userEvent.setup();
 
     state.selectParticle(6);
     state.selectMaterial(267);
 
-    await user.click(screen.getByTestId("picker-recipe-reset"));
+    state.resetAll();
 
     expect(state.selectedParticle?.id).toBe(1);
     expect(state.selectedMaterial?.id).toBe(276);
     expect(state.selectedProgram.id).toBe(-1);
-    expect(screen.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
+    expect(state.activeTarget).toBe("particle");
+    expect(state.expanded).toBe(true);
   });
 
-  test("clicking the selected-pill clears the current selection", async () => {
-    render(EntitySelection, { props: { selectionState: state } });
-    const user = userEvent.setup();
-
-    expect(screen.getByTestId("picker-particle-selected")).toHaveTextContent("proton");
-
-    await user.click(screen.getByTestId("picker-particle-selected"));
-
-    expect(state.selectedParticle).toBeNull();
-  });
-
-  test("compat overlay link is hidden in basic mode (PR #2 wiring deferred)", async () => {
-    // Picker mode store default is basic
+  test("compat overlay link is hidden in basic mode (advanced toolbar gated)", async () => {
     render(EntitySelection, { props: { selectionState: state } });
 
-    expect(screen.queryByTestId("picker-recipe-compat")).not.toBeInTheDocument();
+    // Basic mode: no advanced toolbar at all.
+    expect(screen.queryByTestId("picker-advanced-toolbar")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-explore-compat")).not.toBeInTheDocument();
   });
 
   test("arrow keys on tab bar move focus / activate adjacent tab", async () => {
@@ -370,6 +368,94 @@ describe("EntitySelection", () => {
 
       // Even with complete defaults, panel stays visible
       expect(screen.getByTestId("picker-tab-panel")).toBeInTheDocument();
+    });
+  });
+
+  describe("entity-selector rework chrome", () => {
+    test("empty-tab data-testid + dashed style fires when a selection is cleared", async () => {
+      render(EntitySelection, { props: { selectionState: state } });
+
+      state.clearParticle();
+      await new Promise((r) => setTimeout(r, 0));
+
+      const badge = await screen.findByTestId("picker-tab-particle-empty");
+      expect(badge).toBeInTheDocument();
+      expect(badge).toHaveTextContent("!");
+    });
+
+    test("advanced toolbar renders in advanced mode (Calculator only) and exposes the Compare-across dropdown", async () => {
+      const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
+      isAdvancedMode.value = true;
+      try {
+        render(EntitySelection, { props: { selectionState: state, collapsible: true } });
+        const toolbar = screen.getByTestId("picker-advanced-toolbar");
+        expect(toolbar).toBeInTheDocument();
+        const compareAcross = screen.getByTestId("picker-compare-across") as HTMLSelectElement;
+        expect(compareAcross.value).toBe("program");
+        // Materials and Particles are disabled per the issue's "out of scope" gate.
+        const opts = Array.from(compareAcross.options);
+        expect(opts.find((o) => o.value === "material")?.disabled).toBe(true);
+        expect(opts.find((o) => o.value === "particle")?.disabled).toBe(true);
+
+        // Reset button exists in the advanced toolbar.
+        expect(screen.getByTestId("picker-reset")).toBeInTheDocument();
+        // Load-external + Explore-compat are present but disabled (follow-up PRs).
+        expect(screen.getByTestId("picker-load-external")).toBeDisabled();
+        expect(screen.getByTestId("picker-explore-compat")).toBeDisabled();
+      } finally {
+        isAdvancedMode.value = false;
+      }
+    });
+
+    test("advanced toolbar is hidden on Plot (collapsible=false) even in advanced mode", async () => {
+      const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
+      isAdvancedMode.value = true;
+      try {
+        render(EntitySelection, { props: { selectionState: state, collapsible: false } });
+        expect(screen.queryByTestId("picker-advanced-toolbar")).not.toBeInTheDocument();
+      } finally {
+        isAdvancedMode.value = false;
+      }
+    });
+
+    test("custom-material pill is rendered below the material columns in advanced mode", async () => {
+      const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
+      const user = userEvent.setup();
+      isAdvancedMode.value = true;
+      try {
+        render(EntitySelection, { props: { selectionState: state } });
+        await user.click(screen.getByTestId("picker-tab-material"));
+        const tabRoot = screen.getByTestId("picker-material-tab");
+        const columns = screen.getByTestId("picker-material-columns");
+        const pill = screen.getByTestId("picker-add-custom-material");
+        // The pill comes after the columns in DOM order so it renders below.
+        const children = Array.from(tabRoot.children);
+        expect(children.indexOf(columns)).toBeLessThan(children.indexOf(pill));
+      } finally {
+        isAdvancedMode.value = false;
+      }
+    });
+
+    test("setAcross + toggleMulti maintain the multi-selection state (reserved for follow-up)", () => {
+      // The Program tab no longer renders <MultiList> (the rendering branch
+      // was removed because it has no consumers — multi-program comparison
+      // is still driven by MultiProgramState above the results table). The
+      // state setters remain wired so the follow-up issue can light up the
+      // UI without re-deriving the data model.
+      state.setAcross("program");
+      state.selectProgram(7); // resets multi to [7]
+      state.setAcross("program");
+
+      state.toggleMulti("program", 9);
+      expect(state.multiSelected.program).toEqual([7, 9]);
+
+      // Cannot deselect the default (index 0).
+      state.toggleMulti("program", 7);
+      expect(state.multiSelected.program).toEqual([7, 9]);
+
+      // Can remove the non-default entry.
+      state.toggleMulti("program", 9);
+      expect(state.multiSelected.program).toEqual([7]);
     });
   });
 });

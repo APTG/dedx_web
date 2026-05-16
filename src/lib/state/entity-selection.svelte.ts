@@ -26,6 +26,26 @@ export interface AutoSelectProgram {
 
 export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgramEntity;
 
+/**
+ * Which of the three picker tabs is currently the "active target" — the tab
+ * whose list opens when the user focuses the search field, marked by the
+ * coral underline in `tab-bar.svelte`.
+ */
+export type PickerTabId = "particle" | "material" | "program";
+
+/**
+ * Compare-across dimension (Advanced mode). Reserved for the multi-select
+ * follow-up — `multiSelected[dim]` is intentionally **not consumed** by any
+ * calculation/URL surface in this PR. The `<MultiList>` rendering branch in
+ * the Program tab was removed for the same reason; the multi-program
+ * comparison is still driven by `MultiProgramState` above the Calculator
+ * results table.
+ *
+ * Tracked follow-up: enable Materials/Particles dropdown options and wire
+ * `multiSelected.*` end-to-end through `calculator-state` / `plot-state`.
+ */
+export type AcrossDimension = "particle" | "material" | "program";
+
 export interface EntitySelectionState {
   selectedProgram: SelectedProgram;
   /** Numeric built-in program ID, or ExtRef string for external programs, or null. */
@@ -46,6 +66,20 @@ export interface EntitySelectionState {
   availableParticles: Array<ParticleEntity | ExternalOnlyParticle>;
   availableMaterials: Array<MaterialEntity | ExternalOnlyMaterial>;
   lastAutoFallbackMessage: string | null;
+
+  /** Which tab the search bar / coral underline is bound to. */
+  activeTarget: PickerTabId;
+  /** Whether the list panel below the search row is visible. */
+  expanded: boolean;
+  /** Multi-axis compare dimension (Advanced only; forced to "program" in Basic). */
+  across: AcrossDimension;
+  /** Multi-selection arrays — populated for the active `across` dimension. */
+  multiSelected: {
+    particle: (number | string)[];
+    material: (number | string)[];
+    program: (number | string)[];
+  };
+
   /** Select a built-in program (numeric) or external program (string ExtRef). */
   selectProgram(programId: number | string): void;
   selectParticle(particleId: number | string | null): void;
@@ -58,6 +92,19 @@ export interface EntitySelectionState {
   setExternalContext(ctx: ExternalCompatibilityContext): void;
   /** Current external compatibility context. */
   externalContext: ExternalCompatibilityContext;
+
+  /** Set the active target tab (does not change `expanded`). */
+  setActiveTarget(tab: PickerTabId): void;
+  /** Set the panel expand/collapse state. */
+  setExpanded(expanded: boolean): void;
+  /**
+   * Change the Compare-across dimension. Sets `multiSelected[newAcross]` to
+   * the current single value (one-item array), sets `activeTarget = newAcross`
+   * and `expanded = true`.
+   */
+  setAcross(newAcross: AcrossDimension): void;
+  /** Toggle an id in `multiSelected[across]` (preserving order; first is default). */
+  toggleMulti(dim: AcrossDimension, id: number | string): void;
 }
 
 const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
@@ -103,6 +150,15 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let selectedProgramId = $state<number | string>(-1);
   let lastAutoFallbackMessage = $state<string | null>(null);
   let extCtx = $state<ExternalCompatibilityContext>(EMPTY_EXTERNAL_CONTEXT);
+
+  // New picker chrome state (entity-selector rework — see
+  // docs/04-feature-specs/entity-selection.md § Active target + expand/collapse).
+  let activeTarget = $state<PickerTabId>("particle");
+  let expanded = $state(true);
+  let across = $state<AcrossDimension>("program");
+  let multiParticle = $state<(number | string)[]>([]);
+  let multiMaterial = $state<(number | string)[]>([]);
+  let multiProgram = $state<(number | string)[]>([]);
 
   function resolveAutoSelect(
     particleId: number | string | null,
@@ -477,6 +533,72 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       selectedMaterialId = WATER_ID;
       selectedProgramId = -1;
       lastAutoFallbackMessage = null;
+      activeTarget = "particle";
+      expanded = true;
+      across = "program";
+      multiParticle = [];
+      multiMaterial = [];
+      multiProgram = [];
+    },
+
+    get activeTarget() {
+      return activeTarget;
+    },
+
+    get expanded() {
+      return expanded;
+    },
+
+    get across() {
+      return across;
+    },
+
+    get multiSelected() {
+      return {
+        particle: multiParticle,
+        material: multiMaterial,
+        program: multiProgram,
+      };
+    },
+
+    setActiveTarget(tab: PickerTabId): void {
+      activeTarget = tab;
+    },
+
+    setExpanded(value: boolean): void {
+      expanded = value;
+    },
+
+    setAcross(newAcross: AcrossDimension): void {
+      across = newAcross;
+      // Seed multi array from current single value (preserves it as element 0).
+      if (newAcross === "program") {
+        const id = selectedProgramId;
+        multiProgram = id !== -1 ? [id] : [];
+      } else if (newAcross === "particle") {
+        multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
+      } else if (newAcross === "material") {
+        multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
+      }
+      activeTarget = newAcross;
+      expanded = true;
+    },
+
+    toggleMulti(dim: AcrossDimension, id: number | string): void {
+      const arr =
+        dim === "program" ? multiProgram : dim === "particle" ? multiParticle : multiMaterial;
+      const idx = arr.indexOf(id);
+      let next: (number | string)[];
+      if (idx >= 0) {
+        // Cannot deselect the default (first) entry — must reorder first.
+        if (idx === 0) return;
+        next = arr.filter((x) => x !== id);
+      } else {
+        next = [...arr, id];
+      }
+      if (dim === "program") multiProgram = next;
+      else if (dim === "particle") multiParticle = next;
+      else multiMaterial = next;
     },
 
     get lastAutoFallbackMessage() {

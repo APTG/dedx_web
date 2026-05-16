@@ -1,24 +1,18 @@
 <script lang="ts">
   import { cn } from "$lib/utils.js";
-  import type {
-    EntitySelectionState,
-    SelectedProgram,
-  } from "$lib/state/entity-selection.svelte";
-  import type {
-    ParticleEntity,
-    MaterialEntity,
-    ProgramEntity,
-  } from "$lib/wasm/types";
+  import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
+  import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
   import type {
     ExternalOnlyParticle,
     ExternalOnlyMaterial,
     ExternalProgramEntity,
   } from "$lib/state/external-compatibility";
-  import RecipeBar from "./recipe-bar.svelte";
-  import TabBar, { type PickerTab } from "./tab-bar.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import TabBar, { type PickerTab, PICKER_TAB_ORDER } from "./tab-bar.svelte";
   import ParticleTab from "./particle-tab.svelte";
   import MaterialTab from "./material-tab.svelte";
   import ProgramTab from "./program-tab.svelte";
+  import AdvancedToolbar from "./advanced-toolbar.svelte";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -26,93 +20,155 @@
     class?: string;
     /**
      * When true (Calculator page), the tab panel auto-collapses once all
-     * three selections are complete, reclaiming vertical space. Clicking any
-     * tab or recipe-bar item re-expands it. Plot page keeps panels always open.
+     * three selections are complete, reclaiming vertical space. Plot page
+     * keeps panels always open.
+     *
+     * Implementation: this gates the *initial* `expanded` state and the
+     * post-completion auto-collapse. Once the user explicitly clicks a tab
+     * or focuses the search, `state.expanded` takes over (rules B in the
+     * entity-selection spec).
      */
     collapsible?: boolean;
+    /**
+     * Whether to render the Advanced-mode toolbar (Compare-across, Load
+     * external, Explore compat, Reset). Default `collapsible` — Calculator
+     * shows it, Plot hides it. On Plot the Advanced mode is only used to
+     * pick part+mat+program for the next "Add series", so Compare-across
+     * and friends are not useful there.
+     */
+    showAdvancedToolbar?: boolean;
   }
 
-  let { selectionState, onParticleSelect, class: className, collapsible = false }: Props = $props();
+  let {
+    selectionState,
+    onParticleSelect,
+    class: className,
+    collapsible = false,
+    showAdvancedToolbar = collapsible,
+  }: Props = $props();
 
-  let activeTab = $state<PickerTab>("particle");
-  let panelOpen = $state(true);
-
+  // Initial expand/collapse rule (spec § Active target + expand/collapse, rule B):
+  // - Calculator (collapsible=true): expanded = !isComplete on first mount.
+  // - Plot (collapsible=false): expanded = true always.
+  //
+  // After mount, `state.expanded` is the source of truth; further updates
+  // come from explicit user gestures (tab click, search focus, Esc) or from
+  // `afterSelection` advancing to the next empty tab.
+  let initialized = false;
   $effect(() => {
-    if (collapsible && selectionState.isComplete) {
-      panelOpen = false;
+    if (initialized) return;
+    initialized = true;
+    if (collapsible) {
+      selectionState.setExpanded(!selectionState.isComplete);
+    } else {
+      selectionState.setExpanded(true);
     }
   });
 
-  function openPanel(tab: PickerTab): void {
-    activeTab = tab;
-    panelOpen = true;
+  function activateTab(tab: PickerTab): void {
+    selectionState.setActiveTarget(tab);
+    selectionState.setExpanded(true);
   }
 
   /**
-   * Auto-advance to the next "non-completed" tab after a selection.
-   * Particle → Material → Program. Stops at the first tab whose selection
-   * is still missing.
+   * Compute the next empty tab in canonical ①→②→③ order. Returns null if
+   * all three are filled.
    */
-  function advanceAfter(current: PickerTab): void {
-    const order: PickerTab[] = ["particle", "material", "program"];
-    const startIdx = order.indexOf(current) + 1;
-    for (let i = startIdx; i < order.length; i++) {
-      const tab = order[i]!;
-      if (tab === "material" && selectionState.selectedMaterial) continue;
-      if (tab === "program" && selectionState.selectedProgram.id !== -1) continue;
-      activeTab = tab;
+  function nextEmptyTab(after: PickerTab): PickerTab | null {
+    const startIdx = PICKER_TAB_ORDER.indexOf(after) + 1;
+    for (let i = startIdx; i < PICKER_TAB_ORDER.length; i++) {
+      const tab = PICKER_TAB_ORDER[i]!;
+      if (tab === "material" && !selectionState.selectedMaterial) return tab;
+      if (tab === "program" && selectionState.selectedProgram.id === -1) {
+        const auto = selectionState.selectedProgram;
+        const hasResolved = "resolvedProgram" in auto && auto.resolvedProgram;
+        if (!hasResolved) return tab;
+      }
+    }
+    // Wrap once if nothing forward — check earlier tabs too.
+    for (let i = 0; i <= PICKER_TAB_ORDER.indexOf(after); i++) {
+      const tab = PICKER_TAB_ORDER[i]!;
+      if (tab === "particle" && !selectionState.selectedParticle) return tab;
+      if (tab === "material" && !selectionState.selectedMaterial) return tab;
+    }
+    return null;
+  }
+
+  /**
+   * Apply rule A.4: after a selection in the active tab, advance to the
+   * next empty tab (keeping expanded), or — if all three filled — stay put
+   * and collapse on Calculator. Plot stays expanded.
+   */
+  function afterSelection(current: PickerTab): void {
+    const nextEmpty = nextEmptyTab(current);
+    if (nextEmpty !== null) {
+      selectionState.setActiveTarget(nextEmpty);
+      selectionState.setExpanded(true);
       return;
+    }
+    // All three filled.
+    if (collapsible) {
+      selectionState.setExpanded(false);
     }
   }
 
   function handleParticleSelect(particle: ParticleEntity | ExternalOnlyParticle) {
     if (onParticleSelect) onParticleSelect(particle.id);
     else selectionState.selectParticle(particle.id);
-    advanceAfter("particle");
+    afterSelection("particle");
   }
 
   function handleMaterialSelect(material: MaterialEntity | ExternalOnlyMaterial) {
     selectionState.selectMaterial(material.id);
-    advanceAfter("material");
+    afterSelection("material");
   }
 
   function handleProgramSelect(program: SelectedProgram | ProgramEntity | ExternalProgramEntity) {
     selectionState.selectProgram(program.id);
+    afterSelection("program");
+  }
+
+  function handleReset(): void {
+    selectionState.resetAll();
+    // Reset restores complete defaults (proton/Water/Auto). On Calculator
+    // (collapsible) the panel should collapse to match the post-completion
+    // rule. On Plot (!collapsible) the panel stays open.
+    if (collapsible) {
+      selectionState.setExpanded(false);
+    }
   }
 
   function handleGlobalKey(event: KeyboardEvent) {
-    // spec § "Anatomy" lists keyboard behaviour: `Esc blur`. The search
-    // input grabs focus on tab change so users need a quick way to exit
-    // back to the page chrome without removing the picker entirely.
+    // Esc collapses the panel (rule A.7) without changing activeTarget.
     if (event.key === "Escape") {
       const active = document.activeElement;
-      if (active instanceof HTMLElement && active.closest("[data-testid='picker-entity-selection']")) {
+      if (
+        active instanceof HTMLElement &&
+        active.closest("[data-testid='picker-entity-selection']")
+      ) {
         active.blur();
+        if (collapsible) selectionState.setExpanded(false);
       }
     }
   }
+
+  const activeTab = $derived(selectionState.activeTarget as PickerTab);
+  const panelOpen = $derived(selectionState.expanded);
 </script>
 
 <svelte:window onkeydown={handleGlobalKey} />
 
-<div
-  class={cn("rounded-lg", className)}
-  data-testid="picker-entity-selection"
->
-  <RecipeBar
-    {selectionState}
-    onActivateTab={(tab) => openPanel(tab)}
-    onReset={() => {
-      selectionState.resetAll();
-      activeTab = "particle";
-      panelOpen = true;
-    }}
-  />
+<div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
+  {#if isAdvancedMode.value && showAdvancedToolbar}
+    <AdvancedToolbar {selectionState} onReset={handleReset} />
+  {/if}
+
   <TabBar
     {activeTab}
+    activeTarget={activeTab}
     {selectionState}
     {panelOpen}
-    onActivate={(tab) => openPanel(tab)}
+    onActivate={(tab) => activateTab(tab)}
   />
 
   {#if panelOpen}
@@ -128,19 +184,24 @@
         <ParticleTab
           {selectionState}
           onSelect={handleParticleSelect}
-          onClear={() => { selectionState.clearParticle(); panelOpen = true; }}
+          onClear={() => {
+            selectionState.clearParticle();
+            selectionState.setActiveTarget("particle");
+            selectionState.setExpanded(true);
+          }}
         />
       {:else if activeTab === "material"}
         <MaterialTab
           {selectionState}
           onSelect={handleMaterialSelect}
-          onClear={() => { selectionState.clearMaterial(); panelOpen = true; }}
+          onClear={() => {
+            selectionState.clearMaterial();
+            selectionState.setActiveTarget("material");
+            selectionState.setExpanded(true);
+          }}
         />
       {:else if activeTab === "program"}
-        <ProgramTab
-          {selectionState}
-          onSelect={handleProgramSelect}
-        />
+        <ProgramTab {selectionState} onSelect={handleProgramSelect} />
       {/if}
     </div>
   {/if}

@@ -9,6 +9,8 @@
     onEnter?: () => void;
     /** Notified when ↑/↓ pressed — host can move list highlight. */
     onArrow?: (direction: "up" | "down") => void;
+    /** Notified when the input receives focus — host can expand the panel. */
+    onFocus?: () => void;
     inputRef?: HTMLInputElement | null;
     class?: string;
     "data-testid"?: string;
@@ -20,6 +22,7 @@
     onInput,
     onEnter,
     onArrow,
+    onFocus,
     inputRef = $bindable(null),
     class: className,
     "data-testid": testId,
@@ -44,12 +47,13 @@
   <input
     type="search"
     bind:this={inputRef}
-    value={value}
+    {value}
     {placeholder}
     class="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
     data-testid={testId ?? "picker-search-input"}
     oninput={(e) => onInput((e.currentTarget as HTMLInputElement).value)}
     onkeydown={handleKey}
+    onfocus={() => onFocus?.()}
   />
   <span class="hidden font-mono text-xs text-muted-foreground sm:inline" aria-hidden="true">
     ↑↓ ↵ /
