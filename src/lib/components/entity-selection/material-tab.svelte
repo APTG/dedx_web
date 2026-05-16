@@ -3,10 +3,7 @@
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import type { MaterialEntity } from "$lib/wasm/types";
   import type { ExternalOnlyMaterial } from "$lib/state/external-compatibility";
-  import {
-    customCompounds,
-    type StoredCompoundInternal,
-  } from "$lib/state/custom-compounds.svelte";
+  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import SelectedPill from "./selected-pill.svelte";
@@ -32,7 +29,10 @@
   });
 
   function isExternal(m: Material): m is ExternalOnlyMaterial {
-    return typeof m.id === "string";
+    // Both external materials (`ext:…`) and custom compounds (`cc_…`) use
+    // string IDs; the external-link glyph and external search/formatting
+    // path must only fire for the former.
+    return typeof m.id === "string" && m.id.startsWith("ext:");
   }
 
   function isGas(m: Material): boolean {
@@ -76,19 +76,15 @@
   ]);
 
   const elements = $derived(
-    allMaterials
-      .filter(inElements)
-      .sort((a, b) => {
-        const ai = isExternal(a) ? (a.atomicNumber ?? 999) : (a.id as number);
-        const bi = isExternal(b) ? (b.atomicNumber ?? 999) : (b.id as number);
-        return ai - bi;
-      }),
+    allMaterials.filter(inElements).sort((a, b) => {
+      const ai = isExternal(a) ? (a.atomicNumber ?? 999) : (a.id as number);
+      const bi = isExternal(b) ? (b.atomicNumber ?? 999) : (b.id as number);
+      return ai - bi;
+    }),
   );
 
   const compounds = $derived(
-    allMaterials
-      .filter(inCompounds)
-      .sort((a, b) => a.name.localeCompare(b.name)),
+    allMaterials.filter(inCompounds).sort((a, b) => a.name.localeCompare(b.name)),
   );
 
   const customItems = $derived.by(() => {
@@ -161,7 +157,7 @@
     <SelectedPill
       label={dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}
       glyph={isGas(selected) ? "≋" : isExternal(selected) ? "🔗" : undefined}
-      onClear={onClear}
+      {onClear}
       data-testid="picker-material-selected"
     />
   {/if}
@@ -220,7 +216,8 @@
                     <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
                   {/if}
                 </span>
-                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
+                  >{/if}
               </span>
             </button>
           </li>
@@ -268,7 +265,8 @@
                     <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
                   {/if}
                 </span>
-                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
+                  >{/if}
               </span>
             </button>
           </li>
@@ -322,7 +320,9 @@
                       <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
                     {/if}
                   </span>
-                  {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions"> (≋)</span>{/if}
+                  {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">
+                      (≋)</span
+                    >{/if}
                 </button>
                 <button
                   type="button"

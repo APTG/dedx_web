@@ -133,7 +133,9 @@ first.
 
 ### Basic vs Advanced mode
 
-A small toggle (default Basic) lives in the recipe bar.
+The Basic/Advanced toggle is the existing global control in the layout
+header — the picker does not own a separate mode switch. The table below
+lists what Advanced unlocks inside the picker.
 
 | Feature                                               | Basic | Advanced       |
 | ----------------------------------------------------- | ----- | -------------- |
@@ -146,8 +148,8 @@ A small toggle (default Basic) lives in the recipe bar.
 | Compatibility overlay (`⊞ explore compat` link)       | —     | ✅             |
 | Advanced filter syntax in search (`z=6`, `v=2013`)    | —     | ✅             |
 
-Mode persists in `localStorage` and is reflected in the URL so shared
-links keep their context.
+Mode persists in `localStorage` (`dedx_advanced_mode`) and is reflected in
+the URL (`?mode=advanced`) so shared links keep their context.
 
 ### Particle tab
 

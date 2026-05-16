@@ -2,7 +2,7 @@
   import { cn } from "$lib/utils.js";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { getParticleLabel } from "$lib/utils/particle-label";
-  import { pickerMode } from "$lib/state/picker-mode.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import type { PickerTab } from "./tab-bar.svelte";
 
   interface Props {
@@ -36,16 +36,13 @@
   const programLabel = $derived.by(() => {
     const program = selectionState.selectedProgram;
     if (program.id === -1) {
-      const resolved =
-        "resolvedProgram" in program ? program.resolvedProgram : null;
+      const resolved = "resolvedProgram" in program ? program.resolvedProgram : null;
       return resolved ? `Auto → ${resolved.name}` : "Auto";
     }
     return program.name;
   });
 
-  const compatEnabled = $derived(
-    pickerMode.value === "advanced" && typeof onExploreCompat === "function",
-  );
+  const compatEnabled = $derived(isAdvancedMode.value && typeof onExploreCompat === "function");
 </script>
 
 <div
@@ -94,7 +91,7 @@
     >
       reset
     </button>
-    {#if pickerMode.value === "advanced"}
+    {#if isAdvancedMode.value}
       <button
         type="button"
         class={cn(

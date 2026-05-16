@@ -84,3 +84,64 @@ Validation:
   (`entity-selection-comboboxes.svelte`, `entity-selection-panels.svelte`)
   are still on disk but unreferenced by routes; cleaning those up is a
   separate task outside the scope of this rename.
+
+---
+
+## Prompt 2: apply review-thread fixes + Stage 8 redesign-plan entry
+
+User asked to apply the four `copilot-pull-request-reviewer` review-thread
+findings and to add a row for this PR to the Stage 8 PRs table in
+`docs/00-redesign-plan.md`.
+
+**AI response:**
+
+1. `material-tab.svelte` — tightened `isExternal()` so it only matches
+   external materials (`ext:…`), not custom compounds (`cc_…`). Previously
+   selecting a custom compound rendered the external-link 🔗 glyph and
+   forced the external search/density format path.
+2. `recipe-bar.svelte` + `picker-mode.svelte.ts` — the parallel
+   `pickerMode` store was the kind of "similar switch" the user explicitly
+   asked to remove in the first prompt. Deleted
+   `src/lib/state/picker-mode.svelte.ts` and
+   `src/tests/unit/picker-mode.test.ts`, dropped the
+   `initPickerModeFromUrl` calls from Calculator and Plot routes
+   (`initAdvancedModeFromUrl` already handles `?mode=advanced`), and
+   switched recipe-bar to read the existing global `isAdvancedMode` for
+   Custom-column and `⊞ explore compat` visibility.
+3. `.opencode/lessons-learned.md` — rewrote Entry 46 so the future-test
+   guidance points at `picker-*` selectors instead of the renamed-out
+   `v8-*` ones; updated Entry 47 to use `picker-particle-item-*`.
+4. `docs/04-feature-specs/entity-selection.md` — removed the "small
+   toggle lives in the recipe bar" claim; the spec now correctly says
+   the global layout-header Basic/Advanced control is the only mode
+   switch, and notes the existing `localStorage` key + `?mode=advanced`
+   URL contract.
+5. `docs/00-redesign-plan.md` — added a `#508` row to the Stage 8 PRs
+   table with a description distilled from the commit history (recipe
+   bar, inline Z, side-by-side material columns with `(ρ=…)`, DATA
+   program tag, auto-collapse, mobile-stacked tabs, `?v8=1` flag drop,
+   parallel-switch removal, rename to `entity-selection/` +
+   `picker-*`).
+
+Validation: `pnpm build` ✅, `pnpm lint` ✅, `pnpm exec vitest run` →
+1317 passed / 3 skipped (matches expected suite size minus the 7
+deleted `picker-mode` tests).
+
+## Tasks (Prompt 2)
+
+### Apply PR review-thread fixes
+
+- **Status**: completed
+- **Stage**: 8 (PR #508)
+- **Files changed**:
+  - `src/lib/components/entity-selection/material-tab.svelte` (custom vs external ID disambiguation)
+  - `src/lib/components/entity-selection/recipe-bar.svelte` (drop pickerMode, use isAdvancedMode)
+  - `src/routes/calculator/+page.svelte`, `src/routes/plot/+page.svelte` (drop `initPickerModeFromUrl`)
+  - Deleted: `src/lib/state/picker-mode.svelte.ts`, `src/tests/unit/picker-mode.test.ts`
+  - `docs/04-feature-specs/entity-selection.md` (Basic/Advanced section)
+  - `.opencode/lessons-learned.md` (Entry 46 + Entry 47 selectors)
+  - `docs/00-redesign-plan.md` (added Stage 8 #508 row)
+- **Decision**: Deleted the `pickerMode` store outright rather than
+  syncing it with `isAdvancedMode`. The user's first prompt explicitly
+  flagged `picker-flag.svelte.ts` and "similar switches" as
+  unnecessary — `pickerMode` was the same anti-pattern.

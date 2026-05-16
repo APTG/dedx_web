@@ -2,7 +2,6 @@
   import { browser } from "$app/environment";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import { initPickerModeFromUrl } from "$lib/state/picker-mode.svelte";
   import {
     createEntitySelectionState,
     type EntitySelectionState,
@@ -136,7 +135,6 @@
     // becomes true inside the async callback.
     if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
-      initPickerModeFromUrl(page.url.searchParams);
       advancedModeInitializedFromUrl = true;
     }
 
@@ -834,9 +832,9 @@
     const selectedParticle = entityState.selectedParticle;
     const massASnapshot =
       selectedParticle && "massNumber" in selectedParticle
-        ? (selectedParticle.massNumber || 1)
+        ? selectedParticle.massNumber || 1
         : selectedParticle && "A" in selectedParticle
-          ? (selectedParticle.A || 1)
+          ? selectedParticle.A || 1
           : 1;
 
     // Capture inputs as snapshot so that a stale `getService()` resolution

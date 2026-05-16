@@ -28,7 +28,6 @@
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import { initPickerModeFromUrl } from "$lib/state/picker-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
@@ -156,7 +155,6 @@
   $effect(() => {
     if (wasmReady.value && !advancedModeInitializedFromUrl) {
       initAdvancedModeFromUrl(page.url.searchParams);
-      initPickerModeFromUrl(page.url.searchParams);
       advancedModeInitializedFromUrl = true;
     }
   });
