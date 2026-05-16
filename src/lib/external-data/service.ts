@@ -14,12 +14,7 @@ import type {
 } from "./schema.js";
 import { ExternalDataError } from "./errors.js";
 import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
-import {
-  convertEnergyGrid,
-  convertStpColumn,
-  convertCsdaColumn,
-  computeCsdaColumn,
-} from "./units.js";
+import { convertEnergyGrid, convertStpColumn, convertCsdaColumn, computeCsdaColumn } from "./units.js";
 import { interpolate, type InterpolationScale } from "./interpolation.js";
 
 /** Maximum number of simultaneously loaded external sources. */

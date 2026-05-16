@@ -186,51 +186,51 @@
                 External
               </p>
               {#each availableExternalPrograms as program (program.id)}
-                {@const extId = program.id as EntityId}
-                {@const selected = isSelected(extId)}
-                {@const defaultProg = isDefault(extId)}
-                {@const incompatible = isIncompatible(extId)}
+              {@const extId = program.id as EntityId}
+              {@const selected = isSelected(extId)}
+              {@const defaultProg = isDefault(extId)}
+              {@const incompatible = isIncompatible(extId)}
 
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={selected}
-                  tabindex={incompatible ? -1 : 0}
-                  class={cn(
-                    "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm",
-                    selected && "bg-accent",
-                    incompatible && "text-muted-foreground opacity-60 cursor-not-allowed",
-                    !incompatible && !selected && "hover:bg-accent/50 focus:bg-accent/50",
-                  )}
-                  onclick={() => toggleProgram(extId)}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter" || e.key === " ") {
-                      e.preventDefault();
-                      toggleProgram(extId);
-                    }
-                  }}
-                  title={incompatible ? "Not available for current selection" : ""}
-                  disabled={incompatible}
-                >
-                  <input
-                    type="checkbox"
-                    checked={selected}
-                    disabled={defaultProg || incompatible}
-                    class="h-4 w-4 rounded border-input pointer-events-none"
-                    aria-label={program.name}
-                    aria-hidden="true"
-                  />
-                  <span class="flex-1 text-left">
-                    🔗 {program.name}
-                    {#if defaultProg}
-                      <span class="ml-1 text-xs text-muted-foreground">(default)</span>
-                    {/if}
-                    {#if incompatible}
-                      <span class="ml-1 text-xs text-muted-foreground">(unavailable)</span>
-                    {/if}
-                  </span>
-                </button>
-              {/each}
+              <button
+                type="button"
+                role="option"
+                aria-selected={selected}
+                tabindex={incompatible ? -1 : 0}
+                class={cn(
+                  "flex w-full items-center gap-2 rounded-sm px-3 py-2 text-sm",
+                  selected && "bg-accent",
+                  incompatible && "text-muted-foreground opacity-60 cursor-not-allowed",
+                  !incompatible && !selected && "hover:bg-accent/50 focus:bg-accent/50",
+                )}
+                onclick={() => toggleProgram(extId)}
+                onkeydown={(e) => {
+                  if (e.key === "Enter" || e.key === " ") {
+                    e.preventDefault();
+                    toggleProgram(extId);
+                  }
+                }}
+                title={incompatible ? "Not available for current selection" : ""}
+                disabled={incompatible}
+              >
+                <input
+                  type="checkbox"
+                  checked={selected}
+                  disabled={defaultProg || incompatible}
+                  class="h-4 w-4 rounded border-input pointer-events-none"
+                  aria-label={program.name}
+                  aria-hidden="true"
+                />
+                <span class="flex-1 text-left">
+                  🔗 {program.name}
+                  {#if defaultProg}
+                    <span class="ml-1 text-xs text-muted-foreground">(default)</span>
+                  {/if}
+                  {#if incompatible}
+                    <span class="ml-1 text-xs text-muted-foreground">(unavailable)</span>
+                  {/if}
+                </span>
+              </button>
+            {/each}
             </div>
           {/if}
         {/if}

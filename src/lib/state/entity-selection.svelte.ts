@@ -34,13 +34,15 @@ export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgra
 export type PickerTabId = "particle" | "material" | "program";
 
 /**
- * Compare-across dimension (Advanced mode). When set to anything other than
- * `"program"`, the matching tab renders `<MultiList>` and its
- * `multiSelected[dim]` array drives results. For Basic mode this is forced
- * to `"program"` and the UI is hidden.
+ * Compare-across dimension (Advanced mode). Reserved for the multi-select
+ * follow-up — `multiSelected[dim]` is intentionally **not consumed** by any
+ * calculation/URL surface in this PR. The `<MultiList>` rendering branch in
+ * the Program tab was removed for the same reason; the multi-program
+ * comparison is still driven by `MultiProgramState` above the Calculator
+ * results table.
  *
- * **PR scope note:** in the chrome+state rework PR only `"program"` is wired
- * to results; `"particle"` / `"material"` are reserved for follow-up issues.
+ * Tracked follow-up: enable Materials/Particles dropdown options and wire
+ * `multiSelected.*` end-to-end through `calculator-state` / `plot-state`.
  */
 export type AcrossDimension = "particle" | "material" | "program";
 

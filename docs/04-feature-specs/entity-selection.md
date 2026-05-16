@@ -77,7 +77,10 @@ selectProgram`, then `afterSelection` advances `activeTarget` to the
 **Advanced toolbar**
 
 `advanced-toolbar.svelte` renders above the tab strip when `isAdvancedMode`
-is true. Contents:
+is true **and** the host page opts in via `showAdvancedToolbar` (defaults
+to `collapsible`, so Calculator shows it and Plot hides it — Plot's
+Advanced mode only needs part+mat+program selection for the next "Add
+series"). Contents:
 
 - `Compare across:` dropdown — `Programs` is the only enabled option this
   PR. `Materials` and `Particles` are present but disabled with a "ships
@@ -86,20 +89,26 @@ is true. Contents:
   modal in a follow-up PR.
 - `⊞ Explore compat` — disabled placeholder; wires up to the
   compatibility-matrix overlay in a follow-up PR.
-- `↺` reset — calls `state.resetAll()`.
+- `↺` reset — calls `state.resetAll()` and, on Calculator, also collapses
+  the panel (defaults are complete after reset).
 
-**Multi-list**
+**Multi-list rendering (deferred)**
 
-`multi-list.svelte` is a generic SELECTED + AVAILABLE list rendered by
-the Program tab when `state.across === "program"` in Advanced mode. It
-keyboard-toggles via checkbox; the first entry has a `DEFAULT` badge and
-cannot be removed. Drag-and-drop reorder and `Alt+ArrowUp/Down` keyboard
-reorder land in a follow-up issue.
+The original wireframes drew a SELECTED + AVAILABLE multi-list on the
+Program tab when `across === "program"` in Advanced. That rendering
+branch is **not shipped in this PR** because nothing consumes
+`multiSelected.program` yet — multi-program comparison is still driven
+by `MultiProgramState` above the Calculator results table. The state
+setters (`setAcross`, `toggleMulti`, `multiSelected.*`) remain wired so
+the follow-up issue can light up the UI without re-deriving the data
+model. See follow-up issue "Compare across — Programs end-to-end".
 
 **Custom-material pill**
 
-The Material tab renders a coral `+ New custom material` pill at the top
-in Advanced mode. It opens the existing `compound-editor-modal.svelte`.
+The Material tab renders a coral `+ New custom material` pill **below**
+the Elements / Compounds / Custom columns in Advanced mode (less
+prominent than the columns themselves; the columns are the primary
+selection path, the pill is a less-common "create new" affordance).
 
 **Deferred to follow-up issues** (intentionally out of scope for the
 chrome+state rework PR):

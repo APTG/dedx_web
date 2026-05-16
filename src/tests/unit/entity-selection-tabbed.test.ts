@@ -383,11 +383,11 @@ describe("EntitySelection", () => {
       expect(badge).toHaveTextContent("!");
     });
 
-    test("advanced toolbar renders in advanced mode and exposes the Compare-across dropdown", async () => {
+    test("advanced toolbar renders in advanced mode (Calculator only) and exposes the Compare-across dropdown", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       isAdvancedMode.value = true;
       try {
-        render(EntitySelection, { props: { selectionState: state } });
+        render(EntitySelection, { props: { selectionState: state, collapsible: true } });
         const toolbar = screen.getByTestId("picker-advanced-toolbar");
         expect(toolbar).toBeInTheDocument();
         const compareAcross = screen.getByTestId("picker-compare-across") as HTMLSelectElement;
@@ -407,54 +407,41 @@ describe("EntitySelection", () => {
       }
     });
 
-    test("custom-material pill renders in Material tab in advanced mode only", async () => {
+    test("advanced toolbar is hidden on Plot (collapsible=false) even in advanced mode", async () => {
+      const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
+      isAdvancedMode.value = true;
+      try {
+        render(EntitySelection, { props: { selectionState: state, collapsible: false } });
+        expect(screen.queryByTestId("picker-advanced-toolbar")).not.toBeInTheDocument();
+      } finally {
+        isAdvancedMode.value = false;
+      }
+    });
+
+    test("custom-material pill is rendered below the material columns in advanced mode", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       const user = userEvent.setup();
-
-      // Basic mode: no pill.
-      render(EntitySelection, { props: { selectionState: state } });
-      await user.click(screen.getByTestId("picker-tab-material"));
-      expect(screen.queryByTestId("picker-add-custom-material")).not.toBeInTheDocument();
-      cleanup();
-
-      // Advanced mode: pill is present.
       isAdvancedMode.value = true;
       try {
-        const service = new MockLibdedxService();
-        const matrix = buildCompatibilityMatrix(service as any);
-        const advState = createEntitySelectionState(matrix);
-        render(EntitySelection, { props: { selectionState: advState } });
-        await user.click(screen.getByTestId("picker-tab-material"));
-        expect(screen.getByTestId("picker-add-custom-material")).toBeInTheDocument();
-      } finally {
-        isAdvancedMode.value = false;
-      }
-    });
-
-    test("setAcross switches the program tab into multi-list mode (Advanced)", async () => {
-      const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
-      isAdvancedMode.value = true;
-      try {
-        // Seed an explicit program so multiSelected.program has a default entry.
-        state.selectProgram(7);
-        state.setAcross("program");
-
-        const user = userEvent.setup();
         render(EntitySelection, { props: { selectionState: state } });
-        await user.click(screen.getByTestId("picker-tab-program"));
-
-        expect(screen.getByTestId("picker-program-multi-list")).toBeInTheDocument();
-        // Auto-select hero is hidden in multi mode.
-        expect(screen.queryByTestId("picker-program-auto-hero")).not.toBeInTheDocument();
-        expect(state.multiSelected.program).toEqual([7]);
-        expect(state.activeTarget).toBe("program");
-        expect(state.expanded).toBe(true);
+        await user.click(screen.getByTestId("picker-tab-material"));
+        const tabRoot = screen.getByTestId("picker-material-tab");
+        const columns = screen.getByTestId("picker-material-columns");
+        const pill = screen.getByTestId("picker-add-custom-material");
+        // The pill comes after the columns in DOM order so it renders below.
+        const children = Array.from(tabRoot.children);
+        expect(children.indexOf(columns)).toBeLessThan(children.indexOf(pill));
       } finally {
         isAdvancedMode.value = false;
       }
     });
 
-    test("toggleMulti adds and removes ids, refusing to remove the default", () => {
+    test("setAcross + toggleMulti maintain the multi-selection state (reserved for follow-up)", () => {
+      // The Program tab no longer renders <MultiList> (the rendering branch
+      // was removed because it has no consumers — multi-program comparison
+      // is still driven by MultiProgramState above the results table). The
+      // state setters remain wired so the follow-up issue can light up the
+      // UI without re-deriving the data model.
       state.setAcross("program");
       state.selectProgram(7); // resets multi to [7]
       state.setAcross("program");

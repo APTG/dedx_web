@@ -134,10 +134,11 @@
         <span
           class="absolute -top-1 -right-1 flex h-[18px] w-[18px] items-center justify-center rounded-full bg-red-500 text-[11px] font-bold text-white"
           data-testid="picker-tab-{tab.id}-empty"
+          role="img"
           aria-label="{tab.title} selection is empty"
           title="{tab.title} selection is empty"
         >
-          !
+          <span aria-hidden="true">!</span>
         </span>
       {/if}
     </button>

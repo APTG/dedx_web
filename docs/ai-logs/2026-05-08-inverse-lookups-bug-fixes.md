@@ -40,7 +40,7 @@ row mutation), Svelte 5 would not re-run the effects.
    - CSDA `$effect`: added `const _rangeMasterUnit = inverseLookupState.rangeMasterUnit;`
    - STP `$effect`: added `const _stpMasterUnit = inverseLookupState.stpMasterUnit;`
    - STP `$effect` per-row handling: when both `lowResult instanceof Error &&
-highResult instanceof Error`, set `r.status = "no-solution"` instead of leaving "valid"
+     highResult instanceof Error`, set `r.status = "no-solution"` instead of leaving "valid"
      with null energies. When at least one succeeds, keep `"valid"`.
    - STP result-low and result-high template cells: added `{:else}` fallback showing "—"
      (matches the existing Range tab pattern)

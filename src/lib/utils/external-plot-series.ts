@@ -1,8 +1,4 @@
-import type {
-  CsdaTableEntry,
-  ExternalDataService,
-  StpTableEntry,
-} from "$lib/external-data/service";
+import type { CsdaTableEntry, ExternalDataService, StpTableEntry } from "$lib/external-data/service";
 import type { CalculationResult } from "$lib/wasm/types";
 
 export function externalEntriesToCalculationResult(

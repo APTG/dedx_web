@@ -16,28 +16,27 @@ User asked to:
 4. Fill the AI logs and ensure all E2E tests pass.
 
 **AI response**: Investigated CI run `25637030160` (failure on `bab8dae`):
-
 - Build failure caused by `button.svelte:67` having a bare `onclick` attribute (also flagged in the review).
 - Two unit test files cascade-failed because of the same compile error.
 
 Applied surgical fixes for every review-thread comment that called out concrete
 code changes:
 
-| #   | Review thread                                                                | Fix                                                                                                                                                                          |
-| --- | ---------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | `libdedx.ts:668-679` — float32 vs `double` ABI mismatch                      | Allocate `energiesPtr` and `stpPtr` as 8-byte buffers and read/write via `HEAPF64`.                                                                                          |
-| 2   | `libdedx.ts:704-707` — same, output buffer                                   | Read `stp` back from `HEAPF64`.                                                                                                                                              |
-| 3   | `dedx_extra.c:527-532` — wrapper signature mismatch                          | C side already declared `double*` for energies/stp/csda; only the JS side was wrong (#1, #2). C side unchanged here.                                                         |
-| 4   | `dedx_extra.c:485-502` — `(int)` truncation of atom counts                   | Use `lround()` instead of `(int)` cast and reject zero/negative counts (sets `*err = -1`). Documents that fractional stoichiometries should be normalized to integer ratios. |
-| 5   | `entity-combobox.svelte:101-108` — `selectedItem` crash on `add-button`      | Skip both `section` and `add-button` entries.                                                                                                                                |
-| 6   | `entity-combobox.svelte:163-172` — `handleValueChange` crash on `add-button` | Skip both `section` and `add-button` entries.                                                                                                                                |
-| 7   | `entity-combobox.svelte:76-81` — production `console.log` debug spam         | Removed all `console.log` statements from the combobox.                                                                                                                      |
-| 8   | `entity-selection-comboboxes.svelte:166` — per-item delete uses wrong target | `handleDeleteCompound(compound)` accepts an explicit target and the dropdown action passes the row's compound.                                                               |
-| 9   | `button.svelte:67` — bare `onclick` attribute                                | Changed to `{onclick}`. Also unblocks the production build.                                                                                                                  |
-| 10  | `tests/e2e/debug-wasm.spec.ts` — debug-only spec                             | Deleted.                                                                                                                                                                     |
-| 11  | `tests/e2e/debug-modal.spec.ts` — debug-only spec                            | Deleted.                                                                                                                                                                     |
-| 12  | `electron-structure-debug.test.ts` — uses old `state` prop, debug-only       | Deleted.                                                                                                                                                                     |
-| 13  | `compound-editor-modal.svelte:152` — `parseInt` drops fractional counts      | Use `parseFloat`; also relaxed the `<Input>` to `min="0" step="any"`.                                                                                                        |
+| # | Review thread                                             | Fix                                                                                                                                                                          |
+| - | --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1 | `libdedx.ts:668-679` — float32 vs `double` ABI mismatch   | Allocate `energiesPtr` and `stpPtr` as 8-byte buffers and read/write via `HEAPF64`.                                                                                          |
+| 2 | `libdedx.ts:704-707` — same, output buffer                | Read `stp` back from `HEAPF64`.                                                                                                                                              |
+| 3 | `dedx_extra.c:527-532` — wrapper signature mismatch       | C side already declared `double*` for energies/stp/csda; only the JS side was wrong (#1, #2). C side unchanged here.                                                         |
+| 4 | `dedx_extra.c:485-502` — `(int)` truncation of atom counts | Use `lround()` instead of `(int)` cast and reject zero/negative counts (sets `*err = -1`). Documents that fractional stoichiometries should be normalized to integer ratios. |
+| 5 | `entity-combobox.svelte:101-108` — `selectedItem` crash on `add-button` | Skip both `section` and `add-button` entries.                                                                                                                                |
+| 6 | `entity-combobox.svelte:163-172` — `handleValueChange` crash on `add-button` | Skip both `section` and `add-button` entries.                                                                                                                                |
+| 7 | `entity-combobox.svelte:76-81` — production `console.log` debug spam | Removed all `console.log` statements from the combobox.                                                                                                                      |
+| 8 | `entity-selection-comboboxes.svelte:166` — per-item delete uses wrong target | `handleDeleteCompound(compound)` accepts an explicit target and the dropdown action passes the row's compound.                                                               |
+| 9 | `button.svelte:67` — bare `onclick` attribute             | Changed to `{onclick}`. Also unblocks the production build.                                                                                                                  |
+| 10 | `tests/e2e/debug-wasm.spec.ts` — debug-only spec         | Deleted.                                                                                                                                                                     |
+| 11 | `tests/e2e/debug-modal.spec.ts` — debug-only spec        | Deleted.                                                                                                                                                                     |
+| 12 | `electron-structure-debug.test.ts` — uses old `state` prop, debug-only | Deleted.                                                                                                                                                                     |
+| 13 | `compound-editor-modal.svelte:152` — `parseInt` drops fractional counts | Use `parseFloat`; also relaxed the `<Input>` to `min="0" step="any"`.                                                                                                        |
 
 Additionally fixed the `entity-selection-comboboxes` unit-test suite that was
 left on the old `state` prop name after the spec rename to `selectionState`

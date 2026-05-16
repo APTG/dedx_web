@@ -13,7 +13,7 @@ this is the right place or whether a better structure exists.
 **AI response**: Read `docs/00-redesign-plan.md` to understand the existing stage structure.
 The current plan was: Stage 7 (Polish & E2E), Stage 8 (CI/CD deploy → v2.0.0), Stage 9
 (Legacy Removal, already done early). The user's instinct was confirmed: the beta phase
-must happen _before_ Stage 8 tags v2.0.0, because once that tag fires `APTG/web` gets
+must happen *before* Stage 8 tags v2.0.0, because once that tag fires `APTG/web` gets
 overwritten and the v1.1.0 comparison reference disappears.
 
 Initial recommendation was to add it as Stage 7.6 to avoid renumbering.
@@ -62,7 +62,6 @@ wrote this session log, updated `CHANGELOG-AI.md` and `docs/ai-logs/README.md`.
 ### Stage 8 content summary
 
 The new Stage 8 defines:
-
 - **Goal**: catch visual/layout bugs before production release, while v1.1.0 is still at
   `aptg.github.io/web` for side-by-side comparison
 - **Process**: share `web_dev` URL → file issues with `beta-feedback` label (critical

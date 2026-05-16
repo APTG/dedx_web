@@ -123,3 +123,64 @@ slow them down.
 - **Issue**: E2E real-WASM verification only runs on CI — the local
   sandbox cannot build WASM via Docker. Unit tests (1321 passing) +
   build + lint + typecheck (no new errors) confirm the shape.
+
+## Review-round fixes (PR #511)
+
+Addressed the reviewer thread + user comment on PR #511:
+
+- **Removed `<MultiList>` rendering branch from `program-tab.svelte`** —
+  the multi-list had no consumers (multi-program comparison still flows
+  through `MultiProgramState`/`<MultiProgramPicker>`), and rendering it
+  hid the normal `picker-program-item-*` rows that the custom-compounds
+  E2E suite depends on. The `multiSelected` state setters stay so the
+  follow-up issue can light up the UI later without re-deriving data.
+- **Deleted `multi-list.svelte`** — no longer referenced; was flagged by
+  the reviewer for `<button>` containing `<input type=checkbox>`
+  (invalid HTML), `role="listbox"` without `role="option"` children,
+  and selected rows disappearing when filtered out by search.
+- **`AdvancedToolbar` hidden on Plot** (user feedback: Plot's Advanced
+  mode only needs part+mat+program selection for the next "Add series",
+  no Compare-across needed). New `showAdvancedToolbar` prop on
+  `<EntitySelection>` defaults to `collapsible`, so Calculator shows it
+  and Plot hides it.
+- **`+ New custom material` pill moved from above the Material columns
+  to below them** (user feedback: less-important feature, columns are
+  the primary path).
+- **`handleReset` re-applies the collapse rule** on Calculator
+  (`collapsible=true`) so reset both restores defaults and collapses
+  the panel — fixes the failing
+  `tests/e2e/entity-selection-tabbed.spec.ts:91` assertion.
+- **Tab-bar empty `!` badge** now uses `role="img"` + `aria-label` with
+  a `aria-hidden` text child, instead of `aria-label` on a plain
+  `<span>` — silences the a11y-tool warning.
+- **Reverted formatting-only changes** to ~30 unrelated files that
+  `pnpm format` rewrote (AI logs, prototype lockfiles, unrelated
+  components). The PR now only touches files relevant to the chrome +
+  state rework.
+- **Updated state-comment** in `entity-selection.svelte.ts` to reflect
+  that the multi-list rendering branch is no longer present and that
+  `multiSelected` is reserved for the follow-up issue.
+
+## Follow-up issues — final list
+
+Filed (or to-file) as separate GitHub issues. The numbering here matches
+the order in the AI log above; details unchanged unless noted.
+
+1. **Persistent picker-level search row + chevron + dynamic placeholder**
+2. **Move `external-sources-panel.svelte` into `entity-selection/`** with
+   collapsible attribution rows + per-source remove buttons.
+3. **`load-external-modal.svelte`** with URL paste + drag-drop + recents.
+4. **`<MultiList>` UI** — recreate the component with proper a11y
+   (separate options list, no nested interactive controls, selected
+   rows preserved across search) **and** wire its reorder
+   interactions. Combined into one issue because the previous
+   component shouldn't be revived; it should be redesigned alongside
+   the consumer wiring.
+5. **Compare across = Materials / Particles end-to-end** through
+   `calculator-state` / `plot-state`. Also covers wiring
+   `multiSelected.program` so that the Compare-across=Programs
+   dropdown actually drives the results table — i.e. the consumer
+   side of follow-up #4.
+6. **Retire `selected-pill.svelte` + `multi-program-picker.svelte`**
+   (depends on #4 and #5).
+7. **Mobile Material-tab card polish.**

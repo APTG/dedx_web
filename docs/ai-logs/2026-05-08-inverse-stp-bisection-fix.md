@@ -52,7 +52,6 @@ Both ICRU 49 (monotone) and PSTAR (Bragg peak at ~0.2 MeV) are handled correctly
 **E2E test failures after first WASM recompile**: The smoke test regex
 `/^\d+(\.\d+)?\s*(MeV|GeV)?$/` did not match `keV` (the auto-scaled display for the
 ~5 keV low-branch answer). Fixed by:
-
 - Updating all 3 affected test regexes to `/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/`.
 - Adding `parseEnergyMeV()` helper to convert keV/MeV/GeV labels to MeV for the
   `E_high > E_low` comparison.

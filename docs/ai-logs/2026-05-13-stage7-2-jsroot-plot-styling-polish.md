@@ -10,22 +10,21 @@ Findings:
 
 The redesign plan lists task 7.2 as ⏳ "not started," but the audit revealed that the bulk of the "physics-grade defaults" had been implemented in earlier stages:
 
-| Requirement                                          | Status found                                             |
-| ---------------------------------------------------- | -------------------------------------------------------- |
-| Log-log axes as default (`xLog: true`, `yLog: true`) | ✅ Done (earlier stages)                                 |
-| Axis labels with units                               | ✅ Done — "Energy [MeV/nucl]", "Stopping Power [{unit}]" |
-| Line width 2 committed / width 1 preview             | ✅ Done                                                  |
-| Color palette (9 colors, exact hex values)           | ✅ Done                                                  |
-| Grid + tick draw options (`gridx;gridy;tickx;ticky`) | ✅ Done                                                  |
-| Wheel zoom disabled                                  | ✅ Done — `JSROOT.settings.ZoomWheel = false`            |
-| Touch zoom disabled on mobile/tablet                 | ✅ Done                                                  |
-| No JSROOT canvas legend — series list as legend      | ✅ Done                                                  |
-| **14 pt fonts**                                      | ❌ Missing — no `fLabelSize`/`fTitleSize` set anywhere   |
+| Requirement | Status found |
+|---|---|
+| Log-log axes as default (`xLog: true`, `yLog: true`) | ✅ Done (earlier stages) |
+| Axis labels with units | ✅ Done — "Energy [MeV/nucl]", "Stopping Power [{unit}]" |
+| Line width 2 committed / width 1 preview | ✅ Done |
+| Color palette (9 colors, exact hex values) | ✅ Done |
+| Grid + tick draw options (`gridx;gridy;tickx;ticky`) | ✅ Done |
+| Wheel zoom disabled | ✅ Done — `JSROOT.settings.ZoomWheel = false` |
+| Touch zoom disabled on mobile/tablet | ✅ Done |
+| No JSROOT canvas legend — series list as legend | ✅ Done |
+| **14 pt fonts** | ❌ Missing — no `fLabelSize`/`fTitleSize` set anywhere |
 
 Additionally, the redesign plan task note contained a contradiction: it said "legend top-right," but `plot.md`'s acceptance criteria explicitly state "No JSROOT-rendered legend on the canvas (the series list below the canvas serves as the legend)." The implementation correctly follows the spec (no canvas legend). The redesign plan note was stale.
 
 Plan produced:
-
 1. Add `fLabelSize = fTitleSize = 0.04` to `buildMultigraph()` in `jsroot-plot.svelte`
 2. Update `plot.md` spec: add font-size lines to the JSROOT Integration code block and a new AC item
 3. Correct the "legend top-right" contradiction in the redesign plan; mark 7.2 ✅

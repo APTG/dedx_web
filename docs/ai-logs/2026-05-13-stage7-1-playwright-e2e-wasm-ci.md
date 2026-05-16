@@ -5,7 +5,6 @@
 ### Prompt 1: Analyse task 7.1 from the redesign plan
 
 **AI response**: Deep audit of the codebase found that the CI infrastructure (WASM download, Playwright install, `pnpm test:e2e` run, HTML report upload) was fully implemented from earlier stages. The E2E test suite (18 spec files, ~3900 lines) ran against real WASM. However, three gaps prevented marking 7.1 complete:
-
 1. `@axe-core/playwright` mandatory per `07-testing-strategy.md §3` — completely absent
 2. One unconditionally-skipped calculator test (`test.skip(true, ...)`) with stale selectors
 3. Missing `@smoke` tags on basic calculator, plot, and export happy paths

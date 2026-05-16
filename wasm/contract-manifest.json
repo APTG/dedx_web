@@ -1,12 +1,20 @@
 {
   "_meta": {
     "purpose": "Single source of truth for JS-facing inverse-wrapper ABI symbols.",
-    "consumers": ["wasm/verify.mjs", "scripts/check-wasm-contract-docs.cjs"],
+    "consumers": [
+      "wasm/verify.mjs",
+      "scripts/check-wasm-contract-docs.cjs"
+    ],
     "update_when": "Any inverse-wrapper export or inverse service backing symbol is added, removed, or renamed."
   },
   "exports": {
-    "dedx_tools_flat_inverse": ["dedx_get_inverse_stp_flat", "dedx_get_inverse_csda_flat"],
-    "dedx_extra_inverse": ["dedx_get_bragg_peak_stp"],
+    "dedx_tools_flat_inverse": [
+      "dedx_get_inverse_stp_flat",
+      "dedx_get_inverse_csda_flat"
+    ],
+    "dedx_extra_inverse": [
+      "dedx_get_bragg_peak_stp"
+    ],
     "dedx_extra_custom_compound": [
       "dedx_calculate_custom_forward_flat",
       "dedx_get_inverse_stp_custom_compound_flat",
@@ -19,12 +27,26 @@
     ]
   },
   "serviceBacking": {
-    "getInverseStp": ["dedx_get_inverse_stp_flat"],
-    "getInverseCsda": ["dedx_get_inverse_csda_flat"],
-    "getBraggPeakStp": ["dedx_get_bragg_peak_stp"],
-    "calculateCustomForward": ["dedx_calculate_custom_forward_flat"],
-    "getInverseStpCustomCompound": ["dedx_get_inverse_stp_custom_compound_flat"],
-    "getInverseCsdaCustomCompound": ["dedx_get_inverse_csda_custom_compound_flat"],
-    "getBraggPeakStpCustomCompound": ["dedx_get_bragg_peak_stp_custom_compound"]
+    "getInverseStp": [
+      "dedx_get_inverse_stp_flat"
+    ],
+    "getInverseCsda": [
+      "dedx_get_inverse_csda_flat"
+    ],
+    "getBraggPeakStp": [
+      "dedx_get_bragg_peak_stp"
+    ],
+    "calculateCustomForward": [
+      "dedx_calculate_custom_forward_flat"
+    ],
+    "getInverseStpCustomCompound": [
+      "dedx_get_inverse_stp_custom_compound_flat"
+    ],
+    "getInverseCsdaCustomCompound": [
+      "dedx_get_inverse_csda_custom_compound_flat"
+    ],
+    "getBraggPeakStpCustomCompound": [
+      "dedx_get_bragg_peak_stp_custom_compound"
+    ]
   }
 }

@@ -135,10 +135,10 @@ does not apply to this context.
 
 ### Mode-transition matrix (REQUIRED for mode-gated features)
 
-| Transition         | Expected UI state        | Expected calculation state | Expected URL state             |
-| ------------------ | ------------------------ | -------------------------- | ------------------------------ |
-| disabled → enabled | Feature controls visible | Feature effects enabled    | Feature params can appear      |
-| enabled → disabled | Feature controls hidden  | Feature effects disabled   | Feature params omitted/ignored |
+| Transition | Expected UI state | Expected calculation state | Expected URL state |
+| ---------- | ----------------- | -------------------------- | ------------------ |
+| disabled → enabled | Feature controls visible | Feature effects enabled | Feature params can appear |
+| enabled → disabled | Feature controls hidden | Feature effects disabled | Feature params omitted/ignored |
 
 ---
 

@@ -29,9 +29,23 @@
      * entity-selection spec).
      */
     collapsible?: boolean;
+    /**
+     * Whether to render the Advanced-mode toolbar (Compare-across, Load
+     * external, Explore compat, Reset). Default `collapsible` — Calculator
+     * shows it, Plot hides it. On Plot the Advanced mode is only used to
+     * pick part+mat+program for the next "Add series", so Compare-across
+     * and friends are not useful there.
+     */
+    showAdvancedToolbar?: boolean;
   }
 
-  let { selectionState, onParticleSelect, class: className, collapsible = false }: Props = $props();
+  let {
+    selectionState,
+    onParticleSelect,
+    class: className,
+    collapsible = false,
+    showAdvancedToolbar = collapsible,
+  }: Props = $props();
 
   // Initial expand/collapse rule (spec § Active target + expand/collapse, rule B):
   // - Calculator (collapsible=true): expanded = !isComplete on first mount.
@@ -116,6 +130,12 @@
 
   function handleReset(): void {
     selectionState.resetAll();
+    // Reset restores complete defaults (proton/Water/Auto). On Calculator
+    // (collapsible) the panel should collapse to match the post-completion
+    // rule. On Plot (!collapsible) the panel stays open.
+    if (collapsible) {
+      selectionState.setExpanded(false);
+    }
   }
 
   function handleGlobalKey(event: KeyboardEvent) {
@@ -139,7 +159,7 @@
 <svelte:window onkeydown={handleGlobalKey} />
 
 <div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
-  {#if isAdvancedMode.value}
+  {#if isAdvancedMode.value && showAdvancedToolbar}
     <AdvancedToolbar {selectionState} onReset={handleReset} />
   {/if}
 

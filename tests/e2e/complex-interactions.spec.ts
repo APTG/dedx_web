@@ -189,9 +189,7 @@ test.describe("Calculator — auto-select and program resolution", () => {
     const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("Urea");
 
-    const ureaItem = page
-      .locator('[data-testid^="picker-material-item-"]', { hasText: /Urea/i })
-      .first();
+    const ureaItem = page.locator('[data-testid^="picker-material-item-"]', { hasText: /Urea/i }).first();
     const ureaExists = await ureaItem.isVisible({ timeout: 2000 }).catch(() => false);
 
     if (ureaExists) {
