@@ -53,7 +53,7 @@
   });
 </script>
 
-<div class="space-y-3" data-testid="v8-program-tab">
+<div class="space-y-3" data-testid="picker-program-tab">
   {#if !isAuto}
     <SelectedPill
       label={currentProgram.name}
@@ -61,7 +61,7 @@
         ? undefined
         : (getProgramDescription(currentProgram.id as number) ?? undefined)}
       onClear={() => selectionState.selectProgram(-1)}
-      data-testid="v8-program-selected"
+      data-testid="picker-program-selected"
     />
   {/if}
 
@@ -70,7 +70,7 @@
     onInput={(v) => (query = v)}
     bind:inputRef
     placeholder="Program name or version…"
-    data-testid="v8-program-search"
+    data-testid="picker-program-search"
   />
 
   <button
@@ -81,7 +81,7 @@
         ? "border-primary bg-primary/10"
         : "border-primary/30 bg-primary/5 hover:bg-primary/10",
     )}
-    data-testid="v8-program-auto-hero"
+    data-testid="picker-program-auto-hero"
     aria-pressed={isAuto}
     onclick={() => selectionState.selectProgram(-1)}
   >
@@ -110,7 +110,7 @@
     aria-label="Programs"
     tabindex="0"
     class="max-h-52 overflow-auto space-y-0.5"
-    data-testid="v8-program-list"
+    data-testid="picker-program-list"
   >
     {#each filteredBuiltin as program (program.id)}
       {@const isSelected = currentProgram.id === program.id}
@@ -120,7 +120,7 @@
           type="button"
           role="option"
           aria-selected={isSelected}
-          data-testid="v8-program-item-{program.id}"
+          data-testid="picker-program-item-{program.id}"
           tabindex={-1}
           class={cn(
             "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
@@ -144,7 +144,7 @@
           type="button"
           role="option"
           aria-selected={isSelected}
-          data-testid="v8-program-item-{program.id}"
+          data-testid="picker-program-item-{program.id}"
           tabindex={-1}
           class={cn(
             "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
@@ -168,7 +168,7 @@
 
   <div
     class="flex flex-wrap items-center gap-3 border-t pt-2 text-xs text-muted-foreground"
-    data-testid="v8-program-legend"
+    data-testid="picker-program-legend"
   >
     <span class="font-medium uppercase tracking-wider">Legend</span>
     <span class="flex items-center gap-1"><ProgramTag kind="TAB" /> data tables</span>

@@ -1,14 +1,14 @@
 import { browser } from "$app/environment";
 
 /**
- * v8 picker mode: "basic" or "advanced".
+ * tabbed picker mode: "basic" or "advanced".
  *
  * Drives what extra features the tabbed picker exposes (periodic-grid
  * scan view, Custom material sub-tab, inline multi-program list,
  * `⊞ explore compat` overlay link, advanced search operators).
  *
  * Mirrors `isAdvancedMode` for the rest of the app for now — kept as a
- * separate store so the v8 picker UI can move independently of the global
+ * separate store so the tabbed picker UI can move independently of the global
  * advanced-options switch if product needs diverge.
  */
 

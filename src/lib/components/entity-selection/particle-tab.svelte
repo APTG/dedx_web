@@ -52,7 +52,7 @@
     return text.includes(trimmed);
   }
 
-  // v8 spec: drop electron entirely until ESTAR ships.
+  // spec: drop electron entirely until ESTAR ships.
   const allBuiltin = $derived(
     selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID),
   );
@@ -107,14 +107,14 @@
   const selected = $derived(selectionState.selectedParticle);
 </script>
 
-<div class="space-y-3" data-testid="v8-particle-tab">
+<div class="space-y-3" data-testid="picker-particle-tab">
   {#if selected}
     {@const atomicNumber = isExternal(selected) ? selected.Z : (selected.id as number)}
     <SelectedPill
       label={getParticleListLabel(selected, atomicNumber)}
       glyph={isExternal(selected) ? "🔗" : undefined}
       onClear={onClear}
-      data-testid="v8-particle-selected"
+      data-testid="picker-particle-selected"
     />
   {/if}
 
@@ -125,10 +125,10 @@
     onEnter={handleEnter}
     bind:inputRef
     placeholder="Name, symbol, Z…"
-    data-testid="v8-particle-search"
+    data-testid="picker-particle-search"
   />
 
-  <div data-testid="v8-particle-list" class="space-y-3">
+  <div data-testid="picker-particle-list" class="space-y-3">
     {#if filteredCommon.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">
@@ -145,7 +145,7 @@
                 role="option"
                 aria-selected={isSelected}
                 aria-disabled={!available}
-                data-testid="v8-particle-item-{p.id}"
+                data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
                 disabled={!available}
                 class={cn(
@@ -180,7 +180,7 @@
                 role="option"
                 aria-selected={isSelected}
                 aria-disabled={!available}
-                data-testid="v8-particle-item-{p.id}"
+                data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
                 disabled={!available}
                 class={cn(

@@ -1,13 +1,13 @@
 import { test, expect } from "@playwright/test";
 
 async function selectParticle(page: import("@playwright/test").Page, id: string, query: string) {
-  await page.getByTestId("v8-tab-particle").click();
-  await page.getByTestId("v8-particle-search").fill(query);
-  await page.getByTestId(`v8-particle-item-${id}`).click();
+  await page.getByTestId("picker-tab-particle").click();
+  await page.getByTestId("picker-particle-search").fill(query);
+  await page.getByTestId(`picker-particle-item-${id}`).click();
 }
 
 async function openProgramTab(page: import("@playwright/test").Page) {
-  await page.getByTestId("v8-tab-program").click();
+  await page.getByTestId("picker-tab-program").click();
 }
 
 /**
@@ -19,7 +19,7 @@ async function openProgramTab(page: import("@playwright/test").Page) {
 test.describe("Custom Compounds — Editor Modal", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-2: + Add compound opens modal with blank form", async ({ page }) => {
@@ -27,10 +27,10 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open material panel
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
 
     // Click + Add compound in the Custom Compounds column
-    const addButton = page.getByTestId("v8-material-add-compound");
+    const addButton = page.getByTestId("picker-material-add-compound");
     await expect(addButton).toBeVisible();
     await addButton.click();
 
@@ -61,8 +61,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open material panel and add compound
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -112,8 +112,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -170,8 +170,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
   test("AC-3: Validation — duplicate Z blocks Save", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("Duplicate");
@@ -203,13 +203,13 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
   test("AC-2: Create compound adds to library", async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open material panel and add compound
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -245,12 +245,12 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Re-navigate to verify compound persisted
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open material panel and verify compound is in the custom column
-    await page.getByTestId("v8-tab-material").click();
-    const customColumn = page.getByTestId("v8-material-col-custom");
+    await page.getByTestId("picker-tab-material").click();
+    const customColumn = page.getByTestId("picker-material-col-custom");
     await expect(customColumn).toBeVisible();
 
     // Verify LiF Pellet is visible in the custom column
@@ -258,7 +258,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Verify density description is visible on the custom compound row.
     await expect(
-      customColumn.locator('[data-testid^="v8-material-item-"]', { hasText: /LiF Pellet/i }).first(),
+      customColumn.locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i }).first(),
     ).toContainText(/2\.20\d* g\/cm/);
   });
 
@@ -273,8 +273,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create a compound first
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("ToDelete");
@@ -291,7 +291,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await saveBtn.click();
 
     // Re-open material panel to access the custom compounds column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
 
     // Find and click the edit button for ToDelete
     const editBtn = page.getByRole("button", { name: /edit compound ToDelete/i });
@@ -323,7 +323,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await confirmDelete.click();
 
     // Re-open material panel and verify compound is gone
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     await expect(page.getByText(/ToDelete/i)).not.toBeVisible();
   });
 });
@@ -331,16 +331,16 @@ test.describe("Custom Compounds — Editor Modal", () => {
 test.describe("Custom Compounds — Entity Selection Integration", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-1: Custom Compounds group absent in Basic mode", async ({ page }) => {
     // Basic mode by default — open the material panel
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
 
     // Custom Compounds column should not be visible in Basic mode
-    await expect(page.getByTestId("v8-material-col-custom")).not.toBeVisible();
-    await expect(page.getByTestId("v8-material-add-compound")).not.toBeVisible();
+    await expect(page.getByTestId("picker-material-col-custom")).not.toBeVisible();
+    await expect(page.getByTestId("picker-material-add-compound")).not.toBeVisible();
   });
 
   test.describe.configure({ mode: "serial" });
@@ -358,7 +358,7 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     console.log(
       "TEST: Console messages captured:",
       consoleMessages.length,
@@ -366,16 +366,16 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     );
 
     // Custom Compounds column and add button should be visible in Advanced mode
-    await expect(page.getByTestId("v8-material-col-custom")).toBeVisible();
-    await expect(page.getByTestId("v8-material-add-compound")).toBeVisible();
+    await expect(page.getByTestId("picker-material-col-custom")).toBeVisible();
+    await expect(page.getByTestId("picker-material-add-compound")).toBeVisible();
   });
 
   test("AC-7: Custom compounds appear with badge in material panel", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create a compound
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("Badge Test");
@@ -392,8 +392,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     await saveBtn.click();
 
     // Re-open material panel to verify compound and badge
-    await page.getByTestId("v8-tab-material").click();
-    const customColumn = page.getByTestId("v8-material-col-custom");
+    await page.getByTestId("picker-tab-material").click();
+    const customColumn = page.getByTestId("picker-material-col-custom");
     await expect(customColumn.getByText(/Badge Test/i)).toBeVisible();
     // Check for "custom" badge indicator
     await expect(
@@ -408,8 +408,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create compound
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("FilteredTest");
@@ -426,8 +426,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     await saveBtn.click();
 
     // Re-open material panel and filter
-    await page.getByTestId("v8-tab-material").click();
-    const searchInput = page.getByTestId("v8-material-search");
+    await page.getByTestId("picker-tab-material").click();
+    const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("filtered");
 
     await expect(page.getByText(/FilteredTest/i)).toBeVisible();
@@ -441,15 +441,15 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 test.describe("Custom Compounds — Program Compatibility Filter", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-7b: Programs missing elements are greyed out (smoke test)", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create LiF compound (Li Z=3, F Z=9)
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("LiF Compatibility");
@@ -475,10 +475,10 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     await saveBtn.click();
 
     // Select the compound from the custom column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     const lifOption = page
-      .getByTestId("v8-material-col-custom")
-      .locator('[data-testid^="v8-material-item-"]', { hasText: /LiF Compatibility/ })
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Compatibility/ })
       .first();
     await lifOption.click();
 
@@ -486,7 +486,7 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     await openProgramTab(page);
 
     // Verify programs are present (greyed-out check requires program-specific data)
-    const options = page.locator('[data-testid^="v8-program-item-"]');
+    const options = page.locator('[data-testid^="picker-program-item-"]');
     const count = await options.count();
     expect(count).toBeGreaterThanOrEqual(1);
 
@@ -500,12 +500,12 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
 test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-1: Custom compound falls back to water in Basic mode", async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     page.on("console", (msg) => {
       console.log("PAGE CONSOLE:", msg.text());
@@ -515,8 +515,8 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create compound
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("BasicModeTest");
@@ -533,16 +533,16 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     await saveBtn.click();
 
     // Select the compound from the custom column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     const customOption = page
-      .getByTestId("v8-material-col-custom")
-      .locator('[data-testid^="v8-material-item-"]', { hasText: /BasicModeTest/ })
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /BasicModeTest/ })
       .first();
     await customOption.waitFor({ state: "visible" });
     await customOption.click({ force: true });
 
     // Verify compound is selected — check the material tab label
-    const materialTab = page.getByTestId("v8-tab-material");
+    const materialTab = page.getByTestId("picker-tab-material");
     const tabText = await materialTab.textContent();
     console.log("Material tab text after selection:", tabText);
     expect(tabText).toContain("BasicModeTest");
@@ -552,14 +552,14 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     await basicModeBtn.click();
 
     // Should fall back to water — check material tab label
-    await expect(page.getByTestId("v8-tab-material")).toContainText(/water/i);
+    await expect(page.getByTestId("picker-tab-material")).toContainText(/water/i);
   });
 });
 
 test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanity check", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("Create water via formula mode (H:2, O:1) and verify reasonable stopping power", async ({
@@ -569,11 +569,11 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 
     // Select alpha particle (well-known stopping power in water)
     await selectParticle(page, "2", "alpha");
-    await expect(page.getByTestId("v8-tab-particle")).toContainText("alpha particle");
+    await expect(page.getByTestId("picker-tab-particle")).toContainText("alpha particle");
 
     // Open compound editor
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -602,18 +602,18 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
     // Select the water compound from the custom column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     const waterOption = page
-      .getByTestId("v8-material-col-custom")
-      .locator('[data-testid^="v8-material-item-"]', { hasText: /Water H2O formula/ })
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O formula/ })
       .first();
     await waterOption.waitFor({ state: "visible" });
     await waterOption.click();
-    await expect(page.getByTestId("v8-tab-material")).toContainText("Water H2O formula");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("Water H2O formula");
 
     // Select first available program
     await openProgramTab(page);
-    const firstProgramOption = page.locator('[data-testid^="v8-program-item-"]').first();
+    const firstProgramOption = page.locator('[data-testid^="picker-program-item-"]').first();
     await firstProgramOption.waitFor({ state: "visible" });
     await firstProgramOption.click();
 
@@ -643,8 +643,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open compound editor
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -685,14 +685,14 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
     // Select the water compound from the custom column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     const waterOption = page
-      .getByTestId("v8-material-col-custom")
-      .locator('[data-testid^="v8-material-item-"]', { hasText: /Water H2O weight/ })
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O weight/ })
       .first();
     await expect(waterOption).toBeVisible();
     await waterOption.click();
-    await expect(page.getByTestId("v8-tab-material")).toContainText("Water H2O weight");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("Water H2O weight");
 
     // Select alpha particle
     await selectParticle(page, "2", "alpha");
@@ -700,7 +700,7 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     // Select ASTAR: custom compounds are evaluated through the elemental
     // compound path, which is supported for this alpha-particle sanity check.
     await openProgramTab(page);
-    const astarOption = page.getByTestId("v8-program-item-1");
+    const astarOption = page.getByTestId("picker-program-item-1");
     await astarOption.waitFor({ state: "visible" });
     await astarOption.click();
 
@@ -724,8 +724,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
   test("Weight fraction sum ≠ 100% blocks Save", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -760,18 +760,18 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 test.describe("Scenario 1: LiF pellet smoke test", () => {
   test("Create LiF compound and calculate with MSTAR", async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     // Enable Advanced mode
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Select alpha particle (He-4)
     await selectParticle(page, "2", "alpha");
-    await expect(page.getByTestId("v8-tab-particle")).toContainText("alpha particle");
+    await expect(page.getByTestId("picker-tab-particle")).toContainText("alpha particle");
 
     // Create LiF
-    await page.getByTestId("v8-tab-material").click();
-    await page.getByTestId("v8-material-add-compound").click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("LiF Pellet");
@@ -797,20 +797,20 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await expect(page.getByRole("dialog", { name: /compound editor/i })).not.toBeVisible();
 
     // Select LiF from the custom column
-    await page.getByTestId("v8-tab-material").click();
+    await page.getByTestId("picker-tab-material").click();
     const lifOption = page
-      .getByTestId("v8-material-col-custom")
-      .locator('[data-testid^="v8-material-item-"]', { hasText: /LiF Pellet/ })
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/ })
       .first();
     await lifOption.waitFor({ state: "visible" });
     await lifOption.click();
-    await expect(page.getByTestId("v8-tab-material")).toContainText("LiF Pellet");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("LiF Pellet");
 
     // Select a program
     await openProgramTab(page);
 
     // Select first available program
-    const firstOption = page.locator('[data-testid^="v8-program-item-"]').first();
+    const firstOption = page.locator('[data-testid^="picker-program-item-"]').first();
     await firstOption.waitFor({ state: "visible" });
     await firstOption.click();
 

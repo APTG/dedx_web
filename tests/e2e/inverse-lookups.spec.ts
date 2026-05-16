@@ -32,7 +32,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await page.goto("/calculator");
     await expect(page.getByRole("heading", { name: "Calculator" })).toBeVisible({ timeout: 10000 });
     try {
-      await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 60000 });
+      await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 60000 });
     } catch (e) {
       await page.screenshot({ path: "test-results/particle-selector-timeout.png" });
       throw e;
@@ -302,7 +302,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
 test.describe("Advanced Mode Gate", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("Advanced-mode gate: inverse tabs absent in Basic mode @regression", async ({ page }) => {

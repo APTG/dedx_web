@@ -12,7 +12,7 @@ const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
   await page.goto("/calculator");
-  await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
+  await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
 
 /** Wait until the result table is visible (entity selection is complete). */
@@ -185,11 +185,11 @@ test.describe("Calculator — auto-select and program resolution", () => {
     page,
   }) => {
     // Open material tab and search for Urea
-    await page.getByTestId("v8-tab-material").click();
-    const searchInput = page.getByTestId("v8-material-search");
+    await page.getByTestId("picker-tab-material").click();
+    const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("Urea");
 
-    const ureaItem = page.locator('[data-testid^="v8-material-item-"]', { hasText: /Urea/i }).first();
+    const ureaItem = page.locator('[data-testid^="picker-material-item-"]', { hasText: /Urea/i }).first();
     const ureaExists = await ureaItem.isVisible({ timeout: 2000 }).catch(() => false);
 
     if (ureaExists) {
@@ -262,7 +262,7 @@ test.describe("Calculator — no crashes during typical interactions", () => {
   });
 
   test("switching particle to Carbon then editing energy does not crash", async ({ page }) => {
-    await selectParticle(page, "carbon", "v8-particle-item-6");
+    await selectParticle(page, "carbon", "picker-particle-item-6");
 
     await waitForTable(page);
     await typeInRow(page, 0, "100");
@@ -271,14 +271,14 @@ test.describe("Calculator — no crashes during typical interactions", () => {
   });
 });
 
-/** Helper: select a particle by search term (v8 UI). */
+/** Helper: select a particle by search term (picker UI). */
 async function selectParticle(
   page: import("@playwright/test").Page,
   query: string,
   itemTestId: string,
 ) {
-  await page.getByTestId("v8-tab-particle").click();
-  await page.getByTestId("v8-particle-search").fill(query);
+  await page.getByTestId("picker-tab-particle").click();
+  await page.getByTestId("picker-particle-search").fill(query);
   await page.getByTestId(itemTestId).click();
 }
 
@@ -293,7 +293,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   });
 
   test("Carbon + Water + 100 MeV/nucl shows numeric STP result", async ({ page }) => {
-    await selectParticle(page, "carbon", "v8-particle-item-6");
+    await selectParticle(page, "carbon", "picker-particle-item-6");
 
     await waitForTable(page);
     await typeInRow(page, 0, "100 MeV/nucl");
@@ -306,7 +306,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   });
 
   test("Helium + Water + 50 MeV/nucl shows numeric STP result", async ({ page }) => {
-    await selectParticle(page, "alpha", "v8-particle-item-2");
+    await selectParticle(page, "alpha", "picker-particle-item-2");
 
     await waitForTable(page);
     await typeInRow(page, 0, "50 MeV/nucl");
@@ -321,7 +321,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   test("Carbon: per-row unit selector shows MeV/nucl column with correct value", async ({
     page,
   }) => {
-    await selectParticle(page, "carbon", "v8-particle-item-6");
+    await selectParticle(page, "carbon", "picker-particle-item-6");
 
     await waitForTable(page);
     // Type explicit MeV/nucl unit to get 1:1 mapping
@@ -334,7 +334,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
   test("switching from Proton to Carbon with value entered does not crash", async ({ page }) => {
     await typeInRow(page, 0, "50");
 
-    await selectParticle(page, "carbon", "v8-particle-item-6");
+    await selectParticle(page, "carbon", "picker-particle-item-6");
 
     await waitForTable(page);
     await expect(page.locator("table")).toBeVisible();

@@ -3,11 +3,11 @@
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { getParticleLabel } from "$lib/utils/particle-label";
   import { pickerMode } from "$lib/state/picker-mode.svelte";
-  import type { V8Tab } from "./tab-bar.svelte";
+  import type { PickerTab } from "./tab-bar.svelte";
 
   interface Props {
     selectionState: EntitySelectionState;
-    onActivateTab: (tab: V8Tab) => void;
+    onActivateTab: (tab: PickerTab) => void;
     onReset: () => void;
     /**
      * Wired in PR #2 with the adaptive compatibility overlay. While the
@@ -53,14 +53,14 @@
     "flex flex-wrap items-center gap-2 rounded-t-lg border border-b-0 bg-muted/40 px-3 py-2 text-sm font-mono",
     className,
   )}
-  data-testid="v8-recipe-bar"
+  data-testid="picker-recipe-bar"
   aria-label="Selection recipe"
 >
   <span class="uppercase tracking-wider text-xs text-muted-foreground">Recipe</span>
   <button
     type="button"
     class="rounded px-2 py-0.5 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-    data-testid="v8-recipe-particle"
+    data-testid="picker-recipe-particle"
     onclick={() => onActivateTab("particle")}
   >
     {particleLabel}
@@ -69,7 +69,7 @@
   <button
     type="button"
     class="rounded px-2 py-0.5 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-    data-testid="v8-recipe-material"
+    data-testid="picker-recipe-material"
     onclick={() => onActivateTab("material")}
   >
     {materialLabel}
@@ -78,7 +78,7 @@
   <button
     type="button"
     class="rounded px-2 py-0.5 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-    data-testid="v8-recipe-program"
+    data-testid="picker-recipe-program"
     onclick={() => onActivateTab("program")}
   >
     {programLabel}
@@ -88,7 +88,7 @@
     <button
       type="button"
       class="text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring rounded"
-      data-testid="v8-recipe-reset"
+      data-testid="picker-recipe-reset"
       onclick={onReset}
       title="Restore defaults (proton / Water / Auto)"
     >
@@ -101,7 +101,7 @@
           "text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring rounded",
           !compatEnabled && "opacity-50 cursor-not-allowed",
         )}
-        data-testid="v8-recipe-compat"
+        data-testid="picker-recipe-compat"
         disabled={!compatEnabled}
         title={compatEnabled
           ? "Explore compatibility matrix"

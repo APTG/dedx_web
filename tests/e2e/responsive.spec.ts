@@ -21,15 +21,15 @@ test.describe("Responsive layout — Calculator @smoke", () => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
-    const particleTab = page.locator('[data-testid="v8-tab-particle"]');
-    const materialTab = page.locator('[data-testid="v8-tab-material"]');
+    const particleTab = page.locator('[data-testid="picker-tab-particle"]');
+    const materialTab = page.locator('[data-testid="picker-tab-material"]');
     await expect(particleTab).toBeVisible();
     await expect(materialTab).toBeVisible();
 
     const overflow = await page.evaluate(
       () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
     );
-    expect(overflow, "v8 entity tabs must not overflow horizontally").toBe(false);
+    expect(overflow, "picker entity tabs must not overflow horizontally").toBe(false);
   });
 });
 

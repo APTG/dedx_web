@@ -7,7 +7,7 @@
  * families), `id > 90` (currently 100/101) are analytical (Bethe variants).
  * External programs use string IDs and are always EXT.
  *
- * See `docs/04-feature-specs/entity-selection.md § v8 Program tab`.
+ * See `docs/04-feature-specs/entity-selection.md § Program tab`.
  */
 
 export type ProgramKind = "TAB" | "FN" | "EXT";

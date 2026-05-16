@@ -15,7 +15,7 @@
     ExternalProgramEntity,
   } from "$lib/state/external-compatibility";
   import RecipeBar from "./recipe-bar.svelte";
-  import TabBar, { type V8Tab } from "./tab-bar.svelte";
+  import TabBar, { type PickerTab } from "./tab-bar.svelte";
   import ParticleTab from "./particle-tab.svelte";
   import MaterialTab from "./material-tab.svelte";
   import ProgramTab from "./program-tab.svelte";
@@ -34,7 +34,7 @@
 
   let { selectionState, onParticleSelect, class: className, collapsible = false }: Props = $props();
 
-  let activeTab = $state<V8Tab>("particle");
+  let activeTab = $state<PickerTab>("particle");
   let panelOpen = $state(true);
 
   $effect(() => {
@@ -43,7 +43,7 @@
     }
   });
 
-  function openPanel(tab: V8Tab): void {
+  function openPanel(tab: PickerTab): void {
     activeTab = tab;
     panelOpen = true;
   }
@@ -53,8 +53,8 @@
    * Particle → Material → Program. Stops at the first tab whose selection
    * is still missing.
    */
-  function advanceAfter(current: V8Tab): void {
-    const order: V8Tab[] = ["particle", "material", "program"];
+  function advanceAfter(current: PickerTab): void {
+    const order: PickerTab[] = ["particle", "material", "program"];
     const startIdx = order.indexOf(current) + 1;
     for (let i = startIdx; i < order.length; i++) {
       const tab = order[i]!;
@@ -81,12 +81,12 @@
   }
 
   function handleGlobalKey(event: KeyboardEvent) {
-    // v8 spec § "Anatomy" lists keyboard behaviour: `Esc blur`. The search
+    // spec § "Anatomy" lists keyboard behaviour: `Esc blur`. The search
     // input grabs focus on tab change so users need a quick way to exit
     // back to the page chrome without removing the picker entirely.
     if (event.key === "Escape") {
       const active = document.activeElement;
-      if (active instanceof HTMLElement && active.closest("[data-testid='v8-entity-selection']")) {
+      if (active instanceof HTMLElement && active.closest("[data-testid='picker-entity-selection']")) {
         active.blur();
       }
     }
@@ -97,7 +97,7 @@
 
 <div
   class={cn("rounded-lg", className)}
-  data-testid="v8-entity-selection"
+  data-testid="picker-entity-selection"
 >
   <RecipeBar
     {selectionState}
@@ -117,11 +117,11 @@
 
   {#if panelOpen}
     <div
-      id="v8-tab-panel-{activeTab}"
+      id="picker-panel-{activeTab}"
       role="tabpanel"
-      aria-labelledby="v8-tab-{activeTab}"
+      aria-labelledby="picker-tab-{activeTab}"
       class="rounded-b-lg border bg-background p-3 min-h-[260px]"
-      data-testid="v8-tab-panel"
+      data-testid="picker-tab-panel"
       data-active-tab={activeTab}
     >
       {#if activeTab === "particle"}

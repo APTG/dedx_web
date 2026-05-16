@@ -21,7 +21,7 @@
     className,
   )}
   data-tag={kind}
-  data-testid="v8-program-tag-{kind}"
+  data-testid="picker-program-tag-{kind}"
   title={meta.description}
   aria-label={meta.description}
 >

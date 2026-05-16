@@ -47,7 +47,7 @@
     value={value}
     {placeholder}
     class="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-    data-testid={testId ?? "v8-search-input"}
+    data-testid={testId ?? "picker-search-input"}
     oninput={(e) => onInput((e.currentTarget as HTMLInputElement).value)}
     onkeydown={handleKey}
   />

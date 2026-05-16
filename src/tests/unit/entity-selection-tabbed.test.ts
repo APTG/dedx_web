@@ -1,7 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import EntitySelectionV8 from "$lib/components/v8/entity-selection-v8.svelte";
+import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
@@ -124,7 +124,7 @@ class MockLibdedxService {
   }
 }
 
-describe("EntitySelectionV8", () => {
+describe("EntitySelection", () => {
   let state: ReturnType<typeof createEntitySelectionState>;
 
   beforeEach(() => {
@@ -135,20 +135,20 @@ describe("EntitySelectionV8", () => {
   });
 
   test("renders recipe bar with current particle/material/program", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
-    const recipe = screen.getByTestId("v8-recipe-bar");
+    const recipe = screen.getByTestId("picker-recipe-bar");
     expect(recipe).toHaveTextContent("proton");
     expect(recipe).toHaveTextContent("Water (liquid)");
     expect(recipe).toHaveTextContent(/Auto/);
   });
 
   test("renders three tabs in order: Particle, Material, Program", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
-    const particleTab = screen.getByTestId("v8-tab-particle");
-    const materialTab = screen.getByTestId("v8-tab-material");
-    const programTab = screen.getByTestId("v8-tab-program");
+    const particleTab = screen.getByTestId("picker-tab-particle");
+    const materialTab = screen.getByTestId("picker-tab-material");
+    const programTab = screen.getByTestId("picker-tab-program");
 
     expect(particleTab).toHaveAttribute("aria-selected", "true");
     expect(materialTab).toHaveAttribute("aria-selected", "false");
@@ -156,220 +156,220 @@ describe("EntitySelectionV8", () => {
   });
 
   test("clicking a tab activates it and renders the matching panel", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-material"));
+    await user.click(screen.getByTestId("picker-tab-material"));
 
-    expect(screen.getByTestId("v8-tab-material")).toHaveAttribute("aria-selected", "true");
-    expect(screen.getByTestId("v8-material-tab")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("picker-material-tab")).toBeInTheDocument();
   });
 
   test("clicking a recipe-bar segment activates the matching tab", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-recipe-program"));
+    await user.click(screen.getByTestId("picker-recipe-program"));
 
-    expect(screen.getByTestId("v8-tab-program")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
-  test("particle tab omits electron (spec §v8 Particle)", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+  test("particle tab omits electron (spec § Particle)", () => {
+    render(EntitySelection, { props: { selectionState: state } });
 
-    expect(screen.queryByTestId("v8-particle-item-1001")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-1001")).not.toBeInTheDocument();
     expect(screen.queryByText(/^electron$/i)).not.toBeInTheDocument();
   });
 
   test("particle tab shows Common particles section with proton + alpha", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
     expect(screen.getByText("Common particles")).toBeInTheDocument();
-    expect(screen.getByTestId("v8-particle-item-1")).toHaveTextContent("proton");
-    expect(screen.getByTestId("v8-particle-item-2")).toHaveTextContent("alpha particle");
+    expect(screen.getByTestId("picker-particle-item-1")).toHaveTextContent("proton");
+    expect(screen.getByTestId("picker-particle-item-2")).toHaveTextContent("alpha particle");
   });
 
   test("particle search supports `z=N` operator", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    const input = screen.getByTestId("v8-particle-search");
+    const input = screen.getByTestId("picker-particle-search");
     await user.type(input, "z=6");
 
-    expect(screen.getByTestId("v8-particle-item-6")).toBeInTheDocument();
-    expect(screen.queryByTestId("v8-particle-item-1")).not.toBeInTheDocument();
+    expect(screen.getByTestId("picker-particle-item-6")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-1")).not.toBeInTheDocument();
   });
 
   test("selecting a particle updates state and auto-advances the active tab", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-particle-item-2"));
+    await user.click(screen.getByTestId("picker-particle-item-2"));
 
     expect(state.selectedParticle?.id).toBe(2);
     // Material is already selected (default Water) → should advance to Program tab.
-    expect(screen.getByTestId("v8-tab-program")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
   test("material tab renders side-by-side Elements/Compounds columns", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-material"));
+    await user.click(screen.getByTestId("picker-tab-material"));
 
-    expect(screen.getByTestId("v8-material-col-elements")).toBeInTheDocument();
-    expect(screen.getByTestId("v8-material-col-compounds")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-material-col-elements")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-material-col-compounds")).toBeInTheDocument();
   });
 
   test("gas materials display the (≋) inline glyph", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-material"));
+    await user.click(screen.getByTestId("picker-tab-material"));
 
     // Air is gas, id 267 → compound bucket via id > 98 rule.
-    const airItem = screen.getByTestId("v8-material-item-267");
+    const airItem = screen.getByTestId("picker-material-item-267");
     expect(airItem).toHaveTextContent("(≋)");
   });
 
   test("program tab renders the Auto-select hero card and a TAB/FN/EXT legend", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-program"));
+    await user.click(screen.getByTestId("picker-tab-program"));
 
-    expect(screen.getByTestId("v8-program-auto-hero")).toBeInTheDocument();
-    const legend = screen.getByTestId("v8-program-legend");
-    expect(within(legend).getByTestId("v8-program-tag-TAB")).toBeInTheDocument();
-    expect(within(legend).getByTestId("v8-program-tag-FN")).toBeInTheDocument();
-    expect(within(legend).getByTestId("v8-program-tag-EXT")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-program-auto-hero")).toBeInTheDocument();
+    const legend = screen.getByTestId("picker-program-legend");
+    expect(within(legend).getByTestId("picker-program-tag-TAB")).toBeInTheDocument();
+    expect(within(legend).getByTestId("picker-program-tag-FN")).toBeInTheDocument();
+    expect(within(legend).getByTestId("picker-program-tag-EXT")).toBeInTheDocument();
   });
 
   test("program rows carry inline TAB tags for tabulated programs", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-program"));
+    await user.click(screen.getByTestId("picker-tab-program"));
 
-    const icru49 = screen.getByTestId("v8-program-item-7");
-    expect(within(icru49).getByTestId("v8-program-tag-TAB")).toHaveTextContent("DATA");
+    const icru49 = screen.getByTestId("picker-program-item-7");
+    expect(within(icru49).getByTestId("picker-program-tag-TAB")).toHaveTextContent("DATA");
   });
 
   test("program rows carry inline FN tags for analytical programs", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-program"));
+    await user.click(screen.getByTestId("picker-tab-program"));
 
-    const betheExt = screen.getByTestId("v8-program-item-101");
-    expect(within(betheExt).getByTestId("v8-program-tag-FN")).toBeInTheDocument();
+    const betheExt = screen.getByTestId("picker-program-item-101");
+    expect(within(betheExt).getByTestId("picker-program-tag-FN")).toBeInTheDocument();
   });
 
   test("selecting a program updates state without auto-advance (Program is last)", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    await user.click(screen.getByTestId("v8-tab-program"));
-    await user.click(screen.getByTestId("v8-program-item-7"));
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.click(screen.getByTestId("picker-program-item-7"));
 
     expect(state.selectedProgram.id).toBe(7);
   });
 
   test("recipe-bar reset restores defaults and activates Particle tab", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     state.selectParticle(6);
     state.selectMaterial(267);
 
-    await user.click(screen.getByTestId("v8-recipe-reset"));
+    await user.click(screen.getByTestId("picker-recipe-reset"));
 
     expect(state.selectedParticle?.id).toBe(1);
     expect(state.selectedMaterial?.id).toBe(276);
     expect(state.selectedProgram.id).toBe(-1);
-    expect(screen.getByTestId("v8-tab-particle")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
   });
 
   test("clicking the selected-pill clears the current selection", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    expect(screen.getByTestId("v8-particle-selected")).toHaveTextContent("proton");
+    expect(screen.getByTestId("picker-particle-selected")).toHaveTextContent("proton");
 
-    await user.click(screen.getByTestId("v8-particle-selected"));
+    await user.click(screen.getByTestId("picker-particle-selected"));
 
     expect(state.selectedParticle).toBeNull();
   });
 
   test("compat overlay link is hidden in basic mode (PR #2 wiring deferred)", async () => {
     // Picker mode store default is basic
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
-    expect(screen.queryByTestId("v8-recipe-compat")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-recipe-compat")).not.toBeInTheDocument();
   });
 
   test("arrow keys on tab bar move focus / activate adjacent tab", async () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
-    const particleTab = screen.getByTestId("v8-tab-particle");
+    const particleTab = screen.getByTestId("picker-tab-particle");
     particleTab.focus();
     await user.keyboard("{ArrowRight}");
 
-    expect(screen.getByTestId("v8-tab-material")).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
   });
 
   test("particle list items show Z inline in name (no separate Z column)", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
     // proton → "proton (Z=1)" in the list
-    expect(screen.getByTestId("v8-particle-item-1")).toHaveTextContent("proton (Z=1)");
+    expect(screen.getByTestId("picker-particle-item-1")).toHaveTextContent("proton (Z=1)");
     // alpha → "alpha particle (Z=2)"
-    expect(screen.getByTestId("v8-particle-item-2")).toHaveTextContent("alpha particle (Z=2)");
+    expect(screen.getByTestId("picker-particle-item-2")).toHaveTextContent("alpha particle (Z=2)");
     // Carbon ion → "Carbon (C, Z=6)"
-    expect(screen.getByTestId("v8-particle-item-6")).toHaveTextContent("Carbon (C, Z=6)");
+    expect(screen.getByTestId("picker-particle-item-6")).toHaveTextContent("Carbon (C, Z=6)");
   });
 
   test("selected-pill includes Z inline in label (no separate meta)", () => {
-    render(EntitySelectionV8, { props: { selectionState: state } });
+    render(EntitySelection, { props: { selectionState: state } });
 
     // Default: proton is selected — pill should show "proton (Z=1)"
-    expect(screen.getByTestId("v8-particle-selected")).toHaveTextContent("proton (Z=1)");
+    expect(screen.getByTestId("picker-particle-selected")).toHaveTextContent("proton (Z=1)");
   });
 
   describe("collapsible mode", () => {
     test("panel is hidden when collapsible=true and selection is complete (defaults)", () => {
       // Default state has proton + Water + Auto → isComplete = true
-      render(EntitySelectionV8, {
+      render(EntitySelection, {
         props: { selectionState: state, collapsible: true },
       });
 
       // Tab bar still visible
-      expect(screen.getByTestId("v8-tab-bar")).toBeInTheDocument();
+      expect(screen.getByTestId("picker-tab-bar")).toBeInTheDocument();
       // But the panel content is gone
-      expect(screen.queryByTestId("v8-tab-panel")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("picker-tab-panel")).not.toBeInTheDocument();
     });
 
     test("clicking a tab re-opens the panel in collapsible mode", async () => {
-      render(EntitySelectionV8, {
+      render(EntitySelection, {
         props: { selectionState: state, collapsible: true },
       });
       const user = userEvent.setup();
 
       // Panel starts hidden (defaults are complete)
-      expect(screen.queryByTestId("v8-tab-panel")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("picker-tab-panel")).not.toBeInTheDocument();
 
-      await user.click(screen.getByTestId("v8-tab-material"));
+      await user.click(screen.getByTestId("picker-tab-material"));
 
-      expect(screen.getByTestId("v8-tab-panel")).toBeInTheDocument();
-      expect(screen.getByTestId("v8-material-tab")).toBeInTheDocument();
+      expect(screen.getByTestId("picker-tab-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("picker-material-tab")).toBeInTheDocument();
     });
 
     test("panel is always open when collapsible=false (default)", () => {
-      render(EntitySelectionV8, { props: { selectionState: state } });
+      render(EntitySelection, { props: { selectionState: state } });
 
       // Even with complete defaults, panel stays visible
-      expect(screen.getByTestId("v8-tab-panel")).toBeInTheDocument();
+      expect(screen.getByTestId("picker-tab-panel")).toBeInTheDocument();
     });
   });
 });

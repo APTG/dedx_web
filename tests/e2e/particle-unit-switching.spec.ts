@@ -20,7 +20,7 @@ const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
   await page.goto("/calculator");
-  await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
+  await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
 
 async function waitForTable(page: import("@playwright/test").Page) {
@@ -35,9 +35,9 @@ async function selectParticle(page: import("@playwright/test").Page, name: strin
     carbon: "6",
     proton: "1",
   };
-  await page.getByTestId("v8-tab-particle").click();
-  await page.getByTestId("v8-particle-search").fill(name);
-  await page.getByTestId(`v8-particle-item-${particleIds[name] ?? name}`).click();
+  await page.getByTestId("picker-tab-particle").click();
+  await page.getByTestId("picker-particle-search").fill(name);
+  await page.getByTestId(`picker-particle-item-${particleIds[name] ?? name}`).click();
   await waitForTable(page);
 }
 

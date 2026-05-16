@@ -13,7 +13,7 @@ test.describe("Calculator Page - Smoke Test", () => {
 
     await expect(page.locator('[data-testid="energy-input-0"]')).toBeVisible();
     await expect(page.getByRole("button", { name: /\+ Add row/i })).toBeVisible();
-    await expect(page.locator('[data-testid="v8-entity-selection"]')).toBeVisible();
+    await expect(page.locator('[data-testid="picker-entity-selection"]')).toBeVisible();
   });
 });
 

@@ -28,7 +28,7 @@
     "flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15",
     className,
   )}
-  data-testid={testId ?? "v8-selected-pill"}
+  data-testid={testId ?? "picker-selected-pill"}
   aria-label="Selected: {label}. Click to clear."
   onclick={onClear}
 >

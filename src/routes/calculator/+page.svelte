@@ -13,7 +13,7 @@
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
-  import EntitySelectionV8 from "$lib/components/v8/entity-selection-v8.svelte";
+  import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
@@ -1400,7 +1400,7 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion state={entityState} />
-      <EntitySelectionV8
+      <EntitySelection
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
         collapsible={true}

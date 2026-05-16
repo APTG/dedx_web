@@ -35,7 +35,7 @@ test.describe("Advanced Options Panel", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
     // Wait for the UI to load
-    await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test.describe("Density Override", () => {

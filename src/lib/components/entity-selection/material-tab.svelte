@@ -155,14 +155,14 @@
   }
 </script>
 
-<div class="space-y-3" data-testid="v8-material-tab">
+<div class="space-y-3" data-testid="picker-material-tab">
   {#if selected}
     {@const dens = formatDensity(selected)}
     <SelectedPill
       label={dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}
       glyph={isGas(selected) ? "≋" : isExternal(selected) ? "🔗" : undefined}
       onClear={onClear}
-      data-testid="v8-material-selected"
+      data-testid="picker-material-selected"
     />
   {/if}
 
@@ -171,7 +171,7 @@
     onInput={(v) => (query = v)}
     bind:inputRef
     placeholder="Name or ID…"
-    data-testid="v8-material-search"
+    data-testid="picker-material-search"
   />
 
   <div
@@ -181,16 +181,16 @@
         ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
         : "grid-cols-1 md:grid-cols-2",
     )}
-    data-testid="v8-material-columns"
+    data-testid="picker-material-columns"
   >
-    <section class="min-w-0" data-testid="v8-material-col-elements">
+    <section class="min-w-0" data-testid="picker-material-col-elements">
       <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Elements</h4>
       <ul
         role="listbox"
         aria-label="Elements"
         tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
-        data-testid="v8-material-list-elements"
+        data-testid="picker-material-list-elements"
       >
         {#each filteredElements as m (m.id)}
           {@const available = isAvailable(m)}
@@ -202,7 +202,7 @@
               role="option"
               aria-selected={isSelected}
               aria-disabled={!available}
-              data-testid="v8-material-item-{m.id}"
+              data-testid="picker-material-item-{m.id}"
               tabindex={-1}
               disabled={!available}
               class={cn(
@@ -231,14 +231,14 @@
       </ul>
     </section>
 
-    <section class="min-w-0" data-testid="v8-material-col-compounds">
+    <section class="min-w-0" data-testid="picker-material-col-compounds">
       <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Compounds</h4>
       <ul
         role="listbox"
         aria-label="Compounds"
         tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
-        data-testid="v8-material-list-compounds"
+        data-testid="picker-material-list-compounds"
       >
         {#each filteredCompounds as m (m.id)}
           {@const available = isAvailable(m)}
@@ -250,7 +250,7 @@
               role="option"
               aria-selected={isSelected}
               aria-disabled={!available}
-              data-testid="v8-material-item-{m.id}"
+              data-testid="picker-material-item-{m.id}"
               tabindex={-1}
               disabled={!available}
               class={cn(
@@ -280,13 +280,13 @@
     </section>
 
     {#if isAdvancedMode.value}
-      <section class="min-w-0" data-testid="v8-material-col-custom">
+      <section class="min-w-0" data-testid="picker-material-col-custom">
         <div class="mb-1 flex items-center justify-between px-2">
           <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Custom</h4>
           <button
             type="button"
             class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
-            data-testid="v8-material-add-compound"
+            data-testid="picker-material-add-compound"
             onclick={handleAddCompound}
           >
             + Add compound
@@ -297,7 +297,7 @@
           aria-label="Custom compounds"
           tabindex="0"
           class="max-h-52 overflow-auto space-y-0.5"
-          data-testid="v8-material-list-custom"
+          data-testid="picker-material-list-custom"
         >
           {#each filteredCustom as m (m.id)}
             {@const isSelected = selected?.id === m.id}
@@ -308,7 +308,7 @@
                   type="button"
                   role="option"
                   aria-selected={isSelected}
-                  data-testid="v8-material-item-{m.id}"
+                  data-testid="picker-material-item-{m.id}"
                   tabindex={-1}
                   class={cn(
                     "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
@@ -329,7 +329,7 @@
                   class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
                   title="Edit compound"
                   aria-label="Edit compound {m.name}"
-                  data-testid="v8-material-edit-compound-{m.id}"
+                  data-testid="picker-material-edit-compound-{m.id}"
                   onclick={() => handleEditCompound(m.source)}
                 >
                   ✎

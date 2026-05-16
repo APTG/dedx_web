@@ -12,7 +12,7 @@
     WATER_ID,
   } from "$lib/state/entity-selection.svelte";
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
-  import EntitySelectionV8 from "$lib/components/v8/entity-selection-v8.svelte";
+  import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
@@ -930,7 +930,7 @@
         {/if}
 
         {#if !isMobile || entityPanelsOpen}
-          <EntitySelectionV8 selectionState={entityState} />
+          <EntitySelection selectionState={entityState} />
         {/if}
 
         <!-- Add Series button -->

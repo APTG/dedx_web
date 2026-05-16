@@ -1,8 +1,7 @@
 # Feature: Entity Selection (Particle → Material → Program)
 
-> **Status:** v8 production (2026-05-15) — the v8 tabbed picker is now the
-> default on both the Calculator and Plot pages. v7 combobox/panel components
-> have been removed.
+> **Status:** Production (2026-05-15) — the tabbed picker is the only
+> entity-selection UI on both the Calculator and Plot pages.
 >
 > Covers the entity selection component used on both the
 > Calculator and Plot pages. This is the primary interaction point
@@ -10,27 +9,27 @@
 
 ---
 
-## v8 — Tabbed picker
+## Tabbed picker
 
-> **Status:** Production (2026-05-15) — v7 removed.
-> **The compatibility-matrix data model and bidirectional filtering rules are
-> unchanged** — only the rendering layer was replaced. Acceptance
-> criteria around defaults, persistence, search, ARIA, and error handling
-> carry over from v7 verbatim unless noted.
+> **The compatibility-matrix data model and bidirectional filtering rules**
+> described later in this document still apply — only the rendering layer
+> changed when the tabbed picker shipped. Acceptance criteria around
+> defaults, persistence, search, ARIA, and error handling carry over
+> verbatim unless noted.
 
 ### Collapsible panel (Calculator only)
 
 On the Calculator page the tab panel auto-collapses once all three selections
 are complete, recovering vertical space for the results table. Clicking any tab
 or recipe-bar segment re-expands the panel. The Plot page keeps panels always
-expanded. The `collapsible` prop on `<EntitySelectionV8>` controls this:
+expanded. The `collapsible` prop on `<EntitySelection>` controls this:
 
 ```svelte
 <!-- Calculator — panel auto-collapses when complete -->
-<EntitySelectionV8 selectionState={entityState} collapsible={true} />
+<EntitySelection selectionState={entityState} collapsible={true} />
 
 <!-- Plot — always expanded -->
-<EntitySelectionV8 selectionState={entityState} />
+<EntitySelection selectionState={entityState} />
 ```
 
 ### Particle list Z display
@@ -56,7 +55,7 @@ proton (Z=1)
 
 At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 
-### Why a v8
+### Why this redesign
 
 1. Three side-by-side panels overwhelm on mobile — all three lists fight
    for the same vertical space.
@@ -73,12 +72,12 @@ At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 - Recover mobile screen estate for results.
 - Keep keyboard- and search-first interaction on desktop.
 - Soft `① ② ③` ordering — visualised but never enforced.
-- Preserve all v7 behaviour: bidirectional filtering, greying out, fallback,
+- Preserve existing behaviour: bidirectional filtering, greying out, fallback,
   Auto-select, shareable URL encoding.
 - First-class External (`🔗`) and Custom items, surfaced where they belong
   rather than as orphan groups.
 - Move custom-compound editing out of an inline panel and into a modal —
-  the v7 inline editor competes with the picker for space.
+  the previous inline editor competed with the picker for space.
 
 ### Non-goals (deferred)
 
@@ -91,14 +90,13 @@ At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 
 ### The shape
 
-One tabbed picker replaces both v7 layouts:
+One tabbed picker is used on both pages:
 
 - Calculator page = compact tabbed picker on its own row.
 - Plot page = same tabbed picker plus a persistent series list beneath.
 
 The two pages share the same `EntitySelectionState` store and tabbed
-component; only the surrounding chrome differs. The full-panel sidebar from
-v7 is retired.
+component; only the surrounding chrome differs.
 
 ### Anatomy
 
@@ -123,7 +121,7 @@ v7 is retired.
   is keyboard-driven via `Tab`/`Shift+Tab` or arrow keys, or mouse.
 - **Selected pill**: the first row of every tab shows the current selection
   for that dimension with full metadata. Clicking it clears the selection
-  (toggle behaviour from v7).
+  (toggle behaviour).
 - **Search**: focused by default on tab change. `↵` selects the highlighted
   result and auto-advances to the next non-empty tab.
 
@@ -137,16 +135,16 @@ first.
 
 A small toggle (default Basic) lives in the recipe bar.
 
-| Feature | Basic | Advanced |
-|---|---|---|
-| Particle tab — list with Common + Ions sections | ✅ | ✅ |
-| Particle tab — periodic-grid scan view (Z layout) | — | ✅ |
-| Material tab — Elements + Compounds columns | ✅ | ✅ |
-| Material tab — **Custom** column + editor entry point | — | ✅ |
-| Program tab — single-program selection | ✅ | — |
-| Program tab — multi-program (for plot comparison) | — | ✅ (always on) |
-| Compatibility overlay (`⊞ explore compat` link) | — | ✅ |
-| Advanced filter syntax in search (`z=6`, `v=2013`) | — | ✅ |
+| Feature                                               | Basic | Advanced       |
+| ----------------------------------------------------- | ----- | -------------- |
+| Particle tab — list with Common + Ions sections       | ✅    | ✅             |
+| Particle tab — periodic-grid scan view (Z layout)     | —     | ✅             |
+| Material tab — Elements + Compounds columns           | ✅    | ✅             |
+| Material tab — **Custom** column + editor entry point | —     | ✅             |
+| Program tab — single-program selection                | ✅    | —              |
+| Program tab — multi-program (for plot comparison)     | —     | ✅ (always on) |
+| Compatibility overlay (`⊞ explore compat` link)       | —     | ✅             |
+| Advanced filter syntax in search (`z=6`, `v=2013`)    | —     | ✅             |
 
 Mode persists in `localStorage` and is reflected in the URL so shared
 links keep their context.
@@ -155,12 +153,12 @@ links keep their context.
 
 Display rules:
 
-| ID | Label | Notes |
-|---|---|---|
-| 1 | `proton` | lowercase, no symbol |
-| 2 | `alpha particle` | lowercase, no symbol |
-| 3..118 | `Element (Symbol)` | e.g. `Carbon (C)`, `Tin (Sn)` |
-| 1001 | — | **omitted** — electron not selectable until ESTAR ships |
+| ID     | Label              | Notes                                                   |
+| ------ | ------------------ | ------------------------------------------------------- |
+| 1      | `proton`           | lowercase, no symbol                                    |
+| 2      | `alpha particle`   | lowercase, no symbol                                    |
+| 3..118 | `Element (Symbol)` | e.g. `Carbon (C)`, `Tin (Sn)`                           |
+| 1001   | —                  | **omitted** — electron not selectable until ESTAR ships |
 
 External-only particles use the `🔗 <name>` prefix and mix into the
 existing sections by Z; they do NOT form an "External" group.
@@ -187,11 +185,11 @@ Custom Compound Editor modal.
 
 No section headers — each row carries its own inline tag:
 
-| Tag | Glyph | Meaning |
-|---|---|---|
-| `DATA` | `▦` | Tabulated data (interpolated from libdedx tables) |
-| `FN`  | `∫` | Analytical model (e.g. Bethe-Bloch) |
-| `EXT` | `🔗` | External (loaded from a `.webdedx` file) |
+| Tag    | Glyph | Meaning                                           |
+| ------ | ----- | ------------------------------------------------- |
+| `DATA` | `▦`   | Tabulated data (interpolated from libdedx tables) |
+| `FN`   | `∫`   | Analytical model (e.g. Bethe-Bloch)               |
+| `EXT`  | `🔗`  | External (loaded from a `.webdedx` file)          |
 
 Tags render as small pill badges at the right of each row. A legend strip
 below the list seeds the mapping for first-time users.
@@ -204,9 +202,9 @@ to reorder` + `AVAILABLE` checkbox list (the standalone multi-program
 dropdown picker is removed). The first program in `SELECTED` is the
 default for the Calculator result table and Plot primary series.
 
-### Custom Compound Editor (modal — new)
+### Custom Compound Editor (modal)
 
-The v7 inline editor is replaced by a focus-trapped modal. Defining a
+Custom compound definition lives in a focus-trapped modal. Defining a
 compound has its own cognitive load (composition + density + I-value) and
 deserves a full-focus surface.
 
@@ -231,7 +229,7 @@ RECIPE  proton  →  Water (liquid)  →  ICRU 49    reset · ⊞ explore compat
 ```
 
 `reset` restores defaults (proton / Water / Auto). `⊞ explore compat`
-opens the adaptive compatibility overlay (PR #2, Advanced only).
+opens the adaptive compatibility overlay (Advanced only).
 
 ### Plot page differences
 
@@ -239,14 +237,13 @@ The Plot page wraps the tabbed picker with a series list beneath it.
 "Add series" pushes the current `EntitySelectionState` into the series
 array and seeds a fresh selection. No sidebar, no full-panel mode.
 
-### Acceptance criteria (delta from v7)
+### Acceptance criteria
 
 #### Layout
 
-- [ ] Calculator page replaces the three inline comboboxes with a single
-      tabbed picker (when `v8` flag on).
-- [ ] Plot page replaces the sidebar+canvas split with `tabbed picker +
-      series list` above the canvas.
+- [ ] Calculator page renders a single tabbed picker (no inline
+      combobox row).
+- [ ] Plot page renders `tabbed picker + series list` above the canvas.
 - [ ] Recipe bar visible on both pages.
 - [ ] Each tab label displays current selection.
 - [ ] One list visible at a time inside the tabbed picker.
@@ -282,58 +279,47 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 
 ### Cross-spec touch points
 
-- `calculator.md` — replace the inline-combobox wireframe with the
-  tabbed-picker recipe-bar wireframe (after flag flip in PR #2).
+- `calculator.md` — inline-combobox wireframe replaced by the
+  tabbed-picker recipe-bar wireframe.
 - `plot.md` — series-list section above plot canvas.
-- `custom-compounds.md` — replace inline editor section with modal editor.
-- `multi-program.md` — note that Advanced mode multi-select moves into
-  the Program tab itself; the standalone multi-program-picker dropdown
-  is removed after the flag flips.
+- `custom-compounds.md` — inline editor section replaced by the modal editor.
+- `multi-program.md` — Advanced mode multi-select moves into the Program
+  tab itself; the standalone multi-program-picker dropdown is removed.
 - `unit-handling.md` — unchanged.
 - `06-wasm-api-contract.md` — unchanged.
 
 ---
 
-## Previous behaviour — v7 (production until v8 flag flip)
+## Historical changelog
 
-> **Status:** Final v7 (27 April 2026 — particle group heading resolved)
->
-> The sections below describe the behaviour rendered when the v8 feature
-> flag is OFF (the default through PR #1). They remain authoritative for
-> the existing `entity-selection-comboboxes.svelte` (calculator) and
-> `entity-selection-panels.svelte` (plot) components and all existing
-> tests targeting them.
->
-> **v2 changes:** Reversed the visual and logical order from Program-first
-> to Particle → Material → Program. Added bidirectional filtering via a
-> compatibility matrix. Added support for "program-first" workflow via
-> independent unselect. See [libdedx#79](https://github.com/APTG/libdedx/issues/79)
-> for user feedback motivating this change.
->
-> **v3 changes:** Adopted always-visible scrollable list panels (inspired by
-> [`libdedx_demo.html`](https://github.com/APTG/libdedx/issues/79#issuecomment-4158280966))
-> instead of dropdown comboboxes. Unavailable items are
-> greyed out rather than hidden. Material panel split into two independently
-> scrollable sub-lists (Elements / Compounds) sharing one text filter.
->
-> **v4 changes:** Split into two layout modes: **full panel mode** (Plot page,
-> sidebar with always-visible lists) and **compact mode** (Calculator page,
-> inline dropdown comboboxes). Adopted Alternative A layout with narrower
-> de-emphasized Program panel. Added UX rationale citing progressive disclosure,
-> Fitt's Law, and context-appropriate density. Shared state persists across
-> page navigation.
->
-> **v5:** Marked as final after cross-review with calculator.md,
-> 06-wasm-api-contract.md, and 01-project-vision.md. No changes needed.
->
-> **v7** (27 April 2026): Resolved particle group heading — "Beams"
-> replaced by **"Common particles"** (project owner decision). The second
-> group remains "Ions". Code change needed in
-> `src/lib/components/entity-selection-comboboxes.svelte` (add section
-> headers to `particleItems`) and `src/lib/config/particle-names.ts`
-> (add overrides for proton → "proton", alpha → "alpha particle",
-> electron → "electron" lowercase).
->
+> Pre-tabbed-picker history is kept for context. The behaviours referenced
+> below — always-visible scrollable panels, inline comboboxes, full-panel
+> sidebar — are no longer rendered. The compatibility-matrix and behavioural
+> sections that follow remain authoritative for the shared
+> `EntitySelectionState` model.
+
+- **v2:** Reversed visual/logical order to Particle → Material → Program.
+  Added bidirectional filtering via a compatibility matrix and the
+  "program-first" workflow via independent unselect. See
+  [libdedx#79](https://github.com/APTG/libdedx/issues/79).
+- **v3:** Adopted always-visible scrollable list panels. Unavailable items
+  greyed out rather than hidden. Material panel split into two
+  independently scrollable sub-lists (Elements / Compounds) sharing one
+  text filter.
+- **v4:** Split into full-panel mode (Plot) and compact mode (Calculator
+  inline dropdown comboboxes). Shared state persists across page
+  navigation.
+- **v5:** Marked as final after cross-review with `calculator.md`,
+  `06-wasm-api-contract.md`, and `01-project-vision.md`.
+- **v7 (27 April 2026):** "Beams" particle group heading replaced by
+  **"Common particles"** (project owner decision). The second group
+  remains "Ions". Display name overrides: proton → "proton",
+  alpha → "alpha particle", electron → "electron" (lowercase).
+- **Tabbed picker (15 May 2026):** Three-panel layout retired in favour
+  of the tabbed picker described above. Legacy
+  `entity-selection-comboboxes.svelte` and `entity-selection-panels.svelte`
+  components are no longer rendered.
+
 > **Terminology:** The libdedx C library uses the term "ion" everywhere —
 > including for the electron (ID 1001) — even though calling an electron an
 > "ion" is physically incorrect. This is a legacy naming convention in the C

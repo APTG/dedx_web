@@ -1,6 +1,6 @@
 <script lang="ts" module>
-  export type V8Tab = "particle" | "material" | "program";
-  export const V8_TAB_ORDER: readonly V8Tab[] = ["particle", "material", "program"];
+  export type PickerTab = "particle" | "material" | "program";
+  export const PICKER_TAB_ORDER: readonly PickerTab[] = ["particle", "material", "program"];
 </script>
 
 <script lang="ts">
@@ -9,9 +9,9 @@
   import { getParticleLabel } from "$lib/utils/particle-label";
 
   interface Props {
-    activeTab: V8Tab;
+    activeTab: PickerTab;
     selectionState: EntitySelectionState;
-    onActivate: (tab: V8Tab) => void;
+    onActivate: (tab: PickerTab) => void;
     panelOpen?: boolean;
     class?: string;
   }
@@ -35,16 +35,16 @@
     return program.name;
   });
 
-  function handleKeyDown(event: KeyboardEvent, current: V8Tab): void {
+  function handleKeyDown(event: KeyboardEvent, current: PickerTab): void {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    const idx = V8_TAB_ORDER.indexOf(current);
+    const idx = PICKER_TAB_ORDER.indexOf(current);
     const delta = event.key === "ArrowRight" ? 1 : -1;
-    const next = V8_TAB_ORDER[(idx + delta + V8_TAB_ORDER.length) % V8_TAB_ORDER.length];
+    const next = PICKER_TAB_ORDER[(idx + delta + PICKER_TAB_ORDER.length) % PICKER_TAB_ORDER.length];
     if (next) onActivate(next);
   }
 
-  type Spec = { id: V8Tab; numeral: string; title: string; value: string };
+  type Spec = { id: PickerTab; numeral: string; title: string; value: string };
   const tabs = $derived<readonly Spec[]>([
     { id: "particle", numeral: "①", title: "Particle", value: particleValue },
     { id: "material", numeral: "②", title: "Material", value: materialValue },
@@ -56,17 +56,17 @@
   class={cn("flex flex-wrap gap-1 border-x bg-card px-1 pt-1", className)}
   role="tablist"
   aria-label="Entity selection tabs"
-  data-testid="v8-tab-bar"
+  data-testid="picker-tab-bar"
 >
   {#each tabs as tab (tab.id)}
     {@const isActive = tab.id === activeTab}
     <button
       type="button"
       role="tab"
-      id="v8-tab-{tab.id}"
-      data-testid="v8-tab-{tab.id}"
+      id="picker-tab-{tab.id}"
+      data-testid="picker-tab-{tab.id}"
       aria-selected={isActive}
-      aria-controls={panelOpen && isActive ? `v8-tab-panel-${tab.id}` : undefined}
+      aria-controls={panelOpen && isActive ? `picker-panel-${tab.id}` : undefined}
       tabindex={isActive ? 0 : -1}
       class={cn(
         "flex items-start sm:items-baseline gap-1 rounded-t-md px-2 sm:px-3 py-1.5 text-sm border border-b-0 transition-colors",
