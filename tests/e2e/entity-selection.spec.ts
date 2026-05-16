@@ -7,11 +7,12 @@ test.describe("Calculator page — entity selection (tabbed picker)", () => {
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
-  test("recipe bar shows proton, Water, Auto by default", async ({ page }) => {
-    const recipe = page.getByTestId("picker-recipe-bar");
-    await expect(recipe).toContainText(/proton/i);
-    await expect(recipe).toContainText(/water/i);
-    await expect(recipe).toContainText(/auto/i);
+  test("tab bar shows proton, Water, Auto by default (no recipe bar)", async ({ page }) => {
+    // Recipe bar removed in the entity-selector rework — selections show inline in tabs.
+    await expect(page.getByTestId("picker-recipe-bar")).toHaveCount(0);
+    await expect(page.getByTestId("picker-tab-particle")).toContainText(/proton/i);
+    await expect(page.getByTestId("picker-tab-material")).toContainText(/water/i);
+    await expect(page.getByTestId("picker-tab-program")).toContainText(/auto/i);
   });
 
   test("typing carbon in the particle search filters the list and shows Carbon (C, Z=6)", async ({
@@ -40,18 +41,25 @@ test.describe("Calculator page — entity selection (tabbed picker)", () => {
     await expect(page.getByTestId("picker-program-item-2")).toHaveCount(0);
   });
 
-  test("recipe-bar reset restores defaults", async ({ page }) => {
+  test("reset (via advanced toolbar) restores defaults", async ({ page }) => {
     // Change particle to Carbon
     await page.getByTestId("picker-tab-particle").click();
     await page.getByTestId("picker-particle-search").fill("carbon");
     await page.getByTestId("picker-particle-item-6").click();
 
-    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/carbon/i);
+    await expect(page.getByTestId("picker-tab-particle")).toContainText(/carbon/i);
 
-    await page.getByTestId("picker-recipe-reset").click();
+    // Reset lives in the Advanced toolbar — switch on advanced via URL param.
+    await page.goto("/calculator?mode=advanced");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
+    // Re-apply Carbon, then reset.
+    await page.getByTestId("picker-tab-particle").click();
+    await page.getByTestId("picker-particle-search").fill("carbon");
+    await page.getByTestId("picker-particle-item-6").click();
+    await page.getByTestId("picker-reset").click();
 
-    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/proton/i);
-    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/water/i);
+    await expect(page.getByTestId("picker-tab-particle")).toContainText(/proton/i);
+    await expect(page.getByTestId("picker-tab-material")).toContainText(/water/i);
   });
 
   test("Electron (ESTAR) is absent from the particle list (not yet implemented)", async ({

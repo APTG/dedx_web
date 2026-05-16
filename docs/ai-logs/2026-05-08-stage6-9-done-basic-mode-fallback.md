@@ -7,6 +7,7 @@
 ### Prompt 1: Mark 6.9 done; verify basic-mode gate works when on Range tab
 
 User asked to:
+
 1. Mark 6.9 as done in the redesign plan
 2. Check whether there are good E2E tests for the flow: visit advanced mode → switch to Range tab → go back to basic mode
 3. Fix if broken, then mark done
@@ -38,6 +39,7 @@ Template content guards in `src/routes/calculator/+page.svelte`:
 ```
 
 None of these checked `isAdvancedMode.value`. So when the user:
+
 1. Enabled advanced mode
 2. Clicked Range tab (`activeTab = "csda"`)
 3. Switched back to basic mode
@@ -58,6 +60,7 @@ the guard didn't check the mode.
   on effect ordering.
 
 Changes (lines ~1086–1218):
+
 ```diff
 - {#if !inverseLookupState || inverseLookupState.activeTab === "forward"}
 + {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}

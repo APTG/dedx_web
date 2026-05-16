@@ -12,14 +12,7 @@
     class?: string;
   }
 
-  let {
-    label,
-    meta,
-    glyph,
-    onClear,
-    "data-testid": testId,
-    class: className,
-  }: Props = $props();
+  let { label, meta, glyph, onClear, "data-testid": testId, class: className }: Props = $props();
 </script>
 
 <button
@@ -39,5 +32,8 @@
   {#if meta}
     <span class="font-mono text-xs text-muted-foreground">{meta}</span>
   {/if}
-  <span class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground" aria-hidden="true">× clear</span>
+  <span
+    class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+    aria-hidden="true">× clear</span
+  >
 </button>

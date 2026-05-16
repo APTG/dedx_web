@@ -99,6 +99,7 @@ Every task that changes code or docs must be logged. Rules are in `AGENTS.md`
 
 **Tooltip label format** (from spec):
 `"Δ = −0.84 keV/µm (−1.8% vs ICRU 90)"` — note:
+
 - Units are included in the label (e.g. `keV/µm`, `MeV·cm²/g`, `cm`).
 - `−` is U+2212 MINUS SIGN for negative, `+` for positive/zero.
 - Absolute delta: `formatSigFigs(Math.abs(delta), 3)` (3 sig-figs).
@@ -114,7 +115,7 @@ export function computeDelta(
   defaultDisplayValue: number | null,
   unit: string,
   defaultName: string,
-): { delta: number; pct: number; label: string } | null
+): { delta: number; pct: number; label: string } | null;
 ```
 
 - Returns `null` when `displayValue` is `null`, `defaultDisplayValue` is `null`,
@@ -186,17 +187,26 @@ const defaultProgramName = $derived(
 (add inside the `{#if stpIndex !== -1}` block, after computing `stpMass`):
 
 ```svelte
-{@const stpDisplay = getStpDisplayValue(result, row.normalizedMevNucl, density, state.stpDisplayUnit)}
-{@const defaultResult = defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
-{@const defaultStpDisplay = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
-  ? getStpDisplayValue(defaultResult, row.normalizedMevNucl, density, state.stpDisplayUnit)
-  : null}
-{@const delta = programId !== defaultProgramId && stpDisplay !== null
-  ? computeDelta(stpDisplay, defaultStpDisplay, state.stpDisplayUnit, defaultProgramName)
-  : null}
+{@const stpDisplay = getStpDisplayValue(
+  result,
+  row.normalizedMevNucl,
+  density,
+  state.stpDisplayUnit,
+)}
+{@const defaultResult =
+  defaultProgramId !== null ? comparisonResults?.get(defaultProgramId) : undefined}
+{@const defaultStpDisplay =
+  defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+    ? getStpDisplayValue(defaultResult, row.normalizedMevNucl, density, state.stpDisplayUnit)
+    : null}
+{@const delta =
+  programId !== defaultProgramId && stpDisplay !== null
+    ? computeDelta(stpDisplay, defaultStpDisplay, state.stpDisplayUnit, defaultProgramName)
+    : null}
 ```
 
 Add to the `<td>` wrapping the STP cell:
+
 - `class="... relative"` (for absolute-positioned tooltip)
 - `aria-describedby={delta ? `delta-desc-${programId}-${i}` : undefined}`
 - `onmouseenter={() => { hoveredCell = `${programId}-${i}`; }}`
@@ -205,6 +215,7 @@ Add to the `<td>` wrapping the STP cell:
 - `onblur={() => { hoveredCell = null; }}`
 
 After the existing cell content, inside the `<td>`:
+
 ```svelte
 {#if delta}
   <span id="delta-desc-{programId}-{i}" class="sr-only">{delta.label}</span>
@@ -227,12 +238,14 @@ For the delta unit use `"cm"` (raw cm values for both cells):
 
 ```svelte
 {@const csdaCm = getCsdaDisplayCm(result, row.normalizedMevNucl, density)}
-{@const defaultCsdaCm = defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
-  ? getCsdaDisplayCm(defaultResult, row.normalizedMevNucl, density)
-  : null}
-{@const csdaDelta = programId !== defaultProgramId && csdaCm !== null
-  ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
-  : null}
+{@const defaultCsdaCm =
+  defaultResult && !(defaultResult instanceof LibdedxError) && row.normalizedMevNucl !== null
+    ? getCsdaDisplayCm(defaultResult, row.normalizedMevNucl, density)
+    : null}
+{@const csdaDelta =
+  programId !== defaultProgramId && csdaCm !== null
+    ? computeDelta(csdaCm, defaultCsdaCm, "cm", defaultProgramName)
+    : null}
 ```
 
 Use `data-testid="delta-tooltip-{programId}-{i}"` for the CSDA tooltip as well
@@ -333,7 +346,7 @@ default header), § Acceptance Criteria "Drag-and-Drop Column Reordering".
 - **Drag constraint:** `ondragover` / `ondrop` do nothing when the target is
   the default program.
 - **Drag reorder:** `ondrop` calls `multiProgramState!.reorderPrograms(draggedId,
-  targetIndex)` where `targetIndex` is `programDisplayOrder.indexOf(targetProgramId)`.
+targetIndex)` where `targetIndex` is `programDisplayOrder.indexOf(targetProgramId)`.
   `reorderPrograms` interprets this as the desired **array index** in
   `programDisplayOrder` (default is always index 0; additional programs are
   indices 1..n).
@@ -375,114 +388,92 @@ if absent):
 
 ```typescript
 test.describe("Stage 6.12 — multi-program polish", () => {
-  test(
-    "keyboard reorder: Alt+ArrowRight moves column right and updates URL @smoke",
-    async ({ page }) => {
-      const wasmOk = await checkWasmAvailable(page);
-      test.skip(!wasmOk, "WASM binary absent");
+  test("keyboard reorder: Alt+ArrowRight moves column right and updates URL @smoke", async ({
+    page,
+  }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent");
 
-      // proton (1) in water (276), three programs: ICRU 90 (9), PSTAR (2), Bethe (101)
-      await page.goto(
-        "/calculator?mode=advanced&particle=1&material=276&programs=9,2,101&energies=100",
-      );
-      await expect
-        .poll(
-          async () =>
-            parseFloat(
-              (await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? "",
-            ),
-          { timeout: 10000 },
-        )
-        .toBeGreaterThan(0);
+    // proton (1) in water (276), three programs: ICRU 90 (9), PSTAR (2), Bethe (101)
+    await page.goto(
+      "/calculator?mode=advanced&particle=1&material=276&programs=9,2,101&energies=100",
+    );
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? ""),
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(0);
 
-      // Focus PSTAR sub-header (STP group, programId=2) and press Alt+ArrowRight
-      await page.locator('[data-testid="program-col-header-stp-2"]').focus();
-      await page.keyboard.press("Alt+ArrowRight");
+    // Focus PSTAR sub-header (STP group, programId=2) and press Alt+ArrowRight
+    await page.locator('[data-testid="program-col-header-stp-2"]').focus();
+    await page.keyboard.press("Alt+ArrowRight");
 
-      // URL must now encode new order: 9,101,2
-      await expect(page).toHaveURL(/programs=9(%2C|,)101(%2C|,)2/, { timeout: 3000 });
-    },
-  );
+    // URL must now encode new order: 9,101,2
+    await expect(page).toHaveURL(/programs=9(%2C|,)101(%2C|,)2/, { timeout: 3000 });
+  });
 
-  test(
-    "keyboard reorder: Alt+ArrowLeft moves column left @regression",
-    async ({ page }) => {
-      const wasmOk = await checkWasmAvailable(page);
-      test.skip(!wasmOk, "WASM binary absent");
+  test("keyboard reorder: Alt+ArrowLeft moves column left @regression", async ({ page }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent");
 
-      await page.goto(
-        "/calculator?mode=advanced&particle=1&material=276&programs=9,101,2&energies=100",
-      );
-      await expect
-        .poll(
-          async () =>
-            parseFloat(
-              (await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? "",
-            ),
-          { timeout: 10000 },
-        )
-        .toBeGreaterThan(0);
+    await page.goto(
+      "/calculator?mode=advanced&particle=1&material=276&programs=9,101,2&energies=100",
+    );
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? ""),
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(0);
 
-      // Focus Bethe (101) and move it left → 9,2,101
-      await page.locator('[data-testid="program-col-header-stp-101"]').focus();
-      await page.keyboard.press("Alt+ArrowLeft");
-      await expect(page).toHaveURL(/programs=9(%2C|,)2(%2C|,)101/, { timeout: 3000 });
-    },
-  );
+    // Focus Bethe (101) and move it left → 9,2,101
+    await page.locator('[data-testid="program-col-header-stp-101"]').focus();
+    await page.keyboard.press("Alt+ArrowLeft");
+    await expect(page).toHaveURL(/programs=9(%2C|,)2(%2C|,)101/, { timeout: 3000 });
+  });
 
-  test(
-    "delta tooltip visible on hover over non-default STP cell @smoke",
-    async ({ page }) => {
-      const wasmOk = await checkWasmAvailable(page);
-      test.skip(!wasmOk, "WASM binary absent");
+  test("delta tooltip visible on hover over non-default STP cell @smoke", async ({ page }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent");
 
-      await page.goto(
-        "/calculator?mode=advanced&particle=1&material=276&programs=9,2&energies=100",
-      );
-      await expect
-        .poll(
-          async () =>
-            parseFloat(
-              (await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? "",
-            ),
-          { timeout: 10000 },
-        )
-        .toBeGreaterThan(0);
+    await page.goto("/calculator?mode=advanced&particle=1&material=276&programs=9,2&energies=100");
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? ""),
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(0);
 
-      await page.locator('[data-testid="stp-cell-2-0"]').hover();
-      const tooltip = page.locator('[data-testid="delta-tooltip-2-0"]');
-      await expect(tooltip).toBeVisible({ timeout: 2000 });
-      await expect(tooltip).toContainText("Δ =");
-      // Must include a unit string and the default program name
-      await expect(tooltip).toContainText("%");
-    },
-  );
+    await page.locator('[data-testid="stp-cell-2-0"]').hover();
+    const tooltip = page.locator('[data-testid="delta-tooltip-2-0"]');
+    await expect(tooltip).toBeVisible({ timeout: 2000 });
+    await expect(tooltip).toContainText("Δ =");
+    // Must include a unit string and the default program name
+    await expect(tooltip).toContainText("%");
+  });
 
-  test(
-    "delta tooltip NOT shown on default program cell @regression",
-    async ({ page }) => {
-      const wasmOk = await checkWasmAvailable(page);
-      test.skip(!wasmOk, "WASM binary absent");
+  test("delta tooltip NOT shown on default program cell @regression", async ({ page }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent");
 
-      await page.goto(
-        "/calculator?mode=advanced&particle=1&material=276&programs=9,2&energies=100",
-      );
-      await expect
-        .poll(
-          async () =>
-            parseFloat(
-              (await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? "",
-            ),
-          { timeout: 10000 },
-        )
-        .toBeGreaterThan(0);
+    await page.goto("/calculator?mode=advanced&particle=1&material=276&programs=9,2&energies=100");
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-9-0"]').textContent()) ?? ""),
+        { timeout: 10000 },
+      )
+      .toBeGreaterThan(0);
 
-      await page.locator('[data-testid="stp-cell-9-0"]').hover();
-      await expect(page.locator('[data-testid*="delta-tooltip"]')).not.toBeVisible({
-        timeout: 1000,
-      });
-    },
-  );
+    await page.locator('[data-testid="stp-cell-9-0"]').hover();
+    await expect(page.locator('[data-testid*="delta-tooltip"]')).not.toBeVisible({
+      timeout: 1000,
+    });
+  });
 });
 ```
 
@@ -491,6 +482,7 @@ test.describe("Stage 6.12 — multi-program polish", () => {
 In `src/lib/components/result-table.svelte`:
 
 **1. Drag state** — add at component `<script>` level:
+
 ```typescript
 let draggingProgramId = $state<number | null>(null);
 let dragOverProgramId = $state<number | null>(null);
@@ -498,6 +490,7 @@ let reorderAnnouncement = $state("");
 ```
 
 **2. Drag handlers:**
+
 ```typescript
 function handleDragStart(e: DragEvent, programId: number) {
   draggingProgramId = programId;
@@ -532,6 +525,7 @@ function handleDragEnd() {
 ```
 
 **3. Keyboard handler:**
+
 ```typescript
 function handleColumnKeydown(e: KeyboardEvent, programId: number) {
   if (programId === defaultProgramId) return;
@@ -551,6 +545,7 @@ function handleColumnKeydown(e: KeyboardEvent, programId: number) {
 ```
 
 **4. Sub-header `<th>` markup** — modify the Row 2 STP sub-headers:
+
 ```svelte
 <th
   scope="col"
@@ -567,10 +562,16 @@ function handleColumnKeydown(e: KeyboardEvent, programId: number) {
   class={[
     "px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap select-none",
     programId !== defaultProgramId ? "cursor-grab" : "",
-    programId === defaultProgramId ? "font-bold bg-blue-50 border-l-2 border-l-blue-500" : "bg-background",
+    programId === defaultProgramId
+      ? "font-bold bg-blue-50 border-l-2 border-l-blue-500"
+      : "bg-background",
     draggingProgramId === programId ? "opacity-50" : "",
-    dragOverProgramId === programId && programId !== defaultProgramId ? "border-l-2 border-l-blue-400" : "",
-  ].filter(Boolean).join(" ")}
+    dragOverProgramId === programId && programId !== defaultProgramId
+      ? "border-l-2 border-l-blue-400"
+      : "",
+  ]
+    .filter(Boolean)
+    .join(" ")}
 >
   {getProgramName(programId)}
   {#if programId === defaultProgramId}
@@ -583,6 +584,7 @@ Apply the same attributes with `data-testid="program-col-header-csda-{programId}
 the CSDA group sub-headers.
 
 **5. Aria-live region** — add once, just inside the `<div class="overflow-x-auto ...">` wrapper:
+
 ```svelte
 <div aria-live="polite" aria-atomic="true" class="sr-only">{reorderAnnouncement}</div>
 ```

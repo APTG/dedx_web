@@ -17,6 +17,7 @@
 ### Prompt 3: Implement Slice 1 — external URL and ID primitives
 
 **AI response**: Created `src/lib/external-data/` module with:
+
 - `types.ts` — `ExternalSourceLabel`, `ExternalEntityLocalId`, `ExtRef`, `EntityId`, `ExternalSourceDescriptor`, `ParsedExtdataParams`, URL error types
 - `ids.ts` — ID validators, `parseExtRef`, `formatExtRef`, `parseEntityId`, `parseEntityIdList`, `formatEntityIdList`
 - `url.ts` — `parseExtdataParams`, `appendExtdataParams`, `externalDataQuerySegments`
@@ -28,6 +29,7 @@ Commit: `feat: add external data URL primitives` (9ff637b)
 ### Prompt 4: Implement Slice 2 — zarrita loader and ExternalDataService
 
 **AI response**: Created:
+
 - `schema.ts` — `ExternalStoreMetadata`, `ExternalParticleEntry`, `ExternalMaterialEntry`, `ExternalProgramEntry`, unit type aliases
 - `errors.ts` — `ExternalDataError` with 8 typed error codes
 - `validation.ts` — `validateRootAttrs()` with all spec §6.1 checks
@@ -39,6 +41,7 @@ Commit: `feat: add external data URL primitives` (9ff637b)
 Wrote 44 tests in `external-data-loader.test.ts` and 35 tests in `external-data-service.test.ts`.
 
 **Key bugs fixed during test writing:**
+
 1. `FetchStore` calls `fetch(request)` with a `Request` object, not a string URL. Fixed mock to check `input instanceof Request` and use `(input as Request).url`.
 2. zarrita's `NotFoundError` message is `"Not found: ..."` (lowercase `f`). Fixed `classifyLoadError` to also match by `err.name === "NotFoundError"` and `msg.startsWith("Not found:")`.
 3. Mock pattern `/zarr.json` matched `prog1/csda_range/zarr.json` before the more specific pattern. Fixed by selecting the **longest** matching pattern in the mock router.

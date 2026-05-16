@@ -125,11 +125,7 @@ function classifyLoadError(err: unknown, context: string): ExternalDataError {
     (err instanceof Error && err.name === "NotFoundError") ||
     msg.startsWith("Not found:")
   ) {
-    return new ExternalDataError(
-      "not-found",
-      `External store not found at ${context}`,
-      msg,
-    );
+    return new ExternalDataError("not-found", `External store not found at ${context}`, msg);
   }
 
   // CORS / CORS-related fetch errors have distinct messages in browsers

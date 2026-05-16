@@ -30,6 +30,7 @@ With the correct formula, 0.7286 keV/µm → 7.286 MeV·cm²/g, which is well wi
 range. WASM returns valid E_low and E_high.
 
 The same bug existed in two places:
+
 - `src/lib/state/inverse-lookups.svelte.ts` (`stpToMevCm2g` exported function)
 - `src/routes/calculator/+page.svelte` (local duplicate helper, used at runtime)
 

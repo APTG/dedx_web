@@ -1,5 +1,9 @@
 import { describe, test, expect } from "vitest";
-import { autoScaleEnergy, formatEnergyWithUnit, columnHeaderUnit } from "$lib/utils/energy-autoscale";
+import {
+  autoScaleEnergy,
+  formatEnergyWithUnit,
+  columnHeaderUnit,
+} from "$lib/utils/energy-autoscale";
 
 describe("autoScaleEnergy", () => {
   test("scales 0.001 MeV to keV", () => {

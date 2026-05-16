@@ -258,7 +258,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Verify density description is visible on the custom compound row.
     await expect(
-      customColumn.locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i }).first(),
+      customColumn
+        .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i })
+        .first(),
     ).toContainText(/2\.20\d* g\/cm/);
   });
 
@@ -296,7 +298,10 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Find and click the edit button for ToDelete
     const editBtn = page.getByRole("button", { name: /edit compound ToDelete/i });
     await expect(editBtn).toBeVisible();
-    console.log("Edit button count:", await page.getByRole("button", { name: /edit compound/i }).count());
+    console.log(
+      "Edit button count:",
+      await page.getByRole("button", { name: /edit compound/i }).count(),
+    );
     await editBtn.click({ force: true });
 
     // Modal should be open - now click delete button inside modal

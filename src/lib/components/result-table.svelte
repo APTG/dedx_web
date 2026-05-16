@@ -143,7 +143,12 @@
     row: CalculatedRow,
   ): number | null {
     if (row.normalizedMevNucl === null) return null;
-    return getStpDisplayValue(result, row.normalizedMevNucl, getSelectedDensity(), calcState.stpDisplayUnit);
+    return getStpDisplayValue(
+      result,
+      row.normalizedMevNucl,
+      getSelectedDensity(),
+      calcState.stpDisplayUnit,
+    );
   }
 
   function getCsdaDisplayForRow(
@@ -684,10 +689,7 @@
               <!-- Stopping Power columns per program -->
               {#if showStp}
                 {#each visibleProgramIds as programId (programId)}
-                  {@const stpDisplay = getStpDisplayForRow(
-                    comparisonResults?.get(programId),
-                    row,
-                  )}
+                  {@const stpDisplay = getStpDisplayForRow(comparisonResults?.get(programId), row)}
                   {@const defaultResult =
                     defaultProgramId !== null
                       ? comparisonResults?.get(defaultProgramId)
@@ -736,7 +738,8 @@
                           {#if entitySelection.selectedMaterial}
                             {@const density =
                               advancedOptions.value.densityOverride ??
-                              (entitySelection.selectedMaterial.density ?? 1)}
+                              entitySelection.selectedMaterial.density ??
+                              1}
                             {@const stpIndex = result.energies.findIndex(
                               (e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001,
                             )}
@@ -828,7 +831,8 @@
                           {#if entitySelection.selectedMaterial}
                             {@const density =
                               advancedOptions.value.densityOverride ??
-                              (entitySelection.selectedMaterial.density ?? 1)}
+                              entitySelection.selectedMaterial.density ??
+                              1}
                             {@const csdaIndex = result.energies.findIndex(
                               (e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001,
                             )}

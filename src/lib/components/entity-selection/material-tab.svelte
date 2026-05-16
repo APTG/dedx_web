@@ -152,6 +152,17 @@
 </script>
 
 <div class="space-y-3" data-testid="picker-material-tab">
+  {#if isAdvancedMode.value}
+    <button
+      type="button"
+      class="flex w-full items-center justify-center gap-1 rounded-full border-2 border-orange-500 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50"
+      data-testid="picker-add-custom-material"
+      onclick={handleAddCompound}
+    >
+      + New custom material
+    </button>
+  {/if}
+
   {#if selected}
     {@const dens = formatDensity(selected)}
     <SelectedPill

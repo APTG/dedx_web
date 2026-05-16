@@ -12,35 +12,41 @@ Implemented URL parser upgrades per spec revision v5: (1) urlv version negotiati
 ## Tasks Completed
 
 ### Task 1: negotiateVersion() utility
+
 - Created `src/lib/utils/url-version.ts` with `CURRENT_URL_MAJOR=1`, `MIN_SUPPORTED_URL_MAJOR=1`
 - Implemented `negotiateVersion(version: string | null | undefined): VersionNegotiationResult` — returns `{ status: "ok" }` or `{ status: "mismatch"; version: number | string }`
 - Handles missing urlv (compatible), valid urlv=1 (compatible), urlv=999 (incompatible), malformed urlv (incompatible with the raw token preserved)
 - 5 unit tests in `src/tests/unit/url-version.test.ts`
 
 ### Task 2: Duplicate-param + unknown-param resolution
+
 - Added `resolveLastWins(params: URLSearchParams): URLSearchParams` helper to `src/lib/utils/calculator-url.ts` and `src/lib/utils/plot-url.ts`
 - Uses `URLSearchParams.set()` to ensure last occurrence wins for each key
 - Unknown params automatically dropped (only known keys extracted)
 - Unit tests + contract tests verify behavior
 
 ### Task 3: UrlVersionWarningBanner component
+
 - Created `src/lib/components/url-version-warning-banner.svelte`
 - Props: `onLoadDefaults()`, `onTryMigration()` (latter reserved for future migration logic)
 - Uses bits-ui primitives, data-testid="url-version-warning"
 - 4 component tests
 
 ### Task 4: Calculator page urlv wiring
+
 - Added `urlVersionMismatch`, `urlVersionChecked`, and `urlInitialized` state so negotiation stays separate from URL restore/write gating
 - Separate `$effect` for URL version negotiation that runs BEFORE WASM loads (critical for banner visibility even if WASM fails)
 - Moved URL init logic into `$effect` with `untrack()` for `replaceState` call (Entry 7 compliance)
 - Banner renders at lines 1068-1073
 
 ### Task 5: Plot page urlv wiring
+
 - Cross-page parity with Calculator: separate `$effect` for URL version check using `urlVersionChecked`
 - Advanced mode URL init in separate `$effect` (no more mode-switch infinite loop risk)
 - Banner renders at lines 595-598
 
 ### Task 6: E2E tests
+
 - Created `tests/e2e/url-parser.spec.ts` with 7 tests covering all 6 acceptance scenarios:
   1. urlv=999 shows banner
   2. load-defaults works from banner

@@ -7,11 +7,13 @@
   } from "$lib/state/entity-selection.svelte";
   import type { ProgramEntity } from "$lib/wasm/types";
   import type { ExternalProgramEntity } from "$lib/state/external-compatibility";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import { getProgramDescription } from "$lib/config/program-names";
   import { programKind } from "$lib/utils/program-kind";
   import SelectedPill from "./selected-pill.svelte";
   import SearchInput from "./search-input.svelte";
   import ProgramTag from "./program-tag.svelte";
+  import MultiList, { type MultiListRow } from "./multi-list.svelte";
 
   type AnyProgram = SelectedProgram | ProgramEntity | ExternalProgramEntity;
 
@@ -33,8 +35,7 @@
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return true;
     return (
-      p.name.toLowerCase().includes(trimmed) ||
-      (p.version ?? "").toLowerCase().includes(trimmed)
+      p.name.toLowerCase().includes(trimmed) || (p.version ?? "").toLowerCase().includes(trimmed)
     );
   }
 
@@ -51,6 +52,23 @@
     const p = currentProgram as AutoSelectProgram;
     return p.resolvedProgram;
   });
+
+  // Multi-select mode (Advanced + Compare across = Programs).
+  const isMultiMode = $derived(isAdvancedMode.value && selectionState.across === "program");
+
+  const multiAvailable = $derived<MultiListRow[]>([
+    ...filteredBuiltin.map((p) => ({
+      id: p.id,
+      label: p.name,
+      meta: getProgramDescription(p.id) ?? undefined,
+    })),
+    ...filteredExternal.map((p) => ({
+      id: p.id,
+      label: p.name,
+      glyph: "🔗",
+      meta: p.label,
+    })),
+  ]);
 </script>
 
 <div class="space-y-3" data-testid="picker-program-tab">
@@ -73,98 +91,109 @@
     data-testid="picker-program-search"
   />
 
-  <button
-    type="button"
-    class={cn(
-      "flex w-full items-start gap-3 rounded-md border-2 px-3 py-2.5 text-left text-sm transition-colors",
-      isAuto
-        ? "border-primary bg-primary/10"
-        : "border-primary/30 bg-primary/5 hover:bg-primary/10",
-    )}
-    data-testid="picker-program-auto-hero"
-    aria-pressed={isAuto}
-    onclick={() => selectionState.selectProgram(-1)}
-  >
-    <span class="text-base" aria-hidden="true">✦</span>
-    <span class="flex-1">
-      <span class="font-semibold">Auto-select</span>
-      {#if autoResolved}
-        <span class="text-muted-foreground"> → </span>
-        <span>{autoResolved.name}</span>
-      {/if}
-      <p class="text-xs text-muted-foreground mt-0.5">
+  {#if isMultiMode}
+    <MultiList
+      available={multiAvailable}
+      selectedIds={selectionState.multiSelected.program}
+      onToggle={(id) => selectionState.toggleMulti("program", id)}
+      testIdPrefix="picker-program-multi"
+      data-testid="picker-program-multi-list"
+    />
+  {:else}
+    <button
+      type="button"
+      class={cn(
+        "flex w-full items-start gap-3 rounded-md border-2 px-3 py-2.5 text-left text-sm transition-colors",
+        isAuto
+          ? "border-primary bg-primary/10"
+          : "border-primary/30 bg-primary/5 hover:bg-primary/10",
+      )}
+      data-testid="picker-program-auto-hero"
+      aria-pressed={isAuto}
+      onclick={() => selectionState.selectProgram(-1)}
+    >
+      <span class="text-base" aria-hidden="true">✦</span>
+      <span class="flex-1">
+        <span class="font-semibold">Auto-select</span>
         {#if autoResolved}
-          {getProgramDescription(autoResolved.id) ?? "Recommended for the current particle/material."}
-        {:else}
-          No compatible program for the current particle / material.
+          <span class="text-muted-foreground"> → </span>
+          <span>{autoResolved.name}</span>
         {/if}
-      </p>
-    </span>
-    {#if autoResolved}
-      <ProgramTag kind={programKind(autoResolved.id)} />
-    {/if}
-  </button>
+        <p class="text-xs text-muted-foreground mt-0.5">
+          {#if autoResolved}
+            {getProgramDescription(autoResolved.id) ??
+              "Recommended for the current particle/material."}
+          {:else}
+            No compatible program for the current particle / material.
+          {/if}
+        </p>
+      </span>
+      {#if autoResolved}
+        <ProgramTag kind={programKind(autoResolved.id)} />
+      {/if}
+    </button>
 
-  <ul
-    role="listbox"
-    aria-label="Programs"
-    tabindex="0"
-    class="max-h-52 overflow-auto space-y-0.5"
-    data-testid="picker-program-list"
-  >
-    {#each filteredBuiltin as program (program.id)}
-      {@const isSelected = currentProgram.id === program.id}
-      {@const desc = getProgramDescription(program.id)}
-      <li role="presentation">
-        <button
-          type="button"
-          role="option"
-          aria-selected={isSelected}
-          data-testid="picker-program-item-{program.id}"
-          tabindex={-1}
-          class={cn(
-            "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            isSelected && "bg-primary/15 font-semibold",
-          )}
-          onclick={() => onSelect(program)}
-        >
-          <span class="flex-1">
-            <span>{program.name}</span>
-            {#if desc}<span class="text-muted-foreground"> · {desc}</span>{/if}
-          </span>
-          <ProgramTag kind={programKind(program.id)} />
-        </button>
-      </li>
-    {/each}
+    <ul
+      role="listbox"
+      aria-label="Programs"
+      tabindex="0"
+      class="max-h-52 overflow-auto space-y-0.5"
+      data-testid="picker-program-list"
+    >
+      {#each filteredBuiltin as program (program.id)}
+        {@const isSelected = currentProgram.id === program.id}
+        {@const desc = getProgramDescription(program.id)}
+        <li role="presentation">
+          <button
+            type="button"
+            role="option"
+            aria-selected={isSelected}
+            data-testid="picker-program-item-{program.id}"
+            tabindex={-1}
+            class={cn(
+              "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
+              isSelected && "bg-primary/15 font-semibold",
+            )}
+            onclick={() => onSelect(program)}
+          >
+            <span class="flex-1">
+              <span>{program.name}</span>
+              {#if desc}<span class="text-muted-foreground"> · {desc}</span>{/if}
+            </span>
+            <ProgramTag kind={programKind(program.id)} />
+          </button>
+        </li>
+      {/each}
 
-    {#each filteredExternal as program (program.id)}
-      {@const isSelected = currentProgram.id === program.id}
-      <li role="presentation">
-        <button
-          type="button"
-          role="option"
-          aria-selected={isSelected}
-          data-testid="picker-program-item-{program.id}"
-          tabindex={-1}
-          class={cn(
-            "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            isSelected && "bg-primary/15 font-semibold",
-          )}
-          onclick={() => onSelect(program)}
-        >
-          <span class="flex-1">
-            <span>🔗 {program.name}</span>
-            {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}
-          </span>
-          <ProgramTag kind="EXT" />
-        </button>
-      </li>
-    {/each}
+      {#each filteredExternal as program (program.id)}
+        {@const isSelected = currentProgram.id === program.id}
+        <li role="presentation">
+          <button
+            type="button"
+            role="option"
+            aria-selected={isSelected}
+            data-testid="picker-program-item-{program.id}"
+            tabindex={-1}
+            class={cn(
+              "flex w-full items-center justify-between gap-3 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
+              isSelected && "bg-primary/15 font-semibold",
+            )}
+            onclick={() => onSelect(program)}
+          >
+            <span class="flex-1">
+              <span>🔗 {program.name}</span>
+              {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}
+            </span>
+            <ProgramTag kind="EXT" />
+          </button>
+        </li>
+      {/each}
 
-    {#if filteredBuiltin.length === 0 && filteredExternal.length === 0}
-      <li class="px-2 py-4 text-center text-sm text-muted-foreground">No programs match.</li>
-    {/if}
-  </ul>
+      {#if filteredBuiltin.length === 0 && filteredExternal.length === 0}
+        <li class="px-2 py-4 text-center text-sm text-muted-foreground">No programs match.</li>
+      {/if}
+    </ul>
+  {/if}
 
   <div
     class="flex flex-wrap items-center gap-3 border-t pt-2 text-xs text-muted-foreground"

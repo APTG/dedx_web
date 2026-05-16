@@ -5,6 +5,7 @@
 ### Prompt 1: Review compound editor and add water tests
 
 User observed two UX defects in the compound editor modal (screenshot provided):
+
 1. **Weight fraction column is read-only** — values displayed as `<span>` elements,
    making it impossible to enter weight fractions directly.
 2. **Element symbol input is hard to edit** — `value={getElementSymbol(...)}` binding
@@ -16,6 +17,7 @@ the resulting stopping power is physically plausible.
 **AI response**:
 
 Investigated `src/lib/components/compound-editor-modal.svelte` and found:
+
 - Weight mode shows computed percentages in `<span>` tags (read-only), WASM/util layer
   already has `computeWeightFractions` / `computeAtomCounts` helpers in `element-data.ts`.
 - Element input used `value={getElementSymbol(atomicNumber)}` + `oninput` without a blur
@@ -23,6 +25,7 @@ Investigated `src/lib/components/compound-editor-modal.svelte` and found:
   the field could show stale/invalid text indefinitely.
 
 **Fixes applied to `compound-editor-modal.svelte`**:
+
 - Added `elementTexts: string[]` parallel state — each entry mirrors the user's
   current text in the symbol field. `bind:value={elementTexts[index]}` on the Input.
   On `oninput`: resolve element, update `atomicNumber` if valid. On `onblur`: reset
@@ -42,11 +45,11 @@ Investigated `src/lib/components/compound-editor-modal.svelte` and found:
 **E2E tests added to `tests/e2e/custom-compounds.spec.ts`**
 (new describe block "Scenario 2: Water (H2O) — formula mode and stopping power sanity check"):
 
-| Test | What it checks |
-|------|---------------|
-| Create water via formula mode (H:2, O:1) | Creates H₂O, selects alpha particle, calculates at 5 MeV; asserts stopping power is in [1, 500] — covers MeV·cm²/g (~83) and keV/µm (~8) display units |
-| Create water via weight-fraction mode (H:11.19%, O:88.81%) | Enters fractions in weight mode, saves, calculates; same plausibility check |
-| Weight fraction sum ≠ 100% blocks Save | Enters 50% for H only; asserts validation error appears and modal stays open |
+| Test                                                       | What it checks                                                                                                                                         |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Create water via formula mode (H:2, O:1)                   | Creates H₂O, selects alpha particle, calculates at 5 MeV; asserts stopping power is in [1, 500] — covers MeV·cm²/g (~83) and keV/µm (~8) display units |
+| Create water via weight-fraction mode (H:11.19%, O:88.81%) | Enters fractions in weight mode, saves, calculates; same plausibility check                                                                            |
+| Weight fraction sum ≠ 100% blocks Save                     | Enters 50% for H only; asserts validation error appears and modal stays open                                                                           |
 
 All 16 tests in the custom-compounds spec pass after fixes.
 

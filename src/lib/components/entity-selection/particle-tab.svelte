@@ -53,9 +53,7 @@
   }
 
   // spec: drop electron entirely until ESTAR ships.
-  const allBuiltin = $derived(
-    selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID),
-  );
+  const allBuiltin = $derived(selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID));
 
   const COMMON_IDS = new Set([1, 2]);
   const COMMON_ORDER = [1, 2];
@@ -113,7 +111,7 @@
     <SelectedPill
       label={getParticleListLabel(selected, atomicNumber)}
       glyph={isExternal(selected) ? "🔗" : undefined}
-      onClear={onClear}
+      {onClear}
       data-testid="picker-particle-selected"
     />
   {/if}
@@ -167,7 +165,12 @@
     {#if filteredIons.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">Ions</div>
-        <ul role="listbox" aria-label="Ions" tabindex="0" class="max-h-52 overflow-auto space-y-0.5">
+        <ul
+          role="listbox"
+          aria-label="Ions"
+          tabindex="0"
+          class="max-h-52 overflow-auto space-y-0.5"
+        >
           {#each filteredIons as p (p.id)}
             {@const available = isAvailable(p)}
             {@const isSelected = selected?.id === p.id}

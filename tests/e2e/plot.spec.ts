@@ -26,7 +26,9 @@ test.describe("Plot page", () => {
     await page.goto(
       "/plot?particle=2&material=276&program=auto&stp_unit=kev-um&xscale=log&yscale=log",
     );
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
 
     await expect(page.locator('[data-testid="preview-series"]')).toBeVisible({
       timeout: 15000,
@@ -46,7 +48,9 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     // each_key_duplicate because programItems pushed state.selectedProgram
     // (id=2) as the first entry AND PSTAR also appeared in availablePrograms.
     await page.goto("/plot");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
 
     await page.getByTestId("picker-tab-program").click();
 
@@ -71,7 +75,9 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     page,
   }) => {
     await page.goto("/plot");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
 
     await page.getByTestId("picker-tab-program").click();
 
@@ -104,7 +110,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate directly in Advanced mode so the panel is available immediately
     await page.goto("/plot?mode=advanced");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
   });
 
   test("preview series appears after selecting particle, material, program", async ({ page }) => {
@@ -201,7 +209,9 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
   }) => {
     // Navigate with mass STP unit selected
     await page.goto("/plot?mode=advanced&stpUnit=MeV%C2%B7cm%C2%B2%2Fg");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
 
     // The unit selector should reflect mass STP — just verify no JS errors
     const errors: string[] = [];
