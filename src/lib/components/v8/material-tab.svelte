@@ -188,6 +188,7 @@
       <ul
         role="listbox"
         aria-label="Elements"
+        tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
         data-testid="v8-material-list-elements"
       >
@@ -195,7 +196,7 @@
           {@const available = isAvailable(m)}
           {@const isSelected = selected?.id === m.id}
           {@const dens = formatDensity(m)}
-          <li>
+          <li role="presentation">
             <button
               type="button"
               role="option"
@@ -235,6 +236,7 @@
       <ul
         role="listbox"
         aria-label="Compounds"
+        tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
         data-testid="v8-material-list-compounds"
       >
@@ -242,7 +244,7 @@
           {@const available = isAvailable(m)}
           {@const isSelected = selected?.id === m.id}
           {@const dens = formatDensity(m)}
-          <li>
+          <li role="presentation">
             <button
               type="button"
               role="option"
@@ -293,13 +295,14 @@
         <ul
           role="listbox"
           aria-label="Custom compounds"
+          tabindex="0"
           class="max-h-52 overflow-auto space-y-0.5"
           data-testid="v8-material-list-custom"
         >
           {#each filteredCustom as m (m.id)}
             {@const isSelected = selected?.id === m.id}
             {@const dens = formatDensity(m)}
-            <li>
+            <li role="presentation">
               <div class="flex items-center gap-1">
                 <button
                   type="button"

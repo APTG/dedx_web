@@ -108,13 +108,14 @@
   <ul
     role="listbox"
     aria-label="Programs"
+    tabindex="0"
     class="max-h-52 overflow-auto space-y-0.5"
     data-testid="v8-program-list"
   >
     {#each filteredBuiltin as program (program.id)}
       {@const isSelected = currentProgram.id === program.id}
       {@const desc = getProgramDescription(program.id)}
-      <li>
+      <li role="presentation">
         <button
           type="button"
           role="option"
@@ -138,7 +139,7 @@
 
     {#each filteredExternal as program (program.id)}
       {@const isSelected = currentProgram.id === program.id}
-      <li>
+      <li role="presentation">
         <button
           type="button"
           role="option"

@@ -128,18 +128,18 @@
     data-testid="v8-particle-search"
   />
 
-  <div role="listbox" aria-label="Particles" data-testid="v8-particle-list" class="space-y-3">
+  <div data-testid="v8-particle-list" class="space-y-3">
     {#if filteredCommon.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">
           Common particles
         </div>
-        <ul class="space-y-0.5">
+        <ul role="listbox" aria-label="Common particles" class="space-y-0.5">
           {#each filteredCommon as p (p.id)}
             {@const available = isAvailable(p)}
             {@const isSelected = selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
-            <li>
+            <li role="presentation">
               <button
                 type="button"
                 role="option"
@@ -167,14 +167,14 @@
     {#if filteredIons.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">Ions</div>
-        <ul class="max-h-52 overflow-auto space-y-0.5">
+        <ul role="listbox" aria-label="Ions" tabindex="0" class="max-h-52 overflow-auto space-y-0.5">
           {#each filteredIons as p (p.id)}
             {@const available = isAvailable(p)}
             {@const isSelected = selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
             {@const external = isExternal(p)}
             {@const atomicNumber = external ? p.Z : (p.id as number)}
-            <li>
+            <li role="presentation">
               <button
                 type="button"
                 role="option"
