@@ -130,10 +130,57 @@
   });
 
   const selected = $derived(selectionState.selectedParticle);
+
+  // Multi-select mode: active when the picker is comparing across particles.
+  const isMultiMode = $derived(selectionState.across === "particle");
+  const multiIds = $derived(selectionState.multiSelected.particle);
+
+  function isMultiSelected(p: Particle): boolean {
+    return multiIds.includes(p.id);
+  }
+
+  function isAnchor(p: Particle): boolean {
+    return multiIds[0] === p.id;
+  }
+
+  function handleMultiToggle(p: Particle): void {
+    selectionState.toggleMulti("particle", p.id);
+  }
 </script>
 
 <div class="space-y-3" data-testid="picker-particle-tab">
-  {#if selected}
+  {#if isMultiMode}
+    {#if multiIds.length > 0}
+      <div class="flex flex-wrap gap-1.5" aria-label="Selected particles for comparison" data-testid="picker-particle-multi-selected">
+        {#each multiIds as id (id)}
+          {@const p = filteredFlat.find((x) => x.id === id) ?? ionParticles.find((x) => x.id === id) ?? commonParticles.find((x) => x.id === id)}
+          {#if p}
+            {@const anchor = multiIds[0] === id}
+            {@const ext = isExternal(p)}
+            {@const z = ext ? p.Z : (p.id as number)}
+            <span
+              class={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                anchor
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-muted bg-muted text-muted-foreground",
+              )}
+            >
+              {getParticleListLabel(p, z)}
+              {#if !anchor}
+                <button
+                  type="button"
+                  aria-label="Remove {getParticleListLabel(p, z)} from comparison"
+                  class="ml-0.5 rounded-full hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                  onclick={() => handleMultiToggle(p)}
+                >×</button>
+              {/if}
+            </span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+  {:else if selected}
     {@const atomicNumber = isExternal(selected) ? selected.Z : (selected.id as number)}
     <SelectedPill
       label={getParticleListLabel(selected, atomicNumber)}
@@ -149,29 +196,44 @@
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">
           Common particles
         </div>
-        <ul role="listbox" aria-label="Common particles" class="space-y-0.5">
+        <ul role="listbox" aria-label="Common particles" aria-multiselectable={isMultiMode} class="space-y-0.5">
           {#each filteredCommon as p (p.id)}
             {@const available = isAvailable(p)}
-            {@const isSelected = selected?.id === p.id}
+            {@const inMulti = isMultiSelected(p)}
+            {@const anchor = isAnchor(p)}
+            {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
             <li role="presentation">
               <button
                 type="button"
                 role="option"
-                aria-selected={isSelected}
-                aria-disabled={!available}
+                aria-selected={isMultiMode ? inMulti : isSingleSelected}
+                aria-disabled={!available || (isMultiMode && anchor)}
                 data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
-                disabled={!available}
+                disabled={!available || (isMultiMode && anchor)}
                 class={cn(
                   "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                  isSelected && "bg-primary/15 font-semibold",
-                  isHighlighted && available && !isSelected && "bg-accent",
+                  (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+                  isHighlighted && available && !(isMultiMode ? inMulti : isSingleSelected) && "bg-accent",
                 )}
-                onclick={() => available && onSelect(p)}
+                onclick={() => {
+                  if (!available) return;
+                  if (isMultiMode) {
+                    if (!anchor) handleMultiToggle(p);
+                  } else {
+                    onSelect(p);
+                  }
+                }}
               >
+                {#if isMultiMode}
+                  <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+                {/if}
                 <span>{getParticleListLabel(p)}</span>
+                {#if isMultiMode && anchor}
+                  <span class="ml-auto text-xs text-muted-foreground">(anchor)</span>
+                {/if}
               </button>
             </li>
           {/each}
@@ -185,12 +247,15 @@
         <ul
           role="listbox"
           aria-label="Ions"
+          aria-multiselectable={isMultiMode}
           tabindex="0"
           class="max-h-52 overflow-auto space-y-0.5"
         >
           {#each filteredIons as p (p.id)}
             {@const available = isAvailable(p)}
-            {@const isSelected = selected?.id === p.id}
+            {@const inMulti = isMultiSelected(p)}
+            {@const anchor = isAnchor(p)}
+            {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
             {@const isHighlighted = highlightedId === p.id}
             {@const external = isExternal(p)}
             {@const atomicNumber = external ? p.Z : (p.id as number)}
@@ -198,21 +263,34 @@
               <button
                 type="button"
                 role="option"
-                aria-selected={isSelected}
-                aria-disabled={!available}
+                aria-selected={isMultiMode ? inMulti : isSingleSelected}
+                aria-disabled={!available || (isMultiMode && anchor)}
                 data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
-                disabled={!available}
+                disabled={!available || (isMultiMode && anchor)}
                 class={cn(
                   "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                  isSelected && "bg-primary/15 font-semibold",
-                  isHighlighted && available && !isSelected && "bg-accent",
+                  (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+                  isHighlighted && available && !(isMultiMode ? inMulti : isSingleSelected) && "bg-accent",
                 )}
-                onclick={() => available && onSelect(p)}
+                onclick={() => {
+                  if (!available) return;
+                  if (isMultiMode) {
+                    if (!anchor) handleMultiToggle(p);
+                  } else {
+                    onSelect(p);
+                  }
+                }}
               >
+                {#if isMultiMode}
+                  <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+                {/if}
                 {#if external}<span aria-hidden="true">🔗</span>{/if}
                 <span>{getParticleListLabel(p, atomicNumber)}</span>
+                {#if isMultiMode && anchor}
+                  <span class="ml-auto text-xs text-muted-foreground">(anchor)</span>
+                {/if}
               </button>
             </li>
           {/each}

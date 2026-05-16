@@ -39,6 +39,8 @@
   }
 
   import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+  import type { MultiEntityState } from "$lib/state/multi-entity.svelte";
+  import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import type { CalculationResult } from "$lib/wasm/types";
   import { LibdedxError } from "$lib/wasm/types";
   import type { EntityId } from "$lib/external-data/types";
@@ -51,6 +53,9 @@
     // Multi-program comparison props (advanced mode)
     multiProgramState?: MultiProgramState;
     comparisonResults?: Map<EntityId, CalculationResult | LibdedxError>;
+    // Multi-material or multi-particle comparison props
+    multiEntityState?: MultiEntityState;
+    multiEntityIds?: EntityId[];
   }
 
   let {
@@ -60,10 +65,14 @@
     class: className = "",
     multiProgramState,
     comparisonResults,
+    multiEntityState,
+    multiEntityIds = [],
   }: Props = $props();
 
   // Derived helpers for advanced mode
   const isAdvanced = $derived(multiProgramState !== undefined);
+  // Multi-entity (material or particle) comparison mode
+  const isMultiEntity = $derived(multiEntityState !== undefined && multiEntityIds.length > 0);
   const visibleProgramIds = $derived<EntityId[]>(
     isAdvanced && multiProgramState
       ? multiProgramState.programDisplayOrder.filter(
@@ -136,6 +145,17 @@
 
   function getSelectedDensity(): number {
     return advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial?.density ?? 1;
+  }
+
+  function getEntityDensity(entityId: EntityId): number {
+    if (entitySelection.across !== "material") return getSelectedDensity();
+    if (typeof entityId === "number") {
+      return entitySelection.allMaterials.find((material) => material.id === entityId)?.density ?? 1;
+    }
+    if (entityId.startsWith("ext:")) {
+      return entitySelection.externalOnlyMaterials.find((material) => material.id === entityId)?.density ?? 1;
+    }
+    return customCompounds.getById(entityId)?.density ?? 1;
   }
 
   function getStpDisplayForRow(
@@ -445,8 +465,8 @@
       {/if}
     </div>
   {:else}
-    {#if isAdvanced}
-      <!-- Toolbar for advanced mode -->
+    {#if isAdvanced && !isMultiEntity}
+      <!-- Toolbar for multi-program advanced mode -->
       <div class="mb-2 flex justify-end relative" data-columns-dropdown>
         <button
           type="button"
@@ -492,7 +512,44 @@
       </div>
     {/if}
     <table class="w-full min-w-[560px] text-sm" data-testid="result-table">
-      {#if isAdvanced}
+      {#if isMultiEntity}
+        <!-- Multi-entity mode: two-row grouped header (material or particle comparison) -->
+        <thead class="sticky top-0 bg-background">
+          <tr>
+            <th scope="col" rowspan="2" class="sticky left-0 z-20 bg-background shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)] px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b border-r">
+              Energy ({calcState.masterUnit})
+            </th>
+            <th scope="col" rowspan="2" class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b border-r">
+              → MeV/nucl
+            </th>
+            <th scope="col" rowspan="2" class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b">
+              Unit
+            </th>
+            <th scope="colgroup" colspan={multiEntityIds.length} class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50">
+              Stopping Power ({calcState.stpDisplayUnit})
+            </th>
+            <th scope="colgroup" colspan={multiEntityIds.length} class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50">
+              CSDA Range
+            </th>
+          </tr>
+          <tr class="bg-background">
+            {#each multiEntityIds as entityId (entityId)}
+              {@const isAnchor = entityId === multiEntityIds[0]}
+              <th scope="col" class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${isAnchor ? "font-bold bg-blue-50 border-l-2 border-l-blue-500" : ""}`}>
+                {multiEntityState?.entityName(entityId) ?? String(entityId)}
+                {#if isAnchor}<span aria-hidden="true"> ◆</span>{/if}
+              </th>
+            {/each}
+            {#each multiEntityIds as entityId (entityId)}
+              {@const isAnchor = entityId === multiEntityIds[0]}
+              <th scope="col" class={`px-2 sm:px-4 py-2 font-medium text-center border-b border-l whitespace-nowrap ${isAnchor ? "font-bold bg-blue-50 border-l-2 border-l-blue-500" : ""}`}>
+                {multiEntityState?.entityName(entityId) ?? String(entityId)}
+                {#if isAnchor}<span aria-hidden="true"> ◆</span>{/if}
+              </th>
+            {/each}
+          </tr>
+        </thead>
+      {:else if isAdvanced}
         <!-- Advanced mode: two-row grouped header -->
         <thead class="sticky top-0 bg-background">
           <!-- Row 1: Group headers -->
@@ -870,6 +927,60 @@
                   </td>
                 {/each}
               {/if}
+            {:else if isMultiEntity}
+              <!-- Multi-entity (material or particle) comparison columns -->
+              {#each multiEntityIds as entityId (entityId)}
+                {@const isAnchor = entityId === multiEntityIds[0]}
+                {@const result = multiEntityState?.comparisonResults.get(entityId)}
+                {@const density = getEntityDensity(entityId)}
+                {@const stpIndex = result && !(result instanceof LibdedxError) && row.normalizedMevNucl !== null
+                  ? result.energies.findIndex((e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001)
+                  : -1}
+                <td
+                  data-entity-id={entityId}
+                  data-testid={`stp-entity-cell-${entityId}-${i}`}
+                  class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${isAnchor ? "bg-blue-50" : ""}`}
+                >
+                  {#if result instanceof LibdedxError}
+                    <span title={result.message}>— ⚠️</span>
+                  {:else if result && stpIndex !== -1}
+                    {@const stpMass = result.stoppingPowers[stpIndex]!}
+                    {#if calcState.stpDisplayUnit === "keV/µm"}
+                      {formatSigFigs((stpMass * density) / 10, 4)}
+                    {:else if calcState.stpDisplayUnit === "MeV/cm"}
+                      {formatSigFigs(stpMass * density, 4)}
+                    {:else}
+                      {formatSigFigs(stpMass, 4)}
+                    {/if}
+                  {:else}
+                    —
+                  {/if}
+                </td>
+              {/each}
+              {#each multiEntityIds as entityId (entityId)}
+                {@const isAnchor = entityId === multiEntityIds[0]}
+                {@const result = multiEntityState?.comparisonResults.get(entityId)}
+                {@const density = getEntityDensity(entityId)}
+                {@const csdaIndex = result && !(result instanceof LibdedxError) && row.normalizedMevNucl !== null
+                  ? result.energies.findIndex((e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001)
+                  : -1}
+                <td
+                  data-entity-id={entityId}
+                  data-testid={`range-entity-cell-${entityId}-${i}`}
+                  class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${isAnchor ? "bg-blue-50" : ""}`}
+                >
+                  {#if result instanceof LibdedxError}
+                    <span title={result.message}>— ⚠️</span>
+                  {:else if result && csdaIndex !== -1 && result.csdaRanges.length > 0}
+                    {@const csdaGcm2 = result.csdaRanges[csdaIndex]!}
+                    {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
+                    {@const scaled = autoScaleLengthCm(csdaCm)}
+                    {formatSigFigs(scaled.value, 4)} {scaled.unit}
+                  {:else}
+                    —
+                  {/if}
+                </td>
+              {/each}
             {:else}
               <!-- Basic mode: single result column per quantity -->
               {#each columns.slice(3) as col (col.id)}

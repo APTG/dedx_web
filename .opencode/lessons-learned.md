@@ -1048,5 +1048,22 @@ built-in and external rows to avoid DnD layout jitter.
 
 ---
 
+## Entry 50 — Multi-entity loops must emit per-entity errors, never silently skip unsupported IDs
+
+**Symptom:** In compare-across Materials/Particles mode, selected string IDs
+(external/custom) rendered empty columns (`—`) with no explanation, and anchor
+material assumptions could drive the wrong calculator path for other columns.
+
+**Root cause:** The loop used `typeof entityId !== "number" => continue`, which
+discarded unsupported entries silently. It also inferred custom-material logic
+from the anchor selection instead of resolving per-column entity type.
+
+**Rule:** For compare loops keyed by entity ID, resolve behavior per `entityId`
+and store explicit `LibdedxError` entries for unsupported entities. Do not
+silently skip IDs; every selected column must produce either a result or a
+user-visible error marker.
+
+---
+
 _Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

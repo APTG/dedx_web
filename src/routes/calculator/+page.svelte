@@ -11,6 +11,10 @@
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
+  import {
+    createMultiEntityState,
+    type MultiEntityState,
+  } from "$lib/state/multi-entity.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
@@ -76,6 +80,7 @@
   let advancedModeInitializedFromUrl = $state(false);
   let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let multiProgState = $state<MultiProgramState | null>(null);
+  let multiEntityState = $state<MultiEntityState | null>(null);
   let inverseLookupState = $state<InverseLookupState | null>(null);
   let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
   let sharedUrlWarning = $state<string | null>(null);
@@ -883,6 +888,7 @@
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
     if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
+    if (entityState.across !== "program") return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
     if (selectedProgramIds.length === 0) return;
@@ -1092,6 +1098,183 @@
 
       if (!cancelled) {
         multiProgState.setComparisonResults(results);
+      }
+    }, 300);
+
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
+  });
+
+  // Create/destroy multi-entity state when the "across" dimension switches to material/particle.
+  // Mirrors the multiProgState creation effect above, but without URL encoding for now.
+  $effect(() => {
+    const across = entityState?.across;
+    if (!isAdvancedMode.value || !entityState || (across !== "material" && across !== "particle")) {
+      multiEntityState = null;
+      return;
+    }
+
+    const dim = across; // "material" | "particle"
+    const state = createMultiEntityState(dim, (id) => {
+      if (dim === "material") {
+        const m =
+          entityState?.allMaterials.find((x) => x.id === id) ??
+          entityState?.externalOnlyMaterials.find((x) => x.id === id);
+        return m?.name ?? String(id);
+      }
+      // particle
+      const p = entityState?.allParticles.find((x) => x.id === id);
+      return p?.name ?? String(id);
+    });
+    multiEntityState = state;
+
+    return () => {
+      multiEntityState = null;
+    };
+  });
+
+  // Multi-entity calculation effect: runs when across === "material" or "particle".
+  // Computes stopping power for each entity in entityState.multiSelected[dimension].
+  $effect(() => {
+    const _advOptsKey = advOptsKey;
+    void _advOptsKey;
+
+    if (urlVersionMismatch !== null) return;
+    if (!multiEntityState || !entityState || !calcState || !entityState.isComplete) return;
+
+    const dim = multiEntityState.dimension;
+    const entityIds = dim === "material"
+      ? entityState.multiSelected.material
+      : entityState.multiSelected.particle;
+
+    if (entityIds.length === 0) return;
+
+    // Require built-in (numeric) program and particle for WASM multi-entity calculation.
+    const rawProgramId = entityState.resolvedProgramId;
+    if (typeof rawProgramId !== "number" || rawProgramId === null) return;
+    const programId = rawProgramId;
+
+    const rawParticleId = entityState.selectedParticle?.id;
+    if (typeof rawParticleId !== "number") return;
+    const anchorParticleId = rawParticleId;
+
+    const material = entityState.selectedMaterial;
+    const builtinMat = material && "isGasByDefault" in material ? material : null;
+    const anchorMaterialId = material?.id;
+    if (anchorMaterialId === null || anchorMaterialId === undefined) return;
+
+    const getCustomMaterialById = (id: EntityId) => {
+      if (typeof id !== "string" || !id.startsWith("cc_")) return null;
+      const compound = customCompounds.getById(id);
+      if (!compound) return null;
+      return {
+        id: compound.id,
+        name: compound.name,
+        density: compound.density,
+        iValue: compound.iValue,
+        phase: compound.phase,
+        elements: compound.elements,
+        isGasByDefault: compound.phase === "gas",
+      };
+    };
+
+    if (dim === "particle" && typeof anchorMaterialId !== "number") {
+      const unsupportedMaterialMessage = typeof anchorMaterialId === "string" &&
+          anchorMaterialId.startsWith("ext:")
+        ? "Multi-particle comparison does not support external-only materials."
+        : "Multi-particle comparison does not support custom compounds.";
+      const results = new Map<EntityId, CalculationResult | LibdedxError>();
+      for (const entityId of entityIds) {
+        results.set(entityId, new LibdedxError(-1, unsupportedMaterialMessage));
+      }
+      multiEntityState.setComparisonResults(results);
+      return;
+    }
+
+    const validRows = calcState.rows.filter(
+      (r) => r.status === "valid" && r.normalizedMevNucl !== null,
+    );
+    if (validRows.length === 0) return;
+
+    const energies = validRows.map((r) => r.normalizedMevNucl as number);
+    const advOptsSnapshot = advancedOptions.value;
+    const inputSnapshot = { programId, anchorParticleId, anchorMaterialId, entityIds, energies, dim, builtinMat };
+    let cancelled = false;
+
+    const timer = setTimeout(async () => {
+      if (cancelled) return;
+      const service = await getService();
+      if (cancelled) return;
+
+      const results = new Map<EntityId, import("$lib/wasm/types").CalculationResult | LibdedxError>();
+
+      for (const entityId of inputSnapshot.entityIds) {
+        try {
+          let result: import("$lib/wasm/types").CalculationResult;
+          if (inputSnapshot.dim === "material") {
+            const customMaterial =
+              getCustomMaterialById(entityId) ??
+              (entityId === inputSnapshot.anchorMaterialId && isCustomMaterial(inputSnapshot.builtinMat)
+                ? inputSnapshot.builtinMat
+                : null);
+            if (customMaterial !== null) {
+              result = service.calculateCustomCompound({
+                programId: inputSnapshot.programId,
+                particleId: inputSnapshot.anchorParticleId,
+                elements: customMaterialElementsForWasm(customMaterial),
+                density: customMaterial.density,
+                iValue: customMaterial.iValue,
+                energies: inputSnapshot.energies,
+              });
+            } else if (typeof entityId === "number") {
+              result = service.calculate(
+                inputSnapshot.programId,
+                inputSnapshot.anchorParticleId,
+                entityId,
+                inputSnapshot.energies,
+                advOptsSnapshot,
+              );
+            } else {
+              throw new LibdedxError(
+                -1,
+                typeof entityId === "string" && entityId.startsWith("ext:")
+                  ? "Multi-material comparison does not support external-only materials."
+                  : `Unsupported material ID for multi-material comparison: ${entityId}`,
+              );
+            }
+          } else {
+            // across === "particle": compute for each particleId, fixed material
+            if (typeof entityId !== "number") {
+              throw new LibdedxError(
+                -1,
+                typeof entityId === "string" && entityId.startsWith("ext:")
+                  ? "Multi-particle comparison does not support external-only particles."
+                  : `Unsupported particle ID for multi-particle comparison: ${entityId}`,
+              );
+            }
+            result = service.calculate(
+              inputSnapshot.programId,
+              entityId,
+              inputSnapshot.anchorMaterialId as number,
+              inputSnapshot.energies,
+              advOptsSnapshot,
+            );
+          }
+          results.set(entityId, result);
+        } catch (e) {
+          results.set(
+            entityId,
+            e instanceof LibdedxError
+              ? e
+              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+          );
+        }
+      }
+
+      if (!cancelled && multiEntityState) {
+        multiEntityState.setComparisonResults(results);
       }
     }, 300);
 
@@ -1495,7 +1678,7 @@
         onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
       />
-      {#if isAdvancedMode.value && multiProgState && entityState}
+      {#if isAdvancedMode.value && entityState?.across === "program" && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
             state={multiProgState}
@@ -1738,12 +1921,19 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          {#if isAdvancedMode.value && multiProgState}
+          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState}
             <ResultTable
               {calcState}
               entitySelection={entityState}
               multiProgramState={multiProgState}
               comparisonResults={multiProgState.comparisonResults}
+            />
+          {:else if isAdvancedMode.value && multiEntityState && (entityState.across === "material" || entityState.across === "particle")}
+            <ResultTable
+              {calcState}
+              entitySelection={entityState}
+              {multiEntityState}
+              multiEntityIds={entityState.across === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle}
             />
           {:else}
             <ResultTable {calcState} entitySelection={entityState} />

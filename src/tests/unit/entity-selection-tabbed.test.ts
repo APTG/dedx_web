@@ -367,11 +367,45 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-particle-item-6")).toHaveTextContent("Carbon (C, Z=6)");
   });
 
+  test("particle anchor option is disabled in multi-select compare mode", () => {
+    state.setAcross("particle");
+    render(EntitySelection, { props: { selectionState: state } });
+
+    expect(screen.getByTestId("picker-particle-item-1")).toBeDisabled();
+    expect(screen.getByTestId("picker-particle-item-2")).not.toBeDisabled();
+  });
+
   test("selected-pill includes Z inline in label (no separate meta)", () => {
     render(EntitySelection, { props: { selectionState: state } });
 
     // Default: proton is selected — pill should show "proton (Z=1)"
     expect(screen.getByTestId("picker-particle-selected")).toHaveTextContent("proton (Z=1)");
+  });
+
+  test("material anchor option is disabled in multi-select compare mode", async () => {
+    state.setAcross("material");
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+
+    expect(screen.getByTestId("picker-material-item-276")).toBeDisabled();
+    expect(screen.getByTestId("picker-material-item-6")).not.toBeDisabled();
+  });
+
+  test("material selected pills remain visible when current search filters rows out", async () => {
+    state.setAcross("material");
+    state.toggleMulti("material", 6);
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.clear(screen.getByTestId("picker-material-search"));
+    await user.type(screen.getByTestId("picker-material-search"), "zzzz-no-match");
+
+    const selected = screen.getByTestId("picker-material-multi-selected");
+    expect(selected).toHaveTextContent("Water");
+    expect(selected).toHaveTextContent("Carbon");
   });
 
   describe("collapsible mode", () => {
@@ -431,10 +465,10 @@ describe("EntitySelection", () => {
         expect(toolbar).toBeInTheDocument();
         const compareAcross = screen.getByTestId("picker-compare-across") as HTMLSelectElement;
         expect(compareAcross.value).toBe("program");
-        // Materials and Particles are disabled per the issue's "out of scope" gate.
+        // Materials and Particles are now enabled (wired in this PR).
         const opts = Array.from(compareAcross.options);
-        expect(opts.find((o) => o.value === "material")?.disabled).toBe(true);
-        expect(opts.find((o) => o.value === "particle")?.disabled).toBe(true);
+        expect(opts.find((o) => o.value === "material")?.disabled).toBe(false);
+        expect(opts.find((o) => o.value === "particle")?.disabled).toBe(false);
 
         // Reset button exists in the advanced toolbar.
         expect(screen.getByTestId("picker-reset")).toBeInTheDocument();
