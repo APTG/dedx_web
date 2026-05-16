@@ -113,6 +113,22 @@
 
   const selected = $derived(selectionState.selectedMaterial);
 
+  // Multi-select mode: active when the picker is comparing across materials.
+  const isMultiMode = $derived(selectionState.across === "material");
+  const multiIds = $derived(selectionState.multiSelected.material);
+
+  function isMultiSelected(m: Material): boolean {
+    return multiIds.includes(m.id);
+  }
+
+  function isAnchor(m: Material): boolean {
+    return multiIds[0] === m.id;
+  }
+
+  function handleMultiToggle(m: Material): void {
+    selectionState.toggleMulti("material", m.id);
+  }
+
   function handleAddCompound() {
     editingCompound = null;
     compoundModalOpen = true;
@@ -147,7 +163,37 @@
 </script>
 
 <div class="space-y-3" data-testid="picker-material-tab">
-  {#if selected}
+  {#if isMultiMode}
+    {#if multiIds.length > 0}
+      <div class="flex flex-wrap gap-1.5" aria-label="Selected materials for comparison" data-testid="picker-material-multi-selected">
+        {#each multiIds as id (id)}
+          {@const m = filteredElements.find((x) => x.id === id) ?? filteredCompounds.find((x) => x.id === id) ?? filteredCustom.find((x) => x.id === id)}
+          {#if m}
+            {@const anchor = multiIds[0] === id}
+            {@const dens = formatDensity(m)}
+            <span
+              class={cn(
+                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
+                anchor
+                  ? "border-primary bg-primary/15 text-primary"
+                  : "border-muted bg-muted text-muted-foreground",
+              )}
+            >
+              {dens ? `${m.name} (ρ=${dens})` : m.name}
+              {#if !anchor}
+                <button
+                  type="button"
+                  aria-label="Remove {m.name} from comparison"
+                  class="ml-0.5 rounded-full hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                  onclick={() => handleMultiToggle(m)}
+                >×</button>
+              {/if}
+            </span>
+          {/if}
+        {/each}
+      </div>
+    {/if}
+  {:else if selected}
     {@const dens = formatDensity(selected)}
     <SelectedPill
       label={dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}
@@ -171,31 +217,44 @@
       <ul
         role="listbox"
         aria-label="Elements"
+        aria-multiselectable={isMultiMode}
         tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
         data-testid="picker-material-list-elements"
       >
         {#each filteredElements as m (m.id)}
           {@const available = isAvailable(m)}
-          {@const isSelected = selected?.id === m.id}
+          {@const inMulti = isMultiSelected(m)}
+          {@const anchor = isAnchor(m)}
+          {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
           {@const dens = formatDensity(m)}
           <li role="presentation">
             <button
               type="button"
               role="option"
-              aria-selected={isSelected}
-              aria-disabled={!available}
+              aria-selected={isMultiMode ? inMulti : isSingleSelected}
+              aria-disabled={!available || (isMultiMode && anchor)}
               data-testid="picker-material-item-{m.id}"
               tabindex={-1}
               disabled={!available}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                isSelected && "bg-primary/15 font-semibold",
+                (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
               )}
-              onclick={() => available && onSelect(m)}
+              onclick={() => {
+                if (!available) return;
+                if (isMultiMode) {
+                  if (!anchor) handleMultiToggle(m);
+                } else {
+                  onSelect(m);
+                }
+              }}
             >
-              <span class="flex min-w-0 items-center gap-2">
+              {#if isMultiMode}
+                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+              {/if}
+              <span class="flex min-w-0 flex-1 items-center gap-2">
                 {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
                 <span class="truncate">
                   {m.name}
@@ -206,6 +265,9 @@
                 {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
                   >{/if}
               </span>
+              {#if isMultiMode && anchor}
+                <span class="text-xs text-muted-foreground">(anchor)</span>
+              {/if}
             </button>
           </li>
         {/each}
@@ -220,31 +282,44 @@
       <ul
         role="listbox"
         aria-label="Compounds"
+        aria-multiselectable={isMultiMode}
         tabindex="0"
         class="max-h-52 overflow-auto space-y-0.5"
         data-testid="picker-material-list-compounds"
       >
         {#each filteredCompounds as m (m.id)}
           {@const available = isAvailable(m)}
-          {@const isSelected = selected?.id === m.id}
+          {@const inMulti = isMultiSelected(m)}
+          {@const anchor = isAnchor(m)}
+          {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
           {@const dens = formatDensity(m)}
           <li role="presentation">
             <button
               type="button"
               role="option"
-              aria-selected={isSelected}
-              aria-disabled={!available}
+              aria-selected={isMultiMode ? inMulti : isSingleSelected}
+              aria-disabled={!available || (isMultiMode && anchor)}
               data-testid="picker-material-item-{m.id}"
               tabindex={-1}
               disabled={!available}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                isSelected && "bg-primary/15 font-semibold",
+                (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
               )}
-              onclick={() => available && onSelect(m)}
+              onclick={() => {
+                if (!available) return;
+                if (isMultiMode) {
+                  if (!anchor) handleMultiToggle(m);
+                } else {
+                  onSelect(m);
+                }
+              }}
             >
-              <span class="flex min-w-0 items-center gap-2">
+              {#if isMultiMode}
+                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+              {/if}
+              <span class="flex min-w-0 flex-1 items-center gap-2">
                 {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
                 <span class="truncate">
                   {m.name}
@@ -255,6 +330,9 @@
                 {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
                   >{/if}
               </span>
+              {#if isMultiMode && anchor}
+                <span class="text-xs text-muted-foreground">(anchor)</span>
+              {/if}
             </button>
           </li>
         {/each}
@@ -280,47 +358,67 @@
         <ul
           role="listbox"
           aria-label="Custom compounds"
+          aria-multiselectable={isMultiMode}
           tabindex="0"
           class="max-h-52 overflow-auto space-y-0.5"
           data-testid="picker-material-list-custom"
         >
           {#each filteredCustom as m (m.id)}
-            {@const isSelected = selected?.id === m.id}
+            {@const inMulti = isMultiSelected(m)}
+            {@const anchor = isAnchor(m)}
+            {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
             {@const dens = formatDensity(m)}
             <li role="presentation">
               <div class="flex items-center gap-1">
                 <button
                   type="button"
                   role="option"
-                  aria-selected={isSelected}
+                  aria-selected={isMultiMode ? inMulti : isSingleSelected}
+                  aria-disabled={isMultiMode && anchor}
                   data-testid="picker-material-item-{m.id}"
                   tabindex={-1}
                   class={cn(
                     "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
-                    isSelected && "bg-primary/15 font-semibold",
+                    (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
                   )}
-                  onclick={() => onSelect(m)}
+                  onclick={() => {
+                    if (isMultiMode) {
+                      if (!anchor) handleMultiToggle(m);
+                    } else {
+                      onSelect(m);
+                    }
+                  }}
                 >
-                  <span class="truncate">
-                    {m.name}
-                    {#if dens}
-                      <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+                  <span class="flex items-center gap-1">
+                    {#if isMultiMode}
+                      <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+                    {/if}
+                    <span class="truncate">
+                      {m.name}
+                      {#if dens}
+                        <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+                      {/if}
+                    </span>
+                    {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">
+                        (≋)</span
+                      >{/if}
+                    {#if isMultiMode && anchor}
+                      <span class="text-xs text-muted-foreground">(anchor)</span>
                     {/if}
                   </span>
-                  {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">
-                      (≋)</span
-                    >{/if}
                 </button>
-                <button
-                  type="button"
-                  class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
-                  title="Edit compound"
-                  aria-label="Edit compound {m.name}"
-                  data-testid="picker-material-edit-compound-{m.id}"
-                  onclick={() => handleEditCompound(m.source)}
-                >
-                  ✎
-                </button>
+                {#if !isMultiMode}
+                  <button
+                    type="button"
+                    class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
+                    title="Edit compound"
+                    aria-label="Edit compound {m.name}"
+                    data-testid="picker-material-edit-compound-{m.id}"
+                    onclick={() => handleEditCompound(m.source)}
+                  >
+                    ✎
+                  </button>
+                {/if}
               </div>
             </li>
           {/each}

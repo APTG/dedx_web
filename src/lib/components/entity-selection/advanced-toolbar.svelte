@@ -26,9 +26,6 @@
     class: className,
   }: Props = $props();
 
-  // Only the "program" axis is wired to results today (see issue § "Out of
-  // scope" — Materials / Particles ship in follow-up PRs but the dropdown
-  // surface lands now so it's a single switch when the math catches up).
   const ACROSS_OPTIONS: Array<{
     value: AcrossDimension;
     label: string;
@@ -44,14 +41,14 @@
     {
       value: "material",
       label: "Materials",
-      disabled: true,
-      title: "Multi-material comparison ships in a follow-up PR",
+      disabled: false,
+      title: "Compare stopping power across multiple materials",
     },
     {
       value: "particle",
       label: "Particles",
-      disabled: true,
-      title: "Multi-particle comparison ships in a follow-up PR",
+      disabled: false,
+      title: "Compare stopping power across multiple particles",
     },
   ];
 
@@ -82,7 +79,7 @@
     >
       {#each ACROSS_OPTIONS as opt (opt.value)}
         <option value={opt.value} disabled={opt.disabled} title={opt.title}>
-          {opt.label}{opt.disabled ? " (soon)" : ""}
+          {opt.label}
         </option>
       {/each}
     </select>
