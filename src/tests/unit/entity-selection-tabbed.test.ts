@@ -530,5 +530,90 @@ describe("EntitySelection", () => {
       state.toggleMulti("program", 9);
       expect(state.multiSelected.program).toEqual([7]);
     });
+
+    describe("collapseToSingle — basic-mode truncation", () => {
+      // setAcross() seeds the multi-array from the *current* single selection,
+      // so the single-select call must come BEFORE setAcross to establish the
+      // anchor correctly.
+
+      test("collapseToSingle keeps only the anchor particle when multiple are selected", () => {
+        state.selectParticle(1);
+        state.setAcross("particle"); // seeds multiParticle = [1]
+        state.toggleMulti("particle", 2);
+        state.toggleMulti("particle", 4);
+        expect(state.multiSelected.particle).toEqual([1, 2, 4]);
+
+        state.collapseToSingle();
+
+        expect(state.multiSelected.particle).toEqual([1]);
+      });
+
+      test("collapseToSingle keeps only the anchor material when multiple are selected", () => {
+        state.selectMaterial(1);
+        state.setAcross("material"); // seeds multiMaterial = [1]
+        state.toggleMulti("material", 2);
+        state.toggleMulti("material", 3);
+        expect(state.multiSelected.material).toEqual([1, 2, 3]);
+
+        state.collapseToSingle();
+
+        expect(state.multiSelected.material).toEqual([1]);
+      });
+
+      test("collapseToSingle keeps only the anchor program when multiple are selected", () => {
+        state.selectProgram(7);
+        state.setAcross("program"); // seeds multiProgram = [7]
+        state.toggleMulti("program", 9);
+        expect(state.multiSelected.program).toEqual([7, 9]);
+
+        state.collapseToSingle();
+
+        expect(state.multiSelected.program).toEqual([7]);
+      });
+
+      test("collapseToSingle is a no-op when only one item is selected", () => {
+        state.selectParticle(1);
+        state.setAcross("particle"); // seeds multiParticle = [1]
+        expect(state.multiSelected.particle).toEqual([1]);
+
+        state.collapseToSingle();
+
+        expect(state.multiSelected.particle).toEqual([1]);
+      });
+
+      test("collapseToSingle is a no-op when nothing is selected", () => {
+        // Fresh state has empty multi arrays (setAcross not yet called).
+        expect(state.multiSelected.particle).toEqual([]);
+        state.collapseToSingle();
+        expect(state.multiSelected.particle).toEqual([]);
+        expect(state.multiSelected.material).toEqual([]);
+        expect(state.multiSelected.program).toEqual([]);
+      });
+
+      test("collapseToSingle truncates all three dimensions independently", () => {
+        // Build up multi-selections on each axis (single-select before setAcross).
+        state.selectParticle(1);
+        state.setAcross("particle"); // seeds multiParticle = [1]
+        state.toggleMulti("particle", 2);
+
+        state.selectMaterial(1);
+        state.setAcross("material"); // seeds multiMaterial = [1]
+        state.toggleMulti("material", 2);
+
+        state.selectProgram(7);
+        state.setAcross("program"); // seeds multiProgram = [7]
+        state.toggleMulti("program", 9);
+
+        expect(state.multiSelected.particle).toEqual([1, 2]);
+        expect(state.multiSelected.material).toEqual([1, 2]);
+        expect(state.multiSelected.program).toEqual([7, 9]);
+
+        state.collapseToSingle();
+
+        expect(state.multiSelected.particle).toEqual([1]);
+        expect(state.multiSelected.material).toEqual([1]);
+        expect(state.multiSelected.program).toEqual([7]);
+      });
+    });
   });
 });

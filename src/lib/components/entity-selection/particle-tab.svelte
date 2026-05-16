@@ -5,7 +5,6 @@
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
   import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
-  import SelectedPill from "./selected-pill.svelte";
 
   type Particle = ParticleEntity | ExternalOnlyParticle;
 
@@ -182,12 +181,22 @@
     {/if}
   {:else if selected}
     {@const atomicNumber = isExternal(selected) ? selected.Z : (selected.id as number)}
-    <SelectedPill
-      label={getParticleListLabel(selected, atomicNumber)}
-      glyph={isExternal(selected) ? "🔗" : undefined}
-      {onClear}
+    <button
+      type="button"
+      class="flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15"
       data-testid="picker-particle-selected"
-    />
+      aria-label="Selected: {getParticleListLabel(selected, atomicNumber)}. Click to clear."
+      onclick={onClear}
+    >
+      {#if isExternal(selected)}
+        <span aria-hidden="true">🔗</span>
+      {/if}
+      <span class="font-medium">{getParticleListLabel(selected, atomicNumber)}</span>
+      <span
+        class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
+        aria-hidden="true"
+      >× clear</span>
+    </button>
   {/if}
 
   <div data-testid="picker-particle-list" class="space-y-3">

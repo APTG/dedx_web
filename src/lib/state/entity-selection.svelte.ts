@@ -105,6 +105,18 @@ export interface EntitySelectionState {
   setAcross(newAcross: AcrossDimension): void;
   /** Toggle an id in `multiSelected[across]` (preserving order; first is default). */
   toggleMulti(dim: AcrossDimension, id: number | string): void;
+  /**
+   * Truncate all three multi-selection arrays to at most one element (the anchor).
+   * Called when switching from Advanced to Basic mode so that returning to Advanced
+   * mode starts with a clean single-item selection rather than a stale multi-set.
+   */
+  collapseToSingle(): void;
+  /**
+   * Directly set the program multi-selection array without the side effects of
+   * setAcross() (no activeTarget change, no expand). Used to seed the array
+   * from the initial resolved program when Advanced mode is first enabled.
+   */
+  setMultiProgram(ids: (number | string)[]): void;
 }
 
 const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
@@ -599,6 +611,18 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       if (dim === "program") multiProgram = next;
       else if (dim === "particle") multiParticle = next;
       else multiMaterial = next;
+    },
+
+    collapseToSingle(): void {
+      // Keep only the anchor (first) element in each multi array.
+      // If the array is empty, leave it empty (no selection to keep).
+      if (multiParticle.length > 1) multiParticle = [multiParticle[0]!];
+      if (multiMaterial.length > 1) multiMaterial = [multiMaterial[0]!];
+      if (multiProgram.length > 1) multiProgram = [multiProgram[0]!];
+    },
+
+    setMultiProgram(ids: (number | string)[]): void {
+      multiProgram = ids;
     },
 
     get lastAutoFallbackMessage() {

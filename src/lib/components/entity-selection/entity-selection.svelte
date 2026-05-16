@@ -290,7 +290,7 @@
           }}
         />
       {:else if activeTab === "program"}
-        <ProgramTab {selectionState} {query} onSelect={handleProgramSelect} />
+        <ProgramTab {selectionState} {query} onSelect={handleProgramSelect} {showAdvancedToolbar} />
       {/if}
     </div>
   {/if}

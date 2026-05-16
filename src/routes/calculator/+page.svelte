@@ -17,7 +17,6 @@
   } from "$lib/state/multi-entity.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
-  import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
@@ -576,13 +575,9 @@
   // Tracks whether the user interacted with the program picker in this Advanced session.
   // Reset to false whenever we enter/re-enter Advanced mode so the hint dismissal
   // does not carry over from a previous session.
-  let programPickerInteracted = $state(false);
-
   $effect(() => {
     // Only run when actively entering Advanced mode with a live state object.
     if (!isAdvancedMode.value || !multiProgState) {
-      // Reset per-session interaction flag when leaving Advanced mode.
-      programPickerInteracted = false;
       return;
     }
 
@@ -592,7 +587,7 @@
     const storageKey = "dedx_adv_hint_count";
     const count = parseInt(localStorage.getItem(storageKey) || "0", 10);
 
-    if (count < 2 && !programPickerInteracted) {
+    if (count < 2) {
       showAdvancedHint = true;
       // Increment the count exactly once per actual mode-entry.
       localStorage.setItem(storageKey, (count + 1).toString());
@@ -650,12 +645,6 @@
     }
   }
 
-  function handleProgramPickerInteraction(): void {
-    programPickerInteracted = true;
-    if (showAdvancedHint) {
-      dismissAdvancedHint();
-    }
-  }
 
   $effect(() => {
     if (calcState && entityState) {
@@ -804,9 +793,47 @@
     // Write the reactive signal only once, after all initialization is done.
     multiProgState = newState;
 
+    // Seed entityState.multiSelected.program to match the freshly created multiProgState.
+    // Done inside untrack so the read of entityState.multiSelected.program doesn't add
+    // it as a reactive dependency of THIS effect (which would cause it to re-run on every
+    // program toggle and re-create multiProgState from scratch, losing comparison results).
+    untrack(() => {
+      entityState!.setMultiProgram(newState.selectedProgramIds as (number | string)[]);
+    });
+
     return () => {
       multiProgState = null;
     };
+  });
+
+  // Sync entityState.multiSelected.program → multiProgState whenever the user toggles
+  // programs in the program tab. The creation effect above handles initial seeding;
+  // this effect only handles subsequent changes.
+  $effect(() => {
+    if (!multiProgState || !entityState) return;
+
+    const desired = entityState.multiSelected.program;
+    if (desired.length === 0) return;
+
+    const current = multiProgState.selectedProgramIds;
+
+    // Remove programs no longer desired (cannot remove the first/default)
+    for (const id of [...current]) {
+      if (!desired.includes(id)) multiProgState.removeProgram(id as EntityId);
+    }
+
+    // Add newly desired programs
+    for (const id of desired) {
+      if (!current.includes(id as EntityId)) multiProgState.addProgram(id as EntityId);
+    }
+  });
+
+  // Collapse multi-selections to single when leaving Advanced mode.
+  // A no-op if the arrays are already empty or have only one item.
+  $effect(() => {
+    if (!isAdvancedMode.value && entityState) {
+      entityState.collapseToSingle();
+    }
   });
 
   // Update default program when resolvedProgramId changes
@@ -1679,105 +1706,93 @@
         onCancel={() => (showLoadExternalModal = false)}
       />
       {#if isAdvancedMode.value && entityState?.across === "program" && multiProgState && entityState}
-        <div class="flex items-center gap-3 pt-2 flex-wrap">
-          <MultiProgramPicker
-            state={multiProgState}
-            availablePrograms={entityState.availablePrograms}
-            availableExternalPrograms={entityState.availableExternalPrograms}
-            compatibleIds={new Set([
-              ...entityState.availablePrograms.map((p) => p.id as EntityId),
-              ...entityState.availableExternalPrograms.map((p) => p.id as EntityId),
-            ])}
-            onInteraction={handleProgramPickerInteraction}
-          />
-          <!-- Table toolbar -->
-          <div class="flex items-center gap-2">
-            <!-- Columns... button -->
-            <div class="relative" id="column-visibility-dropdown-container">
-              <Button
-                id="columns-button"
-                variant="outline"
-                size="sm"
-                onclick={toggleColumnDropdown}
-                aria-expanded={showColumnDropdown}
-                aria-haspopup="dialog"
-                title="Show/hide program columns"
-              >
-                Columns…
-              </Button>
-              <!-- Column visibility dropdown -->
-              {#if showColumnDropdown}
-                <div
-                  id="column-visibility-dropdown"
-                  class="absolute right-0 z-50 mt-2 min-w-[200px] rounded-md border bg-popover p-3 shadow-lg"
-                  role="dialog"
-                  aria-label="Column visibility"
-                >
-                  <div class="space-y-2">
-                    {#each multiProgState.selectedProgramIds as programId (programId)}
-                      {@const program =
-                        entityState.availablePrograms.find((p) => p.id === programId) ??
-                        entityState.availableExternalPrograms.find((p) => p.id === programId)}
-                      {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
-                      {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
-                      <label
-                        class="flex items-center gap-2 text-sm cursor-pointer"
-                        class:opacity-50={!isVisible}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={isVisible}
-                          disabled={isDefault}
-                          onchange={() => multiProgState?.toggleColumnVisibility(programId)}
-                          class="h-4 w-4 rounded border-input"
-                        />
-                        <span>{program?.name ?? `Program ${String(programId)}`}</span>
-                        {#if isDefault}
-                          <span class="text-xs text-muted-foreground">(default)</span>
-                        {/if}
-                      </label>
-                    {/each}
-                  </div>
-                </div>
-              {/if}
-            </div>
-            <!-- Quantity focus segmented control -->
-            <div
-              class="inline-flex items-center rounded-md border bg-background p-1"
-              role="radiogroup"
-              aria-label="Quantity focus"
+        <!-- Table toolbar: column visibility + quantity focus -->
+        <div class="flex items-center gap-2 pt-2 flex-wrap">
+          <!-- Columns... button -->
+          <div class="relative" id="column-visibility-dropdown-container">
+            <Button
+              id="columns-button"
+              variant="outline"
+              size="sm"
+              onclick={toggleColumnDropdown}
+              aria-expanded={showColumnDropdown}
+              aria-haspopup="dialog"
+              title="Show/hide program columns"
             >
-              <button
-                type="button"
-                role="radio"
-                aria-checked={multiProgState.quantityFocus === "stp"}
-                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-                class:bg-accent={multiProgState.quantityFocus === "stp"}
-                onclick={() => multiProgState?.setQuantityFocus("stp")}
+              Columns…
+            </Button>
+            <!-- Column visibility dropdown -->
+            {#if showColumnDropdown}
+              <div
+                id="column-visibility-dropdown"
+                class="absolute right-0 z-50 mt-2 min-w-[200px] rounded-md border bg-popover p-3 shadow-lg"
+                role="dialog"
+                aria-label="Column visibility"
               >
-                STP only
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={multiProgState.quantityFocus === "both"}
-                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-                class:bg-accent={multiProgState.quantityFocus === "both"}
-                onclick={() => multiProgState?.setQuantityFocus("both")}
-              >
-                Both
-              </button>
-              <button
-                type="button"
-                role="radio"
-                aria-checked={multiProgState.quantityFocus === "csda"}
-                class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-                class:bg-accent={multiProgState.quantityFocus === "csda"}
-                onclick={() => multiProgState?.setQuantityFocus("csda")}
-              >
-                CSDA only
-              </button>
-            </div>
+                <div class="space-y-2">
+                  {#each multiProgState.selectedProgramIds as programId (programId)}
+                    {@const program =
+                      entityState.availablePrograms.find((p) => p.id === programId) ??
+                      entityState.availableExternalPrograms.find((p) => p.id === programId)}
+                    {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
+                    {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
+                    <label
+                      class="flex items-center gap-2 text-sm cursor-pointer"
+                      class:opacity-50={!isVisible}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isVisible}
+                        disabled={isDefault}
+                        onchange={() => multiProgState?.toggleColumnVisibility(programId)}
+                        class="h-4 w-4 rounded border-input"
+                      />
+                      <span>{program?.name ?? `Program ${String(programId)}`}</span>
+                      {#if isDefault}
+                        <span class="text-xs text-muted-foreground">(default)</span>
+                      {/if}
+                    </label>
+                  {/each}
+                </div>
+              </div>
+            {/if}
+          </div>
+          <!-- Quantity focus segmented control -->
+          <div
+            class="inline-flex items-center rounded-md border bg-background p-1"
+            role="radiogroup"
+            aria-label="Quantity focus"
+          >
+            <button
+              type="button"
+              role="radio"
+              aria-checked={multiProgState.quantityFocus === "stp"}
+              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+              class:bg-accent={multiProgState.quantityFocus === "stp"}
+              onclick={() => multiProgState?.setQuantityFocus("stp")}
+            >
+              STP only
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={multiProgState.quantityFocus === "both"}
+              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+              class:bg-accent={multiProgState.quantityFocus === "both"}
+              onclick={() => multiProgState?.setQuantityFocus("both")}
+            >
+              Both
+            </button>
+            <button
+              type="button"
+              role="radio"
+              aria-checked={multiProgState.quantityFocus === "csda"}
+              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+              class:bg-accent={multiProgState.quantityFocus === "csda"}
+              onclick={() => multiProgState?.setQuantityFocus("csda")}
+            >
+              CSDA only
+            </button>
           </div>
         </div>
         <!-- Advanced Options Panel -->
