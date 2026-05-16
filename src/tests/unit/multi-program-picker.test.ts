@@ -80,6 +80,17 @@ describe("MultiProgramPicker — drag handle visibility", () => {
     expect(screen.getByRole("button", { name: /Drag to reorder PSTAR/i })).toBeTruthy();
   });
 
+  it("drag handles are connected to the keyboard hint description", async () => {
+    const state = makeState([9, 2, 7]);
+    render(MultiProgramPicker, {
+      props: { state, availablePrograms: programs, compatibleIds: new Set<EntityId>([9, 2, 7]) },
+    });
+    await openDropdown();
+
+    const handle = screen.getByRole("button", { name: /Drag to reorder PSTAR/i });
+    expect(handle.getAttribute("aria-describedby")).toBe("multi-picker-reorder-hint");
+  });
+
   it("drag handle disappears after a program is deselected", async () => {
     const state = makeState([9, 2]);
     render(MultiProgramPicker, {
@@ -190,7 +201,8 @@ describe("MultiProgramPicker — aria-live announcements", () => {
       props: { state, availablePrograms: programs, compatibleIds: new Set<EntityId>([9]) },
     });
 
-    const liveRegion = document.querySelector("[aria-live='polite']");
+    const pickerRoot = document.querySelector("[data-multi-program-picker]");
+    const liveRegion = pickerRoot?.querySelector("[aria-live='polite']");
     expect(liveRegion).not.toBeNull();
   });
 

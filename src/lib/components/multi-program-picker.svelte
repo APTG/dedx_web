@@ -133,11 +133,15 @@
     if (event.key !== "ArrowUp" && event.key !== "ArrowDown") return;
     event.preventDefault();
 
+    const defaultProgramId = multiState.selectedProgramIds[0];
+    if (programId === defaultProgramId) return;
+
     const order = multiState.programDisplayOrder;
     const currentIndex = order.indexOf(programId);
     if (currentIndex === -1) return;
+    const minimumIndex = order[0] === defaultProgramId ? 1 : 0;
 
-    if (event.key === "ArrowUp" && currentIndex > 1) {
+    if (event.key === "ArrowUp" && currentIndex > minimumIndex) {
       reorderAndAnnounce(programId, currentIndex - 1);
     } else if (event.key === "ArrowDown" && currentIndex < order.length - 1) {
       reorderAndAnnounce(programId, currentIndex + 1);
@@ -215,10 +219,10 @@
   });
 </script>
 
-<!-- Always-present aria-live region for reorder announcements -->
-<div aria-live="polite" aria-atomic="true" class="sr-only">{announcement}</div>
-
 <div class={cn("relative inline-block text-left", className)} data-multi-program-picker>
+  <!-- Always-present aria-live region for reorder announcements -->
+  <div aria-live="polite" aria-atomic="true" class="sr-only">{announcement}</div>
+
   <Button
     variant="outline"
     size="sm"
@@ -273,19 +277,19 @@
               >
                 {#if selected && !defaultProg}
                   <!-- Drag handle: focusable, supports keyboard and touch reorder -->
-                  <span
-                    class="flex-none cursor-grab touch-none select-none px-1 py-2 text-sm leading-none text-muted-foreground hover:text-foreground focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  <button
+                    type="button"
+                    class="flex-none cursor-grab touch-none select-none border-0 bg-transparent px-1 py-2 text-sm leading-none text-muted-foreground hover:text-foreground focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     draggable="true"
-                    tabindex="0"
-                    role="button"
                     aria-label="Drag to reorder {program.name}"
+                    aria-describedby="multi-picker-reorder-hint"
                     ondragstart={(e) => handleDragStart(program.id, e)}
                     ondragend={handleDragEnd}
                     onkeydown={(e) => handleHandleKeydown(program.id, e)}
                     ontouchstart={(e) => handleTouchStart(program.id, e)}
                     ontouchmove={handleTouchMove}
                     ontouchend={handleTouchEnd}
-                  >⋮⋮</span>
+                  >⋮⋮</button>
                 {:else}
                   <span class="flex-none w-5 px-1"></span>
                 {/if}
@@ -353,35 +357,35 @@
                 {@const isTouchOver =
                   touchDragOverAttr === String(extId) && selected && !defaultProg}
 
-                <div
-                  role="presentation"
-                  class={cn(
-                    "flex items-center",
-                    (isDragOver || isTouchOver) && "border-l-2 border-primary",
-                  )}
-                  data-program-id={String(extId)}
-                  ondragover={(e) => handleDragOver(extId, e)}
-                  ondrop={(e) => handleDrop(extId, e)}
-                  ondragleave={handleDragLeave}
-                >
-                  {#if selected && !defaultProg}
-                    <!-- Drag handle for external programs -->
-                    <span
-                      class="flex-none cursor-grab touch-none select-none px-1 py-2 text-sm leading-none text-muted-foreground hover:text-foreground focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                      draggable="true"
-                      tabindex="0"
-                      role="button"
-                      aria-label="Drag to reorder {program.name}"
-                      ondragstart={(e) => handleDragStart(extId, e)}
-                      ondragend={handleDragEnd}
-                      onkeydown={(e) => handleHandleKeydown(extId, e)}
-                      ontouchstart={(e) => handleTouchStart(extId, e)}
-                      ontouchmove={handleTouchMove}
-                      ontouchend={handleTouchEnd}
-                    >⋮⋮</span>
-                  {:else}
-                    <span class="flex-none w-5 px-1"></span>
-                  {/if}
+                  <div
+                    role="presentation"
+                    class={cn(
+                      "flex items-center",
+                      (isDragOver || isTouchOver) && "border-l-2 border-primary pl-0",
+                    )}
+                    data-program-id={String(extId)}
+                    ondragover={(e) => handleDragOver(extId, e)}
+                    ondrop={(e) => handleDrop(extId, e)}
+                    ondragleave={handleDragLeave}
+                  >
+                    {#if selected && !defaultProg}
+                      <!-- Drag handle for external programs -->
+                      <button
+                        type="button"
+                        class="flex-none cursor-grab touch-none select-none border-0 bg-transparent px-1 py-2 text-sm leading-none text-muted-foreground hover:text-foreground focus-visible:rounded focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                        draggable="true"
+                        aria-label="Drag to reorder {program.name}"
+                        aria-describedby="multi-picker-reorder-hint"
+                        ondragstart={(e) => handleDragStart(extId, e)}
+                        ondragend={handleDragEnd}
+                        onkeydown={(e) => handleHandleKeydown(extId, e)}
+                        ontouchstart={(e) => handleTouchStart(extId, e)}
+                        ontouchmove={handleTouchMove}
+                        ontouchend={handleTouchEnd}
+                      >⋮⋮</button>
+                    {:else}
+                      <span class="flex-none w-5 px-1"></span>
+                    {/if}
 
                   <button
                     type="button"

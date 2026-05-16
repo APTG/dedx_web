@@ -1030,5 +1030,23 @@ failures by optional side effects.
 
 ---
 
+## Entry 49 — Drag handles must match ARIA semantics and list highlight spacing
+
+**Symptom:** PR review flagged that the multi-program reorder handle used
+`role="button"` without Enter/Space semantics and did not expose reorder-help
+instructions to screen readers. Review also caught a layout shift because
+external-row drop highlights used different padding classes than built-in rows.
+
+**Root cause:** A focusable `<span role="button">` was used as a lightweight
+handle and the keyboard hint remained disconnected (`aria-describedby` missing).
+Highlight class strings were duplicated between list sections and drifted.
+
+**Rule:** For non-click drag handles, use semantic `<button type="button">`
+elements with `aria-describedby` wired to keyboard instructions, keep `Alt+Arrow`
+logic on the handle itself, and mirror drop-highlight utility classes across
+built-in and external rows to avoid DnD layout jitter.
+
+---
+
 _Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

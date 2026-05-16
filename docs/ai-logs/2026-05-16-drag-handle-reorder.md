@@ -42,6 +42,26 @@ three describe blocks:
 
 All 1359 tests pass, ESLint clean.
 
+### Prompt 3: Address PR #522 review comments on drag handles/a11y/layout
+
+**AI response**: Applied targeted follow-up fixes in `multi-program-picker.svelte` and the
+unit test file:
+
+- Converted drag handles from `<span role="button" tabindex="0">` to semantic
+  `<button type="button">` handles to avoid mismatched button-key expectations.
+- Added `aria-describedby="multi-picker-reorder-hint"` on every handle so assistive
+  tech announces the Alt+Arrow keyboard instructions on focus.
+- Moved the `aria-live="polite"` node under the picker wrapper (`data-multi-program-picker`)
+  so announcements remain tied to each widget instance.
+- Aligned drop-highlight classes between built-in and external rows by adding `pl-0`
+  for external highlights (removes tiny drag-over layout shift).
+- Updated keyboard up-boundary logic to derive the minimum movable index from whether
+  the default program currently occupies index `0`, rather than hard-coding `> 1`.
+- Added unit assertions for handle→hint association and live-region scoping.
+
+Targeted unit tests pass (`16/16` in `multi-program-picker.test.ts`), and changed-file
+ESLint is clean.
+
 ## Tasks
 
 ### Drag handle + reorder UX (issue #510 follow-up)
