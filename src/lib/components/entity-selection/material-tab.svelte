@@ -21,6 +21,16 @@
 
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
+  let fullscreenCard = $state<"elements" | "compounds" | "custom" | null>(null);
+
+  $effect(() => {
+    if (fullscreenCard === null) return;
+    function onKey(e: KeyboardEvent) {
+      if (e.key === "Escape") fullscreenCard = null;
+    }
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  });
 
   function isExternal(m: Material): m is ExternalOnlyMaterial {
     // Both external materials (`ext:…`) and custom compounds (`cc_…`) use
@@ -169,13 +179,137 @@
   }
 </script>
 
+{#snippet materialListItems(items: typeof filteredElements)}
+  {#each items as m (m.id)}
+    {@const available = isAvailable(m)}
+    {@const inMulti = isMultiSelected(m)}
+    {@const anchor = isAnchor(m)}
+    {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
+    {@const dens = formatDensity(m)}
+    <li role="presentation">
+      <button
+        type="button"
+        role="option"
+        aria-selected={isMultiMode ? inMulti : isSingleSelected}
+        aria-disabled={!available || (isMultiMode && anchor)}
+        data-testid="picker-material-item-{m.id}"
+        tabindex={-1}
+        disabled={!available || (isMultiMode && anchor)}
+        class={cn(
+          "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
+          available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+          (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+        )}
+        onclick={() => {
+          if (!available) return;
+          if (isMultiMode) {
+            if (!anchor) handleMultiToggle(m);
+          } else {
+            onSelect(m);
+          }
+        }}
+      >
+        {#if isMultiMode}
+          <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+        {/if}
+        <span class="flex min-w-0 flex-1 items-center gap-2">
+          {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
+          <span class="truncate">
+            {m.name}
+            {#if dens}
+              <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+            {/if}
+          </span>
+          {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+        </span>
+        {#if isMultiMode && anchor}
+          <span class="text-xs text-muted-foreground">(anchor)</span>
+        {/if}
+      </button>
+    </li>
+  {/each}
+  {#if items.length === 0}
+    <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
+  {/if}
+{/snippet}
+
+{#snippet customListItems(items: typeof filteredCustom)}
+  {#each items as m (m.id)}
+    {@const inMulti = isMultiSelected(m)}
+    {@const anchor = isAnchor(m)}
+    {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
+    {@const dens = formatDensity(m)}
+    <li role="presentation">
+      <div class="flex items-center gap-1">
+        <button
+          type="button"
+          role="option"
+          aria-selected={isMultiMode ? inMulti : isSingleSelected}
+          aria-disabled={isMultiMode && anchor}
+          data-testid="picker-material-item-{m.id}"
+          tabindex={-1}
+          disabled={isMultiMode && anchor}
+          class={cn(
+            "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
+            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+          )}
+          onclick={() => {
+            if (isMultiMode) {
+              if (!anchor) handleMultiToggle(m);
+            } else {
+              onSelect(m);
+            }
+          }}
+        >
+          <span class="flex items-center gap-1">
+            {#if isMultiMode}
+              <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
+            {/if}
+            <span class="truncate">
+              {m.name}
+              {#if dens}
+                <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
+              {/if}
+            </span>
+            {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
+            {#if isMultiMode && anchor}
+              <span class="text-xs text-muted-foreground">(anchor)</span>
+            {/if}
+          </span>
+        </button>
+        {#if !isMultiMode}
+          <button
+            type="button"
+            class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
+            title="Edit compound"
+            aria-label="Edit compound {m.name}"
+            data-testid="picker-material-edit-compound-{m.id}"
+            onclick={() => handleEditCompound(m.source)}
+          >
+            ✎
+          </button>
+        {/if}
+      </div>
+    </li>
+  {/each}
+  {#if items.length === 0}
+    <li class="px-2 py-4 text-center text-sm text-muted-foreground">
+      No custom compounds yet.
+    </li>
+  {/if}
+{/snippet}
+
 <div class="space-y-3" data-testid="picker-material-tab">
   {#if isMultiMode}
     {#if multiIds.length > 0}
-        <div class="flex flex-wrap gap-1.5" aria-label="Selected materials for comparison" data-testid="picker-material-multi-selected">
-          {#each multiIds as id (id)}
-            {@const m = resolveMaterialById(id)}
-            {#if m}
+      <div
+        class="flex flex-wrap gap-1.5"
+        aria-label="Selected materials for comparison"
+        data-testid="picker-material-multi-selected"
+      >
+        {#each multiIds as id (id)}
+          {@const m = resolveMaterialById(id)}
+          {#if m}
             {@const anchor = multiIds[0] === id}
             {@const dens = formatDensity(m)}
             <span
@@ -232,222 +366,101 @@
     data-testid="picker-material-columns"
   >
     <section class="min-w-0" data-testid="picker-material-col-elements">
-      <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Elements</h4>
-      <ul
-        role="listbox"
-        aria-label="Elements"
-        aria-multiselectable={isMultiMode}
-        tabindex="0"
-        class="max-h-52 overflow-auto space-y-0.5"
-        data-testid="picker-material-list-elements"
-      >
-        {#each filteredElements as m (m.id)}
-          {@const available = isAvailable(m)}
-          {@const inMulti = isMultiSelected(m)}
-          {@const anchor = isAnchor(m)}
-          {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
-          {@const dens = formatDensity(m)}
-          <li role="presentation">
-            <button
-              type="button"
-              role="option"
-              aria-selected={isMultiMode ? inMulti : isSingleSelected}
-              aria-disabled={!available || (isMultiMode && anchor)}
-              data-testid="picker-material-item-{m.id}"
-              tabindex={-1}
-              disabled={!available || (isMultiMode && anchor)}
-              class={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
-                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
-              )}
-              onclick={() => {
-                if (!available) return;
-                if (isMultiMode) {
-                  if (!anchor) handleMultiToggle(m);
-                } else {
-                  onSelect(m);
-                }
-              }}
-            >
-              {#if isMultiMode}
-                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-              {/if}
-              <span class="flex min-w-0 flex-1 items-center gap-2">
-                {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
-                <span class="truncate">
-                  {m.name}
-                  {#if dens}
-                    <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
-                  {/if}
-                </span>
-                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
-                  >{/if}
-              </span>
-              {#if isMultiMode && anchor}
-                <span class="text-xs text-muted-foreground">(anchor)</span>
-              {/if}
-            </button>
-          </li>
-        {/each}
-        {#if filteredElements.length === 0}
-          <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
-        {/if}
-      </ul>
+      <div class="mb-1 flex items-center justify-between px-2">
+        <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Elements</h4>
+        <button
+          type="button"
+          class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          aria-label="Expand Elements list to full screen"
+          title="Expand to full screen"
+          onclick={() => (fullscreenCard = "elements")}
+        >⤢</button>
+      </div>
+      <div class="relative">
+        <ul
+          role="listbox"
+          aria-label="Elements"
+          aria-multiselectable={isMultiMode}
+          tabindex="0"
+          class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+          data-testid="picker-material-list-elements"
+        >
+          {@render materialListItems(filteredElements)}
+        </ul>
+        <div
+          class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+          aria-hidden="true"
+        ></div>
+      </div>
     </section>
 
     <section class="min-w-0" data-testid="picker-material-col-compounds">
-      <h4 class="mb-1 px-2 text-xs uppercase tracking-wider text-muted-foreground">Compounds</h4>
-      <ul
-        role="listbox"
-        aria-label="Compounds"
-        aria-multiselectable={isMultiMode}
-        tabindex="0"
-        class="max-h-52 overflow-auto space-y-0.5"
-        data-testid="picker-material-list-compounds"
-      >
-        {#each filteredCompounds as m (m.id)}
-          {@const available = isAvailable(m)}
-          {@const inMulti = isMultiSelected(m)}
-          {@const anchor = isAnchor(m)}
-          {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
-          {@const dens = formatDensity(m)}
-          <li role="presentation">
-            <button
-              type="button"
-              role="option"
-              aria-selected={isMultiMode ? inMulti : isSingleSelected}
-              aria-disabled={!available || (isMultiMode && anchor)}
-              data-testid="picker-material-item-{m.id}"
-              tabindex={-1}
-              disabled={!available || (isMultiMode && anchor)}
-              class={cn(
-                "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
-                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
-              )}
-              onclick={() => {
-                if (!available) return;
-                if (isMultiMode) {
-                  if (!anchor) handleMultiToggle(m);
-                } else {
-                  onSelect(m);
-                }
-              }}
-            >
-              {#if isMultiMode}
-                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-              {/if}
-              <span class="flex min-w-0 flex-1 items-center gap-2">
-                {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
-                <span class="truncate">
-                  {m.name}
-                  {#if dens}
-                    <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
-                  {/if}
-                </span>
-                {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
-                  >{/if}
-              </span>
-              {#if isMultiMode && anchor}
-                <span class="text-xs text-muted-foreground">(anchor)</span>
-              {/if}
-            </button>
-          </li>
-        {/each}
-        {#if filteredCompounds.length === 0}
-          <li class="px-2 py-4 text-center text-sm text-muted-foreground">No materials match.</li>
-        {/if}
-      </ul>
+      <div class="mb-1 flex items-center justify-between px-2">
+        <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Compounds</h4>
+        <button
+          type="button"
+          class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          aria-label="Expand Compounds list to full screen"
+          title="Expand to full screen"
+          onclick={() => (fullscreenCard = "compounds")}
+        >⤢</button>
+      </div>
+      <div class="relative">
+        <ul
+          role="listbox"
+          aria-label="Compounds"
+          aria-multiselectable={isMultiMode}
+          tabindex="0"
+          class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+          data-testid="picker-material-list-compounds"
+        >
+          {@render materialListItems(filteredCompounds)}
+        </ul>
+        <div
+          class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+          aria-hidden="true"
+        ></div>
+      </div>
     </section>
 
     {#if isAdvancedMode.value}
       <section class="min-w-0" data-testid="picker-material-col-custom">
         <div class="mb-1 flex items-center justify-between px-2">
           <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Custom</h4>
-          <button
-            type="button"
-            class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
-            data-testid="picker-material-add-compound"
-            onclick={handleAddCompound}
-          >
-            + Add compound
-          </button>
+          <div class="flex items-center gap-2">
+            <button
+              type="button"
+              class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+              aria-label="Expand Custom compounds list to full screen"
+              title="Expand to full screen"
+              onclick={() => (fullscreenCard = "custom")}
+            >⤢</button>
+            <button
+              type="button"
+              class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
+              data-testid="picker-material-add-compound"
+              onclick={handleAddCompound}
+            >
+              + Add compound
+            </button>
+          </div>
         </div>
-        <ul
-          role="listbox"
-          aria-label="Custom compounds"
-          aria-multiselectable={isMultiMode}
-          tabindex="0"
-          class="max-h-52 overflow-auto space-y-0.5"
-          data-testid="picker-material-list-custom"
-        >
-          {#each filteredCustom as m (m.id)}
-            {@const inMulti = isMultiSelected(m)}
-            {@const anchor = isAnchor(m)}
-            {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
-            {@const dens = formatDensity(m)}
-            <li role="presentation">
-              <div class="flex items-center gap-1">
-                <button
-                  type="button"
-                  role="option"
-                  aria-selected={isMultiMode ? inMulti : isSingleSelected}
-                  aria-disabled={isMultiMode && anchor}
-                  data-testid="picker-material-item-{m.id}"
-                  tabindex={-1}
-                  disabled={isMultiMode && anchor}
-                  class={cn(
-                    "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
-                    (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
-                  )}
-                  onclick={() => {
-                    if (isMultiMode) {
-                      if (!anchor) handleMultiToggle(m);
-                    } else {
-                      onSelect(m);
-                    }
-                  }}
-                >
-                  <span class="flex items-center gap-1">
-                    {#if isMultiMode}
-                      <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-                    {/if}
-                    <span class="truncate">
-                      {m.name}
-                      {#if dens}
-                        <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
-                      {/if}
-                    </span>
-                    {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">
-                        (≋)</span
-                      >{/if}
-                    {#if isMultiMode && anchor}
-                      <span class="text-xs text-muted-foreground">(anchor)</span>
-                    {/if}
-                  </span>
-                </button>
-                {#if !isMultiMode}
-                  <button
-                    type="button"
-                    class="rounded p-1 text-xs text-muted-foreground hover:text-foreground"
-                    title="Edit compound"
-                    aria-label="Edit compound {m.name}"
-                    data-testid="picker-material-edit-compound-{m.id}"
-                    onclick={() => handleEditCompound(m.source)}
-                  >
-                    ✎
-                  </button>
-                {/if}
-              </div>
-            </li>
-          {/each}
-          {#if filteredCustom.length === 0}
-            <li class="px-2 py-4 text-center text-sm text-muted-foreground">
-              No custom compounds yet.
-            </li>
-          {/if}
-        </ul>
+        <div class="relative">
+          <ul
+            role="listbox"
+            aria-label="Custom compounds"
+            aria-multiselectable={isMultiMode}
+            tabindex="0"
+            class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+            data-testid="picker-material-list-custom"
+          >
+            {@render customListItems(filteredCustom)}
+          </ul>
+          <div
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+            aria-hidden="true"
+          ></div>
+        </div>
       </section>
     {/if}
   </div>
@@ -463,6 +476,60 @@
     </button>
   {/if}
 </div>
+
+<!-- Full-screen sheet: mobile-only (sm:hidden on trigger; JS state never set on desktop) -->
+{#if fullscreenCard !== null}
+  {@const sheetTitle =
+    fullscreenCard === "elements"
+      ? "Elements"
+      : fullscreenCard === "compounds"
+        ? "Compounds"
+        : "Custom compounds"}
+  <div
+    class="fixed inset-0 z-50 flex flex-col bg-background sm:hidden"
+    role="dialog"
+    aria-modal="true"
+    aria-label="{sheetTitle}"
+  >
+    <div class="flex items-center justify-between border-b px-4 py-3 bg-card">
+      <h3 class="font-semibold text-base">{sheetTitle}</h3>
+      <button
+        type="button"
+        class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        aria-label="Close"
+        onclick={() => (fullscreenCard = null)}
+      >✕</button>
+    </div>
+    {#if fullscreenCard === "custom" && isAdvancedMode.value}
+      <div class="flex items-center justify-end border-b px-4 py-2 bg-card/50">
+        <button
+          type="button"
+          class="rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
+          onclick={handleAddCompound}
+        >
+          + Add compound
+        </button>
+      </div>
+    {/if}
+    <div class="flex-1 overflow-auto p-2">
+      <ul
+        role="listbox"
+        aria-label="{sheetTitle}"
+        aria-multiselectable={isMultiMode}
+        tabindex="0"
+        class="space-y-0.5"
+      >
+        {#if fullscreenCard === "elements"}
+          {@render materialListItems(filteredElements)}
+        {:else if fullscreenCard === "compounds"}
+          {@render materialListItems(filteredCompounds)}
+        {:else}
+          {@render customListItems(filteredCustom)}
+        {/if}
+      </ul>
+    </div>
+  </div>
+{/if}
 
 <CompoundEditorModal
   open={compoundModalOpen}
