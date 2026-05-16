@@ -29,6 +29,11 @@
     onSelect,
     onClear,
     query = "",
+    // `$bindable()` defaults are immediately overwritten by the parent
+    // `<EntitySelection>`'s `$effect` (which registers `handleArrow` /
+    // `handleEnter` for the lifted picker-level search input). The
+    // `no-useless-assignment` rule flags the unused undefined default
+    // even though it's required to make the prop bindable.
     /* eslint-disable no-useless-assignment */
     onArrowKey = $bindable(),
     onEnterKey = $bindable(),

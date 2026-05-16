@@ -219,7 +219,12 @@
     onActivate={(tab) => activateTab(tab)}
   />
 
-  <div class="flex items-center gap-2 border-x bg-card px-3 py-2" data-testid="picker-search-row">
+  <div
+    class="flex items-center gap-2 border-x bg-card px-3 py-2"
+    role="search"
+    aria-label="Search picker entities"
+    data-testid="picker-search-row"
+  >
     <SearchInput
       value={query}
       {placeholder}
