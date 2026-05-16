@@ -19,6 +19,27 @@ export function getParticleLabel(particle: { id: string | number; name: string; 
   return symbol ? `${particle.name} (${symbol})` : particle.name;
 }
 
+/**
+ * Variant of `getParticleLabel` that embeds the atomic number inline so
+ * Z is not displayed far to the right as a separate column.
+ *
+ * - ions with a symbol bracket: "Lithium (Li)" → "Lithium (Li, Z=3)"
+ * - named particles without brackets: "proton" → "proton (Z=1)"
+ * - external particles (string id): Z shown separately only if provided.
+ */
+export function getParticleListLabel(
+  particle: { id: string | number; name: string; symbol: string },
+  atomicNumber?: number | null,
+): string {
+  const base = getParticleLabel(particle);
+  const z = atomicNumber ?? (typeof particle.id === "number" ? particle.id : null);
+  if (z === null || z === undefined) return base;
+  // Ions already end with ") " — insert Z before the closing paren.
+  if (base.endsWith(")")) return base.slice(0, -1) + `, Z=${z})`;
+  // Named particles (proton, alpha) without brackets.
+  return `${base} (Z=${z})`;
+}
+
 export function getParticleSearchText(particle: ParticleEntity): string {
   return [
     particle.name,

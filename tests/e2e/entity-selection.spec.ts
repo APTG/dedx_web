@@ -1,100 +1,74 @@
 import { test, expect } from "@playwright/test";
 
-test.describe("Calculator page — compact mode", () => {
-  const particleTrigger = (page: import("@playwright/test").Page) =>
-    page.getByRole("button", { name: /^Particle$/ });
-  const materialTrigger = (page: import("@playwright/test").Page) =>
-    page.getByRole("button", { name: /^Material$/ });
-  const programTrigger = (page: import("@playwright/test").Page) =>
-    page.getByRole("button", { name: /^Program$/ });
-
+test.describe("Calculator page — entity selection (tabbed picker)", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    // Wait for WASM to load and combobox triggers to appear
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    // Wait for WASM to load and tabbed picker to appear
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
-  test("three comboboxes are present: Particle, Material, Program", async ({ page }) => {
-    await expect(particleTrigger(page)).toBeVisible();
-    await expect(materialTrigger(page)).toBeVisible();
-    await expect(programTrigger(page)).toBeVisible();
+  test("recipe bar shows proton, Water, Auto by default", async ({ page }) => {
+    const recipe = page.getByTestId("picker-recipe-bar");
+    await expect(recipe).toContainText(/proton/i);
+    await expect(recipe).toContainText(/water/i);
+    await expect(recipe).toContainText(/auto/i);
   });
 
-  test("default values show proton, Water, Auto-select", async ({ page }) => {
-    await expect(particleTrigger(page)).toContainText(/proton/i);
-    await expect(materialTrigger(page)).toContainText(/water/i);
-    await expect(programTrigger(page)).toContainText(/auto-select/i);
-  });
-
-  test("typing carbon in the Particle search filters the list and shows Carbon", async ({
+  test("typing carbon in the particle search filters the list and shows Carbon (C, Z=6)", async ({
     page,
   }) => {
-    const particleBtn = particleTrigger(page);
-    await particleBtn.click();
+    await page.getByTestId("picker-tab-particle").click();
+    const search = page.getByTestId("picker-particle-search");
+    await search.fill("carbon");
 
-    // Type in the search input inside the open Particle dropdown.
-    // Particle combobox uses placeholder "Name, symbol, Z..." (not generic "Search...").
-    // Use .first() — after opening, exactly one such input is in the DOM.
-    await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill("carbon");
-
-    await expect(page.getByRole("option", { name: /carbon/i }).first()).toBeVisible();
+    await expect(page.getByTestId("picker-particle-item-6")).toBeVisible();
+    await expect(page.getByTestId("picker-particle-item-6")).toContainText("Carbon (C, Z=6)");
   });
 
   test("selecting Carbon removes incompatible programs (PSTAR proton-only disappears)", async ({
     page,
   }) => {
-    // Open particle dropdown and select Carbon (C)
-    const particleBtn = particleTrigger(page);
-    await particleBtn.click();
-    await page
-      .getByRole("option", { name: /^Carbon \(C\)/i })
-      .first()
-      .click();
+    // Open particle tab and select Carbon
+    await page.getByTestId("picker-tab-particle").click();
+    await page.getByTestId("picker-particle-search").fill("carbon");
+    await page.getByTestId("picker-particle-item-6").click();
 
-    // Open program dropdown
-    const programBtn = programTrigger(page);
-    await programBtn.click();
+    // Open program tab
+    await page.getByTestId("picker-tab-program").click();
 
     // PSTAR (proton-only in libdedx) should not appear for carbon
-    await expect(page.getByRole("option", { name: /pstar/i })).toHaveCount(0);
+    await expect(page.getByTestId("picker-program-item-2")).toHaveCount(0);
   });
 
-  test("Reset all link restores defaults", async ({ page }) => {
-    // Change particle to Carbon (C)
-    const particleBtn = particleTrigger(page);
-    await particleBtn.click();
-    await page
-      .getByRole("option", { name: /^Carbon \(C\)/i })
-      .first()
-      .click();
+  test("recipe-bar reset restores defaults", async ({ page }) => {
+    // Change particle to Carbon
+    await page.getByTestId("picker-tab-particle").click();
+    await page.getByTestId("picker-particle-search").fill("carbon");
+    await page.getByTestId("picker-particle-item-6").click();
 
-    // Click restore defaults
-    await page.getByRole("button", { name: /restore defaults/i }).click();
+    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/carbon/i);
 
-    // Verify defaults restored
-    await expect(particleTrigger(page)).toContainText(/proton/i);
-    await expect(materialTrigger(page)).toContainText(/water/i);
-    await expect(programTrigger(page)).toContainText(/auto-select/i);
+    await page.getByTestId("picker-recipe-reset").click();
+
+    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/proton/i);
+    await expect(page.getByTestId("picker-recipe-bar")).toContainText(/water/i);
   });
 
-  test("Electron (ESTAR) is disabled — ESTAR not implemented in libdedx v1.4.0", async ({
+  test("Electron (ESTAR) is absent from the particle list (not yet implemented)", async ({
     page,
   }) => {
-    const particleBtn = particleTrigger(page);
-    await particleBtn.click();
-
-    const electronOption = page.getByRole("option", { name: /electron/i });
-    await expect(electronOption).toHaveCount(1);
-    await expect(electronOption).toHaveAttribute("data-disabled", "");
+    await page.getByTestId("picker-tab-particle").click();
+    await expect(page.getByTestId("picker-particle-item-1001")).toHaveCount(0);
+    const search = page.getByTestId("picker-particle-search");
+    await search.fill("electron");
+    await expect(page.locator('[data-testid^="picker-particle-item-"]')).toHaveCount(0);
   });
 
-  test("DEDX_ICRU internal selector (ID 9) does not appear in the Program combobox", async ({
+  test("DEDX_ICRU internal selector (ID 9) does not appear in the program tab", async ({
     page,
   }) => {
-    // ICRU (ID 9) is excluded from the UI via EXCLUDED_FROM_UI set.
-    // Its label would be "ICRU — 1.0". No such option should be in the DOM at all.
-    // Note: ICRU 49 (a different program) is valid and may appear; we only exclude the internal ICRU.
-    const icruInternal = page.locator('[role="option"]', { hasText: "ICRU — 1.0" });
-    await expect(icruInternal).toHaveCount(0);
+    await page.getByTestId("picker-tab-program").click();
+    // ICRU (ID 9) is excluded via EXCLUDED_FROM_UI set.
+    await expect(page.getByTestId("picker-program-item-9")).toHaveCount(0);
   });
 });

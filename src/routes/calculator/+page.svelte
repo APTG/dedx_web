@@ -12,7 +12,7 @@
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
-  import EntitySelectionComboboxes from "$lib/components/entity-selection-comboboxes.svelte";
+  import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import MultiProgramPicker from "$lib/components/multi-program-picker.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
@@ -832,9 +832,9 @@
     const selectedParticle = entityState.selectedParticle;
     const massASnapshot =
       selectedParticle && "massNumber" in selectedParticle
-        ? (selectedParticle.massNumber || 1)
+        ? selectedParticle.massNumber || 1
         : selectedParticle && "A" in selectedParticle
-          ? (selectedParticle.A || 1)
+          ? selectedParticle.A || 1
           : 1;
 
     // Capture inputs as snapshot so that a stale `getService()` resolution
@@ -1398,9 +1398,10 @@
   {:else}
     <div class="mx-auto max-w-4xl space-y-6">
       <SelectionLiveRegion state={entityState} />
-      <EntitySelectionComboboxes
+      <EntitySelection
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
+        collapsible={true}
       />
       <ExternalSourcesPanel sources={loadedExternalSources} />
       {#if isAdvancedMode.value && multiProgState && entityState}

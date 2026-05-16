@@ -12,7 +12,7 @@ test.describe("Calculator URL sync", () => {
 
   test("loading URL with particle=6 restores carbon selection", async ({ page }) => {
     await page.goto("/calculator?particle=6&material=276&energies=100,200&eunit=MeV");
-    await expect(page.getByRole("button", { name: /^Particle$/ })).toContainText("Carbon (C)", {
+    await expect(page.getByTestId("picker-tab-particle")).toContainText(/Carbon \(C/, {
       timeout: 8000,
     });
     const energyInputs = page.getByRole("textbox");

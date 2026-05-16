@@ -26,7 +26,7 @@ test.describe("Plot page", () => {
     await page.goto(
       "/plot?particle=2&material=276&program=auto&stp_unit=kev-um&xscale=log&yscale=log",
     );
-    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 
     await expect(page.locator('[data-testid="preview-series"]')).toBeVisible({
       timeout: 15000,
@@ -46,27 +46,24 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     // each_key_duplicate because programItems pushed state.selectedProgram
     // (id=2) as the first entry AND PSTAR also appeared in availablePrograms.
     await page.goto("/plot");
-    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 
-    const programPanel = page.getByRole("group", { name: "③ Program" });
+    await page.getByTestId("picker-tab-program").click();
 
     // Click PSTAR — this was the triggering action for the bug
-    const pstarButton = programPanel.getByRole("button", { name: /PSTAR/i });
+    const pstarButton = page.getByTestId("picker-program-item-2");
     await pstarButton.click();
 
-    // Allow any async reactive work to settle — wait for aria-pressed to be set
-    await expect(pstarButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
+    // Allow any async reactive work to settle — wait for the option to be selected.
+    await expect(pstarButton).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
 
     const duplicateKeyErrors = errors.filter(
       (e) => e.includes("each_key_duplicate") || e.includes("duplicate key"),
     );
     expect(duplicateKeyErrors).toHaveLength(0);
 
-    // PSTAR should now be the selected program
-    await expect(pstarButton).toHaveAttribute("aria-pressed", "true");
-
     // Auto-select should still be present but not selected
-    const autoButton = programPanel.getByRole("button", { name: /Auto-select/i });
+    const autoButton = page.getByTestId("picker-program-auto-hero");
     await expect(autoButton).toHaveAttribute("aria-pressed", "false");
   });
 
@@ -74,20 +71,20 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     page,
   }) => {
     await page.goto("/plot");
-    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 
-    const programPanel = page.getByRole("group", { name: "③ Program" });
+    await page.getByTestId("picker-tab-program").click();
 
-    // Click ICRU 49 if present, otherwise click the first non-Auto program
-    const icruButton = programPanel.getByRole("button", { name: /ICRU/i }).first();
+    // Click ICRU 49.
+    const icruButton = page.getByTestId("picker-program-item-7");
     await icruButton.click();
-    // Wait for the clicked button to become selected (aria-pressed = true)
-    await expect(icruButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
+    // Wait for the clicked option to become selected.
+    await expect(icruButton).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
 
-    const buttons = programPanel.getByRole("button");
-    const count = await buttons.count();
+    const options = page.locator('[data-testid^="picker-program-item-"]');
+    const count = await options.count();
     const texts = await Promise.all(
-      Array.from({ length: count }, (_, i) => buttons.nth(i).textContent()),
+      Array.from({ length: count }, (_, i) => options.nth(i).textContent()),
     );
     const uniqueTexts = new Set(texts.map((t) => t?.trim() ?? ""));
     expect(uniqueTexts.size).toBe(count);
@@ -107,7 +104,7 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
   test.beforeEach(async ({ page }) => {
     // Navigate directly in Advanced mode so the panel is available immediately
     await page.goto("/plot?mode=advanced");
-    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
   });
 
   test("preview series appears after selecting particle, material, program", async ({ page }) => {
@@ -204,7 +201,7 @@ test.describe("Plot page — Advanced Options density recalculation", () => {
   }) => {
     // Navigate with mass STP unit selected
     await page.goto("/plot?mode=advanced&stpUnit=MeV%C2%B7cm%C2%B2%2Fg");
-    await page.waitForSelector('[aria-label="③ Program"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 
     // The unit selector should reflect mass STP — just verify no JS errors
     const errors: string[] = [];

@@ -15,25 +15,21 @@ test.describe("Responsive layout — Calculator @smoke", () => {
     expect(overflow, "page body must not overflow horizontally").toBe(false);
   });
 
-  test("entity comboboxes are visible and stack vertically on narrow viewport @responsive", async ({
+  test("entity tabs are visible without horizontal overflow on narrow viewport @responsive", async ({
     page,
   }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
-    const particleCombo = page.locator('[aria-label="Particle"]');
-    const materialCombo = page.locator('[aria-label="Material"]');
-    await expect(particleCombo).toBeVisible();
-    await expect(materialCombo).toBeVisible();
+    const particleTab = page.locator('[data-testid="picker-tab-particle"]');
+    const materialTab = page.locator('[data-testid="picker-tab-material"]');
+    await expect(particleTab).toBeVisible();
+    await expect(materialTab).toBeVisible();
 
-    // On mobile viewports entity comboboxes stack vertically:
-    // the top of materialCombo must be ≥ bottom of particleCombo
-    const pBox = await particleCombo.boundingBox();
-    const mBox = await materialCombo.boundingBox();
-    const viewport = page.viewportSize();
-    if (pBox && mBox && viewport && viewport.width < 900) {
-      expect(mBox.y).toBeGreaterThanOrEqual(pBox.y + pBox.height - 4); // 4px tolerance
-    }
+    const overflow = await page.evaluate(
+      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
+    );
+    expect(overflow, "picker entity tabs must not overflow horizontally").toBe(false);
   });
 });
 

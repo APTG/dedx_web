@@ -1,5 +1,15 @@
 import { test, expect } from "@playwright/test";
 
+async function selectParticle(page: import("@playwright/test").Page, id: string, query: string) {
+  await page.getByTestId("picker-tab-particle").click();
+  await page.getByTestId("picker-particle-search").fill(query);
+  await page.getByTestId(`picker-particle-item-${id}`).click();
+}
+
+async function openProgramTab(page: import("@playwright/test").Page) {
+  await page.getByTestId("picker-tab-program").click();
+}
+
 /**
  * E2E tests for Stage 6.10 Custom Compounds feature.
  * Tests cover compound editor modal, entity selection integration,
@@ -9,19 +19,18 @@ import { test, expect } from "@playwright/test";
 test.describe("Custom Compounds — Editor Modal", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-2: + Add compound opens modal with blank form", async ({ page }) => {
     // Enable Advanced mode first
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    // Open material combobox
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
+    // Open material panel
+    await page.getByTestId("picker-tab-material").click();
 
-    // Click + Add compound at bottom of Custom Compounds group
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
+    // Click + Add compound in the Custom Compounds column
+    const addButton = page.getByTestId("picker-material-add-compound");
     await expect(addButton).toBeVisible();
     await addButton.click();
 
@@ -51,11 +60,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Enable Advanced mode
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    // Open editor
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    // Open material panel and add compound
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -105,10 +112,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -165,10 +170,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
   test("AC-3: Validation — duplicate Z blocks Save", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("Duplicate");
@@ -178,9 +181,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // First H
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("2");
 
@@ -190,9 +191,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
     await elementInput2.fill("H");
-    const hydrogenOption2 = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption2.waitFor({ state: "visible" });
-    await hydrogenOption2.click({ force: true });
+    await elementInput2.blur();
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -204,22 +203,13 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
   test("AC-2: Create compound adds to library", async ({ page }) => {
     await page.goto("/calculator");
-    // Capture console messages
-    const consoleMessages: string[] = [];
-    page.on("console", (msg) => {
-      const text = msg.text();
-      consoleMessages.push(`[${msg.type()}] ${text}`);
-      if (text.includes("DEBUG") || text.includes("Listbox") || text.includes("Material button")) {
-        console.log("PAGE:", text);
-      }
-    });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    // Open material panel and add compound
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -245,152 +235,31 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
-    // Save - use force:true and JavaScript click for debugging
     const saveBtn = page.getByRole("button", { name: /save/i });
-
-    // Check if save button is enabled and visible
     await expect(saveBtn).toBeVisible();
     await expect(saveBtn).toBeEnabled();
-
-    // Check for any visible error messages before clicking
-    const errorMessages = page.getByText(/required|must be|invalid/i);
-    const hasErrorsBefore = (await errorMessages.count()) > 0;
-    console.log("Errors before save click:", hasErrorsBefore);
 
     // Save the compound
     await saveBtn.click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
-    // Log console messages for debugging
-    console.log("Console messages during save:", consoleMessages);
-
-    await expect(modal).not.toBeVisible();
-
-    // Debug: re-navigate to reset any stale state, then verify compound persisted
+    // Re-navigate to verify compound persisted
     await page.goto("/calculator");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    // First test: open the material dropdown WITHOUT any modal interaction
-    const materialBtn2 = page.getByRole("button", { name: /^Material$/ });
-    console.log("Material button text before click:", await materialBtn2.textContent());
+    // Open material panel and verify compound is in the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const customColumn = page.getByTestId("picker-material-col-custom");
+    await expect(customColumn).toBeVisible();
 
-    // Check the open state before click using JavaScript evaluation
-    const openBefore = await materialBtn2.evaluate((el) => {
-      const trigger = el as HTMLButtonElement;
-      return trigger.getAttribute("data-state") || "unknown";
-    });
-    console.log("Trigger data-state before click:", openBefore);
+    // Verify LiF Pellet is visible in the custom column
+    await expect(customColumn.getByText(/LiF Pellet/i)).toBeVisible();
 
-    // Click the material button
-    console.log("Clicking material button after re-navigation...");
-    await materialBtn2.click();
-
-    // Check the open state after click
-    const openAfter = await materialBtn2.evaluate((el) => {
-      const trigger = el as HTMLButtonElement;
-      return trigger.getAttribute("data-state");
-    });
-    console.log("Trigger data-state after click:", openAfter);
-
-    // Check what's in the DOM - look for the dropdown content div
-    const dropdownContents = page.locator("div.rounded-md.border.bg-popover");
-    const contentCount = await dropdownContents.count();
-    console.log("Dropdown content div count:", contentCount);
-    if (contentCount > 0) {
-      const firstContent = dropdownContents.first();
-      const contentVisible = await firstContent.isVisible();
-      console.log("First dropdown content visible:", contentVisible);
-
-      // Get all computed styles that might affect visibility
-      const styles = await firstContent.evaluate((el) => {
-        const cs = window.getComputedStyle(el);
-        return {
-          display: cs.display,
-          position: cs.position,
-          visibility: cs.visibility,
-          height: cs.height,
-          width: cs.width,
-          overflow: cs.overflow,
-          zIndex: cs.zIndex,
-          clientHeight: el.clientHeight,
-          offsetHeight: el instanceof HTMLElement ? el.offsetHeight : 0,
-          scrollHeight: el.scrollHeight,
-        };
-      });
-      console.log("Content computed styles:", JSON.stringify(styles));
-
-      // Get inner HTML to see what's inside
-      const innerHTML = await firstContent.evaluate((el) => el.innerHTML);
-      console.log("Content innerHTML length:", innerHTML.length);
-      console.log("Content innerHTML:", innerHTML.substring(0, 1000));
-    }
-
-    // Check where the listbox role actually is
-    const allListboxes = page.locator('[role="listbox"]');
-    const allListboxCount = await allListboxes.count();
-    console.log("All listbox role elements count:", allListboxCount);
-    for (let i = 0; i < allListboxCount && i < 5; i++) {
-      const lb = allListboxes.nth(i);
-      const isVisible = await lb.isVisible();
-      const tagName = await lb.evaluate((el) => el.tagName);
-      const classes = await lb.getAttribute("class");
-      const parentTag = await lb.evaluate((el) => el.parentElement?.tagName);
-      const styles = await lb.evaluate((el) => {
-        const cs = window.getComputedStyle(el);
-        return {
-          display: cs.display,
-          height: cs.height,
-          width: cs.width,
-          visibility: cs.visibility,
-        };
-      });
-      console.log(
-        `Listbox ${i}: tag=${tagName}, parent=${parentTag}, visible=${isVisible}, class=${classes?.substring(0, 50)}, styles=${JSON.stringify(styles)}`,
-      );
-    }
-
-    // Check if dropdown opened - check the content div instead of listbox (which has 0 height due to positioning)
-    const dropdownContent = page.locator("div.rounded-md.border.bg-popover").first();
-    const contentVisible = await dropdownContent.isVisible();
-    console.log("Dropdown content div visible:", contentVisible);
-    if (contentVisible) {
-      console.log("SUCCESS: Dropdown content is visible!");
-      // Check if Custom Compounds section is visible
-      const hasCustomSection = (await page.getByText(/custom compounds/i).count()) > 0;
-      console.log("Custom Compounds section visible:", hasCustomSection);
-      // Check if LiF Pellet is in the dropdown
-      const hasLiF = (await page.getByText(/LiF Pellet/i).count()) > 0;
-      console.log("LiF Pellet in dropdown:", hasLiF);
-    }
-
-    // Close dropdown if open
-    if (contentVisible) {
-      await page.keyboard.press("Escape");
-    }
-
-    // Re-open dropdown to verify compound persisted
-    const materialBtn3 = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn3.click();
-
-    // Verify LiF Pellet with density is visible in the dropdown
-    const customGroup = page.getByText(/LiF Pellet/i);
-    await expect(customGroup).toBeVisible();
-
-    const customSectionVisible = await customGroup.isVisible();
-    console.log("Custom Compounds section element exists:", customSectionVisible);
-
-    // Check for description spans in the dropdown
-    const descriptionSpans = page.locator('[data-testid="item-description"]');
-    const descCount = await descriptionSpans.count();
-    console.log("Description spans count:", descCount);
-
-    for (let i = 0; i < descCount; i++) {
-      const descText = await descriptionSpans.nth(i).textContent();
-      console.log(`Description span ${i} text:`, descText);
-    }
-
-    // Verify description is visible for the custom compound
-    await expect(page.getByText(/2\.2 g\/cm/)).toBeVisible();
+    // Verify density description is visible on the custom compound row.
+    await expect(
+      customColumn.locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i }).first(),
+    ).toContainText(/2\.20\d* g\/cm/);
   });
 
   test("AC-6: Delete compound confirmation", async ({ page }) => {
@@ -404,10 +273,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create a compound first
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("ToDelete");
@@ -416,61 +283,32 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Open dropdown to see Custom Compounds
-    await materialBtn.click();
+    // Re-open material panel to access the custom compounds column
+    await page.getByTestId("picker-tab-material").click();
 
-    // Find and click the ToDelete compound option to select it first
-    const customCompoundsSection = page.getByText(/Custom Compounds/i).first();
-    const toDeleteOption = customCompoundsSection
-      .locator("..")
-      .getByText(/ToDelete/i)
-      .first();
-    await toDeleteOption.click();
-
-    // Close dropdown by pressing Escape
-    await page.keyboard.press("Escape");
-
-    // Re-open dropdown and click edit button
-    await materialBtn.click();
-
-    // Find edit button for ToDelete in the dropdown - click the compound name first to select it
-    const compoundOption = page.getByText(/ToDelete/).first();
-    await expect(compoundOption).toBeVisible();
-
-    // Find the edit button next to the compound option
-    const editBtn = compoundOption.locator("..").getByRole("button", { name: /edit/i }).first();
+    // Find and click the edit button for ToDelete
+    const editBtn = page.getByRole("button", { name: /edit compound ToDelete/i });
     await expect(editBtn).toBeVisible();
-    console.log("Edit button count:", await page.getByRole("button", { name: /edit/i }).count());
+    console.log("Edit button count:", await page.getByRole("button", { name: /edit compound/i }).count());
     await editBtn.click({ force: true });
 
     // Modal should be open - now click delete button inside modal
-    // Target specifically the Delete button in the modal footer (left side)
     const modal = page.getByRole("dialog").first();
     const deleteBtn = modal.getByRole("button", { name: "Delete" }).first();
     console.log("Delete button visible:", await deleteBtn.isVisible());
     console.log("Delete button disabled:", await deleteBtn.isDisabled());
     await expect(deleteBtn).toBeVisible();
 
-    // Check modal state before click - use the correct title
     const modalBefore = page.getByRole("dialog", { name: /edit compound/i });
     const modalVisibleBefore = await modalBefore.isVisible();
     console.log("Modal visible before delete click:", modalVisibleBefore);
-
-    if (!modalVisibleBefore) {
-      // Try alternative selector
-      const altModal = page.locator('[role="dialog"]').first();
-      const altVisible = await altModal.isVisible();
-      console.log("Alternative modal visible:", altVisible);
-    }
 
     // Click the first Delete button to trigger confirmation
     await deleteBtn.click();
@@ -484,8 +322,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const confirmDelete = confirmDialog.getByRole("button", { name: "Delete" });
     await confirmDelete.click();
 
-    // Should be removed from combobox
-    await materialBtn.click();
+    // Re-open material panel and verify compound is gone
+    await page.getByTestId("picker-tab-material").click();
     await expect(page.getByText(/ToDelete/i)).not.toBeVisible();
   });
 });
@@ -493,17 +331,16 @@ test.describe("Custom Compounds — Editor Modal", () => {
 test.describe("Custom Compounds — Entity Selection Integration", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-1: Custom Compounds group absent in Basic mode", async ({ page }) => {
-    // Basic mode by default
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
+    // Basic mode by default — open the material panel
+    await page.getByTestId("picker-tab-material").click();
 
-    // Custom Compounds group header should not be in DOM
-    await expect(page.getByText(/custom compounds/i)).not.toBeVisible();
-    await expect(page.getByRole("button", { name: /\+ add compound/i })).not.toBeVisible();
+    // Custom Compounds column should not be visible in Basic mode
+    await expect(page.getByTestId("picker-material-col-custom")).not.toBeVisible();
+    await expect(page.getByTestId("picker-material-add-compound")).not.toBeVisible();
   });
 
   test.describe.configure({ mode: "serial" });
@@ -521,26 +358,24 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
+    await page.getByTestId("picker-tab-material").click();
     console.log(
       "TEST: Console messages captured:",
       consoleMessages.length,
       JSON.stringify(consoleMessages.slice(0, 10)),
     );
 
-    await expect(page.getByText(/custom compounds/i)).toBeVisible();
-    await expect(page.getByRole("button", { name: /\+ add compound/i }).first()).toBeVisible();
+    // Custom Compounds column and add button should be visible in Advanced mode
+    await expect(page.getByTestId("picker-material-col-custom")).toBeVisible();
+    await expect(page.getByTestId("picker-material-add-compound")).toBeVisible();
   });
 
-  test("AC-7: Custom compounds appear with badge in combobox", async ({ page }) => {
+  test("AC-7: Custom compounds appear with badge in material panel", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create a compound
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("Badge Test");
@@ -549,19 +384,17 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Verify badge
-    await materialBtn.click();
-    const customEntry = page.getByText(/Badge Test/i);
-    await expect(customEntry).toBeVisible();
+    // Re-open material panel to verify compound and badge
+    await page.getByTestId("picker-tab-material").click();
+    const customColumn = page.getByTestId("picker-material-col-custom");
+    await expect(customColumn.getByText(/Badge Test/i)).toBeVisible();
     // Check for "custom" badge indicator
     await expect(
       page
@@ -575,10 +408,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create compound
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("FilteredTest");
@@ -587,23 +418,21 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Filter
-    await materialBtn.click();
-    const searchInput = page.getByPlaceholder(/name or id/i).first();
+    // Re-open material panel and filter
+    await page.getByTestId("picker-tab-material").click();
+    const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("filtered");
 
     await expect(page.getByText(/FilteredTest/i)).toBeVisible();
 
-    // Clear filter - should show all
+    // Clear filter - should still show compound
     await searchInput.clear();
     await expect(page.getByText(/FilteredTest/i)).toBeVisible();
   });
@@ -612,17 +441,15 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 test.describe("Custom Compounds — Program Compatibility Filter", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-7b: Programs missing elements are greyed out (smoke test)", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create LiF compound (Li Z=3, F Z=9)
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("LiF Compatibility");
@@ -647,17 +474,19 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Select the compound
-    await materialBtn.click();
-    const lifOption = page.getByText(/LiF Compatibility/i);
+    // Select the compound from the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const lifOption = page
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Compatibility/ })
+      .first();
     await lifOption.click();
 
-    // Open program dropdown
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
+    // Open program tab
+    await openProgramTab(page);
 
     // Verify programs are present (greyed-out check requires program-specific data)
-    const options = page.locator('[role="option"]');
+    const options = page.locator('[data-testid^="picker-program-item-"]');
     const count = await options.count();
     expect(count).toBeGreaterThanOrEqual(1);
 
@@ -671,15 +500,13 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
 test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("AC-1: Custom compound falls back to water in Basic mode", async ({ page }) => {
-    // Navigate to calculator
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
-    // Capture console messages
     page.on("console", (msg) => {
       console.log("PAGE CONSOLE:", msg.text());
     });
@@ -688,10 +515,8 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Create compound
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("BasicModeTest");
@@ -700,43 +525,41 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Select the compound - open dropdown, find and click the option
-    await materialBtn.click();
-
-    // Click on the custom compound option using role="option" selector
-    const customOption = page.locator('[role="option"]:has-text("BasicModeTest")').first();
+    // Select the compound from the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const customOption = page
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /BasicModeTest/ })
+      .first();
     await customOption.waitFor({ state: "visible" });
     await customOption.click({ force: true });
 
-    // Verify compound is selected - check the button text
-    const selectedMaterialBtn = page.getByRole("button", { name: /^Material$/ });
-    const buttonText = await selectedMaterialBtn.textContent();
-    console.log("Material button text after selection:", buttonText);
-    expect(buttonText).toContain("BasicModeTest");
+    // Verify compound is selected — check the material tab label
+    const materialTab = page.getByTestId("picker-tab-material");
+    const tabText = await materialTab.textContent();
+    console.log("Material tab text after selection:", tabText);
+    expect(tabText).toContain("BasicModeTest");
 
-    // Switch to Basic mode - use explicit aria-label
+    // Switch to Basic mode
     const basicModeBtn = page.getByRole("button", { name: "Switch to Basic mode" });
     await basicModeBtn.click();
 
-    // Should fall back to water
-    const finalMaterialBtn = page.getByRole("button", { name: /^Material$/ });
-    await expect(finalMaterialBtn).toContainText(/water/i);
+    // Should fall back to water — check material tab label
+    await expect(page.getByTestId("picker-tab-material")).toContainText(/water/i);
   });
 });
 
 test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanity check", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
   test("Create water via formula mode (H:2, O:1) and verify reasonable stopping power", async ({
@@ -745,18 +568,12 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Select alpha particle (well-known stopping power in water)
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
-    await expect(alphaOption).toBeVisible();
-    await alphaOption.click();
-    await expect(particleBtn).toContainText("alpha particle");
+    await selectParticle(page, "2", "alpha");
+    await expect(page.getByTestId("picker-tab-particle")).toContainText("alpha particle");
 
     // Open compound editor
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -784,17 +601,19 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: /save/i }).click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
-    // Select the water compound
-    await materialBtn.click();
-    const waterOption = page.locator('[role="option"]:has-text("Water H2O formula")').first();
+    // Select the water compound from the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const waterOption = page
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O formula/ })
+      .first();
     await waterOption.waitFor({ state: "visible" });
     await waterOption.click();
-    await expect(materialBtn).toContainText("Water H2O formula");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("Water H2O formula");
 
     // Select first available program
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
-    const firstProgramOption = page.locator('[role="option"]').first();
+    await openProgramTab(page);
+    const firstProgramOption = page.locator('[data-testid^="picker-program-item-"]').first();
     await firstProgramOption.waitFor({ state: "visible" });
     await firstProgramOption.click();
 
@@ -824,12 +643,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Open compound editor
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    await page
-      .getByRole("button", { name: /\+ add compound/i })
-      .first()
-      .click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(modal).toBeVisible();
@@ -869,23 +684,23 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: /save/i }).click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
-    // Compound appears in material list
-    await materialBtn.click();
-    const waterOption = page.locator('[role="option"]:has-text("Water H2O weight")').first();
+    // Select the water compound from the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const waterOption = page
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O weight/ })
+      .first();
     await expect(waterOption).toBeVisible();
     await waterOption.click();
-    await expect(materialBtn).toContainText("Water H2O weight");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("Water H2O weight");
 
     // Select alpha particle
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.getByRole("option", { name: /^alpha particle$/ }).click();
+    await selectParticle(page, "2", "alpha");
 
     // Select ASTAR: custom compounds are evaluated through the elemental
     // compound path, which is supported for this alpha-particle sanity check.
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
-    const astarOption = page.getByRole("option", { name: /ASTAR/i }).first();
+    await openProgramTab(page);
+    const astarOption = page.getByTestId("picker-program-item-1");
     await astarOption.waitFor({ state: "visible" });
     await astarOption.click();
 
@@ -909,12 +724,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
   test("Weight fraction sum ≠ 100% blocks Save", async ({ page }) => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    await page
-      .getByRole("button", { name: /\+ add compound/i })
-      .first()
-      .click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const modal = page.getByRole("dialog", { name: /compound editor/i });
 
@@ -949,24 +760,18 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 test.describe("Scenario 1: LiF pellet smoke test", () => {
   test("Create LiF compound and calculate with MSTAR", async ({ page }) => {
     await page.goto("/calculator");
-    await page.waitForSelector('[aria-label="Particle"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     // Enable Advanced mode
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Select alpha particle (He-4)
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
-    await expect(alphaOption).toBeVisible();
-    await alphaOption.click();
-    await expect(particleBtn).toContainText("alpha particle");
+    await selectParticle(page, "2", "alpha");
+    await expect(page.getByTestId("picker-tab-particle")).toContainText("alpha particle");
 
     // Create LiF
-    const materialBtn = page.getByRole("button", { name: /^Material$/ });
-    await materialBtn.click();
-    const addButton = page.getByRole("button", { name: /\+ add compound/i }).first();
-    await addButton.click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
 
     const nameInput = page.getByRole("textbox", { name: /name/i });
     await nameInput.fill("LiF Pellet");
@@ -991,19 +796,21 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await saveBtn.click();
     await expect(page.getByRole("dialog", { name: /compound editor/i })).not.toBeVisible();
 
-    // Select LiF
-    await materialBtn.click();
-    const lifOption = page.locator('[role="option"]:has-text("LiF Pellet")').first();
+    // Select LiF from the custom column
+    await page.getByTestId("picker-tab-material").click();
+    const lifOption = page
+      .getByTestId("picker-material-col-custom")
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/ })
+      .first();
     await lifOption.waitFor({ state: "visible" });
     await lifOption.click();
-    await expect(materialBtn).toContainText("LiF Pellet");
+    await expect(page.getByTestId("picker-tab-material")).toContainText("LiF Pellet");
 
     // Select a program
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
+    await openProgramTab(page);
 
     // Select first available program
-    const firstOption = page.locator('[role="option"]').first();
+    const firstOption = page.locator('[data-testid^="picker-program-item-"]').first();
     await firstOption.waitFor({ state: "visible" });
     await firstOption.click();
 

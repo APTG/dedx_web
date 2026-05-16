@@ -966,5 +966,39 @@ path is a vendor gitlink, and keep rejecting mixed first-party/vendor changes.
 
 ---
 
-_Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 46 — When picker selectors change, update interaction selectors, not just waits
+
+**Symptom:** CI E2E tests kept failing after the tabbed picker became the
+default because several specs still clicked old combobox buttons such as
+`Particle` / `Program`, even though sentinel waits had already moved to
+`[data-testid="picker-entity-selection"]`.
+
+**Root cause:** The selector migration only updated page-ready checks. Helper
+functions and mid-test interactions still assumed the old combobox/listbox DOM,
+and accessibility checks also caught `aria-controls` pointing at a collapsed
+tabpanel that was no longer mounted.
+
+**Rule:** For entity-selection tests, migrate the full interaction path to
+picker test IDs (`picker-tab-*`, `picker-*-search`, `picker-*-item-*`) and
+ensure ARIA references only point at mounted tab panels.
+
+---
+
+## Entry 47 — `role="option"` must be directly owned by listbox/group semantics
+
+**Symptom:** Plot page accessibility E2E failed in CI with
+`aria-required-parent` for picker rows such as `picker-particle-item-98`, plus a
+Safari scrollable-region focusability warning on the ions list.
+
+**Root cause:** The particle tab used `role="option"` buttons inside plain
+`<li>` wrappers, with `role="listbox"` too high in the DOM for axe to consider
+the options owned. Scrollable option lists also lacked a keyboard focus target.
+
+**Rule:** For custom listbox rows, mark structural `<li>` wrappers as
+`role="presentation"` and make scrollable `role="listbox"` containers
+focusable with `tabindex="0"`.
+
+---
+
+_Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
