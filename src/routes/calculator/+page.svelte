@@ -794,9 +794,10 @@
     multiProgState = newState;
 
     // Seed entityState.multiSelected.program to match the freshly created multiProgState.
-    // Done inside untrack so the read of entityState.multiSelected.program doesn't add
-    // it as a reactive dependency of THIS effect (which would cause it to re-run on every
-    // program toggle and re-create multiProgState from scratch, losing comparison results).
+    // Done inside untrack so the read of newState.selectedProgramIds (a $state-backed getter)
+    // doesn't register as a reactive dependency of THIS effect (which would cause it to
+    // re-run on every program toggle and re-create multiProgState from scratch, losing
+    // comparison results).
     untrack(() => {
       entityState!.setMultiProgram(newState.selectedProgramIds as (number | string)[]);
     });

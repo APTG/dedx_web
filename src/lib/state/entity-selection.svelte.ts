@@ -622,7 +622,9 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     setMultiProgram(ids: (number | string)[]): void {
-      multiProgram = ids;
+      // Clone and de-dupe to prevent external mutation from bypassing $state
+      // reactivity and to ensure no duplicate IDs enter the internal state.
+      multiProgram = [...new Set(ids)];
     },
 
     get lastAutoFallbackMessage() {
