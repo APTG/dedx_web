@@ -22,14 +22,105 @@
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
   let fullscreenCard = $state<"elements" | "compounds" | "custom" | null>(null);
+  let fullscreenCloseButton = $state<HTMLButtonElement | null>(null);
+  let fullscreenDialog = $state<HTMLDivElement | null>(null);
+  let fullscreenTrigger = $state<HTMLElement | null>(null);
+
+  let elementsListEl = $state<HTMLUListElement | null>(null);
+  let compoundsListEl = $state<HTMLUListElement | null>(null);
+  let customListEl = $state<HTMLUListElement | null>(null);
+  let showElementsFade = $state(false);
+  let showCompoundsFade = $state(false);
+  let showCustomFade = $state(false);
+
+  function shouldShowBottomFade(el: HTMLElement | null): boolean {
+    if (!el) return false;
+    const maxScrollTop = el.scrollHeight - el.clientHeight;
+    if (maxScrollTop <= 1) return false;
+    return el.scrollTop < maxScrollTop - 1;
+  }
+
+  function updateElementsFade() {
+    showElementsFade = shouldShowBottomFade(elementsListEl);
+  }
+
+  function updateCompoundsFade() {
+    showCompoundsFade = shouldShowBottomFade(compoundsListEl);
+  }
+
+  function updateCustomFade() {
+    showCustomFade = shouldShowBottomFade(customListEl);
+  }
+
+  function openFullscreenCard(card: "elements" | "compounds" | "custom", trigger?: HTMLElement) {
+    fullscreenTrigger = trigger ?? null;
+    fullscreenCard = card;
+  }
+
+  function closeFullscreenCard() {
+    const restoreTarget = fullscreenTrigger;
+    fullscreenCard = null;
+    fullscreenTrigger = null;
+    queueMicrotask(() => {
+      restoreTarget?.focus();
+    });
+  }
 
   $effect(() => {
     if (fullscreenCard === null) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    queueMicrotask(() => {
+      fullscreenCloseButton?.focus();
+    });
+
+    function getFocusableInDialog(): HTMLElement[] {
+      if (!fullscreenDialog) return [];
+      return Array.from(
+        fullscreenDialog.querySelectorAll<HTMLElement>(
+          "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
+        ),
+      );
+    }
+
     function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") fullscreenCard = null;
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeFullscreenCard();
+        return;
+      }
+      if (e.key === "Tab") {
+        const focusable = getFocusableInDialog();
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        const active = document.activeElement as HTMLElement | null;
+        if (!e.shiftKey && active === last) {
+          e.preventDefault();
+          first.focus();
+        } else if (e.shiftKey && (active === first || active === null)) {
+          e.preventDefault();
+          last.focus();
+        }
+      }
     }
     document.addEventListener("keydown", onKey);
-    return () => document.removeEventListener("keydown", onKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      document.removeEventListener("keydown", onKey);
+    };
+  });
+
+  $effect(() => {
+    if (filteredElements.length >= 0) updateElementsFade();
+  });
+
+  $effect(() => {
+    if (filteredCompounds.length >= 0) updateCompoundsFade();
+  });
+
+  $effect(() => {
+    if (filteredCustom.length >= 0) updateCustomFade();
   });
 
   function isExternal(m: Material): m is ExternalOnlyMaterial {
@@ -373,7 +464,8 @@
           class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
           aria-label="Expand Elements list to full screen"
           title="Expand to full screen"
-          onclick={() => (fullscreenCard = "elements")}
+          onclick={(event) =>
+            openFullscreenCard("elements", event.currentTarget as HTMLButtonElement)}
         >⤢</button>
       </div>
       <div class="relative">
@@ -383,14 +475,19 @@
           aria-multiselectable={isMultiMode}
           tabindex="0"
           class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+          bind:this={elementsListEl}
+          onscroll={updateElementsFade}
           data-testid="picker-material-list-elements"
         >
           {@render materialListItems(filteredElements)}
         </ul>
-        <div
-          class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-          aria-hidden="true"
-        ></div>
+        {#if showElementsFade}
+          <div
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+            aria-hidden="true"
+            data-testid="picker-material-fade-elements"
+          ></div>
+        {/if}
       </div>
     </section>
 
@@ -402,7 +499,8 @@
           class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
           aria-label="Expand Compounds list to full screen"
           title="Expand to full screen"
-          onclick={() => (fullscreenCard = "compounds")}
+          onclick={(event) =>
+            openFullscreenCard("compounds", event.currentTarget as HTMLButtonElement)}
         >⤢</button>
       </div>
       <div class="relative">
@@ -412,14 +510,19 @@
           aria-multiselectable={isMultiMode}
           tabindex="0"
           class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+          bind:this={compoundsListEl}
+          onscroll={updateCompoundsFade}
           data-testid="picker-material-list-compounds"
         >
           {@render materialListItems(filteredCompounds)}
         </ul>
-        <div
-          class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-          aria-hidden="true"
-        ></div>
+        {#if showCompoundsFade}
+          <div
+            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+            aria-hidden="true"
+            data-testid="picker-material-fade-compounds"
+          ></div>
+        {/if}
       </div>
     </section>
 
@@ -428,13 +531,14 @@
         <div class="mb-1 flex items-center justify-between px-2">
           <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Custom</h4>
           <div class="flex items-center gap-2">
-            <button
-              type="button"
-              class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-              aria-label="Expand Custom compounds list to full screen"
-              title="Expand to full screen"
-              onclick={() => (fullscreenCard = "custom")}
-            >⤢</button>
+              <button
+                type="button"
+                class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+                aria-label="Expand Custom compounds list to full screen"
+                title="Expand to full screen"
+                onclick={(event) =>
+                  openFullscreenCard("custom", event.currentTarget as HTMLButtonElement)}
+              >⤢</button>
             <button
               type="button"
               class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
@@ -452,14 +556,19 @@
             aria-multiselectable={isMultiMode}
             tabindex="0"
             class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+            bind:this={customListEl}
+            onscroll={updateCustomFade}
             data-testid="picker-material-list-custom"
           >
             {@render customListItems(filteredCustom)}
           </ul>
-          <div
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-            aria-hidden="true"
-          ></div>
+          {#if showCustomFade}
+            <div
+              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+              aria-hidden="true"
+              data-testid="picker-material-fade-custom"
+            ></div>
+          {/if}
         </div>
       </section>
     {/if}
@@ -487,17 +596,20 @@
         : "Custom compounds"}
   <div
     class="fixed inset-0 z-50 flex flex-col bg-background sm:hidden"
+    bind:this={fullscreenDialog}
     role="dialog"
     aria-modal="true"
     aria-label="{sheetTitle}"
+    tabindex="-1"
   >
     <div class="flex items-center justify-between border-b px-4 py-3 bg-card">
       <h3 class="font-semibold text-base">{sheetTitle}</h3>
       <button
         type="button"
+        bind:this={fullscreenCloseButton}
         class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
         aria-label="Close"
-        onclick={() => (fullscreenCard = null)}
+        onclick={closeFullscreenCard}
       >✕</button>
     </div>
     {#if fullscreenCard === "custom" && isAdvancedMode.value}

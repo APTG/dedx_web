@@ -268,6 +268,28 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-material-col-compounds")).toBeInTheDocument();
   });
 
+  test("material fullscreen sheet locks body scroll and restores focus on close", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    const expandElements = screen.getByLabelText("Expand Elements list to full screen");
+
+    await user.click(expandElements);
+
+    const dialog = screen.getByRole("dialog", { name: "Elements" });
+    const closeButton = within(dialog).getByRole("button", { name: "Close" });
+
+    expect(document.body.style.overflow).toBe("hidden");
+    expect(closeButton).toHaveFocus();
+
+    await user.click(closeButton);
+
+    expect(screen.queryByRole("dialog", { name: "Elements" })).not.toBeInTheDocument();
+    expect(document.body.style.overflow).toBe("");
+    expect(expandElements).toHaveFocus();
+  });
+
   test("gas materials display the (≋) inline glyph", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();

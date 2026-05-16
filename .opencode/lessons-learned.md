@@ -1065,5 +1065,24 @@ user-visible error marker.
 
 ---
 
+## Entry 51 — Mobile full-screen sheets need focus + scroll locking and conditional scroll hints
+
+**Symptom:** PR review found that opening the Material-tab full-screen sheet left
+background page scrolling enabled and did not move focus into the dialog or back
+to the trigger on close. Review also flagged always-on bottom fade overlays that
+made short or fully-scrolled lists look disabled.
+
+**Root cause:** The sheet state only toggled visibility and Escape handling; it
+did not manage `document.body.style.overflow`, focus transfer/restore, or focus
+cycling. Fade overlays were rendered unconditionally without checking whether the
+list had clipped content below the viewport.
+
+**Rule:** For mobile modal/sheet patterns, always lock body scroll while open,
+focus an initial element (typically the close button), restore focus to the
+trigger on close, and trap Tab navigation inside the dialog. Scroll-hint fades
+must be conditional on actual overflow and disappear at scroll bottom.
+
+---
+
 _Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
