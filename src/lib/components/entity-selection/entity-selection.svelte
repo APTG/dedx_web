@@ -13,6 +13,7 @@
   import MaterialTab from "./material-tab.svelte";
   import ProgramTab from "./program-tab.svelte";
   import AdvancedToolbar from "./advanced-toolbar.svelte";
+  import SearchInput from "./search-input.svelte";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -154,6 +155,53 @@
 
   const activeTab = $derived(selectionState.activeTarget as PickerTab);
   const panelOpen = $derived(selectionState.expanded);
+
+  // Shared picker-level search query. Cleared whenever the active tab
+  // changes so each tab starts with an empty filter (matches the
+  // previous per-tab `query = $state("")` behaviour).
+  let query = $state("");
+  let searchInputRef: HTMLInputElement | null = $state(null);
+  let particleArrowKey = $state<((d: "up" | "down") => void) | undefined>(undefined);
+  let particleEnterKey = $state<(() => void) | undefined>(undefined);
+
+  let lastTab: PickerTab | null = null;
+  $effect(() => {
+    const current = activeTab;
+    if (lastTab === null) {
+      // Initial mount — record the starting tab but do not steal focus
+      // (callers / tests may want to focus a specific tab button first).
+      lastTab = current;
+      return;
+    }
+    if (lastTab !== current) {
+      lastTab = current;
+      // Reset the shared filter so each tab starts empty (matches the
+      // previous per-tab `query = $state("")` behaviour).
+      query = "";
+      // Refocus the search input on tab change so keyboard users can
+      // immediately type into the lifted picker-level search row.
+      if (panelOpen) searchInputRef?.focus();
+    }
+  });
+
+  const placeholder = $derived.by(() => {
+    switch (activeTab) {
+      case "particle":
+        return "Search particles…";
+      case "material":
+        return "Search materials…";
+      case "program":
+        return "Search programs…";
+    }
+  });
+
+  function toggleExpanded(): void {
+    selectionState.setExpanded(!panelOpen);
+  }
+
+  function handleSearchFocus(): void {
+    if (!panelOpen) selectionState.setExpanded(true);
+  }
 </script>
 
 <svelte:window onkeydown={handleGlobalKey} />
@@ -171,6 +219,37 @@
     onActivate={(tab) => activateTab(tab)}
   />
 
+  <div
+    class="flex items-center gap-2 border-x bg-card px-3 py-2"
+    role="search"
+    aria-label="Search picker entities"
+    data-testid="picker-search-row"
+  >
+    <SearchInput
+      value={query}
+      {placeholder}
+      onInput={(v) => (query = v)}
+      onArrow={(dir) => particleArrowKey?.(dir)}
+      onEnter={() => particleEnterKey?.()}
+      onFocus={handleSearchFocus}
+      bind:inputRef={searchInputRef}
+      class="flex-1"
+      data-testid="picker-{activeTab}-search"
+    />
+    <button
+      type="button"
+      class="rounded-md border bg-background px-2 py-1 text-sm text-muted-foreground hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+      data-testid="picker-toggle"
+      aria-expanded={panelOpen}
+      aria-controls="picker-panel-{activeTab}"
+      aria-label={panelOpen ? "Collapse picker panel" : "Expand picker panel"}
+      title={panelOpen ? "Collapse" : "Expand"}
+      onclick={toggleExpanded}
+    >
+      <span aria-hidden="true">{panelOpen ? "▲" : "▼"}</span>
+    </button>
+  </div>
+
   {#if panelOpen}
     <div
       id="picker-panel-{activeTab}"
@@ -183,6 +262,9 @@
       {#if activeTab === "particle"}
         <ParticleTab
           {selectionState}
+          {query}
+          bind:onArrowKey={particleArrowKey}
+          bind:onEnterKey={particleEnterKey}
           onSelect={handleParticleSelect}
           onClear={() => {
             selectionState.clearParticle();
@@ -193,6 +275,7 @@
       {:else if activeTab === "material"}
         <MaterialTab
           {selectionState}
+          {query}
           onSelect={handleMaterialSelect}
           onClear={() => {
             selectionState.clearMaterial();
@@ -201,7 +284,7 @@
           }}
         />
       {:else if activeTab === "program"}
-        <ProgramTab {selectionState} onSelect={handleProgramSelect} />
+        <ProgramTab {selectionState} {query} onSelect={handleProgramSelect} />
       {/if}
     </div>
   {/if}

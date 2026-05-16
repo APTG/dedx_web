@@ -181,6 +181,45 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
   });
 
+  test("picker-level search row is persistent and changes placeholder per active tab", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    // Persistent search row exists once at picker level (not duplicated per tab).
+    expect(screen.getByTestId("picker-search-row")).toBeInTheDocument();
+
+    // Placeholder + data-testid swap with activeTarget.
+    let input = screen.getByTestId("picker-particle-search") as HTMLInputElement;
+    expect(input.placeholder).toBe("Search particles…");
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    input = screen.getByTestId("picker-material-search") as HTMLInputElement;
+    expect(input.placeholder).toBe("Search materials…");
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    input = screen.getByTestId("picker-program-search") as HTMLInputElement;
+    expect(input.placeholder).toBe("Search programs…");
+  });
+
+  test("chevron toggle expands and collapses the panel", async () => {
+    render(EntitySelection, { props: { selectionState: state, collapsible: true } });
+    const user = userEvent.setup();
+
+    const toggle = screen.getByTestId("picker-toggle");
+    // Default selection is complete → collapsible mounts collapsed.
+    expect(state.expanded).toBe(false);
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    expect(toggle).toHaveTextContent("▼");
+
+    await user.click(toggle);
+    expect(state.expanded).toBe(true);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(toggle).toHaveTextContent("▲");
+
+    await user.click(toggle);
+    expect(state.expanded).toBe(false);
+  });
+
   test("particle tab omits electron (spec § Particle)", () => {
     render(EntitySelection, { props: { selectionState: state } });
 

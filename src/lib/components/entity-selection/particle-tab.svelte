@@ -6,7 +6,6 @@
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
   import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import SelectedPill from "./selected-pill.svelte";
-  import SearchInput from "./search-input.svelte";
 
   type Particle = ParticleEntity | ExternalOnlyParticle;
 
@@ -14,17 +13,34 @@
     selectionState: EntitySelectionState;
     onSelect: (particle: Particle) => void;
     onClear: () => void;
+    /** Shared search query owned by `<EntitySelection>` (picker-level row). */
+    query?: string;
+    /**
+     * Handlers the picker-level search row calls when ↑/↓/↵ are pressed
+     * while focused. The parent binds these so `<EntitySelection>` can
+     * forward keystrokes to the particle list when this tab is active.
+     */
+    onArrowKey?: ((direction: "up" | "down") => void) | undefined;
+    onEnterKey?: (() => void) | undefined;
   }
 
-  let { selectionState, onSelect, onClear }: Props = $props();
+  let {
+    selectionState,
+    onSelect,
+    onClear,
+    query = "",
+    // `$bindable()` defaults are immediately overwritten by the parent
+    // `<EntitySelection>`'s `$effect` (which registers `handleArrow` /
+    // `handleEnter` for the lifted picker-level search input). The
+    // `no-useless-assignment` rule flags the unused undefined default
+    // even though it's required to make the prop bindable.
+    /* eslint-disable no-useless-assignment */
+    onArrowKey = $bindable(),
+    onEnterKey = $bindable(),
+    /* eslint-enable no-useless-assignment */
+  }: Props = $props();
 
-  let query = $state("");
-  let inputRef: HTMLInputElement | null = $state(null);
   let highlightedId = $state<number | string | null>(null);
-
-  $effect(() => {
-    inputRef?.focus();
-  });
 
   function isExternal(p: Particle): p is ExternalOnlyParticle {
     return typeof p.id === "string";
@@ -53,9 +69,7 @@
   }
 
   // spec: drop electron entirely until ESTAR ships.
-  const allBuiltin = $derived(
-    selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID),
-  );
+  const allBuiltin = $derived(selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID));
 
   const COMMON_IDS = new Set([1, 2]);
   const COMMON_ORDER = [1, 2];
@@ -104,6 +118,17 @@
     if (hit) onSelect(hit);
   }
 
+  // Register keyboard handlers on the parent-owned search input so ↑/↓/↵
+  // keep working with the lifted picker-level search row.
+  $effect(() => {
+    onArrowKey = handleArrow;
+    onEnterKey = handleEnter;
+    return () => {
+      onArrowKey = undefined;
+      onEnterKey = undefined;
+    };
+  });
+
   const selected = $derived(selectionState.selectedParticle);
 </script>
 
@@ -113,20 +138,10 @@
     <SelectedPill
       label={getParticleListLabel(selected, atomicNumber)}
       glyph={isExternal(selected) ? "🔗" : undefined}
-      onClear={onClear}
+      {onClear}
       data-testid="picker-particle-selected"
     />
   {/if}
-
-  <SearchInput
-    value={query}
-    onInput={(v) => (query = v)}
-    onArrow={handleArrow}
-    onEnter={handleEnter}
-    bind:inputRef
-    placeholder="Name, symbol, Z…"
-    data-testid="picker-particle-search"
-  />
 
   <div data-testid="picker-particle-list" class="space-y-3">
     {#if filteredCommon.length > 0}
@@ -167,7 +182,12 @@
     {#if filteredIons.length > 0}
       <div>
         <div class="px-2 pb-1 text-xs uppercase tracking-wider text-muted-foreground">Ions</div>
-        <ul role="listbox" aria-label="Ions" tabindex="0" class="max-h-52 overflow-auto space-y-0.5">
+        <ul
+          role="listbox"
+          aria-label="Ions"
+          tabindex="0"
+          class="max-h-52 overflow-auto space-y-0.5"
+        >
           {#each filteredIons as p (p.id)}
             {@const available = isAvailable(p)}
             {@const isSelected = selected?.id === p.id}

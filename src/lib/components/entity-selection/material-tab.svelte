@@ -7,7 +7,6 @@
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import SelectedPill from "./selected-pill.svelte";
-  import SearchInput from "./search-input.svelte";
 
   type Material = MaterialEntity | ExternalOnlyMaterial;
 
@@ -15,18 +14,14 @@
     selectionState: EntitySelectionState;
     onSelect: (material: Material) => void;
     onClear: () => void;
+    /** Shared search query owned by `<EntitySelection>` (picker-level row). */
+    query?: string;
   }
 
-  let { selectionState, onSelect, onClear }: Props = $props();
+  let { selectionState, onSelect, onClear, query = "" }: Props = $props();
 
-  let query = $state("");
-  let inputRef: HTMLInputElement | null = $state(null);
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
-
-  $effect(() => {
-    inputRef?.focus();
-  });
 
   function isExternal(m: Material): m is ExternalOnlyMaterial {
     // Both external materials (`ext:…`) and custom compounds (`cc_…`) use
@@ -161,14 +156,6 @@
       data-testid="picker-material-selected"
     />
   {/if}
-
-  <SearchInput
-    value={query}
-    onInput={(v) => (query = v)}
-    bind:inputRef
-    placeholder="Name or ID…"
-    data-testid="picker-material-search"
-  />
 
   <div
     class={cn(

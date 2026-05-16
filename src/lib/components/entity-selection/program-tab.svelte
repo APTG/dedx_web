@@ -10,7 +10,6 @@
   import { getProgramDescription } from "$lib/config/program-names";
   import { programKind } from "$lib/utils/program-kind";
   import SelectedPill from "./selected-pill.svelte";
-  import SearchInput from "./search-input.svelte";
   import ProgramTag from "./program-tag.svelte";
 
   type AnyProgram = SelectedProgram | ProgramEntity | ExternalProgramEntity;
@@ -18,23 +17,17 @@
   interface Props {
     selectionState: EntitySelectionState;
     onSelect: (program: AnyProgram) => void;
+    /** Shared search query owned by `<EntitySelection>` (picker-level row). */
+    query?: string;
   }
 
-  let { selectionState, onSelect }: Props = $props();
-
-  let query = $state("");
-  let inputRef: HTMLInputElement | null = $state(null);
-
-  $effect(() => {
-    inputRef?.focus();
-  });
+  let { selectionState, onSelect, query = "" }: Props = $props();
 
   function matches(p: { name: string; version?: string | undefined }, q: string): boolean {
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return true;
     return (
-      p.name.toLowerCase().includes(trimmed) ||
-      (p.version ?? "").toLowerCase().includes(trimmed)
+      p.name.toLowerCase().includes(trimmed) || (p.version ?? "").toLowerCase().includes(trimmed)
     );
   }
 
@@ -65,14 +58,6 @@
     />
   {/if}
 
-  <SearchInput
-    value={query}
-    onInput={(v) => (query = v)}
-    bind:inputRef
-    placeholder="Program name or version…"
-    data-testid="picker-program-search"
-  />
-
   <button
     type="button"
     class={cn(
@@ -94,7 +79,8 @@
       {/if}
       <p class="text-xs text-muted-foreground mt-0.5">
         {#if autoResolved}
-          {getProgramDescription(autoResolved.id) ?? "Recommended for the current particle/material."}
+          {getProgramDescription(autoResolved.id) ??
+            "Recommended for the current particle/material."}
         {:else}
           No compatible program for the current particle / material.
         {/if}
