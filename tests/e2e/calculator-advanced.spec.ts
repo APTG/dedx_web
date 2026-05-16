@@ -14,16 +14,22 @@ async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
       timeout: 15000,
     },
   );
-  await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible();
+  expect(page.url()).toContain("mode=advanced");
+  // The advanced toolbar replaces the old MultiProgramPicker "Programs" button as the readiness
+  // signal; it becomes visible as soon as advanced mode is active.
+  await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible();
 }
 
 async function selectComparisonProgram(page: Page, programName: RegExp, programId: number) {
-  await page.getByRole("button", { name: /Programs/ }).click();
-  const listbox = page.getByRole("listbox", { name: "Select comparison programs" });
-  await listbox.getByRole("option", { name: programName }).click();
+  // Programs are now selected via the program tab in the entity picker (multi-select mode).
+  await page.getByTestId("picker-tab-program").click();
+  await page
+    .getByTestId("picker-program-list")
+    .getByRole("option", { name: programName })
+    .click();
   await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
+  // Collapse the picker panel so it does not obscure subsequent interactions.
   await page.keyboard.press("Escape");
-  await expect(listbox).toBeHidden();
 }
 
 async function stpHeaderOrder(page: Page): Promise<string[]> {
