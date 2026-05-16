@@ -50,7 +50,7 @@
   import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
-  import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
+  import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
@@ -77,6 +77,10 @@
   let externalLoading = $state(false);
   let externalError = $state<ExternalDataError | null>(null);
   let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
+
+  function handleRemoveExternalSource(label: string): void {
+    loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
+  }
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
     sharedUrlWarning = urlState.fromUrlWarning ?? null;
@@ -1403,7 +1407,7 @@
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
         collapsible={true}
       />
-      <ExternalSourcesPanel sources={loadedExternalSources} />
+      <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker

@@ -30,7 +30,7 @@
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
-  import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
+  import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
@@ -54,6 +54,10 @@
   let externalLoading = $state(false);
   let externalError = $state<ExternalDataError | null>(null);
   let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
+
+  function handleRemoveExternalSource(label: string): void {
+    loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
+  }
 
   // Mobile responsive: track viewport width to collapse entity panels on small screens
   let isMobile = $state(false);
@@ -908,7 +912,7 @@
       />
     {/if}
 
-    <ExternalSourcesPanel sources={loadedExternalSources} />
+    <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
 
     <!-- Sidebar + main grid; stacks vertically below 900px, side-by-side at desktop: (≥900px) -->
     <div class="grid gap-4 desktop:grid-cols-[minmax(360px,5fr)_minmax(0,7fr)]">
