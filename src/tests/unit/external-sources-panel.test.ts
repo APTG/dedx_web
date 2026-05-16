@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, cleanup, screen } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
-import ExternalSourcesPanel from "$lib/components/external-sources-panel.svelte";
+import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
 import { externalDataService } from "$lib/external-data/service";
 import type { ExternalSourceDescriptor } from "$lib/external-data/types";
 import type { ExternalStoreMetadata } from "$lib/external-data/schema";
@@ -101,5 +101,58 @@ describe("ExternalSourcesPanel", () => {
     const dd = screen.getByText(/^a+…$/);
     // 200 'a's + ellipsis "…"
     expect(dd.textContent?.length).toBe(201);
+  });
+
+  it("renders a Remove button for each source and calls onRemove with the label", async () => {
+    const user = userEvent.setup();
+    const onRemove = vi.fn();
+    const sources: ExternalSourceDescriptor[] = [
+      { label: "srim", url: "https://example.test/srim.webdedx/" },
+    ];
+    render(ExternalSourcesPanel, { props: { sources, onRemove } });
+
+    const removeBtn = screen.getByTestId("external-source-remove-srim");
+    expect(removeBtn).toBeInTheDocument();
+
+    await user.click(removeBtn);
+
+    expect(onRemove).toHaveBeenCalledOnce();
+    expect(onRemove).toHaveBeenCalledWith("srim");
+  });
+
+  it("evicts the source from ExternalDataService when Remove is clicked", async () => {
+    const user = userEvent.setup();
+    const evictSpy = vi.spyOn(externalDataService, "evict");
+    const sources: ExternalSourceDescriptor[] = [
+      { label: "srim", url: "https://example.test/srim.webdedx/" },
+    ];
+    render(ExternalSourcesPanel, { props: { sources } });
+
+    await user.click(screen.getByTestId("external-source-remove-srim"));
+
+    expect(evictSpy).toHaveBeenCalledWith("srim");
+  });
+
+  it("renders per-source collapsible rows that expand to show metadata", async () => {
+    const user = userEvent.setup();
+    const sources: ExternalSourceDescriptor[] = [
+      { label: "srim", url: "https://example.test/srim.webdedx/" },
+    ];
+    render(ExternalSourcesPanel, { props: { sources } });
+
+    // Expand the outer disclosure first
+    await user.click(screen.getByTestId("external-sources-summary"));
+
+    // Per-source row should be collapsed by default
+    const srcSummary = screen.getByTestId("external-source-summary-srim");
+    const srcDetails = srcSummary.closest("details")!;
+    expect(srcDetails.open).toBe(false);
+
+    // Expand the per-source row
+    await user.click(srcSummary);
+    expect(srcDetails.open).toBe(true);
+
+    // Metadata should now be visible
+    expect(screen.getByText(/Test Author/)).toBeInTheDocument();
   });
 });
