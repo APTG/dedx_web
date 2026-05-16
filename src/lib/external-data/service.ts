@@ -13,7 +13,13 @@ import type {
   ExternalMaterialEntry,
 } from "./schema.js";
 import { ExternalDataError } from "./errors.js";
-import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
+import {
+  loadStoreMetadata,
+  loadStoreMetadataFromStore,
+  loadStpSlice,
+  loadCsdaSlice,
+} from "./loader.js";
+import { FileSystemDirectoryHandleStore } from "./fsdh-store.js";
 import { convertEnergyGrid, convertStpColumn, convertCsdaColumn, computeCsdaColumn } from "./units.js";
 import { interpolate, type InterpolationScale } from "./interpolation.js";
 
@@ -49,6 +55,12 @@ export class ExternalDataService {
 
   /** In-flight metadata loads, deduped by label. */
   private readonly _loading = new Map<string, Promise<ExternalStoreMetadata>>();
+
+  /**
+   * Custom store instances keyed by label — only present for file-based sources.
+   * HTTP sources create FetchStore on demand from meta.url.
+   */
+  private readonly _stores = new Map<string, any>();
 
   /**
    * STP cache key: `${label}:${programId}:${particleIndex}:${materialIndex}`
@@ -111,10 +123,44 @@ export class ExternalDataService {
     return this._metadata.has(label);
   }
 
+  /**
+   * Load a source from a URL, using an explicit caller-provided label.
+   * Convenience wrapper around loadSource for the load-external modal.
+   */
+  async loadFromUrl(url: string, label: string): Promise<ExternalStoreMetadata> {
+    return this.loadSource({ label, url });
+  }
+
+  /**
+   * Load a source from a local directory using the File System Access API.
+   * The label must be unique (caller is responsible for checking).
+   * The FileSystemDirectoryHandle is retained for subsequent slice loads.
+   */
+  async loadFromDirectory(
+    handle: FileSystemDirectoryHandle,
+    label: string,
+  ): Promise<ExternalStoreMetadata> {
+    if (this._metadata.has(label)) {
+      return this._metadata.get(label)!;
+    }
+    if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
+      throw new ExternalDataError(
+        "validation-error",
+        `Too many external sources: maximum is ${MAX_SOURCES}`,
+      );
+    }
+    const store = new FileSystemDirectoryHandleStore(handle);
+    const meta = await loadStoreMetadataFromStore(store, { label, url: "" });
+    this._stores.set(label, store);
+    this._metadata.set(label, meta);
+    return meta;
+  }
+
   /** Remove a source from all caches (e.g. when extdata params change). */
   evict(label: string): void {
     this._metadata.delete(label);
     this._loading.delete(label);
+    this._stores.delete(label);
     for (const key of [...this._stpCache.keys()]) {
       if (key.startsWith(`${label}:`)) this._stpCache.delete(key);
     }
@@ -127,6 +173,7 @@ export class ExternalDataService {
   clear(): void {
     this._metadata.clear();
     this._loading.clear();
+    this._stores.clear();
     this._stpCache.clear();
     this._csdaCache.clear();
   }
@@ -152,7 +199,8 @@ export class ExternalDataService {
     const cached = this._stpCache.get(cacheKey);
     if (cached) return cached;
 
-    const raw = await loadStpSlice(meta.url, programId, particle.index, material.index);
+    const storeOverride = this._stores.get(label);
+    const raw = await loadStpSlice(meta.url, programId, particle.index, material.index, storeOverride);
     const energyGridMev = convertEnergyGrid(meta.energyGrid, meta.energyUnit, particle.A);
     const values = convertStpColumn(raw, meta.stpUnit, material.density);
 
@@ -187,7 +235,8 @@ export class ExternalDataService {
 
     if (meta.hasCsdaRange) {
       // Load CSDA from the zarr store.
-      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index);
+      const storeOverride = this._stores.get(label);
+      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index, storeOverride);
       if (raw === null) {
         this._csdaCache.set(cacheKey, null);
         return null;

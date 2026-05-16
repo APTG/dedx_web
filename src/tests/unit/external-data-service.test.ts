@@ -285,6 +285,7 @@ describe("ExternalDataService", () => {
         "prog1",
         0, // particle index
         0, // material index
+        undefined, // no custom store override for HTTP sources
       );
     });
 

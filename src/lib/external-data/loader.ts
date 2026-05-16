@@ -17,6 +17,8 @@ import type { ExternalSourceDescriptor } from "./types.js";
 import { ExternalDataError } from "./errors.js";
 import { validateRootAttrs } from "./validation.js";
 
+type AnyStore = any;
+
 /**
  * Load and validate the root metadata of a .webdedx store.
  *
@@ -26,23 +28,31 @@ import { validateRootAttrs } from "./validation.js";
 export async function loadStoreMetadata(
   descriptor: ExternalSourceDescriptor,
 ): Promise<ExternalStoreMetadata> {
-  const { label, url } = descriptor;
-  const store = new FetchStore(url);
+  const store = new FetchStore(descriptor.url);
+  return loadStoreMetadataFromStore(store, descriptor);
+}
 
-  // Open root group — zarrita fetches `{url}/zarr.json`.
+/**
+ * Load store metadata using a pre-built store (e.g. FileSystemDirectoryHandleStore).
+ * Allows loading from local directories without HTTP.
+ */
+export async function loadStoreMetadataFromStore(
+  store: AnyStore,
+  descriptor: ExternalSourceDescriptor,
+): Promise<ExternalStoreMetadata> {
+  const { label, url } = descriptor;
+  const context = url || `local:${label}`;
+
   let rootGroup: Awaited<ReturnType<typeof open>>;
   try {
     rootGroup = await open(root(store), { kind: "group" });
   } catch (err) {
-    throw classifyLoadError(err, url);
+    throw classifyLoadError(err, context);
   }
 
   const attrs = rootGroup.attrs as Record<string, unknown>;
   const metadata = validateRootAttrs(attrs, label, url);
 
-  // Probe whether csda_range arrays are present for each program.
-  // We open the first program's csda_range array; if it exists, hasCsdaRange = true.
-  // This avoids fetching actual shard data during metadata load.
   let hasCsdaRange = false;
   for (const program of metadata.programs) {
     try {
@@ -69,19 +79,21 @@ export async function loadStpSlice(
   programId: string,
   particleIndex: number,
   materialIndex: number,
+  storeOverride?: AnyStore,
 ): Promise<Float32Array> {
-  const store = new FetchStore(url);
+  const store = storeOverride ?? new FetchStore(url);
+  const context = url || "local store";
   let arr: Awaited<ReturnType<typeof open>>;
   try {
     arr = await open(root(store).resolve(`${programId}/stp`), { kind: "array" });
   } catch (err) {
-    throw classifyLoadError(err, `${url}/${programId}/stp`);
+    throw classifyLoadError(err, `${context}/${programId}/stp`);
   }
   try {
     const chunk = await get(arr, [particleIndex, materialIndex, null]);
     return chunk.data as Float32Array;
   } catch (err) {
-    throw classifyLoadError(err, `${url}/${programId}/stp shard`);
+    throw classifyLoadError(err, `${context}/${programId}/stp shard`);
   }
 }
 
@@ -93,8 +105,10 @@ export async function loadCsdaSlice(
   programId: string,
   particleIndex: number,
   materialIndex: number,
+  storeOverride?: AnyStore,
 ): Promise<Float32Array | null> {
-  const store = new FetchStore(url);
+  const store = storeOverride ?? new FetchStore(url);
+  const context = url || "local store";
   let arr: Awaited<ReturnType<typeof open>>;
   try {
     arr = await open(root(store).resolve(`${programId}/csda_range`), { kind: "array" });
@@ -106,7 +120,7 @@ export async function loadCsdaSlice(
     const chunk = await get(arr, [particleIndex, materialIndex, null]);
     return chunk.data as Float32Array;
   } catch (err) {
-    throw classifyLoadError(err, `${url}/${programId}/csda_range shard`);
+    throw classifyLoadError(err, `${context}/${programId}/csda_range shard`);
   }
 }
 

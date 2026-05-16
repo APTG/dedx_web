@@ -38,6 +38,11 @@
      * and friends are not useful there.
      */
     showAdvancedToolbar?: boolean;
+    /**
+     * Called when the user clicks "Load external" in the Advanced toolbar.
+     * When provided, the toolbar button is enabled.
+     */
+    onLoadExternal?: () => void;
   }
 
   let {
@@ -46,6 +51,7 @@
     class: className,
     collapsible = false,
     showAdvancedToolbar = collapsible,
+    onLoadExternal,
   }: Props = $props();
 
   // Initial expand/collapse rule (spec § Active target + expand/collapse, rule B):
@@ -208,7 +214,7 @@
 
 <div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
   {#if isAdvancedMode.value && showAdvancedToolbar}
-    <AdvancedToolbar {selectionState} onReset={handleReset} />
+    <AdvancedToolbar {selectionState} onReset={handleReset} {onLoadExternal} />
   {/if}
 
   <TabBar

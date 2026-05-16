@@ -51,13 +51,20 @@
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
+  import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
+  import type {
+    ExternalSourceDescriptor,
+    EntityId,
+    ExtRef,
+  } from "$lib/external-data/types";
+  import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { parseExtdataParams } from "$lib/external-data/url";
+  import type { CompatibilityMatrix } from "$lib/wasm/types";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { CalculationResult } from "$lib/wasm/types";
 
@@ -77,9 +84,47 @@
   let externalLoading = $state(false);
   let externalError = $state<ExternalDataError | null>(null);
   let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
+  let compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
+  let showLoadExternalModal = $state(false);
 
   function handleRemoveExternalSource(label: string): void {
     loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
+    // Rebuild external context without the removed source
+    if (entityState && compatibilityMatrix) {
+      const remaining = loadedExternalSources
+        .map((s) => externalDataService.getMetadata(s.label))
+        .filter((m): m is ExternalStoreMetadata => m !== undefined);
+      const extCtx = buildExternalCompatibilityContext(
+        remaining,
+        compatibilityMatrix.allParticles,
+        compatibilityMatrix.allMaterials,
+      );
+      entityState.setExternalContext(extCtx);
+    }
+  }
+
+  async function handleModalLoad(
+    descriptor: ExternalSourceDescriptor,
+    metadata: ExternalStoreMetadata,
+  ) {
+    showLoadExternalModal = false;
+    if (!entityState || !compatibilityMatrix) return;
+
+    // Append new source and rebuild the external compatibility context
+    loadedExternalSources = [...loadedExternalSources, descriptor];
+    const allMetadata = loadedExternalSources
+      .map((s) => externalDataService.getMetadata(s.label))
+      .filter((m): m is ExternalStoreMetadata => m !== undefined);
+    // Ensure the newly loaded metadata is included (it may not be in cache yet if FSDH)
+    const merged = allMetadata.some((m) => m.label === metadata.label)
+      ? allMetadata
+      : [...allMetadata, metadata];
+    const extCtx = buildExternalCompatibilityContext(
+      merged,
+      compatibilityMatrix.allParticles,
+      compatibilityMatrix.allMaterials,
+    );
+    entityState.setExternalContext(extCtx);
   }
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
@@ -175,6 +220,7 @@
           loadedExternalSources = extSources;
 
           const matrix = buildCompatibilityMatrix(service);
+          compatibilityMatrix = matrix;
           const extCtx = buildExternalCompatibilityContext(
             extMetadatas,
             matrix.allParticles,
@@ -1406,8 +1452,15 @@
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
         collapsible={true}
+        onLoadExternal={() => (showLoadExternalModal = true)}
       />
       <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
+      <LoadExternalModal
+        open={showLoadExternalModal}
+        existingLabels={new Set(loadedExternalSources.map((s) => s.label))}
+        onLoad={handleModalLoad}
+        onCancel={() => (showLoadExternalModal = false)}
+      />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker
