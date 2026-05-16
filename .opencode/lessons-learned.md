@@ -966,5 +966,23 @@ path is a vendor gitlink, and keep rejecting mixed first-party/vendor changes.
 
 ---
 
-_Last updated: 2026-05-15. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 46 — When v8 replaces v7, update interaction selectors, not just waits
+
+**Symptom:** CI E2E tests kept failing after v8 became the default because
+several specs still clicked old v7 combobox buttons such as `Particle` /
+`Program`, even though sentinel waits had already moved to
+`[data-testid="v8-entity-selection"]`.
+
+**Root cause:** The selector migration only updated page-ready checks. Helper
+functions and mid-test interactions still assumed the old combobox/listbox DOM,
+and accessibility checks also caught `aria-controls` pointing at a collapsed
+tabpanel that was no longer mounted.
+
+**Rule:** For entity-selection tests, migrate the full interaction path to v8
+test IDs (`v8-tab-*`, `v8-*-search`, `v8-*-item-*`) and ensure ARIA references
+only point at mounted tab panels.
+
+---
+
+_Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

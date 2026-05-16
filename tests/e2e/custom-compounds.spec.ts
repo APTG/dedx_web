@@ -1,5 +1,15 @@
 import { test, expect } from "@playwright/test";
 
+async function selectParticle(page: import("@playwright/test").Page, id: string, query: string) {
+  await page.getByTestId("v8-tab-particle").click();
+  await page.getByTestId("v8-particle-search").fill(query);
+  await page.getByTestId(`v8-particle-item-${id}`).click();
+}
+
+async function openProgramTab(page: import("@playwright/test").Page) {
+  await page.getByTestId("v8-tab-program").click();
+}
+
 /**
  * E2E tests for Stage 6.10 Custom Compounds feature.
  * Tests cover compound editor modal, entity selection integration,
@@ -171,9 +181,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // First H
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("2");
 
@@ -183,9 +191,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
     await elementInput2.fill("H");
-    const hydrogenOption2 = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption2.waitFor({ state: "visible" });
-    await hydrogenOption2.click({ force: true });
+    await elementInput2.blur();
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -250,8 +256,10 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Verify LiF Pellet is visible in the custom column
     await expect(customColumn.getByText(/LiF Pellet/i)).toBeVisible();
 
-    // Verify density description is visible for the custom compound
-    await expect(page.getByText(/2\.2 g\/cm/)).toBeVisible();
+    // Verify density description is visible on the custom compound row.
+    await expect(
+      customColumn.locator('[data-testid^="v8-material-item-"]', { hasText: /LiF Pellet/i }).first(),
+    ).toContainText(/2\.20\d* g\/cm/);
   });
 
   test("AC-6: Delete compound confirmation", async ({ page }) => {
@@ -275,9 +283,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -378,9 +384,7 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -414,9 +418,7 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -480,12 +482,11 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
       .first();
     await lifOption.click();
 
-    // Open program dropdown
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
+    // Open program tab
+    await openProgramTab(page);
 
     // Verify programs are present (greyed-out check requires program-specific data)
-    const options = page.locator('[role="option"]');
+    const options = page.locator('[data-testid^="v8-program-item-"]');
     const count = await options.count();
     expect(count).toBeGreaterThanOrEqual(1);
 
@@ -524,9 +525,7 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
 
     const elementInput = page.getByPlaceholder(/symbol or z/i).first();
     await elementInput.fill("H");
-    const hydrogenOption = page.locator('[role="option"]:has-text("Hydrogen")').first();
-    await hydrogenOption.waitFor({ state: "visible" });
-    await hydrogenOption.click({ force: true });
+    await elementInput.blur();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -569,12 +568,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Select alpha particle (well-known stopping power in water)
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
-    await expect(alphaOption).toBeVisible();
-    await alphaOption.click();
-    await expect(particleBtn).toContainText("alpha particle");
+    await selectParticle(page, "2", "alpha");
+    await expect(page.getByTestId("v8-tab-particle")).toContainText("alpha particle");
 
     // Open compound editor
     await page.getByTestId("v8-tab-material").click();
@@ -617,9 +612,8 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await expect(page.getByTestId("v8-tab-material")).toContainText("Water H2O formula");
 
     // Select first available program
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
-    const firstProgramOption = page.locator('[role="option"]').first();
+    await openProgramTab(page);
+    const firstProgramOption = page.locator('[data-testid^="v8-program-item-"]').first();
     await firstProgramOption.waitFor({ state: "visible" });
     await firstProgramOption.click();
 
@@ -701,15 +695,12 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await expect(page.getByTestId("v8-tab-material")).toContainText("Water H2O weight");
 
     // Select alpha particle
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    await page.getByRole("option", { name: /^alpha particle$/ }).click();
+    await selectParticle(page, "2", "alpha");
 
     // Select ASTAR: custom compounds are evaluated through the elemental
     // compound path, which is supported for this alpha-particle sanity check.
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
-    const astarOption = page.getByRole("option", { name: /ASTAR/i }).first();
+    await openProgramTab(page);
+    const astarOption = page.getByTestId("v8-program-item-1");
     await astarOption.waitFor({ state: "visible" });
     await astarOption.click();
 
@@ -775,12 +766,8 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Select alpha particle (He-4)
-    const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-    await particleBtn.click();
-    const alphaOption = page.getByRole("option", { name: /^alpha particle$/ });
-    await expect(alphaOption).toBeVisible();
-    await alphaOption.click();
-    await expect(particleBtn).toContainText("alpha particle");
+    await selectParticle(page, "2", "alpha");
+    await expect(page.getByTestId("v8-tab-particle")).toContainText("alpha particle");
 
     // Create LiF
     await page.getByTestId("v8-tab-material").click();
@@ -820,11 +807,10 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await expect(page.getByTestId("v8-tab-material")).toContainText("LiF Pellet");
 
     // Select a program
-    const programBtn = page.getByRole("button", { name: /^Program$/ });
-    await programBtn.click();
+    await openProgramTab(page);
 
     // Select first available program
-    const firstOption = page.locator('[role="option"]').first();
+    const firstOption = page.locator('[data-testid^="v8-program-item-"]').first();
     await firstOption.waitFor({ state: "visible" });
     await firstOption.click();
 

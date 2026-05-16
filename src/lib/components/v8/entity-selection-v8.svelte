@@ -111,6 +111,7 @@
   <TabBar
     {activeTab}
     {selectionState}
+    {panelOpen}
     onActivate={(tab) => openPanel(tab)}
   />
 

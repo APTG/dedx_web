@@ -12,10 +12,11 @@
     activeTab: V8Tab;
     selectionState: EntitySelectionState;
     onActivate: (tab: V8Tab) => void;
+    panelOpen?: boolean;
     class?: string;
   }
 
-  let { activeTab, selectionState, onActivate, class: className }: Props = $props();
+  let { activeTab, selectionState, onActivate, panelOpen = true, class: className }: Props = $props();
 
   const particleValue = $derived.by(() => {
     const p = selectionState.selectedParticle;
@@ -65,7 +66,7 @@
       id="v8-tab-{tab.id}"
       data-testid="v8-tab-{tab.id}"
       aria-selected={isActive}
-      aria-controls="v8-tab-panel-{tab.id}"
+      aria-controls={panelOpen && isActive ? `v8-tab-panel-${tab.id}` : undefined}
       tabindex={isActive ? 0 : -1}
       class={cn(
         "flex items-start sm:items-baseline gap-1 rounded-t-md px-2 sm:px-3 py-1.5 text-sm border border-b-0 transition-colors",

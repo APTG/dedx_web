@@ -48,25 +48,22 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     await page.goto("/plot");
     await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
 
-    const programPanel = page.getByRole("group", { name: "③ Program" });
+    await page.getByTestId("v8-tab-program").click();
 
     // Click PSTAR — this was the triggering action for the bug
-    const pstarButton = programPanel.getByRole("button", { name: /PSTAR/i });
+    const pstarButton = page.getByTestId("v8-program-item-2");
     await pstarButton.click();
 
-    // Allow any async reactive work to settle — wait for aria-pressed to be set
-    await expect(pstarButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
+    // Allow any async reactive work to settle — wait for the option to be selected.
+    await expect(pstarButton).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
 
     const duplicateKeyErrors = errors.filter(
       (e) => e.includes("each_key_duplicate") || e.includes("duplicate key"),
     );
     expect(duplicateKeyErrors).toHaveLength(0);
 
-    // PSTAR should now be the selected program
-    await expect(pstarButton).toHaveAttribute("aria-pressed", "true");
-
     // Auto-select should still be present but not selected
-    const autoButton = programPanel.getByRole("button", { name: /Auto-select/i });
+    const autoButton = page.getByTestId("v8-program-auto-hero");
     await expect(autoButton).toHaveAttribute("aria-pressed", "false");
   });
 
@@ -76,18 +73,18 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     await page.goto("/plot");
     await page.waitForSelector('[data-testid="v8-entity-selection"]', { timeout: WASM_TIMEOUT });
 
-    const programPanel = page.getByRole("group", { name: "③ Program" });
+    await page.getByTestId("v8-tab-program").click();
 
-    // Click ICRU 49 if present, otherwise click the first non-Auto program
-    const icruButton = programPanel.getByRole("button", { name: /ICRU/i }).first();
+    // Click ICRU 49.
+    const icruButton = page.getByTestId("v8-program-item-7");
     await icruButton.click();
-    // Wait for the clicked button to become selected (aria-pressed = true)
-    await expect(icruButton).toHaveAttribute("aria-pressed", "true", { timeout: 3000 });
+    // Wait for the clicked option to become selected.
+    await expect(icruButton).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
 
-    const buttons = programPanel.getByRole("button");
-    const count = await buttons.count();
+    const options = page.locator('[data-testid^="v8-program-item-"]');
+    const count = await options.count();
     const texts = await Promise.all(
-      Array.from({ length: count }, (_, i) => buttons.nth(i).textContent()),
+      Array.from({ length: count }, (_, i) => options.nth(i).textContent()),
     );
     const uniqueTexts = new Set(texts.map((t) => t?.trim() ?? ""));
     expect(uniqueTexts.size).toBe(count);

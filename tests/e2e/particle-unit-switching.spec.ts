@@ -30,11 +30,14 @@ async function waitForTable(page: import("@playwright/test").Page) {
 }
 
 async function selectParticle(page: import("@playwright/test").Page, name: string) {
-  const particleBtn = page.getByRole("button", { name: /^Particle$/ });
-  await particleBtn.click();
-  await page.locator('input[placeholder="Name, symbol, Z..."]').first().fill(name);
-  const opt = page.getByRole("option", { name: new RegExp(name, "i") }).first();
-  await opt.click();
+  const particleIds: Record<string, string> = {
+    alpha: "2",
+    carbon: "6",
+    proton: "1",
+  };
+  await page.getByTestId("v8-tab-particle").click();
+  await page.getByTestId("v8-particle-search").fill(name);
+  await page.getByTestId(`v8-particle-item-${particleIds[name] ?? name}`).click();
   await waitForTable(page);
 }
 
