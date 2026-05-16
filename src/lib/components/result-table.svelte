@@ -40,6 +40,7 @@
 
   import type { MultiProgramState } from "$lib/state/multi-program.svelte";
   import type { MultiEntityState } from "$lib/state/multi-entity.svelte";
+  import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import type { CalculationResult } from "$lib/wasm/types";
   import { LibdedxError } from "$lib/wasm/types";
   import type { EntityId } from "$lib/external-data/types";
@@ -144,6 +145,17 @@
 
   function getSelectedDensity(): number {
     return advancedOptions.value.densityOverride ?? entitySelection.selectedMaterial?.density ?? 1;
+  }
+
+  function getEntityDensity(entityId: EntityId): number {
+    if (entitySelection.across !== "material") return getSelectedDensity();
+    if (typeof entityId === "number") {
+      return entitySelection.allMaterials.find((material) => material.id === entityId)?.density ?? 1;
+    }
+    if (entityId.startsWith("ext:")) {
+      return entitySelection.externalOnlyMaterials.find((material) => material.id === entityId)?.density ?? 1;
+    }
+    return customCompounds.getById(entityId)?.density ?? 1;
   }
 
   function getStpDisplayForRow(
@@ -920,7 +932,7 @@
               {#each multiEntityIds as entityId (entityId)}
                 {@const isAnchor = entityId === multiEntityIds[0]}
                 {@const result = multiEntityState?.comparisonResults.get(entityId)}
-                {@const density = advancedOptions.value.densityOverride ?? (entitySelection.selectedMaterial?.density ?? 1)}
+                {@const density = getEntityDensity(entityId)}
                 {@const stpIndex = result && !(result instanceof LibdedxError) && row.normalizedMevNucl !== null
                   ? result.energies.findIndex((e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001)
                   : -1}
@@ -948,7 +960,7 @@
               {#each multiEntityIds as entityId (entityId)}
                 {@const isAnchor = entityId === multiEntityIds[0]}
                 {@const result = multiEntityState?.comparisonResults.get(entityId)}
-                {@const density = advancedOptions.value.densityOverride ?? (entitySelection.selectedMaterial?.density ?? 1)}
+                {@const density = getEntityDensity(entityId)}
                 {@const csdaIndex = result && !(result instanceof LibdedxError) && row.normalizedMevNucl !== null
                   ? result.energies.findIndex((e) => Math.abs(e - row.normalizedMevNucl!) < 0.0001)
                   : -1}

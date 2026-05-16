@@ -888,6 +888,7 @@
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
     if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
+    if (entityState.across !== "program") return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
     if (selectedProgramIds.length === 0) return;
@@ -1164,6 +1165,34 @@
     const anchorMaterialId = material?.id;
     if (anchorMaterialId === null || anchorMaterialId === undefined) return;
 
+    const getCustomMaterialById = (id: EntityId) => {
+      if (typeof id !== "string" || !id.startsWith("cc_")) return null;
+      const compound = customCompounds.getById(id);
+      if (!compound) return null;
+      return {
+        id: compound.id,
+        name: compound.name,
+        density: compound.density,
+        iValue: compound.iValue,
+        phase: compound.phase,
+        elements: compound.elements,
+        isGasByDefault: compound.phase === "gas",
+      };
+    };
+
+    if (dim === "particle" && typeof anchorMaterialId !== "number") {
+      const unsupportedMaterialMessage = typeof anchorMaterialId === "string" &&
+          anchorMaterialId.startsWith("ext:")
+        ? "Multi-particle comparison does not support external-only materials."
+        : "Multi-particle comparison does not support custom compounds.";
+      const results = new Map<EntityId, CalculationResult | LibdedxError>();
+      for (const entityId of entityIds) {
+        results.set(entityId, new LibdedxError(-1, unsupportedMaterialMessage));
+      }
+      multiEntityState.setComparisonResults(results);
+      return;
+    }
+
     const validRows = calcState.rows.filter(
       (r) => r.status === "valid" && r.normalizedMevNucl !== null,
     );
@@ -1182,13 +1211,15 @@
       const results = new Map<EntityId, import("$lib/wasm/types").CalculationResult | LibdedxError>();
 
       for (const entityId of inputSnapshot.entityIds) {
-        if (typeof entityId !== "number") continue; // only built-in entities for now
-
         try {
           let result: import("$lib/wasm/types").CalculationResult;
           if (inputSnapshot.dim === "material") {
-            const customMaterial = isCustomMaterial(inputSnapshot.builtinMat) ? inputSnapshot.builtinMat : null;
-            if (customMaterial) {
+            const customMaterial =
+              getCustomMaterialById(entityId) ??
+              (entityId === inputSnapshot.anchorMaterialId && isCustomMaterial(inputSnapshot.builtinMat)
+                ? inputSnapshot.builtinMat
+                : null);
+            if (customMaterial !== null) {
               result = service.calculateCustomCompound({
                 programId: inputSnapshot.programId,
                 particleId: inputSnapshot.anchorParticleId,
@@ -1197,7 +1228,7 @@
                 iValue: customMaterial.iValue,
                 energies: inputSnapshot.energies,
               });
-            } else {
+            } else if (typeof entityId === "number") {
               result = service.calculate(
                 inputSnapshot.programId,
                 inputSnapshot.anchorParticleId,
@@ -1205,15 +1236,28 @@
                 inputSnapshot.energies,
                 advOptsSnapshot,
               );
+            } else {
+              throw new LibdedxError(
+                -1,
+                typeof entityId === "string" && entityId.startsWith("ext:")
+                  ? "Multi-material comparison does not support external-only materials."
+                  : `Unsupported material ID for multi-material comparison: ${entityId}`,
+              );
             }
           } else {
             // across === "particle": compute for each particleId, fixed material
+            if (typeof entityId !== "number") {
+              throw new LibdedxError(
+                -1,
+                typeof entityId === "string" && entityId.startsWith("ext:")
+                  ? "Multi-particle comparison does not support external-only particles."
+                  : `Unsupported particle ID for multi-particle comparison: ${entityId}`,
+              );
+            }
             result = service.calculate(
               inputSnapshot.programId,
               entityId,
-              typeof inputSnapshot.anchorMaterialId === "number"
-                ? inputSnapshot.anchorMaterialId
-                : (() => { throw new LibdedxError(-1, "External material not supported for multi-particle"); })(),
+              inputSnapshot.anchorMaterialId as number,
               inputSnapshot.energies,
               advOptsSnapshot,
             );

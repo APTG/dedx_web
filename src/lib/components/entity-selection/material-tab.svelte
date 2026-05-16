@@ -129,6 +129,14 @@
     selectionState.toggleMulti("material", m.id);
   }
 
+  function resolveMaterialById(id: number | string): Material | null {
+    return (
+      allMaterials.find((m) => m.id === id) ??
+      customItems.find((m) => m.id === id) ??
+      null
+    );
+  }
+
   function handleAddCompound() {
     editingCompound = null;
     compoundModalOpen = true;
@@ -165,10 +173,10 @@
 <div class="space-y-3" data-testid="picker-material-tab">
   {#if isMultiMode}
     {#if multiIds.length > 0}
-      <div class="flex flex-wrap gap-1.5" aria-label="Selected materials for comparison" data-testid="picker-material-multi-selected">
-        {#each multiIds as id (id)}
-          {@const m = filteredElements.find((x) => x.id === id) ?? filteredCompounds.find((x) => x.id === id) ?? filteredCustom.find((x) => x.id === id)}
-          {#if m}
+        <div class="flex flex-wrap gap-1.5" aria-label="Selected materials for comparison" data-testid="picker-material-multi-selected">
+          {#each multiIds as id (id)}
+            {@const m = resolveMaterialById(id)}
+            {#if m}
             {@const anchor = multiIds[0] === id}
             {@const dens = formatDensity(m)}
             <span
@@ -236,7 +244,7 @@
               aria-disabled={!available || (isMultiMode && anchor)}
               data-testid="picker-material-item-{m.id}"
               tabindex={-1}
-              disabled={!available}
+              disabled={!available || (isMultiMode && anchor)}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
@@ -301,7 +309,7 @@
               aria-disabled={!available || (isMultiMode && anchor)}
               data-testid="picker-material-item-{m.id}"
               tabindex={-1}
-              disabled={!available}
+              disabled={!available || (isMultiMode && anchor)}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
@@ -377,6 +385,7 @@
                   aria-disabled={isMultiMode && anchor}
                   data-testid="picker-material-item-{m.id}"
                   tabindex={-1}
+                  disabled={isMultiMode && anchor}
                   class={cn(
                     "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
                     (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",

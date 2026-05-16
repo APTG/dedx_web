@@ -211,7 +211,7 @@
                 aria-disabled={!available || (isMultiMode && anchor)}
                 data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
-                disabled={!available}
+                disabled={!available || (isMultiMode && anchor)}
                 class={cn(
                   "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
@@ -267,7 +267,7 @@
                 aria-disabled={!available || (isMultiMode && anchor)}
                 data-testid="picker-particle-item-{p.id}"
                 tabindex={-1}
-                disabled={!available}
+                disabled={!available || (isMultiMode && anchor)}
                 class={cn(
                   "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                   available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",

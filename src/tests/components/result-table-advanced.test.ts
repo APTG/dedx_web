@@ -6,10 +6,12 @@ import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { createCalculatorState } from "$lib/state/calculator.svelte";
 import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
+import { createMultiEntityState } from "$lib/state/multi-entity.svelte";
 import ResultTable from "$lib/components/result-table.svelte";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { CalculationResult } from "$lib/wasm/types";
+import type { EntityId } from "$lib/external-data/types";
 
 describe("ResultTable with multiProgramState (advanced mode)", () => {
   let service: LibdedxServiceImpl;
@@ -275,5 +277,91 @@ describe("ResultTable basic mode (no multi-program props)", () => {
     const allHeaders = document.querySelectorAll("thead th");
     // In basic mode, we have 5 columns, no grouping
     expect(allHeaders.length).toBe(5);
+  });
+});
+
+describe("ResultTable multi-entity mode", () => {
+  let service: LibdedxServiceImpl;
+  let entitySelection: EntitySelectionState;
+  let calcState: CalculatorState;
+
+  beforeEach(() => {
+    cleanup();
+    service = new LibdedxServiceImpl();
+    const matrix = buildCompatibilityMatrix(service);
+    entitySelection = createEntitySelectionState(matrix);
+    calcState = createCalculatorState(entitySelection, service);
+    calcState.updateRowText(0, "100");
+    entitySelection.setAcross("material");
+    entitySelection.toggleMulti("material", 267);
+  });
+
+  it("renders grouped headers and uses per-material densities for STP/CSDA cells", () => {
+    const multiEntityState = createMultiEntityState("material", (id) => {
+      if (id === 276) return "Water (liquid)";
+      if (id === 267) return "Air";
+      return String(id);
+    });
+    multiEntityState.setComparisonResults(
+      new Map<EntityId, CalculationResult | LibdedxError>([
+        [
+          276,
+          {
+            energies: [100],
+            stoppingPowers: [10],
+            csdaRanges: [100],
+          },
+        ],
+        [267, { energies: [100], stoppingPowers: [10], csdaRanges: [100] }],
+      ]),
+    );
+
+    render(ResultTable, {
+      props: {
+        calcState,
+        entitySelection,
+        multiEntityState,
+        multiEntityIds: [276, 267],
+      },
+    });
+
+    expect(screen.getByText(/Stopping Power/)).toBeInTheDocument();
+    expect(screen.getByText(/CSDA Range/)).toBeInTheDocument();
+    expect(screen.getAllByText(/Water \(liquid\)/).length).toBeGreaterThan(0);
+    expect(screen.getAllByText(/Air/).length).toBeGreaterThan(0);
+
+    expect(screen.getByTestId("stp-entity-cell-276-0")).toHaveTextContent("1");
+    expect(screen.getByTestId("stp-entity-cell-267-0")).toHaveTextContent("0.0012");
+    expect(screen.getByTestId("range-entity-cell-276-0")).toHaveTextContent("1 m");
+    expect(screen.getByTestId("range-entity-cell-267-0")).toHaveTextContent("833.3 m");
+  });
+
+  it("renders explicit error marker for entity-level calculation failures", () => {
+    const multiEntityState = createMultiEntityState("material", (id) => String(id));
+    multiEntityState.setComparisonResults(
+      new Map<EntityId, CalculationResult | LibdedxError>([
+        [
+          276,
+          {
+            energies: [100],
+            stoppingPowers: [10],
+            csdaRanges: [100],
+          },
+        ],
+        [267, new LibdedxError(-1, "Material not supported")],
+      ]),
+    );
+
+    render(ResultTable, {
+      props: {
+        calcState,
+        entitySelection,
+        multiEntityState,
+        multiEntityIds: [276, 267],
+      },
+    });
+
+    expect(screen.getByTestId("stp-entity-cell-267-0")).toHaveTextContent("⚠️");
+    expect(screen.getByTestId("range-entity-cell-267-0")).toHaveTextContent("⚠️");
   });
 });
