@@ -78,11 +78,12 @@
 <div class="min-h-screen bg-background">
   <nav class="border-b bg-card">
     <div class="container mx-auto px-4">
-      <div class="flex h-14 items-center justify-between gap-2">
-        <div class="flex items-center gap-3 min-w-0">
-          <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl">
-            <img src={`${base}/favicon.svg`} alt="" class="h-6 w-6" />
-            webdedx
+      <div class="flex flex-col sm:flex-row sm:h-14 sm:items-center sm:justify-between">
+        <!-- Row 1: logo + page links -->
+        <div class="flex h-12 sm:h-auto items-center gap-3 min-w-0">
+          <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl shrink-0">
+            <img src={`${base}/favicon.svg`} alt="webdedx" class="h-6 w-6" />
+            <span class="hidden sm:inline">webdedx</span>
           </a>
           <div class="flex items-center gap-4 text-sm">
             <a
@@ -111,8 +112,12 @@
             </a>
           </div>
         </div>
-        <div class="flex items-center gap-2 shrink-0">
-          <!-- Basic/Advanced mode toggle: always visible so mobile users can enter/leave Advanced mode -->
+
+        <!-- Row 2 (mobile) / right side (desktop): mode toggle + actions -->
+        <div
+          class="flex items-center justify-between sm:justify-end gap-2 shrink-0 pb-2 sm:pb-0 border-t sm:border-t-0 border-border/40"
+        >
+          <!-- Basic/Advanced mode toggle -->
           <div class="flex items-center rounded-md border border-border overflow-hidden text-sm">
             <button
               type="button"
