@@ -13,12 +13,22 @@ import type {
   ExternalMaterialEntry,
 } from "./schema.js";
 import { ExternalDataError } from "./errors.js";
-import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
+import {
+  loadStoreMetadata,
+  loadStoreMetadataFromStore,
+  loadStpSlice,
+  loadCsdaSlice,
+} from "./loader.js";
+import { FileSystemDirectoryHandleStore } from "./fsdh-store.js";
 import { convertEnergyGrid, convertStpColumn, convertCsdaColumn, computeCsdaColumn } from "./units.js";
 import { interpolate, type InterpolationScale } from "./interpolation.js";
 
 /** Maximum number of simultaneously loaded external sources. */
 const MAX_SOURCES = 5;
+
+function formatSourceOrigin(url: string): string {
+  return url || "local directory";
+}
 
 /**
  * A cached, converted STP column for one (program, particle, material) triple.
@@ -49,6 +59,13 @@ export class ExternalDataService {
 
   /** In-flight metadata loads, deduped by label. */
   private readonly _loading = new Map<string, Promise<ExternalStoreMetadata>>();
+  private readonly _loadingUrls = new Map<string, string>();
+
+  /**
+   * Custom store instances keyed by label — only present for file-based sources.
+   * HTTP sources create FetchStore on demand from meta.url.
+   */
+  private readonly _stores = new Map<string, any>();
 
   /**
    * STP cache key: `${label}:${programId}:${particleIndex}:${materialIndex}`
@@ -67,13 +84,30 @@ export class ExternalDataService {
    * Throws ExternalDataError on validation failure or network problems.
    */
   async loadSource(descriptor: ExternalSourceDescriptor): Promise<ExternalStoreMetadata> {
-    const { label } = descriptor;
+    const { label, url } = descriptor;
 
     const cached = this._metadata.get(label);
-    if (cached) return cached;
+    if (cached) {
+      if (cached.url !== url) {
+        throw new ExternalDataError(
+          "validation-error",
+          `Label "${label}" is already loaded from "${formatSourceOrigin(cached.url)}", cannot load from "${formatSourceOrigin(url)}"`,
+        );
+      }
+      return cached;
+    }
 
     const inflight = this._loading.get(label);
-    if (inflight) return inflight;
+    if (inflight) {
+      if ((this._loadingUrls.get(label) ?? url) !== url) {
+        const loadingUrl = this._loadingUrls.get(label) ?? "";
+        throw new ExternalDataError(
+          "validation-error",
+          `Label "${label}" is already loading from "${formatSourceOrigin(loadingUrl)}", cannot load from "${formatSourceOrigin(url)}"`,
+        );
+      }
+      return inflight;
+    }
 
     if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
       throw new ExternalDataError(
@@ -86,6 +120,7 @@ export class ExternalDataService {
       .then((meta) => {
         if (this._loading.get(label) === promise) {
           this._loading.delete(label);
+          this._loadingUrls.delete(label);
           this._metadata.set(label, meta);
         }
         return meta;
@@ -93,11 +128,13 @@ export class ExternalDataService {
       .catch((err) => {
         if (this._loading.get(label) === promise) {
           this._loading.delete(label);
+          this._loadingUrls.delete(label);
         }
         throw err;
       });
 
     this._loading.set(label, promise);
+    this._loadingUrls.set(label, url);
     return promise;
   }
 
@@ -111,10 +148,58 @@ export class ExternalDataService {
     return this._metadata.has(label);
   }
 
+  /** Return labels currently cached in-memory (including in-flight loads). */
+  getLoadedLabels(): string[] {
+    return [...new Set([...this._metadata.keys(), ...this._loading.keys()])];
+  }
+
+  /**
+   * Load a source from a URL, using an explicit caller-provided label.
+   * Convenience wrapper around loadSource for the load-external modal.
+   */
+  async loadFromUrl(url: string, label: string): Promise<ExternalStoreMetadata> {
+    return this.loadSource({ label, url });
+  }
+
+  /**
+   * Load a source from a local directory using the File System Access API.
+   * The label must be unique (caller is responsible for checking).
+   * The FileSystemDirectoryHandle is retained for subsequent slice loads.
+   */
+  async loadFromDirectory(
+    handle: FileSystemDirectoryHandle,
+    label: string,
+  ): Promise<ExternalStoreMetadata> {
+    if (this._metadata.has(label) || this._loading.has(label)) {
+      const cached = this._metadata.get(label);
+      const loadingUrl = this._loadingUrls.get(label) ?? "";
+      const existingOrigin = cached
+        ? formatSourceOrigin(cached.url)
+        : formatSourceOrigin(loadingUrl);
+      throw new ExternalDataError(
+        "validation-error",
+        `Label "${label}" is already loaded from "${existingOrigin}", cannot load from "${formatSourceOrigin("")}"`,
+      );
+    }
+    if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
+      throw new ExternalDataError(
+        "validation-error",
+        `Too many external sources: maximum is ${MAX_SOURCES}`,
+      );
+    }
+    const store = new FileSystemDirectoryHandleStore(handle);
+    const meta = await loadStoreMetadataFromStore(store, { label, url: "" });
+    this._stores.set(label, store);
+    this._metadata.set(label, meta);
+    return meta;
+  }
+
   /** Remove a source from all caches (e.g. when extdata params change). */
   evict(label: string): void {
     this._metadata.delete(label);
     this._loading.delete(label);
+    this._loadingUrls.delete(label);
+    this._stores.delete(label);
     for (const key of [...this._stpCache.keys()]) {
       if (key.startsWith(`${label}:`)) this._stpCache.delete(key);
     }
@@ -127,6 +212,8 @@ export class ExternalDataService {
   clear(): void {
     this._metadata.clear();
     this._loading.clear();
+    this._loadingUrls.clear();
+    this._stores.clear();
     this._stpCache.clear();
     this._csdaCache.clear();
   }
@@ -152,7 +239,8 @@ export class ExternalDataService {
     const cached = this._stpCache.get(cacheKey);
     if (cached) return cached;
 
-    const raw = await loadStpSlice(meta.url, programId, particle.index, material.index);
+    const storeOverride = this._stores.get(label);
+    const raw = await loadStpSlice(meta.url, programId, particle.index, material.index, storeOverride);
     const energyGridMev = convertEnergyGrid(meta.energyGrid, meta.energyUnit, particle.A);
     const values = convertStpColumn(raw, meta.stpUnit, material.density);
 
@@ -187,7 +275,8 @@ export class ExternalDataService {
 
     if (meta.hasCsdaRange) {
       // Load CSDA from the zarr store.
-      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index);
+      const storeOverride = this._stores.get(label);
+      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index, storeOverride);
       if (raw === null) {
         this._csdaCache.set(cacheKey, null);
         return null;

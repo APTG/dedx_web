@@ -51,13 +51,20 @@
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
+  import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
   import type { ExternalDataError } from "$lib/external-data/errors";
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
+  import type {
+    ExternalSourceDescriptor,
+    EntityId,
+    ExtRef,
+  } from "$lib/external-data/types";
+  import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { parseExtdataParams } from "$lib/external-data/url";
+  import type { CompatibilityMatrix } from "$lib/wasm/types";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { CalculationResult } from "$lib/wasm/types";
 
@@ -77,9 +84,81 @@
   let externalLoading = $state(false);
   let externalError = $state<ExternalDataError | null>(null);
   let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
+  let compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
+  let showLoadExternalModal = $state(false);
+
+  /**
+   * After external-source add/remove, reset now-invalid selections to safe fallbacks.
+   * Fallback order: Auto-select for program, first available particle, Water (if
+   * present) then first available material.
+   */
+  function reconcileSelectionAfterExternalContextChange(state: EntitySelectionState): void {
+    const selectedProgramId = state.selectedProgram.id;
+    const availableProgramIds = new Set([
+      ...state.availablePrograms.map((program) => program.id),
+      ...state.availableExternalPrograms.map((program) => program.id),
+    ]);
+    if (!availableProgramIds.has(selectedProgramId)) {
+      state.selectProgram(-1);
+    }
+
+    const selectedParticleId = state.selectedParticle?.id ?? null;
+    const availableParticleIds = new Set(state.availableParticles.map((particle) => particle.id));
+    if (selectedParticleId !== null && !availableParticleIds.has(selectedParticleId)) {
+      state.selectParticle(state.availableParticles[0]?.id ?? null);
+    }
+
+    const selectedMaterialId = state.selectedMaterial?.id ?? null;
+    const availableMaterialIds = new Set(state.availableMaterials.map((material) => material.id));
+    if (selectedMaterialId !== null && !availableMaterialIds.has(selectedMaterialId)) {
+      const fallbackMaterial =
+        state.availableMaterials.find((material) => material.id === WATER_ID)?.id ??
+        state.availableMaterials[0]?.id ??
+        null;
+      state.selectMaterial(fallbackMaterial);
+    }
+  }
 
   function handleRemoveExternalSource(label: string): void {
     loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
+    // Rebuild external context without the removed source
+    if (entityState && compatibilityMatrix) {
+      const remaining = loadedExternalSources
+        .map((s) => externalDataService.getMetadata(s.label))
+        .filter((m): m is ExternalStoreMetadata => m !== undefined);
+      const extCtx = buildExternalCompatibilityContext(
+        remaining,
+        compatibilityMatrix.allParticles,
+        compatibilityMatrix.allMaterials,
+      );
+      entityState.setExternalContext(extCtx);
+      reconcileSelectionAfterExternalContextChange(entityState);
+    }
+  }
+
+  async function handleModalLoad(
+    descriptor: ExternalSourceDescriptor,
+    metadata: ExternalStoreMetadata,
+  ) {
+    showLoadExternalModal = false;
+    if (!entityState || !compatibilityMatrix) return;
+
+    // Append new source and rebuild the external compatibility context
+    loadedExternalSources = [...loadedExternalSources, descriptor];
+    const allMetadata = loadedExternalSources
+      .map((s) => externalDataService.getMetadata(s.label))
+      .filter((m): m is ExternalStoreMetadata => m !== undefined);
+    // Ensure the newly loaded metadata is included (it may not be in cache yet if FSDH)
+    const merged = allMetadata.some((m) => m.label === metadata.label)
+      ? allMetadata
+      : [...allMetadata, metadata];
+    const extCtx = buildExternalCompatibilityContext(
+      merged,
+      compatibilityMatrix.allParticles,
+      compatibilityMatrix.allMaterials,
+    );
+    entityState.setExternalContext(extCtx);
+    reconcileSelectionAfterExternalContextChange(entityState);
   }
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
@@ -175,6 +254,7 @@
           loadedExternalSources = extSources;
 
           const matrix = buildCompatibilityMatrix(service);
+          compatibilityMatrix = matrix;
           const extCtx = buildExternalCompatibilityContext(
             extMetadatas,
             matrix.allParticles,
@@ -1406,8 +1486,15 @@
         selectionState={entityState}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
         collapsible={true}
+        onLoadExternal={() => (showLoadExternalModal = true)}
       />
       <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
+      <LoadExternalModal
+        open={showLoadExternalModal}
+        existingLabels={new Set([...loadedExternalSources.map((s) => s.label), ...externalDataService.getLoadedLabels()])}
+        onLoad={handleModalLoad}
+        onCancel={() => (showLoadExternalModal = false)}
+      />
       {#if isAdvancedMode.value && multiProgState && entityState}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <MultiProgramPicker

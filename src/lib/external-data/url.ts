@@ -88,7 +88,12 @@ export function appendExtdataParams(
  * The label separator colon is literal. The URL is percent-encoded so that
  * its own colons (e.g. `https:`) never appear literally in the query string
  * — which is required by the formal URL grammar §2 `extdata-pair` rule.
+ *
+ * File-based sources (blob: URLs or empty-string URLs for FSDH stores) are
+ * ephemeral and not shareable via URL — they are silently excluded.
  */
 export function externalDataQuerySegments(sources: ExternalSourceDescriptor[]): string[] {
-  return sources.map((s) => `extdata=${s.label}:${encodeURIComponent(s.url)}`);
+  return sources
+    .filter((s) => /^https?:\/\//i.test(s.url))
+    .map((s) => `extdata=${s.label}:${encodeURIComponent(s.url)}`);
 }

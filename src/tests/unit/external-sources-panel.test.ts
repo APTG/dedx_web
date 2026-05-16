@@ -155,4 +155,17 @@ describe("ExternalSourcesPanel", () => {
     // Metadata should now be visible
     expect(screen.getByText(/Test Author/)).toBeInTheDocument();
   });
+
+  it("shows a local-directory marker instead of an empty link for local sources", async () => {
+    const user = userEvent.setup();
+    render(ExternalSourcesPanel, {
+      props: { sources: [{ label: "srim", url: "" }] },
+    });
+
+    await user.click(screen.getByTestId("external-sources-summary"));
+    await user.click(screen.getByTestId("external-source-summary-srim"));
+
+    expect(screen.getByText("Local directory (not shareable)")).toBeInTheDocument();
+    expect(screen.queryByRole("link")).toBeNull();
+  });
 });
