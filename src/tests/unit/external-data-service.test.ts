@@ -12,11 +12,23 @@ import type { ExternalStoreMetadata } from "$lib/external-data/schema";
 
 vi.mock("$lib/external-data/loader", () => ({
   loadStoreMetadata: vi.fn(),
+  loadStoreMetadataFromStore: vi.fn(),
   loadStpSlice: vi.fn(),
   loadCsdaSlice: vi.fn(),
 }));
 
-import { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "$lib/external-data/loader";
+vi.mock("$lib/external-data/fsdh-store", () => ({
+  FileSystemDirectoryHandleStore: class MockFileSystemDirectoryHandleStore {
+    constructor(readonly __handle: unknown) {}
+  },
+}));
+
+import {
+  loadStoreMetadata,
+  loadStoreMetadataFromStore,
+  loadStpSlice,
+  loadCsdaSlice,
+} from "$lib/external-data/loader";
 
 // ── Test fixtures ─────────────────────────────────────────────────────────────
 
@@ -50,6 +62,7 @@ function makeMetadata(
 describe("ExternalDataService", () => {
   let svc: ExternalDataService;
   const mockLoadStoreMetadata = vi.mocked(loadStoreMetadata);
+  const mockLoadStoreMetadataFromStore = vi.mocked(loadStoreMetadataFromStore);
   const mockLoadStpSlice = vi.mocked(loadStpSlice);
   const mockLoadCsdaSlice = vi.mocked(loadCsdaSlice);
 
@@ -163,6 +176,56 @@ describe("ExternalDataService", () => {
       ).rejects.toMatchObject({ code: "validation-error" });
 
       await Promise.all(pending);
+    });
+
+    it("throws when reusing a loaded label with a different URL", async () => {
+      mockLoadStoreMetadata.mockResolvedValueOnce(makeMetadata("srim"));
+      await svc.loadSource({ label: "srim", url: "https://example.com/srim.webdedx" });
+      await expect(
+        svc.loadSource({ label: "srim", url: "https://other.example.com/srim.webdedx" }),
+      ).rejects.toMatchObject({ code: "validation-error" });
+    });
+  });
+
+  describe("loadFromDirectory", () => {
+    it("loads metadata from a custom store override and uses it for slice reads", async () => {
+      const localMeta = { ...makeMetadata("local"), url: "" };
+      mockLoadStoreMetadataFromStore.mockResolvedValueOnce(localMeta);
+      mockLoadStpSlice.mockResolvedValueOnce(new Float32Array([10.0, 5.0, 2.5]));
+      const handle = { name: "local.webdedx" } as unknown as FileSystemDirectoryHandle;
+
+      await svc.loadFromDirectory(handle, "local");
+      await svc.getStp("local", "prog1", "p", "water");
+
+      expect(mockLoadStoreMetadataFromStore).toHaveBeenCalledWith(
+        expect.any(Object),
+        expect.objectContaining({ label: "local", url: "" }),
+      );
+      expect(mockLoadStpSlice).toHaveBeenCalledWith("", "prog1", 0, 0, expect.any(Object));
+    });
+
+    it("evict clears directory store overrides", async () => {
+      const localMeta = { ...makeMetadata("local"), url: "" };
+      mockLoadStoreMetadataFromStore.mockResolvedValueOnce(localMeta);
+      await svc.loadFromDirectory(
+        { name: "local.webdedx" } as unknown as FileSystemDirectoryHandle,
+        "local",
+      );
+
+      svc.evict("local");
+      expect(await svc.getStp("local", "prog1", "p", "water")).toBeNull();
+    });
+
+    it("clear removes all directory store overrides", async () => {
+      const localMeta = { ...makeMetadata("local"), url: "" };
+      mockLoadStoreMetadataFromStore.mockResolvedValueOnce(localMeta);
+      await svc.loadFromDirectory(
+        { name: "local.webdedx" } as unknown as FileSystemDirectoryHandle,
+        "local",
+      );
+
+      svc.clear();
+      expect(await svc.getStp("local", "prog1", "p", "water")).toBeNull();
     });
   });
 

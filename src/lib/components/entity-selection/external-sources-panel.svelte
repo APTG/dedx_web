@@ -102,12 +102,16 @@
                   </dd>
                   <dt class="font-medium">URL</dt>
                   <dd>
-                    <a
-                      class="break-all text-primary underline"
-                      href={src.url}
-                      target="_blank"
-                      rel="noopener noreferrer">{src.url}</a
-                    >
+                    {#if src.url}
+                      <a
+                        class="break-all text-primary underline"
+                        href={src.url}
+                        target="_blank"
+                        rel="noopener noreferrer">{src.url}</a
+                      >
+                    {:else}
+                      <span>Local directory (not shareable)</span>
+                    {/if}
                   </dd>
                 </dl>
               {/if}

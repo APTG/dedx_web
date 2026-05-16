@@ -324,6 +324,25 @@ describe("externalDataQuerySegments", () => {
     const segs = externalDataQuerySegments([{ label: "my-data", url: "https://x.com/" }]);
     expect(segs[0]).toMatch(/^extdata=my-data:/);
   });
+
+  it("keeps uppercase HTTP(S) schemes", () => {
+    expect(externalDataQuerySegments([{ label: "u", url: "HTTPS://example.com/a.webdedx" }])).toEqual([
+      "extdata=u:HTTPS%3A%2F%2Fexample.com%2Fa.webdedx",
+    ]);
+    expect(externalDataQuerySegments([{ label: "u", url: "HTTP://localhost:5173/a.webdedx" }])).toEqual([
+      "extdata=u:HTTP%3A%2F%2Flocalhost%3A5173%2Fa.webdedx",
+    ]);
+  });
+
+  it("excludes non-http sources (empty, blob, file)", () => {
+    const segs = externalDataQuerySegments([
+      { label: "a", url: "" },
+      { label: "b", url: "blob:https://example.com/uuid" },
+      { label: "c", url: "file:///tmp/test.webdedx" },
+      { label: "d", url: "https://ok.example.com/ok.webdedx" },
+    ]);
+    expect(segs).toEqual(["extdata=d:https%3A%2F%2Fok.example.com%2Fok.webdedx"]);
+  });
 });
 
 // ---------------------------------------------------------------------------

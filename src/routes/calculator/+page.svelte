@@ -87,6 +87,33 @@
   let compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
   let showLoadExternalModal = $state(false);
 
+  function reconcileSelectionAfterExternalContextChange(state: EntitySelectionState): void {
+    const selectedProgramId = state.selectedProgram.id;
+    const availableProgramIds = new Set([
+      ...state.availablePrograms.map((program) => program.id),
+      ...state.availableExternalPrograms.map((program) => program.id),
+    ]);
+    if (!availableProgramIds.has(selectedProgramId)) {
+      state.selectProgram(-1);
+    }
+
+    const selectedParticleId = state.selectedParticle?.id ?? null;
+    const availableParticleIds = new Set(state.availableParticles.map((particle) => particle.id));
+    if (selectedParticleId !== null && !availableParticleIds.has(selectedParticleId)) {
+      state.selectParticle(state.availableParticles[0]?.id ?? null);
+    }
+
+    const selectedMaterialId = state.selectedMaterial?.id ?? null;
+    const availableMaterialIds = new Set(state.availableMaterials.map((material) => material.id));
+    if (selectedMaterialId !== null && !availableMaterialIds.has(selectedMaterialId)) {
+      const fallbackMaterial =
+        state.availableMaterials.find((material) => material.id === WATER_ID)?.id ??
+        state.availableMaterials[0]?.id ??
+        null;
+      state.selectMaterial(fallbackMaterial);
+    }
+  }
+
   function handleRemoveExternalSource(label: string): void {
     loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
     // Rebuild external context without the removed source
@@ -100,6 +127,7 @@
         compatibilityMatrix.allMaterials,
       );
       entityState.setExternalContext(extCtx);
+      reconcileSelectionAfterExternalContextChange(entityState);
     }
   }
 
@@ -125,6 +153,7 @@
       compatibilityMatrix.allMaterials,
     );
     entityState.setExternalContext(extCtx);
+    reconcileSelectionAfterExternalContextChange(entityState);
   }
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
@@ -1457,7 +1486,7 @@
       <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
       <LoadExternalModal
         open={showLoadExternalModal}
-        existingLabels={new Set(loadedExternalSources.map((s) => s.label))}
+        existingLabels={new Set([...loadedExternalSources.map((s) => s.label), ...externalDataService.getLoadedLabels()])}
         onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
       />

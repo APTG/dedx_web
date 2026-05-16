@@ -55,6 +55,7 @@ export class ExternalDataService {
 
   /** In-flight metadata loads, deduped by label. */
   private readonly _loading = new Map<string, Promise<ExternalStoreMetadata>>();
+  private readonly _loadingUrls = new Map<string, string>();
 
   /**
    * Custom store instances keyed by label — only present for file-based sources.
@@ -79,13 +80,29 @@ export class ExternalDataService {
    * Throws ExternalDataError on validation failure or network problems.
    */
   async loadSource(descriptor: ExternalSourceDescriptor): Promise<ExternalStoreMetadata> {
-    const { label } = descriptor;
+    const { label, url } = descriptor;
 
     const cached = this._metadata.get(label);
-    if (cached) return cached;
+    if (cached) {
+      if (cached.url !== url) {
+        throw new ExternalDataError(
+          "validation-error",
+          `Label "${label}" is already loaded from a different source`,
+        );
+      }
+      return cached;
+    }
 
     const inflight = this._loading.get(label);
-    if (inflight) return inflight;
+    if (inflight) {
+      if ((this._loadingUrls.get(label) ?? url) !== url) {
+        throw new ExternalDataError(
+          "validation-error",
+          `Label "${label}" is already loading from a different source`,
+        );
+      }
+      return inflight;
+    }
 
     if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
       throw new ExternalDataError(
@@ -98,6 +115,7 @@ export class ExternalDataService {
       .then((meta) => {
         if (this._loading.get(label) === promise) {
           this._loading.delete(label);
+          this._loadingUrls.delete(label);
           this._metadata.set(label, meta);
         }
         return meta;
@@ -105,11 +123,13 @@ export class ExternalDataService {
       .catch((err) => {
         if (this._loading.get(label) === promise) {
           this._loading.delete(label);
+          this._loadingUrls.delete(label);
         }
         throw err;
       });
 
     this._loading.set(label, promise);
+    this._loadingUrls.set(label, url);
     return promise;
   }
 
@@ -121,6 +141,11 @@ export class ExternalDataService {
   /** True if the metadata for this label has already been loaded. */
   isLoaded(label: string): boolean {
     return this._metadata.has(label);
+  }
+
+  /** Return labels currently cached in-memory (including in-flight loads). */
+  getLoadedLabels(): string[] {
+    return [...new Set([...this._metadata.keys(), ...this._loading.keys()])];
   }
 
   /**
@@ -140,8 +165,11 @@ export class ExternalDataService {
     handle: FileSystemDirectoryHandle,
     label: string,
   ): Promise<ExternalStoreMetadata> {
-    if (this._metadata.has(label)) {
-      return this._metadata.get(label)!;
+    if (this._metadata.has(label) || this._loading.has(label)) {
+      throw new ExternalDataError(
+        "validation-error",
+        `Label "${label}" is already loaded from a different source`,
+      );
     }
     if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
       throw new ExternalDataError(
@@ -160,6 +188,7 @@ export class ExternalDataService {
   evict(label: string): void {
     this._metadata.delete(label);
     this._loading.delete(label);
+    this._loadingUrls.delete(label);
     this._stores.delete(label);
     for (const key of [...this._stpCache.keys()]) {
       if (key.startsWith(`${label}:`)) this._stpCache.delete(key);
@@ -173,6 +202,7 @@ export class ExternalDataService {
   clear(): void {
     this._metadata.clear();
     this._loading.clear();
+    this._loadingUrls.clear();
     this._stores.clear();
     this._stpCache.clear();
     this._csdaCache.clear();

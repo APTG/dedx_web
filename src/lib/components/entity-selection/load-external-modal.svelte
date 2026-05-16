@@ -9,8 +9,10 @@
   const RECENTS_KEY = "webdedx.externalRecents.v1";
   const MAX_RECENTS = 5;
   const LABEL_RE = /^[A-Za-z0-9_-]+$/;
-  /** Matches http(s):// … .webdedx with optional trailing slash. */
-  const URL_RE = /^https?:\/\/.+\.webdedx\/?$/i;
+  /** Matches https:// … .webdedx with optional trailing slash. */
+  const HTTPS_URL_RE = /^https:\/\/.+\.webdedx\/?$/i;
+  const LOCALHOST_HTTP_URL_RE =
+    /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\/.+\.webdedx\/?$/i;
 
   interface ExternalRecent {
     url: string;
@@ -89,7 +91,11 @@
     if (typeof localStorage === "undefined") return;
     const entry: ExternalRecent = { url, label, name, loadedAt: Date.now() };
     const updated = [entry, ...loadRecents().filter((r) => r.url !== url)].slice(0, MAX_RECENTS);
-    localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
+    try {
+      localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
+    } catch {
+      // Best-effort persistence only — don't block a successful source load.
+    }
     recents = updated;
   }
 
@@ -144,8 +150,8 @@
       urlError = "URL is required";
       return;
     }
-    if (!URL_RE.test(url)) {
-      urlError = "Must be https:// … .webdedx";
+    if (!HTTPS_URL_RE.test(url) && !LOCALHOST_HTTP_URL_RE.test(url)) {
+      urlError = "Must be https://… .webdedx (http://localhost allowed)";
       return;
     }
     const le = validateLabelValue(label);
@@ -270,7 +276,7 @@
     const uriList = e.dataTransfer?.getData("text/uri-list");
     const text = e.dataTransfer?.getData("text/plain");
     const dropped = (uriList || text || "").trim().split("\n")[0]?.trim() ?? "";
-    if (dropped.startsWith("http")) {
+    if (/^https?:\/\//i.test(dropped)) {
       activeTab = "url";
       handleUrlInput(dropped);
     } else {

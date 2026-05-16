@@ -1000,5 +1000,35 @@ focusable with `tabindex="0"`.
 
 ---
 
+## Entry 48 — Non-critical persistence must be best-effort, never block successful loads
+
+**Symptom:** A successful external source load could still fail in the UI when
+`localStorage.setItem` threw (quota/privacy/security errors) while saving recents.
+
+**Root cause:** The persistence side effect ran on the critical success path and
+its exception was allowed to bubble up.
+
+```typescript
+// ❌ WRONG — optional persistence can fail the whole load operation
+const metadata = await externalDataService.loadFromUrl(url, label);
+localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
+onLoad({ label, url }, metadata);
+
+// ✅ CORRECT — keep core flow independent from optional persistence
+const metadata = await externalDataService.loadFromUrl(url, label);
+try {
+  localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
+} catch {
+  // best-effort only
+}
+onLoad({ label, url }, metadata);
+```
+
+**Rule:** Wrap non-critical persistence/telemetry (`localStorage`, hints,
+analytics) in local try/catch so successful user actions are never downgraded to
+failures by optional side effects.
+
+---
+
 _Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

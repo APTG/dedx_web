@@ -94,6 +94,6 @@ export function appendExtdataParams(
  */
 export function externalDataQuerySegments(sources: ExternalSourceDescriptor[]): string[] {
   return sources
-    .filter((s) => s.url.startsWith("http://") || s.url.startsWith("https://"))
+    .filter((s) => /^https?:\/\//i.test(s.url))
     .map((s) => `extdata=${s.label}:${encodeURIComponent(s.url)}`);
 }

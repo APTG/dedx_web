@@ -22,7 +22,18 @@ export interface RangeQuery {
 export class FileSystemDirectoryHandleStore {
   constructor(private readonly root: FileSystemDirectoryHandle) {}
 
-  async get(key: AbsolutePath, opts?: GetOptions): Promise<Uint8Array | undefined> {
+  private static isAbortError(err: unknown): boolean {
+    return err instanceof DOMException && err.name === "AbortError";
+  }
+
+  private static isNotFoundError(err: unknown): boolean {
+    return err instanceof DOMException && err.name === "NotFoundError";
+  }
+
+  private async resolveFile(
+    key: AbsolutePath,
+    opts?: GetOptions,
+  ): Promise<File | undefined> {
     opts?.signal?.throwIfAborted();
     const parts = key.slice(1).split("/").filter(Boolean);
     if (parts.length === 0) return undefined;
@@ -35,10 +46,23 @@ export class FileSystemDirectoryHandleStore {
       const fileHandle = await dir.getFileHandle(parts[parts.length - 1]!);
       opts?.signal?.throwIfAborted();
       const file = await fileHandle.getFile();
-      return new Uint8Array(await file.arrayBuffer());
-    } catch {
-      return undefined;
+      opts?.signal?.throwIfAborted();
+      return file;
+    } catch (err) {
+      if (FileSystemDirectoryHandleStore.isAbortError(err)) {
+        throw err;
+      }
+      if (FileSystemDirectoryHandleStore.isNotFoundError(err)) {
+        return undefined;
+      }
+      throw err;
     }
+  }
+
+  async get(key: AbsolutePath, opts?: GetOptions): Promise<Uint8Array | undefined> {
+    const file = await this.resolveFile(key, opts);
+    if (!file) return undefined;
+    return new Uint8Array(await file.arrayBuffer());
   }
 
   async getRange(
@@ -46,11 +70,18 @@ export class FileSystemDirectoryHandleStore {
     range: RangeQuery | { suffixLength: number },
     opts?: GetOptions,
   ): Promise<Uint8Array | undefined> {
-    const full = await this.get(key, opts);
-    if (!full) return undefined;
+    const file = await this.resolveFile(key, opts);
+    if (!file) return undefined;
+    const size = file.size;
+    let start: number;
+    let end = size;
     if ("suffixLength" in range) {
-      return full.slice(full.length - range.suffixLength);
+      start = Math.max(0, size - Math.max(0, range.suffixLength));
+    } else {
+      start = Math.max(0, range.offset);
+      end = Math.min(size, start + Math.max(0, range.length));
     }
-    return full.slice(range.offset, range.offset + range.length);
+    const slice = file.slice(start, end);
+    return new Uint8Array(await slice.arrayBuffer());
   }
 }
