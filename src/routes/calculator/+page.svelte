@@ -87,6 +87,11 @@
   let compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
   let showLoadExternalModal = $state(false);
 
+  /**
+   * After external-source add/remove, reset now-invalid selections to safe fallbacks.
+   * Fallback order: Auto-select for program, first available particle, Water (if
+   * present) then first available material.
+   */
   function reconcileSelectionAfterExternalContextChange(state: EntitySelectionState): void {
     const selectedProgramId = state.selectedProgram.id;
     const availableProgramIds = new Set([

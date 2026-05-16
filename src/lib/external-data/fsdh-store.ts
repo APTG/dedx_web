@@ -73,14 +73,14 @@ export class FileSystemDirectoryHandleStore {
     const file = await this.resolveFile(key, opts);
     if (!file) return undefined;
     const size = file.size;
-    let start: number;
-    let end = size;
-    if ("suffixLength" in range) {
-      start = Math.max(0, size - Math.max(0, range.suffixLength));
-    } else {
-      start = Math.max(0, range.offset);
-      end = Math.min(size, start + Math.max(0, range.length));
-    }
+    // Clamp to valid file bounds: callers may request ranges outside [0, size).
+    const [start, end] =
+      "suffixLength" in range
+        ? [Math.max(0, size - Math.max(0, range.suffixLength)), size]
+        : [
+            Math.max(0, range.offset),
+            Math.min(size, Math.max(0, range.offset) + Math.max(0, range.length)),
+          ];
     const slice = file.slice(start, end);
     return new Uint8Array(await slice.arrayBuffer());
   }

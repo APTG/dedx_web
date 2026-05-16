@@ -121,6 +121,13 @@
     return null;
   }
 
+  function validateExternalUrl(url: string): string | null {
+    if (!HTTPS_URL_RE.test(url) && !LOCALHOST_HTTP_URL_RE.test(url)) {
+      return "Must be https://… .webdedx (http://localhost allowed)";
+    }
+    return null;
+  }
+
   // --- URL tab handlers ---
 
   function handleUrlInput(value: string) {
@@ -150,8 +157,9 @@
       urlError = "URL is required";
       return;
     }
-    if (!HTTPS_URL_RE.test(url) && !LOCALHOST_HTTP_URL_RE.test(url)) {
-      urlError = "Must be https://… .webdedx (http://localhost allowed)";
+    const ue = validateExternalUrl(url);
+    if (ue) {
+      urlError = ue;
       return;
     }
     const le = validateLabelValue(label);
@@ -279,6 +287,7 @@
     if (/^https?:\/\//i.test(dropped)) {
       activeTab = "url";
       handleUrlInput(dropped);
+      urlError = validateExternalUrl(dropped);
     } else {
       fileLoadError = "Drop a .webdedx directory or paste a URL";
       activeTab = "file";

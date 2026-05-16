@@ -26,6 +26,10 @@ import { interpolate, type InterpolationScale } from "./interpolation.js";
 /** Maximum number of simultaneously loaded external sources. */
 const MAX_SOURCES = 5;
 
+function formatSourceOrigin(url: string): string {
+  return url || "local directory";
+}
+
 /**
  * A cached, converted STP column for one (program, particle, material) triple.
  * Values are in MeV·cm²/g. Null entries indicate conversion failure (e.g. missing density).
@@ -87,7 +91,7 @@ export class ExternalDataService {
       if (cached.url !== url) {
         throw new ExternalDataError(
           "validation-error",
-          `Label "${label}" is already loaded from a different source`,
+          `Label "${label}" is already loaded from "${formatSourceOrigin(cached.url)}", cannot load from "${formatSourceOrigin(url)}"`,
         );
       }
       return cached;
@@ -96,9 +100,10 @@ export class ExternalDataService {
     const inflight = this._loading.get(label);
     if (inflight) {
       if ((this._loadingUrls.get(label) ?? url) !== url) {
+        const loadingUrl = this._loadingUrls.get(label) ?? "";
         throw new ExternalDataError(
           "validation-error",
-          `Label "${label}" is already loading from a different source`,
+          `Label "${label}" is already loading from "${formatSourceOrigin(loadingUrl)}", cannot load from "${formatSourceOrigin(url)}"`,
         );
       }
       return inflight;
@@ -166,9 +171,14 @@ export class ExternalDataService {
     label: string,
   ): Promise<ExternalStoreMetadata> {
     if (this._metadata.has(label) || this._loading.has(label)) {
+      const cached = this._metadata.get(label);
+      const loadingUrl = this._loadingUrls.get(label) ?? "";
+      const existingOrigin = cached
+        ? formatSourceOrigin(cached.url)
+        : formatSourceOrigin(loadingUrl);
       throw new ExternalDataError(
         "validation-error",
-        `Label "${label}" is already loaded from a different source`,
+        `Label "${label}" is already loaded from "${existingOrigin}", cannot load from "${formatSourceOrigin("")}"`,
       );
     }
     if (this._metadata.size + this._loading.size >= MAX_SOURCES) {
