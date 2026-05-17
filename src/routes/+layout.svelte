@@ -42,8 +42,6 @@
     const url = window.location.href;
     try {
       if (!navigator.clipboard?.writeText) {
-        // Insecure context / older browser — surface a non-fatal error so the
-        // user knows the click registered but the URL was not copied.
         throw new Error("Clipboard API unavailable");
       }
       await navigator.clipboard.writeText(url);
@@ -76,72 +74,17 @@
 </script>
 
 <div class="min-h-screen bg-background">
-  <nav class="border-b bg-card">
+  <nav class="border-b bg-card" data-testid="app-nav">
     <div class="container mx-auto px-4">
-      <div class="flex flex-col sm:flex-row sm:h-14 sm:items-center sm:justify-between">
-        <!-- Row 1: logo + page links -->
-        <div class="flex h-12 sm:h-auto items-center gap-3 min-w-0">
-          <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl shrink-0">
-            <img src={`${base}/favicon.svg`} alt="webdedx" class="h-6 w-6" />
-            <span class="hidden sm:inline">webdedx</span>
-          </a>
-          <div class="flex items-center gap-4 text-sm">
-            <a
-              href={`${base}/calculator`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath === "/calculator"}
-              class:text-muted-foreground={routePath !== "/calculator"}
-            >
-              Calculator
-            </a>
-            <a
-              href={`${base}/plot`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath === "/plot"}
-              class:text-muted-foreground={routePath !== "/plot"}
-            >
-              Plot
-            </a>
-            <a
-              href={`${base}/docs`}
-              class="transition-colors hover:text-foreground/80"
-              class:text-foreground={routePath.startsWith("/docs")}
-              class:text-muted-foreground={!routePath.startsWith("/docs")}
-            >
-              Docs
-            </a>
-          </div>
-        </div>
+      <!-- Row 1: logo + secondary controls (mode toggle, export, share) -->
+      <div class="flex h-12 items-center justify-between gap-2">
+        <a href={`${base}/`} class="flex items-center gap-2 font-bold text-xl shrink-0">
+          <img src={`${base}/favicon.svg`} alt="webdedx" class="h-6 w-6" />
+          <span class="hidden sm:inline">webdedx</span>
+        </a>
 
-        <!-- Row 2 (mobile) / right side (desktop): mode toggle + actions -->
-        <div
-          class="flex items-center justify-between sm:justify-end gap-2 shrink-0 pb-2 sm:pb-0 border-t sm:border-t-0 border-border/40"
-        >
-          <!-- Basic/Advanced mode toggle -->
-          <div class="flex items-center rounded-md border border-border overflow-hidden text-sm">
-            <button
-              type="button"
-              class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              aria-pressed={!isAdvancedMode.value}
-              aria-label="Switch to Basic mode"
-              onclick={() => {
-                if (isAdvancedMode.value) toggleAdvancedMode();
-              }}
-            >
-              Basic
-            </button>
-            <button
-              type="button"
-              class={`px-3 py-1.5 transition-colors ${isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              aria-pressed={isAdvancedMode.value}
-              aria-label="Switch to Advanced mode"
-              onclick={() => {
-                if (!isAdvancedMode.value) toggleAdvancedMode();
-              }}
-            >
-              Advanced
-            </button>
-          </div>
+        <div class="flex items-center gap-2 shrink-0">
+          <!-- Export buttons: desktop only -->
           <div class="hidden sm:flex items-center gap-2">
             <Button
               data-testid="export-pdf-btn"
@@ -175,6 +118,8 @@
               Export CSV
             </Button>
           </div>
+
+          <!-- Share URL: always visible -->
           <Button variant="outline" size="sm" onclick={shareUrl}>
             {#if copied}
               <span aria-live="polite">Copied!</span>
@@ -184,7 +129,71 @@
               Share URL
             {/if}
           </Button>
+
+          <!-- Basic/Advanced mode toggle chip -->
+          <div
+            class="flex items-center rounded-md border border-border overflow-hidden text-sm"
+            role="group"
+            aria-label="Display mode"
+          >
+            <button
+              type="button"
+              class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+              aria-pressed={!isAdvancedMode.value}
+              aria-label="Switch to Basic mode"
+              onclick={() => {
+                if (isAdvancedMode.value) toggleAdvancedMode();
+              }}
+            >
+              Basic
+            </button>
+            <button
+              type="button"
+              class={`px-3 py-1.5 transition-colors ${isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+              aria-pressed={isAdvancedMode.value}
+              aria-label="Switch to Advanced mode"
+              onclick={() => {
+                if (!isAdvancedMode.value) toggleAdvancedMode();
+              }}
+            >
+              Advanced
+            </button>
+          </div>
         </div>
+      </div>
+
+      <!-- Row 2: primary route navigation tabs -->
+      <div class="flex border-t border-border/40" data-testid="route-tabs">
+        <a
+          href={`${base}/calculator`}
+          class="route-tab"
+          class:route-tab-active={routePath === "/calculator"}
+          class:route-tab-inactive={routePath !== "/calculator"}
+          aria-current={routePath === "/calculator" ? "page" : undefined}
+          data-testid="route-tab-calculator"
+        >
+          Calculator
+        </a>
+        <a
+          href={`${base}/plot`}
+          class="route-tab"
+          class:route-tab-active={routePath === "/plot"}
+          class:route-tab-inactive={routePath !== "/plot"}
+          aria-current={routePath === "/plot" ? "page" : undefined}
+          data-testid="route-tab-plot"
+        >
+          Plot
+        </a>
+        <a
+          href={`${base}/docs`}
+          class="route-tab"
+          class:route-tab-active={routePath.startsWith("/docs")}
+          class:route-tab-inactive={!routePath.startsWith("/docs")}
+          aria-current={routePath.startsWith("/docs") ? "page" : undefined}
+          data-testid="route-tab-docs"
+        >
+          Docs
+        </a>
       </div>
     </div>
   </nav>
@@ -241,3 +250,57 @@
     </div>
   </footer>
 </div>
+
+<style>
+  .route-tab {
+    display: flex;
+    flex: 1 1 0%;
+    align-items: center;
+    justify-content: center;
+    min-height: 3rem; /* 48px — meets WCAG touch target on mobile */
+    padding-inline: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    text-align: center;
+    transition: background-color 0.15s, color 0.15s;
+    position: relative;
+  }
+
+  @media (min-width: 640px) {
+    .route-tab {
+      min-height: 2.25rem; /* 36px on desktop — compact */
+    }
+  }
+
+  .route-tab-active {
+    color: var(--foreground);
+    font-weight: 600;
+    background-color: color-mix(in oklch, var(--primary) 8%, transparent);
+  }
+
+  /* Bottom border accent on active tab */
+  .route-tab-active::after {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background-color: var(--primary);
+  }
+
+  .route-tab-inactive {
+    color: var(--muted-foreground);
+  }
+
+  .route-tab-inactive:hover {
+    color: var(--foreground);
+    background-color: var(--accent);
+  }
+
+  /* Visible focus ring for keyboard navigation */
+  .route-tab:focus-visible {
+    outline: 2px solid var(--ring, var(--primary));
+    outline-offset: -2px;
+  }
+</style>
