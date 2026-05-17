@@ -134,8 +134,8 @@
       {multiIds}
       {autoResolved}
       {onSelect}
+      onAutoSelect={() => selectionState.selectProgram(-1)}
       onToggleMulti={(id) => selectionState.toggleMulti("program", id)}
-      {getProgramName}
     />
   {:else}
     <!-- Medium+ bucket: auto-select hero + bounded-scroll list -->

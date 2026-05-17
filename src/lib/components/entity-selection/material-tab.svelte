@@ -88,7 +88,7 @@
 
   $effect(() => {
     // Re-evaluate fade when filtered list changes.
-    const _ = filteredActive;
+    void filteredActive;
     queueMicrotask(updateFade);
   });
 
@@ -163,6 +163,7 @@
   const filteredElements = $derived(elements.filter((m) => matches(m, query)));
   const filteredCompounds = $derived(compounds.filter((m) => matches(m, query)));
   const filteredCustom = $derived(customItems.filter((m) => matches(m, query)));
+  const hasQuery = $derived(query.trim().length > 0);
 
   const filteredActive = $derived(
     activeSubTab === "elements"
@@ -450,7 +451,7 @@
       )}
       onclick={() => setSubTab("compounds")}
     >
-      Compounds {filteredCompounds.length > 0 || !query ? compounds.length : "0"}
+      Compounds {hasQuery ? filteredCompounds.length : compounds.length}
     </button>
     <button
       type="button"
@@ -465,7 +466,7 @@
       )}
       onclick={() => setSubTab("elements")}
     >
-      Elements {filteredElements.length > 0 || !query ? elements.length : "0"}
+      Elements {hasQuery ? filteredElements.length : elements.length}
     </button>
     {#if isAdvancedMode.value}
       <button
@@ -481,7 +482,7 @@
         )}
         onclick={() => setSubTab("custom")}
       >
-        Custom {customItems.length}
+        Custom {hasQuery ? filteredCustom.length : customItems.length}
       </button>
     {/if}
   </div>

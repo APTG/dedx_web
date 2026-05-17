@@ -80,15 +80,8 @@ export interface EntitySelectionState {
     program: (number | string)[];
   };
 
-  /** Active material sub-tab: 'compounds' | 'elements' | 'custom'. Persisted to localStorage. */
-  materialSubtab: "compounds" | "elements" | "custom";
   /** Whether the full-screen search sheet is open. */
   sheetOpen: boolean;
-  /** Scroll positions keyed by tab+subtab, e.g. 'material:compounds'. */
-  scrollPositions: Record<string, number>;
-
-  /** Update the active material sub-tab and persist to localStorage. */
-  setMaterialSubtab(tab: "compounds" | "elements" | "custom"): void;
   /** Open or close the full-screen search sheet. */
   setSheetOpen(open: boolean): void;
 
@@ -185,19 +178,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let multiProgram = $state<(number | string)[]>([]);
 
   // Mobile picker sheet state (issue #530 — adaptive picker kit).
-  function loadMaterialSubtab(): "compounds" | "elements" | "custom" {
-    try {
-      const stored = typeof localStorage !== "undefined" ? localStorage.getItem("webdedx.materialSubtab") : null;
-      if (stored === "elements" || stored === "custom") return stored;
-    } catch {
-      // localStorage unavailable
-    }
-    return "compounds";
-  }
-
-  let materialSubtab = $state<"compounds" | "elements" | "custom">(loadMaterialSubtab());
   let sheetOpen = $state(false);
-  let scrollPositions = $state<Record<string, number>>({});
 
   function resolveAutoSelect(
     particleId: number | string | null,
@@ -670,25 +651,8 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       return extCtx;
     },
 
-    get materialSubtab() {
-      return materialSubtab;
-    },
-
     get sheetOpen() {
       return sheetOpen;
-    },
-
-    get scrollPositions() {
-      return scrollPositions;
-    },
-
-    setMaterialSubtab(tab: "compounds" | "elements" | "custom"): void {
-      materialSubtab = tab;
-      try {
-        localStorage.setItem("webdedx.materialSubtab", tab);
-      } catch {
-        // ignore
-      }
     },
 
     setSheetOpen(open: boolean): void {

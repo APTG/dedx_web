@@ -2,7 +2,7 @@
   import { cn } from "$lib/utils.js";
   import type { ProgramEntity } from "$lib/wasm/types";
   import type { ExternalProgramEntity } from "$lib/state/external-compatibility";
-  import type { SelectedProgram, AutoSelectProgram } from "$lib/state/entity-selection.svelte";
+  import type { SelectedProgram } from "$lib/state/entity-selection.svelte";
   import { getProgramDescription } from "$lib/config/program-names";
   import { programKind } from "$lib/utils/program-kind";
   import ProgramTag from "./program-tag.svelte";
@@ -17,8 +17,8 @@
     multiIds: (number | string)[];
     autoResolved: ProgramEntity | null;
     onSelect: (program: AnyProgram) => void;
+    onAutoSelect: () => void;
     onToggleMulti: (id: number | string) => void;
-    getProgramName: (id: number | string) => string;
   }
 
   let {
@@ -29,8 +29,8 @@
     multiIds,
     autoResolved,
     onSelect,
+    onAutoSelect,
     onToggleMulti,
-    getProgramName,
   }: Props = $props();
 
   const isAuto = $derived(currentProgram.id === -1);
@@ -58,7 +58,7 @@
       )}
       data-testid="picker-program-auto-hero"
       aria-pressed={isAuto}
-      onclick={() => onSelect({ id: -1, name: "Auto-select", resolvedProgram: null } as AutoSelectProgram)}
+      onclick={onAutoSelect}
     >
       <span class="text-base" aria-hidden="true">✦</span>
       <span class="flex-1">

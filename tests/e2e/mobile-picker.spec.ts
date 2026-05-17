@@ -82,9 +82,11 @@ test.describe("Mobile picker — adaptive kit (issue #530 PR A)", () => {
   test("particle sheet search finds carbon with Z=6 tag", async ({ page }) => {
     await page.getByTestId("picker-tab-particle").click();
     await page.getByTestId("picker-particle-search").click();
-    await expect(page.getByTestId("picker-sheet")).toBeVisible();
+    const sheet = page.getByTestId("picker-sheet");
+    await expect(sheet).toBeVisible();
     await page.getByTestId("picker-sheet-input").fill("carbon");
-    await expect(page.getByTestId("picker-particle-item-6")).toBeVisible();
-    await expect(page.getByTestId("picker-particle-item-6")).toContainText("Z=6");
+    const carbonResult = sheet.getByTestId("picker-particle-item-6");
+    await expect(carbonResult).toBeVisible();
+    await expect(carbonResult).toContainText("Z=6");
   });
 });

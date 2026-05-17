@@ -149,13 +149,11 @@
     <li class="px-2 py-2 text-sm text-muted-foreground italic">No elements match</li>
   {/if}
 
-  {#if customItems.length > 0 || true}
-    {@render groupHeader("Custom", customItems.length)}
-    {#each customItems as m (m.id)}
-      {@render listItem(m)}
-    {/each}
-    {#if customItems.length === 0}
-      <li class="px-2 py-2 text-sm text-muted-foreground italic">No custom compounds match</li>
-    {/if}
+  {@render groupHeader("Custom", customItems.length)}
+  {#each customItems as m (m.id)}
+    {@render listItem(m)}
+  {/each}
+  {#if customItems.length === 0}
+    <li class="px-2 py-2 text-sm text-muted-foreground italic">No custom compounds match</li>
   {/if}
 </ul>

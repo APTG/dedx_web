@@ -1084,5 +1084,21 @@ must be conditional on actual overflow and disappear at scroll bottom.
 
 ---
 
-_Last updated: 2026-05-16. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 52 — Mobile overlay results must avoid duplicate global test IDs
+
+**Symptom:** Playwright strict-mode assertions on `getByTestId("picker-particle-item-6")`
+started failing in mobile-sheet tests because both the background panel and the
+full-screen sheet rendered rows with the same `data-testid`.
+
+**Root cause:** The mobile sheet intentionally overlays (not unmounts) the base
+panel, so global selectors matched two identical list items unless the test or
+component scope was constrained to the sheet subtree.
+
+**Rule:** When overlays reuse row components/test IDs, scope E2E locators to the
+overlay container (for example `sheet.getByTestId(...)`) and avoid assumptions
+that a global `data-testid` remains unique while the overlay is open.
+
+---
+
+_Last updated: 2026-05-17. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

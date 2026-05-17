@@ -43,6 +43,7 @@
   let inputEl = $state<HTMLInputElement | null>(null);
   let dialogEl = $state<HTMLDivElement | null>(null);
   let closeButtonEl = $state<HTMLButtonElement | null>(null);
+  const sheetHistoryKey = `picker-sheet:${Math.random().toString(36).slice(2)}`;
 
   // Autofocus the search input on mount — this is the sheet's sole keyboard owner.
   $effect(() => {
@@ -53,6 +54,7 @@
   $effect(() => {
     const prev = document.body.style.overflow;
     document.body.style.overflow = "hidden";
+    let closedByPopstate = false;
 
     function getFocusable(): HTMLElement[] {
       if (!dialogEl) return [];
@@ -88,18 +90,22 @@
     // Handle hardware Back via popstate.
     function onPop(e: PopStateEvent) {
       e.preventDefault();
+      closedByPopstate = true;
       onClose();
     }
 
     document.addEventListener("keydown", onKey);
     window.addEventListener("popstate", onPop);
     // Push a state entry so Back closes the sheet.
-    history.pushState({ sheet: activeTab }, "");
+    history.pushState({ ...(history.state ?? {}), pickerSheetKey: sheetHistoryKey }, "");
 
     return () => {
       document.body.style.overflow = prev;
       document.removeEventListener("keydown", onKey);
       window.removeEventListener("popstate", onPop);
+      if (!closedByPopstate && history.state?.pickerSheetKey === sheetHistoryKey) {
+        history.back();
+      }
     };
   });
 
@@ -173,10 +179,6 @@
 
   function isMaterialExternal(m: Material): boolean {
     return typeof m.id === "string" && (m.id as string).startsWith("ext:");
-  }
-
-  function isGas(m: Material): boolean {
-    return !isMaterialExternal(m) && (m as MaterialEntity).isGasByDefault;
   }
 
   function isElementId(id: number): boolean {
@@ -358,7 +360,6 @@
             >
               {#if external}<span aria-hidden="true">🔗</span>{/if}
               <span class="flex-1">{getParticleListLabel(p, z)}</span>
-              <span class="text-xs text-muted-foreground" aria-hidden="true">Z={z}</span>
             </button>
           </li>
         {/each}
