@@ -74,7 +74,7 @@
 </script>
 
 <div class="min-h-screen bg-background">
-  <nav class="border-b bg-card" data-testid="app-nav">
+  <nav class="border-b bg-card" data-testid="app-header">
     <div class="container mx-auto px-4">
       <!-- Row 1: logo + secondary controls (mode toggle, export, share) -->
       <div class="flex h-12 items-center justify-between gap-2">

@@ -22,5 +22,5 @@ Ran full Playwright suite: 180 passed, 10 skipped, 1 pre-existing failure (`url-
 - **Status**: completed
 - **Stage**: Stage 8 / mobile UX
 - **Files changed**: `src/routes/+layout.svelte`
-- **Decision**: Kept Basic/Advanced toggle inline in row 1 (always visible) rather than implementing a popover/bottom-sheet. The issue acceptance criteria only require "two-row structure + mode toggle persists". The open design question around a settings chip popover is deferred.
+- **Decision**: Implemented only the two-row header and prominent route-tab scope in this PR. The issue also requests moving Basic/Advanced into a settings chip/popover (with dedicated test IDs) and removing the inline segmented control; that remaining acceptance-criteria scope is deferred to follow-up work.
 - **Issue**: `url-parser.spec.ts:128` ("advanced URL can switch back to Basic mode") is a pre-existing failure on master unrelated to this change.
