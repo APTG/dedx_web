@@ -84,40 +84,40 @@
         </a>
 
         <div class="flex items-center gap-2 shrink-0">
-          <!-- Export buttons: desktop only -->
-          <div class="hidden sm:flex items-center gap-2">
-            <Button
-              data-testid="export-pdf-btn"
-              variant="outline"
-              size="sm"
-              disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
-                !canExport.value}
-              aria-label="Export PDF"
-              onclick={() => {
-                if (routePath === "/calculator") exportPdf();
-                else if (routePath === "/plot") exportPlotPdf();
-              }}
-            >
-              Export PDF
-            </Button>
-            <Button
-              data-testid="export-csv-btn"
-              variant="outline"
-              size="sm"
-              disabled={!["calculator", "plot"].some((r) => routePath.includes(r)) ||
-                !canExport.value}
-              aria-label="Export CSV"
-              onclick={() => {
-                if (routePath === "/calculator") {
-                  exportCsv();
-                } else if (routePath === "/plot") {
-                  exportPlotCsv();
-                }
-              }}
-            >
-              Export CSV
-            </Button>
-          </div>
+          {#if !routePath.startsWith("/docs")}
+            <!-- Export buttons: desktop only, hidden on Docs (not applicable there) -->
+            <div class="hidden sm:flex items-center gap-2">
+              <Button
+                data-testid="export-pdf-btn"
+                variant="outline"
+                size="sm"
+                disabled={!canExport.value}
+                aria-label="Export PDF"
+                onclick={() => {
+                  if (routePath === "/calculator") exportPdf();
+                  else if (routePath === "/plot") exportPlotPdf();
+                }}
+              >
+                Export PDF
+              </Button>
+              <Button
+                data-testid="export-csv-btn"
+                variant="outline"
+                size="sm"
+                disabled={!canExport.value}
+                aria-label="Export CSV"
+                onclick={() => {
+                  if (routePath === "/calculator") {
+                    exportCsv();
+                  } else if (routePath === "/plot") {
+                    exportPlotCsv();
+                  }
+                }}
+              >
+                Export CSV
+              </Button>
+            </div>
+          {/if}
 
           <!-- Share URL: always visible -->
           <Button variant="outline" size="sm" onclick={shareUrl}>
@@ -130,40 +130,42 @@
             {/if}
           </Button>
 
-          <!-- Basic/Advanced mode toggle chip -->
-          <div
-            class="flex items-center rounded-md border border-border overflow-hidden text-sm"
-            role="group"
-            aria-label="Display mode"
-          >
-            <button
-              type="button"
-              class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              aria-pressed={!isAdvancedMode.value}
-              aria-label="Switch to Basic mode"
-              onclick={() => {
-                if (isAdvancedMode.value) toggleAdvancedMode();
-              }}
+          {#if !routePath.startsWith("/docs")}
+            <!-- Basic/Advanced mode toggle chip: hidden on Docs (not applicable there) -->
+            <div
+              class="flex items-center rounded-md border border-border overflow-hidden text-sm"
+              role="group"
+              aria-label="Display mode"
             >
-              Basic
-            </button>
-            <button
-              type="button"
-              class={`px-3 py-1.5 transition-colors ${isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
-              aria-pressed={isAdvancedMode.value}
-              aria-label="Switch to Advanced mode"
-              onclick={() => {
-                if (!isAdvancedMode.value) toggleAdvancedMode();
-              }}
-            >
-              Advanced
-            </button>
-          </div>
+              <button
+                type="button"
+                class={`px-3 py-1.5 transition-colors ${!isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                aria-pressed={!isAdvancedMode.value}
+                aria-label="Switch to Basic mode"
+                onclick={() => {
+                  if (isAdvancedMode.value) toggleAdvancedMode();
+                }}
+              >
+                Basic
+              </button>
+              <button
+                type="button"
+                class={`px-3 py-1.5 transition-colors ${isAdvancedMode.value ? "bg-primary text-primary-foreground" : "bg-background hover:bg-muted"}`}
+                aria-pressed={isAdvancedMode.value}
+                aria-label="Switch to Advanced mode"
+                onclick={() => {
+                  if (!isAdvancedMode.value) toggleAdvancedMode();
+                }}
+              >
+                Advanced
+              </button>
+            </div>
+          {/if}
         </div>
       </div>
 
-      <!-- Row 2: primary route navigation tabs -->
-      <div class="flex border-t border-border/40" data-testid="route-tabs">
+      <!-- Row 2: primary route navigation tabs — muted strip so active tab pops out -->
+      <div class="flex border-t border-border/40 bg-muted/60" data-testid="route-tabs">
         <a
           href={`${base}/calculator`}
           class="route-tab"
@@ -272,30 +274,23 @@
     }
   }
 
+  /* Active tab: card (white) bg pops out of the muted strip — raised-tab pattern */
   .route-tab-active {
     color: var(--foreground);
     font-weight: 600;
-    background-color: color-mix(in oklch, var(--primary) 8%, transparent);
+    background-color: var(--card);
+    /* Bottom accent instead of ::after so box model stays simple */
+    box-shadow: inset 0 -2px 0 var(--primary);
   }
 
-  /* Bottom border accent on active tab */
-  .route-tab-active::after {
-    content: "";
-    position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
-    height: 2px;
-    background-color: var(--primary);
-  }
-
+  /* Inactive tabs: muted-foreground is a contrast-safe secondary colour */
   .route-tab-inactive {
     color: var(--muted-foreground);
   }
 
   .route-tab-inactive:hover {
     color: var(--foreground);
-    background-color: var(--accent);
+    background-color: color-mix(in oklch, var(--card) 55%, var(--muted));
   }
 
   /* Visible focus ring for keyboard navigation */
