@@ -14,6 +14,7 @@
   import ProgramTab from "./program-tab.svelte";
   import AdvancedToolbar from "./advanced-toolbar.svelte";
   import SearchInput from "./search-input.svelte";
+  import PickerSheet from "./picker-sheet.svelte";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -23,19 +24,12 @@
      * When true (Calculator page), the tab panel auto-collapses once all
      * three selections are complete, reclaiming vertical space. Plot page
      * keeps panels always open.
-     *
-     * Implementation: this gates the *initial* `expanded` state and the
-     * post-completion auto-collapse. Once the user explicitly clicks a tab
-     * or focuses the search, `state.expanded` takes over (rules B in the
-     * entity-selection spec).
      */
     collapsible?: boolean;
     /**
      * Whether to render the Advanced-mode toolbar (Compare-across, Load
      * external, Explore compat, Reset). Default `collapsible` — Calculator
-     * shows it, Plot hides it. On Plot the Advanced mode is only used to
-     * pick part+mat+program for the next "Add series", so Compare-across
-     * and friends are not useful there.
+     * shows it, Plot hides it.
      */
     showAdvancedToolbar?: boolean;
     /**
@@ -57,10 +51,6 @@
   // Initial expand/collapse rule (spec § Active target + expand/collapse, rule B):
   // - Calculator (collapsible=true): expanded = !isComplete on first mount.
   // - Plot (collapsible=false): expanded = true always.
-  //
-  // After mount, `state.expanded` is the source of truth; further updates
-  // come from explicit user gestures (tab click, search focus, Esc) or from
-  // `afterSelection` advancing to the next empty tab.
   let initialized = false;
   $effect(() => {
     if (initialized) return;
@@ -77,10 +67,6 @@
     selectionState.setExpanded(true);
   }
 
-  /**
-   * Compute the next empty tab in canonical ①→②→③ order. Returns null if
-   * all three are filled.
-   */
   function nextEmptyTab(after: PickerTab): PickerTab | null {
     const startIdx = PICKER_TAB_ORDER.indexOf(after) + 1;
     for (let i = startIdx; i < PICKER_TAB_ORDER.length; i++) {
@@ -92,7 +78,6 @@
         if (!hasResolved) return tab;
       }
     }
-    // Wrap once if nothing forward — check earlier tabs too.
     for (let i = 0; i <= PICKER_TAB_ORDER.indexOf(after); i++) {
       const tab = PICKER_TAB_ORDER[i]!;
       if (tab === "particle" && !selectionState.selectedParticle) return tab;
@@ -101,11 +86,6 @@
     return null;
   }
 
-  /**
-   * Apply rule A.4: after a selection in the active tab, advance to the
-   * next empty tab (keeping expanded), or — if all three filled — stay put
-   * and collapse on Calculator. Plot stays expanded.
-   */
   function afterSelection(current: PickerTab): void {
     const nextEmpty = nextEmptyTab(current);
     if (nextEmpty !== null) {
@@ -113,7 +93,6 @@
       selectionState.setExpanded(true);
       return;
     }
-    // All three filled.
     if (collapsible) {
       selectionState.setExpanded(false);
     }
@@ -137,16 +116,12 @@
 
   function handleReset(): void {
     selectionState.resetAll();
-    // Reset restores complete defaults (proton/Water/Auto). On Calculator
-    // (collapsible) the panel should collapse to match the post-completion
-    // rule. On Plot (!collapsible) the panel stays open.
     if (collapsible) {
       selectionState.setExpanded(false);
     }
   }
 
   function handleGlobalKey(event: KeyboardEvent) {
-    // Esc collapses the panel (rule A.7) without changing activeTarget.
     if (event.key === "Escape") {
       const active = document.activeElement;
       if (
@@ -161,10 +136,22 @@
 
   const activeTab = $derived(selectionState.activeTarget as PickerTab);
   const panelOpen = $derived(selectionState.expanded);
+  const sheetOpen = $derived(selectionState.sheetOpen);
 
-  // Shared picker-level search query. Cleared whenever the active tab
-  // changes so each tab starts with an empty filter (matches the
-  // previous per-tab `query = $state("")` behaviour).
+  // Detect mobile viewport (guarded for jsdom where matchMedia is absent).
+  let isMobile = $state(false);
+  $effect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 640px)");
+    isMobile = mq.matches;
+    function onChange(e: MediaQueryListEvent) {
+      isMobile = e.matches;
+    }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
+
+  // Shared picker-level search query. Cleared on tab change.
   let query = $state("");
   let searchInputRef: HTMLInputElement | null = $state(null);
   let particleArrowKey = $state<((d: "up" | "down") => void) | undefined>(undefined);
@@ -174,19 +161,14 @@
   $effect(() => {
     const current = activeTab;
     if (lastTab === null) {
-      // Initial mount — record the starting tab but do not steal focus
-      // (callers / tests may want to focus a specific tab button first).
       lastTab = current;
       return;
     }
     if (lastTab !== current) {
       lastTab = current;
-      // Reset the shared filter so each tab starts empty (matches the
-      // previous per-tab `query = $state("")` behaviour).
       query = "";
-      // Refocus the search input on tab change so keyboard users can
-      // immediately type into the lifted picker-level search row.
-      if (panelOpen) searchInputRef?.focus();
+      // Only autofocus the search input on desktop (not mobile — would invoke keyboard).
+      if (panelOpen && !isMobile) searchInputRef?.focus();
     }
   });
 
@@ -208,9 +190,28 @@
   function handleSearchFocus(): void {
     if (!panelOpen) selectionState.setExpanded(true);
   }
+
+  function openSheet(): void {
+    selectionState.setSheetOpen(true);
+  }
+
+  function closeSheet(): void {
+    selectionState.setSheetOpen(false);
+  }
 </script>
 
 <svelte:window onkeydown={handleGlobalKey} />
+
+{#if sheetOpen}
+  <PickerSheet
+    {selectionState}
+    {activeTab}
+    onClose={closeSheet}
+    onParticleSelect={handleParticleSelect}
+    onMaterialSelect={handleMaterialSelect}
+    onProgramSelect={handleProgramSelect}
+  />
+{/if}
 
 <div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
   {#if isAdvancedMode.value && showAdvancedToolbar}
@@ -238,6 +239,7 @@
       onArrow={(dir) => particleArrowKey?.(dir)}
       onEnter={() => particleEnterKey?.()}
       onFocus={handleSearchFocus}
+      onMobileTap={openSheet}
       bind:inputRef={searchInputRef}
       class="flex-1"
       data-testid="picker-{activeTab}-search"

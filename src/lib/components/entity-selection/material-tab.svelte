@@ -8,6 +8,7 @@
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
 
   type Material = MaterialEntity | ExternalOnlyMaterial;
+  type SubTab = "compounds" | "elements" | "custom";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -21,17 +22,39 @@
 
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
-  let fullscreenCard = $state<"elements" | "compounds" | "custom" | null>(null);
-  let fullscreenCloseButton = $state<HTMLButtonElement | null>(null);
-  let fullscreenDialog = $state<HTMLDivElement | null>(null);
-  let fullscreenTrigger = $state<HTMLElement | null>(null);
 
-  let elementsListEl = $state<HTMLUListElement | null>(null);
-  let compoundsListEl = $state<HTMLUListElement | null>(null);
-  let customListEl = $state<HTMLUListElement | null>(null);
-  let showElementsFade = $state(false);
-  let showCompoundsFade = $state(false);
-  let showCustomFade = $state(false);
+  // Sub-tab state — persisted to localStorage, default = compounds.
+  const STORAGE_KEY = "webdedx.materialSubtab";
+
+  function loadSubTab(): SubTab {
+    try {
+      const stored = localStorage.getItem(STORAGE_KEY);
+      if (stored === "elements" || stored === "custom") return stored;
+    } catch {
+      // localStorage unavailable (SSR, private mode)
+    }
+    return "compounds";
+  }
+
+  function saveSubTab(tab: SubTab) {
+    try {
+      localStorage.setItem(STORAGE_KEY, tab);
+    } catch {
+      // ignore
+    }
+  }
+
+  let activeSubTab = $state<SubTab>(loadSubTab());
+
+  function setSubTab(tab: SubTab) {
+    activeSubTab = tab;
+    saveSubTab(tab);
+  }
+
+  // Scroll position memory per sub-tab.
+  let scrollPositions = $state<Record<SubTab, number>>({ compounds: 0, elements: 0, custom: 0 });
+  let listEl = $state<HTMLUListElement | null>(null);
+  let showBottomFade = $state(false);
 
   function shouldShowBottomFade(el: HTMLElement | null): boolean {
     if (!el) return false;
@@ -40,93 +63,36 @@
     return el.scrollTop < maxScrollTop - 1;
   }
 
-  function updateElementsFade() {
-    showElementsFade = shouldShowBottomFade(elementsListEl);
+  function updateFade() {
+    showBottomFade = shouldShowBottomFade(listEl);
   }
 
-  function updateCompoundsFade() {
-    showCompoundsFade = shouldShowBottomFade(compoundsListEl);
-  }
-
-  function updateCustomFade() {
-    showCustomFade = shouldShowBottomFade(customListEl);
-  }
-
-  function openFullscreenCard(card: "elements" | "compounds" | "custom", trigger?: HTMLElement) {
-    fullscreenTrigger = trigger ?? null;
-    fullscreenCard = card;
-  }
-
-  function closeFullscreenCard() {
-    const restoreTarget = fullscreenTrigger;
-    fullscreenCard = null;
-    fullscreenTrigger = null;
-    queueMicrotask(() => {
-      restoreTarget?.focus();
-    });
-  }
-
+  // Save + restore scroll position when sub-tab switches.
+  let previousSubTab: SubTab | null = null;
   $effect(() => {
-    if (fullscreenCard === null) return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    queueMicrotask(() => {
-      fullscreenCloseButton?.focus();
-    });
-
-    function getFocusableInDialog(): HTMLElement[] {
-      if (!fullscreenDialog) return [];
-      return Array.from(
-        fullscreenDialog.querySelectorAll<HTMLElement>(
-          "button:not([disabled]), [href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex='-1'])",
-        ),
-      );
+    const current = activeSubTab;
+    if (previousSubTab !== null && previousSubTab !== current && listEl) {
+      scrollPositions[previousSubTab] = listEl.scrollTop;
     }
-
-    function onKey(e: KeyboardEvent) {
-      if (e.key === "Escape") {
-        e.preventDefault();
-        closeFullscreenCard();
-        return;
-      }
-      if (e.key === "Tab") {
-        const focusable = getFocusableInDialog();
-        if (focusable.length === 0) return;
-        const first = focusable[0];
-        const last = focusable[focusable.length - 1];
-        const active = document.activeElement as HTMLElement | null;
-        if (!e.shiftKey && active === last) {
-          e.preventDefault();
-          first.focus();
-        } else if (e.shiftKey && (active === first || active === null)) {
-          e.preventDefault();
-          last.focus();
+    previousSubTab = current;
+    // Restore scroll on next tick after DOM update.
+    if (listEl) {
+      queueMicrotask(() => {
+        if (listEl) {
+          listEl.scrollTop = scrollPositions[current];
+          updateFade();
         }
-      }
+      });
     }
-    document.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = previousOverflow;
-      document.removeEventListener("keydown", onKey);
-    };
   });
 
   $effect(() => {
-    if (filteredElements.length >= 0) updateElementsFade();
-  });
-
-  $effect(() => {
-    if (filteredCompounds.length >= 0) updateCompoundsFade();
-  });
-
-  $effect(() => {
-    if (filteredCustom.length >= 0) updateCustomFade();
+    // Re-evaluate fade when filtered list changes.
+    const _ = filteredActive;
+    queueMicrotask(updateFade);
   });
 
   function isExternal(m: Material): m is ExternalOnlyMaterial {
-    // Both external materials (`ext:…`) and custom compounds (`cc_…`) use
-    // string IDs; the external-link glyph and external search/formatting
-    // path must only fire for the former.
     return typeof m.id === "string" && m.id.startsWith("ext:");
   }
 
@@ -151,11 +117,6 @@
     return id >= 1 && id <= 98;
   }
 
-  /**
-   * Inline external materials into Elements / Compounds sub-tabs based on
-   * `atomicNumber`. External materials without atomicNumber go into Compounds
-   * (best-effort heuristic; matches v7's `id > 98 || id === 906` rule).
-   */
   function inElements(m: Material): boolean {
     if (!isExternal(m)) return isElementId(m.id as number);
     return m.atomicNumber !== undefined && isElementId(m.atomicNumber);
@@ -165,6 +126,7 @@
     if (!isExternal(m)) return (m.id as number) > 98 || m.id === 906;
     return !(m.atomicNumber !== undefined && isElementId(m.atomicNumber));
   }
+
   const allMaterials = $derived<Material[]>([
     ...selectionState.allMaterials,
     ...selectionState.externalOnlyMaterials,
@@ -202,6 +164,14 @@
   const filteredCompounds = $derived(compounds.filter((m) => matches(m, query)));
   const filteredCustom = $derived(customItems.filter((m) => matches(m, query)));
 
+  const filteredActive = $derived(
+    activeSubTab === "elements"
+      ? filteredElements
+      : activeSubTab === "custom"
+        ? (filteredCustom as Material[])
+        : filteredCompounds,
+  );
+
   function isAvailable(m: Material): boolean {
     return selectionState.availableMaterials.some((q) => q.id === m.id);
   }
@@ -232,7 +202,7 @@
   function resolveMaterialById(id: number | string): Material | null {
     return (
       allMaterials.find((m) => m.id === id) ??
-      customItems.find((m) => m.id === id) ??
+      (customItems.find((m) => m.id === id) as Material | undefined) ??
       null
     );
   }
@@ -268,6 +238,24 @@
     compoundModalOpen = false;
     editingCompound = null;
   }
+
+  // If a selection lands in a different sub-tab than the active one, silently switch.
+  $effect(() => {
+    const sel = selectionState.selectedMaterial;
+    if (!sel) return;
+    if (inElements(sel) && activeSubTab !== "elements") {
+      const id = (sel as MaterialEntity).id;
+      if (typeof id === "number" && isElementId(id)) {
+        setSubTab("elements");
+      }
+    } else if (
+      typeof sel.id === "string" &&
+      sel.id.startsWith("cc_") &&
+      activeSubTab !== "custom"
+    ) {
+      setSubTab("custom");
+    }
+  });
 </script>
 
 {#snippet materialListItems(items: typeof filteredElements)}
@@ -447,201 +435,98 @@
     </button>
   {/if}
 
-  <div
-    class={cn(
-      "grid gap-3",
-      isAdvancedMode.value
-        ? "grid-cols-1 md:grid-cols-2 xl:grid-cols-3"
-        : "grid-cols-1 md:grid-cols-2",
-    )}
-    data-testid="picker-material-columns"
-  >
-    <section class="min-w-0" data-testid="picker-material-col-elements">
-      <div class="mb-1 flex items-center justify-between px-2">
-        <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Elements</h4>
-        <button
-          type="button"
-          class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-          aria-label="Expand Elements list to full screen"
-          title="Expand to full screen"
-          onclick={(event) =>
-            openFullscreenCard("elements", event.currentTarget as HTMLButtonElement)}
-        >⤢</button>
-      </div>
-      <div class="relative">
-        <ul
-          role="listbox"
-          aria-label="Elements"
-          aria-multiselectable={isMultiMode}
-          tabindex="0"
-          class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
-          bind:this={elementsListEl}
-          onscroll={updateElementsFade}
-          data-testid="picker-material-list-elements"
-        >
-          {@render materialListItems(filteredElements)}
-        </ul>
-        {#if showElementsFade}
-          <div
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-            aria-hidden="true"
-            data-testid="picker-material-fade-elements"
-          ></div>
-        {/if}
-      </div>
-    </section>
-
-    <section class="min-w-0" data-testid="picker-material-col-compounds">
-      <div class="mb-1 flex items-center justify-between px-2">
-        <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Compounds</h4>
-        <button
-          type="button"
-          class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-          aria-label="Expand Compounds list to full screen"
-          title="Expand to full screen"
-          onclick={(event) =>
-            openFullscreenCard("compounds", event.currentTarget as HTMLButtonElement)}
-        >⤢</button>
-      </div>
-      <div class="relative">
-        <ul
-          role="listbox"
-          aria-label="Compounds"
-          aria-multiselectable={isMultiMode}
-          tabindex="0"
-          class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
-          bind:this={compoundsListEl}
-          onscroll={updateCompoundsFade}
-          data-testid="picker-material-list-compounds"
-        >
-          {@render materialListItems(filteredCompounds)}
-        </ul>
-        {#if showCompoundsFade}
-          <div
-            class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-            aria-hidden="true"
-            data-testid="picker-material-fade-compounds"
-          ></div>
-        {/if}
-      </div>
-    </section>
-
+  <!-- Sub-tab pills: fixed order Compounds · Elements · Custom -->
+  <div class="flex gap-1" role="tablist" aria-label="Material sub-tabs" data-testid="picker-material-subtabs">
+    <button
+      type="button"
+      role="tab"
+      aria-selected={activeSubTab === "compounds"}
+      data-testid="material-subtab-compounds"
+      class={cn(
+        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        activeSubTab === "compounds"
+          ? "border-primary bg-primary/15 text-primary"
+          : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+      )}
+      onclick={() => setSubTab("compounds")}
+    >
+      Compounds {filteredCompounds.length > 0 || !query ? compounds.length : "0"}
+    </button>
+    <button
+      type="button"
+      role="tab"
+      aria-selected={activeSubTab === "elements"}
+      data-testid="material-subtab-elements"
+      class={cn(
+        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+        activeSubTab === "elements"
+          ? "border-primary bg-primary/15 text-primary"
+          : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+      )}
+      onclick={() => setSubTab("elements")}
+    >
+      Elements {filteredElements.length > 0 || !query ? elements.length : "0"}
+    </button>
     {#if isAdvancedMode.value}
-      <section class="min-w-0" data-testid="picker-material-col-custom">
-        <div class="mb-1 flex items-center justify-between px-2">
-          <h4 class="text-xs uppercase tracking-wider text-muted-foreground">Custom</h4>
-          <div class="flex items-center gap-2">
-              <button
-                type="button"
-                class="sm:hidden rounded p-0.5 text-sm text-muted-foreground hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                aria-label="Expand Custom compounds list to full screen"
-                title="Expand to full screen"
-                onclick={(event) =>
-                  openFullscreenCard("custom", event.currentTarget as HTMLButtonElement)}
-              >⤢</button>
-            <button
-              type="button"
-              class="rounded px-2 py-0.5 text-xs font-medium text-primary hover:bg-primary/10"
-              data-testid="picker-material-add-compound"
-              onclick={handleAddCompound}
-            >
-              + Add compound
-            </button>
-          </div>
-        </div>
-        <div class="relative">
-          <ul
-            role="listbox"
-            aria-label="Custom compounds"
-            aria-multiselectable={isMultiMode}
-            tabindex="0"
-            class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
-            bind:this={customListEl}
-            onscroll={updateCustomFade}
-            data-testid="picker-material-list-custom"
-          >
-            {@render customListItems(filteredCustom)}
-          </ul>
-          {#if showCustomFade}
-            <div
-              class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
-              aria-hidden="true"
-              data-testid="picker-material-fade-custom"
-            ></div>
-          {/if}
-        </div>
-      </section>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeSubTab === "custom"}
+        data-testid="material-subtab-custom"
+        class={cn(
+          "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+          activeSubTab === "custom"
+            ? "border-primary bg-primary/15 text-primary"
+            : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+        )}
+        onclick={() => setSubTab("custom")}
+      >
+        Custom {customItems.length}
+      </button>
     {/if}
   </div>
 
+  <!-- Active sub-tab list with bounded scroll -->
+  <div class="relative">
+    <ul
+      role="listbox"
+      aria-label={activeSubTab === "elements" ? "Elements" : activeSubTab === "custom" ? "Custom compounds" : "Compounds"}
+      aria-multiselectable={isMultiMode}
+      tabindex="0"
+      class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"
+      bind:this={listEl}
+      onscroll={updateFade}
+      data-testid="picker-material-list-{activeSubTab}"
+    >
+      {#if activeSubTab === "elements"}
+        {@render materialListItems(filteredElements)}
+      {:else if activeSubTab === "custom"}
+        {@render customListItems(filteredCustom)}
+      {:else}
+        {@render materialListItems(filteredCompounds)}
+      {/if}
+    </ul>
+    {#if showBottomFade}
+      <div
+        class="pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t from-background to-transparent rounded-b"
+        aria-hidden="true"
+        data-testid="picker-material-fade"
+      ></div>
+    {/if}
+  </div>
+
+  <!-- + New custom material pill always visible (Advanced mode) -->
   {#if isAdvancedMode.value}
     <button
       type="button"
       class="flex w-full items-center justify-center gap-1 rounded-full border-2 border-orange-500 bg-orange-50 px-3 py-1.5 text-sm font-medium text-orange-700 hover:bg-orange-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring dark:bg-orange-950/30 dark:text-orange-300 dark:hover:bg-orange-950/50"
-      data-testid="picker-add-custom-material"
+      data-testid="picker-material-add-compound"
       onclick={handleAddCompound}
     >
       + New custom material
     </button>
   {/if}
 </div>
-
-<!-- Full-screen sheet: mobile-only (sm:hidden on trigger; JS state never set on desktop) -->
-{#if fullscreenCard !== null}
-  {@const sheetTitle =
-    fullscreenCard === "elements"
-      ? "Elements"
-      : fullscreenCard === "compounds"
-        ? "Compounds"
-        : "Custom compounds"}
-  <div
-    class="fixed inset-0 z-50 flex flex-col bg-background sm:hidden"
-    bind:this={fullscreenDialog}
-    role="dialog"
-    aria-modal="true"
-    aria-label="{sheetTitle}"
-    tabindex="-1"
-  >
-    <div class="flex items-center justify-between border-b px-4 py-3 bg-card">
-      <h3 class="font-semibold text-base">{sheetTitle}</h3>
-      <button
-        type="button"
-        bind:this={fullscreenCloseButton}
-        class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-        aria-label="Close"
-        onclick={closeFullscreenCard}
-      >✕</button>
-    </div>
-    {#if fullscreenCard === "custom" && isAdvancedMode.value}
-      <div class="flex items-center justify-end border-b px-4 py-2 bg-card/50">
-        <button
-          type="button"
-          class="rounded px-2 py-1 text-xs font-medium text-primary hover:bg-primary/10"
-          onclick={handleAddCompound}
-        >
-          + Add compound
-        </button>
-      </div>
-    {/if}
-    <div class="flex-1 overflow-auto p-2">
-      <ul
-        role="listbox"
-        aria-label="{sheetTitle}"
-        aria-multiselectable={isMultiMode}
-        tabindex="0"
-        class="space-y-0.5"
-      >
-        {#if fullscreenCard === "elements"}
-          {@render materialListItems(filteredElements)}
-        {:else if fullscreenCard === "compounds"}
-          {@render materialListItems(filteredCompounds)}
-        {:else}
-          {@render customListItems(filteredCustom)}
-        {/if}
-      </ul>
-    </div>
-  </div>
-{/if}
 
 <CompoundEditorModal
   open={compoundModalOpen}

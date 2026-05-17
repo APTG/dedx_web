@@ -248,17 +248,18 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
-    // Open material panel and verify compound is in the custom column
+    // Open material panel, switch to Custom sub-tab and verify compound is there.
     await page.getByTestId("picker-tab-material").click();
-    const customColumn = page.getByTestId("picker-material-col-custom");
-    await expect(customColumn).toBeVisible();
+    await page.getByTestId("material-subtab-custom").click();
+    const customList = page.getByTestId("picker-material-list-custom");
+    await expect(customList).toBeVisible();
 
-    // Verify LiF Pellet is visible in the custom column
-    await expect(customColumn.getByText(/LiF Pellet/i)).toBeVisible();
+    // Verify LiF Pellet is visible in the custom list.
+    await expect(customList.getByText(/LiF Pellet/i)).toBeVisible();
 
     // Verify density description is visible on the custom compound row.
     await expect(
-      customColumn.locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i }).first(),
+      customList.locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i }).first(),
     ).toContainText(/2\.20\d* g\/cm/);
   });
 
@@ -290,8 +291,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Re-open material panel to access the custom compounds column
+    // Re-open material panel, switch to Custom sub-tab, and find edit button.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
 
     // Find and click the edit button for ToDelete
     const editBtn = page.getByRole("button", { name: /edit compound ToDelete/i });
@@ -338,8 +340,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     // Basic mode by default — open the material panel
     await page.getByTestId("picker-tab-material").click();
 
-    // Custom Compounds column should not be visible in Basic mode
-    await expect(page.getByTestId("picker-material-col-custom")).not.toBeVisible();
+    // Custom sub-tab should not exist in Basic mode; add button also absent.
+    await expect(page.getByTestId("material-subtab-custom")).toHaveCount(0);
     await expect(page.getByTestId("picker-material-add-compound")).not.toBeVisible();
   });
 
@@ -365,8 +367,8 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
       JSON.stringify(consoleMessages.slice(0, 10)),
     );
 
-    // Custom Compounds column and add button should be visible in Advanced mode
-    await expect(page.getByTestId("picker-material-col-custom")).toBeVisible();
+    // Custom sub-tab and add button should be visible in Advanced mode
+    await expect(page.getByTestId("material-subtab-custom")).toBeVisible();
     await expect(page.getByTestId("picker-material-add-compound")).toBeVisible();
   });
 
@@ -391,10 +393,11 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Re-open material panel to verify compound and badge
+    // Re-open material panel, switch to Custom sub-tab, and verify compound.
     await page.getByTestId("picker-tab-material").click();
-    const customColumn = page.getByTestId("picker-material-col-custom");
-    await expect(customColumn.getByText(/Badge Test/i)).toBeVisible();
+    await page.getByTestId("material-subtab-custom").click();
+    const customList2 = page.getByTestId("picker-material-list-custom");
+    await expect(customList2.getByText(/Badge Test/i)).toBeVisible();
     // Check for "custom" badge indicator
     await expect(
       page
@@ -425,8 +428,9 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Re-open material panel and filter
+    // Re-open material panel, switch to Custom sub-tab, and filter.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("filtered");
 
@@ -474,10 +478,11 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Select the compound from the custom column
+    // Select the compound from the Custom sub-tab.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const lifOption = page
-      .getByTestId("picker-material-col-custom")
+      .getByTestId("picker-material-list-custom")
       .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Compatibility/ })
       .first();
     await lifOption.click();
@@ -532,10 +537,11 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
 
-    // Select the compound from the custom column
+    // Select the compound from the Custom sub-tab.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const customOption = page
-      .getByTestId("picker-material-col-custom")
+      .getByTestId("picker-material-list-custom")
       .locator('[data-testid^="picker-material-item-"]', { hasText: /BasicModeTest/ })
       .first();
     await customOption.waitFor({ state: "visible" });
@@ -601,10 +607,11 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: /save/i }).click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
-    // Select the water compound from the custom column
+    // Select the water compound from the Custom sub-tab.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const waterOption = page
-      .getByTestId("picker-material-col-custom")
+      .getByTestId("picker-material-list-custom")
       .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O formula/ })
       .first();
     await waterOption.waitFor({ state: "visible" });
@@ -684,10 +691,11 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("button", { name: /save/i }).click();
     await expect(modal).not.toBeVisible({ timeout: 5000 });
 
-    // Select the water compound from the custom column
+    // Select the water compound from the Custom sub-tab.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const waterOption = page
-      .getByTestId("picker-material-col-custom")
+      .getByTestId("picker-material-list-custom")
       .locator('[data-testid^="picker-material-item-"]', { hasText: /Water H2O weight/ })
       .first();
     await expect(waterOption).toBeVisible();
@@ -796,10 +804,11 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await saveBtn.click();
     await expect(page.getByRole("dialog", { name: /compound editor/i })).not.toBeVisible();
 
-    // Select LiF from the custom column
+    // Select LiF from the Custom sub-tab.
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-custom").click();
     const lifOption = page
-      .getByTestId("picker-material-col-custom")
+      .getByTestId("picker-material-list-custom")
       .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/ })
       .first();
     await lifOption.waitFor({ state: "visible" });

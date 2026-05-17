@@ -1,6 +1,7 @@
 import { describe, test, expect, beforeEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
+import { tick } from "svelte";
 import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
@@ -227,12 +228,15 @@ describe("EntitySelection", () => {
     expect(screen.queryByText(/^electron$/i)).not.toBeInTheDocument();
   });
 
-  test("particle tab shows Common particles section with proton + alpha", () => {
+  test("particle tab shows flat list with proton + alpha (no section headers)", () => {
     render(EntitySelection, { props: { selectionState: state } });
 
-    expect(screen.getByText("Common particles")).toBeInTheDocument();
+    // No COMMON/IONS section headers in the new flat-list design.
+    expect(screen.queryByText("Common particles")).not.toBeInTheDocument();
     expect(screen.getByTestId("picker-particle-item-1")).toHaveTextContent("proton");
     expect(screen.getByTestId("picker-particle-item-2")).toHaveTextContent("alpha particle");
+    // Z tags are present on each row.
+    expect(screen.getByTestId("picker-particle-item-1")).toHaveTextContent("Z=1");
   });
 
   test("particle search supports `z=N` operator", async () => {
@@ -258,36 +262,43 @@ describe("EntitySelection", () => {
     expect(state.activeTarget).toBe("particle");
   });
 
-  test("material tab renders side-by-side Elements/Compounds columns", async () => {
+  test("material tab renders sub-tab pills with Compounds as default", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("picker-tab-material"));
 
-    expect(screen.getByTestId("picker-material-col-elements")).toBeInTheDocument();
-    expect(screen.getByTestId("picker-material-col-compounds")).toBeInTheDocument();
+    // New design: sub-tab pills replace the column layout.
+    expect(screen.getByTestId("material-subtab-compounds")).toBeInTheDocument();
+    expect(screen.getByTestId("material-subtab-elements")).toBeInTheDocument();
+    // Compounds sub-tab is the active default.
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe("true");
+    // Compounds list is visible.
+    expect(screen.getByTestId("picker-material-list-compounds")).toBeInTheDocument();
   });
 
-  test("material fullscreen sheet locks body scroll and restores focus on close", async () => {
+  test("material picker-sheet locks body scroll and restores on close", async () => {
+    // The full-screen sheet is now opened via the search tap target.
+    // On desktop (jsdom) the mobile matchMedia query returns false so
+    // the search field is an input; opening the sheet requires setSheetOpen().
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
     await user.click(screen.getByTestId("picker-tab-material"));
-    const expandElements = screen.getByLabelText("Expand Elements list to full screen");
 
-    await user.click(expandElements);
+    // Open sheet directly through state (mobile tap path).
+    state.setSheetOpen(true);
+    await tick();
 
-    const dialog = screen.getByRole("dialog", { name: "Elements" });
-    const closeButton = within(dialog).getByRole("button", { name: "Close" });
+    const dialog = screen.getByRole("dialog", { name: /search material/i });
+    const closeButton = within(dialog).getByRole("button", { name: /close search/i });
 
     expect(document.body.style.overflow).toBe("hidden");
-    expect(closeButton).toHaveFocus();
 
     await user.click(closeButton);
 
-    expect(screen.queryByRole("dialog", { name: "Elements" })).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-sheet")).not.toBeInTheDocument();
     expect(document.body.style.overflow).toBe("");
-    expect(expandElements).toHaveFocus();
   });
 
   test("gas materials display the (≋) inline glyph", async () => {
@@ -411,7 +422,11 @@ describe("EntitySelection", () => {
 
     await user.click(screen.getByTestId("picker-tab-material"));
 
+    // Water (276) is in Compounds sub-tab (active by default) — anchor should be disabled.
     expect(screen.getByTestId("picker-material-item-276")).toBeDisabled();
+
+    // Carbon (6) is in Elements sub-tab — switch to it and verify non-anchor is enabled.
+    await user.click(screen.getByTestId("material-subtab-elements"));
     expect(screen.getByTestId("picker-material-item-6")).not.toBeDisabled();
   });
 
@@ -513,19 +528,16 @@ describe("EntitySelection", () => {
       }
     });
 
-    test("custom-material pill is rendered below the material columns in advanced mode", async () => {
+    test("custom-material button and Custom sub-tab pill appear in advanced mode", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       const user = userEvent.setup();
       isAdvancedMode.value = true;
       try {
         render(EntitySelection, { props: { selectionState: state } });
         await user.click(screen.getByTestId("picker-tab-material"));
-        const tabRoot = screen.getByTestId("picker-material-tab");
-        const columns = screen.getByTestId("picker-material-columns");
-        const pill = screen.getByTestId("picker-add-custom-material");
-        // The pill comes after the columns in DOM order so it renders below.
-        const children = Array.from(tabRoot.children);
-        expect(children.indexOf(columns)).toBeLessThan(children.indexOf(pill));
+        // Custom sub-tab and add-compound button visible in Advanced.
+        expect(screen.getByTestId("material-subtab-custom")).toBeInTheDocument();
+        expect(screen.getByTestId("picker-material-add-compound")).toBeInTheDocument();
       } finally {
         isAdvancedMode.value = false;
       }

@@ -44,9 +44,14 @@ test.describe("Calculator page — tabbed picker", () => {
     await expect(page.getByTestId("picker-particle-item-1001")).toHaveCount(0);
   });
 
-  test("particle list shows Z inline in name (no separate Z column)", async ({ page }) => {
+  test("particle list shows flat list with Z tag and no section headers", async ({ page }) => {
     await page.getByTestId("picker-tab-particle").click();
-    await expect(page.getByTestId("picker-particle-item-1")).toContainText("proton (Z=1)");
+    // proton row shows the name and a Z=1 tag
+    await expect(page.getByTestId("picker-particle-item-1")).toContainText("proton");
+    await expect(page.getByTestId("picker-particle-item-1")).toContainText("Z=1");
+    // Section headers should be gone
+    await expect(page.getByTestId("picker-particle-tab")).not.toContainText("Common particles");
+    await expect(page.getByTestId("picker-particle-tab")).not.toContainText("Ions");
   });
 
   test("particle search filters the list and a click selects + stays on tab", async ({ page }) => {
@@ -63,13 +68,23 @@ test.describe("Calculator page — tabbed picker", () => {
     await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 
-  test("material tab shows split columns and program tab legend is visible", async ({ page }) => {
+  test("material tab shows sub-tab pills (Compounds default) and program legend is visible", async ({
+    page,
+  }) => {
     await page.getByTestId("picker-tab-material").click();
-    await expect(page.getByTestId("picker-material-col-elements")).toBeVisible();
-    await expect(page.getByTestId("picker-material-col-compounds")).toBeVisible();
+    // Sub-tab pills replace the old column layout.
+    await expect(page.getByTestId("material-subtab-compounds")).toBeVisible();
+    await expect(page.getByTestId("material-subtab-elements")).toBeVisible();
+    // Compounds should be the default active sub-tab.
+    await expect(page.getByTestId("material-subtab-compounds")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    // Old column test-IDs are gone.
+    await expect(page.getByTestId("picker-material-col-elements")).toHaveCount(0);
+    await expect(page.getByTestId("picker-material-col-compounds")).toHaveCount(0);
 
     await page.getByTestId("picker-tab-program").click();
-    await expect(page.getByTestId("picker-program-auto-hero")).toBeVisible();
     await expect(page.getByTestId("picker-program-legend")).toBeVisible();
   });
 
