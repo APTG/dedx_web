@@ -65,5 +65,46 @@
         <a class="break-all text-primary underline" href={plotExampleHref}>{plotExampleHref}</a>
       </p>
     </section>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="text-2xl font-semibold">Keyboard shortcuts</h2>
+      <p class="text-muted-foreground">
+        The entity picker (Particle / Material / Program) supports keyboard-first navigation:
+      </p>
+      <table class="mt-2 w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="py-1 pr-4 text-left">Key</th>
+            <th class="py-1 text-left">Action</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr class="border-b border-muted/30">
+            <td class="py-1 pr-4 font-mono">/</td>
+            <td class="py-1">Focus the search field (expands panel if collapsed)</td>
+          </tr>
+          <tr class="border-b border-muted/30">
+            <td class="py-1 pr-4 font-mono">↑ / ↓</td>
+            <td class="py-1">Move highlight up / down through the list</td>
+          </tr>
+          <tr class="border-b border-muted/30">
+            <td class="py-1 pr-4 font-mono">↵ Enter</td>
+            <td class="py-1">Select highlighted item; advances to the next empty field automatically</td>
+          </tr>
+          <tr class="border-b border-muted/30">
+            <td class="py-1 pr-4 font-mono">Escape</td>
+            <td class="py-1">Blur focus and collapse the picker (on the Calculator page)</td>
+          </tr>
+          <tr>
+            <td class="py-1 pr-4 font-mono">← / →</td>
+            <td class="py-1">Cycle between Particle / Material / Program tabs (when a tab button is focused)</td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="text-sm text-muted-foreground">
+        Tip: press <code class="rounded bg-muted px-1 py-0.5 font-mono text-xs">/</code>, type to
+        filter, use ↑↓ to highlight, then ↵ to confirm and automatically move to the next field.
+      </p>
+    </section>
   </div>
 </div>

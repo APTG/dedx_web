@@ -34,6 +34,7 @@ export interface PlotState {
 
   addSeries(data: PlotSeriesData): boolean;
   removeSeries(seriesId: number): void;
+  updateSeries(seriesId: number, data: PlotSeriesData): void;
   toggleVisibility(seriesId: number): void;
   setPreview(data: PlotSeriesData): void;
   clearPreview(): void;
@@ -87,6 +88,11 @@ export function createPlotState(): PlotState {
     if (!target) return;
     releaseColor(availableColorIndices, target.colorIndex);
     series = series.filter((s) => s.seriesId !== seriesId);
+    recomputeLabels();
+  }
+
+  function updateSeries(seriesId: number, data: PlotSeriesData): void {
+    series = series.map((s) => (s.seriesId === seriesId ? { ...s, ...data } : s));
     recomputeLabels();
   }
 
@@ -157,6 +163,7 @@ export function createPlotState(): PlotState {
     },
     addSeries,
     removeSeries,
+    updateSeries,
     toggleVisibility,
     setPreview,
     clearPreview,

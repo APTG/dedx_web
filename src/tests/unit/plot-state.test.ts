@@ -68,6 +68,39 @@ describe("createPlotState", () => {
     expect(state.series.length).toBe(initial);
   });
 
+  it("updateSeries replaces data fields for matching seriesId", () => {
+    const state = createPlotState();
+    state.addSeries(mockSeries());
+    const sid = state.series[0]!.seriesId;
+    const updated = mockSeries({ programId: 9, programName: "ICRU 90" });
+    state.updateSeries(sid, updated);
+    const s = state.series.find((x) => x.seriesId === sid)!;
+    expect(s.programId).toBe(9);
+    expect(s.programName).toBe("ICRU 90");
+  });
+
+  it("updateSeries preserves seriesId, color, colorIndex, and visible flag", () => {
+    const state = createPlotState();
+    state.addSeries(mockSeries());
+    const s0 = state.series[0]!;
+    const { seriesId, color, colorIndex } = s0;
+    state.updateSeries(seriesId, mockSeries({ programId: 9 }));
+    const updated = state.series.find((x) => x.seriesId === seriesId)!;
+    expect(updated.seriesId).toBe(seriesId);
+    expect(updated.color).toBe(color);
+    expect(updated.colorIndex).toBe(colorIndex);
+    expect(updated.visible).toBe(true);
+  });
+
+  it("updateSeries is a no-op for unknown seriesId", () => {
+    const state = createPlotState();
+    state.addSeries(mockSeries());
+    const before = [...state.series];
+    state.updateSeries(9999, mockSeries({ programId: 9 }));
+    expect(state.series.length).toBe(before.length);
+    expect(state.series[0]!.programId).toBe(before[0]!.programId);
+  });
+
   it("removeSeries removes by seriesId", () => {
     const state = createPlotState();
     state.addSeries(mockSeries());

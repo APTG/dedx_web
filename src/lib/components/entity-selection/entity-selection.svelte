@@ -135,18 +135,23 @@
         if (collapsible) selectionState.setExpanded(false);
       }
     }
+    if (event.key === "/" && !isMobile && document.activeElement !== searchInputRef) {
+      event.preventDefault();
+      if (!panelOpen) selectionState.setExpanded(true);
+      searchInputRef?.focus();
+    }
   }
 
   const activeTab = $derived(selectionState.activeTarget as PickerTab);
   const panelOpen = $derived(selectionState.expanded);
   const sheetOpen = $derived(selectionState.sheetOpen);
-  // Animate only in a real browser — jsdom tests have no WAAPI support.
-  const sheetAnimDuration = $derived(browser && !prefersReducedMotion ? 200 : 0);
-  const sheetAnimDurationOut = $derived(browser && !prefersReducedMotion ? 150 : 0);
-
   // Detect mobile viewport (guarded for jsdom where matchMedia is absent).
   let isMobile = $state(false);
   let prefersReducedMotion = $state(false);
+
+  // Animate only in a real browser — jsdom tests have no WAAPI support.
+  const sheetAnimDuration = $derived(browser && !prefersReducedMotion ? 200 : 0);
+  const sheetAnimDurationOut = $derived(browser && !prefersReducedMotion ? 150 : 0);
   $effect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(max-width: 640px)");
