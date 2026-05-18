@@ -87,7 +87,7 @@
       .catch(() => {})
       .then(async () => {
         if (cancelled) return;
-        const { painter, restore } = await drawPlot(el, snapshot);
+        const { painter, restore } = await drawWithRetry(el, snapshot, () => cancelled);
         if (cancelled) {
           painter?.cleanup?.();
           restore();
@@ -100,13 +100,6 @@
       })
       .catch((err) => {
         if (!cancelled) {
-          const message = err instanceof Error ? err.message : String(err);
-          // Chrome: "… (reading 'jsroot')", Firefox: "can't access property "jsroot" of undefined"
-          if (message.includes("'jsroot'") || message.includes('"jsroot"')) {
-            jsrootError = null;
-            jsrootReady = false;
-            return;
-          }
           jsrootError = "Failed to load the plot engine. Please refresh the page.";
           jsrootReady = false;
           console.error("JsrootPlot error:", err);
@@ -196,6 +189,35 @@
       requestExportSvg = null;
     };
   });
+
+  async function drawWithRetry(
+    el: HTMLDivElement,
+    opts: Parameters<typeof drawPlot>[1],
+    getCancelled: () => boolean,
+  ): Promise<{ painter: JsrootPainter; restore: () => void }> {
+    const delays = [0, 100, 200, 400, 800];
+    let lastErr: unknown;
+    for (let attempt = 0; attempt < delays.length; attempt++) {
+      if (getCancelled()) throw new Error("cancelled");
+      if (delays[attempt] > 0) {
+        await new Promise<void>((resolve) => setTimeout(resolve, delays[attempt]));
+      }
+      if (getCancelled()) throw new Error("cancelled");
+      try {
+        return await drawPlot(el, opts);
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err);
+        if (message.includes("'jsroot'") || message.includes('"jsroot"')) {
+          lastErr = err;
+          if (attempt < delays.length - 1)
+            console.warn(`JSROOT module race (attempt ${attempt + 1}), retrying in ${delays[attempt + 1]}ms…`);
+          continue;
+        }
+        throw err;
+      }
+    }
+    throw lastErr;
+  }
 
   async function drawPlot(
     el: HTMLDivElement,

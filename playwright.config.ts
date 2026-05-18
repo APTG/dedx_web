@@ -65,6 +65,13 @@ export default defineConfig({
       use: { ...devices["iPad Air"] },
       grep: /@responsive/,
     },
+    // Firefox-specific tests. Only tests tagged @firefox in their describe/name run here.
+    // Run with: pnpm exec playwright test --project=firefox
+    {
+      name: "firefox",
+      use: { ...devices["Desktop Firefox"] },
+      grep: /@firefox/,
+    },
   ],
   webServer: {
     command: "pnpm preview --host 127.0.0.1",

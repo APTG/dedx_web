@@ -35,7 +35,7 @@ test.describe("Plot page", () => {
     expect(errors.filter((e) => e.includes("too much recursion"))).toHaveLength(0);
   });
 
-  test("default proton+water preview loads with no JSROOT error (direct load) @regression", async ({
+  test("default proton+water preview loads with no JSROOT error (direct load) @regression @firefox", async ({
     page,
   }) => {
     test.setTimeout(60000);
@@ -47,10 +47,12 @@ test.describe("Plot page", () => {
 
     await expect(page.locator('[data-testid="preview-series"]')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText("Failed to load the plot engine")).toHaveCount(0);
+    // JSROOT must actually render — loading placeholder disappears when jsrootReady=true
+    await expect(page.getByText("Loading plot engine")).toHaveCount(0, { timeout: 20000 });
     expect(errors.filter((e) => e.includes("ObjectPainter") || e.includes("internals"))).toHaveLength(0);
   });
 
-  test("default proton+water preview loads with no JSROOT error (client-side nav) @regression", async ({
+  test("default proton+water preview loads with no JSROOT error (client-side nav) @regression @firefox", async ({
     page,
   }) => {
     test.setTimeout(60000);
@@ -64,6 +66,8 @@ test.describe("Plot page", () => {
 
     await expect(page.locator('[data-testid="preview-series"]')).toBeVisible({ timeout: 15000 });
     await expect(page.getByText("Failed to load the plot engine")).toHaveCount(0);
+    // JSROOT must actually render — loading placeholder disappears when jsrootReady=true
+    await expect(page.getByText("Loading plot engine")).toHaveCount(0, { timeout: 20000 });
     expect(errors.filter((e) => e.includes("ObjectPainter") || e.includes("internals"))).toHaveLength(0);
   });
 });
