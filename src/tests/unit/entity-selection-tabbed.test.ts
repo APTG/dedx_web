@@ -1,4 +1,4 @@
-import { describe, test, expect, beforeEach } from "vitest";
+import { describe, test, expect, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, within, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
@@ -6,6 +6,7 @@ import EntitySelection from "$lib/components/entity-selection/entity-selection.s
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
+import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
 class MockLibdedxService {
   getPrograms(): ProgramEntity[] {
@@ -404,11 +405,13 @@ describe("EntitySelection", () => {
   });
 
   test("particle anchor option is disabled in multi-select compare mode", () => {
+    isAdvancedMode.value = true;
     state.setAcross("particle");
     render(EntitySelection, { props: { selectionState: state } });
 
     expect(screen.getByTestId("picker-particle-item-1")).toBeDisabled();
     expect(screen.getByTestId("picker-particle-item-2")).not.toBeDisabled();
+    isAdvancedMode.value = false;
   });
 
   test("selected-pill includes Z inline in label (no separate meta)", () => {
@@ -419,6 +422,7 @@ describe("EntitySelection", () => {
   });
 
   test("material anchor option is disabled in multi-select compare mode", async () => {
+    isAdvancedMode.value = true;
     state.setAcross("material");
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
@@ -431,9 +435,11 @@ describe("EntitySelection", () => {
     // Carbon (6) is in Elements sub-tab — switch to it and verify non-anchor is enabled.
     await user.click(screen.getByTestId("material-subtab-elements"));
     expect(screen.getByTestId("picker-material-item-6")).not.toBeDisabled();
+    isAdvancedMode.value = false;
   });
 
   test("material summary bar remains visible when current search filters rows out", async () => {
+    isAdvancedMode.value = true;
     state.setAcross("material");
     state.toggleMulti("material", 6);
     render(EntitySelection, { props: { selectionState: state } });
@@ -447,6 +453,7 @@ describe("EntitySelection", () => {
     const summaryBar = screen.getByTestId("picker-material-selected");
     expect(summaryBar).toHaveTextContent("Water");
     expect(summaryBar).toHaveTextContent("Carbon");
+    isAdvancedMode.value = false;
   });
 
   describe("collapsible mode", () => {

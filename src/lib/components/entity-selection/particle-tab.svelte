@@ -6,6 +6,7 @@
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
   import { getParticleLabel, getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
   type Particle = ParticleEntity | ExternalOnlyParticle;
 
@@ -134,8 +135,10 @@
 
   const selected = $derived(selectionState.selectedParticle);
 
-  // Multi-select mode: active when the picker is comparing across particles.
-  const isMultiMode = $derived(selectionState.across === "particle");
+  // Multi-select mode: only active when advanced mode is on AND across=particle.
+  // Without the isAdvancedMode gate, `across` lingers as "particle" after switching
+  // back to basic mode and ghost ○ circles / anchor labels would appear.
+  const isMultiMode = $derived(isAdvancedMode.value && selectionState.across === "particle");
   const multiIds = $derived(selectionState.multiSelected.particle);
 
   function isMultiSelected(p: Particle): boolean {
@@ -243,9 +246,6 @@
           {#if external}<span aria-hidden="true">🔗</span>{/if}
           {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
           <span class="flex-1">{getParticleListLabel(p, z)}</span>
-          {#if isMultiMode && anchor}
-            <span class="text-xs text-muted-foreground">(anchor)</span>
-          {/if}
         </button>
       </li>
     {/each}

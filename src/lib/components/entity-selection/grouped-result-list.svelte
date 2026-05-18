@@ -121,9 +121,6 @@
         </span>
         {#if gas}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
       </span>
-      {#if isMultiMode && anchor}
-        <span class="text-xs text-muted-foreground">(anchor)</span>
-      {/if}
     </button>
   </li>
 {/snippet}

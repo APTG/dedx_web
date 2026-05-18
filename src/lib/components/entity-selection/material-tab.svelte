@@ -188,8 +188,8 @@
 
   const selected = $derived(selectionState.selectedMaterial);
 
-  // Multi-select mode: active when the picker is comparing across materials.
-  const isMultiMode = $derived(selectionState.across === "material");
+  // Multi-select mode: only active when advanced mode is on AND across=material.
+  const isMultiMode = $derived(isAdvancedMode.value && selectionState.across === "material");
   const multiIds = $derived(selectionState.multiSelected.material);
 
   function isMultiSelected(m: Material): boolean {
@@ -328,9 +328,6 @@
           </span>
           {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
         </span>
-        {#if isMultiMode && anchor}
-          <span class="text-xs text-muted-foreground">(anchor)</span>
-        {/if}
       </button>
     </li>
   {/each}
@@ -380,9 +377,6 @@
               {/if}
             </span>
             {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
-            {#if isMultiMode && anchor}
-              <span class="text-xs text-muted-foreground">(anchor)</span>
-            {/if}
           </span>
         </button>
         {#if !isMultiMode}

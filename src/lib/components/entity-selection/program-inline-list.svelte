@@ -120,9 +120,6 @@
             </span>
             <ProgramTag kind={programKind(program.id)} />
           </span>
-          {#if isMultiMode && anchor}
-            <span class="text-xs text-muted-foreground">(anchor)</span>
-          {/if}
         </button>
       </li>
     {/each}
@@ -162,9 +159,6 @@
             {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}
             <ProgramTag kind="EXT" />
           </span>
-          {#if isMultiMode && anchor}
-            <span class="text-xs text-muted-foreground">(anchor)</span>
-          {/if}
         </button>
       </li>
     {/each}
