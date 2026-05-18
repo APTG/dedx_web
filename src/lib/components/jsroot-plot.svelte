@@ -1,4 +1,6 @@
 <script lang="ts">
+  import type * as JSROOTNs from "jsroot";
+  import { base } from "$app/paths";
   import type { PlotSeries } from "$lib/state/plot.svelte";
   import type { StpUnit } from "$lib/wasm/types";
   import {
@@ -8,6 +10,35 @@
     getPlotEnergyAxisLabel,
     getPlotEnergyAxisUnit,
   } from "$lib/utils/plot-utils";
+
+  type JSROOTModule = typeof JSROOTNs;
+
+  // Load jsroot's pre-built UMD bundle (static/jsroot.min.js) via a <script> tag
+  // instead of import("jsroot"). This bypasses Rollup's circular-dependency
+  // evaluation-order bug in jsroot 7.11.0: ObjectPainter.mjs:1828 runs
+  // Object.assign(internals.jsroot, …) before core.mjs has initialised
+  // `internals` when Rollup linearises the static import graph.
+  // The UMD bundle was built by jsroot's own Rollup with the correct order.
+  let _jsrootPromise: Promise<JSROOTModule> | null = null;
+
+  function getJsroot(): Promise<JSROOTModule> {
+    const g = globalThis as Record<string, unknown>;
+    if (g.JSROOT) return Promise.resolve(g.JSROOT as JSROOTModule);
+    if (_jsrootPromise) return _jsrootPromise;
+    _jsrootPromise = new Promise<JSROOTModule>((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = `${base}/jsroot.min.js`;
+      script.onload = () => {
+        const jsroot = (globalThis as Record<string, unknown>).JSROOT;
+        jsroot
+          ? resolve(jsroot as JSROOTModule)
+          : reject(new Error("JSROOT not found after load"));
+      };
+      script.onerror = () => reject(new Error("Failed to load jsroot.min.js"));
+      document.head.appendChild(script);
+    });
+    return _jsrootPromise;
+  }
 
   interface AxisRanges {
     xMin: number;
@@ -87,7 +118,7 @@
       .catch(() => {})
       .then(async () => {
         if (cancelled) return;
-        const { painter, restore } = await drawWithRetry(el, snapshot, () => cancelled);
+        const { painter, restore } = await drawPlot(el, snapshot);
         if (cancelled) {
           painter?.cleanup?.();
           restore();
@@ -117,7 +148,7 @@
         restoreSettings?.();
         restoreSettings = null;
         try {
-          const JSROOT = await import("jsroot");
+          const JSROOT = await getJsroot();
           if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(el);
         } catch {
           // Swallow cleanup errors during teardown to avoid breaking the page.
@@ -132,7 +163,7 @@
     let disposed = false;
     const observer = new ResizeObserver(() => {
       if (disposed) return;
-      import("jsroot").then((JSROOT) => {
+      getJsroot().then((JSROOT) => {
         if (disposed) return;
         if (typeof JSROOT.resize === "function") JSROOT.resize(el);
       });
@@ -159,7 +190,7 @@
         "position:fixed;visibility:hidden;pointer-events:none;width:800px;height:600px;top:-9999px;left:-9999px;";
       document.body.appendChild(offscreen);
       try {
-        const JSROOT = await import("jsroot");
+        const JSROOT = await getJsroot();
         // Read current reactive values at call time; exclude preview (preview: null)
         const mg = buildMultigraph(JSROOT, {
           series,
@@ -178,7 +209,7 @@
         }
         return result;
       } catch {
-        // JSROOT draw failed (e.g. module-evaluation race before engine is ready).
+        // JSROOT draw failed (e.g. script not yet loaded).
         // Return null so the caller falls back to DOM serialization or empty canvas.
         return null;
       } finally {
@@ -189,35 +220,6 @@
       requestExportSvg = null;
     };
   });
-
-  async function drawWithRetry(
-    el: HTMLDivElement,
-    opts: Parameters<typeof drawPlot>[1],
-    getCancelled: () => boolean,
-  ): Promise<{ painter: JsrootPainter; restore: () => void }> {
-    const delays = [0, 100, 200, 400, 800];
-    let lastErr: unknown;
-    for (let attempt = 0; attempt < delays.length; attempt++) {
-      if (getCancelled()) throw new Error("cancelled");
-      if (delays[attempt] > 0) {
-        await new Promise<void>((resolve) => setTimeout(resolve, delays[attempt]));
-      }
-      if (getCancelled()) throw new Error("cancelled");
-      try {
-        return await drawPlot(el, opts);
-      } catch (err) {
-        const message = err instanceof Error ? err.message : String(err);
-        if (message.includes("'jsroot'") || message.includes('"jsroot"')) {
-          lastErr = err;
-          if (attempt < delays.length - 1)
-            console.warn(`JSROOT module race (attempt ${attempt + 1}), retrying in ${delays[attempt + 1]}ms…`);
-          continue;
-        }
-        throw err;
-      }
-    }
-    throw lastErr;
-  }
 
   async function drawPlot(
     el: HTMLDivElement,
@@ -230,7 +232,7 @@
       axisRanges: AxisRanges;
     },
   ): Promise<{ painter: JsrootPainter; restore: () => void }> {
-    const JSROOT = await import("jsroot");
+    const JSROOT = await getJsroot();
 
     const prevZoomWheel = JSROOT.settings.ZoomWheel;
     JSROOT.settings.ZoomWheel = false;

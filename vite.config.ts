@@ -1,10 +1,28 @@
+import { copyFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [
+    tailwindcss(),
+    sveltekit(),
+    {
+      // Copy jsroot's own pre-built UMD bundle to static/ so it can be loaded
+      // via a <script> tag instead of being bundled by Rollup. This bypasses
+      // Rollup's circular-dependency evaluation-order bug introduced with
+      // jsroot 7.11.0 (ObjectPainter.mjs:1828 runs before core.mjs initialises
+      // `internals` when Rollup linearises the module graph).
+      name: "copy-jsroot-bundle",
+      buildStart() {
+        copyFileSync(
+          fileURLToPath(new URL("./node_modules/jsroot/build/jsroot.min.js", import.meta.url)),
+          fileURLToPath(new URL("./static/jsroot.min.js", import.meta.url)),
+        );
+      },
+    },
+  ],
   test: {
     environment: "jsdom",
     setupFiles: ["./src/tests/setup.ts"],
@@ -35,14 +53,7 @@ export default defineConfig({
   optimizeDeps: {
     include: ["svelte", "@testing-library/svelte"],
   },
-  resolve: {
-    alias: {
-      // Browser-only shim: force @resvg/resvg-js to resolve to a TS shim in browser/test builds
-      // to avoid native Node.js binding resolution (see lessons-learned.md Entry 44).
-      "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
-    },
-    // During Vitest runs, force browser export conditions so module resolution
-    // matches app/browser behavior (including the @resvg/resvg-js shim path).
-    ...(process.env.VITEST ? { conditions: ["browser"] } : {}),
-  },
+  // During Vitest runs, force browser export conditions so module resolution
+  // matches app/browser behavior.
+  resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
 });
