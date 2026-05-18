@@ -101,7 +101,8 @@
       .catch((err) => {
         if (!cancelled) {
           const message = err instanceof Error ? err.message : String(err);
-          if (message.includes("reading 'jsroot'") || message.includes('reading "jsroot"')) {
+          // Chrome: "… (reading 'jsroot')", Firefox: "can't access property "jsroot" of undefined"
+          if (message.includes("'jsroot'") || message.includes('"jsroot"')) {
             jsrootError = null;
             jsrootReady = false;
             return;
