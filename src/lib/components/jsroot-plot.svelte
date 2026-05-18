@@ -102,6 +102,7 @@
         if (!cancelled) {
           const message = err instanceof Error ? err.message : String(err);
           if (message.includes("reading 'jsroot'") || message.includes('reading "jsroot"')) {
+            jsrootError = null;
             jsrootReady = false;
             return;
           }

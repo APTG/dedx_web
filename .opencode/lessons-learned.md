@@ -1131,5 +1131,28 @@ URL and skip `replaceState` when there is no effective change.
 
 ---
 
+## Entry 54 — Batch add flows must treat `addSeries()` false as a user-visible partial failure
+
+**Symptom:** Multi-add could process several selections but still add fewer
+series than requested (duplicates/limits), while showing no feedback.
+
+**Root cause:** `PlotState.addSeries(...)` returns `false` for duplicates, but
+the caller ignored that boolean and only treated thrown exceptions as failures.
+
+```typescript
+// ❌ WRONG — ignores duplicate rejection
+plotState.addSeries(candidate);
+
+// ✅ CORRECT — count soft rejections as failures too
+const added = plotState.addSeries(candidate);
+if (!added) hadFailures = true;
+```
+
+**Rule:** In any batch/looped add flow, handle both hard failures (exceptions)
+and soft failures (boolean `false` returns) so partial completion is surfaced to
+the user.
+
+---
+
 _Last updated: 2026-05-18. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

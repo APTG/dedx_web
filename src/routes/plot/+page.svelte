@@ -697,8 +697,11 @@
   });
 
   // ── Add Series ──
+  const MAX_PLOT_SERIES = 20;
+
   function handleAddSeries() {
     if (!entityState) return;
+    if (plotState.series.length >= MAX_PLOT_SERIES) return;
     const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
     if (!plotState.preview) return;
@@ -737,6 +740,7 @@
   // ── Handle Add: delegate to multi-create when in advanced multi-select mode ──
   async function handleAddOrMulti(): Promise<void> {
     if (!entityState) return;
+    if (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES) return;
     if (editingSeriesId !== null) {
       handleDoneEditing();
       return;
@@ -814,7 +818,7 @@
         }
 
         const result = service.getPlotData(programId, particleId, materialId, 500, true, advancedOptions.value);
-        plotState.addSeries({
+        const added = plotState.addSeries({
           programId,
           particleId,
           materialId,
@@ -825,6 +829,9 @@
           density,
           result,
         });
+        if (!added) {
+          hadFailures = true;
+        }
       } catch (err) {
         hadFailures = true;
         console.warn("Failed to add one of the multi-selected series.", err);
@@ -1061,8 +1068,10 @@
 
         <!-- Add Series / Done editing button (sidebar, desktop-primary) -->
         <button
-          disabled={!entityState.isComplete && editingSeriesId === null}
-          aria-disabled={!entityState.isComplete && editingSeriesId === null}
+          disabled={(editingSeriesId === null && !entityState.isComplete) ||
+            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
+          aria-disabled={(editingSeriesId === null && !entityState.isComplete) ||
+            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
           onclick={handleAddOrMulti}
           class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 min-h-[44px]"
         >
@@ -1218,6 +1227,7 @@
           preview={plotState.preview}
           {editingSeriesId}
           {jsrootSwatchColors}
+          maxSeries={MAX_PLOT_SERIES}
           {previewError}
           onAdd={handleAddOrMulti}
           onRemove={(id) => plotState.removeSeries(id)}

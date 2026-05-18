@@ -140,7 +140,7 @@
       if (
         target instanceof HTMLElement &&
         (target.isContentEditable ||
-          target.closest("[contenteditable='true']") ||
+          target.closest("[contenteditable]") ||
           ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
       ) {
         return;
