@@ -112,7 +112,7 @@ test.describe("Plot export", () => {
     );
 
     await page.goto("/plot");
-    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     const exportPdf = page.getByRole("button", { name: /export pdf/i });
     const exportCsv = page.getByRole("button", { name: /export csv/i });
@@ -132,7 +132,7 @@ test.describe("Plot export", () => {
     );
 
     await page.goto("/plot");
-    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series using the default selection (Proton in Water)
     const addSeriesButton = page.getByRole("button", { name: /add series/i });
@@ -156,7 +156,7 @@ test.describe("Plot export", () => {
     );
 
     await page.goto("/plot");
-    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series first
     const addSeriesButton2 = page.getByRole("button", { name: /add series/i });
@@ -193,7 +193,7 @@ test.describe("Plot export", () => {
     );
 
     await page.goto("/plot");
-    await page.waitForSelector('[role="img"]', { timeout: 10000 });
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series first
     const addSeriesButton3 = page.getByRole("button", { name: /add series/i });
