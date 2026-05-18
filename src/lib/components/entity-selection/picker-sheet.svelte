@@ -288,7 +288,7 @@
 </script>
 
 <div
-  class="fixed inset-0 z-50 flex flex-col bg-background"
+  class="flex h-full flex-col bg-background"
   bind:this={dialogEl}
   role="dialog"
   aria-modal="true"
@@ -359,6 +359,7 @@
               }}
             >
               {#if external}<span aria-hidden="true">🔗</span>{/if}
+              {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
               <span class="flex-1">{getParticleListLabel(p, z)}</span>
             </button>
           </li>

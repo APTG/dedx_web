@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import { cn } from "$lib/utils.js";
   import type { EntitySelectionState, SelectedProgram } from "$lib/state/entity-selection.svelte";
   import type { ParticleEntity, MaterialEntity, ProgramEntity } from "$lib/wasm/types";
@@ -15,6 +16,8 @@
   import AdvancedToolbar from "./advanced-toolbar.svelte";
   import SearchInput from "./search-input.svelte";
   import PickerSheet from "./picker-sheet.svelte";
+  import { fly } from "svelte/transition";
+  import { quintOut, quadIn } from "svelte/easing";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -137,15 +140,30 @@
   const activeTab = $derived(selectionState.activeTarget as PickerTab);
   const panelOpen = $derived(selectionState.expanded);
   const sheetOpen = $derived(selectionState.sheetOpen);
+  // Animate only in a real browser — jsdom tests have no WAAPI support.
+  const sheetAnimDuration = $derived(browser && !prefersReducedMotion ? 200 : 0);
+  const sheetAnimDurationOut = $derived(browser && !prefersReducedMotion ? 150 : 0);
 
   // Detect mobile viewport (guarded for jsdom where matchMedia is absent).
   let isMobile = $state(false);
+  let prefersReducedMotion = $state(false);
   $effect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
     const mq = window.matchMedia("(max-width: 640px)");
     isMobile = mq.matches;
     function onChange(e: MediaQueryListEvent) {
       isMobile = e.matches;
+    }
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
+
+  $effect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion = mq.matches;
+    function onChange(e: MediaQueryListEvent) {
+      prefersReducedMotion = e.matches;
     }
     mq.addEventListener("change", onChange);
     return () => mq.removeEventListener("change", onChange);
@@ -203,14 +221,20 @@
 <svelte:window onkeydown={handleGlobalKey} />
 
 {#if sheetOpen}
-  <PickerSheet
-    {selectionState}
-    {activeTab}
-    onClose={closeSheet}
-    onParticleSelect={handleParticleSelect}
-    onMaterialSelect={handleMaterialSelect}
-    onProgramSelect={handleProgramSelect}
-  />
+  <div
+    class="fixed inset-0 z-50"
+    in:fly={{ y: 600, duration: sheetAnimDuration, easing: quintOut }}
+    out:fly={{ y: 600, duration: sheetAnimDurationOut, easing: quadIn }}
+  >
+    <PickerSheet
+      {selectionState}
+      {activeTab}
+      onClose={closeSheet}
+      onParticleSelect={handleParticleSelect}
+      onMaterialSelect={handleMaterialSelect}
+      onProgramSelect={handleProgramSelect}
+    />
+  </div>
 {/if}
 
 <div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
