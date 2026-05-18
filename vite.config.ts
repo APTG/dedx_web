@@ -53,7 +53,19 @@ export default defineConfig({
   optimizeDeps: {
     include: ["svelte", "@testing-library/svelte"],
   },
-  // During Vitest runs, force browser export conditions so module resolution
-  // matches app/browser behavior.
-  resolve: process.env.VITEST ? { conditions: ["browser"] } : undefined,
+  resolve: {
+    alias: {
+      // @resvg/resvg-js is a Node.js-only native addon pulled in transitively by
+      // jsroot 7.11.0. Rolldown (Vite 8) crawls the jsroot ESM tree even for
+      // `import type` and tries to load the .node binary, which fails. Point it
+      // to a browser-safe stub so the build completes. jsroot itself is loaded
+      // via its UMD bundle (<script> tag) at runtime and never bundled.
+      "@resvg/resvg-js": fileURLToPath(
+        new URL("./src/lib/shims/resvg-js.ts", import.meta.url),
+      ),
+    },
+    // During Vitest runs, force browser export conditions so module resolution
+    // matches app/browser behavior.
+    ...(process.env.VITEST ? { conditions: ["browser"] } : {}),
+  },
 });
