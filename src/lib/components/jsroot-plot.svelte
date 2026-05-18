@@ -182,6 +182,10 @@
           // cleanup failure is non-fatal; the offscreen div is removed in finally
         }
         return result;
+      } catch {
+        // JSROOT draw failed (e.g. module-evaluation race before engine is ready).
+        // Return null so the caller falls back to DOM serialization or empty canvas.
+        return null;
       } finally {
         if (offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
       }

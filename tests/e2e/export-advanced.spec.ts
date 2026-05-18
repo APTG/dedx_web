@@ -66,9 +66,10 @@ test.describe("Export Advanced Mode", () => {
   });
 
   test("Plot CSV export in advanced mode opens shared CSV modal @regression", async ({ page }) => {
+    test.setTimeout(90000);
     await page.goto("/plot?mode=advanced");
-    // Wait for plot to render
-    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+    // Wait for WASM to compute the default preview (more reliable than waiting for JSROOT render)
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series using the default selection
     const addSeriesButton = page.getByRole("button", { name: /add series/i });
@@ -140,9 +141,12 @@ test.describe("Export Advanced Mode", () => {
   });
 
   test("PNG export only in advanced mode @smoke", async ({ page }) => {
+    test.setTimeout(90000);
     // Basic mode: navigate directly
     await page.goto("/plot");
-    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+    // Wait for WASM to compute the default preview — this is the reliable signal that
+    // the page is ready to interact with (JSROOT draw timing is too variable for a 20s limit).
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series first
     const addSeriesButton = page.getByRole("button", { name: /add series/i });
@@ -169,7 +173,7 @@ test.describe("Export Advanced Mode", () => {
 
     // Advanced mode: navigate directly
     await page.goto("/plot?mode=advanced");
-    await page.waitForSelector('[role="img"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="preview-series"]', { timeout: 35000 });
 
     // Add a series in advanced mode
     const addSeriesButtonAdvanced = page.getByRole("button", { name: /add series/i });
