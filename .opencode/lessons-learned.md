@@ -1100,5 +1100,59 @@ that a global `data-testid` remains unique while the overlay is open.
 
 ---
 
-_Last updated: 2026-05-17. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 53 — Guard URL sync effects to prevent replaceState feedback loops
+
+**Symptom:** Plot "Done editing" never exited edit mode in E2E, and the browser
+threw `effect_update_depth_exceeded` after entering live-edit.
+
+**Root cause:** The URL-sync `$effect` always called `replaceState(...)` even
+when the serialized query string was unchanged. During live updates this created
+an internal feedback loop between route-state updates and reactive effects.
+
+```typescript
+// ❌ WRONG — unconditional replaceState inside a reactive effect
+$effect(() => {
+  const newUrl = `${window.location.pathname}?${params.toString()}`;
+  replaceState(newUrl, page.state);
+});
+
+// ✅ CORRECT — only replace when URL actually changed
+$effect(() => {
+  const query = params.toString();
+  const newUrl = query ? `${window.location.pathname}?${query}` : window.location.pathname;
+  const currentUrl = `${window.location.pathname}${window.location.search}`;
+  if (newUrl === currentUrl) return;
+  replaceState(newUrl, page.state);
+});
+```
+
+**Rule:** Any reactive URL persistence effect must compare against the current
+URL and skip `replaceState` when there is no effective change.
+
+---
+
+## Entry 54 — Batch add flows must treat `addSeries()` false as a user-visible partial failure
+
+**Symptom:** Multi-add could process several selections but still add fewer
+series than requested (duplicates/limits), while showing no feedback.
+
+**Root cause:** `PlotState.addSeries(...)` returns `false` for duplicates, but
+the caller ignored that boolean and only treated thrown exceptions as failures.
+
+```typescript
+// ❌ WRONG — ignores duplicate rejection
+plotState.addSeries(candidate);
+
+// ✅ CORRECT — count soft rejections as failures too
+const added = plotState.addSeries(candidate);
+if (!added) hadFailures = true;
+```
+
+**Rule:** In any batch/looped add flow, handle both hard failures (exceptions)
+and soft failures (boolean `false` returns) so partial completion is surfaced to
+the user.
+
+---
+
+_Last updated: 2026-05-18. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_

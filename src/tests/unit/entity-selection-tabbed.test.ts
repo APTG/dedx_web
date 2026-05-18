@@ -1,5 +1,5 @@
 import { describe, test, expect, beforeEach } from "vitest";
-import { render, screen, cleanup, within } from "@testing-library/svelte";
+import { render, screen, cleanup, within, waitFor } from "@testing-library/svelte";
 import userEvent from "@testing-library/user-event";
 import { tick } from "svelte";
 import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
@@ -296,8 +296,11 @@ describe("EntitySelection", () => {
     expect(document.body.style.overflow).toBe("hidden");
 
     await user.click(closeButton);
-
-    expect(screen.queryByTestId("picker-sheet")).not.toBeInTheDocument();
+    // The sheet wrapper has a fly out-transition; poll until Svelte removes the
+    // element after the transition promise resolves.
+    await waitFor(() =>
+      expect(screen.queryByTestId("picker-sheet")).not.toBeInTheDocument(),
+    );
     expect(document.body.style.overflow).toBe("");
   });
 

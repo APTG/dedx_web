@@ -247,6 +247,7 @@
             <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
           {/if}
           {#if external}<span aria-hidden="true">🔗</span>{/if}
+          {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
           <span class="flex-1">{getParticleListLabel(p, z)}</span>
           {#if isMultiMode && anchor}
             <span class="text-xs text-muted-foreground">(anchor)</span>

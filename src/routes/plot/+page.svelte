@@ -27,6 +27,7 @@
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
+  import SeriesStrip from "./series-strip.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
@@ -59,9 +60,8 @@
     loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
   }
 
-  // Mobile responsive: track viewport width to collapse entity panels on small screens
+  // Mobile responsive: track viewport width to pass collapsible to EntitySelection
   let isMobile = $state(false);
-  let entityPanelsOpen = $state(false);
   let previewError = $state<string | null>(null);
 
   $effect(() => {
@@ -70,7 +70,6 @@
     isMobile = mq.matches;
     const handler = (e: MediaQueryListEvent) => {
       isMobile = e.matches;
-      if (!e.matches) entityPanelsOpen = false;
     };
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
@@ -425,7 +424,10 @@
       externalSources: loadedExternalSources,
       ...customUrlFields,
     });
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    const query = params.toString();
+    const newUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (newUrl === currentUrl) return;
     untrack(() => replaceState(newUrl, page.state));
   });
 
@@ -644,23 +646,62 @@
     ),
   );
 
-  // Summary shown in the mobile collapsed entity-panel header
-  const selectionSummary = $derived.by(() => {
-    if (!entityState) return "";
-    const particlePart = entityState.selectedParticle
-      ? getParticleLabel(entityState.selectedParticle)
-      : "—";
-    const materialPart = entityState.selectedMaterial?.name ?? "—";
-    const programPart =
-      "resolvedProgram" in entityState.selectedProgram
-        ? (entityState.selectedProgram.resolvedProgram?.name ?? "Auto")
-        : entityState.selectedProgram.name;
-    return `${particlePart} / ${materialPart} / ${programPart}`;
+  // ── Editing series ──
+  let editingSeriesId = $state<number | null>(null);
+
+  function handleSelectSeriesForEdit(seriesId: number): void {
+    if (!entityState) return;
+    const s = plotState.series.find((x) => x.seriesId === seriesId);
+    if (!s) return;
+    editingSeriesId = seriesId;
+    entityState.selectParticle(s.particleId);
+    entityState.selectMaterial(s.materialId);
+    entityState.selectProgram(s.programId as number | string);
+    entityState.setExpanded(true);
+  }
+
+  function handleDoneEditing(): void {
+    editingSeriesId = null;
+  }
+
+  // Live-update the editing series whenever the preview changes.
+  $effect(() => {
+    if (editingSeriesId === null || !plotState.preview) return;
+    const p = plotState.preview;
+    const current = plotState.series.find((s) => s.seriesId === editingSeriesId);
+    if (
+      current &&
+      current.programId === p.programId &&
+      current.particleId === p.particleId &&
+      current.materialId === p.materialId &&
+      current.programName === p.programName &&
+      current.particleName === p.particleName &&
+      current.materialName === p.materialName &&
+      current.particleMassNumber === p.particleMassNumber &&
+      current.density === p.density &&
+      current.result === p.result
+    ) {
+      return;
+    }
+    plotState.updateSeries(editingSeriesId, {
+      programId: p.programId,
+      particleId: p.particleId,
+      materialId: p.materialId,
+      programName: p.programName,
+      particleName: p.particleName,
+      materialName: p.materialName,
+      particleMassNumber: p.particleMassNumber,
+      density: p.density,
+      result: p.result,
+    });
   });
 
   // ── Add Series ──
+  const MAX_PLOT_SERIES = 20;
+
   function handleAddSeries() {
     if (!entityState) return;
+    if (plotState.series.length >= MAX_PLOT_SERIES) return;
     const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
     if (!plotState.preview) return;
@@ -693,6 +734,111 @@
 
     if (!added) {
       console.warn("Duplicate series — not added.");
+    }
+  }
+
+  // ── Handle Add: delegate to multi-create when in advanced multi-select mode ──
+  async function handleAddOrMulti(): Promise<void> {
+    if (!entityState) return;
+    if (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES) return;
+    if (editingSeriesId !== null) {
+      handleDoneEditing();
+      return;
+    }
+    const across = entityState.across;
+    if (isAdvancedMode.value && across !== null) {
+      const ids = entityState.multiSelected[across];
+      if (ids.length > 1) {
+        await handleAddMultiSeries(across, ids);
+        return;
+      }
+    }
+    handleAddSeries();
+  }
+
+  async function handleAddMultiSeries(
+    across: "particle" | "material" | "program",
+    ids: (number | string)[],
+  ): Promise<void> {
+    if (!entityState) return;
+    const service = await getService();
+    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
+    if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
+    const programs = service.getPrograms();
+    const toNumericId = (value: number | string): number | null => {
+      const parsed = typeof value === "number" ? value : Number(value);
+      return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+    };
+
+    const baseProgramId = toNumericId(resolvedProgramId);
+    const baseParticleId = toNumericId(selectedParticle.id);
+    const baseMaterialId = toNumericId(selectedMaterial.id);
+    if (baseProgramId === null || baseParticleId === null || baseMaterialId === null) {
+      previewError = "Cannot add selected series: one or more base IDs are invalid.";
+      return;
+    }
+
+    let hadFailures = false;
+    for (const id of ids) {
+      try {
+        let programId = baseProgramId;
+        let particleId = baseParticleId;
+        let materialId = baseMaterialId;
+        let programName = programs.find((p) => p.id === programId)?.name ?? "";
+        let particleName = getParticleLabel(selectedParticle);
+        let materialName = selectedMaterial.name;
+        let density = selectedMaterial.density ?? 1;
+        let particleMassNumber: number | undefined =
+          "massNumber" in selectedParticle ? selectedParticle.massNumber : undefined;
+        const overrideId = toNumericId(id);
+        if (overrideId === null) {
+          hadFailures = true;
+          continue;
+        }
+
+        if (across === "program") {
+          programId = overrideId;
+          programName = programs.find((p) => p.id === overrideId)?.name ?? String(overrideId);
+        } else if (across === "particle") {
+          particleId = overrideId;
+          const particles = service.getParticles(programId);
+          const part = particles.find((p) => p.id === overrideId);
+          if (part) {
+            particleName = getParticleLabel(part);
+            particleMassNumber = part.massNumber;
+          }
+        } else if (across === "material") {
+          materialId = overrideId;
+          const materials = service.getMaterials(programId);
+          const mat = materials.find((m) => m.id === overrideId);
+          if (mat) {
+            materialName = mat.name;
+            density = mat.density;
+          }
+        }
+
+        const result = service.getPlotData(programId, particleId, materialId, 500, true, advancedOptions.value);
+        const added = plotState.addSeries({
+          programId,
+          particleId,
+          materialId,
+          programName,
+          particleName,
+          materialName,
+          particleMassNumber,
+          density,
+          result,
+        });
+        if (!added) {
+          hadFailures = true;
+        }
+      } catch (err) {
+        hadFailures = true;
+        console.warn("Failed to add one of the multi-selected series.", err);
+      }
+    }
+    if (hadFailures) {
+      previewError = "Some selected series could not be added.";
     }
   }
 
@@ -918,31 +1064,18 @@
     <div class="grid gap-4 desktop:grid-cols-[minmax(360px,5fr)_minmax(0,7fr)]">
       <!-- ── SIDEBAR ── -->
       <aside class="flex min-w-0 flex-col gap-4">
-        {#if isMobile}
-          <!-- Mobile: collapsed disclosure button showing current selection -->
-          <button
-            type="button"
-            aria-expanded={entityPanelsOpen}
-            onclick={() => (entityPanelsOpen = !entityPanelsOpen)}
-            class="flex w-full items-center justify-between rounded-lg border bg-card px-4 py-3 text-sm font-medium min-h-[44px]"
-          >
-            <span>{entityPanelsOpen ? "▼" : "▶"} Select Entities</span>
-            <span class="ml-2 truncate text-xs text-muted-foreground">{selectionSummary}</span>
-          </button>
-        {/if}
+        <EntitySelection selectionState={entityState} collapsible={isMobile} />
 
-        {#if !isMobile || entityPanelsOpen}
-          <EntitySelection selectionState={entityState} />
-        {/if}
-
-        <!-- Add Series button -->
+        <!-- Add Series / Done editing button (sidebar, desktop-primary) -->
         <button
-          disabled={!entityState.isComplete}
-          aria-disabled={!entityState.isComplete}
-          onclick={handleAddSeries}
+          disabled={(editingSeriesId === null && !entityState.isComplete) ||
+            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
+          aria-disabled={(editingSeriesId === null && !entityState.isComplete) ||
+            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
+          onclick={handleAddOrMulti}
           class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 min-h-[44px]"
         >
-          ＋ Add Series
+          {editingSeriesId !== null ? "Done editing" : "＋ Add Series"}
         </button>
 
         {#if plotState.series.length >= 10}
@@ -1088,64 +1221,21 @@
           />
         </div>
 
-        <!-- Series list (legend) -->
-        {#if previewError}
-          <p class="text-xs text-destructive" role="alert">Preview failed: {previewError}</p>
-        {/if}
-        {#if plotState.series.length > 0 || plotState.preview}
-          <div role="list" aria-label="Plot series" class="flex flex-col gap-1">
-            {#if plotState.preview}
-              <div
-                role="listitem"
-                data-testid="preview-series"
-                data-density={plotState.preview.density}
-                class="flex items-center gap-2 text-sm italic text-muted-foreground"
-              >
-                <span
-                  role="img"
-                  class="inline-block h-4 w-4 rounded-sm border border-dashed"
-                  style="background-color: #000; opacity: 0.5"
-                  aria-label="Black, dashed line (preview)"
-                ></span>
-                <span
-                  >Preview — {plotState.preview.particleName} in {plotState.preview
-                    .materialName}</span
-                >
-                <button
-                  aria-label="Toggle preview visibility"
-                  onclick={() => plotState.togglePreviewVisibility()}
-                  class="ml-auto text-muted-foreground hover:text-foreground">👁</button
-                >
-              </div>
-            {/if}
-
-            {#each plotState.series as s (s.seriesId)}
-              <div
-                role="listitem"
-                class="flex items-center gap-2 text-sm"
-                style={s.visible ? "" : "opacity: 0.4"}
-              >
-                <span
-                  class="inline-block h-4 w-4 rounded-sm"
-                  style="background-color: {jsrootSwatchColors?.get(s.colorIndex) ?? s.color}"
-                  aria-label="{jsrootSwatchColors?.get(s.colorIndex) ?? s.color}, solid line"
-                ></span>
-                <span>{s.label}</span>
-                <button
-                  aria-label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
-                  aria-pressed={!s.visible}
-                  onclick={() => plotState.toggleVisibility(s.seriesId)}
-                  class="ml-auto text-muted-foreground hover:text-foreground">👁</button
-                >
-                <button
-                  aria-label="Remove series {s.label}"
-                  onclick={() => plotState.removeSeries(s.seriesId)}
-                  class="text-muted-foreground hover:text-destructive">×</button
-                >
-              </div>
-            {/each}
-          </div>
-        {/if}
+        <!-- Series strip (legend + add/edit/remove) -->
+        <SeriesStrip
+          series={plotState.series}
+          preview={plotState.preview}
+          {editingSeriesId}
+          {jsrootSwatchColors}
+          maxSeries={MAX_PLOT_SERIES}
+          {previewError}
+          onAdd={handleAddOrMulti}
+          onRemove={(id) => plotState.removeSeries(id)}
+          onToggleVisibility={(id) => plotState.toggleVisibility(id)}
+          onTogglePreview={() => plotState.togglePreviewVisibility()}
+          onSelectForEdit={handleSelectSeriesForEdit}
+          onDone={handleDoneEditing}
+        />
 
         <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
         {#if isAdvancedMode.value && entityState.selectedMaterial}
