@@ -6,6 +6,7 @@
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
+  import PickerSummaryBar from "./picker-summary-bar.svelte";
 
   type Material = MaterialEntity | ExternalOnlyMaterial;
   type SubTab = "compounds" | "elements" | "custom";
@@ -165,13 +166,16 @@
   const filteredCustom = $derived(customItems.filter((m) => matches(m, query)));
   const hasQuery = $derived(query.trim().length > 0);
 
-  const filteredActive = $derived(
-    activeSubTab === "elements"
-      ? filteredElements
-      : activeSubTab === "custom"
-        ? (filteredCustom as Material[])
-        : filteredCompounds,
-  );
+  let showOnlySelected = $state(false);
+
+  const filteredActive = $derived.by<Material[]>(() => {
+    let base: Material[];
+    if (activeSubTab === "elements") base = filteredElements;
+    else if (activeSubTab === "custom") base = filteredCustom as Material[];
+    else base = filteredCompounds;
+    if (!showOnlySelected) return base;
+    return base.filter((m) => (isMultiMode ? isMultiSelected(m) : selected?.id === m.id));
+  });
 
   function isAvailable(m: Material): boolean {
     return selectionState.availableMaterials.some((q) => q.id === m.id);
@@ -199,6 +203,26 @@
   function handleMultiToggle(m: Material): void {
     selectionState.toggleMulti("material", m.id);
   }
+
+  function clearAllMulti(): void {
+    const [, ...rest] = multiIds;
+    for (const id of rest) selectionState.toggleMulti("material", id);
+  }
+
+  // Summary bar derived values
+  const summaryCount = $derived(isMultiMode ? multiIds.length : selected ? 1 : 0);
+  const summaryLabels = $derived(
+    isMultiMode
+      ? multiIds.map((id) => {
+          const m = resolveMaterialById(id);
+          if (!m) return String(id);
+          const dens = formatDensity(m);
+          return dens ? `${m.name} (ρ=${dens})` : m.name;
+        })
+      : selected
+        ? [formatDensity(selected) ? `${selected.name} (ρ=${formatDensity(selected)} g/cm³)` : selected.name]
+        : [],
+  );
 
   function resolveMaterialById(id: number | string): Material | null {
     return (
@@ -265,6 +289,7 @@
     {@const inMulti = isMultiSelected(m)}
     {@const anchor = isAnchor(m)}
     {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
+    {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
     {@const dens = formatDensity(m)}
     <li role="presentation">
       <button
@@ -278,7 +303,7 @@
         class={cn(
           "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
           available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-          (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+          isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
         )}
         onclick={() => {
           if (!available) return;
@@ -289,9 +314,10 @@
           }
         }}
       >
-        {#if isMultiMode}
-          <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-        {/if}
+        <span
+          aria-hidden="true"
+          class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+        >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
         <span class="flex min-w-0 flex-1 items-center gap-2">
           {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
           <span class="truncate">
@@ -318,6 +344,7 @@
     {@const inMulti = isMultiSelected(m)}
     {@const anchor = isAnchor(m)}
     {@const isSingleSelected = !isMultiMode && selected?.id === m.id}
+    {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
     {@const dens = formatDensity(m)}
     <li role="presentation">
       <div class="flex items-center gap-1">
@@ -331,7 +358,7 @@
           disabled={isMultiMode && anchor}
           class={cn(
             "min-w-0 flex-1 rounded px-2 py-1.5 text-left text-sm hover:bg-accent",
-            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+            isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
           )}
           onclick={() => {
             if (isMultiMode) {
@@ -342,9 +369,10 @@
           }}
         >
           <span class="flex items-center gap-1">
-            {#if isMultiMode}
-              <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-            {/if}
+            <span
+              aria-hidden="true"
+              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
             <span class="truncate">
               {m.name}
               {#if dens}
@@ -379,62 +407,16 @@
   {/if}
 {/snippet}
 
-<div class="space-y-3" data-testid="picker-material-tab">
-  {#if isMultiMode}
-    {#if multiIds.length > 0}
-      <div
-        class="flex flex-wrap gap-1.5"
-        aria-label="Selected materials for comparison"
-        data-testid="picker-material-multi-selected"
-      >
-        {#each multiIds as id (id)}
-          {@const m = resolveMaterialById(id)}
-          {#if m}
-            {@const anchor = multiIds[0] === id}
-            {@const dens = formatDensity(m)}
-            <span
-              class={cn(
-                "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-                anchor
-                  ? "border-primary bg-primary/15 text-primary"
-                  : "border-muted bg-muted text-muted-foreground",
-              )}
-            >
-              {dens ? `${m.name} (ρ=${dens})` : m.name}
-              {#if !anchor}
-                <button
-                  type="button"
-                  aria-label="Remove {m.name} from comparison"
-                  class="ml-0.5 rounded-full hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                  onclick={() => handleMultiToggle(m)}
-                >×</button>
-              {/if}
-            </span>
-          {/if}
-        {/each}
-      </div>
-    {/if}
-  {:else if selected}
-    {@const dens = formatDensity(selected)}
-    <button
-      type="button"
-      class="flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15"
-      data-testid="picker-material-selected"
-      aria-label="Selected: {dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}. Click to clear."
-      onclick={onClear}
-    >
-      {#if isGas(selected)}
-        <span aria-hidden="true">≋</span>
-      {:else if isExternal(selected)}
-        <span aria-hidden="true">🔗</span>
-      {/if}
-      <span class="font-medium">{dens ? `${selected.name} (ρ=${dens} g/cm³)` : selected.name}</span>
-      <span
-        class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-        aria-hidden="true"
-      >× clear</span>
-    </button>
-  {/if}
+<div class="space-y-2" data-testid="picker-material-tab">
+  <!-- Compact sticky summary bar -->
+  <PickerSummaryBar
+    count={summaryCount}
+    {summaryLabels}
+    onClear={isMultiMode ? clearAllMulti : onClear}
+    onlySelected={showOnlySelected}
+    onToggleOnlySelected={isMultiMode ? () => { showOnlySelected = !showOnlySelected; } : undefined}
+    testId="picker-material-selected"
+  />
 
   <!-- Sub-tab pills: fixed order Compounds · Elements · Custom -->
   <div class="flex gap-1" role="tablist" aria-label="Material sub-tabs" data-testid="picker-material-subtabs">

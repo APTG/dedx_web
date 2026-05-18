@@ -86,6 +86,7 @@
       {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
       {@const inMulti = isMultiMode && isMultiSelected(program.id)}
       {@const anchor = isMultiMode && isAnchor(program.id)}
+      {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
       {@const desc = getProgramDescription(program.id)}
       <li role="presentation">
         <button
@@ -98,7 +99,7 @@
           disabled={isMultiMode && anchor}
           class={cn(
             "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+            isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
           )}
           onclick={() => {
             if (isMultiMode) {
@@ -108,9 +109,10 @@
             }
           }}
         >
-          {#if isMultiMode}
-            <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-          {/if}
+          <span
+            aria-hidden="true"
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>
               <span>{program.name}</span>
@@ -129,6 +131,7 @@
       {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
       {@const inMulti = isMultiMode && isMultiSelected(program.id)}
       {@const anchor = isMultiMode && isAnchor(program.id)}
+      {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
       <li role="presentation">
         <button
           type="button"
@@ -140,7 +143,7 @@
           disabled={isMultiMode && anchor}
           class={cn(
             "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-            (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+            isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
           )}
           onclick={() => {
             if (isMultiMode) {
@@ -150,9 +153,10 @@
             }
           }}
         >
-          {#if isMultiMode}
-            <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-          {/if}
+          <span
+            aria-hidden="true"
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>🔗 {program.name}</span>
             {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}

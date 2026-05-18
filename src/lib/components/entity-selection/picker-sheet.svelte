@@ -349,8 +349,8 @@
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                isSingleSelected && "bg-primary/15 font-semibold",
-                named && !isSingleSelected && "font-semibold",
+                isSingleSelected && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
+                !isSingleSelected && named && "font-semibold",
               )}
               onclick={() => {
                 if (!available) return;
@@ -358,6 +358,10 @@
                 onClose();
               }}
             >
+              <span
+                aria-hidden="true"
+                class="w-4 shrink-0 text-center text-xs {isSingleSelected ? 'font-bold text-orange-500' : ''}"
+              >{isSingleSelected ? "✓" : ""}</span>
               {#if external}<span aria-hidden="true">🔗</span>{/if}
               {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
               <span class="flex-1">{getParticleListLabel(p, z)}</span>
@@ -391,6 +395,7 @@
           {@const isSingleSelected = !isMultiProgram && currentProgram.id === program.id}
           {@const inMulti = isMultiProgram && multiProgramIds.includes(program.id)}
           {@const anchor = multiProgramIds[0] === program.id}
+          {@const isChecked = isMultiProgram ? inMulti : isSingleSelected}
           {@const desc = getProgramDescription(program.id)}
           <li role="presentation">
             <button
@@ -403,7 +408,7 @@
               disabled={isMultiProgram && anchor}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-                (isMultiProgram ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+                isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
               )}
               onclick={() => {
                 if (isMultiProgram) {
@@ -414,9 +419,10 @@
                 }
               }}
             >
-              {#if isMultiProgram}
-                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-              {/if}
+              <span
+                aria-hidden="true"
+                class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+              >{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span>
               <span class="flex-1 flex items-center justify-between gap-3">
                 <span>
                   {program.name}
@@ -431,6 +437,7 @@
           {@const isSingleSelected = !isMultiProgram && currentProgram.id === program.id}
           {@const inMulti = isMultiProgram && multiProgramIds.includes(program.id)}
           {@const anchor = multiProgramIds[0] === program.id}
+          {@const isChecked = isMultiProgram ? inMulti : isSingleSelected}
           <li role="presentation">
             <button
               type="button"
@@ -442,7 +449,7 @@
               disabled={isMultiProgram && anchor}
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-                (isMultiProgram ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+                isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
               )}
               onclick={() => {
                 if (isMultiProgram) {
@@ -453,9 +460,10 @@
                 }
               }}
             >
-              {#if isMultiProgram}
-                <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-              {/if}
+              <span
+                aria-hidden="true"
+                class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+              >{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span>
               <span class="flex-1 flex items-center gap-2">
                 <span>🔗 {program.name}</span>
                 <ProgramTag kind="EXT" />

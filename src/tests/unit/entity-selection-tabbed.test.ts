@@ -433,7 +433,7 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-material-item-6")).not.toBeDisabled();
   });
 
-  test("material selected pills remain visible when current search filters rows out", async () => {
+  test("material summary bar remains visible when current search filters rows out", async () => {
     state.setAcross("material");
     state.toggleMulti("material", 6);
     render(EntitySelection, { props: { selectionState: state } });
@@ -443,9 +443,10 @@ describe("EntitySelection", () => {
     await user.clear(screen.getByTestId("picker-material-search"));
     await user.type(screen.getByTestId("picker-material-search"), "zzzz-no-match");
 
-    const selected = screen.getByTestId("picker-material-multi-selected");
-    expect(selected).toHaveTextContent("Water");
-    expect(selected).toHaveTextContent("Carbon");
+    // Summary bar (picker-material-selected) replaces old pills — always visible.
+    const summaryBar = screen.getByTestId("picker-material-selected");
+    expect(summaryBar).toHaveTextContent("Water");
+    expect(summaryBar).toHaveTextContent("Carbon");
   });
 
   describe("collapsible mode", () => {
