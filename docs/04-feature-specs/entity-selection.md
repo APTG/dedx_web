@@ -171,6 +171,86 @@ proton (Z=1)
 
 At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 
+---
+
+### Adaptive Picker Kit (PR A — 2026-05-17)
+
+> **Issue #530 — PR A:** Adaptive Picker Kit + Particle/Material/Program Rework.
+> Shipped in branch `feat/issue-530-mobile-picker-part-a`.
+> Plot page left untouched (collapsible=false path is unchanged).
+
+#### Adaptive size-bucket system
+
+Each picker tab renders differently depending on the count of available items
+(`computeBucket` in `src/lib/components/entity-selection/size-bucket.ts`):
+
+| Bucket | Count | Behavior |
+|--------|-------|----------|
+| `tiny` | ≤ 10 | Flat tap list, no search, no scroll container |
+| `medium` | 11–150 | Scrollable list with search |
+| `large` | > 150 | Same as medium (future: virtualisation) |
+
+The Program tab uses this: ≤ 10 programs → renders `<ProgramInlineList>` (no
+search bar, no scroll wrapper); more → existing auto-hero + scrollable `<ul>`.
+
+Particle (~30 items) → always `medium`. Material (~195 items) → always `large`.
+
+#### Particle tab — flat Z-sorted list
+
+Removed the Common particles / Ions section headers. All builtins now form a
+single flat list sorted by Z, with named particles (proton, alpha) first:
+
+1. Named particles (NAMED_IDS = {1, 2}) sorted by Z — bold (`font-semibold`)
+2. Remaining builtins sorted by Z
+3. External-only particles sorted by Z
+
+Each row renders `getParticleListLabel(p, z)` — Z is embedded in the name
+(`proton (Z=1)`, `Carbon (C, Z=6)`) with no separate right-aligned Z column.
+
+`data-testid="picker-particle-list"` on the `<ul>` (no sub-sections).
+
+Electron (id 1001) remains excluded until ESTAR ships.
+
+#### Material tab — sub-tab pill controls
+
+Replaced the three side-by-side columns with a single active list plus
+pill buttons switching between sub-tabs:
+
+- **Order**: Compounds · Elements · Custom (Custom only in Advanced mode)
+- **Default active sub-tab**: `"compounds"`
+- **Persistence**: `localStorage["webdedx.materialSubtab"]` — survives reload
+- **Scroll memory**: each sub-tab's scroll position is saved/restored on switch
+- **Auto-switch**: if the selected material is in a different sub-tab, the
+  tab silently switches to show it (no user interaction required)
+- **Bottom fade**: a gradient fade at the bottom of the list hints at overflow
+
+Test IDs:
+- Sub-tab pills: `material-subtab-compounds`, `material-subtab-elements`, `material-subtab-custom`
+- Active list: `picker-material-list-{activeSubTab}`
+- Add compound: `picker-material-add-compound` (unchanged for backward compat)
+
+#### Full-screen search sheet (mobile)
+
+On mobile (≤ 640px), the picker-level search field is a tap-target `<button>`
+rather than a real `<input>`. Tapping it opens a full-screen overlay
+(`picker-sheet.svelte`) with:
+
+- Autofocused `<input data-testid="picker-sheet-input">`
+- Full focus trap (Tab cycling, Escape to close)
+- Body scroll lock (`document.body.style.overflow = "hidden"`) while open
+- Hardware Back support (`history.pushState` + `popstate` listener)
+- Done button (`data-testid="picker-sheet-done"`) in multi-select Advanced mode
+- Results mirror the main tab's logic: flat particles, grouped materials, flat programs
+
+Mobile detection uses `window.matchMedia("(max-width: 640px)")` with a jsdom
+guard (`if (!window.matchMedia) return;`) in both `search-input.svelte` and
+`entity-selection.svelte`.
+
+State: `selectionState.sheetOpen` (boolean) + `setSheetOpen(open)`.
+
+No mobile autofocus: on tab change, `searchInputRef?.focus()` is only called
+when `!isMobile` to avoid invoking the software keyboard unexpectedly.
+
 ### Why this redesign
 
 1. Three side-by-side panels overwhelm on mobile — all three lists fight
@@ -278,26 +358,33 @@ Display rules:
 | 3..118 | `Element (Symbol)` | e.g. `Carbon (C)`, `Tin (Sn)`                           |
 | 1001   | —                  | **omitted** — electron not selectable until ESTAR ships |
 
-External-only particles use the `🔗 <name>` prefix and mix into the
-existing sections by Z; they do NOT form an "External" group.
+**Current implementation (as of PR A, 2026-05-17):** Flat Z-sorted list with
+no Common/Ions section headers. Named particles (proton, alpha) sort first
+and are bold. Z is embedded in the name label: `proton (Z=1)`, `Carbon (C, Z=6)`.
+See the "Adaptive Picker Kit" section for full details.
 
-Basic mode renders two sections (Common particles / Ions). Advanced mode
-adds a periodic-grid scan view toggle. Search supports name, symbol,
-alias, bare Z, and (Advanced) `z=N` / `z>=N` operator syntax.
+External-only particles use the `🔗 <name>` prefix and sort into the flat
+list by Z; they do NOT form an "External" group.
+
+Search supports name, symbol, alias, bare Z, and `z=N` operator syntax.
 
 ### Material tab
 
-Columns: Elements (id 1..98), Compounds (id ≥ 99 + 906 + external),
-and Custom (Advanced only). External materials stay inline in the
-Compounds column with `🔗 ` prefix.
+**Current implementation (as of PR A, 2026-05-17):** Sub-tab pill controls
+replace the three-column layout. See the "Adaptive Picker Kit" section above
+for full details.
+
+Sub-tabs: Compounds (id ≥ 99 or 906 + external), Elements (id 1..98),
+Custom (Advanced only). Only one sub-tab is visible at a time; pills
+(`material-subtab-*`) switch between them.
 
 Inline indicators: gas materials carry an inline `(≋)` glyph next to the
 name (no coloured badge — colour-blind friendly). Density is shown beside
 the material name as `(ρ=... g/cm³)` to keep name+density visually grouped.
 
-Custom column (Advanced only): lists user-defined compounds with per-row
-edit action and a clearly visible `+ Add compound` button that opens the
-Custom Compound Editor modal.
+Custom sub-tab (Advanced only): lists user-defined compounds with per-row
+edit action and a clearly visible `+ New custom material` pill button that
+opens the Custom Compound Editor modal.
 
 ### Program tab
 

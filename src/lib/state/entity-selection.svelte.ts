@@ -80,6 +80,11 @@ export interface EntitySelectionState {
     program: (number | string)[];
   };
 
+  /** Whether the full-screen search sheet is open. */
+  sheetOpen: boolean;
+  /** Open or close the full-screen search sheet. */
+  setSheetOpen(open: boolean): void;
+
   /** Select a built-in program (numeric) or external program (string ExtRef). */
   selectProgram(programId: number | string): void;
   selectParticle(particleId: number | string | null): void;
@@ -171,6 +176,9 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let multiParticle = $state<(number | string)[]>([]);
   let multiMaterial = $state<(number | string)[]>([]);
   let multiProgram = $state<(number | string)[]>([]);
+
+  // Mobile picker sheet state (issue #530 — adaptive picker kit).
+  let sheetOpen = $state(false);
 
   function resolveAutoSelect(
     particleId: number | string | null,
@@ -641,6 +649,14 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
     get externalContext(): ExternalCompatibilityContext {
       return extCtx;
+    },
+
+    get sheetOpen() {
+      return sheetOpen;
+    },
+
+    setSheetOpen(open: boolean): void {
+      sheetOpen = open;
     },
   };
 
