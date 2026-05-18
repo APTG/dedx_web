@@ -19,25 +19,50 @@
   // Object.assign(internals.jsroot, …) before core.mjs has initialised
   // `internals` when Rollup linearises the static import graph.
   // The UMD bundle was built by jsroot's own Rollup with the correct order.
-  let _jsrootPromise: Promise<JSROOTModule> | null = null;
+  const JSROOT_SCRIPT_ID = "jsroot-umd-loader";
+  const JSROOT_PROMISE_KEY = "__jsrootPromise__";
 
   function getJsroot(): Promise<JSROOTModule> {
     const g = globalThis as Record<string, unknown>;
     if (g.JSROOT) return Promise.resolve(g.JSROOT as JSROOTModule);
-    if (_jsrootPromise) return _jsrootPromise;
-    _jsrootPromise = new Promise<JSROOTModule>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = `${base}/jsroot.min.js`;
-      script.onload = () => {
+
+    const existingPromise = g[JSROOT_PROMISE_KEY];
+    if (existingPromise) return existingPromise as Promise<JSROOTModule>;
+
+    const jsrootPromise = new Promise<JSROOTModule>((resolve, reject) => {
+      const onLoad = () => {
         const jsroot = (globalThis as Record<string, unknown>).JSROOT;
-        jsroot
-          ? resolve(jsroot as JSROOTModule)
-          : reject(new Error("JSROOT not found after load"));
+        if (jsroot) {
+          resolve(jsroot as JSROOTModule);
+          return;
+        }
+
+        delete g[JSROOT_PROMISE_KEY];
+        reject(new Error("JSROOT not found after load"));
       };
-      script.onerror = () => reject(new Error("Failed to load jsroot.min.js"));
+
+      const onError = () => {
+        delete g[JSROOT_PROMISE_KEY];
+        reject(new Error("Failed to load jsroot.min.js"));
+      };
+
+      const existingScript = document.getElementById(JSROOT_SCRIPT_ID) as HTMLScriptElement | null;
+      if (existingScript) {
+        existingScript.addEventListener("load", onLoad, { once: true });
+        existingScript.addEventListener("error", onError, { once: true });
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = JSROOT_SCRIPT_ID;
+      script.src = `${base}/jsroot.min.js`;
+      script.addEventListener("load", onLoad, { once: true });
+      script.addEventListener("error", onError, { once: true });
       document.head.appendChild(script);
     });
-    return _jsrootPromise;
+
+    g[JSROOT_PROMISE_KEY] = jsrootPromise;
+    return jsrootPromise;
   }
 
   interface AxisRanges {

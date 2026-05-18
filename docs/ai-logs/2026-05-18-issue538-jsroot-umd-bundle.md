@@ -80,8 +80,9 @@ Confirmed 7.10.3 lockfile had no `@resvg` dependency; 7.11.0 lockfile added it.
     is used for cast sites.
   - `drawWithRetry` removed entirely — the root cause is fixed, retrying is no longer
     meaningful.
-  - `@resvg/resvg-js` alias removed from vite.config.ts — jsroot is no longer processed
-    by Rollup, so the shim is never needed.
+  - The existing `@resvg/resvg-js` alias remains in `vite.config.ts`, but it is no longer
+    relevant to this fix because jsroot is now loaded via its pre-built UMD bundle instead
+    of being processed through Rollup's ESM pipeline.
   - Tests: `vi.mock("$app/paths", () => ({ base: "" }))` added; `beforeAll` made async
     and sets `globalThis.JSROOT = await import("jsroot")` so the mocked JSROOT is found
     by `getJsroot()` without any script-tag injection in jsdom.
