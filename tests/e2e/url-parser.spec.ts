@@ -134,14 +134,19 @@ test.describe("Stage 6.13 — URL parser", () => {
     await page.goto(
       "/calculator?urlv=1&particle=1&material=276&program=7&energies=12&eunit=MeV&mode=advanced&programs=7&qfocus=both",
     );
-    await page.waitForFunction(() => window.location.search.includes("mode=advanced"), {
-      timeout: 10000,
-    });
+    // Wait for WASM to load and produce a result — this also confirms urlInitialized=true
+    // (the URL update effect guards on urlInitialized, so we must not click before it's set).
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    await expect
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), {
+        timeout: 20000,
+      })
+      .toBeGreaterThan(0);
 
     await page.locator('button[aria-label="Switch to Basic mode"]').click();
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get("mode") !== "advanced",
-      { timeout: 5000 },
+      { timeout: 10000 },
     );
 
     await expect(page.locator('button[aria-label="Switch to Basic mode"]')).toHaveAttribute(

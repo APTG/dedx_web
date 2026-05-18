@@ -1,8 +1,13 @@
 import { render, screen, cleanup } from "@testing-library/svelte";
 import { describe, it, expect, vi, beforeAll, afterEach } from "vitest";
 
-// jsdom polyfills for matchMedia and ResizeObserver
-beforeAll(() => {
+// $app/paths: base is empty string in tests (no sub-path deployment)
+vi.mock("$app/paths", () => ({ base: "" }));
+
+// jsdom polyfills for matchMedia and ResizeObserver; also pre-populate
+// globalThis.JSROOT so getJsroot() returns the mock immediately without
+// trying to inject a <script> tag (which jsdom cannot execute).
+beforeAll(async () => {
   if (!window.matchMedia) {
     window.matchMedia = (query: string) => ({
       matches: false,
@@ -23,6 +28,10 @@ beforeAll(() => {
       disconnect = vi.fn();
     } as unknown as typeof ResizeObserver;
   }
+
+  // vi.mock("jsroot") is hoisted above this beforeAll, so import("jsroot")
+  // returns the mock object — assign it so getJsroot() short-circuits.
+  (globalThis as Record<string, unknown>).JSROOT = await import("jsroot");
 });
 
 afterEach(() => {

@@ -27,6 +27,7 @@ yarn-error.log*
 
 # Build artifacts — generated at build time
 /static/deploy.json
+/static/jsroot.min.js
 
 # Generated external-data reference stores and inspection reports
 /data/*.webdedx/

@@ -1,10 +1,28 @@
+import { copyFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
-import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
-  plugins: [tailwindcss(), sveltekit()],
+  plugins: [
+    tailwindcss(),
+    sveltekit(),
+    {
+      // Copy jsroot's own pre-built UMD bundle to static/ so it can be loaded
+      // via a <script> tag instead of being bundled by Rollup. This bypasses
+      // Rollup's circular-dependency evaluation-order bug introduced with
+      // jsroot 7.11.0 (ObjectPainter.mjs:1828 runs before core.mjs initialises
+      // `internals` when Rollup linearises the module graph).
+      name: "copy-jsroot-bundle",
+      buildStart() {
+        copyFileSync(
+          fileURLToPath(new URL("./node_modules/jsroot/build/jsroot.min.js", import.meta.url)),
+          fileURLToPath(new URL("./static/jsroot.min.js", import.meta.url)),
+        );
+      },
+    },
+  ],
   test: {
     environment: "jsdom",
     setupFiles: ["./src/tests/setup.ts"],
@@ -37,12 +55,17 @@ export default defineConfig({
   },
   resolve: {
     alias: {
-      // Browser-only shim: force @resvg/resvg-js to resolve to a TS shim in browser/test builds
-      // to avoid native Node.js binding resolution (see lessons-learned.md Entry 44).
-      "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
+      // @resvg/resvg-js is a Node.js-only native addon pulled in transitively by
+      // jsroot 7.11.0. Rolldown (Vite 8) crawls the jsroot ESM tree even for
+      // `import type` and tries to load the .node binary, which fails. Point it
+      // to a browser-safe stub so the build completes. jsroot itself is loaded
+      // via its UMD bundle (<script> tag) at runtime and never bundled.
+      "@resvg/resvg-js": fileURLToPath(
+        new URL("./src/lib/shims/resvg-js.ts", import.meta.url),
+      ),
     },
     // During Vitest runs, force browser export conditions so module resolution
-    // matches app/browser behavior (including the @resvg/resvg-js shim path).
+    // matches app/browser behavior.
     ...(process.env.VITEST ? { conditions: ["browser"] } : {}),
   },
 });
