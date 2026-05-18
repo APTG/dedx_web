@@ -83,6 +83,7 @@
   {@const available = isCustomItem(item) ? true : isAvailable(item as Material)}
   {@const external = !isCustomItem(item) && isExternal(item as Material)}
   {@const gas = !isCustomItem(item) && isGas(item as Material)}
+  {@const isChecked = isMultiMode ? itemInMulti : isSingleSelected}
   <li role="presentation">
     <button
       type="button"
@@ -95,7 +96,7 @@
       class={cn(
         "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
         available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-        (isMultiMode ? itemInMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+        isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
       )}
       onclick={() => {
         if (!available) return;
@@ -106,9 +107,10 @@
         }
       }}
     >
-      {#if isMultiMode}
-        <span aria-hidden="true" class="w-3 text-center text-xs">{itemInMulti ? "✓" : ""}</span>
-      {/if}
+      <span
+        aria-hidden="true"
+        class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+      >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
       <span class="flex min-w-0 flex-1 items-center gap-2">
         {#if external}<span aria-hidden="true">🔗</span>{/if}
         <span class="truncate">
@@ -119,9 +121,6 @@
         </span>
         {#if gas}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
       </span>
-      {#if isMultiMode && anchor}
-        <span class="text-xs text-muted-foreground">(anchor)</span>
-      {/if}
     </button>
   </li>
 {/snippet}

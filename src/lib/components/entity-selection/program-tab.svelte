@@ -12,6 +12,7 @@
   import { computeBucket } from "./size-bucket";
   import ProgramTag from "./program-tag.svelte";
   import ProgramInlineList from "./program-inline-list.svelte";
+  import PickerSummaryBar from "./picker-summary-bar.svelte";
 
   type AnyProgram = SelectedProgram | ProgramEntity | ExternalProgramEntity;
 
@@ -69,60 +70,34 @@
     const e = external.find((p) => p.id === id);
     return e?.name ?? String(id);
   }
+
+  function clearAllMulti(): void {
+    const [, ...rest] = multiIds;
+    for (const id of rest) selectionState.toggleMulti("program", id);
+  }
+
+  // Summary bar derived values — show when a specific program is selected (not Auto)
+  const summaryCount = $derived(
+    isMultiMode ? multiIds.length : isAuto ? 0 : 1,
+  );
+  const summaryLabels = $derived(
+    isMultiMode
+      ? multiIds.map(getProgramName)
+      : isAuto
+        ? []
+        : [currentProgram.name],
+  );
 </script>
 
-<div class="space-y-3" data-testid="picker-program-tab">
-  {#if isMultiMode}
-    {#if multiIds.length > 0}
-      <div
-        class="flex flex-wrap gap-1.5"
-        aria-label="Selected programs for comparison"
-        data-testid="picker-program-multi-selected"
-      >
-        {#each multiIds as id (id)}
-          {@const anchor = isAnchor(id)}
-          <span
-            class={cn(
-              "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-xs font-medium",
-              anchor
-                ? "border-primary bg-primary/15 text-primary"
-                : "border-muted bg-muted text-muted-foreground",
-            )}
-          >
-            {getProgramName(id)}
-            {#if !anchor}
-              <button
-                type="button"
-                aria-label="Remove {getProgramName(id)} from comparison"
-                class="ml-0.5 rounded-full hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-                onclick={() => selectionState.toggleMulti("program", id)}
-              >×</button>
-            {/if}
-          </span>
-        {/each}
-      </div>
-    {/if}
-  {:else if !isAuto}
-    <button
-      type="button"
-      class="flex w-full items-center gap-2 rounded-md border border-primary/40 bg-primary/10 px-3 py-2 text-left text-sm transition-colors hover:bg-primary/15"
-      data-testid="picker-program-selected"
-      aria-label="Selected: {currentProgram.name}. Click to clear."
-      onclick={() => selectionState.selectProgram(-1)}
-    >
-      <span class="font-medium">{currentProgram.name}</span>
-      {#if typeof currentProgram.id !== "string"}
-        {@const desc = getProgramDescription(currentProgram.id as number)}
-        {#if desc}
-          <span class="font-mono text-xs text-muted-foreground">{desc}</span>
-        {/if}
-      {/if}
-      <span
-        class="ml-auto rounded border border-muted/50 px-1.5 py-0.5 text-xs text-muted-foreground hover:border-foreground/30 hover:text-foreground"
-        aria-hidden="true"
-      >× clear</span>
-    </button>
-  {/if}
+<div class="space-y-2" data-testid="picker-program-tab">
+  <!-- Compact sticky summary bar -->
+  <PickerSummaryBar
+    count={summaryCount}
+    {summaryLabels}
+    onClear={isMultiMode ? clearAllMulti : () => selectionState.selectProgram(-1)}
+    onToggleOnlySelected={undefined}
+    testId="picker-program-selected"
+  />
 
   {#if bucket === "tiny"}
     <!-- Tiny bucket: flat list without search bar or scroll container -->
@@ -186,6 +161,7 @@
         {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
         {@const inMulti = isMultiMode && isMultiSelected(program.id)}
         {@const anchor = isMultiMode && isAnchor(program.id)}
+        {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
         {@const desc = getProgramDescription(program.id)}
         <li role="presentation">
           <button
@@ -198,7 +174,7 @@
             disabled={isMultiMode && anchor}
             class={cn(
               "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-              (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+              isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
             )}
             onclick={() => {
               if (isMultiMode) {
@@ -208,9 +184,10 @@
               }
             }}
           >
-            {#if isMultiMode}
-              <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-            {/if}
+            <span
+              aria-hidden="true"
+              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
             <span class="flex-1 justify-between gap-3 flex items-center">
               <span>
                 <span>{program.name}</span>
@@ -218,9 +195,6 @@
               </span>
               <ProgramTag kind={programKind(program.id)} />
             </span>
-            {#if isMultiMode && anchor}
-              <span class="text-xs text-muted-foreground">(anchor)</span>
-            {/if}
           </button>
         </li>
       {/each}
@@ -229,6 +203,7 @@
         {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
         {@const inMulti = isMultiMode && isMultiSelected(program.id)}
         {@const anchor = isMultiMode && isAnchor(program.id)}
+        {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
         <li role="presentation">
           <button
             type="button"
@@ -240,7 +215,7 @@
             disabled={isMultiMode && anchor}
             class={cn(
               "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
-              (isMultiMode ? inMulti : isSingleSelected) && "bg-primary/15 font-semibold",
+              isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
             )}
             onclick={() => {
               if (isMultiMode) {
@@ -250,17 +225,15 @@
               }
             }}
           >
-            {#if isMultiMode}
-              <span aria-hidden="true" class="w-3 text-center text-xs">{inMulti ? "✓" : ""}</span>
-            {/if}
+            <span
+              aria-hidden="true"
+              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
             <span class="flex-1 justify-between gap-3 flex items-center">
               <span>🔗 {program.name}</span>
               {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}
               <ProgramTag kind="EXT" />
             </span>
-            {#if isMultiMode && anchor}
-              <span class="text-xs text-muted-foreground">(anchor)</span>
-            {/if}
           </button>
         </li>
       {/each}
