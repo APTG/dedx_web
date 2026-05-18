@@ -20,6 +20,17 @@ export default defineConfig({
   build: {
     sourcemap: true,
     minify: true,
+    // When deployed under a sub-path (e.g. BASE_PATH=/web_dev), Vite's relative
+    // source paths traverse up to the origin root and miss the base segment.
+    // Transform them to absolute paths so devtools links point to the correct URL.
+    ...(process.env.BASE_PATH
+      ? {
+          sourcemapPathTransform: (relativeSourcePath: string) => {
+            const match = relativeSourcePath.match(/^(?:\.\.\/)*(.+)$/);
+            return match ? `${process.env.BASE_PATH}/${match[1]}` : relativeSourcePath;
+          },
+        }
+      : {}),
   },
   optimizeDeps: {
     include: ["svelte", "@testing-library/svelte"],
