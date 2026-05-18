@@ -33,7 +33,7 @@
   const isEditing = $derived(editingSeriesId !== null);
 </script>
 
-<div data-testid="plot-series-strip" class="space-y-1">
+<div data-testid="plot-series-strip" class="space-y-1" role="list" aria-label="Plot series">
   <!-- Header row -->
   <div
     data-testid="plot-series-header"

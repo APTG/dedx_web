@@ -50,7 +50,7 @@ test.describe("Entity picker — keyboard navigation", () => {
     await expect(highlighted).toHaveCount(1);
   });
 
-  test("↵ Enter selects the highlighted particle and auto-advances to material tab", async ({
+  test("↵ Enter selects the highlighted particle and collapses when all slots are already complete", async ({
     page,
   }) => {
     const searchInput = page.getByTestId("picker-particle-search");
@@ -61,22 +61,25 @@ test.describe("Entity picker — keyboard navigation", () => {
     // Enter → selects it and auto-advances to the next empty tab.
     await page.keyboard.press("Enter");
 
-    // Material tab should now be active (auto-advance after particle selection).
-    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute(
+    // Calculator defaults are already complete, so no empty tab remains.
+    // Enter updates particle and collapses the panel instead of auto-advancing.
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute(
       "aria-selected",
       "true",
     );
+    await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 
-  test("↵ Enter selects first available particle when no highlight change", async ({ page }) => {
+  test("↵ Enter selects first available particle and collapses when complete", async ({ page }) => {
     const searchInput = page.getByTestId("picker-particle-search");
     await searchInput.focus();
     await page.keyboard.press("Enter");
 
-    // After selecting default proton, material tab should be active (auto-advance to next empty slot).
-    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute(
+    // No empty tab remains on calculator defaults, so panel collapses.
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute(
       "aria-selected",
       "true",
     );
+    await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 });

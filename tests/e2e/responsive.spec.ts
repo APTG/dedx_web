@@ -56,14 +56,16 @@ test.describe("Responsive layout — Plot @smoke", () => {
       return;
     }
 
-    // Mobile: disclosure button must be visible, entity panels hidden
-    const disclosureBtn = page.getByRole("button", { name: /Select Entities/i });
+    // Mobile: picker toggle is visible and panel starts collapsed.
+    const disclosureBtn = page.getByTestId("picker-toggle");
     await expect(disclosureBtn).toBeVisible();
-    expect(await disclosureBtn.getAttribute("aria-expanded")).toBe("false");
+    await expect(disclosureBtn).toHaveAttribute("aria-expanded", "false");
+    await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
 
     // Expand panels
     await disclosureBtn.click();
-    expect(await disclosureBtn.getAttribute("aria-expanded")).toBe("true");
+    await expect(disclosureBtn).toHaveAttribute("aria-expanded", "true");
+    await expect(page.getByTestId("picker-tab-panel")).toBeVisible();
   });
 
   test("entity panels always visible on desktop viewport @responsive", async ({ page }) => {
@@ -76,9 +78,9 @@ test.describe("Responsive layout — Plot @smoke", () => {
       return;
     }
 
-    // Desktop: no disclosure button, panels directly visible
-    const disclosureBtn = page.getByRole("button", { name: /Select Entities/i });
-    await expect(disclosureBtn).not.toBeVisible();
+    // Desktop: picker is expanded and the old "Select Entities" disclosure is absent.
+    await expect(page.getByTestId("picker-tab-panel")).toBeVisible();
+    await expect(page.getByRole("button", { name: /Select Entities/i })).toHaveCount(0);
   });
 });
 

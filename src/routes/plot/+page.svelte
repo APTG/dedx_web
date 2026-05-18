@@ -424,7 +424,10 @@
       externalSources: loadedExternalSources,
       ...customUrlFields,
     });
-    const newUrl = `${window.location.pathname}?${params.toString()}`;
+    const query = params.toString();
+    const newUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
+    const currentUrl = `${window.location.pathname}${window.location.search}`;
+    if (newUrl === currentUrl) return;
     untrack(() => replaceState(newUrl, page.state));
   });
 
@@ -665,6 +668,21 @@
   $effect(() => {
     if (editingSeriesId === null || !plotState.preview) return;
     const p = plotState.preview;
+    const current = plotState.series.find((s) => s.seriesId === editingSeriesId);
+    if (
+      current &&
+      current.programId === p.programId &&
+      current.particleId === p.particleId &&
+      current.materialId === p.materialId &&
+      current.programName === p.programName &&
+      current.particleName === p.particleName &&
+      current.materialName === p.materialName &&
+      current.particleMassNumber === p.particleMassNumber &&
+      current.density === p.density &&
+      current.result === p.result
+    ) {
+      return;
+    }
     plotState.updateSeries(editingSeriesId, {
       programId: p.programId,
       particleId: p.particleId,
@@ -743,36 +761,52 @@
     const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
     if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
     const programs = service.getPrograms();
+    const toNumericId = (value: number | string): number | null => {
+      const parsed = typeof value === "number" ? value : Number(value);
+      return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
+    };
 
+    const baseProgramId = toNumericId(resolvedProgramId);
+    const baseParticleId = toNumericId(selectedParticle.id);
+    const baseMaterialId = toNumericId(selectedMaterial.id);
+    if (baseProgramId === null || baseParticleId === null || baseMaterialId === null) {
+      previewError = "Cannot add selected series: one or more base IDs are invalid.";
+      return;
+    }
+
+    let hadFailures = false;
     for (const id of ids) {
       try {
-        let programId: number = typeof resolvedProgramId === "number" ? resolvedProgramId : 0;
-        let particleId: number =
-          typeof selectedParticle.id === "number" ? selectedParticle.id : 0;
-        let materialId: number =
-          typeof selectedMaterial.id === "number" ? selectedMaterial.id : 0;
+        let programId = baseProgramId;
+        let particleId = baseParticleId;
+        let materialId = baseMaterialId;
         let programName = programs.find((p) => p.id === programId)?.name ?? "";
         let particleName = getParticleLabel(selectedParticle);
         let materialName = selectedMaterial.name;
         let density = selectedMaterial.density ?? 1;
         let particleMassNumber: number | undefined =
           "massNumber" in selectedParticle ? selectedParticle.massNumber : undefined;
+        const overrideId = toNumericId(id);
+        if (overrideId === null) {
+          hadFailures = true;
+          continue;
+        }
 
-        if (across === "program" && typeof id === "number") {
-          programId = id;
-          programName = programs.find((p) => p.id === id)?.name ?? String(id);
-        } else if (across === "particle" && typeof id === "number") {
-          particleId = id;
+        if (across === "program") {
+          programId = overrideId;
+          programName = programs.find((p) => p.id === overrideId)?.name ?? String(overrideId);
+        } else if (across === "particle") {
+          particleId = overrideId;
           const particles = service.getParticles(programId);
-          const part = particles.find((p) => p.id === id);
+          const part = particles.find((p) => p.id === overrideId);
           if (part) {
             particleName = getParticleLabel(part);
             particleMassNumber = part.massNumber;
           }
-        } else if (across === "material" && typeof id === "number") {
-          materialId = id;
+        } else if (across === "material") {
+          materialId = overrideId;
           const materials = service.getMaterials(programId);
-          const mat = materials.find((m) => m.id === id);
+          const mat = materials.find((m) => m.id === overrideId);
           if (mat) {
             materialName = mat.name;
             density = mat.density;
@@ -791,9 +825,13 @@
           density,
           result,
         });
-      } catch {
-        // Skip failed triplet
+      } catch (err) {
+        hadFailures = true;
+        console.warn("Failed to add one of the multi-selected series.", err);
       }
+    }
+    if (hadFailures) {
+      previewError = "Some selected series could not be added.";
     }
   }
 

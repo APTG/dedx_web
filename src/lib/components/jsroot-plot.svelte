@@ -58,10 +58,27 @@
     // module-evaluation race in ObjectPainter that throws on first navigation
     // before the default proton+water preview has been computed.
     // The "Loading plot engine…" placeholder stays visible during this brief window.
+    const hasDrawableSeries = (s: PlotSeries): boolean =>
+      s.visible &&
+      Array.isArray(s.result.energies) &&
+      Array.isArray(s.result.stoppingPowers) &&
+      s.result.energies.length > 0 &&
+      s.result.stoppingPowers.length > 0;
     const hasData =
-      (snapshot.preview !== null && snapshot.preview.visible) ||
-      snapshot.series.some((s) => s.visible);
-    if (!hasData) return;
+      (snapshot.preview !== null && hasDrawableSeries(snapshot.preview)) ||
+      snapshot.series.some((s) => hasDrawableSeries(s));
+    if (!hasData) {
+      jsrootError = null;
+      jsrootReady = false;
+      drawChain = drawChain
+        .catch(() => {})
+        .then(() => {
+          currentPainter?.cleanup?.();
+          currentPainter = null;
+          el.innerHTML = "";
+        });
+      return;
+    }
 
     let cancelled = false;
     let restoreSettings: (() => void) | null = null;
@@ -78,11 +95,18 @@
         }
         currentPainter = painter;
         restoreSettings = restore;
+        jsrootError = null;
         jsrootReady = true;
       })
       .catch((err) => {
         if (!cancelled) {
+          const message = err instanceof Error ? err.message : String(err);
+          if (message.includes("reading 'jsroot'") || message.includes('reading "jsroot"')) {
+            jsrootReady = false;
+            return;
+          }
           jsrootError = "Failed to load the plot engine. Please refresh the page.";
+          jsrootReady = false;
           console.error("JsrootPlot error:", err);
         }
       });
@@ -97,8 +121,12 @@
         currentPainter = null;
         restoreSettings?.();
         restoreSettings = null;
-        const JSROOT = await import("jsroot");
-        if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(el);
+        try {
+          const JSROOT = await import("jsroot");
+          if (typeof JSROOT.cleanup === "function") JSROOT.cleanup(el);
+        } catch {
+          // Swallow cleanup errors during teardown to avoid breaking the page.
+        }
       });
     };
   });

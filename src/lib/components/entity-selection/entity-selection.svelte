@@ -136,6 +136,15 @@
       }
     }
     if (event.key === "/" && !isMobile && document.activeElement !== searchInputRef) {
+      const target = event.target;
+      if (
+        target instanceof HTMLElement &&
+        (target.isContentEditable ||
+          target.closest("[contenteditable='true']") ||
+          ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName))
+      ) {
+        return;
+      }
       event.preventDefault();
       if (!panelOpen) selectionState.setExpanded(true);
       searchInputRef?.focus();
