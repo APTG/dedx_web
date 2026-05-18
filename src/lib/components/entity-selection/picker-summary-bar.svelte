@@ -45,7 +45,7 @@
   >
     <!-- Count badge -->
     <span
-      class="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-orange-500 px-1 text-[11px] font-bold leading-none text-white"
+      class="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-orange-700 px-1 text-[11px] font-bold leading-none text-white"
       aria-hidden="true"
     >{count}</span>
 
@@ -57,8 +57,8 @@
       <button
         type="button"
         class="shrink-0 rounded border px-1.5 py-0.5 text-xs font-medium transition-colors {onlySelected
-          ? 'border-orange-400 bg-orange-100 text-orange-700'
-          : 'border-orange-200 text-orange-600 hover:bg-orange-100'}"
+          ? 'border-orange-400 bg-orange-100 text-orange-800'
+          : 'border-orange-200 text-orange-800 hover:bg-orange-100'}"
         aria-pressed={onlySelected}
         onclick={onToggleOnlySelected}
       >{onlySelected ? "Sel. only" : "All shown"}</button>
@@ -67,7 +67,7 @@
     <!-- Clear -->
     <button
       type="button"
-      class="shrink-0 rounded border border-orange-200 px-1.5 py-0.5 text-xs text-orange-600 transition-colors hover:border-orange-300 hover:bg-orange-100"
+      class="shrink-0 rounded border border-orange-200 px-1.5 py-0.5 text-xs text-orange-800 transition-colors hover:border-orange-300 hover:bg-orange-100"
       aria-label="Clear selection"
       onclick={onClear}
     >Clear</button>

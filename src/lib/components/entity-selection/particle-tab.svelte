@@ -240,7 +240,7 @@
           <span
             aria-hidden="true"
             class="w-4 shrink-0 text-center text-xs {isChecked
-              ? 'font-bold text-orange-500'
+              ? 'font-bold text-orange-700'
               : 'text-muted-foreground'}"
           >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           {#if external}<span aria-hidden="true">🔗</span>{/if}

@@ -111,7 +111,7 @@
         >
           <span
             aria-hidden="true"
-            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
           >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>
@@ -152,7 +152,7 @@
         >
           <span
             aria-hidden="true"
-            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-500' : 'text-muted-foreground'}"
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
           >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>🔗 {program.name}</span>
