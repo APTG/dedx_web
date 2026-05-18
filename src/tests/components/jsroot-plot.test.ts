@@ -116,7 +116,22 @@ describe("JsrootPlot", () => {
     expect(container.textContent).toContain("Loading plot engine");
   });
 
-  it("calls JSROOT.draw after mount", async () => {
+  it("calls JSROOT.draw after mount when series data is present", async () => {
+    const JSROOT = await import("jsroot");
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({})],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+      },
+    });
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+  });
+
+  it("does NOT call JSROOT.draw when series is empty and preview is null (ObjectPainter guard)", async () => {
     const JSROOT = await import("jsroot");
     render(JsrootPlot, {
       props: {
@@ -128,7 +143,9 @@ describe("JsrootPlot", () => {
         axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
       },
     });
-    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    // Give the effect queue time to flush — JSROOT.draw must NOT be called.
+    await new Promise((resolve) => setTimeout(resolve, 50));
+    expect(JSROOT.draw).not.toHaveBeenCalled();
   });
 
   it("has aria-label describing the plot", () => {

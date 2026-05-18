@@ -53,6 +53,16 @@
     const snapshot = { series, preview, stpUnit, xLog, yLog, axisRanges };
     const el = container;
     if (!el) return;
+
+    // Guard: do not call JSROOT.draw() with an empty multigraph — it triggers a
+    // module-evaluation race in ObjectPainter that throws on first navigation
+    // before the default proton+water preview has been computed.
+    // The "Loading plot engine…" placeholder stays visible during this brief window.
+    const hasData =
+      (snapshot.preview !== null && snapshot.preview.visible) ||
+      snapshot.series.some((s) => s.visible);
+    if (!hasData) return;
+
     let cancelled = false;
     let restoreSettings: (() => void) | null = null;
 
