@@ -41,7 +41,7 @@
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/svelte": "^5.2.8",
     "@testing-library/user-event": "^14.6.1",
-    "@types/node": "^25.8.0",
+    "@types/node": "^25.9.0",
     "@vitest/coverage-v8": "^4.1.6",
     "bits-ui": "^2.18.1",
     "eslint": "^10.4.0",
@@ -57,7 +57,7 @@
     "tailwind-variants": "^3.2.2",
     "tailwindcss": "^4.3.0",
     "typescript": "^6.0.3",
-    "typescript-eslint": "^8.59.3",
+    "typescript-eslint": "^8.59.4",
     "vite": "^8.0.13",
     "vitest": "^4.1.6"
   },
