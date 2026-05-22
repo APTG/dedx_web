@@ -1,3 +1,15 @@
+/**
+ * Unit tests for calculator-url.ts encode/decode helpers.
+ *
+ * Source of truth for v2 param names, allowed values, and migration rules:
+ *   docs/04-feature-specs/url-schema.md  (URL Schema v2)
+ *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop and qfocus→qshow rename)
+ *
+ * NOTE: This file covers the v1 encoder/decoder that is currently in production.
+ * Actual v2 param name changes (particleId=, uanchor=, qshow=, etc.) are
+ * implemented in #555–#561. When those land, update the fixture strings below
+ * to match the v2 canonical form.
+ */
 import { describe, it, expect } from "vitest";
 import {
   encodeCalculatorUrl,
@@ -646,5 +658,77 @@ describe("unknown params dropped from canonical URL", () => {
     expect(encodedStr).not.toContain("unknown=");
     expect(encodedStr).toContain("urlv=1");
     expect(encodedStr).toContain("particle=1");
+  });
+});
+
+// ──────────────────────────────────────────────────────────────────────────
+// v1 → v2 migration fixtures (url-schema.md §6)
+//
+// These tests document that v1 URLs (using old param names) are accepted on
+// read by the current decoder. They serve as regression anchors: once the v2
+// encoder/decoder lands in #555–#561, the encoded output should use the new
+// param names (particleId=, materialId=, programId=, uanchor=, qshow=, etc.).
+//
+// Source of truth: docs/04-feature-specs/url-schema.md §6 (migration rules)
+//                  docs/decisions/006-url-schema-v2.md (justification)
+// ──────────────────────────────────────────────────────────────────────────
+
+describe("v1 → v2 migration fixture: v1 param names accepted on read", () => {
+  it("v1 particle= is decoded to particleId (no crash, value preserved)", () => {
+    // v2 renames particle= → particleId= (url-schema.md §3.2 migration)
+    const params = new URLSearchParams("particle=6&material=276&program=auto&energies=10&eunit=MeV/nucl");
+    const state = decodeCalculatorUrl(params);
+    expect(state.particleId).toBe(6);
+  });
+
+  it("v1 material= is decoded to materialId (no crash, value preserved)", () => {
+    // v2 renames material= → materialId= (url-schema.md §3.3 migration)
+    const params = new URLSearchParams("particle=1&material=104&program=auto&energies=100&eunit=MeV");
+    const state = decodeCalculatorUrl(params);
+    expect(state.materialId).toBe(104);
+  });
+
+  it("v1 program= is decoded to programId (no crash, value preserved)", () => {
+    // v2 renames program= → programId= (url-schema.md §3.4 migration)
+    const params = new URLSearchParams("particle=1&material=276&program=9&energies=100&eunit=MeV");
+    const state = decodeCalculatorUrl(params);
+    expect(state.programId).toBe(9);
+  });
+
+  it("v1 eunit= is decoded to masterUnit (maps to uanchor= in v2, url-schema.md §3.8)", () => {
+    // v2 replaces eunit= with uanchor=; migration maps MeV→mev, MeV/nucl→mev-nucl, MeV/u→mev-u
+    const params = new URLSearchParams("particle=1&material=276&program=auto&energies=100&eunit=MeV/nucl");
+    const state = decodeCalculatorUrl(params);
+    expect(state.masterUnit).toBe("MeV/nucl");
+  });
+
+  it("v1 qfocus=csda → treated as qshow=range on migration (url-schema.md §6)", () => {
+    // v2 migration: qfocus=csda → qshow=range (url-schema.md §3.13 + ADR 006)
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
+    );
+    const state = decodeCalculatorUrl(params);
+    // Current decoder stores as quantityFocus="csda"; v2 decoder will store as qshow="range"
+    expect((state as any).quantityFocus).toBe("csda");
+  });
+
+  it("v1 hidden_programs= is silently dropped on read (url-schema.md §5.1)", () => {
+    // v2 drops hidden= / hidden_programs= entirely (ADR 006 §1)
+    // The decoder returns hiddenProgramIds but v2 encoder will not emit hidden_programs=
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both",
+    );
+    const state = decodeCalculatorUrl(params);
+    // Confirm the param is parsed (v1 behaviour); v2 will drop it silently
+    expect((state as any).hiddenProgramIds).toEqual([2]);
+  });
+
+  it("inline :unit suffix in energies= round-trips (url-schema.md §3.11)", () => {
+    // This syntax is shared between v1 and v2 — the :unit suffix grammar is unchanged
+    const params = new URLSearchParams("energies=100,10:keV,2:GeV&eunit=MeV");
+    const state = decodeCalculatorUrl(params);
+    expect(state.rows[0]).toEqual({ rawInput: "100", unit: "MeV", unitFromSuffix: false });
+    expect(state.rows[1]).toEqual({ rawInput: "10", unit: "keV", unitFromSuffix: true });
+    expect(state.rows[2]).toEqual({ rawInput: "2", unit: "GeV", unitFromSuffix: true });
   });
 });
