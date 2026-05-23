@@ -9,6 +9,27 @@
 
 ---
 
+## Entry 56 — Migration docs must state precedence for overlapping legacy params
+
+**Symptom:** A migration table said v1 `mode=advanced&programs=` should derive a
+singular `program=` anchor from the first valid plural entry, but did not say
+what happens when the legacy URL already contains an explicit `program=`.
+
+```text
+❌ AMBIGUOUS
+mode=advanced&program=2&programs=9,2 → program=?
+
+✅ PRECISE
+Use existing program= if valid; otherwise derive program= from first valid
+programs= entry.
+```
+
+**Rule:** When migration rules combine old and new representations, document
+precedence for every overlapping param so implementation does not rely on
+guesswork.
+
+---
+
 ## Entry 55 — Do not infer URL mode from entity-list params
 
 **Symptom:** A URL schema draft dropped explicit `mode=basic|advanced` and

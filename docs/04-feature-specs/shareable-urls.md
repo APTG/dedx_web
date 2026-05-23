@@ -559,31 +559,31 @@ When the parser reads a URL with `urlv=1` or no `urlv`, apply these rules in
 order and then write the canonical v2 URL via `replaceState` (bumping `urlv` to
 `2`):
 
-| v1 param                               | v2 behaviour                                                                                      |
-| -------------------------------------- | ------------------------------------------------------------------------------------------------- |
-| `mode=advanced` or `mode=basic`        | Emit unchanged as explicit v2 picker mode                                                         |
-| `mode` absent                          | Emit `mode=basic` (default)                                                                       |
-| `particle=` · `material=` · `program=` | Emit unchanged as singular anchors                                                                |
-| `programs=` with `mode=advanced`       | Emit `program=` anchor from the first valid program, keep `programs=`, and emit `across=programs` |
-| `programs=` without `mode=advanced`    | Drop (do not infer advanced mode)                                                                 |
-| `particles=` · `materials=`            | v2-only; accepted only when `mode=advanced` and `across=` matches                                 |
-| `eunit=MeV`                            | Map to `uanchor=MeV`                                                                              |
-| `eunit=MeV/nucl`                       | Map to `uanchor=MeV/nucl`                                                                         |
-| `eunit=MeV/u`                          | Map to `uanchor=MeV/u`                                                                            |
-| `eunit=keV` · `eunit=GeV`              | Map to `uanchor=MeV` (prefix belongs in per-row `:unit` suffixes)                                 |
-| `eunit=keV/nucl` · `eunit=GeV/nucl`    | Map to `uanchor=MeV/nucl`                                                                         |
-| `eunit=keV/u` · `eunit=GeV/u`          | Map to `uanchor=MeV/u`                                                                            |
-| `qfocus=both`                          | Omit `qshow=` (default — both visible)                                                            |
-| `qfocus=stp`                           | Emit `qshow=stp`                                                                                  |
-| `qfocus=csda`                          | Emit `qshow=range`                                                                                |
-| `imode=csda`                           | Emit `calc=range`                                                                                 |
-| `imode=stp`                            | Emit `calc=inverse-stp`                                                                           |
-| `iunit=` (with `imode=csda`)           | Map to `runit=`                                                                                   |
-| `iunit=` (with `imode=stp`)            | Map to `sunit=`                                                                                   |
-| `ivalues=`                             | Rename to `lookups=` (value syntax unchanged)                                                     |
-| `hidden=` or `hidden_programs=`        | Silently drop                                                                                     |
-| `energies=` without `:unit` suffixes   | Load unchanged; unsuffixed rows use migrated `uanchor=`                                           |
-| Any unknown param                      | Silently drop                                                                                     |
+| v1 param                               | v2 behaviour                                                                                                                                            |
+| -------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mode=advanced` or `mode=basic`        | Emit unchanged as explicit v2 picker mode                                                                                                               |
+| `mode` absent                          | Emit `mode=basic` (default)                                                                                                                             |
+| `particle=` · `material=` · `program=` | Emit unchanged as singular anchors                                                                                                                      |
+| `programs=` with `mode=advanced`       | Keep existing `program=` if valid; otherwise emit `program=` anchor from the first valid `programs=` entry. Keep `programs=` and emit `across=programs` |
+| `programs=` without `mode=advanced`    | Drop (do not infer advanced mode)                                                                                                                       |
+| `particles=` · `materials=`            | v2-only; accepted only when `mode=advanced` and `across=` matches                                                                                       |
+| `eunit=MeV`                            | Map to `uanchor=MeV`                                                                                                                                    |
+| `eunit=MeV/nucl`                       | Map to `uanchor=MeV/nucl`                                                                                                                               |
+| `eunit=MeV/u`                          | Map to `uanchor=MeV/u`                                                                                                                                  |
+| `eunit=keV` · `eunit=GeV`              | Map to `uanchor=MeV` (prefix belongs in per-row `:unit` suffixes)                                                                                       |
+| `eunit=keV/nucl` · `eunit=GeV/nucl`    | Map to `uanchor=MeV/nucl`                                                                                                                               |
+| `eunit=keV/u` · `eunit=GeV/u`          | Map to `uanchor=MeV/u`                                                                                                                                  |
+| `qfocus=both`                          | Omit `qshow=` (default — both visible)                                                                                                                  |
+| `qfocus=stp`                           | Emit `qshow=stp`                                                                                                                                        |
+| `qfocus=csda`                          | Emit `qshow=range`                                                                                                                                      |
+| `imode=csda`                           | Emit `calc=range`                                                                                                                                       |
+| `imode=stp`                            | Emit `calc=inverse-stp`                                                                                                                                 |
+| `iunit=` (with `imode=csda`)           | Map to `runit=`                                                                                                                                         |
+| `iunit=` (with `imode=stp`)            | Map to `sunit=`                                                                                                                                         |
+| `ivalues=`                             | Rename to `lookups=` (value syntax unchanged)                                                                                                           |
+| `hidden=` or `hidden_programs=`        | Silently drop                                                                                                                                           |
+| `energies=` without `:unit` suffixes   | Load unchanged; unsuffixed rows use migrated `uanchor=`                                                                                                 |
+| Any unknown param                      | Silently drop                                                                                                                                           |
 
 ### 7.2 v1 URL Detection Modal
 
@@ -946,7 +946,7 @@ strictly larger.
 | `m`   | m            |
 | `km`  | km           |
 
-### 14.4 Calculator Mode Tokens
+### 14.4 `calc=` — Calculator Operation Tokens
 
 | Token         | Meaning                                                  |
 | ------------- | -------------------------------------------------------- |

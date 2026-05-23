@@ -15,6 +15,13 @@ with targeted calculator URL unit tests plus Prettier. `pnpm check` still fails
 on pre-existing unrelated Svelte/TypeScript diagnostics in entity-selection,
 external-data, and calculator components.
 
+### Prompt 2: Address minor remarks from post-6d78516 review
+
+**AI response**: Applied the three requested documentation clarifications:
+renamed the token-reference heading to target `calc=`, documented v1 migration
+precedence when both `program=` and `programs=` are present, and annotated the
+advanced inverse conformance vectors where `across=` is intentionally absent.
+
 ## Tasks
 
 ### URL schema mode correction
@@ -38,3 +45,17 @@ external-data, and calculator components.
   introduce `calc=` for forward/range/inverse-STP operation to avoid overloading
   one URL key.
 - **Issue**: `pnpm check` remains blocked by unrelated pre-existing diagnostics.
+
+### Minor documentation clarifications
+
+- **Status**: completed
+- **Stage**: Schema work / PR #565
+- **Files changed**:
+  - `docs/04-feature-specs/shareable-urls.md`
+  - `docs/04-feature-specs/shareable-urls-formal.md`
+  - `.opencode/lessons-learned.md`
+  - `docs/ai-logs/2026-05-23-pr565-mode-review.md`
+- **Decision**: Keep the clarification surgical: no schema changes, only
+  headings, migration precedence wording, and explanatory notes in existing
+  vectors.
+- **Issue**: None.

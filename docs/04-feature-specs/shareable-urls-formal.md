@@ -320,29 +320,29 @@ Unknown parameters are silently ignored and never emitted in canonical output.
 
 Applied during step 5c when `urlv=1` or absent. Map deprecated params to v2 equivalents:
 
-| Deprecated v1 key + value       | v2 equivalent                                                                                                     |
-| ------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
-| `eunit=MeV`                     | `uanchor=MeV`                                                                                                     |
-| `eunit=MeV/nucl`                | `uanchor=MeV/nucl`                                                                                                |
-| `eunit=MeV/u`                   | `uanchor=MeV/u`                                                                                                   |
-| `eunit=keV`                     | `uanchor=MeV` (keV is a per-row suffix, not an anchor)                                                            |
-| `eunit=GeV`                     | `uanchor=MeV` (same)                                                                                              |
-| `eunit=keV/nucl`                | `uanchor=MeV/nucl` (prefix belongs in per-row suffixes; anchor stays MeV/nucl)                                    |
-| `eunit=GeV/nucl`                | `uanchor=MeV/nucl` (same)                                                                                         |
-| `eunit=keV/u`                   | `uanchor=MeV/u` (prefix belongs in per-row suffixes; anchor stays MeV/u)                                          |
-| `eunit=GeV/u`                   | `uanchor=MeV/u` (same)                                                                                            |
-| `qfocus=both`                   | omit `qshow=` (default)                                                                                           |
-| `qfocus=stp`                    | `qshow=stp`                                                                                                       |
-| `qfocus=csda`                   | `qshow=range`                                                                                                     |
-| `imode=csda`                    | `calc=range`                                                                                                      |
-| `imode=stp`                     | `calc=inverse-stp`                                                                                                |
-| `iunit=` (with `imode=csda`)    | `runit={value}`                                                                                                   |
-| `iunit=` (with `imode=stp`)     | `sunit={value}`                                                                                                   |
-| `ivalues=`                      | `lookups=` (value unchanged)                                                                                      |
-| `mode=advanced` or `mode=basic` | preserve as explicit v2 picker mode                                                                               |
-| `mode` absent                   | `mode=basic`                                                                                                      |
-| `mode=advanced` + `programs=`   | emit `program=` anchor from first valid program and `across=programs` unless a valid `across=` is already present |
-| `hidden=` or `hidden_programs=` | silently drop                                                                                                     |
+| Deprecated v1 key + value       | v2 equivalent                                                                                                                                                              |
+| ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `eunit=MeV`                     | `uanchor=MeV`                                                                                                                                                              |
+| `eunit=MeV/nucl`                | `uanchor=MeV/nucl`                                                                                                                                                         |
+| `eunit=MeV/u`                   | `uanchor=MeV/u`                                                                                                                                                            |
+| `eunit=keV`                     | `uanchor=MeV` (keV is a per-row suffix, not an anchor)                                                                                                                     |
+| `eunit=GeV`                     | `uanchor=MeV` (same)                                                                                                                                                       |
+| `eunit=keV/nucl`                | `uanchor=MeV/nucl` (prefix belongs in per-row suffixes; anchor stays MeV/nucl)                                                                                             |
+| `eunit=GeV/nucl`                | `uanchor=MeV/nucl` (same)                                                                                                                                                  |
+| `eunit=keV/u`                   | `uanchor=MeV/u` (prefix belongs in per-row suffixes; anchor stays MeV/u)                                                                                                   |
+| `eunit=GeV/u`                   | `uanchor=MeV/u` (same)                                                                                                                                                     |
+| `qfocus=both`                   | omit `qshow=` (default)                                                                                                                                                    |
+| `qfocus=stp`                    | `qshow=stp`                                                                                                                                                                |
+| `qfocus=csda`                   | `qshow=range`                                                                                                                                                              |
+| `imode=csda`                    | `calc=range`                                                                                                                                                               |
+| `imode=stp`                     | `calc=inverse-stp`                                                                                                                                                         |
+| `iunit=` (with `imode=csda`)    | `runit={value}`                                                                                                                                                            |
+| `iunit=` (with `imode=stp`)     | `sunit={value}`                                                                                                                                                            |
+| `ivalues=`                      | `lookups=` (value unchanged)                                                                                                                                               |
+| `mode=advanced` or `mode=basic` | preserve as explicit v2 picker mode                                                                                                                                        |
+| `mode` absent                   | `mode=basic`                                                                                                                                                               |
+| `mode=advanced` + `programs=`   | keep existing `program=` if valid; otherwise emit `program=` anchor from first valid `programs=` entry; emit `across=programs` unless a valid `across=` is already present |
+| `hidden=` or `hidden_programs=` | silently drop                                                                                                                                                              |
 
 After mapping, all subsequent processing uses the v2 param names.
 
@@ -539,12 +539,12 @@ Normalization rules:
 3. Advanced calculator, range mode (input has redundant `runit=cm` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&calc=range`
    - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=MeV&calc=range`
-   - Note: `runit=cm` equals the default → omitted in canonical output.
+   - Note: `runit=cm` equals the default → omitted in canonical output. `across=` is absent intentionally: this exercises `mode=advanced` with the default `across=none` and no comparison list.
 
 4. Advanced calculator, inverse-STP mode, both branches (input has redundant `sunit=kev-um` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`
    - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`
-   - Note: `sunit=kev-um` equals the default for condensed material → omitted; `istpbranch=both` is non-default → emitted.
+   - Note: `sunit=kev-um` equals the default for condensed material → omitted; `istpbranch=both` is non-default → emitted. `across=` is absent intentionally: this exercises `mode=advanced` with the default `across=none` and no comparison list.
 
 5. Compare-across programs, range display:
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2,101&energies=100,200&uanchor=MeV&across=programs&qshow=range`
