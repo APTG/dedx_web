@@ -11,14 +11,12 @@
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
-  import {
-    createMultiEntityState,
-    type MultiEntityState,
-  } from "$lib/state/multi-entity.svelte";
+  import { createMultiEntityState, type MultiEntityState } from "$lib/state/multi-entity.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
+  import TableBasic from "$lib/components/results/table-basic.svelte";
   import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
@@ -60,11 +58,7 @@
   import type { ExternalDataError } from "$lib/external-data/errors";
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type {
-    ExternalSourceDescriptor,
-    EntityId,
-    ExtRef,
-  } from "$lib/external-data/types";
+  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { parseExtdataParams } from "$lib/external-data/url";
   import type { CompatibilityMatrix } from "$lib/wasm/types";
@@ -645,7 +639,6 @@
     }
   }
 
-
   $effect(() => {
     if (calcState && entityState) {
       initExportState(calcState, entityState);
@@ -1173,9 +1166,8 @@
     if (!multiEntityState || !entityState || !calcState || !entityState.isComplete) return;
 
     const dim = multiEntityState.dimension;
-    const entityIds = dim === "material"
-      ? entityState.multiSelected.material
-      : entityState.multiSelected.particle;
+    const entityIds =
+      dim === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle;
 
     if (entityIds.length === 0) return;
 
@@ -1209,10 +1201,10 @@
     };
 
     if (dim === "particle" && typeof anchorMaterialId !== "number") {
-      const unsupportedMaterialMessage = typeof anchorMaterialId === "string" &&
-          anchorMaterialId.startsWith("ext:")
-        ? "Multi-particle comparison does not support external-only materials."
-        : "Multi-particle comparison does not support custom compounds.";
+      const unsupportedMaterialMessage =
+        typeof anchorMaterialId === "string" && anchorMaterialId.startsWith("ext:")
+          ? "Multi-particle comparison does not support external-only materials."
+          : "Multi-particle comparison does not support custom compounds.";
       const results = new Map<EntityId, CalculationResult | LibdedxError>();
       for (const entityId of entityIds) {
         results.set(entityId, new LibdedxError(-1, unsupportedMaterialMessage));
@@ -1228,7 +1220,15 @@
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
     const advOptsSnapshot = advancedOptions.value;
-    const inputSnapshot = { programId, anchorParticleId, anchorMaterialId, entityIds, energies, dim, builtinMat };
+    const inputSnapshot = {
+      programId,
+      anchorParticleId,
+      anchorMaterialId,
+      entityIds,
+      energies,
+      dim,
+      builtinMat,
+    };
     let cancelled = false;
 
     const timer = setTimeout(async () => {
@@ -1236,7 +1236,10 @@
       const service = await getService();
       if (cancelled) return;
 
-      const results = new Map<EntityId, import("$lib/wasm/types").CalculationResult | LibdedxError>();
+      const results = new Map<
+        EntityId,
+        import("$lib/wasm/types").CalculationResult | LibdedxError
+      >();
 
       for (const entityId of inputSnapshot.entityIds) {
         try {
@@ -1244,7 +1247,8 @@
           if (inputSnapshot.dim === "material") {
             const customMaterial =
               getCustomMaterialById(entityId) ??
-              (entityId === inputSnapshot.anchorMaterialId && isCustomMaterial(inputSnapshot.builtinMat)
+              (entityId === inputSnapshot.anchorMaterialId &&
+              isCustomMaterial(inputSnapshot.builtinMat)
                 ? inputSnapshot.builtinMat
                 : null);
             if (customMaterial !== null) {
@@ -1702,7 +1706,10 @@
       <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
       <LoadExternalModal
         open={showLoadExternalModal}
-        existingLabels={new Set([...loadedExternalSources.map((s) => s.label), ...externalDataService.getLoadedLabels()])}
+        existingLabels={new Set([
+          ...loadedExternalSources.map((s) => s.label),
+          ...externalDataService.getLoadedLabels(),
+        ])}
         onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
       />
@@ -1875,17 +1882,19 @@
           </div>
         </div>
       {/if}
-      <EnergyUnitSelector
-        value={calcState.masterUnit}
-        availableUnits={getAvailableEnergyUnits(
-          entityState.selectedParticle && "massNumber" in entityState.selectedParticle
-            ? entityState.selectedParticle
-            : null,
-          isAdvancedMode.value,
-        )}
-        disabled={calcState.isPerRowMode}
-        onValueChange={(unit) => calcState?.setMasterUnit(unit)}
-      />
+      {#if isAdvancedMode.value}
+        <EnergyUnitSelector
+          value={calcState.masterUnit}
+          availableUnits={getAvailableEnergyUnits(
+            entityState.selectedParticle && "massNumber" in entityState.selectedParticle
+              ? entityState.selectedParticle
+              : null,
+            isAdvancedMode.value,
+          )}
+          disabled={calcState.isPerRowMode}
+          onValueChange={(unit) => calcState?.setMasterUnit(unit)}
+        />
+      {/if}
 
       {#if isAdvancedMode.value}
         <!-- Tab switcher for Advanced mode -->
@@ -1949,10 +1958,14 @@
               {calcState}
               entitySelection={entityState}
               {multiEntityState}
-              multiEntityIds={entityState.across === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle}
+              multiEntityIds={entityState.across === "material"
+                ? entityState.multiSelected.material
+                : entityState.multiSelected.particle}
             />
-          {:else}
+          {:else if isAdvancedMode.value}
             <ResultTable {calcState} entitySelection={entityState} />
+          {:else}
+            <TableBasic {calcState} entitySelection={entityState} />
           {/if}
         </div>
       {/if}
