@@ -509,7 +509,6 @@
         typeof entityState.resolvedProgramId === "number" ? entityState.resolvedProgramId : null,
       rows: calcState.rows,
       masterUnit: calcState.masterUnit,
-      energyAnchor: calcState.masterUnit,
       externalSources: loadedExternalSources,
       ...customUrlFields,
       // Include advanced mode state when active

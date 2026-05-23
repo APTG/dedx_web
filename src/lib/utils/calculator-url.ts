@@ -108,6 +108,10 @@ const UNIT_TO_UANCHOR: Readonly<Record<EnergyUnit, string>> = {
   "MeV/u": "mev-u",
 };
 
+function isUanchorSlug(value: string): value is keyof typeof UANCHOR_TO_UNIT {
+  return Object.hasOwn(UANCHOR_TO_UNIT, value);
+}
+
 /**
  * Decoded inverse mode from URL params.
  */
@@ -232,7 +236,7 @@ export interface CalculatorUrlState {
   lookups?: InverseLookupUrlRow[];
   iunit?: string;
 
-  /** Energy unit anchor selection (`uanchor=` URL param). Defaults to `"MeV"` when absent. */
+  /** Energy unit anchor selection (`uanchor=` URL param) when explicitly present and valid. */
   energyAnchor?: EnergyUnit;
 }
 
@@ -503,7 +507,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   const masterUnit: EnergyUnit = isMasterUnit(eunitRaw) ? eunitRaw : "MeV";
 
   const uanchorRaw = params.get("uanchor") ?? "";
-  const energyAnchor: EnergyUnit | undefined = uanchorRaw in UANCHOR_TO_UNIT
+  const energyAnchor: EnergyUnit | undefined = isUanchorSlug(uanchorRaw)
     ? UANCHOR_TO_UNIT[uanchorRaw]
     : undefined;
 
