@@ -2,7 +2,7 @@
  * Unit tests for calculator-url.ts encode/decode helpers.
  *
  * Source of truth for v2 param names, allowed values, and migration rules:
- *   docs/04-feature-specs/url-schema.md  (URL Schema v2)
+ *   docs/04-feature-specs/shareable-urls.md  §2 (schema delta) §7 (migration rules)
  *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop and qfocus→qshow rename)
  *
  * NOTE: This file covers the v1 encoder/decoder that is currently in production.
@@ -664,7 +664,7 @@ describe("unknown params dropped from canonical URL", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────
-// v1 → v2 migration fixtures (url-schema.md §6)
+// v1 → v2 migration fixtures (shareable-urls.md §7)
 //
 // These tests anchor the v1→v2 migration mapping that the schema doc
 // describes. The current v1 decoder is what's being tested here — once the
@@ -676,11 +676,11 @@ describe("unknown params dropped from canonical URL", () => {
 // param renames in v2 are around eunit→uanchor, qfocus→qshow, imode→mode,
 // and the silent drop of hidden_programs=.
 //
-// Source of truth: docs/04-feature-specs/url-schema.md §6 (migration rules)
+// Source of truth: docs/04-feature-specs/shareable-urls.md §7 (migration rules)
 //                  docs/decisions/006-url-schema-v2.md (justification)
 // ──────────────────────────────────────────────────────────────────────────
 
-describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
+describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
   it("particle= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
     const params = new URLSearchParams("particle=6&material=276&program=auto&energies=10&eunit=MeV/nucl");
     const state = decodeCalculatorUrl(params);
@@ -699,7 +699,7 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect(state.programId).toBe(9);
   });
 
-  it("v1 eunit= round-trips through the current decoder (v2 will map to uanchor=, url-schema.md §3.8)", () => {
+  it("v1 eunit= round-trips through the current decoder (v2 will map to uanchor=, shareable-urls.md §3.6)", () => {
     // The current v1 decoder keeps eunit as masterUnit. The v2 decoder will
     // map MeV→mev / MeV/nucl→mev-nucl / MeV/u→mev-u and emit uanchor= in
     // canonical output (implementation in #555).
@@ -708,7 +708,7 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect(state.masterUnit).toBe("MeV/nucl");
   });
 
-  it("v1 decoder accepts qfocus=csda (v2 will map this to qshow=range — url-schema.md §6)", () => {
+  it("v1 decoder accepts qfocus=csda (v2 will map this to qshow=range — shareable-urls.md §7)", () => {
     // This anchors the CURRENT v1 decoder behaviour: qfocus=csda is stored
     // verbatim as quantityFocus="csda". The v2 migration in #561 will map
     // it to qshow="range". Update this assertion when #561 lands.
@@ -719,7 +719,7 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect((state as any).quantityFocus).toBe("csda");
   });
 
-  it("v1 decoder still parses hidden_programs= (v2 will silently drop this — url-schema.md §5.1)", () => {
+  it("v1 decoder still parses hidden_programs= (v2 will silently drop this — shareable-urls.md §2 (hidden_programs= removed))", () => {
     // CURRENT v1 decoder behaviour: hidden_programs=2 is parsed into
     // hiddenProgramIds=[2]. The v2 decoder in #561 will silently drop the
     // param without populating any state field. Update this assertion when
@@ -731,7 +731,7 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect((state as any).hiddenProgramIds).toEqual([2]);
   });
 
-  it("inline :unit suffix in energies= round-trips (url-schema.md §3.7)", () => {
+  it("inline :unit suffix in energies= round-trips (shareable-urls.md §3.5)", () => {
     // This syntax is shared between v1 and v2 — the :unit suffix grammar is unchanged
     const params = new URLSearchParams("energies=100,10:keV,2:GeV&eunit=MeV");
     const state = decodeCalculatorUrl(params);
@@ -740,7 +740,7 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect(state.rows[2]).toEqual({ rawInput: "2", unit: "GeV", unitFromSuffix: true });
   });
 
-  it("v1 ivalues= still decodes through the current decoder (v2 will copy verbatim into lookups= — url-schema.md §3.8 + ADR 006 §4)", () => {
+  it("v1 ivalues= still decodes through the current decoder (v2 will copy verbatim into lookups= — shareable-urls.md §3.6 + ADR 006 §4)", () => {
     // v2 renames the inverse-lookup input list from ivalues= to lookups= to
     // avoid colliding with the I-value (ival= / mat_ival=) used in the
     // Bethe-Bloch formula. Value syntax (number + optional :unit suffix) is

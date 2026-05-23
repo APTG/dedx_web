@@ -1,55 +1,38 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** Final v6 (9 April 2026)
+> **Status:** v7 (2026-05-23) — v2 URL schema (`urlv=2`), calculator-table redesign
 >
 > **Cross-check:** If this file disagrees with `shareable-urls-formal.md`, the formal contract wins.
 >
 > This spec defines the canonical URL state contract for the dEdx Web application.
 > Every page (Calculator, Plot) encodes its full state in query parameters for
-> shareability. When a user shares a URL, the recipient sees identical inputs,
-> results, and rendering.
+> shareability. The v2 schema corresponds to the calculator-table redesign (#552 / #526).
 >
-> **v1** (8 April 2026): Initial comprehensive draft. Covers canonical URL contract
-> across pages, basic vs advanced mode behavior, Calculator and Plot URL encoding,
-> validation and normalization, backward-compatibility strategy, and shareability
-> guarantees.
+> For the v1 schema history, see git log on this file.
 >
-> **v2** (8 April 2026): Consistency fixes. Added explicit `mode=advanced` to the
-> advanced-mode contract example, unified canonicalization policy to always include
-> explicit defaulted page-state params, and corrected fixture/example program IDs to
-> match `ProgramEntity.id` constants from `06-wasm-api-contract.md`.
->
-> **v3** (8 April 2026): Added explicit URL-contract versioning via `urlv` query
-> parameter, including major-version compatibility rules, migration behavior, and
-> user-warning requirements for incompatible/legacy URL formats.
->
-> **v4** (8 April 2026): Seven-item consistency pass. Reordered §5 and §10.2 snippets
-> to canonical param order, made energy normalization conditional on particle type
-> (ions → MeV/nucl, electron → MeV), aligned Scenario 4 with unit-availability
-> contract, and reconciled qfocus always-emit rule with multi-program.md.
->
-> **v5** (9 April 2026): §7.2 unit token list corrected to include `GeV/nucl`. §7.3
-> canonicalization ordering clarified: explicit `program` vs `programs` by mode,
-> advanced-mode param sub-order (`mode` → `hidden_programs` → `qfocus`), `extdata`
-> placement. Added canonical example showing `hidden_programs` when non-empty.
->
-> **v6** (9 April 2026): Added §8.4 Share Button specification: placement, button
-> states (ready/copied/updated), clipboard interaction, and discrete URL-change
-> notification. Renamed "social sharing" to "sharing via communicators" throughout
-> to reflect scientific usage context.
+> **Revision history (selected):**
+> - **v1–v6** (April 2026): initial URL contract (`urlv=1`).
+> - **v7** (2026-05-23): rewritten for v2 schema (`urlv=2`). Supersedes the
+>   separately-maintained `url-schema.md` (now deleted). Key v1→v2 changes:
+>   `eunit=` → `uanchor=`; `qfocus=stp|csda|both` → `qshow=stp|range` (2-state);
+>   `imode=csda|stp` → `mode=range|inverse-stp`; `hidden_programs=` removed;
+>   `ivalues=` → `lookups=`; new params `runit=`, `sunit=`, `across=`,
+>   `istpbranch=`, `tip_seen=`; advanced/basic picker inferred from `programs=`
+>   vs `program=` (no longer a URL token).
 
 ---
 
 ## Related Specs
 
-- [`01-project-vision.md`](../01-project-vision.md) § 3 — Core use cases requiring shareability.
-- [`calculator.md`](calculator.md) — Basic-mode Calculator, entity selection, energy input, result table, unit handling.
-- [`multi-program.md`](multi-program.md) — Advanced-mode Calculator URL extensions (`mode`, `programs`, `hidden_programs`, `qfocus`).
-- [`plot.md`](plot.md) — Plot page, series management, axis controls, URL encoding.
-- [`unit-handling.md`](unit-handling.md) — Energy and stopping-power unit conversion, SI prefixes.
-- [`entity-selection.md`](entity-selection.md) — Particle, material, program selectors.
-- [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) — Entity and result types.
-- [`shareable-urls-formal.md`](shareable-urls-formal.md) — Formal ABNF grammar + semantic validation/canonicalization contract.
+- [`calculator.md`](calculator.md) — landing page: table, inputs, units, export.
+- [`multi-program.md`](multi-program.md) — advanced multi-entity comparison.
+- [`plot.md`](plot.md) — plot page, series management, axis controls.
+- [`unit-handling.md`](unit-handling.md) — unit conversion contract.
+- [`entity-selection.md`](entity-selection.md) — particle / material / program selectors.
+- [`inverse-lookups.md`](inverse-lookups.md) — inverse-lookup modes (Range → and STP →).
+- [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) — entity and result types.
+- [`shareable-urls-formal.md`](shareable-urls-formal.md) — normative ABNF grammar + canonicalization algorithm.
+- [`decisions/006-url-schema-v2.md`](../decisions/006-url-schema-v2.md) — ADR for v2 design decisions.
 
 ---
 
@@ -59,1148 +42,788 @@
 
 URLs are the primary mechanism for **state sharing** in dEdx Web:
 
-1. **Scientific collaboration:** A researcher sends a colleague a link including
-   the exact particle, material, energy values, and program used for a calculation.
-   The colleague clicks the link and sees identical results.
+1. **Scientific collaboration:** A researcher sends a link that includes the exact
+   particle, material, energy values, and program. The recipient clicks it and sees
+   identical results.
 2. **Bookmarking & reproducibility:** A physicist bookmarks a calculation URL;
-   clicking it 6 months later restores the full calculation state.
-3. **Publication & documentation:** A plot URL is embedded in supplementary material.
-   Readers can click and compare multiple curves interactively without installing software.
-4. **Sharing via communicators:** A researcher pastes a link in email, Slack, Teams,
-   or Mattermost. The recipient clicks it and immediately sees the exact same
-   calculation or plot — no setup, no file transfer required.
+   clicking it 6 months later restores the full state.
+3. **Publication:** A URL is embedded in supplementary material. Readers can compare
+   curves interactively without installing software.
+4. **Sharing via communicators:** A link pasted in email, Slack, or Mattermost opens
+   the exact same calculation or plot without setup or file transfer.
 
 ### 1.2 Design Principles
 
-- **Deterministic and complete:** The URL encodes _all_ necessary state to reproduce
-  exactly the same output. No hidden state in `localStorage` affects rendered results.
+- **Deterministic and complete:** The URL encodes all state necessary to reproduce
+  exactly the same output. No `localStorage` state affects rendered results.
 - **Canonical form:** URLs are normalized to a single canonical representation.
-  Equivalent URLs (logically identical state) produce identical canonical strings.
-- **Backward-compatible:** If parameter names or semantics change, old URLs still
-  work (via migration rules in §8.2).
-- **Safe:** The URL is safe to share publicly (no sensitive data, no executable
-  payloads). Safe to decode without risk of code injection.
-- **Compact:** URLs are kept short to be shareable in email, Slack, Teams, and
-  similar communicators. Avoid extraneous parameters or base-64-encoded blobs.
+  Equivalent state → identical canonical string.
+- **Default values are omitted:** Parameters equal to their defaults are not emitted.
+  This keeps shared URLs short.
+- **Version-safe:** The `urlv` major integer signals the contract version. Old URLs
+  load via migration rules (§7); unknown future versions trigger a modal (§7.2).
+- **Compact:** URLs are kept short enough for email, Slack, and communicators.
 
 ---
 
-## 2. URL Scope & Exclusions
+## 2. Schema Changes from v1
 
-### 2.1 In Scope — Persisted State
+This table summarizes every calculator-route URL change in v2. Plot-route params
+that are unchanged from v1 are listed in §3.8.
 
-Encoded in URL query parameters:
+| Param | v2 Status | Notes |
+|---|---|---|
+| `urlv=` | **bumped to 2** | Triggers v1→v2 migration on read (§7.1) |
+| `particle=` · `material=` · `program=` · `programs=` | **unchanged** | Same names + semantics as v1 |
+| `extdata=` · `mat_*=` · `agg_state=` · `interp_*=` · `mstar_mode=` · `density=` · `ival=` | **unchanged** | Same as `shareable-urls-formal.md` v6 |
+| `across=none\|programs\|materials\|particles` | **new** | Was UI state only in v1; now in URL |
+| `mode=forward\|range\|inverse-stp` | **new** | Calculator operation mode; replaces `imode=csda\|stp` |
+| `hidden=` / `hidden_programs=` | **removed** | Silently dropped on read; visibility from picker selection |
+| `qshow=stp\|range` | **replaces `qfocus=`** | 3-state → 2-state; values renamed (see §3.7) |
+| `uanchor=mev\|mev-nucl\|mev-u` | **new** | Energy unit anchor; replaces `eunit=` |
+| `runit=nm\|um\|mm\|cm\|dm\|m\|km` | **new** | Range unit anchor (Range → mode + CSDA range display) |
+| `sunit=kev-um\|mev-cm\|mev-cm2-g` | **new** | STP unit anchor (STP → mode + STP display) |
+| `energies=100,10:keV,2:GeV` | **extended** | Per-row `:unit` suffix; used only when `mode=forward` |
+| `lookups=` | **renamed** from `ivalues=` | Inverse-mode input list; same `:unit` suffix syntax |
+| `istpbranch=hi\|lo\|both` | **new** | Sticky inverse-STP branch column state |
+| `tip_seen=inline_unit` | **new (optional)** | Inline-unit tip dismissal flag |
 
-- **Entity selection:** Particle, material, program (shared across pages).
-- **Energy inputs & units** (Calculator): Comma-separated energy values, master
-  energy unit, per-row unit suffixes (mixed-unit mode).
-- **Advanced mode settings** (when advanced mode is on): `mode=advanced`, list of
-  selected programs (`programs`), hidden program IDs (`hidden_programs`), quantity
-  focus (`qfocus`).
-- **Stopping power display unit** (Plot page): `stp_unit`.
-- **Axis scale settings** (Plot page): `xscale`, `yscale` (log / linear).
-- **Series list** (Plot page): Encoded triplets of (program, particle, material).
-
-### 2.2 Out of Scope — Not Persisted
-
-NOT encoded in the URL:
-
-- **Series visibility toggles** (Plot page). Hidden series are always restored as
-  visible. See [`plot.md`](plot.md): "Visibility state is not persisted in the URL."
-- **User preferences / settings** (`localStorage` only): theme, dark mode, onboarding
-  hint dismissal, localStorage-only persistence flag for advanced mode.
-- **Scroll position** or other UI ephemera.
-- **Calculation cache or intermediate results.** The state is sufficient to re-run
-  calculations from the WASM API.
-- **Error states or validation messages.** These are derived from the persisted
-  state on load.
+> **Note on mode token naming:** `forward|range|inverse-stp` are the v2 tokens. A
+> future revision may rename these to shorter UI-aligned tokens (e.g. `e|r|s` to
+> match the E→ / R→ / S→ tab labels); see the ADR for the decision log.
 
 ---
 
-## 3. Canonical URL State Contract
+## 3. Canonical URL Contract
 
-### 3.1 Global (Shared Across Pages)
+### 3.1 Canonical Form
 
-These parameters are present on both Calculator and Plot pages and encode shared
-entity selection state:
+#### Calculator (v2)
 
-```
-?urlv={major}&particle={id}&material={id}&program={id|"auto"}
-```
-
-| Parameter  | Type                               | Example            | Rules                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
-| ---------- | ---------------------------------- | ------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `urlv`     | Integer major version              | `1`                | **URL contract major version.** Current Stage 1 value is `1`. If missing, parser assumes `1` for backward compatibility. Canonical URL writing always includes it explicitly.                                                                                                                                                                                                                                                                                                                                                                            |
-| `particle` | Numeric ID or omitted              | `1`, `6`, `1001`   | **Required.** Particle ID from `ParticleEntity`. Default if omitted: `1` (proton). Validation: must exist in compatibility matrix. Invalid → use `1`.                                                                                                                                                                                                                                                                                                                                                                                                    |
-| `material` | Numeric ID or omitted              | `276`, `104`       | **Required.** Material ID from `MaterialEntity`. Default if omitted: `276` (water liquid). Validation: must be compatible with `particle` and `program`. Invalid → use `276`.                                                                                                                                                                                                                                                                                                                                                                            |
-| `program`  | `"auto"` or numeric ID, or omitted | `"auto"`, `2`, `9` | **Optional.** Specifies which program to use (or `"auto"` for auto-select). Default if omitted: `"auto"`. Validation: if numeric, must be compatible with `particle` and `material`. Incompatible → silently fall back to `"auto"`. **Note:** When `program=auto` and the resolved program is a fallback (not from the preferred chain in [`entity-selection.md`](entity-selection.md) §7), the same URL may resolve to different programs across libdedx versions. Future: append resolved program as `program=auto:MSTAR` to preserve fallback choice. |
-
-### 3.2 Basic Mode (Calculator & Plot pages, no `mode=advanced`)
-
-When `mode` parameter is absent or `mode=basic`, the Calculator and Plot pages
-ignore any multi-program parameters (`programs`, `hidden_programs`, `qfocus`).
-They display in single-program mode using only `particle`, `material`, `program`.
-
-**Calculator basic mode** adds:
+Square brackets denote optional/conditional params (omitted at default):
 
 ```
-?urlv={major}&particle={id}&material={id}&program={id|"auto"}&energies={csv}&eunit={unit}
+/calculator
+  ?urlv=2
+  [&extdata={label}:{url}]              ← one per source, declaration order
+  &particle={id}
+  &material={id|"custom"}
+  &{program={id|"auto"} | programs={ids}}   ← exactly one, by mode
+  [&across={dimension}]                 ← omit when "none" (default)
+  [&energies={csv}]                     ← only when mode=forward (default)
+  [&lookups={csv}]                      ← only when mode=range or mode=inverse-stp
+  &uanchor={token}                      ← always emitted
+  [&runit={token}]                      ← omit when "cm" (default)
+  [&sunit={token}]                      ← omit when default for material phase
+  [&mode={forward|range|inverse-stp}]   ← omit when "forward" (default)
+  [&qshow={stp|range}]                  ← omit when both visible (default)
+  [&istpbranch={hi|lo|both}]            ← omit when "hi" (default)
+  [&tip_seen=inline_unit]               ← omit unless tip dismissed
+  [&agg_state=...] [&interp_scale=...] ...  ← advanced options; omit at default
+  [&mat_name=...] ...                   ← custom compound params
 ```
 
-**Plot basic mode** adds:
+#### Plot (v2, unchanged from v1)
 
 ```
-?urlv={major}&particle={id}&material={id}&program={id|"auto"}&series={triplets}&stp_unit={token}&xscale={scale}&yscale={scale}
+/plot
+  ?urlv=2
+  [&extdata={label}:{url}]
+  &particle={id}
+  &material={id}
+  &program={id|"auto"}
+  [&series={triplets}]
+  [&stp_unit={token}]                   ← omit when "kev-um" (default)
+  [&xscale={log|lin}]                   ← omit when "log" (default)
+  [&yscale={log|lin}]                   ← omit when "log" (default)
 ```
 
-### 3.3 Advanced Mode (Extensions to Basic)
+### 3.2 `urlv` — URL Contract Version
 
-When `mode=advanced` is present:
+| Attribute | Value |
+|---|---|
+| Type | Positive integer |
+| Current value | `2` |
+| Default if absent | treat as `1` (legacy link) |
+
+Canonical URLs always emit `urlv=2`. If absent, the parser assumes v1 and applies
+migration rules (§7). If the value is unknown future major, show the migration modal
+(§7.2).
+
+### 3.3 Entity Parameters (shared, unchanged from v1)
+
+| Param | Type | Default | Notes |
+|---|---|---|---|
+| `particle` | numeric ID | `1` (proton) | Must exist in compatibility matrix |
+| `material` | numeric ID or `"custom"` | `276` (water liquid) | Must be compatible with particle + program |
+| `program` | `"auto"` or numeric ID | `"auto"` | Basic mode only; incompatible → fall back to `"auto"` |
+| `programs` | comma-separated IDs | — | Advanced mode only; first is the default program |
+
+**Advanced vs basic mode** is no longer a URL token in v2. The parser infers it:
+
+- `program=` present → basic mode (single program)
+- `programs=` present → advanced mode (multi-program)
+
+The v1 literal `mode=advanced` / `mode=basic` is accepted on read for migration
+but **never emitted** in v2 canonical output. There is no ambiguity with the v2
+`mode=` calc-operation tokens because the value sets don't overlap.
+
+### 3.4 `mode` — Calculator Operation Mode
+
+| Attribute | Value |
+|---|---|
+| Type | `"forward"` \| `"range"` \| `"inverse-stp"` |
+| Default | `"forward"` (omitted from canonical URL) |
+| v1 equivalent | implicit `"forward"` + `imode=csda\|stp` for inverse modes |
+
+| Token | Input column | Output column | UI tab |
+|---|---|---|---|
+| `forward` | Energy (user-typed) | STP + CSDA Range | default |
+| `range` | CSDA Range (user-typed) | Energy | R→ |
+| `inverse-stp` | Stopping Power (user-typed) | Energy | S→ |
+
+The v1 param `imode=csda` maps to `mode=range`; `imode=stp` maps to
+`mode=inverse-stp` (see §7.1 migration table).
+
+### 3.5 `energies` — Energy Input List (mode=forward only)
+
+| Attribute | Value |
+|---|---|
+| Type | Comma-separated `energy-item` list |
+| Grammar | `energy-item = number [":" energy-unit-token]` |
+| Used when | `mode=forward` (the default); absent in `mode=range` and `mode=inverse-stp` |
+
+Each item is a bare number (inherits `uanchor=`) or a number with an explicit
+per-row `:unit` suffix. The colon is RFC 3986 §3.4-safe within a query string.
+
+Valid per-row unit tokens: `eV`, `keV`, `MeV`, `GeV`, `TeV`, `MeV/nucl`,
+`keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`. Unknown → invalid row.
+
+**Worked example — mixed inline units:**
 
 ```
-?urlv={major}&particle={id}&material={id}&programs={ids}&...page-specific params...&mode=advanced&hidden_programs={ids}&qfocus={focus}
+?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV,250&uanchor=mev
 ```
 
-- `particle`, `material` remain (shared entity selection).
-- `program` is replaced by `programs` (multi-select list).
-- `hidden_programs`, `qfocus` are added.
-- Advanced-mode parameters are ignored if `mode` is absent or `mode=basic`.
+→ Four rows: 100 MeV, 10 keV, 2 GeV, 250 MeV.
 
-See [`multi-program.md`](multi-program.md) § URL Persistence for details.
+### 3.6 `uanchor` — Energy Unit Anchor (replaces v1 `eunit=`)
 
-### 3.4 Forward/Back Navigation Behavior
+| Attribute | Value |
+|---|---|
+| Type | `"mev"` \| `"mev-nucl"` \| `"mev-u"` |
+| Default | `"mev"` |
+| Always emitted | yes (never omitted) |
+| v1 equivalent | `eunit=MeV\|MeV/nucl\|MeV/u` |
 
-**History semantics:**
+Determines how unsuffixed rows in `energies=` are interpreted and sets the
+Energy column header. For proton (A=1), `mev` and `mev-nucl` are numerically
+identical; `mev-u` differs by ~0.1% — see the `(≠MeV)` badge in #558.
 
-- **Navigation to Calculator from Plot (or vice versa):** When the user clicks
-  the navigation link to switch pages, the browser history entry is preserved.
-  Clicking the back button returns the user to the previous page with its state
-  intact. Example flow:
+**Worked example — carbon at MeV/nucl:**
 
-  ```
-  1. User on /calculator?urlv=1&particle=1&material=276&energies=100,200&eunit=MeV
-  2. Clicks "Plot" in nav
-  3. Browser navigates to /plot?urlv=1&particle=1&material=276&series=...
-  4. History entry added: [calc URL, plot URL]
-  5. Clicking browser back → /calculator?urlv=1&particle=1&...&energies=100,200
-  ```
+```
+?urlv=2&particle=6&material=276&program=auto&energies=10,50,200&uanchor=mev-nucl
+```
 
-- **State changes on same page:** When the user modifies inputs (entity selection,
-  energies, programs, etc.) without navigating, the URL is updated via
-  `replaceState` (not `pushState`) — this **does not** create a new history entry.
-  This prevents history pollution from intermediate typing. For example:
+### 3.7 `lookups` — Inverse-Lookup Input List (mode=range or mode=inverse-stp)
 
-  ```
-  Initial: /calculator?urlv=1&particle=1&material=276&energies=100
-  User types "200" → /calculator?urlv=1&particle=1&material=276&energies=100,200  (replaceState)
-  User types "300" → /calculator?urlv=1&particle=1&material=276&energies=100,200,300  (replaceState)
-  Browser history still shows only one entry (the initial URL).
-  ```
+| Attribute | Value |
+|---|---|
+| Type | Comma-separated `lookup-item` list |
+| Grammar | `lookup-item = number [":" unit-token]` |
+| Used when | `mode=range` or `mode=inverse-stp`; absent in `mode=forward` |
+| v1 name | `ivalues=` (renamed to avoid collision with Bethe-Bloch I-value `ival=`) |
 
-- **Deep linking:** A user receives a URL via email or Slack. Clicking it (cold load)
-  navigates directly to that page and state. The browser history contains only that
-  URL (no "back" entry above it).
+Per-row unit depends on mode:
+- `mode=range` → length token from `runit=` token set
+- `mode=inverse-stp` → STP token from `sunit=` token set
 
-- **Sharing from intermediate state:** On Calculator, user types "100 MeV". The URL
-  is `...&energies=100`. User opens link in new tab → same state. User shares this
-  URL → recipient loads identical state.
+**Worked example — range lookup, mixed length units:**
 
-### 3.5 Precedence Rules
+```
+?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=mev&mode=range
+```
 
-When conflicting parameters exist, apply these rules:
+**Worked example — STP inverse lookup:**
 
-| Conflict                                                         | Resolution                                                                                                       |
-| ---------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
-| Missing `urlv`                                                   | Assume `urlv=1` and continue parsing as v1 contract                                                              |
-| Unsupported `urlv` major                                         | Attempt registered migration to current major; if migration unavailable, show blocking warning with reset action |
-| Both `program` and `programs` present                            | If `mode=advanced`, use `programs` and ignore `program`. If `mode=basic`, use `program` and ignore `programs`.   |
-| Missing but required entity parameter (e.g., `particle` missing) | Use default: `particle=1`                                                                                        |
-| Invalid entity (e.g., `particle=999` doesn't exist)              | Fall back to default: `particle=1` `material=276` `program=auto`                                                 |
-| Incompatible combination (e.g., `particle=1&material=999`)       | Silently drop conflicting param; use valid fallback per compatibility matrix                                     |
-| Invalid energy unit in `energies` suffix (e.g., `100:bebok`)     | Treat as invalid row; exclude from calculation; show validation message                                          |
-| Both `eunit` and per-row energy units present                    | Per-row suffixes take precedence; `eunit` is fallback for unsuffixed values                                      |
+```
+?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
+```
+
+### 3.8 `runit` — Range Unit Anchor
+
+| Attribute | Value |
+|---|---|
+| Type | `"nm"` \| `"um"` \| `"mm"` \| `"cm"` \| `"dm"` \| `"m"` \| `"km"` |
+| Default | `"cm"` (omitted when default) |
+| v1 equivalent | `iunit=` when `imode=csda` |
+
+Sets (1) the CSDA Range column header, (2) the unit for unsuffixed rows in
+`lookups=` when `mode=range`. The full SI-prefix span (`nm` through `km`) covers
+sub-mm medical physics through km-scale cosmic-ray scenarios.
+
+Per-cell values **auto-scale** to an appropriate prefix regardless of `runit=`
+(per #556 `value-formatters.ts`). `runit=` only anchors the **input** and header.
+
+### 3.9 `sunit` — STP Unit Anchor
+
+| Attribute | Value |
+|---|---|
+| Type | `"kev-um"` \| `"mev-cm"` \| `"mev-cm2-g"` |
+| Default | `"kev-um"` (condensed materials); `"mev-cm2-g"` (gases) |
+| v1 equivalent | `stp_unit=` (plot) / `iunit=` when `imode=stp` |
+
+| Token | Display label |
+|---|---|
+| `kev-um` | keV/µm |
+| `mev-cm` | MeV/cm |
+| `mev-cm2-g` | MeV·cm²/g |
+
+Sets (1) the Stopping Power column header, (2) the unit for unsuffixed rows in
+`lookups=` when `mode=inverse-stp`.
+
+### 3.10 `qshow` — Quantity Display Toggle (replaces v1 `qfocus=`)
+
+| Attribute | Value |
+|---|---|
+| Type | `"stp"` \| `"range"` |
+| Default | both quantities visible (param absent) |
+| Mode | Advanced only; ignored in basic mode |
+
+| v2 `qshow=` | v1 `qfocus=` | Meaning |
+|---|---|---|
+| *(absent)* | `both` | Both stopping power + range columns visible |
+| `stp` | `stp` | Stopping power columns only |
+| `range` | `csda` | Range columns only |
+
+CSV export always includes both quantities regardless of `qshow=`. Unlike v1
+(which always emitted `qfocus=both`), v2 omits `qshow=` when the default applies.
+
+### 3.11 `across` — Compare-Across Dimension
+
+| Attribute | Value |
+|---|---|
+| Type | `"none"` \| `"programs"` \| `"materials"` \| `"particles"` |
+| Default | `"none"` (omitted) |
+| Mode | Advanced only |
+
+Controls which entity axis drives the multi-column comparison. In v1 this was
+stored only in UI state (not the URL).
+
+### 3.12 `istpbranch` — Inverse-STP Branch Visibility
+
+| Attribute | Value |
+|---|---|
+| Type | `"hi"` \| `"lo"` \| `"both"` |
+| Default | `"hi"` (omitted) |
+| Mode | Only relevant when `mode=inverse-stp` |
+
+Some STP values have two energy solutions (high-E and low-E branches). The
+`both` state is sticky: once the user sees a dual-solution row and the
+column opens, `istpbranch=both` keeps it visible on reload.
+
+| Token | Meaning |
+|---|---|
+| `hi` | High-energy branch only (default) |
+| `lo` | Low-energy branch only (reserved; not implemented in #560) |
+| `both` | Both branch columns visible |
+
+### 3.13 `tip_seen` — Tip Dismissal Flag (optional)
+
+| Attribute | Value |
+|---|---|
+| Type | Literal `"inline_unit"` |
+| Default | absent (tip not yet seen) |
+
+Cross-device sharing of the "type a unit too — e.g. `10 keV`" dismissal state.
+Primary persistence is `localStorage`; the URL param is an optional supplement.
+
+### 3.14 Plot Parameters (unchanged from v1)
+
+| Param | Example | Default | Notes |
+|---|---|---|---|
+| `series` | `9.1.276,2.6.276` | — | Committed series: `programId.particleId.materialId` triplets |
+| `stp_unit` | `kev-um` | `kev-um` (omit) | Plot stopping-power display unit |
+| `xscale` | `log` | `log` (omit) | X-axis scale |
+| `yscale` | `log` | `log` (omit) | Y-axis scale |
+
+Auto-select is resolved to a numeric program ID before encoding into `series`.
+The literal `"auto"` never appears inside a `series` triplet.
+
+### 3.15 Advanced Options Parameters (reference)
+
+`agg_state=`, `interp_scale=`, `interp_method=`, `mstar_mode=`, `density=`,
+`ival=` — unchanged from v1. Source of truth: [`advanced-options.md`](advanced-options.md).
+Each is omitted when at its default value.
+
+### 3.16 Custom Compound Parameters (reference)
+
+`mat_name=`, `mat_density=`, `mat_elements=`, `mat_ival=`, `mat_phase=` —
+unchanged from v1. Source of truth: [`custom-compounds.md`](custom-compounds.md) §6.
+Required when `material=custom`.
 
 ---
 
-## 4. Calculator URL Contract (Basic Mode)
+## 4. Calculator URL: Per-Mode Examples
 
-### 4.1 Basic-Mode Parameters
+### 4.1 Mode = forward (default) — Energy → STP + Range
 
-```
-?urlv={major}&particle={id}&material={id}&program={id|"auto"}&energies={csv}&eunit={unit}
-```
-
-| Parameter  | Example           | Type              | Required?                               | Notes                                                                   |
-| ---------- | ----------------- | ----------------- | --------------------------------------- | ----------------------------------------------------------------------- |
-| `urlv`     | `1`               | Integer           | Implicit (default parser assumption: 1) | URL contract major version. Canonical URLs include `urlv=1` in Stage 1. |
-| `particle` | `1`               | Numeric           | Implicit (default: 1)                   | Particle ID (proton, heavy ion, electron)                               |
-| `material` | `276`             | Numeric           | Implicit (default: 276)                 | Material ID                                                             |
-| `program`  | `auto`, `2`       | String or numeric | Implicit (default: `auto`)              | `"auto"` or program ID                                                  |
-| `energies` | `100,200:keV,500` | CSV string        | Optional                                | Comma-separated energy values with optional per-value unit suffixes     |
-| `eunit`    | `MeV`             | String            | Optional (default: `MeV`)               | Master energy unit (MeV, MeV/nucl, MeV/u)                               |
-
-### 4.2 Energy & Unit Encoding
-
-#### Master Mode (all rows same unit)
-
-When all energy values use the same unit (master mode), encode as:
+**Basic mode:**
 
 ```
-?energies=100,200,500&eunit=MeV
+/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,200,500&uanchor=mev
 ```
 
-**Parsing on load:**
-
-- `100` → interpreted as 100 MeV
-- `200` → interpreted as 200 MeV
-- `500` → interpreted as 500 MeV
-
-#### Per-Row Mode (mixed units)
-
-When per-row unit detection is active (at least one row has a unit suffix),
-encode with per-value suffixes using colon separator:
+**Basic mode, mixed inline units:**
 
 ```
-?energies=100,200:keV,50:GeV/nucl,300&eunit=MeV
+/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV&uanchor=mev
 ```
 
-**Parsing on load:**
-
-- `100` → interpreted as 100 MeV (from `eunit`)
-- `200:keV` → interpreted as 200 keV (overrides `eunit`)
-- `50:GeV/nucl` → interpreted as 50 GeV/nucl (overrides `eunit`)
-- `300` → interpreted as 300 MeV (from `eunit`)
-
-**URL generation:**
-
-- If all rows have the same unit: omit per-value suffixes.
-  ```
-  energies=100,200,500&eunit=GeV
-  ```
-- If mixed: append `:unit` to values that differ from `eunit`.
-  ```
-  energies=100:MeV,200:keV&eunit=MeV  → only "200" has a suffix (differs from eunit)
-  ```
-
-#### Supported Unit Tokens in URL
-
-| Token                                    | Resolves to                                        | Notes                                    |
-| ---------------------------------------- | -------------------------------------------------- | ---------------------------------------- |
-| `MeV`                                    | MeV                                                | Base unit (3-char token for clarity)     |
-| `MeV/nucl`                               | MeV/nucl                                           | 8-char token; slash allowed in URI query |
-| `MeV/u`                                  | MeV/u                                              | 5-char token                             |
-| `keV`                                    | keV (×0.001 MeV)                                   | Prefix variant of MeV                    |
-| `GeV`                                    | GeV (×1000 MeV)                                    | Prefix variant of MeV                    |
-| `keV/nucl`, `GeV/nucl`, `keV/u`, `GeV/u` | Respective per-nucleon / per-u units with prefixes |                                          |
-
-**Canonical rule:** When writing the URL (state → URL), use the base unit tokens
-without SI prefixes in `eunit`: always `MeV`, `MeV/nucl`, or `MeV/u`. Per-value
-suffixes may include prefixes (e.g., `100:keV`). This keeps the master unit compact.
-
-Example canonical forms:
+**Advanced mode, multi-program, STP column only:**
 
 ```
-?energies=100,200,500&eunit=MeV           → all MeV
-?energies=100:keV,200,500&eunit=MeV       → mixed; 100 is keV, others MeV
-?energies=100&eunit=MeV/nucl               → master unit is per-nucleon
+/calculator?urlv=2&particle=1&material=276&programs=9,2&energies=100,200&uanchor=mev&qshow=stp
 ```
 
-**Invalid/unknown unit token:**
+**Carbon-12, MeV/nucl:**
 
-- Parse error → treat as invalid row, exclude from calculation, show validation message.
+```
+/calculator?urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=mev-nucl
+```
 
-### 4.3 Defaults & Fallbacks
+### 4.2 Mode = range — CSDA Range → Energy
 
-If parameters are missing or invalid on page load:
+```
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,20:cm&runit=cm&uanchor=mev&mode=range
+```
 
-| Scenario                                      | Fallback                                                               |
-| --------------------------------------------- | ---------------------------------------------------------------------- |
-| `urlv` missing                                | Assume `1` and parse using v1 rules                                    |
-| `urlv` invalid (non-integer or <=0)           | Treat as unsupported version; show warning and offer Reset to defaults |
-| `particle` missing                            | Use 1 (proton)                                                         |
-| `particle` invalid (e.g., 999)                | Use 1                                                                  |
-| `material` missing                            | Use 276 (water liquid)                                                 |
-| `material` invalid                            | Use 276                                                                |
-| `program` missing                             | Use `"auto"` (auto-select)                                             |
-| `program` incompatible with particle/material | Use `"auto"`. Brief toast: "Program not available; using auto-select." |
-| `energies` missing                            | Pre-fill with `100` (single row) → shows default result                |
-| `energies` empty string                       | Pre-fill with `100`                                                    |
-| `eunit` missing                               | Use `MeV`                                                              |
-| `eunit` invalid (e.g., `"meevee"`)            | Use `MeV`                                                              |
-| `energies` contains only invalid/empty rows   | Show table with empty rows; validation summary below                   |
+Large-scale (km), alpha in air:
 
-### 4.4 Mixed-Unit Transition Rules
+```
+/calculator?urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=mev&mode=range
+```
 
-**On page load with URL encoding:**
+### 4.3 Mode = inverse-stp — STP → Energy
 
-1. Parse all parameters.
-2. Expand `energies` CSV → array of energy values with detected units.
-3. Count distinct units in the values:
-   - **All same:** activate master mode. Show master unit selector as active.
-   - **Mixed:** activate per-row mode. Disable master selector. Show per-row dropdowns.
-4. Do **not** trigger unit detection from typed text (URL values are already explicit).
+Single branch (default hi), master STP unit:
 
-**On user interaction (typing in rows):**
+```
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
+```
 
-- Unit detection runs per [`unit-handling.md`](unit-handling.md) § 3.
-- Transitions between master and per-row mode as rows are edited.
+Both branches visible (sticky):
+
+```
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
+```
+
+### 4.4 Compare-Across Programs (advanced)
+
+```
+/calculator?urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=mev&across=programs&qshow=range
+```
 
 ---
 
-## 5. Calculator URL Contract (Advanced Mode)
+## 5. Plot URL: Examples
 
-See [`multi-program.md`](multi-program.md) § URL Persistence for the full contract.
-
-**Summary:** Advanced-mode parameters extend basic mode:
+Single series, keV/µm, log-log:
 
 ```
-?urlv={major}&particle={id}&material={id}&programs={ids}&energies={csv}&eunit={unit}&mode=advanced&hidden_programs={ids}&qfocus={focus}
+/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276&stp_unit=kev-um
 ```
 
-Canonical ordering places page-specific params (`energies`, `eunit`) before the
-advanced-mode params (`mode`, `hidden_programs`, `qfocus`), matching §7.3.
+Multiple series, MeV·cm²/g, linear X:
 
-| Parameter         | Example               | Notes                                                                                                                                    |
-| ----------------- | --------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
-| `mode`            | `advanced`            | Always emitted in advanced mode. Absence or `basic` → single-program mode.                                                               |
-| `programs`        | `9,2,101`             | Comma-separated program IDs in display order. First is always the auto-selected default. Replaces `program`.                             |
-| `hidden_programs` | `2`                   | Comma-separated program IDs (subset of `programs`) whose columns are currently hidden. Omitted when empty.                               |
-| `qfocus`          | `stp`, `csda`, `both` | Quantity focus (which column groups visible). Always emitted in advanced mode for canonical consistency, even when `both` (the default). |
-
-Validation:
-
-- Invalid program IDs → silently drop; show toast if any dropped.
-- All programs invalid → fall back to auto-select only.
-- `hidden_programs` references a program not in `programs` → ignore silently.
+```
+/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276,2.1.276,9.6.276&stp_unit=mev-cm2-g&xscale=lin
+```
 
 ---
 
-## 6. Plot URL Contract
+## 6. Navigation & History
 
-### 6.1 Plot-Page Parameters
-
-```
-?urlv={major}&particle={id}&material={id}&program={id|"auto"}&series={triplets}&stp_unit={token}&xscale={scale}&yscale={scale}
-```
-
-| Parameter  | Example           | Type              | Required?                    | Notes                                                                   |
-| ---------- | ----------------- | ----------------- | ---------------------------- | ----------------------------------------------------------------------- |
-| `urlv`     | `1`               | Integer           | Implicit                     | URL contract major version. Canonical URLs include `urlv=1` in Stage 1. |
-| `particle` | `1`               | Numeric           | Implicit                     | Current entity selection (shared with Calculator)                       |
-| `material` | `276`             | Numeric           | Implicit                     | Current entity selection                                                |
-| `program`  | `auto`, `2`       | String or numeric | Implicit                     | Current entity selection (selector in sidebar)                          |
-| `series`   | `2.1.276,9.6.276` | CSV triplets      | Optional                     | Committed series: `programId.particleId.materialId` triplets            |
-| `stp_unit` | `kev-um`          | Token             | Optional (default: `kev-um`) | Stopping power display unit: `kev-um`, `mev-cm`, `mev-cm2-g`            |
-| `xscale`   | `log` or `lin`    | String            | Optional (default: `log`)    | X-axis scale                                                            |
-| `yscale`   | `log` or `lin`    | String            | Optional (default: `log`)    | Y-axis scale                                                            |
-
-### 6.2 Series Encoding
-
-Each series is a dot-separated triplet: `programId.particleId.materialId`.
-
-Multiple series are comma-separated:
-
-```
-?series=2.1.276,9.6.276,2.6.276
-```
-
-→ Series 1: program 2, particle 1 (proton), material 276 (water)
-→ Series 2: program 9, particle 6 (carbon), material 276
-→ Series 3: program 2, particle 6, material 276
-
-**Auto-select resolution:** If the UI state currently uses auto-select, resolve it
-at encoding time to the actual numeric program ID before constructing each series
-triplet. `series` always encodes numeric `programId.particleId.materialId` triplets;
-the literal token `auto` never appears inside `series`.
-
-**Validation on load:**
-
-1. Parse each triplet.
-2. Check compatibility via the matrix.
-3. Fetch plot data via `getPlotData()`.
-4. **Partial load:** If one series is invalid, skip it and load the others. Show a
-   brief toast: "1 series could not be loaded (may no longer be available)."
-5. Empty `series` → no committed series plotted; only the preview is shown.
-
-### 6.3 Stopping Power Unit Encoding
-
-Tokens:
-
-```
-kev-um     → keV/µm
-mev-cm     → MeV/cm
-mev-cm2-g  → MeV·cm²/g
-```
-
-**Parsing:**
-
-- `stp_unit=kev-um` → display unit is keV/µm (default).
-- Missing → default to `kev-um`.
-- Invalid token (e.g., `stp_unit=foo`) → default to `kev-um`. No error shown.
-
-**Generation:**
-
-- Always use the canonical token form (lowercase, hyphen separators).
-
-### 6.4 Axis Scale Encoding
-
-```
-xscale=log     → logarithmic X-axis
-xscale=lin     → linear X-axis
-yscale=log     → logarithmic Y-axis
-yscale=lin     → linear Y-axis
-```
-
-**Parsing:**
-
-- Missing → default to `log`.
-- Invalid → default to `log`.
-
-**Generation:**
-
-- Always use lowercase token.
+- **Page switch** (Calculator → Plot or vice versa): `pushState` — creates a
+  history entry. Back button returns to prior page + state.
+- **State changes on same page** (entity/energy edits): `replaceState` — no new
+  history entry, prevents pollution.
+- **Deep link (cold load):** URL loaded directly; browser history starts here.
 
 ---
 
-## 7. Validation & Normalization Rules
+## 7. v1 → v2 Migration
 
-### 7.1 Entity Validation
+### 7.1 Migration Rules
 
-On page load or URL change, validate entities via the compatibility matrix:
+When the parser reads a URL with `urlv=1` or no `urlv`, apply these rules in
+order and then write the canonical v2 URL via `replaceState` (bumping `urlv` to
+`2`):
 
-```
-if (!matrix.programs.has(program)) → invalid program
-if (!matrix.particles.has(particle)) → invalid particle
-if (!matrix.materials.has(material)) → invalid material
-if (!matrix.programsByParticle.get(particle).has(program)) → incompatible
-if (!matrix.materialsByProgram.get(program).has(material)) → incompatible
-```
+| v1 param | v2 behaviour |
+|---|---|
+| `particle=` · `material=` · `program=` · `programs=` | Emit unchanged |
+| `eunit=MeV` | Map to `uanchor=mev` |
+| `eunit=MeV/nucl` | Map to `uanchor=mev-nucl` |
+| `eunit=MeV/u` | Map to `uanchor=mev-u` |
+| `qfocus=both` | Omit `qshow=` (default — both visible) |
+| `qfocus=stp` | Emit `qshow=stp` |
+| `qfocus=csda` | Emit `qshow=range` |
+| `imode=csda` | Emit `mode=range` |
+| `imode=stp` | Emit `mode=inverse-stp` |
+| `iunit=` (with `imode=csda`) | Map to `runit=` |
+| `iunit=` (with `imode=stp`) | Map to `sunit=` |
+| `ivalues=` | Rename to `lookups=` (value syntax unchanged) |
+| `mode=advanced` or `mode=basic` | Discard literal; advanced mode inferred from `programs=` |
+| `hidden=` or `hidden_programs=` | Silently drop |
+| `energies=` without `:unit` suffixes | Load unchanged; unsuffixed rows use migrated `uanchor=` |
+| Any unknown param | Silently drop |
 
-**Action:**
+### 7.2 v1 URL Detection Modal
 
-- Silently fall back to ([1], [276], [auto]). Do not show an error.
-- Exception: if a user manually selects an entity that becomes incompatible
-  (via bidirectional filtering in entity-selection.md), the component handles
-  re-filtering and fallback per [`entity-selection.md`](entity-selection.md).
+The v1→v2 migration is **automatic and transparent**: the parser applies the
+rules in §7.1 without user interaction. However, the user should be informed
+that their URL has changed format so they can copy the updated link.
 
-### 7.2 Energy Parsing
+#### When to show
 
-For each energy value in `energies`:
+Show the migration notification when:
 
-1. Split by `:` → (value_str, unit_str_if_any).
-2. Parse value_str as a number (int, decimal, or scientific notation, e.g., `1e3`).
-   - Invalid → treat as invalid row.
-   - Negative or zero → treat as out-of-range.
-3. Parse unit_str (if present):
-   - Match against supported unit tokens (MeV, keV, GeV, MeV/nucl, keV/nucl, GeV/nucl, MeV/u, keV/u, GeV/u).
-   - Unknown → treat as invalid row.
-4. Normalize value to the particle's internal energy unit:
-   - **Ions (A ≥ 1):** convert to MeV/nucl (using particle mass number A).
-   - **Electron (particle ID 1001, A = 0):** convert to MeV only.
-     See [`unit-handling.md`](unit-handling.md) § 2 and [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) for the conditional rule.
-5. Check bounds: 0 < E ≤ max_energy for the program.
-   - Out of bounds → mark as out-of-range (row excluded, validation message shown).
+- A URL with `urlv=1` or no `urlv` is loaded cold (page load or navigation from
+  outside the app).
+- Do **not** show when `replaceState` fires from normal in-app editing.
 
-**Numeric precision:**
+#### Notification UI (v1 load)
 
-- Parse floats as IEEE 754 double-precision (JavaScript number type).
-- No arbitrary precision arithmetic required.
+A **non-blocking dismissable banner** at the top of the page content area:
 
-### 7.3 Canonical URL Form
+> "Your link was in an older format (v1) and has been automatically updated to v2.
+>  [Copy updated link]  [Dismiss ✕]"
 
-When writing the URL (state → URL), normalize to this form:
+- **"Copy updated link"** button copies the current canonical URL (same as Share button action).
+- **"Dismiss ✕"** closes the banner without any further action.
+- Banner is displayed for as long as it is not dismissed (no auto-timeout).
+- After the user dismisses or copies, the banner does not reappear on subsequent
+  page loads from the new canonical URL (which has `urlv=2`).
 
-```
-/calculator?urlv={major}&particle={id}&material={id}&program={id|"auto"}&energies={csv}&eunit={unit}
-/plot?urlv={major}&particle={id}&material={id}&program={id|"auto"}&series={triplets}&stp_unit={token}&xscale={scale}&yscale={scale}
-```
+The calculated results are shown immediately — the banner does **not** block the
+calculation. Migration never loses data for v1 URLs (all params have defined
+migration rules; see §7.1).
 
-**Ordering of parameters:**
+#### Blocking modal (future-version URL, urlv > 2)
 
-1. `urlv`.
-2. `extdata` (one per source, label-declaration order) — omitted when absent.
-3. `particle`, `material`.
-4. Exactly one program param, depending on mode:
-   - Basic mode: `program` (always present; value `auto` or numeric ID).
-   - Advanced mode: `programs` (always present; `program` never emitted).
-5. Page-specific params: `energies`, `eunit` (calc); `series`, `stp_unit`, `xscale`, `yscale` (plot).
-6. Advanced-mode params, in sub-order: `mode=advanced`, then `hidden_programs` (omit if empty), then `qfocus` (always emit in advanced mode, even when `both`).
-7. Advanced Options params: `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival` — each omitted when at default value; silently dropped in Basic mode. See [`advanced-options.md`](advanced-options.md) §URL State Encoding.
-8. Inverse-lookup params (Calculator only): `imode`, `ivalues`, `iunit` — omitted when the Forward tab is active; silently dropped in Basic mode. See [`inverse-lookups.md`](inverse-lookups.md) §9.
+When `urlv > CURRENT_URL_MAJOR` (a URL from a future app version):
 
-See [`shareable-urls-formal.md`](shareable-urls-formal.md) §4 for the normative canonicalization algorithm.
+- Show a **blocking modal** (calculation does not start):
 
-**Example canonical forms:**
+  > **"URL format not supported"**
+  >
+  > This link uses URL format v{n}, but this app supports up to v2.
+  > The link was likely created with a newer version of dEdx Web.
+  >
+  > [Try migration]  [Load defaults]
 
-Calculator basic mode:
+- **"Try migration"** — applies available migration rules best-effort; proceeds
+  even if some params are unrecognised (they are silently dropped). User sees a
+  secondary notice: "Some URL parameters could not be interpreted and were ignored."
+- **"Load defaults"** — discards all URL params; loads the default calculator state
+  (`urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`).
+- Do not calculate from unparsed parameters until user chooses a recovery action.
 
-```
-/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200,500&eunit=MeV
-```
+#### Blocking modal (unsupported old version, urlv < 1)
 
-Calculator advanced mode — no hidden programs:
-
-```
-/calculator?urlv=1&particle=1&material=276&programs=9,2&energies=100,200&eunit=MeV&mode=advanced&qfocus=both
-```
-
-Calculator advanced mode — with hidden programs:
-
-```
-/calculator?urlv=1&particle=1&material=276&programs=9,2,101&energies=100,200&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both
-```
-
-Plot:
-
-```
-/plot?urlv=1&particle=1&material=276&program=auto&series=2.1.276,9.6.276&stp_unit=kev-um&xscale=log&yscale=log
-```
-
-**Canonical comparison:**
-
-- Different param orderings → different strings (not canonical equivalent).
-- Whitespace in values → inconsistent. Avoid.
-- Canonical URLs always include explicit defaulted page-state params (e.g., `eunit=MeV`, `xscale=log`, `yscale=log`) for deterministic sharing and round-trip stability.
-
-**Whitespace:** URLs must not contain unencoded spaces. Query tokenization splits on raw `&` and the first raw `=` in each pair, then percent-decoding is applied to each key/value component (or an equivalent `URLSearchParams` implementation is used). Do not percent-decode the full query string before splitting, because encoded delimiters such as `%26` must remain inside a value until after tokenization.
-
-### 7.4 URL Normalization on Page Load
-
-When a page loads with URL parameters:
-
-1. Parse all parameters.
-2. Validate and apply fallbacks per § 4.3, § 6.1–6.4, § 7.1–7.2.
-3. Once state is resolved, immediately write a normalized URL via `replaceState`.
-   This ensures bookmarks and sharing links are always in canonical form.
-
-Example:
-
-- User visits: `?particle=1&program=auto&material=276` (minimal, legacy)
-- System loads, applies defaults.
-- System writes: `?urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV` (canonical)
-- Bookmark now has the full canonical form.
+Treat as corrupted URL: show "Load defaults" only, no migration attempt.
 
 ---
 
-## 8. Shareability & Compatibility
+## 8. Validation & Normalization
 
-### 8.1 Deterministic Links
+### 8.1 Entity Validation
 
-**Goal:** Two users, same URL, see identical results.
+```
+if (!matrix.particles.has(particle))              → use default particle=1
+if (!matrix.materials.has(material))              → use default material=276
+if (!matrix.programs.has(program))                → use program=auto
+if incompatible combination after resolution       → use particle=1, material=276, program=auto
+```
 
-**Implementation:**
+Silently fall back; do not show an error. If a program is incompatible, show a brief
+toast: "Program not available; using auto-select."
 
-- URL encodes all inputs needed for calculation: particle, material, program, energies,
-  units, series.
-- No `localStorage` state affects visible output.
-- WASM initialization is deterministic (no randomness in algorithm selection or ordering).
-- Results are deterministic (no rounding differences or platform variations expected).
+### 8.2 Energy/Lookup Parsing
 
-**Guarantee:** Given the same URL on two browsers (or two machines), both will show
-the same data rows, stopping powers, CSDA ranges, plots, and colors.
+For each item in `energies=` or `lookups=`:
 
-### 8.2 Backward Compatibility
+1. Split on `:` (last occurrence) → `(value_str, unit_str_if_any)`.
+2. Parse `value_str` as a number (int, decimal, or scientific notation `1e3`).
+   Negative or zero → out-of-range.
+3. If `unit_str` present, match against the allowed token set for the active mode:
+   - `energies=`: energy tokens (§14.1)
+   - `lookups=` + `mode=range`: length tokens (§14.3)
+   - `lookups=` + `mode=inverse-stp`: STP tokens (§14.2)
+   - Unknown token → invalid row (excluded, validation message shown).
+4. For `energies=`: normalize to particle's internal energy unit:
+   - Ions (A ≥ 1) → MeV/nucl; electron (particle 1001, A=0) → MeV only.
+5. Check energy bounds for the program; out-of-range → invalid row.
 
-**Strategy:** URL contracts are versioned by `urlv` (major integer). When parameter
-names, formats, or semantics change in future versions, old URLs must still be
-parseable when a migration exists.
+**Numeric precision:** JavaScript `Number()` (IEEE 754 double). No arbitrary precision required.
 
-**Current contract major:** `urlv=1`.
+### 8.3 Canonical URL Writing
 
-### 8.2.1 Version Negotiation Rules
+After parsing and applying fallbacks, write the canonical v2 URL via `replaceState`.
+This ensures bookmarks and shared links are always in canonical form.
 
-Define app constants:
+**Canonical rules:**
+- Include `urlv=2` first.
+- Emit only params that differ from their defaults (§3.1 square-bracket notation).
+- `uanchor=` is always emitted (no default-omit rule).
+- `program=` XOR `programs=` — never both.
+- `energies=` only when `mode=forward`; `lookups=` only when `mode=range` or
+  `mode=inverse-stp`.
+- `qshow=` omitted when both quantities are visible.
+- `mode=` omitted when `"forward"` (the default).
 
-- `CURRENT_URL_MAJOR = 1`
-- `MIN_SUPPORTED_URL_MAJOR = 1`
+### 8.4 Precedence Rules
 
-On URL load:
+| Conflict | Resolution |
+|---|---|
+| `urlv` missing | Assume `1`; apply §7.1 migration |
+| `urlv > CURRENT_URL_MAJOR` | Blocking modal (§7.2) |
+| `urlv < 1` or non-integer | Blocking modal, "Load defaults" only |
+| Both `program=` and `programs=` present | Use `programs=`; ignore `program=` |
+| `programs=` with all-invalid IDs | Fall back to `program=auto` |
+| `hidden_programs=` | Silently drop (v1 migration) |
+| Unknown `mode=` token | Fall back to `"forward"` |
+| Invalid energy unit suffix | Invalid row; show validation message |
+| Both `eunit=` and per-row `:unit` in v1 URL | Per-row takes precedence; `eunit=` is fallback |
+
+---
+
+## 9. Shareability & Compatibility
+
+### 9.1 Deterministic Links
+
+Given the same URL on two browsers or two machines, both show the same data rows,
+stopping powers, CSDA ranges, plots, and colors. No `localStorage` state affects
+visible output. WASM results are deterministic (no algorithm-selection randomness).
+
+### 9.2 URL Versioning
+
+| Constant | Value |
+|---|---|
+| `CURRENT_URL_MAJOR` | `2` |
+| `MIN_SUPPORTED_URL_MAJOR` | `1` |
+
+On load:
 
 1. Read `urlv`.
-2. If missing, treat as `1` (legacy v1 links).
-3. If `urlv === CURRENT_URL_MAJOR`, parse normally.
-4. If `MIN_SUPPORTED_URL_MAJOR <= urlv < CURRENT_URL_MAJOR`, run migration chain
-   (`migrateUrlV{n}ToV{n+1}`) until current version is reached.
-5. If `urlv < MIN_SUPPORTED_URL_MAJOR` or `urlv > CURRENT_URL_MAJOR`, do not silently
-   reinterpret parameters. Show explicit warning UI (see 8.2.2).
+2. If missing → assume `1`.
+3. If `urlv === 2` → parse normally.
+4. If `urlv === 1` → apply §7.1 migration, then show §7.2 banner.
+5. If `urlv > 2` → §7.2 blocking modal.
+6. If `urlv < 1` or invalid → §7.2 blocking modal, "Load defaults" only.
 
-### 8.2.2 User Warning Requirements (Major-Version Mismatch)
+### 9.3 URL Length Guidance
 
-When a URL cannot be safely interpreted due to major mismatch:
+| Scenario | Typical length |
+|---|---|
+| Basic calculator, 1–5 energies | ~80 bytes |
+| Advanced, 6 programs, 10 energies | ~200 bytes |
+| Plot, 3–5 series | ~150 bytes |
 
-- Show a prominent warning banner/dialog:
-  - "This link uses URL format v{urlv}, but this app supports v{MIN_SUPPORTED_URL_MAJOR}–v{CURRENT_URL_MAJOR}."
-- Provide actions:
-  1. `Try migration` (enabled only when migration path exists)
-  2. `Load defaults` (resets to canonical default state, writes `urlv={CURRENT_URL_MAJOR}`)
-  3. `View raw URL` (read-only, for debugging/support)
-- Do not execute calculations from ambiguous/unparsed parameters until user chooses
-  a recovery action.
-
-This is required to avoid silent scientific misinterpretation from incompatible URL formats.
-
-**Migration example:** If in v2 the energy unit token `MeV` is renamed to `mev`:
-
-1. Accept both `eunit=MeV` and `eunit=mev` on load.
-2. Normalize to canonical form `eunit=mev` in new URLs.
-3. Bump `urlv` to `2` in canonical output.
-4. Provide migration function: `migrateURLv1Tov2(url)`.
-
-**No breaking changes promised in Stage 1.** This spec is the v1 baseline. If
-parameter changes are needed, they will be addressed in a future spec
-(`docs/04-feature-specs/shareable-urls-migration.md`).
-
-### 8.3 URL Length Guidance
-
-**Typical URL length:**
-
-- Basic calculator: ~80 bytes (particle, material, program, 1–5 energies, units)
-- Advanced calculator with 6 programs and 10 energies: ~200 bytes
-- Plot with 3–5 series: ~150 bytes
-
-**Browser limits:**
-
-- Most browsers support URLs up to ~2000 bytes (some support >8000).
-- Email clients: often truncate at ~2000 characters.
-- Slack: unfurled URLs are truncated; click to expand works.
-
-**Guidance:** Keep URLs under 1500 bytes for maximum compatibility. If a URL exceeds
-this:
-
-1. **For calculator:** Limit energy inputs to ~20 values.
-2. **For plot:** Limit series to ~10 triplets.
-3. **Future enhancement:** Support a "share" feature that stores state in a database
-   and provides a short URL (e.g., `dedx.web/s/abc123`). Not in Stage 1 scope.
-
-**Behavior if URL exceeds limit:**
-
-- Not truncated by the app. The full URL is sent.
-- If the URL is too long for certain communicators (email clients, Slack), users will
-  see truncation at the channel level. No app-level warning is needed.
-
-### 8.4 Share Button
-
-The Share button provides a one-click mechanism for copying the current canonical URL
-to the clipboard. It is the primary entry point for sharing links via communicators
-(email, Slack, Teams, Mattermost, etc.).
-
-#### 8.4.1 Placement
-
-- Displayed in the **upper-right corner** of the page toolbar, present on both the
-  Calculator and the Plot pages.
-- Placement and appearance are consistent across both pages.
-
-#### 8.4.2 Button States
-
-The button has three named states, driven by two signals: (1) whether a copy action
-has just occurred, and (2) whether the URL has changed since the last copy.
-
-| State       | Visual appearance                                                            | Condition                                                                                 |
-| ----------- | ---------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------- |
-| **Ready**   | Standard label (e.g., "Copy link") with a link/chain icon; default styling   | No recent copy, or `copied` timeout has elapsed                                           |
-| **Copied**  | Success color (e.g., green), label changes to "Copied"                       | Immediately after the user clicks the button and the clipboard write succeeds             |
-| **Updated** | Accent color or small badge/dot on the icon; label reads "Copy updated link" | URL changed while button was in **Copied** state (the previously copied URL is now stale) |
-
-State transitions:
-
-```
-Ready ──[click → clipboard success]──► Copied
-Copied ──[~2 s timeout]──────────────► Ready
-Copied ──[URL changes]───────────────► Updated
-Updated ──[click → clipboard success]─► Copied
-Updated ──[~2 s timeout (no action)]──► Ready
-```
-
-#### 8.4.3 Clipboard Interaction
-
-1. On click, call the [Clipboard API](https://developer.mozilla.org/en-US/docs/Web/API/Clipboard/writeText):
-   ```js
-   await navigator.clipboard.writeText(window.location.href);
-   ```
-2. On success → transition to **Copied** state; start 2-second revert timer.
-3. On failure (e.g., insecure context, permission denied) → fall back to:
-   - Create a temporary `<input>` with the URL, select all, execute `document.execCommand('copy')`.
-   - If that also fails → show an inline tooltip: "Press Ctrl+C to copy" pointing at the input.
-   - Do **not** show a popup/modal; keep feedback inline.
-
-#### 8.4.4 URL-Change Notification (Discrete)
-
-When the user modifies any input (entity selection, energies, series, units, axis
-scales), the URL is updated via `replaceState`. If the button is currently in the
-**Copied** state (the user has already copied a link), it silently transitions to
-**Updated** to signal that the previously copied URL is now stale.
-
-Rules:
-
-- The notification is **inline and non-intrusive** — no toast, no modal, no banner.
-  Only the button appearance changes.
-- If the button is in **Ready** state when the URL changes, no extra notification is
-  shown — the user has not copied yet, so there is nothing to invalidate.
-- If the user ignores the **Updated** state and the 2-second timer elapses, the button
-  returns to **Ready** silently.
-- On the next click in **Updated** state, the fresh URL is copied and the button
-  enters **Copied** again.
-
-#### 8.4.5 Accessibility
-
-- The button must have an accessible label that reflects its current state:
-  - Ready: `aria-label="Copy link to this page"`
-  - Copied: `aria-label="Link copied to clipboard"`
-  - Updated: `aria-label="Link updated — copy new link"`
-- The state change must be announced to screen readers via `aria-live="polite"` on
-  the button region or a visually-hidden status element.
+Keep under 1500 bytes for maximum email/communicator compatibility. If the user
+enters very many rows (>20 energies), warn that the URL may not copy correctly in
+some contexts.
 
 ---
 
-## 9. Security & Robustness
+## 10. Share Button
 
-### 9.1 Safe Decoding Guarantees
+### 10.1 Placement
 
-**No code execution risk:**
+Present in the **upper-right corner** of the toolbar on both Calculator and Plot
+pages. Appearance is consistent across both pages.
 
-- URL parameters are treated as strings and numbers only.
-- No `eval()` or dynamic code execution.
-- User inputs (from URL or form) are escaped before rendering (no XSS risk).
+### 10.2 Button States
 
-**Safe energy parsing:**
+| State | Appearance | Condition |
+|---|---|---|
+| **Ready** | Default label "Copy link", link icon | No recent copy |
+| **Copied** | Success color, label "Copied" | Just after a successful clipboard write |
+| **Updated** | Accent color, label "Copy updated link" | URL changed while in Copied state |
 
-- Numeric parse: JavaScript `Number()` function (standard, safe).
-- Unit string match: whitelist of expected tokens; unknown tokens are rejected.
-- No regular expressions with user input (fixed regex).
+Transitions:
 
-**Safe series triplet parsing:**
+```
+Ready ──[click → success]──► Copied ──[~2 s]──► Ready
+Copied ──[URL changes]──────► Updated ──[click → success]──► Copied
+Updated ──[~2 s, no click]──► Ready
+```
 
-- Split, map to numeric IDs, validate against compatibility matrix.
-- Invalid IDs → silently ignored (partial load).
+### 10.3 Clipboard Interaction
 
-### 9.2 No Payload Interpretation
+1. `await navigator.clipboard.writeText(window.location.href)`
+2. On success → Copied state, 2-second revert timer.
+3. On failure → fallback: temp `<input>`, select all, `document.execCommand('copy')`.
+4. If both fail → inline tooltip: "Press Ctrl+C to copy".
 
-URLs do not store or interpret:
+### 10.4 Accessibility
 
-- User code or configuration files.
-- Serialized objects (no JSON blobs in URL).
-- Commands or operations beyond the physics domain (particle, material, energy).
+| State | `aria-label` |
+|---|---|
+| Ready | `"Copy link to this page"` |
+| Copied | `"Link copied to clipboard"` |
+| Updated | `"Link updated — copy new link"` |
 
-URLs are safe to click from untrusted sources (though the content may be nonsensical
-if parameters are garbage).
-
-### 9.3 Injection Prevention
-
-**XSS prevention:**
-
-- Entity selection values (particle/material/program names) come from the WASM
-  library's fixed data tables, not from user input via URLs.
-- Energy values are rendered as text (no HTML interpretation).
-- Series labels are constructed from entity names (safe).
-
-**URL parameter names:** Fixed by the spec, not user-supplied.
+Announce state changes via `aria-live="polite"` on the button region.
 
 ---
 
-## 10. Acceptance Criteria & Fixtures
+## 11. Security & Robustness
 
-All examples assume (matching [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) program constants):
+- **No code execution:** URL params are treated as strings and numbers only. No
+  `eval()` or dynamic code execution.
+- **XSS prevention:** Energy values and entity names are rendered as text. Entity
+  names come from WASM fixed data tables, not from the URL.
+- **Injection prevention:** All param names are fixed by this spec; no user-supplied
+  keys are evaluated.
+- **Safe series parsing:** `series` triplets are split, mapped to numeric IDs, and
+  validated against the compatibility matrix. Invalid IDs are silently ignored.
+- **Whitespace:** URLs must not contain unencoded spaces. Split on raw `&` and `=`
+  before percent-decoding each component.
 
-- Proton (particle ID 1), Hydrogen
+---
+
+## 12. Acceptance Criteria & Fixtures
+
+All examples assume:
+
+- Proton (particle ID 1); Carbon-12 (ID 6)
 - Water liquid (material ID 276)
-- ICRU 90 (program ID 9)
-- PSTAR (program ID 2)
-- Bethe-Ext00 (program ID 101)
-- URL contract version `urlv=1`
+- ICRU 90 (program ID 9); PSTAR (ID 2); Bethe-Ext00 (ID 101)
+- URL contract version `urlv=2`
 
-### 10.1 Basic Calculator URL Examples
+### 12.1 Round-Trip Tests
 
-#### Single-value calculation
+**Calculator forward mode:**
 
-**Input state:**
+1. Load default calculator state → URL: `/calculator?urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+2. Add 200 MeV row → URL updates via replaceState.
+3. Copy URL → open in new window → identical state.
 
-- Particle: Proton
-- Material: Water (liquid)
-- Program: Auto-select → ICRU 90
-- Energy: 100 MeV
+**Calculator range mode:**
 
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV
-```
-
-**Expected output:** One row: 100 MeV, stopping power, CSDA range in keV/µm and cm respectively.
-
-#### Multiple energies (master mode — all same unit)
-
-**Input state:**
-
-- Particle: Proton
-- Material: Water (liquid)
-- Program: PSTAR (explicit)
-- Energies: 50 MeV, 100 MeV, 200 MeV, 500 MeV
-- Unit: MeV
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=276&program=2&energies=50,100,200,500&eunit=MeV
-```
-
-**Expected output:** Four rows with results.
-
-#### Mixed-unit energies (per-row mode)
-
-**Input state:**
-
-- Particle: Proton
-- Material: PMMA (plastic, ID 99)
-- Program: Auto-select
-- Energies:
-  - 100 MeV
-  - 200 keV (per-row unit)
-  - 50 GeV/nucl (per-row unit, but proton has A=1 so per-nucleon = MeV)
-  - 300 MeV
-- Master unit: MeV
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=99&program=auto&energies=100,200:keV,50:GeV/nucl,300&eunit=MeV
-```
-
-**Expectation:** Parsing correctly normalizes to [100, 0.2, 50000, 300] MeV. Per-row
-mode is active (selector greyed out).
-
-#### Heavy ion with per-nucleon unit
-
-**Input state:**
-
-- Particle: Carbon-12 (particle ID 6, mass number 12)
-- Material: Water (liquid)
-- Program: Auto-select
-- Energies: 10 MeV/nucl, 100 MeV/nucl
-- Unit: MeV/nucl
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=6&material=276&program=auto&energies=10,100&eunit=MeV/nucl
-```
-
-**Expected output:** Two rows. Values normalized to 10 and 100 MeV/nucl in the app.
-
-### 10.2 Advanced Calculator URL Examples
-
-#### Multi-program comparison
-
-**Input state:**
-
-- Particle: Proton
-- Material: Water (liquid)
-- Advanced mode: ON
-- Selected programs: ICRU 90 (default, ID 9), PSTAR (ID 2)
-- Hidden programs: none
-- Quantity focus: Both (default)
-- Energies: 100 MeV, 200 MeV
-- Unit: MeV
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=276&programs=9,2&energies=100,200&eunit=MeV&mode=advanced&qfocus=both
-```
-
-**Expected output:** Five columns (Typed, Normalized, Unit, Stp Power, CSDA Range) for default program (ICRU 90), plus additional Stp Power and CSDA Range columns for PSTAR. Both quantity groups visible.
-
-#### Advanced mode — stopping power only
-
-**Input state:**
-
-- Same as above, but `qfocus=stp` (hide CSDA range columns)
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=276&programs=9,2&energies=100,200&eunit=MeV&mode=advanced&qfocus=stp
-```
-
-**Expected output:** Only stopping power columns visible for both programs.
-
-#### Advanced mode — hidden programs
-
-**Input state:**
-
-- Selected programs: ICRU 90 (default, ID 9), PSTAR (ID 2), Bethe-Ext00 (ID 101)
-- Hidden: PSTAR (ID 2)
-- Quantity focus: Both (default)
-
-**URL:**
-
-```
-/calculator?urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both
-```
-
-**Expected output:** Columns for ICRU 90 (visible) and Bethe-Ext00 (visible); PSTAR column is hidden (users can toggle via eye icon). Both stopping-power and CSDA-range quantity groups visible.
-
-### 10.3 Plot Page URL Examples
-
-#### Single series
-
-**Input state:**
-
-- Entity selection: Proton in Water, auto-select
-- Committed series: ICRU 90, Proton, Water
-- Stopping power unit: keV/µm
-- Axis scales: Log-Log
-
-**URL:**
-
-```
-/plot?urlv=1&particle=1&material=276&program=auto&series=9.1.276&stp_unit=kev-um&xscale=log&yscale=log
-```
-
-**Expected output:** One curve (solid black line) labeled "ICRU 90 – Proton in Water" plotted on a log-log plot.
-
-#### Multiple series with mixed axes
-
-**Input state:**
-
-- Committed series:
-  - ICRU 90, Proton, Water
-  - PSTAR, Proton, Water
-  - ICRU 90, Carbon, Water
-- Stopping power unit: MeV·cm²/g
-- Axis scales: Linear X, Log Y
-
-**URL:**
-
-```
-/plot?urlv=1&particle=1&material=276&program=auto&series=9.1.276,2.1.276,9.6.276&stp_unit=mev-cm2-g&xscale=lin&yscale=log
-```
-
-**Expected output:** Three curves (different colors); Y-axis log, X-axis linear; Y-label shows "Stopping Power [MeV·cm²/g]".
-
-#### Series with auto-select program
-
-**Note:** Auto-select is **resolved** at encoding time.
-
-**Input state:**
-
-- Entity selection: Proton in Water, auto-select → ICRU 90 (ID 9)
-- Series: Proton in Water via auto-select
-
-**URL (outgoing):**
-
-```
-/plot?urlv=1&particle=1&material=276&program=auto&series=9.1.276&...
-```
-
-The `series` triplet encodes the **resolved** program ID (9), not "auto", ensuring
-the URL is self-contained.
-
-### 10.4 Round-Trip Tests
-
-**Test: state → URL → restored state (determinism)**
-
-**Calculator round-trip:**
-
-1. Load default calculator: `/calculator`
-2. Select: Proton, Water, auto-select, type 100 and 200 MeV.
-3. Expected URL: `/calculator?urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV`
-4. Copy URL.
-5. Open in new window.
-6. Verify: Same entity selection, same energies, same results.
-7. Modify: Type 300 MeV.
-8. Expected new URL: `/calculator?...&energies=100,200,300&...`
-9. Copy URL, open in new window, verify. ✓
+1. Switch to Range → tab → URL gains `&mode=range`.
+2. Enter `7.72 cm` → URL: `...&lookups=7.72&runit=cm&uanchor=mev&mode=range`.
+3. Open URL in new window → Range mode active, same lookup value.
 
 **Plot round-trip:**
 
-1. Load Plot page.
-2. Add series: ICRU 90 + Proton + Water.
-3. Add series: PSTAR + Proton + Water.
-4. Change unit to MeV/cm.
-5. Expected URL: `/plot?urlv=1&particle=1&material=276&program=auto&series=9.1.276,2.1.276&stp_unit=mev-cm&xscale=log&yscale=log`
-6. Copy URL.
-7. Open in new window.
-8. Verify: Same two series, same unit, same colors, same plot appearance. ✓
+1. Add series: ICRU 90 + Proton + Water → series=9.1.276.
+2. Change stp_unit to MeV/cm → URL: `/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276&stp_unit=mev-cm`.
+3. Open in new window → same series, same unit.
 
-### 10.5 Invalid URL Recovery
+### 12.2 v1 URL Migration Tests
 
-**Test: invalid params → fallback to defaults + toast**
+| v1 URL | Expected v2 behaviour |
+|---|---|
+| `?urlv=1&particle=1&material=276&eunit=MeV/nucl&energies=100` | Parse → migrate to `uanchor=mev-nucl`; show v1 banner |
+| `?urlv=1&qfocus=csda` | Migrate to `qshow=range` |
+| `?urlv=1&imode=csda&ivalues=7.72:cm&iunit=cm` | Migrate to `mode=range&lookups=7.72:cm&runit=cm` |
+| `?urlv=1&hidden_programs=2&programs=9,2` | Drop `hidden_programs=`; show all columns |
+| No `urlv` param | Treat as v1; apply migration; show v1 banner |
 
-**Scenario 1: Nonexistent particle**
+### 12.3 Invalid URL Recovery
 
-URL:
-
+**Nonexistent particle:**
 ```
-/calculator?urlv=1&particle=999&energies=100
+/calculator?urlv=2&particle=999&energies=100&uanchor=mev
 ```
+→ Fallback to `particle=1`; canonical URL rewritten.
 
-Expected:
-
-- Load fails validation.
-- Fallback to particle=1 (proton).
-- Show toast: "Particle not found; using Proton."
-- Canonical URL rewritten: `/calculator?urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV`
-
-**Scenario 2: Incompatible combination**
-
-URL:
-
+**Incompatible program:**
 ```
-/calculator?urlv=1&particle=1&material=99&program=50
+/calculator?urlv=2&particle=1&material=276&program=50&energies=100&uanchor=mev
 ```
+→ `program=auto`; toast "Program not available; using auto-select."
 
-(Assume program 50 doesn't exist or doesn't support particle 1 + material 99.)
-
-Expected:
-
-- Fallback program to auto-select.
-- If auto-select is incompatible, fall back to particle=1, material=276, program=auto.
-- Brief toast: "Program not available; using auto-select."
-
-**Scenario 3: Invalid energy (non-numeric)**
-
-URL:
-
+**Invalid energy row:**
 ```
-/calculator?urlv=1&particle=1&material=276&energies=abc,100,xyz
+/calculator?urlv=2&particle=1&material=276&energies=abc,100,xyz&uanchor=mev
 ```
-
-Expected:
-
-- Row 1 (abc): invalid, excluded from calculation, validation message "Non-numeric value 'abc'".
-- Row 2 (100): valid, shows results.
-- Row 3 (xyz): invalid, excluded.
-- Validation summary below table: "2 of 3 values invalid".
-
-**Scenario 4: Per-row unit incompatible with particle**
-
-URL:
-
-```
-/calculator?urlv=1&particle=1&energies=100:MeV/nucl
-```
-
-(Proton A=1; per [`unit-handling.md`](unit-handling.md) § 2, only MeV is available for protons.
-MeV/nucl is not a valid unit for this particle.)
-
-Expected:
-
-- Row treated as invalid (unit `MeV/nucl` not in the proton's available-unit set).
-- Row excluded from calculation; validation message shown:
-  "Unit 'MeV/nucl' is not available for Proton."
-- Canonical URL rewrites the page with the invalid row excluded.
+→ Rows 1 and 3 excluded; validation summary "2 of 3 values invalid".
 
 ---
 
-## 11. Cross-Spec Consistency Checklist
+## 13. Cross-Spec Consistency Checklist
 
-### 11.1 Alignment with calculator.md
-
-- [ ] Calculator URL params (`particle`, `material`, `program`, `energies`, `eunit`) match the contract in [`calculator.md`](calculator.md) § URL State Encoding.
-- [ ] Energy unit tokens (MeV, MeV/nucl, MeV/u, keV, GeV, …) are consistent with [`unit-handling.md`](unit-handling.md) § 3 Supported Suffixes.
-- [ ] Mixed-unit encoding (per-row suffixes) matches the algorithm in [`calculator.md`](calculator.md).
-- [ ] Fallback behavior (missing params, defaults) aligns with § Default State on First Load in [`calculator.md`](calculator.md).
-
-### 11.2 Alignment with multi-program.md
-
-- [ ] Advanced-mode params (`mode`, `programs`, `hidden_programs`, `qfocus`) are documented in this spec and cross-referenced to [`multi-program.md`](multi-program.md) § URL Persistence.
-- [ ] Program display order in `programs` list matches the drag-and-drop column order in [`multi-program.md`](multi-program.md).
-- [ ] Quantity focus values (`both`, `stp`, `csda`) are the same.
-
-### 11.3 Alignment with plot.md
-
-- [ ] Plot URL params (`particle`, `material`, `program`, `series`, `stp_unit`, `xscale`, `yscale`) match [`plot.md`](plot.md) § URL State Encoding.
-- [ ] Series encoding (triplets with dots) matches [`plot.md`](plot.md) § Series Encoding.
-- [ ] Stopping power unit tokens (`kev-um`, `mev-cm`, `mev-cm2-g`) are canonical and match [`plot.md`](plot.md).
-- [ ] Axis scale tokens (`log`, `lin`) are correct.
-- [ ] Note that series visibility is NOT persisted (as per [`plot.md`](plot.md) § Toggle Series Visibility).
-
-### 11.4 Alignment with unit-handling.md
-
-- [ ] Energy unit conversions (MeV ↔ MeV/nucl ↔ MeV/u) use the same formulas as [`unit-handling.md`](unit-handling.md) § 4 Conversion Formulas.
-- [ ] SI prefix multipliers (e.g., keV = ×0.001 MeV) match § 3 Supported Suffixes.
-- [ ] Stopping power unit conversions (keV/µm ↔ MeV/cm ↔ MeV·cm²/g) use material density per [`unit-handling.md`](unit-handling.md) § 5.0.
-
-### 11.5 Alignment with entity-selection.md
-
-- [ ] Entity IDs (particle, material, program) are numeric IDs from the WASM library's entity lists.
-- [ ] Auto-select (program = "auto") behavior matches [`entity-selection.md`](entity-selection.md) § Auto-Select Mechanism.
-- [ ] Entity validation against the compatibility matrix is consistent.
-
-### 11.6 Alignment with 06-wasm-api-contract.md
-
-- [ ] Entity IDs (ParticleEntity.id, MaterialEntity.id, ProgramEntity.id) are numeric and match the WASM contract types.
-- [ ] Energy unit definitions (MeV, MeV/nucl, MeV/u) match the EnergyUnit type in [`06-wasm-api-contract.md`](../06-wasm-api-contract.md) § 2.1 Units.
-- [ ] Stopping power units (MeV·cm²/g, MeV/cm, keV/µm) match the StpUnit type.
-
-### 11.7 Known Issues & Follow-Up Edits
-
-**No mismatches found in Stage 1 spec review.** All cross-references are consistent.
-
-**Future enhancements (not blocking v1):**
-
-- Short URL storage (database) for very long plot URLs — to be defined in a future spec.
-- User-defined custom compounds in URL state — **specified** in `custom-compounds.md` §6 and `shareable-urls-formal.md` v6 (`material=custom` sentinel + `mat_*` params, canonicalization step 9).
+- [ ] `uanchor=` replaces `eunit=` in canonical output; migration reads `eunit=` (#555).
+- [ ] `qshow=stp|range` replaces `qfocus=`; state shapes in `multi-program.svelte.ts` updated (#561).
+- [ ] `mode=forward|range|inverse-stp` replaces `imode=csda|stp`; route handling updated (#558).
+- [ ] `across=` URL param wired to entity-selection state (#561).
+- [ ] `istpbranch=` round-trips through `calculator-url.ts` (#560).
+- [ ] `runit=` set `nm|um|mm|cm|dm|m|km` implemented in encoder/decoder (#558).
+- [ ] `lookups=` replaces `ivalues=` in encoder/decoder + state field (#555 / #560).
+- [ ] `hidden=` / `hidden_programs=` silently dropped (#561 migration).
+- [ ] `shareable-urls-formal.md` ABNF grammar updated with v2 params after #561.
+- [ ] `calculator.md` energy-unit token table updated to use `uanchor=` tokens.
+- [ ] `inverse-lookups.md` §9 cross-referenced to this spec for canonical step ordering.
 
 ---
 
-## 12. Acceptance Criteria
+## 14. Token Reference
 
-- [ ] **Calculator basic mode:** URL encodes particle, material, program, energies (CSV with optional per-value unit suffixes), and master unit. On load with URL, state is restored identically.
-- [ ] **Calculator advanced mode:** URL encodes `mode=advanced`, `programs` list (comma-separated, first = default), and `qfocus`. Invalid programs are silently dropped with a toast.
-- [ ] **Plot page:** URL encodes particle, material, program, series list (dot-separated triplets), stopping power unit, and axis scales. On load, series are fetched and plotted with correct colors and labels.
-- [ ] **Energy parsing:** Per-row unit suffixes (e.g., `200:keV`) are parsed correctly. Round-trip: state → URL → restored state produces identical results (deterministic).
-- [ ] **Entity validation:** Invalid entity IDs (e.g., particle=999) cause fallback to defaults with a brief toast message. Incompatible combinations fall back to auto-select.
-- [ ] **URL normalization:** On page load, the URL is normalized to canonical form via `replaceState`. Subsequent bookmarks and shares use the canonical form.
-- [ ] **Versioned URL contract:** Canonical URLs include `urlv={CURRENT_URL_MAJOR}`. Missing `urlv` is interpreted as legacy v1 only.
-- [ ] **Share button placement:** Button present in the upper-right corner on both Calculator and Plot pages; appearance is visually consistent.
-- [ ] **Copy to clipboard:** Clicking the button in **Ready** or **Updated** state copies the current canonical URL. Button transitions to **Copied** state (success color, "Copied" label) for ~2 seconds, then reverts to **Ready**.
-- [ ] **Stale-copy notification:** If the user modifies state after copying, the button transitions from **Copied** to **Updated** ("Copy updated link") without showing any popup or toast.
-- [ ] **Clipboard fallback:** If `navigator.clipboard.writeText` fails, a fallback copy mechanism is attempted; if both fail, an inline tooltip instructs the user to copy manually.
-- [ ] **Accessibility:** Button `aria-label` reflects current state; state changes are announced via `aria-live`.
-- [ ] **Major mismatch warning:** If `urlv` is outside supported range, the app warns the user and requires explicit recovery action (`Try migration` or `Load defaults`) before calculating.
-- [ ] **Forward/back navigation:** Switching pages via navigation preserves browser history. State changes on the same page use `replaceState` (no history pollution). Back button returns to previous page/state.
-- [ ] **Shareability:** Two users with identical URLs see identical results (deterministic rendering). No `localStorage` state affects visible output.
-- [ ] **Security:** URLs are safe to click from untrusted sources. No code execution, XSS, or injection risks.
-- [ ] **Backward compatibility:** Old URL formats can be parsed when migration path exists; otherwise explicit warning is shown. Stage 1 current major is `urlv=1`.
+### 14.1 Energy Unit Tokens (`uanchor=` and inline `:unit` in `energies=`)
 
----
+| Token | Resolves to | Example |
+|---|---|---|
+| `mev` (uanchor) | MeV | `uanchor=mev` |
+| `mev-nucl` (uanchor) | MeV/nucl | `uanchor=mev-nucl` |
+| `mev-u` (uanchor) | MeV/u | `uanchor=mev-u` |
+| `MeV` (inline `:unit`) | MeV | `energies=100:MeV` |
+| `keV` (inline) | keV (×0.001 MeV) | `energies=100:keV` |
+| `GeV` (inline) | GeV (×1000 MeV) | `energies=100:GeV` |
+| `MeV/nucl` (inline) | MeV/nucl | `energies=10:MeV/nucl` |
+| `keV/nucl`, `GeV/nucl` | respective prefix variants | |
+| `MeV/u`, `keV/u`, `GeV/u` | per-atomic-mass-unit variants | |
+| `eV`, `TeV` | extremes | |
 
-## 13. Appendix: Token Reference
+**Note:** `uanchor=` uses lowercase hyphenated tokens (`mev`, `mev-nucl`, `mev-u`).
+Inline `:unit` tokens in `energies=` use the display-form notation (`MeV`,
+`MeV/nucl`, etc.). These are two distinct token sets.
 
-### 13.1 Energy Unit Tokens
+### 14.2 Stopping Power Tokens (`sunit=` and `stp_unit=`)
 
-| Token      | Resolves to                | Example                         |
-| ---------- | -------------------------- | ------------------------------- |
-| `MeV`      | MeV                        | `energies=100&eunit=MeV`        |
-| `keV`      | keV (×0.001 MeV)           | `energies=100:keV` → 0.1 MeV    |
-| `GeV`      | GeV (×1000 MeV)            | `energies=100:GeV` → 100000 MeV |
-| `MeV/nucl` | MeV/nucl                   | `energies=100&eunit=MeV/nucl`   |
-| `keV/nucl` | keV/nucl (×0.001 MeV/nucl) | `energies=100:keV/nucl`         |
-| `GeV/nucl` | GeV/nucl (×1000 MeV/nucl)  | `energies=100:GeV/nucl`         |
-| `MeV/u`    | MeV/u                      | `energies=100&eunit=MeV/u`      |
-| `keV/u`    | keV/u (×0.001 MeV/u)       | `energies=100:keV/u`            |
-| `GeV/u`    | GeV/u (×1000 MeV/u)        | `energies=100:GeV/u`            |
+| Token | Display |
+|---|---|
+| `kev-um` | keV/µm |
+| `mev-cm` | MeV/cm |
+| `mev-cm2-g` | MeV·cm²/g |
 
-### 13.2 Stopping Power Unit Tokens (Plot)
+### 14.3 Range Unit Tokens (`runit=`)
 
-| Token       | Resolves to |
-| ----------- | ----------- |
-| `kev-um`    | keV/µm      |
-| `mev-cm`    | MeV/cm      |
-| `mev-cm2-g` | MeV·cm²/g   |
+| Token | Display |
+|---|---|
+| `nm` | nm |
+| `um` | µm |
+| `mm` | mm |
+| `cm` | cm (default) |
+| `dm` | dm |
+| `m` | m |
+| `km` | km |
 
-### 13.3 Quantity Focus Tokens (Advanced Calculator)
+### 14.4 Calculator Mode Tokens
 
-| Token  | Meaning                                        |
-| ------ | ---------------------------------------------- |
-| `both` | Show all columns (stopping power + CSDA range) |
-| `stp`  | Show stopping power columns only               |
-| `csda` | Show CSDA range columns only                   |
+| Token | Meaning |
+|---|---|
+| `forward` | Energy → STP + Range (default; omitted in canonical URL) |
+| `range` | CSDA Range → Energy |
+| `inverse-stp` | Stopping Power → Energy |
 
-### 13.4 Axis Scale Tokens (Plot)
+### 14.5 Axis Scale Tokens (Plot)
 
-| Token | Meaning           |
-| ----- | ----------------- |
-| `log` | Logarithmic scale |
-| `lin` | Linear scale      |
+| Token | Meaning |
+|---|---|
+| `log` | Logarithmic (default; omitted) |
+| `lin` | Linear |

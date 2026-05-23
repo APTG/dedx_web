@@ -101,6 +101,54 @@ match. Remember the AI logs.
 6. **Issue #554 description** updated with the rename and a third
    migration-rule row.
 
+### Prompt 4 (2026-05-23): merge url-schema.md into shareable-urls.md; add migration modal
+
+**User feedback:** Instead of maintaining a separate `url-schema.md`, modify the
+existing `shareable-urls.md` and `shareable-urls-formal.md` and almost completely
+replace the v1 content. Backward compatibility is not critical (v2 is OK), but a
+modal/notification is needed when users load old v1 URLs in the new v2 app. Also
+asked about renaming `forward|range|inverse-stp` mode tokens.
+
+**AI response:**
+
+1. **Rewrote `shareable-urls.md` as v7** (the canonical v2 URL spec), incorporating
+   all content from `url-schema.md`:
+   - Added §2 Schema Delta Table (v1→v2 changes at a glance).
+   - Added per-param reference sections for all v2 params (`uanchor=`, `runit=`,
+     `sunit=`, `lookups=`, `qshow=`, `mode=`, `across=`, `istpbranch=`, `tip_seen=`).
+   - Added §7 v1→v2 Migration: migration rules table + §7.2 Migration Modal spec:
+     - v1 URL → non-blocking dismissable banner "Your link was in an older format".
+     - Future-version URL (`urlv > 2`) → blocking modal with "Try migration" and "Load defaults".
+   - Removed v1-specific examples; updated all examples to v2.
+   - Retained Share button spec (§10), security (§11), and acceptance criteria.
+   - Proposed mode token renaming alternatives (`e|r|s` matching E→/R→/S→ tab
+     glyphs; `energy|range-in|stp-in` explicit form) but kept `forward|range|inverse-stp`
+     since the user said "at some point" — the note is in §2.
+
+2. **Rewrote `shareable-urls-formal.md` as v7** (normative ABNF + semantics):
+   - Extended ABNF grammar with all v2 pairs: `uanchor-pair`, `runit-pair`,
+     `sunit-pair`, `lookups-pair`, `qshow-pair`, `across-pair`, `istpbranch-pair`,
+     `tip-seen-pair`.
+   - Updated `mode-pair` to `forward|range|inverse-stp` calc-operation tokens.
+   - Extended `length-unit-token` with `dm` and `km`.
+   - Marked deprecated v1 pairs with `;(deprecated)` comment — still parsed,
+     never emitted in v2 canonical output.
+   - Added §3.4 v1→v2 migration mapping table.
+   - Updated §3.4 version negotiation (`CURRENT_URL_MAJOR = 2`).
+   - Updated §3.5 conditional enablement: advanced mode inferred from `programs=`
+     vs `program=`, not from `mode=advanced` literal.
+   - Updated §3.6 defaults to v2 values.
+   - Updated §4 canonicalization algorithm to v2 ordering.
+   - Added §5.2 migration conformance vectors (8 v1→v2 migration cases).
+
+3. **Deleted `url-schema.md`** — content fully absorbed by the updated shareable-urls docs.
+
+4. **Updated test file doc comment** — changed reference from `url-schema.md` to
+   `shareable-urls.md §2 §7`.
+
+5. **Updated `docs/04-feature-specs/README.md`** — replaced url-schema.md row,
+   updated shareable-urls.md and shareable-urls-formal.md status to `v7 (2026-05-23)`.
+
 ### Write url-schema.md
 
 - **Status**: completed
