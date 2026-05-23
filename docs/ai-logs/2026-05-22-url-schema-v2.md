@@ -149,6 +149,67 @@ asked about renaming `forward|range|inverse-stp` mode tokens.
 5. **Updated `docs/04-feature-specs/README.md`** — replaced url-schema.md row,
    updated shareable-urls.md and shareable-urls-formal.md status to `v7 (2026-05-23)`.
 
+### Prompt 5 (2026-05-23): cross-spec sync, case-sensitivity, energy-unit cross-product, dual-output future plan
+
+**User feedback:**
+1. Review comment: `shareable-urls.md` §3.3 (mode persistence in entity-selection)
+   contradicts `entity-selection.md:481` which says "Basic/Advanced toggle persists
+   in `localStorage` and the URL". Need to fix the cross-spec contradiction or add
+   a note so implementers don't follow the older contract.
+2. Review comment: vectors #3 and #4 in `shareable-urls-formal.md` §5.1 conflate
+   non-canonical input with the claim that the canonical is "same". Each vector
+   should have a single unambiguous canonical string.
+3. `{csv}` placeholder in the canonical URL form resembles a CSV file format;
+   pick something less misleading.
+4. `§3.4 mode` should keep in mind a planned follow-up: advanced inverse modes
+   may emit **two output quantities** (range→stp + range→energy; stp→range +
+   stp→energy).
+5. Per-row energy unit tokens should cover **all combinations** of prefix
+   (`eV` … `TeV`) × suffix (`-`, `/nucl`, `/u`) — i.e. 15 tokens (including
+   `eV/nucl`).
+6. `uanchor=mev` looks like millielectronvolt. Switch to physics-standard
+   mixed case, and add a general section about URL case sensitivity.
+7. Add the PR entry to Stage 8 in `00-redesign-plan.md`.
+8. Cross-check all specs for v1/v2 contradictions and fix where needed.
+
+**AI response:**
+
+1. **Fixed `entity-selection.md` contradiction** (line 347–348 and §6 acceptance
+   checklist line 481): the URL now describes inferring advanced from `programs=`
+   vs `program=`, with `localStorage` still tracking the user's preference.
+   Added an explicit cross-reference to `shareable-urls.md` §3.3 and §7.1.
+2. **Fixed conformance vectors #3 and #4** in `shareable-urls-formal.md` §5.1:
+   each vector now has a single explicit canonical string (no more "same"
+   + "corrected canonical" pair); the redundant default param in the input
+   is called out in a "Note" line.
+3. **Replaced `{csv}` → `{value-list}`** throughout `shareable-urls.md` canonical
+   form. (`shareable-urls-formal.md` uses ABNF rule names — not affected.)
+4. **Added forward-compatibility note in §3.4 mode**: planned post-#552 follow-up
+   that lets advanced inverse modes emit two output quantities. The `mode=`
+   token set is unchanged; the output-column selection will be carried via
+   an extension to `qshow=`. Schema-additive — no breaking change.
+5. **Extended energy unit tokens to the full 15-token cross product** in §3.5
+   (5 prefixes × 3 suffixes including `eV/nucl`, `TeV/nucl`, etc.). Mirrored
+   in `shareable-urls-formal.md` ABNF `energy-unit-token` rule.
+6. **Switched `uanchor=` to mixed-case (`MeV`, `MeV/nucl`, `MeV/u`)** to match
+   physics convention and avoid the milli-confusion. ABNF `uanchor-token`
+   updated with a CASE-SENSITIVE comment. Added new section §1.3 **Case
+   Sensitivity Policy** listing the casing convention per token category
+   (params/IDs/flags = lowercase; energy units = physics mixed case; length
+   units, STP units = lowercase). All examples + worked URLs updated.
+7. **Added PR #565 row** to Stage 8 PRs table in `00-redesign-plan.md` with a
+   detailed summary of the schema changes.
+8. **Cross-spec sync banners**: added a v1→v2 "⚠ URL examples in this spec
+   use the v1 schema" note immediately after the Status line in:
+   - `multi-program.md` (most affected — `mode=advanced`, `qfocus=`, `hidden_programs=`)
+   - `advanced-options.md` (params unchanged, but URL scaffolding affected)
+   - `inverse-lookups.md` (most affected — `imode=`, `ivalues=`, `iunit=`)
+   - `custom-compounds.md` (`mat_*` unchanged; only scaffolding affected)
+   - `calculator.md` (`eunit=` → `uanchor=`)
+   - `stage-6-13-url-parser.md` (was targeting v1 parser; v2 modal now in shareable-urls.md §7.2)
+
+All 61 calculator-url unit tests continue to pass.
+
 ### Write url-schema.md
 
 - **Status**: completed

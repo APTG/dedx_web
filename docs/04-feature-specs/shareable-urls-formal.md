@@ -122,8 +122,11 @@ energy-item         = number [":" energy-unit-token]
 
 ; Energy unit anchor (replaces v1 eunit=)
 uanchor-pair        = "uanchor=" uanchor-token
-uanchor-token       = "mev" / "mev-nucl" / "mev-u"
-                    ; lowercase kebab tokens; always emitted in canonical URL
+uanchor-token       = "MeV" / "MeV/nucl" / "MeV/u"
+                    ; physics-style mixed case (CASE-SENSITIVE — lowercase "mev"
+                    ; would mean millielectronvolt and is rejected); always
+                    ; emitted in canonical URL. See `shareable-urls.md` §1.3
+                    ; (Case Sensitivity Policy).
 
 ; Inverse-lookup input list (mode=range or mode=inverse-stp only)
 lookups-pair        = "lookups=" lookups-list
@@ -153,11 +156,13 @@ istpbranch-pair     = "istpbranch=" ("hi" / "lo" / "both")
 ; Tip dismissal
 tip-seen-pair       = "tip_seen=" "inline_unit"
 
-; energy-unit-token used in energies= per-row suffix (display form)
-energy-unit-token   = "eV"
-                    / "keV" / "MeV" / "GeV" / "TeV"
-                    / "keV/nucl" / "MeV/nucl" / "GeV/nucl"
-                    / "keV/u" / "MeV/u" / "GeV/u"
+; energy-unit-token used in energies= per-row suffix (display form).
+; Full cross product of prefix × suffix: 5 prefixes (eV, keV, MeV, GeV, TeV) ×
+; 3 suffixes (none, /nucl, /u) = 15 tokens. CASE-SENSITIVE — see §1.3 of
+; `shareable-urls.md`.
+energy-unit-token   = "eV"      / "keV"      / "MeV"      / "GeV"      / "TeV"
+                    / "eV/nucl" / "keV/nucl" / "MeV/nucl" / "GeV/nucl" / "TeV/nucl"
+                    / "eV/u"    / "keV/u"    / "MeV/u"    / "GeV/u"    / "TeV/u"
 
 ; -----------------------------
 ; plot params
@@ -204,10 +209,12 @@ mat-phase-pair      = "mat_phase=" ("gas" / "condensed")
 ; DEPRECATED v1 params (accepted on read for migration; never emitted in v2)
 ; -----------------------------
 eunit-pair          = "eunit=" v1-energy-unit-token         ;(deprecated → uanchor=)
-v1-energy-unit-token= "MeV" / "MeV/nucl" / "MeV/u"
-                    / "keV" / "GeV"
-                    / "keV/nucl" / "GeV/nucl"
-                    / "keV/u" / "GeV/u"
+v1-energy-unit-token= energy-unit-token
+                    ; v1 accepted the same token set as the v2 per-row suffix;
+                    ; on migration the value is mapped to the corresponding
+                    ; uanchor= token. Prefixed values (keV/GeV/eV/TeV) were
+                    ; never valid v1 master anchors but are still parsed for
+                    ; lenient migration; they map to uanchor=MeV (the base).
 
 qfocus-pair         = "qfocus=" ("both" / "stp" / "csda")  ;(deprecated → qshow=)
 
@@ -307,15 +314,15 @@ Applied during step 5c when `urlv=1` or absent. Map deprecated params to v2 equi
 
 | Deprecated v1 key + value | v2 equivalent |
 |---|---|
-| `eunit=MeV` | `uanchor=mev` |
-| `eunit=MeV/nucl` | `uanchor=mev-nucl` |
-| `eunit=MeV/u` | `uanchor=mev-u` |
-| `eunit=keV` | `uanchor=mev` (keV is a per-row suffix, not an anchor) |
-| `eunit=GeV` | `uanchor=mev` (same) |
-| `eunit=keV/nucl` | `uanchor=mev-nucl` (prefix belongs in per-row suffixes; anchor stays MeV/nucl) |
-| `eunit=GeV/nucl` | `uanchor=mev-nucl` (same) |
-| `eunit=keV/u` | `uanchor=mev-u` (prefix belongs in per-row suffixes; anchor stays MeV/u) |
-| `eunit=GeV/u` | `uanchor=mev-u` (same) |
+| `eunit=MeV` | `uanchor=MeV` |
+| `eunit=MeV/nucl` | `uanchor=MeV/nucl` |
+| `eunit=MeV/u` | `uanchor=MeV/u` |
+| `eunit=keV` | `uanchor=MeV` (keV is a per-row suffix, not an anchor) |
+| `eunit=GeV` | `uanchor=MeV` (same) |
+| `eunit=keV/nucl` | `uanchor=MeV/nucl` (prefix belongs in per-row suffixes; anchor stays MeV/nucl) |
+| `eunit=GeV/nucl` | `uanchor=MeV/nucl` (same) |
+| `eunit=keV/u` | `uanchor=MeV/u` (prefix belongs in per-row suffixes; anchor stays MeV/u) |
+| `eunit=GeV/u` | `uanchor=MeV/u` (same) |
 | `qfocus=both` | omit `qshow=` (default) |
 | `qfocus=stp` | `qshow=stp` |
 | `qfocus=csda` | `qshow=range` |
@@ -368,7 +375,7 @@ Global:
 
 Calculator v2:
 
-- `uanchor=mev` (always emitted; no default-omit rule)
+- `uanchor=MeV` (always emitted; no default-omit rule)
 - `mode=forward` (omitted in canonical URL)
 - `runit=cm` (omitted in canonical URL)
 - `sunit=kev-um` condensed / `mev-cm2-g` gas (omitted when equal to default)
@@ -485,7 +492,7 @@ Canonical parameter order for `/plot`:
 Normalization rules:
 
 - Never emit deprecated v1 param names (`eunit=`, `qfocus=`, `imode=`, `ivalues=`, `iunit=`, `hidden_programs=`, `mode=advanced`).
-- `uanchor=` is always emitted (even when `"mev"`, the default); it is the anchor for energy interpretation.
+- `uanchor=` is always emitted (even when `"MeV"`, the default); it is the anchor for energy interpretation.
 - Advanced mode is inferred from `programs=`; `mode=advanced` is never emitted.
 - In `series`, always emit resolved `int-pos` or `ext-ref` triplets; never `auto`.
 - Comma-separated lists have no spaces.
@@ -502,29 +509,29 @@ Normalization rules:
 
 1. Basic calculator, forward mode, default params:
 
-   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=MeV`
    - Canonical: unchanged.
 
 2. Advanced calculator, forward mode, STP-only display:
 
-   - Input: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=mev&qshow=stp`
+   - Input: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=MeV&qshow=stp`
    - Canonical: unchanged.
 
-3. Advanced calculator, range mode:
+3. Advanced calculator, range mode (input has redundant `runit=cm` default):
 
-   - Input: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=mev&mode=range`
-   - Canonical: same (`runit=cm` is the default → should be omitted).
-   - Corrected canonical: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=mev&mode=range`
+   - Input: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&mode=range`
+   - Canonical: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=MeV&mode=range`
+   - Note: `runit=cm` equals the default → omitted in canonical output.
 
-4. Advanced calculator, inverse-STP mode, both branches:
+4. Advanced calculator, inverse-STP mode, both branches (input has redundant `sunit=kev-um` default):
 
-   - Input: `urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both`
-   - Canonical: same (`sunit=kev-um` is default for condensed → omitted; `istpbranch=both` is non-default → emitted).
-   - Corrected canonical: `urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both`
+   - Input: `urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&mode=inverse-stp&istpbranch=both`
+   - Canonical: `urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&uanchor=MeV&mode=inverse-stp&istpbranch=both`
+   - Note: `sunit=kev-um` equals the default for condensed material → omitted; `istpbranch=both` is non-default → emitted.
 
 5. Compare-across programs, range display:
 
-   - Input: `urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=mev&across=programs&qshow=range`
+   - Input: `urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=MeV&across=programs&qshow=range`
    - Canonical: unchanged.
 
 6. Plot, multiple series, MeV·cm²/g, linear X:
@@ -534,22 +541,22 @@ Normalization rules:
 
 7. Advanced Options — density + agg_state override:
 
-   - Input: `urlv=2&particle=1&material=3&programs=9,2&energies=100&uanchor=mev&agg_state=condensed&density=8.99e-5`
+   - Input: `urlv=2&particle=1&material=3&programs=9,2&energies=100&uanchor=MeV&agg_state=condensed&density=8.99e-5`
    - Canonical: unchanged.
 
 8. Advanced Options — default values omitted:
 
-   - Input: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=mev&interp_scale=log-log&mstar_mode=b`
-   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=MeV&interp_scale=log-log&mstar_mode=b`
+   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=MeV`
 
 9. Custom compound — PMMA, condensed, no iValue:
 
-   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=mev&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
    - Canonical: unchanged (`mat_phase` omitted because condensed is default; `mat_ival` absent).
 
 10. Carbon-12, MeV/nucl anchor:
 
-    - Input: `urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=mev-nucl`
+    - Input: `urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl`
     - Canonical: unchanged.
 
 ### 5.2 v1 → v2 Migration Vectors
@@ -559,47 +566,47 @@ These vectors arrive with `urlv=1` (or no `urlv`) and must be migrated to v2 can
 1. v1 basic forward mode:
 
    - Input: `urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV`
-   - v2 canonical: `urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=mev`
+   - v2 canonical: `urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=MeV`
 
 2. v1 advanced mode, qfocus=csda:
 
    - Input: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda`
-   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=mev&qshow=range`
+   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=MeV&qshow=range`
    - Note: `mode=advanced` discarded; advanced inferred from `programs=`.
 
 3. v1 advanced mode, qfocus=both (default — omit):
 
    - Input: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=both`
-   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=mev`
+   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2&energies=100&uanchor=MeV`
    - Note: `qfocus=both` → `qshow=` absent (default).
 
 4. v1 range tab (imode=csda), mixed units, iunit=cm (default):
 
    - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm&iunit=cm`
-   - v2 canonical: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=mev&mode=range`
+   - v2 canonical: `urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=MeV&mode=range`
    - Note: `imode=csda` → `mode=range`; `ivalues=` → `lookups=`; `iunit=cm` → `runit=cm` (default → omitted).
 
 5. v1 inverse-STP tab, non-gas material, iunit=kev-um (default):
 
    - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um`
-   - v2 canonical: `urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&uanchor=mev&mode=inverse-stp`
+   - v2 canonical: `urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&uanchor=MeV&mode=inverse-stp`
    - Note: `sunit=kev-um` default → omitted.
 
 6. v1 advanced mode — hidden_programs silently dropped:
 
    - Input: `urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both`
-   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2,101&energies=100&uanchor=mev`
+   - v2 canonical: `urlv=2&particle=1&material=276&programs=9,2,101&energies=100&uanchor=MeV`
 
 7. No urlv (legacy):
 
    - Input: `particle=1&material=276&program=auto`
-   - Treated as v1; v2 canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+   - Treated as v1; v2 canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
    - Note: `energies=` default pre-fill applies.
 
 8. v1 eunit=MeV/nucl:
 
    - Input: `urlv=1&particle=6&material=276&program=auto&energies=10,100&eunit=MeV/nucl`
-   - v2 canonical: `urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=mev-nucl`
+   - v2 canonical: `urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl`
 
 ### 5.3 Invalid / Recovery
 
@@ -610,46 +617,46 @@ These vectors arrive with `urlv=1` (or no `urlv`) and must be migrated to v2 can
 
 2. Invalid energy token:
 
-   - Input: `urlv=2&particle=1&material=276&energies=100:foo&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=276&energies=100:foo&uanchor=MeV`
    - Result: row invalid; excluded from calculation; validation message shown.
 
 3. Advanced params without programs (treated as basic):
 
-   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev&qshow=stp`
+   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV&qshow=stp`
    - Result: `qshow=` ignored (basic mode); canonical strips it.
-   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 
 4. Advanced Options in basic mode — silently dropped:
 
-   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev&density=1.2`
-   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV&density=1.2`
+   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 
 5. `lookups=` without `mode=range` or `mode=inverse-stp` — silently ignored:
 
-   - Input: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=mev&lookups=7.718`
-   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=MeV&lookups=7.718`
+   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=MeV`
 
 6. Custom compound — PMMA, condensed (phase omitted), with iValue; element order corrected:
 
-   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=mev&mat_name=PMMA&mat_density=1.2&mat_elements=8:2,1:8,6:5&mat_ival=74.0`
-   - Canonical: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=mev&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2&mat_ival=74`
+   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=8:2,1:8,6:5&mat_ival=74.0`
+   - Canonical: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2&mat_ival=74`
    - Note: elements re-ordered by ascending Z; `mat_ival=74` (trailing .0 dropped).
 
 7. Custom compound — mat_name missing → fall back to material 276:
 
-   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=mev&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+   - Input: `urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=MeV&mat_density=1.2&mat_elements=1:8,6:5,8:2`
    - Result: `mat_name` absent → fall back to default material (276); warning banner.
-   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=mev`
+   - Canonical: `urlv=2&particle=1&material=276&programs=9&energies=100&uanchor=MeV`
 
 8. Custom compound — mat_* in basic mode — silently dropped:
 
-   - Input: `urlv=2&particle=1&material=custom&program=auto&energies=100&uanchor=mev&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
-   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+   - Input: `urlv=2&particle=1&material=custom&program=auto&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
+   - Canonical: `urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
    - Note: no advanced mode → `material=custom` and `mat_*` dropped; material defaults to 276.
 
 9. `runit=km`, alpha in air, advanced range mode:
 
-   - Input: `urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=mev&mode=range`
+   - Input: `urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=MeV&mode=range`
    - Canonical: unchanged (`runit=km` is non-default → emitted).
 
 ---

@@ -64,6 +64,31 @@ URLs are the primary mechanism for **state sharing** in dEdx Web:
   load via migration rules (§7); unknown future versions trigger a modal (§7.2).
 - **Compact:** URLs are kept short enough for email, Slack, and communicators.
 
+### 1.3 Case Sensitivity Policy
+
+URL query parameters in this contract are **case-sensitive** for both keys and
+values, unless explicitly noted. The casing rules are:
+
+| Token category | Casing convention | Examples |
+|---|---|---|
+| Parameter names (keys) | lowercase (with `_` for compound names) | `urlv`, `particle`, `programs`, `tip_seen`, `mat_density`, `stp_unit` |
+| Numeric IDs | digits only | `particle=1`, `material=276` |
+| Literal flag values | lowercase | `program=auto`, `material=custom`, `xscale=log`, `qshow=stp`, `across=programs` |
+| Mode tokens (`mode=`, `across=`, `qshow=`, `istpbranch=`, `agg_state=`) | lowercase | `mode=forward`, `istpbranch=hi` |
+| **Energy unit tokens** (`uanchor=` value and per-row `:unit` suffix in `energies=` / `lookups=`) | **Physics-standard mixed case** — preserves prefix capitalisation so the token cannot be confused with an SI-prefixed alternative | `MeV`, `keV`, `GeV`, `MeV/nucl`, `MeV/u` (lowercase `mev` ≠ `MeV`; it would denote millielectronvolt) |
+| Length unit tokens (`runit=`, length per-row suffix) | lowercase | `nm`, `um`, `mm`, `cm`, `dm`, `m`, `km` |
+| Stopping-power unit tokens (`sunit=`, `stp_unit=`) | lowercase kebab | `kev-um`, `mev-cm`, `mev-cm2-g` |
+| MSTAR mode (`mstar_mode=`) | lowercase letter | `a`, `b`, `c`, `d`, `g`, `h` |
+
+**Rationale:** energy units follow the physics convention because the
+prefix-letter case carries meaning (`m` = milli, `M` = mega; `k` = kilo,
+`K` is undefined). The rest of the token space avoids this ambiguity and uses
+lowercase for URL hygiene (consistent with browser/server normalisation patterns).
+
+**Comparison is strict:** unknown casing → invalid token → row/parameter dropped
+(falling back to its default). `URLSearchParams` preserves case during parsing;
+matching is then done with exact string equality against the allowed token sets.
+
 ---
 
 ## 2. Schema Changes from v1
@@ -80,7 +105,7 @@ that are unchanged from v1 are listed in §3.8.
 | `mode=forward\|range\|inverse-stp` | **new** | Calculator operation mode; replaces `imode=csda\|stp` |
 | `hidden=` / `hidden_programs=` | **removed** | Silently dropped on read; visibility from picker selection |
 | `qshow=stp\|range` | **replaces `qfocus=`** | 3-state → 2-state; values renamed (see §3.7) |
-| `uanchor=mev\|mev-nucl\|mev-u` | **new** | Energy unit anchor; replaces `eunit=` |
+| `uanchor=MeV\|MeV/nucl\|MeV/u` | **new** | Energy unit anchor; replaces `eunit=` (case-sensitive, see §1.3) |
 | `runit=nm\|um\|mm\|cm\|dm\|m\|km` | **new** | Range unit anchor (Range → mode + CSDA range display) |
 | `sunit=kev-um\|mev-cm\|mev-cm2-g` | **new** | STP unit anchor (STP → mode + STP display) |
 | `energies=100,10:keV,2:GeV` | **extended** | Per-row `:unit` suffix; used only when `mode=forward` |
@@ -110,8 +135,8 @@ Square brackets denote optional/conditional params (omitted at default):
   &material={id|"custom"}               ← "custom" only in advanced mode
   &{program={id|"auto"} | programs={ids}}   ← exactly one, by mode
   [&across={dimension}]                 ← omit when "none" (default)
-  [&energies={csv}]                     ← only when mode=forward (default)
-  [&lookups={csv}]                      ← only when mode=range or mode=inverse-stp
+  [&energies={value-list}]                     ← only when mode=forward (default)
+  [&lookups={value-list}]                      ← only when mode=range or mode=inverse-stp
   &uanchor={token}                      ← always emitted
   [&runit={token}]                      ← omit when "cm" (default)
   [&sunit={token}]                      ← omit when default for material phase
@@ -185,6 +210,23 @@ but **never emitted** in v2 canonical output. There is no ambiguity with the v2
 The v1 param `imode=csda` maps to `mode=range`; `imode=stp` maps to
 `mode=inverse-stp` (see §7.1 migration table).
 
+> **Forward-compatibility note (planned, post-#552):** the calculator-results
+> redesign anticipates a follow-up that lets each non-forward mode emit **two
+> output quantities** in advanced mode. Concretely:
+>
+> - `mode=range` (CSDA Range → …) will optionally show **both** the energy
+>   column and the stopping-power column for the looked-up range.
+> - `mode=inverse-stp` (Stopping Power → …) will optionally show **both** the
+>   energy column and the CSDA-range column for the looked-up STP.
+>
+> The output-column selection will be carried in `qshow=` (extended from the
+> current `stp|range` 2-state to allow co-display in inverse modes) — exact
+> token grammar TBD in the follow-up issue. **No URL-schema-breaking change is
+> required by this extension** because `qshow=` already exists and the new
+> values will be additive; the `mode=` token set stays the same. This note
+> is here so implementers of #555–#561 don't bake in the "inverse modes only
+> have one output column" assumption.
+
 ### 3.5 `energies` — Energy Input List (mode=forward only)
 
 | Attribute | Value |
@@ -196,13 +238,24 @@ The v1 param `imode=csda` maps to `mode=range`; `imode=stp` maps to
 Each item is a bare number (inherits `uanchor=`) or a number with an explicit
 per-row `:unit` suffix. The colon is RFC 3986 §3.4-safe within a query string.
 
-Valid per-row unit tokens: `eV`, `keV`, `MeV`, `GeV`, `TeV`, `MeV/nucl`,
-`keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`. Unknown → invalid row.
+Valid per-row unit tokens are the full cross-product of **5 prefixes**
+(`eV`, `keV`, `MeV`, `GeV`, `TeV`) × **3 suffixes** (none, `/nucl`, `/u`) =
+**15 tokens**:
+
+| | (none) | `/nucl` | `/u` |
+|---|---|---|---|
+| `eV` | `eV` | `eV/nucl` | `eV/u` |
+| `keV` | `keV` | `keV/nucl` | `keV/u` |
+| `MeV` | `MeV` | `MeV/nucl` | `MeV/u` |
+| `GeV` | `GeV` | `GeV/nucl` | `GeV/u` |
+| `TeV` | `TeV` | `TeV/nucl` | `TeV/u` |
+
+Tokens are CASE-SENSITIVE (see §1.3). Unknown / wrong-case → invalid row.
 
 **Worked example — mixed inline units:**
 
 ```
-?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV,250&uanchor=mev
+?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV,250&uanchor=MeV
 ```
 
 → Four rows: 100 MeV, 10 keV, 2 GeV, 250 MeV.
@@ -211,19 +264,24 @@ Valid per-row unit tokens: `eV`, `keV`, `MeV`, `GeV`, `TeV`, `MeV/nucl`,
 
 | Attribute | Value |
 |---|---|
-| Type | `"mev"` \| `"mev-nucl"` \| `"mev-u"` |
-| Default | `"mev"` |
+| Type | `"MeV"` \| `"MeV/nucl"` \| `"MeV/u"` |
+| Default | `"MeV"` |
 | Always emitted | yes (never omitted) |
 | v1 equivalent | `eunit=MeV\|MeV/nucl\|MeV/u` |
 
 Determines how unsuffixed rows in `energies=` are interpreted and sets the
-Energy column header. For proton (A=1), `mev` and `mev-nucl` are numerically
-identical; `mev-u` differs by ~0.1% — see the `(≠MeV)` badge in #558.
+Energy column header. For proton (A=1), `MeV` and `MeV/nucl` are numerically
+identical; `MeV/u` differs by ~0.1% — see the `(≠MeV)` badge in #558.
+
+**Why mixed case?** Lowercase `mev` would mean **millielectronvolt** (a real
+but irrelevant unit). The token preserves the physics-standard capitalisation
+(`M` for mega, `e` for electron, `V` for Volt). Tokens are CASE-SENSITIVE
+(see §1.3); `uanchor=mev` is rejected as invalid.
 
 **Worked example — carbon at MeV/nucl:**
 
 ```
-?urlv=2&particle=6&material=276&program=auto&energies=10,50,200&uanchor=mev-nucl
+?urlv=2&particle=6&material=276&program=auto&energies=10,50,200&uanchor=MeV/nucl
 ```
 
 ### 3.7 `lookups` — Inverse-Lookup Input List (mode=range or mode=inverse-stp)
@@ -242,13 +300,13 @@ Per-row unit depends on mode:
 **Worked example — range lookup, mixed length units:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=mev&mode=range
+?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&mode=range
 ```
 
 **Worked example — STP inverse lookup:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
+?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=MeV&mode=inverse-stp
 ```
 
 ### 3.8 `runit` — Range Unit Anchor
@@ -372,37 +430,37 @@ Required when `material=custom`.
 **Basic mode:**
 
 ```
-/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,200,500&uanchor=mev
+/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,200,500&uanchor=MeV
 ```
 
 **Basic mode, mixed inline units:**
 
 ```
-/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV&uanchor=mev
+/calculator?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV&uanchor=MeV
 ```
 
 **Advanced mode, multi-program, STP column only:**
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9,2&energies=100,200&uanchor=mev&qshow=stp
+/calculator?urlv=2&particle=1&material=276&programs=9,2&energies=100,200&uanchor=MeV&qshow=stp
 ```
 
 **Carbon-12, MeV/nucl:**
 
 ```
-/calculator?urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=mev-nucl
+/calculator?urlv=2&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl
 ```
 
 ### 4.2 Mode = range — CSDA Range → Energy
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,20:cm&runit=cm&uanchor=mev&mode=range
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,20:cm&runit=cm&uanchor=MeV&mode=range
 ```
 
 Large-scale (km), alpha in air:
 
 ```
-/calculator?urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=mev&mode=range
+/calculator?urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=MeV&mode=range
 ```
 
 ### 4.3 Mode = inverse-stp — STP → Energy
@@ -410,19 +468,19 @@ Large-scale (km), alpha in air:
 Single branch (default hi), master STP unit:
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=MeV&mode=inverse-stp
 ```
 
 Both branches visible (sticky):
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&mode=inverse-stp&istpbranch=both
 ```
 
 ### 4.4 Compare-Across Programs (advanced)
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=mev&across=programs&qshow=range
+/calculator?urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=MeV&across=programs&qshow=range
 ```
 
 ---
@@ -464,12 +522,12 @@ order and then write the canonical v2 URL via `replaceState` (bumping `urlv` to
 | v1 param | v2 behaviour |
 |---|---|
 | `particle=` · `material=` · `program=` · `programs=` | Emit unchanged |
-| `eunit=MeV` | Map to `uanchor=mev` |
-| `eunit=MeV/nucl` | Map to `uanchor=mev-nucl` |
-| `eunit=MeV/u` | Map to `uanchor=mev-u` |
-| `eunit=keV` · `eunit=GeV` | Map to `uanchor=mev` (prefix belongs in per-row `:unit` suffixes) |
-| `eunit=keV/nucl` · `eunit=GeV/nucl` | Map to `uanchor=mev-nucl` |
-| `eunit=keV/u` · `eunit=GeV/u` | Map to `uanchor=mev-u` |
+| `eunit=MeV` | Map to `uanchor=MeV` |
+| `eunit=MeV/nucl` | Map to `uanchor=MeV/nucl` |
+| `eunit=MeV/u` | Map to `uanchor=MeV/u` |
+| `eunit=keV` · `eunit=GeV` | Map to `uanchor=MeV` (prefix belongs in per-row `:unit` suffixes) |
+| `eunit=keV/nucl` · `eunit=GeV/nucl` | Map to `uanchor=MeV/nucl` |
+| `eunit=keV/u` · `eunit=GeV/u` | Map to `uanchor=MeV/u` |
 | `qfocus=both` | Omit `qshow=` (default — both visible) |
 | `qfocus=stp` | Emit `qshow=stp` |
 | `qfocus=csda` | Emit `qshow=range` |
@@ -531,7 +589,7 @@ When `urlv > CURRENT_URL_MAJOR` (a URL from a future app version):
   even if some params are unrecognised (they are silently dropped). User sees a
   secondary notice: "Some URL parameters could not be interpreted and were ignored."
 - **"Load defaults"** — discards all URL params; loads the default calculator state
-  (`urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`).
+  (`urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`).
 - Do not calculate from unparsed parameters until user chooses a recovery action.
 
 #### Blocking modal (unsupported old version, urlv < 1)
@@ -711,14 +769,14 @@ All examples assume:
 
 **Calculator forward mode:**
 
-1. Load default calculator state → URL: `/calculator?urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev`
+1. Load default calculator state → URL: `/calculator?urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 2. Add 200 MeV row → URL updates via replaceState.
 3. Copy URL → open in new window → identical state.
 
 **Calculator range mode:**
 
 1. Switch to Range → tab → URL gains `&mode=range`.
-2. Enter `7.72 cm` → URL: `...&lookups=7.72&runit=cm&uanchor=mev&mode=range`.
+2. Enter `7.72 cm` → URL: `...&lookups=7.72&runit=cm&uanchor=MeV&mode=range`.
 3. Open URL in new window → Range mode active, same lookup value.
 
 **Plot round-trip:**
@@ -731,7 +789,7 @@ All examples assume:
 
 | v1 URL | Expected v2 behaviour |
 |---|---|
-| `?urlv=1&particle=1&material=276&eunit=MeV/nucl&energies=100` | Parse → migrate to `uanchor=mev-nucl`; show v1 banner |
+| `?urlv=1&particle=1&material=276&eunit=MeV/nucl&energies=100` | Parse → migrate to `uanchor=MeV/nucl`; show v1 banner |
 | `?urlv=1&qfocus=csda` | Migrate to `qshow=range` |
 | `?urlv=1&imode=csda&ivalues=7.72:cm&iunit=cm` | Migrate to `mode=range&lookups=7.72:cm&runit=cm` |
 | `?urlv=1&hidden_programs=2&programs=9,2` | Drop `hidden_programs=`; show all columns |
@@ -741,19 +799,19 @@ All examples assume:
 
 **Nonexistent particle:**
 ```
-/calculator?urlv=2&particle=999&energies=100&uanchor=mev
+/calculator?urlv=2&particle=999&energies=100&uanchor=MeV
 ```
 → Fallback to `particle=1`; canonical URL rewritten.
 
 **Incompatible program:**
 ```
-/calculator?urlv=2&particle=1&material=276&program=50&energies=100&uanchor=mev
+/calculator?urlv=2&particle=1&material=276&program=50&energies=100&uanchor=MeV
 ```
 → `program=auto`; toast "Program not available; using auto-select."
 
 **Invalid energy row:**
 ```
-/calculator?urlv=2&particle=1&material=276&energies=abc,100,xyz&uanchor=mev
+/calculator?urlv=2&particle=1&material=276&energies=abc,100,xyz&uanchor=MeV
 ```
 → Rows 1 and 3 excluded; validation summary "2 of 3 values invalid".
 
@@ -779,22 +837,37 @@ All examples assume:
 
 ### 14.1 Energy Unit Tokens (`uanchor=` and inline `:unit` in `energies=`)
 
+#### Master-anchor token set — used as `uanchor=` value (3 tokens)
+
 | Token | Resolves to | Example |
 |---|---|---|
-| `mev` (uanchor) | MeV | `uanchor=mev` |
-| `mev-nucl` (uanchor) | MeV/nucl | `uanchor=mev-nucl` |
-| `mev-u` (uanchor) | MeV/u | `uanchor=mev-u` |
-| `MeV` (inline `:unit`) | MeV | `energies=100:MeV` |
-| `keV` (inline) | keV (×0.001 MeV) | `energies=100:keV` |
-| `GeV` (inline) | GeV (×1000 MeV) | `energies=100:GeV` |
-| `MeV/nucl` (inline) | MeV/nucl | `energies=10:MeV/nucl` |
-| `keV/nucl`, `GeV/nucl` | respective prefix variants | |
-| `MeV/u`, `keV/u`, `GeV/u` | per-atomic-mass-unit variants | |
-| `eV`, `TeV` | extremes | |
+| `MeV` | MeV | `uanchor=MeV` |
+| `MeV/nucl` | MeV/nucl | `uanchor=MeV/nucl` |
+| `MeV/u` | MeV/u | `uanchor=MeV/u` |
 
-**Note:** `uanchor=` uses lowercase hyphenated tokens (`mev`, `mev-nucl`, `mev-u`).
-Inline `:unit` tokens in `energies=` use the display-form notation (`MeV`,
-`MeV/nucl`, etc.). These are two distinct token sets.
+The master anchor is restricted to the three MeV-prefix forms. SI-prefixed
+variants (`keV`, `GeV`, etc.) are not valid `uanchor=` values; use them as
+per-row `:unit` suffixes inside `energies=` instead.
+
+#### Per-row suffix token set — used in `energies=` / `lookups=` per-row `:unit` (15 tokens)
+
+Full cross-product of **5 prefixes × 3 suffixes**:
+
+| | (none — base only) | `/nucl` (per-nucleon) | `/u` (per atomic mass unit) |
+|---|---|---|---|
+| `eV` (×10⁻⁶ MeV) | `eV` | `eV/nucl` | `eV/u` |
+| `keV` (×10⁻³ MeV) | `keV` | `keV/nucl` | `keV/u` |
+| `MeV` (base) | `MeV` | `MeV/nucl` | `MeV/u` |
+| `GeV` (×10³ MeV) | `GeV` | `GeV/nucl` | `GeV/u` |
+| `TeV` (×10⁶ MeV) | `TeV` | `TeV/nucl` | `TeV/u` |
+
+All tokens are CASE-SENSITIVE — see §1.3. Examples:
+`energies=100:MeV,500:keV,2.5:GeV/nucl`.
+
+**Per-row suffix vs uanchor:** `uanchor=` declares the **master** unit applied
+to rows that have no `:unit` suffix. Per-row suffixes override the master for
+that row. The two sets overlap on the three MeV forms but the suffix set is
+strictly larger.
 
 ### 14.2 Stopping Power Tokens (`sunit=` and `stp_unit=`)
 

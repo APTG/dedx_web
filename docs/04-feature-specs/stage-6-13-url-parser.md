@@ -2,10 +2,17 @@
 
 > **Status:** Draft v1 (2026-05-06)
 >
-> **Formal grammar:** [`shareable-urls-formal.md`](shareable-urls-formal.md) Final v6
-> (ABNF, semantic rules, canonicalization algorithm, 21 conformance vectors)
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** This stage's
+> target is the v1 URL parser. The v2 URL contract (`urlv=2`, calculator-table
+> redesign) supersedes it — see [`shareable-urls.md`](shareable-urls.md) §3 and
+> §7 for the v2 schema + v1→v2 migration rules. The v1→v2 negotiation modal
+> spec referenced here is now in `shareable-urls.md` §7.2 (replaces the prior
+> `urlv` major-version warning banner).
 >
-> **UX behavior (warnings/messages):** [`shareable-urls.md`](shareable-urls.md) Final v6
+> **Formal grammar:** [`shareable-urls-formal.md`](shareable-urls-formal.md) v7
+> (ABNF + v1→v2 migration + canonicalization + conformance vectors).
+>
+> **UX behavior (warnings/messages):** [`shareable-urls.md`](shareable-urls.md) v7
 > wins where specs conflict.
 >
 > **Related specs:**

@@ -344,8 +344,15 @@ lists what Advanced unlocks inside the picker.
 | Compatibility overlay (`⊞ explore compat` link)       | —     | ✅             |
 | Advanced filter syntax in search (`z=6`, `v=2013`)    | —     | ✅             |
 
-Mode persists in `localStorage` (`dedx_advanced_mode`) and is reflected in
-the URL (`?mode=advanced`) so shared links keep their context.
+Mode persistence:
+
+- **`localStorage`** (`dedx_advanced_mode`) — tracks the user's preferred mode
+  across sessions on the same device.
+- **URL** — in v2 (`urlv=2`), advanced mode is **inferred from URL structure**,
+  not from an explicit `mode=advanced` literal: a URL with `programs=` is
+  advanced mode; a URL with `program=` is basic. The v1 literal `mode=advanced`
+  is still accepted on read for migration but is never emitted in v2 canonical
+  output. See [`shareable-urls.md`](shareable-urls.md) §3.3 and §7.1.
 
 ### Particle tab
 
@@ -478,7 +485,10 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 
 #### Mode + persistence
 
-- [ ] Basic / Advanced toggle persists in `localStorage` and the URL.
+- [ ] Basic / Advanced toggle preference persists in `localStorage`. In the URL
+      (v2 / `urlv=2`) advanced mode is **inferred from the program param** —
+      `programs=` ⇒ advanced, `program=` ⇒ basic — there is no explicit
+      `mode=advanced` token (see [`shareable-urls.md`](shareable-urls.md) §3.3).
 - [ ] Compatibility overlay, multi-program, periodic-grid, Custom
       sub-tab — none are available in Basic.
 

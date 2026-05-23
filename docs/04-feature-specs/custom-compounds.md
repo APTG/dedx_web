@@ -2,6 +2,13 @@
 
 > **Status:** Final v4 (2026-05-08)
 >
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
+> URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
+> The `mat_*=` params and the `material=custom` sentinel are **unchanged** in v2.
+> Only the surrounding scaffolding in examples differs: advanced mode is inferred
+> from `programs=` (no `mode=advanced` token); `eunit=` → `uanchor=`; `qfocus=both`
+> is omitted as the default.
+>
 > **v1** (13 April 2026): Initial draft — compound library (localStorage),
 > compound editor (formula mode + weight-fraction mode), entity-selection
 > integration, WASM `calculateCustomCompound()` wiring, Advanced Options
