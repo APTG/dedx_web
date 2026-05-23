@@ -759,7 +759,14 @@ export function createCalculatorState(
       entitySelection.selectParticle(particleId);
 
       if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
-        convertRowsForNewParticle(oldParticle, newParticle);
+        if (isAdvancedMode.value) {
+          // Advanced mode: convert values to maintain per-nucleon energy conservation.
+          convertRowsForNewParticle(oldParticle, newParticle);
+        } else {
+          // Basic mode: preserve typed values, auto-set masterUnit to match particle type.
+          const isHeavyIon = newParticle.id !== 1001 && newParticle.massNumber > 1;
+          inputState.setMasterUnit(isHeavyIon ? "MeV/nucl" : "MeV");
+        }
       }
       previousParticle = newParticle;
     },

@@ -418,7 +418,14 @@ describe("CalculatorState", () => {
     });
   });
 
-  describe("KE conservation on particle switch", () => {
+  describe("KE conservation on particle switch (Advanced mode only)", () => {
+    beforeEach(() => {
+      isAdvancedMode.value = true;
+    });
+    afterEach(() => {
+      isAdvancedMode.value = false;
+    });
+
     it('He (A=4) row "20 MeV/nucl" → switch to proton (A=1): row text → "20 MeV" (E_nucl conserved)', () => {
       const electronService = new MockLibdedxServiceWithElectron();
       const matrix = buildCompatibilityMatrix(electronService);
@@ -517,6 +524,42 @@ describe("CalculatorState", () => {
       // 100 MeV on proton (E_nucl=100) → Carbon (A=12) total = 100 × 12 = 1200 MeV.
       expect(cs.rows[0]!.rawInput).toBe("1200 MeV");
       expect(cs.rows[0]!.normalizedMevNucl).toBeCloseTo(100, 1);
+    });
+  });
+
+  describe("Basic mode particle switch — value preservation", () => {
+    it("proton → Carbon: row value preserved, masterUnit switches to MeV/nucl", () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      // Start as proton with "100" (masterUnit = MeV)
+      cs.updateRowText(0, "100");
+      expect(cs.masterUnit).toBe("MeV");
+
+      // Switch to Carbon in Basic mode
+      cs.switchParticle(6);
+
+      // Value preserved as typed; masterUnit auto-set to MeV/nucl
+      expect(cs.rows[0]!.rawInput).toBe("100");
+      expect(cs.masterUnit).toBe("MeV/nucl");
+    });
+
+    it("Carbon → proton: row value preserved, masterUnit switches to MeV", () => {
+      const electronService = new MockLibdedxServiceWithElectron();
+      const matrix = buildCompatibilityMatrix(electronService);
+      const es = createEntitySelectionState(matrix);
+      const cs = createCalculatorState(es, electronService) as any;
+
+      cs.switchParticle(6);
+      cs.updateRowText(0, "100");
+      expect(cs.masterUnit).toBe("MeV/nucl");
+
+      cs.switchParticle(1);
+
+      expect(cs.rows[0]!.rawInput).toBe("100");
+      expect(cs.masterUnit).toBe("MeV");
     });
   });
 
