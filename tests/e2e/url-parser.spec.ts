@@ -7,8 +7,8 @@ import type { Page } from "@playwright/test";
  * Tests cover all 6 acceptance scenarios from the spec:
  * - Scenario 1a: urlv mismatch shows banner (no WASM needed)
  * - Scenario 1b: load-defaults restores calculation (WASM needed)
- * - Scenario 2: urlv=1 (current) — no warning
- * - Scenario 3: missing urlv — assumed 1, no warning
+ * - Scenario 2: urlv=2 (current) — no warning
+ * - Scenario 3: missing urlv — treated as legacy, no warning
  * - Scenario 4: custom compound round-trip (WASM needed)
  * - Scenario 5: duplicate params use last value
  * - Scenario 6: unknown params dropped
@@ -64,7 +64,7 @@ test.describe("Stage 6.13 — URL parser", () => {
       .toBeGreaterThan(0);
   });
 
-  // ── Scenario 2: urlv=1 (current) — no warning @regression ────────────────
+  // ── Scenario 2: urlv=2 (current) — no warning @regression ────────────────
   test("malformed urlv: version-mismatch banner visible @regression", async ({ page }) => {
     await page.goto("/calculator?urlv=1abc&particle=1&material=276&energies=100");
     const banner = page.locator('[data-testid="url-version-warning"]');
@@ -72,16 +72,16 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(banner).toContainText("1abc");
   });
 
-  test("urlv=1: no warning banner shown @regression", async ({ page }) => {
-    await page.goto("/calculator?urlv=1&particle=1&material=276&energies=100&eunit=MeV");
+  test("urlv=2: no warning banner shown @regression", async ({ page }) => {
+    await page.goto("/calculator?urlv=2&particle=1&material=276&energies=100&eunit=MeV");
     await page.waitForLoadState("domcontentloaded");
     await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
       timeout: 3000,
     });
   });
 
-  // ── Scenario 3: missing urlv — assumed 1, no warning @regression ──────────
-  test("missing urlv: no warning banner (assumed version 1) @regression", async ({ page }) => {
+  // ── Scenario 3: missing urlv — treated as legacy, no warning @regression ───
+  test("missing urlv: no warning banner (legacy-compatible) @regression", async ({ page }) => {
     await page.goto("/calculator?particle=1&material=276&energies=100");
     await page.waitForLoadState("domcontentloaded");
     await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
@@ -95,7 +95,7 @@ test.describe("Stage 6.13 — URL parser", () => {
     test.skip(!wasmOk, "WASM binary absent — skip custom compound round-trip");
 
     const url =
-      "/calculator?urlv=1&particle=2&material=custom&mat_name=Water-url-test" +
+      "/calculator?urlv=2&particle=2&material=custom&mat_name=Water-url-test" +
       "&mat_density=1&mat_elements=1%3A2%2C8%3A1&mode=advanced&program=1&programs=1&energies=5";
 
     await page.goto(url);
@@ -123,7 +123,7 @@ test.describe("Stage 6.13 — URL parser", () => {
     test.skip(!wasmOk, "WASM binary absent — skip advanced mode URL restore");
 
     await page.goto(
-      "/calculator?urlv=1&particle=1&material=276&program=7&energies=12&eunit=MeV&mode=advanced&programs=7&qfocus=both",
+      "/calculator?urlv=2&particle=1&material=276&program=7&energies=12&eunit=MeV&mode=advanced&programs=7&qfocus=both",
     );
     // Wait for WASM to load and produce a result — this also confirms urlInitialized=true
     // (the URL update effect guards on urlInitialized, so we must not click before it's set).
@@ -166,7 +166,7 @@ test.describe("Stage 6.13 — URL parser", () => {
     const wasmOk = await checkWasmAvailable(page);
     test.skip(!wasmOk, "WASM binary absent — skip canonical URL sync assertion");
 
-    await page.goto("/calculator?urlv=1&particle=1&material=276&energies=100&foo=bar&unknown=xyz");
+    await page.goto("/calculator?urlv=2&particle=1&material=276&energies=100&foo=bar&unknown=xyz");
     await page.waitForFunction(() => !window.location.search.includes("foo="), {
       timeout: 5000,
     });
