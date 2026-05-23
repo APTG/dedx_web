@@ -312,6 +312,10 @@ Applied during step 5c when `urlv=1` or absent. Map deprecated params to v2 equi
 | `eunit=MeV/u` | `uanchor=mev-u` |
 | `eunit=keV` | `uanchor=mev` (keV is a per-row suffix, not an anchor) |
 | `eunit=GeV` | `uanchor=mev` (same) |
+| `eunit=keV/nucl` | `uanchor=mev-nucl` (prefix belongs in per-row suffixes; anchor stays MeV/nucl) |
+| `eunit=GeV/nucl` | `uanchor=mev-nucl` (same) |
+| `eunit=keV/u` | `uanchor=mev-u` (prefix belongs in per-row suffixes; anchor stays MeV/u) |
+| `eunit=GeV/u` | `uanchor=mev-u` (same) |
 | `qfocus=both` | omit `qshow=` (default) |
 | `qfocus=stp` | `qshow=stp` |
 | `qfocus=csda` | `qshow=range` |

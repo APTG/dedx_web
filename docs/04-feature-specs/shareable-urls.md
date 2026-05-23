@@ -75,7 +75,7 @@ that are unchanged from v1 are listed in §3.8.
 |---|---|---|
 | `urlv=` | **bumped to 2** | Triggers v1→v2 migration on read (§7.1) |
 | `particle=` · `material=` · `program=` · `programs=` | **unchanged** | Same names + semantics as v1 |
-| `extdata=` · `mat_*=` · `agg_state=` · `interp_*=` · `mstar_mode=` · `density=` · `ival=` | **unchanged** | Same as `shareable-urls-formal.md` v6 |
+| `extdata=` · `mat_*=` · `agg_state=` · `interp_*=` · `mstar_mode=` · `density=` · `ival=` | **unchanged** | Unchanged from v1; see `shareable-urls-formal.md` for details |
 | `across=none\|programs\|materials\|particles` | **new** | Was UI state only in v1; now in URL |
 | `mode=forward\|range\|inverse-stp` | **new** | Calculator operation mode; replaces `imode=csda\|stp` |
 | `hidden=` / `hidden_programs=` | **removed** | Silently dropped on read; visibility from picker selection |
@@ -107,7 +107,7 @@ Square brackets denote optional/conditional params (omitted at default):
   ?urlv=2
   [&extdata={label}:{url}]              ← one per source, declaration order
   &particle={id}
-  &material={id|"custom"}
+  &material={id|"custom"}               ← "custom" only in advanced mode
   &{program={id|"auto"} | programs={ids}}   ← exactly one, by mode
   [&across={dimension}]                 ← omit when "none" (default)
   [&energies={csv}]                     ← only when mode=forward (default)
@@ -467,6 +467,9 @@ order and then write the canonical v2 URL via `replaceState` (bumping `urlv` to
 | `eunit=MeV` | Map to `uanchor=mev` |
 | `eunit=MeV/nucl` | Map to `uanchor=mev-nucl` |
 | `eunit=MeV/u` | Map to `uanchor=mev-u` |
+| `eunit=keV` · `eunit=GeV` | Map to `uanchor=mev` (prefix belongs in per-row `:unit` suffixes) |
+| `eunit=keV/nucl` · `eunit=GeV/nucl` | Map to `uanchor=mev-nucl` |
+| `eunit=keV/u` · `eunit=GeV/u` | Map to `uanchor=mev-u` |
 | `qfocus=both` | Omit `qshow=` (default — both visible) |
 | `qfocus=stp` | Emit `qshow=stp` |
 | `qfocus=csda` | Emit `qshow=range` |

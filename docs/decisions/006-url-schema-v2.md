@@ -21,8 +21,8 @@ a `urlv` bump and explicit migration rules.
 
 ## Decision
 
-Adopt the v2 URL schema described in `docs/04-feature-specs/url-schema.md`
-for the Calculator route. The three decisions that need justification here
+Adopt the v2 URL schema described in `docs/04-feature-specs/shareable-urls.md`
+for the Calculator route (formal contract: `docs/04-feature-specs/shareable-urls-formal.md`). The three decisions that need justification here
 are:
 
 1. **Drop `hidden=` / `hidden_programs=`**
@@ -169,7 +169,7 @@ unchanged).
 - Old URLs with `hidden_programs=2` will load with all columns visible —
   acceptable data loss given the Columns dropdown is removed.
 - A `urlv` bump to `2` is required; the version-mismatch warning UI (from
-  `shareable-urls.md` §8.2.2) must be implemented to handle URLs from
+  `shareable-urls.md` §7.2) must be implemented to handle URLs from
   hypothetical future versions.
 
 ---
@@ -195,8 +195,8 @@ no UI counterpart would be confusing. CSV export always includes both, so the
 
 ## References
 
-- `docs/04-feature-specs/url-schema.md` — canonical v2 schema
-- `shareable-urls.md` — v1 baseline and backward-compat rules
-- `shareable-urls-formal.md` — ABNF grammar (to be updated after #561)
+- `docs/04-feature-specs/shareable-urls.md` — canonical v2 schema + migration rules/UI
+- `docs/04-feature-specs/shareable-urls-formal.md` — ABNF grammar + semantic rules + canonicalization
+- Issue #552 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
 - Issue #552 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
 - PR #565 review (rationale for rejecting the `Id`-suffix rename)

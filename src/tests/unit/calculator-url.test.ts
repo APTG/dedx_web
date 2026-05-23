@@ -3,7 +3,7 @@
  *
  * Source of truth for v2 param names, allowed values, and migration rules:
  *   docs/04-feature-specs/shareable-urls.md  §2 (schema delta) §7 (migration rules)
- *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop and qfocus→qshow rename)
+ *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop, qfocus→qshow rename, and ivalues→lookups rename)
  *
  * NOTE: This file covers the v1 encoder/decoder that is currently in production.
  * v2 introduces uanchor=, qshow=, mode=forward|range|inverse-stp, runit=, sunit=,
