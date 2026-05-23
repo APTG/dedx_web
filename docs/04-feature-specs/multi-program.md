@@ -2,6 +2,15 @@
 
 > **Status:** Final v3 (8 April 2026)
 >
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
+> URL contract (`urlv=2`, calculator-table redesign) is in
+> [`shareable-urls.md`](shareable-urls.md) §3 / `shareable-urls-formal.md`.
+> Affecting this spec: `mode=advanced` remains an explicit picker-mode token
+> (not inferred from `programs=`); `qfocus=stp|csda|both` → `qshow=stp|range`
+> (2-state, default omitted); `hidden_programs=` removed entirely (visibility
+> follows picker selection); `eunit=` → `uanchor=`. URL examples below will be
+> re-aligned to v2 as part of #561.
+>
 > **v1** (8 April 2026): Full draft. Multi-program comparison is an
 > advanced-mode feature that adds per-program columns to the Calculator's
 > unified table. Columns can be shown/hidden (Excel-style). Default

@@ -184,11 +184,11 @@ At `sm:` and above it reverts to the inline format `① Particle: proton (Z=1)`.
 Each picker tab renders differently depending on the count of available items
 (`computeBucket` in `src/lib/components/entity-selection/size-bucket.ts`):
 
-| Bucket | Count | Behavior |
-|--------|-------|----------|
-| `tiny` | ≤ 10 | Flat tap list, no search, no scroll container |
-| `medium` | 11–150 | Scrollable list with search |
-| `large` | > 150 | Same as medium (future: virtualisation) |
+| Bucket   | Count  | Behavior                                      |
+| -------- | ------ | --------------------------------------------- |
+| `tiny`   | ≤ 10   | Flat tap list, no search, no scroll container |
+| `medium` | 11–150 | Scrollable list with search                   |
+| `large`  | > 150  | Same as medium (future: virtualisation)       |
 
 The Program tab uses this: ≤ 10 programs → renders `<ProgramInlineList>` (no
 search bar, no scroll wrapper); more → existing auto-hero + scrollable `<ul>`.
@@ -225,6 +225,7 @@ pill buttons switching between sub-tabs:
 - **Bottom fade**: a gradient fade at the bottom of the list hints at overflow
 
 Test IDs:
+
 - Sub-tab pills: `material-subtab-compounds`, `material-subtab-elements`, `material-subtab-custom`
 - Active list: `picker-material-list-{activeSubTab}`
 - Add compound: `picker-material-add-compound` (unchanged for backward compat)
@@ -344,8 +345,15 @@ lists what Advanced unlocks inside the picker.
 | Compatibility overlay (`⊞ explore compat` link)       | —     | ✅             |
 | Advanced filter syntax in search (`z=6`, `v=2013`)    | —     | ✅             |
 
-Mode persists in `localStorage` (`dedx_advanced_mode`) and is reflected in
-the URL (`?mode=advanced`) so shared links keep their context.
+Mode persistence:
+
+- **`localStorage`** (`dedx_advanced_mode`) — tracks the user's preferred mode
+  across sessions on the same device.
+- **URL** — in v2 (`urlv=2`), picker mode is explicit:
+  `mode=basic|advanced`. Singular anchors (`particle=`, `material=`,
+  `program=`) are always emitted for Calculator; advanced comparison lists
+  (`particles=`, `materials=`, `programs=`) are emitted only when `across=`
+  selects that axis. See [`shareable-urls.md`](shareable-urls.md) §3.3 and §7.1.
 
 ### Particle tab
 
@@ -478,7 +486,10 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 
 #### Mode + persistence
 
-- [ ] Basic / Advanced toggle persists in `localStorage` and the URL.
+- [ ] Basic / Advanced toggle preference persists in `localStorage`. In the URL
+      (v2 / `urlv=2`) picker mode is explicit as `mode=basic|advanced`; plural
+      comparison lists are valid only in advanced mode with matching `across=`
+      (see [`shareable-urls.md`](shareable-urls.md) §3.3).
 - [ ] Compatibility overlay, multi-program, periodic-grid, Custom
       sub-tab — none are available in Basic.
 

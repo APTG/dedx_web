@@ -9,6 +9,51 @@
 
 ---
 
+## Entry 56 — Migration docs must state precedence for overlapping legacy params
+
+**Symptom:** A migration table said v1 `mode=advanced&programs=` should derive a
+singular `program=` anchor from the first valid plural entry, but did not say
+what happens when the legacy URL already contains an explicit `program=`.
+
+```text
+❌ AMBIGUOUS
+mode=advanced&program=2&programs=9,2 → program=?
+
+✅ PRECISE
+Use existing program= if valid; otherwise derive program= from first valid
+programs= entry.
+```
+
+**Rule:** When migration rules combine old and new representations, document
+precedence for every overlapping param so implementation does not rely on
+guesswork.
+
+---
+
+## Entry 55 — Do not infer URL mode from entity-list params
+
+**Symptom:** A URL schema draft dropped explicit `mode=basic|advanced` and
+inferred advanced mode from `programs=` vs `program=`. Review found this made
+advanced compare-across particles/materials awkward and hid which params are
+valid in Basic versus Advanced.
+
+```text
+❌ WRONG — picker mode inferred from the selected entity list
+programs=9,2 ⇒ advanced
+program=9 ⇒ basic
+
+✅ CORRECT — picker mode is explicit; plural lists are separately gated
+mode=advanced&program=9&programs=9,2&across=programs
+mode=advanced&program=9&materials=276,3&across=materials
+mode=basic&program=auto  # plural lists ignored
+```
+
+**Rule:** URL contracts should encode UI mode switches explicitly when they gate
+other params. Use a validation matrix for mode-gated params instead of deriving
+mode from one param's shape.
+
+---
+
 ## Entry 1 — Reactive dep not registered when read inside `.then()` / `setTimeout`
 
 **Symptom:** Density override had no visible effect in the browser. Unit tests for

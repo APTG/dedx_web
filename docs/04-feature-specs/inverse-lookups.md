@@ -2,6 +2,16 @@
 
 > **Status:** Final v6 (2026-05-07)
 >
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
+> URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
+> Affecting this spec: `imode=csda` → `calc=range`; `imode=stp` → `calc=inverse-stp`;
+> `ivalues=` → `lookups=` (renamed to avoid colliding with the Bethe-Bloch
+> I-value `ival=`); `iunit=` → `runit=` (range tab) or `sunit=` (inverse-STP tab).
+> New: `istpbranch=hi|lo|both` sticky branch-column flag. A future extension
+> (post-#552) may let advanced inverse modes emit two output columns (range AND
+> stp from a single inverse lookup) — see `shareable-urls.md` §3.4 forward-
+> compatibility note. URL examples below will be re-aligned to v2 as part of #560.
+>
 > This spec covers the two inverse lookup modes available on the Calculator
 > page: **Range** (energy from CSDA range) and **Inverse STP**
 > (energy from stopping power). Both are advanced features, visible only when

@@ -2,6 +2,13 @@
 
 > **Status:** Final v4 (2026-05-08)
 >
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
+> URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
+> The `mat_*=` params and the `material=custom` sentinel are **unchanged** in v2.
+> Only the surrounding scaffolding in examples differs: advanced mode is explicit
+> as `mode=advanced` (not inferred from `programs=`); `eunit=` → `uanchor=`; `qfocus=both`
+> is omitted as the default.
+>
 > **v1** (13 April 2026): Initial draft — compound library (localStorage),
 > compound editor (formula mode + weight-fraction mode), entity-selection
 > integration, WASM `calculateCustomCompound()` wiring, Advanced Options
@@ -1443,9 +1450,7 @@ interface CustomCompoundStoreEnvelopeV1 {
   compounds: StoredCustomCompoundV1[];
 }
 
-type MaterialRef =
-  | { kind: "builtin"; id: number }
-  | { kind: "custom"; id: string }; // persisted UI selection references by id
+type MaterialRef = { kind: "builtin"; id: number } | { kind: "custom"; id: string }; // persisted UI selection references by id
 ```
 
 - **Stable ID strategy:** ID generated once at create-time; rename/edit never changes ID.
@@ -1455,13 +1460,13 @@ type MaterialRef =
 
 ### 6.10.3 Validation matrix
 
-| Category | Valid examples | Invalid examples | Rule |
-| --- | --- | --- | --- |
-| Formula tokens | `H2O`, `C5H8O2`, `LiF` | `Xx2O`, `H0`, `C-1H4` | Elements must resolve to Z 1..118 and counts > 0 |
-| Weight fractions | `H=11.19, O=88.81` | `H=50, O=30` (sum 80), `H=-1, O=101` | Sum must be 99.9..100.1; each fraction > 0 |
-| Density | `1.0`, `2.20`, `8.99e-5` | `0`, `-1`, `30`, `abc` | finite, >0, ≤25 |
-| I-value | `74`, `150`, blank | `0`, `-5`, `20000`, `abc` | optional; if present finite, >0, ≤10000 |
-| Duplicate names | `PMMA` + `PMMA` | N/A (warning-only) | Warn on normalized match; IDs keep entries distinct |
+| Category         | Valid examples           | Invalid examples                     | Rule                                                |
+| ---------------- | ------------------------ | ------------------------------------ | --------------------------------------------------- |
+| Formula tokens   | `H2O`, `C5H8O2`, `LiF`   | `Xx2O`, `H0`, `C-1H4`                | Elements must resolve to Z 1..118 and counts > 0    |
+| Weight fractions | `H=11.19, O=88.81`       | `H=50, O=30` (sum 80), `H=-1, O=101` | Sum must be 99.9..100.1; each fraction > 0          |
+| Density          | `1.0`, `2.20`, `8.99e-5` | `0`, `-1`, `30`, `abc`               | finite, >0, ≤25                                     |
+| I-value          | `74`, `150`, blank       | `0`, `-5`, `20000`, `abc`            | optional; if present finite, >0, ≤10000             |
+| Duplicate names  | `PMMA` + `PMMA`          | N/A (warning-only)                   | Warn on normalized match; IDs keep entries distinct |
 
 Normalization/canonicalization rules:
 

@@ -2,6 +2,15 @@
 
 > **Status:** Final v5 (10 April 2026)
 >
+> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
+> URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
+> The Advanced Options params themselves (`agg_state=`, `interp_scale=`,
+> `interp_method=`, `mstar_mode=`, `density=`, `ival=`) are **unchanged** in v2.
+> Affecting the surrounding URL scaffolding only: the gate is now explicit
+> `mode=advanced` (not inferred from `programs=`);
+> `eunit=MeV` → `uanchor=MeV` (always emitted); `qfocus=both` is omitted as
+> the default. URL examples below will be re-aligned to v2 as part of #561.
+>
 > **v1** (10 April 2026): Initial draft — aggregate state override,
 > interpolation mode, MSTAR mode, density override, I-value override.
 > Accordion placement, visibility gating, per-field validation,
