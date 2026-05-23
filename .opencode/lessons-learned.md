@@ -9,6 +9,30 @@
 
 ---
 
+## Entry 55 — Do not infer URL mode from entity-list params
+
+**Symptom:** A URL schema draft dropped explicit `mode=basic|advanced` and
+inferred advanced mode from `programs=` vs `program=`. Review found this made
+advanced compare-across particles/materials awkward and hid which params are
+valid in Basic versus Advanced.
+
+```text
+❌ WRONG — picker mode inferred from the selected entity list
+programs=9,2 ⇒ advanced
+program=9 ⇒ basic
+
+✅ CORRECT — picker mode is explicit; plural lists are separately gated
+mode=advanced&program=9&programs=9,2&across=programs
+mode=advanced&program=9&materials=276,3&across=materials
+mode=basic&program=auto  # plural lists ignored
+```
+
+**Rule:** URL contracts should encode UI mode switches explicitly when they gate
+other params. Use a validation matrix for mode-gated params instead of deriving
+mode from one param's shape.
+
+---
+
 ## Entry 1 — Reactive dep not registered when read inside `.then()` / `setTimeout`
 
 **Symptom:** Density override had no visible effect in the browser. Unit tests for

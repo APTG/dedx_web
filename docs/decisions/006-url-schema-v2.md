@@ -4,9 +4,10 @@
 
 **Context:** Calculator-table redesign (#526 / #552). The redesigned table
 removes the Columns dropdown, replaces the three-state quantity-focus toggle
-with a two-state one, and renames the inverse-lookup input param to remove a
-naming collision with a Bethe-Bloch physics quantity. These changes require
-a `urlv` bump and explicit migration rules.
+with a two-state one, keeps the Basic/Advanced picker mode explicit in URLs,
+and renames the inverse-lookup input param to remove a naming collision with a
+Bethe-Bloch physics quantity. These changes require a `urlv` bump and explicit
+migration rules.
 
 **Revision history:**
 
@@ -22,14 +23,15 @@ a `urlv` bump and explicit migration rules.
 ## Decision
 
 Adopt the v2 URL schema described in `docs/04-feature-specs/shareable-urls.md`
-for the Calculator route (formal contract: `docs/04-feature-specs/shareable-urls-formal.md`). The three decisions that need justification here
+for the Calculator route (formal contract: `docs/04-feature-specs/shareable-urls-formal.md`). The four accepted decisions that need justification here
 are:
 
 1. **Drop `hidden=` / `hidden_programs=`**
 2. **Replace `qfocus=stp|csda|both` with `qshow=stp|range`**
-3. **Rename `ivalues=` to `lookups=`**
+3. **Keep `mode=basic|advanced` for picker mode and use `calc=` for calculator operation**
+4. **Rename `ivalues=` to `lookups=`**
 
-A previously-proposed fourth decision — renaming the entity-ID params with
+A previously-proposed fifth decision — renaming the entity-ID params with
 an `Id` suffix — was rejected. See §3.
 
 ---
@@ -79,6 +81,7 @@ always includes both quantities regardless of the on-screen toggle.
   unambiguous and forward-compatible.
 
 **Migration rules:**
+
 - `qfocus=stp` → `qshow=stp`
 - `qfocus=csda` → `qshow=range`
 - `qfocus=both` → omit `qshow=` (both visible, default)
@@ -113,7 +116,29 @@ suffix to make their semantics (numeric ID) explicit:
 
 In v2, `particle=`, `material=`, `program=` are emitted unchanged from v1.
 
-### 4. Rename `ivalues=` → `lookups=`
+### 4. Keep `mode=basic|advanced`; use `calc=` for calculator operation
+
+**Problem:** An intermediate v2 draft reused `mode=` for calculator operation
+(`forward|range|inverse-stp`) and inferred Basic/Advanced from `program=` vs
+`programs=`. That made `mode=` diverge from the UI's Basic/Advanced switch and
+made it impossible to validate plural entity lists independently from picker
+mode.
+
+**Decision:** canonical Calculator URLs emit `mode=basic|advanced` explicitly.
+The calculator operation uses `calc=forward|range|inverse-stp`. Advanced
+comparison lists are separate axis-specific params (`particles=`, `materials=`,
+`programs=`), gated by both `mode=advanced` and matching `across=`.
+
+**Why:**
+
+- The URL mirrors the visible Basic/Advanced switch instead of reconstructing it
+  from unrelated entity-list params.
+- Advanced mode can compare across particles, materials, or programs without
+  overloading `programs=` as the only signal.
+- The checker has a simple matrix: basic mode accepts singular anchors only;
+  advanced mode accepts exactly the plural list selected by `across=`.
+
+### 5. Rename `ivalues=` → `lookups=`
 
 **Problem:** In v1 the inverse-lookup input list (the values the user types
 in Range → and STP → modes — typically ranges in cm/mm/μm or stopping
@@ -129,7 +154,7 @@ with each other.
 
 **Why `lookups=`?**
 
-- Describes the role: each entry is a value to *look up* an energy for.
+- Describes the role: each entry is a value to _look up_ an energy for.
 - Self-evident in inverse modes (Range → and STP →) where the input
   column is, semantically, a lookup query.
 - Doesn't reuse the `i` prefix (avoids the I-value collision).
@@ -137,12 +162,12 @@ with each other.
 
 **Alternatives considered and rejected:**
 
-| Option | Rejected because |
-|---|---|
-| `inputs=` | Too generic; collides with the colloquial sense of "input field" |
-| `targets=` | Suggests destinations rather than queries |
-| `invvalues=` / `invals=` | Still I-adjacent; doesn't fully remove the collision |
-| Keep `ivalues=` and add a doc note | Doc notes don't reach users who read raw URLs |
+| Option                             | Rejected because                                                 |
+| ---------------------------------- | ---------------------------------------------------------------- |
+| `inputs=`                          | Too generic; collides with the colloquial sense of "input field" |
+| `targets=`                         | Suggests destinations rather than queries                        |
+| `invvalues=` / `invals=`           | Still I-adjacent; doesn't fully remove the collision             |
+| Keep `ivalues=` and add a doc note | Doc notes don't reach users who read raw URLs                    |
 
 **Migration:** v1 `ivalues=` is accepted on read and silently copied to
 `lookups=` (value syntax — number plus optional `:unit` suffix — is
@@ -153,9 +178,11 @@ unchanged).
 ## Consequences
 
 **Positive:**
+
 - Cleaner two-state `qshow=` toggle that matches the UI labels.
 - Shorter canonical URLs (no `qshow=` when both visible, no `hidden_programs=`).
-- `mode=forward|range|inverse-stp` clarifies calculator operation vs
+- `mode=basic|advanced` remains aligned with the visible picker switch, while
+  `calc=forward|range|inverse-stp` clarifies calculator operation vs
   `imode=csda|stp` which required knowing what "imode" meant.
 - Existing `particle=` / `material=` / `program=` bookmarks continue to round-
   trip exactly without a name change.
@@ -164,6 +191,7 @@ unchanged).
   can guess what `lookups=10.0:kev-um` means).
 
 **Negative / trade-offs:**
+
 - Old bookmarked URLs with `qfocus=csda` will silently migrate to `qshow=range`
   — the meaning is preserved but the URL changes on first load.
 - Old URLs with `hidden_programs=2` will load with all columns visible —
@@ -197,6 +225,5 @@ no UI counterpart would be confusing. CSV export always includes both, so the
 
 - `docs/04-feature-specs/shareable-urls.md` — canonical v2 schema + migration rules/UI
 - `docs/04-feature-specs/shareable-urls-formal.md` — ABNF grammar + semantic rules + canonicalization
-- Issue #552 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
 - Issue #552 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
 - PR #565 review (rationale for rejecting the `Id`-suffix rename)

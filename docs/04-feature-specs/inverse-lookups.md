@@ -4,7 +4,7 @@
 >
 > **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
 > URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
-> Affecting this spec: `imode=csda` → `mode=range`; `imode=stp` → `mode=inverse-stp`;
+> Affecting this spec: `imode=csda` → `calc=range`; `imode=stp` → `calc=inverse-stp`;
 > `ivalues=` → `lookups=` (renamed to avoid colliding with the Bethe-Bloch
 > I-value `ival=`); `iunit=` → `runit=` (range tab) or `sunit=` (inverse-STP tab).
 > New: `istpbranch=hi|lo|both` sticky branch-column flag. A future extension

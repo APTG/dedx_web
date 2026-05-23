@@ -6,8 +6,8 @@
  *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop, qfocus→qshow rename, and ivalues→lookups rename)
  *
  * NOTE: This file covers the v1 encoder/decoder that is currently in production.
- * v2 introduces uanchor=, qshow=, mode=forward|range|inverse-stp, runit=, sunit=,
- * istpbranch=, across=, and tip_seen=; renames ivalues= → lookups= (ADR 006 §4);
+ * v2 introduces uanchor=, qshow=, mode=basic|advanced, calc=forward|range|inverse-stp,
+ * runit=, sunit=, istpbranch=, across=, and tip_seen=; renames ivalues= → lookups= (ADR 006 §5);
  * silently drops hidden_programs=. The entity-ID param names (particle=, material=,
  * program=) are unchanged in v2 — see ADR 006 §3 for why the earlier *Id rename
  * proposal was rejected. Behavioural v2 encoder changes land in #555–#561.
@@ -682,13 +682,17 @@ describe("unknown params dropped from canonical URL", () => {
 
 describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
   it("particle= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
-    const params = new URLSearchParams("particle=6&material=276&program=auto&energies=10&eunit=MeV/nucl");
+    const params = new URLSearchParams(
+      "particle=6&material=276&program=auto&energies=10&eunit=MeV/nucl",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.particleId).toBe(6);
   });
 
   it("material= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
-    const params = new URLSearchParams("particle=1&material=104&program=auto&energies=100&eunit=MeV");
+    const params = new URLSearchParams(
+      "particle=1&material=104&program=auto&energies=100&eunit=MeV",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.materialId).toBe(104);
   });
@@ -701,9 +705,11 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
 
   it("v1 eunit= round-trips through the current decoder (v2 will map to uanchor=, shareable-urls.md §3.6)", () => {
     // The current v1 decoder keeps eunit as masterUnit. The v2 decoder will
-    // map MeV→mev / MeV/nucl→mev-nucl / MeV/u→mev-u and emit uanchor= in
+    // map MeV→MeV / MeV/nucl→MeV/nucl / MeV/u→MeV/u and emit uanchor= in
     // canonical output (implementation in #555).
-    const params = new URLSearchParams("particle=1&material=276&program=auto&energies=100&eunit=MeV/nucl");
+    const params = new URLSearchParams(
+      "particle=1&material=276&program=auto&energies=100&eunit=MeV/nucl",
+    );
     const state = decodeCalculatorUrl(params);
     expect(state.masterUnit).toBe("MeV/nucl");
   });
@@ -716,7 +722,7 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
       "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
     );
     const state = decodeCalculatorUrl(params);
-    expect((state as any).quantityFocus).toBe("csda");
+    expect(state.quantityFocus).toBe("csda");
   });
 
   it("v1 decoder still parses hidden_programs= (v2 will silently drop this — shareable-urls.md §2 (hidden_programs= removed))", () => {
@@ -728,7 +734,7 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
       "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both",
     );
     const state = decodeCalculatorUrl(params);
-    expect((state as any).hiddenProgramIds).toEqual([2]);
+    expect(state.hiddenProgramIds).toEqual([2]);
   });
 
   it("inline :unit suffix in energies= round-trips (shareable-urls.md §3.5)", () => {
@@ -750,8 +756,8 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
       "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um&iunit=cm",
     );
     const state = decodeCalculatorUrl(params);
-    expect((state as any).imode).toBe("csda");
-    expect((state as any).ivalues).toEqual([
+    expect(state.imode).toBe("csda");
+    expect(state.ivalues).toEqual([
       { rawInput: "7.718", unit: "cm", unitFromSuffix: true },
       { rawInput: "45", unit: "um", unitFromSuffix: true },
     ]);

@@ -5,8 +5,8 @@
 > **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
 > URL contract (`urlv=2`, calculator-table redesign) is in
 > [`shareable-urls.md`](shareable-urls.md) §3 / `shareable-urls-formal.md`.
-> Affecting this spec: `mode=advanced` is no longer emitted (advanced is
-> inferred from `programs=`); `qfocus=stp|csda|both` → `qshow=stp|range`
+> Affecting this spec: `mode=advanced` remains an explicit picker-mode token
+> (not inferred from `programs=`); `qfocus=stp|csda|both` → `qshow=stp|range`
 > (2-state, default omitted); `hidden_programs=` removed entirely (visibility
 > follows picker selection); `eunit=` → `uanchor=`. URL examples below will be
 > re-aligned to v2 as part of #561.
