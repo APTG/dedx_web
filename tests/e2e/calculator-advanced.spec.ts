@@ -25,7 +25,10 @@ async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
 async function selectComparisonProgram(page: Page, programName: RegExp, programId: number) {
   // Programs are now selected via the program tab in the entity picker (multi-select mode).
   await page.getByTestId("picker-tab-program").click();
-  await page.getByTestId("picker-program-list").getByRole("option", { name: programName }).click();
+  await page
+    .getByTestId("picker-program-list")
+    .getByRole("option", { name: programName })
+    .click();
   await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
   // Collapse the picker panel via Escape (the same handler used by keyboard users) so
   // the panel does not obscure subsequent drag-and-drop or column-header interactions.

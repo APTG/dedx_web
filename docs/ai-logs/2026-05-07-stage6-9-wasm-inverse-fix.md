@@ -10,7 +10,7 @@ Analysis of the previous Qwen session (`session-ses_1fcf`) revealed that
 `_dedx_get_inverse_csda` and `_dedx_get_inverse_stp` were exported from WASM
 but have the wrong calling convention for JavaScript use: the C functions take
 `(dedx_workspace*, dedx_config*, ...)` while the TypeScript wrapper called them
-with plain integer IDs. `_dedx_get_bragg_peak_stp` did not exist at all.
+with plain integer IDs.  `_dedx_get_bragg_peak_stp` did not exist at all.
 
 User chose Option B: add flat C wrappers to `wasm/dedx_extra.c` that manage
 workspace/config lifecycle internally, then rebuild WASM.
@@ -18,13 +18,11 @@ workspace/config lifecycle internally, then rebuild WASM.
 ### Stage 1 — Add C wrappers (commit 7ce77d4)
 
 Added to `wasm/dedx_extra.h`:
-
 - `dedx_get_inverse_csda_flat(int program, int ion, int target, double range, int *err)`
 - `dedx_get_inverse_stp_flat(int program, int ion, int target, double stp, int side, int *err)`
 - `dedx_get_bragg_peak_stp(int program, int ion, int target, int *err)`
 
 Added implementations to `wasm/dedx_extra.c`:
-
 - Each flat wrapper allocates a workspace, zeroes a `dedx_config`, sets
   program/ion/target, calls `dedx_load_config` (required to populate `ion_a`
   which the core inverse functions check before doing anything), calls the core
@@ -38,11 +36,10 @@ Added implementations to `wasm/dedx_extra.c`:
 ### Stage 2 — Rebuild WASM (commit 72dcc50)
 
 First rebuild failed: `dedx_tools.h` not found because `emcc` only had
-`-I/src/wasm` on its include path. Added `-I/src/libdedx/include` to the
+`-I/src/wasm` on its include path.  Added `-I/src/libdedx/include` to the
 `emcc` link step in `build.sh`.
 
-Second rebuild succeeded. Verified exports with Node.js:
-
+Second rebuild succeeded.  Verified exports with Node.js:
 ```
 _dedx_get_bragg_peak_stp
 _dedx_get_inverse_csda_flat
@@ -52,8 +49,7 @@ _dedx_get_inverse_stp_flat
 ### Stage 3 — Update TypeScript interface (commit 766d9bd)
 
 Updated `EmscriptenModule` interface in `src/lib/wasm/libdedx.ts` to match the
-new flat function names. Updated all three call sites in `LibdedxServiceImpl`:
-
+new flat function names.  Updated all three call sites in `LibdedxServiceImpl`:
 - `getInverseStp` → calls `_dedx_get_inverse_stp_flat`
 - `getInverseCsda` → calls `_dedx_get_inverse_csda_flat`
 - `getBraggPeakStp` → calls `_dedx_get_bragg_peak_stp` (now actually exists)
@@ -78,12 +74,11 @@ the WASM recompile.
 
 Root cause: `_malloc(4)` returns uninitialised memory, and the flat wrappers
 passed the caller's `err` pointer directly to the core functions without
-zeroing it first. Both `dedx_get_csda` (called inside `dedx_get_inverse_csda`)
+zeroing it first.  Both `dedx_get_csda` (called inside `dedx_get_inverse_csda`)
 and `dedx_get_inverse_stp` check `if (*err != 0) return -1` on entry — so any
 garbage value in `errPtr` caused an immediate false failure.
 
 Two-line fix:
-
 - `wasm/dedx_extra.c` — added `*err = 0;` in both `dedx_get_inverse_csda_flat`
   and `dedx_get_inverse_stp_flat` before delegating to the core functions.
 - `src/lib/wasm/libdedx.ts` — added `HEAP32[errPtr >>> 2] = 0` before each
@@ -96,23 +91,23 @@ WASM rebuilt, 826 unit tests pass, all 6 inverse-lookup E2E tests pass.
 
 User observed that the E2E tests injected `__MOCK_INVERSE_CSDA_RESULTS` and
 `__MOCK_INVERSE_CSDA_CALCULATOR` via `page.addInitScript`, bypassing WASM even
-when the binary was present. Two additional bugs were found during cleanup:
+when the binary was present.  Two additional bugs were found during cleanup:
 
 **Bug 2 — missing `ion_a`** (root cause of "Inverse CSDA lookup failed"):  
 `dedx_get_inverse_csda` and `dedx_get_inverse_stp` check `config->ion_a <= 0`
 at entry and return `DEDX_ERR_ION_A_REQUIRED (209)` if unset.
 `dedx_load_config` does NOT populate `ion_a` — callers must set it explicitly
-(as `dedx_wrappers.c:229` does with `dedx_internal_get_nucleon`). All three
+(as `dedx_wrappers.c:229` does with `dedx_internal_get_nucleon`).  All three
 flat C wrappers now call `dedx_internal_get_nucleon` before `dedx_load_config`.
 
 **Bug 3 — duplicate computation + wrong unit conversion** in state file:  
 `inverse-lookups.svelte.ts` had `performRangeCalculation` which raced with the
-page `$effect` (canonical computation path). The state file path computed
+page `$effect` (canonical computation path).  The state file path computed
 `rangesGcm2` using `cmToGcm2(r.value!, density)`, which ignored `r.unit` and
-treated mm/nm values as cm — wrong by up to 10x. Worse, on WASM error it set
+treated mm/nm values as cm — wrong by up to 10x.  Worse, on WASM error it set
 `row.status = "error"`, which caused the page `$effect`'s result loop to skip
 the row (it filters by `status === "valid"`), permanently blocking the correct
-result. Removed both debounced calc functions from the state file; the page
+result.  Removed both debounced calc functions from the state file; the page
 `$effect` is the sole computation path.
 
 After all fixes: 121/121 E2E tests pass with real WASM, no mocks.
@@ -130,7 +125,7 @@ After all fixes: 121/121 E2E tests pass with real WASM, no mocks.
   - `static/wasm/libdedx.mjs` + `static/wasm/libdedx.wasm` — rebuilt binary
 - **Decision**: `dedx_get_bragg_peak_stp` samples 300 log-spaced energies rather
   than re-implementing the ternary-search from `dedx_tools.c` (which is `static`
-  and inaccessible). 300 points gives sub-1% accuracy for the Bragg peak
+  and inaccessible).  300 points gives sub-1% accuracy for the Bragg peak
   without measurable latency on WASM.
 
 ### Fix TypeScript calling convention

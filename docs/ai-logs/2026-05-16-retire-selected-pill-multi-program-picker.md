@@ -5,7 +5,6 @@
 ### Prompt 1: Retire deprecated components and add basic-mode truncation
 
 User asked to implement follow-up issue #6 from the entity-selector rework log:
-
 - Delete `selected-pill.svelte` and its callsites (particle-tab, material-tab, program-tab), inlining its markup
 - Delete `multi-program-picker.svelte` and its callsite in `calculator/+page.svelte`
 - Delete `src/lib/state/multi-program.svelte.ts` only if no other consumer remains (kept — result-table.svelte still uses it)

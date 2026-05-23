@@ -10,7 +10,7 @@
 - **Drag handle element**: `<span role="button" draggable="true" tabindex="0">` visible only
   on selected, non-default rows. Shows `⋮⋮` with `cursor-grab` and focus-ring styling.
 - **Mouse drag-and-drop**: `ondragstart` on the handle sets `draggingId`; wrapper `<div
-role="presentation">` rows receive `ondragover` / `ondrop` / `ondragleave`. Drop calls
+  role="presentation">` rows receive `ondragover` / `ondrop` / `ondragleave`. Drop calls
   `multiState.reorderPrograms(draggedId, targetIndex)` only when target is a selected,
   non-default row.
 - **Touch drag**: `ontouchstart` / `ontouchmove` / `ontouchend` on the handle. `touchmove`
@@ -20,7 +20,7 @@ role="presentation">` rows receive `ondragover` / `ondrop` / `ondragleave`. Drop
 - **Keyboard reorder**: `onkeydown` on the handle — `Alt+ArrowUp` decreases index (blocked
   at position 1 to preserve default-first invariant), `Alt+ArrowDown` increases index.
 - **aria-live announcements**: always-present `<div aria-live="polite" aria-atomic="true"
-class="sr-only">` at component root (outside the `{#if isOpen}` block) announces "Moved
+  class="sr-only">` at component root (outside the `{#if isOpen}` block) announces "Moved
   Program X to position N of M." after every reorder.
 - **Drag opacity**: dragged row gets `opacity-40` while the drag is in flight; drop-target
   row gets a `border-l-2 border-primary` highlight for both mouse and touch drag.

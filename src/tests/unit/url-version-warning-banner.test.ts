@@ -37,5 +37,8 @@ test("Try migration button present when onTryMigration provided", () => {
   render(UrlVersionWarningBanner, {
     props: { version: 5, onLoadDefaults: vi.fn(), onTryMigration: vi.fn() },
   });
-  expect(screen.getByTestId("url-version-warning-try-migration")).toHaveAttribute("type", "button");
+  expect(screen.getByTestId("url-version-warning-try-migration")).toHaveAttribute(
+    "type",
+    "button",
+  );
 });

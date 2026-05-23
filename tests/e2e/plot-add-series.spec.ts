@@ -58,10 +58,7 @@ test.describe("Plot — add-series flow", () => {
     await page.getByTestId("plot-add-series").click();
     await expect(page.getByTestId("plot-series-row-0")).toBeVisible();
 
-    await page
-      .getByTestId("plot-series-row-0")
-      .getByRole("button", { name: /remove series/i })
-      .click();
+    await page.getByTestId("plot-series-row-0").getByRole("button", { name: /remove series/i }).click();
     await expect(page.getByTestId("plot-series-row-0")).toHaveCount(0);
   });
 
@@ -78,10 +75,7 @@ test.describe("Plot — add-series flow", () => {
 
   test("Done editing button exits edit mode", async ({ page }) => {
     await page.getByTestId("plot-add-series").click();
-    await page
-      .getByTestId("plot-series-row-0")
-      .getByRole("button", { name: /edit series/i })
-      .click();
+    await page.getByTestId("plot-series-row-0").getByRole("button", { name: /edit series/i }).click();
     await expect(page.getByTestId("plot-series-done")).toBeVisible();
 
     await page.getByTestId("plot-series-done").click();

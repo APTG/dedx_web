@@ -273,9 +273,7 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("material-subtab-compounds")).toBeInTheDocument();
     expect(screen.getByTestId("material-subtab-elements")).toBeInTheDocument();
     // Compounds sub-tab is the active default.
-    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe(
-      "true",
-    );
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe("true");
     // Compounds list is visible.
     expect(screen.getByTestId("picker-material-list-compounds")).toBeInTheDocument();
   });
@@ -301,7 +299,9 @@ describe("EntitySelection", () => {
     await user.click(closeButton);
     // The sheet wrapper has a fly out-transition; poll until Svelte removes the
     // element after the transition promise resolves.
-    await waitFor(() => expect(screen.queryByTestId("picker-sheet")).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId("picker-sheet")).not.toBeInTheDocument(),
+    );
     expect(document.body.style.overflow).toBe("");
   });
 

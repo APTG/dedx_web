@@ -26,7 +26,6 @@ Implemented the WASM service layer for custom compound calculations. This task a
 4. `dedx_get_bragg_peak_stp_custom_compound` — Bragg peak STP energy for custom compounds
 
 **Implementation pattern:**
-
 - All wrappers follow the "flat" API pattern: accept parallel arrays (`elements_id`, `elements_atoms`, `num_elements`) instead of requiring pre-configured workspace
 - Each wrapper internally manages workspace/config lifecycle:
   1. Call `dedx_internal_setup_custom_compound` to allocate and populate config arrays
@@ -36,12 +35,10 @@ Implemented the WASM service layer for custom compound calculations. This task a
   5. Return result buffer pointer
 
 **Internal helpers (exported but not public API):**
-
 - `dedx_internal_setup_custom_compound` — Allocates `config->elements_id` (int) and `config->elements_atoms` (double) arrays, copies from input
 - `dedx_internal_cleanup_custom_compound` — Frees the allocated arrays, sets pointers to NULL
 
 **Build changes:**
-
 - `wasm/build.sh`: Added 6 new symbols to `EXPORTED_FUNCTIONS` (4 wrappers + 2 internal helpers)
 - `wasm/contract-manifest.json`: Added 4 new exports under `dedx_extra_custom_compound` backing category
 - `wasm/verify.mjs`: All 69 checks pass (49 contract checks + 20 service coverage checks)
@@ -49,7 +46,6 @@ Implemented the WASM service layer for custom compound calculations. This task a
 ### TypeScript Layer (`src/lib/wasm/`)
 
 **Interface extension (`types.ts`):**
-
 ```typescript
 calculateCustomCompound(params: {
   programId: number;
@@ -89,7 +85,6 @@ getBraggPeakStpCustomCompound(params: {
 ```
 
 **Service implementation (`libdedx.ts`):**
-
 - Helper `prepareCompoundElements` converts `CompoundElement[]` to parallel HEAP32/HEAPF64 arrays
 - All 4 methods use `Module._malloc`/`Module._free` for WASM heap memory management
 - Forward calculation: `HEAPF32` for energies/STP output, `HEAPF64` for CSDA ranges
@@ -97,7 +92,6 @@ getBraggPeakStpCustomCompound(params: {
 - Bragg peak: single `f64` return value
 
 **Mock implementations (`__mocks__/libdedx.ts`):**
-
 - `LibdedxServiceImpl` — stub implementations returning empty arrays / 80.0 for Bragg peak
 - `MockLibdedxServiceWithElectron` — identical stubs
 - Both classes now satisfy the full `LibdedxService` interface including all 4 custom compound methods
@@ -105,7 +99,6 @@ getBraggPeakStpCustomCompound(params: {
 ### Contracts (`src/tests/contracts/`)
 
 **`service-interface.contract.test.ts`:**
-
 - Added runtime checks for all 4 new methods on both mock classes
 - Type-level `satisfies` assertions ensure compile-time interface compliance
 

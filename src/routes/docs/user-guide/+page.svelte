@@ -89,9 +89,7 @@
           </tr>
           <tr class="border-b border-muted/30">
             <td class="py-1 pr-4 font-mono">↵ Enter</td>
-            <td class="py-1"
-              >Select highlighted item; advances to the next empty field automatically</td
-            >
+            <td class="py-1">Select highlighted item; advances to the next empty field automatically</td>
           </tr>
           <tr class="border-b border-muted/30">
             <td class="py-1 pr-4 font-mono">Escape</td>
@@ -99,9 +97,7 @@
           </tr>
           <tr>
             <td class="py-1 pr-4 font-mono">← / →</td>
-            <td class="py-1"
-              >Cycle between Particle / Material / Program tabs (when a tab button is focused)</td
-            >
+            <td class="py-1">Cycle between Particle / Material / Program tabs (when a tab button is focused)</td>
           </tr>
         </tbody>
       </table>

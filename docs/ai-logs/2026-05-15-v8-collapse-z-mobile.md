@@ -86,7 +86,7 @@ routes, and rewrote/updated all affected E2E tests.
   `src/routes/plot/+page.svelte`
 - **Decision**: Removed `isPickerV8`/`initPickerV8FromUrl` imports and all
   `{#if isPickerV8.value}` branches. Calculator renders `<EntitySelectionV8
-collapsible={true}>` unconditionally. Plot renders `<EntitySelectionV8>`
+  collapsible={true}>` unconditionally. Plot renders `<EntitySelectionV8>`
   unconditionally (no collapsible). The `picker-flag.svelte.ts` file is kept
   (it may be imported by tests) but is no longer called from routes.
 
@@ -102,7 +102,7 @@ collapsible={true}>` unconditionally. Plot renders `<EntitySelectionV8>`
   - `tests/e2e/complex-interactions.spec.ts` — sentinel updated, v7 particle/
     material selection updated to use v8 testids; added `selectParticle` helper
   - `tests/e2e/custom-compounds.spec.ts` — all `getByRole("button", { name:
-/^Material$/ })` patterns replaced with `v8-tab-material` testid; v7
+    /^Material$/ })` patterns replaced with `v8-tab-material` testid; v7
     dropdown patterns replaced with v8 panel patterns
   - `tests/e2e/advanced-options.spec.ts`, `complex-interactions.spec.ts`,
     `inverse-lookups.spec.ts`, `particle-unit-switching.spec.ts`, `plot.spec.ts`,

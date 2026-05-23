@@ -10,16 +10,7 @@ const metadataFixture: ExternalStoreMetadata = {
   name: "SRIM dataset",
   programs: [{ id: "prog1", name: "Program 1" }],
   particles: [
-    {
-      id: "p",
-      name: "Proton",
-      symbol: "H",
-      Z: 1,
-      A: 1,
-      atomicMass: 1.008,
-      index: 0,
-      pdgCode: 2212,
-    },
+    { id: "p", name: "Proton", symbol: "H", Z: 1, A: 1, atomicMass: 1.008, index: 0, pdgCode: 2212 },
   ],
   materials: [{ id: "water", name: "Water", density: 1.0, index: 0, linearUnitsAvailable: true }],
   energyGrid: [1, 10, 100],
@@ -63,13 +54,9 @@ describe("LoadExternalModal", () => {
     await fireEvent.input(screen.getByTestId("load-ext-url-input"), {
       target: { value: "http://example.test/srim.webdedx" },
     });
-    await fireEvent.input(screen.getByTestId("load-ext-label-input"), {
-      target: { value: "srim" },
-    });
+    await fireEvent.input(screen.getByTestId("load-ext-label-input"), { target: { value: "srim" } });
     await fireEvent.click(screen.getByTestId("load-ext-url-submit"));
-    expect(
-      screen.getByText("Must be https://… .webdedx (http://localhost allowed)"),
-    ).toBeInTheDocument();
+    expect(screen.getByText("Must be https://… .webdedx (http://localhost allowed)")).toBeInTheDocument();
 
     await fireEvent.input(screen.getByTestId("load-ext-url-input"), {
       target: { value: "HTTPS://example.test/srim.webdedx" },
@@ -97,9 +84,7 @@ describe("LoadExternalModal", () => {
     await fireEvent.input(screen.getByTestId("load-ext-url-input"), {
       target: { value: "https://example.test/srim.webdedx" },
     });
-    await fireEvent.input(screen.getByTestId("load-ext-label-input"), {
-      target: { value: "srim" },
-    });
+    await fireEvent.input(screen.getByTestId("load-ext-label-input"), { target: { value: "srim" } });
     await fireEvent.click(screen.getByTestId("load-ext-url-submit"));
 
     expect(onLoad).toHaveBeenCalledTimes(1);

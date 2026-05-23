@@ -37,7 +37,10 @@
 
 <div data-testid="plot-series-strip" class="space-y-1">
   <!-- Header row -->
-  <div data-testid="plot-series-header" class="flex items-center justify-between py-1">
+  <div
+    data-testid="plot-series-header"
+    class="flex items-center justify-between py-1"
+  >
     <span class="text-sm font-medium text-muted-foreground">
       Series{series.length > 0 ? ` · ${series.length}` : ""}
     </span>
@@ -91,8 +94,8 @@
           type="button"
           aria-label="Toggle preview visibility"
           onclick={onTogglePreview}
-          class="shrink-0 text-muted-foreground hover:text-foreground">👁</button
-        >
+          class="shrink-0 text-muted-foreground hover:text-foreground"
+        >👁</button>
       </div>
     {/if}
 
@@ -133,14 +136,14 @@
           aria-label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
           aria-pressed={!s.visible}
           onclick={() => onToggleVisibility(s.seriesId)}
-          class="shrink-0 text-muted-foreground hover:text-foreground">👁</button
-        >
+          class="shrink-0 text-muted-foreground hover:text-foreground"
+        >👁</button>
         <button
           type="button"
           aria-label="Remove series {s.label}"
           onclick={() => onRemove(s.seriesId)}
-          class="shrink-0 text-muted-foreground hover:text-destructive">×</button
-        >
+          class="shrink-0 text-muted-foreground hover:text-destructive"
+        >×</button>
       </div>
     {/each}
   </div>

@@ -67,7 +67,6 @@ Acceptance criteria:
 c. Wait for the implementer to output TASK DONE: or TASK BLOCKED:.
 
 The implementer must:
-
 - run `pnpm guard:staged` before commit,
 - run at least one real-WASM `@smoke` acceptance path when the feature is
   WASM-backed (no runtime `page.addInitScript` mock injection in acceptance tests),

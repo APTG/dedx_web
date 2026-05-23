@@ -11,7 +11,6 @@ They also asked to check the Copilot comment about "Plot series not yet
 supported" and whether there was something to implement.
 
 **AI response**: Launched three parallel Explore agents covering:
-
 1. SRIM converter script and the current `data/srim-gui.webdedx/zarr.json`.
 2. Frontend external data loading, program selector, and plot page state.
 3. Built-in material name definitions (libdedx C table, TypeScript overrides).
@@ -59,7 +58,6 @@ User confirmed S3 upload complete and asked to continue with the next stage
 pipeline before implementing.
 
 Key findings:
-
 - `CalculationResult.energies` uses MeV/nucl; `StpTableEntry.energyGridMev`
   is MeV total — must divide by particle A when building the result.
 - `EntityId = number | ExtRef` (branded template literal); needed `as EntityId`
@@ -71,7 +69,6 @@ Key findings:
   external series per spec §9.1.
 
 Changes made:
-
 - `entity-selection-panels.svelte`: removed availability guard and hint text.
 - `jsroot-plot.svelte`: external series (string `programId`) use `fLineStyle=2`.
 - `plot.svelte.ts`: extended `programId` and `particleId` from `number` to
@@ -107,7 +104,7 @@ Changes made:
    - Same density (rounded to 3 dp): marks all-but-first for exclusion.
    - Different densities: removes `icruId` from ALL entries, appends
      " ({density:.3f} g/cm³)" to each name.
-     Returns the set of `sourceKey` strings to exclude.
+   Returns the set of `sourceKey` strings to exclude.
 
 3. `SourceInfo` dataclass: Added `duplicate_material_keys: set[str]` field.
 
@@ -128,7 +125,6 @@ Changes made:
    `droppedDuplicateMaterials` count.
 
 **Tests** (20 passing, `scripts/tests/test_srim_reference_to_webdedx.py`):
-
 - `TestAssignMaterialIds` (7 tests): verifies `icruId` always assigned, no
   uniqueness gate, elements unchanged, unique IDs generated, ICRU-099 parsed.
 - `TestResolveIcruDuplicates` (9 tests): same-density dedup keeps first;
@@ -145,7 +141,6 @@ Changes made:
   user will upload the regenerated store to S3.
 
 **Verified output**:
-
 - Water: exactly 1 entry with `icruId: 276` ✓
 - Materials with `icruId`: 144 (up from 121)
   - Previous 26 duplicate ICRU groups → 23 resolved (same density), 3 are

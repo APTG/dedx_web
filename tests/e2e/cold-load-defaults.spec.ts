@@ -37,8 +37,8 @@ test.describe("Cold-load defaults — issue #555", () => {
       .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 10000 })
       .toBeGreaterThan(0);
 
-    const activeTag = await page.evaluate(() =>
-      (document.activeElement?.tagName ?? "BODY").toUpperCase(),
+    const activeTag = await page.evaluate(
+      () => (document.activeElement?.tagName ?? "BODY").toUpperCase(),
     );
     expect(activeTag).toBe("BODY");
   });

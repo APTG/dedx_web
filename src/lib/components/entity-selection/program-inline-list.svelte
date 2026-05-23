@@ -69,8 +69,7 @@
         {/if}
         <p class="text-xs text-muted-foreground mt-0.5">
           {#if autoResolved}
-            {getProgramDescription(autoResolved.id) ??
-              "Recommended for the current particle/material."}
+            {getProgramDescription(autoResolved.id) ?? "Recommended for the current particle/material."}
           {:else}
             No compatible program for the current particle / material.
           {/if}
@@ -82,12 +81,7 @@
     </button>
   {/if}
 
-  <ul
-    role="listbox"
-    aria-label="Programs"
-    aria-multiselectable={isMultiMode}
-    data-testid="picker-program-list"
-  >
+  <ul role="listbox" aria-label="Programs" aria-multiselectable={isMultiMode} data-testid="picker-program-list">
     {#each builtinPrograms as program (program.id)}
       {@const isSingleSelected = !isMultiMode && currentProgram.id === program.id}
       {@const inMulti = isMultiMode && isMultiSelected(program.id)}
@@ -117,10 +111,8 @@
         >
           <span
             aria-hidden="true"
-            class="w-4 shrink-0 text-center text-xs {isChecked
-              ? 'font-bold text-orange-700'
-              : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
-          >
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>
               <span>{program.name}</span>
@@ -160,10 +152,8 @@
         >
           <span
             aria-hidden="true"
-            class="w-4 shrink-0 text-center text-xs {isChecked
-              ? 'font-bold text-orange-700'
-              : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
-          >
+            class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
           <span class="flex-1 justify-between gap-3 flex items-center">
             <span>🔗 {program.name}</span>
             {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}

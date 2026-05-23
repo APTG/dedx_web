@@ -63,7 +63,10 @@ test.describe("Entity picker — keyboard navigation", () => {
 
     // Calculator defaults are already complete, so no empty tab remains.
     // Enter updates particle and collapses the panel instead of auto-advancing.
-    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 
@@ -73,7 +76,10 @@ test.describe("Entity picker — keyboard navigation", () => {
     await page.keyboard.press("Enter");
 
     // No empty tab remains on calculator defaults, so panel collapses.
-    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
     await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 });

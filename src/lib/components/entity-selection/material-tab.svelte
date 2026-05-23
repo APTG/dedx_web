@@ -220,11 +220,7 @@
           return dens ? `${m.name} (ρ=${dens})` : m.name;
         })
       : selected
-        ? [
-            formatDensity(selected)
-              ? `${selected.name} (ρ=${formatDensity(selected)} g/cm³)`
-              : selected.name,
-          ]
+        ? [formatDensity(selected) ? `${selected.name} (ρ=${formatDensity(selected)} g/cm³)` : selected.name]
         : [],
   );
 
@@ -320,10 +316,8 @@
       >
         <span
           aria-hidden="true"
-          class="w-4 shrink-0 text-center text-xs {isChecked
-            ? 'font-bold text-orange-700'
-            : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
-        >
+          class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+        >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
         <span class="flex min-w-0 flex-1 items-center gap-2">
           {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
           <span class="truncate">
@@ -374,18 +368,15 @@
           <span class="flex items-center gap-1">
             <span
               aria-hidden="true"
-              class="w-4 shrink-0 text-center text-xs {isChecked
-                ? 'font-bold text-orange-700'
-                : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
-            >
+              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
+            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
             <span class="truncate">
               {m.name}
               {#if dens}
                 <span class="ml-1 text-xs text-muted-foreground">(ρ={dens} g/cm³)</span>
               {/if}
             </span>
-            {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span
-              >{/if}
+            {#if isGas(m)}<span aria-hidden="true" title="Gas at standard conditions">(≋)</span>{/if}
           </span>
         </button>
         {#if !isMultiMode}
@@ -404,7 +395,9 @@
     </li>
   {/each}
   {#if items.length === 0}
-    <li class="px-2 py-4 text-center text-sm text-muted-foreground">No custom compounds yet.</li>
+    <li class="px-2 py-4 text-center text-sm text-muted-foreground">
+      No custom compounds yet.
+    </li>
   {/if}
 {/snippet}
 
@@ -415,21 +408,12 @@
     {summaryLabels}
     onClear={isMultiMode ? clearAllMulti : onClear}
     onlySelected={showOnlySelected}
-    onToggleOnlySelected={isMultiMode
-      ? () => {
-          showOnlySelected = !showOnlySelected;
-        }
-      : undefined}
+    onToggleOnlySelected={isMultiMode ? () => { showOnlySelected = !showOnlySelected; } : undefined}
     testId="picker-material-selected"
   />
 
   <!-- Sub-tab pills: fixed order Compounds · Elements · Custom -->
-  <div
-    class="flex gap-1"
-    role="tablist"
-    aria-label="Material sub-tabs"
-    data-testid="picker-material-subtabs"
-  >
+  <div class="flex gap-1" role="tablist" aria-label="Material sub-tabs" data-testid="picker-material-subtabs">
     <button
       type="button"
       role="tab"
@@ -483,11 +467,7 @@
   <div class="relative">
     <ul
       role="listbox"
-      aria-label={activeSubTab === "elements"
-        ? "Elements"
-        : activeSubTab === "custom"
-          ? "Custom compounds"
-          : "Compounds"}
+      aria-label={activeSubTab === "elements" ? "Elements" : activeSubTab === "custom" ? "Custom compounds" : "Compounds"}
       aria-multiselectable={isMultiMode}
       tabindex="0"
       class="max-h-52 overflow-auto overscroll-y-contain space-y-0.5"

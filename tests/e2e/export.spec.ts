@@ -21,9 +21,7 @@ test.describe("Calculator export — toolbar buttons", () => {
     await expect(exportCsv).toBeEnabled();
   });
 
-  test("Export CSV downloads a file with the correct filename and headers @smoke", async ({
-    page,
-  }) => {
+  test("Export CSV downloads a file with the correct filename and headers @smoke", async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 

@@ -9,16 +9,16 @@
 
 The bulk of the "physics-grade defaults" described in the redesign plan had been implemented during earlier stages as part of the plot feature:
 
-| Item                                                                  | Status                   |
-| --------------------------------------------------------------------- | ------------------------ |
-| Log-log axes as default (`xLog: true`, `yLog: true`)                  | ✅ Done (earlier stages) |
+| Item | Status |
+|------|--------|
+| Log-log axes as default (`xLog: true`, `yLog: true`) | ✅ Done (earlier stages) |
 | Axis labels with units ("Energy [MeV/nucl]", "Stopping Power [unit]") | ✅ Done (earlier stages) |
-| Line width 2 for committed series, width 1 for preview                | ✅ Done (earlier stages) |
-| Color palette — 9 colors with exact hex values                        | ✅ Done (earlier stages) |
-| Grid and tick draw options (`gridx;gridy;tickx;ticky`)                | ✅ Done (earlier stages) |
-| Wheel zoom disabled (`JSROOT.settings.ZoomWheel = false`)             | ✅ Done (earlier stages) |
-| Touch zoom disabled on mobile/tablet                                  | ✅ Done (earlier stages) |
-| No JSROOT canvas legend — series list serves as legend                | ✅ Done (earlier stages) |
+| Line width 2 for committed series, width 1 for preview | ✅ Done (earlier stages) |
+| Color palette — 9 colors with exact hex values | ✅ Done (earlier stages) |
+| Grid and tick draw options (`gridx;gridy;tickx;ticky`) | ✅ Done (earlier stages) |
+| Wheel zoom disabled (`JSROOT.settings.ZoomWheel = false`) | ✅ Done (earlier stages) |
+| Touch zoom disabled on mobile/tablet | ✅ Done (earlier stages) |
+| No JSROOT canvas legend — series list serves as legend | ✅ Done (earlier stages) |
 
 ## What this session added
 
@@ -31,7 +31,6 @@ The redesign plan mentioned "14 pt fonts." `fLabelSize = fTitleSize = 0.04` NDC 
 **Net result in this PR:** no code changes required for font sizing (`jsroot-plot.svelte` remains without explicit `fLabelSize`/`fTitleSize`).
 
 **Files changed for the final Stage 7.2 outcome:**
-
 - `docs/04-feature-specs/plot.md` — AC updated to document use of JSROOT defaults
 - `docs/00-redesign-plan.md` — Stage 7.2 notes aligned with final decision
 

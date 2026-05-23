@@ -10,8 +10,7 @@ Plan approved: add `drawWithRetry` helper, replace `drawPlot` call, simplify cat
 
 ### Prompt 2: Implement the fix
 
-**AI response**:
-
+**AI response**: 
 - Added `drawWithRetry` function to `jsroot-plot.svelte` — up to 5 attempts with delays `[0, 100, 200, 400, 800]` ms. Only retries on the jsroot module-race error pattern; all other errors are re-thrown immediately. Checks `getCancelled()` before each attempt and after each delay to abort if the effect is torn down mid-retry.
 - Replaced `drawPlot(el, snapshot)` call with `drawWithRetry(el, snapshot, () => cancelled)`.
 - Simplified the outer `.catch()` — removed the now-redundant jsroot-race branch.

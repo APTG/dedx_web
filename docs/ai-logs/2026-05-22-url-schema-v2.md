@@ -7,7 +7,6 @@
 **AI response**: Read the issue, all blocked sub-issues (#555–#561), and the
 existing shareable-urls spec files to understand the full v2 schema delta.
 Key findings:
-
 - The v2 schema renames three core params (`particle=` → `particleId=`, etc.)
 - `qfocus=stp|csda|both` (3-state) is replaced by `qshow=stp|range` (2-state)
 - `hidden=` / `hidden_programs=` is removed entirely (Columns dropdown gone)
@@ -16,7 +15,6 @@ Key findings:
 - `imode=csda|stp` is replaced by `mode=range|inverse-stp`
 
 Created three deliverables:
-
 1. `docs/04-feature-specs/url-schema.md` — canonical v2 schema with one
    worked example per param, inline-unit grammar, migration rules, and a
    cross-spec consistency checklist.
@@ -28,7 +26,7 @@ Created three deliverables:
 
 ## Tasks
 
-### Prompt 2 (2026-05-23): drop \*Id rename, extend runit, address Copilot review
+### Prompt 2 (2026-05-23): drop *Id rename, extend runit, address Copilot review
 
 **User feedback:** PR #565 got a Copilot review. Maintainer (grzanka) doesn't
 want the `particle=` → `particleId=` rename (and the parallel `material=` →
@@ -53,7 +51,7 @@ the decision and check the impact on other linked issues in #552.
 6. Renamed two misleading migration-fixture test titles (Copilot reviews
    #1 and #2). The tests still assert the current v1 decoder behaviour; the
    new names make it clear that the v2 mapping lands in #561.
-7. Updated test-file top-of-file doc comment to drop the \*Id rename mention.
+7. Updated test-file top-of-file doc comment to drop the *Id rename mention.
 8. Updated issue #554 description to record the revision decisions and
    pointed at the revised PR/ADR.
 9. Checked all linked sub-issues in #552 for impact: only #555 mentions
@@ -79,8 +77,8 @@ match. Remember the AI logs.
    / `mat_ival=` (the I-value / mean excitation potential). The two
    concepts are unrelated (`ival=` is a Bethe-Bloch physics parameter;
    `ivalues=` carried inverse-lookup input rows). Picked `lookups=`
-   because (a) it describes the role — each entry is a value to _look
-   up_ an energy for — and (b) it doesn't reuse the `i` prefix. Also
+   because (a) it describes the role — each entry is a value to *look
+   up* an energy for — and (b) it doesn't reuse the `i` prefix. Also
    considered `inputs=` (too generic), `targets=` (suggests destinations),
    `invvalues=` / `invals=` (still I-adjacent). ADR 006 gained a new §4
    recording the rationale and the alternatives.
@@ -154,7 +152,6 @@ asked about renaming `forward|range|inverse-stp` mode tokens.
 ### Prompt 5 (2026-05-23): cross-spec sync, case-sensitivity, energy-unit cross-product, dual-output future plan
 
 **User feedback:**
-
 1. Review comment: `shareable-urls.md` §3.3 (mode persistence in entity-selection)
    contradicts `entity-selection.md:481` which says "Basic/Advanced toggle persists
    in `localStorage` and the URL". Need to fix the cross-spec contradiction or add
@@ -183,8 +180,8 @@ asked about renaming `forward|range|inverse-stp` mode tokens.
    Added an explicit cross-reference to `shareable-urls.md` §3.3 and §7.1.
 2. **Fixed conformance vectors #3 and #4** in `shareable-urls-formal.md` §5.1:
    each vector now has a single explicit canonical string (no more "same"
-   - "corrected canonical" pair); the redundant default param in the input
-     is called out in a "Note" line.
+   + "corrected canonical" pair); the redundant default param in the input
+   is called out in a "Note" line.
 3. **Replaced `{csv}` → `{value-list}`** throughout `shareable-urls.md` canonical
    form. (`shareable-urls-formal.md` uses ABNF rule names — not affected.)
 4. **Added forward-compatibility note in §3.4 mode**: planned post-#552 follow-up
