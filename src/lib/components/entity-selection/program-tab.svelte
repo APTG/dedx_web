@@ -77,15 +77,9 @@
   }
 
   // Summary bar derived values — show when a specific program is selected (not Auto)
-  const summaryCount = $derived(
-    isMultiMode ? multiIds.length : isAuto ? 0 : 1,
-  );
+  const summaryCount = $derived(isMultiMode ? multiIds.length : isAuto ? 0 : 1);
   const summaryLabels = $derived(
-    isMultiMode
-      ? multiIds.map(getProgramName)
-      : isAuto
-        ? []
-        : [currentProgram.name],
+    isMultiMode ? multiIds.map(getProgramName) : isAuto ? [] : [currentProgram.name],
   );
 </script>
 
@@ -186,8 +180,10 @@
           >
             <span
               aria-hidden="true"
-              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
-            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
+              class="w-4 shrink-0 text-center text-xs {isChecked
+                ? 'font-bold text-orange-700'
+                : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
+            >
             <span class="flex-1 justify-between gap-3 flex items-center">
               <span>
                 <span>{program.name}</span>
@@ -227,8 +223,10 @@
           >
             <span
               aria-hidden="true"
-              class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
-            >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
+              class="w-4 shrink-0 text-center text-xs {isChecked
+                ? 'font-bold text-orange-700'
+                : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
+            >
             <span class="flex-1 justify-between gap-3 flex items-center">
               <span>🔗 {program.name}</span>
               {#if program.label}<span class="text-muted-foreground"> · {program.label}</span>{/if}

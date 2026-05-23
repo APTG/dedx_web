@@ -6,6 +6,7 @@
 
 **User request**: At 412px (Samsung Galaxy S24 Ultra) the top nav bar is too
 cramped. Requested:
+
 1. Hide "webdedx" text on mobile — show icon only.
 2. Move Basic/Advanced toggle + Share URL to a second row on mobile so
    they're clearly visible.
@@ -49,7 +50,7 @@ cramped. Requested:
   page from scrolling when the inner list reaches its bounds on mobile.
 - **Decision**: Each card scroll area is wrapped in a `relative` div. A
   `pointer-events-none absolute inset-x-0 bottom-0 h-8 bg-gradient-to-t
-  from-background to-transparent` overlay provides a persistent fade
+from-background to-transparent` overlay provides a persistent fade
   shadow indicating scrollability. Always-on is acceptable — it's a
   subtle UX hint, not a functional control.
 - **Decision**: `⤢` buttons are `sm:hidden` so they are only accessible
@@ -57,7 +58,7 @@ cramped. Requested:
   `fullscreenCard` state is never set, so the sheet never renders on
   desktop.
 - **Decision**: The full-screen sheet is a `fixed inset-0 z-50 flex-col
-  bg-background sm:hidden` overlay. Escape key closes it (via a
+bg-background sm:hidden` overlay. Escape key closes it (via a
   `$effect` that adds/removes a `keydown` listener on the document only
   while the sheet is open). The Custom column sheet includes an
   "+ Add compound" action row for convenience.

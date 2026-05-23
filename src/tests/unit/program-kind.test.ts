@@ -1,9 +1,5 @@
 import { describe, test, expect } from "vitest";
-import {
-  programKind,
-  programKindMeta,
-  getProgramKindMeta,
-} from "$lib/utils/program-kind";
+import { programKind, programKindMeta, getProgramKindMeta } from "$lib/utils/program-kind";
 
 describe("programKind", () => {
   test("numeric ids ≤ 90 map to TAB", () => {

@@ -182,18 +182,25 @@ test plan §Unit tests and §Component tests.
 ```typescript
 import { generateCalculatorCsv } from "$lib/export/csv";
 
-const MOCK_ROW = { /* minimal valid CalculatedRow */ };
-const META = { particle: { name: "Proton" }, material: { name: "Water" }, program: { name: "ICRU 90" } };
+const MOCK_ROW = {
+  /* minimal valid CalculatedRow */
+};
+const META = {
+  particle: { name: "Proton" },
+  material: { name: "Water" },
+  program: { name: "ICRU 90" },
+};
 
 test("default options: comma separator, CRLF line endings", () => {
   const { content } = generateCalculatorCsv([MOCK_ROW], "keV/µm", META);
   expect(content.split("\r\n").length).toBeGreaterThan(1); // CRLF present
-  expect(content).not.toContain("\n\r");                  // no bare LF
+  expect(content).not.toContain("\n\r"); // no bare LF
 });
 
 test("semicolon separator produces semicolon-delimited header", () => {
   const { content } = generateCalculatorCsv([MOCK_ROW], "keV/µm", META, {
-    separator: "semicolon", lineEndings: "crlf",
+    separator: "semicolon",
+    lineEndings: "crlf",
   });
   const header = content.split("\r\n")[0] ?? "";
   expect(header).toContain(";");
@@ -202,7 +209,8 @@ test("semicolon separator produces semicolon-delimited header", () => {
 
 test("tab separator produces tab-delimited header", () => {
   const { content } = generateCalculatorCsv([MOCK_ROW], "keV/µm", META, {
-    separator: "tab", lineEndings: "lf",
+    separator: "tab",
+    lineEndings: "lf",
   });
   const header = content.split("\n")[0] ?? "";
   expect(header).toContain("\t");
@@ -210,7 +218,8 @@ test("tab separator produces tab-delimited header", () => {
 
 test("lf line endings produce LF only (no CR)", () => {
   const { content } = generateCalculatorCsv([MOCK_ROW], "keV/µm", META, {
-    separator: "comma", lineEndings: "lf",
+    separator: "comma",
+    lineEndings: "lf",
   });
   expect(content).not.toContain("\r");
 });
@@ -285,18 +294,18 @@ test plan §Unit tests for advanced PDF.
     material: { name: string; phase: "gas" | "condensed"; densityGcm3: number } | null;
     programs: Array<{ name: string; source: "builtin" | "external"; sourceUrl?: string }>;
     settings: {
-      interpolationScale?: string;    // e.g. "Log-log"
-      interpolationMethod?: string;   // e.g. "Spline"
-      aggregateState?: string;        // e.g. "Condensed" (only if non-default)
-      densityOverride?: number;       // g/cm³ (only if set)
-      iValueOverride?: number;        // eV (only if set)
+      interpolationScale?: string; // e.g. "Log-log"
+      interpolationMethod?: string; // e.g. "Spline"
+      aggregateState?: string; // e.g. "Condensed" (only if non-default)
+      densityOverride?: number; // g/cm³ (only if set)
+      iValueOverride?: number; // eV (only if set)
     };
-    system: string;                   // navigator.userAgent (caller passes this)
+    system: string; // navigator.userAgent (caller passes this)
     build?: {
       commit: string;
       date: string;
       branch: string;
-    } | null;                         // null when deploy.json absent
+    } | null; // null when deploy.json absent
   }
   ```
 - New exported function `generateAdvancedCalculatorPdf(ctx: AdvancedPdfExportContext): Promise<void>` where:
@@ -344,21 +353,28 @@ helpers directly by extracting them into testable pure functions.
 import { formatParticleMetadataLine } from "$lib/export/pdf";
 
 test("formatParticleMetadataLine renders Z and A", () => {
-  expect(formatParticleMetadataLine({ name: "Proton", atomicNumber: 1, massNumber: 1 }))
-    .toBe("Proton  Z=1  A=1");
+  expect(formatParticleMetadataLine({ name: "Proton", atomicNumber: 1, massNumber: 1 })).toBe(
+    "Proton  Z=1  A=1",
+  );
 });
 
 // Helper that formats a PROGRAMS entry
 import { formatProgramMetadataLine } from "$lib/export/pdf";
 
 test("builtin program shows (built-in)", () => {
-  expect(formatProgramMetadataLine({ name: "ICRU 90", source: "builtin" }))
-    .toBe("ICRU 90  (built-in)");
+  expect(formatProgramMetadataLine({ name: "ICRU 90", source: "builtin" })).toBe(
+    "ICRU 90  (built-in)",
+  );
 });
 
 test("external program shows source URL", () => {
-  expect(formatProgramMetadataLine({ name: "NIST", source: "external", sourceUrl: "https://x.com/nist" }))
-    .toBe("NIST  (external) https://x.com/nist");
+  expect(
+    formatProgramMetadataLine({
+      name: "NIST",
+      source: "external",
+      sourceUrl: "https://x.com/nist",
+    }),
+  ).toBe("NIST  (external) https://x.com/nist");
 });
 
 // Settings block: only non-default values appear
@@ -374,7 +390,10 @@ test("density override is included when set", () => {
 });
 
 test("interpolation is included when set", () => {
-  const lines = formatSettingsLines({ interpolationScale: "Log-log", interpolationMethod: "Spline" });
+  const lines = formatSettingsLines({
+    interpolationScale: "Log-log",
+    interpolationMethod: "Spline",
+  });
   expect(lines).toContain("Interpolation: Log-log / Spline");
 });
 
@@ -465,27 +484,18 @@ Reactive Triggers Matrix, Cross-Page Parity Checklist.
     conditional on `isAdvancedMode.value`:
     ```svelte
     {#if isAdvancedMode.value}
-      <button
-        role="menuitem"
-        data-testid="export-image-png"
-        onclick={downloadPng}
-        class="..."
-      >
+      <button role="menuitem" data-testid="export-image-png" onclick={downloadPng} class="...">
         PNG image
       </button>
     {/if}
-    <button
-      role="menuitem"
-      data-testid="export-image-svg"
-      onclick={downloadSvg}
-      class="..."
-    >
+    <button role="menuitem" data-testid="export-image-svg" onclick={downloadSvg} class="...">
       SVG vector
     </button>
     ```
   - Add `data-testid="export-image-btn"` to the existing dropdown trigger
     button (currently has `aria-label="Export plot as image"` but no testid).
 - `downloadPng()` function:
+
   ```typescript
   async function downloadPng() {
     if (!getSvg) return;
@@ -523,6 +533,7 @@ Reactive Triggers Matrix, Cross-Page Parity Checklist.
     showExportMenu = false;
   }
   ```
+
   - Rationale: JSROOT's `makeSVG()` output (already wired to `getSvg`) is
     rasterized at 2× via an intermediate Canvas. This is simpler than calling
     JSROOT's internal PNG API and avoids adding new JSROOT dependencies.
@@ -568,33 +579,35 @@ const wasmPresent = (): boolean => {
 };
 
 test.describe("Export — advanced mode additions", () => {
-
-  test("CSV modal opens in advanced mode (Calculator); semicolon separator persists @smoke",
-    async ({ page }) => {
-      test.skip(!wasmPresent(), "WASM binary absent");
-      await page.goto("/calculator?mode=advanced&particle=1&material=276");
-      await expect.poll(
-        async () => parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
+  test("CSV modal opens in advanced mode (Calculator); semicolon separator persists @smoke", async ({
+    page,
+  }) => {
+    test.skip(!wasmPresent(), "WASM binary absent");
+    await page.goto("/calculator?mode=advanced&particle=1&material=276");
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
         { timeout: 8000 },
-      ).toBeGreaterThan(0);
+      )
+      .toBeGreaterThan(0);
 
-      await page.click('[data-testid="export-csv-btn"]');
-      await expect(page.locator('[data-testid="csv-export-modal"]')).toBeVisible();
-      await expect(page.locator('[data-testid="csv-separator-comma"]')).toBeChecked();
+    await page.click('[data-testid="export-csv-btn"]');
+    await expect(page.locator('[data-testid="csv-export-modal"]')).toBeVisible();
+    await expect(page.locator('[data-testid="csv-separator-comma"]')).toBeChecked();
 
-      await page.click('[data-testid="csv-separator-semicolon"]');
-      const download = await Promise.all([
-        page.waitForEvent("download"),
-        page.click('[data-testid="csv-export-confirm"]'),
-      ]).then(([d]) => d);
-      expect(download.suggestedFilename()).toMatch(/\.csv$/);
-      await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible();
+    await page.click('[data-testid="csv-separator-semicolon"]');
+    const download = await Promise.all([
+      page.waitForEvent("download"),
+      page.click('[data-testid="csv-export-confirm"]'),
+    ]).then(([d]) => d);
+    expect(download.suggestedFilename()).toMatch(/\.csv$/);
+    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible();
 
-      // Re-open: semicolon persists
-      await page.click('[data-testid="export-csv-btn"]');
-      await expect(page.locator('[data-testid="csv-separator-semicolon"]')).toBeChecked();
-    },
-  );
+    // Re-open: semicolon persists
+    await page.click('[data-testid="export-csv-btn"]');
+    await expect(page.locator('[data-testid="csv-separator-semicolon"]')).toBeChecked();
+  });
 
   test("CSV modal also opens on Plot page in advanced mode @regression", async ({ page }) => {
     test.skip(!wasmPresent(), "WASM binary absent");
@@ -604,7 +617,7 @@ test.describe("Export — advanced mode additions", () => {
     // should auto-commit from the URL params — check canExport becomes true.
     await expect
       .poll(
-        async () => (await page.locator('[data-testid="export-csv-btn"]').getAttribute("disabled")),
+        async () => await page.locator('[data-testid="export-csv-btn"]').getAttribute("disabled"),
         { timeout: 8000 },
       )
       .toBeNull();
@@ -616,17 +629,22 @@ test.describe("Export — advanced mode additions", () => {
   test("basic mode: CSV downloads immediately, no modal @regression", async ({ page }) => {
     test.skip(!wasmPresent(), "WASM binary absent");
     await page.goto("/calculator?particle=1&material=276");
-    await expect.poll(
-      async () => parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
-      { timeout: 8000 },
-    ).toBeGreaterThan(0);
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
+        { timeout: 8000 },
+      )
+      .toBeGreaterThan(0);
 
     // In basic mode the button should trigger download directly
     const [download] = await Promise.all([
       page.waitForEvent("download"),
       page.click('[data-testid="export-csv-btn"]'),
     ]);
-    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible({ timeout: 500 });
+    await expect(page.locator('[data-testid="csv-export-modal"]')).not.toBeVisible({
+      timeout: 500,
+    });
     expect(download.suggestedFilename()).toMatch(/\.csv$/);
   });
 
@@ -652,23 +670,25 @@ test.describe("Export — advanced mode additions", () => {
     expect(download.suggestedFilename()).toBe("dedx_plot.png");
   });
 
-  test("Calculator PDF downloads in advanced mode with dedx_calculator_*.pdf filename @regression",
-    async ({ page }) => {
-      test.skip(!wasmPresent(), "WASM binary absent");
-      await page.goto("/calculator?mode=advanced&particle=1&material=276");
-      await expect.poll(
-        async () => parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
+  test("Calculator PDF downloads in advanced mode with dedx_calculator_*.pdf filename @regression", async ({
+    page,
+  }) => {
+    test.skip(!wasmPresent(), "WASM binary absent");
+    await page.goto("/calculator?mode=advanced&particle=1&material=276");
+    await expect
+      .poll(
+        async () =>
+          parseFloat((await page.locator('[data-testid="stp-cell-0"]').textContent()) ?? ""),
         { timeout: 8000 },
-      ).toBeGreaterThan(0);
+      )
+      .toBeGreaterThan(0);
 
-      const [download] = await Promise.all([
-        page.waitForEvent("download"),
-        page.getByRole("button", { name: /export pdf/i }).click(),
-      ]);
-      expect(download.suggestedFilename()).toMatch(/^dedx_calculator_.+\.pdf$/);
-    },
-  );
-
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      page.getByRole("button", { name: /export pdf/i }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(/^dedx_calculator_.+\.pdf$/);
+  });
 });
 ```
 

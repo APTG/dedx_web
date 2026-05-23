@@ -22,7 +22,7 @@ Key design choices:
   `activeTab` changes (matching the old per-tab `query = $state("")`
   default) and refocuses the lifted search input so keyboard users can
   immediately type after switching tabs. Initial mount intentionally
-  does *not* steal focus, which preserves the existing
+  does _not_ steal focus, which preserves the existing
   `entity-selection-tabbed.test.ts` "arrow keys on tab bar" behavior
   where the test focuses a tab button after render.
 - **Dynamic placeholder**: derived from `activeTarget` —
@@ -37,7 +37,7 @@ Key design choices:
   `$effect`. Material/Program tabs do not register them (they didn't
   use arrow/enter navigation before either).
 - **Chevron**: `▼` when collapsed, `▲` when expanded; `aria-expanded`
-  + `aria-controls` for screen readers; `data-testid="picker-toggle"`.
+  - `aria-controls` for screen readers; `data-testid="picker-toggle"`.
 
 ## Tasks
 

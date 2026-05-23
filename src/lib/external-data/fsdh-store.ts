@@ -30,10 +30,7 @@ export class FileSystemDirectoryHandleStore {
     return err instanceof DOMException && err.name === "NotFoundError";
   }
 
-  private async resolveFile(
-    key: AbsolutePath,
-    opts?: GetOptions,
-  ): Promise<File | undefined> {
+  private async resolveFile(key: AbsolutePath, opts?: GetOptions): Promise<File | undefined> {
     opts?.signal?.throwIfAborted();
     const parts = key.slice(1).split("/").filter(Boolean);
     if (parts.length === 0) return undefined;

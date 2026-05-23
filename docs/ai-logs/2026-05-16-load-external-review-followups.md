@@ -5,6 +5,7 @@
 ### Prompt 1: Apply PR #521 review-thread fixes
 
 **AI response**: Addressed the full review thread for the load-external feature with minimal, focused edits:
+
 - Added stale-label safeguards (`ExternalDataService` now rejects same-label/different-source reuse; Calculator passes service-cached labels into modal uniqueness checks).
 - Rebuilt external compatibility context reconciliation to fallback selections when removed external sources invalidate current particle/material/program picks.
 - Made recents persistence best-effort (`localStorage.setItem` failures no longer block successful loads).

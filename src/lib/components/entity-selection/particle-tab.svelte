@@ -4,7 +4,11 @@
   import type { ParticleEntity } from "$lib/wasm/types";
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
-  import { getParticleLabel, getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
+  import {
+    getParticleLabel,
+    getParticleListLabel,
+    getParticleSearchText,
+  } from "$lib/utils/particle-label";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
@@ -189,7 +193,11 @@
     {summaryLabels}
     onClear={isMultiMode ? clearAllMulti : onClear}
     onlySelected={showOnlySelected}
-    onToggleOnlySelected={isMultiMode ? () => { showOnlySelected = !showOnlySelected; } : undefined}
+    onToggleOnlySelected={isMultiMode
+      ? () => {
+          showOnlySelected = !showOnlySelected;
+        }
+      : undefined}
     testId="picker-particle-selected"
   />
 
@@ -241,8 +249,8 @@
             aria-hidden="true"
             class="w-4 shrink-0 text-center text-xs {isChecked
               ? 'font-bold text-orange-700'
-              : 'text-muted-foreground'}"
-          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
+              : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
+          >
           {#if external}<span aria-hidden="true">🔗</span>{/if}
           {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
           <span class="flex-1">{getParticleListLabel(p, z)}</span>

@@ -264,7 +264,9 @@
     font-size: 0.875rem;
     font-weight: 500;
     text-align: center;
-    transition: background-color 0.15s, color 0.15s;
+    transition:
+      background-color 0.15s,
+      color 0.15s;
     position: relative;
   }
 

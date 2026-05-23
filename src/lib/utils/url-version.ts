@@ -1,7 +1,9 @@
 export const CURRENT_URL_MAJOR = 1;
 export const MIN_SUPPORTED_URL_MAJOR = 1;
 
-export type VersionNegotiationResult = { status: "ok" } | { status: "mismatch"; version: number | string };
+export type VersionNegotiationResult =
+  | { status: "ok" }
+  | { status: "mismatch"; version: number | string };
 
 export function negotiateVersion(version: string | null | undefined): VersionNegotiationResult {
   if (version === null || version === undefined) return { status: "ok" };

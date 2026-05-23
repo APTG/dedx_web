@@ -7,6 +7,7 @@
 User requested implementation of the remaining work from issue #530: fix the JSROOT "Failed to load the plot engine" crash, resolve Part A open questions (★ prefix for named particles, slide-up animation), add `/` keyboard shortcut, series-strip component, and plot page re-layout with live-edit + multi-create.
 
 **AI response**: Created a detailed implementation plan covering:
+
 - Root cause of JSROOT crash: `ObjectPainter.mjs:1828` runs `Object.assign(internals.jsroot, {...})` during module evaluation when JSROOT lazily loads on first `draw()` call with empty multigraph. `internals` is undefined due to ES module circular dep evaluation order. Fix: guard prevents the empty draw call.
 - Part A deferred: (c) ★ prefix for proton/alpha; slide-up 200ms animation with prefers-reduced-motion; desktop stays inline.
 - `/` shortcut: focuses search input from anywhere in the picker.
@@ -18,6 +19,7 @@ Plan approved after adjusting: removed "No data yet" placeholder (first load sho
 ### Prompt 2 (continuation): Resume implementing
 
 **AI response**: Implemented in this order:
+
 1. JSROOT empty-draw guard in `jsroot-plot.svelte` + unit test + E2E regression tests in `plot.spec.ts`
 2. ★ prefix in `particle-tab.svelte` and `picker-sheet.svelte`
 3. Slide-up sheet animation in `entity-selection.svelte` (fly transition, prefers-reduced-motion)

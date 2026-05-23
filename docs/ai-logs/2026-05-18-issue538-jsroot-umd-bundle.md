@@ -22,6 +22,7 @@ now evaluates `ObjectPainter.mjs` top-level code before `core.mjs` initialises `
 The error is structural — retrying never helps.
 
 Proposed three options:
+
 1. Pin jsroot to 7.10.3 (quick, fights dependabot)
 2. Make `@resvg/resvg-js` a Rollup external (uncertain fix)
 3. Load jsroot via its own pre-built UMD bundle (definitive fix)
@@ -29,6 +30,7 @@ Proposed three options:
 ### Prompt 2: Check past commits at end of stage 6 to understand what was different
 
 **AI response**: Traced the exact version history:
+
 - Stage 6 end (3863744, May 13 08:55 UTC): jsroot `7.10.3` via `^7.9.0` in package.json
 - 17 minutes later (3cf5e09, May 13 09:12 UTC): dependabot bumped to jsroot `7.11.0`
 - May 15 (59b26fe): second bump PR also added `@resvg/resvg-js` alias to vite.config.ts
@@ -45,6 +47,7 @@ Confirmed 7.10.3 lockfile had no `@resvg` dependency; 7.11.0 lockfile added it.
 ### Prompt 3: Explain pros and cons of all three options in detail
 
 **AI response**: Detailed comparison:
+
 - **Option 1** (pin 7.10.3): trivial, confirmed working, but fights dependabot forever
 - **Option 2** (Rollup external): small change, uncertain — doesn't guarantee evaluation
   order; Vitest handling complex

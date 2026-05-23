@@ -61,7 +61,9 @@ async function mevNuclCell(page: import("@playwright/test").Page, index: number)
 test.describe("Particle switching — E_nucl conservation", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator?advanced=1");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 
@@ -146,7 +148,9 @@ test.describe("Particle switching — E_nucl conservation", () => {
 test.describe("Per-row unit dropdown — current behaviour", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator?advanced=1");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 

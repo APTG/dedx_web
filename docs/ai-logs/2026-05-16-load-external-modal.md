@@ -5,6 +5,7 @@
 ### Prompt 1: Build load-external-modal + wire disabled button
 
 User asked to build `src/lib/components/entity-selection/load-external-modal.svelte` with:
+
 - URL paste validator (`https?://…/*.webdedx` regex)
 - Drag-drop file/directory zone
 - `webdedx.externalRecents.v1` localStorage recents (5 most recent URL loads)
@@ -60,6 +61,7 @@ Created branch `feat/issue-510-load-external-modal` and implemented:
    - `<LoadExternalModal>` rendered in template next to `<ExternalSourcesPanel>`
 
 **Decisions**:
+
 - FSDH store does full file reads (no streaming Range support) via `File.arrayBuffer()`. The
   `getRange` override slices in-memory — acceptable given typical `.webdedx` shard sizes.
 - File-based sources get `url: ""` in their descriptor; `externalDataQuerySegments` filters

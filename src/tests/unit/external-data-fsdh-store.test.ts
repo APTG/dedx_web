@@ -24,9 +24,7 @@ describe("FileSystemDirectoryHandleStore", () => {
 
   it("rethrows abort errors instead of treating them as missing files", async () => {
     const root = {
-      getDirectoryHandle: vi
-        .fn()
-        .mockRejectedValue(new DOMException("Aborted", "AbortError")),
+      getDirectoryHandle: vi.fn().mockRejectedValue(new DOMException("Aborted", "AbortError")),
     } as unknown as FileSystemDirectoryHandle;
     const store = new FileSystemDirectoryHandleStore(root);
 

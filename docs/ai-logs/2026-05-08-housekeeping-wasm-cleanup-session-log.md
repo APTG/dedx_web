@@ -18,7 +18,7 @@ Investigated both issues:
 1. **WASM binaries in git** — `.gitignore` explicitly lists both files under
    the comment "WASM build artifacts — build.sh outputs here; never commit
    built binaries". They were added in commit `72dcc50` (`build(wasm): add
-   -I/src/libdedx/include and rebuild WASM binary`) alongside the legitimate
+-I/src/libdedx/include and rebuild WASM binary`) alongside the legitimate
    `wasm/build.sh` change. Removed with `git rm --cached`.
 
 2. **Session log filing** — `session-ses_1fcf.md` (5900 lines, raw Qwen

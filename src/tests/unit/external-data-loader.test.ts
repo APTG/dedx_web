@@ -210,8 +210,7 @@ describe("stpToInternal", () => {
   it("MeV·cm²/g: identity", () => expect(stpToInternal(5.0, "MeV·cm²/g")).toBe(5.0));
   it("MeV/cm: divides by density", () =>
     expect(stpToInternal(5.0, "MeV/cm", 2.0)).toBeCloseTo(2.5));
-  it("MeV/cm: null when density missing", () =>
-    expect(stpToInternal(5.0, "MeV/cm")).toBeNull());
+  it("MeV/cm: null when density missing", () => expect(stpToInternal(5.0, "MeV/cm")).toBeNull());
   it("keV/µm: *10/density", () => expect(stpToInternal(5.0, "keV/µm", 1.0)).toBeCloseTo(50.0));
   it("keV/µm: null when density missing", () => expect(stpToInternal(5.0, "keV/µm")).toBeNull());
 });

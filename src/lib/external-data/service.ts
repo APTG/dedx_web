@@ -20,7 +20,12 @@ import {
   loadCsdaSlice,
 } from "./loader.js";
 import { FileSystemDirectoryHandleStore } from "./fsdh-store.js";
-import { convertEnergyGrid, convertStpColumn, convertCsdaColumn, computeCsdaColumn } from "./units.js";
+import {
+  convertEnergyGrid,
+  convertStpColumn,
+  convertCsdaColumn,
+  computeCsdaColumn,
+} from "./units.js";
 import { interpolate, type InterpolationScale } from "./interpolation.js";
 
 /** Maximum number of simultaneously loaded external sources. */
@@ -240,7 +245,13 @@ export class ExternalDataService {
     if (cached) return cached;
 
     const storeOverride = this._stores.get(label);
-    const raw = await loadStpSlice(meta.url, programId, particle.index, material.index, storeOverride);
+    const raw = await loadStpSlice(
+      meta.url,
+      programId,
+      particle.index,
+      material.index,
+      storeOverride,
+    );
     const energyGridMev = convertEnergyGrid(meta.energyGrid, meta.energyUnit, particle.A);
     const values = convertStpColumn(raw, meta.stpUnit, material.density);
 
@@ -276,7 +287,13 @@ export class ExternalDataService {
     if (meta.hasCsdaRange) {
       // Load CSDA from the zarr store.
       const storeOverride = this._stores.get(label);
-      const raw = await loadCsdaSlice(meta.url, programId, particle.index, material.index, storeOverride);
+      const raw = await loadCsdaSlice(
+        meta.url,
+        programId,
+        particle.index,
+        material.index,
+        storeOverride,
+      );
       if (raw === null) {
         this._csdaCache.set(cacheKey, null);
         return null;

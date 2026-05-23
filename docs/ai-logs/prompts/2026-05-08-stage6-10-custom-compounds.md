@@ -121,6 +121,7 @@ Before writing any WASM code, complete the mandatory checklist from
    their semantics (`target=0` activates the custom compound path).
 
 Hard rules (from implementer contract):
+
 - Do **not** infer WASM behavior from UI/spec prose alone.
 - Do **not** invent new WASM capabilities beyond the four functions listed below.
 - In your `TASK DONE` for Task 2, explicitly record what C symbols now exist vs.
@@ -148,7 +149,7 @@ Hard rules (from implementer contract):
   ```typescript
   interface CustomCompoundsStore {
     readonly compounds: StoredCustomCompoundV1[];
-    create(fields: CompoundCreateInput): StoredCustomCompoundV1;   // throws ValidationError
+    create(fields: CompoundCreateInput): StoredCustomCompoundV1; // throws ValidationError
     update(id: string, fields: Partial<CompoundCreateInput>): void; // throws ValidationError
     delete(id: string): void;
     getById(id: string): StoredCustomCompoundV1 | undefined;
@@ -156,10 +157,14 @@ Hard rules (from implementer contract):
     getCompatiblePrograms(
       compound: Pick<StoredCustomCompoundV1, "elements">,
       allPrograms: ProgramEntity[],
-      matrix: CompatibilityMatrix
-    ): { compatible: ProgramEntity[]; incompatible: Array<{ program: ProgramEntity; missingZ: number[] }> };
+      matrix: CompatibilityMatrix,
+    ): {
+      compatible: ProgramEntity[];
+      incompatible: Array<{ program: ProgramEntity; missingZ: number[] }>;
+    };
   }
   ```
+
   - Backed by `$state` (Svelte 5 runes). The `compounds` getter returns the reactive array.
   - `localStorage` key `customCompounds`; schema v1 (`{ schemaVersion: 1, compounds: [...] }`).
   - On init: reads localStorage, migrates legacy array-only shape (wrap in v1 envelope), drops invalid rows silently.
@@ -194,16 +199,16 @@ expect(resolveElement("999")).toBeNull();
 // parseFormula
 expect(parseFormula("H2O")).toEqual([
   { atomicNumber: 1, atomCount: 2 },
-  { atomicNumber: 8, atomCount: 1 }
+  { atomicNumber: 8, atomCount: 1 },
 ]);
 expect(parseFormula("C5H8O2")).toEqual([
   { atomicNumber: 1, atomCount: 8 },
   { atomicNumber: 6, atomCount: 5 },
-  { atomicNumber: 8, atomCount: 2 }
+  { atomicNumber: 8, atomCount: 2 },
 ]);
 expect(parseFormula("LiF")).toEqual([
   { atomicNumber: 3, atomCount: 1 },
-  { atomicNumber: 9, atomCount: 1 }
+  { atomicNumber: 9, atomCount: 1 },
 ]);
 expect(parseFormula("Fe")).toEqual([{ atomicNumber: 26, atomCount: 1 }]);
 expect(parseFormula("Xx2O")).toMatchObject({ error: expect.stringContaining("Xx") });
@@ -268,6 +273,7 @@ Study the existing `dedx_get_inverse_stp_flat` function carefully — it sets up
 **same lifecycle**.
 
 For the custom compound variants, the difference is:
+
 - Set `cfg->target = 0` (custom compound path in libdedx)
 - Set `cfg->elements_id = elem_ids` (pointer to the caller's int array)
 - Set `cfg->elements_atoms = elem_atoms` (pointer to the caller's double array)
@@ -372,6 +378,7 @@ getBraggPeakStpCustomCompound(params: {
 ```
 
 **In `src/lib/wasm/libdedx.ts`:**
+
 - `calculateCustomCompound`: use `_malloc` to allocate `Int32Array` (elem_ids) and `Float64Array` (elem_atoms, energies, stp_out, csda_out), write compound data, call `_dedx_calculate_custom_forward_flat`, read results, free all.
 - `getPlotDataCustomCompound`: JS-side only — call `_dedx_get_min_energy` + `_dedx_get_max_energy` (look at how `calculate()` obtains energy bounds), generate `pointCount` log- or linear-spaced energies, call `calculateCustomCompound` iteratively, accumulate results.
 - `getInverseStpCustomCompound` and `getInverseCsdaCustomCompound`: loop over input values; per value malloc+call+free the C wrapper.
@@ -496,6 +503,7 @@ Round-trip: material=custom + mat_* → encode → decode → same compound fiel
 ### Step 3b — implement
 
 In `encodeCalculatorUrl` / `decodeCalculatorUrl`:
+
 - Use standard `URLSearchParams` for percent-encoding (via `params.set("mat_name", state.matName)` and `params.get("mat_name")` + `decodeURIComponent`).
 - In decode: a `fromUrlWarning` string is returned as part of the state (not a thrown error) — the Calculator page reads it and renders the warning banner.
 
@@ -583,12 +591,14 @@ do not need WASM.
 ### Step 4b — implement
 
 **Compound editor modal:**
+
 - Use a Bits UI Dialog primitive (`bits-ui` is already a dependency; see `vendor/bits-ui/` for source). Open/close via `bind:open`.
 - Weight-fraction mode: store weight % per element row. Compute `n_i = w_i / M_i` using `ELEMENT_DATA.atomicWeight` for live display. Sum displayed below rows with colour coding.
 - Formula mode: call `parseFormula()` on blur / save to produce element array.
 - On save: call `customCompoundsStore.create()` or `customCompoundsStore.update()`. On ValidationError, display message in `compound-validation-error`.
 
 **Entity selection integration:**
+
 - In `src/routes/calculator/+page.svelte` (or the existing entity selector component): read `customCompoundsStore.compounds` reactively; render "Custom Compounds" group inside `{#if isAdvancedMode.value}`.
 - Store the active material as a `MaterialRef` union: `{ kind: "builtin"; id: number } | { kind: "custom"; id: string }` (as defined in spec §6.10.2).
 - "Custom" compounds are never greyed out for particle/program selection (spec §2.3).
@@ -617,6 +627,7 @@ integration, interaction with Advanced Options, inverse lookup, default unit),
 ### Acceptance criteria
 
 **Calculator page (`src/routes/calculator/+page.svelte`):**
+
 - When the active material `ref.kind === "custom"`, forward calculation calls `service.calculateCustomCompound()` instead of `service.calculate()`.
 - Reactive dep snapshot rule (lessons-learned Entry 1): `customCompoundsStore.getById(ref.id)` and all other reactive deps are read **synchronously** at the top of the calculation `$effect`, before any `getService().then()`.
 - When active material switches to Basic mode: fall back to built-in liquid water (ID 276); retain the custom compound ref in memory; restore on switch back to Advanced mode.
@@ -628,12 +639,14 @@ integration, interaction with Advanced Options, inverse lookup, default unit),
 - Multi-program mode: each program calls `calculateCustomCompound()` independently; one program's runtime error does not abort others.
 
 **Plot page (`src/routes/plot/+page.svelte`):**
+
 - When a custom compound series is added, `getPlotDataCustomCompound()` generates the dense energy grid. Series label shows compound name + "(custom)" badge.
 - Custom compound series in the `{#if isAdvancedMode.value}` guard; switching to Basic mode removes custom compound series from the series list (they are NOT restored on re-entry to Advanced mode).
 - URL sync on plot page: same `material=custom` + `mat_*` params when a custom compound is the selected material for a new series.
 - "Compound from shared URL" banner on plot page too, with same logic.
 
 **Export behavior:**
+
 - CSV filename: `dedx_{compoundName}_custom_{particle}_{program}.csv` (spaces replaced with underscores in compound name).
 - Advanced PDF metadata `MATERIAL` row: `"{name} (custom)  ρ = {density} g/cm³"` for condensed; `"{name} (custom, gas)  ρ = {density} g/cm³"` for gas.
 - Elemental composition table below MATERIAL row (advanced PDF only): columns Element, Z, Atom count, Weight % — all per spec §8.2.
@@ -675,32 +688,41 @@ test("custom compound: created on Calculator available on Plot page @regression"
 ```typescript
 $effect(() => {
   // Read ALL reactive deps synchronously
-  const ref = entityState.activeMaterialRef;            // { kind, id }
-  const compound = ref?.kind === "custom"
-    ? customCompoundsStore.getById(ref.id) ?? null
-    : null;
+  const ref = entityState.activeMaterialRef; // { kind, id }
+  const compound = ref?.kind === "custom" ? (customCompoundsStore.getById(ref.id) ?? null) : null;
   const energies = energyRowsState.parsedEnergies;
   const particle = entityState.selectedParticle;
   const program = entityState.selectedProgram;
-  const advOpts = advancedOptions.value;                // snapshot
+  const advOpts = advancedOptions.value; // snapshot
   if (!particle || !program || !energies.length) return;
 
   getService().then((svc) => {
     if (compound) {
       // Use frozen snapshots inside .then()
-      calcState.setResult(svc.calculateCustomCompound({
-        programId: program.id, particleId: particle.id,
-        compound: { name: compound.name, elements: compound.elements,
-                    density: compound.density, iValue: compound.iValue },
-        energies,
-        options: { interpolation: advOpts.interpolation, mstarMode: advOpts.mstarMode }
-      }));
+      calcState.setResult(
+        svc.calculateCustomCompound({
+          programId: program.id,
+          particleId: particle.id,
+          compound: {
+            name: compound.name,
+            elements: compound.elements,
+            density: compound.density,
+            iValue: compound.iValue,
+          },
+          energies,
+          options: { interpolation: advOpts.interpolation, mstarMode: advOpts.mstarMode },
+        }),
+      );
     } else {
-      calcState.setResult(svc.calculate({
-        programId: program.id, particleId: particle.id,
-        materialId: (ref as { kind: "builtin"; id: number }).id,
-        energies, options: advOpts
-      }));
+      calcState.setResult(
+        svc.calculate({
+          programId: program.id,
+          particleId: particle.id,
+          materialId: (ref as { kind: "builtin"; id: number }).id,
+          energies,
+          options: advOpts,
+        }),
+      );
     }
   });
 });
