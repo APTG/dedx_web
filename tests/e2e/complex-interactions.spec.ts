@@ -49,9 +49,12 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     // Clear advanced-mode flag set by beforeEach so the page loads in Basic mode.
     await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
     await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
     await typeInRow(page, 0, "100");
+    await page.getByRole("button", { name: /\+\s*Add row/i }).click();
     const headers = page.locator("thead th");
     await expect(headers).toHaveCount(3, { timeout: 5000 });
     await expect(headers.nth(0)).toContainText(/Energy/i);
@@ -194,7 +197,9 @@ test.describe("Calculator — auto-select and program resolution", () => {
     const searchInput = page.getByTestId("picker-material-search");
     await searchInput.fill("Urea");
 
-    const ureaItem = page.locator('[data-testid^="picker-material-item-"]', { hasText: /Urea/i }).first();
+    const ureaItem = page
+      .locator('[data-testid^="picker-material-item-"]', { hasText: /Urea/i })
+      .first();
     const ureaExists = await ureaItem.isVisible({ timeout: 2000 }).catch(() => false);
 
     if (ureaExists) {

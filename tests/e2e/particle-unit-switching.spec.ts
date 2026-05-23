@@ -61,7 +61,9 @@ async function mevNuclCell(page: import("@playwright/test").Page, index: number)
 test.describe("Particle switching — E_nucl conservation", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator?advanced=1");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 
@@ -146,7 +148,9 @@ test.describe("Particle switching — E_nucl conservation", () => {
 test.describe("Per-row unit dropdown — current behaviour", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator?advanced=1");
-    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 
@@ -241,20 +245,21 @@ test.describe("Add row UX", () => {
     await waitForTable(page);
   });
 
-  test("typing in the last row auto-appends a fresh row below it", async ({ page }) => {
-    // Default state has a single pre-filled "100" row. Typing in the LAST
-    // row auto-appends a new empty row (see `updateRowText` in
-    // `src/lib/state/energy-rows.svelte.ts`).
+  test("typing in the last row does not auto-append; + Add row appends explicitly", async ({
+    page,
+  }) => {
+    // Basic mode keeps single-row card layout until the user explicitly adds rows.
     const initialCount = await page.locator("input[data-row-index]").count();
     expect(initialCount).toBeGreaterThanOrEqual(1);
 
-    // Type into the current last row to trigger an auto-append.
+    // Typing does not auto-append.
     await typeInRow(page, initialCount - 1, "200");
-    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount + 1);
+    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount);
 
-    // Typing in the new last row appends one more.
-    await typeInRow(page, initialCount, "300");
-    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount + 2);
+    // Explicit + Add row appends one empty row.
+    const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
+    await addBtn.click();
+    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount + 1);
   });
 
   test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({

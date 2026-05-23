@@ -2,11 +2,11 @@ import { describe, test, expect } from "vitest";
 import { negotiateVersion } from "$lib/utils/url-version.js";
 
 describe("negotiateVersion", () => {
-  test("negotiateVersion(1) → ok", () => {
-    expect(negotiateVersion("1")).toEqual({ status: "ok" });
+  test("negotiateVersion(2) → ok", () => {
+    expect(negotiateVersion("2")).toEqual({ status: "ok" });
   });
 
-  test("negotiateVersion(null/undefined) → ok (absent = version 1)", () => {
+  test("negotiateVersion(null/undefined) → ok (absent = legacy v1)", () => {
     expect(negotiateVersion(null)).toEqual({ status: "ok" });
     expect(negotiateVersion(undefined)).toEqual({ status: "ok" });
   });

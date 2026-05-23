@@ -299,12 +299,12 @@
           const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
           if (inverseMode && isAdvancedMode.value) {
             inverseLookupState!.setActiveTab(inverseMode.imode);
-            if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
+            if (inverseMode.lookups && inverseMode.lookups.length > 0) {
               inverseLookupState!.rangeRows.length = 0;
               inverseLookupState!.stpRows.length = 0;
 
-              for (let i = 0; i < inverseMode.ivalues.length; i++) {
-                const ival = inverseMode.ivalues[i]!;
+              for (let i = 0; i < inverseMode.lookups.length; i++) {
+                const ival = inverseMode.lookups[i]!;
                 const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
                 if (inverseMode.imode === "csda") {
                   if (i === 0) {

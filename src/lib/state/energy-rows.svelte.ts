@@ -14,7 +14,7 @@ export interface EnergyInputState {
   hasLargeInput: boolean;
   addRow(): void;
   removeRow(index: number): void;
-  updateRowText(index: number, text: string): void;
+  updateRowText(index: number, text: string, autoAdd?: boolean): void;
   handleBlur(index: number): void;
   setMasterUnit(unit: EnergyUnit): void;
   getParsedEnergies(): ParseResult[];
@@ -48,7 +48,7 @@ export function createEnergyInputState(): EnergyInputState {
     rows = rows.filter((_, i) => i !== index);
   }
 
-  function updateRowText(index: number, text: string): void {
+  function updateRowText(index: number, text: string, autoAdd = true): void {
     const parsed = parseEnergyInput(text);
     const error = "error" in parsed ? parsed.error : undefined;
 
@@ -64,7 +64,7 @@ export function createEnergyInputState(): EnergyInputState {
       return rowWithoutError;
     });
 
-    if (index === rows.length - 1 && text.trim() !== "") {
+    if (autoAdd && index === rows.length - 1 && text.trim() !== "") {
       addRow();
     }
   }

@@ -50,8 +50,49 @@
     }
   });
 
-  function handleInputFocus(event: Event) {
+  // First-focus inline-unit hint — shown once per browser session.
+  let hintVisible = $state(false);
+  let hintTimerId: ReturnType<typeof setTimeout> | null = null;
+
+  function maybeShowHint(index: number) {
+    if (index !== 0) return;
+    if (typeof localStorage === "undefined") return;
+    try {
+      if (localStorage.getItem("dedx_tip_inline_unit_seen")) return;
+    } catch {
+      return;
+    }
+    hintVisible = true;
+    hintTimerId = setTimeout(dismissHint, 10_000);
+  }
+
+  function dismissHint() {
+    hintVisible = false;
+    if (hintTimerId !== null) {
+      clearTimeout(hintTimerId);
+      hintTimerId = null;
+    }
+    if (typeof localStorage !== "undefined") {
+      try {
+        localStorage.setItem("dedx_tip_inline_unit_seen", "1");
+      } catch {
+        // Best-effort only.
+      }
+    }
+  }
+
+  $effect(() => {
+    return () => {
+      if (hintTimerId !== null) {
+        clearTimeout(hintTimerId);
+        hintTimerId = null;
+      }
+    };
+  });
+
+  function handleInputFocus(event: Event, index: number) {
     (event.target as HTMLInputElement).select();
+    maybeShowHint(index);
   }
 
   function focusRowInput(targetIndex: number): boolean {
@@ -69,7 +110,11 @@
       event.preventDefault();
       calcState.handleBlur(index);
       const moved = focusRowInput(index + 1);
-      if (!moved) queueMicrotask(() => focusRowInput(index + 1));
+      if (!moved) {
+        // No next row exists — explicitly add one so the user can continue
+        calcState.addRow();
+        queueMicrotask(() => focusRowInput(index + 1));
+      }
       return;
     }
     if (event.key === "Tab") {
@@ -86,7 +131,9 @@
 
   function handleInputChange(event: Event, index: number) {
     const target = event.target as HTMLInputElement;
-    calcState.updateRowText(index, target.value);
+    // autoAdd=false: layout stays as card until user explicitly adds a row
+    // (Enter key or "+ Add row" button). Advanced mode uses the default autoAdd=true.
+    calcState.updateRowText(index, target.value, false);
     calcState.triggerCalculation();
   }
 
@@ -182,13 +229,14 @@
           <input
             id="basic-energy-input"
             type="text"
+            inputmode="text"
             aria-label="Energy value row 1"
             data-row-index={0}
             data-testid="energy-input-0"
             value={row.rawInput}
             placeholder="e.g. 100 keV"
             class={inputClass(row)}
-            onfocus={handleInputFocus}
+            onfocus={(e) => handleInputFocus(e, 0)}
             onkeydown={(e) => handleInputKeyDown(e, 0)}
             oninput={(e) => handleInputChange(e, 0)}
             onpaste={(e) => handlePaste(e, 0)}
@@ -197,6 +245,21 @@
           {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
             <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
               {row.message}
+            </div>
+          {/if}
+          {#if hintVisible}
+            <div
+              class="mt-1 flex items-center gap-2 rounded border border-dashed border-muted-foreground/40 px-2 py-1 text-xs text-muted-foreground"
+              role="status"
+              data-testid="inline-unit-hint"
+            >
+              <span>type a unit too — e.g. <code class="font-mono">10 keV</code></span>
+              <button
+                type="button"
+                class="ml-auto text-muted-foreground/60 hover:text-muted-foreground leading-none"
+                aria-label="Dismiss hint"
+                onclick={dismissHint}>×</button
+              >
             </div>
           {/if}
         </div>
@@ -252,13 +315,14 @@
                 >
                   <input
                     type="text"
+                    inputmode="text"
                     aria-label={`Energy value row ${i + 1}`}
                     data-row-index={i}
                     data-testid={`energy-input-${i}`}
                     value={row.rawInput}
                     placeholder="e.g. 100 keV"
                     class={inputClass(row)}
-                    onfocus={handleInputFocus}
+                    onfocus={(e) => handleInputFocus(e, i)}
                     onkeydown={(e) => handleInputKeyDown(e, i)}
                     oninput={(e) => handleInputChange(e, i)}
                     onpaste={(e) => handlePaste(e, i)}
@@ -317,26 +381,14 @@
       </div>
     {/if}
 
-    {#if !isSingleRow}
-      <div class="flex justify-start">
-        <button
-          type="button"
-          class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-          onclick={() => calcState.addRow()}
-        >
-          + Add row
-        </button>
-      </div>
-    {:else}
-      <div class="flex justify-start">
-        <button
-          type="button"
-          class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-          onclick={() => calcState.addRow()}
-        >
-          + Add row
-        </button>
-      </div>
-    {/if}
+    <div class="flex justify-start">
+      <button
+        type="button"
+        class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+        onclick={() => calcState.addRow()}
+      >
+        + Add row
+      </button>
+    </div>
   {/if}
 </div>
