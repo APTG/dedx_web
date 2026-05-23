@@ -11,16 +11,15 @@ import { test, expect } from "@playwright/test";
 const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
-  await page.goto("/calculator");
+  // All tests in this file rely on the Advanced mode table structure (5-column
+  // table with → MeV/nucl column, per-row unit selector, tbody/thead).
+  await page.goto("/calculator?advanced=1");
   await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
 
 /** Wait until the result table is visible (entity selection is complete). */
 async function waitForTable(page: import("@playwright/test").Page) {
-  // Wait for a stable, identifying header cell so we don't race the
-  // initial WASM load.  Reuse WASM_TIMEOUT — initial page load and
-  // resolveAutoSelect can both be slow in CI.
-  await expect(page.locator("thead th").first()).toContainText(/Energy/i, {
+  await expect(page.locator('[data-testid="energy-input-0"]')).toBeVisible({
     timeout: WASM_TIMEOUT,
   });
 }

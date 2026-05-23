@@ -13,6 +13,7 @@ export default tseslint.config(
       ".svelte-kit/**",
       "build/**",
       "static/wasm/**",
+      "static/jsroot.min.js",
       "wasm/output/**",
       "scripts/**",
     ],

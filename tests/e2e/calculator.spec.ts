@@ -49,7 +49,9 @@ test.describe("Calculator on mobile viewport", () => {
   test.use({ viewport: { width: 412, height: 915 } });
 
   test("calculated stopping power and range are fully visible (no clipping)", async ({ page }) => {
-    await page.goto("/calculator");
+    // Advanced mode: the ResultTable uses <td> elements required by the closest("td")
+    // assertion below; the Basic mode card layout has no <td> for the result cells.
+    await page.goto("/calculator?advanced=1");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
     const energyInput = page.locator('[data-testid="energy-input-0"]');
