@@ -479,31 +479,31 @@ describe("decodeCalculatorUrl", () => {
   });
 
   // ──────────────────────────────────────────────────────────────────────────
-  // Inverse lookup URL params (imode, ivalues, iunit)
+  // Inverse lookup URL params (imode, lookups, iunit)
   // ──────────────────────────────────────────────────────────────────────────
 
-  it("decodes imode=csda, ivalues with mixed per-row suffixes, iunit=cm", () => {
+  it("decodes imode=csda, lookups with mixed per-row suffixes, iunit=cm", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,0.2&iunit=cm",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&lookups=7.718:cm,45:um,0.2&iunit=cm",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBe("csda");
     expect((decoded as any).iunit).toBe("cm");
-    expect((decoded as any).ivalues).toEqual([
+    expect((decoded as any).lookups).toEqual([
       { rawInput: "7.718", unit: "cm", unitFromSuffix: true },
       { rawInput: "45", unit: "um", unitFromSuffix: true },
       { rawInput: "0.2", unit: "cm", unitFromSuffix: false },
     ]);
   });
 
-  it("decodes imode=stp, ivalues without per-row suffixes, iunit=kev-um", () => {
+  it("decodes imode=stp, lookups without per-row suffixes, iunit=kev-um", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&lookups=45.76,10.00&iunit=kev-um",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBe("stp");
     expect((decoded as any).iunit).toBe("kev-um");
-    expect((decoded as any).ivalues).toEqual([
+    expect((decoded as any).lookups).toEqual([
       { rawInput: "45.76", unit: "kev-um", unitFromSuffix: false },
       { rawInput: "10.00", unit: "kev-um", unitFromSuffix: false },
     ]);
@@ -511,19 +511,19 @@ describe("decodeCalculatorUrl", () => {
 
   it("decodes imode=csda with invalid iunit (km) → defaults to cm", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&ivalues=7.718&iunit=km",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&lookups=7.718&iunit=km",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBe("csda");
     expect((decoded as any).iunit).toBe("cm"); // invalid unit defaults to cm
-    expect((decoded as any).ivalues).toEqual([
+    expect((decoded as any).lookups).toEqual([
       { rawInput: "7.718", unit: "cm", unitFromSuffix: false },
     ]);
   });
 
   it("decodes imode=stp with invalid iunit → defaults to kev-um", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&ivalues=45.76&iunit=invalid-unit",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&lookups=45.76&iunit=invalid-unit",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBe("stp");
@@ -532,30 +532,30 @@ describe("decodeCalculatorUrl", () => {
 
   it("no imode param → imode is undefined (Forward tab active)", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBeUndefined();
-    expect((decoded as any).ivalues).toBeUndefined();
+    expect((decoded as any).lookups).toBeUndefined();
     expect((decoded as any).iunit).toBeUndefined();
   });
 
   it("imode=invalid is silently ignored → undefined", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&imode=invalid",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&imode=invalid",
     );
     const decoded = decodeCalculatorUrl(params);
     expect((decoded as any).imode).toBeUndefined();
   });
 
-  it("encodes imode=csda, ivalues with mixed per-row suffixes, iunit=cm", () => {
+  it("encodes imode=csda, lookups with mixed per-row suffixes, iunit=cm", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
       selectedProgramIds: [9],
       quantityFocus: "both",
       imode: "csda",
-      ivalues: [
+      lookups: [
         { rawInput: "7.718", unit: "cm", unitFromSuffix: true },
         { rawInput: "45", unit: "um", unitFromSuffix: true },
         { rawInput: "0.2", unit: "cm", unitFromSuffix: false },
@@ -563,29 +563,29 @@ describe("decodeCalculatorUrl", () => {
       iunit: "cm",
     } as any);
     expect(p.get("imode")).toBe("csda");
-    expect(p.get("ivalues")).toBe("7.718:cm,45:um,0.2");
+    expect(p.get("lookups")).toBe("7.718:cm,45:um,0.2");
     expect(p.get("iunit")).toBe("cm");
   });
 
-  it("encodes imode=stp, ivalues without per-row suffixes, iunit=kev-um", () => {
+  it("encodes imode=stp, lookups without per-row suffixes, iunit=kev-um", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
       selectedProgramIds: [9],
       quantityFocus: "both",
       imode: "stp",
-      ivalues: [
+      lookups: [
         { rawInput: "45.76", unit: "kev-um", unitFromSuffix: false },
         { rawInput: "10.00", unit: "kev-um", unitFromSuffix: false },
       ],
       iunit: "kev-um",
     } as any);
     expect(p.get("imode")).toBe("stp");
-    expect(p.get("ivalues")).toBe("45.76,10.00");
+    expect(p.get("lookups")).toBe("45.76,10.00");
     expect(p.get("iunit")).toBe("kev-um");
   });
 
-  it("does not emit imode/ivalues/iunit when imode is undefined", () => {
+  it("does not emit imode/lookups/iunit when imode is undefined", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
@@ -593,31 +593,31 @@ describe("decodeCalculatorUrl", () => {
       quantityFocus: "both",
     } as any);
     expect(p.has("imode")).toBe(false);
-    expect(p.has("ivalues")).toBe(false);
+    expect(p.has("lookups")).toBe(false);
     expect(p.has("iunit")).toBe(false);
   });
 
-  it("URL round-trip: imode=csda with mixed per-row suffixes", () => {
+  it("URL round-trip: imode=csda with mixed per-row suffixes (v2 lookups=)", () => {
     const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,0.2&iunit=cm",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&lookups=7.718:cm,45:um,0.2&iunit=cm",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("imode")).toBe("csda");
-    expect(reEncoded.get("ivalues")).toBe("7.718:cm,45:um,0.2");
+    expect(reEncoded.get("lookups")).toBe("7.718:cm,45:um,0.2");
     expect(reEncoded.get("iunit")).toBe("cm");
   });
 
-  it("URL round-trip: imode=stp with master unit only", () => {
+  it("URL round-trip: imode=stp with master unit only (v2 lookups=)", () => {
     const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&lookups=45.76,10.00&iunit=kev-um",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("imode")).toBe("stp");
-    expect(reEncoded.get("ivalues")).toBe("45.76,10.00");
+    expect(reEncoded.get("lookups")).toBe("45.76,10.00");
     expect(reEncoded.get("iunit")).toBe("kev-um");
   });
 });
@@ -658,7 +658,7 @@ describe("unknown params dropped from canonical URL", () => {
     const encodedStr = encoded.toString();
     expect(encodedStr).not.toContain("foo=");
     expect(encodedStr).not.toContain("unknown=");
-    expect(encodedStr).toContain("urlv=1");
+    expect(encodedStr).toContain("urlv=2");
     expect(encodedStr).toContain("particle=1");
   });
 });
@@ -746,18 +746,16 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
     expect(state.rows[2]).toEqual({ rawInput: "2", unit: "GeV", unitFromSuffix: true });
   });
 
-  it("v1 ivalues= still decodes through the current decoder (v2 will copy verbatim into lookups= — shareable-urls.md §3.6 + ADR 006 §4)", () => {
-    // v2 renames the inverse-lookup input list from ivalues= to lookups= to
-    // avoid colliding with the I-value (ival= / mat_ival=) used in the
-    // Bethe-Bloch formula. Value syntax (number + optional :unit suffix) is
-    // unchanged. The current v1 decoder still uses ivalues=; this assertion
-    // documents what v1 does. Update when #555/#560 land the v2 encoder/decoder.
+  it("v1 ivalues= is accepted as backward-compat fallback for lookups= (ADR 006 §4)", () => {
+    // v2 renames the inverse-lookup input list from ivalues= to lookups=.
+    // Old bookmarks with ivalues= continue to work — the decoder checks
+    // lookups= first, then falls back to ivalues=.
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um&iunit=cm",
     );
     const state = decodeCalculatorUrl(params);
     expect(state.imode).toBe("csda");
-    expect(state.ivalues).toEqual([
+    expect(state.lookups).toEqual([
       { rawInput: "7.718", unit: "cm", unitFromSuffix: true },
       { rawInput: "45", unit: "um", unitFromSuffix: true },
     ]);

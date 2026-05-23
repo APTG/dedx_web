@@ -82,7 +82,7 @@ export interface CalculatorState {
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
   switchParticle(particleId: number | string | null): void;
-  updateRowText(index: number, text: string): void;
+  updateRowText(index: number, text: string, autoAdd?: boolean): void;
   handleBlur(index: number): void;
   addRow(): void;
   triggerCalculation(): void;
@@ -770,8 +770,8 @@ export function createCalculatorState(
       }
       previousParticle = newParticle;
     },
-    updateRowText(index: number, text: string) {
-      inputState.updateRowText(index, text);
+    updateRowText(index: number, text: string, autoAdd?: boolean) {
+      inputState.updateRowText(index, text, autoAdd);
     },
     handleBlur(index: number) {
       inputState.handleBlur(index);

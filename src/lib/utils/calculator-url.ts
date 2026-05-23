@@ -10,7 +10,7 @@ import { parseExtdataParams, externalDataQuerySegments } from "$lib/external-dat
  * param shape; minor/additive changes can ride along on the same major.
  * See `docs/04-feature-specs/shareable-urls.md` §3.1.
  */
-export const CALCULATOR_URL_VERSION = 1;
+export const CALCULATOR_URL_VERSION = 2;
 
 /**
  * Master `eunit` parameter — limited to the three base `EnergyUnit` values
@@ -99,13 +99,15 @@ const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
  */
 export interface InverseModeUrlState {
   imode: "csda" | "stp";
-  ivalues?: InverseLookupUrlRow[];
+  lookups?: InverseLookupUrlRow[];
   iunit?: string;
 }
 
 /**
  * Decode inverse mode from URLSearchParams.
- * Returns { imode, ivalues, iunit } or undefined if not present/invalid.
+ * Returns { imode, lookups, iunit } or undefined if not present/invalid.
+ *
+ * Backward-compat: v1 `ivalues=` param is accepted and treated as `lookups=`.
  */
 export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUrlState | undefined {
   const imodeRaw = params.get("imode");
@@ -114,20 +116,21 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
 
   if (!imode) return undefined;
 
-  let ivalues: InverseLookupUrlRow[] | undefined;
+  let lookups: InverseLookupUrlRow[] | undefined;
   let iunit: string | undefined;
 
-  const ivaluesParam = params.get("ivalues");
-  if (ivaluesParam) {
-    ivalues = [];
-    for (const part of ivaluesParam.split(",")) {
+  // v2 canonical param is `lookups=`; accept v1 `ivalues=` as fallback.
+  const lookupsParam = params.get("lookups") ?? params.get("ivalues");
+  if (lookupsParam) {
+    lookups = [];
+    for (const part of lookupsParam.split(",")) {
       const colonIdx = part.lastIndexOf(":");
       if (colonIdx > 0) {
         const rawInput = part.slice(0, colonIdx);
         const unitStr = part.slice(colonIdx + 1);
-        ivalues.push({ rawInput, unit: unitStr, unitFromSuffix: true });
+        lookups.push({ rawInput, unit: unitStr, unitFromSuffix: true });
       } else {
-        ivalues.push({ rawInput: part, unit: "", unitFromSuffix: false });
+        lookups.push({ rawInput: part, unit: "", unitFromSuffix: false });
       }
     }
   }
@@ -141,8 +144,8 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
   }
 
   // Assign default unit to rows that don't have per-row suffix
-  if (ivalues && iunit) {
-    for (const row of ivalues) {
+  if (lookups && iunit) {
+    for (const row of lookups) {
       if (!row.unitFromSuffix) {
         row.unit = iunit;
       }
@@ -150,7 +153,7 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
   }
 
   const state: InverseModeUrlState = { imode };
-  if (ivalues !== undefined) state.ivalues = ivalues;
+  if (lookups !== undefined) state.lookups = lookups;
   if (iunit !== undefined) state.iunit = iunit;
   return state;
 }
@@ -212,7 +215,7 @@ export interface CalculatorUrlState {
 
   /** Inverse lookup fields (optional — only present when encoding/decoding inverse mode) */
   imode?: InverseMode;
-  ivalues?: InverseLookupUrlRow[];
+  lookups?: InverseLookupUrlRow[];
   iunit?: string;
 }
 
@@ -382,20 +385,20 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   if (state.imode) {
     params.set("imode", state.imode);
 
-    if (state.ivalues?.length) {
-      const encodedIvalues: string[] = [];
-      for (const row of state.ivalues) {
+    if (state.lookups?.length) {
+      const encodedLookups: string[] = [];
+      for (const row of state.lookups) {
         const trimmed = row.rawInput.trim();
         if (trimmed === "") continue;
         // Encode as `rawInput:unit` when unitFromSuffix, else bare `rawInput`
         if (row.unitFromSuffix) {
-          encodedIvalues.push(`${trimmed}:${row.unit}`);
+          encodedLookups.push(`${trimmed}:${row.unit}`);
         } else {
-          encodedIvalues.push(trimmed);
+          encodedLookups.push(trimmed);
         }
       }
-      if (encodedIvalues.length > 0) {
-        params.set("ivalues", encodedIvalues.join(","));
+      if (encodedLookups.length > 0) {
+        params.set("lookups", encodedLookups.join(","));
       }
     }
 
@@ -676,26 +679,27 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     }
   }
 
-  // Parse inverse lookup params (imode, ivalues, iunit)
+  // Parse inverse lookup params (imode, lookups, iunit)
   const imodeRaw = params.get("imode");
   const imode: InverseMode | undefined =
     imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
 
-  let ivalues: InverseLookupUrlRow[] | undefined;
+  let lookups: InverseLookupUrlRow[] | undefined;
   let iunit: string | undefined;
 
   if (imode) {
-    const ivaluesParam = params.get("ivalues");
-    if (ivaluesParam) {
-      ivalues = [];
-      for (const part of ivaluesParam.split(",")) {
+    // v2 canonical param is `lookups=`; accept v1 `ivalues=` as fallback.
+    const lookupsParam = params.get("lookups") ?? params.get("ivalues");
+    if (lookupsParam) {
+      lookups = [];
+      for (const part of lookupsParam.split(",")) {
         const colonIdx = part.lastIndexOf(":");
         if (colonIdx > 0) {
           const rawInput = part.slice(0, colonIdx);
           const unitStr = part.slice(colonIdx + 1);
-          ivalues.push({ rawInput, unit: unitStr, unitFromSuffix: true });
+          lookups.push({ rawInput, unit: unitStr, unitFromSuffix: true });
         } else {
-          ivalues.push({ rawInput: part, unit: "", unitFromSuffix: false });
+          lookups.push({ rawInput: part, unit: "", unitFromSuffix: false });
         }
       }
     }
@@ -709,8 +713,8 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     }
 
     // Assign default unit to rows that don't have per-row suffix
-    if (ivalues && iunit) {
-      for (const row of ivalues) {
+    if (lookups && iunit) {
+      for (const row of lookups) {
         if (!row.unitFromSuffix) {
           row.unit = iunit;
         }
@@ -770,8 +774,8 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   if (imode) {
     result.imode = imode;
   }
-  if (ivalues) {
-    result.ivalues = ivalues;
+  if (lookups) {
+    result.lookups = lookups;
   }
   if (iunit) {
     result.iunit = iunit;
