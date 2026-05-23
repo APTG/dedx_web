@@ -1,4 +1,4 @@
-export const CURRENT_URL_MAJOR = 1;
+export const CURRENT_URL_MAJOR = 2;
 export const MIN_SUPPORTED_URL_MAJOR = 1;
 
 export type VersionNegotiationResult =

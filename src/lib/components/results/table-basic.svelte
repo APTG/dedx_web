@@ -57,7 +57,11 @@
   function maybeShowHint(index: number) {
     if (index !== 0) return;
     if (typeof localStorage === "undefined") return;
-    if (localStorage.getItem("dedx_tip_inline_unit_seen")) return;
+    try {
+      if (localStorage.getItem("dedx_tip_inline_unit_seen")) return;
+    } catch {
+      return;
+    }
     hintVisible = true;
     hintTimerId = setTimeout(dismissHint, 10_000);
   }
@@ -69,9 +73,22 @@
       hintTimerId = null;
     }
     if (typeof localStorage !== "undefined") {
-      localStorage.setItem("dedx_tip_inline_unit_seen", "1");
+      try {
+        localStorage.setItem("dedx_tip_inline_unit_seen", "1");
+      } catch {
+        // Best-effort only.
+      }
     }
   }
+
+  $effect(() => {
+    return () => {
+      if (hintTimerId !== null) {
+        clearTimeout(hintTimerId);
+        hintTimerId = null;
+      }
+    };
+  });
 
   function handleInputFocus(event: Event, index: number) {
     (event.target as HTMLInputElement).select();
@@ -212,7 +229,7 @@
           <input
             id="basic-energy-input"
             type="text"
-            inputmode="decimal"
+            inputmode="text"
             aria-label="Energy value row 1"
             data-row-index={0}
             data-testid="energy-input-0"
@@ -298,7 +315,7 @@
                 >
                   <input
                     type="text"
-                    inputmode="decimal"
+                    inputmode="text"
                     aria-label={`Energy value row ${i + 1}`}
                     data-row-index={i}
                     data-testid={`energy-input-${i}`}

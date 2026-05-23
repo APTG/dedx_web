@@ -54,6 +54,7 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     });
     await waitForTable(page);
     await typeInRow(page, 0, "100");
+    await page.getByRole("button", { name: /\+\s*Add row/i }).click();
     const headers = page.locator("thead th");
     await expect(headers).toHaveCount(3, { timeout: 5000 });
     await expect(headers.nth(0)).toContainText(/Energy/i);

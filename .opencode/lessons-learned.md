@@ -9,6 +9,29 @@
 
 ---
 
+## Entry 57 — URL encoder/version negotiation majors must be updated together
+
+**Symptom:** Calculator links started emitting `urlv=2`, but the runtime
+negotiation constant stayed at major `1`. Freshly generated links were treated
+as "future version" mismatches and triggered warning fallback paths.
+
+```text
+❌ BROKEN
+CALCULATOR_URL_VERSION = 2
+CURRENT_URL_MAJOR = 1
+
+✅ CORRECT
+CALCULATOR_URL_VERSION = 2
+CURRENT_URL_MAJOR = 2
+MIN_SUPPORTED_URL_MAJOR = 1  # keep backward compatibility if needed
+```
+
+**Rule:** Any URL schema-major bump must update both the encoder constant and
+the version-negotiation major in the same PR, plus at least one regression test
+covering `negotiateVersion("<new-major>")`.
+
+---
+
 ## Entry 56 — Migration docs must state precedence for overlapping legacy params
 
 **Symptom:** A migration table said v1 `mode=advanced&programs=` should derive a

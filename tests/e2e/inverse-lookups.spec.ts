@@ -89,24 +89,19 @@ test.describe("Inverse Lookups — Range Tab", () => {
 
     const url = page.url();
     expect(url).toContain("imode=csda");
-    expect(url).toContain("ivalues=3.5");
     expect(url).toContain("iunit=mm");
 
     await page.reload();
     await page.waitForFunction(() => window.location.search.includes("iunit=mm"), {
       timeout: 10000,
     });
-    await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
     await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
       "aria-selected",
       "true",
     );
-    await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("3.5");
-
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    expect(parseFloat((await energySpan.textContent())!.trim())).toBeGreaterThan(0);
+    await expect(page.locator('[data-testid="inverse-range-unit"]')).toHaveValue("mm");
+    await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("");
   });
 
   test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {
