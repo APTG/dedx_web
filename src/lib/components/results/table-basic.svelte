@@ -139,7 +139,7 @@
   );
 </script>
 
-<div class={`space-y-3 ${className}`}>
+<div class={`space-y-3 ${className}`} data-testid="result-table">
   {#if !entitySelection.isComplete}
     <div class="p-4 text-center text-muted-foreground">
       {#if entitySelection.selectedParticle?.id === 1001}
