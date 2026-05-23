@@ -94,6 +94,20 @@ const VALID_CSDA_MASTER_UNITS = new Set(["nm", "um", "mm", "cm", "m"]);
 /** Valid STP unit tokens for inverse STP mode (imode=stp). */
 const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
 
+/** URL slug → EnergyUnit for the `uanchor` param. */
+const UANCHOR_TO_UNIT: Readonly<Record<string, EnergyUnit>> = {
+  "mev": "MeV",
+  "mev-nucl": "MeV/nucl",
+  "mev-u": "MeV/u",
+};
+
+/** EnergyUnit → URL slug for the `uanchor` param. */
+const UNIT_TO_UANCHOR: Readonly<Record<EnergyUnit, string>> = {
+  "MeV": "mev",
+  "MeV/nucl": "mev-nucl",
+  "MeV/u": "mev-u",
+};
+
 /**
  * Decoded inverse mode from URL params.
  */
@@ -217,6 +231,9 @@ export interface CalculatorUrlState {
   imode?: InverseMode;
   lookups?: InverseLookupUrlRow[];
   iunit?: string;
+
+  /** Energy unit anchor selection (`uanchor=` URL param). Defaults to `"MeV"` when absent. */
+  energyAnchor?: EnergyUnit;
 }
 
 function isMasterUnit(s: string): s is EnergyUnit {
@@ -407,6 +424,10 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     }
   }
 
+  if (state.energyAnchor && state.energyAnchor !== "MeV") {
+    params.set("uanchor", UNIT_TO_UANCHOR[state.energyAnchor]);
+  }
+
   return params;
 }
 
@@ -480,6 +501,11 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   const eunitRaw = params.get("eunit") ?? "MeV";
   const masterUnit: EnergyUnit = isMasterUnit(eunitRaw) ? eunitRaw : "MeV";
+
+  const uanchorRaw = params.get("uanchor") ?? "";
+  const energyAnchor: EnergyUnit | undefined = uanchorRaw in UANCHOR_TO_UNIT
+    ? UANCHOR_TO_UNIT[uanchorRaw]
+    : undefined;
 
   const rows: CalculatorUrlRow[] = [];
   const energiesParam = params.get("energies");
@@ -779,6 +805,9 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
   if (iunit) {
     result.iunit = iunit;
+  }
+  if (energyAnchor) {
+    result.energyAnchor = energyAnchor;
   }
   return result;
 }
