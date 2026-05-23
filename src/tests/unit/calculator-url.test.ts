@@ -6,9 +6,11 @@
  *   docs/decisions/006-url-schema-v2.md  (ADR — justifies hidden= drop and qfocus→qshow rename)
  *
  * NOTE: This file covers the v1 encoder/decoder that is currently in production.
- * Actual v2 param name changes (particleId=, uanchor=, qshow=, etc.) are
- * implemented in #555–#561. When those land, update the fixture strings below
- * to match the v2 canonical form.
+ * v2 introduces uanchor=, qshow=, mode=forward|range|inverse-stp, runit=, sunit=,
+ * istpbranch=, across=, and tip_seen=; it silently drops hidden_programs=. The
+ * entity-ID param names (particle=, material=, program=) are unchanged in v2 —
+ * see ADR 006 §3 for why the earlier *Id rename proposal was rejected.
+ * Behavioural v2 encoder changes land in #555–#561.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -664,62 +666,68 @@ describe("unknown params dropped from canonical URL", () => {
 // ──────────────────────────────────────────────────────────────────────────
 // v1 → v2 migration fixtures (url-schema.md §6)
 //
-// These tests document that v1 URLs (using old param names) are accepted on
-// read by the current decoder. They serve as regression anchors: once the v2
-// encoder/decoder lands in #555–#561, the encoded output should use the new
-// param names (particleId=, materialId=, programId=, uanchor=, qshow=, etc.).
+// These tests anchor the v1→v2 migration mapping that the schema doc
+// describes. The current v1 decoder is what's being tested here — once the
+// v2 encoder/decoder lands in #555–#561, these fixtures will be updated to
+// assert the v2 canonical output and v2 migration behaviour.
+//
+// NOTE: v2 keeps the param names particle=, material=, program= verbatim
+// (the earlier rename to *Id was reverted, see ADR 006 §3). The only v1
+// param renames in v2 are around eunit→uanchor, qfocus→qshow, imode→mode,
+// and the silent drop of hidden_programs=.
 //
 // Source of truth: docs/04-feature-specs/url-schema.md §6 (migration rules)
 //                  docs/decisions/006-url-schema-v2.md (justification)
 // ──────────────────────────────────────────────────────────────────────────
 
-describe("v1 → v2 migration fixture: v1 param names accepted on read", () => {
-  it("v1 particle= is decoded to particleId (no crash, value preserved)", () => {
-    // v2 renames particle= → particleId= (url-schema.md §3.2 migration)
+describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
+  it("particle= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
     const params = new URLSearchParams("particle=6&material=276&program=auto&energies=10&eunit=MeV/nucl");
     const state = decodeCalculatorUrl(params);
     expect(state.particleId).toBe(6);
   });
 
-  it("v1 material= is decoded to materialId (no crash, value preserved)", () => {
-    // v2 renames material= → materialId= (url-schema.md §3.3 migration)
+  it("material= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
     const params = new URLSearchParams("particle=1&material=104&program=auto&energies=100&eunit=MeV");
     const state = decodeCalculatorUrl(params);
     expect(state.materialId).toBe(104);
   });
 
-  it("v1 program= is decoded to programId (no crash, value preserved)", () => {
-    // v2 renames program= → programId= (url-schema.md §3.4 migration)
+  it("program= retains its v1 name in v2 (no rename — see ADR 006 §3)", () => {
     const params = new URLSearchParams("particle=1&material=276&program=9&energies=100&eunit=MeV");
     const state = decodeCalculatorUrl(params);
     expect(state.programId).toBe(9);
   });
 
-  it("v1 eunit= is decoded to masterUnit (maps to uanchor= in v2, url-schema.md §3.8)", () => {
-    // v2 replaces eunit= with uanchor=; migration maps MeV→mev, MeV/nucl→mev-nucl, MeV/u→mev-u
+  it("v1 eunit= round-trips through the current decoder (v2 will map to uanchor=, url-schema.md §3.8)", () => {
+    // The current v1 decoder keeps eunit as masterUnit. The v2 decoder will
+    // map MeV→mev / MeV/nucl→mev-nucl / MeV/u→mev-u and emit uanchor= in
+    // canonical output (implementation in #555).
     const params = new URLSearchParams("particle=1&material=276&program=auto&energies=100&eunit=MeV/nucl");
     const state = decodeCalculatorUrl(params);
     expect(state.masterUnit).toBe("MeV/nucl");
   });
 
-  it("v1 qfocus=csda decodes to quantityFocus=\"csda\" (pre-v2 behavior)", () => {
-    // v2 migration: qfocus=csda → qshow=range (url-schema.md §3.13 + ADR 006)
+  it("v1 decoder accepts qfocus=csda (v2 will map this to qshow=range — url-schema.md §6)", () => {
+    // This anchors the CURRENT v1 decoder behaviour: qfocus=csda is stored
+    // verbatim as quantityFocus="csda". The v2 migration in #561 will map
+    // it to qshow="range". Update this assertion when #561 lands.
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
     );
     const state = decodeCalculatorUrl(params);
-    // Current decoder stores as quantityFocus="csda"; v2 decoder will store as qshow="range"
     expect((state as any).quantityFocus).toBe("csda");
   });
 
-  it("v1 hidden_programs= decodes to hiddenProgramIds (pre-v2 behavior)", () => {
-    // v2 drops hidden= / hidden_programs= entirely (ADR 006 §1)
-    // The decoder returns hiddenProgramIds but v2 encoder will not emit hidden_programs=
+  it("v1 decoder still parses hidden_programs= (v2 will silently drop this — url-schema.md §5.1)", () => {
+    // CURRENT v1 decoder behaviour: hidden_programs=2 is parsed into
+    // hiddenProgramIds=[2]. The v2 decoder in #561 will silently drop the
+    // param without populating any state field. Update this assertion when
+    // #561 lands; right now it documents what v1 does, not what v2 will do.
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both",
     );
     const state = decodeCalculatorUrl(params);
-    // Confirm the param is parsed (v1 behaviour); v2 will drop it silently
     expect((state as any).hiddenProgramIds).toEqual([2]);
   });
 

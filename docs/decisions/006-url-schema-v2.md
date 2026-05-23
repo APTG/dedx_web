@@ -1,24 +1,28 @@
-# ADR 006 — URL Schema v2: param renames, `hidden=` removal, `qfocus=` → `qshow=`
+# ADR 006 — URL Schema v2: `hidden=` removal and `qfocus=` → `qshow=`
 
-**Status:** Accepted (2026-05-22)
+**Status:** Accepted (2026-05-22 · revised 2026-05-23)
 
 **Context:** Calculator-table redesign (#526). The redesigned table removes the
 Columns dropdown and replaces the three-state quantity-focus toggle with a
-two-state one. Several existing URL params are renamed for clarity. These
-changes require a major `urlv` bump and explicit migration rules.
+two-state one. These changes require a `urlv` bump and explicit migration
+rules.
+
+**Revision (2026-05-23):** Earlier draft also proposed renaming `particle=` →
+`particleId=`, `material=` → `materialId=`, `program=` → `programId=`. That
+rename was reverted before the schema doc shipped. See §3 for the rationale.
 
 ---
 
 ## Decision
 
 Adopt the v2 URL schema described in `docs/04-feature-specs/url-schema.md`
-for the Calculator route.  The three key decisions that need justification here
-are:
+for the Calculator route. The two decisions that need justification here are:
 
 1. **Drop `hidden=` / `hidden_programs=`**
 2. **Replace `qfocus=stp|csda|both` with `qshow=stp|range`**
-3. **Rename `particle=` → `particleId=`, `material=` → `materialId=`,
-   `program=` → `programId=`**
+
+A previously-proposed third decision — renaming the entity-ID params with an
+`Id` suffix — was rejected. See §3.
 
 ---
 
@@ -71,24 +75,35 @@ always includes both quantities regardless of the on-screen toggle.
 - `qfocus=csda` → `qshow=range`
 - `qfocus=both` → omit `qshow=` (both visible, default)
 
-### 3. Rename `particle=` → `particleId=`, `material=` → `materialId=`, `program=` → `programId=`
+### 3. Rejected — Renaming `particle=` → `particleId=` etc.
 
-**Problem:** The param names `particle`, `material`, `program` are ambiguous
-when reading raw URL query strings: it is unclear whether the value is a
-numeric ID, a slug, or a name. The `Id` suffix makes the semantics explicit
-to developers inspecting URLs.
+An earlier draft proposed renaming the three entity-ID params with an `Id`
+suffix to make their semantics (numeric ID) explicit:
 
-**Alternatives considered:**
+- `particle=` → `particleId=`
+- `material=` → `materialId=`
+- `program=` → `programId=`
 
-| Option | Rejected because |
-|---|---|
-| Keep old names | No clarity gain; misses the opportunity of the v2 bump |
-| Use slugs (`particle=proton`) | Would require a slug registry and make URLs fragile across libdedx versions where entity names can change |
-| Use `p=`, `m=`, `prog=` abbreviations | Too cryptic; worse than the original names |
+**Why this was rejected:**
 
-**Migration:** Both old (`particle=`) and new (`particleId=`) param names are
-accepted on read. Only the new names are emitted in canonical v2 output.
-Old URLs continue to load correctly through the v1→v2 migration path.
+- **No clear payoff.** The value of these params is always a positive integer
+  (or the literal `"auto"` / `"custom"`); the param name `particle=1` is no
+  more ambiguous than `particleId=1`. Users who inspect URLs are already
+  primed to read the numeric value as an identifier.
+- **High link-rot cost.** Every bookmarked URL, every doc example, every test
+  fixture, every blog-post / paper supplement / Slack snapshot would either
+  break (silent fallback to defaults if v2 only accepted the new name) or
+  carry a migration cost (parser must accept both names indefinitely). The
+  cost outweighs the readability gain.
+- **Already-bumped `urlv` covers the real breaking changes.** The `urlv=2`
+  bump is justified by the `qfocus=` value-set change and the removal of
+  `hidden_programs=`. Adding three cosmetic renames on top doesn't help
+  users and creates a long deprecation tail.
+- **Reviewer pushback.** The PR-565 review on the v1 draft of this ADR
+  explicitly flagged the rename as unnecessary churn. The decision is to
+  keep the v1 names verbatim.
+
+In v2, `particle=`, `material=`, `program=` are emitted unchanged from v1.
 
 ---
 
@@ -97,9 +112,10 @@ Old URLs continue to load correctly through the v1→v2 migration path.
 **Positive:**
 - Cleaner two-state `qshow=` toggle that matches the UI labels.
 - Shorter canonical URLs (no `qshow=` when both visible, no `hidden_programs=`).
-- URL params now unambiguously communicate numeric IDs.
 - `mode=forward|range|inverse-stp` clarifies calculator operation vs
   `imode=csda|stp` which required knowing what "imode" meant.
+- Existing `particle=` / `material=` / `program=` bookmarks continue to round-
+  trip exactly without a name change.
 
 **Negative / trade-offs:**
 - Old bookmarked URLs with `qfocus=csda` will silently migrate to `qshow=range`
@@ -116,11 +132,10 @@ Old URLs continue to load correctly through the v1→v2 migration path.
 
 ### Keep `urlv=1` and add the new params as extensions
 
-Rejected: the param renames (`particle=` → `particleId=`) and the `qfocus=`
-value-set change (3 values → 2 values with different names) are semantically
-breaking. Keeping `urlv=1` would mean the old parser would silently misinterpret
-`programId=9` as an unknown param and fall back to `programId=null` (auto-select).
-A version bump + explicit migration is safer.
+Rejected: the `qfocus=` value-set change (3 values → 2 values with different
+names) is semantically breaking. Keeping `urlv=1` would mean the old parser
+would silently misinterpret `qshow=range` as an unknown param and fall back to
+the "both" default. A version bump + explicit migration is safer.
 
 ### Use a single `qshow=both|stp|range` (keep "both" state)
 
@@ -137,4 +152,5 @@ no UI counterpart would be confusing. CSV export always includes both, so the
 - `docs/04-feature-specs/url-schema.md` — canonical v2 schema
 - `shareable-urls.md` — v1 baseline and backward-compat rules
 - `shareable-urls-formal.md` — ABNF grammar (to be updated after #561)
-- Issue #526 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
+- Issue #552 (master epic), #554 (this design doc), #561 (Columns dropdown removal + `qshow=`)
+- PR #565 review (rationale for rejecting the `Id`-suffix rename)
