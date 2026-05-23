@@ -532,7 +532,7 @@ describe("CalculatorState", () => {
       const electronService = new MockLibdedxServiceWithElectron();
       const matrix = buildCompatibilityMatrix(electronService);
       const es = createEntitySelectionState(matrix);
-      const cs = createCalculatorState(es, electronService) as any;
+      const cs = createCalculatorState(es, electronService);
 
       // Start as proton with "100" (masterUnit = MeV)
       cs.updateRowText(0, "100");
@@ -550,7 +550,7 @@ describe("CalculatorState", () => {
       const electronService = new MockLibdedxServiceWithElectron();
       const matrix = buildCompatibilityMatrix(electronService);
       const es = createEntitySelectionState(matrix);
-      const cs = createCalculatorState(es, electronService) as any;
+      const cs = createCalculatorState(es, electronService);
 
       cs.switchParticle(6);
       cs.updateRowText(0, "100");

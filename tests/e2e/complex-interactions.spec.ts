@@ -11,8 +11,8 @@ import { test, expect } from "@playwright/test";
 const WASM_TIMEOUT = 20000;
 
 async function waitForWasm(page: import("@playwright/test").Page) {
-  // All tests in this file rely on the Advanced mode table structure (5-column
-  // table with → MeV/nucl column, per-row unit selector, tbody/thead).
+  // Navigates to Advanced mode to confirm WASM is loaded before individual
+  // tests navigate to their target URLs (some of which use Basic mode).
   await page.goto("/calculator?advanced=1");
   await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
 }
@@ -46,6 +46,8 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
   test("shows the result table with three columns in Basic mode", async ({ page }) => {
     // After #556, Basic mode uses a 3-column table (Energy, STP, CSDA Range).
     // Typing triggers auto-append, switching from card to multi-row table mode.
+    // Clear advanced-mode flag set by beforeEach so the page loads in Basic mode.
+    await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
     await waitForTable(page);

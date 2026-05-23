@@ -221,7 +221,7 @@
     {:else}
       <!-- Multi-row compact table layout -->
       <div class="overflow-x-auto" data-testid="basic-multi-row-table">
-        <table class="w-full min-w-[400px] text-sm" data-testid="result-table">
+        <table class="w-full min-w-[400px] text-sm" data-testid="basic-result-table">
           <thead class="sticky top-0 bg-background">
             <tr>
               <th
