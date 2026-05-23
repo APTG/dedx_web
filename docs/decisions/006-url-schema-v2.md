@@ -1,28 +1,36 @@
-# ADR 006 — URL Schema v2: `hidden=` removal and `qfocus=` → `qshow=`
+# ADR 006 — URL Schema v2: `hidden=` removal, `qfocus=` → `qshow=`, `ivalues=` → `lookups=`
 
 **Status:** Accepted (2026-05-22 · revised 2026-05-23)
 
-**Context:** Calculator-table redesign (#526). The redesigned table removes the
-Columns dropdown and replaces the three-state quantity-focus toggle with a
-two-state one. These changes require a `urlv` bump and explicit migration
-rules.
+**Context:** Calculator-table redesign (#526 / #552). The redesigned table
+removes the Columns dropdown, replaces the three-state quantity-focus toggle
+with a two-state one, and renames the inverse-lookup input param to remove a
+naming collision with a Bethe-Bloch physics quantity. These changes require
+a `urlv` bump and explicit migration rules.
 
-**Revision (2026-05-23):** Earlier draft also proposed renaming `particle=` →
-`particleId=`, `material=` → `materialId=`, `program=` → `programId=`. That
-rename was reverted before the schema doc shipped. See §3 for the rationale.
+**Revision history:**
+
+- Earlier draft also proposed renaming `particle=` → `particleId=` (+ parallel
+  renames). Rejected. See §3.
+- Later round added the `ivalues=` → `lookups=` rename (§4) after reviewer
+  feedback that `ivalues=` reads like a plural of `ival=` / `mat_ival=`
+  (the I-value used in the Bethe-Bloch formula) even though the two are
+  unrelated.
 
 ---
 
 ## Decision
 
 Adopt the v2 URL schema described in `docs/04-feature-specs/url-schema.md`
-for the Calculator route. The two decisions that need justification here are:
+for the Calculator route. The three decisions that need justification here
+are:
 
 1. **Drop `hidden=` / `hidden_programs=`**
 2. **Replace `qfocus=stp|csda|both` with `qshow=stp|range`**
+3. **Rename `ivalues=` to `lookups=`**
 
-A previously-proposed third decision — renaming the entity-ID params with an
-`Id` suffix — was rejected. See §3.
+A previously-proposed fourth decision — renaming the entity-ID params with
+an `Id` suffix — was rejected. See §3.
 
 ---
 
@@ -105,6 +113,41 @@ suffix to make their semantics (numeric ID) explicit:
 
 In v2, `particle=`, `material=`, `program=` are emitted unchanged from v1.
 
+### 4. Rename `ivalues=` → `lookups=`
+
+**Problem:** In v1 the inverse-lookup input list (the values the user types
+in Range → and STP → modes — typically ranges in cm/mm/μm or stopping
+powers in keV/μm) is carried by the URL param `ivalues=`. The `i` prefix
+was originally chosen for "inverse". Independently, the I-value (mean
+excitation potential) used by the Bethe-Bloch formula is encoded by
+`ival=` (advanced options override) and `mat_ival=` (custom compound).
+Reading a URL with both `ivalues=…&ival=…` invites the wrong assumption
+that `ivalues=` is a plural list of I-values. The two have nothing to do
+with each other.
+
+**Decision:** rename `ivalues=` to `lookups=` in v2 canonical output.
+
+**Why `lookups=`?**
+
+- Describes the role: each entry is a value to *look up* an energy for.
+- Self-evident in inverse modes (Range → and STP →) where the input
+  column is, semantically, a lookup query.
+- Doesn't reuse the `i` prefix (avoids the I-value collision).
+- Plural parallels `energies=`, the forward-mode counterpart.
+
+**Alternatives considered and rejected:**
+
+| Option | Rejected because |
+|---|---|
+| `inputs=` | Too generic; collides with the colloquial sense of "input field" |
+| `targets=` | Suggests destinations rather than queries |
+| `invvalues=` / `invals=` | Still I-adjacent; doesn't fully remove the collision |
+| Keep `ivalues=` and add a doc note | Doc notes don't reach users who read raw URLs |
+
+**Migration:** v1 `ivalues=` is accepted on read and silently copied to
+`lookups=` (value syntax — number plus optional `:unit` suffix — is
+unchanged).
+
 ---
 
 ## Consequences
@@ -116,6 +159,9 @@ In v2, `particle=`, `material=`, `program=` are emitted unchanged from v1.
   `imode=csda|stp` which required knowing what "imode" meant.
 - Existing `particle=` / `material=` / `program=` bookmarks continue to round-
   trip exactly without a name change.
+- `lookups=` removes the I-value naming collision and makes the URL self-
+  documenting in inverse modes (a reader who has never seen the calculator
+  can guess what `lookups=10.0:kev-um` means).
 
 **Negative / trade-offs:**
 - Old bookmarked URLs with `qfocus=csda` will silently migrate to `qshow=range`

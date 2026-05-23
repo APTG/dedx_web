@@ -63,6 +63,44 @@ the decision and check the impact on other linked issues in #552.
 
 All 60 calculator-url unit tests continue to pass.
 
+### Prompt 3 (2026-05-23): rename ivalues=→lookups=; trim unchanged-from-v1 sections
+
+**User feedback:** rename `ivalues=` to something that won't be confusing
+with the I-value from the Bethe-Bloch formula. Also, skip so much
+description of the unchanged stuff wrt v1. Adjust the PR description to
+match. Remember the AI logs.
+
+**AI response:**
+
+1. **Rename `ivalues=` → `lookups=`.** The `i` prefix in `ivalues=` was
+   originally chosen for "inverse" but it reads like a plural of `ival=`
+   / `mat_ival=` (the I-value / mean excitation potential). The two
+   concepts are unrelated (`ival=` is a Bethe-Bloch physics parameter;
+   `ivalues=` carried inverse-lookup input rows). Picked `lookups=`
+   because (a) it describes the role — each entry is a value to *look
+   up* an energy for — and (b) it doesn't reuse the `i` prefix. Also
+   considered `inputs=` (too generic), `targets=` (suggests destinations),
+   `invvalues=` / `invals=` (still I-adjacent). ADR 006 gained a new §4
+   recording the rationale and the alternatives.
+2. **Aggressively trim unchanged-from-v1 sections in `url-schema.md`.**
+   The earlier draft had a full per-param section for each of `particle=`,
+   `material=`, `program=`, `programs=` even though they don't change in
+   v2. Collapsed all of those into a single one-row-each table in §3.1
+   ("Unchanged From v1"). Full per-param sections are now reserved for
+   v2-specific params (`across=`, `mode=`, `uanchor=`, `runit=`, `sunit=`,
+   `energies=` extended, `lookups=`, `qshow=`, `istpbranch=`, `tip_seen=`).
+   The doc is now shorter and easier to scan.
+3. **Migration rule:** v1 `ivalues=` is accepted on read and copied
+   verbatim into `lookups=`. Value syntax (number + optional `:unit`
+   suffix) is unchanged.
+4. **Test update:** added one new fixture covering the `ivalues=` round-
+   trip through the current v1 decoder. Title makes clear that the v2
+   decoder will copy this into `lookups=` (implementation in #555/#560).
+   Total 61 calculator-url tests pass.
+5. **README + CHANGELOG + PR description** updated to reflect the rename.
+6. **Issue #554 description** updated with the rename and a third
+   migration-rule row.
+
 ### Write url-schema.md
 
 - **Status**: completed

@@ -7,10 +7,10 @@
  *
  * NOTE: This file covers the v1 encoder/decoder that is currently in production.
  * v2 introduces uanchor=, qshow=, mode=forward|range|inverse-stp, runit=, sunit=,
- * istpbranch=, across=, and tip_seen=; it silently drops hidden_programs=. The
- * entity-ID param names (particle=, material=, program=) are unchanged in v2 —
- * see ADR 006 §3 for why the earlier *Id rename proposal was rejected.
- * Behavioural v2 encoder changes land in #555–#561.
+ * istpbranch=, across=, and tip_seen=; renames ivalues= → lookups= (ADR 006 §4);
+ * silently drops hidden_programs=. The entity-ID param names (particle=, material=,
+ * program=) are unchanged in v2 — see ADR 006 §3 for why the earlier *Id rename
+ * proposal was rejected. Behavioural v2 encoder changes land in #555–#561.
  */
 import { describe, it, expect } from "vitest";
 import {
@@ -731,12 +731,29 @@ describe("v1 → v2 migration fixture (url-schema.md §6)", () => {
     expect((state as any).hiddenProgramIds).toEqual([2]);
   });
 
-  it("inline :unit suffix in energies= round-trips (url-schema.md §3.11)", () => {
+  it("inline :unit suffix in energies= round-trips (url-schema.md §3.7)", () => {
     // This syntax is shared between v1 and v2 — the :unit suffix grammar is unchanged
     const params = new URLSearchParams("energies=100,10:keV,2:GeV&eunit=MeV");
     const state = decodeCalculatorUrl(params);
     expect(state.rows[0]).toEqual({ rawInput: "100", unit: "MeV", unitFromSuffix: false });
     expect(state.rows[1]).toEqual({ rawInput: "10", unit: "keV", unitFromSuffix: true });
     expect(state.rows[2]).toEqual({ rawInput: "2", unit: "GeV", unitFromSuffix: true });
+  });
+
+  it("v1 ivalues= still decodes through the current decoder (v2 will copy verbatim into lookups= — url-schema.md §3.8 + ADR 006 §4)", () => {
+    // v2 renames the inverse-lookup input list from ivalues= to lookups= to
+    // avoid colliding with the I-value (ival= / mat_ival=) used in the
+    // Bethe-Bloch formula. Value syntax (number + optional :unit suffix) is
+    // unchanged. The current v1 decoder still uses ivalues=; this assertion
+    // documents what v1 does. Update when #555/#560 land the v2 encoder/decoder.
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um&iunit=cm",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect((state as any).imode).toBe("csda");
+    expect((state as any).ivalues).toEqual([
+      { rawInput: "7.718", unit: "cm", unitFromSuffix: true },
+      { rawInput: "45", unit: "um", unitFromSuffix: true },
+    ]);
   });
 });

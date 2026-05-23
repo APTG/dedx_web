@@ -1,6 +1,6 @@
 # URL Schema v2 — Canonical Query-Parameter Reference
 
-> **Status:** v2 (2026-05-23) · Canonical design doc for the calculator-table redesign
+> **Status:** v3 (2026-05-23) · Canonical design doc for the calculator-table redesign
 >
 > **Part of:** master epic #552 / #526 (calculator-table redesign)
 >
@@ -12,46 +12,35 @@
 > updated to reference this doc.
 >
 > **Cross-check rule:** If this file conflicts with `shareable-urls.md` or
-> `shareable-urls-formal.md`, this file wins **for the calculator route**. For
-> the plot route and shared entity params, the formal contract wins until a
-> plot-schema v2 is written.
+> `shareable-urls-formal.md`, this file wins **for the calculator route**.
 >
 > **Revision history:**
 >
-> - **v1** (2026-05-22): initial draft with `particleId=` / `materialId=` /
->   `programId=` param renames.
-> - **v2** (2026-05-23): **reverted the param renames** — `particle=`,
->   `material=`, `program=` are kept verbatim from v1. Rationale: the rename
->   added churn across every link, bookmark, doc snippet, and test fixture
->   without a clear payoff (the `Id` suffix is implicit from the value being
->   a positive integer). Also expanded `runit=` to cover `dm` and `km`,
->   fixed §3.7 worked example, split the "Params Unchanged from v1" section
->   into "unchanged" and "deprecated-but-accepted" subsections, and made
->   `energies=` conditional on `mode=forward` in the canonical URL form.
+> - **v1** (2026-05-22): initial draft (later reverted: had `particleId=` etc. renames).
+> - **v2** (2026-05-23): reverted the `*Id` rename; extended `runit=` with `dm` and `km`;
+>   addressed PR #565 Copilot review.
+> - **v3** (2026-05-23): renamed `ivalues=` → `lookups=` to avoid clashing with the
+>   I-value / mean excitation potential (`ival=`, `mat_ival=`) from the Bethe-Bloch
+>   formula. Aggressively trimmed unchanged-from-v1 param sections — each gets one
+>   line in §3 plus a row in the §2 delta table.
 
 ---
 
 ## 1. Why a Separate Schema Doc
 
-The calculator-table redesign (#526) introduces new query params, replaces
-existing ones, and drops one entirely. Letting each implementation issue
-(#555–#561) make ad-hoc URL decisions would produce inconsistency. This
-document is the single source of truth that every dependent issue MUST
-reference.
+The calculator-table redesign introduces new query params, replaces existing
+ones, and drops one entirely. Letting each implementation issue (#555–#561)
+make ad-hoc URL decisions would produce inconsistency. This document is the
+single source of truth that every dependent issue MUST reference.
 
-**Scope of this document:**
+**Scope:** every query parameter accepted by the Calculator route
+(`/calculator`); migration rules from `master` (v1, `urlv=1`); one worked URL
+example per new/changed parameter; explicit coverage of the two riskiest
+formats — inline-unit suffix in row values (`100,10:keV,2:GeV`) and the
+inverse-STP branch sticky flag (`istpbranch=hi|lo|both`).
 
-- Every query parameter accepted by the Calculator route (`/calculator`).
-- Migration rules from the current `master` URL format (v1, `urlv=1`).
-- One worked URL example per parameter.
-- Explicit coverage of the two highest-risk formats: **inline-unit suffix in row
-  values** (`100,10:keV,2:GeV`) and the **inverse-STP branch sticky flag**
-  (`istpbranch=hi|lo|both`).
-
-**Out of scope:**
-
-- Plot-route params that don't change (series-strip encoding stays as-is).
-- Any actual UI behaviour — those land in #555 onwards.
+**Out of scope:** plot-route params that don't change (series-strip encoding
+stays as-is); any actual UI behaviour — those land in #555 onwards.
 
 ---
 
@@ -62,152 +51,55 @@ Dependent issues must not deviate from it without updating this doc first.
 
 | Param | v2 Status | Notes |
 |---|---|---|
-| `urlv=` | **bumped to 2** | Major version bump; triggers migration path on old v1 URLs |
-| `particle=` | unchanged | Same name + semantics as v1 |
-| `material=` | unchanged | Same name + semantics as v1 (still accepts `"custom"`) |
-| `program=` | unchanged | Same name + semantics as v1 (basic mode only) |
-| `programs=` | unchanged | Advanced-mode program list; value format unchanged |
+| `urlv=` | **bumped to 2** | Triggers v1→v2 migration on read |
+| `particle=` · `material=` · `program=` · `programs=` | unchanged | Same names + semantics as v1 |
+| `extdata=` · `mat_*=` · `agg_state=` · `interp_*=` · `mstar_mode=` · `density=` · `ival=` | unchanged | Same as `shareable-urls-formal.md` v6 |
 | `across=none\|programs\|materials\|particles` | **new URL param** | Was UI state only in v1; now in URL |
-| `mode=forward\|range\|inverse-stp` | **new** (replaces `imode=`) | Calculator operation mode; replaces the `imode=csda\|stp` param |
-| `hidden=` / `hidden_programs=` | **removed** | Silently dropped on read; column visibility now from picker selection |
+| `mode=forward\|range\|inverse-stp` | **new** | Calculator operation mode; replaces `imode=csda\|stp` |
+| `hidden=` / `hidden_programs=` | **removed** | Silently dropped on read; visibility now from picker selection |
 | `qshow=stp\|range` | **replaces `qfocus=`** | 3-state → 2-state; values renamed (see §6) |
-| `uanchor=mev\|mev-nucl\|mev-u` | **new** | Energy unit anchor; replaces `eunit=` in canonical output |
-| `runit=nm\|um\|mm\|cm\|dm\|m\|km` | **new** | Range unit anchor (Range → mode and CSDA range display) |
-| `sunit=kev-um\|mev-cm\|mev-cm2-g` | **new** | STP unit anchor (STP → mode and stopping-power display) |
-| `energies=100,10:keV,2:GeV` | **extended** | Inline `:unit` suffix per row; same `:` separator |
-| `ivalues=` | **extended** | Same inline `:unit` suffix syntax; used in Range → and STP → modes |
+| `uanchor=mev\|mev-nucl\|mev-u` | **new** | Energy unit anchor; replaces `eunit=` |
+| `runit=nm\|um\|mm\|cm\|dm\|m\|km` | **new** | Range unit anchor (Range → mode + CSDA range display) |
+| `sunit=kev-um\|mev-cm\|mev-cm2-g` | **new** | STP unit anchor (STP → mode + STP display) |
+| `energies=100,10:keV,2:GeV` | **extended** | Inline `:unit` per row; used only when `mode=forward` |
+| `lookups=` | **renamed** (from `ivalues=`) | Inverse-mode input list; same inline `:unit` syntax |
 | `istpbranch=hi\|lo\|both` | **new** | Sticky inverse-STP branch column state |
-| `tip_seen=inline_unit` | **new (optional)** | Tip-dismissal hint flag; omit unless the user has seen it |
-
-> **Params not listed above** (e.g. `extdata=`, `mat_*`, `agg_state`,
-> `interp_scale`, etc.) are unchanged from `shareable-urls-formal.md` v6.
+| `tip_seen=inline_unit` | **new (optional)** | Inline-unit tip dismissal flag |
 
 ---
 
-## 3. Full Parameter Reference
+## 3. Parameter Reference
 
-### 3.1 `urlv` — URL Contract Version
+Params that didn't change from v1 are listed in §3.1 in one line each. The
+v2-specific params get full per-param sections starting at §3.2.
 
-| Attribute | Value |
+### 3.1 Unchanged From v1
+
+| Param | Source of truth |
 |---|---|
-| Type | Positive integer |
-| v2 canonical value | `2` |
-| Default if absent | `1` (legacy) |
+| `urlv=` | `shareable-urls.md` §3.1 — value is `2` in v2 canonical output |
+| `particle=` | `shareable-urls.md` §3.1 (default `1` = proton) |
+| `material=` | `shareable-urls.md` §3.1 (default `276` = water liquid; `"custom"` allowed) |
+| `program=` | `shareable-urls.md` §4.1 (basic mode; default `"auto"`) |
+| `programs=` | `shareable-urls-formal.md` §3.5 (advanced mode; comma-separated IDs) |
+| `extdata=` | `shareable-urls-formal.md` §2 |
+| `agg_state=` · `interp_scale=` · `interp_method=` · `mstar_mode=` · `density=` · `ival=` | `advanced-options.md` |
+| `mat_name=` · `mat_density=` · `mat_elements=` · `mat_ival=` · `mat_phase=` | `custom-compounds.md` §6 |
 
-**v2 behaviour:** The canonicalisation step always emits `urlv=2`. On read, if
-`urlv=1` is detected, run the v1→v2 migration chain (§6) before applying
-defaults. Unknown future versions trigger the major-mismatch warning from
-`shareable-urls.md` §8.2.
+> **Note on `ival=` and `mat_ival=`:** these encode the **I-value** (mean
+> excitation potential) used in the Bethe-Bloch formula. They are unrelated
+> to the v1 `ivalues=` param (which carried *inverse-lookup* input rows and
+> has been renamed to `lookups=` in v2 to remove the naming collision).
 
-**Worked example:**
-
-```
-?urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev
-```
-
----
-
-### 3.2 `particle` — Particle Identity
-
-| Attribute | Value |
-|---|---|
-| Type | Positive integer |
-| v1 name | `particle=` (**unchanged in v2**) |
-| Default if absent | `1` (proton) |
-| Invalid | Fall back to `1` |
-
-**Worked example:**
-
-```
-?urlv=2&particle=6&material=276&program=auto&energies=10&uanchor=mev-nucl
-```
-
-→ Carbon-12 (Z=6) in water at 10 MeV/nucl.
-
----
-
-### 3.3 `material` — Material Identity
-
-| Attribute | Value |
-|---|---|
-| Type | Positive integer or literal `"custom"` |
-| v1 name | `material=` (**unchanged in v2**) |
-| Default if absent | `276` (water liquid) |
-| Invalid / incompatible | Fall back to `276` |
-
-`"custom"` sentinel requires valid `mat_*` params; see
-`shareable-urls-formal.md` §3.8 for the custom-compound constraint rules
-(unchanged in v2).
-
-**Worked example — built-in material:**
-
-```
-?urlv=2&particle=1&material=104&program=auto&energies=100&uanchor=mev
-```
-
-→ PMMA (ID 104) as the target material.
-
-**Worked example — custom compound:**
-
-```
-?urlv=2&particle=1&material=custom&programs=9&energies=100&uanchor=mev&qshow=stp&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2
-```
-
----
-
-### 3.4 `program` — Program (Basic Mode)
-
-| Attribute | Value |
-|---|---|
-| Type | Positive integer or literal `"auto"` |
-| v1 name | `program=` (**unchanged in v2**) |
-| Default if absent | `"auto"` |
-| Mode | **Basic mode only** |
-
-In advanced mode this param is absent; `programs=` is used instead. Advanced
-mode is inferred from the presence of `programs=` in the URL (§4.2).
-
-**Worked example:**
-
-```
-?urlv=2&particle=1&material=276&program=9&energies=100,200&uanchor=mev
-```
-
-→ Explicit ICRU 90 (program ID 9), basic mode.
-
----
-
-### 3.5 `programs` — Program List (Advanced Mode)
-
-| Attribute | Value |
-|---|---|
-| Type | Comma-separated list of positive integers (or `ext-ref` for external) |
-| v1 name | `programs=` (unchanged) |
-| Mode | **Advanced mode only** |
-
-Value format and external-entity `ext:label:id` encoding are **unchanged** from
-`shareable-urls-formal.md` v6. First ID in the list is the default program.
-
-**Worked example:**
-
-```
-?urlv=2&particle=1&material=276&programs=9,2,101&energies=100&uanchor=mev&qshow=stp
-```
-
----
-
-### 3.6 `across` — Compare-Across Dimension
+### 3.2 `across` — Compare-Across Dimension (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"none"` \| `"programs"` \| `"materials"` \| `"particles"` |
-| v1 equivalent | Was UI state only; no URL param existed |
-| Default if absent | `"none"` (single-entity mode) |
-| Mode | **Advanced mode only**; silently ignored in basic mode |
+| Default | `"none"` (omitted from canonical URL) |
+| Mode | Advanced mode only; silently ignored in basic mode |
 
-Controls which entity axis is used for the multi-entity comparison columns.
-When `"none"`, the table shows a single entity column set. When non-`"none"`,
-the table shows one column set per selected entity along the chosen axis.
+Controls which entity axis drives the multi-entity comparison columns.
 
 **Worked example:**
 
@@ -217,80 +109,51 @@ the table shows one column set per selected entity along the chosen axis.
 
 → Advanced mode, comparing programs 9 and 2 across two energy rows.
 
----
-
-### 3.7 `mode` — Calculator Operation Mode
+### 3.3 `mode` — Calculator Operation Mode (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"forward"` \| `"range"` \| `"inverse-stp"` |
-| v1 equivalent | Implicit (always `"forward"`); inverse modes used `imode=csda\|stp` |
-| Default if absent | `"forward"` |
+| Default | `"forward"` (omitted from canonical URL) |
+| v1 equivalent | implicit `"forward"`; inverse modes used `imode=csda\|stp` |
 
-Specifies which calculator operation is active:
-
-| Token | Meaning | Old equivalent |
+| Token | Meaning | Replaces |
 |---|---|---|
-| `forward` | Energy → STP + CSDA Range | default (no `imode`) |
+| `forward` | Energy → STP + CSDA Range | no `imode` |
 | `range` | CSDA Range → Energy | `imode=csda` |
 | `inverse-stp` | Stopping Power → Energy | `imode=stp` |
 
-The `imode=` param is removed in v2; `mode=` covers all three modes. The
-advanced/basic **picker** mode is a separate concept derived from the
-presence of `programs=` vs `program=` in the URL (§4.2), not a URL param
-of its own.
+The `imode=` param is removed; `mode=` covers all three. Advanced/basic
+**picker** mode is no longer a URL param — it is inferred from the presence
+of `programs=` vs `program=` (§4.2).
 
-**Worked example — forward (default):**
-
-```
-?urlv=2&particle=1&material=276&program=auto&energies=10,100,1000&uanchor=mev
-```
-
-(Forward is the default; `mode=forward` is omitted in the canonical output.)
-
-**Worked example — range lookup (Range →):**
+**Worked example — range lookup:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=7.72:cm,20:cm&runit=cm&uanchor=mev&mode=range
+?urlv=2&particle=1&material=276&programs=9&lookups=7.72:cm,20:cm&runit=cm&uanchor=mev&mode=range
 ```
 
-→ Range-to-energy lookup for two CSDA range values; input column is range,
-   output columns are energies. `energies=` is absent (Range → mode uses
-   `ivalues=` as the input list).
+→ Range-to-energy lookup for two CSDA range values. Input column = range
+(via `lookups=`); output columns = energies. `energies=` is absent.
 
-**Worked example — inverse STP (STP →):**
+**Worked example — inverse STP:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=10.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
+?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
 ```
 
-→ Stopping-power-to-energy lookup; sticky both-branch column state.
-
----
-
-### 3.8 `uanchor` — Energy Unit Anchor (Energy → Mode)
+### 3.4 `uanchor` — Energy Unit Anchor (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"mev"` \| `"mev-nucl"` \| `"mev-u"` |
+| Default | `"mev"` |
 | v1 equivalent | `eunit=MeV\|MeV/nucl\|MeV/u` |
-| Default if absent | `"mev"` |
 
-Maps to display units for the Energy column header and determines how
-unsuffixed rows in `energies=` are interpreted.
-
-| Token | Display label | Conversion |
-|---|---|---|
-| `mev` | MeV | base |
-| `mev-nucl` | MeV/nucl | per nucleon (÷ mass number A) |
-| `mev-u` | MeV/u | per atomic mass unit |
-
-Note: for proton (A=1), `mev` and `mev-nucl` are numerically identical. For
-proton + `mev-u`, the value differs by ~0.1% (proton mass ≠ 1 u exactly) — see
+Determines how unsuffixed rows in `energies=` are interpreted and what the
+Energy column header reads. Note: for proton (A=1), `mev` and `mev-nucl` are
+numerically identical; for proton + `mev-u` the value differs by ~0.1% — see
 the `(≠MeV)` badge in #558.
-
-The `eunit=` param is accepted on read for v1 migration (§6); only `uanchor=`
-is emitted in canonical v2 output.
 
 **Worked example:**
 
@@ -300,30 +163,26 @@ is emitted in canonical v2 output.
 
 → Carbon-12, energies interpreted as 10/50/200 MeV/nucl.
 
----
-
-### 3.9 `runit` — Range Unit Anchor
+### 3.5 `runit` — Range Unit Anchor (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"nm"` \| `"um"` \| `"mm"` \| `"cm"` \| `"dm"` \| `"m"` \| `"km"` |
+| Default | `"cm"` |
 | v1 equivalent | `iunit=` (for `imode=csda`) |
-| Default if absent | `"cm"` |
 
-Controls:
-1. The unit shown in the CSDA Range column header (Energy → mode).
-2. How unsuffixed rows in `ivalues=` are interpreted when `mode=range`.
-3. The anchor shown in the range unit-anchor strip (Range → mode).
+Controls (1) the unit shown in the CSDA Range column header, (2) how
+unsuffixed rows in `lookups=` are interpreted when `mode=range`, (3) the
+anchor in the Range → unit-anchor strip. The full SI prefix set spans
+sub-mm (`nm`, `um`, `mm`) through everyday (`cm`, `dm`, `m`) to large
+(`km`) — needed for high-energy / low-density cases (e.g. cosmic rays
+through air, alpha particles through km-scale gas columns). The on-screen
+anchor strip defaults to a five-button subset per #558; `dm` and `km` are
+accepted in URLs for round-trip fidelity.
 
-The token set spans seven SI length prefixes from nanometres to kilometres.
-While the on-screen anchor strip (per #558) defaults to a five-button set
-(`nm · μm · mm · cm · m`), `dm` and `km` are accepted in the URL for
-shared-link round-trips when the user has explicitly chosen those units
-(e.g. via per-row `:unit` suffix in `ivalues=` or future configuration).
-
-Note: individual result cells auto-scale to an appropriate SI prefix even when
-`runit=cm` (the default). `runit=` anchors the user's **input** interpretation
-and the column header; per-cell rendering uses auto-prefix logic from #556.
+Per-cell rendering auto-scales to an appropriate prefix independent of
+`runit=` (per #556's `value-formatters.ts`). `runit=` only anchors the
+**input** interpretation and the column header.
 
 **Worked example — basic, mm display:**
 
@@ -331,40 +190,21 @@ and the column header; per-cell rendering uses auto-prefix logic from #556.
 ?urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=mev&runit=mm
 ```
 
-→ Range results displayed in mm (header says "CSDA Range [mm]").
-
-**Worked example — range lookup (Range →), mixed length units:**
+**Worked example — range lookup, large-scale ranges:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=7.72,20.5&runit=cm&uanchor=mev&mode=range
+?urlv=2&particle=2&material=3&programs=9&lookups=1.5,3.0&runit=km&uanchor=mev&mode=range
 ```
 
-→ Lookup energies for CSDA ranges 7.72 cm and 20.5 cm (unsuffixed rows
-   inherit `runit=cm`).
+→ Alpha particles in air at km-scale ranges.
 
-**Worked example — range lookup with km anchor (large-scale ranges):**
-
-```
-?urlv=2&particle=2&material=3&programs=9&ivalues=1.5,3.0&runit=km&uanchor=mev&mode=range
-```
-
-→ Alpha particles in air at km-scale ranges (the URL anchors the input
-   interpretation in km).
-
----
-
-### 3.10 `sunit` — STP Unit Anchor
+### 3.6 `sunit` — STP Unit Anchor (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"kev-um"` \| `"mev-cm"` \| `"mev-cm2-g"` |
+| Default | `"kev-um"` (condensed material); `"mev-cm2-g"` (gas) |
 | v1 equivalent | `stp_unit=` (plot page) / `iunit=` (for `imode=stp`) |
-| Default if absent | `"kev-um"` (condensed material); `"mev-cm2-g"` (gas) |
-
-Controls:
-1. The unit shown in the STP column header (Energy → mode).
-2. How unsuffixed rows in `ivalues=` are interpreted when `mode=inverse-stp`.
-3. The anchor shown in the STP unit-anchor strip (STP → mode).
 
 | Token | Display label |
 |---|---|
@@ -378,40 +218,21 @@ Controls:
 ?urlv=2&particle=1&material=276&program=auto&energies=100,200&uanchor=mev&sunit=mev-cm
 ```
 
-**Worked example — inverse STP (STP →):**
-
-```
-?urlv=2&particle=1&material=276&programs=9&ivalues=4.55,10.0&sunit=kev-um&uanchor=mev&mode=inverse-stp
-```
-
----
-
-### 3.11 `energies` — Energy Input Values (Extended)
+### 3.7 `energies` — Energy Input Values (extended in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | Comma-separated `energy-item` list |
 | Grammar | `energy-item = number [":" energy-unit-token]` |
-| v1 name | `energies=` (unchanged; syntax extended) |
-| Mode | **Only used when `mode=forward`** (the default). Absent in `mode=range` and `mode=inverse-stp` (which use `ivalues=` instead) |
+| Mode | Only used when `mode=forward` (the default); absent in `mode=range` and `mode=inverse-stp` (which use `lookups=` instead) |
 
 Each row is either a bare number (inherits `uanchor=`) or a number with an
-explicit per-row `:unit` suffix. The `:` character is a valid unencoded query
-component character per RFC 3986 §3.4.
+explicit per-row `:unit` suffix. The `:` separator is RFC 3986 §3.4-safe;
+see §7 for grammar analysis.
 
 Valid per-row unit tokens: `eV`, `keV`, `MeV`, `GeV`, `TeV`, `MeV/nucl`,
-`keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`.
-
-Unknown unit tokens: treat as invalid row; exclude from calculation; show
-validation message.
-
-**Worked example — master unit only:**
-
-```
-?urlv=2&particle=1&material=276&program=auto&energies=100,200,500&uanchor=mev
-```
-
-→ Three rows: 100, 200, 500 MeV.
+`keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`. Unknown tokens →
+invalid row; excluded from calculation; validation message shown.
 
 **Worked example — mixed inline units:**
 
@@ -422,60 +243,47 @@ validation message.
 → Four rows: 100 MeV (from `uanchor`), 10 keV (explicit), 2 GeV (explicit),
    250 MeV (from `uanchor`).
 
-**Worked example — per-nucleon anchor with mixed prefixes:**
-
-```
-?urlv=2&particle=6&material=276&program=auto&energies=10,400:MeV/nucl,0.5:GeV/nucl&uanchor=mev-nucl
-```
-
-→ Carbon-12: 10 MeV/nucl, 400 MeV/nucl (explicit matches anchor — no suffix
-   in canonical output), 500 MeV/nucl.
-
----
-
-### 3.12 `ivalues` — Inverse Lookup Input Values (Extended)
+### 3.8 `lookups` — Inverse-Lookup Input Values (renamed in v2 from `ivalues=`)
 
 | Attribute | Value |
 |---|---|
-| Type | Comma-separated `ivalue-item` list |
-| Grammar | `ivalue-item = number [":" ivalue-unit-token]` |
-| v1 name | `ivalues=` (unchanged; syntax extended) |
+| Type | Comma-separated `lookup-item` list |
+| Grammar | `lookup-item = number [":" unit-token]` |
+| v1 name | `ivalues=` (renamed to `lookups=` to avoid colliding with the I-value `ival=`) |
 | Mode | Only parsed when `mode=range` or `mode=inverse-stp` |
 
-When `mode=range`: per-row unit is a length token from §3.9 (`nm`/`um`/`mm`/
-`cm`/`dm`/`m`/`km`); master unit from `runit=`. When `mode=inverse-stp`:
-per-row unit is a STP token (`kev-um`/`mev-cm`/`mev-cm2-g`); master unit
-from `sunit=`.
+When `mode=range`: per-row unit is a length token from §3.5 (`nm` /
+`um` / `mm` / `cm` / `dm` / `m` / `km`); master unit from `runit=`. When
+`mode=inverse-stp`: per-row unit is a STP token (`kev-um` / `mev-cm` /
+`mev-cm2-g`); master unit from `sunit=`.
+
+**Why the rename?** In v1, `ivalues=` carried inverse-lookup input rows.
+The `i` prefix collided with the I-value (mean excitation potential)
+encoded by `ival=` (and `mat_ival=` for custom compounds) — a Bethe-Bloch
+physics quantity. The two have nothing to do with each other; the rename
+makes the URL self-documenting.
 
 **Worked example — range lookup, mixed length units:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=mev&mode=range
+?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=mev&mode=range
 ```
 
 → Three range-lookup rows: 7.718 cm, 45 µm, 1.5 mm.
 
-**Worked example — STP inverse lookup, master unit:**
+**Worked example — STP inverse lookup, master unit only:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
+?urlv=2&particle=1&material=276&programs=9&lookups=45.76,10.00&sunit=kev-um&uanchor=mev&mode=inverse-stp
 ```
 
-→ Two STP-inverse rows: 45.76 keV/µm and 10.00 keV/µm (both from `sunit`).
-
----
-
-### 3.13 `qshow` — Quantity Display Toggle
+### 3.9 `qshow` — Quantity Display Toggle (replaces v1 `qfocus=`)
 
 | Attribute | Value |
 |---|---|
 | Type | `"stp"` \| `"range"` |
-| v1 name | `qfocus=stp\|csda\|both` |
-| Default if absent | both quantities shown (equivalent to old `qfocus=both`) |
-| Mode | **Advanced mode only**; ignored in basic mode (basic always shows both) |
-
-The old three-state `qfocus=` is replaced by the two-state `qshow=`. CSV export
-always includes both quantities regardless of `qshow=`.
+| Default | both quantities visible (param absent from URL) |
+| Mode | Advanced mode only; ignored in basic mode |
 
 | v2 `qshow=` | v1 `qfocus=` | Meaning |
 |---|---|---|
@@ -483,9 +291,9 @@ always includes both quantities regardless of `qshow=`.
 | `range` | `csda` | Show CSDA range columns only |
 | *(absent)* | `both` | Show both (default) |
 
-Note: `qshow=` is NOT emitted in the canonical URL when both quantities are
-visible (absence = default). This differs from v1 where `qfocus=both` was
-always emitted explicitly in advanced mode.
+CSV export always includes both quantities regardless of `qshow=`. Unlike
+v1 which always emitted `qfocus=both`, v2 omits `qshow=` when both are
+visible (default = absence).
 
 **Worked example:**
 
@@ -493,59 +301,42 @@ always emitted explicitly in advanced mode.
 ?urlv=2&particle=1&material=276&programs=9,2&energies=100,200&uanchor=mev&qshow=range
 ```
 
-→ Advanced mode, CSDA range columns only visible.
-
----
-
-### 3.14 `istpbranch` — Inverse-STP Branch Sticky Flag
+### 3.10 `istpbranch` — Inverse-STP Branch Sticky Flag (new in v2)
 
 | Attribute | Value |
 |---|---|
 | Type | `"hi"` \| `"lo"` \| `"both"` |
-| Default if absent | `"hi"` |
+| Default | `"hi"` |
 | Mode | Only relevant when `mode=inverse-stp` |
 
-Controls the column visibility state for the dual-branch inverse-STP table.
+Controls the column-visibility state for the dual-branch inverse-STP table.
 Some STP values have two corresponding energies (high-E and low-E branches).
 
 | Token | Meaning |
 |---|---|
 | `hi` | Show high-energy branch only (default) |
-| `lo` | Show low-energy branch only (reserved — not implemented in #560; schema stub) |
-| `both` | Both branch columns visible (sticky state after user has seen a dual-solution row) |
+| `lo` | Show low-energy branch only (reserved; not implemented in #560 — schema stub) |
+| `both` | Both branch columns visible (sticky after the user has seen a dual-solution row) |
 
-The `both` state is sticky: once a dual-solution row is encountered the column
-reveals; `istpbranch=both` in the URL keeps that column visible on reload even
-before any row resolves to two energies.
-
-**Worked example — default (hi branch only):**
-
-```
-?urlv=2&particle=1&material=276&programs=9&ivalues=10.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp
-```
+The `both` state is sticky: once a dual-solution row appears the column
+reveals; `istpbranch=both` keeps that column visible on reload.
 
 **Worked example — sticky both-branch state:**
 
 ```
-?urlv=2&particle=1&material=276&programs=9&ivalues=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
+?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
 ```
 
----
-
-### 3.15 `tip_seen` — Tip Dismissal Flag (Optional)
+### 3.11 `tip_seen` — Tip Dismissal Flag (new in v2, optional)
 
 | Attribute | Value |
 |---|---|
-| Type | Literal `"inline_unit"` (the only valid value currently) |
-| Default if absent | Tip not yet seen |
+| Type | Literal `"inline_unit"` (only valid value currently) |
+| Default | tip not yet seen (param absent) |
 
-When the user has dismissed the "type a unit too — e.g. `10 keV`" one-time
-hint, `tip_seen=inline_unit` may appear in the URL. It is NOT required for
-round-trip fidelity; it is an optional optimisation to prevent re-showing the
-hint when a shared URL is opened by someone who has already seen it.
-
-Persistence is primarily via `localStorage` key `dedx_tip_inline_unit_seen`.
-The URL param supplements this for cross-device link-sharing.
+Cross-device sharing of the "type a unit too — e.g. `10 keV`" dismissal
+state. Primary persistence is `localStorage` key
+`dedx_tip_inline_unit_seen`; the URL param is an optional supplement.
 
 **Worked example:**
 
@@ -553,44 +344,17 @@ The URL param supplements this for cross-device link-sharing.
 ?urlv=2&particle=1&material=276&program=auto&energies=100,10:keV&uanchor=mev&tip_seen=inline_unit
 ```
 
----
-
-### 3.16 Params Unchanged from v1
-
-The following v2 params retain their v1 semantics and ABNF grammar — they are
-still emitted in canonical v2 output exactly as they were in v1. See
-`shareable-urls-formal.md` v6 for full details.
-
-| Param | Reference | Notes |
-|---|---|---|
-| `extdata=` | formal ABNF §2 | External source label+URL; multiple allowed |
-| `agg_state=` | formal ABNF §3.7 | Advanced options |
-| `interp_scale=` | formal ABNF §3.7 | Advanced options |
-| `interp_method=` | formal ABNF §3.7 | Advanced options |
-| `mstar_mode=` | formal ABNF §3.7 | Advanced options |
-| `density=` | formal ABNF §3.7 | Advanced options |
-| `ival=` | formal ABNF §3.7 | Advanced options |
-| `mat_name=` | formal ABNF §3.8 | Custom compound |
-| `mat_density=` | formal ABNF §3.8 | Custom compound |
-| `mat_elements=` | formal ABNF §3.8 | Custom compound |
-| `mat_ival=` | formal ABNF §3.8 | Custom compound |
-| `mat_phase=` | formal ABNF §3.8 | Custom compound |
-
-### 3.17 Deprecated v1 Params Accepted for Migration
-
-These params were emitted in v1 canonical output but are **not emitted** in v2.
-They are accepted on read for the v1→v2 migration path (§6) and silently
-dropped or mapped to their v2 replacements before the canonical URL is written
-back via `replaceState`.
+### 3.12 Deprecated v1 Params (accepted on read; never emitted in v2)
 
 | Deprecated v1 param | v2 behaviour |
 |---|---|
-| `mode=advanced` / `mode=basic` | Accepted on read; not emitted. Advanced mode is inferred from `programs=` vs `program=` (§4.2). |
-| `eunit=` | Accepted on read; mapped to `uanchor=` (§3.8). |
-| `qfocus=` | Accepted on read; mapped to `qshow=` per §6. |
-| `imode=` | Accepted on read; mapped to `mode=range\|inverse-stp` per §6. |
-| `iunit=` | Accepted on read; mapped to `runit=` or `sunit=` depending on the active `mode=` after migration. |
-| `hidden=` / `hidden_programs=` | Silently dropped on read; column visibility is now derived from picker selection. |
+| `mode=advanced` / `mode=basic` | Accepted; not emitted. Advanced mode is inferred from `programs=` vs `program=` (§4.2). |
+| `eunit=` | Accepted; mapped to `uanchor=` (§3.4). |
+| `qfocus=` | Accepted; mapped to `qshow=` per §6. |
+| `imode=` | Accepted; mapped to `mode=range\|inverse-stp` per §6. |
+| `iunit=` | Accepted; mapped to `runit=` (when prior `imode=csda`) or `sunit=` (when prior `imode=stp`). |
+| `ivalues=` | Accepted; copied verbatim to `lookups=` (same value syntax). |
+| `hidden=` / `hidden_programs=` | Silently dropped; column visibility now derived from picker selection. |
 
 ---
 
@@ -598,8 +362,7 @@ back via `replaceState`.
 
 ### 4.1 Parameter Order
 
-Canonical v2 Calculator URL (`?` and `&` shown on separate lines for readability;
-square brackets denote conditional emission):
+Square brackets denote conditional emission:
 
 ```
 /calculator
@@ -610,7 +373,7 @@ square brackets denote conditional emission):
   &{program={id|"auto"} | programs={ids}}   ← exactly one, by mode
   [&across={dimension}]                 ← omit when "none" (default)
   [&energies={csv}]                     ← only when mode=forward (default)
-  [&ivalues={csv}]                      ← only when mode=range or mode=inverse-stp
+  [&lookups={csv}]                      ← only when mode=range or mode=inverse-stp
   &uanchor={token}                      ← always emitted
   [&runit={token}]                      ← omit when "cm" (default)
   [&sunit={token}]                      ← omit when default for material phase
@@ -618,42 +381,31 @@ square brackets denote conditional emission):
   [&qshow={stp|range}]                  ← omit when both visible (default)
   [&istpbranch={hi|lo|both}]            ← omit when "hi" (default)
   [&tip_seen=inline_unit]               ← omit unless tip dismissed
-  [&agg_state=...] [&interp_scale=...] ...  ← advanced options (§3.16)
-  [&mat_name=...] ...                   ← custom compound (§3.16)
+  [&agg_state=...] [&interp_scale=...] ...  ← advanced options
+  [&mat_name=...] ...                   ← custom compound
 ```
 
 ### 4.2 Advanced Mode vs Basic Mode in v2
 
-In v2, advanced/basic mode is no longer stored as a `mode=advanced|basic`
-URL param. Instead:
+Advanced/basic mode is no longer stored as a `mode=advanced|basic` URL param.
+Instead:
 
 - **Basic mode:** URL contains `program=` (one program param).
 - **Advanced mode:** URL contains `programs=` (multi-program param).
 
-This removes the redundancy of a separate `mode=` advanced-mode marker and
-makes the URL more self-describing.
-
-The literal `mode=advanced` or `mode=basic` is **accepted but ignored** on
-read (for v1 migration compatibility only); it is never emitted in canonical
-v2 output. (Note: v2 reuses the `mode=` URL key for the *calculator operation
-mode* — `forward`/`range`/`inverse-stp`. There is no ambiguity because the
-v2 parser only accepts the new tokens; `mode=advanced` literals are dropped
-silently after their advanced-mode signal has been recorded.)
+The literal `mode=advanced` / `mode=basic` is accepted on read for v1
+migration only and never emitted. (No ambiguity with the v2 `mode=` calc-
+operation tokens because the value-sets don't overlap.)
 
 ### 4.3 When `qshow=` is Omitted
 
-Unlike v1 which always emitted `qfocus=both`, in v2:
-- `qshow=stp` → emit `qshow=stp`
-- `qshow=range` → emit `qshow=range`
-- Both visible (default) → **omit `qshow=`** from the URL
+| Value | Canonical emission |
+|---|---|
+| `qshow=stp` | emit `qshow=stp` |
+| `qshow=range` | emit `qshow=range` |
+| both visible (default) | omit `qshow=` |
 
 ### 4.4 Worked Canonical Examples
-
-**Basic mode — single energy:**
-
-```
-/calculator?urlv=2&particle=1&material=276&program=auto&energies=100&uanchor=mev
-```
 
 **Basic mode — mixed inline units:**
 
@@ -670,13 +422,13 @@ Unlike v1 which always emitted `qfocus=both`, in v2:
 **Advanced mode — range lookup:**
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9&ivalues=7.718:cm,20:cm&runit=cm&uanchor=mev&mode=range
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=7.718:cm,20:cm&runit=cm&uanchor=mev&mode=range
 ```
 
 **Advanced mode — inverse STP, sticky both-branch:**
 
 ```
-/calculator?urlv=2&particle=1&material=276&programs=9&ivalues=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
+/calculator?urlv=2&particle=1&material=276&programs=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=mev&mode=inverse-stp&istpbranch=both
 ```
 
 **Advanced mode — compare-across programs:**
@@ -685,24 +437,17 @@ Unlike v1 which always emitted `qfocus=both`, in v2:
 /calculator?urlv=2&particle=1&material=276&programs=9,2,101&energies=100,200&uanchor=mev&across=programs&qshow=range
 ```
 
-**Advanced mode — carbon, heavy-ion energy anchor:**
-
-```
-/calculator?urlv=2&particle=6&material=276&programs=9&energies=10,100,400:MeV/nucl&uanchor=mev-nucl
-```
-
 ---
 
 ## 5. Removed Params
 
 ### 5.1 `hidden=` / `hidden_programs=`
 
-Previously used to hide program columns in multi-entity Advanced mode. The
-Columns dropdown is removed in #561; column visibility is entirely governed
-by entity selection in the picker (selected = visible, deselected = absent).
+Used in v1 to hide program columns in multi-entity advanced mode. The
+Columns dropdown is removed in #561; column visibility = entity selection
+in the picker (selected = visible, deselected = absent).
 
-**On read (migration):** silently drop any `hidden=` or `hidden_programs=`
-parameter. Do not show a warning. Do not restore hidden-column state.
+**On read:** silently drop. No warning. No hidden-column state restoration.
 
 ---
 
@@ -712,23 +457,22 @@ When loading a URL with `urlv=1` (or no `urlv`):
 
 | v1 param | v2 behaviour |
 |---|---|
-| `particle={id}` | unchanged — emitted as `particle={id}` in v2 |
-| `material={id}` | unchanged — emitted as `material={id}` in v2 |
-| `program={id\|auto}` | unchanged — emitted as `program={id\|auto}` in v2 |
-| `eunit={token}` | read as `uanchor=` with mapped token (MeV→mev, MeV/nucl→mev-nucl, MeV/u→mev-u) |
+| `particle=` · `material=` · `program=` · `programs=` | unchanged — emitted as-is in v2 |
+| `eunit={token}` | read as `uanchor=` with mapped token (`MeV`→`mev`, `MeV/nucl`→`mev-nucl`, `MeV/u`→`mev-u`) |
 | `qfocus=both` | treat as `qshow=` absent (both visible, default) |
 | `qfocus=stp` | treat as `qshow=stp` |
 | `qfocus=csda` | treat as `qshow=range` |
 | `imode=csda` | treat as `mode=range` |
 | `imode=stp` | treat as `mode=inverse-stp` |
-| `iunit=` | treat as `runit=` (when old `imode=csda`) or `sunit=` (when old `imode=stp`) |
-| `mode=advanced` | infer advanced mode from `programs=` param (discard `mode=advanced` literal) |
+| `iunit=` | treat as `runit=` (when prior `imode=csda`) or `sunit=` (when prior `imode=stp`) |
+| `ivalues=` | rename to `lookups=` (value syntax unchanged) |
+| `mode=advanced` | infer advanced mode from `programs=` param (discard literal) |
 | `hidden=` or `hidden_programs=` | silently drop |
 | `energies=` without `:unit` suffixes | load with `uanchor=` default; values unchanged |
-| Any unknown param | silently drop (forward-compat rule) |
+| Any unknown param | silently drop (forward-compat) |
 
-After applying migration, the parser emits a canonical v2 URL via `replaceState`,
-bumping `urlv` to `2`.
+After applying migration, the parser emits a canonical v2 URL via
+`replaceState`, bumping `urlv` to `2`.
 
 ---
 
@@ -736,38 +480,33 @@ bumping `urlv` to `2`.
 
 The inline `:unit` suffix uses a literal colon inside the query component.
 RFC 3986 §3.4 permits `:` unencoded within a query string; `URLSearchParams`
-preserves literal colons inside values. This is safe because:
+preserves literal colons inside values. Safety analysis:
 
-1. The query string is split on raw `&` and raw `=` first (per ABNF tokenisation
-   in `shareable-urls-formal.md` §2).
-2. After extracting the `energies=` or `ivalues=` value, the CSV is split on `,`
-   (also literal and safe per RFC 3986 §3.4).
-3. Each item is then split on the **last** `:` to separate the number from the
-   unit token. The "last" colon rule is important for per-nucleon tokens like
-   `MeV/nucl` — but those tokens do not contain colons, so any colon in an
-   item is unambiguously the number-unit separator.
+1. The query string is split on raw `&` and raw `=` first (per ABNF
+   tokenisation in `shareable-urls-formal.md` §2).
+2. After extracting the `energies=` or `lookups=` value, the CSV is split
+   on `,` (also literal and safe per RFC 3986 §3.4).
+3. Each item is then split on the **last** `:` to separate the number
+   from the unit token. Current unit tokens (`MeV`, `keV`, `GeV`,
+   `MeV/nucl`, `keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`, `nm`,
+   `um`, `mm`, `cm`, `dm`, `m`, `km`, `kev-um`, `mev-cm`, `mev-cm2-g`)
+   contain no colons, so the split is unambiguous. Future tokens must
+   not include colons.
 
-**Known conflict:** If a unit token itself contained `:`, the last-colon rule
-would be ambiguous. The current token set (`MeV`, `keV`, `GeV`, `MeV/nucl`,
-`keV/nucl`, `GeV/nucl`, `MeV/u`, `keV/u`, `GeV/u`, `nm`, `um`, `mm`, `cm`,
-`dm`, `m`, `km`, `kev-um`, `mev-cm`, `mev-cm2-g`) contains no colons. Future
-tokens must not include colons.
-
-**The `|` in `istpbranch=hi|lo|both`:** This is not a URL issue — `istpbranch`
-carries a single token value (`hi`, `lo`, or `both`); the `|` only appears in
-the spec table as a grammar alternative notation.
+**The `|` in `istpbranch=hi|lo|both`:** not a URL issue. `istpbranch`
+carries a single token value (`hi`, `lo`, or `both`); the `|` is grammar
+alternative notation in the spec table only.
 
 ---
 
 ## 8. Test-Plan Summary
 
-Per the issue #554 scope, this issue ships **documentation only**. No Playwright
-tests are added here. Unit-test fixtures are updated to reference this doc.
+This issue ships **documentation only**. No Playwright tests are added here.
 
 | Test coverage | Where |
 |---|---|
-| Round-trip parse → serialise → parse for new params | `calculator-url.test.ts` (updated in this issue to reference this doc; behavioural coverage added in #555–#561) |
-| Schema validator | Added in #555 (first implementation issue) |
+| Round-trip parse → serialise → parse for new params | `calculator-url.test.ts` (this issue references the doc as source of truth; behavioural coverage in #555–#561) |
+| Schema validator | Added in #555 |
 | Inline-unit round-trips | `inline-unit.test.ts` (new in #557) |
 | `istpbranch` sticky logic | `inverse-stp.spec.ts` E2E (new in #560) |
 
@@ -775,17 +514,14 @@ tests are added here. Unit-test fixtures are updated to reference this doc.
 
 ## 9. Cross-Spec Consistency Checklist
 
-- [ ] `uanchor=` replaces `eunit=` in canonical output; migration reads `eunit=`
-      and maps tokens (implementation in #555).
-- [ ] `qshow=stp|range` (2-state) replaces `qfocus=stp|csda|both` (3-state);
-      `multi-program.svelte.ts` and `multi-entity.svelte.ts` state shape updated
-      in #561.
-- [ ] `mode=forward|range|inverse-stp` replaces `imode=csda|stp`; Calculator page
-      route param handling updated in #558.
-- [ ] `across=` URL param wired to entity-selection `across` state in #561.
-- [ ] `istpbranch=` param round-trips through `calculator-url.ts` in #560.
+- [ ] `uanchor=` replaces `eunit=` in canonical output; migration reads `eunit=` and maps tokens (#555).
+- [ ] `qshow=stp|range` replaces `qfocus=stp|csda|both`; `multi-program.svelte.ts` + `multi-entity.svelte.ts` state shape updated (#561).
+- [ ] `mode=forward|range|inverse-stp` replaces `imode=csda|stp`; route handling updated (#558).
+- [ ] `across=` URL param wired to entity-selection state (#561).
+- [ ] `istpbranch=` round-trips through `calculator-url.ts` (#560).
 - [ ] `runit=` token set extended to `nm|um|mm|cm|dm|m|km` (#558).
-- [ ] `hidden=` / `hidden_programs=` silently dropped in #561 migration.
+- [ ] `lookups=` replaces `ivalues=` in encoder/decoder + state field (#555 / #560).
+- [ ] `hidden=` / `hidden_programs=` silently dropped (#561 migration).
 - [ ] `shareable-urls-formal.md` ABNF grammar updated with v2 params after #561.
 - [ ] `shareable-urls.md` §3–§5 updated to reference this doc after #561.
 - [ ] `docs/04-feature-specs/README.md` status table updated after #561.
