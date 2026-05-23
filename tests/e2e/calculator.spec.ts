@@ -49,8 +49,10 @@ test.describe("Calculator on mobile viewport", () => {
   test.use({ viewport: { width: 412, height: 915 } });
 
   test("calculated stopping power and range are fully visible (no clipping)", async ({ page }) => {
-    // Advanced mode: the ResultTable uses <td> elements required by the closest("td")
-    // assertion below; the Basic mode card layout has no <td> for the result cells.
+    // Advanced mode (multi-program): result-table.svelte wraps <table> in an
+    // overflow-x-auto div, so locator("..") finds the scroll container.
+    // Testids: single-program → stp-cell-0; multi-program → stp-cell-{id}-0.
+    // Use prefix matching so the selectors work regardless of which mode is active.
     await page.goto("/calculator?advanced=1");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
 
@@ -58,8 +60,9 @@ test.describe("Calculator on mobile viewport", () => {
     await energyInput.fill("100 MeV");
     await energyInput.blur();
 
-    const stpCell = page.locator('[data-testid="stp-cell-0"]');
-    const rangeCell = page.locator('[data-testid="range-cell-0"]');
+    // Matches stp-cell-0 (single-program) and stp-cell-{programId}-0 (multi-program).
+    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    const rangeCell = page.locator('[data-testid^="range-cell-"]').first();
 
     // Wait for real WASM-computed values.
     await expect

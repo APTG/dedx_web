@@ -43,14 +43,18 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     await waitForTable(page);
   });
 
-  test("shows the result table with five columns", async ({ page }) => {
+  test("shows the result table with three columns in Basic mode", async ({ page }) => {
+    // After #556, Basic mode uses a 3-column table (Energy, STP, CSDA Range).
+    // Typing triggers auto-append, switching from card to multi-row table mode.
+    await page.goto("/calculator");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: WASM_TIMEOUT });
+    await waitForTable(page);
+    await typeInRow(page, 0, "100");
     const headers = page.locator("thead th");
-    await expect(headers).toHaveCount(5);
+    await expect(headers).toHaveCount(3, { timeout: 5000 });
     await expect(headers.nth(0)).toContainText(/Energy/i);
-    await expect(headers.nth(1)).toContainText(/MeV\/nucl/);
-    await expect(headers.nth(2)).toContainText(/Unit/i);
-    await expect(headers.nth(3)).toContainText(/Stopping Power/i);
-    await expect(headers.nth(4)).toContainText(/CSDA Range/i);
+    await expect(headers.nth(1)).toContainText(/Stopping Power/i);
+    await expect(headers.nth(2)).toContainText(/CSDA Range/i);
   });
 
   test("default row '100' shows a normalised MeV/nucl value of 100", async ({ page }) => {
