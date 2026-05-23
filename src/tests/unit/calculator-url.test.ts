@@ -702,7 +702,7 @@ describe("v1 → v2 migration fixture: v1 param names accepted on read", () => {
     expect(state.masterUnit).toBe("MeV/nucl");
   });
 
-  it("v1 qfocus=csda → treated as qshow=range on migration (url-schema.md §6)", () => {
+  it("v1 qfocus=csda decodes to quantityFocus=\"csda\" (pre-v2 behavior)", () => {
     // v2 migration: qfocus=csda → qshow=range (url-schema.md §3.13 + ADR 006)
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
@@ -712,7 +712,7 @@ describe("v1 → v2 migration fixture: v1 param names accepted on read", () => {
     expect((state as any).quantityFocus).toBe("csda");
   });
 
-  it("v1 hidden_programs= is silently dropped on read (url-schema.md §5.1)", () => {
+  it("v1 hidden_programs= decodes to hiddenProgramIds (pre-v2 behavior)", () => {
     // v2 drops hidden= / hidden_programs= entirely (ADR 006 §1)
     // The decoder returns hiddenProgramIds but v2 encoder will not emit hidden_programs=
     const params = new URLSearchParams(

@@ -235,21 +235,9 @@ is not encoded in the URL (it is derived from the presence of `programs=`).
 ?urlv=2&particleId=1&materialId=276&programId=auto&energies=10,100,1000&uanchor=mev
 ```
 
-**Worked example — range lookup:**
+**Worked example — range lookup (advanced):**
 
-```
-?urlv=2&particleId=1&materialId=276&programs=9&ivalues=7.72:cm,20:cm&runit=cm&mode=range&mode=advanced&qshow=range
-```
-
-Wait — `mode=advanced` and `mode=range` would conflict. See §3.10 for how
-`mode=` encodes the calculator tab.  The picker advanced/basic state is
-determined by the presence of `programs=` vs `programId=`.
-
-**Corrected worked example — range lookup in advanced:**
-
-```
-?urlv=2&particleId=1&materialId=276&programs=9&ivalues=7.72:cm,20:cm&runit=cm&uanchor=mev&mode=range
-```
+    ?urlv=2&particleId=1&materialId=276&programs=9&ivalues=7.72:cm,20:cm&runit=cm&uanchor=mev&mode=range
 
 **Worked example — inverse STP:**
 
@@ -538,8 +526,6 @@ The following params retain their v1 semantics and ABNF grammar. See
 |---|---|---|
 | `urlv=` | §2 | Value bumped to `2` in canonical output |
 | `extdata=` | §2 formal ABNF | External source label+URL; multiple allowed |
-| `mode=advanced` | — | **Not emitted in v2.** Advanced mode is inferred from `programs=` vs `programId=`. The `mode=advanced` literal is accepted on v1 migration read but not emitted. |
-| `hidden_programs=` | §5 (was v1) | Silently dropped on read in v2 (see §5 migration) |
 | `agg_state=` | §3.7 advanced options | Unchanged |
 | `interp_scale=` | §3.7 | Unchanged |
 | `interp_method=` | §3.7 | Unchanged |
@@ -551,6 +537,11 @@ The following params retain their v1 semantics and ABNF grammar. See
 | `mat_elements=` | §3.8 | Unchanged |
 | `mat_ival=` | §3.8 | Unchanged |
 | `mat_phase=` | §3.8 | Unchanged |
+
+**Migration-only v1 params (accepted on read, never emitted in v2):**
+
+- `mode=advanced` (advanced mode is inferred from `programs=` vs `programId=`)
+- `hidden=` / `hidden_programs=` (silently dropped; see §5.1)
 
 ---
 
@@ -568,12 +559,11 @@ Canonical v2 Calculator URL:
   &materialId={id|"custom"}
   &{programId={id|"auto"} | programs={ids}}   ← exactly one, by mode
   [&across={dimension}]              ← omit when "none"
-  &energies={csv}
+  &{energies={csv} | ivalues={csv}}        ← input rows: energies when mode=forward; ivalues when mode=range or mode=inverse-stp
   &uanchor={token}                   ← always emitted
   [&runit={token}]                   ← omit when "cm" (default)
   [&sunit={token}]                   ← omit when default for material phase
   [&mode={forward|range|inverse-stp}] ← omit when "forward" (default)
-  [&ivalues={csv}]                   ← only when mode=range or mode=inverse-stp
   [&qshow={stp|range}]               ← omit when both visible (default)
   [&istpbranch={hi|lo|both}]         ← omit when "hi" (default)
   [&tip_seen=inline_unit]            ← omit unless tip dismissed
