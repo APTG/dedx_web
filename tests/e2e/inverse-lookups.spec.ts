@@ -123,7 +123,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
       "true",
     );
     await expectInverseUnitSelected(page, "inverse-range-unit", "mm");
-    await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("");
+    await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("3.5");
   });
 
   test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {

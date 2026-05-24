@@ -196,14 +196,14 @@ test.describe("Inverse-STP table — column reveal behaviour", () => {
 
     // Navigate directly to plot page with inv_stp_branch=both
     await page.goto("/plot?particle=1&material=276&program=2&inv_stp_branch=both");
-    await page.waitForSelector('[data-testid="series-strip"]', { timeout: 20000 });
+    await page.waitForSelector('[data-testid="plot-series-strip"]', { timeout: 20000 });
 
     // Wait for 2 series to appear in the legend / series strip
     await expect
       .poll(
         async () => {
           const items = await page
-            .locator('[data-testid="series-strip"] [data-testid^="series-item"]')
+            .locator('[data-testid="plot-series-strip"] [data-testid^="plot-series-row-"]')
             .count();
           return items;
         },
@@ -213,7 +213,7 @@ test.describe("Inverse-STP table — column reveal behaviour", () => {
 
     // Both series labels must contain the branch suffix
     const labels = await page
-      .locator('[data-testid="series-strip"] [data-testid^="series-item"]')
+      .locator('[data-testid="plot-series-strip"] [data-testid^="plot-series-row-"]')
       .allTextContents();
     const hasHighE = labels.some((l) => l.includes("high-E"));
     const hasLowE = labels.some((l) => l.includes("low-E"));

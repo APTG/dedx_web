@@ -77,6 +77,21 @@ describe("encodePlotUrl", () => {
     expect(params.get("yscale")).toBe("log");
   });
 
+  it("encodes inv_stp_branch=both when requested", () => {
+    const input = {
+      particleId: 1,
+      materialId: 276,
+      programId: 2,
+      series: [],
+      stpUnit: "MeV/cm" as StpUnit,
+      xLog: false,
+      yLog: true,
+      invStpBranch: "both" as const,
+    };
+    const params = encodePlotUrl(input);
+    expect(params.get("inv_stp_branch")).toBe("both");
+  });
+
   it("omits series param when empty", () => {
     const input = {
       particleId: 1,
@@ -136,6 +151,12 @@ describe("decodePlotUrl", () => {
     const sp = new URLSearchParams("program=2");
     const decoded = decodePlotUrl(sp);
     expect(decoded.programId).toBe(2);
+  });
+
+  it("decodes inv_stp_branch=both", () => {
+    const sp = new URLSearchParams("program=2&inv_stp_branch=both");
+    const decoded = decodePlotUrl(sp);
+    expect(decoded.invStpBranch).toBe("both");
   });
 
   it("uses defaults for empty params", () => {

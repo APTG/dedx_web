@@ -396,7 +396,7 @@
         // entity triple (particle/material/program).  Add two series — same STP
         // curve but labelled " high-E" and " low-E" — so both branches appear in
         // the legend.
-        const invStpBranch = params.get("inv_stp_branch");
+        const invStpBranch = decoded.invStpBranch;
         if (
           invStpBranch === "both" &&
           decoded.particleId !== null &&
@@ -457,6 +457,9 @@
       : {};
     const selectedParticleId = entityState.selectedParticle?.id;
     const selectedProgramId = entityState.selectedProgram.id;
+    const hasInverseStpPair =
+      plotState.series.some((s) => s.labelSuffix === " high-E") &&
+      plotState.series.some((s) => s.labelSuffix === " low-E");
     const params = encodePlotUrl({
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
@@ -469,6 +472,7 @@
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
+      invStpBranch: hasInverseStpPair ? "both" : undefined,
       advancedOptions: advancedOptions.value,
       externalSources: loadedExternalSources,
       ...customUrlFields,

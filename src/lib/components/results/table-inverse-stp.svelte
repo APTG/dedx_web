@@ -35,27 +35,49 @@
   // When the low-E column first appears, animate it once.
   let loEPrevVisible = $state(false);
   let loEColumnJustRevealed = $state(false);
+  let autoRevealedByTwoSolution = $state(false);
 
   $effect(() => {
     const now = showLowEColumn;
+    let revealTimer: ReturnType<typeof setTimeout> | undefined;
     if (now && !loEPrevVisible) {
       loEColumnJustRevealed = true;
       // Remove the tint class after the animation completes (600ms).
-      setTimeout(() => {
+      revealTimer = setTimeout(() => {
         loEColumnJustRevealed = false;
       }, 600);
     }
     loEPrevVisible = now;
+    return () => {
+      if (revealTimer !== undefined) {
+        clearTimeout(revealTimer);
+      }
+    };
   });
 
-  // Sync stpBranchState to "both" whenever the column is shown.
+  // Sync stpBranchState for auto-reveal behaviour triggered by 2-solution rows.
   $effect(() => {
-    if (showLowEColumn && props.inverseLookupState.stpBranchState !== "both") {
-      props.inverseLookupState.setStpBranchState("both");
-    } else if (!showLowEColumn && props.inverseLookupState.stpBranchState === "both") {
-      props.inverseLookupState.setStpBranchState("hi");
+    if (hasTwoSolutionRow) {
+      autoRevealedByTwoSolution = true;
+      if (props.inverseLookupState.stpBranchState !== "both") {
+        props.inverseLookupState.setStpBranchState("both");
+      }
+      return;
+    }
+    if (autoRevealedByTwoSolution) {
+      autoRevealedByTwoSolution = false;
+      if (props.inverseLookupState.stpBranchState === "both") {
+        props.inverseLookupState.setStpBranchState("hi");
+      }
     }
   });
+
+  const canDeleteRows = $derived(stpRows.length > 1);
+
+  function onDeleteRow(index: number): void {
+    if (!canDeleteRows) return;
+    props.inverseLookupState.removeStpRow(index);
+  }
 
   function inputClass(status: string): string {
     const isError =
@@ -188,15 +210,15 @@
                     Plot
                   </button>
                 {/if}
-                {#if stpRows.length > 1}
-                  <button
-                    type="button"
-                    aria-label="Delete row {i + 1}"
-                    data-testid="inverse-stp-delete-{i}"
-                    class="text-muted-foreground/50 hover:text-destructive text-base leading-none"
-                    onclick={() => props.inverseLookupState.removeStpRow(i)}>×</button
-                  >
-                {/if}
+                <button
+                  type="button"
+                  aria-label="Delete row {i + 1}"
+                  aria-disabled={!canDeleteRows}
+                  data-testid="inverse-stp-delete-{i}"
+                  disabled={!canDeleteRows}
+                  class={`text-base leading-none ${canDeleteRows ? "text-muted-foreground/50 hover:text-destructive" : "text-muted-foreground/25 cursor-not-allowed"}`}
+                  onclick={() => onDeleteRow(i)}>×</button
+                >
               </div>
             </td>
           </tr>
