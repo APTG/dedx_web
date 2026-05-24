@@ -435,15 +435,24 @@
     persistAdvancedOptions();
   });
 
-  // Retrigger single-program calculation when advanced options change (basic mode).
-  // Advanced mode uses its own calculation effect below (multi-program calculateMulti).
+  // Retrigger calculator-state calculation when advanced options change for the
+  // single-result table paths (Basic mode and single-program Advanced mode).
+  // True multi-program compare continues to use the dedicated calculateMulti effect below.
   $effect(() => {
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
-    if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
+    if (!calcState || !entityState?.isComplete) return;
+    const isMultiProgramCompare =
+      isAdvancedMode.value &&
+      entityState.across === "program" &&
+      (multiProgState?.selectedProgramIds.length ?? 0) > 1;
+    const isMultiEntityCompare =
+      isAdvancedMode.value &&
+      (entityState.across === "material" || entityState.across === "particle");
+    if (isMultiProgramCompare || isMultiEntityCompare) return;
     calcState.triggerCalculation();
   });
 
@@ -962,7 +971,7 @@
     if (entityState.across !== "program") return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
-    if (selectedProgramIds.length === 0) return;
+    if (selectedProgramIds.length <= 1) return;
 
     const rawParticleId = entityState.selectedParticle?.id;
     // External-only particles have string IDs — multi-program mode only supports built-in particles

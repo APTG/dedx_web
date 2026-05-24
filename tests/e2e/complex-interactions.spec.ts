@@ -19,7 +19,7 @@ async function waitForWasm(page: import("@playwright/test").Page) {
 
 /** Wait until the result table is visible (entity selection is complete). */
 async function waitForTable(page: import("@playwright/test").Page) {
-  await expect(page.locator('[data-testid="energy-input-0"]')).toBeVisible({
+  await expect(page.locator("input[data-row-index]").first()).toBeVisible({
     timeout: WASM_TIMEOUT,
   });
 }
@@ -62,9 +62,10 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     await expect(headers.nth(2)).toContainText(/CSDA Range/i);
   });
 
-  test("default row '100' shows a normalised MeV/nucl value of 100", async ({ page }) => {
-    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
-    await expect(mevNuclCell).toContainText("100");
+  test("default row '100' keeps the compact table without a → MeV/nucl column", async ({
+    page,
+  }) => {
+    await expect(page.getByTestId("mev-nucl-column-header")).toHaveCount(0);
   });
 
   test("editing the energy row triggers recalculation and shows STP result", async ({ page }) => {
@@ -101,20 +102,23 @@ test.describe("Calculator — energy input with unit suffixes", () => {
 
   test("'100 keV' is parsed and shows ~0.1 in the → MeV/nucl column", async ({ page }) => {
     await typeInRow(page, 0, "100 keV");
-    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
+    await expect(page.getByTestId("mev-nucl-column-header")).toBeVisible();
+    const mevNuclCell = page.getByTestId("advanced-mev-nucl-cell-0");
     // 100 keV = 0.1 MeV for proton (A=1)
     await expect(mevNuclCell).toContainText("0.1");
   });
 
   test("'12 MeV/nucl' shows 12 in the → MeV/nucl column (proton, A=1)", async ({ page }) => {
     await typeInRow(page, 0, "12 MeV/nucl");
-    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
+    await expect(page.getByTestId("mev-nucl-column-header")).toBeVisible();
+    const mevNuclCell = page.getByTestId("advanced-mev-nucl-cell-0");
     await expect(mevNuclCell).toContainText("12");
   });
 
   test("'12 MeV/u' shows ~12 in the → MeV/nucl column (proton, A=1, m_u≈1)", async ({ page }) => {
     await typeInRow(page, 0, "12MeV/u");
-    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
+    await expect(page.getByTestId("mev-nucl-column-header")).toBeVisible();
+    const mevNuclCell = page.getByTestId("advanced-mev-nucl-cell-0");
     // For proton: MeV/u ≈ MeV/nucl (A=1, m_u≈1.008)
     await expect(mevNuclCell).not.toContainText("-");
   });
@@ -135,7 +139,7 @@ test.describe("Calculator — invalid input error display", () => {
     const row = page.locator("tbody tr").first();
     const input = row.locator("input[data-row-index]").first();
     // Input border turns red for invalid input
-    await expect(input).toHaveClass(/border-red-500/);
+    await expect(input).toHaveClass(/border-destructive/);
     // An inline error message with role="alert" appears
     const alertMsg = row.locator('[role="alert"]');
     await expect(alertMsg).toBeVisible();
@@ -337,7 +341,8 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     // Type explicit MeV/nucl unit to get 1:1 mapping
     await typeInRow(page, 0, "100 MeV/nucl");
 
-    const mevNuclCell = page.locator("tbody tr").first().locator("td").nth(1);
+    await expect(page.getByTestId("mev-nucl-column-header")).toBeVisible();
+    const mevNuclCell = page.getByTestId("advanced-mev-nucl-cell-0");
     await expect(mevNuclCell).toContainText("100");
   });
 

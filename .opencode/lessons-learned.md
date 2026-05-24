@@ -9,6 +9,32 @@
 
 ---
 
+## Entry 60 — Advanced calculator E2E selectors differ between single-program and multi-program mode
+
+**Symptom:** Export tests opened `/calculator?mode=advanced` and still waited for
+the old multi-program `ResultTable` contract (`energy-input-0`, `result-table`,
+`stp-cell-*`). After `TableAdvanced` became the single-program Advanced view,
+those selectors never appeared and CI timed out before export actions.
+
+```text
+❌ BROKEN — assumes all Advanced calculator flows use ResultTable
+await page.locator('[data-testid="energy-input-0"]').fill("100 MeV");
+await page.waitForSelector('[data-testid="result-table"]');
+await page.waitForSelector('[data-testid^="stp-cell-"]');
+
+✅ CORRECT — single-program Advanced mode uses TableAdvanced
+await page.getByTestId("advanced-energy-input-0").fill("100 MeV");
+await expect(page.getByTestId("advanced-combined-table")).toBeVisible();
+await expect(page.getByTestId("advanced-stp-cell-0")).not.toHaveText("—");
+```
+
+**Rule:** When writing Calculator E2E tests in Advanced mode, first determine
+whether the scenario is single-program or multi-program. Single-program Advanced
+uses `TableAdvanced` test ids (`advanced-*`), while true compare-across-programs
+continues to use `ResultTable` ids.
+
+---
+
 ## Entry 59 — E2E deep links must use supported URL enums, not legacy placeholders
 
 **Symptom:** Playwright tried to open the new single-entity Advanced calculator
