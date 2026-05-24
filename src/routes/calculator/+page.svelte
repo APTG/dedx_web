@@ -67,7 +67,7 @@
   import type { CalculationResult } from "$lib/wasm/types";
 
   const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
-    "MeV": "Megaelectronvolts — total kinetic energy",
+    MeV: "Megaelectronvolts — total kinetic energy",
     "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
     "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
   };
@@ -100,7 +100,9 @@
     );
     const isElectron = particle?.id === 1001;
     const massNumber =
-      particle && "massNumber" in particle ? particle.massNumber : (particle as { A?: number } | null)?.A;
+      particle && "massNumber" in particle
+        ? particle.massNumber
+        : (particle as { A?: number } | null)?.A;
     const isProton = massNumber === 1 && !isElectron;
     return units.map((u) => {
       const opt: { value: string; label: string; tooltip: string; sub?: string } = {
@@ -1962,7 +1964,9 @@
               data-testid="inverse-tab-forward"
             >
               <span class="hidden min-[400px]:block font-bold">Energy →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ STP, Range</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ STP, Range</span
+              >
               <span class="min-[400px]:hidden font-bold">E→</span>
             </button>
             <button
@@ -1977,7 +1981,9 @@
               data-testid="inverse-tab-range"
             >
               <span class="hidden min-[400px]:block font-bold">Range →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
               <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
             <button
@@ -1992,7 +1998,9 @@
               data-testid="inverse-tab-stp"
             >
               <span class="hidden min-[400px]:block font-bold">STP →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
               <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
           </div>
@@ -2002,7 +2010,7 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState}
+          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
             <ResultTable
               {calcState}
               entitySelection={entityState}
@@ -2057,9 +2065,7 @@
               options={STP_ANCHOR_OPTIONS}
               selected={inverseLookupState.stpMasterUnit}
               onSelect={(v) =>
-                inverseLookupState?.setStpMasterUnit(
-                  v as "kev-um" | "mev-cm" | "mev-cm2-g",
-                )}
+                inverseLookupState?.setStpMasterUnit(v as "kev-um" | "mev-cm" | "mev-cm2-g")}
               data-testid="inverse-stp-unit"
             />
 

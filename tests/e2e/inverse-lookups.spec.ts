@@ -72,11 +72,10 @@ test.describe("Inverse Lookups — Range Tab", () => {
     );
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
 
-    const energyText = (await energySpan.textContent())!.trim();
-    const energy = parseFloat(energyText);
+    const energy = parseEnergyMeV((await energyResult.textContent())!.trim());
     // PSTAR: 7.718 g/cm² → ~100.5 MeV; allow ±15% for unit-display rounding
     expect(energy).toBeGreaterThan(85);
     expect(energy).toBeLessThan(120);
@@ -137,21 +136,21 @@ test.describe("Inverse Lookups — Range Tab", () => {
 
     // '30 m' — valid metre suffix; must produce a positive numeric result
     await page.fill('[data-testid="inverse-range-input-0"]', "30 m");
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    expect(parseFloat((await energySpan.textContent())!.trim())).toBeGreaterThan(0);
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    expect(parseEnergyMeV((await energyResult.textContent())!.trim())).toBeGreaterThan(0);
 
     // Per-row mode active → master unit selector disabled
     await expect(
       inverseUnitGroup(page, "inverse-range-unit").getByRole("radio", { name: "cm" }),
     ).toBeDisabled();
 
-    // '0.03 km' — unrecognised suffix → inline error about unrecognized unit
+    // '0.03 km' — unrecognised suffix → result cell shows validation error
     await page.fill('[data-testid="inverse-range-input-0"]', "0.03 km");
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/unrecognized unit/i);
@@ -166,7 +165,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/positive/i);
@@ -175,7 +174,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/numeric/i);
@@ -263,9 +262,9 @@ test.describe("Inverse Lookups — Range Tab", () => {
     );
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    const energyAtCm = parseFloat((await energySpan.textContent())!.trim());
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtCm = parseEnergyMeV((await energyResult.textContent())!.trim());
     expect(energyAtCm).toBeGreaterThan(0);
 
     // Change master unit to mm; same numeric value (10) now means 10 mm = 1 cm → different energy
@@ -274,15 +273,15 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () => {
-          const text = (await energySpan.textContent())?.trim();
+          const text = (await energyResult.textContent())?.trim();
           if (!text || !/^\d/.test(text)) return null;
-          return parseFloat(text);
+          return parseEnergyMeV(text);
         },
         { timeout: 15000 },
       )
       .not.toBe(energyAtCm);
 
-    const energyAtMm = parseFloat((await energySpan.textContent())!.trim());
+    const energyAtMm = parseEnergyMeV((await energyResult.textContent())!.trim());
     expect(energyAtMm).toBeGreaterThan(0);
     // 10 mm < 10 cm, so energy for 10 mm range must be less than for 10 cm
     expect(energyAtMm).toBeLessThan(energyAtCm);

@@ -55,11 +55,10 @@
   const energyAnchorOptions = $derived.by(() => {
     if (!isEnergy || !entitySelection) return [];
     const particle = entitySelection.selectedParticle;
-    const ion =
-      particle && "massNumber" in particle
-        ? (particle as { id: number | string; massNumber: number })
-        : null;
-    return getAvailableEnergyUnits(ion, true).map((u) => ({
+    return getAvailableEnergyUnits(
+      particle as Parameters<typeof getAvailableEnergyUnits>[0],
+      true,
+    ).map((u) => ({
       value: u,
       label: u,
       tooltip: ENERGY_UNIT_TOOLTIPS[u as EnergyUnit] ?? u,
@@ -173,34 +172,26 @@
               class="sticky left-0 z-20 bg-background w-6 px-1 py-2 border-b"
               aria-label="Drag handle"
             ></th>
-            <th
-              scope="col"
-              class="px-2 py-2 font-medium whitespace-nowrap text-left border-b w-8"
-            >#</th>
-            <th
-              scope="col"
-              class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
-            >Energy ({calcState.masterUnit})</th>
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b w-8"
+              >#</th
+            >
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
+              >Energy ({calcState.masterUnit})</th
+            >
             {#if showMevNuclColumn}
               <th
                 scope="col"
                 class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-                data-testid="mev-nucl-column-header"
-              >→ MeV/nucl</th>
+                data-testid="mev-nucl-column-header">→ MeV/nucl</th
+              >
             {/if}
-            <th
-              scope="col"
-              class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-            >STP ({calcState.stpDisplayUnit})</th>
-            <th
-              scope="col"
-              class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-            >CSDA Range</th>
-            <th
-              scope="col"
-              class="px-1 py-2 font-medium border-b w-6"
-              aria-label="Delete row"
-            ></th>
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
+              >STP ({calcState.stpDisplayUnit})</th
+            >
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
+              >CSDA Range</th
+            >
+            <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Delete row"></th>
           </tr>
         </thead>
         <tbody>
@@ -212,8 +203,8 @@
               <!-- Drag handle (static, drag behaviour in #562) -->
               <td
                 class={`sticky left-0 z-10 px-1 py-2 text-muted-foreground/40 select-none ${i === 0 ? "bg-amber-50/50 dark:bg-amber-950/20" : i % 2 === 1 ? "bg-muted/20" : "bg-background"}`}
-                aria-hidden="true"
-              >≡</td>
+                aria-hidden="true">≡</td
+              >
 
               <!-- Row index -->
               <td class="px-2 py-2 text-muted-foreground text-xs tabular-nums">{i + 1}</td>
@@ -287,8 +278,8 @@
                     aria-label="Delete row {i + 1}"
                     data-testid="advanced-delete-row-{i}"
                     class="text-muted-foreground/50 hover:text-destructive text-base leading-none"
-                    onclick={() => calcState?.removeRow(i)}
-                  >×</button>
+                    onclick={() => calcState?.removeRow(i)}>×</button
+                  >
                 {/if}
               </td>
             </tr>
@@ -300,17 +291,18 @@
     {#if calcState.validationSummary.invalid > 0 || calcState.validationSummary.outOfRange > 0}
       <div class="text-xs text-muted-foreground">
         {calcState.validationSummary.invalid + calcState.validationSummary.outOfRange} of {calcState
-          .validationSummary.total} values excluded
-        ({#if calcState.validationSummary.invalid > 0}{calcState.validationSummary.invalid} invalid{/if}{#if calcState.validationSummary.invalid > 0 && calcState.validationSummary.outOfRange > 0}, {/if}{#if calcState.validationSummary.outOfRange > 0}{calcState.validationSummary.outOfRange} out of range{/if})
+          .validationSummary.total} values excluded ({#if calcState.validationSummary.invalid > 0}{calcState
+            .validationSummary.invalid} invalid{/if}{#if calcState.validationSummary.invalid > 0 && calcState.validationSummary.outOfRange > 0},
+        {/if}{#if calcState.validationSummary.outOfRange > 0}{calcState.validationSummary
+            .outOfRange} out of range{/if})
       </div>
     {/if}
 
     <button
       type="button"
       class="text-sm text-primary hover:underline"
-      onclick={() => calcState?.addRow()}
-    >+ Add row</button>
-
+      onclick={() => calcState?.addRow()}>+ Add row</button
+    >
   {:else if !isEnergy && inverseLookupState}
     <!-- Range → mode: compact unit selector above table -->
     <div class="flex items-center gap-3">
@@ -340,18 +332,18 @@
               aria-label="Drag handle"
             ></th>
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b w-8"
-              >#</th>
+              >#</th
+            >
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
-              >Range</th>
+              >Range</th
+            >
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
-              >Unit</th>
+              >Unit</th
+            >
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-              >→ Energy</th>
-            <th
-              scope="col"
-              class="px-1 py-2 font-medium border-b w-6"
-              aria-label="Delete row"
-            ></th>
+              >→ Energy</th
+            >
+            <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Delete row"></th>
           </tr>
         </thead>
         <tbody>
@@ -363,8 +355,8 @@
               <!-- Drag handle -->
               <td
                 class={`sticky left-0 z-10 px-1 py-2 text-muted-foreground/40 select-none ${i === 0 ? "bg-amber-50/50 dark:bg-amber-950/20" : i % 2 === 1 ? "bg-muted/20" : "bg-background"}`}
-                aria-hidden="true"
-              >≡</td>
+                aria-hidden="true">≡</td
+              >
 
               <!-- Row index -->
               <td class="px-2 py-2 text-muted-foreground text-xs tabular-nums">{i + 1}</td>
@@ -373,6 +365,7 @@
               <td class="px-2 py-2">
                 <input
                   type="text"
+                  aria-label={`Range value row ${i + 1}`}
                   value={row.text}
                   placeholder="e.g. 7.718 cm"
                   class={inputClass(row.status)}
@@ -412,8 +405,8 @@
                     aria-label="Delete range row {i + 1}"
                     data-testid="inverse-range-delete-{i}"
                     class="text-muted-foreground/50 hover:text-destructive text-base leading-none"
-                    onclick={() => inverseLookupState?.removeRangeRow(i)}
-                  >×</button>
+                    onclick={() => inverseLookupState?.removeRangeRow(i)}>×</button
+                  >
                 {/if}
               </td>
             </tr>
@@ -425,7 +418,7 @@
     <button
       type="button"
       class="text-sm text-primary hover:underline"
-      onclick={() => inverseLookupState?.addRangeRow()}
-    >+ Add row</button>
+      onclick={() => inverseLookupState?.addRangeRow()}>+ Add row</button
+    >
   {/if}
 </div>

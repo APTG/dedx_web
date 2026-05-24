@@ -9,6 +9,29 @@
 
 ---
 
+## Entry 59 — E2E deep links must use supported URL enums, not legacy placeholders
+
+**Symptom:** Playwright tried to open the new single-entity Advanced calculator
+with `across=none`, and then waited forever for `advanced-combined-table`.
+The page silently fell back to the default compare-across mode because
+`AcrossDimension` only accepts `particle | material | program`.
+
+```text
+❌ BROKEN
+/calculator?...&mode=advanced&across=none
+
+✅ CORRECT
+/calculator?...&mode=advanced
+# or use an actually supported value: across=program|material|particle
+```
+
+**Rule:** When an E2E test deep-links into calculator state, use only enums that
+the current URL/state contract actually accepts. Do not invent sentinel values
+like `none`; for single-entity Advanced mode, omit the compare-across param and
+let the page use its canonical default.
+
+---
+
 ## Entry 58 — Replacing native form controls requires updating the test contract in the same PR
 
 **Symptom:** A UI refactor swapped an inverse-lookup unit `<select>` for a

@@ -3,7 +3,7 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * E2E tests for the combined Advanced result table (issue #559).
  *
- * Covers Energy → and Range → modes in single-entity (Compare across = none)
+ * Covers Energy → and Range → modes in single-entity Advanced configuration
  * Advanced configuration, where `table-advanced.svelte` is rendered.
  *
  * Tests that require WASM computation skip automatically when the binary is absent.
@@ -19,9 +19,9 @@ async function checkWasmPresent(page: Page): Promise<boolean> {
 }
 
 async function gotoAdvancedSingleEntity(page: Page): Promise<void> {
-  // Advanced mode, single-entity (no multi-program, no multi-material).
+  // Advanced mode, single-entity (single selected particle/material/program).
   // particle=1 (proton), material=276 (water), program=2 (PSTAR) — single program.
-  await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced&across=none");
+  await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
   await page.waitForFunction(
     () => new URLSearchParams(window.location.search).get("mode") === "advanced",
     { timeout: 15000 },
@@ -128,12 +128,9 @@ test.describe("Advanced combined table — Energy → mode", () => {
     await input.fill("1e9"); // 1 TeV — way out of range
     await input.blur();
 
-    // Allow debounce to fire.
-    await page.waitForTimeout(500);
-
     // Result cell should show out-of-range indicator.
     const stpCell = page.getByTestId("advanced-stp-cell-0");
-    await expect(stpCell).toContainText("out of range", { timeout: 5000 });
+    await expect(stpCell).toContainText("out of range", { timeout: 10000 });
 
     const rangeCell = page.getByTestId("advanced-range-cell-0");
     await expect(rangeCell).toContainText("out of range", { timeout: 3000 });
@@ -166,8 +163,11 @@ test.describe("Advanced combined table — Energy → mode", () => {
       }
     }
 
-    // Wait for calculation to complete.
-    await page.waitForTimeout(600);
+    await expect
+      .poll(async () => (await page.getByTestId("advanced-range-cell-4").textContent())?.trim(), {
+        timeout: 10000,
+      })
+      .not.toBe("—");
 
     // Snapshot the table.
     await expect(page.getByTestId("advanced-combined-table")).toMatchAriaSnapshot();

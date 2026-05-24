@@ -7,7 +7,7 @@ export function formatRangeCm(cm: number): string {
   return formatRangeValue(cm);
 }
 
-/** Format a mass-specific stopping power with unit conversion applied. */
+/** Format a mass-specific stopping power with shared sig-fig formatting only. */
 export function formatStpValue(value: number, unit: StpUnit): string {
   return _formatStpValue(value, unit);
 }
