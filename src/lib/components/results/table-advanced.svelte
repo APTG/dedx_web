@@ -69,7 +69,8 @@
   const rangeRows = $derived(inverseLookupState?.rangeRows ?? []);
 
   function inputClass(status: string): string {
-    const isError = status === "invalid" || status === "out-of-range";
+    const isError =
+      status === "invalid" || status === "out-of-range" || status === "error";
     return `w-28 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
       isError ? "border-destructive bg-destructive/5" : "border-input"
     }`;

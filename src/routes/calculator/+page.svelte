@@ -1943,7 +1943,7 @@
           </div>
         </div>
       {/if}
-      {#if isAdvancedMode.value && (multiProgState !== null || multiEntityState !== null)}
+      {#if isAdvancedMode.value && ((multiProgState !== null && multiProgState.selectedProgramIds.length > 1) || multiEntityState !== null)}
         <UnitAnchorStrip
           options={getEnergyAnchorOptions(
             entityState.selectedParticle && "massNumber" in entityState.selectedParticle
