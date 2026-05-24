@@ -116,7 +116,7 @@
             class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
             data-testid="col-hi-e"
           >
-            → Energy (high-E)
+            → Energy{showLowEColumn ? " (high-E)" : ""}
           </th>
           {#if showLowEColumn}
             <th

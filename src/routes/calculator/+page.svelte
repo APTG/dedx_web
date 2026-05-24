@@ -1587,10 +1587,19 @@
               r.energyHighMevNucl = null;
             } else {
               r.status = "valid";
-              r.energyLowMevNucl =
+              const lowE =
                 lowResult instanceof Error || lowResult === undefined ? null : lowResult.energy;
-              r.energyHighMevNucl =
+              const highE =
                 highResult instanceof Error || highResult === undefined ? null : highResult.energy;
+              // Treat identical branch energies as a single solution —
+              // the C inverse lookup returns the same energy for both sides
+              // when only one physical solution exists for the given STP value.
+              const isSingleSolution =
+                lowE !== null &&
+                highE !== null &&
+                Math.abs(lowE - highE) / Math.max(Math.abs(highE), 1e-300) < 1e-6;
+              r.energyLowMevNucl = isSingleSolution ? null : lowE;
+              r.energyHighMevNucl = highE;
             }
 
             resultIdx++;
