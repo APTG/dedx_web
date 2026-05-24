@@ -18,8 +18,10 @@ export interface MultiEntityState {
   dimension: MultiEntityDimension;
   comparisonResults: Map<EntityId, CalculationResult | LibdedxError>;
   entityName: (id: EntityId) => string;
+  quantityFocus: "stp" | "range";
 
   setComparisonResults(results: Map<EntityId, CalculationResult | LibdedxError>): void;
+  setQuantityFocus(focus: "stp" | "range"): void;
 }
 
 export function createMultiEntityState(
@@ -27,6 +29,7 @@ export function createMultiEntityState(
   nameResolver: (id: EntityId) => string,
 ): MultiEntityState {
   let comparisonResults = $state<Map<EntityId, CalculationResult | LibdedxError>>(new Map());
+  let quantityFocus = $state<"stp" | "range">("stp");
 
   return {
     get dimension() {
@@ -35,11 +38,17 @@ export function createMultiEntityState(
     get comparisonResults() {
       return comparisonResults;
     },
+    get quantityFocus() {
+      return quantityFocus;
+    },
     entityName(id: EntityId): string {
       return nameResolver(id);
     },
     setComparisonResults(results: Map<EntityId, CalculationResult | LibdedxError>): void {
       comparisonResults = new Map(results);
+    },
+    setQuantityFocus(focus: "stp" | "range"): void {
+      quantityFocus = focus;
     },
   };
 }

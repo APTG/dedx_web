@@ -253,7 +253,10 @@
 
 <div class={cn("rounded-lg", className)} data-testid="picker-entity-selection">
   {#if isAdvancedMode.value && showAdvancedToolbar}
-    <AdvancedToolbar {selectionState} onReset={handleReset} {onLoadExternal} />
+    <AdvancedToolbar
+      onReset={handleReset}
+      {...(onLoadExternal !== undefined ? { onLoadExternal } : {})}
+    />
   {/if}
 
   <TabBar

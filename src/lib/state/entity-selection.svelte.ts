@@ -44,7 +44,7 @@ export type PickerTabId = "particle" | "material" | "program";
  * Tracked follow-up: enable Materials/Particles dropdown options and wire
  * `multiSelected.*` end-to-end through `calculator-state` / `plot-state`.
  */
-export type AcrossDimension = "particle" | "material" | "program";
+export type AcrossDimension = "single" | "particle" | "material" | "program";
 
 export interface EntitySelectionState {
   selectedProgram: SelectedProgram;
@@ -172,7 +172,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   // docs/04-feature-specs/entity-selection.md § Active target + expand/collapse).
   let activeTarget = $state<PickerTabId>("particle");
   let expanded = $state(true);
-  let across = $state<AcrossDimension>("program");
+  let across = $state<AcrossDimension>("single");
   let multiParticle = $state<(number | string)[]>([]);
   let multiMaterial = $state<(number | string)[]>([]);
   let multiProgram = $state<(number | string)[]>([]);
@@ -555,7 +555,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       lastAutoFallbackMessage = null;
       activeTarget = "particle";
       expanded = true;
-      across = "program";
+      across = "single";
       multiParticle = [];
       multiMaterial = [];
       multiProgram = [];
@@ -591,20 +591,29 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
     setAcross(newAcross: AcrossDimension): void {
       across = newAcross;
-      // Seed multi array from current single value (preserves it as element 0).
-      if (newAcross === "program") {
-        const id = selectedProgramId;
-        multiProgram = id !== -1 ? [id] : [];
-      } else if (newAcross === "particle") {
-        multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
-      } else if (newAcross === "material") {
-        multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
+      if (newAcross === "single") {
+        // Collapse all multi arrays to avoid stale selections bleeding in later.
+        if (multiParticle.length > 1) multiParticle = [multiParticle[0]!];
+        if (multiMaterial.length > 1) multiMaterial = [multiMaterial[0]!];
+        if (multiProgram.length > 1) multiProgram = [multiProgram[0]!];
+        // Don't force-open the picker or change the active tab.
+      } else {
+        // Seed multi array from current single value (preserves it as element 0).
+        if (newAcross === "program") {
+          const id = selectedProgramId;
+          multiProgram = id !== -1 ? [id] : [];
+        } else if (newAcross === "particle") {
+          multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
+        } else if (newAcross === "material") {
+          multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
+        }
+        activeTarget = newAcross;
+        expanded = true;
       }
-      activeTarget = newAcross;
-      expanded = true;
     },
 
     toggleMulti(dim: AcrossDimension, id: number | string): void {
+      if (dim === "single") return;
       const arr =
         dim === "program" ? multiProgram : dim === "particle" ? multiParticle : multiMaterial;
       const idx = arr.indexOf(id);

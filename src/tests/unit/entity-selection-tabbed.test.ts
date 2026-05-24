@@ -504,19 +504,15 @@ describe("EntitySelection", () => {
       expect(badge).toHaveTextContent("!");
     });
 
-    test("advanced toolbar renders in advanced mode (Calculator only) and exposes the Compare-across dropdown", async () => {
+    test("advanced toolbar renders in advanced mode (Calculator only); compare-across dropdown replaced by strip in results area", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       isAdvancedMode.value = true;
       try {
         render(EntitySelection, { props: { selectionState: state, collapsible: true } });
         const toolbar = screen.getByTestId("picker-advanced-toolbar");
         expect(toolbar).toBeInTheDocument();
-        const compareAcross = screen.getByTestId("picker-compare-across") as HTMLSelectElement;
-        expect(compareAcross.value).toBe("program");
-        // Materials and Particles are now enabled (wired in this PR).
-        const opts = Array.from(compareAcross.options);
-        expect(opts.find((o) => o.value === "material")?.disabled).toBe(false);
-        expect(opts.find((o) => o.value === "particle")?.disabled).toBe(false);
+        // The compare-across dropdown has moved to the results strip — not in the picker toolbar.
+        expect(screen.queryByTestId("picker-compare-across")).not.toBeInTheDocument();
 
         // Reset button exists in the advanced toolbar.
         expect(screen.getByTestId("picker-reset")).toBeInTheDocument();

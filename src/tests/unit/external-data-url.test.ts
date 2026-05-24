@@ -468,7 +468,7 @@ describe("decodeCalculatorUrl — mixed EntityId programs", () => {
       ...baseCalcState,
       isAdvancedMode: true,
       selectedProgramIds: [9, 10],
-      quantityFocus: "both",
+      quantityFocus: "stp",
     };
     const qs = calculatorUrlQueryString(state);
     const decoded = decodeCalculatorUrl(new URLSearchParams(qs));
@@ -481,13 +481,13 @@ describe("decodeCalculatorUrl — mixed EntityId programs", () => {
       externalSources: [{ label: "srim", url: "https://example.com/srim.webdedx" }],
       isAdvancedMode: true,
       selectedProgramIds: [9, "ext:srim:srim-2013"],
-      hiddenProgramIds: ["ext:srim:srim-2013"],
-      quantityFocus: "both",
+      quantityFocus: "stp",
     };
     const qs = calculatorUrlQueryString(state);
     const decoded = decodeCalculatorUrl(new URLSearchParams(qs));
     expect(decoded.selectedProgramIds).toEqual([9, "ext:srim:srim-2013"]);
-    expect(decoded.hiddenProgramIds).toEqual(["ext:srim:srim-2013"]);
+    // hiddenProgramIds is no longer emitted or decoded (v2 drops column visibility)
+    expect((decoded as any).hiddenProgramIds).toBeUndefined();
   });
 
   it("ordinary duplicate non-extdata params use last-wins", () => {

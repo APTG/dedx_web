@@ -36,7 +36,7 @@ const baseState: CalculatorUrlState = {
   masterUnit: "MeV",
   isAdvancedMode: true,
   selectedProgramIds: [9],
-  quantityFocus: "both",
+  quantityFocus: "stp",
 };
 
 describe("encodeCalculatorUrl", () => {
@@ -242,9 +242,9 @@ describe("decodeCalculatorUrl", () => {
     });
   });
 
-  it("decodes advanced mode params: mode=advanced&programs=9,2&qfocus=stp", () => {
+  it("decodes advanced mode params: mode=advanced&programs=9,2&qshow=stp", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qfocus=stp",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qshow=stp",
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).isAdvancedMode).toBe(true);
@@ -252,13 +252,14 @@ describe("decodeCalculatorUrl", () => {
     expect((s as any).quantityFocus).toBe("stp");
   });
 
-  it("decodes advanced mode with hidden_programs parameter", () => {
+  it("decodes advanced mode with hidden_programs parameter (silently dropped in v2)", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2&qfocus=both",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2",
     );
     const s = decodeCalculatorUrl(params);
     expect((s as any).isAdvancedMode).toBe(true);
-    expect((s as any).hiddenProgramIds).toEqual([2]);
+    // hidden_programs is silently dropped — no hiddenProgramIds in state
+    expect((s as any).hiddenProgramIds).toBeUndefined();
   });
 
   it("decodes advanced mode with invalid program IDs (no crash, IDs parsed as integers)", () => {
@@ -271,31 +272,30 @@ describe("decodeCalculatorUrl", () => {
     expect((s as any).selectedProgramIds).toEqual([9, 999]);
   });
 
-  it("encodes advanced mode with mode=advanced&programs=9%2C2&qfocus=both", () => {
+  it("encodes advanced mode with mode=advanced&programs=9%2C2&qshow=stp", () => {
     const p = encodeCalculatorUrl({
       ...defaultState,
       isAdvancedMode: true,
       selectedProgramIds: [9, 2],
-      hiddenProgramIds: [],
-      quantityFocus: "both",
-    } as any);
-    expect(p.get("mode")).toBe("advanced");
-    expect(p.get("programs")).toBe("9,2");
-    expect(p.get("qfocus")).toBe("both");
-  });
-
-  it("encodes advanced mode with hidden_programs", () => {
-    const p = encodeCalculatorUrl({
-      ...defaultState,
-      isAdvancedMode: true,
-      selectedProgramIds: [9, 2],
-      hiddenProgramIds: [2],
       quantityFocus: "stp",
     } as any);
     expect(p.get("mode")).toBe("advanced");
     expect(p.get("programs")).toBe("9,2");
-    expect(p.get("hidden_programs")).toBe("2");
-    expect(p.get("qfocus")).toBe("stp");
+    expect(p.get("qshow")).toBe("stp");
+    expect(p.has("hidden_programs")).toBe(false);
+  });
+
+  it("encodes advanced mode without hidden_programs (v2 drops column visibility)", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9, 2],
+      quantityFocus: "stp",
+    } as any);
+    expect(p.get("mode")).toBe("advanced");
+    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("qshow")).toBe("stp");
+    expect(p.has("hidden_programs")).toBe(false);
   });
 
   it("basic mode does NOT contain mode= or programs= params", () => {
@@ -306,12 +306,12 @@ describe("decodeCalculatorUrl", () => {
     expect(p.has("mode")).toBe(false);
     expect(p.has("programs")).toBe(false);
     expect(p.has("hidden_programs")).toBe(false);
-    expect(p.has("qfocus")).toBe(false);
+    expect(p.has("qshow")).toBe(false);
   });
 
   it("URL round-trip: encode(decode(url)) === url for advanced mode", () => {
     const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qfocus=both",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qshow=stp",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
@@ -319,23 +319,24 @@ describe("decodeCalculatorUrl", () => {
     // Compare key params that should round-trip
     expect(reEncoded.get("mode")).toBe("advanced");
     expect(reEncoded.get("programs")).toBe("9,2");
-    expect(reEncoded.get("qfocus")).toBe("both");
+    expect(reEncoded.get("qshow")).toBe("stp");
     expect(reEncoded.get("particle")).toBe("1");
     expect(reEncoded.get("material")).toBe("276");
     expect(reEncoded.get("eunit")).toBe("MeV");
   });
 
-  it("URL round-trip with hidden_programs: encode(decode(url)) preserves hidden", () => {
+  it("URL round-trip with hidden_programs: silently dropped, not re-emitted", () => {
     const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2&qfocus=stp",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&hidden_programs=2&qshow=stp",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("mode")).toBe("advanced");
     expect(reEncoded.get("programs")).toBe("9,2");
-    expect(reEncoded.get("hidden_programs")).toBe("2");
-    expect(reEncoded.get("qfocus")).toBe("stp");
+    // hidden_programs is dropped — not re-emitted
+    expect(reEncoded.has("hidden_programs")).toBe(false);
+    expect(reEncoded.get("qshow")).toBe("stp");
   });
 
   it("encodes advanced options agg_state when it differs from materialIsGas", () => {
@@ -476,14 +477,14 @@ describe("decodeCalculatorUrl", () => {
 
   it("URL round-trip with partial params: encode(decode(url)) preserves only density", () => {
     const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&density=1.5",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qshow=stp&density=1.5",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("mode")).toBe("advanced");
     expect(reEncoded.get("programs")).toBe("9");
-    expect(reEncoded.get("qfocus")).toBe("both");
+    expect(reEncoded.get("qshow")).toBe("stp");
     expect(reEncoded.get("density")).toBe("1.5");
     // Other advanced options should NOT be present
     expect(reEncoded.has("agg_state")).toBe(false);
@@ -752,27 +753,22 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
     expect(state.masterUnit).toBe("MeV/nucl");
   });
 
-  it("v1 decoder accepts qfocus=csda (v2 will map this to qshow=range — shareable-urls.md §7)", () => {
-    // This anchors the CURRENT v1 decoder behaviour: qfocus=csda is stored
-    // verbatim as quantityFocus="csda". The v2 migration in #561 will map
-    // it to qshow="range". Update this assertion when #561 lands.
+  it("v2 decoder maps qshow=range (replaces v1 qfocus=csda — shareable-urls.md §7)", () => {
+    // v2 migration: qfocus=csda is dropped; qshow=range is the new canonical form.
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
+      "urlv=2&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qshow=range",
     );
     const state = decodeCalculatorUrl(params);
-    expect(state.quantityFocus).toBe("csda");
+    expect(state.quantityFocus).toBe("range");
   });
 
-  it("v1 decoder still parses hidden_programs= (v2 will silently drop this — shareable-urls.md §2 (hidden_programs= removed))", () => {
-    // CURRENT v1 decoder behaviour: hidden_programs=2 is parsed into
-    // hiddenProgramIds=[2]. The v2 decoder in #561 will silently drop the
-    // param without populating any state field. Update this assertion when
-    // #561 lands; right now it documents what v1 does, not what v2 will do.
+  it("v2 decoder silently drops hidden_programs= (shareable-urls.md §2)", () => {
+    // v2 decoder behaviour: hidden_programs= is silently dropped.
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both",
+      "urlv=2&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qshow=stp",
     );
     const state = decodeCalculatorUrl(params);
-    expect(state.hiddenProgramIds).toEqual([2]);
+    expect((state as any).hiddenProgramIds).toBeUndefined();
   });
 
   it("inline :unit suffix in energies= round-trips (shareable-urls.md §3.5)", () => {
