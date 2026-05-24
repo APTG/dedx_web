@@ -1,4 +1,5 @@
 import type { EnergyUnit, MstarMode, InverseMode } from "$lib/wasm/types";
+import type { StpBranchState } from "$lib/utils/inverse-stp";
 import { parseEnergyInput, type EnergySuffixUnit } from "$lib/utils/energy-parser";
 import type { AdvancedOptions } from "$lib/wasm/types";
 import type { EntityId, ExternalSourceDescriptor } from "$lib/external-data/types";
@@ -235,6 +236,8 @@ export interface CalculatorUrlState {
   imode?: InverseMode;
   lookups?: InverseLookupUrlRow[];
   iunit?: string;
+  /** STP column-visibility state (`istpbranch=` param). Only meaningful when imode=stp. */
+  istpBranchState?: StpBranchState;
 
   /** Energy unit anchor selection (`uanchor=` URL param) when explicitly present and valid. */
   energyAnchor?: EnergyUnit;
@@ -425,6 +428,10 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
 
     if (state.iunit) {
       params.set("iunit", state.iunit);
+    }
+
+    if (state.imode === "stp" && state.istpBranchState === "both") {
+      params.set("istpbranch", "both");
     }
   }
 
@@ -809,6 +816,12 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
   if (iunit) {
     result.iunit = iunit;
+  }
+  if (imode === "stp") {
+    const istpBranchRaw = params.get("istpbranch");
+    const istpBranchState: StpBranchState =
+      istpBranchRaw === "both" || istpBranchRaw === "lo" ? istpBranchRaw : "hi";
+    result.istpBranchState = istpBranchState;
   }
   if (energyAnchor) {
     result.energyAnchor = energyAnchor;

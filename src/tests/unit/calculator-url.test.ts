@@ -784,6 +784,54 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
     expect(state.rows[2]).toEqual({ rawInput: "2", unit: "GeV", unitFromSuffix: true });
   });
 
+  it("istpbranch=both round-trips through encode/decode", () => {
+    const state = decodeCalculatorUrl(
+      new URLSearchParams(
+        "particle=1&material=276&programs=9&mode=advanced&qfocus=both&imode=stp&lookups=30&iunit=kev-um&istpbranch=both",
+      ),
+    );
+    expect(state.imode).toBe("stp");
+    expect(state.istpBranchState).toBe("both");
+    const encoded = encodeCalculatorUrl({
+      ...baseState,
+      imode: "stp",
+      lookups: [{ rawInput: "30", unit: "kev-um", unitFromSuffix: false }],
+      iunit: "kev-um",
+      istpBranchState: "both",
+    });
+    expect(encoded.get("istpbranch")).toBe("both");
+    expect(encoded.get("imode")).toBe("stp");
+  });
+
+  it("istpbranch defaults to hi when absent", () => {
+    const state = decodeCalculatorUrl(
+      new URLSearchParams("particle=1&material=276&mode=advanced&imode=stp&lookups=30&iunit=kev-um"),
+    );
+    expect(state.istpBranchState).toBe("hi");
+  });
+
+  it("istpbranch=hi is not emitted in URL (hi is the default)", () => {
+    const encoded = encodeCalculatorUrl({
+      ...baseState,
+      imode: "stp",
+      lookups: [{ rawInput: "30", unit: "kev-um", unitFromSuffix: false }],
+      iunit: "kev-um",
+      istpBranchState: "hi",
+    });
+    expect(encoded.get("istpbranch")).toBeNull();
+  });
+
+  it("istpbranch not emitted when imode is csda even if state is both", () => {
+    const encoded = encodeCalculatorUrl({
+      ...baseState,
+      imode: "csda",
+      lookups: [{ rawInput: "7.718", unit: "cm", unitFromSuffix: false }],
+      iunit: "cm",
+      istpBranchState: "both",
+    });
+    expect(encoded.get("istpbranch")).toBeNull();
+  });
+
   it("v1 ivalues= is accepted as backward-compat fallback for lookups= (ADR 006 §4)", () => {
     // v2 renames the inverse-lookup input list from ivalues= to lookups=.
     // Old bookmarks with ivalues= continue to work — the decoder checks

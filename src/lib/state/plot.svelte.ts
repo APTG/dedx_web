@@ -14,6 +14,8 @@ export interface PlotSeriesData {
   particleMassNumber?: number | undefined;
   density: number;
   result: CalculationResult;
+  /** Optional suffix appended to the auto-computed label (e.g. " high-E" for inverse-STP pairs). */
+  labelSuffix?: string;
 }
 
 export interface PlotSeries extends PlotSeriesData {
@@ -56,7 +58,10 @@ export function createPlotState(): PlotState {
 
   function recomputeLabels(): void {
     const labels = computeSeriesLabels(series);
-    series = series.map((s, i) => ({ ...s, label: labels[i] ?? s.label }));
+    series = series.map((s, i) => ({
+      ...s,
+      label: (labels[i] ?? s.label) + (s.labelSuffix ?? ""),
+    }));
   }
 
   function addSeries(data: PlotSeriesData): boolean {
@@ -64,7 +69,8 @@ export function createPlotState(): PlotState {
       (s) =>
         s.programId === data.programId &&
         s.particleId === data.particleId &&
-        s.materialId === data.materialId,
+        s.materialId === data.materialId &&
+        (s.labelSuffix ?? "") === (data.labelSuffix ?? ""),
     );
     if (isDuplicate) return false;
 
