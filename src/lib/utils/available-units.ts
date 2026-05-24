@@ -1,6 +1,6 @@
 /**
  * Shared helper for which `EnergyUnit` options should be offered in any
- * unit selector (the master `EnergyUnitSelector` on the calculator
+ * unit selector (the master `UnitAnchorStrip` on the calculator
  * route, the per-row dropdowns inside `ResultTable`).
  *
  * Keeping this in one place avoids drift between the two selectors —
@@ -21,7 +21,11 @@ export function getAvailableEnergyUnits(
   const isElectron = particle.id === 1001;
   const massNumber = "massNumber" in particle ? particle.massNumber : particle.A;
   const isProton = massNumber === 1 && !isElectron;
-  if (isElectron || isProton) return ["MeV"];
+
+  if (isElectron) return ["MeV"];
+
+  // Proton: MeV/nucl ≡ MeV numerically, so omit it; MeV/u differs by ~0.001
+  if (isProton) return advancedMode ? ["MeV", "MeV/u"] : ["MeV"];
 
   if (advancedMode) {
     return ["MeV", "MeV/nucl", "MeV/u"];

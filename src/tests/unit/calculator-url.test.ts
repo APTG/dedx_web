@@ -122,6 +122,28 @@ describe("encodeCalculatorUrl", () => {
     });
     expect(p.get("energies")).toBe("100");
   });
+
+  it("omits uanchor for the default MeV anchor", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      energyAnchor: "MeV",
+    });
+    expect(p.has("uanchor")).toBe(false);
+  });
+
+  it("encodes non-default uanchor slugs", () => {
+    const perNucleon = encodeCalculatorUrl({
+      ...defaultState,
+      energyAnchor: "MeV/nucl",
+    });
+    const perAtomicMass = encodeCalculatorUrl({
+      ...defaultState,
+      energyAnchor: "MeV/u",
+    });
+
+    expect(perNucleon.get("uanchor")).toBe("mev-nucl");
+    expect(perAtomicMass.get("uanchor")).toBe("mev-u");
+  });
 });
 
 describe("calculatorUrlQueryString", () => {
@@ -186,6 +208,22 @@ describe("decodeCalculatorUrl", () => {
     const params = new URLSearchParams("eunit=keV");
     const s = decodeCalculatorUrl(params);
     expect(s.masterUnit).toBe("MeV");
+  });
+
+  it("decodes valid uanchor slugs", () => {
+    expect(decodeCalculatorUrl(new URLSearchParams("uanchor=mev")).energyAnchor).toBe("MeV");
+    expect(decodeCalculatorUrl(new URLSearchParams("uanchor=mev-nucl")).energyAnchor).toBe(
+      "MeV/nucl",
+    );
+    expect(decodeCalculatorUrl(new URLSearchParams("uanchor=mev-u")).energyAnchor).toBe("MeV/u");
+  });
+
+  it("rejects unknown uanchor slugs safely", () => {
+    const prototypeKey = decodeCalculatorUrl(new URLSearchParams("uanchor=__proto__"));
+    const unknownKey = decodeCalculatorUrl(new URLSearchParams("uanchor=bogus"));
+
+    expect(prototypeKey.energyAnchor).toBeUndefined();
+    expect(unknownKey.energyAnchor).toBeUndefined();
   });
 
   it("decodes explicit program ID", () => {

@@ -9,6 +9,33 @@
 
 ---
 
+## Entry 58 — Replacing native form controls requires updating the test contract in the same PR
+
+**Symptom:** A UI refactor swapped an inverse-lookup unit `<select>` for a
+custom radiogroup pill strip. Playwright still used `page.selectOption()` and
+`toHaveValue()` against the old `data-testid`, so CI only failed after merge
+review even though the new control rendered correctly in the browser.
+
+```text
+❌ BROKEN — same test id, different control semantics
+<div data-testid="inverse-range-unit" role="radiogroup">…</div>
+await page.selectOption('[data-testid="inverse-range-unit"]', 'mm')
+
+✅ CORRECT — update tests to the new accessible contract
+const group = page.getByTestId("inverse-range-unit");
+await group.getByRole("radio", { name: "mm" }).click();
+await expect(group.getByRole("radio", { name: "mm" })).toHaveAttribute(
+  "aria-checked",
+  "true",
+);
+```
+
+**Rule:** Whenever a PR replaces a native `<select>`/`<input>`/`<button>` with a
+custom accessible widget, update component and E2E tests in the same PR to use
+the new role/ARIA contract instead of keeping the old interaction helpers.
+
+---
+
 ## Entry 57 — URL encoder/version negotiation majors must be updated together
 
 **Symptom:** Calculator links started emitting `urlv=2`, but the runtime

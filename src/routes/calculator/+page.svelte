@@ -17,7 +17,7 @@
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
-  import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
+  import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
@@ -48,7 +48,7 @@
     createInverseLookupState,
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
-  import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
+  import { LibdedxError, type InverseCsdaResult, type EnergyUnit } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
@@ -64,6 +64,53 @@
   import type { CompatibilityMatrix } from "$lib/wasm/types";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { CalculationResult } from "$lib/wasm/types";
+
+  const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
+    "MeV": "Megaelectronvolts — total kinetic energy",
+    "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
+    "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
+  };
+
+  const RANGE_ANCHOR_OPTIONS = [
+    { value: "nm", label: "nm", tooltip: "nanometres" },
+    { value: "um", label: "µm", tooltip: "micrometres" },
+    { value: "mm", label: "mm", tooltip: "millimetres" },
+    { value: "cm", label: "cm", tooltip: "centimetres" },
+    { value: "m", label: "m", tooltip: "metres" },
+  ];
+
+  const STP_ANCHOR_OPTIONS = [
+    { value: "kev-um", label: "keV/µm", tooltip: "keV per micrometre (linear stopping power)" },
+    { value: "mev-cm", label: "MeV/cm", tooltip: "MeV per centimetre (linear stopping power)" },
+    {
+      value: "mev-cm2-g",
+      label: "MeV·cm²/g",
+      tooltip: "MeV·cm² per gram (mass stopping power)",
+    },
+  ];
+
+  function getEnergyAnchorOptions(
+    particle: { id: number | string; massNumber?: number; A?: number } | null | undefined,
+    advancedMode: boolean,
+  ) {
+    const units = getAvailableEnergyUnits(
+      particle as Parameters<typeof getAvailableEnergyUnits>[0],
+      advancedMode,
+    );
+    const isElectron = particle?.id === 1001;
+    const massNumber =
+      particle && "massNumber" in particle ? particle.massNumber : (particle as { A?: number } | null)?.A;
+    const isProton = massNumber === 1 && !isElectron;
+    return units.map((u) => {
+      const opt: { value: string; label: string; tooltip: string; sub?: string } = {
+        value: u,
+        label: u,
+        tooltip: ENERGY_UNIT_TOOLTIPS[u],
+      };
+      if (u === "MeV/u" && isProton && advancedMode) opt.sub = "(≠MeV)";
+      return opt;
+    });
+  }
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -1883,16 +1930,16 @@
         </div>
       {/if}
       {#if isAdvancedMode.value}
-        <EnergyUnitSelector
-          value={calcState.masterUnit}
-          availableUnits={getAvailableEnergyUnits(
+        <UnitAnchorStrip
+          options={getEnergyAnchorOptions(
             entityState.selectedParticle && "massNumber" in entityState.selectedParticle
               ? entityState.selectedParticle
               : null,
             isAdvancedMode.value,
           )}
+          selected={calcState.masterUnit}
+          onSelect={(v) => calcState?.setMasterUnit(v as EnergyUnit)}
           disabled={calcState.isPerRowMode}
-          onValueChange={(unit) => calcState?.setMasterUnit(unit)}
         />
       {/if}
 
@@ -1903,7 +1950,7 @@
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "forward"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "forward"}
               class:border-transparent={inverseLookupState?.activeTab !== "forward"}
               class:text-foreground={inverseLookupState?.activeTab === "forward"}
@@ -1911,12 +1958,14 @@
               onclick={() => inverseLookupState?.setActiveTab("forward")}
               data-testid="inverse-tab-forward"
             >
-              Forward
+              <span class="hidden min-[400px]:block font-bold">Energy →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ STP, Range</span>
+              <span class="min-[400px]:hidden font-bold">E→</span>
             </button>
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "csda"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "csda"}
               class:border-transparent={inverseLookupState?.activeTab !== "csda"}
               class:text-foreground={inverseLookupState?.activeTab === "csda"}
@@ -1924,12 +1973,14 @@
               onclick={() => inverseLookupState?.setActiveTab("csda")}
               data-testid="inverse-tab-range"
             >
-              Range
+              <span class="hidden min-[400px]:block font-bold">Range →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "stp"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "stp"}
               class:border-transparent={inverseLookupState?.activeTab !== "stp"}
               class:text-foreground={inverseLookupState?.activeTab === "stp"}
@@ -1937,7 +1988,9 @@
               onclick={() => inverseLookupState?.setActiveTab("stp")}
               data-testid="inverse-tab-stp"
             >
-              Inverse STP
+              <span class="hidden min-[400px]:block font-bold">STP →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
           </div>
         </div>
@@ -1978,26 +2031,18 @@
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
 
-            <!-- Master unit selector (visible in master mode) -->
-            <div class="flex items-center gap-2 text-sm">
-              <label for="inverse-range-unit" class="text-muted-foreground">Unit:</label>
-              <select
-                id="inverse-range-unit"
-                data-testid="inverse-range-unit"
-                value={inverseLookupState.rangeMasterUnit}
+            <!-- Unit anchor strip -->
+            <div class="flex items-center gap-3">
+              <UnitAnchorStrip
+                options={RANGE_ANCHOR_OPTIONS}
+                selected={inverseLookupState.rangeMasterUnit}
+                onSelect={(v) =>
+                  inverseLookupState?.setRangeMasterUnit(
+                    v as "nm" | "um" | "mm" | "cm" | "m",
+                  )}
                 disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                onchange={(e) => {
-                  const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
-                  inverseLookupState?.setRangeMasterUnit(newUnit);
-                }}
-                class="flex h-10 w-auto rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="nm">nm</option>
-                <option value="um">µm</option>
-                <option value="mm">mm</option>
-                <option value="cm">cm</option>
-                <option value="m">m</option>
-              </select>
+                data-testid="inverse-range-unit"
+              />
               {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
                 <span class="text-xs text-muted-foreground">(per-row mode active)</span>
               {/if}
@@ -2023,35 +2068,13 @@
                       inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
                     data-testid="inverse-range-input-{i}"
                   />
-                  {#if row.unitFromSuffix}
-                    <select
-                      value={row.unit}
-                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      disabled
-                    >
-                      <option value="nm">nm</option>
-                      <option value="um">µm</option>
-                      <option value="mm">mm</option>
-                      <option value="cm">cm</option>
-                      <option value="m">m</option>
-                    </select>
-                  {:else}
-                    <select
-                      value={inverseLookupState.rangeMasterUnit}
-                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      onchange={(e) => {
-                        inverseLookupState?.setRangeMasterUnit(
-                          e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m",
-                        );
-                      }}
-                    >
-                      <option value="nm">nm</option>
-                      <option value="um">µm</option>
-                      <option value="mm">mm</option>
-                      <option value="cm">cm</option>
-                      <option value="m">m</option>
-                    </select>
-                  {/if}
+                  <div class="flex h-10 items-center text-sm text-muted-foreground">
+                    {#if row.unitFromSuffix}
+                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{row.unit === "um" ? "µm" : row.unit}</span>
+                    {:else}
+                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{inverseLookupState.rangeMasterUnit === "um" ? "µm" : inverseLookupState.rangeMasterUnit}</span>
+                    {/if}
+                  </div>
                   <div class="flex items-center" data-testid="inverse-range-result-{i}">
                     {#if row.status === "valid" && row.energyMevNucl != null}
                       <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
@@ -2100,10 +2123,20 @@
               branches).
             </div>
 
+            <!-- Unit anchor strip -->
+            <UnitAnchorStrip
+              options={STP_ANCHOR_OPTIONS}
+              selected={inverseLookupState.stpMasterUnit}
+              onSelect={(v) =>
+                inverseLookupState?.setStpMasterUnit(
+                  v as "kev-um" | "mev-cm" | "mev-cm2-g",
+                )}
+              data-testid="inverse-stp-unit"
+            />
+
             <!-- STP table header -->
-            <div class="grid grid-cols-4 gap-2 text-sm font-medium mb-2">
+            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
               <div>Stopping Power</div>
-              <div>Unit</div>
               <div>E low</div>
               <div>E high</div>
             </div>
@@ -2111,7 +2144,7 @@
             <!-- STP rows -->
             <div class="space-y-2">
               {#each inverseLookupState.stpRows as row, i (row.id)}
-                <div class="grid grid-cols-4 gap-2" data-testid="inverse-stp-row-{i}">
+                <div class="grid grid-cols-3 gap-2" data-testid="inverse-stp-row-{i}">
                   <input
                     type="text"
                     value={row.text}
@@ -2120,20 +2153,6 @@
                     oninput={(e) => inverseLookupState?.updateStpRowText(i, e.currentTarget.value)}
                     data-testid="inverse-stp-input-{i}"
                   />
-                  <select
-                    data-testid="inverse-stp-unit"
-                    value={row.unit}
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    onchange={(e) => {
-                      inverseLookupState?.setStpMasterUnit(
-                        e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g",
-                      );
-                    }}
-                  >
-                    <option value="kev-um">keV/µm</option>
-                    <option value="mev-cm">MeV/cm</option>
-                    <option value="mev-cm2-g">MeV·cm²/g</option>
-                  </select>
                   <div class="flex items-center" data-testid="inverse-stp-result-low-{i}">
                     {#if row.status === "valid" && row.energyLowMevNucl !== null}
                       <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>

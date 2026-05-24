@@ -27,6 +27,29 @@ function parseEnergyMeV(text: string): number {
   return v;
 }
 
+function inverseUnitGroup(page: import("@playwright/test").Page, testId: string) {
+  return page.getByTestId(testId);
+}
+
+async function selectInverseUnit(
+  page: import("@playwright/test").Page,
+  testId: string,
+  label: string,
+): Promise<void> {
+  await inverseUnitGroup(page, testId).getByRole("radio", { name: label }).click();
+}
+
+async function expectInverseUnitSelected(
+  page: import("@playwright/test").Page,
+  testId: string,
+  label: string,
+): Promise<void> {
+  await expect(inverseUnitGroup(page, testId).getByRole("radio", { name: label })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+}
+
 test.describe("Inverse Lookups — Range Tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
@@ -76,7 +99,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await page.waitForSelector('[data-testid="inverse-tab-range"]', { timeout: 5000 });
 
     await page.click('[data-testid="inverse-tab-range"]');
-    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+    await selectInverseUnit(page, "inverse-range-unit", "mm");
     await page.fill('[data-testid="inverse-range-input-0"]', "3.5");
     await page.locator('[data-testid="inverse-range-input-0"]').blur();
 
@@ -100,7 +123,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
       "aria-selected",
       "true",
     );
-    await expect(page.locator('[data-testid="inverse-range-unit"]')).toHaveValue("mm");
+    await expectInverseUnitSelected(page, "inverse-range-unit", "mm");
     await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("");
   });
 
@@ -119,7 +142,9 @@ test.describe("Inverse Lookups — Range Tab", () => {
     expect(parseFloat((await energySpan.textContent())!.trim())).toBeGreaterThan(0);
 
     // Per-row mode active → master unit selector disabled
-    await expect(page.locator('[data-testid="inverse-range-unit"]')).toBeDisabled();
+    await expect(
+      inverseUnitGroup(page, "inverse-range-unit").getByRole("radio", { name: "cm" }),
+    ).toBeDisabled();
 
     // '0.03 km' — unrecognised suffix → inline error about unrecognized unit
     await page.fill('[data-testid="inverse-range-input-0"]', "0.03 km");
@@ -244,7 +269,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     expect(energyAtCm).toBeGreaterThan(0);
 
     // Change master unit to mm; same numeric value (10) now means 10 mm = 1 cm → different energy
-    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+    await selectInverseUnit(page, "inverse-range-unit", "mm");
 
     await expect
       .poll(
@@ -278,7 +303,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const energyAtKevUm = parseFloat((await lowSpan.textContent())!.trim());
 
     // Change unit to MeV/cm; same numeric value (30) now means 30 MeV/cm → different conversion
-    await page.selectOption('[data-testid="inverse-stp-unit"]', "mev-cm");
+    await selectInverseUnit(page, "inverse-stp-unit", "MeV/cm");
 
     await expect
       .poll(
