@@ -1664,9 +1664,14 @@
   <title>Calculator - webdedx</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-3 sm:space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-3xl font-bold">Calculator</h1>
+    <div>
+      <h1 class="hidden sm:block sm:text-2xl sm:font-semibold">Calculator</h1>
+      <p class="text-xs sm:text-sm text-muted-foreground">
+        Select a particle, material, and program to calculate stopping powers and CSDA ranges.
+      </p>
+    </div>
     {#if calcState}
       <Button
         variant="ghost"
@@ -1678,9 +1683,6 @@
       </Button>
     {/if}
   </div>
-  <p class="text-muted-foreground">
-    Select a particle, material, and program to calculate stopping powers and CSDA ranges.
-  </p>
 
   {#if urlVersionMismatch}
     <UrlVersionWarningBanner
@@ -1742,7 +1744,7 @@
       </div>
     </div>
   {:else}
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="mx-auto max-w-4xl space-y-4 sm:space-y-6">
       <SelectionLiveRegion state={entityState} />
       <EntitySelection
         selectionState={entityState}
