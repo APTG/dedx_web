@@ -291,15 +291,15 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const wasmPresent = await checkWasmPresent(page);
     test.skip(!wasmPresent, "WASM binary absent");
 
-    // Load with 30 keV/µm; note initial E_low
+    // Load with 30 keV/µm; note initial E_high
     await page.goto(
       "/calculator?particle=1&material=276&program=2&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
     );
-    await page.waitForSelector('[data-testid="inverse-stp-result-low-0"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="inverse-stp-result-high-0"]', { timeout: 15000 });
 
-    const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
-    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
-    const energyAtKevUm = parseFloat((await lowSpan.textContent())!.trim());
+    const highSpan = page.locator('[data-testid="inverse-stp-result-high-0"] span');
+    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtKevUm = parseFloat((await highSpan.textContent())!.trim());
 
     // Change unit to MeV/cm; same numeric value (30) now means 30 MeV/cm → different conversion
     await selectInverseUnit(page, "inverse-stp-unit", "MeV/cm");
@@ -307,7 +307,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () => {
-          const text = (await lowSpan.textContent())?.trim();
+          const text = (await highSpan.textContent())?.trim();
           if (!text || !/^\d/.test(text)) return null;
           return parseFloat(text);
         },
