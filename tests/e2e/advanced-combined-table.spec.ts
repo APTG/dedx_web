@@ -3,8 +3,8 @@ import { test, expect, type Page } from "@playwright/test";
 /**
  * E2E tests for the combined Advanced result table (issue #559).
  *
- * Covers Energy → and Range → modes in single-entity Advanced configuration
- * Advanced configuration, where `table-advanced.svelte` is rendered.
+ * Covers Energy → and Range → modes in single-entity Advanced configuration,
+ * where `table-advanced.svelte` is rendered.
  *
  * Tests that require WASM computation skip automatically when the binary is absent.
  */
@@ -19,8 +19,8 @@ async function checkWasmPresent(page: Page): Promise<boolean> {
 }
 
 async function gotoAdvancedSingleEntity(page: Page): Promise<void> {
-  // Advanced mode, single-entity (single selected particle/material/program).
-  // particle=1 (proton), material=276 (water), program=2 (PSTAR) — single program.
+  // Advanced mode, single-entity (one selected particle/material/program).
+  // particle=1 (proton), material=276 (water), program=2 (PSTAR).
   await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
   await page.waitForFunction(
     () => new URLSearchParams(window.location.search).get("mode") === "advanced",
