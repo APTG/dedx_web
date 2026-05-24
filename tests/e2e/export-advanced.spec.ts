@@ -1,5 +1,24 @@
 import { test, expect } from "@playwright/test";
 
+async function waitForAdvancedCalculatorResult(
+  page: import("@playwright/test").Page,
+): Promise<void> {
+  const energyInput = page.getByTestId("advanced-energy-input-0");
+  await energyInput.fill("100 MeV");
+  await energyInput.blur();
+
+  await expect(page.getByTestId("advanced-combined-table")).toBeVisible({ timeout: 10000 });
+  await expect
+    .poll(
+      async () => {
+        const text = (await page.getByTestId("advanced-stp-cell-0").textContent())?.trim() ?? "";
+        return text && text !== "—" ? parseFloat(text) : 0;
+      },
+      { timeout: 15000 },
+    )
+    .toBeGreaterThan(0);
+}
+
 test.describe("Export Advanced Mode", () => {
   test("CSV modal: opens in advanced mode, semicolon separator persists @smoke", async ({
     page,
@@ -14,27 +33,7 @@ test.describe("Export Advanced Mode", () => {
       { timeout: 10000 },
     );
 
-    // Fill energy first (triggers auto-select and debounced calculation)
-    const energyInput = page.locator('[data-testid="energy-input-0"]');
-    await energyInput.fill("100 MeV");
-    await energyInput.blur();
-
-    // Wait for result table to appear
-    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
-
-    // In advanced mode, STP cells have format stp-cell-{programId}-{rowIndex}
-    // Wait for any STP cell to have content (auto-select resolves to ICRU49 for proton+water)
-    await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
-    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
-    await expect
-      .poll(
-        async () => {
-          const text = await stpCell.textContent();
-          return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
-        },
-        { timeout: 15000 },
-      )
-      .toBeGreaterThan(0);
+    await waitForAdvancedCalculatorResult(page);
 
     // Wait for export button to be enabled (use test ID like PDF test uses role)
     const exportCsvBtn = page.getByTestId("export-csv-btn");
@@ -211,26 +210,7 @@ test.describe("Export Advanced Mode", () => {
       { timeout: 10000 },
     );
 
-    // Fill energy first (triggers auto-select and debounced calculation)
-    const energyInput = page.locator('[data-testid="energy-input-0"]');
-    await energyInput.fill("100 MeV");
-    await energyInput.blur();
-
-    // Wait for result table
-    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
-
-    // In advanced mode, STP cells have format stp-cell-{programId}-{rowIndex}
-    await page.waitForSelector('[data-testid^="stp-cell-"]', { timeout: 10000 });
-    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
-    await expect
-      .poll(
-        async () => {
-          const text = await stpCell.textContent();
-          return text && text.trim() !== "—" ? parseFloat(text.trim()) : 0;
-        },
-        { timeout: 15000 },
-      )
-      .toBeGreaterThan(0);
+    await waitForAdvancedCalculatorResult(page);
 
     // Wait for export button to be enabled
     const exportPdfBtn = page.getByRole("button", { name: /export pdf/i });

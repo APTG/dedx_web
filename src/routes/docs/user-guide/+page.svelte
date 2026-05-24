@@ -1,10 +1,16 @@
 <script lang="ts">
   import { page } from "$app/state";
   import {
+    buildAdvancedCalculatorExampleUrl,
+    buildBasicCalculatorExampleUrl,
     buildSrimCalculatorExampleUrl,
     buildSrimPlotExampleUrl,
   } from "$lib/utils/external-data-example-urls";
 
+  const basicCalculatorExampleHref = $derived(buildBasicCalculatorExampleUrl(page.url.origin));
+  const advancedCalculatorExampleHref = $derived(
+    buildAdvancedCalculatorExampleUrl(page.url.origin),
+  );
   const calculatorExampleHref = $derived(buildSrimCalculatorExampleUrl(page.url.origin));
   const plotExampleHref = $derived(buildSrimPlotExampleUrl(page.url.origin));
 </script>
@@ -27,6 +33,34 @@
       <li>Using advanced options (density override, MSTAR modes)</li>
       <li>Loading external .webdedx data files</li>
     </ul>
+
+    <section class="mt-8 space-y-4">
+      <h2 class="text-2xl font-semibold">Shareable URL examples</h2>
+      <p class="text-muted-foreground">
+        The app stores calculator and plot state in the URL so you can bookmark or share exact
+        scenarios. These examples use the current <code>urlv=2</code> syntax.
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">Basic calculator example</h3>
+      <p class="text-muted-foreground">
+        Open Calculator in Basic mode with proton, liquid water, ICRU 49, and a single 100 MeV row:
+      </p>
+      <p>
+        <a class="break-all text-primary underline" href={basicCalculatorExampleHref}
+          >{basicCalculatorExampleHref}</a
+        >
+      </p>
+
+      <h3 class="mt-4 text-xl font-semibold">Advanced calculator example</h3>
+      <p class="text-muted-foreground">
+        Open Calculator in Advanced mode with carbon-12 in liquid water and three energy rows:
+      </p>
+      <p>
+        <a class="break-all text-primary underline" href={advancedCalculatorExampleHref}
+          >{advancedCalculatorExampleHref}</a
+        >
+      </p>
+    </section>
 
     <section class="mt-8 space-y-4">
       <h2 class="text-2xl font-semibold">Loading external datasets</h2>
@@ -58,7 +92,7 @@
 
       <h3 class="mt-4 text-xl font-semibold">Plot example</h3>
       <p class="text-muted-foreground">
-        Open Plot with the same SRIM dataset, proton in liquid water, and ICRU 49 as the built-in
+        Open Plot with the same SRIM dataset, proton in liquid water, and ICRU 49 as the selected
         program:
       </p>
       <p>
@@ -89,7 +123,9 @@
           </tr>
           <tr class="border-b border-muted/30">
             <td class="py-1 pr-4 font-mono">↵ Enter</td>
-            <td class="py-1">Select highlighted item; advances to the next empty field automatically</td>
+            <td class="py-1"
+              >Select highlighted item; advances to the next empty field automatically</td
+            >
           </tr>
           <tr class="border-b border-muted/30">
             <td class="py-1 pr-4 font-mono">Escape</td>
@@ -97,7 +133,9 @@
           </tr>
           <tr>
             <td class="py-1 pr-4 font-mono">← / →</td>
-            <td class="py-1">Cycle between Particle / Material / Program tabs (when a tab button is focused)</td>
+            <td class="py-1"
+              >Cycle between Particle / Material / Program tabs (when a tab button is focused)</td
+            >
           </tr>
         </tbody>
       </table>

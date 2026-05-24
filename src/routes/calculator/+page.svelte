@@ -17,6 +17,7 @@
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
+  import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
@@ -66,7 +67,7 @@
   import type { CalculationResult } from "$lib/wasm/types";
 
   const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
-    "MeV": "Megaelectronvolts — total kinetic energy",
+    MeV: "Megaelectronvolts — total kinetic energy",
     "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
     "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
   };
@@ -99,7 +100,9 @@
     );
     const isElectron = particle?.id === 1001;
     const massNumber =
-      particle && "massNumber" in particle ? particle.massNumber : (particle as { A?: number } | null)?.A;
+      particle && "massNumber" in particle
+        ? particle.massNumber
+        : (particle as { A?: number } | null)?.A;
     const isProton = massNumber === 1 && !isElectron;
     return units.map((u) => {
       const opt: { value: string; label: string; tooltip: string; sub?: string } = {
@@ -432,15 +435,24 @@
     persistAdvancedOptions();
   });
 
-  // Retrigger single-program calculation when advanced options change (basic mode).
-  // Advanced mode uses its own calculation effect below (multi-program calculateMulti).
+  // Retrigger calculator-state calculation when advanced options change for the
+  // single-result table paths (Basic mode and single-program Advanced mode).
+  // True multi-program compare continues to use the dedicated calculateMulti effect below.
   $effect(() => {
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
-    if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
+    if (!calcState || !entityState?.isComplete) return;
+    const isMultiProgramCompare =
+      isAdvancedMode.value &&
+      entityState.across === "program" &&
+      (multiProgState?.selectedProgramIds.length ?? 0) > 1;
+    const isMultiEntityCompare =
+      isAdvancedMode.value &&
+      (entityState.across === "material" || entityState.across === "particle");
+    if (isMultiProgramCompare || isMultiEntityCompare) return;
     calcState.triggerCalculation();
   });
 
@@ -959,7 +971,7 @@
     if (entityState.across !== "program") return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
-    if (selectedProgramIds.length === 0) return;
+    if (selectedProgramIds.length <= 1) return;
 
     const rawParticleId = entityState.selectedParticle?.id;
     // External-only particles have string IDs — multi-program mode only supports built-in particles
@@ -1931,7 +1943,7 @@
           </div>
         </div>
       {/if}
-      {#if isAdvancedMode.value}
+      {#if isAdvancedMode.value && ((multiProgState !== null && multiProgState.selectedProgramIds.length > 1) || multiEntityState !== null)}
         <UnitAnchorStrip
           options={getEnergyAnchorOptions(
             entityState.selectedParticle && "massNumber" in entityState.selectedParticle
@@ -1961,7 +1973,9 @@
               data-testid="inverse-tab-forward"
             >
               <span class="hidden min-[400px]:block font-bold">Energy →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ STP, Range</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ STP, Range</span
+              >
               <span class="min-[400px]:hidden font-bold">E→</span>
             </button>
             <button
@@ -1976,7 +1990,9 @@
               data-testid="inverse-tab-range"
             >
               <span class="hidden min-[400px]:block font-bold">Range →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
               <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
             <button
@@ -1991,7 +2007,9 @@
               data-testid="inverse-tab-stp"
             >
               <span class="hidden min-[400px]:block font-bold">STP →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground">→ Energy</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
               <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
           </div>
@@ -2001,7 +2019,7 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState}
+          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
             <ResultTable
               {calcState}
               entitySelection={entityState}
@@ -2018,7 +2036,7 @@
                 : entityState.multiSelected.particle}
             />
           {:else if isAdvancedMode.value}
-            <ResultTable {calcState} entitySelection={entityState} />
+            <TableAdvanced mode="energy" {calcState} entitySelection={entityState} />
           {:else}
             <TableBasic {calcState} entitySelection={entityState} />
           {/if}
@@ -2032,81 +2050,7 @@
             <div class="text-sm text-muted-foreground">
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
-
-            <!-- Unit anchor strip -->
-            <div class="flex items-center gap-3">
-              <UnitAnchorStrip
-                options={RANGE_ANCHOR_OPTIONS}
-                selected={inverseLookupState.rangeMasterUnit}
-                onSelect={(v) =>
-                  inverseLookupState?.setRangeMasterUnit(
-                    v as "nm" | "um" | "mm" | "cm" | "m",
-                  )}
-                disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                data-testid="inverse-range-unit"
-              />
-              {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                <span class="text-xs text-muted-foreground">(per-row mode active)</span>
-              {/if}
-            </div>
-
-            <!-- Range table header -->
-            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
-              <div>Range</div>
-              <div>Unit</div>
-              <div>→ Energy</div>
-            </div>
-
-            <!-- Range rows -->
-            <div class="space-y-2">
-              {#each inverseLookupState.rangeRows as row, i (row.id)}
-                <div class="grid grid-cols-3 gap-2" data-testid="inverse-range-row-{i}">
-                  <input
-                    type="text"
-                    value={row.text}
-                    placeholder="Enter range (e.g., 7.718 cm)"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) =>
-                      inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
-                    data-testid="inverse-range-input-{i}"
-                  />
-                  <div class="flex h-10 items-center text-sm text-muted-foreground">
-                    {#if row.unitFromSuffix}
-                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{row.unit === "um" ? "µm" : row.unit}</span>
-                    {:else}
-                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{inverseLookupState.rangeMasterUnit === "um" ? "µm" : inverseLookupState.rangeMasterUnit}</span>
-                    {/if}
-                  </div>
-                  <div class="flex items-center" data-testid="inverse-range-result-{i}">
-                    {#if row.status === "valid" && row.energyMevNucl != null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "out-of-range" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                </div>
-                <!-- Error row display -->
-                {#if (row.status === "invalid" || row.status === "out-of-range" || row.status === "error") && row.message}
-                  <div data-testid="inverse-range-row-error-{i}" class="text-sm text-destructive">
-                    {row.message}
-                  </div>
-                {/if}
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState?.addRangeRow()}
-              >
-                + Add row
-              </button>
-            </div>
-
-            <!-- Valid range hint -->
+            <TableAdvanced mode="range" {inverseLookupState} />
             {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
@@ -2130,9 +2074,7 @@
               options={STP_ANCHOR_OPTIONS}
               selected={inverseLookupState.stpMasterUnit}
               onSelect={(v) =>
-                inverseLookupState?.setStpMasterUnit(
-                  v as "kev-um" | "mev-cm" | "mev-cm2-g",
-                )}
+                inverseLookupState?.setStpMasterUnit(v as "kev-um" | "mev-cm" | "mev-cm2-g")}
               data-testid="inverse-stp-unit"
             />
 

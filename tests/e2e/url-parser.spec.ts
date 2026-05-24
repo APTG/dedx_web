@@ -110,7 +110,9 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(page.locator('[data-testid="compound-from-url-banner"]')).toBeVisible({
       timeout: 5000,
     });
-    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    const stpCell = page
+      .locator('[data-testid="advanced-stp-cell-0"], [data-testid^="stp-cell-"]')
+      .first();
     await expect
       .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), {
         timeout: 10000,
@@ -127,7 +129,9 @@ test.describe("Stage 6.13 — URL parser", () => {
     );
     // Wait for WASM to load and produce a result — this also confirms urlInitialized=true
     // (the URL update effect guards on urlInitialized, so we must not click before it's set).
-    const stpCell = page.locator('[data-testid^="stp-cell-"]').first();
+    const stpCell = page
+      .locator('[data-testid="advanced-stp-cell-0"], [data-testid^="stp-cell-"]')
+      .first();
     await expect
       .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), {
         timeout: 20000,
