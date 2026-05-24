@@ -39,18 +39,18 @@
 
   $effect(() => {
     const now = showLowEColumn;
-    let revealTimer: ReturnType<typeof setTimeout> | undefined;
+    let revealTimeoutId: ReturnType<typeof setTimeout> | undefined;
     if (now && !loEPrevVisible) {
       loEColumnJustRevealed = true;
       // Remove the tint class after the animation completes (600ms).
-      revealTimer = setTimeout(() => {
+      revealTimeoutId = setTimeout(() => {
         loEColumnJustRevealed = false;
       }, 600);
     }
     loEPrevVisible = now;
     return () => {
-      if (revealTimer !== undefined) {
-        clearTimeout(revealTimer);
+      if (revealTimeoutId !== undefined) {
+        clearTimeout(revealTimeoutId);
       }
     };
   });
