@@ -1667,8 +1667,8 @@
 <div class="space-y-3 sm:space-y-6">
   <div class="flex items-center justify-between">
     <div>
-      <h1 class="text-xl sm:text-2xl font-semibold">Calculator</h1>
-      <p class="hidden min-[400px]:block text-xs sm:text-sm text-muted-foreground">
+      <h1 class="hidden sm:block sm:text-2xl sm:font-semibold">Calculator</h1>
+      <p class="text-xs sm:text-sm text-muted-foreground">
         Select a particle, material, and program to calculate stopping powers and CSDA ranges.
       </p>
     </div>
