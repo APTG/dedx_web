@@ -56,6 +56,8 @@ export interface InverseLookupState {
   setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m"): void;
   /** Range tab: add empty row */
   addRangeRow(): void;
+  /** Range tab: remove row at index (no-op when only one row remains) */
+  removeRangeRow(index: number): void;
   /** STP tab: update row text */
   updateStpRowText(index: number, text: string): void;
   /** STP tab: set master unit */
@@ -376,6 +378,10 @@ export function createInverseLookupState(
         energyMevNucl: null,
       };
       rangeRows.push(newRow);
+    },
+    removeRangeRow(index: number) {
+      if (rangeRows.length <= 1) return;
+      rangeRows.splice(index, 1);
     },
     updateStpRowText(index: number, text: string) {
       const row = stpRows[index];

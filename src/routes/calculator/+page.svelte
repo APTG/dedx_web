@@ -17,6 +17,7 @@
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
+  import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
@@ -1931,7 +1932,7 @@
           </div>
         </div>
       {/if}
-      {#if isAdvancedMode.value}
+      {#if isAdvancedMode.value && (multiProgState !== null || multiEntityState !== null)}
         <UnitAnchorStrip
           options={getEnergyAnchorOptions(
             entityState.selectedParticle && "massNumber" in entityState.selectedParticle
@@ -2018,7 +2019,7 @@
                 : entityState.multiSelected.particle}
             />
           {:else if isAdvancedMode.value}
-            <ResultTable {calcState} entitySelection={entityState} />
+            <TableAdvanced mode="energy" {calcState} entitySelection={entityState} />
           {:else}
             <TableBasic {calcState} entitySelection={entityState} />
           {/if}
@@ -2032,81 +2033,7 @@
             <div class="text-sm text-muted-foreground">
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
-
-            <!-- Unit anchor strip -->
-            <div class="flex items-center gap-3">
-              <UnitAnchorStrip
-                options={RANGE_ANCHOR_OPTIONS}
-                selected={inverseLookupState.rangeMasterUnit}
-                onSelect={(v) =>
-                  inverseLookupState?.setRangeMasterUnit(
-                    v as "nm" | "um" | "mm" | "cm" | "m",
-                  )}
-                disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                data-testid="inverse-range-unit"
-              />
-              {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                <span class="text-xs text-muted-foreground">(per-row mode active)</span>
-              {/if}
-            </div>
-
-            <!-- Range table header -->
-            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
-              <div>Range</div>
-              <div>Unit</div>
-              <div>→ Energy</div>
-            </div>
-
-            <!-- Range rows -->
-            <div class="space-y-2">
-              {#each inverseLookupState.rangeRows as row, i (row.id)}
-                <div class="grid grid-cols-3 gap-2" data-testid="inverse-range-row-{i}">
-                  <input
-                    type="text"
-                    value={row.text}
-                    placeholder="Enter range (e.g., 7.718 cm)"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) =>
-                      inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
-                    data-testid="inverse-range-input-{i}"
-                  />
-                  <div class="flex h-10 items-center text-sm text-muted-foreground">
-                    {#if row.unitFromSuffix}
-                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{row.unit === "um" ? "µm" : row.unit}</span>
-                    {:else}
-                      <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs">{inverseLookupState.rangeMasterUnit === "um" ? "µm" : inverseLookupState.rangeMasterUnit}</span>
-                    {/if}
-                  </div>
-                  <div class="flex items-center" data-testid="inverse-range-result-{i}">
-                    {#if row.status === "valid" && row.energyMevNucl != null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "out-of-range" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                </div>
-                <!-- Error row display -->
-                {#if (row.status === "invalid" || row.status === "out-of-range" || row.status === "error") && row.message}
-                  <div data-testid="inverse-range-row-error-{i}" class="text-sm text-destructive">
-                    {row.message}
-                  </div>
-                {/if}
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState?.addRangeRow()}
-              >
-                + Add row
-              </button>
-            </div>
-
-            <!-- Valid range hint -->
+            <TableAdvanced mode="range" {inverseLookupState} />
             {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
