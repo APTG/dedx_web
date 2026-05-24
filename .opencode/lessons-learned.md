@@ -9,6 +9,31 @@
 
 ---
 
+## Entry 61 — Auto-reveal URL state must not permanently lock inverse-STP low-E column
+
+**Symptom:** The inverse-STP table derived `showLowEColumn` from
+`stpBranchState === "both" || hasTwoSolutionRow` and then immediately wrote
+`stpBranchState = "both"` whenever the column was visible. Once any row had two
+solutions, the state stayed `"both"` forever, so the low-E column could never
+auto-collapse after rows were cleared.
+
+```text
+❌ BROKEN — visibility and persisted URL state form a self-locking loop
+showLowEColumn = stpBranchState === "both" || hasTwoSolutionRow
+if (showLowEColumn) stpBranchState = "both"
+
+✅ CORRECT — track auto-reveal intent separately
+if (hasTwoSolutionRow) { autoRevealed = true; stpBranchState = "both" }
+if (!hasTwoSolutionRow && autoRevealed) { autoRevealed = false; stpBranchState = "hi" }
+```
+
+**Rule:** When URL-restorable state (`istpbranch`) also controls UI visibility,
+never derive-and-write the same flag in one loop. Keep an explicit local flag
+for auto-reveal transitions so URL pre-open behavior and auto-collapse behavior
+can coexist.
+
+---
+
 ## Entry 60 — Advanced calculator E2E selectors differ between single-program and multi-program mode
 
 **Symptom:** Export tests opened `/calculator?mode=advanced` and still waited for

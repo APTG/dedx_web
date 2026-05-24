@@ -76,6 +76,7 @@ export interface PlotUrlInput {
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
+  invStpBranch?: "both";
   advancedOptions?: AdvancedOptions;
 
   /** External data sources declared via `extdata` URL params (in declaration order). */
@@ -98,6 +99,7 @@ export interface PlotUrlDecoded {
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
+  invStpBranch?: "both";
   advancedOptions: AdvancedOptions;
 
   /** External data sources declared via `extdata` URL params (in declaration order). */
@@ -162,6 +164,9 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   params.set("stp_unit", stpUnitToToken(input.stpUnit));
   params.set("xscale", input.xLog ? "log" : "lin");
   params.set("yscale", input.yLog ? "log" : "lin");
+  if (input.invStpBranch === "both") {
+    params.set("inv_stp_branch", "both");
+  }
 
   // Encode advanced options (only non-default values)
   if (input.advancedOptions) {
@@ -391,6 +396,7 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   const stpUnit = tokenToStpUnit(params.get("stp_unit") ?? "");
   const xLog = (params.get("xscale") ?? "log") === "log";
   const yLog = (params.get("yscale") ?? "log") === "log";
+  const invStpBranch = params.get("inv_stp_branch") === "both" ? "both" : undefined;
 
   // Decode advanced options
   const advancedOptions: AdvancedOptions = {};
@@ -451,6 +457,9 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
     yLog,
     advancedOptions,
   };
+  if (invStpBranch) {
+    result.invStpBranch = invStpBranch;
+  }
   if (externalSources.length > 0) {
     result.externalSources = externalSources;
   }

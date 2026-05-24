@@ -390,6 +390,55 @@
           }
         }
         await Promise.allSettled(externalRestores);
+
+        // Inverse-STP two-series creation: when navigating from "Plot this row"
+        // on a 2-solution STP row, the URL carries inv_stp_branch=both and the
+        // entity triple (particle/material/program).  Add two series — same STP
+        // curve but labelled " high-E" and " low-E" — so both branches appear in
+        // the legend.
+        const invStpBranch = decoded.invStpBranch;
+        if (
+          invStpBranch === "both" &&
+          decoded.particleId !== null &&
+          typeof decoded.particleId === "number" &&
+          decoded.materialId !== null &&
+          typeof decoded.materialId === "number" &&
+          decoded.programId !== -1
+        ) {
+          try {
+            const stpResult = service.getPlotData(
+              decoded.programId,
+              decoded.particleId,
+              decoded.materialId,
+              500,
+              true,
+              advancedOptions.value,
+            );
+            const allPrograms = service.getPrograms();
+            const allParticles = service.getParticles(decoded.programId);
+            const allMaterials = service.getMaterials(decoded.programId);
+            const prog = allPrograms.find((p) => p.id === decoded.programId);
+            const part = allParticles.find((p) => p.id === decoded.particleId);
+            const mat = allMaterials.find((m) => m.id === decoded.materialId);
+            if (prog && part && mat) {
+              const baseData = {
+                programId: decoded.programId,
+                particleId: decoded.particleId,
+                materialId: decoded.materialId,
+                programName: prog.name,
+                particleName: getParticleLabel(part),
+                materialName: mat.name,
+                particleMassNumber: part.massNumber,
+                density: mat.density,
+                result: stpResult,
+              };
+              plotState.addSeries({ ...baseData, labelSuffix: " high-E" });
+              plotState.addSeries({ ...baseData, labelSuffix: " low-E" });
+            }
+          } catch {
+            // silently ignore — invalid triplet
+          }
+        }
       })
       .finally(() => {
         // Only allow URL-writes after every restored series has been added,
@@ -408,6 +457,9 @@
       : {};
     const selectedParticleId = entityState.selectedParticle?.id;
     const selectedProgramId = entityState.selectedProgram.id;
+    const hasInverseStpPair =
+      plotState.series.some((s) => s.labelSuffix === " high-E") &&
+      plotState.series.some((s) => s.labelSuffix === " low-E");
     const params = encodePlotUrl({
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
@@ -420,6 +472,7 @@
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
+      invStpBranch: hasInverseStpPair ? "both" : undefined,
       advancedOptions: advancedOptions.value,
       externalSources: loadedExternalSources,
       ...customUrlFields,

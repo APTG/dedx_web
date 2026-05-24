@@ -18,6 +18,7 @@
   import ResultTable from "$lib/components/result-table.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
+  import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
@@ -49,6 +50,7 @@
     createInverseLookupState,
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
+  import { HIGH_E_SIDE, LOW_E_SIDE } from "$lib/utils/inverse-stp";
   import { LibdedxError, type InverseCsdaResult, type EnergyUnit } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
@@ -78,16 +80,6 @@
     { value: "mm", label: "mm", tooltip: "millimetres" },
     { value: "cm", label: "cm", tooltip: "centimetres" },
     { value: "m", label: "m", tooltip: "metres" },
-  ];
-
-  const STP_ANCHOR_OPTIONS = [
-    { value: "kev-um", label: "keV/µm", tooltip: "keV per micrometre (linear stopping power)" },
-    { value: "mev-cm", label: "MeV/cm", tooltip: "MeV per centimetre (linear stopping power)" },
-    {
-      value: "mev-cm2-g",
-      label: "MeV·cm²/g",
-      tooltip: "MeV·cm² per gram (mass stopping power)",
-    },
   ];
 
   function getEnergyAnchorOptions(
@@ -393,6 +385,10 @@
                 );
               }
             }
+            // Restore STP column-visibility state from URL
+            if (inverseMode.imode === "stp" && urlState.istpBranchState) {
+              inverseLookupState!.setStpBranchState(urlState.istpBranchState);
+            }
           }
 
           urlInitialized = true;
@@ -473,7 +469,7 @@
       if (inverseLookupState.activeTab === "csda") {
         inverseModeState = {
           imode: "csda",
-          ivalues: inverseLookupState.rangeRows
+          lookups: inverseLookupState.rangeRows
             .filter((r) => r.text.trim() !== "")
             .map((r) => {
               const trimmed = r.text.trim();
@@ -489,12 +485,12 @@
       } else if (inverseLookupState.activeTab === "stp") {
         inverseModeState = {
           imode: "stp",
-          ivalues: inverseLookupState.stpRows
+          lookups: inverseLookupState.stpRows
             .filter((r) => r.text.trim() !== "")
             .map((r) => ({
               rawInput: r.text.trim(),
               unit: r.unit,
-              unitFromSuffix: false, // STP doesn't use inline suffix detection
+              unitFromSuffix: false,
             })),
           iunit: inverseLookupState.stpMasterUnit,
         };
@@ -542,6 +538,10 @@
         : {}),
       // Include inverse mode state when active
       ...(inverseModeState || {}),
+      // Encode istpbranch when STP column visibility is "both"
+      ...(inverseModeState?.imode === "stp" && inverseLookupState?.stpBranchState === "both"
+        ? { istpBranchState: "both" as const }
+        : {}),
     };
     // Use calculatorUrlQueryString so `:` and `,` are written literally
     // (RFC 3986 §3.4 permits them unencoded in the query component).
@@ -912,30 +912,6 @@
    * Format energy with auto-scaling (eV/keV/MeV/GeV).
    * Input is in MeV/nucl. Returns string with unit.
    */
-  function formatEnergy(energyMevNucl: number): string {
-    const absVal = Math.abs(energyMevNucl);
-    let value: number;
-    let unit: string;
-
-    if (absVal >= 1000) {
-      value = energyMevNucl / 1000;
-      unit = "GeV";
-    } else if (absVal >= 1) {
-      value = energyMevNucl;
-      unit = "MeV";
-    } else if (absVal >= 0.001) {
-      value = energyMevNucl * 1000;
-      unit = "keV";
-    } else {
-      value = energyMevNucl * 1e6;
-      unit = "eV";
-    }
-
-    // Format with 4 significant figures
-    const formatted = value.toPrecision(4);
-    return `${formatted} ${unit}`;
-  }
-
   /** Find the local ID of an entity (particle or material) within a specific external source. */
   function resolveExtLocalIdForLabel(
     entityId: number | string,
@@ -1556,7 +1532,7 @@
 
       try {
         const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
-        // Call for low/high branches
+        // Call for low-E and high-E branches (LOW_E_SIDE=0, HIGH_E_SIDE=1)
         const lowResults = activeCustomMaterial
           ? service.getInverseStpCustomCompound({
               programId,
@@ -1565,7 +1541,7 @@
               density,
               iValue: activeCustomMaterial.iValue,
               stoppingPowers: stpMevCm2g,
-              side: 0,
+              side: LOW_E_SIDE,
             })
           : typeof materialId === "number"
             ? service.getInverseStp({
@@ -1573,7 +1549,7 @@
                 particleId,
                 materialId,
                 stoppingPowers: stpMevCm2g,
-                side: 0,
+                side: LOW_E_SIDE,
                 options: advOptsSnapshot,
               })
             : [];
@@ -1586,7 +1562,7 @@
               density,
               iValue: activeCustomMaterial.iValue,
               stoppingPowers: stpMevCm2g,
-              side: 1,
+              side: HIGH_E_SIDE,
             })
           : typeof materialId === "number"
             ? service.getInverseStp({
@@ -1594,7 +1570,7 @@
                 particleId,
                 materialId,
                 stoppingPowers: stpMevCm2g,
-                side: 1,
+                side: HIGH_E_SIDE,
                 options: advOptsSnapshot,
               })
             : [];
@@ -1611,10 +1587,19 @@
               r.energyHighMevNucl = null;
             } else {
               r.status = "valid";
-              r.energyLowMevNucl =
+              const lowE =
                 lowResult instanceof Error || lowResult === undefined ? null : lowResult.energy;
-              r.energyHighMevNucl =
+              const highE =
                 highResult instanceof Error || highResult === undefined ? null : highResult.energy;
+              // Treat identical branch energies as a single solution —
+              // the C inverse lookup returns the same energy for both sides
+              // when only one physical solution exists for the given STP value.
+              const isSingleSolution =
+                lowE !== null &&
+                highE !== null &&
+                Math.abs(lowE - highE) / Math.max(Math.abs(highE), 1e-300) < 1e-6;
+              r.energyLowMevNucl = isSingleSolution ? null : lowE;
+              r.energyHighMevNucl = highE;
             }
 
             resultIdx++;
@@ -2065,85 +2050,21 @@
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
-              Enter a stopping power value to find the corresponding energies (low and high
-              branches).
+              Enter a stopping power value to find the corresponding energies (high-E branch by
+              default; low-E branch reveals when any row has two solutions).
             </div>
-
-            <!-- Unit anchor strip -->
-            <UnitAnchorStrip
-              options={STP_ANCHOR_OPTIONS}
-              selected={inverseLookupState.stpMasterUnit}
-              onSelect={(v) =>
-                inverseLookupState?.setStpMasterUnit(v as "kev-um" | "mev-cm" | "mev-cm2-g")}
-              data-testid="inverse-stp-unit"
+            <TableInverseStp
+              inverseLookupState={inverseLookupState}
+              onPlotRow={(rowIndex) => {
+                const row = inverseLookupState?.stpRows[rowIndex];
+                if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
+                const pId = entityState?.selectedParticle?.id;
+                const mId = entityState?.selectedMaterial?.id;
+                const progId = entityState?.resolvedProgramId;
+                if (typeof pId !== "number" || typeof mId !== "number" || typeof progId !== "number") return;
+                goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
+              }}
             />
-
-            <!-- STP table header -->
-            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
-              <div>Stopping Power</div>
-              <div>E low</div>
-              <div>E high</div>
-            </div>
-
-            <!-- STP rows -->
-            <div class="space-y-2">
-              {#each inverseLookupState.stpRows as row, i (row.id)}
-                <div class="grid grid-cols-3 gap-2" data-testid="inverse-stp-row-{i}">
-                  <input
-                    type="text"
-                    value={row.text}
-                    placeholder="Enter stopping power"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) => inverseLookupState?.updateStpRowText(i, e.currentTarget.value)}
-                    data-testid="inverse-stp-input-{i}"
-                  />
-                  <div class="flex items-center" data-testid="inverse-stp-result-low-{i}">
-                    {#if row.status === "valid" && row.energyLowMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                  <div class="flex items-center" data-testid="inverse-stp-result-high-{i}">
-                    {#if row.status === "valid" && row.energyHighMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                </div>
-                <!-- Error row display -->
-                {#if (row.status === "invalid" || row.status === "no-solution" || row.status === "error") && row.message}
-                  <div data-testid="inverse-stp-row-error-{i}" class="text-sm text-destructive">
-                    {row.message}
-                  </div>
-                {/if}
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState?.addStpRow()}
-              >
-                + Add row
-              </button>
-            </div>
-
-            <!-- Valid STP range hint -->
-            {#if entityState.isComplete && energyRangeLabel}
-              <p class="text-xs text-muted-foreground mt-4">
-                Particle/material: {entityState.selectedParticle?.name} in {entityState
-                  .selectedMaterial?.name}
-              </p>
-            {/if}
           </div>
         </div>
       {/if}
