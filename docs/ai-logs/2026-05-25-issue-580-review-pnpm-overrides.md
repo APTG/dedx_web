@@ -29,5 +29,5 @@
   - [`package.json`](../../package.json)
   - [`pnpm-lock.yaml`](../../pnpm-lock.yaml)
   - [`README.md`](../../README.md)
-- **Decision**: Svelte and devalue overrides were dropped because direct upgrades pulled in safe transitive versions. Cookie override was kept and simplified to the `"cookie": "^0.7.0"` format in `pnpm-workspace.yaml` with a YAML `#` comment documenting the mitigation of GHSA-pxg6-pf52-xh8x and linking to the upstream SvelteKit issue.
+- **Decision**: Svelte and devalue overrides were dropped because direct upgrades pulled in safe transitive versions. Cookie override was kept and simplified to the `cookie: "^0.7.0"` format in `pnpm-workspace.yaml` with a YAML `#` comment documenting the mitigation of GHSA-pxg6-pf52-xh8x and linking to the upstream SvelteKit issue.
 - **Issue**: None
