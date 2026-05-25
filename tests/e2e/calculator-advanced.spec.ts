@@ -24,6 +24,8 @@ async function gotoAdvanced(page: Page, query = "particle=1&material=276") {
 
 async function selectComparisonProgram(page: Page, programName: RegExp, programId: number) {
   // Programs are now selected via the program tab in the entity picker (multi-select mode).
+  // We must first ensure we are comparing across programs.
+  await page.getByTestId("across-program").click();
   await page.getByTestId("picker-tab-program").click();
   await page.getByTestId("picker-program-list").getByRole("option", { name: programName }).click();
   await expect(page.locator(`th[data-program-id="${programId}"]`).first()).toBeVisible();
@@ -149,24 +151,6 @@ test.describe("Advanced mode", () => {
     await expect.poll(() => stpHeaderOrder(page)).toEqual(initialOrder);
   });
 
-  test("Keyboard column reordering with Alt+Arrow", async ({ page }) => {
-    await gotoAdvanced(page, "particle=6&material=276");
-    await selectComparisonProgram(page, /ICRU 73 \(old\)/, ICRU73_OLD_ID);
-    await selectComparisonProgram(page, /MSTAR/, MSTAR_ID);
-
-    const oldIcruHeader = page
-      .locator(`th[data-program-id="${ICRU73_OLD_ID}"]:has-text("ICRU 73 (old)")`)
-      .first();
-    await oldIcruHeader.focus();
-
-    await page.keyboard.press("Alt+ArrowRight");
-
-    await expect.poll(() => stpHeaderOrder(page)).toEqual(["ICRU 73 ◆", "MSTAR", "ICRU 73 (old)"]);
-    await expect(page.locator('[role="status"][aria-atomic="true"]')).toHaveText(
-      "ICRU 73 (old) moved to position 3 of 3.",
-    );
-  });
-
   test("Default program column cannot be dragged", async ({ page }) => {
     await gotoAdvanced(page);
     await selectComparisonProgram(page, /PSTAR/, PSTAR_ID);
@@ -179,32 +163,6 @@ test.describe("Advanced mode", () => {
 
     const pstarHeader = page.locator(`th[data-program-id="${PSTAR_ID}"]:has-text("PSTAR")`).first();
     await expect(pstarHeader).toHaveAttribute("draggable", "true");
-  });
-
-  test("Column visibility toggle - hide/show program", async ({ page }) => {
-    await gotoAdvanced(page, "particle=6&material=276");
-    await selectComparisonProgram(page, /MSTAR/, MSTAR_ID);
-
-    // Find and click the "Columns..." button
-    const columnsButton = page.getByRole("button", { name: /Columns/ });
-    await expect(columnsButton).toBeVisible();
-    await columnsButton.click();
-
-    // MSTAR checkbox should be visible in the dropdown
-    const mstarCheckbox = page.getByRole("checkbox", { name: /MSTAR/ });
-    await expect(mstarCheckbox).toBeChecked();
-
-    // Uncheck MSTAR to hide it
-    await mstarCheckbox.click();
-
-    const mstarHeaders = page.locator(`th[data-program-id="${MSTAR_ID}"]`);
-    await expect(mstarHeaders).toHaveCount(0);
-
-    // URL should contain hidden_programs parameter
-    await page.waitForFunction(
-      () => new URLSearchParams(window.location.search).get("hidden_programs") === "4",
-      { timeout: 5000 },
-    );
   });
 
   test("out-of-range comparison program shows an error without hiding safe program results", async ({

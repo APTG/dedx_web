@@ -63,7 +63,7 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     return results;
   }
 
-  it("renders two group header spans in advanced mode with 2 programs", () => {
+  it("renders STP group header in advanced mode with 2 programs (default quantityFocus=stp)", () => {
     const comparisonResults = createComparisonResults([2, 4]);
     multiProgState.setComparisonResults(comparisonResults);
 
@@ -76,22 +76,20 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
       },
     });
 
-    // Check for group headers
+    // Default quantityFocus="stp": only Stopping Power group is visible
     expect(screen.getByText(/Stopping Power/)).toBeInTheDocument();
-    expect(screen.getByText(/CSDA Range/)).toBeInTheDocument();
+    expect(screen.queryByText(/CSDA Range/)).not.toBeInTheDocument();
 
-    // Both program columns should be present in sub-headers (twice each - once in STP group, once in CSDA group)
-    // Query only within thead to avoid matching delta tooltip text in tbody
+    // Both program columns should be present in the STP sub-header row
     const thead = document.querySelector("thead");
     const thElements = thead?.querySelectorAll("th") || [];
     const thTexts = Array.from(thElements).map((th) => th.textContent);
-    // Filter to only count th elements in the sub-header row (not group headers)
     const programHeaders = thTexts.filter((t) => t?.includes("PSTAR") || t?.includes("MSTAR"));
-    expect(programHeaders.filter((t) => t?.includes("PSTAR"))).toHaveLength(2);
-    expect(programHeaders.filter((t) => t?.includes("MSTAR"))).toHaveLength(2);
+    expect(programHeaders.filter((t) => t?.includes("PSTAR"))).toHaveLength(1);
+    expect(programHeaders.filter((t) => t?.includes("MSTAR"))).toHaveLength(1);
   });
 
-  it("shows 4 result data cells per row in advanced mode (2 stp + 2 csda) with 2 programs", async () => {
+  it("shows 2 STP result cells per row in advanced mode (default quantityFocus=stp) with 2 programs", async () => {
     const comparisonResults = createComparisonResults([9, 2]);
     multiProgState.setComparisonResults(comparisonResults);
     await calcState.triggerCalculation();
@@ -107,18 +105,12 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
       },
     });
 
-    // With 2 programs and quantityFocus='both', we should have:
-    // - 2 stopping power cells (one per program)
-    // - 2 CSDA range cells (one per program)
-    // Total: 4 result cells in the data row
-
-    // Find all data cells with test ids for result values
+    // Default quantityFocus="stp": only STP cells visible, no CSDA range cells
     const stpCells = document.querySelectorAll("[data-testid^='stp-cell']");
     const rangeCells = document.querySelectorAll("[data-testid^='range-cell']");
 
-    // In advanced mode there should be multiple result cells per row
     expect(stpCells.length).toBeGreaterThanOrEqual(2);
-    expect(rangeCells.length).toBeGreaterThanOrEqual(2);
+    expect(rangeCells.length).toBe(0);
   });
 
   it("hides CSDA group header and cells when quantityFocus='stp'", async () => {
@@ -146,8 +138,8 @@ describe("ResultTable with multiProgramState (advanced mode)", () => {
     expect(csdaHeader).not.toBeInTheDocument();
   });
 
-  it("hides STP group header and cells when quantityFocus='csda'", async () => {
-    multiProgState.setQuantityFocus("csda");
+  it("hides STP group header and cells when quantityFocus='range'", async () => {
+    multiProgState.setQuantityFocus("range");
     const comparisonResults = createComparisonResults([9, 2]);
     multiProgState.setComparisonResults(comparisonResults);
     await calcState.triggerCalculation();

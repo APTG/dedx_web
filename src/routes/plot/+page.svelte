@@ -799,7 +799,7 @@
       return;
     }
     const across = entityState.across;
-    if (isAdvancedMode.value && across !== null) {
+    if (isAdvancedMode.value && across !== null && across !== "single") {
       const ids = entityState.multiSelected[across];
       if (ids.length > 1) {
         await handleAddMultiSeries(across, ids);

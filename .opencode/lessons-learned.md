@@ -154,6 +154,26 @@ the header if the two sides used different markdown-table formatting.
 
 ---
 
+## Entry 64 — Reproduce Playwright failures against the current preview build, not a stale server
+
+**Symptom:** Local Playwright debugging can point at the wrong conclusion when port
+`4173` is still serving an older `pnpm preview` process from a previous build. The
+tests then exercise stale assets and stale JS instead of the current working tree.
+
+```text
+❌ MISLEADING
+start a new preview command and assume the existing server on 4173 is current
+
+✅ RELIABLE
+confirm which process owns 4173, restart preview for the current build, then rerun Playwright
+```
+
+**Rule:** Before trusting local E2E reproductions, verify the preview server is
+serving the freshly built app for the current tree. A stale server can make you
+debug the wrong commit and waste time on phantom regressions.
+
+---
+
 ## Entry 63 — Responsive overflow E2E assertions should poll for settled layout, not sample once
 
 **Symptom:** A mobile responsive Playwright test asserted `scrollWidth > clientWidth`

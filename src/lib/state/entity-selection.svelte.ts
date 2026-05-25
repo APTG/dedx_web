@@ -34,17 +34,13 @@ export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgra
 export type PickerTabId = "particle" | "material" | "program";
 
 /**
- * Compare-across dimension (Advanced mode). Reserved for the multi-select
- * follow-up — `multiSelected[dim]` is intentionally **not consumed** by any
- * calculation/URL surface in this PR. The `<MultiList>` rendering branch in
- * the Program tab was removed for the same reason; the multi-program
- * comparison is still driven by `MultiProgramState` above the Calculator
- * results table.
- *
- * Tracked follow-up: enable Materials/Particles dropdown options and wire
- * `multiSelected.*` end-to-end through `calculator-state` / `plot-state`.
+ * Compare-across dimension (Advanced mode). Controls the multi-entity result
+ * view: `"single"` shows the standard single-entity result; `"material"` and
+ * `"particle"` wire `multiSelected.material` / `multiSelected.particle` into
+ * `TableMulti`; `"program"` drives the existing `MultiProgramState` result
+ * table.
  */
-export type AcrossDimension = "particle" | "material" | "program";
+export type AcrossDimension = "single" | "particle" | "material" | "program";
 
 export interface EntitySelectionState {
   selectedProgram: SelectedProgram;
@@ -103,9 +99,11 @@ export interface EntitySelectionState {
   /** Set the panel expand/collapse state. */
   setExpanded(expanded: boolean): void;
   /**
-   * Change the Compare-across dimension. Sets `multiSelected[newAcross]` to
-   * the current single value (one-item array), sets `activeTarget = newAcross`
-   * and `expanded = true`.
+   * Change the Compare-across dimension.
+   * - When `newAcross === "single"`: collapses all multi-selection arrays to at
+   *   most one element without changing `activeTarget` or `expanded`.
+   * - Otherwise: seeds `multiSelected[newAcross]` from the current single
+   *   selection and sets `activeTarget = newAcross` and `expanded = true`.
    */
   setAcross(newAcross: AcrossDimension): void;
   /** Toggle an id in `multiSelected[across]` (preserving order; first is default). */
@@ -172,7 +170,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   // docs/04-feature-specs/entity-selection.md § Active target + expand/collapse).
   let activeTarget = $state<PickerTabId>("particle");
   let expanded = $state(true);
-  let across = $state<AcrossDimension>("program");
+  let across = $state<AcrossDimension>("single");
   let multiParticle = $state<(number | string)[]>([]);
   let multiMaterial = $state<(number | string)[]>([]);
   let multiProgram = $state<(number | string)[]>([]);
@@ -555,7 +553,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       lastAutoFallbackMessage = null;
       activeTarget = "particle";
       expanded = true;
-      across = "program";
+      across = "single";
       multiParticle = [];
       multiMaterial = [];
       multiProgram = [];
@@ -590,21 +588,31 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     setAcross(newAcross: AcrossDimension): void {
+      if (across === newAcross) return;
       across = newAcross;
-      // Seed multi array from current single value (preserves it as element 0).
-      if (newAcross === "program") {
-        const id = selectedProgramId;
-        multiProgram = id !== -1 ? [id] : [];
-      } else if (newAcross === "particle") {
-        multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
-      } else if (newAcross === "material") {
-        multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
+      if (newAcross === "single") {
+        // Collapse all multi arrays to avoid stale selections bleeding in later.
+        if (multiParticle.length > 1) multiParticle = [multiParticle[0]!];
+        if (multiMaterial.length > 1) multiMaterial = [multiMaterial[0]!];
+        if (multiProgram.length > 1) multiProgram = [multiProgram[0]!];
+        // Don't force-open the picker or change the active tab.
+      } else {
+        // Seed multi array from current single value (preserves it as element 0).
+        if (newAcross === "program") {
+          const id = selectedProgramId;
+          multiProgram = id !== -1 ? [id] : [];
+        } else if (newAcross === "particle") {
+          multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
+        } else if (newAcross === "material") {
+          multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
+        }
+        activeTarget = newAcross;
+        expanded = true;
       }
-      activeTarget = newAcross;
-      expanded = true;
     },
 
     toggleMulti(dim: AcrossDimension, id: number | string): void {
+      if (dim === "single") return;
       const arr =
         dim === "program" ? multiProgram : dim === "particle" ? multiParticle : multiMaterial;
       const idx = arr.indexOf(id);
