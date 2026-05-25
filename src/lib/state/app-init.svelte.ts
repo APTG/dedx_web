@@ -29,7 +29,7 @@ export class AppInitState {
   hasExternalSources = $state(false);
 
   // Ready data
-  service: LibdedxService | null = null;
+  service = $state<LibdedxService | null>(null);
   compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
   loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
   entityState = $state<EntitySelectionState | null>(null);
