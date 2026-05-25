@@ -556,9 +556,8 @@ describe("EntitySelection", () => {
       // is still driven by MultiProgramState above the results table). The
       // state setters remain wired so the follow-up issue can light up the
       // UI without re-deriving the data model.
-      state.setAcross("program");
-      state.selectProgram(7); // resets multi to [7]
-      state.setAcross("program");
+      state.selectProgram(7);
+      state.setAcross("program"); // seeds multi to [7]
 
       state.toggleMulti("program", 9);
       expect(state.multiSelected.program).toEqual([7, 9]);
