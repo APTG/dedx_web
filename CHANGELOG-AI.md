@@ -17,7 +17,7 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-- 2026-05-25 — **CI / infra**: **Issue #595 — Migrate project to pnpm v11** (Claude Sonnet 4.6 via Claude Code): Updated `packageManager` in `package.json` from `pnpm@10.33.0` to `pnpm@11.3.0`. Migrated `pnpm-workspace.yaml` from the deprecated `onlyBuiltDependencies` list syntax to the new `allowBuilds` map syntax introduced in pnpm v11. All type checks and unit tests pass.
+- 2026-05-25 — **CI / infra**: **Issue #595 — Migrate project to pnpm v11** (Claude Sonnet 4.6 via Claude Code): Updated `packageManager` in `package.json` from `pnpm@10.33.0` to `pnpm@11.3.0`. Migrated `pnpm-workspace.yaml` from the deprecated `onlyBuiltDependencies` list syntax to the new `allowBuilds` map syntax introduced in pnpm v11. Type checks and unit tests passed, but the linked session log still recorded 3 `guard-forbidden-files` failures, so this session was not fully green.
   - **Log:** [log](docs/ai-logs/2026-05-25-issue-595-pnpm-v11.md)
 - 2026-05-25 — **CI / docs**: **PR #596 follow-up — migrate AI changelog to bullet-list format** (GPT-5.5 via GitHub Copilot coding agent): investigated failing static-analysis formatting logs, replaced the markdown-table `CHANGELOG-AI.md` layout with a formatter-stable bullet-list structure, and updated AI instruction docs (`.github/copilot-instructions.md`, `CLAUDE.md`, `AGENTS.md`, `docs/opencode-setup.md`, `docs/00-redesign-plan.md`, `.opencode/lessons-learned.md`) to require prepending bullet entries instead of table rows.
   - **Log:** [log](docs/ai-logs/2026-05-25-changelog-bullet-format.md)
