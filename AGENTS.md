@@ -136,7 +136,7 @@ Branch naming: `qwen/<stage-or-feature>` (see [`docs/00-redesign-plan.md §4.2`]
 - **Run `pnpm guard:staged` before each commit.** It blocks forbidden generated
   artifacts (`static/wasm/**`, `static/deploy.json`, `build/**`, `coverage/**`,
   `.svelte-kit/**`, `.vite/**`, Playwright outputs) and vendor gitlink changes.
-- **Log every session** — append a row to `CHANGELOG-AI.md` and create a file in
+- **Log every session** — prepend a bullet entry to `CHANGELOG-AI.md` and create a file in
   `docs/ai-logs/YYYY-MM-DD-<slug>.md`. Include the tool + model attribution in
   every entry — see `.github/copilot-instructions.md § AI Session Logging` for the
   exact format per tool (opencode, Copilot, Claude Code).
@@ -178,7 +178,7 @@ That prompt tells you the spec path, branch name, and acceptance criteria.
    b. Call 'reviewer'    subagent → validates, outputs REVIEW PASS or REVIEW FAIL: <issues>
    c. If REVIEW FAIL → call implementer again with the issue list (max 2 retries)
    d. Mark task done or blocked, move to next
-3. When all tasks complete → write CHANGELOG-AI.md row + session log
+3. When all tasks complete → write CHANGELOG-AI.md bullet entry + session log
 ```
 
 **Mandatory gate:** do not start implementation edits before `.opencode/tasks/<branch>.md`

@@ -228,24 +228,23 @@ covering `negotiateVersion("<new-major>")`.
 
 ---
 
-## Entry 62 — Changelog merge fixes must preserve both upstream rows and local session rows
+## Entry 62 — Changelog merge fixes must preserve both upstream and local entries
 
-**Symptom:** A PR branch prepended a new `CHANGELOG-AI.md` row while `master` added
-newer rows above the old top of the table. The merge conflict appeared at the table
-header even though the real requirement was to keep both sets of rows.
+**Symptom:** A PR branch prepended a new `CHANGELOG-AI.md` entry while `master` added
+newer entries at the top. The merge conflict appeared near the first list items even
+though the real requirement was to keep both sets of entries.
 
 ```text
 ❌ WRONG
 Resolve the conflict by keeping only the branch side or only the base side.
 
 ✅ CORRECT
-Keep the canonical markdown table header/separator, preserve newer upstream rows,
-and reinsert the branch's local session row in date order above older entries.
+Preserve newer upstream entries and reinsert the branch's local session entry
+in date order above older entries.
 ```
 
-**Rule:** When `CHANGELOG-AI.md` conflicts near the top of the table, resolve it as a
-merged changelog, not a one-side overwrite. Preserve all valid entries and normalize
-the header if the two sides used different markdown-table formatting.
+**Rule:** When `CHANGELOG-AI.md` conflicts near the top of the entries list, resolve
+it as a merged changelog, not a one-side overwrite. Preserve all valid entries.
 
 ---
 
