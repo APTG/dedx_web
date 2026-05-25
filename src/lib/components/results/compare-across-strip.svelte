@@ -71,7 +71,7 @@
       class:hover:bg-accent={value !== opt.value}
       onclick={() => onChange(opt.value)}
       onkeydown={handleKeyDown}
-      data-testid={"across-" + opt.value}
+      data-testid={`across-${opt.value}`}
     >
       <span class="hidden min-[380px]:inline">{opt.label}</span>
       <span class="inline min-[380px]:hidden">{opt.short}</span>

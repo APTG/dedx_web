@@ -58,7 +58,7 @@
             class:bg-yellow-50={isDefault}
             class:dark:bg-yellow-950={isDefault}
             class:font-bold={isDefault}
-            data-testid={"table-multi-col-" + entityId}
+            data-testid={`table-multi-col-${entityId}`}
           >
             {entityName(entityId)}
             {#if isDefault}
@@ -69,7 +69,7 @@
       </tr>
     </thead>
     <tbody>
-      {#each calcState.rows as row, i (row.id)}
+      {#each calcState.rows as row (row.id)}
         <tr class="border-b last:border-0 hover:bg-muted/30 transition-colors">
           <td
             class="sticky left-0 bg-background px-2 py-2 text-left whitespace-nowrap font-mono border-r shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]"
@@ -87,7 +87,7 @@
               class="px-2 py-2 text-right whitespace-nowrap font-mono border-l"
               class:bg-yellow-50={isDefault}
               class:dark:bg-yellow-950={isDefault}
-              data-testid={`${quantityFocus}-entity-cell-${entityId}-${i}`}
+              data-testid={`${quantityFocus}-entity-cell-${entityId}-${row.id}`}
             >
               {#if result instanceof LibdedxError}
                 <span title={result.message}>— ⚠️</span>
