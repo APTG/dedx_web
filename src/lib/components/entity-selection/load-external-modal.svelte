@@ -110,7 +110,10 @@
   }
 
   function sanitizeLabel(raw: string): string {
-    const clean = raw.replace(/[^A-Za-z0-9_-]/g, "-").replace(/-+/g, "-").replace(/^-|-$/g, "");
+    const clean = raw
+      .replace(/[^A-Za-z0-9_-]/g, "-")
+      .replace(/-+/g, "-")
+      .replace(/^-|-$/g, "");
     return clean.slice(0, 32) || "ext";
   }
 
@@ -314,8 +317,7 @@
         Load external data source
       </Dialog.Title>
       <Dialog.Description class="mt-1 text-sm text-muted-foreground">
-        Load a <code class="font-mono text-xs">.webdedx</code> Zarr v3 store from a URL or a local
-        directory.
+        Load a <code class="font-mono text-xs">.webdedx</code> Zarr v3 store from a URL or a local directory.
       </Dialog.Description>
 
       <!-- Tabs -->

@@ -143,7 +143,10 @@ test.describe("Quantity toggle (requires WASM)", () => {
     const toggle = page.getByTestId("quantity-toggle");
     await expect(toggle).toBeVisible();
     await expect(page.getByTestId("quantity-toggle-stp")).toHaveAttribute("aria-checked", "true");
-    await expect(page.getByTestId("quantity-toggle-range")).toHaveAttribute("aria-checked", "false");
+    await expect(page.getByTestId("quantity-toggle-range")).toHaveAttribute(
+      "aria-checked",
+      "false",
+    );
   });
 
   test("qshow=range URL param activates CSDA Range toggle button", async ({ page }) => {

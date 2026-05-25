@@ -129,10 +129,7 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
 
     // Add SRIM to comparison
     await openProgramPicker(page);
-    await page
-      .getByTestId("picker-program-list")
-      .getByRole("option", { name: /srim/i })
-      .click();
+    await page.getByTestId("picker-program-list").getByRole("option", { name: /srim/i }).click();
     await page.keyboard.press("Escape");
 
     // Wait for URL to update with programs param containing ext:srim:

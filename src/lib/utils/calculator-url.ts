@@ -97,14 +97,14 @@ const VALID_STP_MASTER_UNITS = new Set(["kev-um", "mev-cm", "mev-cm2-g"]);
 
 /** URL slug → EnergyUnit for the `uanchor` param. */
 const UANCHOR_TO_UNIT: Readonly<Record<string, EnergyUnit>> = {
-  "mev": "MeV",
+  mev: "MeV",
   "mev-nucl": "MeV/nucl",
   "mev-u": "MeV/u",
 };
 
 /** EnergyUnit → URL slug for the `uanchor` param. */
 const UNIT_TO_UANCHOR: Readonly<Record<EnergyUnit, string>> = {
-  "MeV": "mev",
+  MeV: "mev",
   "MeV/nucl": "mev-nucl",
   "MeV/u": "mev-u",
 };
@@ -551,8 +551,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     else if (qfocusRaw === "csda") resolvedQshow = "range";
     // qfocus=both → omit (default)
   }
-  const quantityFocus =
-    isAdvancedMode && resolvedQshow !== null ? resolvedQshow : undefined;
+  const quantityFocus = isAdvancedMode && resolvedQshow !== null ? resolvedQshow : undefined;
 
   // Parse custom compound material params (only in advanced mode)
   let materialIsCustom: boolean | undefined;

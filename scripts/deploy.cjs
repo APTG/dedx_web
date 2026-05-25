@@ -29,7 +29,9 @@ function main() {
   }
 
   const commitFull = gitCommitFull || process.env.GITHUB_SHA || "unknown";
-  const fallbackShortCommit = /^[0-9a-f]{40}$/i.test(commitFull) ? commitFull.slice(0, 7) : "unknown";
+  const fallbackShortCommit = /^[0-9a-f]{40}$/i.test(commitFull)
+    ? commitFull.slice(0, 7)
+    : "unknown";
   const commit = gitCommit || fallbackShortCommit;
   const rawRef = gitRef || process.env.GITHUB_REF_NAME || process.env.GITHUB_REF || "unknown";
   const branch = stripHeadsPrefix(rawRef);

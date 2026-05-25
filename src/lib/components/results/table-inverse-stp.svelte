@@ -80,8 +80,7 @@
   }
 
   function inputClass(status: string): string {
-    const isError =
-      status === "invalid" || status === "out-of-range" || status === "error";
+    const isError = status === "invalid" || status === "out-of-range" || status === "error";
     return `w-28 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
       isError ? "border-destructive bg-destructive/5" : "border-input"
     }`;
@@ -99,10 +98,7 @@
   />
 
   <div class="overflow-x-auto">
-    <table
-      class="w-full min-w-[400px] text-sm border-collapse"
-      data-testid="inverse-stp-table"
-    >
+    <table class="w-full min-w-[400px] text-sm border-collapse" data-testid="inverse-stp-table">
       <thead class="sticky top-0 bg-background">
         <tr>
           <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b w-8"
@@ -127,11 +123,7 @@
               → Energy (low-E)
             </th>
           {/if}
-          <th
-            scope="col"
-            class="px-1 py-2 font-medium border-b w-6"
-            aria-label="Actions"
-          ></th>
+          <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Actions"></th>
         </tr>
       </thead>
       <tbody>
@@ -151,8 +143,7 @@
                 value={row.text}
                 placeholder="e.g. 30"
                 class={inputClass(row.status)}
-                oninput={(e) =>
-                  props.inverseLookupState.updateStpRowText(i, e.currentTarget.value)}
+                oninput={(e) => props.inverseLookupState.updateStpRowText(i, e.currentTarget.value)}
                 data-testid="inverse-stp-input-{i}"
               />
               {#if (row.status === "invalid" || row.status === "no-solution" || row.status === "error") && row.message}

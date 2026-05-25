@@ -478,7 +478,8 @@
       ...customUrlFields,
     });
     const query = params.toString();
-    const newUrl = query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
+    const newUrl =
+      query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
     const currentUrl = `${window.location.pathname}${window.location.search}`;
     if (newUrl === currentUrl) return;
     untrack(() => replaceState(newUrl, page.state));
@@ -870,7 +871,14 @@
           }
         }
 
-        const result = service.getPlotData(programId, particleId, materialId, 500, true, advancedOptions.value);
+        const result = service.getPlotData(
+          programId,
+          particleId,
+          materialId,
+          500,
+          true,
+          advancedOptions.value,
+        );
         const added = plotState.addSeries({
           programId,
           particleId,

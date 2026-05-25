@@ -1,69 +1,69 @@
 - table:
-  - rowgroup:
-    - 'row "Drag handle # Energy (MeV) STP (keV/µm) CSDA Range Delete row"':
-      - columnheader "Drag handle"
-      - columnheader "#"
-      - columnheader "Energy (MeV)"
-      - columnheader "STP (keV/µm)"
-      - columnheader "CSDA Range"
-      - columnheader "Delete row"
-  - rowgroup:
-    - row /1 \d+ \d+\.\d+ \d+\.\d+ mm Delete row 1/:
-      - cell "1"
-      - cell /\d+/:
-        - textbox "Energy value row 1":
-          - /placeholder: e.g. 100 keV
-          - text: /\d+/
-      - cell /\d+\.\d+/
-      - cell /\d+\.\d+ mm/
-      - cell "Delete row 1":
-        - button "Delete row 1": ×
-    - row /2 \d+ \d+\.\d+ \d+\.\d+ cm Delete row 2/:
-      - cell "2"
-      - cell /\d+/:
-        - textbox "Energy value row 2":
-          - /placeholder: e.g. 100 keV
-          - text: /\d+/
-      - cell /\d+\.\d+/
-      - cell /\d+\.\d+ cm/
-      - cell "Delete row 2":
-        - button "Delete row 2": ×
-    - row /3 \d+ \d+\.\d+ \d+\.\d+ cm Delete row 3/:
-      - cell "3"
-      - cell /\d+/:
-        - textbox "Energy value row 3":
-          - /placeholder: e.g. 100 keV
-          - text: /\d+/
-      - cell /\d+\.\d+/
-      - cell /\d+\.\d+ cm/
-      - cell "Delete row 3":
-        - button "Delete row 3": ×
-    - row /4 \d+ \d+\.\d+ \d+\.\d+ m Delete row 4/:
-      - cell "4"
-      - cell /\d+/:
-        - textbox "Energy value row 4":
-          - /placeholder: e.g. 100 keV
-          - text: /\d+/
-      - cell /\d+\.\d+/
-      - cell /\d+\.\d+ m/
-      - cell "Delete row 4":
-        - button "Delete row 4": ×
-    - row /5 \d+ \d+\.\d+ \d+\.\d+ m Delete row 5/:
-      - cell "5"
-      - cell /\d+/:
-        - textbox "Energy value row 5":
-          - /placeholder: e.g. 100 keV
-          - text: /\d+/
-      - cell /\d+\.\d+/
-      - cell /\d+\.\d+ m/
-      - cell "Delete row 5":
-        - button "Delete row 5": ×
-    - row "6 — — Delete row 6":
-      - cell "6"
-      - cell:
-        - textbox "Energy value row 6":
-          - /placeholder: e.g. 100 keV
-      - cell "—"
-      - cell "—"
-      - cell "Delete row 6":
-        - button "Delete row 6": ×
+    - rowgroup:
+        - 'row "Drag handle # Energy (MeV) STP (keV/µm) CSDA Range Delete row"':
+            - columnheader "Drag handle"
+            - columnheader "#"
+            - columnheader "Energy (MeV)"
+            - columnheader "STP (keV/µm)"
+            - columnheader "CSDA Range"
+            - columnheader "Delete row"
+    - rowgroup:
+        - row /1 \d+ \d+\.\d+ \d+\.\d+ mm Delete row 1/:
+            - cell "1"
+            - cell /\d+/:
+                - textbox "Energy value row 1":
+                    - /placeholder: e.g. 100 keV
+                    - text: /\d+/
+            - cell /\d+\.\d+/
+            - cell /\d+\.\d+ mm/
+            - cell "Delete row 1":
+                - button "Delete row 1": ×
+        - row /2 \d+ \d+\.\d+ \d+\.\d+ cm Delete row 2/:
+            - cell "2"
+            - cell /\d+/:
+                - textbox "Energy value row 2":
+                    - /placeholder: e.g. 100 keV
+                    - text: /\d+/
+            - cell /\d+\.\d+/
+            - cell /\d+\.\d+ cm/
+            - cell "Delete row 2":
+                - button "Delete row 2": ×
+        - row /3 \d+ \d+\.\d+ \d+\.\d+ cm Delete row 3/:
+            - cell "3"
+            - cell /\d+/:
+                - textbox "Energy value row 3":
+                    - /placeholder: e.g. 100 keV
+                    - text: /\d+/
+            - cell /\d+\.\d+/
+            - cell /\d+\.\d+ cm/
+            - cell "Delete row 3":
+                - button "Delete row 3": ×
+        - row /4 \d+ \d+\.\d+ \d+\.\d+ m Delete row 4/:
+            - cell "4"
+            - cell /\d+/:
+                - textbox "Energy value row 4":
+                    - /placeholder: e.g. 100 keV
+                    - text: /\d+/
+            - cell /\d+\.\d+/
+            - cell /\d+\.\d+ m/
+            - cell "Delete row 4":
+                - button "Delete row 4": ×
+        - row /5 \d+ \d+\.\d+ \d+\.\d+ m Delete row 5/:
+            - cell "5"
+            - cell /\d+/:
+                - textbox "Energy value row 5":
+                    - /placeholder: e.g. 100 keV
+                    - text: /\d+/
+            - cell /\d+\.\d+/
+            - cell /\d+\.\d+ m/
+            - cell "Delete row 5":
+                - button "Delete row 5": ×
+        - row "6 — — Delete row 6":
+            - cell "6"
+            - cell:
+                - textbox "Energy value row 6":
+                    - /placeholder: e.g. 100 keV
+            - cell "—"
+            - cell "—"
+            - cell "Delete row 6":
+                - button "Delete row 6": ×

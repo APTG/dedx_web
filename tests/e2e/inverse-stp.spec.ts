@@ -89,9 +89,7 @@ test.describe("Inverse-STP table — column reveal behaviour", () => {
     await page.waitForSelector('[data-testid="inverse-stp-input-1"]', { timeout: 3000 });
 
     // The second row is empty so it shows — in both columns
-    await expect(
-      page.locator('[data-testid="inverse-stp-result-low-1"]'),
-    ).toContainText("—");
+    await expect(page.locator('[data-testid="inverse-stp-result-low-1"]')).toContainText("—");
   });
 
   test("auto-collapse: all rows single-solution → low-E column disappears @regression", async ({
@@ -114,10 +112,9 @@ test.describe("Inverse-STP table — column reveal behaviour", () => {
 
     // Low-E column must disappear once no rows have 2 solutions
     await expect
-      .poll(
-        async () => (await page.locator('[data-testid="col-lo-e"]').count()) === 0,
-        { timeout: 10000 },
-      )
+      .poll(async () => (await page.locator('[data-testid="col-lo-e"]').count()) === 0, {
+        timeout: 10000,
+      })
       .toBe(true);
   });
 
@@ -150,10 +147,9 @@ test.describe("Inverse-STP table — column reveal behaviour", () => {
     await expect(page.locator('[data-testid="col-lo-e"]')).toBeVisible({ timeout: 15000 });
 
     // URL must update to include istpbranch=both
-    await page.waitForFunction(
-      () => window.location.search.includes("istpbranch=both"),
-      { timeout: 5000 },
-    );
+    await page.waitForFunction(() => window.location.search.includes("istpbranch=both"), {
+      timeout: 5000,
+    });
     expect(page.url()).toContain("istpbranch=both");
   });
 

@@ -12,13 +12,7 @@ import { isExternalEntityLocalId } from "./ids.js";
 
 const SUPPORTED_FORMAT_VERSION = 1;
 
-const VALID_ENERGY_UNITS = new Set<ExternalEnergyUnit>([
-  "MeV",
-  "MeV/nucl",
-  "MeV/u",
-  "keV",
-  "GeV",
-]);
+const VALID_ENERGY_UNITS = new Set<ExternalEnergyUnit>(["MeV", "MeV/nucl", "MeV/u", "keV", "GeV"]);
 const VALID_STP_UNITS = new Set<ExternalStpUnit>(["MeV·cm²/g", "MeV/cm", "keV/µm"]);
 const VALID_CSDA_UNITS = new Set<ExternalCsdaUnit>(["g/cm²", "cm"]);
 
@@ -102,10 +96,7 @@ export function validateRootAttrs(
   const csdaUnitRaw = units["csdaRange"];
   let csdaUnit: ExternalCsdaUnit | undefined;
   if (csdaUnitRaw !== undefined) {
-    if (
-      typeof csdaUnitRaw !== "string" ||
-      !VALID_CSDA_UNITS.has(csdaUnitRaw as ExternalCsdaUnit)
-    ) {
+    if (typeof csdaUnitRaw !== "string" || !VALID_CSDA_UNITS.has(csdaUnitRaw as ExternalCsdaUnit)) {
       fail(
         `webdedx.units.csdaRange "${csdaUnitRaw}" is not supported. Valid: ${[...VALID_CSDA_UNITS].join(", ")}`,
       );
@@ -129,9 +120,7 @@ export function validateRootAttrs(
     }
     const ePrev = rawGrid[i - 1];
     if (i > 0 && (e as number) <= (ePrev as number)) {
-      fail(
-        `webdedx.energyGrid is not strictly increasing at index ${i} (${ePrev} >= ${e})`,
-      );
+      fail(`webdedx.energyGrid is not strictly increasing at index ${i} (${ePrev} >= ${e})`);
     }
   }
 
@@ -326,14 +315,11 @@ export function validateRootAttrs(
     });
   }
 
-  const metaVersion =
-    typeof meta["version"] === "string" ? (meta["version"] as string) : undefined;
-  const metaAuthor =
-    typeof meta["author"] === "string" ? (meta["author"] as string) : undefined;
+  const metaVersion = typeof meta["version"] === "string" ? (meta["version"] as string) : undefined;
+  const metaAuthor = typeof meta["author"] === "string" ? (meta["author"] as string) : undefined;
   const metaDescription =
     typeof meta["description"] === "string" ? (meta["description"] as string) : undefined;
-  const metaLicense =
-    typeof meta["license"] === "string" ? (meta["license"] as string) : undefined;
+  const metaLicense = typeof meta["license"] === "string" ? (meta["license"] as string) : undefined;
 
   return {
     label,

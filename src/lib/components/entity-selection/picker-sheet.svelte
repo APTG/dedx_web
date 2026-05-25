@@ -300,8 +300,8 @@
       type="button"
       class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
       aria-label="Close search"
-      onclick={onClose}
-    >←</button>
+      onclick={onClose}>←</button
+    >
     <input
       type="search"
       bind:this={inputEl}
@@ -321,8 +321,8 @@
       onclick={() => {
         query = "";
         inputEl?.focus();
-      }}
-    >×</button>
+      }}>×</button
+    >
   </div>
 
   <!-- Results -->
@@ -347,7 +347,8 @@
               class={cn(
                 "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-                isSingleSelected && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
+                isSingleSelected &&
+                  "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
                 !isSingleSelected && named && "font-semibold",
               )}
               onclick={() => {
@@ -358,8 +359,10 @@
             >
               <span
                 aria-hidden="true"
-                class="w-4 shrink-0 text-center text-xs {isSingleSelected ? 'font-bold text-orange-700' : ''}"
-              >{isSingleSelected ? "✓" : ""}</span>
+                class="w-4 shrink-0 text-center text-xs {isSingleSelected
+                  ? 'font-bold text-orange-700'
+                  : ''}">{isSingleSelected ? "✓" : ""}</span
+              >
               {#if external}<span aria-hidden="true">🔗</span>{/if}
               {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
               <span class="flex-1">{getParticleListLabel(p, z)}</span>
@@ -419,8 +422,10 @@
             >
               <span
                 aria-hidden="true"
-                class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
-              >{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span>
+                class="w-4 shrink-0 text-center text-xs {isChecked
+                  ? 'font-bold text-orange-700'
+                  : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span
+              >
               <span class="flex-1 flex items-center justify-between gap-3">
                 <span>
                   {program.name}
@@ -460,8 +465,10 @@
             >
               <span
                 aria-hidden="true"
-                class="w-4 shrink-0 text-center text-xs {isChecked ? 'font-bold text-orange-700' : 'text-muted-foreground'}"
-              >{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span>
+                class="w-4 shrink-0 text-center text-xs {isChecked
+                  ? 'font-bold text-orange-700'
+                  : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiProgram ? "○" : ""}</span
+              >
               <span class="flex-1 flex items-center gap-2">
                 <span>🔗 {program.name}</span>
                 <ProgramTag kind="EXT" />

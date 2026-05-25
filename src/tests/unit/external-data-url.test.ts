@@ -326,12 +326,12 @@ describe("externalDataQuerySegments", () => {
   });
 
   it("keeps uppercase HTTP(S) schemes", () => {
-    expect(externalDataQuerySegments([{ label: "u", url: "HTTPS://example.com/a.webdedx" }])).toEqual([
-      "extdata=u:HTTPS%3A%2F%2Fexample.com%2Fa.webdedx",
-    ]);
-    expect(externalDataQuerySegments([{ label: "u", url: "HTTP://localhost:5173/a.webdedx" }])).toEqual([
-      "extdata=u:HTTP%3A%2F%2Flocalhost%3A5173%2Fa.webdedx",
-    ]);
+    expect(
+      externalDataQuerySegments([{ label: "u", url: "HTTPS://example.com/a.webdedx" }]),
+    ).toEqual(["extdata=u:HTTPS%3A%2F%2Fexample.com%2Fa.webdedx"]);
+    expect(
+      externalDataQuerySegments([{ label: "u", url: "HTTP://localhost:5173/a.webdedx" }]),
+    ).toEqual(["extdata=u:HTTP%3A%2F%2Flocalhost%3A5173%2Fa.webdedx"]);
   });
 
   it("excludes non-http sources (empty, blob, file)", () => {

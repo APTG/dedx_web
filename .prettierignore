@@ -3,3 +3,20 @@ node_modules
 build
 static/wasm
 wasm/output
+
+# Git submodules — formatted by their own projects
+libdedx/
+vendor/bits-ui/
+vendor/jsroot/
+vendor/shadcn-svelte/
+vendor/svelte/
+vendor/svelte-ai-tools/
+vendor/zarrita/
+
+# Lock files are managed by pnpm, not prettier
+**/pnpm-lock.yaml
+
+# AI session logs contain raw tool output with pseudo-code fragments
+# that trip the TypeScript parser (e.g. bare `...` as truncation markers)
+docs/ai-logs/
+!docs/ai-logs/README.md

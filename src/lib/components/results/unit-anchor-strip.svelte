@@ -88,7 +88,7 @@
           aria-checked={option.value === selected}
           aria-disabled={disabled ? "true" : "false"}
           tabindex={disabled ? -1 : focusedIndex === index ? 0 : -1}
-          disabled={disabled}
+          {disabled}
           class={cn(
             "inline-flex items-center justify-center rounded px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background",
             option.value === selected
@@ -99,7 +99,9 @@
           onclick={() => handleSelect(option.value)}
           onkeydown={handleKeyDown}
         >
-          {option.label}{#if option.sub}<span class="ml-1 text-xs text-muted-foreground">{option.sub}</span>{/if}
+          {option.label}{#if option.sub}<span class="ml-1 text-xs text-muted-foreground"
+              >{option.sub}</span
+            >{/if}
         </TooltipTrigger>
         {#if option.tooltip}
           <TooltipContent>

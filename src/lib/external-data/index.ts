@@ -21,11 +21,7 @@ export {
   formatEntityIdList,
 } from "./ids.js";
 
-export {
-  parseExtdataParams,
-  appendExtdataParams,
-  externalDataQuerySegments,
-} from "./url.js";
+export { parseExtdataParams, appendExtdataParams, externalDataQuerySegments } from "./url.js";
 
 export type {
   ExternalEnergyUnit,
@@ -56,8 +52,5 @@ export type { InterpolationScale } from "./interpolation.js";
 
 export { loadStoreMetadata, loadStpSlice, loadCsdaSlice } from "./loader.js";
 
-export {
-  ExternalDataService,
-  externalDataService,
-} from "./service.js";
+export { ExternalDataService, externalDataService } from "./service.js";
 export type { StpTableEntry, CsdaTableEntry, ExternalLookupResult } from "./service.js";

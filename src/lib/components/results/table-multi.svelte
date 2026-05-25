@@ -74,7 +74,8 @@
           <td
             class="sticky left-0 bg-background px-2 py-2 text-left whitespace-nowrap font-mono border-r shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]"
           >
-            {row.rawInput}{#if !row.unitFromSuffix} {row.unit}{/if}
+            {row.rawInput}{#if !row.unitFromSuffix}
+              {row.unit}{/if}
           </td>
           {#each entityIds as entityId (entityId)}
             {@const isDefault = entityId === entityIds[0]}
