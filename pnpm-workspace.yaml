@@ -8,5 +8,4 @@ onlyBuiltDependencies:
 
 overrides:
   # Mitigates GHSA-pxg6-pf52-xh8x. Upstream: https://github.com/sveltejs/kit/issues/13089
-  cookie: ">=0.7.0"
-
+  cookie: "^0.7.0"

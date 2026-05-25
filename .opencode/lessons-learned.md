@@ -9,6 +9,101 @@
 
 ---
 
+## Entry 68 — prebuild replaces explicit deploy.json workflow steps, not pnpm build
+
+**Symptom:** After adding `prebuild: node scripts/deploy.cjs`, CI/workflow docs
+still suggested a separate `Write deploy.json` step before `pnpm build`, which
+made it unclear whether E2E could skip the build entirely.
+
+```yaml
+❌ redundant workflow
+- run: node scripts/deploy.cjs
+- run: pnpm build
+- run: pnpm test:e2e
+
+✅ single source of truth
+- run: pnpm build      # triggers prebuild -> deploy.json
+- run: pnpm test:e2e   # uses pnpm preview against build/
+```
+
+**Rule:** If deploy metadata generation is wired into `prebuild`, remove
+duplicate workflow steps and document that `pnpm test:e2e` still requires a
+fresh `pnpm build` because Playwright launches `pnpm preview`, not a build.
+
+---
+
+## Entry 67 — Footer build metadata must wrap on mobile
+
+**Symptom:** Mobile responsive Playwright checks reported persistent horizontal
+overflow on calculator and plot even after layout assertions were stabilized.
+The actual overflow came from footer build metadata (`BuildInfoBadge`) forcing a
+single unbroken line on narrow viewports.
+
+```svelte
+❌ mobile overflow
+<div class="flex items-center justify-between">
+  <BuildInfoBadge class="whitespace-nowrap" />
+  <p>Built with Svelte 5 + WASM</p>
+</div>
+
+✅ mobile-safe footer
+<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0">
+    <BuildInfoBadge class="break-all sm:break-normal sm:whitespace-nowrap" />
+  </div>
+</div>
+```
+
+**Rule:** Any footer/header metadata that includes branch names, commit hashes, or
+URLs must be allowed to wrap on mobile; avoid unconditional `whitespace-nowrap`
+inside shared layout chrome.
+
+---
+
+## Entry 66 — Local E2E builds should generate deploy.json via the normal build lifecycle
+
+**Symptom:** CI wrote `static/deploy.json` before `pnpm build`, but local
+developers running `pnpm build && pnpm test:e2e` still saw noisy
+`[404] GET /deploy.json` lines because the local build script never generated the
+footer metadata file.
+
+```text
+❌ CI-only setup
+workflow: node scripts/deploy.cjs
+local:    pnpm build
+
+✅ shared build lifecycle
+"prebuild": "node scripts/deploy.cjs"
+"build": "vite build"
+```
+
+**Rule:** If a generated static asset is required by local preview/E2E runs, hook
+it into the normal package script lifecycle (`prebuild`, `pretest`, etc.) instead
+of relying only on CI workflow steps.
+
+---
+
+## Entry 65 — Responsive overflow E2E checks need a small pixel tolerance in CI
+
+**Symptom:** Mobile Chromium responsive checks can still report horizontal overflow
+in CI even after layout has settled, while local probes show `scrollWidth` and
+`clientWidth` are effectively equal on the same page. The remaining difference is
+an environment-dependent rounding edge, not a visible layout regression.
+
+```text
+❌ TOO STRICT
+expect.poll(() => root.scrollWidth > root.clientWidth).toBe(false)
+
+✅ ROBUST
+expect.poll(() => Math.ceil(root.scrollWidth - root.clientWidth)).toBeLessThanOrEqual(1)
+```
+
+**Rule:** For full-page responsive overflow assertions in Playwright, poll the
+numeric overflow amount and allow a 1 px tolerance. This keeps the test sensitive
+to real clipping while avoiding CI-only rounding flakes.
+
+---
+
 ## Entry 61 — Auto-reveal URL state must not permanently lock inverse-STP low-E column
 
 **Symptom:** The inverse-STP table derived `showLowEColumn` from
@@ -130,6 +225,70 @@ MIN_SUPPORTED_URL_MAJOR = 1  # keep backward compatibility if needed
 **Rule:** Any URL schema-major bump must update both the encoder constant and
 the version-negotiation major in the same PR, plus at least one regression test
 covering `negotiateVersion("<new-major>")`.
+
+---
+
+## Entry 62 — Changelog merge fixes must preserve both upstream rows and local session rows
+
+**Symptom:** A PR branch prepended a new `CHANGELOG-AI.md` row while `master` added
+newer rows above the old top of the table. The merge conflict appeared at the table
+header even though the real requirement was to keep both sets of rows.
+
+```text
+❌ WRONG
+Resolve the conflict by keeping only the branch side or only the base side.
+
+✅ CORRECT
+Keep the canonical markdown table header/separator, preserve newer upstream rows,
+and reinsert the branch's local session row in date order above older entries.
+```
+
+**Rule:** When `CHANGELOG-AI.md` conflicts near the top of the table, resolve it as a
+merged changelog, not a one-side overwrite. Preserve all valid entries and normalize
+the header if the two sides used different markdown-table formatting.
+
+---
+
+## Entry 64 — Reproduce Playwright failures against the current preview build, not a stale server
+
+**Symptom:** Local Playwright debugging can point at the wrong conclusion when port
+`4173` is still serving an older `pnpm preview` process from a previous build. The
+tests then exercise stale assets and stale JS instead of the current working tree.
+
+```text
+❌ MISLEADING
+start a new preview command and assume the existing server on 4173 is current
+
+✅ RELIABLE
+confirm which process owns 4173, restart preview for the current build, then rerun Playwright
+```
+
+**Rule:** Before trusting local E2E reproductions, verify the preview server is
+serving the freshly built app for the current tree. A stale server can make you
+debug the wrong commit and waste time on phantom regressions.
+
+---
+
+## Entry 63 — Responsive overflow E2E assertions should poll for settled layout, not sample once
+
+**Symptom:** A mobile responsive Playwright test asserted `scrollWidth > clientWidth`
+immediately after the calculator result table first appeared. CI sometimes still had
+transient horizontal overflow at that instant, even though the page settled correctly
+moments later and `master` was green on the same UI code.
+
+```text
+❌ FLAKY
+waitForSelector('[data-testid="result-table"]')
+expect(scrollWidth > clientWidth).toBe(false)
+
+✅ STABLE
+waitForSelector('[data-testid="result-table"]')
+expect.poll(() => scrollWidth > clientWidth, { timeout: 10000 }).toBe(false)
+```
+
+**Rule:** For responsive-layout E2E assertions that depend on async rendering or
+post-load layout settling, use `expect.poll(...)` on the overflow condition instead
+of a one-shot width sample immediately after the first visible sentinel appears.
 
 ---
 

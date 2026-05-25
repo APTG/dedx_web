@@ -9,6 +9,7 @@
   },
   "scripts": {
     "dev": "vite dev",
+    "prebuild": "node scripts/deploy.cjs",
     "build": "vite build",
     "preview": "vite preview",
     "check": "svelte-kit sync && svelte-check --workspace src --tsconfig tsconfig.svelte-check.json && tsc --noEmit -p tsconfig.json",
@@ -35,7 +36,7 @@
     "@lucide/svelte": "^1.16.0",
     "@playwright/test": "^1.60.0",
     "@sveltejs/adapter-static": "^3.0.9",
-    "@sveltejs/kit": "^2.60.1",
+    "@sveltejs/kit": "^2.61.1",
     "@sveltejs/vite-plugin-svelte": "^7.1.2",
     "@tailwindcss/vite": "^4.3.0",
     "@testing-library/jest-dom": "^6.9.1",

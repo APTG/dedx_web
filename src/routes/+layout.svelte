@@ -242,12 +242,12 @@
 
   <footer class="border-t bg-card mt-auto">
     <div class="container mx-auto px-4 py-4">
-      <div class="flex items-center justify-between text-xs text-muted-foreground">
-        <div class="flex flex-col gap-0.5">
+      <div class="flex flex-col gap-2 text-xs text-muted-foreground sm:flex-row sm:items-center sm:justify-between">
+        <div class="flex min-w-0 flex-col gap-0.5">
           <p>webdedx — Stopping power calculations</p>
           <BuildInfoBadge />
         </div>
-        <p>Built with Svelte 5 + WASM</p>
+        <p class="sm:text-right">Built with Svelte 5 + WASM</p>
       </div>
     </div>
   </footer>
