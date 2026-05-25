@@ -3,3 +3,14 @@ node_modules
 build
 static/wasm
 wasm/output
+
+# Git submodules — formatted by their own projects
+libdedx/
+vendor/
+
+# Lock files are managed by pnpm, not prettier
+**/pnpm-lock.yaml
+
+# AI session logs contain raw tool output with pseudo-code fragments
+# that trip the TypeScript parser (e.g. bare `...` as truncation markers)
+docs/ai-logs/

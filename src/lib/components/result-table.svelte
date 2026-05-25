@@ -98,7 +98,6 @@
   let dragOverProgramId = $state<EntityId | null>(null);
   let reorderAnnouncement = $state<string>("");
 
-
   // Derived once — used in both STP and CSDA delta computations
   const defaultProgramName = $derived(
     defaultProgramId !== null ? getProgramName(defaultProgramId) : "",
@@ -432,8 +431,6 @@
       }
     }
   }
-
-
 </script>
 
 <div class={`overflow-x-auto ${className}`}>

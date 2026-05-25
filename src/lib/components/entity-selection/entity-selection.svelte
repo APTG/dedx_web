@@ -280,7 +280,7 @@
   {#if isAdvancedMode.value && showAdvancedToolbar}
     <AdvancedToolbar
       onReset={handleReset}
-      {...(onLoadExternal !== undefined ? { onLoadExternal } : {})}
+      {...onLoadExternal !== undefined ? { onLoadExternal } : {}}
     />
   {/if}
 

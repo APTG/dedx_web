@@ -653,7 +653,6 @@
     if (hintTimeout) clearTimeout(hintTimeout);
   }
 
-
   $effect(() => {
     if (calcState && entityState) {
       initExportState(calcState, entityState);
@@ -1901,19 +1900,13 @@
               quantityFocus={multiEntityState.quantityFocus}
               getDensity={(entityId) => {
                 if (es.across !== "material") {
-                  return (
-                    advancedOptions.value.densityOverride ??
-                    es.selectedMaterial?.density ??
-                    1
-                  );
+                  return advancedOptions.value.densityOverride ?? es.selectedMaterial?.density ?? 1;
                 }
                 if (typeof entityId === "number") {
                   return es.allMaterials.find((m) => m.id === entityId)?.density ?? 1;
                 }
                 if (String(entityId).startsWith("ext:")) {
-                  return (
-                    es.externalOnlyMaterials.find((m) => m.id === entityId)?.density ?? 1
-                  );
+                  return es.externalOnlyMaterials.find((m) => m.id === entityId)?.density ?? 1;
                 }
                 return customCompounds.getById(entityId as string)?.density ?? 1;
               }}
@@ -1952,14 +1945,19 @@
               default; low-E branch reveals when any row has two solutions).
             </div>
             <TableInverseStp
-              inverseLookupState={inverseLookupState}
+              {inverseLookupState}
               onPlotRow={(rowIndex) => {
                 const row = inverseLookupState?.stpRows[rowIndex];
                 if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
                 const pId = entityState?.selectedParticle?.id;
                 const mId = entityState?.selectedMaterial?.id;
                 const progId = entityState?.resolvedProgramId;
-                if (typeof pId !== "number" || typeof mId !== "number" || typeof progId !== "number") return;
+                if (
+                  typeof pId !== "number" ||
+                  typeof mId !== "number" ||
+                  typeof progId !== "number"
+                )
+                  return;
                 goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
               }}
             />

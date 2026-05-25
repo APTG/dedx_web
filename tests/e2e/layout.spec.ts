@@ -73,7 +73,9 @@ test.describe("Browser page titles", () => {
 test.describe("WASM loading state", () => {
   test("WASM loads and entity selectors are ready", async ({ page }) => {
     await page.goto("/calculator");
-    await expect(page.locator('[data-testid="picker-entity-selection"]')).toBeVisible({ timeout: 15000 });
+    await expect(page.locator('[data-testid="picker-entity-selection"]')).toBeVisible({
+      timeout: 15000,
+    });
   });
 
   test.skip("shows explicit WASM error state when initialization fails", async () => {

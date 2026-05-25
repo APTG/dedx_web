@@ -60,9 +60,7 @@ export default defineConfig({
       // `import type` and tries to load the .node binary, which fails. Point it
       // to a browser-safe stub so the build completes. jsroot itself is loaded
       // via its UMD bundle (<script> tag) at runtime and never bundled.
-      "@resvg/resvg-js": fileURLToPath(
-        new URL("./src/lib/shims/resvg-js.ts", import.meta.url),
-      ),
+      "@resvg/resvg-js": fileURLToPath(new URL("./src/lib/shims/resvg-js.ts", import.meta.url)),
     },
     // During Vitest runs, force browser export conditions so module resolution
     // matches app/browser behavior.

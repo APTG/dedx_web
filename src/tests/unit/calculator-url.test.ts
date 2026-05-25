@@ -838,7 +838,9 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
 
   it("istpbranch defaults to hi when absent", () => {
     const state = decodeCalculatorUrl(
-      new URLSearchParams("particle=1&material=276&mode=advanced&imode=stp&lookups=30&iunit=kev-um"),
+      new URLSearchParams(
+        "particle=1&material=276&mode=advanced&imode=stp&lookups=30&iunit=kev-um",
+      ),
     );
     expect(state.istpBranchState).toBe("hi");
   });

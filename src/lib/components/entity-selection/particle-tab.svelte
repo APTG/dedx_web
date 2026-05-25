@@ -189,7 +189,11 @@
     {summaryLabels}
     onClear={isMultiMode ? clearAllMulti : onClear}
     onlySelected={showOnlySelected}
-    onToggleOnlySelected={isMultiMode ? () => { showOnlySelected = !showOnlySelected; } : undefined}
+    onToggleOnlySelected={isMultiMode
+      ? () => {
+          showOnlySelected = !showOnlySelected;
+        }
+      : undefined}
     testId="picker-particle-selected"
   />
 
@@ -241,8 +245,8 @@
             aria-hidden="true"
             class="w-4 shrink-0 text-center text-xs {isChecked
               ? 'font-bold text-orange-700'
-              : 'text-muted-foreground'}"
-          >{isChecked ? "✓" : isMultiMode ? "○" : ""}</span>
+              : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
+          >
           {#if external}<span aria-hidden="true">🔗</span>{/if}
           {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
           <span class="flex-1">{getParticleListLabel(p, z)}</span>

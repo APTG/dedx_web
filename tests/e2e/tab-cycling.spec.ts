@@ -165,8 +165,6 @@ test.describe("Entity picker — global ArrowLeft/ArrowRight tab switching", () 
     // The Material tab should be active and focused exactly once, not looped.
     await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
     // Only one tab may have aria-selected=true.
-    await expect(
-      page.locator('[data-testid^="picker-tab-"][aria-selected="true"]'),
-    ).toHaveCount(1);
+    await expect(page.locator('[data-testid^="picker-tab-"][aria-selected="true"]')).toHaveCount(1);
   });
 });

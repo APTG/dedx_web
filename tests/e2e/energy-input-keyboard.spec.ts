@@ -168,7 +168,9 @@ test.describe("Advanced energy table — keyboard contract", () => {
       () => new URLSearchParams(window.location.search).get("mode") === "advanced",
       { timeout: 15000 },
     );
-    await expect(page.getByTestId("advanced-combined-table")).toBeVisible({ timeout: WASM_TIMEOUT });
+    await expect(page.getByTestId("advanced-combined-table")).toBeVisible({
+      timeout: WASM_TIMEOUT,
+    });
   }
 
   test("Escape blurs the advanced energy input", async ({ page }) => {

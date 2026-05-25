@@ -46,8 +46,8 @@
     <!-- Count badge -->
     <span
       class="flex h-5 min-w-[1.25rem] shrink-0 items-center justify-center rounded-full bg-orange-700 px-1 text-[11px] font-bold leading-none text-white"
-      aria-hidden="true"
-    >{count}</span>
+      aria-hidden="true">{count}</span
+    >
 
     <!-- Truncated summary text -->
     <span class="min-w-0 flex-1 truncate text-xs text-foreground">{summaryText}</span>
@@ -60,8 +60,8 @@
           ? 'border-orange-400 bg-orange-100 text-orange-800'
           : 'border-orange-200 text-orange-800 hover:bg-orange-100'}"
         aria-pressed={onlySelected}
-        onclick={onToggleOnlySelected}
-      >{onlySelected ? "Sel. only" : "All shown"}</button>
+        onclick={onToggleOnlySelected}>{onlySelected ? "Sel. only" : "All shown"}</button
+      >
     {/if}
 
     <!-- Clear -->
@@ -69,7 +69,7 @@
       type="button"
       class="shrink-0 rounded border border-orange-200 px-1.5 py-0.5 text-xs text-orange-800 transition-colors hover:border-orange-300 hover:bg-orange-100"
       aria-label="Clear selection"
-      onclick={onClear}
-    >Clear</button>
+      onclick={onClear}>Clear</button
+    >
   </div>
 {/if}
