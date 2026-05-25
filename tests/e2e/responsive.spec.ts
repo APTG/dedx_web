@@ -1,18 +1,27 @@
-import { test, expect } from "@playwright/test";
+import { test, expect, type Page } from "@playwright/test";
 
 // Stage 7.3 — Mobile responsive polish
 // These tests run on all projects but the assertions are most relevant for
 // the mobile-chrome (Pixel 5) and tablet (iPad Air) Playwright projects.
+
+async function expectNoHorizontalOverflow(page: Page, message: string) {
+  await expect
+    .poll(
+      () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth),
+      {
+        message,
+        timeout: 10000,
+      },
+    )
+    .toBe(false);
+}
 
 test.describe("Responsive layout — Calculator @smoke", () => {
   test("no horizontal overflow on calculator page @responsive", async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(overflow, "page body must not overflow horizontally").toBe(false);
+    await expectNoHorizontalOverflow(page, "page body must not overflow horizontally");
   });
 
   test("entity tabs are visible without horizontal overflow on narrow viewport @responsive", async ({
@@ -26,10 +35,7 @@ test.describe("Responsive layout — Calculator @smoke", () => {
     await expect(particleTab).toBeVisible();
     await expect(materialTab).toBeVisible();
 
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(overflow, "picker entity tabs must not overflow horizontally").toBe(false);
+    await expectNoHorizontalOverflow(page, "picker entity tabs must not overflow horizontally");
   });
 });
 
@@ -38,10 +44,7 @@ test.describe("Responsive layout — Plot @smoke", () => {
     await page.goto("/plot");
     await expect(page.getByRole("heading", { name: "Plot" })).toBeVisible();
 
-    const overflow = await page.evaluate(
-      () => document.documentElement.scrollWidth > document.documentElement.clientWidth,
-    );
-    expect(overflow, "plot page must not overflow horizontally").toBe(false);
+    await expectNoHorizontalOverflow(page, "plot page must not overflow horizontally");
   });
 
   test("entity panels collapsed by default on mobile viewport @responsive", async ({ page }) => {

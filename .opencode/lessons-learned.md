@@ -133,7 +133,7 @@ covering `negotiateVersion("<new-major>")`.
 
 ---
 
-## Entry 57 — Changelog merge fixes must preserve both upstream rows and local session rows
+## Entry 62 — Changelog merge fixes must preserve both upstream rows and local session rows
 
 **Symptom:** A PR branch prepended a new `CHANGELOG-AI.md` row while `master` added
 newer rows above the old top of the table. The merge conflict appeared at the table
@@ -151,6 +151,29 @@ and reinsert the branch's local session row in date order above older entries.
 **Rule:** When `CHANGELOG-AI.md` conflicts near the top of the table, resolve it as a
 merged changelog, not a one-side overwrite. Preserve all valid entries and normalize
 the header if the two sides used different markdown-table formatting.
+
+---
+
+## Entry 63 — Responsive overflow E2E assertions should poll for settled layout, not sample once
+
+**Symptom:** A mobile responsive Playwright test asserted `scrollWidth > clientWidth`
+immediately after the calculator result table first appeared. CI sometimes still had
+transient horizontal overflow at that instant, even though the page settled correctly
+moments later and `master` was green on the same UI code.
+
+```text
+❌ FLAKY
+waitForSelector('[data-testid="result-table"]')
+expect(scrollWidth > clientWidth).toBe(false)
+
+✅ STABLE
+waitForSelector('[data-testid="result-table"]')
+expect.poll(() => scrollWidth > clientWidth, { timeout: 10000 }).toBe(false)
+```
+
+**Rule:** For responsive-layout E2E assertions that depend on async rendering or
+post-load layout settling, use `expect.poll(...)` on the overflow condition instead
+of a one-shot width sample immediately after the first visible sentinel appears.
 
 ---
 
