@@ -9,6 +9,29 @@
 
 ---
 
+## Entry 66 — Local E2E builds should generate deploy.json via the normal build lifecycle
+
+**Symptom:** CI wrote `static/deploy.json` before `pnpm build`, but local
+developers running `pnpm build && pnpm test:e2e` still saw noisy
+`[404] GET /deploy.json` lines because the local build script never generated the
+footer metadata file.
+
+```text
+❌ CI-only setup
+workflow: node scripts/deploy.cjs
+local:    pnpm build
+
+✅ shared build lifecycle
+"prebuild": "node scripts/deploy.cjs"
+"build": "vite build"
+```
+
+**Rule:** If a generated static asset is required by local preview/E2E runs, hook
+it into the normal package script lifecycle (`prebuild`, `pretest`, etc.) instead
+of relying only on CI workflow steps.
+
+---
+
 ## Entry 65 — Responsive overflow E2E checks need a small pixel tolerance in CI
 
 **Symptom:** Mobile Chromium responsive checks can still report horizontal overflow
