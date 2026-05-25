@@ -9,6 +9,29 @@
 
 ---
 
+## Entry 68 — prebuild replaces explicit deploy.json workflow steps, not pnpm build
+
+**Symptom:** After adding `prebuild: node scripts/deploy.cjs`, CI/workflow docs
+still suggested a separate `Write deploy.json` step before `pnpm build`, which
+made it unclear whether E2E could skip the build entirely.
+
+```yaml
+❌ redundant workflow
+- run: node scripts/deploy.cjs
+- run: pnpm build
+- run: pnpm test:e2e
+
+✅ single source of truth
+- run: pnpm build      # triggers prebuild -> deploy.json
+- run: pnpm test:e2e   # uses pnpm preview against build/
+```
+
+**Rule:** If deploy metadata generation is wired into `prebuild`, remove
+duplicate workflow steps and document that `pnpm test:e2e` still requires a
+fresh `pnpm build` because Playwright launches `pnpm preview`, not a build.
+
+---
+
 ## Entry 67 — Footer build metadata must wrap on mobile
 
 **Symptom:** Mobile responsive Playwright checks reported persistent horizontal
