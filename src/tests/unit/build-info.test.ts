@@ -10,6 +10,11 @@ describe("stripHeadsPrefix", () => {
     expect(stripHeadsPrefix("heads/feat/foo")).toBe("feat/foo");
   });
 
+  test('removes "refs/heads/" prefix from git refs', () => {
+    expect(stripHeadsPrefix("refs/heads/master")).toBe("master");
+    expect(stripHeadsPrefix("refs/heads/feat/foo")).toBe("feat/foo");
+  });
+
   test('keeps "tags/" prefix unchanged', () => {
     expect(stripHeadsPrefix("tags/v1.0")).toBe("tags/v1.0");
   });
