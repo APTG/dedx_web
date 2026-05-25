@@ -11,7 +11,7 @@
 **AI response**: 
 - Created a dedicated git worktree named `worktree-issue-580` checked out on branch `qwen/issue-580`.
 - Audited the current transitive dependency tree and determined that `devalue` and `svelte` are already resolved to safe versions, making their overrides redundant.
-- `cookie` is required to be pinned to `>=0.7.0` because `@sveltejs/kit` has a transitive dependency range `^0.6.0` which resolves to a vulnerable version.
+- `cookie` is required to be pinned to `^0.7.0` because `@sveltejs/kit` has a transitive dependency range `^0.6.0` which resolves to a vulnerable version.
 - Removed redundant overrides for `svelte` and `devalue`, keeping only `cookie` in `pnpm-workspace.yaml` with a security comment.
 - Ran `pnpm install` in the worktree to update `pnpm-lock.yaml`.
 - Verified `pnpm audit` is clean with the new overrides.
@@ -29,5 +29,5 @@
   - [`package.json`](../../package.json)
   - [`pnpm-lock.yaml`](../../pnpm-lock.yaml)
   - [`README.md`](../../README.md)
-- **Decision**: Svelte and devalue overrides were dropped because direct upgrades pulled in safe transitive versions. Cookie override was kept and simplified to the `cookie: "^0.7.0"` format in `pnpm-workspace.yaml` with a YAML `#` comment documenting the mitigation of GHSA-pxg6-pf52-xh8x and linking to the upstream SvelteKit issue.
+- **Decision**: Svelte and devalue overrides were dropped because direct upgrades pulled in safe transitive versions. Cookie override was kept and simplified to the `cookie: "^0.7.0"` format in `pnpm-workspace.yaml` with a YAML `#` comment documenting the mitigation of GHSA-pxg6-pf52-xh8x and linking to upstream SvelteKit issue #13089.
 - **Issue**: None
