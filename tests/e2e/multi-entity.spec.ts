@@ -127,10 +127,15 @@ test.describe("Quantity toggle (requires WASM)", () => {
       { timeout: 15000 },
     );
 
-    // Wait briefly for potential WASM calculation
-    await page.waitForTimeout(2000);
-    const wasmReady = await page.locator('[data-testid="result-table"]').count();
-    if (wasmReady === 0) {
+    // Wait for WASM calculation to complete (multi-program renders result-table)
+    let wasmReady = false;
+    try {
+      await page.locator('[data-testid="result-table"]').waitFor({ timeout: 8000 });
+      wasmReady = true;
+    } catch {
+      // WASM not available
+    }
+    if (!wasmReady) {
       test.skip();
       return;
     }
@@ -150,9 +155,15 @@ test.describe("Quantity toggle (requires WASM)", () => {
       { timeout: 15000 },
     );
 
-    await page.waitForTimeout(2000);
-    const wasmReady = await page.locator('[data-testid="result-table"]').count();
-    if (wasmReady === 0) {
+    // Wait for WASM calculation to complete (multi-program renders result-table)
+    let wasmReady = false;
+    try {
+      await page.locator('[data-testid="result-table"]').waitFor({ timeout: 8000 });
+      wasmReady = true;
+    } catch {
+      // WASM not available
+    }
+    if (!wasmReady) {
       test.skip();
       return;
     }
@@ -173,19 +184,24 @@ test.describe("Multi-entity table (requires WASM)", () => {
   test("switching to materials renders table-multi", async ({ page }) => {
     await gotoAdvanced(page, "particle=1&material=276&energies=100");
 
-    await page.waitForTimeout(2000);
-    const wasmReady = await page.locator('[data-testid="result-table"]').count();
-    if (wasmReady === 0) {
+    // In Advanced single-program mode, WASM renders advanced-combined-table
+    let wasmReady = false;
+    try {
+      await page.locator('[data-testid="advanced-combined-table"]').waitFor({ timeout: 8000 });
+      wasmReady = true;
+    } catch {
+      // WASM not available
+    }
+    if (!wasmReady) {
       test.skip();
       return;
     }
 
     await switchToAcross(page, "material");
 
-    // Select a second material (Water, id=276 is already default; pick Aluminum, id=13)
+    // Select Aluminum (id=13) as second material alongside the default Water (id=276)
     await page.getByTestId("picker-tab-material").click();
-    // Click the second material item if visible
-    const aluminumItem = page.locator('[data-testid^="picker-material-item-"]').nth(1);
+    const aluminumItem = page.locator('[data-testid="picker-material-item-13"]');
     if (await aluminumItem.count()) {
       await aluminumItem.click();
     }

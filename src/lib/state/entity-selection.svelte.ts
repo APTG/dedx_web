@@ -34,15 +34,11 @@ export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgra
 export type PickerTabId = "particle" | "material" | "program";
 
 /**
- * Compare-across dimension (Advanced mode). Reserved for the multi-select
- * follow-up — `multiSelected[dim]` is intentionally **not consumed** by any
- * calculation/URL surface in this PR. The `<MultiList>` rendering branch in
- * the Program tab was removed for the same reason; the multi-program
- * comparison is still driven by `MultiProgramState` above the Calculator
- * results table.
- *
- * Tracked follow-up: enable Materials/Particles dropdown options and wire
- * `multiSelected.*` end-to-end through `calculator-state` / `plot-state`.
+ * Compare-across dimension (Advanced mode). Controls the multi-entity result
+ * view: `"single"` shows the standard single-entity result; `"material"` and
+ * `"particle"` wire `multiSelected.material` / `multiSelected.particle` into
+ * `TableMulti`; `"program"` drives the existing `MultiProgramState` result
+ * table.
  */
 export type AcrossDimension = "single" | "particle" | "material" | "program";
 
@@ -103,9 +99,11 @@ export interface EntitySelectionState {
   /** Set the panel expand/collapse state. */
   setExpanded(expanded: boolean): void;
   /**
-   * Change the Compare-across dimension. Sets `multiSelected[newAcross]` to
-   * the current single value (one-item array), sets `activeTarget = newAcross`
-   * and `expanded = true`.
+   * Change the Compare-across dimension.
+   * - When `newAcross === "single"`: collapses all multi-selection arrays to at
+   *   most one element without changing `activeTarget` or `expanded`.
+   * - Otherwise: seeds `multiSelected[newAcross]` from the current single
+   *   selection and sets `activeTarget = newAcross` and `expanded = true`.
    */
   setAcross(newAcross: AcrossDimension): void;
   /** Toggle an id in `multiSelected[across]` (preserving order; first is default). */
