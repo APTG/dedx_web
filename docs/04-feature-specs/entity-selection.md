@@ -82,9 +82,12 @@ to `collapsible`, so Calculator shows it and Plot hides it — Plot's
 Advanced mode only needs part+mat+program selection for the next "Add
 series"). Contents:
 
-- `Compare across:` dropdown — `Programs` is the only enabled option this
-  PR. `Materials` and `Particles` are present but disabled with a "ships
-  in a follow-up PR" tooltip so the dropdown surface doesn't shift later.
+- **Compare-across strip** (`compare-across-strip.svelte`) — a visible
+  4-button pill radiogroup replacing the earlier dropdown:
+  `[Programs ●]  [Materials]  [Particles]  [Single]`. The active
+  dimension has a filled pill. `AcrossDimension` accepts
+  `"program" | "material" | "particle" | "single"`. See
+  [ADR 011](../decisions/011-compare-across-visible-strip.md).
 - `🔗 Load external` — disabled placeholder; opens the load-external
   modal in a follow-up PR.
 - `⊞ Explore compat` — disabled placeholder; wires up to the

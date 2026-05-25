@@ -132,6 +132,10 @@ Branch naming: `qwen/<stage-or-feature>` (see [`docs/00-redesign-plan.md §4.2`]
 - **One feature per session** — reference the spec file, do not re-explain.
 - **Commit after each working increment** using Conventional Commits
   (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
+- **Format before each commit:** run `pnpm format` (equivalently
+  `pnpm run format:check --write`) to auto-format all files — including markdown
+  files such as `CHANGELOG-AI.md` — before staging. Verify with
+  `pnpm run format:check`.
 - **Run `pnpm guard:staged` before each commit.** It blocks forbidden generated
   artifacts (`static/wasm/**`, `static/deploy.json`, `build/**`, `coverage/**`,
   `.svelte-kit/**`, `.vite/**`, Playwright outputs) and vendor gitlink changes.

@@ -21,6 +21,8 @@
 
 - Prettier defaults: double quotes, semicolons, 2-space indent
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`
+- Before committing: run `pnpm format` to auto-format all files, including
+  markdown files such as `CHANGELOG-AI.md`. Verify with `pnpm run format:check`.
 
 ## Key Docs
 

@@ -38,6 +38,8 @@ Vendor source + docs are in `vendor/svelte/` if you need to check implementation
 - **Prettier**: double quotes, semicolons, 2-space indent
 - **Commits**: Conventional Commits — `feat:`, `fix:`, `docs:`, `chore:`, `test:`
 - Comments only where the WHY is non-obvious; never narrate what the code does
+- **Before committing**: run `pnpm format` to auto-format all files, including
+  markdown files such as `CHANGELOG-AI.md`. Verify with `pnpm run format:check`.
 
 ---
 
