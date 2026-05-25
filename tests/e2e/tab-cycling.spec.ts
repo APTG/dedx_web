@@ -102,3 +102,71 @@ test.describe("Tab bar — ArrowLeft / ArrowRight cycling @firefox", () => {
     await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
   });
 });
+
+// ── Global ArrowLeft/ArrowRight handler (entity-selection.svelte) ─────────────
+//
+// The global handler fires when the picker panel is open AND focus is on
+// document.body (cold-load path) or anywhere inside the picker that is not a
+// text input or a tab button.  Tab buttons own the key via their own onkeydown
+// handler, and text inputs must NOT trigger a tab switch.
+
+test.describe("Entity picker — global ArrowLeft/ArrowRight tab switching", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/calculator");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
+    // Open the panel so the global handler is active.
+    await page.getByTestId("picker-tab-particle").click();
+    await expect(page.getByTestId("picker-tab-panel")).toBeVisible();
+  });
+
+  test("ArrowRight cycles to Material tab when document.body has focus", async ({ page }) => {
+    // Click outside the picker so focus falls to body.
+    await page.locator("body").click({ position: { x: 10, y: 10 } });
+    await page.keyboard.press("ArrowRight");
+
+    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("ArrowLeft cycles to Program tab (wrap-around) when document.body has focus", async ({
+    page,
+  }) => {
+    // Particle is currently active. ArrowLeft should wrap to Program.
+    await page.locator("body").click({ position: { x: 10, y: 10 } });
+    await page.keyboard.press("ArrowLeft");
+
+    await expect(page.getByTestId("picker-tab-program")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("ArrowRight is ignored when focus is inside the search input", async ({ page }) => {
+    // Focus the particle search input (it is an HTMLInputElement — should be skipped).
+    const search = page.getByTestId("picker-particle-search");
+    await search.focus();
+
+    // ArrowRight should NOT switch tabs while typing in the search box.
+    await page.keyboard.press("ArrowRight");
+
+    // Particle tab must still be active.
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("ArrowRight is ignored when focus is on a tab button (no double-firing)", async ({
+    page,
+  }) => {
+    // The tab-bar onkeydown already handles this; the global handler must not
+    // fire a second time.  Focusing the particle tab button and pressing
+    // ArrowRight should move focus to the Material tab exactly once.
+    await page.getByTestId("picker-tab-particle").focus();
+    await page.keyboard.press("ArrowRight");
+
+    // The Material tab should be active and focused exactly once, not looped.
+    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
+    // Only one tab may have aria-selected=true.
+    await expect(
+      page.locator('[data-testid^="picker-tab-"][aria-selected="true"]'),
+    ).toHaveCount(1);
+  });
+});

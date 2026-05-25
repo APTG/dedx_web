@@ -86,6 +86,7 @@ export interface CalculatorState {
   handleBlur(index: number): void;
   addRow(): void;
   removeRow(index: number): void;
+  moveRow(index: number, direction: "up" | "down"): void;
   triggerCalculation(): void;
   flushCalculation(): Promise<void> | undefined;
   clearResults(): void;
@@ -782,6 +783,9 @@ export function createCalculatorState(
     },
     removeRow(index: number) {
       inputState.removeRow(index);
+    },
+    moveRow(index: number, direction: "up" | "down") {
+      inputState.moveRow(index, direction);
     },
     triggerCalculation(): void {
       // Schedules a debounced calculation. Use `flushCalculation()` and

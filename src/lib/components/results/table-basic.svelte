@@ -106,17 +106,24 @@
   }
 
   function handleInputKeyDown(event: KeyboardEvent, index: number) {
+    if (event.key === "Escape") {
+      event.preventDefault();
+      (event.target as HTMLInputElement).blur();
+      return;
+    }
+
     if (event.key === "Enter") {
       event.preventDefault();
       calcState.handleBlur(index);
+      if (event.shiftKey) return;
       const moved = focusRowInput(index + 1);
       if (!moved) {
-        // No next row exists — explicitly add one so the user can continue
         calcState.addRow();
         queueMicrotask(() => focusRowInput(index + 1));
       }
       return;
     }
+
     if (event.key === "Tab") {
       const targetIndex = event.shiftKey ? index - 1 : index + 1;
       const inputs = document.querySelectorAll<HTMLInputElement>("input[data-row-index]");
@@ -125,6 +132,30 @@
         event.preventDefault();
         calcState.handleBlur(index);
         targetInput.focus();
+      }
+      return;
+    }
+
+    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
+      if (event.ctrlKey || event.metaKey) {
+        event.preventDefault();
+        const direction = event.key === "ArrowUp" ? "up" : "down";
+        calcState.moveRow(index, direction);
+        const newIndex = direction === "up" ? index - 1 : index + 1;
+        queueMicrotask(() => focusRowInput(newIndex));
+      } else {
+        event.preventDefault();
+        focusRowInput(event.key === "ArrowUp" ? index - 1 : index + 1);
+      }
+      return;
+    }
+
+    if (event.key === "Backspace") {
+      const input = event.target as HTMLInputElement;
+      if (input.value === "" && calcState.rows.length > 1) {
+        event.preventDefault();
+        calcState.removeRow(index);
+        queueMicrotask(() => focusRowInput(Math.max(0, index - 1)));
       }
     }
   }

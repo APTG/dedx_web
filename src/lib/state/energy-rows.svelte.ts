@@ -14,6 +14,7 @@ export interface EnergyInputState {
   hasLargeInput: boolean;
   addRow(): void;
   removeRow(index: number): void;
+  moveRow(index: number, direction: "up" | "down"): void;
   updateRowText(index: number, text: string, autoAdd?: boolean): void;
   handleBlur(index: number): void;
   setMasterUnit(unit: EnergyUnit): void;
@@ -46,6 +47,15 @@ export function createEnergyInputState(): EnergyInputState {
   function removeRow(index: number): void {
     if (rows.length <= 1) return;
     rows = rows.filter((_, i) => i !== index);
+  }
+
+  function moveRow(index: number, direction: "up" | "down"): void {
+    if (index < 0 || index >= rows.length) return;
+    const target = direction === "up" ? index - 1 : index + 1;
+    if (target < 0 || target >= rows.length) return;
+    const next = [...rows];
+    [next[index], next[target]] = [next[target]!, next[index]!];
+    rows = next;
   }
 
   function updateRowText(index: number, text: string, autoAdd = true): void {
@@ -113,6 +123,7 @@ export function createEnergyInputState(): EnergyInputState {
     },
     addRow,
     removeRow,
+    moveRow,
     updateRowText,
     handleBlur,
     setMasterUnit,
