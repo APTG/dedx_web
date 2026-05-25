@@ -7,13 +7,18 @@ import { test, expect, type Page } from "@playwright/test";
 async function expectNoHorizontalOverflow(page: Page, message: string) {
   await expect
     .poll(
-      () => page.evaluate(() => document.documentElement.scrollWidth > document.documentElement.clientWidth),
+      () =>
+        page.evaluate(() => {
+          const root = document.documentElement;
+          const scrollElement = document.scrollingElement ?? root;
+          return Math.max(0, Math.ceil(scrollElement.scrollWidth - root.clientWidth));
+        }),
       {
         message,
         timeout: 10000,
       },
     )
-    .toBe(false);
+    .toBeLessThanOrEqual(1);
 }
 
 test.describe("Responsive layout — Calculator @smoke", () => {

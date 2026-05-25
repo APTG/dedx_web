@@ -9,6 +9,27 @@
 
 ---
 
+## Entry 65 — Responsive overflow E2E checks need a small pixel tolerance in CI
+
+**Symptom:** Mobile Chromium responsive checks can still report horizontal overflow
+in CI even after layout has settled, while local probes show `scrollWidth` and
+`clientWidth` are effectively equal on the same page. The remaining difference is
+an environment-dependent rounding edge, not a visible layout regression.
+
+```text
+❌ TOO STRICT
+expect.poll(() => scrollWidth > clientWidth).toBe(false)
+
+✅ ROBUST
+expect.poll(() => ceil(scrollWidth - clientWidth)).toBeLessThanOrEqual(1)
+```
+
+**Rule:** For full-page responsive overflow assertions in Playwright, poll the
+numeric overflow amount and allow a 1 px tolerance. This keeps the test sensitive
+to real clipping while avoiding CI-only rounding flakes.
+
+---
+
 ## Entry 61 — Auto-reveal URL state must not permanently lock inverse-STP low-E column
 
 **Symptom:** The inverse-STP table derived `showLowEColumn` from
