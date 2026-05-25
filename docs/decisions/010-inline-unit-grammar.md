@@ -19,8 +19,8 @@ ASCII-only input and a 15-token canonical unit set.
 
 Key rules:
 
-1. **ASCII input only.** Users type `um` for µm, `keV/nucl` or `keV/u` for
-   keV/nucleon. The parser emits the canonical Unicode symbol (µm) internally.
+1. **ASCII input only.** Users type ASCII tokens such as `keV/nucl` or
+   `keV/u` for keV/nucleon.
 2. **Canonical SI casing required.** Only canonical tokens (`MeV`, `GeV`,
    `keV`, `eV`, `TeV`, and `/nucl` or `/u` suffixes with canonical case) are
    accepted. Non-canonical casing (`MEV`, `mev`, `MeV/Nucl`) is rejected with
