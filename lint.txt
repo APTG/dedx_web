@@ -1,0 +1,21 @@
+
+> dedx-web@0.0.1 lint /home/leszekgrzanka/workspace/dedx_web
+> eslint .
+
+
+/home/leszekgrzanka/workspace/dedx_web/src/lib/components/entity-selection/particle-tab.svelte
+  7:12  warning  'getParticleLabel' is defined but never used  @typescript-eslint/no-unused-vars
+
+/home/leszekgrzanka/workspace/dedx_web/src/lib/components/jsroot-plot.svelte
+  40:18  error  Do not delete dynamically computed property keys  @typescript-eslint/no-dynamic-delete
+  45:18  error  Do not delete dynamically computed property keys  @typescript-eslint/no-dynamic-delete
+
+/home/leszekgrzanka/workspace/dedx_web/src/routes/calculator/+page.svelte
+  80:9  warning  'RANGE_ANCHOR_OPTIONS' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+/home/leszekgrzanka/workspace/dedx_web/tests/e2e/calculator-advanced.spec.ts
+  4:7  warning  'ICRU73_OLD_ID' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 5 problems (2 errors, 3 warnings)
+
+ ELIFECYCLE  Command failed with exit code 1.
