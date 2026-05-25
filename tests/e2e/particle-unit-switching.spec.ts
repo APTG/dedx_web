@@ -24,7 +24,7 @@ async function waitForWasm(page: import("@playwright/test").Page) {
 }
 
 async function waitForTable(page: import("@playwright/test").Page) {
-  await expect(page.locator("thead th").first()).toContainText(/Energy/i, {
+  await expect(page.locator("input[data-row-index]").first()).toBeVisible({
     timeout: WASM_TIMEOUT,
   });
 }
@@ -51,7 +51,8 @@ async function rowText(page: import("@playwright/test").Page, index: number): Pr
 }
 
 async function mevNuclCell(page: import("@playwright/test").Page, index: number): Promise<string> {
-  return (await page.locator("tbody tr").nth(index).locator("td").nth(1).textContent()) ?? "";
+  await expect(page.getByTestId("mev-nucl-column-header")).toBeVisible({ timeout: WASM_TIMEOUT });
+  return (await page.getByTestId(`advanced-mev-nucl-cell-${index}`).textContent()) ?? "";
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -60,7 +61,10 @@ async function mevNuclCell(page: import("@playwright/test").Page, index: number)
 
 test.describe("Particle switching — E_nucl conservation", () => {
   test.beforeEach(async ({ page }) => {
-    await waitForWasm(page);
+    await page.goto("/calculator?advanced=1");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 
@@ -94,8 +98,9 @@ test.describe("Particle switching — E_nucl conservation", () => {
   test("Proton 100 MeV → switch to carbon → switch back to hydrogen: E_nucl conserved", async ({
     page,
   }) => {
+    await typeInRow(page, 0, "100 MeV");
     // Default: proton 100 MeV (E_nucl=100).
-    expect(await rowText(page, 0)).toBe("100");
+    expect(await rowText(page, 0)).toBe("100 MeV");
     expect(await mevNuclCell(page, 0)).toContain("100");
 
     // Carbon (A=12): E_nucl=100 → 100 × 12 = 1200 MeV total.
@@ -142,28 +147,27 @@ test.describe("Particle switching — E_nucl conservation", () => {
 // Per-row unit dropdown — current behaviour
 // ─────────────────────────────────────────────────────────────────────────────
 
-test.describe("Per-row unit dropdown — current behaviour", () => {
+test.describe("Per-row inline unit editing — current behaviour", () => {
   test.beforeEach(async ({ page }) => {
-    await waitForWasm(page);
+    await page.goto("/calculator?advanced=1");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
   });
 
-  test("Carbon 12 MeV → toggle unit to MeV/nucl: text is rewritten with converted value (KE conserved)", async ({
-    page,
-  }) => {
+  test("Carbon 12 MeV → editing inline unit to MeV/nucl preserves KE", async ({ page }) => {
     await selectParticle(page, "carbon");
     await typeInRow(page, 0, "12 MeV");
 
     // Carbon 12 MeV total = 1 MeV/nucl in the conversion column.
     expect(await mevNuclCell(page, 0)).toContain("1");
 
-    // Use the per-row Unit dropdown to switch the row to MeV/nucl.
-    const unitSelect = page.locator("tbody tr").first().locator("select").first();
-    await unitSelect.selectOption("MeV/nucl");
+    // Rewrite the row with an explicit MeV/nucl suffix.
+    await typeInRow(page, 0, "1 MeV/nucl");
 
-    // Per `setRowUnit()` in calculator.svelte.ts: the numeric value IS
-    // converted to conserve kinetic energy. So "12 MeV" → "1 MeV/nucl",
-    // and the MeV/nucl column now reads 1 (kinetic energy conserved).
+    // The inline-unit parser keeps the same physical KE when the row is
+    // expressed directly in MeV/nucl.
     expect(await rowText(page, 0)).toBe("1 MeV/nucl");
     expect(await mevNuclCell(page, 0)).toContain("1");
   });
@@ -239,20 +243,21 @@ test.describe("Add row UX", () => {
     await waitForTable(page);
   });
 
-  test("typing in the last row auto-appends a fresh row below it", async ({ page }) => {
-    // Default state has a single pre-filled "100" row. Typing in the LAST
-    // row auto-appends a new empty row (see `updateRowText` in
-    // `src/lib/state/energy-input.svelte.ts`).
-    const initialCount = await page.locator("tbody tr").count();
+  test("typing in the last row does not auto-append; + Add row appends explicitly", async ({
+    page,
+  }) => {
+    // Basic mode keeps single-row card layout until the user explicitly adds rows.
+    const initialCount = await page.locator("input[data-row-index]").count();
     expect(initialCount).toBeGreaterThanOrEqual(1);
 
-    // Type into the current last row to trigger an auto-append.
+    // Typing does not auto-append.
     await typeInRow(page, initialCount - 1, "200");
-    await expect(page.locator("tbody tr")).toHaveCount(initialCount + 1);
+    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount);
 
-    // Typing in the new last row appends one more.
-    await typeInRow(page, initialCount, "300");
-    await expect(page.locator("tbody tr")).toHaveCount(initialCount + 2);
+    // Explicit + Add row appends one empty row.
+    const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
+    await addBtn.click();
+    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount + 1);
   });
 
   test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({
@@ -264,8 +269,8 @@ test.describe("Add row UX", () => {
     const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
     await expect(addBtn).toHaveCount(1);
 
-    const before = await page.locator("tbody tr").count();
+    const before = await page.locator("input[data-row-index]").count();
     await addBtn.click();
-    await expect(page.locator("tbody tr")).toHaveCount(before + 1);
+    await expect(page.locator("input[data-row-index]")).toHaveCount(before + 1);
   });
 });

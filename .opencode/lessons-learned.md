@@ -9,6 +9,151 @@
 
 ---
 
+## Entry 61 — Auto-reveal URL state must not permanently lock inverse-STP low-E column
+
+**Symptom:** The inverse-STP table derived `showLowEColumn` from
+`stpBranchState === "both" || hasTwoSolutionRow` and then immediately wrote
+`stpBranchState = "both"` whenever the column was visible. Once any row had two
+solutions, the state stayed `"both"` forever, so the low-E column could never
+auto-collapse after rows were cleared.
+
+```text
+❌ BROKEN — visibility and persisted URL state form a self-locking loop
+showLowEColumn = stpBranchState === "both" || hasTwoSolutionRow
+if (showLowEColumn) stpBranchState = "both"
+
+✅ CORRECT — track auto-reveal intent separately
+if (hasTwoSolutionRow) { autoRevealed = true; stpBranchState = "both" }
+if (!hasTwoSolutionRow && autoRevealed) { autoRevealed = false; stpBranchState = "hi" }
+```
+
+**Rule:** When URL-restorable state (`istpbranch`) also controls UI visibility,
+never derive-and-write the same flag in one loop. Keep an explicit local flag
+for auto-reveal transitions so URL pre-open behavior and auto-collapse behavior
+can coexist.
+
+---
+
+## Entry 60 — Advanced calculator E2E selectors differ between single-program and multi-program mode
+
+**Symptom:** Export tests opened `/calculator?mode=advanced` and still waited for
+the old multi-program `ResultTable` contract (`energy-input-0`, `result-table`,
+`stp-cell-*`). After `TableAdvanced` became the single-program Advanced view,
+those selectors never appeared and CI timed out before export actions.
+
+```text
+❌ BROKEN — assumes all Advanced calculator flows use ResultTable
+await page.locator('[data-testid="energy-input-0"]').fill("100 MeV");
+await page.waitForSelector('[data-testid="result-table"]');
+await page.waitForSelector('[data-testid^="stp-cell-"]');
+
+✅ CORRECT — single-program Advanced mode uses TableAdvanced
+await page.getByTestId("advanced-energy-input-0").fill("100 MeV");
+await expect(page.getByTestId("advanced-combined-table")).toBeVisible();
+await expect(page.getByTestId("advanced-stp-cell-0")).not.toHaveText("—");
+```
+
+**Rule:** When writing Calculator E2E tests in Advanced mode, first determine
+whether the scenario is single-program or multi-program. Single-program Advanced
+uses `TableAdvanced` test ids (`advanced-*`), while true compare-across-programs
+continues to use `ResultTable` ids.
+
+---
+
+## Entry 59 — E2E deep links must use supported URL enums, not legacy placeholders
+
+**Symptom:** Playwright tried to open the new single-entity Advanced calculator
+with `across=none`, and then waited forever for `advanced-combined-table`.
+The page silently fell back to the default compare-across mode because
+`AcrossDimension` only accepts `particle | material | program`.
+
+```text
+❌ BROKEN
+/calculator?...&mode=advanced&across=none
+
+✅ CORRECT
+/calculator?...&mode=advanced
+# or use an actually supported value: across=program|material|particle
+```
+
+**Rule:** When an E2E test deep-links into calculator state, use only enums that
+the current URL/state contract actually accepts. Do not invent sentinel values
+like `none`; for single-entity Advanced mode, omit the compare-across param and
+let the page use its canonical default.
+
+---
+
+## Entry 58 — Replacing native form controls requires updating the test contract in the same PR
+
+**Symptom:** A UI refactor swapped an inverse-lookup unit `<select>` for a
+custom radiogroup pill strip. Playwright still used `page.selectOption()` and
+`toHaveValue()` against the old `data-testid`, so CI only failed after merge
+review even though the new control rendered correctly in the browser.
+
+```text
+❌ BROKEN — same test id, different control semantics
+<div data-testid="inverse-range-unit" role="radiogroup">…</div>
+await page.selectOption('[data-testid="inverse-range-unit"]', 'mm')
+
+✅ CORRECT — update tests to the new accessible contract
+const group = page.getByTestId("inverse-range-unit");
+await group.getByRole("radio", { name: "mm" }).click();
+await expect(group.getByRole("radio", { name: "mm" })).toHaveAttribute(
+  "aria-checked",
+  "true",
+);
+```
+
+**Rule:** Whenever a PR replaces a native `<select>`/`<input>`/`<button>` with a
+custom accessible widget, update component and E2E tests in the same PR to use
+the new role/ARIA contract instead of keeping the old interaction helpers.
+
+---
+
+## Entry 57 — URL encoder/version negotiation majors must be updated together
+
+**Symptom:** Calculator links started emitting `urlv=2`, but the runtime
+negotiation constant stayed at major `1`. Freshly generated links were treated
+as "future version" mismatches and triggered warning fallback paths.
+
+```text
+❌ BROKEN
+CALCULATOR_URL_VERSION = 2
+CURRENT_URL_MAJOR = 1
+
+✅ CORRECT
+CALCULATOR_URL_VERSION = 2
+CURRENT_URL_MAJOR = 2
+MIN_SUPPORTED_URL_MAJOR = 1  # keep backward compatibility if needed
+```
+
+**Rule:** Any URL schema-major bump must update both the encoder constant and
+the version-negotiation major in the same PR, plus at least one regression test
+covering `negotiateVersion("<new-major>")`.
+
+---
+
+## Entry 57 — Changelog merge fixes must preserve both upstream rows and local session rows
+
+**Symptom:** A PR branch prepended a new `CHANGELOG-AI.md` row while `master` added
+newer rows above the old top of the table. The merge conflict appeared at the table
+header even though the real requirement was to keep both sets of rows.
+
+```text
+❌ WRONG
+Resolve the conflict by keeping only the branch side or only the base side.
+
+✅ CORRECT
+Keep the canonical markdown table header/separator, preserve newer upstream rows,
+and reinsert the branch's local session row in date order above older entries.
+```
+
+**Rule:** When `CHANGELOG-AI.md` conflicts near the top of the table, resolve it as a
+merged changelog, not a one-side overwrite. Preserve all valid entries and normalize
+the header if the two sides used different markdown-table formatting.
+
+---
+
 ## Entry 56 — Migration docs must state precedence for overlapping legacy params
 
 **Symptom:** A migration table said v1 `mode=advanced&programs=` should derive a

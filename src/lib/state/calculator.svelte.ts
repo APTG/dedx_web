@@ -82,9 +82,10 @@ export interface CalculatorState {
   setMasterUnit(unit: EnergyUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
   switchParticle(particleId: number | string | null): void;
-  updateRowText(index: number, text: string): void;
+  updateRowText(index: number, text: string, autoAdd?: boolean): void;
   handleBlur(index: number): void;
   addRow(): void;
+  removeRow(index: number): void;
   triggerCalculation(): void;
   flushCalculation(): Promise<void> | undefined;
   clearResults(): void;
@@ -759,18 +760,28 @@ export function createCalculatorState(
       entitySelection.selectParticle(particleId);
 
       if (newParticle && oldParticle && newParticle.id !== oldParticle.id) {
-        convertRowsForNewParticle(oldParticle, newParticle);
+        if (isAdvancedMode.value) {
+          // Advanced mode: convert values to maintain per-nucleon energy conservation.
+          convertRowsForNewParticle(oldParticle, newParticle);
+        } else {
+          // Basic mode: preserve typed values, auto-set masterUnit to match particle type.
+          const isHeavyIon = newParticle.id !== 1001 && newParticle.massNumber > 1;
+          inputState.setMasterUnit(isHeavyIon ? "MeV/nucl" : "MeV");
+        }
       }
       previousParticle = newParticle;
     },
-    updateRowText(index: number, text: string) {
-      inputState.updateRowText(index, text);
+    updateRowText(index: number, text: string, autoAdd?: boolean) {
+      inputState.updateRowText(index, text, autoAdd);
     },
     handleBlur(index: number) {
       inputState.handleBlur(index);
     },
     addRow() {
       inputState.addRow();
+    },
+    removeRow(index: number) {
+      inputState.removeRow(index);
     },
     triggerCalculation(): void {
       // Schedules a debounced calculation. Use `flushCalculation()` and

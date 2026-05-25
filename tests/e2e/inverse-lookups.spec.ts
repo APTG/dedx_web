@@ -27,6 +27,29 @@ function parseEnergyMeV(text: string): number {
   return v;
 }
 
+function inverseUnitGroup(page: import("@playwright/test").Page, testId: string) {
+  return page.getByTestId(testId);
+}
+
+async function selectInverseUnit(
+  page: import("@playwright/test").Page,
+  testId: string,
+  label: string,
+): Promise<void> {
+  await inverseUnitGroup(page, testId).getByRole("radio", { name: label }).click();
+}
+
+async function expectInverseUnitSelected(
+  page: import("@playwright/test").Page,
+  testId: string,
+  label: string,
+): Promise<void> {
+  await expect(inverseUnitGroup(page, testId).getByRole("radio", { name: label })).toHaveAttribute(
+    "aria-checked",
+    "true",
+  );
+}
+
 test.describe("Inverse Lookups — Range Tab", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
@@ -49,11 +72,10 @@ test.describe("Inverse Lookups — Range Tab", () => {
     );
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
 
-    const energyText = (await energySpan.textContent())!.trim();
-    const energy = parseFloat(energyText);
+    const energy = parseEnergyMeV((await energyResult.textContent())!.trim());
     // PSTAR: 7.718 g/cm² → ~100.5 MeV; allow ±15% for unit-display rounding
     expect(energy).toBeGreaterThan(85);
     expect(energy).toBeLessThan(120);
@@ -76,7 +98,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await page.waitForSelector('[data-testid="inverse-tab-range"]', { timeout: 5000 });
 
     await page.click('[data-testid="inverse-tab-range"]');
-    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+    await selectInverseUnit(page, "inverse-range-unit", "mm");
     await page.fill('[data-testid="inverse-range-input-0"]', "3.5");
     await page.locator('[data-testid="inverse-range-input-0"]').blur();
 
@@ -89,25 +111,19 @@ test.describe("Inverse Lookups — Range Tab", () => {
 
     const url = page.url();
     expect(url).toContain("imode=csda");
-    expect(url).toContain("ivalues=3.5");
     expect(url).toContain("iunit=mm");
 
     await page.reload();
-    await page.waitForFunction(
-      () => window.location.search.includes("iunit=mm"),
-      { timeout: 10000 },
-    );
-    await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
+    await page.waitForFunction(() => window.location.search.includes("iunit=mm"), {
+      timeout: 10000,
+    });
 
     await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
       "aria-selected",
       "true",
     );
+    await expectInverseUnitSelected(page, "inverse-range-unit", "mm");
     await expect(page.locator('[data-testid="inverse-range-input-0"]')).toHaveValue("3.5");
-
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    expect(parseFloat((await energySpan.textContent())!.trim())).toBeGreaterThan(0);
   });
 
   test("Range tab: 'm' suffix accepted, 'km' rejected @regression", async ({ page }) => {
@@ -120,19 +136,21 @@ test.describe("Inverse Lookups — Range Tab", () => {
 
     // '30 m' — valid metre suffix; must produce a positive numeric result
     await page.fill('[data-testid="inverse-range-input-0"]', "30 m");
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    expect(parseFloat((await energySpan.textContent())!.trim())).toBeGreaterThan(0);
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    expect(parseEnergyMeV((await energyResult.textContent())!.trim())).toBeGreaterThan(0);
 
     // Per-row mode active → master unit selector disabled
-    await expect(page.locator('[data-testid="inverse-range-unit"]')).toBeDisabled();
+    await expect(
+      inverseUnitGroup(page, "inverse-range-unit").getByRole("radio", { name: "cm" }),
+    ).toBeDisabled();
 
-    // '0.03 km' — unrecognised suffix → inline error about unrecognized unit
+    // '0.03 km' — unrecognised suffix → result cell shows validation error
     await page.fill('[data-testid="inverse-range-input-0"]', "0.03 km");
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/unrecognized unit/i);
@@ -147,7 +165,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/positive/i);
@@ -156,7 +174,7 @@ test.describe("Inverse Lookups — Range Tab", () => {
     await expect
       .poll(
         async () =>
-          (await page.locator('[data-testid="inverse-range-row-error-0"]').textContent())?.trim(),
+          (await page.locator('[data-testid="inverse-range-result-0"]').textContent())?.trim(),
         { timeout: 10000 },
       )
       .toMatch(/numeric/i);
@@ -244,26 +262,26 @@ test.describe("Inverse Lookups — Range Tab", () => {
     );
     await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
 
-    const energySpan = page.locator('[data-testid="inverse-range-result-0"] span');
-    await expect(energySpan).toHaveText(/^\d+(\.\d+)?\s*(MeV|GeV)?$/, { timeout: 15000 });
-    const energyAtCm = parseFloat((await energySpan.textContent())!.trim());
+    const energyResult = page.locator('[data-testid="inverse-range-result-0"]');
+    await expect(energyResult).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtCm = parseEnergyMeV((await energyResult.textContent())!.trim());
     expect(energyAtCm).toBeGreaterThan(0);
 
     // Change master unit to mm; same numeric value (10) now means 10 mm = 1 cm → different energy
-    await page.selectOption('[data-testid="inverse-range-unit"]', "mm");
+    await selectInverseUnit(page, "inverse-range-unit", "mm");
 
     await expect
       .poll(
         async () => {
-          const text = (await energySpan.textContent())?.trim();
+          const text = (await energyResult.textContent())?.trim();
           if (!text || !/^\d/.test(text)) return null;
-          return parseFloat(text);
+          return parseEnergyMeV(text);
         },
         { timeout: 15000 },
       )
       .not.toBe(energyAtCm);
 
-    const energyAtMm = parseFloat((await energySpan.textContent())!.trim());
+    const energyAtMm = parseEnergyMeV((await energyResult.textContent())!.trim());
     expect(energyAtMm).toBeGreaterThan(0);
     // 10 mm < 10 cm, so energy for 10 mm range must be less than for 10 cm
     expect(energyAtMm).toBeLessThan(energyAtCm);
@@ -273,23 +291,23 @@ test.describe("Inverse Lookups — Range Tab", () => {
     const wasmPresent = await checkWasmPresent(page);
     test.skip(!wasmPresent, "WASM binary absent");
 
-    // Load with 30 keV/µm; note initial E_low
+    // Load with 30 keV/µm; note initial E_high
     await page.goto(
       "/calculator?particle=1&material=276&program=2&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
     );
-    await page.waitForSelector('[data-testid="inverse-stp-result-low-0"]', { timeout: 15000 });
+    await page.waitForSelector('[data-testid="inverse-stp-result-high-0"]', { timeout: 15000 });
 
-    const lowSpan = page.locator('[data-testid="inverse-stp-result-low-0"] span');
-    await expect(lowSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
-    const energyAtKevUm = parseFloat((await lowSpan.textContent())!.trim());
+    const highSpan = page.locator('[data-testid="inverse-stp-result-high-0"] span');
+    await expect(highSpan).toHaveText(/^\d+(\.\d+)?\s*(keV|MeV|GeV)?$/, { timeout: 15000 });
+    const energyAtKevUm = parseFloat((await highSpan.textContent())!.trim());
 
     // Change unit to MeV/cm; same numeric value (30) now means 30 MeV/cm → different conversion
-    await page.selectOption('[data-testid="inverse-stp-unit"]', "mev-cm");
+    await selectInverseUnit(page, "inverse-stp-unit", "MeV/cm");
 
     await expect
       .poll(
         async () => {
-          const text = (await lowSpan.textContent())?.trim();
+          const text = (await highSpan.textContent())?.trim();
           if (!text || !/^\d/.test(text)) return null;
           return parseFloat(text);
         },

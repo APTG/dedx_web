@@ -49,15 +49,19 @@ test.describe("Calculator on mobile viewport", () => {
   test.use({ viewport: { width: 412, height: 915 } });
 
   test("calculated stopping power and range are fully visible (no clipping)", async ({ page }) => {
-    await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+    // Advanced mode (multi-program): result-table.svelte wraps <table> in an
+    // overflow-x-auto div, so locator("..") finds the scroll container.
+    // Single-program Advanced mode now uses TableAdvanced (`advanced-*` test ids),
+    // while true compare-across-programs still uses ResultTable (`stp-cell-*`).
+    await page.goto("/calculator?advanced=1");
+    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 10000 });
 
-    const energyInput = page.locator('[data-testid="energy-input-0"]');
+    const energyInput = page.locator('[data-testid="advanced-energy-input-0"]');
     await energyInput.fill("100 MeV");
     await energyInput.blur();
 
-    const stpCell = page.locator('[data-testid="stp-cell-0"]');
-    const rangeCell = page.locator('[data-testid="range-cell-0"]');
+    const stpCell = page.locator('[data-testid="advanced-stp-cell-0"]');
+    const rangeCell = page.locator('[data-testid="advanced-range-cell-0"]');
 
     // Wait for real WASM-computed values.
     await expect
@@ -96,7 +100,7 @@ test.describe("Calculator on mobile viewport", () => {
     // narrower than the table — i.e. scrollWidth strictly greater than
     // clientWidth on the wrapper. Equality would mean the table fits and
     // there is nothing to scroll, which would silently regress this fix.
-    const tableWrapper = page.locator('[data-testid="result-table"]').locator("..");
+    const tableWrapper = page.locator('[data-testid="advanced-combined-table"]').locator("..");
     const wrapperMetrics = await tableWrapper.evaluate((el) => {
       const style = getComputedStyle(el);
       return {

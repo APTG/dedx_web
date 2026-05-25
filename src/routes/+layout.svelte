@@ -223,7 +223,7 @@
     </div>
   {/if}
 
-  <main class="container mx-auto px-4 py-6">
+  <main class="container mx-auto px-4 pt-3 pb-6 sm:py-6">
     {@render children()}
   </main>
 

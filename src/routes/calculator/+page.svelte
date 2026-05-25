@@ -11,15 +11,15 @@
   import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
-  import {
-    createMultiEntityState,
-    type MultiEntityState,
-  } from "$lib/state/multi-entity.svelte";
+  import { createMultiEntityState, type MultiEntityState } from "$lib/state/multi-entity.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/result-table.svelte";
-  import EnergyUnitSelector from "$lib/components/energy-unit-selector.svelte";
+  import TableBasic from "$lib/components/results/table-basic.svelte";
+  import TableAdvanced from "$lib/components/results/table-advanced.svelte";
+  import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
+  import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
@@ -50,7 +50,8 @@
     createInverseLookupState,
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
-  import { LibdedxError, type InverseCsdaResult } from "$lib/wasm/types";
+  import { HIGH_E_SIDE, LOW_E_SIDE } from "$lib/utils/inverse-stp";
+  import { LibdedxError, type InverseCsdaResult, type EnergyUnit } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
@@ -60,16 +61,51 @@
   import type { ExternalDataError } from "$lib/external-data/errors";
   import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type {
-    ExternalSourceDescriptor,
-    EntityId,
-    ExtRef,
-  } from "$lib/external-data/types";
+  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { parseExtdataParams } from "$lib/external-data/url";
   import type { CompatibilityMatrix } from "$lib/wasm/types";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { CalculationResult } from "$lib/wasm/types";
+
+  const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
+    MeV: "Megaelectronvolts — total kinetic energy",
+    "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
+    "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
+  };
+
+  const RANGE_ANCHOR_OPTIONS = [
+    { value: "nm", label: "nm", tooltip: "nanometres" },
+    { value: "um", label: "µm", tooltip: "micrometres" },
+    { value: "mm", label: "mm", tooltip: "millimetres" },
+    { value: "cm", label: "cm", tooltip: "centimetres" },
+    { value: "m", label: "m", tooltip: "metres" },
+  ];
+
+  function getEnergyAnchorOptions(
+    particle: { id: number | string; massNumber?: number; A?: number } | null | undefined,
+    advancedMode: boolean,
+  ) {
+    const units = getAvailableEnergyUnits(
+      particle as Parameters<typeof getAvailableEnergyUnits>[0],
+      advancedMode,
+    );
+    const isElectron = particle?.id === 1001;
+    const massNumber =
+      particle && "massNumber" in particle
+        ? particle.massNumber
+        : (particle as { A?: number } | null)?.A;
+    const isProton = massNumber === 1 && !isElectron;
+    return units.map((u) => {
+      const opt: { value: string; label: string; tooltip: string; sub?: string } = {
+        value: u,
+        label: u,
+        tooltip: ENERGY_UNIT_TOOLTIPS[u],
+      };
+      if (u === "MeV/u" && isProton && advancedMode) opt.sub = "(≠MeV)";
+      return opt;
+    });
+  }
 
   let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
@@ -305,12 +341,12 @@
           const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
           if (inverseMode && isAdvancedMode.value) {
             inverseLookupState!.setActiveTab(inverseMode.imode);
-            if (inverseMode.ivalues && inverseMode.ivalues.length > 0) {
+            if (inverseMode.lookups && inverseMode.lookups.length > 0) {
               inverseLookupState!.rangeRows.length = 0;
               inverseLookupState!.stpRows.length = 0;
 
-              for (let i = 0; i < inverseMode.ivalues.length; i++) {
-                const ival = inverseMode.ivalues[i]!;
+              for (let i = 0; i < inverseMode.lookups.length; i++) {
+                const ival = inverseMode.lookups[i]!;
                 const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
                 if (inverseMode.imode === "csda") {
                   if (i === 0) {
@@ -348,6 +384,10 @@
                   inverseMode.iunit as (typeof validStpUnits)[number],
                 );
               }
+            }
+            // Restore STP column-visibility state from URL
+            if (inverseMode.imode === "stp" && urlState.istpBranchState) {
+              inverseLookupState!.setStpBranchState(urlState.istpBranchState);
             }
           }
 
@@ -391,15 +431,24 @@
     persistAdvancedOptions();
   });
 
-  // Retrigger single-program calculation when advanced options change (basic mode).
-  // Advanced mode uses its own calculation effect below (multi-program calculateMulti).
+  // Retrigger calculator-state calculation when advanced options change for the
+  // single-result table paths (Basic mode and single-program Advanced mode).
+  // True multi-program compare continues to use the dedicated calculateMulti effect below.
   $effect(() => {
     // Read advOptsKey to register reactive dep on all advanced option fields.
     const _advOptsKey = advOptsKey;
     void _advOptsKey;
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
-    if (!calcState || !entityState?.isComplete || isAdvancedMode.value) return;
+    if (!calcState || !entityState?.isComplete) return;
+    const isMultiProgramCompare =
+      isAdvancedMode.value &&
+      entityState.across === "program" &&
+      (multiProgState?.selectedProgramIds.length ?? 0) > 1;
+    const isMultiEntityCompare =
+      isAdvancedMode.value &&
+      (entityState.across === "material" || entityState.across === "particle");
+    if (isMultiProgramCompare || isMultiEntityCompare) return;
     calcState.triggerCalculation();
   });
 
@@ -420,7 +469,7 @@
       if (inverseLookupState.activeTab === "csda") {
         inverseModeState = {
           imode: "csda",
-          ivalues: inverseLookupState.rangeRows
+          lookups: inverseLookupState.rangeRows
             .filter((r) => r.text.trim() !== "")
             .map((r) => {
               const trimmed = r.text.trim();
@@ -436,12 +485,12 @@
       } else if (inverseLookupState.activeTab === "stp") {
         inverseModeState = {
           imode: "stp",
-          ivalues: inverseLookupState.stpRows
+          lookups: inverseLookupState.stpRows
             .filter((r) => r.text.trim() !== "")
             .map((r) => ({
               rawInput: r.text.trim(),
               unit: r.unit,
-              unitFromSuffix: false, // STP doesn't use inline suffix detection
+              unitFromSuffix: false,
             })),
           iunit: inverseLookupState.stpMasterUnit,
         };
@@ -489,6 +538,10 @@
         : {}),
       // Include inverse mode state when active
       ...(inverseModeState || {}),
+      // Encode istpbranch when STP column visibility is "both"
+      ...(inverseModeState?.imode === "stp" && inverseLookupState?.stpBranchState === "both"
+        ? { istpBranchState: "both" as const }
+        : {}),
     };
     // Use calculatorUrlQueryString so `:` and `,` are written literally
     // (RFC 3986 §3.4 permits them unencoded in the query component).
@@ -644,7 +697,6 @@
       }
     }
   }
-
 
   $effect(() => {
     if (calcState && entityState) {
@@ -860,30 +912,6 @@
    * Format energy with auto-scaling (eV/keV/MeV/GeV).
    * Input is in MeV/nucl. Returns string with unit.
    */
-  function formatEnergy(energyMevNucl: number): string {
-    const absVal = Math.abs(energyMevNucl);
-    let value: number;
-    let unit: string;
-
-    if (absVal >= 1000) {
-      value = energyMevNucl / 1000;
-      unit = "GeV";
-    } else if (absVal >= 1) {
-      value = energyMevNucl;
-      unit = "MeV";
-    } else if (absVal >= 0.001) {
-      value = energyMevNucl * 1000;
-      unit = "keV";
-    } else {
-      value = energyMevNucl * 1e6;
-      unit = "eV";
-    }
-
-    // Format with 4 significant figures
-    const formatted = value.toPrecision(4);
-    return `${formatted} ${unit}`;
-  }
-
   /** Find the local ID of an entity (particle or material) within a specific external source. */
   function resolveExtLocalIdForLabel(
     entityId: number | string,
@@ -919,7 +947,7 @@
     if (entityState.across !== "program") return;
 
     const selectedProgramIds = multiProgState.selectedProgramIds;
-    if (selectedProgramIds.length === 0) return;
+    if (selectedProgramIds.length <= 1) return;
 
     const rawParticleId = entityState.selectedParticle?.id;
     // External-only particles have string IDs — multi-program mode only supports built-in particles
@@ -1173,9 +1201,8 @@
     if (!multiEntityState || !entityState || !calcState || !entityState.isComplete) return;
 
     const dim = multiEntityState.dimension;
-    const entityIds = dim === "material"
-      ? entityState.multiSelected.material
-      : entityState.multiSelected.particle;
+    const entityIds =
+      dim === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle;
 
     if (entityIds.length === 0) return;
 
@@ -1209,10 +1236,10 @@
     };
 
     if (dim === "particle" && typeof anchorMaterialId !== "number") {
-      const unsupportedMaterialMessage = typeof anchorMaterialId === "string" &&
-          anchorMaterialId.startsWith("ext:")
-        ? "Multi-particle comparison does not support external-only materials."
-        : "Multi-particle comparison does not support custom compounds.";
+      const unsupportedMaterialMessage =
+        typeof anchorMaterialId === "string" && anchorMaterialId.startsWith("ext:")
+          ? "Multi-particle comparison does not support external-only materials."
+          : "Multi-particle comparison does not support custom compounds.";
       const results = new Map<EntityId, CalculationResult | LibdedxError>();
       for (const entityId of entityIds) {
         results.set(entityId, new LibdedxError(-1, unsupportedMaterialMessage));
@@ -1228,7 +1255,15 @@
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
     const advOptsSnapshot = advancedOptions.value;
-    const inputSnapshot = { programId, anchorParticleId, anchorMaterialId, entityIds, energies, dim, builtinMat };
+    const inputSnapshot = {
+      programId,
+      anchorParticleId,
+      anchorMaterialId,
+      entityIds,
+      energies,
+      dim,
+      builtinMat,
+    };
     let cancelled = false;
 
     const timer = setTimeout(async () => {
@@ -1236,7 +1271,10 @@
       const service = await getService();
       if (cancelled) return;
 
-      const results = new Map<EntityId, import("$lib/wasm/types").CalculationResult | LibdedxError>();
+      const results = new Map<
+        EntityId,
+        import("$lib/wasm/types").CalculationResult | LibdedxError
+      >();
 
       for (const entityId of inputSnapshot.entityIds) {
         try {
@@ -1244,7 +1282,8 @@
           if (inputSnapshot.dim === "material") {
             const customMaterial =
               getCustomMaterialById(entityId) ??
-              (entityId === inputSnapshot.anchorMaterialId && isCustomMaterial(inputSnapshot.builtinMat)
+              (entityId === inputSnapshot.anchorMaterialId &&
+              isCustomMaterial(inputSnapshot.builtinMat)
                 ? inputSnapshot.builtinMat
                 : null);
             if (customMaterial !== null) {
@@ -1493,7 +1532,7 @@
 
       try {
         const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
-        // Call for low/high branches
+        // Call for low-E and high-E branches (LOW_E_SIDE=0, HIGH_E_SIDE=1)
         const lowResults = activeCustomMaterial
           ? service.getInverseStpCustomCompound({
               programId,
@@ -1502,7 +1541,7 @@
               density,
               iValue: activeCustomMaterial.iValue,
               stoppingPowers: stpMevCm2g,
-              side: 0,
+              side: LOW_E_SIDE,
             })
           : typeof materialId === "number"
             ? service.getInverseStp({
@@ -1510,7 +1549,7 @@
                 particleId,
                 materialId,
                 stoppingPowers: stpMevCm2g,
-                side: 0,
+                side: LOW_E_SIDE,
                 options: advOptsSnapshot,
               })
             : [];
@@ -1523,7 +1562,7 @@
               density,
               iValue: activeCustomMaterial.iValue,
               stoppingPowers: stpMevCm2g,
-              side: 1,
+              side: HIGH_E_SIDE,
             })
           : typeof materialId === "number"
             ? service.getInverseStp({
@@ -1531,7 +1570,7 @@
                 particleId,
                 materialId,
                 stoppingPowers: stpMevCm2g,
-                side: 1,
+                side: HIGH_E_SIDE,
                 options: advOptsSnapshot,
               })
             : [];
@@ -1548,10 +1587,19 @@
               r.energyHighMevNucl = null;
             } else {
               r.status = "valid";
-              r.energyLowMevNucl =
+              const lowE =
                 lowResult instanceof Error || lowResult === undefined ? null : lowResult.energy;
-              r.energyHighMevNucl =
+              const highE =
                 highResult instanceof Error || highResult === undefined ? null : highResult.energy;
+              // Treat identical branch energies as a single solution —
+              // the C inverse lookup returns the same energy for both sides
+              // when only one physical solution exists for the given STP value.
+              const isSingleSolution =
+                lowE !== null &&
+                highE !== null &&
+                Math.abs(lowE - highE) / Math.max(Math.abs(highE), 1e-300) < 1e-6;
+              r.energyLowMevNucl = isSingleSolution ? null : lowE;
+              r.energyHighMevNucl = highE;
             }
 
             resultIdx++;
@@ -1613,9 +1661,14 @@
   <title>Calculator - webdedx</title>
 </svelte:head>
 
-<div class="space-y-6">
+<div class="space-y-3 sm:space-y-6">
   <div class="flex items-center justify-between">
-    <h1 class="text-3xl font-bold">Calculator</h1>
+    <div>
+      <h1 class="hidden sm:block sm:text-2xl sm:font-semibold">Calculator</h1>
+      <p class="text-xs sm:text-sm text-muted-foreground">
+        Select a particle, material, and program to calculate stopping powers and CSDA ranges.
+      </p>
+    </div>
     {#if calcState}
       <Button
         variant="ghost"
@@ -1627,9 +1680,6 @@
       </Button>
     {/if}
   </div>
-  <p class="text-muted-foreground">
-    Select a particle, material, and program to calculate stopping powers and CSDA ranges.
-  </p>
 
   {#if urlVersionMismatch}
     <UrlVersionWarningBanner
@@ -1691,7 +1741,7 @@
       </div>
     </div>
   {:else}
-    <div class="mx-auto max-w-4xl space-y-6">
+    <div class="mx-auto max-w-4xl space-y-4 sm:space-y-6">
       <SelectionLiveRegion state={entityState} />
       <EntitySelection
         selectionState={entityState}
@@ -1702,7 +1752,10 @@
       <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
       <LoadExternalModal
         open={showLoadExternalModal}
-        existingLabels={new Set([...loadedExternalSources.map((s) => s.label), ...externalDataService.getLoadedLabels()])}
+        existingLabels={new Set([
+          ...loadedExternalSources.map((s) => s.label),
+          ...externalDataService.getLoadedLabels(),
+        ])}
         onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
       />
@@ -1875,17 +1928,19 @@
           </div>
         </div>
       {/if}
-      <EnergyUnitSelector
-        value={calcState.masterUnit}
-        availableUnits={getAvailableEnergyUnits(
-          entityState.selectedParticle && "massNumber" in entityState.selectedParticle
-            ? entityState.selectedParticle
-            : null,
-          isAdvancedMode.value,
-        )}
-        disabled={calcState.isPerRowMode}
-        onValueChange={(unit) => calcState?.setMasterUnit(unit)}
-      />
+      {#if isAdvancedMode.value && ((multiProgState !== null && multiProgState.selectedProgramIds.length > 1) || multiEntityState !== null)}
+        <UnitAnchorStrip
+          options={getEnergyAnchorOptions(
+            entityState.selectedParticle && "massNumber" in entityState.selectedParticle
+              ? entityState.selectedParticle
+              : null,
+            isAdvancedMode.value,
+          )}
+          selected={calcState.masterUnit}
+          onSelect={(v) => calcState?.setMasterUnit(v as EnergyUnit)}
+          disabled={calcState.isPerRowMode}
+        />
+      {/if}
 
       {#if isAdvancedMode.value}
         <!-- Tab switcher for Advanced mode -->
@@ -1894,7 +1949,7 @@
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "forward"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "forward"}
               class:border-transparent={inverseLookupState?.activeTab !== "forward"}
               class:text-foreground={inverseLookupState?.activeTab === "forward"}
@@ -1902,12 +1957,16 @@
               onclick={() => inverseLookupState?.setActiveTab("forward")}
               data-testid="inverse-tab-forward"
             >
-              Forward
+              <span class="hidden min-[400px]:block font-bold">Energy →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ STP, Range</span
+              >
+              <span class="min-[400px]:hidden font-bold">E→</span>
             </button>
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "csda"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "csda"}
               class:border-transparent={inverseLookupState?.activeTab !== "csda"}
               class:text-foreground={inverseLookupState?.activeTab === "csda"}
@@ -1915,12 +1974,16 @@
               onclick={() => inverseLookupState?.setActiveTab("csda")}
               data-testid="inverse-tab-range"
             >
-              Range
+              <span class="hidden min-[400px]:block font-bold">Range →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
+              <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
             <button
               role="tab"
               aria-selected={inverseLookupState?.activeTab === "stp"}
-              class="px-4 py-2 text-sm font-medium border-b-2 transition-colors"
+              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
               class:border-primary={inverseLookupState?.activeTab === "stp"}
               class:border-transparent={inverseLookupState?.activeTab !== "stp"}
               class:text-foreground={inverseLookupState?.activeTab === "stp"}
@@ -1928,7 +1991,11 @@
               onclick={() => inverseLookupState?.setActiveTab("stp")}
               data-testid="inverse-tab-stp"
             >
-              Inverse STP
+              <span class="hidden min-[400px]:block font-bold">STP →</span>
+              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+                >→ Energy</span
+              >
+              <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
           </div>
         </div>
@@ -1937,7 +2004,7 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState}
+          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
             <ResultTable
               {calcState}
               entitySelection={entityState}
@@ -1949,10 +2016,14 @@
               {calcState}
               entitySelection={entityState}
               {multiEntityState}
-              multiEntityIds={entityState.across === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle}
+              multiEntityIds={entityState.across === "material"
+                ? entityState.multiSelected.material
+                : entityState.multiSelected.particle}
             />
+          {:else if isAdvancedMode.value}
+            <TableAdvanced mode="energy" {calcState} entitySelection={entityState} />
           {:else}
-            <ResultTable {calcState} entitySelection={entityState} />
+            <TableBasic {calcState} entitySelection={entityState} />
           {/if}
         </div>
       {/if}
@@ -1964,111 +2035,7 @@
             <div class="text-sm text-muted-foreground">
               Enter a CSDA range value to find the corresponding particle energy.
             </div>
-
-            <!-- Master unit selector (visible in master mode) -->
-            <div class="flex items-center gap-2 text-sm">
-              <label for="inverse-range-unit" class="text-muted-foreground">Unit:</label>
-              <select
-                id="inverse-range-unit"
-                data-testid="inverse-range-unit"
-                value={inverseLookupState.rangeMasterUnit}
-                disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                onchange={(e) => {
-                  const newUnit = e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m";
-                  inverseLookupState?.setRangeMasterUnit(newUnit);
-                }}
-                class="flex h-10 w-auto rounded-md border border-input bg-background px-3 py-2 text-sm"
-              >
-                <option value="nm">nm</option>
-                <option value="um">µm</option>
-                <option value="mm">mm</option>
-                <option value="cm">cm</option>
-                <option value="m">m</option>
-              </select>
-              {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
-                <span class="text-xs text-muted-foreground">(per-row mode active)</span>
-              {/if}
-            </div>
-
-            <!-- Range table header -->
-            <div class="grid grid-cols-3 gap-2 text-sm font-medium mb-2">
-              <div>Range</div>
-              <div>Unit</div>
-              <div>→ Energy</div>
-            </div>
-
-            <!-- Range rows -->
-            <div class="space-y-2">
-              {#each inverseLookupState.rangeRows as row, i (row.id)}
-                <div class="grid grid-cols-3 gap-2" data-testid="inverse-range-row-{i}">
-                  <input
-                    type="text"
-                    value={row.text}
-                    placeholder="Enter range (e.g., 7.718 cm)"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) =>
-                      inverseLookupState?.updateRangeRowText(i, e.currentTarget.value)}
-                    data-testid="inverse-range-input-{i}"
-                  />
-                  {#if row.unitFromSuffix}
-                    <select
-                      value={row.unit}
-                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      disabled
-                    >
-                      <option value="nm">nm</option>
-                      <option value="um">µm</option>
-                      <option value="mm">mm</option>
-                      <option value="cm">cm</option>
-                      <option value="m">m</option>
-                    </select>
-                  {:else}
-                    <select
-                      value={inverseLookupState.rangeMasterUnit}
-                      class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                      onchange={(e) => {
-                        inverseLookupState?.setRangeMasterUnit(
-                          e.currentTarget.value as "nm" | "um" | "mm" | "cm" | "m",
-                        );
-                      }}
-                    >
-                      <option value="nm">nm</option>
-                      <option value="um">µm</option>
-                      <option value="mm">mm</option>
-                      <option value="cm">cm</option>
-                      <option value="m">m</option>
-                    </select>
-                  {/if}
-                  <div class="flex items-center" data-testid="inverse-range-result-{i}">
-                    {#if row.status === "valid" && row.energyMevNucl != null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "out-of-range" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                </div>
-                <!-- Error row display -->
-                {#if (row.status === "invalid" || row.status === "out-of-range" || row.status === "error") && row.message}
-                  <div data-testid="inverse-range-row-error-{i}" class="text-sm text-destructive">
-                    {row.message}
-                  </div>
-                {/if}
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState?.addRangeRow()}
-              >
-                + Add row
-              </button>
-            </div>
-
-            <!-- Valid range hint -->
+            <TableAdvanced mode="range" {inverseLookupState} />
             {#if entityState.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
@@ -2083,91 +2050,21 @@
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           <div class="space-y-4">
             <div class="text-sm text-muted-foreground">
-              Enter a stopping power value to find the corresponding energies (low and high
-              branches).
+              Enter a stopping power value to find the corresponding energies (high-E branch by
+              default; low-E branch reveals when any row has two solutions).
             </div>
-
-            <!-- STP table header -->
-            <div class="grid grid-cols-4 gap-2 text-sm font-medium mb-2">
-              <div>Stopping Power</div>
-              <div>Unit</div>
-              <div>E low</div>
-              <div>E high</div>
-            </div>
-
-            <!-- STP rows -->
-            <div class="space-y-2">
-              {#each inverseLookupState.stpRows as row, i (row.id)}
-                <div class="grid grid-cols-4 gap-2" data-testid="inverse-stp-row-{i}">
-                  <input
-                    type="text"
-                    value={row.text}
-                    placeholder="Enter stopping power"
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                    oninput={(e) => inverseLookupState?.updateStpRowText(i, e.currentTarget.value)}
-                    data-testid="inverse-stp-input-{i}"
-                  />
-                  <select
-                    data-testid="inverse-stp-unit"
-                    value={row.unit}
-                    class="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                    onchange={(e) => {
-                      inverseLookupState?.setStpMasterUnit(
-                        e.currentTarget.value as "kev-um" | "mev-cm" | "mev-cm2-g",
-                      );
-                    }}
-                  >
-                    <option value="kev-um">keV/µm</option>
-                    <option value="mev-cm">MeV/cm</option>
-                    <option value="mev-cm2-g">MeV·cm²/g</option>
-                  </select>
-                  <div class="flex items-center" data-testid="inverse-stp-result-low-{i}">
-                    {#if row.status === "valid" && row.energyLowMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                  <div class="flex items-center" data-testid="inverse-stp-result-high-{i}">
-                    {#if row.status === "valid" && row.energyHighMevNucl !== null}
-                      <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
-                    {:else if row.status === "invalid" || row.status === "no-solution" || row.status === "error"}
-                      <span class="text-sm text-destructive">{row.message ?? "—"}</span>
-                    {:else if row.status === "empty"}
-                      <span class="text-sm text-muted-foreground"></span>
-                    {:else}
-                      <span class="text-sm text-muted-foreground">—</span>
-                    {/if}
-                  </div>
-                </div>
-                <!-- Error row display -->
-                {#if (row.status === "invalid" || row.status === "no-solution" || row.status === "error") && row.message}
-                  <div data-testid="inverse-stp-row-error-{i}" class="text-sm text-destructive">
-                    {row.message}
-                  </div>
-                {/if}
-              {/each}
-              <!-- Add row button -->
-              <button
-                type="button"
-                class="text-sm text-primary hover:underline mt-2"
-                onclick={() => inverseLookupState?.addStpRow()}
-              >
-                + Add row
-              </button>
-            </div>
-
-            <!-- Valid STP range hint -->
-            {#if entityState.isComplete && energyRangeLabel}
-              <p class="text-xs text-muted-foreground mt-4">
-                Particle/material: {entityState.selectedParticle?.name} in {entityState
-                  .selectedMaterial?.name}
-              </p>
-            {/if}
+            <TableInverseStp
+              inverseLookupState={inverseLookupState}
+              onPlotRow={(rowIndex) => {
+                const row = inverseLookupState?.stpRows[rowIndex];
+                if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
+                const pId = entityState?.selectedParticle?.id;
+                const mId = entityState?.selectedMaterial?.id;
+                const progId = entityState?.resolvedProgramId;
+                if (typeof pId !== "number" || typeof mId !== "number" || typeof progId !== "number") return;
+                goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
+              }}
+            />
           </div>
         </div>
       {/if}

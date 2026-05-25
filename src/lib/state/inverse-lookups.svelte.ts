@@ -1,4 +1,5 @@
 import type { EntitySelectionState } from "./entity-selection.svelte";
+import type { StpBranchState } from "$lib/utils/inverse-stp";
 
 /**
  * Range row for inverse CSDA lookup.
@@ -46,6 +47,8 @@ export interface InverseLookupState {
   stpRows: InverseStpRow[];
   rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m";
   stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g";
+  /** Column-visibility state for the STP table (hi = high-E only, both = both columns). */
+  stpBranchState: StpBranchState;
   isCalculating: boolean;
   error: Error | null;
   /** Set active tab ("forward", "csda", "stp") */
@@ -56,12 +59,18 @@ export interface InverseLookupState {
   setRangeMasterUnit(unit: "nm" | "um" | "mm" | "cm" | "m"): void;
   /** Range tab: add empty row */
   addRangeRow(): void;
+  /** Range tab: remove row at index (no-op when only one row remains) */
+  removeRangeRow(index: number): void;
   /** STP tab: update row text */
   updateStpRowText(index: number, text: string): void;
   /** STP tab: set master unit */
   setStpMasterUnit(unit: "kev-um" | "mev-cm" | "mev-cm2-g"): void;
   /** STP tab: add empty row */
   addStpRow(): void;
+  /** STP tab: remove row at index (no-op when only one row remains) */
+  removeStpRow(index: number): void;
+  /** STP tab: set branch column-visibility state (used when loading from URL). */
+  setStpBranchState(state: StpBranchState): void;
   /** Reset all inverse state */
   reset(): void;
 }
@@ -183,11 +192,13 @@ export function createInverseLookupState(
   const meta = $state<{
     rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m";
     stpMasterUnit: "kev-um" | "mev-cm" | "mev-cm2-g";
+    stpBranchState: StpBranchState;
     isCalculating: boolean;
     error: Error | null;
   }>({
     rangeMasterUnit: "cm",
     stpMasterUnit: "kev-um",
+    stpBranchState: "hi",
     isCalculating: false,
     error: null,
   });
@@ -334,6 +345,9 @@ export function createInverseLookupState(
     set stpMasterUnit(v: "kev-um" | "mev-cm" | "mev-cm2-g") {
       meta.stpMasterUnit = v;
     },
+    get stpBranchState() {
+      return meta.stpBranchState;
+    },
     get isCalculating() {
       return meta.isCalculating;
     },
@@ -377,6 +391,10 @@ export function createInverseLookupState(
       };
       rangeRows.push(newRow);
     },
+    removeRangeRow(index: number) {
+      if (rangeRows.length <= 1) return;
+      rangeRows.splice(index, 1);
+    },
     updateStpRowText(index: number, text: string) {
       const row = stpRows[index];
       if (!row) return;
@@ -400,6 +418,13 @@ export function createInverseLookupState(
         energyHighMevNucl: null,
       };
       stpRows.push(newRow);
+    },
+    removeStpRow(index: number) {
+      if (stpRows.length <= 1) return;
+      stpRows.splice(index, 1);
+    },
+    setStpBranchState(s: StpBranchState) {
+      meta.stpBranchState = s;
     },
     reset() {
       state.activeTab = "forward";
@@ -425,6 +450,7 @@ export function createInverseLookupState(
       });
       meta.rangeMasterUnit = "cm";
       meta.stpMasterUnit = "kev-um";
+      meta.stpBranchState = "hi";
       meta.isCalculating = false;
       meta.error = null;
     },
