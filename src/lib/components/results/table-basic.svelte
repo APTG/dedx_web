@@ -4,7 +4,6 @@
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { formatRangeCm } from "./value-formatters";
   import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
-  import { tick } from "svelte";
 
   interface Props {
     calcState: CalculatorState;
@@ -109,8 +108,7 @@
   function handleInputKeyDown(event: KeyboardEvent, index: number) {
     if (event.key === "Escape") {
       event.preventDefault();
-      const target = event.target as HTMLInputElement;
-      tick().then(() => target.blur());
+      (event.target as HTMLInputElement).blur();
       return;
     }
 
@@ -121,7 +119,7 @@
       const moved = focusRowInput(index + 1);
       if (!moved) {
         calcState.addRow();
-        tick().then(() => focusRowInput(index + 1));
+        queueMicrotask(() => focusRowInput(index + 1));
       }
       return;
     }
@@ -144,7 +142,7 @@
         const direction = event.key === "ArrowUp" ? "up" : "down";
         calcState.moveRow(index, direction);
         const newIndex = direction === "up" ? index - 1 : index + 1;
-        tick().then(() => focusRowInput(newIndex));
+        queueMicrotask(() => focusRowInput(newIndex));
       } else {
         event.preventDefault();
         focusRowInput(event.key === "ArrowUp" ? index - 1 : index + 1);
@@ -157,7 +155,7 @@
       if (input.value === "" && calcState.rows.length > 1) {
         event.preventDefault();
         calcState.removeRow(index);
-        tick().then(() => focusRowInput(Math.max(0, index - 1)));
+        queueMicrotask(() => focusRowInput(Math.max(0, index - 1)));
       }
     }
   }
@@ -273,6 +271,7 @@
             onkeydown={(e) => handleInputKeyDown(e, 0)}
             oninput={(e) => handleInputChange(e, 0)}
             onpaste={(e) => handlePaste(e, 0)}
+            disabled={calcState.isCalculating}
           />
           {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
             <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
@@ -358,6 +357,7 @@
                     onkeydown={(e) => handleInputKeyDown(e, i)}
                     oninput={(e) => handleInputChange(e, i)}
                     onpaste={(e) => handlePaste(e, i)}
+                    disabled={calcState.isCalculating}
                   />
                   {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
                     <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">

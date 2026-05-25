@@ -14,8 +14,12 @@ export function setupPlotUrlSync(
   getEntityState: () => EntitySelectionState | null,
   getUrlInitialized: () => boolean,
   getLoadedExternalSources: () => ExternalSourceDescriptor[],
+  getAdvOptsKey: () => string,
 ) {
   $effect(() => {
+    const _advOptsKey = getAdvOptsKey();
+    void _advOptsKey;
+
     const entityState = getEntityState();
     const urlInitialized = getUrlInitialized();
     const plotState = getPlotState();

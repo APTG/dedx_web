@@ -7,7 +7,6 @@
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
-  import { tick } from "svelte";
 
   const RANGE_ANCHOR_OPTIONS = [
     { value: "nm", label: "nm", tooltip: "nanometres" },
@@ -94,7 +93,7 @@
   }
 
   function focusAdvancedRow(index: number): void {
-    tick().then(() => advancedInputs()[index]?.focus());
+    queueMicrotask(() => advancedInputs()[index]?.focus());
   }
 
   function handleEnergyKeyDown(e: KeyboardEvent, i: number) {
@@ -102,8 +101,7 @@
 
     if (e.key === "Escape") {
       e.preventDefault();
-      const target = e.target as HTMLInputElement;
-      tick().then(() => target.blur());
+      (e.target as HTMLInputElement).blur();
       return;
     }
 
@@ -146,10 +144,10 @@
 
     if (e.key === "Backspace") {
       const input = e.target as HTMLInputElement;
-      if (input.value === "" && calcState && calcState.rows.length > 1) {
+      if (input.value === "" && calcState.rows.length > 1) {
         e.preventDefault();
         calcState.removeRow(i);
-        tick().then(() => focusAdvancedRow(Math.max(0, i - 1)));
+        focusAdvancedRow(Math.max(0, i - 1));
       }
     }
   }
@@ -269,7 +267,8 @@
                   oninput={(e) => handleEnergyInput(e, i)}
                   onkeydown={(e) => handleEnergyKeyDown(e, i)}
                   onpaste={(e) => handleEnergyPaste(e, i)}
-                  onblur={() => tick().then(() => calcState?.handleBlur(i))}
+                  onblur={() => calcState?.handleBlur(i)}
+                  disabled={calcState.isCalculating}
                 />
                 {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
                   <div class="mt-0.5 text-xs text-destructive" role="alert">{row.message}</div>

@@ -450,6 +450,7 @@
     () => entityState,
     () => urlInitialized,
     () => loadedExternalSources,
+    () => advOptsKey,
   );
 
   // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
