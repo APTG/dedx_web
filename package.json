@@ -65,11 +65,5 @@
     "jspdf": "^4.2.1",
     "jsroot": "^7.11.0",
     "zarrita": "^0.7.3"
-  },
-  "pnpm": {
-    "// overrides": "cookie is overridden to >=0.7.0 to mitigate GHSA-pxg6-pf52-xh8x. Upstream: https://github.com/sveltejs/kit/issues/13089",
-    "overrides": {
-      "cookie": ">=0.7.0"
-    }
   }
 }

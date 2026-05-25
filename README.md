@@ -47,8 +47,9 @@ Open [http://localhost:5173](http://localhost:5173).
 To maintain a secure and clean codebase, follow these rules when managing dependencies and addressing security vulnerabilities:
 
 - **Prefer Direct Upgrades**: If `pnpm audit` or Dependabot flags a vulnerability in a transitive dependency, prefer upgrading the direct dependency that pulls it in. Do not jump to adding overrides immediately.
-- **Minimal Overrides**: Only use `pnpm.overrides` as a last resort if no compatible upstream release exists.
-- **Document Overrides**: Every override in `package.json` must be documented. Because `pnpm` validates selector keys within the `overrides` block, place comments in a `"// overrides"` property sibling to `"overrides"` inside the `"pnpm"` block. The comment must reference the GHSA ID it mitigates and link to the upstream issue tracking the proper fix.
+- **Minimal Overrides**: Only use overrides as a last resort if no compatible upstream release exists.
+- **Workspace-Level Configuration**: Define overrides in the root `pnpm-workspace.yaml` under the `overrides:` key (rather than `package.json`'s `pnpm.overrides` block) to ensure compatibility with pnpm v11+ which ignores the `pnpm` field in `package.json`.
+- **Document Overrides**: Every override must be documented. Use standard YAML comments directly above each override entry in `pnpm-workspace.yaml`. The comment must reference the GHSA ID it mitigates and link to the upstream issue tracking the proper fix.
 
 ### Documentation
 
