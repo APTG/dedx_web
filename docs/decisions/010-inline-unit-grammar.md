@@ -14,16 +14,17 @@ input/result table allows users to type energy values with inline unit suffixes
 
 ## Decision
 
-Implement a **whitespace-tolerant, case-insensitive inline-unit parser** with
-ASCII-only input and a 15-token cross-product unit set.
+Implement a **whitespace-tolerant, case-sensitive inline-unit parser** with
+ASCII-only input and a 15-token canonical unit set.
 
 Key rules:
 
 1. **ASCII input only.** Users type `um` for µm, `keV/nucl` or `keV/u` for
    keV/nucleon. The parser emits the canonical Unicode symbol (µm) internally.
-2. **Case-insensitive energy prefix matching.** `MEV`, `mev`, `MeV` are all
-   treated as MeV. The canonical form uses standard physics mixed-case
-   (MeV, GeV, keV, eV, TeV).
+2. **Canonical SI casing required.** Only canonical tokens (`MeV`, `GeV`,
+   `keV`, `eV`, `TeV`, and `/nucl` or `/u` suffixes with canonical case) are
+   accepted. Non-canonical casing (`MEV`, `mev`, `MeV/Nucl`) is rejected with
+   a validation error and optional "did you mean …?" hint when unambiguous.
 3. **Whitespace-tolerant.** `100 MeV`, `100MeV`, `100  MeV` all parse to
    (100, MeV). Leading/trailing whitespace is stripped.
 4. **15-token cross-product.** Five SI energy prefixes × three per-nucleon
@@ -49,11 +50,12 @@ ASCII. Requiring Unicode entry (e.g., typing µ) creates friction. The
 conventional ASCII approximation (`u`, `um`) is well-established in the
 physics community.
 
-### Why case-insensitive
+### Why case-sensitive canonical units
 
-Copy-pasted values from papers sometimes use all-caps (`MEV`), and auto-
-correct on mobile may capitalise the first letter. Accepting any casing
-avoids frustrating users whose input source normalises case differently.
+Energy units are scale-sensitive: `MeV` (10⁶ eV) and `meV` (10⁻³ eV) differ by
+10⁹. Treating arbitrary casing as equivalent risks silent mis-scaling. Requiring
+canonical SI casing makes invalid input explicit and keeps parsing behaviour
+aligned with physics conventions.
 
 ### Why 15 tokens (not fewer)
 
@@ -72,8 +74,8 @@ but reject `100 MeV`, which is the more common typed form.
 
 ## Consequences
 
-- `src/lib/parse/inline-unit.ts` implements the parser with 42 unit tests
-  in `src/tests/unit/inline-unit.test.ts`.
+- `src/lib/utils/energy-parser.ts` implements the parser with unit tests in
+  `src/tests/unit/energy-parser.test.ts`.
 - The URL encoding for per-row unit suffixes uses the same 15-token set
   (see `shareable-urls.md` §3.5).
 - `unit-handling.md` §3 is the normative reference for per-row unit
@@ -87,6 +89,6 @@ but reject `100 MeV`, which is the more common typed form.
 
 - `docs/04-feature-specs/unit-handling.md` — §3 per-row unit detection
 - `docs/04-feature-specs/shareable-urls.md` — §3.5 energy per-row unit suffix tokens
-- `src/lib/parse/inline-unit.ts` — parser implementation
-- `src/tests/unit/inline-unit.test.ts` — 42 unit tests
+- `src/lib/utils/energy-parser.ts` — parser implementation
+- `src/tests/unit/energy-parser.test.ts` — parser unit tests
 - Issue #557 — inline-unit parser, Basic mode layout fix, URL v2 `lookups=` rename

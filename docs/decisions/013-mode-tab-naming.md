@@ -65,7 +65,7 @@ language across the page.
 
 ## Consequences
 
-- Tab labels updated in `calculator.svelte` / `+page.svelte`.
+- Tab labels updated in `src/routes/calculator/+page.svelte`.
 - Desktop sublabels rendered below the main tab label using a smaller
   `text-xs` class.
 - Mobile glyphs (`E→`, `R→`, `S→`) render when viewport width < 400px via
