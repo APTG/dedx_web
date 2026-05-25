@@ -1,8 +1,6 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { replaceState } from "$app/navigation";
   import { page } from "$app/state";
-  import { untrack } from "svelte";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
@@ -21,7 +19,6 @@
   import { getParticleLabel } from "$lib/utils/particle-label";
   import {
     customMaterialElementsForWasm,
-    customMaterialUrlFields,
     isCustomMaterial,
   } from "$lib/utils/custom-compound-material";
   import { customCompounds } from "$lib/state/custom-compounds.svelte";

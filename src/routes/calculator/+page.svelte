@@ -29,18 +29,14 @@
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import {
     customMaterialElementsForWasm,
-    customMaterialUrlFields,
     isCustomMaterial,
   } from "$lib/utils/custom-compound-material";
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { page } from "$app/state";
-  import { replaceState } from "$app/navigation";
   import { untrack } from "svelte";
   import {
     decodeCalculatorUrl,
-    calculatorUrlQueryString,
     decodeInverseModeFromUrl,
-    type InverseModeUrlState,
   } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte";
   import { initExportState } from "$lib/state/export.svelte";
