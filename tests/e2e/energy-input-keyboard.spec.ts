@@ -48,6 +48,8 @@ test.describe("Basic energy table — keyboard contract", () => {
 
     const input1 = page.getByTestId("energy-input-1");
     await expect(input1).toBeFocused({ timeout: 3000 });
+    // Fill row 1 so handleBlur does not remove it as an empty row.
+    await input1.fill("200");
 
     // Shift+Enter should stay on row 1.
     await input1.press("Shift+Enter");
@@ -197,6 +199,8 @@ test.describe("Advanced energy table — keyboard contract", () => {
 
     const input1 = page.getByTestId("advanced-energy-input-1");
     await expect(input1).toBeFocused({ timeout: 3000 });
+    // Fill row 1 so handleBlur (called by Shift+Enter) does not remove it as an empty row.
+    await input1.fill("200");
 
     await input1.press("Shift+Enter");
     await expect(input1).toBeFocused();
@@ -207,11 +211,15 @@ test.describe("Advanced energy table — keyboard contract", () => {
     const input0 = page.getByTestId("advanced-energy-input-0");
     await input0.fill("100");
     await input0.press("Enter");
-    await expect(page.getByTestId("advanced-energy-input-1")).toBeVisible({ timeout: 3000 });
+    const input1 = page.getByTestId("advanced-energy-input-1");
+    await expect(input1).toBeVisible({ timeout: 3000 });
+    // Fill row 1 so the blur event fired when input0 is re-focused does not
+    // remove it via handleBlur (the advanced table has an onblur handler).
+    await input1.fill("200");
 
     await input0.focus();
     await page.keyboard.press("ArrowDown");
-    await expect(page.getByTestId("advanced-energy-input-1")).toBeFocused();
+    await expect(input1).toBeFocused();
   });
 
   test("ArrowUp moves focus to previous advanced row", async ({ page }) => {
