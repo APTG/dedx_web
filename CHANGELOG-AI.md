@@ -17,7 +17,7 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-- 2026-05-25 — **Refactoring**: Extract URL synchronization logic into headless stores (#602) (Gemini via opengravity)
+- 2026-05-25 — **Refactoring**: Extract URL synchronization logic into headless stores (#602) (Gemini 1.5 Pro via opengravity)
   - **Log:** [log](docs/ai-logs/2026-05-25-url-sync-refactor.md)
 
 - 2026-05-25 — **CI / infra**: **Issue #595 — Migrate project to pnpm v11** (Claude Sonnet 4.6 via Claude Code): Updated `packageManager` in `package.json` from `pnpm@10.33.0` to `pnpm@11.3.0`. Migrated `pnpm-workspace.yaml` from the deprecated `onlyBuiltDependencies` list syntax to the new `allowBuilds` map syntax introduced in pnpm v11. Type checks and unit tests passed, but the linked session log still recorded 3 `guard-forbidden-files` failures, so this session was not fully green.

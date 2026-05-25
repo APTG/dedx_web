@@ -16,8 +16,8 @@
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
-  import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
-  import { setupPlotUrlSync } from "$lib/state/plot-url-sync.svelte.ts";
+  import { decodePlotUrl } from "$lib/utils/plot-url";
+  import { setupPlotUrlSync } from "$lib/state/plot-url-sync.svelte";
   import { getParticleLabel } from "$lib/utils/particle-label";
   import {
     customMaterialElementsForWasm,

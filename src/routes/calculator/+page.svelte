@@ -49,10 +49,11 @@
     loadAdvancedOptionsFromStorage,
     persistAdvancedOptions,
   } from "$lib/state/advanced-options.svelte";
+  import {
     createInverseLookupState,
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
-  import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte.ts";
+  import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte";
   import { HIGH_E_SIDE, LOW_E_SIDE } from "$lib/utils/inverse-stp";
   import { LibdedxError, type InverseCsdaResult, type EnergyUnit } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
