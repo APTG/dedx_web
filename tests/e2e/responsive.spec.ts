@@ -10,7 +10,7 @@ async function expectNoHorizontalOverflow(page: Page, message: string) {
       () =>
         page.evaluate(() => {
           const root = document.documentElement;
-          return Math.max(0, Math.ceil(root.scrollWidth - root.clientWidth));
+          return Math.ceil(root.scrollWidth - root.clientWidth);
         }),
       {
         message,

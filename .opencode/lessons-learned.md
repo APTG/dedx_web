@@ -18,10 +18,10 @@ an environment-dependent rounding edge, not a visible layout regression.
 
 ```text
 ❌ TOO STRICT
-expect.poll(() => scrollWidth > clientWidth).toBe(false)
+expect.poll(() => root.scrollWidth > root.clientWidth).toBe(false)
 
 ✅ ROBUST
-expect.poll(() => ceil(scrollWidth - clientWidth)).toBeLessThanOrEqual(1)
+expect.poll(() => Math.ceil(root.scrollWidth - root.clientWidth)).toBeLessThanOrEqual(1)
 ```
 
 **Rule:** For full-page responsive overflow assertions in Playwright, poll the
