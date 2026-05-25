@@ -17,6 +17,7 @@
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
   import { encodePlotUrl, decodePlotUrl } from "$lib/utils/plot-url";
+  import { setupPlotUrlSync } from "$lib/state/plot-url-sync.svelte.ts";
   import { getParticleLabel } from "$lib/utils/particle-label";
   import {
     customMaterialElementsForWasm,
@@ -447,43 +448,12 @@
       });
   });
 
-  $effect(() => {
-    if (!browser || !entityState || !urlInitialized) return;
-    const selectedMaterial = entityState.selectedMaterial;
-    const builtinUrlMat =
-      selectedMaterial && "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
-    const customUrlFields = isCustomMaterial(builtinUrlMat)
-      ? customMaterialUrlFields(builtinUrlMat)
-      : {};
-    const selectedParticleId = entityState.selectedParticle?.id;
-    const selectedProgramId = entityState.selectedProgram.id;
-    const hasInverseStpPair =
-      plotState.series.some((s) => s.labelSuffix === " high-E") &&
-      plotState.series.some((s) => s.labelSuffix === " low-E");
-    const params = encodePlotUrl({
-      particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
-      materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
-      programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
-      series: plotState.series.map((s) => ({
-        programId: s.programId,
-        particleId: s.particleId,
-        materialId: s.materialId,
-      })),
-      stpUnit: plotState.stpUnit,
-      xLog: plotState.xLog,
-      yLog: plotState.yLog,
-      ...(hasInverseStpPair ? { invStpBranch: "both" as const } : {}),
-      advancedOptions: advancedOptions.value,
-      externalSources: loadedExternalSources,
-      ...customUrlFields,
-    });
-    const query = params.toString();
-    const newUrl =
-      query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
-    const currentUrl = `${window.location.pathname}${window.location.search}`;
-    if (newUrl === currentUrl) return;
-    untrack(() => replaceState(newUrl, page.state));
-  });
+  setupPlotUrlSync(
+    () => plotState,
+    () => entityState,
+    () => urlInitialized,
+    () => loadedExternalSources,
+  );
 
   // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
   $effect(() => {
