@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-25 — **Refactoring**: Extract async initialization logic into app-init state module (#603) (antigravity via opencode)
+  - **Log:** [log](docs/ai-logs/2026-05-25-issue-603-component-extraction.md)
+
 - 2026-05-25 — **Refactoring**: Extract URL synchronization logic into headless stores (#602) (Gemini 1.5 Pro via opengravity)
   - **Log:** [log](docs/ai-logs/2026-05-25-url-sync-refactor.md)
 
