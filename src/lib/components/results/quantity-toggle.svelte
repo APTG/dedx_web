@@ -62,7 +62,7 @@
       class:bg-accent={value === opt.value}
       onclick={() => onChange(opt.value)}
       onkeydown={handleKeyDown}
-      data-testid="quantity-toggle-{opt.value}"
+      data-testid={"quantity-toggle-" + opt.value}
     >
       {opt.label}
     </button>

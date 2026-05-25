@@ -322,8 +322,10 @@ export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrl
       params.programs = formatEntityIdList(state.programDisplayOrder);
     }
 
-    // Always emit qshow in advanced mode for consistency
-    params.qshow = state.quantityFocus;
+    // Omit qshow when it is the default ("stp") per ADR 006 default-omission rule.
+    if (state.quantityFocus !== "stp") {
+      params.qshow = state.quantityFocus;
+    }
   }
 
   return params;
@@ -355,9 +357,16 @@ export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiPro
   // Silently drop legacy hidden_programs / hidden params (per #554 / ADR 006).
   // No state is applied — the picker now governs entity visibility.
 
-  const qshow = params.get("qshow") as QuantityFocus | null;
-  if (qshow === "stp" || qshow === "range") {
-    result.qshow = qshow;
+  // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
+  const qshowRaw = params.get("qshow") as QuantityFocus | null;
+  const qfocusRaw = params.get("qfocus");
+  if (qshowRaw === "stp" || qshowRaw === "range") {
+    result.qshow = qshowRaw;
+  } else if (!qshowRaw && qfocusRaw) {
+    // Legacy migration: qfocus=stp→stp, qfocus=csda→range, qfocus=both→omit (default)
+    if (qfocusRaw === "stp") result.qshow = "stp";
+    else if (qfocusRaw === "csda") result.qshow = "range";
+    // qfocus=both → omit (default, no assignment)
   }
 
   return result;

@@ -272,7 +272,7 @@ describe("decodeCalculatorUrl", () => {
     expect((s as any).selectedProgramIds).toEqual([9, 999]);
   });
 
-  it("encodes advanced mode with mode=advanced&programs=9%2C2&qshow=stp", () => {
+  it("encodes advanced mode without qshow when quantityFocus is default (stp)", () => {
     const p = encodeCalculatorUrl({
       ...defaultState,
       isAdvancedMode: true,
@@ -281,7 +281,20 @@ describe("decodeCalculatorUrl", () => {
     } as any);
     expect(p.get("mode")).toBe("advanced");
     expect(p.get("programs")).toBe("9,2");
-    expect(p.get("qshow")).toBe("stp");
+    expect(p.has("qshow")).toBe(false); // omitted when default (stp) per ADR 006
+    expect(p.has("hidden_programs")).toBe(false);
+  });
+
+  it("encodes advanced mode with qshow=range when quantityFocus is range", () => {
+    const p = encodeCalculatorUrl({
+      ...defaultState,
+      isAdvancedMode: true,
+      selectedProgramIds: [9, 2],
+      quantityFocus: "range",
+    } as any);
+    expect(p.get("mode")).toBe("advanced");
+    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("qshow")).toBe("range");
     expect(p.has("hidden_programs")).toBe(false);
   });
 
@@ -294,7 +307,7 @@ describe("decodeCalculatorUrl", () => {
     } as any);
     expect(p.get("mode")).toBe("advanced");
     expect(p.get("programs")).toBe("9,2");
-    expect(p.get("qshow")).toBe("stp");
+    expect(p.has("qshow")).toBe(false); // omitted when default (stp) per ADR 006
     expect(p.has("hidden_programs")).toBe(false);
   });
 
@@ -309,7 +322,7 @@ describe("decodeCalculatorUrl", () => {
     expect(p.has("qshow")).toBe(false);
   });
 
-  it("URL round-trip: encode(decode(url)) === url for advanced mode", () => {
+  it("URL round-trip: encode(decode(url)) normalises qshow=stp to absent (default omission)", () => {
     const originalParams = new URLSearchParams(
       "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C2&qshow=stp",
     );
@@ -319,7 +332,7 @@ describe("decodeCalculatorUrl", () => {
     // Compare key params that should round-trip
     expect(reEncoded.get("mode")).toBe("advanced");
     expect(reEncoded.get("programs")).toBe("9,2");
-    expect(reEncoded.get("qshow")).toBe("stp");
+    expect(reEncoded.has("qshow")).toBe(false); // stp is default — omitted in canonical form
     expect(reEncoded.get("particle")).toBe("1");
     expect(reEncoded.get("material")).toBe("276");
     expect(reEncoded.get("eunit")).toBe("MeV");
@@ -336,7 +349,7 @@ describe("decodeCalculatorUrl", () => {
     expect(reEncoded.get("programs")).toBe("9,2");
     // hidden_programs is dropped — not re-emitted
     expect(reEncoded.has("hidden_programs")).toBe(false);
-    expect(reEncoded.get("qshow")).toBe("stp");
+    expect(reEncoded.has("qshow")).toBe(false); // stp is default — omitted in canonical form
   });
 
   it("encodes advanced options agg_state when it differs from materialIsGas", () => {
@@ -475,7 +488,7 @@ describe("decodeCalculatorUrl", () => {
     expect(reEncoded.get("ival")).toBe("85.5");
   });
 
-  it("URL round-trip with partial params: encode(decode(url)) preserves only density", () => {
+  it("URL round-trip with partial params: encode(decode(url)) normalises qshow=stp to absent", () => {
     const originalParams = new URLSearchParams(
       "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qshow=stp&density=1.5",
     );
@@ -484,7 +497,7 @@ describe("decodeCalculatorUrl", () => {
 
     expect(reEncoded.get("mode")).toBe("advanced");
     expect(reEncoded.get("programs")).toBe("9");
-    expect(reEncoded.get("qshow")).toBe("stp");
+    expect(reEncoded.has("qshow")).toBe(false); // stp is default — omitted in canonical form
     expect(reEncoded.get("density")).toBe("1.5");
     // Other advanced options should NOT be present
     expect(reEncoded.has("agg_state")).toBe(false);
@@ -760,6 +773,30 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
     );
     const state = decodeCalculatorUrl(params);
     expect(state.quantityFocus).toBe("range");
+  });
+
+  it("legacy qfocus=csda migrates to quantityFocus=range (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=csda",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.quantityFocus).toBe("range");
+  });
+
+  it("legacy qfocus=stp migrates to quantityFocus=stp (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=stp",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.quantityFocus).toBe("stp");
+  });
+
+  it("legacy qfocus=both migrates to default quantityFocus (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.quantityFocus).toBeUndefined(); // both → omit (default)
   });
 
   it("v2 decoder silently drops hidden_programs= (shareable-urls.md §2)", () => {

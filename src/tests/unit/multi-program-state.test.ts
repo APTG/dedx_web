@@ -381,7 +381,7 @@ describe("encodeMultiProgramUrl", () => {
     const params = encodeMultiProgramUrl(state);
     expect(params.mode).toBe("advanced");
     expect(params.programs).toBe("9,2");
-    expect(params.qshow).toBe("stp");
+    expect(params.qshow).toBeUndefined(); // stp is default — omitted per ADR 006
   });
 
   it("does not encode hidden programs (dropped in v2)", () => {
@@ -396,13 +396,22 @@ describe("encodeMultiProgramUrl", () => {
     expect((params as Record<string, unknown>).hidden_programs).toBeUndefined();
   });
 
-  it("encodes quantity focus as qshow", () => {
+  it("omits qshow when quantity focus is stp (default)", () => {
     state.setAdvancedMode(true);
     state.addProgram(9);
     state.setQuantityFocus("stp");
 
     const params = encodeMultiProgramUrl(state);
-    expect(params.qshow).toBe("stp");
+    expect(params.qshow).toBeUndefined(); // stp is default — omitted per ADR 006
+  });
+
+  it("encodes qshow=range when quantity focus is range", () => {
+    state.setAdvancedMode(true);
+    state.addProgram(9);
+    state.setQuantityFocus("range");
+
+    const params = encodeMultiProgramUrl(state);
+    expect(params.qshow).toBe("range");
   });
 
   it("encodes mixed built-in and external programs using formatEntityIdList", () => {
@@ -461,6 +470,24 @@ describe("decodeMultiProgramUrl", () => {
 
   it("ignores invalid qshow values", () => {
     const params = new URLSearchParams("?qshow=invalid");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBeUndefined();
+  });
+
+  it("migrates legacy qfocus=csda to qshow=range (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=csda");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBe("range");
+  });
+
+  it("migrates legacy qfocus=stp to qshow=stp (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=stp");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBe("stp");
+  });
+
+  it("migrates legacy qfocus=both to omitted qshow (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=both");
     const decoded = decodeMultiProgramUrl(params);
     expect(decoded.qshow).toBeUndefined();
   });

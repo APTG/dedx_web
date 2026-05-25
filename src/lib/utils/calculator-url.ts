@@ -330,8 +330,11 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
       params.set("programs", formatEntityIdList(state.selectedProgramIds));
     }
 
-    // Always emit qshow in advanced mode for canonical form
-    params.set("qshow", state.quantityFocus ?? "stp");
+    // Omit qshow when it is the default ("stp") per ADR 006 default-omission rule.
+    const qfocusVal = state.quantityFocus ?? "stp";
+    if (qfocusVal !== "stp") {
+      params.set("qshow", qfocusVal);
+    }
 
     // Custom compound material params (only when materialIsCustom=true)
     if (state.materialIsCustom && state.materialId === null) {
@@ -536,9 +539,20 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   const selectedProgramIds: EntityId[] | undefined =
     isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
   // Silently drop legacy hidden_programs param (per ADR 006 / #561).
-  const qshow = params.get("qshow") as "stp" | "range" | null;
+  // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
+  const qshowRaw = params.get("qshow") as "stp" | "range" | null;
+  const qfocusRaw = params.get("qfocus");
+  let resolvedQshow: "stp" | "range" | null = null;
+  if (qshowRaw === "stp" || qshowRaw === "range") {
+    resolvedQshow = qshowRaw;
+  } else if (!qshowRaw && qfocusRaw) {
+    // Legacy migration: qfocus=stp→stp, qfocus=csda→range, qfocus=both→null (default)
+    if (qfocusRaw === "stp") resolvedQshow = "stp";
+    else if (qfocusRaw === "csda") resolvedQshow = "range";
+    // qfocus=both → omit (default)
+  }
   const quantityFocus =
-    isAdvancedMode && (qshow === "stp" || qshow === "range") ? qshow : undefined;
+    isAdvancedMode && resolvedQshow !== null ? resolvedQshow : undefined;
 
   // Parse custom compound material params (only in advanced mode)
   let materialIsCustom: boolean | undefined;
