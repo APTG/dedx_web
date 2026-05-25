@@ -1482,5 +1482,27 @@ the user.
 
 ---
 
-_Last updated: 2026-05-18. Links: [implementer.md](.opencode/agents/implementer.md) •
+## Entry 55 — After pnpm override edits, refresh lockfile unfrozen before validation
+
+**Symptom:** After narrowing the workspace `cookie` override from `>=0.7.0` to
+`^0.7.0`, `pnpm install` failed immediately with
+`ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`.
+
+**Root cause:** The lockfile still encoded the previous override policy, and the
+default frozen install in CI/local checks refuses config drift.
+
+```bash
+# ❌ WRONG — frozen install with stale override config
+pnpm install
+
+# ✅ CORRECT — refresh lockfile first after override changes
+pnpm install --no-frozen-lockfile
+```
+
+**Rule:** Any time `pnpm-workspace.yaml` overrides change, regenerate
+`pnpm-lock.yaml` with a non-frozen install before running normal validation.
+
+---
+
+_Last updated: 2026-05-25. Links: [implementer.md](.opencode/agents/implementer.md) •
 [reviewer.md](.opencode/agents/reviewer.md) • [AGENTS.md](AGENTS.md)_
