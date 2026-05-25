@@ -9,7 +9,7 @@ import { formatEntityIdList, parseEntityIdList } from "$lib/external-data/ids";
  * Spec reference: docs/04-feature-specs/multi-program.md §State Model
  */
 
-export type QuantityFocus = "both" | "stp" | "csda";
+export type QuantityFocus = "stp" | "range";
 
 export interface MultiProgramState {
   /** Whether advanced mode is active (app-wide, from the action bar toggle). */
@@ -100,7 +100,7 @@ export interface MultiProgramDerivedState {
 
 export function createMultiProgramState(): MultiProgramState {
   let advancedMode = $state<boolean>(false);
-  let quantityFocus = $state<QuantityFocus>("both");
+  let quantityFocus = $state<QuantityFocus>("stp");
   let selectedProgramIds = $state<EntityId[]>([]);
   let programDisplayOrder = $state<EntityId[]>([]);
   let columnVisibility = $state<Map<EntityId, boolean>>(new Map());
@@ -256,7 +256,7 @@ export function createMultiProgramState(): MultiProgramState {
 
     reset(): void {
       advancedMode = false;
-      quantityFocus = "both";
+      quantityFocus = "stp";
       selectedProgramIds = [];
       programDisplayOrder = [];
       columnVisibility = new Map();
@@ -290,9 +290,9 @@ export function computeMultiProgramDerived(state: MultiProgramState): MultiProgr
     (r) => r instanceof LibdedxError,
   );
 
-  const showStoppingPowerGroup = state.quantityFocus === "both" || state.quantityFocus === "stp";
+  const showStoppingPowerGroup = state.quantityFocus === "stp";
 
-  const showCsdaRangeGroup = state.quantityFocus === "both" || state.quantityFocus === "csda";
+  const showCsdaRangeGroup = state.quantityFocus === "range";
 
   return {
     visibleProgramIds,
@@ -309,8 +309,7 @@ export function computeMultiProgramDerived(state: MultiProgramState): MultiProgr
 export interface MultiProgramUrlParams {
   mode?: "advanced" | "basic";
   programs?: string; // comma-separated program IDs in display order
-  hidden_programs?: string; // comma-separated hidden program IDs
-  qfocus?: "both" | "stp" | "csda";
+  qshow?: "stp" | "range";
 }
 
 export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrlParams {
@@ -323,15 +322,10 @@ export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrl
       params.programs = formatEntityIdList(state.programDisplayOrder);
     }
 
-    const hiddenIds = state.programDisplayOrder.filter(
-      (id) => state.columnVisibility.get(id) === false,
-    );
-    if (hiddenIds.length > 0) {
-      params.hidden_programs = formatEntityIdList(hiddenIds);
+    // Omit qshow when it is the default ("stp") per ADR 006 default-omission rule.
+    if (state.quantityFocus !== "stp") {
+      params.qshow = state.quantityFocus;
     }
-
-    // Always emit qfocus in advanced mode for consistency
-    params.qfocus = state.quantityFocus;
   }
 
   return params;
@@ -339,15 +333,11 @@ export function encodeMultiProgramUrl(state: MultiProgramState): MultiProgramUrl
 
 export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiProgramUrlParams> & {
   parsedProgramIds?: number[];
-  parsedHiddenIds?: number[];
   parsedProgramEntityIds?: EntityId[];
-  parsedHiddenEntityIds?: EntityId[];
 } {
   const result: MultiProgramUrlParams & {
     parsedProgramIds?: number[];
-    parsedHiddenIds?: number[];
     parsedProgramEntityIds?: EntityId[];
-    parsedHiddenEntityIds?: EntityId[];
   } = {};
 
   const mode = params.get("mode");
@@ -364,18 +354,19 @@ export function decodeMultiProgramUrl(params: URLSearchParams): Partial<MultiPro
     result.parsedProgramIds = entityIds.filter((id): id is number => typeof id === "number");
   }
 
-  const hidden = params.get("hidden_programs");
-  if (hidden) {
-    result.hidden_programs = hidden;
-    const entityIds = parseEntityIdList(hidden);
-    result.parsedHiddenEntityIds = entityIds;
-    // Backward-compat: numeric-only subset for existing callers.
-    result.parsedHiddenIds = entityIds.filter((id): id is number => typeof id === "number");
-  }
+  // Silently drop legacy hidden_programs / hidden params (per #554 / ADR 006).
+  // No state is applied — the picker now governs entity visibility.
 
-  const qfocus = params.get("qfocus") as QuantityFocus | null;
-  if (qfocus === "both" || qfocus === "stp" || qfocus === "csda") {
-    result.qfocus = qfocus;
+  // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
+  const qshowRaw = params.get("qshow") as QuantityFocus | null;
+  const qfocusRaw = params.get("qfocus");
+  if (qshowRaw === "stp" || qshowRaw === "range") {
+    result.qshow = qshowRaw;
+  } else if (!qshowRaw && qfocusRaw) {
+    // Legacy migration: qfocus=stp→stp, qfocus=csda→range, qfocus=both→omit (default)
+    if (qfocusRaw === "stp") result.qshow = "stp";
+    else if (qfocusRaw === "csda") result.qshow = "range";
+    // qfocus=both → omit (default, no assignment)
   }
 
   return result;

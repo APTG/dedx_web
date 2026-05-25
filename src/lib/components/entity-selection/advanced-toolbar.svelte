@@ -1,9 +1,7 @@
 <script lang="ts">
   import { cn } from "$lib/utils.js";
-  import type { EntitySelectionState, AcrossDimension } from "$lib/state/entity-selection.svelte";
 
   interface Props {
-    selectionState: EntitySelectionState;
     onReset: () => void;
     /**
      * Wired in a later PR (compatibility overlay). Renders disabled with a
@@ -18,45 +16,7 @@
     class?: string;
   }
 
-  let {
-    selectionState,
-    onReset,
-    onExploreCompat,
-    onLoadExternal,
-    class: className,
-  }: Props = $props();
-
-  const ACROSS_OPTIONS: Array<{
-    value: AcrossDimension;
-    label: string;
-    disabled: boolean;
-    title: string;
-  }> = [
-    {
-      value: "program",
-      label: "Programs",
-      disabled: false,
-      title: "Compare across multiple stopping-power programs",
-    },
-    {
-      value: "material",
-      label: "Materials",
-      disabled: false,
-      title: "Compare stopping power across multiple materials",
-    },
-    {
-      value: "particle",
-      label: "Particles",
-      disabled: false,
-      title: "Compare stopping power across multiple particles",
-    },
-  ];
-
-  function handleAcrossChange(event: Event) {
-    const value = (event.currentTarget as HTMLSelectElement).value as AcrossDimension;
-    if (value === selectionState.across) return;
-    selectionState.setAcross(value);
-  }
+  let { onReset, onExploreCompat, onLoadExternal, class: className }: Props = $props();
 </script>
 
 <div
@@ -68,22 +28,6 @@
   aria-label="Advanced picker toolbar"
 >
   <span class="font-semibold uppercase tracking-wider text-muted-foreground">Advanced</span>
-
-  <label class="flex items-center gap-2">
-    <span class="text-muted-foreground">Compare across:</span>
-    <select
-      class="rounded border bg-background px-2 py-0.5 text-xs focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-      data-testid="picker-compare-across"
-      value={selectionState.across}
-      onchange={handleAcrossChange}
-    >
-      {#each ACROSS_OPTIONS as opt (opt.value)}
-        <option value={opt.value} disabled={opt.disabled} title={opt.title}>
-          {opt.label}
-        </option>
-      {/each}
-    </select>
-  </label>
 
   <button
     type="button"

@@ -10,7 +10,7 @@ const baseAdvancedState: CalculatorUrlState = {
   masterUnit: "MeV",
   isAdvancedMode: true,
   selectedProgramIds: [9],
-  quantityFocus: "both",
+  quantityFocus: "stp",
 };
 
 describe("encodeCalculatorUrl — custom compounds", () => {

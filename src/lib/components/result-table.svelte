@@ -81,10 +81,10 @@
       : [],
   );
   const showStp = $derived(
-    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "csda",
+    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus === "stp",
   );
   const showCsda = $derived(
-    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus !== "stp",
+    !isAdvanced || !multiProgramState || multiProgramState.quantityFocus === "range",
   );
   const defaultProgramId = $derived(
     (isAdvanced && multiProgramState ? multiProgramState.selectedProgramIds[0] : null) ?? null,
@@ -98,8 +98,6 @@
   let dragOverProgramId = $state<EntityId | null>(null);
   let reorderAnnouncement = $state<string>("");
 
-  // Column visibility dropdown state
-  let showColumnsDropdown = $state<boolean>(false);
 
   // Derived once — used in both STP and CSDA delta computations
   const defaultProgramName = $derived(
@@ -435,30 +433,7 @@
     }
   }
 
-  // Column visibility toggle handler
-  function handleToggleColumnVisibility(programId: EntityId) {
-    if (!multiProgramState || programId === defaultProgramId) return;
-    multiProgramState.toggleColumnVisibility(programId);
-  }
 
-  function toggleColumnsDropdown() {
-    showColumnsDropdown = !showColumnsDropdown;
-  }
-
-  // Close dropdown when clicking outside
-  function handleOutsideClick(event: MouseEvent) {
-    const target = event.target as HTMLElement;
-    if (showColumnsDropdown && !target.closest("[data-columns-dropdown]")) {
-      showColumnsDropdown = false;
-    }
-  }
-
-  $effect(() => {
-    if (showColumnsDropdown) {
-      document.addEventListener("click", handleOutsideClick);
-      return () => document.removeEventListener("click", handleOutsideClick);
-    }
-  });
 </script>
 
 <div class={`overflow-x-auto ${className}`}>
@@ -475,52 +450,6 @@
       {/if}
     </div>
   {:else}
-    {#if isAdvanced && !isMultiEntity}
-      <!-- Toolbar for multi-program advanced mode -->
-      <div class="mb-2 flex justify-end relative" data-columns-dropdown>
-        <button
-          type="button"
-          class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-          aria-label="Toggle column visibility"
-          aria-expanded={showColumnsDropdown}
-          aria-haspopup="menu"
-          onclick={toggleColumnsDropdown}
-        >
-          Columns…
-        </button>
-
-        {#if showColumnsDropdown}
-          <!-- Column visibility dropdown menu -->
-          <div
-            class="absolute right-0 mt-1 w-48 rounded-md border bg-popover p-2 shadow-lg z-50"
-            role="menu"
-            aria-label="Column visibility"
-          >
-            {#each multiProgramState?.selectedProgramIds || [] as programId (programId)}
-              <div class="flex items-center gap-2 px-2 py-1.5">
-                <input
-                  type="checkbox"
-                  id={`column-toggle-${programId}`}
-                  checked={multiProgramState?.columnVisibility.get(programId) !== false}
-                  disabled={programId === defaultProgramId}
-                  onchange={() => handleToggleColumnVisibility(programId)}
-                  class="h-4 w-4 rounded border-input"
-                />
-                <label
-                  for={`column-toggle-${programId}`}
-                  class={`text-sm cursor-pointer ${programId === defaultProgramId ? "text-muted-foreground" : ""}`}
-                >
-                  {getProgramName(programId)}
-                  {#if programId === defaultProgramId}
-                    <span class="ml-1 text-xs">(default)</span>
-                  {/if}
-                </label>
-              </div>
-            {/each}
-          </div>
-        {/if}
-      </div>
-    {/if}
     <table class="w-full min-w-[560px] text-sm" data-testid="result-table">
       {#if isMultiEntity}
         <!-- Multi-entity mode: two-row grouped header (material or particle comparison) -->

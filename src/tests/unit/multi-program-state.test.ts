@@ -21,7 +21,7 @@ describe("MultiProgramState — core functionality", () => {
   describe("initial state", () => {
     it("starts in basic mode with empty selections", () => {
       expect(state.advancedMode).toBe(false);
-      expect(state.quantityFocus).toBe("both");
+      expect(state.quantityFocus).toBe("stp");
       expect(state.selectedProgramIds).toEqual([]);
       expect(state.programDisplayOrder).toEqual([]);
       expect(state.columnVisibility.size).toBe(0);
@@ -208,14 +208,9 @@ describe("MultiProgramState — core functionality", () => {
       expect(state.quantityFocus).toBe("stp");
     });
 
-    it("sets quantity focus to csda", () => {
-      state.setQuantityFocus("csda");
-      expect(state.quantityFocus).toBe("csda");
-    });
-
-    it("sets quantity focus to both", () => {
-      state.setQuantityFocus("both");
-      expect(state.quantityFocus).toBe("both");
+    it("sets quantity focus to range", () => {
+      state.setQuantityFocus("range");
+      expect(state.quantityFocus).toBe("range");
     });
   });
 
@@ -285,22 +280,16 @@ describe("computeMultiProgramDerived", () => {
     expect(derived.hasAnyFailedProgram).toBe(true);
   });
 
-  it("showStoppingPowerGroup is true for both/stp", () => {
-    state.setQuantityFocus("both");
-    expect(computeMultiProgramDerived(state).showStoppingPowerGroup).toBe(true);
-
+  it("showStoppingPowerGroup is true only for stp", () => {
     state.setQuantityFocus("stp");
     expect(computeMultiProgramDerived(state).showStoppingPowerGroup).toBe(true);
 
-    state.setQuantityFocus("csda");
+    state.setQuantityFocus("range");
     expect(computeMultiProgramDerived(state).showStoppingPowerGroup).toBe(false);
   });
 
-  it("showCsdaRangeGroup is true for both/csda", () => {
-    state.setQuantityFocus("both");
-    expect(computeMultiProgramDerived(state).showCsdaRangeGroup).toBe(true);
-
-    state.setQuantityFocus("csda");
+  it("showCsdaRangeGroup is true only for range", () => {
+    state.setQuantityFocus("range");
     expect(computeMultiProgramDerived(state).showCsdaRangeGroup).toBe(true);
 
     state.setQuantityFocus("stp");
@@ -392,10 +381,10 @@ describe("encodeMultiProgramUrl", () => {
     const params = encodeMultiProgramUrl(state);
     expect(params.mode).toBe("advanced");
     expect(params.programs).toBe("9,2");
-    expect(params.qfocus).toBe("both");
+    expect(params.qshow).toBeUndefined(); // stp is default — omitted per ADR 006
   });
 
-  it("encodes hidden programs", () => {
+  it("does not encode hidden programs (dropped in v2)", () => {
     state.setAdvancedMode(true);
     state.addProgram(9);
     state.addProgram(2);
@@ -404,16 +393,25 @@ describe("encodeMultiProgramUrl", () => {
     state.columnVisibility.set(101, false);
 
     const params = encodeMultiProgramUrl(state);
-    expect(params.hidden_programs).toBe("101");
+    expect((params as Record<string, unknown>).hidden_programs).toBeUndefined();
   });
 
-  it("encodes quantity focus", () => {
+  it("omits qshow when quantity focus is stp (default)", () => {
     state.setAdvancedMode(true);
     state.addProgram(9);
     state.setQuantityFocus("stp");
 
     const params = encodeMultiProgramUrl(state);
-    expect(params.qfocus).toBe("stp");
+    expect(params.qshow).toBeUndefined(); // stp is default — omitted per ADR 006
+  });
+
+  it("encodes qshow=range when quantity focus is range", () => {
+    state.setAdvancedMode(true);
+    state.addProgram(9);
+    state.setQuantityFocus("range");
+
+    const params = encodeMultiProgramUrl(state);
+    expect(params.qshow).toBe("range");
   });
 
   it("encodes mixed built-in and external programs using formatEntityIdList", () => {
@@ -432,19 +430,15 @@ describe("encodeMultiProgramUrl", () => {
     state.addProgram(EXT_SRIM);
     state.addProgram(EXT_SRIM2);
     state.setProgramDisplayOrder([9, EXT_SRIM, EXT_SRIM2]);
-    state.columnVisibility.set(EXT_SRIM2, false);
 
     const encoded = encodeMultiProgramUrl(state);
     const urlParams = new URLSearchParams();
     if (encoded.programs) urlParams.set("programs", encoded.programs);
-    if (encoded.hidden_programs) urlParams.set("hidden_programs", encoded.hidden_programs);
 
     const decoded = decodeMultiProgramUrl(urlParams);
     expect(decoded.parsedProgramEntityIds).toEqual([9, EXT_SRIM, EXT_SRIM2]);
-    expect(decoded.parsedHiddenEntityIds).toEqual([EXT_SRIM2]);
-    // Backward-compat numeric-only subsets
+    // Backward-compat numeric-only subset
     expect(decoded.parsedProgramIds).toEqual([9]);
-    expect(decoded.parsedHiddenIds).toEqual([]);
   });
 });
 
@@ -461,22 +455,41 @@ describe("decodeMultiProgramUrl", () => {
     expect(decoded.parsedProgramIds).toEqual([9, 2, 101]);
   });
 
-  it("parses hidden_programs as number array", () => {
+  it("silently drops hidden_programs (dropped in v2)", () => {
     const params = new URLSearchParams("?hidden_programs=101");
     const decoded = decodeMultiProgramUrl(params);
-    expect(decoded.parsedHiddenIds).toEqual([101]);
+    expect((decoded as Record<string, unknown>).parsedHiddenIds).toBeUndefined();
+    expect((decoded as Record<string, unknown>).hidden_programs).toBeUndefined();
   });
 
-  it("parses qfocus", () => {
-    const params = new URLSearchParams("?qfocus=csda");
+  it("parses qshow", () => {
+    const params = new URLSearchParams("?qshow=range");
     const decoded = decodeMultiProgramUrl(params);
-    expect(decoded.qfocus).toBe("csda");
+    expect(decoded.qshow).toBe("range");
   });
 
-  it("ignores invalid qfocus values", () => {
-    const params = new URLSearchParams("?qfocus=invalid");
+  it("ignores invalid qshow values", () => {
+    const params = new URLSearchParams("?qshow=invalid");
     const decoded = decodeMultiProgramUrl(params);
-    expect(decoded.qfocus).toBeUndefined();
+    expect(decoded.qshow).toBeUndefined();
+  });
+
+  it("migrates legacy qfocus=csda to qshow=range (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=csda");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBe("range");
+  });
+
+  it("migrates legacy qfocus=stp to qshow=stp (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=stp");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBe("stp");
+  });
+
+  it("migrates legacy qfocus=both to omitted qshow (ADR 006 migration rule)", () => {
+    const params = new URLSearchParams("?mode=advanced&qfocus=both");
+    const decoded = decodeMultiProgramUrl(params);
+    expect(decoded.qshow).toBeUndefined();
   });
 
   it("filters invalid program IDs", () => {
@@ -492,10 +505,9 @@ describe("decodeMultiProgramUrl", () => {
     expect(decoded.parsedProgramIds).toEqual([9, 2]); // numeric-only subset
   });
 
-  it("parses ExtRef in hidden_programs", () => {
+  it("silently drops ExtRef in hidden_programs (dropped in v2)", () => {
     const params = new URLSearchParams(`?hidden_programs=${EXT_SRIM}`);
     const decoded = decodeMultiProgramUrl(params);
-    expect(decoded.parsedHiddenEntityIds).toEqual([EXT_SRIM]);
-    expect(decoded.parsedHiddenIds).toEqual([]); // numeric-only subset is empty
+    expect((decoded as Record<string, unknown>).parsedHiddenEntityIds).toBeUndefined();
   });
 });

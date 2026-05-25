@@ -20,6 +20,9 @@
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
+  import CompareAcrossStrip from "$lib/components/results/compare-across-strip.svelte";
+  import TableMulti from "$lib/components/results/table-multi.svelte";
+  import QuantityToggle from "$lib/components/results/quantity-toggle.svelte";
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
@@ -527,9 +530,6 @@
             // so the URL is the canonical full list and consumers can reconstruct
             // the complete comparison without needing to infer the default.
             selectedProgramIds: activeMultiProgramState.selectedProgramIds,
-            hiddenProgramIds: activeMultiProgramState.selectedProgramIds.filter(
-              (id) => activeMultiProgramState.columnVisibility.get(id) === false,
-            ),
             quantityFocus: activeMultiProgramState.quantityFocus,
             // Include advanced options when in advanced mode
             advancedOptions: advancedOptions.value,
@@ -661,42 +661,6 @@
     if (hintTimeout) clearTimeout(hintTimeout);
   }
 
-  // Column visibility dropdown state
-  let showColumnDropdown = $state(false);
-  // Single stable reference to the outside-click handler so it can be removed
-  // on close without accumulating duplicate listeners.
-  let columnOutsideClickHandler: ((e: MouseEvent) => void) | null = null;
-
-  function toggleColumnDropdown(): void {
-    showColumnDropdown = !showColumnDropdown;
-    if (showColumnDropdown) {
-      // Defer by one tick so the current click (which opened the dropdown) does
-      // not immediately re-close it.
-      setTimeout(() => {
-        columnOutsideClickHandler = (e: MouseEvent) => {
-          const target = e.target as Node;
-          const dropdown = document.getElementById("column-visibility-dropdown");
-          const button = document.getElementById("columns-button");
-          if (dropdown && !dropdown.contains(target) && button && !button.contains(target)) {
-            showColumnDropdown = false;
-            // Guard: the button-close path (else branch) may have already set
-            // columnOutsideClickHandler to null before this outside-click fires.
-            if (columnOutsideClickHandler) {
-              document.removeEventListener("click", columnOutsideClickHandler);
-              columnOutsideClickHandler = null;
-            }
-          }
-        };
-        document.addEventListener("click", columnOutsideClickHandler);
-      }, 0);
-    } else {
-      // Closed via button — remove the outside-click listener if still attached.
-      if (columnOutsideClickHandler) {
-        document.removeEventListener("click", columnOutsideClickHandler);
-        columnOutsideClickHandler = null;
-      }
-    }
-  }
 
   $effect(() => {
     if (calcState && entityState) {
@@ -821,24 +785,9 @@
         newState.setProgramDisplayOrder(orderedIds);
       }
 
-      // Restore hidden programs
-      if (multiParams.parsedHiddenEntityIds) {
-        for (const hiddenId of multiParams.parsedHiddenEntityIds) {
-          const isBuiltin = typeof hiddenId === "number" && availableBuiltinIds.has(hiddenId);
-          const isExt = typeof hiddenId === "string" && availableExtIds.has(hiddenId);
-          if ((isBuiltin || isExt) && hiddenId !== defaultProgramId) {
-            newState.toggleColumnVisibility(hiddenId);
-          }
-        }
-      }
-
       // Restore quantity focus
-      if (
-        multiParams.qfocus === "both" ||
-        multiParams.qfocus === "stp" ||
-        multiParams.qfocus === "csda"
-      ) {
-        newState.setQuantityFocus(multiParams.qfocus);
+      if (multiParams.qshow === "stp" || multiParams.qshow === "range") {
+        newState.setQuantityFocus(multiParams.qshow);
       }
     }
 
@@ -1201,8 +1150,9 @@
     if (!multiEntityState || !entityState || !calcState || !entityState.isComplete) return;
 
     const dim = multiEntityState.dimension;
-    const entityIds =
-      dim === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle;
+    const entityIds = (
+      dim === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle
+    ) as import("$lib/external-data/types").EntityId[];
 
     if (entityIds.length === 0) return;
 
@@ -1759,98 +1709,19 @@
         onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
       />
-      {#if isAdvancedMode.value && entityState?.across === "program" && multiProgState && entityState}
-        <!-- Table toolbar: column visibility + quantity focus -->
-        <div class="flex items-center gap-2 pt-2 flex-wrap">
-          <!-- Columns... button -->
-          <div class="relative" id="column-visibility-dropdown-container">
-            <Button
-              id="columns-button"
-              variant="outline"
-              size="sm"
-              onclick={toggleColumnDropdown}
-              aria-expanded={showColumnDropdown}
-              aria-haspopup="dialog"
-              title="Show/hide program columns"
-            >
-              Columns…
-            </Button>
-            <!-- Column visibility dropdown -->
-            {#if showColumnDropdown}
-              <div
-                id="column-visibility-dropdown"
-                class="absolute right-0 z-50 mt-2 min-w-[200px] rounded-md border bg-popover p-3 shadow-lg"
-                role="dialog"
-                aria-label="Column visibility"
-              >
-                <div class="space-y-2">
-                  {#each multiProgState.selectedProgramIds as programId (programId)}
-                    {@const program =
-                      entityState.availablePrograms.find((p) => p.id === programId) ??
-                      entityState.availableExternalPrograms.find((p) => p.id === programId)}
-                    {@const isDefault = programId === multiProgState.selectedProgramIds[0]}
-                    {@const isVisible = multiProgState.columnVisibility.get(programId) !== false}
-                    <label
-                      class="flex items-center gap-2 text-sm cursor-pointer"
-                      class:opacity-50={!isVisible}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={isVisible}
-                        disabled={isDefault}
-                        onchange={() => multiProgState?.toggleColumnVisibility(programId)}
-                        class="h-4 w-4 rounded border-input"
-                      />
-                      <span>{program?.name ?? `Program ${String(programId)}`}</span>
-                      {#if isDefault}
-                        <span class="text-xs text-muted-foreground">(default)</span>
-                      {/if}
-                    </label>
-                  {/each}
-                </div>
-              </div>
-            {/if}
-          </div>
-          <!-- Quantity focus segmented control -->
-          <div
-            class="inline-flex items-center rounded-md border bg-background p-1"
-            role="radiogroup"
-            aria-label="Quantity focus"
+      {#if isAdvancedMode.value && entityState}
+        <!-- Compare-across strip: 4 pill buttons -->
+        <div class="flex items-center gap-3 pt-2 flex-wrap">
+          <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
+            >Compare across</span
           >
-            <button
-              type="button"
-              role="radio"
-              aria-checked={multiProgState.quantityFocus === "stp"}
-              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-              class:bg-accent={multiProgState.quantityFocus === "stp"}
-              onclick={() => multiProgState?.setQuantityFocus("stp")}
-            >
-              STP only
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={multiProgState.quantityFocus === "both"}
-              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-              class:bg-accent={multiProgState.quantityFocus === "both"}
-              onclick={() => multiProgState?.setQuantityFocus("both")}
-            >
-              Both
-            </button>
-            <button
-              type="button"
-              role="radio"
-              aria-checked={multiProgState.quantityFocus === "csda"}
-              class="px-3 py-1.5 text-sm font-medium rounded-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-              class:bg-accent={multiProgState.quantityFocus === "csda"}
-              onclick={() => multiProgState?.setQuantityFocus("csda")}
-            >
-              CSDA only
-            </button>
-          </div>
+          <CompareAcrossStrip
+            value={entityState.across}
+            onChange={(v) => entityState?.setAcross(v)}
+          />
         </div>
-        <!-- Advanced Options Panel -->
-        {#if entityState}
+        <!-- Advanced Options Panel (only in program/single mode) -->
+        {#if entityState.across === "program" || entityState.across === "single"}
           {@const selMatAdv = entityState.selectedMaterial}
           {@const builtinMatAdv = selMatAdv && "isGasByDefault" in selMatAdv ? selMatAdv : null}
           <AdvancedOptionsPanel
@@ -2005,6 +1876,12 @@
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           {#if isAdvancedMode.value && entityState.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
+            <div class="mb-3">
+              <QuantityToggle
+                value={multiProgState.quantityFocus}
+                onChange={(v) => multiProgState?.setQuantityFocus(v)}
+              />
+            </div>
             <ResultTable
               {calcState}
               entitySelection={entityState}
@@ -2012,13 +1889,42 @@
               comparisonResults={multiProgState.comparisonResults}
             />
           {:else if isAdvancedMode.value && multiEntityState && (entityState.across === "material" || entityState.across === "particle")}
-            <ResultTable
-              {calcState}
-              entitySelection={entityState}
-              {multiEntityState}
-              multiEntityIds={entityState.across === "material"
+            {@const es = entityState}
+            {@const entityIds = (
+              entityState.across === "material"
                 ? entityState.multiSelected.material
-                : entityState.multiSelected.particle}
+                : entityState.multiSelected.particle
+            ) as import("$lib/external-data/types").EntityId[]}
+            <div class="mb-3">
+              <QuantityToggle
+                value={multiEntityState.quantityFocus}
+                onChange={(v) => multiEntityState?.setQuantityFocus(v)}
+              />
+            </div>
+            <TableMulti
+              {calcState}
+              {entityIds}
+              results={multiEntityState.comparisonResults}
+              entityName={(id) => multiEntityState?.entityName(id) ?? String(id)}
+              quantityFocus={multiEntityState.quantityFocus}
+              getDensity={(entityId) => {
+                if (es.across !== "material") {
+                  return (
+                    advancedOptions.value.densityOverride ??
+                    es.selectedMaterial?.density ??
+                    1
+                  );
+                }
+                if (typeof entityId === "number") {
+                  return es.allMaterials.find((m) => m.id === entityId)?.density ?? 1;
+                }
+                if (String(entityId).startsWith("ext:")) {
+                  return (
+                    es.externalOnlyMaterials.find((m) => m.id === entityId)?.density ?? 1
+                  );
+                }
+                return customCompounds.getById(entityId as string)?.density ?? 1;
+              }}
             />
           {:else if isAdvancedMode.value}
             <TableAdvanced mode="energy" {calcState} entitySelection={entityState} />
