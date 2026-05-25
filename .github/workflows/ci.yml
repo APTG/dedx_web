@@ -104,10 +104,40 @@ jobs:
             data/wasm_ts_contract_stats.json
           retention-days: 7
 
+  static-analysis:
+    name: Static Analysis (format, lint, check)
+    runs-on: ubuntu-latest
+    needs: [workflow-guards]
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Check formatting (Prettier)
+        run: pnpm run format:check
+
+      - name: Lint (ESLint)
+        run: pnpm run lint
+
+      - name: Type-check (svelte-check + tsc)
+        run: pnpm run check
+
   unit-tests:
     name: Unit & Integration Tests
     runs-on: ubuntu-latest
-    needs: [workflow-guards]
+    needs: [workflow-guards, static-analysis]
 
     steps:
       - name: Checkout
