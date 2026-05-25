@@ -1,10 +1,11 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, fireEvent, cleanup } from "@testing-library/svelte";
 import CsvExportModal from "$lib/components/CsvExportModal.svelte";
+import type { CsvOptions } from "$lib/export/csv";
 
 describe("CsvExportModal", () => {
-  let mockOnConfirm: ReturnType<typeof vi.fn>;
-  let mockOnCancel: ReturnType<typeof vi.fn>;
+  let mockOnConfirm: ReturnType<typeof vi.fn<(options: CsvOptions, filename: string) => void>>;
+  let mockOnCancel: ReturnType<typeof vi.fn<() => void>>;
 
   async function cleanupDialogTimers() {
     cleanup();
@@ -16,8 +17,8 @@ describe("CsvExportModal", () => {
     // Clear localStorage between tests
     localStorage.clear();
     // Reset mocks between tests
-    mockOnConfirm = vi.fn();
-    mockOnCancel = vi.fn();
+    mockOnConfirm = vi.fn<(options: CsvOptions, filename: string) => void>();
+    mockOnCancel = vi.fn<() => void>();
   });
 
   afterEach(async () => {
