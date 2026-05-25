@@ -9,6 +9,11 @@ import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { ExternalSourceDescriptor } from "$lib/external-data/types";
 import type { PlotState } from "$lib/state/plot.svelte";
 
+/**
+ * Headless Svelte 5 state module for synchronizing Plotting state to the URL.
+ * Extracted from +page.svelte to decouple state management from the UI component
+ * and cleanly resolve complex Svelte 5 `$effect` dependency tracking issues.
+ */
 export function setupPlotUrlSync(
   getPlotState: () => PlotState,
   getEntityState: () => EntitySelectionState | null,

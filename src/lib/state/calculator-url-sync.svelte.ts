@@ -11,6 +11,11 @@ import type { MultiProgramState } from "$lib/state/multi-program.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 import type { ExternalSourceDescriptor } from "$lib/external-data/types";
 
+/**
+ * Headless Svelte 5 state module for synchronizing Calculator state to the URL.
+ * Extracted from +page.svelte to decouple state management from the UI component
+ * and cleanly resolve complex Svelte 5 `$effect` dependency tracking issues.
+ */
 export function setupCalculatorUrlSync(
   getCalcState: () => CalculatorState | null,
   getEntityState: () => EntitySelectionState | null,
