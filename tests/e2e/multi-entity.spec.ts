@@ -201,6 +201,7 @@ test.describe("Multi-entity table (requires WASM)", () => {
 
     // Select Aluminum (id=13) as second material alongside the default Water (id=276)
     await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("material-subtab-elements").click();
     const aluminumItem = page.locator('[data-testid="picker-material-item-13"]');
     await expect(aluminumItem).toBeVisible();
     await aluminumItem.click();

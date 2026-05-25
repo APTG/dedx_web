@@ -588,6 +588,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     setAcross(newAcross: AcrossDimension): void {
+      if (across === newAcross) return;
       across = newAcross;
       if (newAcross === "single") {
         // Collapse all multi arrays to avoid stale selections bleeding in later.
