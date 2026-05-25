@@ -1,7 +1,6 @@
 import { test, expect, type Page } from "@playwright/test";
 
 const ICRU49_ID = 7;
-const ICRU73_OLD_ID = 5;
 const ASTAR_ID = 1;
 const PSTAR_ID = 2;
 const MSTAR_ID = 4;

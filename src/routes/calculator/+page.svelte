@@ -77,14 +77,6 @@
     "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
   };
 
-  const RANGE_ANCHOR_OPTIONS = [
-    { value: "nm", label: "nm", tooltip: "nanometres" },
-    { value: "um", label: "µm", tooltip: "micrometres" },
-    { value: "mm", label: "mm", tooltip: "millimetres" },
-    { value: "cm", label: "cm", tooltip: "centimetres" },
-    { value: "m", label: "m", tooltip: "metres" },
-  ];
-
   function getEnergyAnchorOptions(
     particle: { id: number | string; massNumber?: number; A?: number } | null | undefined,
     advancedMode: boolean,

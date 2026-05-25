@@ -37,12 +37,12 @@
           return;
         }
 
-        delete g[JSROOT_PROMISE_KEY];
+        Reflect.deleteProperty(g, JSROOT_PROMISE_KEY);
         reject(new Error("JSROOT not found after load"));
       };
 
       const onError = () => {
-        delete g[JSROOT_PROMISE_KEY];
+        Reflect.deleteProperty(g, JSROOT_PROMISE_KEY);
         reject(new Error("Failed to load jsroot.min.js"));
       };
 
