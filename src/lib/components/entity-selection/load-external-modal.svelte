@@ -264,7 +264,10 @@
     dragOver = false;
 
     // Try to get a FileSystemDirectoryHandle via the File System Access API
-    const items = Array.from(e.dataTransfer?.items ?? []);
+    type DataTransferItemWithFSA = DataTransferItem & {
+      getAsFileSystemHandle?: () => Promise<FileSystemHandle | null>;
+    };
+    const items = Array.from(e.dataTransfer?.items ?? []) as DataTransferItemWithFSA[];
     for (const item of items) {
       if (typeof item.getAsFileSystemHandle === "function") {
         try {

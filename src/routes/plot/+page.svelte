@@ -472,7 +472,7 @@
       stpUnit: plotState.stpUnit,
       xLog: plotState.xLog,
       yLog: plotState.yLog,
-      invStpBranch: hasInverseStpPair ? "both" : undefined,
+      ...(hasInverseStpPair ? { invStpBranch: "both" as const } : {}),
       advancedOptions: advancedOptions.value,
       externalSources: loadedExternalSources,
       ...customUrlFields,

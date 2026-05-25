@@ -124,13 +124,13 @@ export function computeCsdaColumn(
 
   for (let i = 1; i < n; i++) {
     const prev = out[i - 1];
-    if (prev === null) {
+    if (prev == null) {
       // Gap in previous segment — cannot continue.
       continue;
     }
     const s0 = stpValues[i - 1];
     const s1 = stpValues[i];
-    if (s0 === null || s1 === null || s0 <= 0 || s1 <= 0) {
+    if (s0 == null || s1 == null || s0 <= 0 || s1 <= 0) {
       // Cannot integrate this segment.
       continue;
     }

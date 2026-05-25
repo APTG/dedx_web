@@ -42,7 +42,6 @@
   let query = $state("");
   let inputEl = $state<HTMLInputElement | null>(null);
   let dialogEl = $state<HTMLDivElement | null>(null);
-  let closeButtonEl = $state<HTMLButtonElement | null>(null);
   const sheetHistoryKey = `picker-sheet:${Math.random().toString(36).slice(2)}`;
 
   // Autofocus the search input on mount — this is the sheet's sole keyboard owner.
@@ -245,7 +244,7 @@
         density: compound.density,
         phase: compound.phase,
         elements: compound.elements,
-        iValue: compound.iValue,
+        ...(compound.iValue !== undefined ? { iValue: compound.iValue } : {}),
         isGasByDefault: compound.phase === "gas",
         source: compound,
       }))
@@ -271,7 +270,7 @@
   const builtinPrograms = $derived(selectionState.availablePrograms);
   const externalPrograms = $derived(selectionState.availableExternalPrograms);
 
-  function programMatches(p: { name: string; version?: string }, q: string): boolean {
+  function programMatches(p: { name: string; version?: string | undefined }, q: string): boolean {
     const t = q.trim().toLowerCase();
     if (!t) return true;
     return p.name.toLowerCase().includes(t) || (p.version ?? "").toLowerCase().includes(t);
@@ -299,7 +298,6 @@
   <div class="flex items-center gap-2 border-b bg-card px-3 py-2">
     <button
       type="button"
-      bind:this={closeButtonEl}
       class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
       aria-label="Close search"
       onclick={onClose}
