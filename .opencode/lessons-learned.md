@@ -9,6 +9,34 @@
 
 ---
 
+## Entry 67 — Footer build metadata must wrap on mobile
+
+**Symptom:** Mobile responsive Playwright checks reported persistent horizontal
+overflow on calculator and plot even after layout assertions were stabilized.
+The actual overflow came from footer build metadata (`BuildInfoBadge`) forcing a
+single unbroken line on narrow viewports.
+
+```svelte
+❌ mobile overflow
+<div class="flex items-center justify-between">
+  <BuildInfoBadge class="whitespace-nowrap" />
+  <p>Built with Svelte 5 + WASM</p>
+</div>
+
+✅ mobile-safe footer
+<div class="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+  <div class="min-w-0">
+    <BuildInfoBadge class="break-all sm:break-normal sm:whitespace-nowrap" />
+  </div>
+</div>
+```
+
+**Rule:** Any footer/header metadata that includes branch names, commit hashes, or
+URLs must be allowed to wrap on mobile; avoid unconditional `whitespace-nowrap`
+inside shared layout chrome.
+
+---
+
 ## Entry 66 — Local E2E builds should generate deploy.json via the normal build lifecycle
 
 **Symptom:** CI wrote `static/deploy.json` before `pnpm build`, but local
