@@ -87,25 +87,68 @@
     calcState.triggerCalculation();
   }
 
+  function advancedInputs() {
+    return document.querySelectorAll<HTMLInputElement>(
+      "[data-testid='advanced-combined-table'] input[data-row-index]",
+    );
+  }
+
+  function focusAdvancedRow(index: number): void {
+    queueMicrotask(() => advancedInputs()[index]?.focus());
+  }
+
   function handleEnergyKeyDown(e: KeyboardEvent, i: number) {
     if (!calcState) return;
+
+    if (e.key === "Escape") {
+      e.preventDefault();
+      (e.target as HTMLInputElement).blur();
+      return;
+    }
+
     if (e.key === "Enter") {
       e.preventDefault();
       calcState.handleBlur(i);
-      const inputs = document.querySelectorAll<HTMLInputElement>(
-        "[data-testid='advanced-combined-table'] input[data-row-index]",
-      );
-      const next = inputs[i + 1];
+      if (e.shiftKey) return;
+      const next = advancedInputs()[i + 1];
       if (next) {
         next.focus();
       } else {
         calcState.addRow();
-        queueMicrotask(() => {
-          const refreshed = document.querySelectorAll<HTMLInputElement>(
-            "[data-testid='advanced-combined-table'] input[data-row-index]",
-          );
-          refreshed[i + 1]?.focus();
-        });
+        focusAdvancedRow(i + 1);
+      }
+      return;
+    }
+
+    if (e.key === "Tab") {
+      const target = advancedInputs()[e.shiftKey ? i - 1 : i + 1];
+      if (target) {
+        e.preventDefault();
+        calcState.handleBlur(i);
+        target.focus();
+      }
+      return;
+    }
+
+    if (e.key === "ArrowUp" || e.key === "ArrowDown") {
+      if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        const direction = e.key === "ArrowUp" ? "up" : "down";
+        calcState.moveRow(i, direction);
+        focusAdvancedRow(direction === "up" ? i - 1 : i + 1);
+      } else {
+        e.preventDefault();
+        advancedInputs()[e.key === "ArrowUp" ? i - 1 : i + 1]?.focus();
+      }
+      return;
+    }
+
+    if (e.key === "Backspace") {
+      const input = e.target as HTMLInputElement;
+      if (input.value === "" && calcState.rows.length > 1) {
+        e.preventDefault();
+        calcState.removeRow(i);
+        focusAdvancedRow(Math.max(0, i - 1));
       }
     }
   }

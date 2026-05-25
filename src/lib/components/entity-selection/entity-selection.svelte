@@ -149,6 +149,31 @@
       if (!panelOpen) selectionState.setExpanded(true);
       searchInputRef?.focus();
     }
+    // Arrow keys switch tabs when the picker panel is open and focus is not
+    // inside a text input or on a tab button (tab-bar handles those natively).
+    // Cold-load path: document.body has focus (nothing clicked yet).
+    if ((event.key === "ArrowLeft" || event.key === "ArrowRight") && panelOpen) {
+      const active = document.activeElement;
+      if (
+        active instanceof HTMLInputElement ||
+        active instanceof HTMLTextAreaElement ||
+        active instanceof HTMLSelectElement
+      ) {
+        return;
+      }
+      // Skip: tab buttons own ArrowLeft/ArrowRight via their onkeydown handler.
+      if (active instanceof HTMLElement && active.getAttribute("role") === "tab") return;
+      const pickerRoot = document.querySelector("[data-testid='picker-entity-selection']");
+      const inPicker = pickerRoot?.contains(active);
+      if (active === null || active === document.body || inPicker) {
+        event.preventDefault();
+        const idx = PICKER_TAB_ORDER.indexOf(activeTab);
+        const delta = event.key === "ArrowRight" ? 1 : -1;
+        const next =
+          PICKER_TAB_ORDER[(idx + delta + PICKER_TAB_ORDER.length) % PICKER_TAB_ORDER.length];
+        if (next) activateTab(next);
+      }
+    }
   }
 
   const activeTab = $derived(selectionState.activeTarget as PickerTab);
