@@ -1,10 +1,10 @@
 packages:
   - "."
 
-onlyBuiltDependencies:
-  - canvas
-  - core-js
-  - esbuild
+allowBuilds:
+  canvas: true
+  core-js: true
+  esbuild: true
 
 overrides:
   # Mitigates GHSA-pxg6-pf52-xh8x. Upstream: https://github.com/sveltejs/kit/issues/13089
