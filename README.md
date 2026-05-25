@@ -55,6 +55,15 @@ pnpm test:e2e
 `static/deploy.json` is generated automatically and no extra manual step is
 needed before E2E.
 
+### Dependency Management & Security Policy
+
+To maintain a secure and clean codebase, follow these rules when managing dependencies and addressing security vulnerabilities:
+
+- **Prefer Direct Upgrades**: If `pnpm audit` or Dependabot flags a vulnerability in a transitive dependency, prefer upgrading the direct dependency that pulls it in. Do not jump to adding overrides immediately.
+- **Minimal Overrides**: Only use overrides as a last resort if no compatible upstream release exists.
+- **Workspace-Level Configuration**: Define overrides in the root `pnpm-workspace.yaml` under the `overrides:` key (rather than `package.json`'s `pnpm.overrides` block) for workspace-wide consistency, and keep lockfile config aligned with that source to avoid `ERR_PNPM_LOCKFILE_CONFIG_MISMATCH`.
+- **Document Overrides**: Every override must be documented. Use standard YAML comments directly above each override entry in `pnpm-workspace.yaml`. The comment must reference the GHSA ID it mitigates and link to the upstream issue tracking the proper fix.
+
 ### Documentation
 
 |                                                   |                                                       |
