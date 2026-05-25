@@ -50,6 +50,7 @@ export function createEnergyInputState(): EnergyInputState {
   }
 
   function moveRow(index: number, direction: "up" | "down"): void {
+    if (index < 0 || index >= rows.length) return;
     const target = direction === "up" ? index - 1 : index + 1;
     if (target < 0 || target >= rows.length) return;
     const next = [...rows];
