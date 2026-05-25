@@ -34,10 +34,7 @@
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { page } from "$app/state";
   import { untrack } from "svelte";
-  import {
-    decodeCalculatorUrl,
-    decodeInverseModeFromUrl,
-  } from "$lib/utils/calculator-url";
+  import { decodeCalculatorUrl, decodeInverseModeFromUrl } from "$lib/utils/calculator-url";
   import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte";
   import { initExportState } from "$lib/state/export.svelte";
   import {
