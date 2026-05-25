@@ -75,14 +75,14 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
     const source = readSource(PLOT_PAGE);
     // If replaceState is present, it must be within an untrack() call.
     // This guards against the effect_update_depth_exceeded bug.
-    if (source.includes('import { replaceState }')) {
+    if (source.includes("import { replaceState }")) {
       expect(source).toContain("untrack");
     }
   });
 
   it("calculator/+page.svelte wraps replaceState calls with untrack (prevents reactive loop)", () => {
     const source = readSource(CALCULATOR_PAGE);
-    if (source.includes('import { replaceState }')) {
+    if (source.includes("import { replaceState }")) {
       expect(source).toContain("untrack");
     }
   });
