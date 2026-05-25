@@ -27,7 +27,13 @@ async function gotoAdvancedWithSrim(page: Page) {
     { timeout: 15000 },
   );
   // External data loading + WASM init can take 20-30s on first load
-  await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible({ timeout: 30000 });
+  await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible({ timeout: 30000 });
+}
+
+async function openProgramPicker(page: Page) {
+  await page.getByTestId("across-program").click();
+  await page.getByTestId("picker-tab-program").click();
+  await expect(page.getByTestId("picker-program-list")).toBeVisible();
 }
 
 // Run manually with: EXTERNAL_DATA_URL=http://127.0.0.1:9000/bucket/store.webdedx pnpm test:e2e:s3
@@ -44,10 +50,9 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
     await gotoAdvancedWithSrim(page);
 
     // Open the Programs picker
-    await page.getByRole("button", { name: /Programs/ }).click();
+    await openProgramPicker(page);
 
-    const listbox = page.getByRole("listbox", { name: "Select comparison programs" });
-    await expect(listbox).toBeVisible();
+    const listbox = page.getByTestId("picker-program-list");
 
     // The External section header should be present
     await expect(listbox.getByText("External", { exact: false })).toBeVisible();
@@ -61,8 +66,8 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
     await gotoAdvancedWithSrim(page);
 
     // Open Programs picker and add SRIM
-    await page.getByRole("button", { name: /Programs/ }).click();
-    const listbox = page.getByRole("listbox", { name: "Select comparison programs" });
+    await openProgramPicker(page);
+    const listbox = page.getByTestId("picker-program-list");
     const srimOption = listbox.getByRole("option", { name: /srim/i });
     await srimOption.click();
     await page.keyboard.press("Escape");
@@ -78,9 +83,9 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
     await gotoAdvancedWithSrim(page);
 
     // Open Programs picker and add SRIM
-    await page.getByRole("button", { name: /Programs/ }).click();
+    await openProgramPicker(page);
     const srimOption = page
-      .getByRole("listbox", { name: "Select comparison programs" })
+      .getByTestId("picker-program-list")
       .getByRole("option", { name: /srim/i });
     await srimOption.click();
     await page.keyboard.press("Escape");
@@ -106,7 +111,7 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
       () => new URLSearchParams(window.location.search).get("mode") === "advanced",
       { timeout: 15000 },
     );
-    await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible({ timeout: 30000 });
 
     // The SRIM program should be shown in the header as default
     const defaultHeader = page.locator(`th[data-program-id^="ext:srim:"]`).first();
@@ -123,9 +128,9 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
     await gotoAdvancedWithSrim(page);
 
     // Add SRIM to comparison
-    await page.getByRole("button", { name: /Programs/ }).click();
+    await openProgramPicker(page);
     await page
-      .getByRole("listbox", { name: "Select comparison programs" })
+      .getByTestId("picker-program-list")
       .getByRole("option", { name: /srim/i })
       .click();
     await page.keyboard.press("Escape");
@@ -150,7 +155,7 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
       { timeout: 15000 },
     );
     // Wait for external data + WASM to reload before checking the table
-    await expect(page.getByRole("button", { name: /Programs/ })).toBeVisible({ timeout: 30000 });
+    await expect(page.getByTestId("picker-advanced-toolbar")).toBeVisible({ timeout: 30000 });
 
     const srimHeader = page.locator(`th[data-program-id^="ext:srim:"]`).first();
     await expect(srimHeader).toBeVisible({ timeout: 10000 });
