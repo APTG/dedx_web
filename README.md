@@ -42,6 +42,14 @@ pnpm install && pnpm dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
+### Dependency Management & Security Policy
+
+To maintain a secure and clean codebase, follow these rules when managing dependencies and addressing security vulnerabilities:
+
+- **Prefer Direct Upgrades**: If `pnpm audit` or Dependabot flags a vulnerability in a transitive dependency, prefer upgrading the direct dependency that pulls it in. Do not jump to adding overrides immediately.
+- **Minimal Overrides**: Only use `pnpm.overrides` as a last resort if no compatible upstream release exists.
+- **Document Overrides**: Every override in `package.json` must be documented. Because `pnpm` validates selector keys within the `overrides` block, place comments in a `"// overrides"` property sibling to `"overrides"` inside the `"pnpm"` block. The comment must reference the GHSA ID it mitigates and link to the upstream issue tracking the proper fix.
+
 ### Documentation
 
 |                                                   |                                                       |
