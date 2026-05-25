@@ -42,6 +42,19 @@ pnpm install && pnpm dev
 
 Open [http://localhost:5173](http://localhost:5173).
 
+### Run E2E locally
+
+Playwright serves the built app with `pnpm preview`, so the safe local flow is:
+
+```sh
+pnpm build
+pnpm test:e2e
+```
+
+`pnpm build` now runs `node scripts/deploy.cjs` via `prebuild`, so
+`static/deploy.json` is generated automatically and no extra manual step is
+needed before E2E.
+
 ### Documentation
 
 |                                                   |                                                       |

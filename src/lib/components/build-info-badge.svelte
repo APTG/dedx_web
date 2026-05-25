@@ -24,7 +24,7 @@
 </script>
 
 {#if info}
-  <span class="text-xs text-muted-foreground whitespace-nowrap">
+  <span class="text-xs text-muted-foreground break-all sm:break-normal sm:whitespace-nowrap">
     Deployed:
     <a
       href={`${info.repoUrl}/commit/${info.commitFull}`}

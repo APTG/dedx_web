@@ -92,6 +92,12 @@ static HTML, JS (content-hashed), and CSS files. The WASM artifacts in
 embedding and their cache behaviour is acceptable. See
 [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md).
 
+The build also generates `static/deploy.json` via the `prebuild` hook
+(`node scripts/deploy.cjs`). This file is consumed by `BuildInfoBadge` in the
+shared footer, so any workflow that runs `pnpm build` already includes deploy
+metadata automatically. A separate `Write deploy.json` step is unnecessary
+unless the build lifecycle is intentionally bypassed.
+
 **Base path:** The app is served from a sub-path on GitHub Pages
 (`/web_dev/` or `/web/`). `%sveltekit.assets%` resolves this at build time.
 See [03-architecture.md](03-architecture.md) for the Vite config details.
@@ -115,6 +121,14 @@ stage so that every PR has a gate matching the current scope of the project:
 Every PR triggers the full `ci` job at whatever steps the current stage has added.
 The deploy job in `deploy.yml` runs only on `master` push — never on PRs.
 Production deploy (to `APTG/web`) will be added in Stage 9, triggered by `v*` tags.
+
+For E2E jobs, the required sequence is:
+
+1. prepare WASM artifacts,
+2. run `pnpm build` (which now also generates `deploy.json` via `prebuild`),
+3. run `pnpm test:e2e`, which starts `pnpm preview` against the built output.
+
+`pnpm test:e2e` does not invoke `pnpm build` on its own.
 
 ### §5.1 deploy.yml — continuous deployment to web_dev
 

@@ -126,14 +126,18 @@ Active CI workflow (`.github/workflows/ci.yml`) runs on pushes to `master`,
    - depends on WASM verify job
    - downloads WASM binaries artifact
    - runs `pnpm build` then `pnpm test:e2e`
+   - `pnpm build` is required because Playwright serves the already-built app via
+     `pnpm preview`; it does **not** build automatically
+   - the `prebuild` hook writes `static/deploy.json`, so no separate
+     `node scripts/deploy.cjs` step is needed before E2E anymore
 
 Recommended local pre-push checklist:
 
 ```
 pnpm lint          ← ESLint + Prettier check
 pnpm test          ← Vitest (unit + integration)
-pnpm exec playwright test   ← E2E + axe-core
-pnpm build         ← SvelteKit static build (must not fail)
+pnpm build         ← required before Playwright; also generates static/deploy.json via prebuild
+pnpm exec playwright test   ← E2E + axe-core against pnpm preview
 ```
 
 A Lighthouse performance budget on a simulated 3G Fast profile (targets:
