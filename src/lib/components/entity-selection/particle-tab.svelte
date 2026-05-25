@@ -4,7 +4,7 @@
   import type { ParticleEntity } from "$lib/wasm/types";
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
-  import { getParticleLabel, getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
+  import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 
