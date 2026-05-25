@@ -170,6 +170,9 @@ jobs:
       - name: Install Playwright browsers
         run: pnpm exec playwright install --with-deps chromium firefox
 
+      - name: Write deploy.json
+        run: node scripts/deploy.cjs
+
       - name: Build app
         run: pnpm build
 
