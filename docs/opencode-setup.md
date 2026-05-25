@@ -312,9 +312,11 @@ separate terminal windows:
 
 Every opencode session **must** produce:
 
-1. A new row at the top of `CHANGELOG-AI.md`:
-   ```
-   | YYYY-MM-DD | <stage> | <description> (opencode + Qwen3.5-397B) | [log](...) |
+1. A new bullet entry at the top of the `## Entries (newest first)` section in
+   `CHANGELOG-AI.md`:
+   ```markdown
+   - YYYY-MM-DD — **<stage>**: <description> (opencode + Qwen3.5-397B)
+     - **Log:** [log](...)
    ```
 2. A session log at `docs/ai-logs/YYYY-MM-DD-<slug>.md`.
 

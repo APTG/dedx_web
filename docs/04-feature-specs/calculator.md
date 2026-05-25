@@ -1,13 +1,16 @@
 # Feature: Calculator Page
 
-> **Status:** Final v8 (13 April 2026)
+> **Status:** Final v9 (25 May 2026)
 >
-> **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
-> URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
-> Affecting this spec: `eunit=MeV` → `uanchor=MeV` (always emitted); per-row
-> `:unit` suffix grammar in `energies=` is unchanged (extended to 15 tokens —
-> see `shareable-urls.md` §3.5). URL examples below will be re-aligned to v2 as
-> part of #555.
+> **v9** (25 May 2026 — Stage 8, issue #563): Aligned to shipped behaviour.
+> Advanced mode tabs renamed Energy → / Range → / STP → ([ADR 013](../decisions/013-mode-tab-naming.md)).
+> Standalone energy-unit selector removed; replaced by unit-anchor strip
+> ([ADR 008](../decisions/008-drop-unit-button-between-picker-and-results.md)).
+> Inline unit grammar documented ([ADR 010](../decisions/010-inline-unit-grammar.md)).
+> No autofocus on cold load ([ADR 009](../decisions/009-no-autofocus-on-cold-load.md)).
+> URL examples updated to v2 (`urlv=2`): `eunit=` → `uanchor=`; `qfocus=` →
+> `qshow=`; `hidden_programs=` removed; all per-row energy suffix tokens
+> extended to the 15-token cross-product. Cross-linked to ADRs 007–013.
 >
 > **v8** (13 April 2026): Export buttons moved from below the unified table
 > to the **app toolbar** (upper-right, left of "Share URL"), consistent
@@ -140,6 +143,57 @@ without pressing a "Calculate" button.
 
 ---
 
+## Defaults
+
+On cold load (no URL parameters):
+
+| Setting     | Default value                                                                              |
+| ----------- | ------------------------------------------------------------------------------------------ |
+| Particle    | Proton (H)                                                                                 |
+| Material    | Water (liquid)                                                                             |
+| Program     | Auto-select → resolved (e.g., ICRU 90)                                                     |
+| Energy rows | One pre-filled row with `100` (MeV)                                                        |
+| Mode        | Basic                                                                                      |
+| Autofocus   | None — no input is auto-focused ([ADR 009](../decisions/009-no-autofocus-on-cold-load.md)) |
+| Results     | Appear immediately without user interaction                                                |
+
+---
+
+## Modes
+
+### Basic / Advanced toggle
+
+The app-wide Basic/Advanced toggle (top-right action bar) switches between two
+table layouts. In **Basic** mode the table has one energy input column and two
+output columns (stopping power, CSDA range). In **Advanced** mode, three
+calculation sub-modes are available via tabs.
+
+### Advanced sub-mode tabs
+
+> **Stage 8 update:** tabs renamed from Forward/Range/Inverse STP to the
+> arrow-notation scheme below. See
+> [ADR 013](../decisions/013-mode-tab-naming.md).
+
+| Tab | Label    | Desktop sublabel        | Mobile glyph (< 400 px) | `calc=` URL token |
+| --- | -------- | ----------------------- | ----------------------- | ----------------- |
+| 1   | Energy → | → Stopping Power, Range | E→                      | `forward`         |
+| 2   | Range →  | → Energy                | R→                      | `range`           |
+| 3   | STP →    | → Energy                | S→                      | `inverse-stp`     |
+
+The arrow suffix makes the **input → output** direction immediately clear
+without physics-domain knowledge:
+
+- **Energy →** — the user types energies and reads stopping power + CSDA range.
+  This is the default tab and is also the Basic mode behaviour.
+- **Range →** — the user types CSDA range values and reads the energy that
+  produces each range (inverse CSDA range lookup).
+- **STP →** — the user types stopping-power values and reads the energy on the
+  high-energy branch (falling side of the Bragg peak). A second low-energy
+  column reveals automatically when a row has two solutions
+  ([ADR 012](../decisions/012-inverse-stp-sticky-high-e-default.md)).
+
+---
+
 ## Page Layout Overview
 
 The Calculator page uses the **compact mode** entity selection layout
@@ -194,17 +248,23 @@ The badge serves two purposes:
 2. Explain why the default stopping power unit changes when switching
    between gas and non-gas materials (see [`unit-handling.md`](unit-handling.md) §5.1).
 
-### 2. Energy Unit Selector
+### 2. Unit-Anchor Strip (Energy Unit Selector)
 
-| Property                | Detail                                                                                                                                                                                                                                                                           |
-| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Type                    | Segmented control / radio buttons (not a dropdown — ≤3 options, see §4.2 of project vision)                                                                                                                                                                                      |
-| Position                | Inline with the entity selection row, after the Program combobox                                                                                                                                                                                                                 |
-| Options                 | **Particle-dependent.** The selected particle type determines which units are shown: MeV only for proton and electron; MeV + MeV/nucl for heavy ions. See [`unit-handling.md`](unit-handling.md) §2 for the full rules.                                                          |
-| Default                 | MeV                                                                                                                                                                                                                                                                              |
-| Master vs. per-row mode | When all rows have plain numbers (no unit suffix), the selector is **active** (master mode). When any row has a typed unit suffix, the selector becomes **greyed out / disabled** (per-row mode). See [`unit-handling.md`](unit-handling.md) §2 "Master vs. Per-Row Mode".       |
-| Behavior                | Changing the unit **does not modify the typed values** — the numeric text stays the same. The values are reinterpreted in the new unit, which **triggers an immediate recalculation**. See Recalculation Triggers table below.                                                   |
-| Inline unit detection   | When the user types a unit suffix in a row (e.g., `100 keV`, `250 GeV/nucl`), the parser detects it after debounce, assigns the row its own unit, and — if this creates mixed units — switches to per-row mode. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
+> **Stage 8 update:** The standalone energy-unit selector between the picker
+> and the results table is removed. It is replaced by the **unit-anchor strip**
+> — a pill radiogroup rendered in the table toolbar area.
+> See [ADR 008](../decisions/008-drop-unit-button-between-picker-and-results.md).
+
+| Property                | Detail                                                                                                                                                                                                                                                                                 |
+| ----------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                    | Pill radiogroup (`unit-anchor-strip.svelte`) — not a dropdown                                                                                                                                                                                                                          |
+| Position                | Basic mode: inside the table toolbar (above or inline with the column headers). Advanced mode: rendered in the Advanced toolbar above the tab strip.                                                                                                                                   |
+| Options                 | **Particle-dependent.** MeV only for proton; MeV + MeV/nucl + MeV/u for heavy ions. In Advanced mode, MeV/u is also available for proton with an `(≠MeV)` badge. See [`unit-handling.md`](unit-handling.md) §2.                                                                        |
+| Default                 | MeV                                                                                                                                                                                                                                                                                    |
+| Master vs. per-row mode | When all rows have plain numbers (no unit suffix), the strip is **active** (master mode). When any row has a typed unit suffix, the strip becomes **greyed out / disabled** (per-row mode). See [`unit-handling.md`](unit-handling.md) §2 "Master vs. Per-Row Mode".                   |
+| Behavior                | Changing the anchor unit **does not modify the typed values** — the numeric text stays the same. The values are reinterpreted in the new unit, triggering an immediate recalculation. See Recalculation Triggers table below.                                                          |
+| Inline unit detection   | When the user types a unit suffix in a row (e.g., `100 keV`, `250 GeV/nucl`), the inline-unit parser ([ADR 010](../decisions/010-inline-unit-grammar.md)) detects it after debounce and assigns the row its own unit. See [`unit-handling.md`](unit-handling.md) §3 for parsing rules. |
+| URL parameter           | `uanchor=MeV` (v2). Replaces v1 `eunit=`. See [`shareable-urls.md`](shareable-urls.md) §3.                                                                                                                                                                                             |
 
 > Full energy unit logic — particle-dependent options, SI prefix handling,
 > per-row unit detection, output unit defaults, conversion formulas — lives in
@@ -564,21 +624,25 @@ a `calculate()` call:
 
 ## URL State Encoding
 
-This section defines the **basic-mode** Calculator URL contract.
-Advanced-mode extensions (`mode`, `programs`, `hidden_programs`,
-`qfocus`) are specified in [`multi-program.md`](multi-program.md).
+> **v2 URL schema is canonical (`urlv=2`).** See
+> [`shareable-urls.md`](shareable-urls.md) for the full contract. This section
+> summarises the basic-mode parameters. Advanced-mode extensions (`programs`,
+> `qshow`, `across`) are specified in [`multi-program.md`](multi-program.md).
 
 The Calculator page state is encoded in URL query parameters for
 shareability. When a user shares a URL, the recipient sees the same
-inputs and results for this basic-mode contract.
+inputs and results.
 
-| Parameter  | Example           | Notes                                                                   |
-| ---------- | ----------------- | ----------------------------------------------------------------------- |
-| `particle` | `1`               | Particle ID (proton, heavy ion, or electron)                            |
-| `material` | `276`             | Material ID                                                             |
-| `program`  | `auto` or `2`     | "auto" for Auto-select, numeric for specific                            |
-| `energies` | `100,200:keV,500` | Comma-separated values, with optional per-value unit suffix (see below) |
-| `eunit`    | `MeV`             | Master energy unit (used for values without a per-value unit)           |
+| Parameter  | Example           | Notes                                                                                                     |
+| ---------- | ----------------- | --------------------------------------------------------------------------------------------------------- |
+| `urlv`     | `2`               | Schema version. Always `2` in canonical output.                                                           |
+| `mode`     | `basic`           | `basic` or `advanced`. Absent = `basic`.                                                                  |
+| `particle` | `1`               | Particle ID (proton, heavy ion, or electron)                                                              |
+| `material` | `276`             | Material ID                                                                                               |
+| `program`  | `auto` or `2`     | `auto` for Auto-select, numeric ID for a specific program                                                 |
+| `energies` | `100,200:keV,500` | Comma-separated values with optional per-value unit suffix (see below)                                    |
+| `uanchor`  | `MeV`             | Master energy unit anchor (replaces v1 `eunit=`). Omitted when MeV (default).                             |
+| `calc`     | `forward`         | Calculator operation: `forward` (Energy →), `range` (Range →), `inverse-stp` (STP →). Absent = `forward`. |
 
 ### Mixed-Unit URL Encoding
 
@@ -586,22 +650,22 @@ When per-row mode is active (mixed units), each energy value in the
 `energies` parameter may carry its own unit suffix using a colon separator:
 
 ```
-?energies=100,200:keV,50:GeV/nucl,300&eunit=MeV
+?urlv=2&energies=100,200:keV,50:GeV/nucl,300&uanchor=MeV
 ```
 
 Parsing rules:
 
-- `100` → value 100, unit from `eunit` (MeV)
+- `100` → value 100, unit from `uanchor` (MeV)
 - `200:keV` → value 200, unit keV
 - `50:GeV/nucl` → value 50, unit GeV/nucl
-- `300` → value 300, unit from `eunit` (MeV)
+- `300` → value 300, unit from `uanchor` (MeV)
 
 When encoding the URL from the current table state:
 
-- If all rows use the same unit (master mode): use `eunit` only, no
-  per-value suffixes. E.g., `?energies=100,200,500&eunit=MeV`
+- If all rows use the same unit (master mode): use `uanchor` only, no
+  per-value suffixes. E.g., `?urlv=2&energies=100,200,500&uanchor=MeV`
 - If any row has a different unit (per-row mode): append `:unit` to
-  values that differ from `eunit`. The `eunit` parameter still encodes
+  values that differ from `uanchor`. The `uanchor` parameter still encodes
   the base unit for unsuffixed values.
 
 On page load with URL parameters:

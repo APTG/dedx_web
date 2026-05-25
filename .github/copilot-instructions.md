@@ -21,6 +21,8 @@
 
 - Prettier defaults: double quotes, semicolons, 2-space indent
 - Conventional Commits: `feat:`, `fix:`, `docs:`, `chore:`, `test:`
+- Before committing: run `pnpm format` to auto-format all files, including
+  markdown files such as `CHANGELOG-AI.md`. Verify with `pnpm run format:check`.
 
 ## Key Docs
 
@@ -70,16 +72,17 @@ Every AI coding session MUST be logged for project continuity.
 
 ### Quick Reference
 
-- **Changelog**: `CHANGELOG-AI.md` (repo root) — append one-line summaries at the top
+- **Changelog**: `CHANGELOG-AI.md` (repo root) — prepend bullet entries at the top
 - **Detailed logs**: `docs/ai-logs/YYYY-MM-DD-<slug>.md` — one file per session
 
 ### Changelog Entry Format (CHANGELOG-AI.md)
 
-The changelog uses a markdown table. Append a new row at the top of the table body
-(below the header row and separator):
+The changelog uses a markdown bullet list. Prepend one bullet at the top of the
+`## Entries (newest first)` section:
 
-```
-| YYYY-MM-DD | N | <what was done> (<model> via <tool>) | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
+```markdown
+- YYYY-MM-DD — **<stage>**: <what was done> (<model> via <tool>)
+  - **Log:** [log](docs/ai-logs/YYYY-MM-DD-slug.md)
 ```
 
 The `(<model> via <tool>)` attribution is **mandatory** so multi-tool history stays

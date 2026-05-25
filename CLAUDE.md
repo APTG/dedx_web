@@ -38,6 +38,8 @@ Vendor source + docs are in `vendor/svelte/` if you need to check implementation
 - **Prettier**: double quotes, semicolons, 2-space indent
 - **Commits**: Conventional Commits — `feat:`, `fix:`, `docs:`, `chore:`, `test:`
 - Comments only where the WHY is non-obvious; never narrate what the code does
+- **Before committing**: run `pnpm format` to auto-format all files, including
+  markdown files such as `CHANGELOG-AI.md`. Verify with `pnpm run format:check`.
 
 ---
 
@@ -111,14 +113,16 @@ project maintains continuity across tools and contributors.
 
 ### At session start
 
-Check `CHANGELOG-AI.md` (top rows) and `docs/progress/` to understand recent history.
+Check `CHANGELOG-AI.md` (top entries) and `docs/progress/` to understand recent history.
 
 ### What to create
 
-**1. Changelog row** — prepend to the top of the table body in `CHANGELOG-AI.md`:
+**1. Changelog entry** — prepend to the top of the `## Entries (newest first)`
+section in `CHANGELOG-AI.md`:
 
-```
-| YYYY-MM-DD | N | <what was done> (Claude Sonnet 4.6 via Claude Code) | [log](docs/ai-logs/YYYY-MM-DD-slug.md) |
+```markdown
+- YYYY-MM-DD — **<stage>**: <what was done> (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/YYYY-MM-DD-slug.md)
 ```
 
 The `(Claude Sonnet 4.6 via Claude Code)` attribution is **mandatory** for traceability.
@@ -150,7 +154,7 @@ Replace the model name if you are running on a different Claude version.
 
 ### Rules
 
-- For trivial changes (< 3 files, no decisions) a changelog row alone is sufficient — skip the detailed log.
+- For trivial changes (< 3 files, no decisions) a changelog entry alone is sufficient — skip the detailed log.
 - Use the slug from the feature spec filename when applicable (e.g. `entity-selection`, `calculator`).
 - Commit messages use Conventional Commits; the log captures the _why_.
 

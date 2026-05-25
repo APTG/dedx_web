@@ -1,6 +1,11 @@
 # Feature: Export
 
-> **Status:** Final v6 (13 April 2026)
+> **Status:** Final v7 (25 May 2026)
+>
+> **v7** (25 May 2026 — issue #563): Clarified that `qshow=` is
+> presentation-only and does **not** filter CSV output — both stopping-power
+> and CSDA-range columns are always exported. See
+> [ADR 006](../decisions/006-url-schema-v2.md).
 >
 > **v6** (13 April 2026): Added `## User Stories` section (four personas:
 > researcher → CSV for analysis, student → PDF for lab report, data
@@ -306,14 +311,17 @@ Column rules:
 
 Visibility rules — what columns are included:
 
-| Condition                  | Effect on CSV                                  |
-| -------------------------- | ---------------------------------------------- |
-| Hidden program column      | Excluded from CSV                              |
-| Quantity focus `Both`      | Stopping-power columns then CSDA-range columns |
-| Quantity focus `STP only`  | Stopping-power columns only                    |
-| Quantity focus `CSDA only` | CSDA-range columns only                        |
-| Delta / % hover values     | **Not exported** (derivable from raw data)     |
-| Preview series             | **Not exported**                               |
+| Condition              | Effect on CSV                                                                   |
+| ---------------------- | ------------------------------------------------------------------------------- |
+| `qshow=stp` or `range` | **No effect** — CSV always exports both quantity groups regardless of `qshow=`. |
+| Delta / % hover values | **Not exported** (derivable from raw data)                                      |
+| Preview series         | **Not exported**                                                                |
+
+> **`qshow=` is presentation-only.** The on-screen quantity toggle controls
+> which group is visually highlighted but does **not** filter CSV output.
+> Both stopping-power and CSDA-range columns are always present in the
+> exported file. See [ADR 006](../decisions/006-url-schema-v2.md) and
+> [`multi-program.md`](multi-program.md) § Quantity Toggle.
 
 ### Filename
 
