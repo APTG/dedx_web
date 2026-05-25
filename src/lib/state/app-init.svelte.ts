@@ -6,8 +6,9 @@ import { buildExternalCompatibilityContext } from "$lib/state/external-compatibi
 import {
   createEntitySelectionState,
   type EntitySelectionState,
+  WATER_ID,
 } from "$lib/state/entity-selection.svelte";
-import type { CompatibilityMatrix } from "$lib/wasm/types";
+import type { CompatibilityMatrix, LibdedxService } from "$lib/wasm/types";
 import type { ExternalDataError } from "$lib/external-data/errors";
 import type { ExternalSourceDescriptor } from "$lib/external-data/types";
 import { parseExtdataParams } from "$lib/external-data/url";
@@ -24,9 +25,11 @@ export class AppInitState {
   // Reactive flags indicating initialization progress
   isInitializing = $state(false);
   error = $state<ExternalDataError | null>(null);
+  /** True while `initialize()` is running and external sources were requested via URL. */
+  hasExternalSources = $state(false);
 
   // Ready data
-  service: any | null = null;
+  service: LibdedxService | null = null;
   compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
   loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
   entityState = $state<EntitySelectionState | null>(null);
@@ -38,9 +41,11 @@ export class AppInitState {
   initialize(searchParams: URLSearchParams): void {
     if (!browser || this.isInitializing || this.entityState) return;
 
+    this.error = null;
     this.isInitializing = true;
     const extdataResult = parseExtdataParams(searchParams);
     const extSources = extdataResult.sources;
+    this.hasExternalSources = extSources.length > 0;
 
     Promise.all([
       getService(),
@@ -74,7 +79,7 @@ export class AppInitState {
   /**
    * Helper to append an external source dynamically (e.g. from modal) and rebuild context.
    */
-  addExternalSource(descriptor: ExternalSourceDescriptor, metadata: any): void {
+  addExternalSource(descriptor: ExternalSourceDescriptor, metadata: ExternalStoreMetadata): void {
     if (!this.entityState || !this.compatibilityMatrix) return;
 
     this.loadedExternalSources = [...this.loadedExternalSources, descriptor];
@@ -143,9 +148,8 @@ export class AppInitState {
     const selectedMaterialId = state.selectedMaterial?.id ?? null;
     const availableMaterialIds = new Set(state.availableMaterials.map((material) => material.id));
     if (selectedMaterialId !== null && !availableMaterialIds.has(selectedMaterialId)) {
-      // Hardcoded WATER_ID from entity-selection.svelte is 10
       const fallbackMaterial =
-        state.availableMaterials.find((material) => material.id === 10)?.id ??
+        state.availableMaterials.find((material) => material.id === WATER_ID)?.id ??
         state.availableMaterials[0]?.id ??
         null;
       state.selectMaterial(fallbackMaterial);

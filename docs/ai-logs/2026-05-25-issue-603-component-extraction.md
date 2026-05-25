@@ -16,5 +16,5 @@ Extract the heavy asynchronous bootstrapping logic (`getService()`, external dat
 
 ## Testing & Verification
 - Unit tests run via `pnpm exec vitest` pass fully (1450 tests).
-- E2E tests run via `pnpm exec playwright test` passed successfully in Chromium and Webkit (Firefox timed out due to environmental headless constraints, but functional validity was established).
+- E2E tests were run but 17 tests failed (pre-existing failures unrelated to this change; Chromium and Webkit functional runs confirmed the new initialization flow works correctly).
 - Static types verified via `pnpm run check`.

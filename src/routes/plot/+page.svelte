@@ -41,7 +41,7 @@
 
   let entityState = $derived(appInit.entityState);
   let loadedExternalSources = $derived(appInit.loadedExternalSources);
-  let externalLoading = $derived(appInit.isInitializing);
+  let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
   let externalError = $derived(appInit.error);
 
   let materialIsGas = $state<boolean | undefined>(undefined);
@@ -106,7 +106,7 @@
   }
 
   $effect(() => {
-    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState) {
+    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
       appInit.initialize(page.url.searchParams);
     }
   });
