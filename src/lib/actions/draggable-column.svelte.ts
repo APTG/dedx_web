@@ -121,7 +121,8 @@ export function createColumnReorder<T>(config: ColumnReorderConfig<T>) {
     const draggedIndex = order.indexOf(draggedId);
     if (targetIndex !== -1 && draggedIndex !== -1) {
       config.reorder(draggedId, targetIndex);
-      const announced = Math.min(Math.max(1, targetIndex), order.length - 1) + 1;
+      const minIndex = config.getLockedId() === null ? 0 : 1;
+      const announced = Math.min(Math.max(minIndex, targetIndex), order.length - 1) + 1;
       announcement = `${config.getName(draggedId)} moved to position ${announced} of ${order.length}.`;
     }
     draggingId = null;
@@ -136,6 +137,7 @@ export function createColumnReorder<T>(config: ColumnReorderConfig<T>) {
     if (isLocked(id) || !event.altKey) return;
     const order = config.getOrder();
     const currentIndex = order.indexOf(id);
+    const minIndex = config.getLockedId() === null ? 0 : 1;
     if (currentIndex === -1) return;
 
     if (event.key === "ArrowRight" && currentIndex < order.length - 1) {
@@ -143,7 +145,7 @@ export function createColumnReorder<T>(config: ColumnReorderConfig<T>) {
       const newPos = currentIndex + 1;
       config.reorder(id, newPos);
       announcement = `${config.getName(id)} moved to position ${newPos + 1} of ${order.length}.`;
-    } else if (event.key === "ArrowLeft" && currentIndex > 1) {
+    } else if (event.key === "ArrowLeft" && currentIndex > minIndex) {
       event.preventDefault();
       const newPos = currentIndex - 1;
       config.reorder(id, newPos);
