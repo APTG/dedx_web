@@ -214,6 +214,61 @@ Each row renders `getParticleListLabel(p, z)` — Z is embedded in the name
 
 Electron (id 1001) remains excluded until ESTAR ships.
 
+#### Particle tab — periodic-grid scan view (Advanced)
+
+Shipped in PR #614 (issue #599). In **Advanced** mode the particle tab
+exposes a list/grid toggle so users can scan particles by Z directly on
+the periodic table. The toggle is suppressed in Basic mode, and the view
+is force-reset to `"list"` when the user drops out of Advanced mode.
+
+Layout — `data-testid="picker-particle-grid"`:
+
+- 18-column CSS grid (`grid-template-columns: repeat(18, minmax(0, 1fr))`)
+  with rows `repeat(7, auto) 0.35rem repeat(2, auto)`. Row 8 is an
+  intentional gap separating the main table from the lanthanide /
+  actinide rows (9 and 10).
+- Each builtin renders as a square tile with `Z` in the top-left corner
+  and the element `symbol` centered, wrapped in a `<button role="option">`.
+- Tile testid: `picker-particle-tile-{id}`. Availability is exposed as
+  `data-available="0|1"`. Unavailable tiles are `disabled` and rendered
+  at `opacity-40`; search non-matches dim to `opacity-30`.
+- Two `aria-hidden` indicator cells sit at row 6 col 3 and row 7 col 3
+  showing `57-71` / `89-103`, pointing to the lanthanide / actinide rows
+  below.
+- External-only particles render below the grid as a wrap row
+  (`data-testid="picker-particle-grid-external"`) of chip-style buttons
+  `picker-particle-ext-tile-{id}` showing `🔗 symbol Z=N`.
+- View toggle: `data-testid="picker-particle-view-toggle"` with
+  `picker-particle-view-list` (☰) and `picker-particle-view-grid` (▦)
+  buttons; both expose `aria-pressed` mirroring the active view.
+- `<div data-testid="picker-particle-tab" data-view="list|grid">` on the
+  outer wrapper lets tests assert the active view without hitting the
+  toggle.
+
+Selection, highlight, multi-select, anchor, and keyboard navigation
+behave identically to the list view — the grid is purely a rendering
+alternative for the same underlying state.
+
+#### Particle tab — component decomposition (PR #617)
+
+`particle-tab.svelte` is a thin orchestrator. The two renderers live in
+sibling components and receive already-derived arrays + per-particle
+callbacks via Svelte 5 `$props()`:
+
+- `particle-list-view.svelte` — owns the `picker-particle-list` listbox.
+- `particle-grid-view.svelte` — owns the `picker-particle-grid` grid and
+  the `picker-particle-grid-external` chip row. Built-in props are typed
+  `ParticleEntity[]` (not the wider `Particle` union) since the
+  periodic-table grid only renders builtins.
+- `particle-tab-helpers.ts` — pure helpers shared by all three:
+  `Particle` type alias, `NAMED_IDS`, `isExternal`, `atomicNumber`,
+  `isNamed`, `periodicPosition` (atomic-number → row/column mapping).
+
+The orchestrator retains: filter/match (`z=N` operator), view-mode
+state, `PickerSummaryBar`, view toggle, multi-select bookkeeping, and
+registration of the picker-level `onArrowKey` / `onEnterKey` keyboard
+handlers (`$bindable` slots).
+
 #### Material tab — sub-tab pill controls
 
 Replaced the three side-by-side columns with a single active list plus
