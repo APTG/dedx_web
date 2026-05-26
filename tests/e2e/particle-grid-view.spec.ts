@@ -136,9 +136,18 @@ test.describe("Particle tab — periodic-grid scan view", () => {
     test("search query filters tiles in grid view", async ({ page }) => {
       await page.getByTestId("picker-particle-view-grid").click();
       await page.getByTestId("picker-particle-search").fill("carbon");
-      // Carbon tile present; an unrelated tile (proton) hidden by filter.
+      // Carbon tile remains visible; a non-matching tile (proton) stays rendered but is dimmed.
       await expect(page.getByTestId("picker-particle-tile-6")).toBeVisible();
-      await expect(page.getByTestId("picker-particle-tile-1")).toHaveCount(0);
+      const proton = page.getByTestId("picker-particle-tile-1");
+      await expect(proton).toHaveCount(1);
+      await expect
+        .poll(async () => {
+          const opacity = await proton.evaluate((element) =>
+            Number.parseFloat(window.getComputedStyle(element).opacity),
+          );
+          return opacity;
+        })
+        .toBeLessThan(1);
     });
   });
 

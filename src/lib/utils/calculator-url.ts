@@ -350,20 +350,21 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   if (state.isAdvancedMode) {
     params.set("mode", "advanced");
 
-    // across= and plural comparison lists (omit when not active).
-    if (state.across) {
-      params.set("across", toAcrossUrlToken(state.across));
-    }
+    // across= and plural comparison lists (omit when not active/valid).
     if (
       state.across === "particle" &&
       state.selectedParticleIds &&
       state.selectedParticleIds.length > 0
     ) {
       params.set("particles", state.selectedParticleIds.join(","));
-    }
-
-    if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
+      params.set("across", toAcrossUrlToken(state.across));
+    } else if (
+      state.across === "program" &&
+      state.selectedProgramIds &&
+      state.selectedProgramIds.length > 0
+    ) {
       params.set("programs", formatEntityIdList(state.selectedProgramIds));
+      params.set("across", toAcrossUrlToken(state.across));
     }
 
     // Omit qshow when it is the default ("stp") per ADR 006 default-omission rule.
@@ -590,10 +591,14 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   const programsParam = params.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
-    isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
+    isAdvancedMode && acrossCandidate === "program" && programsParam
+      ? parseEntityIdList(programsParam)
+      : undefined;
   const materialsParam = params.get("materials");
-  const selectedMaterialIds =
-    isAdvancedMode && materialsParam ? parseEntityIdList(materialsParam) : undefined;
+  const selectedMaterialIds: EntityId[] | undefined =
+    isAdvancedMode && acrossCandidate === "material" && materialsParam
+      ? parseEntityIdList(materialsParam)
+      : undefined;
 
   const across: "particle" | "material" | "program" | undefined = acrossCandidate;
 
