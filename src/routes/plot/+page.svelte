@@ -4,12 +4,7 @@
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
-  import {
-    createEntitySelectionState,
-    type EntitySelectionState,
-    WATER_ID,
-  } from "$lib/state/entity-selection.svelte";
-  import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+  import { WATER_ID } from "$lib/state/entity-selection.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
@@ -32,10 +27,6 @@
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
-  import type { ExternalDataError } from "$lib/external-data/errors";
-  import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
-  import { parseExtdataParams } from "$lib/external-data/url";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { EntityId } from "$lib/external-data/types";
   import { loadExternalCalculationResult } from "$lib/utils/external-plot-series";
@@ -46,16 +37,19 @@
   } from "$lib/state/advanced-options.svelte";
 
   const plotState = createPlotState();
-  let entityState = $state<EntitySelectionState | null>(null);
+  import { appInit } from "$lib/state/app-init.svelte";
+
+  let entityState = $derived(appInit.entityState);
+  let loadedExternalSources = $derived(appInit.loadedExternalSources);
+  let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
+  let externalError = $derived(appInit.error);
+
   let materialIsGas = $state<boolean | undefined>(undefined);
   let urlVersionMismatch = $state<{ version: number | string } | null>(null);
   let advancedModeInitializedFromUrl = $state(false);
-  let externalLoading = $state(false);
-  let externalError = $state<ExternalDataError | null>(null);
-  let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
 
   function handleRemoveExternalSource(label: string): void {
-    loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
+    appInit.removeExternalSource(label);
   }
 
   // Mobile responsive: track viewport width to pass collapsible to EntitySelection
@@ -112,34 +106,9 @@
   }
 
   $effect(() => {
-    if (!wasmReady.value || entityState) return;
-    const currentSearchParams = page.url.searchParams;
-    const extdataResult = parseExtdataParams(currentSearchParams);
-    const extSources = extdataResult.sources;
-    externalLoading = extSources.length > 0;
-
-    Promise.all([
-      getService(),
-      Promise.all(extSources.map((s) => externalDataService.loadSource(s))),
-    ])
-      .then(([service, extMetadatas]) => {
-        externalLoading = false;
-        externalError = null;
-        loadedExternalSources = extSources;
-
-        const matrix = buildCompatibilityMatrix(service);
-        const extCtx = buildExternalCompatibilityContext(
-          extMetadatas,
-          matrix.allParticles,
-          matrix.allMaterials,
-        );
-        entityState = createEntitySelectionState(matrix);
-        entityState.setExternalContext(extCtx);
-      })
-      .catch((err) => {
-        externalLoading = false;
-        externalError = err as ExternalDataError;
-      });
+    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
+      appInit.initialize(page.url.searchParams);
+    }
   });
 
   // Initialize advanced options from localStorage on mount (runs once; browser is a constant)

@@ -2,13 +2,8 @@
   import { browser } from "$app/environment";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import {
-    createEntitySelectionState,
-    type EntitySelectionState,
-    type AutoSelectProgram,
-    WATER_ID,
-  } from "$lib/state/entity-selection.svelte";
-  import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+  import { type AutoSelectProgram, WATER_ID } from "$lib/state/entity-selection.svelte";
+
   import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
   import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
   import { createMultiEntityState, type MultiEntityState } from "$lib/state/multi-entity.svelte";
@@ -55,13 +50,9 @@
   import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
-  import type { ExternalDataError } from "$lib/external-data/errors";
-  import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
   import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
-  import { parseExtdataParams } from "$lib/external-data/url";
-  import type { CompatibilityMatrix } from "$lib/wasm/types";
   import { parseExtRef } from "$lib/external-data/ids";
   import type { CalculationResult } from "$lib/wasm/types";
 
@@ -96,7 +87,6 @@
     });
   }
 
-  let entityState = $state<EntitySelectionState | null>(null);
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
   let urlVersionChecked = $state(false);
@@ -109,60 +99,16 @@
   let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
   let sharedUrlWarning = $state<string | null>(null);
 
-  // External data state
-  let externalLoading = $state(false);
-  let externalError = $state<ExternalDataError | null>(null);
-  let loadedExternalSources = $state<ExternalSourceDescriptor[]>([]);
-  let compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
+  import { appInit } from "$lib/state/app-init.svelte";
   let showLoadExternalModal = $state(false);
 
-  /**
-   * After external-source add/remove, reset now-invalid selections to safe fallbacks.
-   * Fallback order: Auto-select for program, first available particle, Water (if
-   * present) then first available material.
-   */
-  function reconcileSelectionAfterExternalContextChange(state: EntitySelectionState): void {
-    const selectedProgramId = state.selectedProgram.id;
-    const availableProgramIds = new Set([
-      ...state.availablePrograms.map((program) => program.id),
-      ...state.availableExternalPrograms.map((program) => program.id),
-    ]);
-    if (!availableProgramIds.has(selectedProgramId)) {
-      state.selectProgram(-1);
-    }
-
-    const selectedParticleId = state.selectedParticle?.id ?? null;
-    const availableParticleIds = new Set(state.availableParticles.map((particle) => particle.id));
-    if (selectedParticleId !== null && !availableParticleIds.has(selectedParticleId)) {
-      state.selectParticle(state.availableParticles[0]?.id ?? null);
-    }
-
-    const selectedMaterialId = state.selectedMaterial?.id ?? null;
-    const availableMaterialIds = new Set(state.availableMaterials.map((material) => material.id));
-    if (selectedMaterialId !== null && !availableMaterialIds.has(selectedMaterialId)) {
-      const fallbackMaterial =
-        state.availableMaterials.find((material) => material.id === WATER_ID)?.id ??
-        state.availableMaterials[0]?.id ??
-        null;
-      state.selectMaterial(fallbackMaterial);
-    }
-  }
+  let entityState = $derived(appInit.entityState);
+  let loadedExternalSources = $derived(appInit.loadedExternalSources);
+  let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
+  let externalError = $derived(appInit.error);
 
   function handleRemoveExternalSource(label: string): void {
-    loadedExternalSources = loadedExternalSources.filter((s) => s.label !== label);
-    // Rebuild external context without the removed source
-    if (entityState && compatibilityMatrix) {
-      const remaining = loadedExternalSources
-        .map((s) => externalDataService.getMetadata(s.label))
-        .filter((m): m is ExternalStoreMetadata => m !== undefined);
-      const extCtx = buildExternalCompatibilityContext(
-        remaining,
-        compatibilityMatrix.allParticles,
-        compatibilityMatrix.allMaterials,
-      );
-      entityState.setExternalContext(extCtx);
-      reconcileSelectionAfterExternalContextChange(entityState);
-    }
+    appInit.removeExternalSource(label);
   }
 
   async function handleModalLoad(
@@ -170,24 +116,7 @@
     metadata: ExternalStoreMetadata,
   ) {
     showLoadExternalModal = false;
-    if (!entityState || !compatibilityMatrix) return;
-
-    // Append new source and rebuild the external compatibility context
-    loadedExternalSources = [...loadedExternalSources, descriptor];
-    const allMetadata = loadedExternalSources
-      .map((s) => externalDataService.getMetadata(s.label))
-      .filter((m): m is ExternalStoreMetadata => m !== undefined);
-    // Ensure the newly loaded metadata is included (it may not be in cache yet if FSDH)
-    const merged = allMetadata.some((m) => m.label === metadata.label)
-      ? allMetadata
-      : [...allMetadata, metadata];
-    const extCtx = buildExternalCompatibilityContext(
-      merged,
-      compatibilityMatrix.allParticles,
-      compatibilityMatrix.allMaterials,
-    );
-    entityState.setExternalContext(extCtx);
-    reconcileSelectionAfterExternalContextChange(entityState);
+    appInit.addExternalSource(descriptor, metadata);
   }
 
   function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
@@ -213,7 +142,7 @@
   }
 
   function saveSharedUrlCompound() {
-    if (!sharedUrlCompound || !entityState) return;
+    if (!sharedUrlCompound || !appInit.entityState) return;
     const result = customCompounds.create({
       name: sharedUrlCompound.name,
       density: sharedUrlCompound.density,
@@ -223,7 +152,7 @@
     });
     if (result.success) {
       customCompounds.removeTransient(sharedUrlCompound.id);
-      entityState.selectMaterial(result.compound.id);
+      appInit.entityState.selectMaterial(result.compound.id);
       sharedUrlCompound = null;
     }
   }
@@ -263,139 +192,117 @@
       urlVersionChecked = true;
     }
 
-    if (wasmReady.value && !entityState && !calcState) {
+    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
+      appInit.initialize(page.url.searchParams);
+    }
+  });
+
+  $effect(() => {
+    if (appInit.entityState && appInit.service && !calcState) {
       // Snapshot URL params synchronously before async work (constraint: must snapshot before await)
       const currentSearchParams = page.url.searchParams;
-      const extdataResult = parseExtdataParams(currentSearchParams);
-      const extSources = extdataResult.sources;
       const urlState = decodeCalculatorUrl(currentSearchParams);
       const hasEnergies = currentSearchParams.has("energies");
 
-      externalLoading = extSources.length > 0;
+      calcState = createCalculatorState(appInit.entityState, appInit.service, externalDataService);
+      inverseLookupState = createInverseLookupState(appInit.entityState);
 
-      Promise.all([
-        getService(),
-        Promise.all(extSources.map((s) => externalDataService.loadSource(s))),
-      ])
-        .then(([service, extMetadatas]) => {
-          externalLoading = false;
-          externalError = null;
-          loadedExternalSources = extSources;
+      // Load advanced options from localStorage first
+      loadAdvancedOptionsFromStorage();
 
-          const matrix = buildCompatibilityMatrix(service);
-          compatibilityMatrix = matrix;
-          const extCtx = buildExternalCompatibilityContext(
-            extMetadatas,
-            matrix.allParticles,
-            matrix.allMaterials,
-          );
+      // Restore advanced options from URL (URL takes priority over localStorage)
+      const urlAdvOpts = urlState.advancedOptions;
+      if (urlAdvOpts) {
+        advancedOptions.value = urlAdvOpts;
+      }
 
-          entityState = createEntitySelectionState(matrix);
-          entityState.setExternalContext(extCtx);
-          calcState = createCalculatorState(entityState, service, externalDataService);
-          inverseLookupState = createInverseLookupState(entityState);
-
-          // Load advanced options from localStorage first
-          loadAdvancedOptionsFromStorage();
-
-          // Restore advanced options from URL (URL takes priority over localStorage)
-          const urlAdvOpts = urlState.advancedOptions;
-          if (urlAdvOpts) {
-            advancedOptions.value = urlAdvOpts;
+      // Select particle/material/program FIRST before initializing rows
+      if (urlState.particleId !== null) appInit.entityState.selectParticle(urlState.particleId);
+      const customFromUrl = restoreCustomCompoundFromUrl(urlState);
+      if (customFromUrl) {
+        appInit.entityState.selectMaterial(customFromUrl.id);
+      } else if (urlState.materialId !== null) {
+        appInit.entityState.selectMaterial(urlState.materialId);
+      }
+      if (urlState.programId !== null) appInit.entityState.selectProgram(urlState.programId);
+      calcState.setMasterUnit(urlState.masterUnit);
+      if (hasEnergies) {
+        urlState.rows.forEach((r, i) => {
+          const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
+          if (i === 0) {
+            calcState!.updateRowText(0, text);
+          } else {
+            calcState!.addRow();
+            calcState!.updateRowText(i, text);
           }
-
-          // Select particle/material/program FIRST before initializing rows
-          if (urlState.particleId !== null) entityState.selectParticle(urlState.particleId);
-          const customFromUrl = restoreCustomCompoundFromUrl(urlState);
-          if (customFromUrl) {
-            entityState.selectMaterial(customFromUrl.id);
-          } else if (urlState.materialId !== null) {
-            entityState.selectMaterial(urlState.materialId);
-          }
-          if (urlState.programId !== null) entityState.selectProgram(urlState.programId);
-          calcState.setMasterUnit(urlState.masterUnit);
-          if (hasEnergies) {
-            urlState.rows.forEach((r, i) => {
-              const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
-              if (i === 0) {
-                calcState!.updateRowText(0, text);
-              } else {
-                calcState!.addRow();
-                calcState!.updateRowText(i, text);
-              }
-            });
-          }
-
-          // Restore inverse lookup mode from URL (AFTER particle/material selected)
-          const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
-          if (inverseMode && isAdvancedMode.value) {
-            inverseLookupState!.setActiveTab(inverseMode.imode);
-            if (inverseMode.lookups && inverseMode.lookups.length > 0) {
-              inverseLookupState!.rangeRows.length = 0;
-              inverseLookupState!.stpRows.length = 0;
-
-              for (let i = 0; i < inverseMode.lookups.length; i++) {
-                const ival = inverseMode.lookups[i]!;
-                const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
-                if (inverseMode.imode === "csda") {
-                  if (i === 0) {
-                    inverseLookupState!.addRangeRow();
-                    inverseLookupState!.updateRangeRowText(0, text);
-                  } else {
-                    inverseLookupState!.addRangeRow();
-                    inverseLookupState!.updateRangeRowText(i, text);
-                  }
-                } else if (inverseMode.imode === "stp") {
-                  if (i === 0) {
-                    inverseLookupState!.addStpRow();
-                    inverseLookupState!.updateStpRowText(0, text);
-                  } else {
-                    inverseLookupState!.addStpRow();
-                    inverseLookupState!.updateStpRowText(i, text);
-                  }
-                }
-              }
-            }
-            // Set master unit for Range (CSDA) mode
-            if (inverseMode.imode === "csda" && inverseMode.iunit) {
-              const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
-              if (validRangeUnits.includes(inverseMode.iunit as (typeof validRangeUnits)[number])) {
-                inverseLookupState!.setRangeMasterUnit(
-                  inverseMode.iunit as (typeof validRangeUnits)[number],
-                );
-              }
-            }
-            // Set master unit for STP mode
-            if (inverseMode.imode === "stp" && inverseMode.iunit) {
-              const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
-              if (validStpUnits.includes(inverseMode.iunit as (typeof validStpUnits)[number])) {
-                inverseLookupState!.setStpMasterUnit(
-                  inverseMode.iunit as (typeof validStpUnits)[number],
-                );
-              }
-            }
-            // Restore STP column-visibility state from URL
-            if (inverseMode.imode === "stp" && urlState.istpBranchState) {
-              inverseLookupState!.setStpBranchState(urlState.istpBranchState);
-            }
-          }
-
-          urlInitialized = true;
-        })
-        .catch((err: unknown) => {
-          externalLoading = false;
-          externalError = err as ExternalDataError;
         });
+      }
+
+      // Restore inverse lookup mode from URL (AFTER particle/material selected)
+      const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
+      if (inverseMode && isAdvancedMode.value) {
+        inverseLookupState!.setActiveTab(inverseMode.imode);
+        if (inverseMode.lookups && inverseMode.lookups.length > 0) {
+          inverseLookupState!.rangeRows.length = 0;
+          inverseLookupState!.stpRows.length = 0;
+
+          for (let i = 0; i < inverseMode.lookups.length; i++) {
+            const ival = inverseMode.lookups[i]!;
+            const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
+            if (inverseMode.imode === "csda") {
+              if (i === 0) {
+                inverseLookupState!.addRangeRow();
+                inverseLookupState!.updateRangeRowText(0, text);
+              } else {
+                inverseLookupState!.addRangeRow();
+                inverseLookupState!.updateRangeRowText(i, text);
+              }
+            } else if (inverseMode.imode === "stp") {
+              if (i === 0) {
+                inverseLookupState!.addStpRow();
+                inverseLookupState!.updateStpRowText(0, text);
+              } else {
+                inverseLookupState!.addStpRow();
+                inverseLookupState!.updateStpRowText(i, text);
+              }
+            }
+          }
+        }
+        // Set master unit for Range (CSDA) mode
+        if (inverseMode.imode === "csda" && inverseMode.iunit) {
+          const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
+          if (validRangeUnits.includes(inverseMode.iunit as (typeof validRangeUnits)[number])) {
+            inverseLookupState!.setRangeMasterUnit(
+              inverseMode.iunit as (typeof validRangeUnits)[number],
+            );
+          }
+        }
+        // Set master unit for STP mode
+        if (inverseMode.imode === "stp" && inverseMode.iunit) {
+          const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
+          if (validStpUnits.includes(inverseMode.iunit as (typeof validStpUnits)[number])) {
+            inverseLookupState!.setStpMasterUnit(
+              inverseMode.iunit as (typeof validStpUnits)[number],
+            );
+          }
+        }
+        // Restore STP column-visibility state from URL
+        if (inverseMode.imode === "stp" && urlState.istpBranchState) {
+          inverseLookupState!.setStpBranchState(urlState.istpBranchState);
+        }
+      }
+
+      urlInitialized = true;
     }
   });
 
   // Handle mode switch fallback: custom compound → water when switching to Basic mode
   $effect(() => {
     const mode = isAdvancedMode.value;
-    if (!mode && entityState?.selectedMaterial) {
-      const matId = entityState.selectedMaterial.id;
+    if (!mode && appInit.entityState?.selectedMaterial) {
+      const matId = appInit.entityState.selectedMaterial.id;
       if (typeof matId === "string" && matId.startsWith("cc_")) {
-        entityState.selectMaterial(WATER_ID);
+        appInit.entityState.selectMaterial(WATER_ID);
       }
     }
   });
@@ -429,14 +336,14 @@
     void _advOptsKey;
     // Block calculation while URL version mismatch is pending
     if (urlVersionMismatch !== null) return;
-    if (!calcState || !entityState?.isComplete) return;
+    if (!calcState || !appInit.entityState?.isComplete) return;
     const isMultiProgramCompare =
       isAdvancedMode.value &&
-      entityState.across === "program" &&
+      appInit.entityState.across === "program" &&
       (multiProgState?.selectedProgramIds.length ?? 0) > 1;
     const isMultiEntityCompare =
       isAdvancedMode.value &&
-      (entityState.across === "material" || entityState.across === "particle");
+      (appInit.entityState.across === "material" || appInit.entityState.across === "particle");
     if (isMultiProgramCompare || isMultiEntityCompare) return;
     calcState.triggerCalculation();
   });
