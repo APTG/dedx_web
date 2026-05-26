@@ -213,6 +213,10 @@ export interface CalculatorUrlState {
 
   /** Advanced mode fields (optional — only present when encoding/decoding advanced mode) */
   isAdvancedMode?: boolean;
+  /** Compare-across dimension (advanced only). Omitted when "none"/"single". */
+  across?: "particle" | "material" | "program";
+  /** Multi-selected particle IDs when across=particle (advanced only). */
+  selectedParticleIds?: number[];
   /** Supports mixed built-in numeric IDs and external `ext:{label}:{id}` refs. */
   selectedProgramIds?: EntityId[];
   quantityFocus?: "stp" | "range";
@@ -325,6 +329,18 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   // Advanced mode params
   if (state.isAdvancedMode) {
     params.set("mode", "advanced");
+
+    // across= and plural comparison lists (omit when not active).
+    if (state.across) {
+      params.set("across", state.across);
+    }
+    if (
+      state.across === "particle" &&
+      state.selectedParticleIds &&
+      state.selectedParticleIds.length > 0
+    ) {
+      params.set("particles", state.selectedParticleIds.join(","));
+    }
 
     if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
       params.set("programs", formatEntityIdList(state.selectedProgramIds));
@@ -535,6 +551,27 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   // Parse advanced mode params
   const mode = params.get("mode");
   const isAdvancedMode = mode === "advanced";
+
+  // across= and plural comparison lists (valid only in advanced mode per spec §3.3).
+  const acrossRaw = params.get("across");
+  const across: "particle" | "material" | "program" | undefined =
+    isAdvancedMode &&
+    (acrossRaw === "particle" || acrossRaw === "material" || acrossRaw === "program")
+      ? acrossRaw
+      : undefined;
+
+  let selectedParticleIds: number[] | undefined;
+  if (isAdvancedMode && across === "particle") {
+    const particlesParam = params.get("particles");
+    if (particlesParam) {
+      const ids = particlesParam
+        .split(",")
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 118);
+      if (ids.length > 0) selectedParticleIds = ids;
+    }
+  }
+
   const programsParam = params.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
     isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
@@ -785,6 +822,12 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   };
   if (externalSources.length > 0) {
     result.externalSources = externalSources;
+  }
+  if (across) {
+    result.across = across;
+  }
+  if (selectedParticleIds) {
+    result.selectedParticleIds = selectedParticleIds;
   }
   if (selectedProgramIds) {
     result.selectedProgramIds = selectedProgramIds;

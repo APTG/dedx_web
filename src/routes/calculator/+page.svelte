@@ -225,6 +225,20 @@
         appInit.entityState.selectMaterial(urlState.materialId);
       }
       if (urlState.programId !== null) appInit.entityState.selectProgram(urlState.programId);
+
+      // Restore multi-particle comparison state from URL (across=particle + particles=).
+      if (
+        urlState.isAdvancedMode &&
+        urlState.across === "particle" &&
+        urlState.selectedParticleIds
+      ) {
+        const available = new Set(appInit.entityState.availableParticles.map((p) => p.id));
+        const validIds = urlState.selectedParticleIds.filter((id) => available.has(id));
+        if (validIds.length > 0) {
+          appInit.entityState.setAcross("particle");
+          appInit.entityState.setMultiParticle(validIds);
+        }
+      }
       calcState.setMasterUnit(urlState.masterUnit);
       if (hasEnergies) {
         urlState.rows.forEach((r, i) => {

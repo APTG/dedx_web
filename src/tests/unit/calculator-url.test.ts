@@ -882,3 +882,124 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
     ]);
   });
 });
+
+// ─── Multi-particle URL encoding/decoding (issue #599) ────────────────────────
+// Spec: docs/04-feature-specs/shareable-urls.md §3.1 canonical example:
+//   particles=1,2,6&across=particles
+
+const advancedBase: CalculatorUrlState = {
+  particleId: 1,
+  materialId: 276,
+  programId: 9,
+  rows: [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
+  masterUnit: "MeV",
+  isAdvancedMode: true,
+};
+
+describe("encodeCalculatorUrl — multi-particle (across=particle)", () => {
+  it("emits particles= and across=particle when selectedParticleIds is set", () => {
+    const p = encodeCalculatorUrl({
+      ...advancedBase,
+      across: "particle",
+      selectedParticleIds: [1, 2, 6],
+    });
+    expect(p.get("across")).toBe("particle");
+    expect(p.get("particles")).toBe("1,2,6");
+  });
+
+  it("omits across= and particles= when across is undefined", () => {
+    const p = encodeCalculatorUrl(advancedBase);
+    expect(p.has("across")).toBe(false);
+    expect(p.has("particles")).toBe(false);
+  });
+
+  it("omits particles= when selectedParticleIds is empty", () => {
+    const p = encodeCalculatorUrl({
+      ...advancedBase,
+      across: "particle",
+      selectedParticleIds: [],
+    });
+    expect(p.has("particles")).toBe(false);
+  });
+
+  it("does not emit particles= when across=material", () => {
+    const p = encodeCalculatorUrl({
+      ...advancedBase,
+      across: "material",
+      selectedParticleIds: [1, 2, 6],
+    });
+    expect(p.get("across")).toBe("material");
+    expect(p.has("particles")).toBe(false);
+  });
+
+  it("round-trips the canonical spec example URL", () => {
+    // Spec example: particles=1,2,6&across=particles
+    const p = encodeCalculatorUrl({
+      ...advancedBase,
+      across: "particle",
+      selectedParticleIds: [1, 2, 6],
+    });
+    const qs = p.toString();
+    expect(qs).toContain("particles=1%2C2%2C6");
+    expect(qs).toContain("across=particle");
+  });
+});
+
+describe("decodeCalculatorUrl — multi-particle (across=particle)", () => {
+  it("decodes particles= and across=particle", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particle",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.isAdvancedMode).toBe(true);
+    expect(state.across).toBe("particle");
+    expect(state.selectedParticleIds).toEqual([1, 2, 6]);
+    expect(state.particleId).toBe(1);
+  });
+
+  it("ignores particles= when across is absent", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.across).toBeUndefined();
+    expect(state.selectedParticleIds).toBeUndefined();
+  });
+
+  it("ignores particles= in basic mode (across= requires mode=advanced)", () => {
+    const params = new URLSearchParams(
+      "urlv=2&particle=1&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particle",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.isAdvancedMode).toBe(false);
+    expect(state.across).toBeUndefined();
+    expect(state.selectedParticleIds).toBeUndefined();
+  });
+
+  it("filters out-of-range Z values from particles=", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&particles=0,1,2,119&material=276&program=9&energies=100&eunit=MeV&across=particle",
+    );
+    const state = decodeCalculatorUrl(params);
+    // Z=0 and Z=119 are out-of-range [1..118] and should be dropped.
+    expect(state.selectedParticleIds).toEqual([1, 2]);
+  });
+
+  it("returns undefined selectedParticleIds when particles= is absent", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&eunit=MeV&across=particle",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.across).toBe("particle");
+    expect(state.selectedParticleIds).toBeUndefined();
+  });
+
+  it("decodes across=material without touching selectedParticleIds", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&eunit=MeV&across=material",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.across).toBe("material");
+    expect(state.selectedParticleIds).toBeUndefined();
+  });
+});
