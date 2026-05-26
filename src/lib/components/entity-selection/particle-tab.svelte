@@ -320,7 +320,7 @@
               disabled={!available || (isMultiMode && anchor)}
               style="grid-row: {pos.row}; grid-column: {pos.col};"
               class={cn(
-                "flex aspect-square flex-col items-center justify-center rounded-sm border bg-card text-center leading-none transition-colors p-0",
+                "relative flex aspect-square flex-col items-center justify-center rounded-sm border bg-card p-0 text-center leading-none transition-colors overflow-hidden",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
                 isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
                 !isChecked && isHighlighted && available && "bg-accent",
@@ -334,8 +334,13 @@
                 }
               }}
             >
-              <span class="font-mono text-[7px] text-muted-foreground leading-none">{z}</span>
-              <span class="font-mono text-[10px] font-bold leading-tight">{sym}</span>
+              <span
+                class="absolute left-[1px] top-[1px] font-mono text-[min(0.5rem,1.5vw)] text-muted-foreground opacity-70 leading-none"
+                >{z}</span
+              >
+              <span class="font-mono text-[clamp(11px,1.5vw,18px)] font-bold leading-none"
+                >{sym}</span
+              >
             </button>
           {/if}
         {/each}
