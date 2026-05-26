@@ -213,6 +213,12 @@ export interface CalculatorUrlState {
 
   /** Advanced mode fields (optional — only present when encoding/decoding advanced mode) */
   isAdvancedMode?: boolean;
+  /** Compare-across dimension (advanced only). Omitted when "none"/"single". */
+  across?: "particle" | "material" | "program";
+  /** Multi-selected particle IDs when across=particle (advanced only). */
+  selectedParticleIds?: number[];
+  /** Multi-selected material IDs when across=material (advanced only). */
+  selectedMaterialIds?: EntityId[];
   /** Supports mixed built-in numeric IDs and external `ext:{label}:{id}` refs. */
   selectedProgramIds?: EntityId[];
   quantityFocus?: "stp" | "range";
@@ -299,6 +305,24 @@ function isUrlSafeNumeric(s: string): boolean {
   return !s.includes(",") && !s.includes(":");
 }
 
+const ACROSS_TO_URL_TOKEN = {
+  particle: "particles",
+  material: "materials",
+  program: "programs",
+} as const;
+
+function toAcrossUrlToken(across: "particle" | "material" | "program") {
+  return ACROSS_TO_URL_TOKEN[across];
+}
+
+function fromAcrossUrlToken(raw: string | null): "particle" | "material" | "program" | undefined {
+  if (!raw || raw === "none") return undefined;
+  if (raw === "particle" || raw === "particles") return "particle";
+  if (raw === "material" || raw === "materials") return "material";
+  if (raw === "program" || raw === "programs") return "program";
+  return undefined;
+}
+
 export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams {
   const params = new URLSearchParams();
   params.set("urlv", String(CALCULATOR_URL_VERSION));
@@ -326,8 +350,27 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   if (state.isAdvancedMode) {
     params.set("mode", "advanced");
 
+    // programs= is emitted whenever selectedProgramIds is non-empty (pre-existing multi-program
+    // comparison feature, independent of the across= comparison dimension).
     if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
       params.set("programs", formatEntityIdList(state.selectedProgramIds));
+    }
+
+    // across= token: emit when a comparison dimension is active.
+    // particles= is only emitted when across=particle (state value) is set and the list is non-empty.
+    // For material/program dimensions the token is emitted without a matching list param here
+    // (the caller is responsible for populating those lists separately as needed).
+    if (
+      state.across === "particle" &&
+      state.selectedParticleIds &&
+      state.selectedParticleIds.length > 0
+    ) {
+      params.set("particles", state.selectedParticleIds.join(","));
+      params.set("across", toAcrossUrlToken(state.across));
+    } else if (state.across === "material") {
+      params.set("across", toAcrossUrlToken(state.across));
+    } else if (state.across === "program") {
+      params.set("across", toAcrossUrlToken(state.across));
     }
 
     // Omit qshow when it is the default ("stp") per ADR 006 default-omission rule.
@@ -535,9 +578,34 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   // Parse advanced mode params
   const mode = params.get("mode");
   const isAdvancedMode = mode === "advanced";
+
+  // across= and plural comparison lists (valid only in advanced mode per spec §3.3).
+  const acrossRaw = params.get("across");
+  const acrossCandidate = isAdvancedMode ? fromAcrossUrlToken(acrossRaw) : undefined;
+
+  let selectedParticleIds: number[] | undefined;
+  if (isAdvancedMode && acrossCandidate === "particle") {
+    const particlesParam = params.get("particles");
+    if (particlesParam) {
+      const ids = particlesParam
+        .split(",")
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isInteger(n) && n >= 1 && n <= 118);
+      if (ids.length > 0) selectedParticleIds = ids;
+    }
+  }
+
   const programsParam = params.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
     isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
+  const materialsParam = params.get("materials");
+  const selectedMaterialIds: EntityId[] | undefined =
+    isAdvancedMode && acrossCandidate === "material" && materialsParam
+      ? parseEntityIdList(materialsParam)
+      : undefined;
+
+  const across: "particle" | "material" | "program" | undefined = acrossCandidate;
+
   // Silently drop legacy hidden_programs param (per ADR 006 / #561).
   // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
   const qshowRaw = params.get("qshow") as "stp" | "range" | null;
@@ -786,7 +854,16 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   if (externalSources.length > 0) {
     result.externalSources = externalSources;
   }
-  if (selectedProgramIds) {
+  if (across) {
+    result.across = across;
+  }
+  if (selectedParticleIds) {
+    result.selectedParticleIds = selectedParticleIds;
+  }
+  if (selectedMaterialIds) {
+    result.selectedMaterialIds = selectedMaterialIds;
+  }
+  if (selectedProgramIds && selectedProgramIds.length > 0) {
     result.selectedProgramIds = selectedProgramIds;
   }
   if (quantityFocus) {

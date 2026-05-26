@@ -17,6 +17,15 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-26 — **Stage 5 — entity-selection**: Address PR #614 review-thread fixes for particle grid, URL `across` canonicalization, and E2E stability (GPT-5.5 via GitHub Copilot coding agent)
+  - **Log:** [log](docs/ai-logs/2026-05-26-pr614-review-thread-fixes.md)
+
+- 2026-05-26 — **Stage 5 — entity-selection**: Wire multi-particle selection into URL as `particles=` + `across=particle` (#599 follow-up) (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-26-issue-599-periodic-grid-particle-picker.md)
+
+- 2026-05-26 — **Stage 5 — entity-selection**: Implement periodic-grid scan view in advanced particle picker (#599) (Claude Opus 4.7 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-26-issue-599-periodic-grid-particle-picker.md)
+
 - 2026-05-26 — **Refactoring**: Decompose `result-table.svelte` god component into mode-specific sub-components and extract column-reorder drag-and-drop into a reusable Svelte 5 action (#604) (Claude Opus 4.7 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-26-issue-604-decompose-result-table.md)
 

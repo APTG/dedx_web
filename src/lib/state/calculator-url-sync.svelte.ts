@@ -88,6 +88,13 @@ export function setupCalculatorUrlSync(
     const selectedParticleId = entityState.selectedParticle?.id;
     const activeMultiProgramState = isAdvancedMode.value ? multiProgState : null;
 
+    // Encode across= and particles= when advanced multi-particle comparison is active.
+    const acrossDim = isAdvancedMode.value ? entityState.across : "single";
+    const multiParticleIds =
+      isAdvancedMode.value && acrossDim === "particle"
+        ? (entityState.multiSelected.particle.filter((id) => typeof id === "number") as number[])
+        : undefined;
+
     const urlState = {
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId:
@@ -100,18 +107,26 @@ export function setupCalculatorUrlSync(
       externalSources: loadedExternalSources,
       ...customUrlFields,
       // Include advanced mode state when active
-      ...(activeMultiProgramState
+      ...(isAdvancedMode.value
         ? {
             isAdvancedMode: true,
-            // Emit ALL selected programs in display order (default program first)
-            // so the URL is the canonical full list and consumers can reconstruct
-            // the complete comparison without needing to infer the default.
-            selectedProgramIds: activeMultiProgramState.selectedProgramIds,
-            quantityFocus: activeMultiProgramState.quantityFocus,
-            // Include advanced options when in advanced mode
             advancedOptions: advancedOptions.value,
             materialIsGas: builtinMaterial?.isGasByDefault,
           }
+        : {}),
+      ...(activeMultiProgramState
+        ? {
+            // Emit ALL selected programs in display order (default program first)
+            selectedProgramIds: activeMultiProgramState.selectedProgramIds,
+            quantityFocus: activeMultiProgramState.quantityFocus,
+          }
+        : {}),
+      // Emit across= only when the matching comparison list is present.
+      ...(acrossDim === "particle" && multiParticleIds && multiParticleIds.length > 0
+        ? { across: "particle" as const }
+        : {}),
+      ...(multiParticleIds && multiParticleIds.length > 0
+        ? { selectedParticleIds: multiParticleIds }
         : {}),
       // Include inverse mode state when active
       ...(inverseModeState || {}),
