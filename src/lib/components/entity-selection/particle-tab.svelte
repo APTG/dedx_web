@@ -323,7 +323,7 @@
               class={cn(
                 "relative flex aspect-square flex-col items-center justify-center rounded-sm border bg-card p-0 text-center leading-none transition-colors overflow-hidden",
                 available && isMatched ? "hover:bg-accent cursor-pointer" : "pointer-events-none",
-              !available ? "opacity-40" : !isMatched ? "opacity-30" : null,
+                !available ? "opacity-40" : !isMatched ? "opacity-30" : null,
                 isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
                 !isChecked && isHighlighted && available && isMatched && "bg-accent",
               )}
