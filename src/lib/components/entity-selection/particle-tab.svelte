@@ -297,9 +297,10 @@
         aria-multiselectable={isMultiMode}
         data-testid="picker-particle-grid"
       >
-        {#each filteredBuiltin as p (p.id)}
+        {#each allBuiltin as p (p.id)}
           {@const z = atomicNumber(p)}
           {@const pos = periodicPosition(z)}
+          {@const isMatched = filteredBuiltin.includes(p)}
           {@const available = isAvailable(p)}
           {@const inMulti = isMultiSelected(p)}
           {@const anchor = isAnchor(p)}
@@ -312,21 +313,22 @@
               type="button"
               role="option"
               aria-selected={isMultiMode ? inMulti : isSingleSelected}
-              aria-disabled={!available || (isMultiMode && anchor)}
+              aria-disabled={!available || !isMatched || (isMultiMode && anchor)}
               aria-label="{getParticleListLabel(p, z)}{available ? '' : ' (unavailable)'}"
               title={getParticleListLabel(p, z)}
               data-testid="picker-particle-tile-{p.id}"
               data-available={available ? "1" : "0"}
-              disabled={!available || (isMultiMode && anchor)}
+              disabled={!available || !isMatched || (isMultiMode && anchor)}
               style="grid-row: {pos.row}; grid-column: {pos.col};"
               class={cn(
                 "relative flex aspect-square flex-col items-center justify-center rounded-sm border bg-card p-0 text-center leading-none transition-colors overflow-hidden",
-                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+                available && isMatched ? "hover:bg-accent cursor-pointer" : "pointer-events-none",
+                !available && "opacity-40",
                 isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
-                !isChecked && isHighlighted && available && "bg-accent",
+                !isChecked && isHighlighted && available && isMatched && "bg-accent",
               )}
               onclick={() => {
-                if (!available) return;
+                if (!available || !isMatched) return;
                 if (isMultiMode) {
                   if (!anchor) handleMultiToggle(p);
                 } else {
@@ -335,11 +337,18 @@
               }}
             >
               <span
-                class="absolute left-[1px] top-[1px] font-mono text-[min(0.5rem,1.5vw)] text-muted-foreground opacity-70 leading-none"
-                >{z}</span
+                class={cn(
+                  "absolute left-[1px] top-[1px] font-mono text-[min(0.5rem,1.5vw)] leading-none transition-opacity",
+                  isMatched
+                    ? "text-muted-foreground opacity-70"
+                    : "opacity-10 text-muted-foreground",
+                )}>{z}</span
               >
-              <span class="font-mono text-[clamp(11px,1.5vw,18px)] font-bold leading-none"
-                >{sym}</span
+              <span
+                class={cn(
+                  "font-mono text-[clamp(11px,1.5vw,18px)] font-bold leading-none transition-opacity",
+                  !isMatched && "opacity-10",
+                )}>{sym}</span
               >
             </button>
           {/if}
