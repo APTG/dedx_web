@@ -198,7 +198,7 @@
   });
 
   $effect(() => {
-    if (appInit.entityState && !calcState) {
+    if (appInit.entityState && appInit.service && !calcState) {
       // Snapshot URL params synchronously before async work (constraint: must snapshot before await)
       const currentSearchParams = page.url.searchParams;
       const urlState = decodeCalculatorUrl(currentSearchParams);
