@@ -350,7 +350,16 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
   if (state.isAdvancedMode) {
     params.set("mode", "advanced");
 
-    // across= and plural comparison lists (omit when not active/valid).
+    // programs= is emitted whenever selectedProgramIds is non-empty (pre-existing multi-program
+    // comparison feature, independent of the across= comparison dimension).
+    if (state.selectedProgramIds && state.selectedProgramIds.length > 0) {
+      params.set("programs", formatEntityIdList(state.selectedProgramIds));
+    }
+
+    // across= token: emit when a comparison dimension is active.
+    // particles= is only emitted when across=particle (state value) is set and the list is non-empty.
+    // For material/program dimensions the token is emitted without a matching list param here
+    // (the caller is responsible for populating those lists separately as needed).
     if (
       state.across === "particle" &&
       state.selectedParticleIds &&
@@ -358,12 +367,9 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     ) {
       params.set("particles", state.selectedParticleIds.join(","));
       params.set("across", toAcrossUrlToken(state.across));
-    } else if (
-      state.across === "program" &&
-      state.selectedProgramIds &&
-      state.selectedProgramIds.length > 0
-    ) {
-      params.set("programs", formatEntityIdList(state.selectedProgramIds));
+    } else if (state.across === "material") {
+      params.set("across", toAcrossUrlToken(state.across));
+    } else if (state.across === "program") {
       params.set("across", toAcrossUrlToken(state.across));
     }
 
@@ -591,9 +597,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   const programsParam = params.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
-    isAdvancedMode && acrossCandidate === "program" && programsParam
-      ? parseEntityIdList(programsParam)
-      : undefined;
+    isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
   const materialsParam = params.get("materials");
   const selectedMaterialIds: EntityId[] | undefined =
     isAdvancedMode && acrossCandidate === "material" && materialsParam
