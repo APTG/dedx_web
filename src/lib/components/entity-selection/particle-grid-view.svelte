@@ -11,8 +11,8 @@
   } from "./particle-tab-helpers";
 
   interface Props {
-    allBuiltin: Particle[];
-    filteredBuiltin: Particle[];
+    allBuiltin: ParticleEntity[];
+    filteredBuiltin: ParticleEntity[];
     filteredExternal: ExternalOnlyParticle[];
     selected: Particle | null | undefined;
     multiIds: ReadonlyArray<number | string>;

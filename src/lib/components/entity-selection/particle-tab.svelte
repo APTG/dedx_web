@@ -182,7 +182,7 @@
       .filter((p) =>
         showOnlySelected ? (isMultiMode ? isMultiSelected(p) : selected?.id === p.id) : true,
       )
-      .sort((a, b) => a.Z - b.Z) as ExternalOnlyParticle[],
+      .sort((a, b) => a.Z - b.Z),
   );
 </script>
 
