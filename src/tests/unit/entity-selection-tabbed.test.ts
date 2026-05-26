@@ -5,8 +5,10 @@ import { tick } from "svelte";
 import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
 import type { ProgramEntity, ParticleEntity, MaterialEntity } from "$lib/wasm/types";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 
 class MockLibdedxService {
   getPrograms(): ProgramEntity[] {
@@ -334,6 +336,31 @@ describe("EntitySelection", () => {
     expect(screen.queryByTestId("picker-material-item-276")).not.toBeInTheDocument();
   });
 
+  test("material `ρ...` search excludes external-only materials without density", async () => {
+    const externalStore = makeExternalEntityStore();
+    externalStore.materials.push({
+      id: "nodensity",
+      name: "No Density Material",
+      index: externalStore.materials.length,
+      linearUnitsAvailable: true,
+    });
+    state.setExternalContext(
+      buildExternalCompatibilityContext([externalStore], state.allParticles, state.allMaterials),
+    );
+
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+    await user.click(screen.getByTestId("picker-tab-material"));
+
+    const input = screen.getByTestId("picker-material-search");
+    await user.type(input, "ρ>=0");
+    expect(screen.queryByText("No Density Material")).not.toBeInTheDocument();
+
+    await user.clear(input);
+    await user.type(input, "no density material");
+    expect(screen.getByText("No Density Material")).toBeInTheDocument();
+  });
+
   test("program search supports `tag=fn` operator", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
@@ -366,6 +393,20 @@ describe("EntitySelection", () => {
 
     expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument();
     expect(screen.queryByTestId("picker-program-item-101")).not.toBeInTheDocument();
+  });
+
+  test("program search supports `tag=ext` for external programs", async () => {
+    state.setExternalContext(
+      buildExternalCompatibilityContext([makeExternalEntityStore()], state.allParticles, state.allMaterials),
+    );
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "tag=ext");
+
+    expect(screen.getByText(/SRIM GUI/)).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-7")).not.toBeInTheDocument();
   });
 
   test("program search supports `v=` version operator", async () => {

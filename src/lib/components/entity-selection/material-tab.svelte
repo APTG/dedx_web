@@ -118,7 +118,7 @@
     if (!trimmed) return true;
     const rhoOp = trimmed.match(/^(?:ρ|rho)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)$/);
     if (rhoOp) {
-      const density = isExternal(m) ? m.density : m.density;
+      const density = m.density;
       if (density === undefined) return false;
       const n = Number(rhoOp[2]);
       if (rhoOp[1] === ">=") return density >= n;
