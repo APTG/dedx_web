@@ -3,16 +3,14 @@
   import type { ParticleEntity } from "$lib/wasm/types";
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { getParticleListLabel } from "$lib/utils/particle-label";
-  import {
-    atomicNumber,
-    isExternal,
-    periodicPosition,
-    type Particle,
-  } from "./particle-tab-helpers";
+  import { periodicPosition, type Particle } from "./particle-tab-helpers";
 
   interface Props {
+    /** Built-in periodic-table particles (Z=1..118), no electron, no externals. */
     allBuiltin: ParticleEntity[];
+    /** Subset of `allBuiltin` matching the current search query. */
     filteredBuiltin: ParticleEntity[];
+    /** External-only particles matching the current search query. */
     filteredExternal: ExternalOnlyParticle[];
     selected: Particle | null | undefined;
     multiIds: ReadonlyArray<number | string>;
@@ -55,7 +53,7 @@
     data-testid="picker-particle-grid"
   >
     {#each allBuiltin as p (p.id)}
-      {@const z = atomicNumber(p)}
+      {@const z = p.id}
       {@const pos = periodicPosition(z)}
       {@const isMatched = filteredBuiltin.includes(p)}
       {@const available = isAvailable(p)}
@@ -64,7 +62,7 @@
       {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
       {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
       {@const isHighlighted = highlightedId === p.id}
-      {@const sym = !isExternal(p) ? (p as ParticleEntity).symbol || "?" : "?"}
+      {@const sym = p.symbol || "?"}
       {#if pos}
         <button
           type="button"

@@ -1,7 +1,6 @@
 <script lang="ts">
   import { cn } from "$lib/utils.js";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
-  import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
   import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
@@ -174,7 +173,9 @@
     if (!isAdvancedMode.value && view === "grid") view = "list";
   });
 
-  const filteredBuiltin = $derived(filteredFlat.filter((p) => !isExternal(p)));
+  const filteredBuiltin = $derived(
+    filteredFlat.filter((p): p is (typeof allBuiltin)[number] => !isExternal(p)),
+  );
 
   const filteredExternal = $derived(
     selectionState.externalOnlyParticles
