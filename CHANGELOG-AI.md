@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-26 — **Refactoring**: Decompose `result-table.svelte` god component into mode-specific sub-components and extract column-reorder drag-and-drop into a reusable Svelte 5 action (#604) (Claude Opus 4.7 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-26-issue-604-decompose-result-table.md)
+
 - 2026-05-25 — **Refactoring**: Extract async initialization logic into app-init state module (#603) (antigravity via opencode)
   - **Log:** [log](docs/ai-logs/2026-05-25-issue-603-component-extraction.md)
 
