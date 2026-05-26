@@ -551,7 +551,7 @@ describe("CalculatorState", () => {
     describe("external basic-mode conversion", () => {
       it("uses selected material density for keV/µm and CSDA conversions", async () => {
         const extService = {
-          findMaterial: vi.fn().mockReturnValue({ density: 0.25 }),
+          findMaterial: vi.fn(),
           interpolateAt: vi.fn().mockResolvedValue({ stp: 2, csda: 5 }),
         };
         const mergedStore = makeExternalEntityStore();
@@ -581,6 +581,7 @@ describe("CalculatorState", () => {
         await externalCalc.flushCalculation();
 
         expect(externalCalc.stpDisplayUnit).toBe("keV/µm");
+        // mergedStore.materials[0].density is 1.0 after the fixture merge.
         expect(externalCalc.rows[0]!.stoppingPower).toBeCloseTo(0.2, 6); // 2 * 1.0 / 10
         expect(externalCalc.rows[0]!.csdaRangeCm).toBeCloseTo(5, 6); // 5 / 1.0
         expect(extService.findMaterial).not.toHaveBeenCalled();

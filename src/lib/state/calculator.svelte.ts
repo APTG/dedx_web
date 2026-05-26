@@ -393,9 +393,9 @@ export function createCalculatorState(
     const mass = resolveParticleMass(selectedParticle);
     const massA = mass?.massNumber ?? 1;
 
-    // Use the density override only in Advanced mode; Basic mode always uses
-    // the material's built-in density so switching back reverts the value.
-    const density =
+    // Use the density override only in Advanced mode; Basic mode uses the
+    // selected material density when available so switching back reverts the value.
+    const conversionDensity =
       (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
       selectedMaterial?.density;
 
@@ -415,15 +415,18 @@ export function createCalculatorState(
         if (result.stp !== null) {
           let stpDisplay: number | null;
           if (getStpDisplayUnit() === "keV/µm") {
-            stpDisplay = typeof density === "number" ? stpMassToKevUm(result.stp, density) : null;
+            stpDisplay =
+              typeof conversionDensity === "number"
+                ? stpMassToKevUm(result.stp, conversionDensity)
+                : null;
           } else {
             stpDisplay = result.stp;
           }
 
           // result.csda is in g/cm²; convert to cm for display using material density.
           const csdaCm =
-            result.csda !== null && typeof density === "number"
-              ? csdaGcm2ToCm(result.csda, density)
+            result.csda !== null && typeof conversionDensity === "number"
+              ? csdaGcm2ToCm(result.csda, conversionDensity)
               : null;
           results.set(rowId, { stoppingPower: stpDisplay, csdaRangeCm: csdaCm });
         } else {
