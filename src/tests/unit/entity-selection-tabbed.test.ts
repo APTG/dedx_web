@@ -251,6 +251,146 @@ describe("EntitySelection", () => {
     expect(screen.queryByTestId("picker-particle-item-1")).not.toBeInTheDocument();
   });
 
+  test("particle search supports `z>N` inequality operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const input = screen.getByTestId("picker-particle-search");
+    await user.type(input, "z>2");
+
+    expect(screen.getByTestId("picker-particle-item-6")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-1")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-2")).not.toBeInTheDocument();
+  });
+
+  test("particle search supports `z>=N` inequality operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const input = screen.getByTestId("picker-particle-search");
+    await user.type(input, "z>=2");
+
+    expect(screen.getByTestId("picker-particle-item-2")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-particle-item-6")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-1")).not.toBeInTheDocument();
+  });
+
+  test("particle search supports `z<N` inequality operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const input = screen.getByTestId("picker-particle-search");
+    await user.type(input, "z<2");
+
+    expect(screen.getByTestId("picker-particle-item-1")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-2")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-6")).not.toBeInTheDocument();
+  });
+
+  test("particle search supports `z<=N` inequality operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    const input = screen.getByTestId("picker-particle-search");
+    await user.type(input, "z<=2");
+
+    expect(screen.getByTestId("picker-particle-item-1")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-particle-item-2")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-particle-item-6")).not.toBeInTheDocument();
+  });
+
+  test("material search supports `ρ<N` density operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    // Compounds sub-tab is active by default; Air (density=0.0012) and Water (density=1.0).
+    await user.type(screen.getByTestId("picker-material-search"), "ρ<0.01");
+
+    expect(screen.getByTestId("picker-material-item-267")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-material-item-276")).not.toBeInTheDocument();
+  });
+
+  test("material search supports `ρ>=N` density operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    // ρ>=1 should match Water (density=1.0) but not Air (density=0.0012).
+    await user.type(screen.getByTestId("picker-material-search"), "ρ>=1");
+
+    expect(screen.getByTestId("picker-material-item-276")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-material-item-267")).not.toBeInTheDocument();
+  });
+
+  test("material search supports ASCII `rho<N` alias for ρ", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.type(screen.getByTestId("picker-material-search"), "rho<0.01");
+
+    expect(screen.getByTestId("picker-material-item-267")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-material-item-276")).not.toBeInTheDocument();
+  });
+
+  test("program search supports `tag=fn` operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "tag=fn");
+
+    // Bethe-ext (id=101) is FN; ICRU 49 (id=7) is TAB — should be hidden.
+    expect(screen.getByTestId("picker-program-item-101")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-7")).not.toBeInTheDocument();
+  });
+
+  test("program search supports `tag=tab` operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "tag=tab");
+
+    expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-101")).not.toBeInTheDocument();
+  });
+
+  test("program search `tag=data` is an alias for `tag=tab`", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "tag=data");
+
+    expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-101")).not.toBeInTheDocument();
+  });
+
+  test("program search supports `v=` version operator", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "v=1.0");
+
+    // All programs in the mock have version "1.0" — all should still be visible.
+    expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-program-item-101")).toBeInTheDocument();
+  });
+
+  test("program search `v=` with no match hides all programs", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+    await user.type(screen.getByTestId("picker-program-search"), "v=9999");
+
+    expect(screen.queryByTestId("picker-program-item-7")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-101")).not.toBeInTheDocument();
+  });
+
   test("selecting a particle when all tabs are non-empty stays put (rule A.4)", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();

@@ -108,9 +108,25 @@
     return `${m.id} ${m.name} ${m.rawName ?? ""}`;
   }
 
+  /**
+   * Match the query against a material's searchable text.
+   * Supports plain substring + density operators (advanced syntax):
+   *   ρ>N   ρ>=N   ρ<N   ρ<=N   ρ=N   (also accepts ASCII alias `rho`)
+   */
   function matches(m: Material, q: string): boolean {
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return true;
+    const rhoOp = trimmed.match(/^(?:ρ|rho)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)$/);
+    if (rhoOp) {
+      const density = isExternal(m) ? m.density : m.density;
+      if (density === undefined) return false;
+      const n = Number(rhoOp[2]);
+      if (rhoOp[1] === ">=") return density >= n;
+      if (rhoOp[1] === "<=") return density <= n;
+      if (rhoOp[1] === ">") return density > n;
+      if (rhoOp[1] === "<") return density < n;
+      if (rhoOp[1] === "=") return Math.abs(density - n) < 0.0001;
+    }
     return searchText(m).toLowerCase().includes(trimmed);
   }
 

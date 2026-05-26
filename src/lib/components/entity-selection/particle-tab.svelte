@@ -51,18 +51,26 @@
   }
 
   /**
-   * Match the query against a particle's searchable text. Supports plain
-   * substring + the `z=N` numeric operator (advanced syntax).
+   * Match the query against a particle's searchable text.
+   * Supports plain substring + numeric Z operators (advanced syntax):
+   *   z=N   exact atomic-number match
+   *   z>N   z>=N   z<N   z<=N   inequality range
    */
   function matches(p: Particle, q: string): boolean {
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return true;
-    const text = searchText(p).toLowerCase();
+    const z = atomicNumber(p);
     const zEq = trimmed.match(/^z\s*=\s*(\d+)$/);
-    if (zEq && !isExternal(p)) {
-      return p.id === Number(zEq[1]);
+    if (zEq) return z === Number(zEq[1]);
+    const zCmp = trimmed.match(/^z\s*(>=|<=|>|<)\s*(\d+)$/);
+    if (zCmp) {
+      const n = Number(zCmp[2]);
+      if (zCmp[1] === ">=") return z >= n;
+      if (zCmp[1] === "<=") return z <= n;
+      if (zCmp[1] === ">") return z > n;
+      if (zCmp[1] === "<") return z < n;
     }
-    return text.includes(trimmed);
+    return searchText(p).toLowerCase().includes(trimmed);
   }
 
   // spec: drop electron entirely until ESTAR ships.
