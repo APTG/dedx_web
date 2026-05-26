@@ -57,14 +57,14 @@ test.describe("Calculator URL sync", () => {
  * Multi-particle URL round-trip (issue #599).
  *
  * Spec: docs/04-feature-specs/shareable-urls.md §3.1
- * Canonical example: particles=1,2,6&across=particle&mode=advanced
+ * Canonical example: particles=1,2,6&across=particles&mode=advanced
  */
-test.describe("Multi-particle URL encoding (across=particle)", () => {
-  test("selecting multiple particles in advanced mode encodes particles= and across=particle in URL", async ({
+test.describe("Multi-particle URL encoding (across=particles)", () => {
+  test("selecting multiple particles in advanced mode encodes particles= and across=particles in URL", async ({
     page,
   }) => {
-    // Start in advanced mode, across=particle
-    await page.goto("/calculator?mode=advanced&particle=1&material=276&across=particle");
+    // Start in advanced mode, across=particles
+    await page.goto("/calculator?mode=advanced&particle=1&material=276&across=particles");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
     // Open particle tab and select a second particle (Carbon, Z=6)
@@ -74,8 +74,8 @@ test.describe("Multi-particle URL encoding (across=particle)", () => {
     await expect(carbonItem).toBeVisible({ timeout: 5000 });
     await carbonItem.click();
 
-    // URL must now contain across=particle and particles= with at least two IDs.
-    await waitForUrl(page, "across=particle");
+    // URL must now contain across=particles and particles= with at least two IDs.
+    await waitForUrl(page, "across=particles");
     await waitForUrl(page, "particles=");
     const url = new URL(page.url());
     const particlesParam = url.searchParams.get("particles");
@@ -85,11 +85,11 @@ test.describe("Multi-particle URL encoding (across=particle)", () => {
     expect(ids).toContain(6); // carbon
   });
 
-  test("sharing a URL with particles=1,2,6&across=particle restores multi-select state", async ({
+  test("sharing a URL with particles=1,2,6&across=particles restores multi-select state", async ({
     page,
   }) => {
     await page.goto(
-      "/calculator?urlv=2&mode=advanced&particle=1&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particle",
+      "/calculator?urlv=2&mode=advanced&particle=1&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particles",
     );
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
 
@@ -118,7 +118,7 @@ test.describe("Multi-particle URL encoding (across=particle)", () => {
   }) => {
     // Basic mode: particles= and across= are invalid per spec and must be ignored.
     await page.goto(
-      "/calculator?particle=6&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particle",
+      "/calculator?particle=6&particles=1,2,6&material=276&program=9&energies=100&eunit=MeV&across=particles",
     );
     await page.waitForFunction(() => window.location.search.includes("particle="), {
       timeout: 10000,
@@ -129,7 +129,7 @@ test.describe("Multi-particle URL encoding (across=particle)", () => {
     await expect(page.getByTestId("compare-across-strip")).toHaveCount(0);
   });
 
-  test("URL in advanced mode without particles= has no across=particle in encoded URL", async ({
+  test("URL in advanced mode without particles= has no across=particles in encoded URL", async ({
     page,
   }) => {
     await page.goto("/calculator?mode=advanced&particle=1&material=276");
@@ -138,10 +138,10 @@ test.describe("Multi-particle URL encoding (across=particle)", () => {
     await page.waitForFunction(
       () =>
         window.location.search.includes("particle=") &&
-        !window.location.search.includes("across=particle"),
+        !window.location.search.includes("across=particles"),
       { timeout: 8000 },
     );
-    expect(page.url()).not.toContain("across=particle");
+    expect(page.url()).not.toContain("across=particles");
     expect(page.url()).not.toContain("particles=");
   });
 });

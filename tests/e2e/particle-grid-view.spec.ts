@@ -88,25 +88,22 @@ test.describe("Particle tab — periodic-grid scan view", () => {
     });
 
     test("unavailable tiles are disabled and rendered at reduced opacity", async ({ page }) => {
-      // Switch program to ICRU 49 first (which restricts particles to p, alpha,
-      // and a few ions only) so we can verify dimmed unavailable tiles.
-      await page.goto("/calculator?mode=advanced&program=2");
+      // Switch to ICRU 49 (program=7), which restricts compatibility enough
+      // to reliably produce unavailable tiles in the particle grid.
+      await page.goto("/calculator?mode=advanced&program=7");
       await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
       await page.getByTestId("picker-tab-particle").click();
       await page.getByTestId("picker-particle-view-grid").click();
 
-      // Find at least one unavailable tile (data-available="0") and one
-      // available tile.
       const grid = page.getByTestId("picker-particle-grid");
       const unavailable = grid.locator('[data-available="0"]').first();
       const available = grid.locator('[data-available="1"]').first();
 
-      // Available tile is enabled, unavailable is disabled.
-      await expect(available).toBeEnabled();
       const unavailableCount = await grid.locator('[data-available="0"]').count();
-      if (unavailableCount > 0) {
-        await expect(unavailable).toBeDisabled();
-      }
+      expect(unavailableCount).toBeGreaterThan(0);
+      await expect(available).toBeEnabled();
+      await expect(unavailable).toBeDisabled();
+      await expect(unavailable).toHaveClass(/opacity-40/);
     });
 
     test("selected particle tile gets the orange selection ring", async ({ page }) => {
@@ -148,16 +145,23 @@ test.describe("Particle tab — periodic-grid scan view", () => {
       await page.getByTestId("picker-tab-particle").click();
     });
 
-    test("periodic table fits the mobile viewport (or scrolls horizontally)", async ({ page }) => {
+    test("grid keeps mobile tap targets >=44px and avoids horizontal overflow", async ({
+      page,
+    }) => {
       await page.getByTestId("picker-particle-view-grid").click();
       const grid = page.getByTestId("picker-particle-grid");
       await expect(grid).toBeVisible();
-      // Every built-in tile is rendered and laid out via grid (non-zero size).
+
       const protonTile = page.getByTestId("picker-particle-tile-1");
       const box = await protonTile.boundingBox();
       expect(box).not.toBeNull();
-      expect(box!.width).toBeGreaterThan(0);
-      expect(box!.height).toBeGreaterThan(0);
+      expect(box!.height).toBeGreaterThanOrEqual(44);
+
+      await expect
+        .poll(async () => {
+          return await grid.evaluate((el) => el.scrollWidth - el.clientWidth);
+        })
+        .toBeLessThanOrEqual(1);
     });
 
     test("grid is selectable on mobile (tap → selection persists in tab label)", async ({

@@ -121,7 +121,7 @@ export interface EntitySelectionState {
    */
   setMultiProgram(ids: (number | string)[]): void;
   /** Directly set the particle multi-selection array from URL restore. */
-  setMultiParticle(ids: number[]): void;
+  setMultiParticle(ids: (number | string)[]): void;
 }
 
 const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
@@ -645,7 +645,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       multiProgram = [...new Set(ids)];
     },
 
-    setMultiParticle(ids: number[]): void {
+    setMultiParticle(ids: (number | string)[]): void {
       multiParticle = [...new Set(ids)];
     },
 

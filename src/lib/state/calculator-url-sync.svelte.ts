@@ -121,9 +121,9 @@ export function setupCalculatorUrlSync(
             quantityFocus: activeMultiProgramState.quantityFocus,
           }
         : {}),
-      // Emit across= and particles= only when actively comparing across particles.
-      ...(acrossDim !== "single" && acrossDim !== "program"
-        ? { across: acrossDim as "particle" | "material" }
+      // Emit across= only when the matching comparison list is present.
+      ...(acrossDim === "particle" && multiParticleIds && multiParticleIds.length > 0
+        ? { across: "particle" as const }
         : {}),
       ...(multiParticleIds && multiParticleIds.length > 0
         ? { selectedParticleIds: multiParticleIds }

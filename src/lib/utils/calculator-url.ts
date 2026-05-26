@@ -303,6 +303,24 @@ function isUrlSafeNumeric(s: string): boolean {
   return !s.includes(",") && !s.includes(":");
 }
 
+const ACROSS_TO_URL_TOKEN = {
+  particle: "particles",
+  material: "materials",
+  program: "programs",
+} as const;
+
+function toAcrossUrlToken(across: "particle" | "material" | "program") {
+  return ACROSS_TO_URL_TOKEN[across];
+}
+
+function fromAcrossUrlToken(raw: string | null): "particle" | "material" | "program" | undefined {
+  if (!raw || raw === "none") return undefined;
+  if (raw === "particle" || raw === "particles") return "particle";
+  if (raw === "material" || raw === "materials") return "material";
+  if (raw === "program" || raw === "programs") return "program";
+  return undefined;
+}
+
 export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams {
   const params = new URLSearchParams();
   params.set("urlv", String(CALCULATOR_URL_VERSION));
@@ -332,7 +350,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
 
     // across= and plural comparison lists (omit when not active).
     if (state.across) {
-      params.set("across", state.across);
+      params.set("across", toAcrossUrlToken(state.across));
     }
     if (
       state.across === "particle" &&
@@ -554,14 +572,10 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   // across= and plural comparison lists (valid only in advanced mode per spec §3.3).
   const acrossRaw = params.get("across");
-  const across: "particle" | "material" | "program" | undefined =
-    isAdvancedMode &&
-    (acrossRaw === "particle" || acrossRaw === "material" || acrossRaw === "program")
-      ? acrossRaw
-      : undefined;
+  const acrossCandidate = isAdvancedMode ? fromAcrossUrlToken(acrossRaw) : undefined;
 
   let selectedParticleIds: number[] | undefined;
-  if (isAdvancedMode && across === "particle") {
+  if (isAdvancedMode && acrossCandidate === "particle") {
     const particlesParam = params.get("particles");
     if (particlesParam) {
       const ids = particlesParam
@@ -575,6 +589,18 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   const programsParam = params.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
     isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
+  const materialsParam = params.get("materials");
+  const selectedMaterialIds =
+    isAdvancedMode && materialsParam ? parseEntityIdList(materialsParam) : undefined;
+
+  let across: "particle" | "material" | "program" | undefined;
+  if (acrossCandidate === "particle") {
+    across = selectedParticleIds && selectedParticleIds.length > 0 ? "particle" : undefined;
+  } else if (acrossCandidate === "program") {
+    across = selectedProgramIds && selectedProgramIds.length > 0 ? "program" : undefined;
+  } else if (acrossCandidate === "material") {
+    across = selectedMaterialIds && selectedMaterialIds.length > 0 ? "material" : undefined;
+  }
   // Silently drop legacy hidden_programs param (per ADR 006 / #561).
   // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
   const qshowRaw = params.get("qshow") as "stp" | "range" | null;
@@ -829,7 +855,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   if (selectedParticleIds) {
     result.selectedParticleIds = selectedParticleIds;
   }
-  if (selectedProgramIds) {
+  if (selectedProgramIds && selectedProgramIds.length > 0) {
     result.selectedProgramIds = selectedProgramIds;
   }
   if (quantityFocus) {
