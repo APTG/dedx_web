@@ -226,17 +226,21 @@
       }
       if (urlState.programId !== null) appInit.entityState.selectProgram(urlState.programId);
 
-      // Restore multi-particle comparison state from URL (across=particle + particles=).
-      if (
-        urlState.isAdvancedMode &&
-        urlState.across === "particle" &&
-        urlState.selectedParticleIds
-      ) {
-        const available = new Set(appInit.entityState.availableParticles.map((p) => p.id));
-        const validIds = urlState.selectedParticleIds.filter((id) => available.has(id));
-        if (validIds.length > 0) {
-          appInit.entityState.setAcross("particle");
-          appInit.entityState.setMultiParticle(validIds);
+      // Restore multi-entity comparison state from URL (across=* + particles=/materials=).
+      if (urlState.isAdvancedMode && urlState.across) {
+        appInit.entityState.setAcross(urlState.across);
+        if (urlState.across === "particle" && urlState.selectedParticleIds) {
+          const available = new Set(appInit.entityState.availableParticles.map((p) => p.id));
+          const validIds = urlState.selectedParticleIds.filter((id) => available.has(id));
+          if (validIds.length > 0) {
+            appInit.entityState.setMultiParticle(validIds);
+          }
+        } else if (urlState.across === "material" && urlState.selectedMaterialIds) {
+          const available = new Set(appInit.entityState.availableMaterials.map((p) => p.id));
+          const validIds = urlState.selectedMaterialIds.filter((id) => available.has(id));
+          if (validIds.length > 0) {
+            appInit.entityState.setMultiMaterial(validIds);
+          }
         }
       }
       calcState.setMasterUnit(urlState.masterUnit);

@@ -999,7 +999,7 @@ describe("decodeCalculatorUrl — multi-particle (across=particles)", () => {
       "urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&eunit=MeV&across=particles",
     );
     const state = decodeCalculatorUrl(params);
-    expect(state.across).toBeUndefined();
+    expect(state.across).toBe("particle");
     expect(state.selectedParticleIds).toBeUndefined();
   });
 

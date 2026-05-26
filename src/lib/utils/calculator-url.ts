@@ -217,6 +217,8 @@ export interface CalculatorUrlState {
   across?: "particle" | "material" | "program";
   /** Multi-selected particle IDs when across=particle (advanced only). */
   selectedParticleIds?: number[];
+  /** Multi-selected material IDs when across=material (advanced only). */
+  selectedMaterialIds?: EntityId[];
   /** Supports mixed built-in numeric IDs and external `ext:{label}:{id}` refs. */
   selectedProgramIds?: EntityId[];
   quantityFocus?: "stp" | "range";
@@ -593,14 +595,8 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   const selectedMaterialIds =
     isAdvancedMode && materialsParam ? parseEntityIdList(materialsParam) : undefined;
 
-  let across: "particle" | "material" | "program" | undefined;
-  if (acrossCandidate === "particle") {
-    across = selectedParticleIds && selectedParticleIds.length > 0 ? "particle" : undefined;
-  } else if (acrossCandidate === "program") {
-    across = selectedProgramIds && selectedProgramIds.length > 0 ? "program" : undefined;
-  } else if (acrossCandidate === "material") {
-    across = selectedMaterialIds && selectedMaterialIds.length > 0 ? "material" : undefined;
-  }
+  const across: "particle" | "material" | "program" | undefined = acrossCandidate;
+
   // Silently drop legacy hidden_programs param (per ADR 006 / #561).
   // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
   const qshowRaw = params.get("qshow") as "stp" | "range" | null;
@@ -854,6 +850,9 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
   if (selectedParticleIds) {
     result.selectedParticleIds = selectedParticleIds;
+  }
+  if (selectedMaterialIds) {
+    result.selectedMaterialIds = selectedMaterialIds;
   }
   if (selectedProgramIds && selectedProgramIds.length > 0) {
     result.selectedProgramIds = selectedProgramIds;

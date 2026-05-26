@@ -120,6 +120,7 @@ export interface EntitySelectionState {
    * from the initial resolved program when Advanced mode is first enabled.
    */
   setMultiProgram(ids: (number | string)[]): void;
+  setMultiMaterial(ids: (number | string)[]): void;
   /** Directly set the particle multi-selection array from URL restore. */
   setMultiParticle(ids: (number | string)[]): void;
 }
@@ -643,6 +644,10 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       // Clone and de-dupe to prevent external mutation from bypassing $state
       // reactivity and to ensure no duplicate IDs enter the internal state.
       multiProgram = [...new Set(ids)];
+    },
+
+    setMultiMaterial(ids: (number | string)[]): void {
+      multiMaterial = [...new Set(ids)];
     },
 
     setMultiParticle(ids: (number | string)[]): void {

@@ -113,6 +113,12 @@ test.describe("Particle tab — periodic-grid scan view", () => {
       await expect(proton).toHaveAttribute("aria-selected", "true");
       // Click alpha → it becomes selected, proton no longer.
       await page.getByTestId("picker-particle-tile-2").click();
+
+      // The calculator page auto-collapses the tab panel when the selection is complete.
+      // Re-open it to check the tile.
+      await page.getByTestId("picker-tab-particle").click();
+      await page.getByTestId("picker-particle-view-grid").click();
+
       await expect(page.getByTestId("picker-particle-tile-2")).toHaveAttribute(
         "aria-selected",
         "true",
