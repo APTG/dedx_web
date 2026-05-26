@@ -288,8 +288,8 @@
   {#if view === "grid"}
     <div class="overflow-x-auto">
       <div
-        class="grid gap-[2px]"
-        style="grid-template-columns: repeat(18, minmax(0, 1fr)); grid-template-rows: repeat(7, auto) 0.35rem repeat(2, auto); min-width: 360px;"
+        class="grid gap-[3px]"
+        style="grid-template-columns: repeat(18, minmax(0, 1fr)); grid-template-rows: repeat(7, auto) 0.4rem repeat(2, auto); min-width: 760px;"
         role="listbox"
         aria-label="Particles (periodic table)"
         aria-multiselectable={isMultiMode}
@@ -318,7 +318,7 @@
               disabled={!available || (isMultiMode && anchor)}
               style="grid-row: {pos.row}; grid-column: {pos.col};"
               class={cn(
-                "flex aspect-square flex-col items-center justify-center rounded-sm border bg-card text-center leading-none transition-colors p-0",
+                "relative flex aspect-square flex-col items-center justify-center rounded-sm border bg-card text-center leading-none transition-colors p-0.5",
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
                 isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
                 !isChecked && isHighlighted && available && "bg-accent",
@@ -332,22 +332,25 @@
                 }
               }}
             >
-              <span class="font-mono text-[7px] text-muted-foreground leading-none">{z}</span>
-              <span class="font-mono text-[10px] font-bold leading-tight">{sym}</span>
+              <span
+                class="absolute left-0.5 top-0.5 font-mono text-[10px] text-muted-foreground leading-none"
+                >{z}</span
+              >
+              <span class="font-mono text-base font-bold leading-none">{sym}</span>
             </button>
           {/if}
         {/each}
         <!-- Indicator cells pointing to the lanthanide / actinide rows below. -->
         <div
           aria-hidden="true"
-          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[7px] text-muted-foreground font-mono"
+          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[10px] text-muted-foreground font-mono"
           style="grid-row: 6; grid-column: 3;"
         >
           57-71
         </div>
         <div
           aria-hidden="true"
-          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[7px] text-muted-foreground font-mono"
+          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[10px] text-muted-foreground font-mono"
           style="grid-row: 7; grid-column: 3;"
         >
           89-103
