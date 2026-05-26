@@ -12,6 +12,8 @@ import {
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 import { customCompounds } from "$lib/state/custom-compounds.svelte";
+import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
+import { makeExternalEntityStore } from "./external-entity-fixtures";
 
 describe("CalculatorState", () => {
   let service: LibdedxServiceImpl;
@@ -544,6 +546,53 @@ describe("CalculatorState", () => {
       // Value preserved as typed; masterUnit auto-set to MeV/nucl
       expect(cs.rows[0]!.rawInput).toBe("100");
       expect(cs.masterUnit).toBe("MeV/nucl");
+    });
+
+    describe("external basic-mode conversion", () => {
+      it("uses selected material density for keV/µm and CSDA conversions", async () => {
+        const extService = {
+          findMaterial: vi.fn(),
+          interpolateAt: vi.fn().mockResolvedValue({ stp: 2, csda: 5 }),
+        };
+        const mergedStore = makeExternalEntityStore();
+        mergedStore.materials[0] = {
+          ...mergedStore.materials[0]!,
+          icruId: 276,
+        };
+        const matrix = buildCompatibilityMatrix(service);
+        const state = createEntitySelectionState(matrix);
+        state.setExternalContext(
+          buildExternalCompatibilityContext(
+            [mergedStore],
+            matrix.allParticles,
+            matrix.allMaterials,
+          ),
+        );
+        state.selectProgram("ext:srim:srim-2013-gui");
+
+        const externalCalc = createCalculatorState(
+          state,
+          service,
+          extService as unknown as NonNullable<Parameters<typeof createCalculatorState>[2]>,
+        );
+
+        await externalCalc.triggerCalculation();
+        await externalCalc.flushCalculation();
+        await externalCalc.flushCalculation();
+
+        expect(externalCalc.stpDisplayUnit).toBe("keV/µm");
+        // mergedStore.materials[0].density is 1.0 after the fixture merge.
+        expect(externalCalc.rows[0]!.stoppingPower).toBeCloseTo(0.2, 6); // 2 * 1.0 / 10
+        expect(externalCalc.rows[0]!.csdaRangeCm).toBeCloseTo(5, 6); // 5 / 1.0
+        expect(extService.findMaterial).not.toHaveBeenCalled();
+        expect(extService.interpolateAt).toHaveBeenCalledWith(
+          "srim",
+          "srim-2013-gui",
+          "p",
+          "water",
+          100,
+        );
+      });
     });
 
     it("Carbon → proton: row value preserved, masterUnit switches to MeV", () => {
