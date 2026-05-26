@@ -180,9 +180,32 @@
         ? [getParticleListLabel(selected, atomicNumber(selected))]
         : [],
   );
+
+  // View mode: list (default) or grid (advanced only).
+  // Persist user choice for the session so switching tabs preserves the picked view.
+  type View = "list" | "grid";
+  let view = $state<View>("list");
+
+  // Toggle is only visible in Advanced mode (per spec § Particle / acceptance
+  // criterion: "Advanced mode renders the periodic-grid scan view").
+  const showViewToggle = $derived(isAdvancedMode.value);
+
+  // Force list view when the user drops out of advanced mode.
+  $effect(() => {
+    if (!isAdvancedMode.value && view === "grid") view = "list";
+  });
+
+  const filteredExternal = $derived(
+    selectionState.externalOnlyParticles
+      .filter((p) => matches(p, query))
+      .filter((p) =>
+        showOnlySelected ? (isMultiMode ? isMultiSelected(p) : selected?.id === p.id) : true,
+      )
+      .sort((a, b) => a.Z - b.Z),
+  );
 </script>
 
-<div class="space-y-2" data-testid="picker-particle-tab">
+<div class="space-y-2" data-testid="picker-particle-tab" data-view={view}>
   <!-- Compact sticky summary bar (replaces old badge + multi-pills) -->
   <PickerSummaryBar
     count={summaryCount}
@@ -197,39 +220,78 @@
     testId="picker-particle-selected"
   />
 
-  <ul
-    role="listbox"
-    aria-label="Particles"
-    aria-multiselectable={isMultiMode}
-    tabindex="0"
-    class="max-h-52 overflow-auto space-y-0.5"
-    data-testid="picker-particle-list"
-  >
-    {#each filteredFlat as p (p.id)}
-      {@const available = isAvailable(p)}
-      {@const inMulti = isMultiSelected(p)}
-      {@const anchor = isAnchor(p)}
-      {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
-      {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
-      {@const isHighlighted = highlightedId === p.id}
-      {@const external = isExternal(p)}
-      {@const z = atomicNumber(p)}
-      {@const named = isNamed(p)}
-      <li role="presentation">
+  {#if showViewToggle}
+    <div
+      class="flex justify-end"
+      role="group"
+      aria-label="Particle view mode"
+      data-testid="picker-particle-view-toggle"
+    >
+      <div class="inline-flex rounded-md border bg-background text-xs">
+        <button
+          type="button"
+          aria-pressed={view === "list"}
+          aria-label="List view"
+          title="List view"
+          data-testid="picker-particle-view-list"
+          class={cn(
+            "px-2 py-1 rounded-l-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+            view === "list" ? "bg-accent font-semibold" : "text-muted-foreground hover:bg-accent",
+          )}
+          onclick={() => (view = "list")}
+        >
+          <span aria-hidden="true">☰</span>
+        </button>
+        <button
+          type="button"
+          aria-pressed={view === "grid"}
+          aria-label="Grid view"
+          title="Grid view"
+          data-testid="picker-particle-view-grid"
+          class={cn(
+            "px-2 py-1 rounded-r-md border-l focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
+            view === "grid" ? "bg-accent font-semibold" : "text-muted-foreground hover:bg-accent",
+          )}
+          onclick={() => (view = "grid")}
+        >
+          <span aria-hidden="true">▦</span>
+        </button>
+      </div>
+    </div>
+  {/if}
+
+  {#if view === "grid"}
+    <div
+      class="grid grid-cols-6 gap-1 sm:grid-cols-9"
+      role="listbox"
+      aria-label="Particles (grid)"
+      aria-multiselectable={isMultiMode}
+      data-testid="picker-particle-grid"
+    >
+      {#each filteredFlat.filter((p) => !isExternal(p)) as p (p.id)}
+        {@const z = atomicNumber(p)}
+        {@const available = isAvailable(p)}
+        {@const inMulti = isMultiSelected(p)}
+        {@const anchor = isAnchor(p)}
+        {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
+        {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
+        {@const isHighlighted = highlightedId === p.id}
+        {@const sym = !isExternal(p) ? (p as ParticleEntity).symbol || "?" : "?"}
         <button
           type="button"
           role="option"
           aria-selected={isMultiMode ? inMulti : isSingleSelected}
           aria-disabled={!available || (isMultiMode && anchor)}
-          data-testid="picker-particle-item-{p.id}"
-          tabindex={-1}
+          aria-label="{getParticleListLabel(p, z)}{available ? '' : ' (unavailable)'}"
+          title={getParticleListLabel(p, z)}
+          data-testid="picker-particle-tile-{p.id}"
+          data-available={available ? "1" : "0"}
           disabled={!available || (isMultiMode && anchor)}
           class={cn(
-            "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
+            "flex aspect-square min-h-[44px] flex-col items-center justify-center rounded border bg-card text-center leading-none transition-colors",
             available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-            isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
+            isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
             !isChecked && isHighlighted && available && "bg-accent",
-            !isChecked && named && "font-semibold",
           )}
           onclick={() => {
             if (!available) return;
@@ -240,21 +302,115 @@
             }
           }}
         >
-          <!-- Selection indicator: ✓ / ○ / empty -->
-          <span
-            aria-hidden="true"
-            class="w-4 shrink-0 text-center text-xs {isChecked
-              ? 'font-bold text-orange-700'
-              : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
-          >
-          {#if external}<span aria-hidden="true">🔗</span>{/if}
-          {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
-          <span class="flex-1">{getParticleListLabel(p, z)}</span>
+          <span class="font-mono text-[10px] text-muted-foreground leading-none">{z}</span>
+          <span class="font-mono text-sm font-bold leading-tight">{sym}</span>
         </button>
-      </li>
-    {/each}
-    {#if filteredFlat.length === 0}
-      <li class="px-2 py-4 text-center text-sm text-muted-foreground">No particles match.</li>
+      {/each}
+    </div>
+    {#if filteredFlat.filter((p) => !isExternal(p)).length === 0}
+      <div class="px-2 py-4 text-center text-sm text-muted-foreground">No particles match.</div>
     {/if}
-  </ul>
+
+    {#if filteredExternal.length > 0}
+      <div class="mt-2 border-t pt-2" data-testid="picker-particle-grid-external">
+        <div class="mb-1 text-[10px] uppercase tracking-wider text-muted-foreground">External</div>
+        <div class="flex flex-wrap gap-1">
+          {#each filteredExternal as p (p.id)}
+            {@const available = isAvailable(p)}
+            {@const inMulti = isMultiSelected(p)}
+            {@const anchor = isAnchor(p)}
+            {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
+            {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
+            <button
+              type="button"
+              role="option"
+              aria-selected={isMultiMode ? inMulti : isSingleSelected}
+              aria-disabled={!available || (isMultiMode && anchor)}
+              data-testid="picker-particle-ext-tile-{p.id}"
+              data-available={available ? "1" : "0"}
+              disabled={!available || (isMultiMode && anchor)}
+              class={cn(
+                "inline-flex min-h-[44px] items-center gap-1 rounded border bg-card px-2 py-1 text-xs",
+                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+                isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
+              )}
+              onclick={() => {
+                if (!available) return;
+                if (isMultiMode) {
+                  if (!anchor) handleMultiToggle(p);
+                } else {
+                  onSelect(p);
+                }
+              }}
+            >
+              <span aria-hidden="true">🔗</span>
+              <span class="font-mono">{p.symbol || p.name}</span>
+              <span class="text-[10px] text-muted-foreground font-mono">Z={p.Z}</span>
+            </button>
+          {/each}
+        </div>
+      </div>
+    {/if}
+  {:else}
+    <ul
+      role="listbox"
+      aria-label="Particles"
+      aria-multiselectable={isMultiMode}
+      tabindex="0"
+      class="max-h-52 overflow-auto space-y-0.5"
+      data-testid="picker-particle-list"
+    >
+      {#each filteredFlat as p (p.id)}
+        {@const available = isAvailable(p)}
+        {@const inMulti = isMultiSelected(p)}
+        {@const anchor = isAnchor(p)}
+        {@const isSingleSelected = !isMultiMode && selected?.id === p.id}
+        {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
+        {@const isHighlighted = highlightedId === p.id}
+        {@const external = isExternal(p)}
+        {@const z = atomicNumber(p)}
+        {@const named = isNamed(p)}
+        <li role="presentation">
+          <button
+            type="button"
+            role="option"
+            aria-selected={isMultiMode ? inMulti : isSingleSelected}
+            aria-disabled={!available || (isMultiMode && anchor)}
+            data-testid="picker-particle-item-{p.id}"
+            tabindex={-1}
+            disabled={!available || (isMultiMode && anchor)}
+            class={cn(
+              "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left",
+              available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+              isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
+              !isChecked && isHighlighted && available && "bg-accent",
+              !isChecked && named && "font-semibold",
+            )}
+            onclick={() => {
+              if (!available) return;
+              if (isMultiMode) {
+                if (!anchor) handleMultiToggle(p);
+              } else {
+                onSelect(p);
+              }
+            }}
+          >
+            <!-- Selection indicator: ✓ / ○ / empty -->
+            <span
+              aria-hidden="true"
+              class="w-4 shrink-0 text-center text-xs {isChecked
+                ? 'font-bold text-orange-700'
+                : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
+            >
+            {#if external}<span aria-hidden="true">🔗</span>{/if}
+            {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
+            <span class="flex-1">{getParticleListLabel(p, z)}</span>
+          </button>
+        </li>
+      {/each}
+      {#if filteredFlat.length === 0}
+        <li class="px-2 py-4 text-center text-sm text-muted-foreground">No particles match.</li>
+      {/if}
+    </ul>
+  {/if}
 </div>
