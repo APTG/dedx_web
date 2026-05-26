@@ -393,9 +393,14 @@ export function createCalculatorState(
     const mass = resolveParticleMass(selectedParticle);
     const massA = mass?.massNumber ?? 1;
 
-    // Density needed to convert CSDA from g/cm² (internal) to cm for display.
     const extMaterial = extService.findMaterial(label, materialLocalId);
-    const materialDensity = extMaterial?.density;
+
+    // Use the density override only in Advanced mode; Basic mode always uses
+    // the material's built-in density so switching back reverts the value.
+    const density =
+      (isAdvancedMode.value ? advancedOptions.value.densityOverride : undefined) ??
+      extMaterial?.density ??
+      1;
 
     const results = new Map<string, { stoppingPower: number; csdaRangeCm: number | null }>();
     const externalOutOfRange = new Set<string>();
@@ -411,12 +416,17 @@ export function createCalculatorState(
           totalMev,
         );
         if (result.stp !== null) {
+          let stpDisplay: number;
+          if (getStpDisplayUnit() === "keV/µm") {
+            const converted = stpMassToKevUm(result.stp, density);
+            stpDisplay = converted ?? result.stp;
+          } else {
+            stpDisplay = result.stp;
+          }
+
           // result.csda is in g/cm²; convert to cm for display using material density.
-          const csdaCm =
-            result.csda !== null && materialDensity !== undefined
-              ? csdaGcm2ToCm(result.csda, materialDensity)
-              : null;
-          results.set(rowId, { stoppingPower: result.stp, csdaRangeCm: csdaCm });
+          const csdaCm = result.csda !== null ? csdaGcm2ToCm(result.csda, density) : null;
+          results.set(rowId, { stoppingPower: stpDisplay, csdaRangeCm: csdaCm });
         } else {
           externalOutOfRange.add(rowId);
         }
