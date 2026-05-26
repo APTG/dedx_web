@@ -195,6 +195,31 @@
     if (!isAdvancedMode.value && view === "grid") view = "list";
   });
 
+  /**
+   * Map an atomic number to its (row, column) cell in the standard 18-column
+   * periodic table. Lanthanides (57-71) and actinides (89-103) live on rows
+   * 9 / 10 below the main table; row 8 is an intentional gap.
+   */
+  function periodicPosition(z: number): { row: number; col: number } | null {
+    if (z === 1) return { row: 1, col: 1 };
+    if (z === 2) return { row: 1, col: 18 };
+    if (z >= 3 && z <= 4) return { row: 2, col: z - 2 };
+    if (z >= 5 && z <= 10) return { row: 2, col: z + 8 };
+    if (z >= 11 && z <= 12) return { row: 3, col: z - 10 };
+    if (z >= 13 && z <= 18) return { row: 3, col: z };
+    if (z >= 19 && z <= 36) return { row: 4, col: z - 18 };
+    if (z >= 37 && z <= 54) return { row: 5, col: z - 36 };
+    if (z === 55) return { row: 6, col: 1 };
+    if (z === 56) return { row: 6, col: 2 };
+    if (z >= 57 && z <= 71) return { row: 9, col: z - 53 };
+    if (z >= 72 && z <= 86) return { row: 6, col: z - 68 };
+    if (z === 87) return { row: 7, col: 1 };
+    if (z === 88) return { row: 7, col: 2 };
+    if (z >= 89 && z <= 103) return { row: 10, col: z - 85 };
+    if (z >= 104 && z <= 118) return { row: 7, col: z - 100 };
+    return null;
+  }
+
   const filteredBuiltin = $derived(filteredFlat.filter((p) => !isExternal(p)));
 
   const filteredExternal = $derived(
@@ -263,16 +288,18 @@
   {/if}
 
   {#if view === "grid"}
-    <div>
+    <div class="overflow-x-auto">
       <div
-        class="grid grid-cols-6 gap-1 sm:grid-cols-9"
+        class="grid gap-[2px]"
+        style="grid-template-columns: repeat(18, minmax(0, 1fr)); grid-template-rows: repeat(7, auto) 0.35rem repeat(2, auto); min-width: 360px;"
         role="listbox"
-        aria-label="Particles (scan grid)"
+        aria-label="Particles (periodic table)"
         aria-multiselectable={isMultiMode}
         data-testid="picker-particle-grid"
       >
         {#each filteredBuiltin as p (p.id)}
           {@const z = atomicNumber(p)}
+          {@const pos = periodicPosition(z)}
           {@const available = isAvailable(p)}
           {@const inMulti = isMultiSelected(p)}
           {@const anchor = isAnchor(p)}
@@ -280,38 +307,53 @@
           {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
           {@const isHighlighted = highlightedId === p.id}
           {@const sym = !isExternal(p) ? (p as ParticleEntity).symbol || "?" : "?"}
-          <button
-            type="button"
-            role="option"
-            aria-selected={isMultiMode ? inMulti : isSingleSelected}
-            aria-disabled={!available || (isMultiMode && anchor)}
-            aria-label="{getParticleListLabel(p, z)}{available ? '' : ' (unavailable)'}"
-            title={getParticleListLabel(p, z)}
-            data-testid="picker-particle-tile-{p.id}"
-            data-available={available ? "1" : "0"}
-            disabled={!available || (isMultiMode && anchor)}
-            class={cn(
-              "relative flex aspect-square min-h-[44px] min-w-[44px] flex-col items-center justify-center rounded-sm border bg-card p-0.5 text-center leading-none transition-colors",
-              available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
-              isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
-              !isChecked && isHighlighted && available && "bg-accent",
-            )}
-            onclick={() => {
-              if (!available) return;
-              if (isMultiMode) {
-                if (!anchor) handleMultiToggle(p);
-              } else {
-                onSelect(p);
-              }
-            }}
-          >
-            <span
-              class="absolute left-0.5 top-0.5 font-mono text-[10px] text-muted-foreground leading-none"
-              >{z}</span
+          {#if pos}
+            <button
+              type="button"
+              role="option"
+              aria-selected={isMultiMode ? inMulti : isSingleSelected}
+              aria-disabled={!available || (isMultiMode && anchor)}
+              aria-label="{getParticleListLabel(p, z)}{available ? '' : ' (unavailable)'}"
+              title={getParticleListLabel(p, z)}
+              data-testid="picker-particle-tile-{p.id}"
+              data-available={available ? "1" : "0"}
+              disabled={!available || (isMultiMode && anchor)}
+              style="grid-row: {pos.row}; grid-column: {pos.col};"
+              class={cn(
+                "flex aspect-square flex-col items-center justify-center rounded-sm border bg-card text-center leading-none transition-colors p-0",
+                available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
+                isChecked && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
+                !isChecked && isHighlighted && available && "bg-accent",
+              )}
+              onclick={() => {
+                if (!available) return;
+                if (isMultiMode) {
+                  if (!anchor) handleMultiToggle(p);
+                } else {
+                  onSelect(p);
+                }
+              }}
             >
-            <span class="font-mono text-base font-bold leading-none">{sym}</span>
-          </button>
+              <span class="font-mono text-[7px] text-muted-foreground leading-none">{z}</span>
+              <span class="font-mono text-[10px] font-bold leading-tight">{sym}</span>
+            </button>
+          {/if}
         {/each}
+        <!-- Indicator cells pointing to the lanthanide / actinide rows below. -->
+        <div
+          aria-hidden="true"
+          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[7px] text-muted-foreground font-mono"
+          style="grid-row: 6; grid-column: 3;"
+        >
+          57-71
+        </div>
+        <div
+          aria-hidden="true"
+          class="flex aspect-square items-center justify-center rounded-sm border border-dashed bg-muted/30 text-[7px] text-muted-foreground font-mono"
+          style="grid-row: 7; grid-column: 3;"
+        >
+          89-103
+        </div>
       </div>
     </div>
     {#if filteredBuiltin.length === 0 && filteredExternal.length === 0}
