@@ -82,3 +82,30 @@ export function parseEntityIdList(raw: string): EntityId[] {
 export function formatEntityIdList(ids: EntityId[]): string {
   return ids.map(formatEntityId).join(",");
 }
+
+/**
+ * Resolve a built-in or external entity ID to its local ID inside a named
+ * external source. Returns null if the entity is not covered by that source.
+ *
+ * - External IDs (`ext:label:localId`) yield their `localId` iff `label` matches.
+ * - Built-in numeric IDs use `refMap` (e.g. `externalRefsForBuiltinParticle`)
+ *   to find an `ext:label:…` reference whose label matches.
+ */
+export function resolveExtLocalIdForLabel(
+  entityId: number | string,
+  label: string,
+  refMap: Map<number, string[]> | Map<number | string, string[]>,
+): string | null {
+  if (typeof entityId === "string" && entityId.startsWith("ext:")) {
+    const parsed = parseExtRef(entityId);
+    return parsed && parsed.label === label ? parsed.localId : null;
+  }
+  if (typeof entityId === "number") {
+    const refs = (refMap as Map<number, string[]>).get(entityId) ?? [];
+    for (const ref of refs) {
+      const p = parseExtRef(ref);
+      if (p && p.label === label) return p.localId;
+    }
+  }
+  return null;
+}
