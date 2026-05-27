@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Refactoring**: Extract duplicated utilities — `slug()` to `src/lib/export/utils.ts`, `asBuiltinMaterial`/`asBuiltinParticle` to `src/lib/utils/entity-type-guards.ts`, `validateEntityArray()` helper inside `validation.ts` (#626). (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-27-issue-626-extract-duplicate-utilities.md)
+
 - 2026-05-27 — **Stage 5 — entity-selection**: Remove "common particles" concept — drop star icon, bold emphasis for proton/alpha, and Common particles/Ions section headers; all particles now rendered uniformly sorted by Z (#622). (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-27-issue-622-remove-common-particles.md)
 

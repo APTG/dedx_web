@@ -2,6 +2,7 @@ import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import type { PlotSeries } from "$lib/state/plot.svelte";
 import type { AdvancedOptions } from "$lib/wasm/types";
 import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions.js";
+import { slug } from "./utils";
 
 /**
  * Lightweight identity used for filename construction and entity labels in
@@ -51,10 +52,6 @@ export function buildPdfFilename(
   material: PdfEntity | null,
   program: PdfEntity | null,
 ): string {
-  function slug(name: string): string {
-    return name.toLowerCase().replace(/\s+/g, "_");
-  }
-
   const p = particle ? slug(particle.name) : "unknown_particle";
   const customSuffix =
     material && typeof material.id === "string" && material.id.startsWith("cc_") ? "_custom" : "";

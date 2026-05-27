@@ -12,7 +12,7 @@ import {
   autoScaleLengthCm,
 } from "$lib/utils/unit-conversions";
 import { LibdedxError } from "$lib/wasm/types";
-import type { EnergyUnit, StpUnit, LibdedxService, MaterialEntity } from "$lib/wasm/types";
+import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ParticleEntity } from "$lib/wasm/types";
 import type { ExternalOnlyParticle } from "./external-compatibility";
@@ -25,6 +25,7 @@ import {
 } from "$lib/utils/custom-compound-material";
 import { parseExtRef } from "$lib/external-data/ids";
 import type { ExternalDataService } from "$lib/external-data/service";
+import { asBuiltinMaterial, asBuiltinParticle } from "$lib/utils/entity-type-guards";
 
 /** Resolve mass fields (massNumber, atomicMass) from built-in or external-only particle. */
 function resolveParticleMass(
@@ -34,28 +35,6 @@ function resolveParticleMass(
   if ("massNumber" in particle)
     return { massNumber: particle.massNumber, atomicMass: particle.atomicMass };
   return { massNumber: particle.A, atomicMass: particle.atomicMass };
-}
-
-/**
- * Narrow a material to a built-in MaterialEntity (null if external-only or absent).
- */
-function asBuiltinMaterial(material: unknown): MaterialEntity | null {
-  if (!material) return null;
-  if (typeof material === "object" && "isGasByDefault" in material) {
-    return material as MaterialEntity;
-  }
-  return null;
-}
-
-/**
- * Narrow a particle to a built-in ParticleEntity (null if external-only).
- */
-function asBuiltinParticle(particle: unknown): ParticleEntity | null {
-  if (!particle) return null;
-  if (typeof particle === "object" && "massNumber" in particle) {
-    return particle as ParticleEntity;
-  }
-  return null;
 }
 
 export interface CalculatedRow {

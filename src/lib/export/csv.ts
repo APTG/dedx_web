@@ -1,5 +1,6 @@
 import type { CalculatedRow } from "$lib/state/calculator.svelte";
 import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
+import { slug } from "./utils";
 
 /**
  * CSV export options for customizing separator and line endings.
@@ -133,10 +134,6 @@ function buildCsvFilename(
   material: { id?: number | string; name: string } | null,
   program: { name: string } | null,
 ): string {
-  function slug(name: string): string {
-    return name.toLowerCase().replace(/\s+/g, "_");
-  }
-
   const p = particle ? slug(particle.name) : "unknown_particle";
   const customSuffix =
     material && typeof material.id === "string" && material.id.startsWith("cc_") ? "_custom" : "";
