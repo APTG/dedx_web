@@ -19,9 +19,6 @@
 
   let { state, class: className }: Props = $props();
 
-  const COMMON_PARTICLE_IDS = new Set([1, 2, 1001]);
-  const COMMON_PARTICLE_ORDER = [1, 2, 1001];
-
   function toParticleItem(particle: ParticleEntity) {
     return {
       entity: particle,
@@ -33,20 +30,9 @@
     };
   }
 
-  const commonParticles = $derived.by(() =>
+  const allParticles = $derived.by(() =>
     state.allParticles
-      .filter((p) => typeof p.id === "number" && COMMON_PARTICLE_IDS.has(p.id))
-      .sort(
-        (a, b) =>
-          COMMON_PARTICLE_ORDER.indexOf(a.id as number) -
-          COMMON_PARTICLE_ORDER.indexOf(b.id as number),
-      )
-      .map(toParticleItem),
-  );
-
-  const ionParticles = $derived.by(() =>
-    state.allParticles
-      .filter((p) => typeof p.id === "number" && !COMMON_PARTICLE_IDS.has(p.id))
+      .filter((p) => typeof p.id === "number")
       .sort((a, b) => (a.id as number) - (b.id as number))
       .map(toParticleItem),
   );
@@ -184,8 +170,7 @@
       items={[]}
       grouped={true}
       groups={[
-        { groupName: "Common particles", items: commonParticles },
-        { groupName: "Ions", items: ionParticles },
+        { groupName: "Particles", items: allParticles },
         ...(externalParticles.length > 0
           ? [{ groupName: "External", items: externalParticles }]
           : []),

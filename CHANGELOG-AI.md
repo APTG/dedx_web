@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Stage 5 — entity-selection**: Remove "common particles" concept — drop star icon, bold emphasis for proton/alpha, and Common particles/Ions section headers; all particles now rendered uniformly sorted by Z (#622). (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-27-issue-622-remove-common-particles.md)
+
 - 2026-05-27 — **Testing**: Add unit tests for custom-compounds and inverse-lookups (#621). (Qwen3.5-397B via opencode)
   - **Log:** [log](docs/ai-logs/2026-05-27-issue-621.md)
 

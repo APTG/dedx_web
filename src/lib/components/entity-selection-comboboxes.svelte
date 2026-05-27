@@ -82,21 +82,6 @@
   }
 
   const particleItems = $derived.by(() => {
-    // "Common particles" group: proton (1), alpha (2), electron (1001)
-    // allParticles are always built-in (numeric IDs) — cast is safe.
-    const COMMON_IDS = new Set([1, 2, 1001]);
-    const commonParticles = selectionState.allParticles
-      .filter((p) => COMMON_IDS.has(p.id as number))
-      .sort((a, b) => {
-        // fixed order: proton, alpha particle, electron
-        const ORDER = [1, 2, 1001];
-        return ORDER.indexOf(a.id as number) - ORDER.indexOf(b.id as number);
-      });
-
-    const ionParticles = selectionState.allParticles
-      .filter((p) => !COMMON_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-
     function toItem(particle: ParticleEntity) {
       const isElectron = particle.id === 1001;
       return {
@@ -109,6 +94,11 @@
       };
     }
 
+    const allParticlesSorted = selectionState.allParticles
+      .slice()
+      .sort((a, b) => (a.id as number) - (b.id as number))
+      .map(toItem);
+
     const externalParticles = selectionState.externalOnlyParticles.map((particle) => ({
       entity: particle,
       available: selectionState.availableParticles.some((p) => p.id === particle.id),
@@ -118,12 +108,8 @@
       searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
     }));
 
-    // Use same section-header pattern as materialItems
     return [
-      { type: "section" as const, label: "Common particles" },
-      ...commonParticles.map(toItem),
-      { type: "section" as const, label: "Ions" },
-      ...ionParticles.map(toItem),
+      ...allParticlesSorted,
       ...(externalParticles.length > 0
         ? [{ type: "section" as const, label: "External" }, ...externalParticles]
         : []),

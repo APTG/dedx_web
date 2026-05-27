@@ -200,12 +200,11 @@ Particle (~30 items) → always `medium`. Material (~195 items) → always `larg
 
 #### Particle tab — flat Z-sorted list
 
-Removed the Common particles / Ions section headers. All builtins now form a
-single flat list sorted by Z, with named particles (proton, alpha) first:
+All builtins form a single flat list sorted by Z with no section headers and no
+special treatment for any particle:
 
-1. Named particles (NAMED_IDS = {1, 2}) sorted by Z — bold (`font-semibold`)
-2. Remaining builtins sorted by Z
-3. External-only particles sorted by Z
+1. Builtin particles sorted by Z
+2. External-only particles sorted by Z
 
 Each row renders `getParticleListLabel(p, z)` — Z is embedded in the name
 (`proton (Z=1)`, `Carbon (C, Z=6)`) with no separate right-aligned Z column.
@@ -261,8 +260,8 @@ callbacks via Svelte 5 `$props()`:
   `ParticleEntity[]` (not the wider `Particle` union) since the
   periodic-table grid only renders builtins.
 - `particle-tab-helpers.ts` — pure helpers shared by all three:
-  `Particle` type alias, `NAMED_IDS`, `isExternal`, `atomicNumber`,
-  `isNamed`, `periodicPosition` (atomic-number → row/column mapping).
+  `Particle` type alias, `isExternal`, `atomicNumber`,
+  `periodicPosition` (atomic-number → row/column mapping).
 
 The orchestrator retains: filter/match (`z=N` operator), view-mode
 state, `PickerSummaryBar`, view toggle, multi-select bookkeeping, and
@@ -424,10 +423,10 @@ Display rules:
 | 3..118 | `Element (Symbol)` | e.g. `Carbon (C)`, `Tin (Sn)`                           |
 | 1001   | —                  | **omitted** — electron not selectable until ESTAR ships |
 
-**Current implementation (as of PR A, 2026-05-17):** Flat Z-sorted list with
-no Common/Ions section headers. Named particles (proton, alpha) sort first
-and are bold. Z is embedded in the name label: `proton (Z=1)`, `Carbon (C, Z=6)`.
-See the "Adaptive Picker Kit" section for full details.
+**Current implementation (as of issue #622):** Flat Z-sorted list with no
+section headers and no special styling for any particle. Z is embedded in the
+name label: `proton (Z=1)`, `Carbon (C, Z=6)`. See the "Adaptive Picker Kit"
+section for full details.
 
 External-only particles use the `🔗 <name>` prefix and sort into the flat
 list by Z; they do NOT form an "External" group.

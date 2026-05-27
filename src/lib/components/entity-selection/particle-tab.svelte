@@ -7,7 +7,7 @@
   import ParticleListView from "./particle-list-view.svelte";
   import ParticleGridView from "./particle-grid-view.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
-  import { atomicNumber, isExternal, NAMED_IDS, type Particle } from "./particle-tab-helpers";
+  import { atomicNumber, isExternal, type Particle } from "./particle-tab-helpers";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -77,14 +77,9 @@
   const allBuiltin = $derived(selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID));
 
   const flatList = $derived.by<Particle[]>(() => {
-    const named = allBuiltin
-      .filter((p) => NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const ions = allBuiltin
-      .filter((p) => !NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
+    const builtins = [...allBuiltin].sort((a, b) => (a.id as number) - (b.id as number));
     const ext = [...selectionState.externalOnlyParticles].sort((a, b) => a.Z - b.Z);
-    return [...named, ...ions, ...ext] as Particle[];
+    return [...builtins, ...ext] as Particle[];
   });
 
   const filteredFlat = $derived(
