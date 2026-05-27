@@ -26,14 +26,15 @@ const MAX_ENERGY_POINTS = 10000;
 /**
  * Validate a top-level entity array attribute (particles or materials):
  * must be a non-empty array within `maxLength`, each element a plain object
- * with a unique, valid local-id string. Returns validated `[rawItems, idSet]`.
+ * (created via object literal or `Object.create(Object.prototype)`)
+ * with a unique, valid local-id string. Returns the validated items array.
  */
 function validateEntityArray(
   raw: unknown,
   key: string,
   maxLength: number,
   fail: (msg: string, code?: ExternalDataError["code"]) => never,
-): [Record<string, unknown>[], Set<string>] {
+): Record<string, unknown>[] {
   if (!Array.isArray(raw) || raw.length === 0) {
     fail(`${key} must be a non-empty array`);
   }
@@ -45,8 +46,13 @@ function validateEntityArray(
   const validated: Record<string, unknown>[] = [];
   for (let i = 0; i < items.length; i++) {
     const item = items[i];
-    if (!item || typeof item !== "object" || Array.isArray(item)) {
-      fail(`${key}[${i}] is not an object`);
+    if (
+      !item ||
+      typeof item !== "object" ||
+      Array.isArray(item) ||
+      Object.getPrototypeOf(item) !== Object.prototype
+    ) {
+      fail(`${key}[${i}] is not a plain object`);
     }
     const obj = item as Record<string, unknown>;
     const id = obj["id"];
@@ -58,7 +64,7 @@ function validateEntityArray(
     ids.add(idStr);
     validated.push(obj);
   }
-  return [validated, ids];
+  return validated;
 }
 
 /**
@@ -194,7 +200,7 @@ export function validateRootAttrs(
   }
 
   // Particles
-  const [rawParticles] = validateEntityArray(
+  const rawParticles = validateEntityArray(
     attrs["webdedx.particles"],
     "webdedx.particles",
     MAX_PARTICLES,
@@ -203,7 +209,7 @@ export function validateRootAttrs(
   const pdgCodes = new Set<number>();
   const particles: ExternalParticleEntry[] = [];
   for (let i = 0; i < rawParticles.length; i++) {
-    const part = rawParticles[i];
+    const part = rawParticles[i]!;
     const idStr = part["id"] as string;
 
     const pname = part["name"];
@@ -253,7 +259,7 @@ export function validateRootAttrs(
   }
 
   // Materials
-  const [rawMaterials] = validateEntityArray(
+  const rawMaterials = validateEntityArray(
     attrs["webdedx.materials"],
     "webdedx.materials",
     MAX_MATERIALS,
@@ -261,7 +267,7 @@ export function validateRootAttrs(
   );
   const materials: ExternalMaterialEntry[] = [];
   for (let i = 0; i < rawMaterials.length; i++) {
-    const mat = rawMaterials[i];
+    const mat = rawMaterials[i]!;
     const idStr = mat["id"] as string;
     const mname = mat["name"];
     if (typeof mname !== "string" || !mname) fail(`webdedx.materials[${i}].name is required`);
