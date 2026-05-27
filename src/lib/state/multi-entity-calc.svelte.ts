@@ -46,7 +46,7 @@ export function setupMultiEntityCalculation(
 
     // Multi-entity calculation requires built-in (numeric) program + particle.
     const rawProgramId = entityState.resolvedProgramId;
-    if (typeof rawProgramId !== "number" || rawProgramId === null) return;
+    if (typeof rawProgramId !== "number") return;
     const programId = rawProgramId;
 
     const rawParticleId = entityState.selectedParticle?.id;

@@ -59,7 +59,7 @@ export function setupInverseRangeCalculation(
       status: r.status,
     }));
 
-    if (particleId === null || materialId === null || programId === null) return;
+    if (materialId === null || programId === null) return;
 
     const validRows = rowsSnapshot.filter(
       (r) => r.status === "valid" || r.status === "out-of-range",
@@ -194,7 +194,7 @@ export function setupInverseStpCalculation(
       status: r.status,
     }));
 
-    if (particleId === null || materialId === null || programId === null) return;
+    if (materialId === null || programId === null) return;
 
     const validRows = rowsSnapshot.filter(
       (r) => r.status === "valid" || r.status === "no-solution",
