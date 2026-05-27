@@ -24,6 +24,44 @@ const MAX_MATERIALS = 10000;
 const MAX_ENERGY_POINTS = 10000;
 
 /**
+ * Validate a top-level entity array attribute (particles or materials):
+ * must be a non-empty array within `maxLength`, each element a plain object
+ * with a unique, valid local-id string. Returns validated `[rawItems, idSet]`.
+ */
+function validateEntityArray(
+  raw: unknown,
+  key: string,
+  maxLength: number,
+  fail: (msg: string, code?: ExternalDataError["code"]) => never,
+): [Record<string, unknown>[], Set<string>] {
+  if (!Array.isArray(raw) || raw.length === 0) {
+    fail(`${key} must be a non-empty array`);
+  }
+  const items = raw as unknown[];
+  if (items.length > maxLength) {
+    fail(`${key} length ${items.length} exceeds maximum ${maxLength}`);
+  }
+  const ids = new Set<string>();
+  const validated: Record<string, unknown>[] = [];
+  for (let i = 0; i < items.length; i++) {
+    const item = items[i];
+    if (!item || typeof item !== "object" || Array.isArray(item)) {
+      fail(`${key}[${i}] is not an object`);
+    }
+    const obj = item as Record<string, unknown>;
+    const id = obj["id"];
+    if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
+      fail(`${key}[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
+    }
+    const idStr = id as string;
+    if (ids.has(idStr)) fail(`${key}: duplicate id "${idStr}"`);
+    ids.add(idStr);
+    validated.push(obj);
+  }
+  return [validated, ids];
+}
+
+/**
  * Validate the raw attributes object from a webdedx store's root zarr.json.
  * Throws ExternalDataError on any violation.
  * Returns a fully validated ExternalStoreMetadata on success.
@@ -156,30 +194,17 @@ export function validateRootAttrs(
   }
 
   // Particles
-  const rawParticlesUnknown = attrs["webdedx.particles"];
-  if (!Array.isArray(rawParticlesUnknown) || rawParticlesUnknown.length === 0) {
-    fail("webdedx.particles must be a non-empty array");
-  }
-  const rawParticles = rawParticlesUnknown as unknown[];
-  if (rawParticles.length > MAX_PARTICLES) {
-    fail(`webdedx.particles length ${rawParticles.length} exceeds maximum ${MAX_PARTICLES}`);
-  }
-  const particleIds = new Set<string>();
+  const [rawParticles] = validateEntityArray(
+    attrs["webdedx.particles"],
+    "webdedx.particles",
+    MAX_PARTICLES,
+    fail,
+  );
   const pdgCodes = new Set<number>();
   const particles: ExternalParticleEntry[] = [];
   for (let i = 0; i < rawParticles.length; i++) {
-    const p = rawParticles[i];
-    if (!p || typeof p !== "object" || Array.isArray(p)) {
-      fail(`webdedx.particles[${i}] is not an object`);
-    }
-    const part = p as Record<string, unknown>;
-    const id = part["id"];
-    if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
-      fail(`webdedx.particles[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
-    }
-    const idStr = id as string;
-    if (particleIds.has(idStr)) fail(`webdedx.particles: duplicate id "${idStr}"`);
-    particleIds.add(idStr);
+    const part = rawParticles[i];
+    const idStr = part["id"] as string;
 
     const pname = part["name"];
     if (typeof pname !== "string" || !pname) fail(`webdedx.particles[${i}].name is required`);
@@ -228,29 +253,16 @@ export function validateRootAttrs(
   }
 
   // Materials
-  const rawMaterialsUnknown = attrs["webdedx.materials"];
-  if (!Array.isArray(rawMaterialsUnknown) || rawMaterialsUnknown.length === 0) {
-    fail("webdedx.materials must be a non-empty array");
-  }
-  const rawMaterials = rawMaterialsUnknown as unknown[];
-  if (rawMaterials.length > MAX_MATERIALS) {
-    fail(`webdedx.materials length ${rawMaterials.length} exceeds maximum ${MAX_MATERIALS}`);
-  }
-  const materialIds = new Set<string>();
+  const [rawMaterials] = validateEntityArray(
+    attrs["webdedx.materials"],
+    "webdedx.materials",
+    MAX_MATERIALS,
+    fail,
+  );
   const materials: ExternalMaterialEntry[] = [];
   for (let i = 0; i < rawMaterials.length; i++) {
-    const m = rawMaterials[i];
-    if (!m || typeof m !== "object" || Array.isArray(m)) {
-      fail(`webdedx.materials[${i}] is not an object`);
-    }
-    const mat = m as Record<string, unknown>;
-    const id = mat["id"];
-    if (typeof id !== "string" || !isExternalEntityLocalId(id)) {
-      fail(`webdedx.materials[${i}].id "${id}" is invalid (must match [A-Za-z0-9_-]+)`);
-    }
-    const idStr = id as string;
-    if (materialIds.has(idStr)) fail(`webdedx.materials: duplicate id "${idStr}"`);
-    materialIds.add(idStr);
+    const mat = rawMaterials[i];
+    const idStr = mat["id"] as string;
     const mname = mat["name"];
     if (typeof mname !== "string" || !mname) fail(`webdedx.materials[${i}].name is required`);
     const mnameStr = mname as string;
