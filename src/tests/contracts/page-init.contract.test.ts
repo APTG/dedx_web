@@ -24,11 +24,12 @@ function readSource(relativePath: string): string {
 }
 
 const CALCULATOR_PAGE = "src/routes/calculator/+page.svelte";
+const CALCULATOR_ORCHESTRATOR = "src/lib/state/calculator-page-orchestrator.svelte.ts";
 const PLOT_PAGE = "src/routes/plot/+page.svelte";
 
 describe("Page-init contract — initAdvancedModeFromUrl", () => {
-  it("calculator/+page.svelte calls initAdvancedModeFromUrl", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator calls initAdvancedModeFromUrl", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     expect(source).toContain("initAdvancedModeFromUrl");
   });
 
@@ -80,8 +81,8 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
     }
   });
 
-  it("calculator/+page.svelte wraps replaceState calls with untrack (prevents reactive loop)", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator wraps replaceState calls with untrack (prevents reactive loop)", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     if (source.includes("import { replaceState }")) {
       expect(source).toContain("untrack");
     }
@@ -89,8 +90,8 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
 });
 
 describe("Page-init contract — urlv negotiation", () => {
-  it("calculator/+page.svelte source contains negotiateVersion call", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator source contains negotiateVersion call", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     expect(source).toContain("negotiateVersion");
   });
 

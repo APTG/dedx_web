@@ -1,12 +1,7 @@
 <script lang="ts">
-  import { browser } from "$app/environment";
-  import { wasmReady, wasmError } from "$lib/state/ui.svelte";
-  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import { type AutoSelectProgram, WATER_ID } from "$lib/state/entity-selection.svelte";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import { type AutoSelectProgram } from "$lib/state/entity-selection.svelte";
 
-  import { createCalculatorState, type CalculatorState } from "$lib/state/calculator.svelte";
-  import { createMultiProgramState, type MultiProgramState } from "$lib/state/multi-program.svelte";
-  import { createMultiEntityState, type MultiEntityState } from "$lib/state/multi-entity.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
@@ -18,61 +13,30 @@
   import CompareAcrossStrip from "$lib/components/results/compare-across-strip.svelte";
   import TableMulti from "$lib/components/results/table-multi.svelte";
   import QuantityToggle from "$lib/components/results/quantity-toggle.svelte";
-  import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
-  import { getService } from "$lib/wasm/loader";
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
-  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
-  import { page } from "$app/state";
-  import { untrack } from "svelte";
-  import { decodeCalculatorUrl, decodeInverseModeFromUrl } from "$lib/utils/calculator-url";
-  import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte";
   import { initExportState } from "$lib/state/export.svelte";
-  import {
-    advancedOptions,
-    loadAdvancedOptionsFromStorage,
-    persistAdvancedOptions,
-  } from "$lib/state/advanced-options.svelte";
-  import {
-    createInverseLookupState,
-    type InverseLookupState,
-  } from "$lib/state/inverse-lookups.svelte";
-  import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte";
-  import { setupMultiProgramCalculation } from "$lib/state/multi-program-calc.svelte";
-  import { setupMultiEntityCalculation } from "$lib/state/multi-entity-calc.svelte";
-  import {
-    setupInverseRangeCalculation,
-    setupInverseStpCalculation,
-  } from "$lib/state/inverse-calc.svelte";
+  import { advancedOptions } from "$lib/state/advanced-options.svelte";
   import { getEnergyAnchorOptions } from "$lib/utils/energy-anchor-options";
   import { buildCalculatorPdfMetadata } from "$lib/utils/calculator-pdf-metadata";
   import { type EnergyUnit } from "$lib/wasm/types";
-  import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
   import { goto } from "$app/navigation";
-  import { externalDataService } from "$lib/external-data/service";
-  import type { ExternalSourceDescriptor, EntityId } from "$lib/external-data/types";
+  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
-  import { parseExtRef } from "$lib/external-data/ids";
+  import { externalDataService } from "$lib/external-data/service";
 
-  let calcState = $state<CalculatorState | null>(null);
-  let energyRangeLabel = $state<string>("");
-  let urlVersionChecked = $state(false);
-  let urlInitialized = $state(false);
-  let advancedModeInitializedFromUrl = $state(false);
-  let urlVersionMismatch = $state<{ version: number | string } | null>(null);
-  let multiProgState = $state<MultiProgramState | null>(null);
-  let multiEntityState = $state<MultiEntityState | null>(null);
-  let inverseLookupState = $state<InverseLookupState | null>(null);
-  let sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
-  let sharedUrlWarning = $state<string | null>(null);
+  import PageErrorFallback from "$lib/components/layout/page-error-fallback.svelte";
+  import AdvancedHint from "$lib/components/calculator/advanced-hint.svelte";
+  import SharedCompoundAlert from "$lib/components/calculator/shared-compound-alert.svelte";
+  import { createCalculatorPageOrchestrator } from "$lib/state/calculator-page-orchestrator.svelte";
 
   import { appInit } from "$lib/state/app-init.svelte";
+
   let showLoadExternalModal = $state(false);
 
-  let entityState = $derived(appInit.entityState);
   let loadedExternalSources = $derived(appInit.loadedExternalSources);
   let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
   let externalError = $derived(appInit.error);
@@ -89,350 +53,37 @@
     appInit.addExternalSource(descriptor, metadata);
   }
 
-  function restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
-    sharedUrlWarning = urlState.fromUrlWarning ?? null;
-    if (
-      !urlState.materialIsCustom ||
-      !urlState.matName ||
-      urlState.matDensity === undefined ||
-      !urlState.matElements?.length
-    ) {
-      return null;
-    }
-
-    const compound = customCompounds.addTransient({
-      name: urlState.matName,
-      density: urlState.matDensity,
-      iValue: urlState.matIval,
-      elements: urlState.matElements,
-      phase: urlState.matPhase ?? "condensed",
-    });
-    sharedUrlCompound = compound;
-    return compound;
-  }
-
-  function saveSharedUrlCompound() {
-    if (!sharedUrlCompound || !appInit.entityState) return;
-    const result = customCompounds.create({
-      name: sharedUrlCompound.name,
-      density: sharedUrlCompound.density,
-      iValue: sharedUrlCompound.iValue,
-      elements: sharedUrlCompound.elements,
-      phase: sharedUrlCompound.phase,
-    });
-    if (result.success) {
-      customCompounds.removeTransient(sharedUrlCompound.id);
-      appInit.entityState.selectMaterial(result.compound.id);
-      sharedUrlCompound = null;
-    }
-  }
-
-  function dismissSharedUrlCompound() {
-    sharedUrlCompound = null;
-    sharedUrlWarning = null;
-  }
-
   function handleLoadDefaults() {
-    // Navigate to /calculator without params to clear the mismatch URL
     goto("/calculator", { replaceState: true });
-    urlVersionMismatch = null;
+    orchestrator.urlVersionMismatch = null;
   }
 
-  $effect(() => {
-    // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
-    // async getService() callback runs. This ensures the tabs render correctly when
-    // the page loads with ?advanced=1 — otherwise the component renders with
-    // isAdvancedMode.value = false and there's a reactivity glitch when it later
-    // becomes true inside the async callback.
-    if (wasmReady.value && !advancedModeInitializedFromUrl) {
-      initAdvancedModeFromUrl(page.url.searchParams);
-      advancedModeInitializedFromUrl = true;
-    }
+  const orchestrator = createCalculatorPageOrchestrator();
 
-    // Negotiate URL version IMMEDIATELY (before WASM is ready) — this should show
-    // the banner even if WASM fails to load
-    if (!urlVersionChecked) {
-      const urlvRaw = page.url.searchParams.get("urlv");
-      const negotiationResult = negotiateVersion(urlvRaw);
-      if (negotiationResult.status === "mismatch") {
-        urlVersionMismatch = { version: negotiationResult.version };
-      } else {
-        urlVersionMismatch = null;
-      }
-      urlVersionChecked = true;
-    }
-
-    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
-      appInit.initialize(page.url.searchParams);
-    }
-  });
+  let calcState = $derived(orchestrator.calcState);
+  let energyRangeLabel = $derived(orchestrator.energyRangeLabel);
+  let urlVersionMismatch = $derived(orchestrator.urlVersionMismatch);
+  let multiProgState = $derived(orchestrator.multiProgState);
+  let multiEntityState = $derived(orchestrator.multiEntityState);
+  let inverseLookupState = $derived(orchestrator.inverseLookupState);
 
   $effect(() => {
-    if (appInit.entityState && appInit.service && !calcState) {
-      // Snapshot URL params synchronously before async work (constraint: must snapshot before await)
-      const currentSearchParams = page.url.searchParams;
-      const urlState = decodeCalculatorUrl(currentSearchParams);
-      const hasEnergies = currentSearchParams.has("energies");
-
-      calcState = createCalculatorState(appInit.entityState, appInit.service, externalDataService);
-      inverseLookupState = createInverseLookupState(appInit.entityState);
-
-      // Load advanced options from localStorage first
-      loadAdvancedOptionsFromStorage();
-
-      // Restore advanced options from URL (URL takes priority over localStorage)
-      const urlAdvOpts = urlState.advancedOptions;
-      if (urlAdvOpts) {
-        advancedOptions.value = urlAdvOpts;
-      }
-
-      // Select particle/material/program FIRST before initializing rows
-      if (urlState.particleId !== null) appInit.entityState.selectParticle(urlState.particleId);
-      const customFromUrl = restoreCustomCompoundFromUrl(urlState);
-      if (customFromUrl) {
-        appInit.entityState.selectMaterial(customFromUrl.id);
-      } else if (urlState.materialId !== null) {
-        appInit.entityState.selectMaterial(urlState.materialId);
-      }
-      if (urlState.programId !== null) appInit.entityState.selectProgram(urlState.programId);
-
-      // Restore multi-entity comparison state from URL (across=* + particles=/materials=).
-      if (urlState.isAdvancedMode && urlState.across) {
-        if (urlState.across === "particle") {
-          // Always activate particle multi-mode when across=particles is in the URL.
-          // setAcross seeds the multi-array from the current single selection (anchor).
-          appInit.entityState.setAcross(urlState.across);
-          if (urlState.selectedParticleIds) {
-            const available = new Set(appInit.entityState.availableParticles.map((p) => p.id));
-            const validIds = urlState.selectedParticleIds.filter((id) => available.has(id));
-            if (validIds.length > 0) {
-              appInit.entityState.setMultiParticle(validIds);
-            }
-          }
-        } else if (urlState.across === "material" && urlState.selectedMaterialIds) {
-          const available = new Set(appInit.entityState.availableMaterials.map((p) => p.id));
-          const validIds = urlState.selectedMaterialIds.filter((id) => available.has(id));
-          if (validIds.length > 0) {
-            appInit.entityState.setAcross(urlState.across);
-            appInit.entityState.setMultiMaterial(validIds);
-          }
-        }
-      }
-      calcState.setMasterUnit(urlState.masterUnit);
-      if (hasEnergies) {
-        urlState.rows.forEach((r, i) => {
-          const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
-          if (i === 0) {
-            calcState!.updateRowText(0, text);
-          } else {
-            calcState!.addRow();
-            calcState!.updateRowText(i, text);
-          }
-        });
-      }
-
-      // Restore inverse lookup mode from URL (AFTER particle/material selected)
-      const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
-      if (inverseMode && isAdvancedMode.value) {
-        inverseLookupState!.setActiveTab(inverseMode.imode);
-        if (inverseMode.lookups && inverseMode.lookups.length > 0) {
-          inverseLookupState!.rangeRows.length = 0;
-          inverseLookupState!.stpRows.length = 0;
-
-          for (let i = 0; i < inverseMode.lookups.length; i++) {
-            const ival = inverseMode.lookups[i]!;
-            const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
-            if (inverseMode.imode === "csda") {
-              if (i === 0) {
-                inverseLookupState!.addRangeRow();
-                inverseLookupState!.updateRangeRowText(0, text);
-              } else {
-                inverseLookupState!.addRangeRow();
-                inverseLookupState!.updateRangeRowText(i, text);
-              }
-            } else if (inverseMode.imode === "stp") {
-              if (i === 0) {
-                inverseLookupState!.addStpRow();
-                inverseLookupState!.updateStpRowText(0, text);
-              } else {
-                inverseLookupState!.addStpRow();
-                inverseLookupState!.updateStpRowText(i, text);
-              }
-            }
-          }
-        }
-        // Set master unit for Range (CSDA) mode
-        if (inverseMode.imode === "csda" && inverseMode.iunit) {
-          const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
-          if (validRangeUnits.includes(inverseMode.iunit as (typeof validRangeUnits)[number])) {
-            inverseLookupState!.setRangeMasterUnit(
-              inverseMode.iunit as (typeof validRangeUnits)[number],
-            );
-          }
-        }
-        // Set master unit for STP mode
-        if (inverseMode.imode === "stp" && inverseMode.iunit) {
-          const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
-          if (validStpUnits.includes(inverseMode.iunit as (typeof validStpUnits)[number])) {
-            inverseLookupState!.setStpMasterUnit(
-              inverseMode.iunit as (typeof validStpUnits)[number],
-            );
-          }
-        }
-        // Restore STP column-visibility state from URL
-        if (inverseMode.imode === "stp" && urlState.istpBranchState) {
-          inverseLookupState!.setStpBranchState(urlState.istpBranchState);
-        }
-      }
-
-      urlInitialized = true;
+    if (calcState && appInit.entityState) {
+      initExportState(calcState, appInit.entityState);
     }
-  });
-
-  // Handle mode switch fallback: custom compound → water when switching to Basic mode
-  $effect(() => {
-    const mode = isAdvancedMode.value;
-    if (!mode && appInit.entityState?.selectedMaterial) {
-      const matId = appInit.entityState.selectedMaterial.id;
-      if (typeof matId === "string" && matId.startsWith("cc_")) {
-        appInit.entityState.selectMaterial(WATER_ID);
-      }
-    }
-  });
-
-  // $derived signal to track nested advancedOptions changes
-  const advOptsKey = $derived(
-    JSON.stringify([
-      advancedOptions.value.interpolation?.scale,
-      advancedOptions.value.interpolation?.method,
-      advancedOptions.value.densityOverride,
-      advancedOptions.value.iValueOverride,
-      advancedOptions.value.aggregateState,
-      advancedOptions.value.mstarMode,
-    ]),
-  );
-
-  // Persist advanced options to localStorage whenever they change
-  $effect(() => {
-    if (!browser) return;
-    // Read advOptsKey to track nested changes
-    void advOptsKey;
-    persistAdvancedOptions();
-  });
-
-  // Retrigger calculator-state calculation when advanced options change for the
-  // single-result table paths (Basic mode and single-program Advanced mode).
-  // True multi-program compare continues to use the dedicated calculateMulti effect below.
-  $effect(() => {
-    // Read advOptsKey to register reactive dep on all advanced option fields.
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-    // Block calculation while URL version mismatch is pending
-    if (urlVersionMismatch !== null) return;
-    if (!calcState || !appInit.entityState?.isComplete) return;
-    const isMultiProgramCompare =
-      isAdvancedMode.value &&
-      appInit.entityState.across === "program" &&
-      (multiProgState?.selectedProgramIds.length ?? 0) > 1;
-    const isMultiEntityCompare =
-      isAdvancedMode.value &&
-      (appInit.entityState.across === "material" || appInit.entityState.across === "particle");
-    if (isMultiProgramCompare || isMultiEntityCompare) return;
-    calcState.triggerCalculation();
-  });
-
-  setupCalculatorUrlSync(
-    () => calcState,
-    () => entityState,
-    () => inverseLookupState,
-    () => multiProgState,
-    () => urlInitialized,
-    () => loadedExternalSources,
-    () => advOptsKey,
-  );
-
-  setupMultiProgramCalculation(
-    () => calcState,
-    () => entityState,
-    () => multiProgState,
-    () => urlVersionMismatch,
-    () => advOptsKey,
-  );
-
-  setupMultiEntityCalculation(
-    () => calcState,
-    () => entityState,
-    () => multiEntityState,
-    () => urlVersionMismatch,
-    () => advOptsKey,
-  );
-
-  setupInverseRangeCalculation(
-    () => calcState,
-    () => entityState,
-    () => inverseLookupState,
-    () => urlVersionMismatch,
-    () => advOptsKey,
-  );
-
-  setupInverseStpCalculation(
-    () => calcState,
-    () => entityState,
-    () => inverseLookupState,
-    () => urlVersionMismatch,
-    () => advOptsKey,
-  );
-
-  $effect(() => {
-    if (calcState && entityState?.isComplete) {
-      const programId = entityState.resolvedProgramId;
-      const particleId = entityState.selectedParticle?.id;
-      if (programId !== null && particleId !== null) {
-        if (typeof programId === "string") {
-          // External program: read energy grid from external service metadata
-          const parsedProgram = parseExtRef(programId);
-          if (!parsedProgram) {
-            energyRangeLabel = "";
-            return;
-          }
-          const { label } = parsedProgram;
-          const meta = externalDataService.getMetadata(label);
-          if (meta) {
-            const grid = meta.energyGrid;
-            const minE = grid[0] ?? 0;
-            const maxE = grid[grid.length - 1] ?? 0;
-            energyRangeLabel = `${minE.toLocaleString()} – ${maxE.toLocaleString()} ${meta.energyUnit} (external)`;
-          } else {
-            energyRangeLabel = "";
-          }
-          return;
-        }
-
-        // Built-in program: query WASM for energy range
-        const snapshot = { programId, particleId };
-        let cancelled = false;
-        getService().then((service) => {
-          if (cancelled) return;
-          if (
-            snapshot.programId !== entityState?.resolvedProgramId ||
-            snapshot.particleId !== entityState?.selectedParticle?.id
-          ) {
-            return;
-          }
-          const min = service.getMinEnergy(programId as number, particleId as number);
-          const max = service.getMaxEnergy(programId as number, particleId as number);
-          energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
-        });
-        return () => {
-          cancelled = true;
-        };
-      }
-    }
+    // Set the advanced metadata getter callback for PDF export
+    import("$lib/state/export.svelte").then((mod) => {
+      mod.getCalculatorAdvancedMetadata.value = () => {
+        if (!isAdvancedMode.value) return null;
+        if (!appInit.entityState || !calcState) return null;
+        return buildCalculatorPdfMetadata(appInit.entityState, advancedOptions.value);
+      };
+    });
   });
 
   let programLabel = $derived.by(() => {
-    if (!entityState) return "";
-    const program = entityState.selectedProgram;
+    if (!appInit.entityState) return "";
+    const program = appInit.entityState.selectedProgram;
     if (program.id === -1) {
       const resolvedName = (program as AutoSelectProgram).resolvedProgram?.name;
       if (resolvedName) {
@@ -443,344 +94,78 @@
     }
     return "";
   });
-
-  // Onboarding hint for advanced mode - show first 2 times, auto-dismiss after 8s
-  let showAdvancedHint = $state(false);
-  let hintTimeout: ReturnType<typeof setTimeout> | undefined;
-  // Tracks whether the user interacted with the program picker in this Advanced session.
-  // Reset to false whenever we enter/re-enter Advanced mode so the hint dismissal
-  // does not carry over from a previous session.
-  $effect(() => {
-    // Only run when actively entering Advanced mode with a live state object.
-    if (!isAdvancedMode.value || !multiProgState) {
-      return;
-    }
-
-    // Read the current count once per mode-entry (i.e. when the effect first fires
-    // for this multiProgState instance). Using a snapshot prevents the count from
-    // being incremented again if multiProgState is recreated while the mode stays on.
-    const storageKey = "dedx_adv_hint_count";
-    const count = parseInt(localStorage.getItem(storageKey) || "0", 10);
-
-    if (count < 2) {
-      showAdvancedHint = true;
-      // Increment the count exactly once per actual mode-entry.
-      localStorage.setItem(storageKey, (count + 1).toString());
-
-      // Auto-dismiss after 8 seconds
-      hintTimeout = setTimeout(() => {
-        showAdvancedHint = false;
-      }, 8000);
-    }
-
-    return () => {
-      if (hintTimeout) clearTimeout(hintTimeout);
-    };
-  });
-
-  function dismissAdvancedHint(): void {
-    showAdvancedHint = false;
-    if (hintTimeout) clearTimeout(hintTimeout);
-  }
-
-  $effect(() => {
-    if (calcState && entityState) {
-      initExportState(calcState, entityState);
-    }
-    // Set the advanced metadata getter callback for PDF export
-    import("$lib/state/export.svelte").then((mod) => {
-      mod.getCalculatorAdvancedMetadata.value = () => {
-        if (!isAdvancedMode.value) return null;
-        if (!entityState || !calcState) return null;
-        return buildCalculatorPdfMetadata(entityState, advancedOptions.value);
-      };
-    });
-  });
-
-  // When basic mode is activated while an inverse tab is open, fall back to the Forward tab.
-  $effect(() => {
-    if (!isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab !== "forward") {
-      inverseLookupState.setActiveTab("forward");
-    }
-  });
-
-  // Create/destroy multi-program state when advanced mode toggles or entity selection changes.
-  //
-  // IMPORTANT: All initialization must go through the local `newState` variable. Never read
-  // the outer reactive `multiProgState` signal inside this effect after writing to it — doing so
-  // creates a self-dependency (the effect reads `multiProgState`, which it also writes, causing
-  // it to re-schedule itself on every run → effect_update_depth_exceeded).
-  $effect(() => {
-    if (!isAdvancedMode.value || !entityState || !calcState) {
-      multiProgState = null;
-      return;
-    }
-
-    // Build the new state entirely through the local variable so the reactive
-    // `multiProgState` signal is only written once, at the end.
-    const newState = createMultiProgramState();
-    newState.setAdvancedMode(true);
-
-    // Read URL params via window.location.search (non-reactive) to avoid
-    // registering page.url as a reactive dependency of this effect. If we
-    // read page.url.searchParams here, every replaceState call from the URL
-    // update effect below would re-trigger this effect, creating an infinite
-    // loop (effect_update_depth_exceeded).
-    const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
-
-    // Initialize with the resolved program as default (built-in or external)
-    const defaultProgramId = entityState.resolvedProgramId as EntityId | null;
-    if (defaultProgramId !== null && defaultProgramId !== -1) {
-      newState.addProgram(defaultProgramId);
-    }
-
-    // Restore selected programs from URL (supports both built-in numeric and external ExtRef IDs)
-    if (multiParams.mode === "advanced" && multiParams.parsedProgramEntityIds) {
-      const availableBuiltinIds = new Set(entityState.availablePrograms.map((p) => p.id));
-      const availableExtIds = new Set(entityState.availableExternalPrograms.map((p) => p.id));
-      const validProgramIds = multiParams.parsedProgramEntityIds.filter((id) => {
-        if (typeof id === "number") return availableBuiltinIds.has(id);
-        if (typeof id === "string") return availableExtIds.has(id);
-        return false;
-      });
-
-      // Add programs from URL (excluding default which is already added)
-      for (const programId of validProgramIds) {
-        if (programId !== defaultProgramId) {
-          newState.addProgram(programId);
-        }
-      }
-
-      // Restore display order (default must be first)
-      if (validProgramIds.length > 0) {
-        const defaultFirst =
-          defaultProgramId !== null && defaultProgramId !== -1
-            ? defaultProgramId
-            : validProgramIds[0]!;
-        const orderedIds: EntityId[] = [
-          defaultFirst,
-          ...validProgramIds.filter((id) => id !== defaultFirst),
-        ];
-        newState.setProgramDisplayOrder(orderedIds);
-      }
-
-      // Restore quantity focus
-      if (multiParams.qshow === "stp" || multiParams.qshow === "range") {
-        newState.setQuantityFocus(multiParams.qshow);
-      }
-    }
-
-    // Write the reactive signal only once, after all initialization is done.
-    multiProgState = newState;
-
-    // Seed entityState.multiSelected.program to match the freshly created multiProgState.
-    // Done inside untrack so the read of newState.selectedProgramIds (a $state-backed getter)
-    // doesn't register as a reactive dependency of THIS effect (which would cause it to
-    // re-run on every program toggle and re-create multiProgState from scratch, losing
-    // comparison results).
-    untrack(() => {
-      entityState!.setMultiProgram(newState.selectedProgramIds as (number | string)[]);
-    });
-
-    return () => {
-      multiProgState = null;
-    };
-  });
-
-  // Sync entityState.multiSelected.program → multiProgState whenever the user toggles
-  // programs in the program tab. The creation effect above handles initial seeding;
-  // this effect only handles subsequent changes.
-  $effect(() => {
-    if (!multiProgState || !entityState) return;
-
-    const desired = entityState.multiSelected.program;
-    if (desired.length === 0) return;
-
-    const current = multiProgState.selectedProgramIds;
-
-    // Remove programs no longer desired (cannot remove the first/default)
-    for (const id of [...current]) {
-      if (!desired.includes(id)) multiProgState.removeProgram(id as EntityId);
-    }
-
-    // Add newly desired programs
-    for (const id of desired) {
-      if (!current.includes(id as EntityId)) multiProgState.addProgram(id as EntityId);
-    }
-  });
-
-  // Collapse multi-selections to single when leaving Advanced mode.
-  // A no-op if the arrays are already empty or have only one item.
-  $effect(() => {
-    if (!isAdvancedMode.value && entityState) {
-      entityState.collapseToSingle();
-    }
-  });
-
-  // Update default program when resolvedProgramId changes
-  $effect(() => {
-    if (!multiProgState || !entityState) return;
-
-    const resolvedId = entityState.resolvedProgramId;
-    // -1 means "auto" (no explicit program selected) — skip
-    if (resolvedId === null || resolvedId === -1) return;
-    const defaultProgramId = resolvedId as EntityId;
-
-    // Only update if the default program has changed
-    const currentDefault = multiProgState.selectedProgramIds[0];
-    if (currentDefault !== defaultProgramId) {
-      if (!multiProgState.selectedProgramIds.includes(defaultProgramId)) {
-        multiProgState.addProgram(defaultProgramId);
-      }
-      multiProgState.setDefaultProgram(defaultProgramId);
-    }
-  });
-
-  // Create/destroy multi-entity state when the "across" dimension switches to material/particle.
-  // Mirrors the multiProgState creation effect above, but without URL encoding for now.
-  $effect(() => {
-    const across = entityState?.across;
-    if (!isAdvancedMode.value || !entityState || (across !== "material" && across !== "particle")) {
-      multiEntityState = null;
-      return;
-    }
-
-    const dim = across; // "material" | "particle"
-    const state = createMultiEntityState(dim, (id) => {
-      if (dim === "material") {
-        const m =
-          entityState?.allMaterials.find((x) => x.id === id) ??
-          entityState?.externalOnlyMaterials.find((x) => x.id === id);
-        return m?.name ?? String(id);
-      }
-      // particle
-      const p = entityState?.allParticles.find((x) => x.id === id);
-      return p?.name ?? String(id);
-    });
-    multiEntityState = state;
-
-    return () => {
-      multiEntityState = null;
-    };
-  });
 </script>
 
 <svelte:head>
-  <title>Calculator - webdedx</title>
+  <title>Calculator - dEdx Web</title>
 </svelte:head>
 
-<div class="space-y-3 sm:space-y-6">
-  <div class="flex items-center justify-between">
+<div class="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
+  <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="hidden sm:block sm:text-2xl sm:font-semibold">Calculator</h1>
-      <p class="text-xs sm:text-sm text-muted-foreground">
-        Select a particle, material, and program to calculate stopping powers and CSDA ranges.
+      <h1 class="text-3xl font-bold tracking-tight text-foreground">Stopping Power Calculator</h1>
+      <p class="text-muted-foreground mt-2">
+        Calculate dE/dx and ranges for various particles and materials.
       </p>
     </div>
-    {#if calcState}
-      <Button
-        variant="ghost"
-        size="sm"
-        onclick={() => calcState?.resetAll()}
-        title="Reset particle, material, program, and energy rows"
-      >
-        Reset all
-      </Button>
-    {/if}
   </div>
 
+  <PageErrorFallback {externalError} fallbackUrl="/calculator" />
+
   {#if urlVersionMismatch}
-    <UrlVersionWarningBanner
-      version={urlVersionMismatch.version}
-      onLoadDefaults={handleLoadDefaults}
-    />
+    <div class="mb-6">
+      <UrlVersionWarningBanner
+        version={urlVersionMismatch.version}
+        onLoadDefaults={handleLoadDefaults}
+      />
+    </div>
   {/if}
 
-  {#if wasmError.value}
-    <div
-      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
-    >
-      <p class="font-semibold text-destructive">Failed to load the calculation engine.</p>
-      <p class="text-sm text-muted-foreground">
-        Please try refreshing the page or use a different browser.
-      </p>
-      <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
-        Retry
-      </Button>
-      <details class="text-left text-xs text-muted-foreground mt-2">
-        <summary class="cursor-pointer">Show details</summary>
-        <pre class="mt-1 whitespace-pre-wrap">{wasmError.value.message}</pre>
-      </details>
+  {#if externalLoading}
+    <div class="mx-auto max-w-md space-y-4">
+      <Skeleton class="h-8 w-3/4 mx-auto" />
+      <Skeleton class="h-4 w-full" />
+      <Skeleton class="h-4 w-5/6 mx-auto" />
     </div>
-  {:else if externalError}
-    <div
-      class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
-    >
-      <p class="font-semibold text-destructive">Failed to load external data source.</p>
-      <p class="text-sm text-muted-foreground">{externalError.message}</p>
-      <div class="flex justify-center gap-2">
-        <Button variant="destructive" size="sm" onclick={() => window.location.reload()}>
-          Retry
-        </Button>
-        <Button
-          variant="outline"
-          size="sm"
-          onclick={() => goto("/calculator", { replaceState: true })}
-        >
-          Load without external data
-        </Button>
-      </div>
-    </div>
-  {:else if !wasmReady.value || !entityState || !calcState}
-    <div class="mx-auto max-w-4xl space-y-6" aria-busy="true" aria-label="Loading calculator">
-      {#if externalLoading}
-        <p class="text-sm text-muted-foreground">Loading external data sources…</p>
-      {/if}
-      <div class="flex flex-wrap gap-3">
-        <Skeleton class="h-10 w-44 rounded-md" />
-        <Skeleton class="h-10 w-44 rounded-md" />
-        <Skeleton class="h-10 w-36 rounded-md" />
-        <Skeleton class="h-10 w-28 rounded-md" />
-      </div>
-      <div class="rounded-lg border bg-card p-6 space-y-2">
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-full" />
-        <Skeleton class="h-8 w-3/4" />
-      </div>
-    </div>
-  {:else}
-    <div class="mx-auto max-w-4xl space-y-4 sm:space-y-6">
-      <SelectionLiveRegion state={entityState} />
+  {:else if appInit.entityState && calcState}
+    {@const es = appInit.entityState}
+    <div class="space-y-6">
+      <SelectionLiveRegion state={es} />
+
       <EntitySelection
-        selectionState={entityState}
+        selectionState={es}
         onParticleSelect={(particleId) => calcState?.switchParticle(particleId)}
         collapsible={true}
         onLoadExternal={() => (showLoadExternalModal = true)}
       />
-      <ExternalSourcesPanel sources={loadedExternalSources} onRemove={handleRemoveExternalSource} />
+
+      {#if Object.keys(loadedExternalSources).length > 0}
+        <ExternalSourcesPanel
+          sources={loadedExternalSources}
+          onRemove={handleRemoveExternalSource}
+        />
+      {/if}
+
       <LoadExternalModal
         open={showLoadExternalModal}
         existingLabels={new Set([
           ...loadedExternalSources.map((s) => s.label),
           ...externalDataService.getLoadedLabels(),
         ])}
-        onLoad={handleModalLoad}
         onCancel={() => (showLoadExternalModal = false)}
+        onLoad={handleModalLoad}
       />
-      {#if isAdvancedMode.value && entityState}
-        <!-- Compare-across strip: 4 pill buttons -->
+
+      {#if isAdvancedMode.value}
         <div class="flex items-center gap-3 pt-2 flex-wrap">
           <span class="text-xs font-semibold uppercase tracking-wider text-muted-foreground"
             >Compare across</span
           >
-          <CompareAcrossStrip
-            value={entityState.across}
-            onChange={(v) => entityState?.setAcross(v)}
-          />
+          <CompareAcrossStrip value={es.across} onChange={(v) => es.setAcross(v)} />
         </div>
-        <!-- Advanced Options Panel (only in program/single mode) -->
-        {#if entityState.across === "program" || entityState.across === "single"}
-          {@const selMatAdv = entityState.selectedMaterial}
+
+        {#if es.across === "program" || es.across === "single"}
+          {@const selMatAdv = es.selectedMaterial}
           {@const builtinMatAdv = selMatAdv && "isGasByDefault" in selMatAdv ? selMatAdv : null}
           <AdvancedOptionsPanel
             materialIsGas={builtinMatAdv?.isGasByDefault ?? false}
@@ -791,78 +176,39 @@
                 : "condensed"
               : undefined}
             isCustomCompoundActive={isCustomMaterial(builtinMatAdv)}
-            selectedProgram={"resolvedProgram" in entityState.selectedProgram
-              ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
-              : entityState.selectedProgram.name}
+            selectedProgram={es.selectedProgram.id === -1
+              ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "")
+              : es.selectedProgram.name}
           />
         {/if}
       {/if}
-      <!-- Advanced mode onboarding hint -->
-      {#if showAdvancedHint}
-        <div
-          class="flex items-start justify-between rounded-md border border-blue-200 bg-blue-50 px-4 py-3 text-sm text-blue-800 dark:border-blue-800 dark:bg-blue-950 dark:text-blue-200"
-          role="status"
-          aria-live="polite"
-        >
-          <div class="flex-1 pr-4">
-            <p class="font-medium">Multi-program comparison enabled</p>
-            <p class="mt-1 text-blue-700 dark:text-blue-300">
-              Select multiple programs to compare results side-by-side. Use the columns button to
-              show/hide programs or change the quantity focus.
-            </p>
-          </div>
-          <button
-            type="button"
-            class="ml-2 text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-200 text-lg leading-none"
-            aria-label="Dismiss hint"
-            onclick={dismissAdvancedHint}
-          >
-            ×
-          </button>
-        </div>
-      {/if}
-      {#if entityState.lastAutoFallbackMessage}
+
+      <AdvancedHint {multiProgState} />
+
+      {#if es.lastAutoFallbackMessage}
         <div
           class="flex items-center justify-between rounded border border-amber-300 bg-amber-50 px-3 py-2 text-sm text-amber-800"
         >
-          <span role="status" aria-live="polite">{entityState.lastAutoFallbackMessage}</span>
+          <span role="status" aria-live="polite">{es.lastAutoFallbackMessage}</span>
           <button
             class="ml-2 text-amber-600 hover:text-amber-800 text-lg leading-none"
             aria-label="Dismiss"
-            onclick={() => entityState?.clearAutoFallbackMessage()}
+            onclick={() => es.clearAutoFallbackMessage()}
           >
             ×
           </button>
         </div>
       {/if}
-      {#if sharedUrlCompound || sharedUrlWarning}
-        <div
-          class="flex flex-wrap items-center justify-between gap-3 rounded border border-blue-300 bg-blue-50 px-3 py-2 text-sm text-blue-900"
-          data-testid="compound-from-url-banner"
-        >
-          <span role="status" aria-live="polite">
-            {#if sharedUrlCompound}
-              Loaded custom compound “{sharedUrlCompound.name}” from shared URL.
-            {:else}
-              Custom compound URL parameters could not be restored: {sharedUrlWarning}
-            {/if}
-          </span>
-          <div class="flex items-center gap-2">
-            {#if sharedUrlCompound}
-              <Button size="sm" variant="outline" onclick={saveSharedUrlCompound}>
-                Save to library
-              </Button>
-            {/if}
-            <Button size="sm" variant="ghost" onclick={dismissSharedUrlCompound}>Dismiss</Button>
-          </div>
-        </div>
-      {/if}
+
+      <SharedCompoundAlert
+        bind:sharedUrlCompound={orchestrator.sharedUrlCompound}
+        bind:sharedUrlWarning={orchestrator.sharedUrlWarning}
+      />
+
       {#if isAdvancedMode.value && ((multiProgState !== null && multiProgState.selectedProgramIds.length > 1) || multiEntityState !== null)}
         <UnitAnchorStrip
           options={getEnergyAnchorOptions(
-            entityState.selectedParticle && "massNumber" in entityState.selectedParticle
-              ? entityState.selectedParticle
-              : null,
+            es.selectedParticle && "massNumber" in es.selectedParticle ? es.selectedParticle : null,
             isAdvancedMode.value,
           )}
           selected={calcState.masterUnit}
@@ -933,7 +279,7 @@
       <!-- Forward tab content (default) -->
       {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          {#if isAdvancedMode.value && entityState.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
+          {#if isAdvancedMode.value && es.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
             <div class="mb-3">
               <QuantityToggle
                 value={multiProgState.quantityFocus}
@@ -942,16 +288,13 @@
             </div>
             <ResultTable
               {calcState}
-              entitySelection={entityState}
+              entitySelection={es}
               multiProgramState={multiProgState}
               comparisonResults={multiProgState.comparisonResults}
             />
-          {:else if isAdvancedMode.value && multiEntityState && (entityState.across === "material" || entityState.across === "particle")}
-            {@const es = entityState}
+          {:else if isAdvancedMode.value && multiEntityState && (es.across === "material" || es.across === "particle")}
             {@const entityIds = (
-              entityState.across === "material"
-                ? entityState.multiSelected.material
-                : entityState.multiSelected.particle
+              es.across === "material" ? es.multiSelected.material : es.multiSelected.particle
             ) as import("$lib/external-data/types").EntityId[]}
             <div class="mb-3">
               <QuantityToggle
@@ -975,78 +318,82 @@
                 if (String(entityId).startsWith("ext:")) {
                   return es.externalOnlyMaterials.find((m) => m.id === entityId)?.density ?? 1;
                 }
-                return customCompounds.getById(entityId as string)?.density ?? 1;
+                return 1;
               }}
             />
           {:else if isAdvancedMode.value}
-            <TableAdvanced mode="energy" {calcState} entitySelection={entityState} />
+            <TableAdvanced mode="energy" {calcState} entitySelection={es} />
           {:else}
-            <TableBasic {calcState} entitySelection={entityState} />
+            <TableBasic {calcState} entitySelection={es} />
           {/if}
         </div>
       {/if}
 
-      <!-- Range tab content -->
-      {#if isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab === "csda"}
+      <!-- Range lookup tab content -->
+      {#if inverseLookupState && isAdvancedMode.value && inverseLookupState.activeTab === "csda"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          <div class="space-y-4">
-            <div class="text-sm text-muted-foreground">
-              Enter a CSDA range value to find the corresponding particle energy.
+          {#if es.across !== "single"}
+            <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-800 mb-4">
+              <p class="font-medium text-sm">Not supported</p>
+              <p class="text-sm mt-1">
+                Inverse lookups are currently only supported when calculating for a single particle,
+                material, and program.
+              </p>
             </div>
+          {:else}
             <TableAdvanced mode="range" {inverseLookupState} />
-            {#if entityState.isComplete && energyRangeLabel}
+            {#if es.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
+                ({es.selectedProgram.id === -1
+                  ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+                  : es.selectedProgram.name},
+                {es.selectedParticle?.name ?? ""})
               </p>
             {/if}
-          </div>
+          {/if}
         </div>
       {/if}
 
-      <!-- Inverse STP tab content -->
-      {#if isAdvancedMode.value && inverseLookupState && inverseLookupState.activeTab === "stp"}
+      <!-- STP lookup tab content -->
+      {#if inverseLookupState && isAdvancedMode.value && inverseLookupState.activeTab === "stp"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
-          <div class="space-y-4">
-            <div class="text-sm text-muted-foreground">
-              Enter a stopping power value to find the corresponding energies (high-E branch by
-              default; low-E branch reveals when any row has two solutions).
+          {#if es.across !== "single"}
+            <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-800 mb-4">
+              <p class="font-medium text-sm">Not supported</p>
+              <p class="text-sm mt-1">
+                Inverse lookups are currently only supported when calculating for a single particle,
+                material, and program.
+              </p>
             </div>
-            <TableInverseStp
-              {inverseLookupState}
-              onPlotRow={(rowIndex) => {
-                const row = inverseLookupState?.stpRows[rowIndex];
-                if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
-                const pId = entityState?.selectedParticle?.id;
-                const mId = entityState?.selectedMaterial?.id;
-                const progId = entityState?.resolvedProgramId;
-                if (
-                  typeof pId !== "number" ||
-                  typeof mId !== "number" ||
-                  typeof progId !== "number"
-                )
-                  return;
-                goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
-              }}
-            />
-          </div>
+          {:else}
+            <TableInverseStp {inverseLookupState} />
+            {#if es.isComplete && energyRangeLabel}
+              <p class="text-xs text-muted-foreground mt-4">
+                Valid range: {energyRangeLabel}
+                ({es.selectedProgram.id === -1
+                  ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+                  : es.selectedProgram.name},
+                {es.selectedParticle?.name ?? ""})
+              </p>
+            {/if}
+          {/if}
         </div>
       {/if}
-      {#if programLabel}
-        <p class="text-sm text-muted-foreground -mt-2">{programLabel}</p>
-      {/if}
-      {#if entityState.isComplete && energyRangeLabel}
+
+      {#if es.isComplete && energyRangeLabel}
         <p class="text-xs text-muted-foreground">
           Valid range: {energyRangeLabel}
-          ({entityState.selectedProgram.id === -1
-            ? ((entityState.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-            : entityState.selectedProgram.name},
-          {entityState.selectedParticle?.name ?? ""})
+          ({es.selectedProgram.id === -1
+            ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+            : es.selectedProgram.name},
+          {es.selectedParticle?.name ?? ""})
         </p>
       {/if}
-      {#if calcState?.hasLargeInput}
-        <p class="text-sm text-amber-600" role="status">
-          Large input ({calcState.rows.filter((r) => r.status !== "empty").length} values). Calculation
-          may be slow.
+
+      {#if programLabel}
+        <p class="text-xs text-muted-foreground border-t pt-2">
+          {programLabel}
         </p>
       {/if}
     </div>
