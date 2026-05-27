@@ -574,6 +574,87 @@ describe("custom-compounds", () => {
       expect(result.success).toBe(false);
       expect(result.error).toBeDefined();
     });
+
+    test("getById returns the compound for a known ID", () => {
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+      const store = createCustomCompoundsStore();
+
+      const createResult = store.create({
+        name: "Test",
+        density: 1.0,
+        elements: [{ atomicNumber: 1, atomCount: 1 }],
+        phase: "condensed",
+      });
+
+      expect(createResult.success).toBe(true);
+      if (createResult.success) {
+        const found = store.getById(createResult.compound.id);
+        expect(found).toBeDefined();
+        expect(found?.id).toBe(createResult.compound.id);
+      }
+    });
+
+    test("getById returns undefined for an unknown ID", () => {
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+      const store = createCustomCompoundsStore();
+
+      expect(store.getById("unknown_id")).toBeUndefined();
+    });
+
+    test("compounds getter returns equal contents but a new array per read when unchanged", () => {
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+      const store = createCustomCompoundsStore();
+
+      const firstRead = store.compounds;
+      const secondRead = store.compounds;
+      expect(secondRead).toEqual(firstRead);
+      expect(secondRead).not.toBe(firstRead);
+    });
+
+    test("compounds getter reflects inserts and deletes reactively", () => {
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+      const store = createCustomCompoundsStore();
+
+      const initialCount = store.compounds.length;
+
+      const createResult = store.create({
+        name: "ReactTest",
+        density: 1.0,
+        elements: [{ atomicNumber: 1, atomCount: 1 }],
+        phase: "condensed",
+      });
+
+      expect(store.compounds.length).toBe(initialCount + 1);
+
+      if (createResult.success) {
+        store.delete(createResult.compound.id);
+        expect(store.compounds.length).toBe(initialCount);
+      }
+    });
+
+    test("Rehydrates from localStorage on store creation", () => {
+      const mockData = {
+        schemaVersion: 1,
+        compounds: [
+          {
+            id: "cc_rehydrate",
+            name: "Rehydrated",
+            normalizedName: "rehydrated",
+            elements: [{ atomicNumber: 1, atomCount: 1 }],
+            density: 1.0,
+            phase: "condensed",
+            createdAt: "2026-01-01T00:00:00Z",
+            updatedAt: "2026-01-01T00:00:00Z",
+          },
+        ],
+      };
+      localStorageMock.setItem("customCompounds", JSON.stringify(mockData));
+      Object.defineProperty(global, "localStorage", { value: localStorageMock });
+
+      const store = createCustomCompoundsStore();
+      expect(store.compounds.length).toBe(1);
+      expect(store.compounds[0]!.name).toBe("Rehydrated");
+    });
   });
 
   describe("toCustomCompoundInput", () => {
