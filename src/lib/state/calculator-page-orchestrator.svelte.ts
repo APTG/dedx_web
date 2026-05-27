@@ -432,8 +432,7 @@ export class CalculatorPageOrchestrator {
       }
 
       for (const id of desired) {
-        if (!current.includes(id as EntityId))
-          this.multiProgState.addProgram(id as EntityId);
+        if (!current.includes(id as EntityId)) this.multiProgState.addProgram(id as EntityId);
       }
     });
 

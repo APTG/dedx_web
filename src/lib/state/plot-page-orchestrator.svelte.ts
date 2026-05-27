@@ -178,9 +178,7 @@ export class PlotPageOrchestrator {
     $effect(() => {
       if (this.editingSeriesId === null || !this.plotState.preview) return;
       const p = this.plotState.preview;
-      const current = this.plotState.series.find(
-        (s) => s.seriesId === this.editingSeriesId,
-      );
+      const current = this.plotState.series.find((s) => s.seriesId === this.editingSeriesId);
       if (
         current &&
         current.programId === p.programId &&
