@@ -571,11 +571,13 @@ describe("EntitySelectionComboboxes", () => {
       await user.click(particleCombobox);
 
       const particleListbox = screen.getByRole("listbox", { name: "Particle options" });
-      expect(within(particleListbox).queryByRole("group", { name: /^External$/i })).not.toBeInTheDocument();
+      expect(
+        within(particleListbox).queryByRole("group", { name: /^External$/i }),
+      ).not.toBeInTheDocument();
 
       const particleOptions = within(particleListbox).getAllByRole("option");
-      const optionTexts = particleOptions.map((option) =>
-        option.textContent?.replace(/\s+/g, " ").trim() ?? "",
+      const optionTexts = particleOptions.map(
+        (option) => option.textContent?.replace(/\s+/g, " ").trim() ?? "",
       );
       const antiprotonIndex = optionTexts.findIndex((text) => /antiproton/i.test(text));
       const protonIndex = optionTexts.findIndex((text) => /^proton\b/i.test(text));
