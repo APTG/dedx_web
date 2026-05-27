@@ -26,6 +26,7 @@ function readSource(relativePath: string): string {
 const CALCULATOR_PAGE = "src/routes/calculator/+page.svelte";
 const CALCULATOR_ORCHESTRATOR = "src/lib/state/calculator-page-orchestrator.svelte.ts";
 const PLOT_PAGE = "src/routes/plot/+page.svelte";
+const PLOT_ORCHESTRATOR = "src/lib/state/plot-page-orchestrator.svelte.ts";
 
 describe("Page-init contract — initAdvancedModeFromUrl", () => {
   it("calculator orchestrator calls initAdvancedModeFromUrl", () => {
@@ -33,8 +34,8 @@ describe("Page-init contract — initAdvancedModeFromUrl", () => {
     expect(source).toContain("initAdvancedModeFromUrl");
   });
 
-  it("plot/+page.svelte calls initAdvancedModeFromUrl", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator calls initAdvancedModeFromUrl", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     expect(source).toContain("initAdvancedModeFromUrl");
   });
 });
@@ -62,8 +63,8 @@ describe("Page-init contract — reactive dep snapshot pattern", () => {
     expect(hasAdvOptsKey || hasAdvOptsSnapshot).toBe(true);
   });
 
-  it("plot/+page.svelte uses advOptsKey or equivalent snapshot pattern", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator uses advOptsKey or equivalent snapshot pattern", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     const hasAdvOptsKey = source.includes("advOptsKey");
     const hasAdvOptsSnapshot =
       source.includes("advancedOptions.value") && source.includes("$derived");
@@ -95,8 +96,8 @@ describe("Page-init contract — urlv negotiation", () => {
     expect(source).toContain("negotiateVersion");
   });
 
-  it("plot page source contains negotiateVersion call", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator source contains negotiateVersion call", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     expect(source).toContain("negotiateVersion");
   });
 });

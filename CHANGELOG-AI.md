@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Refactoring**: Decompose `src/routes/plot/+page.svelte` (809 → 415 lines) by extracting calculation and orchestration logic into `PlotPageOrchestrator` (#627). (Antigravity via opencode)
+  - **Log:** [log](docs/ai-logs/2026-05-27-issue-627.md)
+
 - 2026-05-27 — **Refactoring**: Extract duplicated utilities — `slug()` to `src/lib/export/utils.ts`, `asBuiltinMaterial`/`asBuiltinParticle` to `src/lib/utils/entity-type-guards.ts`, `validateEntityArray()` helper inside `validation.ts` (#626). (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-27-issue-626-extract-duplicate-utilities.md)
 
