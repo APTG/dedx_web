@@ -432,7 +432,13 @@ See the "Adaptive Picker Kit" section for full details.
 External-only particles use the `🔗 <name>` prefix and sort into the flat
 list by Z; they do NOT form an "External" group.
 
-Search supports name, symbol, alias, bare Z, and `z=N` operator syntax.
+Search supports name, symbol, alias, bare Z, and advanced operator syntax:
+
+| Syntax         | Meaning                                 |
+| -------------- | --------------------------------------- |
+| `z=N`          | Exact atomic-number match               |
+| `z>N` / `z>=N` | Atomic number greater than / at least N |
+| `z<N` / `z<=N` | Atomic number less than / at most N     |
 
 ### Material tab
 
@@ -452,6 +458,17 @@ Custom sub-tab (Advanced only): lists user-defined compounds with per-row
 edit action and a clearly visible `+ New custom material` pill button that
 opens the Custom Compound Editor modal.
 
+Search supports name, ID, and advanced density operator syntax:
+
+| Syntax         | Meaning                                          |
+| -------------- | ------------------------------------------------ |
+| `ρ>N` / `ρ>=N` | Density greater than / at least N g/cm³          |
+| `ρ<N` / `ρ<=N` | Density less than / at most N g/cm³              |
+| `ρ=N`          | Density approximately equal to N g/cm³ (±0.0001) |
+| `rho>N` (etc.) | ASCII alias for `ρ` — same operators apply       |
+
+External-only materials without a declared density are excluded by any `ρ` operator.
+
 ### Program tab
 
 No section headers — each row carries its own inline tag:
@@ -464,6 +481,17 @@ No section headers — each row carries its own inline tag:
 
 Tags render as small pill badges at the right of each row. A legend strip
 below the list seeds the mapping for first-time users.
+
+Search supports name, version substring, and advanced operator syntax:
+
+| Syntax                 | Meaning                                              |
+| ---------------------- | ---------------------------------------------------- |
+| `tag=fn`               | Show only analytical-model programs (FN badge)       |
+| `tag=tab` / `tag=data` | Show only tabulated-data programs (TAB/DATA badge)   |
+| `tag=ext`              | Show only external programs (EXT badge)              |
+| `v=<string>`           | Show only programs whose version contains `<string>` |
+
+Tag matching is case-insensitive. `tag=data` is an alias for `tag=tab`.
 
 Auto-select hero card sits at the top of the list, larger and visually
 prominent, showing the resolved program (`✦ Auto-select → ICRU 49 [DATA]`).
@@ -524,7 +552,7 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 - [ ] Electron (id 1001) does not appear in any list, periodic-grid,
       or search result.
 - [ ] Advanced mode renders the periodic-grid scan view.
-- [ ] Filter syntax `z=N` and `z>=N` work in Advanced.
+- [x] Filter syntax `z=N`, `z>N`, `z>=N`, `z<N`, `z<=N` work (#609).
 
 #### Material
 
@@ -533,11 +561,13 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 - [ ] Density is rendered next to material name as `(ρ=... g/cm³)`.
 - [ ] Advanced reveals Custom column; Basic hides it.
 - [ ] `+ Add compound` and `edit` action open the modal editor.
+- [x] Density operators `ρ>N`, `ρ>=N`, `ρ<N`, `ρ<=N`, `ρ=N` (and ASCII `rho`) work (#609).
 
 #### Program
 
 - [ ] No "Tabulated / Analytical / External" section headers.
 - [ ] Each row shows a DATA / FN / EXT tag with hover tooltip.
+- [x] Search operators `tag=fn`, `tag=tab`, `tag=data`, `tag=ext`, `v=<string>` work (#609).
 - [ ] Auto-select row is visually prominent and shows resolved program.
 - [ ] Advanced mode renders the multi-program checkbox list + SELECTED
       group with drag-handle reorder.

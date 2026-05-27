@@ -27,9 +27,26 @@
 
   let { selectionState, onSelect, query = "", showAdvancedToolbar = false }: Props = $props();
 
-  function matches(p: { name: string; version?: string | undefined }, q: string): boolean {
+  /**
+   * Match the query against a program.
+   * Supports plain substring + metadata operators (advanced syntax):
+   *   tag=FN | tag=TAB | tag=DATA | tag=EXT   filter by program kind badge
+   *   v=<string>                                filter by version substring
+   */
+  function matches(
+    p: { id: number | string; name: string; version?: string | undefined },
+    q: string,
+  ): boolean {
     const trimmed = q.trim().toLowerCase();
     if (!trimmed) return true;
+    const tagOp = trimmed.match(/^tag\s*=\s*(\w+)$/);
+    if (tagOp) {
+      const t = tagOp[1] ?? "";
+      const kind = programKind(p.id).toLowerCase();
+      return t === kind || (t === "data" && kind === "tab");
+    }
+    const vOp = trimmed.match(/^v\s*=\s*(\S+)$/);
+    if (vOp) return (p.version ?? "").toLowerCase().includes(vOp[1] ?? "");
     return (
       p.name.toLowerCase().includes(trimmed) || (p.version ?? "").toLowerCase().includes(trimmed)
     );

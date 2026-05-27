@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-26 — **Stage 5 — entity-selection**: Advanced search operators for picker tabs (#609): `z>N`/`z>=N`/`z<N`/`z<=N` for particles, `ρ>N`/`ρ>=N`/`ρ<N`/`ρ<=N`/`ρ=N` (+ `rho` alias) for materials, `tag=fn`/`tag=tab`/`tag=data`/`tag=ext`/`v=<string>` for programs. 13 new unit tests. Spec updated. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-26-issue-609-advanced-search-syntax.md)
+
 - 2026-05-26 — **Stage 5 — entity-selection**: Decompose `particle-tab.svelte` into focused `particle-list-view` and `particle-grid-view` sub-components (#615) (Claude Opus 4.7 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-26-issue-615-particle-tab-decompose.md)
 
