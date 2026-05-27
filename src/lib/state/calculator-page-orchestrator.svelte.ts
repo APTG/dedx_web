@@ -73,24 +73,24 @@ export class CalculatorPageOrchestrator {
   }
 
   setupEffects() {
-    const orchestrator = this;
+    // Removed this alias
 
     // 1. Initial version negotiation & advanced mode check
     $effect(() => {
-      if (wasmReady.value && !orchestrator.advancedModeInitializedFromUrl) {
+      if (wasmReady.value && !this.advancedModeInitializedFromUrl) {
         initAdvancedModeFromUrl(page.url.searchParams);
-        orchestrator.advancedModeInitializedFromUrl = true;
+        this.advancedModeInitializedFromUrl = true;
       }
 
-      if (!orchestrator.urlVersionChecked) {
+      if (!this.urlVersionChecked) {
         const urlvRaw = page.url.searchParams.get("urlv");
         const negotiationResult = negotiateVersion(urlvRaw);
         if (negotiationResult.status === "mismatch") {
-          orchestrator.urlVersionMismatch = { version: negotiationResult.version };
+          this.urlVersionMismatch = { version: negotiationResult.version };
         } else {
-          orchestrator.urlVersionMismatch = null;
+          this.urlVersionMismatch = null;
         }
-        orchestrator.urlVersionChecked = true;
+        this.urlVersionChecked = true;
       }
 
       if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
@@ -100,17 +100,17 @@ export class CalculatorPageOrchestrator {
 
     // 2. Setup state from URL once appInit is ready
     $effect(() => {
-      if (appInit.entityState && appInit.service && !orchestrator.calcState) {
+      if (appInit.entityState && appInit.service && !this.calcState) {
         const currentSearchParams = page.url.searchParams;
         const urlState = decodeCalculatorUrl(currentSearchParams);
         const hasEnergies = currentSearchParams.has("energies");
 
-        orchestrator.calcState = createCalculatorState(
+        this.calcState = createCalculatorState(
           appInit.entityState,
           appInit.service,
           externalDataService,
         );
-        orchestrator.inverseLookupState = createInverseLookupState(appInit.entityState);
+        this.inverseLookupState = createInverseLookupState(appInit.entityState);
 
         loadAdvancedOptionsFromStorage();
 
@@ -120,7 +120,7 @@ export class CalculatorPageOrchestrator {
         }
 
         if (urlState.particleId !== null) appInit.entityState.selectParticle(urlState.particleId);
-        const customFromUrl = orchestrator.restoreCustomCompoundFromUrl(urlState);
+        const customFromUrl = this.restoreCustomCompoundFromUrl(urlState);
         if (customFromUrl) {
           appInit.entityState.selectMaterial(customFromUrl.id);
         } else if (urlState.materialId !== null) {
@@ -148,45 +148,45 @@ export class CalculatorPageOrchestrator {
           }
         }
 
-        orchestrator.calcState.setMasterUnit(urlState.masterUnit);
+        this.calcState.setMasterUnit(urlState.masterUnit);
 
         if (hasEnergies) {
           urlState.rows.forEach((r, i) => {
             const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
             if (i === 0) {
-              orchestrator.calcState!.updateRowText(0, text);
+              this.calcState!.updateRowText(0, text);
             } else {
-              orchestrator.calcState!.addRow();
-              orchestrator.calcState!.updateRowText(i, text);
+              this.calcState!.addRow();
+              this.calcState!.updateRowText(i, text);
             }
           });
         }
 
         const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
         if (inverseMode && isAdvancedMode.value) {
-          orchestrator.inverseLookupState!.setActiveTab(inverseMode.imode);
+          this.inverseLookupState!.setActiveTab(inverseMode.imode);
           if (inverseMode.lookups && inverseMode.lookups.length > 0) {
-            orchestrator.inverseLookupState!.rangeRows.length = 0;
-            orchestrator.inverseLookupState!.stpRows.length = 0;
+            this.inverseLookupState!.rangeRows.length = 0;
+            this.inverseLookupState!.stpRows.length = 0;
 
             for (let i = 0; i < inverseMode.lookups.length; i++) {
               const ival = inverseMode.lookups[i]!;
               const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
               if (inverseMode.imode === "csda") {
                 if (i === 0) {
-                  orchestrator.inverseLookupState!.addRangeRow();
-                  orchestrator.inverseLookupState!.updateRangeRowText(0, text);
+                  this.inverseLookupState!.addRangeRow();
+                  this.inverseLookupState!.updateRangeRowText(0, text);
                 } else {
-                  orchestrator.inverseLookupState!.addRangeRow();
-                  orchestrator.inverseLookupState!.updateRangeRowText(i, text);
+                  this.inverseLookupState!.addRangeRow();
+                  this.inverseLookupState!.updateRangeRowText(i, text);
                 }
               } else if (inverseMode.imode === "stp") {
                 if (i === 0) {
-                  orchestrator.inverseLookupState!.addStpRow();
-                  orchestrator.inverseLookupState!.updateStpRowText(0, text);
+                  this.inverseLookupState!.addStpRow();
+                  this.inverseLookupState!.updateStpRowText(0, text);
                 } else {
-                  orchestrator.inverseLookupState!.addStpRow();
-                  orchestrator.inverseLookupState!.updateStpRowText(i, text);
+                  this.inverseLookupState!.addStpRow();
+                  this.inverseLookupState!.updateStpRowText(i, text);
                 }
               }
             }
@@ -194,21 +194,21 @@ export class CalculatorPageOrchestrator {
           if (inverseMode.imode === "csda" && inverseMode.iunit) {
             const validRangeUnits = ["nm", "um", "mm", "cm", "m"] as const;
             if (validRangeUnits.includes(inverseMode.iunit as any)) {
-              orchestrator.inverseLookupState!.setRangeMasterUnit(inverseMode.iunit as any);
+              this.inverseLookupState!.setRangeMasterUnit(inverseMode.iunit as any);
             }
           }
           if (inverseMode.imode === "stp" && inverseMode.iunit) {
             const validStpUnits = ["kev-um", "mev-cm", "mev-cm2-g"] as const;
             if (validStpUnits.includes(inverseMode.iunit as any)) {
-              orchestrator.inverseLookupState!.setStpMasterUnit(inverseMode.iunit as any);
+              this.inverseLookupState!.setStpMasterUnit(inverseMode.iunit as any);
             }
           }
           if (inverseMode.imode === "stp" && urlState.istpBranchState) {
-            orchestrator.inverseLookupState!.setStpBranchState(urlState.istpBranchState);
+            this.inverseLookupState!.setStpBranchState(urlState.istpBranchState);
           }
         }
 
-        orchestrator.urlInitialized = true;
+        this.urlInitialized = true;
       }
     });
 
@@ -244,72 +244,72 @@ export class CalculatorPageOrchestrator {
     $effect(() => {
       const _advOptsKey = advOptsKey;
       void _advOptsKey;
-      if (orchestrator.urlVersionMismatch !== null) return;
-      if (!orchestrator.calcState || !appInit.entityState?.isComplete) return;
+      if (this.urlVersionMismatch !== null) return;
+      if (!this.calcState || !appInit.entityState?.isComplete) return;
       const isMultiProgramCompare =
         isAdvancedMode.value &&
         appInit.entityState.across === "program" &&
-        (orchestrator.multiProgState?.selectedProgramIds.length ?? 0) > 1;
+        (this.multiProgState?.selectedProgramIds.length ?? 0) > 1;
       const isMultiEntityCompare =
         isAdvancedMode.value &&
         (appInit.entityState.across === "material" || appInit.entityState.across === "particle");
       if (isMultiProgramCompare || isMultiEntityCompare) return;
-      orchestrator.calcState.triggerCalculation();
+      this.calcState.triggerCalculation();
     });
 
     // Delegated state synchronizations
     setupCalculatorUrlSync(
-      () => orchestrator.calcState,
+      () => this.calcState,
       () => appInit.entityState,
-      () => orchestrator.inverseLookupState,
-      () => orchestrator.multiProgState,
-      () => orchestrator.urlInitialized,
+      () => this.inverseLookupState,
+      () => this.multiProgState,
+      () => this.urlInitialized,
       () => appInit.loadedExternalSources,
       () => advOptsKey,
     );
 
     setupMultiProgramCalculation(
-      () => orchestrator.calcState,
+      () => this.calcState,
       () => appInit.entityState,
-      () => orchestrator.multiProgState,
-      () => orchestrator.urlVersionMismatch,
+      () => this.multiProgState,
+      () => this.urlVersionMismatch,
       () => advOptsKey,
     );
 
     setupMultiEntityCalculation(
-      () => orchestrator.calcState,
+      () => this.calcState,
       () => appInit.entityState,
-      () => orchestrator.multiEntityState,
-      () => orchestrator.urlVersionMismatch,
+      () => this.multiEntityState,
+      () => this.urlVersionMismatch,
       () => advOptsKey,
     );
 
     setupInverseRangeCalculation(
-      () => orchestrator.calcState,
+      () => this.calcState,
       () => appInit.entityState,
-      () => orchestrator.inverseLookupState,
-      () => orchestrator.urlVersionMismatch,
+      () => this.inverseLookupState,
+      () => this.urlVersionMismatch,
       () => advOptsKey,
     );
 
     setupInverseStpCalculation(
-      () => orchestrator.calcState,
+      () => this.calcState,
       () => appInit.entityState,
-      () => orchestrator.inverseLookupState,
-      () => orchestrator.urlVersionMismatch,
+      () => this.inverseLookupState,
+      () => this.urlVersionMismatch,
       () => advOptsKey,
     );
 
     // Energy range label
     $effect(() => {
-      if (orchestrator.calcState && appInit.entityState?.isComplete) {
+      if (this.calcState && appInit.entityState?.isComplete) {
         const programId = appInit.entityState.resolvedProgramId;
         const particleId = appInit.entityState.selectedParticle?.id;
         if (programId !== null && particleId !== null) {
           if (typeof programId === "string") {
             const parsedProgram = parseExtRef(programId);
             if (!parsedProgram) {
-              orchestrator.energyRangeLabel = "";
+              this.energyRangeLabel = "";
               return;
             }
             const { label } = parsedProgram;
@@ -318,9 +318,9 @@ export class CalculatorPageOrchestrator {
               const grid = meta.energyGrid;
               const minE = grid[0] ?? 0;
               const maxE = grid[grid.length - 1] ?? 0;
-              orchestrator.energyRangeLabel = `${minE.toLocaleString()} – ${maxE.toLocaleString()} ${meta.energyUnit} (external)`;
+              this.energyRangeLabel = `${minE.toLocaleString()} – ${maxE.toLocaleString()} ${meta.energyUnit} (external)`;
             } else {
-              orchestrator.energyRangeLabel = "";
+              this.energyRangeLabel = "";
             }
             return;
           }
@@ -337,7 +337,7 @@ export class CalculatorPageOrchestrator {
             }
             const min = service.getMinEnergy(programId as number, particleId as number);
             const max = service.getMaxEnergy(programId as number, particleId as number);
-            orchestrator.energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
+            this.energyRangeLabel = `${min.toLocaleString()} – ${max.toLocaleString()} MeV/nucl`;
           });
           return () => {
             cancelled = true;
@@ -350,17 +350,17 @@ export class CalculatorPageOrchestrator {
     $effect(() => {
       if (
         !isAdvancedMode.value &&
-        orchestrator.inverseLookupState &&
-        orchestrator.inverseLookupState.activeTab !== "forward"
+        this.inverseLookupState &&
+        this.inverseLookupState.activeTab !== "forward"
       ) {
-        orchestrator.inverseLookupState.setActiveTab("forward");
+        this.inverseLookupState.setActiveTab("forward");
       }
     });
 
     // Multi-program state sync
     $effect(() => {
-      if (!isAdvancedMode.value || !appInit.entityState || !orchestrator.calcState) {
-        orchestrator.multiProgState = null;
+      if (!isAdvancedMode.value || !appInit.entityState || !this.calcState) {
+        this.multiProgState = null;
         return;
       }
 
@@ -408,32 +408,32 @@ export class CalculatorPageOrchestrator {
         }
       }
 
-      orchestrator.multiProgState = newState;
+      this.multiProgState = newState;
 
       untrack(() => {
         appInit.entityState!.setMultiProgram(newState.selectedProgramIds as (number | string)[]);
       });
 
       return () => {
-        orchestrator.multiProgState = null;
+        this.multiProgState = null;
       };
     });
 
     $effect(() => {
-      if (!orchestrator.multiProgState || !appInit.entityState) return;
+      if (!this.multiProgState || !appInit.entityState) return;
 
       const desired = appInit.entityState.multiSelected.program;
       if (desired.length === 0) return;
 
-      const current = orchestrator.multiProgState.selectedProgramIds;
+      const current = this.multiProgState.selectedProgramIds;
 
       for (const id of [...current]) {
-        if (!desired.includes(id)) orchestrator.multiProgState.removeProgram(id as EntityId);
+        if (!desired.includes(id)) this.multiProgState.removeProgram(id as EntityId);
       }
 
       for (const id of desired) {
         if (!current.includes(id as EntityId))
-          orchestrator.multiProgState.addProgram(id as EntityId);
+          this.multiProgState.addProgram(id as EntityId);
       }
     });
 
@@ -444,18 +444,18 @@ export class CalculatorPageOrchestrator {
     });
 
     $effect(() => {
-      if (!orchestrator.multiProgState || !appInit.entityState) return;
+      if (!this.multiProgState || !appInit.entityState) return;
 
       const resolvedId = appInit.entityState.resolvedProgramId;
       if (resolvedId === null || resolvedId === -1) return;
       const defaultProgramId = resolvedId as EntityId;
 
-      const currentDefault = orchestrator.multiProgState.selectedProgramIds[0];
+      const currentDefault = this.multiProgState.selectedProgramIds[0];
       if (currentDefault !== defaultProgramId) {
-        if (!orchestrator.multiProgState.selectedProgramIds.includes(defaultProgramId)) {
-          orchestrator.multiProgState.addProgram(defaultProgramId);
+        if (!this.multiProgState.selectedProgramIds.includes(defaultProgramId)) {
+          this.multiProgState.addProgram(defaultProgramId);
         }
-        orchestrator.multiProgState.setDefaultProgram(defaultProgramId);
+        this.multiProgState.setDefaultProgram(defaultProgramId);
       }
     });
 
@@ -467,7 +467,7 @@ export class CalculatorPageOrchestrator {
         !appInit.entityState ||
         (across !== "material" && across !== "particle")
       ) {
-        orchestrator.multiEntityState = null;
+        this.multiEntityState = null;
         return;
       }
 
@@ -482,10 +482,10 @@ export class CalculatorPageOrchestrator {
         const p = appInit.entityState?.allParticles.find((x) => x.id === id);
         return p?.name ?? String(id);
       });
-      orchestrator.multiEntityState = state;
+      this.multiEntityState = state;
 
       return () => {
-        orchestrator.multiEntityState = null;
+        this.multiEntityState = null;
       };
     });
   }

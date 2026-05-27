@@ -43,7 +43,7 @@ export class PlotPageOrchestrator {
   }
 
   setupEffects() {
-    const orchestrator = this;
+    // Removed this alias
 
     $effect(() => {
       if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
@@ -57,9 +57,9 @@ export class PlotPageOrchestrator {
     });
 
     $effect(() => {
-      if (wasmReady.value && !orchestrator.advancedModeInitializedFromUrl) {
+      if (wasmReady.value && !this.advancedModeInitializedFromUrl) {
         initAdvancedModeFromUrl(page.url.searchParams);
-        orchestrator.advancedModeInitializedFromUrl = true;
+        this.advancedModeInitializedFromUrl = true;
       }
     });
 
@@ -72,9 +72,9 @@ export class PlotPageOrchestrator {
         }
       }
       if (!mode) {
-        for (const series of [...orchestrator.plotState.series]) {
+        for (const series of [...this.plotState.series]) {
           if (typeof series.materialId === "string" && series.materialId.startsWith("cc_")) {
-            orchestrator.plotState.removeSeries(series.seriesId);
+            this.plotState.removeSeries(series.seriesId);
           }
         }
       }
@@ -82,7 +82,7 @@ export class PlotPageOrchestrator {
 
     $effect(() => {
       if (!appInit.entityState?.selectedMaterial) {
-        orchestrator.materialIsGas = undefined;
+        this.materialIsGas = undefined;
         return;
       }
       const resolvedId = appInit.entityState.resolvedProgramId;
@@ -90,11 +90,11 @@ export class PlotPageOrchestrator {
       const builtinMat = "isGasByDefault" in selMat ? selMat : null;
       const matId = selMat.id;
       if (isCustomMaterial(builtinMat)) {
-        orchestrator.materialIsGas = builtinMat.isGasByDefault;
+        this.materialIsGas = builtinMat.isGasByDefault;
         return;
       }
       if (resolvedId === null || typeof resolvedId !== "number") {
-        orchestrator.materialIsGas = undefined;
+        this.materialIsGas = undefined;
         return;
       }
       let cancelled = false;
@@ -104,7 +104,7 @@ export class PlotPageOrchestrator {
         const materials = service.getMaterials(numericResolvedId);
         const mat = materials.find((m) => m.id === matId);
         if (cancelled) return;
-        orchestrator.materialIsGas = mat?.isGasByDefault;
+        this.materialIsGas = mat?.isGasByDefault;
       });
       return () => {
         cancelled = true;
@@ -130,56 +130,56 @@ export class PlotPageOrchestrator {
     });
 
     $effect(() => {
-      if (!browser || orchestrator.urlVersionChecked) return;
+      if (!browser || this.urlVersionChecked) return;
       const params = new URLSearchParams(window.location.search);
       const urlvRaw = params.get("urlv");
       const negotiationResult = negotiateVersion(urlvRaw);
       if (negotiationResult.status === "mismatch") {
-        orchestrator.urlVersionMismatch = { version: negotiationResult.version };
+        this.urlVersionMismatch = { version: negotiationResult.version };
       } else {
-        orchestrator.urlVersionMismatch = null;
+        this.urlVersionMismatch = null;
       }
-      orchestrator.urlVersionChecked = true;
+      this.urlVersionChecked = true;
     });
 
     setupPlotUrlRestore(
-      () => orchestrator.plotState,
+      () => this.plotState,
       () => appInit.entityState,
-      () => orchestrator.urlInitialized,
+      () => this.urlInitialized,
       () => {
-        orchestrator.urlInitialized = true;
+        this.urlInitialized = true;
       },
     );
 
     setupPlotUrlSync(
-      () => orchestrator.plotState,
+      () => this.plotState,
       () => appInit.entityState,
-      () => orchestrator.urlInitialized,
+      () => this.urlInitialized,
       () => appInit.loadedExternalSources,
       () => advOptsKey,
     );
 
     setupPlotPreviewCalculation(
-      () => orchestrator.plotState,
+      () => this.plotState,
       () => appInit.entityState,
-      () => orchestrator.urlVersionMismatch,
+      () => this.urlVersionMismatch,
       () => advOptsKey,
       (msg) => {
-        orchestrator.previewError = msg;
+        this.previewError = msg;
       },
     );
 
     $effect(() => {
-      if (!browser || orchestrator.jsrootSwatchColors) return;
-      getJsrootSwatchColors().then((m) => (orchestrator.jsrootSwatchColors = m));
+      if (!browser || this.jsrootSwatchColors) return;
+      getJsrootSwatchColors().then((m) => (this.jsrootSwatchColors = m));
     });
 
     // Live-update editing series
     $effect(() => {
-      if (orchestrator.editingSeriesId === null || !orchestrator.plotState.preview) return;
-      const p = orchestrator.plotState.preview;
-      const current = orchestrator.plotState.series.find(
-        (s) => s.seriesId === orchestrator.editingSeriesId,
+      if (this.editingSeriesId === null || !this.plotState.preview) return;
+      const p = this.plotState.preview;
+      const current = this.plotState.series.find(
+        (s) => s.seriesId === this.editingSeriesId,
       );
       if (
         current &&
@@ -195,7 +195,7 @@ export class PlotPageOrchestrator {
       ) {
         return;
       }
-      orchestrator.plotState.updateSeries(orchestrator.editingSeriesId, {
+      this.plotState.updateSeries(this.editingSeriesId, {
         programId: p.programId,
         particleId: p.particleId,
         materialId: p.materialId,
