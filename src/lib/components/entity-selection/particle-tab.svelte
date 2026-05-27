@@ -97,8 +97,20 @@
   }
 
   $effect(() => {
-    const firstAvailable = filteredFlat.find(isAvailable);
-    highlightedId = firstAvailable?.id ?? null;
+    // Prefer the currently selected (or multi-anchor) particle as the
+    // keyboard-navigation starting point so opening the list doesn't move
+    // the focus highlight away from the active selection. Fall back to the
+    // first available particle only when the preferred one has been filtered
+    // out by the search query.
+    const available = filteredFlat.filter(isAvailable);
+    if (available.length === 0) {
+      highlightedId = null;
+      return;
+    }
+    const preferredId = isMultiMode ? (multiIds[0] ?? null) : (selected?.id ?? null);
+    const preferred =
+      preferredId !== null ? available.find((p) => p.id === preferredId) : undefined;
+    highlightedId = (preferred ?? available[0]!).id;
   });
 
   function handleArrow(direction: "up" | "down") {
