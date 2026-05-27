@@ -367,7 +367,23 @@
               </p>
             </div>
           {:else}
-            <TableInverseStp {inverseLookupState} />
+            <TableInverseStp
+              {inverseLookupState}
+              onPlotRow={(rowIndex) => {
+                const row = inverseLookupState?.stpRows[rowIndex];
+                if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
+                const pId = es.selectedParticle?.id;
+                const mId = es.selectedMaterial?.id;
+                const progId = es.resolvedProgramId;
+                if (
+                  typeof pId !== "number" ||
+                  typeof mId !== "number" ||
+                  typeof progId !== "number"
+                )
+                  return;
+                goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
+              }}
+            />
             {#if es.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}
