@@ -117,7 +117,6 @@
   );
 
   // ── Particle list ─────────────────────────────────────────────────────────
-  const NAMED_IDS = new Set([1, 2]);
   const ELECTRON_ID_VAL = ELECTRON_ID;
 
   const allBuiltinParticles = $derived(
@@ -125,14 +124,9 @@
   );
 
   const flatParticles = $derived.by<Particle[]>(() => {
-    const named = allBuiltinParticles
-      .filter((p) => NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const ions = allBuiltinParticles
-      .filter((p) => !NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const ext = [...selectionState.externalOnlyParticles].sort((a, b) => a.Z - b.Z);
-    return [...named, ...ions, ...ext] as Particle[];
+    return [...allBuiltinParticles, ...selectionState.externalOnlyParticles].sort(
+      (a, b) => particleZ(a) - particleZ(b),
+    ) as Particle[];
   });
 
   function particleSearchText(p: Particle): string {
@@ -156,10 +150,6 @@
 
   function isParticleExternal(p: Particle): p is ExternalOnlyParticle {
     return typeof p.id === "string";
-  }
-
-  function isNamed(p: Particle): boolean {
-    return !isParticleExternal(p) && NAMED_IDS.has(p.id as number);
   }
 
   function particleZ(p: Particle): number {
@@ -331,7 +321,6 @@
       <ul role="listbox" aria-label="Particle results" class="space-y-0.5" tabindex="0">
         {#each filteredParticles as p (p.id)}
           {@const available = isParticleAvailable(p)}
-          {@const named = isNamed(p)}
           {@const external = isParticleExternal(p)}
           {@const z = particleZ(p)}
           {@const isSingleSelected = selectionState.selectedParticle?.id === p.id}
@@ -349,7 +338,6 @@
                 available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
                 isSingleSelected &&
                   "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
-                !isSingleSelected && named && "font-semibold",
               )}
               onclick={() => {
                 if (!available) return;
@@ -364,7 +352,6 @@
                   : ''}">{isSingleSelected ? "✓" : ""}</span
               >
               {#if external}<span aria-hidden="true">🔗</span>{/if}
-              {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
               <span class="flex-1">{getParticleListLabel(p, z)}</span>
             </button>
           </li>

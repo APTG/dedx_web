@@ -508,9 +508,7 @@ describe("EntitySelectionComboboxes", () => {
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
       await user.click(particleCombobox);
 
-      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
-      const protonItem = within(commonGroup).getByRole("option", { name: /proton/i });
-      expect(protonItem).toBeInTheDocument();
+      expect(screen.getAllByRole("option", { name: /proton/i }).length).toBeGreaterThan(0);
     });
 
     test("Helium label is 'alpha particle' (not 'Helium (He)')", async () => {
@@ -520,9 +518,7 @@ describe("EntitySelectionComboboxes", () => {
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
       await user.click(particleCombobox);
 
-      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
-      const alphaItem = within(commonGroup).getByRole("option", { name: /alpha particle/i });
-      expect(alphaItem).toBeInTheDocument();
+      expect(screen.getByRole("option", { name: /alpha particle/i })).toBeInTheDocument();
     });
 
     test("Electron label is 'electron' (not 'Electron')", async () => {
@@ -538,9 +534,7 @@ describe("EntitySelectionComboboxes", () => {
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
       await user.click(particleCombobox);
 
-      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
-      const electronItem = within(commonGroup).getByRole("option", { name: /electron/i });
-      expect(electronItem).toBeInTheDocument();
+      expect(screen.getAllByRole("option", { name: /electron/i }).length).toBeGreaterThan(0);
     });
 
     test("Carbon label is 'Carbon (C)'", async () => {
@@ -551,38 +545,49 @@ describe("EntitySelectionComboboxes", () => {
       expect(particleCombobox).toHaveTextContent("Carbon (C)");
     });
 
-    test("'Common particles' group exists and contains proton, alpha particle, electron", async () => {
-      const electronService = new MockLibdedxServiceWithElectron();
-      const electronMatrix = buildCompatibilityMatrix(electronService as any);
-      const electronState = createEntitySelectionState(electronMatrix);
-
-      const { container } = render(EntitySelectionComboboxes, {
-        props: { selectionState: electronState },
-      });
-      const user = userEvent.setup();
-
-      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
-      await user.click(particleCombobox);
-
-      const commonGroup = screen.getByRole("group", { name: /^Common particles$/i });
-      expect(commonGroup).toBeInTheDocument();
-      expect(within(commonGroup).getByRole("option", { name: /proton/i })).toBeInTheDocument();
-      expect(
-        within(commonGroup).getByRole("option", { name: /alpha particle/i }),
-      ).toBeInTheDocument();
-      expect(within(commonGroup).getByRole("option", { name: /electron/i })).toBeInTheDocument();
-    });
-
-    test("'Ions' group exists and contains 'Carbon (C)'", async () => {
+    test("No 'Common particles' or 'Ions' group headers in particle list", async () => {
       const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
       await user.click(particleCombobox);
 
-      const ionsGroup = screen.getByRole("group", { name: /^Ions$/i });
-      expect(ionsGroup).toBeInTheDocument();
-      expect(within(ionsGroup).getByRole("option", { name: /Carbon \(C\)/i })).toBeInTheDocument();
+      expect(screen.queryByRole("group", { name: /^Common particles$/i })).not.toBeInTheDocument();
+      expect(screen.queryByRole("group", { name: /^Ions$/i })).not.toBeInTheDocument();
+    });
+
+    test("All particles appear in a flat list sorted by Z without external headers", async () => {
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalEntityStore({ includeExternalOnlyParticle: true })],
+          state.allParticles,
+          state.allMaterials,
+        ),
+      );
+      const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
+      const user = userEvent.setup();
+
+      const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
+      await user.click(particleCombobox);
+
+      const particleListbox = screen.getByRole("listbox", { name: "Particle options" });
+      expect(
+        within(particleListbox).queryByRole("group", { name: /^External$/i }),
+      ).not.toBeInTheDocument();
+
+      const particleOptions = within(particleListbox).getAllByRole("option");
+      const optionTexts = particleOptions.map(
+        (option) => option.textContent?.replace(/\s+/g, " ").trim() ?? "",
+      );
+      const antiprotonIndex = optionTexts.findIndex((text) => /antiproton/i.test(text));
+      const protonIndex = optionTexts.findIndex((text) => /^proton\b/i.test(text));
+      const alphaIndex = optionTexts.findIndex((text) => /alpha particle/i.test(text));
+      const carbonIndex = optionTexts.findIndex((text) => /Carbon \(C\)/i.test(text));
+
+      expect(antiprotonIndex).toBeGreaterThanOrEqual(0);
+      expect(protonIndex).toBeGreaterThan(antiprotonIndex);
+      expect(alphaIndex).toBeGreaterThan(protonIndex);
+      expect(carbonIndex).toBeGreaterThan(alphaIndex);
     });
   });
 });

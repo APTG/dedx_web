@@ -3,19 +3,12 @@ import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
 
 export type Particle = ParticleEntity | ExternalOnlyParticle;
 
-export const NAMED_IDS = new Set<number>([1, 2]);
-
 export function isExternal(p: Particle): p is ExternalOnlyParticle {
   return typeof p.id === "string";
 }
 
 export function atomicNumber(p: Particle): number {
   return isExternal(p) ? p.Z : (p.id as number);
-}
-
-/** Named particles (proton/alpha) get bold emphasis per spec default (b). */
-export function isNamed(p: Particle): boolean {
-  return !isExternal(p) && NAMED_IDS.has(p.id as number);
 }
 
 /**

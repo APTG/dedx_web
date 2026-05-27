@@ -1,7 +1,7 @@
 <script lang="ts">
   import { cn } from "$lib/utils.js";
   import { getParticleListLabel } from "$lib/utils/particle-label";
-  import { atomicNumber, isExternal, isNamed, type Particle } from "./particle-tab-helpers";
+  import { atomicNumber, isExternal, type Particle } from "./particle-tab-helpers";
 
   interface Props {
     items: Particle[];
@@ -51,7 +51,6 @@
     {@const isHighlighted = highlightedId === p.id}
     {@const external = isExternal(p)}
     {@const z = atomicNumber(p)}
-    {@const named = isNamed(p)}
     <li role="presentation">
       <button
         type="button"
@@ -66,7 +65,6 @@
           available ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
           isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
           !isChecked && isHighlighted && available && "bg-accent",
-          !isChecked && named && "font-semibold",
         )}
         onclick={() => {
           if (!available) return;
@@ -85,7 +83,6 @@
             : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
         >
         {#if external}<span aria-hidden="true">🔗</span>{/if}
-        {#if named}<span aria-hidden="true" class="mr-0.5">★</span>{/if}
         <span class="flex-1">{getParticleListLabel(p, z)}</span>
       </button>
     </li>

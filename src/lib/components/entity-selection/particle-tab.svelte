@@ -7,7 +7,7 @@
   import ParticleListView from "./particle-list-view.svelte";
   import ParticleGridView from "./particle-grid-view.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
-  import { atomicNumber, isExternal, NAMED_IDS, type Particle } from "./particle-tab-helpers";
+  import { atomicNumber, isExternal, type Particle } from "./particle-tab-helpers";
 
   interface Props {
     selectionState: EntitySelectionState;
@@ -77,14 +77,9 @@
   const allBuiltin = $derived(selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID));
 
   const flatList = $derived.by<Particle[]>(() => {
-    const named = allBuiltin
-      .filter((p) => NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const ions = allBuiltin
-      .filter((p) => !NAMED_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-    const ext = [...selectionState.externalOnlyParticles].sort((a, b) => a.Z - b.Z);
-    return [...named, ...ions, ...ext] as Particle[];
+    return [...allBuiltin, ...selectionState.externalOnlyParticles].sort(
+      (a, b) => atomicNumber(a) - atomicNumber(b),
+    ) as Particle[];
   });
 
   const filteredFlat = $derived(
@@ -102,8 +97,20 @@
   }
 
   $effect(() => {
-    const firstAvailable = filteredFlat.find(isAvailable);
-    highlightedId = firstAvailable?.id ?? null;
+    // Prefer the currently selected (or multi-anchor) particle as the
+    // keyboard-navigation starting point so opening the list doesn't move
+    // the focus highlight away from the active selection. Fall back to the
+    // first available particle only when the preferred one has been filtered
+    // out by the search query.
+    const available = filteredFlat.filter(isAvailable);
+    if (available.length === 0) {
+      highlightedId = null;
+      return;
+    }
+    const preferredId = isMultiMode ? (multiIds[0] ?? null) : (selected?.id ?? null);
+    const preferred =
+      preferredId !== null ? available.find((p) => p.id === preferredId) : undefined;
+    highlightedId = (preferred ?? available[0]!).id;
   });
 
   function handleArrow(direction: "up" | "down") {

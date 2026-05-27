@@ -81,23 +81,27 @@
     }
   }
 
+  function isExternalParticle(particle: ParticleOption): particle is ExternalOnlyParticle {
+    return typeof particle.id === "string";
+  }
+
+  function particleZ(particle: ParticleOption): number {
+    return isExternalParticle(particle) ? particle.Z : (particle.id as number);
+  }
+
   const particleItems = $derived.by(() => {
-    // "Common particles" group: proton (1), alpha (2), electron (1001)
-    // allParticles are always built-in (numeric IDs) — cast is safe.
-    const COMMON_IDS = new Set([1, 2, 1001]);
-    const commonParticles = selectionState.allParticles
-      .filter((p) => COMMON_IDS.has(p.id as number))
-      .sort((a, b) => {
-        // fixed order: proton, alpha particle, electron
-        const ORDER = [1, 2, 1001];
-        return ORDER.indexOf(a.id as number) - ORDER.indexOf(b.id as number);
-      });
+    function toItem(particle: ParticleOption) {
+      if (isExternalParticle(particle)) {
+        return {
+          entity: particle,
+          available: selectionState.availableParticles.some((p) => p.id === particle.id),
+          // Spec §7.1: external-only particles prefixed with 🔗 icon
+          label: `🔗 ${particle.name}`,
+          description: particle.label,
+          searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
+        };
+      }
 
-    const ionParticles = selectionState.allParticles
-      .filter((p) => !COMMON_IDS.has(p.id as number))
-      .sort((a, b) => (a.id as number) - (b.id as number));
-
-    function toItem(particle: ParticleEntity) {
       const isElectron = particle.id === 1001;
       return {
         entity: particle,
@@ -109,25 +113,9 @@
       };
     }
 
-    const externalParticles = selectionState.externalOnlyParticles.map((particle) => ({
-      entity: particle,
-      available: selectionState.availableParticles.some((p) => p.id === particle.id),
-      // Spec §7.1: external-only particles prefixed with 🔗 icon
-      label: `🔗 ${particle.name}`,
-      description: particle.label,
-      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
-    }));
-
-    // Use same section-header pattern as materialItems
-    return [
-      { type: "section" as const, label: "Common particles" },
-      ...commonParticles.map(toItem),
-      { type: "section" as const, label: "Ions" },
-      ...ionParticles.map(toItem),
-      ...(externalParticles.length > 0
-        ? [{ type: "section" as const, label: "External" }, ...externalParticles]
-        : []),
-    ];
+    return [...selectionState.allParticles, ...selectionState.externalOnlyParticles]
+      .sort((a, b) => particleZ(a) - particleZ(b))
+      .map(toItem);
   });
 
   interface MaterialGroup {
