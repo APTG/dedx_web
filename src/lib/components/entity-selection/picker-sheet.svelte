@@ -124,9 +124,9 @@
   );
 
   const flatParticles = $derived.by<Particle[]>(() => {
-    const builtins = [...allBuiltinParticles].sort((a, b) => (a.id as number) - (b.id as number));
-    const ext = [...selectionState.externalOnlyParticles].sort((a, b) => a.Z - b.Z);
-    return [...builtins, ...ext] as Particle[];
+    return [...allBuiltinParticles, ...selectionState.externalOnlyParticles].sort(
+      (a, b) => particleZ(a) - particleZ(b),
+    ) as Particle[];
   });
 
   function particleSearchText(p: Particle): string {

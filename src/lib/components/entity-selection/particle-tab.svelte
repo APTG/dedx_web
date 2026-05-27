@@ -77,9 +77,9 @@
   const allBuiltin = $derived(selectionState.allParticles.filter((p) => p.id !== ELECTRON_ID));
 
   const flatList = $derived.by<Particle[]>(() => {
-    const builtins = [...allBuiltin].sort((a, b) => (a.id as number) - (b.id as number));
-    const ext = [...selectionState.externalOnlyParticles].sort((a, b) => a.Z - b.Z);
-    return [...builtins, ...ext] as Particle[];
+    return [...allBuiltin, ...selectionState.externalOnlyParticles].sort(
+      (a, b) => atomicNumber(a) - atomicNumber(b),
+    ) as Particle[];
   });
 
   const filteredFlat = $derived(

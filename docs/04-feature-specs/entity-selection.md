@@ -200,11 +200,8 @@ Particle (~30 items) → always `medium`. Material (~195 items) → always `larg
 
 #### Particle tab — flat Z-sorted list
 
-All builtins form a single flat list sorted by Z with no section headers and no
-special treatment for any particle:
-
-1. Builtin particles sorted by Z
-2. External-only particles sorted by Z
+Builtin and external-only particles form a single flat list sorted globally by
+Z with no section headers and no special treatment for any particle.
 
 Each row renders `getParticleListLabel(p, z)` — Z is embedded in the name
 (`proton (Z=1)`, `Carbon (C, Z=6)`) with no separate right-aligned Z column.

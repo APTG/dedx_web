@@ -556,16 +556,36 @@ describe("EntitySelectionComboboxes", () => {
       expect(screen.queryByRole("group", { name: /^Ions$/i })).not.toBeInTheDocument();
     });
 
-    test("All particles appear in a flat list sorted by Z", async () => {
+    test("All particles appear in a flat list sorted by Z without external headers", async () => {
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalEntityStore({ includeExternalOnlyParticle: true })],
+          state.allParticles,
+          state.allMaterials,
+        ),
+      );
       const { container } = render(EntitySelectionComboboxes, { props: { selectionState: state } });
       const user = userEvent.setup();
 
       const particleCombobox = container.querySelector('[aria-label="Particle"]')!;
       await user.click(particleCombobox);
 
-      expect(screen.getAllByRole("option", { name: /proton/i }).length).toBeGreaterThan(0);
-      expect(screen.getByRole("option", { name: /alpha particle/i })).toBeInTheDocument();
-      expect(screen.getByRole("option", { name: /Carbon \(C\)/i })).toBeInTheDocument();
+      const particleListbox = screen.getByRole("listbox", { name: "Particle options" });
+      expect(within(particleListbox).queryByRole("group", { name: /^External$/i })).not.toBeInTheDocument();
+
+      const particleOptions = within(particleListbox).getAllByRole("option");
+      const optionTexts = particleOptions.map((option) =>
+        option.textContent?.replace(/\s+/g, " ").trim() ?? "",
+      );
+      const antiprotonIndex = optionTexts.findIndex((text) => /antiproton/i.test(text));
+      const protonIndex = optionTexts.findIndex((text) => /^proton\b/i.test(text));
+      const alphaIndex = optionTexts.findIndex((text) => /alpha particle/i.test(text));
+      const carbonIndex = optionTexts.findIndex((text) => /Carbon \(C\)/i.test(text));
+
+      expect(antiprotonIndex).toBeGreaterThanOrEqual(0);
+      expect(protonIndex).toBeGreaterThan(antiprotonIndex);
+      expect(alphaIndex).toBeGreaterThan(protonIndex);
+      expect(carbonIndex).toBeGreaterThan(alphaIndex);
     });
   });
 });

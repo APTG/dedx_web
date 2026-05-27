@@ -81,8 +81,27 @@
     }
   }
 
+  function isExternalParticle(particle: ParticleOption): particle is ExternalOnlyParticle {
+    return typeof particle.id === "string";
+  }
+
+  function particleZ(particle: ParticleOption): number {
+    return isExternalParticle(particle) ? particle.Z : (particle.id as number);
+  }
+
   const particleItems = $derived.by(() => {
-    function toItem(particle: ParticleEntity) {
+    function toItem(particle: ParticleOption) {
+      if (isExternalParticle(particle)) {
+        return {
+          entity: particle,
+          available: selectionState.availableParticles.some((p) => p.id === particle.id),
+          // Spec §7.1: external-only particles prefixed with 🔗 icon
+          label: `🔗 ${particle.name}`,
+          description: particle.label,
+          searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
+        };
+      }
+
       const isElectron = particle.id === 1001;
       return {
         entity: particle,
@@ -94,26 +113,9 @@
       };
     }
 
-    const allParticlesSorted = selectionState.allParticles
-      .slice()
-      .sort((a, b) => (a.id as number) - (b.id as number))
+    return [...selectionState.allParticles, ...selectionState.externalOnlyParticles]
+      .sort((a, b) => particleZ(a) - particleZ(b))
       .map(toItem);
-
-    const externalParticles = selectionState.externalOnlyParticles.map((particle) => ({
-      entity: particle,
-      available: selectionState.availableParticles.some((p) => p.id === particle.id),
-      // Spec §7.1: external-only particles prefixed with 🔗 icon
-      label: `🔗 ${particle.name}`,
-      description: particle.label,
-      searchText: `${particle.localId} ${particle.name} ${particle.symbol} ${particle.label} ext external`,
-    }));
-
-    return [
-      ...allParticlesSorted,
-      ...(externalParticles.length > 0
-        ? [{ type: "section" as const, label: "External" }, ...externalParticles]
-        : []),
-    ];
   });
 
   interface MaterialGroup {
