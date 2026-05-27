@@ -699,8 +699,11 @@
                   data-testid="export-image-svg"
                   role="menuitem"
                   onclick={async () => {
-                    await downloadPlotSvg(getSvg);
-                    showExportMenu = false;
+                    try {
+                      await downloadPlotSvg(getSvg);
+                    } finally {
+                      showExportMenu = false;
+                    }
                   }}
                   class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
@@ -711,8 +714,11 @@
                     data-testid="export-image-png"
                     role="menuitem"
                     onclick={async () => {
-                      await downloadPlotPng(getSvg);
-                      showExportMenu = false;
+                      try {
+                        await downloadPlotPng(getSvg);
+                      } finally {
+                        showExportMenu = false;
+                      }
                     }}
                     class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                   >

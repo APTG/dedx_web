@@ -1,7 +1,7 @@
 import { getAvailableEnergyUnits } from "$lib/utils/available-units";
 import type { EnergyUnit } from "$lib/wasm/types";
 
-const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
+export const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
   MeV: "Megaelectronvolts — total kinetic energy",
   "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
   "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
