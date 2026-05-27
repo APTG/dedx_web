@@ -397,7 +397,11 @@ describe("EntitySelection", () => {
 
   test("program search supports `tag=ext` for external programs", async () => {
     state.setExternalContext(
-      buildExternalCompatibilityContext([makeExternalEntityStore()], state.allParticles, state.allMaterials),
+      buildExternalCompatibilityContext(
+        [makeExternalEntityStore()],
+        state.allParticles,
+        state.allMaterials,
+      ),
     );
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
