@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Testing**: Add unit tests for headless calc setup functions extracted in PR #619 (`setupMultiProgramCalculation`, `setupMultiEntityCalculation`, `setupInverseRangeCalculation`, `setupInverseStpCalculation`, `setupPlotPreviewCalculation`, `inverse-units`); 44 new tests across 5 new test files + 1 helper. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-27-state-store-unit-tests.md)
+
 - 2026-05-27 — **Refactoring**: Decompose `/calculator` (1815 → 1055 lines) and `/plot` (1280 → 802 lines) page components by extracting calculation orchestration into headless `setupMultiProgramCalculation`, `setupMultiEntityCalculation`, `setupInverseRangeCalculation`, `setupInverseStpCalculation`, `setupPlotPreviewCalculation`, and `setupPlotUrlRestore` state modules; extracted pure helpers (`inverse-units`, `energy-anchor-options`, `calculator-pdf-metadata`, `plot-image`); deduplicated `resolveExtLocalIdForLabel` into `$lib/external-data/ids.ts`. (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-27-page-decomposition.md)
 
