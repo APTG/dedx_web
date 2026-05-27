@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Refactoring**: Decompose `/calculator` (1815 → 1055 lines) and `/plot` (1280 → 802 lines) page components by extracting calculation orchestration into headless `setupMultiProgramCalculation`, `setupMultiEntityCalculation`, `setupInverseRangeCalculation`, `setupInverseStpCalculation`, `setupPlotPreviewCalculation`, and `setupPlotUrlRestore` state modules; extracted pure helpers (`inverse-units`, `energy-anchor-options`, `calculator-pdf-metadata`, `plot-image`); deduplicated `resolveExtLocalIdForLabel` into `$lib/external-data/ids.ts`. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-27-page-decomposition.md)
+
 - 2026-05-26 — **Stage 5 — entity-selection**: Advanced search operators for picker tabs (#609): `z>N`/`z>=N`/`z<N`/`z<=N` for particles, `ρ>N`/`ρ>=N`/`ρ<N`/`ρ<=N`/`ρ=N` (+ `rho` alias) for materials, `tag=fn`/`tag=tab`/`tag=data`/`tag=ext`/`v=<string>` for programs. 13 new unit tests. Spec updated. (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-26-issue-609-advanced-search-syntax.md)
 

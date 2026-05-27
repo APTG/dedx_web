@@ -21,11 +21,7 @@
   import { Button } from "$lib/components/ui/button";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { getService } from "$lib/wasm/loader";
-  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
-  import {
-    customMaterialElementsForWasm,
-    isCustomMaterial,
-  } from "$lib/utils/custom-compound-material";
+  import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { page } from "$app/state";
   import { untrack } from "svelte";
@@ -42,50 +38,24 @@
     type InverseLookupState,
   } from "$lib/state/inverse-lookups.svelte";
   import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte";
-  import { HIGH_E_SIDE, LOW_E_SIDE } from "$lib/utils/inverse-stp";
-  import { LibdedxError, type InverseCsdaResult, type EnergyUnit } from "$lib/wasm/types";
+  import { setupMultiProgramCalculation } from "$lib/state/multi-program-calc.svelte";
+  import { setupMultiEntityCalculation } from "$lib/state/multi-entity-calc.svelte";
+  import {
+    setupInverseRangeCalculation,
+    setupInverseStpCalculation,
+  } from "$lib/state/inverse-calc.svelte";
+  import { getEnergyAnchorOptions } from "$lib/utils/energy-anchor-options";
+  import { buildCalculatorPdfMetadata } from "$lib/utils/calculator-pdf-metadata";
+  import { type EnergyUnit } from "$lib/wasm/types";
   import { negotiateVersion } from "$lib/utils/url-version.js";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
   import { goto } from "$app/navigation";
   import { externalDataService } from "$lib/external-data/service";
-  import type { ExternalCompatibilityContext } from "$lib/state/external-compatibility";
-  import type { ExternalSourceDescriptor, EntityId, ExtRef } from "$lib/external-data/types";
+  import type { ExternalSourceDescriptor, EntityId } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { parseExtRef } from "$lib/external-data/ids";
-  import type { CalculationResult } from "$lib/wasm/types";
-
-  const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
-    MeV: "Megaelectronvolts — total kinetic energy",
-    "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
-    "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
-  };
-
-  function getEnergyAnchorOptions(
-    particle: { id: number | string; massNumber?: number; A?: number } | null | undefined,
-    advancedMode: boolean,
-  ) {
-    const units = getAvailableEnergyUnits(
-      particle as Parameters<typeof getAvailableEnergyUnits>[0],
-      advancedMode,
-    );
-    const isElectron = particle?.id === 1001;
-    const massNumber =
-      particle && "massNumber" in particle
-        ? particle.massNumber
-        : (particle as { A?: number } | null)?.A;
-    const isProton = massNumber === 1 && !isElectron;
-    return units.map((u) => {
-      const opt: { value: string; label: string; tooltip: string; sub?: string } = {
-        value: u,
-        label: u,
-        tooltip: ENERGY_UNIT_TOOLTIPS[u],
-      };
-      if (u === "MeV/u" && isProton && advancedMode) opt.sub = "(≠MeV)";
-      return opt;
-    });
-  }
 
   let calcState = $state<CalculatorState | null>(null);
   let energyRangeLabel = $state<string>("");
@@ -381,6 +351,38 @@
     () => advOptsKey,
   );
 
+  setupMultiProgramCalculation(
+    () => calcState,
+    () => entityState,
+    () => multiProgState,
+    () => urlVersionMismatch,
+    () => advOptsKey,
+  );
+
+  setupMultiEntityCalculation(
+    () => calcState,
+    () => entityState,
+    () => multiEntityState,
+    () => urlVersionMismatch,
+    () => advOptsKey,
+  );
+
+  setupInverseRangeCalculation(
+    () => calcState,
+    () => entityState,
+    () => inverseLookupState,
+    () => urlVersionMismatch,
+    () => advOptsKey,
+  );
+
+  setupInverseStpCalculation(
+    () => calcState,
+    () => entityState,
+    () => inverseLookupState,
+    () => urlVersionMismatch,
+    () => advOptsKey,
+  );
+
   $effect(() => {
     if (calcState && entityState?.isComplete) {
       const programId = entityState.resolvedProgramId;
@@ -490,49 +492,7 @@
       mod.getCalculatorAdvancedMetadata.value = () => {
         if (!isAdvancedMode.value) return null;
         if (!entityState || !calcState) return null;
-
-        const particle = entityState.selectedParticle;
-        const material = entityState.selectedMaterial;
-        const program = entityState.selectedProgram;
-
-        if (!particle || !material) return null;
-
-        // Build programs array (single program in basic mode, multiple in advanced)
-        const programs = [];
-        if ("resolvedProgram" in program && program.resolvedProgram) {
-          programs.push({
-            name: program.resolvedProgram.name,
-            type: "built-in" as const,
-          });
-        } else {
-          programs.push({
-            name: program.name,
-            type: "built-in" as const,
-          });
-        }
-
-        const builtinParticle = "massNumber" in particle ? particle : null;
-        const builtinPdfMat = "isGasByDefault" in material ? material : null;
-        return {
-          particle: {
-            name: particle.name,
-            massNumber: builtinParticle?.massNumber ?? ("A" in particle ? particle.A : 0),
-            atomicNumber:
-              builtinParticle && typeof builtinParticle.id === "number"
-                ? builtinParticle.id
-                : "Z" in particle
-                  ? particle.Z
-                  : 0,
-          },
-          material: {
-            name: material.name,
-            density: builtinPdfMat?.density ?? material.density ?? 0,
-            densityUnit: "g/cm³",
-            phase: builtinPdfMat?.isGasByDefault ? "gas" : "condensed",
-          },
-          programs,
-          advancedOptions: advancedOptions.value,
-        };
+        return buildCalculatorPdfMetadata(entityState, advancedOptions.value);
       };
     });
   });
@@ -676,261 +636,6 @@
     }
   });
 
-  /**
-   * Format energy with auto-scaling (eV/keV/MeV/GeV).
-   * Input is in MeV/nucl. Returns string with unit.
-   */
-  /** Find the local ID of an entity (particle or material) within a specific external source. */
-  function resolveExtLocalIdForLabel(
-    entityId: number | string,
-    label: string,
-    refMap: Map<number, string[]> | Map<number | string, string[]>,
-  ): string | null {
-    if (typeof entityId === "string" && entityId.startsWith("ext:")) {
-      const parsed = parseExtRef(entityId);
-      return parsed && parsed.label === label ? parsed.localId : null;
-    }
-    if (typeof entityId === "number") {
-      const refs = refMap.get(entityId) ?? [];
-      for (const ref of refs) {
-        const p = parseExtRef(ref);
-        if (p && p.label === label) return p.localId;
-      }
-    }
-    return null;
-  }
-
-  // Debounced calculation for multi-program mode
-  $effect(() => {
-    // Read advOptsKey to establish reactive dependency on all advanced option fields.
-    // Without this, changing density/aggregate state etc. would not retrigger this
-    // calculation since advancedOptions.value is only read inside the setTimeout
-    // callback (async context), which does not register reactive dependencies.
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-
-    // Block calculation while URL version mismatch is pending
-    if (urlVersionMismatch !== null) return;
-    if (!multiProgState || !entityState || !calcState || !entityState.isComplete) return;
-    if (entityState.across !== "program") return;
-
-    const selectedProgramIds = multiProgState.selectedProgramIds;
-    if (selectedProgramIds.length <= 1) return;
-
-    const rawParticleId = entityState.selectedParticle?.id;
-    // External-only particles have string IDs — multi-program mode only supports built-in particles
-    if (typeof rawParticleId !== "number") return;
-    const particleId: number = rawParticleId;
-    const material = entityState.selectedMaterial;
-    // Narrow to built-in material; external-only materials skip WASM multi-program calc
-    const builtinMat = material && "isGasByDefault" in material ? material : null;
-    const customMaterial = isCustomMaterial(builtinMat) ? builtinMat : null;
-    const materialId = material?.id;
-    if (materialId === null || materialId === undefined) return;
-
-    const validRows = calcState.rows.filter(
-      (r) => r.status === "valid" && r.normalizedMevNucl !== null,
-    );
-
-    if (validRows.length === 0) return;
-
-    const energies = validRows.map((r) => r.normalizedMevNucl as number);
-    // Snapshot advanced options synchronously (before async) so the timer closure
-    // uses the options that were active when the effect fired.
-    const advOptsSnapshot = advancedOptions.value;
-
-    // Snapshot external context and particle mass for external program calculations.
-    // Clamp to 1 for particles where massNumber/A is 0 (e.g. electrons), to
-    // prevent totalMev = energy * 0 = 0 which breaks external interpolation.
-    const extCtxSnapshot: ExternalCompatibilityContext = entityState.externalContext;
-    const selectedParticle = entityState.selectedParticle;
-    const massASnapshot =
-      selectedParticle && "massNumber" in selectedParticle
-        ? selectedParticle.massNumber || 1
-        : selectedParticle && "A" in selectedParticle
-          ? selectedParticle.A || 1
-          : 1;
-
-    // Capture inputs as snapshot so that a stale `getService()` resolution
-    // (race: user changed selection while the async call was in-flight) cannot
-    // overwrite the current state with results computed for different inputs.
-    const inputSnapshot = {
-      selectedProgramIds,
-      particleId,
-      materialId,
-      energies,
-      customMaterial,
-    };
-    let cancelled = false;
-
-    // Debounce the calculation
-    const timer = setTimeout(async () => {
-      if (cancelled || !multiProgState) return;
-      const service = await getService();
-      // Check whether the inputs have already changed since the timer fired.
-      if (cancelled) return;
-
-      // Split selected programs into built-in (numeric) and external (ExtRef string)
-      const builtinProgramIds = inputSnapshot.selectedProgramIds.filter(
-        (id): id is number => typeof id === "number",
-      );
-      const extProgramIds = inputSnapshot.selectedProgramIds.filter(
-        (id): id is ExtRef => typeof id === "string",
-      );
-
-      const results = new Map<EntityId, CalculationResult | LibdedxError>();
-
-      // --- Built-in program calculations (WASM) ---
-      // Range pre-check: skip WASM per program if any submitted energy is outside
-      // that program's tabulated range. Some programs (e.g. ICRU 49) hang in
-      // _dedx_get_stp_table on out-of-range inputs rather than returning error code 101.
-      let safeProgramIds = builtinProgramIds;
-      if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
-        safeProgramIds = [];
-        for (const programId of builtinProgramIds) {
-          const minEnergy = service.getMinEnergy(programId, inputSnapshot.particleId);
-          const maxEnergy = service.getMaxEnergy(programId, inputSnapshot.particleId);
-          const allEnergiesInRange = inputSnapshot.energies.every(
-            (energy) => energy >= minEnergy && energy <= maxEnergy,
-          );
-          if (allEnergiesInRange) {
-            safeProgramIds.push(programId);
-          } else {
-            results.set(
-              programId,
-              new LibdedxError(
-                101,
-                `Energy out of tabulated range (${minEnergy} – ${maxEnergy} MeV/nucl)`,
-              ),
-            );
-          }
-        }
-      }
-
-      if (safeProgramIds.length > 0) {
-        if (inputSnapshot.customMaterial) {
-          for (const programId of safeProgramIds) {
-            try {
-              results.set(
-                programId,
-                service.calculateCustomCompound({
-                  programId,
-                  particleId: inputSnapshot.particleId,
-                  elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
-                  density: inputSnapshot.customMaterial.density,
-                  iValue: inputSnapshot.customMaterial.iValue,
-                  energies: inputSnapshot.energies,
-                }),
-              );
-            } catch (e) {
-              results.set(
-                programId,
-                e instanceof LibdedxError
-                  ? e
-                  : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-              );
-            }
-          }
-        } else if (typeof inputSnapshot.materialId === "number") {
-          const builtInResults = service.calculateMulti({
-            programIds: safeProgramIds,
-            particleId: inputSnapshot.particleId,
-            materialId: inputSnapshot.materialId,
-            energies: inputSnapshot.energies,
-            options: advOptsSnapshot,
-          });
-          for (const [programId, result] of builtInResults) {
-            results.set(programId, result);
-          }
-        }
-      }
-
-      // --- External program calculations (ExternalDataService) ---
-      for (const extProgramId of extProgramIds) {
-        const parsed = parseExtRef(extProgramId);
-        if (!parsed) {
-          results.set(extProgramId, new LibdedxError(-1, "Invalid external program reference"));
-          continue;
-        }
-        const { label, localId: localProgramId } = parsed;
-
-        const particleLocalId = resolveExtLocalIdForLabel(
-          inputSnapshot.particleId,
-          label,
-          extCtxSnapshot.externalRefsForBuiltinParticle,
-        );
-        const materialLocalId = resolveExtLocalIdForLabel(
-          // materialId is number | string at this point (undefined checked above)
-          inputSnapshot.materialId as number | string,
-          label,
-          extCtxSnapshot.externalRefsForBuiltinMaterial,
-        );
-
-        if (!particleLocalId || !materialLocalId) {
-          results.set(
-            extProgramId,
-            new LibdedxError(-1, "Particle or material not covered by this external program"),
-          );
-          continue;
-        }
-
-        try {
-          const stoppingPowers: number[] = [];
-          const csdaValuesGcm2: (number | null)[] = [];
-          const validEnergies: number[] = [];
-
-          for (const energy of inputSnapshot.energies) {
-            const totalMev = energy * massASnapshot;
-            const r = await externalDataService.interpolateAt(
-              label,
-              localProgramId,
-              particleLocalId,
-              materialLocalId,
-              totalMev,
-            );
-            if (r.stp !== null) {
-              validEnergies.push(energy);
-              stoppingPowers.push(r.stp);
-              csdaValuesGcm2.push(r.csda);
-            }
-          }
-
-          if (validEnergies.length === 0) {
-            results.set(
-              extProgramId,
-              new LibdedxError(101, "Energy out of range for this external program"),
-            );
-          } else {
-            // Only include CSDA array when all values are non-null (store has CSDA data)
-            const allCsdaAvailable =
-              csdaValuesGcm2.length > 0 && csdaValuesGcm2.every((v) => v !== null);
-            results.set(extProgramId, {
-              energies: validEnergies,
-              stoppingPowers,
-              csdaRanges: allCsdaAvailable ? (csdaValuesGcm2 as number[]) : [],
-            });
-          }
-        } catch (e) {
-          results.set(
-            extProgramId,
-            e instanceof LibdedxError
-              ? e
-              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-          );
-        }
-      }
-
-      if (!cancelled) {
-        multiProgState.setComparisonResults(results);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  });
-
   // Create/destroy multi-entity state when the "across" dimension switches to material/particle.
   // Mirrors the multiProgState creation effect above, but without URL encoding for now.
   $effect(() => {
@@ -958,472 +663,6 @@
       multiEntityState = null;
     };
   });
-
-  // Multi-entity calculation effect: runs when across === "material" or "particle".
-  // Computes stopping power for each entity in entityState.multiSelected[dimension].
-  $effect(() => {
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-
-    if (urlVersionMismatch !== null) return;
-    if (!multiEntityState || !entityState || !calcState || !entityState.isComplete) return;
-
-    const dim = multiEntityState.dimension;
-    const entityIds = (
-      dim === "material" ? entityState.multiSelected.material : entityState.multiSelected.particle
-    ) as import("$lib/external-data/types").EntityId[];
-
-    if (entityIds.length === 0) return;
-
-    // Require built-in (numeric) program and particle for WASM multi-entity calculation.
-    const rawProgramId = entityState.resolvedProgramId;
-    if (typeof rawProgramId !== "number" || rawProgramId === null) return;
-    const programId = rawProgramId;
-
-    const rawParticleId = entityState.selectedParticle?.id;
-    if (typeof rawParticleId !== "number") return;
-    const anchorParticleId = rawParticleId;
-
-    const material = entityState.selectedMaterial;
-    const builtinMat = material && "isGasByDefault" in material ? material : null;
-    const anchorMaterialId = material?.id;
-    if (anchorMaterialId === null || anchorMaterialId === undefined) return;
-
-    const getCustomMaterialById = (id: EntityId) => {
-      if (typeof id !== "string" || !id.startsWith("cc_")) return null;
-      const compound = customCompounds.getById(id);
-      if (!compound) return null;
-      return {
-        id: compound.id,
-        name: compound.name,
-        density: compound.density,
-        iValue: compound.iValue,
-        phase: compound.phase,
-        elements: compound.elements,
-        isGasByDefault: compound.phase === "gas",
-      };
-    };
-
-    if (dim === "particle" && typeof anchorMaterialId !== "number") {
-      const unsupportedMaterialMessage =
-        typeof anchorMaterialId === "string" && anchorMaterialId.startsWith("ext:")
-          ? "Multi-particle comparison does not support external-only materials."
-          : "Multi-particle comparison does not support custom compounds.";
-      const results = new Map<EntityId, CalculationResult | LibdedxError>();
-      for (const entityId of entityIds) {
-        results.set(entityId, new LibdedxError(-1, unsupportedMaterialMessage));
-      }
-      multiEntityState.setComparisonResults(results);
-      return;
-    }
-
-    const validRows = calcState.rows.filter(
-      (r) => r.status === "valid" && r.normalizedMevNucl !== null,
-    );
-    if (validRows.length === 0) return;
-
-    const energies = validRows.map((r) => r.normalizedMevNucl as number);
-    const advOptsSnapshot = advancedOptions.value;
-    const inputSnapshot = {
-      programId,
-      anchorParticleId,
-      anchorMaterialId,
-      entityIds,
-      energies,
-      dim,
-      builtinMat,
-    };
-    let cancelled = false;
-
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
-
-      const results = new Map<
-        EntityId,
-        import("$lib/wasm/types").CalculationResult | LibdedxError
-      >();
-
-      for (const entityId of inputSnapshot.entityIds) {
-        try {
-          let result: import("$lib/wasm/types").CalculationResult;
-          if (inputSnapshot.dim === "material") {
-            const customMaterial =
-              getCustomMaterialById(entityId) ??
-              (entityId === inputSnapshot.anchorMaterialId &&
-              isCustomMaterial(inputSnapshot.builtinMat)
-                ? inputSnapshot.builtinMat
-                : null);
-            if (customMaterial !== null) {
-              result = service.calculateCustomCompound({
-                programId: inputSnapshot.programId,
-                particleId: inputSnapshot.anchorParticleId,
-                elements: customMaterialElementsForWasm(customMaterial),
-                density: customMaterial.density,
-                iValue: customMaterial.iValue,
-                energies: inputSnapshot.energies,
-              });
-            } else if (typeof entityId === "number") {
-              result = service.calculate(
-                inputSnapshot.programId,
-                inputSnapshot.anchorParticleId,
-                entityId,
-                inputSnapshot.energies,
-                advOptsSnapshot,
-              );
-            } else {
-              throw new LibdedxError(
-                -1,
-                typeof entityId === "string" && entityId.startsWith("ext:")
-                  ? "Multi-material comparison does not support external-only materials."
-                  : `Unsupported material ID for multi-material comparison: ${entityId}`,
-              );
-            }
-          } else {
-            // across === "particle": compute for each particleId, fixed material
-            if (typeof entityId !== "number") {
-              throw new LibdedxError(
-                -1,
-                typeof entityId === "string" && entityId.startsWith("ext:")
-                  ? "Multi-particle comparison does not support external-only particles."
-                  : `Unsupported particle ID for multi-particle comparison: ${entityId}`,
-              );
-            }
-            result = service.calculate(
-              inputSnapshot.programId,
-              entityId,
-              inputSnapshot.anchorMaterialId as number,
-              inputSnapshot.energies,
-              advOptsSnapshot,
-            );
-          }
-          results.set(entityId, result);
-        } catch (e) {
-          results.set(
-            entityId,
-            e instanceof LibdedxError
-              ? e
-              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-          );
-        }
-      }
-
-      if (!cancelled && multiEntityState) {
-        multiEntityState.setComparisonResults(results);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  });
-
-  // Inverse lookup calculation effects - snapshot deps synchronously before async
-  $effect(() => {
-    // Read advOptsKey and activeTab to establish reactive dependencies
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-    if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
-    const inverseState = inverseLookupState;
-    if (inverseState.activeTab !== "csda") return;
-
-    // Snapshot all reactive deps synchronously at the top
-    const _rangeMasterUnit = inverseState.rangeMasterUnit;
-    void _rangeMasterUnit;
-    const advOptsSnapshot = advancedOptions.value;
-    const rawParticleId = entityState.selectedParticle?.id;
-    // External-only particles/programs do not support inverse CSDA lookup
-    if (typeof rawParticleId !== "number") return;
-    const particleId: number = rawParticleId;
-    const material = entityState.selectedMaterial;
-    const builtinRangeMat = material && "isGasByDefault" in material ? material : null;
-    const customMaterial = isCustomMaterial(builtinRangeMat) ? builtinRangeMat : null;
-    const materialId = material?.id;
-    const rawProgramId = entityState.resolvedProgramId;
-    if (typeof rawProgramId === "string") return; // external program, no inverse lookup
-    const programId = rawProgramId;
-    const rowsSnapshot = inverseState.rangeRows.map((r) => ({
-      id: r.id,
-      text: r.text,
-      value: r.value,
-      unit: r.unit,
-      status: r.status,
-    }));
-
-    if (particleId === null || materialId === null || programId === null) return;
-
-    const validRows = rowsSnapshot.filter(
-      (r) => r.status === "valid" || r.status === "out-of-range",
-    );
-    if (validRows.length === 0) {
-      return;
-    }
-
-    let cancelled = false;
-
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
-
-      const asyncMat = entityState?.selectedMaterial;
-      const asyncBuiltinMat = asyncMat && "isGasByDefault" in asyncMat ? asyncMat : null;
-      const currentCustomMaterial = isCustomMaterial(asyncBuiltinMat) ? asyncBuiltinMat : null;
-      const density =
-        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
-        asyncMat?.density ??
-        1;
-
-      if (density <= 0) {
-        // Mark all non-empty rows as invalid due to missing density
-        for (const r of inverseState.rangeRows) {
-          if (r.text.trim()) {
-            r.status = "invalid";
-            r.message = "Density not available for this material";
-            r.energyMevNucl = null;
-          }
-        }
-        return;
-      }
-
-      // Convert to g/cm²
-      const rangesGcm2 = validRows.map((r) => {
-        const rangeCm = r.value! * getUnitToCmFactor(r.unit);
-        return rangeCm * density;
-      });
-
-      try {
-        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
-        const results: (InverseCsdaResult | Error)[] = activeCustomMaterial
-          ? service.getInverseCsdaCustomCompound({
-              programId,
-              particleId,
-              elements: customMaterialElementsForWasm(activeCustomMaterial),
-              density,
-              iValue: activeCustomMaterial.iValue,
-              ranges: rangesGcm2,
-            })
-          : typeof materialId === "number"
-            ? service.getInverseCsda({
-                programId,
-                particleId,
-                materialId,
-                ranges: rangesGcm2,
-                options: advOptsSnapshot,
-              })
-            : [];
-
-        let resultIdx = 0;
-        for (const r of inverseState.rangeRows) {
-          if (r.status === "valid" || r.status === "out-of-range") {
-            const result = results[resultIdx++];
-            if (result instanceof Error || result === undefined) {
-              r.energyMevNucl = null;
-            } else {
-              r.energyMevNucl = result.energy;
-            }
-          }
-        }
-      } catch {
-        for (const r of inverseState.rangeRows) {
-          if (r.status === "valid" || r.status === "out-of-range") {
-            r.status = "error";
-            r.message = "Inverse range lookup failed";
-            r.energyMevNucl = null;
-          }
-        }
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  });
-
-  $effect(() => {
-    // Read advOptsKey and activeTab to establish reactive dependencies
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-    if (!inverseLookupState || !entityState || !calcState || !entityState.isComplete) return;
-    const inverseState = inverseLookupState;
-    if (inverseState.activeTab !== "stp") return;
-
-    // Snapshot all reactive deps synchronously at the top
-    const _stpMasterUnit = inverseState.stpMasterUnit;
-    void _stpMasterUnit;
-    const advOptsSnapshot = advancedOptions.value;
-    const rawParticleIdStp = entityState.selectedParticle?.id;
-    // External-only particles/programs do not support inverse STP lookup
-    if (typeof rawParticleIdStp !== "number") return;
-    const particleId: number = rawParticleIdStp;
-    const material = entityState.selectedMaterial;
-    const builtinStpMat = material && "isGasByDefault" in material ? material : null;
-    const customMaterial = isCustomMaterial(builtinStpMat) ? builtinStpMat : null;
-    const materialId = material?.id;
-    const rawProgramIdStp = entityState.resolvedProgramId;
-    if (typeof rawProgramIdStp === "string") return; // external program, no inverse lookup
-    const programId = rawProgramIdStp;
-    const rowsSnapshot = inverseState.stpRows.map((r) => ({
-      id: r.id,
-      text: r.text,
-      value: r.value,
-      unit: r.unit,
-      status: r.status,
-    }));
-
-    if (particleId === null || materialId === null || programId === null) return;
-
-    const validRows = rowsSnapshot.filter(
-      (r) => r.status === "valid" || r.status === "no-solution",
-    );
-    if (validRows.length === 0) return;
-
-    let cancelled = false;
-
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
-
-      const stpAsyncMat = entityState?.selectedMaterial;
-      const stpBuiltinMat = stpAsyncMat && "isGasByDefault" in stpAsyncMat ? stpAsyncMat : null;
-      const currentCustomMaterial = isCustomMaterial(stpBuiltinMat) ? stpBuiltinMat : null;
-      const density =
-        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
-        stpAsyncMat?.density ??
-        1;
-
-      // Convert to MeV·cm²/g
-      const stpMevCm2g = validRows.map((r) => stpToMevCm2g(r.value!, r.unit, density));
-
-      try {
-        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
-        // Call for low-E and high-E branches (LOW_E_SIDE=0, HIGH_E_SIDE=1)
-        const lowResults = activeCustomMaterial
-          ? service.getInverseStpCustomCompound({
-              programId,
-              particleId,
-              elements: customMaterialElementsForWasm(activeCustomMaterial),
-              density,
-              iValue: activeCustomMaterial.iValue,
-              stoppingPowers: stpMevCm2g,
-              side: LOW_E_SIDE,
-            })
-          : typeof materialId === "number"
-            ? service.getInverseStp({
-                programId,
-                particleId,
-                materialId,
-                stoppingPowers: stpMevCm2g,
-                side: LOW_E_SIDE,
-                options: advOptsSnapshot,
-              })
-            : [];
-
-        const highResults = activeCustomMaterial
-          ? service.getInverseStpCustomCompound({
-              programId,
-              particleId,
-              elements: customMaterialElementsForWasm(activeCustomMaterial),
-              density,
-              iValue: activeCustomMaterial.iValue,
-              stoppingPowers: stpMevCm2g,
-              side: HIGH_E_SIDE,
-            })
-          : typeof materialId === "number"
-            ? service.getInverseStp({
-                programId,
-                particleId,
-                materialId,
-                stoppingPowers: stpMevCm2g,
-                side: HIGH_E_SIDE,
-                options: advOptsSnapshot,
-              })
-            : [];
-
-        let resultIdx = 0;
-        for (const r of inverseState.stpRows) {
-          if (r.status === "valid" || r.status === "no-solution") {
-            const lowResult = lowResults[resultIdx];
-            const highResult = highResults[resultIdx];
-
-            if (lowResult instanceof Error && highResult instanceof Error) {
-              r.status = "no-solution";
-              r.energyLowMevNucl = null;
-              r.energyHighMevNucl = null;
-            } else {
-              r.status = "valid";
-              const lowE =
-                lowResult instanceof Error || lowResult === undefined ? null : lowResult.energy;
-              const highE =
-                highResult instanceof Error || highResult === undefined ? null : highResult.energy;
-              // Treat identical branch energies as a single solution —
-              // the C inverse lookup returns the same energy for both sides
-              // when only one physical solution exists for the given STP value.
-              const isSingleSolution =
-                lowE !== null &&
-                highE !== null &&
-                Math.abs(lowE - highE) / Math.max(Math.abs(highE), 1e-300) < 1e-6;
-              r.energyLowMevNucl = isSingleSolution ? null : lowE;
-              r.energyHighMevNucl = highE;
-            }
-
-            resultIdx++;
-          }
-        }
-      } catch {
-        for (const r of inverseState.stpRows) {
-          if (r.status === "valid" || r.status === "no-solution") {
-            r.status = "error";
-            r.message = "Inverse STP lookup failed";
-            r.energyLowMevNucl = null;
-            r.energyHighMevNucl = null;
-          }
-        }
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
-  });
-
-  // Helper: convert length unit to cm factor
-  function getUnitToCmFactor(unit: "nm" | "um" | "mm" | "cm" | "m"): number {
-    switch (unit) {
-      case "nm":
-        return 1e-7;
-      case "um":
-        return 1e-4;
-      case "mm":
-        return 0.1;
-      case "cm":
-        return 1;
-      case "m":
-        return 100;
-    }
-  }
-
-  // Helper: STP to MeV·cm²/g conversion
-  function stpToMevCm2g(
-    value: number,
-    unit: "kev-um" | "mev-cm" | "mev-cm2-g",
-    density: number,
-  ): number {
-    switch (unit) {
-      case "kev-um":
-        // 1 keV/µm = 10 MeV/cm; divide by density
-        return (value * 10) / density;
-      case "mev-cm":
-        return value / density;
-      case "mev-cm2-g":
-        return value;
-    }
-  }
 </script>
 
 <svelte:head>

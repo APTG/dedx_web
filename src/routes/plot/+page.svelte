@@ -9,14 +9,12 @@
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import { createPlotState } from "$lib/state/plot.svelte";
   import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
-  import { decodePlotUrl } from "$lib/utils/plot-url";
   import { setupPlotUrlSync } from "$lib/state/plot-url-sync.svelte";
+  import { setupPlotUrlRestore } from "$lib/state/plot-url-restore.svelte";
+  import { setupPlotPreviewCalculation } from "$lib/state/plot-preview-calc.svelte";
+  import { downloadPlotSvg, downloadPlotPng } from "$lib/export/plot-image";
   import { getParticleLabel } from "$lib/utils/particle-label";
-  import {
-    customMaterialElementsForWasm,
-    isCustomMaterial,
-  } from "$lib/utils/custom-compound-material";
-  import { customCompounds } from "$lib/state/custom-compounds.svelte";
+  import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
@@ -26,10 +24,6 @@
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
-  import { externalDataService } from "$lib/external-data/service";
-  import { parseExtRef } from "$lib/external-data/ids";
-  import type { EntityId } from "$lib/external-data/types";
-  import { loadExternalCalculationResult } from "$lib/utils/external-plot-series";
   import {
     advancedOptions,
     loadAdvancedOptionsFromStorage,
@@ -66,44 +60,6 @@
     mq.addEventListener("change", handler);
     return () => mq.removeEventListener("change", handler);
   });
-
-  /** Resolve the local ID of a built-in or external entity within a named source. */
-  function resolveExtLocalId(
-    entityId: number | string,
-    label: string,
-    refMap: Map<number, string[]> | Map<number | string, string[]>,
-  ): string | null {
-    if (typeof entityId === "string" && entityId.startsWith("ext:")) {
-      const parsed = parseExtRef(entityId);
-      return parsed && parsed.label === label ? parsed.localId : null;
-    }
-    if (typeof entityId === "number") {
-      const refs = (refMap as Map<number, string[]>).get(entityId) ?? [];
-      for (const ref of refs) {
-        const p = parseExtRef(ref);
-        if (p && p.label === label) return p.localId;
-      }
-    }
-    return null;
-  }
-
-  function restorePlotCustomCompoundFromUrl(decoded: ReturnType<typeof decodePlotUrl>) {
-    if (
-      !decoded.materialIsCustom ||
-      !decoded.matName ||
-      decoded.matDensity === undefined ||
-      !decoded.matElements?.length
-    ) {
-      return null;
-    }
-    return customCompounds.addTransient({
-      name: decoded.matName,
-      density: decoded.matDensity,
-      iValue: decoded.matIval,
-      elements: decoded.matElements,
-      phase: decoded.matPhase ?? "condensed",
-    });
-  }
 
   $effect(() => {
     if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
@@ -223,196 +179,14 @@
     urlVersionChecked = true;
   });
 
-  $effect(() => {
-    if (!browser || !wasmReady.value || !entityState || urlInitialized) return;
-    // Mark in-flight so the URL-write effect cannot run while we are
-    // restoring (it would otherwise wipe `series=...` from the address bar).
-    const params = new URLSearchParams(window.location.search);
-
-    const decoded = decodePlotUrl(params);
-
-    if (decoded.particleId !== null) {
-      entityState.selectParticle(decoded.particleId);
-    }
-    const customFromUrl = restorePlotCustomCompoundFromUrl(decoded);
-    if (customFromUrl) {
-      entityState.selectMaterial(customFromUrl.id);
-    } else if (decoded.materialId !== null) {
-      entityState.selectMaterial(decoded.materialId);
-    }
-    if (decoded.programId !== -1) {
-      entityState.selectProgram(decoded.programId);
-    }
-
-    if (decoded.stpUnit) {
-      plotState.setStpUnit(decoded.stpUnit);
-    }
-    plotState.setAxisScale("x", decoded.xLog);
-    plotState.setAxisScale("y", decoded.yLog);
-
-    // Apply advanced options from URL (URL takes precedence over localStorage)
-    if (Object.keys(decoded.advancedOptions).length > 0) {
-      advancedOptions.value = decoded.advancedOptions;
-    }
-
-    getService()
-      .then(async (service) => {
-        const externalRestores: Promise<void>[] = [];
-        for (const s of decoded.series) {
-          if (typeof s.programId === "string") {
-            // External series: load via ExternalDataService asynchronously.
-            const progParsed = parseExtRef(s.programId);
-            if (!progParsed || !entityState) continue;
-            const { label, localId: programLocalId } = progParsed;
-            const extCtx = entityState.externalContext;
-            const meta = externalDataService.getMetadata(label);
-            if (!meta) continue;
-            const particleLocalId = resolveExtLocalId(
-              s.particleId,
-              label,
-              extCtx.externalRefsForBuiltinParticle,
-            );
-            const materialLocalId = resolveExtLocalId(
-              s.materialId,
-              label,
-              extCtx.externalRefsForBuiltinMaterial,
-            );
-            if (!particleLocalId || !materialLocalId) continue;
-            const extParticle = meta.particles.find((p) => p.id === particleLocalId);
-            const extMat = meta.materials.find((m) => m.id === materialLocalId);
-            const extProg = meta.programs.find((p) => p.id === programLocalId);
-            if (!extParticle || !extMat) continue;
-            const particleA = extParticle.A;
-            const pId = s.programId;
-            const ptId = s.particleId;
-            const matId = s.materialId;
-            const programName = extProg ? `🔗 ${extProg.name}` : `🔗 ${label}`;
-            const particleName = getParticleLabel({
-              id: s.particleId,
-              name: extParticle.name,
-              symbol: extParticle.symbol,
-            });
-            const materialName = extMat.name;
-            const density = extMat.density ?? 1;
-            externalRestores.push(
-              loadExternalCalculationResult(
-                externalDataService,
-                label,
-                programLocalId,
-                particleLocalId,
-                materialLocalId,
-                particleA,
-              )
-                .then((result) => {
-                  if (!result) return;
-                  plotState.addSeries({
-                    programId: pId,
-                    particleId: ptId,
-                    materialId: matId,
-                    programName,
-                    particleName,
-                    materialName,
-                    particleMassNumber: particleA,
-                    density,
-                    result,
-                  });
-                })
-                .catch(() => {
-                  // silently skip failed external series restores
-                }),
-            );
-            continue;
-          }
-          // Built-in triplets.
-          if (typeof s.particleId !== "number" || typeof s.materialId !== "number") continue;
-          try {
-            const result = service.getPlotData(
-              s.programId,
-              s.particleId,
-              s.materialId,
-              500,
-              true,
-              advancedOptions.value,
-            );
-            const programs = service.getPrograms();
-            const particles = service.getParticles(s.programId);
-            const materials = service.getMaterials(s.programId);
-            const prog = programs.find((p) => p.id === s.programId);
-            const part = particles.find((p) => p.id === s.particleId);
-            const mat = materials.find((m) => m.id === s.materialId);
-            if (!prog || !part || !mat) continue;
-            plotState.addSeries({
-              programId: s.programId,
-              particleId: s.particleId,
-              materialId: s.materialId,
-              programName: prog.name,
-              particleName: getParticleLabel(part),
-              materialName: mat.name,
-              particleMassNumber: part.massNumber,
-              density: mat.density,
-              result,
-            });
-          } catch {
-            // Invalid triplet — silently skip per spec
-          }
-        }
-        await Promise.allSettled(externalRestores);
-
-        // Inverse-STP two-series creation: when navigating from "Plot this row"
-        // on a 2-solution STP row, the URL carries inv_stp_branch=both and the
-        // entity triple (particle/material/program).  Add two series — same STP
-        // curve but labelled " high-E" and " low-E" — so both branches appear in
-        // the legend.
-        const invStpBranch = decoded.invStpBranch;
-        if (
-          invStpBranch === "both" &&
-          decoded.particleId !== null &&
-          typeof decoded.particleId === "number" &&
-          decoded.materialId !== null &&
-          typeof decoded.materialId === "number" &&
-          decoded.programId !== -1
-        ) {
-          try {
-            const stpResult = service.getPlotData(
-              decoded.programId,
-              decoded.particleId,
-              decoded.materialId,
-              500,
-              true,
-              advancedOptions.value,
-            );
-            const allPrograms = service.getPrograms();
-            const allParticles = service.getParticles(decoded.programId);
-            const allMaterials = service.getMaterials(decoded.programId);
-            const prog = allPrograms.find((p) => p.id === decoded.programId);
-            const part = allParticles.find((p) => p.id === decoded.particleId);
-            const mat = allMaterials.find((m) => m.id === decoded.materialId);
-            if (prog && part && mat) {
-              const baseData = {
-                programId: decoded.programId,
-                particleId: decoded.particleId,
-                materialId: decoded.materialId,
-                programName: prog.name,
-                particleName: getParticleLabel(part),
-                materialName: mat.name,
-                particleMassNumber: part.massNumber,
-                density: mat.density,
-                result: stpResult,
-              };
-              plotState.addSeries({ ...baseData, labelSuffix: " high-E" });
-              plotState.addSeries({ ...baseData, labelSuffix: " low-E" });
-            }
-          } catch {
-            // silently ignore — invalid triplet
-          }
-        }
-      })
-      .finally(() => {
-        // Only allow URL-writes after every restored series has been added,
-        // otherwise a write running mid-restore would overwrite `series=...`.
-        urlInitialized = true;
-      });
-  });
+  setupPlotUrlRestore(
+    () => plotState,
+    () => entityState,
+    () => urlInitialized,
+    () => {
+      urlInitialized = true;
+    },
+  );
 
   setupPlotUrlSync(
     () => plotState,
@@ -422,203 +196,15 @@
     () => advOptsKey,
   );
 
-  // ── Preview series: auto-calculated whenever entity selection OR advanced options change ──
-  $effect(() => {
-    // Read advOptsKey synchronously to register reactive deps on ALL nested
-    // advancedOptions properties (density, aggregateState, interpolation, etc.).
-    // Without this, mutating advancedOptions.value.densityOverride does not
-    // re-run the effect because Svelte's fine-grained tracker only records the
-    // read of advancedOptions.value (the object reference) when we do
-    // `const advOptsSnapshot = advancedOptions.value` below, but not the
-    // reads of nested properties that happen inside the async .then() callback.
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-
-    // Also read isAdvancedMode synchronously so switching modes triggers a
-    // re-render (the density formula depends on it, but it was previously only
-    // accessed inside the async callback which is not tracked).
-    const advancedModeActive = isAdvancedMode.value;
-
-    previewError = null;
-
-    // Block preview calculation when URL version mismatch is pending
-    if (urlVersionMismatch !== null) {
-      plotState.clearPreview();
-      return;
-    }
-
-    if (!entityState) {
-      plotState.clearPreview();
-      return;
-    }
-    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete, selectedProgram } =
-      entityState;
-    if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) {
-      plotState.clearPreview();
-      return;
-    }
-    const programName =
-      "resolvedProgram" in selectedProgram
-        ? (selectedProgram.resolvedProgram?.name ?? "Auto")
-        : selectedProgram.name;
-
-    // Snapshot advanced options synchronously BEFORE the async call so the
-    // closure uses the options that were active when the effect fired (not
-    // potentially stale ones resolved later after a rapid selection change).
-    const advOptsSnapshot = advancedOptions.value;
-
-    // External program: fetch preview from ExternalDataService
-    if (typeof resolvedProgramId === "string") {
-      const extProgRef = parseExtRef(resolvedProgramId);
-      if (!extProgRef) {
-        plotState.clearPreview();
-        return;
-      }
-      const { label, localId: programLocalId } = extProgRef;
-      const extCtx = entityState.externalContext;
-      const particleLocalId = resolveExtLocalId(
-        selectedParticle.id,
-        label,
-        extCtx.externalRefsForBuiltinParticle,
-      );
-      const materialLocalId = resolveExtLocalId(
-        selectedMaterial.id,
-        label,
-        extCtx.externalRefsForBuiltinMaterial,
-      );
-      if (!particleLocalId || !materialLocalId) {
-        plotState.clearPreview();
-        return;
-      }
-      const particleA =
-        "massNumber" in selectedParticle
-          ? selectedParticle.massNumber
-          : "A" in selectedParticle
-            ? (selectedParticle as { A: number }).A
-            : 1;
-      const extProgramName = `🔗 ${programName}`;
-      const snapshot = {
-        programId: resolvedProgramId as EntityId,
-        particleId: selectedParticle.id as EntityId,
-        materialId: selectedMaterial.id as EntityId,
-      };
-      let extCancelled = false;
-      loadExternalCalculationResult(
-        externalDataService,
-        label,
-        programLocalId,
-        particleLocalId,
-        materialLocalId,
-        particleA,
-      )
-        .then((result) => {
-          if (extCancelled) return;
-          if (!result) {
-            plotState.clearPreview();
-            return;
-          }
-          if (extCancelled) return;
-          plotState.setPreview({
-            programId: snapshot.programId,
-            particleId: snapshot.particleId,
-            materialId: snapshot.materialId,
-            programName: extProgramName,
-            particleName: getParticleLabel(selectedParticle),
-            materialName: selectedMaterial.name,
-            particleMassNumber: particleA,
-            density: selectedMaterial.density ?? 1,
-            result,
-          });
-        })
-        .catch((err) => {
-          if (extCancelled) return;
-          previewError = err instanceof Error ? err.message : String(err);
-          plotState.clearPreview();
-        });
-      return () => {
-        extCancelled = true;
-      };
-    }
-    const numericProgramId: number = resolvedProgramId;
-
-    // Narrow particle to built-in type for WASM calls
-    const builtinPreviewParticle = "massNumber" in selectedParticle ? selectedParticle : null;
-    if (!builtinPreviewParticle) {
-      plotState.clearPreview();
-      return;
-    }
-
-    const builtinPreviewMat = "isGasByDefault" in selectedMaterial ? selectedMaterial : null;
-
-    // Snapshot the current selection so a slower in-flight getPlotData
-    // for an outdated selection cannot clobber a fresher preview (race
-    // when the user changes particle/material/program quickly).
-    const snapshot = {
-      programId: numericProgramId,
-      particleId: builtinPreviewParticle.id as number,
-      materialId: selectedMaterial.id as EntityId,
-      customMaterial: isCustomMaterial(builtinPreviewMat) ? builtinPreviewMat : null,
-    };
-    let cancelled = false;
-
-    getService().then((service) => {
-      if (cancelled) return;
-      try {
-        const result = snapshot.customMaterial
-          ? service.getPlotDataCustomCompound({
-              programId: snapshot.programId,
-              particleId: snapshot.particleId,
-              elements: customMaterialElementsForWasm(snapshot.customMaterial),
-              density: snapshot.customMaterial.density,
-              iValue: snapshot.customMaterial.iValue,
-              numPoints: 500,
-              logScale: true,
-            })
-          : typeof snapshot.materialId === "number"
-            ? service.getPlotData(
-                snapshot.programId,
-                snapshot.particleId,
-                snapshot.materialId,
-                500,
-                true,
-                advOptsSnapshot,
-              )
-            : null;
-        if (!result) {
-          plotState.clearPreview();
-          return;
-        }
-        if (cancelled) return;
-        plotState.setPreview({
-          programId: snapshot.programId,
-          particleId: snapshot.particleId,
-          materialId: snapshot.materialId,
-          programName,
-          particleName: getParticleLabel(builtinPreviewParticle),
-          materialName: selectedMaterial.name,
-          particleMassNumber: builtinPreviewParticle.massNumber,
-          // Use the density override (only in Advanced mode) for correct unit conversion.
-          // advancedModeActive is snapshotted synchronously at the top of this effect.
-          density:
-            (advancedModeActive && !snapshot.customMaterial
-              ? advOptsSnapshot.densityOverride
-              : undefined) ??
-            builtinPreviewMat?.density ??
-            selectedMaterial.density ??
-            1,
-          result,
-        });
-      } catch (err) {
-        if (cancelled) return;
-        previewError = err instanceof Error ? err.message : String(err);
-        plotState.clearPreview();
-      }
-    });
-
-    return () => {
-      cancelled = true;
-    };
-  });
+  setupPlotPreviewCalculation(
+    () => plotState,
+    () => entityState,
+    () => urlVersionMismatch,
+    () => advOptsKey,
+    (msg) => {
+      previewError = msg;
+    },
+  );
 
   // ── Legend swatch colors: derived from JSROOT's actual color list so the
   // swatch hex matches what JSROOT renders for fLineColor = colorIndex + 2. ──
@@ -878,76 +464,6 @@
   // Dropdown state
   let showExportMenu = $state(false);
   let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
-  const FALLBACK_EXPORT_WIDTH = 800;
-  const FALLBACK_EXPORT_HEIGHT = 600;
-
-  function getSvgFromRenderedPlot(): string | null {
-    const svgEl = document.querySelector('[role="img"] svg');
-    if (!(svgEl instanceof SVGElement)) return null;
-    return new XMLSerializer().serializeToString(svgEl);
-  }
-
-  async function resolveSvgForExport(): Promise<string | null> {
-    if (getSvg) {
-      const svg = await getSvg();
-      if (svg) return svg;
-    }
-    // Fallback path: serialize the currently rendered plot SVG from the DOM
-    // when JSROOT callback export is temporarily unavailable.
-    return getSvgFromRenderedPlot();
-  }
-
-  async function downloadSvg() {
-    const svgString =
-      (await resolveSvgForExport()) ??
-      `<svg xmlns="http://www.w3.org/2000/svg" width="${FALLBACK_EXPORT_WIDTH}" height="${FALLBACK_EXPORT_HEIGHT}"></svg>`;
-
-    // Create blob and trigger download
-    const blob = new Blob([svgString], { type: "image/svg+xml" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "dedx_plot.svg";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-    showExportMenu = false;
-  }
-
-  async function downloadPng() {
-    const svgString = await resolveSvgForExport();
-    let pngDataUrl: string | null = null;
-
-    if (svgString) {
-      // Import svgToPng helper and convert
-      const { svgToPng } = await import("$lib/export/pdf.js");
-      pngDataUrl = await svgToPng(svgString, 210, 148); // A5 landscape approx
-    } else {
-      // Fallback path: if SVG export isn't available, export from the rendered
-      // canvas output directly.
-      const renderedCanvas = document.querySelector('[role="img"] canvas');
-      if (renderedCanvas instanceof HTMLCanvasElement) {
-        pngDataUrl = renderedCanvas.toDataURL("image/png");
-      }
-    }
-
-    if (!pngDataUrl) {
-      const fallbackCanvas = document.createElement("canvas");
-      fallbackCanvas.width = FALLBACK_EXPORT_WIDTH;
-      fallbackCanvas.height = FALLBACK_EXPORT_HEIGHT;
-      pngDataUrl = fallbackCanvas.toDataURL("image/png");
-    }
-
-    // Create download link
-    const a = document.createElement("a");
-    a.href = pngDataUrl;
-    a.download = "dedx_plot.png";
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    showExportMenu = false;
-  }
 
   function toggleExportMenu() {
     if (!canExport.value) return;
@@ -1182,7 +698,10 @@
                 <button
                   data-testid="export-image-svg"
                   role="menuitem"
-                  onclick={downloadSvg}
+                  onclick={async () => {
+                    await downloadPlotSvg(getSvg);
+                    showExportMenu = false;
+                  }}
                   class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                 >
                   SVG vector
@@ -1191,7 +710,10 @@
                   <button
                     data-testid="export-image-png"
                     role="menuitem"
-                    onclick={downloadPng}
+                    onclick={async () => {
+                      await downloadPlotPng(getSvg);
+                      showExportMenu = false;
+                    }}
                     class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
                   >
                     PNG image
