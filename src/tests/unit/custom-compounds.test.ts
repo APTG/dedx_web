@@ -601,15 +601,17 @@ describe("custom-compounds", () => {
       expect(store.getById("unknown_id")).toBeUndefined();
     });
 
-    test("compounds getter returns a stable reference between calls when nothing changed", () => {
+    test("compounds getter returns equal contents but a new array per read when unchanged", () => {
       Object.defineProperty(global, "localStorage", { value: localStorageMock });
       const store = createCustomCompoundsStore();
 
-      // Checking for equality
-      expect(store.compounds).toEqual(store.compounds);
+      const firstRead = store.compounds;
+      const secondRead = store.compounds;
+      expect(secondRead).toEqual(firstRead);
+      expect(secondRead).not.toBe(firstRead);
     });
 
-    test("compounds getter reflects inserts and deletes reactively (via flushSync)", async () => {
+    test("compounds getter reflects inserts and deletes reactively", () => {
       Object.defineProperty(global, "localStorage", { value: localStorageMock });
       const store = createCustomCompoundsStore();
 
@@ -630,7 +632,7 @@ describe("custom-compounds", () => {
       }
     });
 
-    test("Rehydrates from localStorage on module init", () => {
+    test("Rehydrates from localStorage on store creation", () => {
       const mockData = {
         schemaVersion: 1,
         compounds: [

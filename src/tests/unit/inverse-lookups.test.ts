@@ -209,7 +209,7 @@ describe("inverse-lookups", () => {
     });
   });
 
-  describe("clearResults()", () => {
+  describe("reset()", () => {
     test("Sets all result fields back to null on all rows", () => {
       // Mock setting results
       state.rangeRows[0]!.energyMevNucl = 100;
