@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-27 — **Testing**: Add unit tests for custom-compounds and inverse-lookups (#621). (Qwen3.5-397B via opencode)
+  - **Log:** [log](docs/ai-logs/2026-05-27-issue-621.md)
+
 - 2026-05-27 — **Testing**: Add unit tests for headless calc setup functions extracted in PR #619 (`setupMultiProgramCalculation`, `setupMultiEntityCalculation`, `setupInverseRangeCalculation`, `setupInverseStpCalculation`, `setupPlotPreviewCalculation`, `inverse-units`); 44 new tests across 5 new test files + 1 helper. (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-27-state-store-unit-tests.md)
 
