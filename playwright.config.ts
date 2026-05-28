@@ -74,7 +74,9 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm preview --host 127.0.0.1",
+    command: process.env.CI
+      ? "pnpm preview --host 127.0.0.1"
+      : "pnpm build && pnpm preview --host 127.0.0.1",
     url: "http://127.0.0.1:4173",
     reuseExistingServer: !process.env.CI,
   },

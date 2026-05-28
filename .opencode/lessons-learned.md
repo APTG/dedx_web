@@ -9,19 +9,20 @@
 
 ---
 
-## Entry 69 — Run pnpm build before testing with Playwright
+## Entry 69 — Let Playwright handle the local E2E build
 
-**Symptom:** Running `pnpm exec playwright test` immediately after modifying `.svelte` or `.ts` files results in E2E tests executing against a stale production build.
+**Symptom:** E2E tests executed against a stale production build when developers forgot to run `pnpm build` manually before `playwright test`. Conversely, embedding `pnpm build` directly in `package.json` scripts caused redundant double-builds in CI environments.
 
-**Root cause:** Playwright is configured via `playwright.config.ts` to use `webServer: { command: "pnpm preview --host 127.0.0.1" }`. `pnpm preview` serves the compiled, static production build from the `.svelte-kit/output/` directory—it does not dynamically recompile source files like a dev server would.
+**Root cause:** `playwright test` starts a local web server if one isn't running. If `webServer.command` only runs `pnpm preview`, the developer must manually guarantee a fresh build beforehand. Moving the explicit build to `package.json` scripts fixed the local trap but punished CI, which already has its own dedicated build step.
 
 ```text
-❌ Bad: Running `pnpm exec playwright test` immediately after modifying `.svelte` or `.ts` files. The tests use `vite preview` which serves the old production build.
+❌ Bad (Stale Trap): webServer command is just "pnpm preview", relying on devs to manually build first.
+❌ Bad (Double Build): "test:e2e": "pnpm build && playwright test" (forces CI to build twice).
 
-✅ Good: Always run `pnpm build` before running Playwright E2E tests to ensure your changes are actually being tested.
+✅ Good (Smart webServer): webServer command is "process.env.CI ? 'pnpm preview' : 'pnpm build && pnpm preview'".
 ```
 
-**Rule:** Always run `pnpm build` before running Playwright E2E tests to ensure your changes are actually being tested.
+**Rule:** Keep `package.json` test scripts clean (`"test:e2e": "playwright test"`) and let Playwright's `webServer.command` conditionally trigger the local build (`pnpm build && pnpm preview`) only when NOT in CI (`process.env.CI`).
 
 ---
 
