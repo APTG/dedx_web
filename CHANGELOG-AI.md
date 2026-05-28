@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-28 — **Stage 6.10**: Implemented periodic-table picker for compound editor and duplicate resolution logic (Issue #644). (Gemini 2.5 Pro via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-05-28-issue-644.md)
+
 - 2026-05-28 — **Refactoring**: Extract "Availability Computation" and "External Compatibility Context" into `entity-availability.svelte.ts` (#650). (Gemini 3.1 Pro via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-05-28-issue-650-extract-availability.md)
 
