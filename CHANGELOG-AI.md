@@ -1,3 +1,4 @@
+- **2026-05-28** (opencode / Antigravity): Decomposed `calculator.svelte.ts` and `entity-selection.svelte.ts` state monoliths into `calculator-engine.svelte.ts` and `multi-selection.svelte.ts`. Fixed related accessibility issue with export buttons. ([docs/ai-logs/2026-05-28-issue-628.md](docs/ai-logs/2026-05-28-issue-628.md))
 # AI Changelog
 
 > This changelog tracks all AI-assisted coding sessions on this project.
