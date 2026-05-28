@@ -372,7 +372,7 @@
       class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <Dialog.Content
-      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[500px]"
+      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[700px] md:max-w-[1000px]"
     >
       <form
         onsubmit={(e) => {
@@ -580,6 +580,7 @@
                             size="sm"
                             class="bg-orange-500 hover:bg-orange-600 text-white"
                             onclick={handleMergePrompt}
+                            autofocus
                           >
                             Merge into existing {getLocalSymbol(editDuplicatePrompt.newZ)}
                           </Button>
@@ -702,7 +703,7 @@
               <div class="flex items-center gap-4 mt-2">
                 <Input
                   type="text"
-                  placeholder="Type symbol or name..."
+                  placeholder="Type symbol or element..."
                   class="w-40 h-8 text-sm"
                   onkeydown={(e) => {
                     if (e.key === "Enter") {

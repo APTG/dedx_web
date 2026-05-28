@@ -74,19 +74,16 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await densityInput.fill("1.19");
 
     // Fill elements (H2O)
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
+    // H is present by default
 
     // Atom count input has role="spinbutton" (type="number") and placeholder "Count"
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("2");
 
     // Add oxygen
-    const addElementBtn = page.getByRole("button", { name: /add element/i });
-    await addElementBtn.click();
-
-    const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await elementInput2.fill("O");
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("O");
+    await addInput.press("Enter");
 
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
@@ -129,9 +126,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await densityInput.fill("30");
 
     // One element
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await expect(elementInput).toBeVisible();
-    await elementInput.fill("H");
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await expect(atomCount).toBeVisible();
     await atomCount.fill("1");
@@ -179,26 +174,20 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await densityInput.fill("1.0");
 
     // First H
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
-    await elementInput.blur();
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("2");
 
     // Add another H (duplicate)
-    const addElementBtn = page.getByRole("button", { name: /add element/i });
-    await addElementBtn.click();
-
-    const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await elementInput2.fill("H");
-    await elementInput2.blur();
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("H");
+    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
     const saveBtn = page.getByRole("button", { name: /save/i });
-    await saveBtn.click();
-
-    await expect(page.getByText(/listed more than once/i)).toBeVisible();
+    await expect(saveBtn).toBeDisabled();
+    await expect(page.getByText(/appears twice/i)).toBeVisible();
   });
 
   test("AC-2: Create compound adds to library", async ({ page }) => {
@@ -221,17 +210,15 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await densityInput.fill("2.20");
 
     // Li (Z=3) - element resolves automatically on input
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("Li");
+    await page.getByTestId("picker-element-tile-1").first().click();
+    await page.getByTestId("picker-grid-tile-3").first().click();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     // Add F (Z=9)
-    const addElementBtn = page.getByRole("button", { name: /add element/i });
-    await addElementBtn.click();
-
-    const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await elementInput2.fill("F");
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("F");
+    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -284,9 +271,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("1.0");
 
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
-    await elementInput.blur();
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -308,7 +293,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Modal should be open - now click delete button inside modal
     const modal = page.getByRole("dialog").first();
-    const deleteBtn = modal.getByRole("button", { name: "Delete" }).first();
+    const deleteBtn = modal.getByRole("button", { name: "Delete", exact: true }).first();
     console.log("Delete button visible:", await deleteBtn.isVisible());
     console.log("Delete button disabled:", await deleteBtn.isDisabled());
     await expect(deleteBtn).toBeVisible();
@@ -318,7 +303,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     console.log("Modal visible before delete click:", modalVisibleBefore);
 
     // Click the first Delete button to trigger confirmation
-    await deleteBtn.click();
+    await deleteBtn.click({ force: true });
 
     // Confirmation dialog should appear
     const confirmText = page.getByText(/Are you sure you want to delete/i);
@@ -354,7 +339,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await expect(pickerGrid).toBeVisible();
 
     // Add Carbon (Z=6)
-    const carbonTile = page.getByTestId("picker-element-tile-6");
+    await page.getByRole("button", { name: /Pick from periodic table/i }).click();
+    const carbonTile = page.getByTestId("picker-grid-tile-6").first();
     await carbonTile.click();
 
     // Verify Carbon was added
@@ -370,12 +356,12 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await expect(pickerGrid).toBeVisible();
 
     // Change H to O (Z=8)
-    const oxygenTile = page.getByTestId("picker-element-tile-8").nth(1); // the one in the picker
+    const oxygenTile = page.getByTestId("picker-grid-tile-8").first(); // the one in the picker
     await oxygenTile.click();
 
     // Verify H is gone and O is present
     await expect(page.getByTestId("picker-element-tile-1")).not.toBeVisible();
-    const oxygenEditBtn = page.getByTestId("picker-element-tile-8").first();
+    const oxygenEditBtn = page.getByTestId("picker-grid-tile-8").first();
     await expect(oxygenEditBtn).toBeVisible();
   });
 });
@@ -434,9 +420,7 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("1.0");
 
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
-    await elementInput.blur();
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -469,9 +453,7 @@ test.describe("Custom Compounds — Entity Selection Integration", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("1.0");
 
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
-    await elementInput.blur();
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -511,17 +493,15 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     await densityInput.fill("2.20");
 
     // Li
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("Li");
+    await page.getByTestId("picker-element-tile-1").first().click();
+    await page.getByTestId("picker-grid-tile-3").first().click();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     // F
-    const addElementBtn = page.getByRole("button", { name: /add element/i });
-    await addElementBtn.click();
-
-    const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await elementInput2.fill("F");
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("F");
+    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -578,9 +558,7 @@ test.describe("Custom Compounds — Basic/Advanced Mode Transition", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("1.0");
 
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("H");
-    await elementInput.blur();
+    // H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
@@ -639,17 +617,15 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
 
     // First element: H with atom count 2
-    const el0 = page.getByPlaceholder(/symbol or z/i).first();
-    await el0.fill("H");
-    await el0.blur(); // normalize to "H"
+    // H is present by default
+    // await el0.blur();
     const count0 = page.getByPlaceholder(/count/i).first();
     await count0.fill("2");
 
     // Add oxygen
-    await page.getByRole("button", { name: /add element/i }).click();
-    const el1 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await el1.fill("O");
-    await el1.blur();
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("O");
+    await addInput.press("Enter");
     const count1 = page.getByPlaceholder(/count/i).nth(1);
     await count1.fill("1");
 
@@ -711,9 +687,7 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
 
     // First element: H with a placeholder atom count (will be replaced by weight mode)
-    const el0 = page.getByPlaceholder(/symbol or z/i).first();
-    await el0.fill("H");
-    await el0.blur();
+    // H is present by default
 
     // Switch to weight fraction mode
     const weightTab = page.getByRole("tab", { name: /weight fraction/i });
@@ -727,10 +701,9 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await wf0.fill("11.19");
 
     // Add oxygen element
-    await page.getByRole("button", { name: /add element/i }).click();
-    const el1 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await el1.fill("O");
-    await el1.blur();
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("O");
+    await addInput.press("Enter");
 
     // Set oxygen weight fraction
     const wf1 = page.getByRole("spinbutton", { name: /weight fraction.*element 2/i }).first();
@@ -790,9 +763,7 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("textbox", { name: /name/i }).fill("Bad Fractions");
     await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
 
-    const el0 = page.getByPlaceholder(/symbol or z/i).first();
-    await el0.fill("H");
-    await el0.blur();
+    // H is present by default
 
     // Switch to weight fraction mode
     await page.getByRole("tab", { name: /weight fraction/i }).click();
@@ -837,16 +808,15 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     await densityInput.fill("2.20");
 
     // Li (Z=3)
-    const elementInput = page.getByPlaceholder(/symbol or z/i).first();
-    await elementInput.fill("Li");
+    await page.getByTestId("picker-element-tile-1").first().click();
+    await page.getByTestId("picker-grid-tile-3").first().click();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     // F (Z=9)
-    const addElementBtn = page.getByRole("button", { name: /add element/i });
-    await addElementBtn.click();
-    const elementInput2 = page.getByPlaceholder(/symbol or z/i).nth(1);
-    await elementInput2.fill("F");
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("F");
+    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 

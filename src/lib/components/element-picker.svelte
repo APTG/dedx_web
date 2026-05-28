@@ -38,7 +38,7 @@
           aria-disabled={isDisabled}
           aria-label="{el.name} (Z={z})"
           title="{el.name} (Z={z})"
-          data-testid="picker-element-tile-{z}"
+          data-testid="picker-grid-tile-{z}"
           disabled={isDisabled}
           style="grid-row: {pos.row}; grid-column: {pos.col};"
           class={cn(
