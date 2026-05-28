@@ -69,7 +69,7 @@
     null,
   );
 
-  let duplicateBanner = $derived.by(() => {
+  let duplicateBanner = $derived(() => {
     const seen = new Map<number, number>();
     for (let i = 0; i < formData.elements.length; i++) {
       const z = formData.elements[i]!.atomicNumber;
