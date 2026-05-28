@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from "svelte";
   import { Dialog } from "bits-ui";
   import { Button } from "$lib/components/ui/button";
   import { Input } from "$lib/components/ui/input";
@@ -82,26 +83,30 @@
   let usedZ = $derived.by(() => new Set(formData.elements.map((e) => e.atomicNumber)));
 
   $effect(() => {
-    if (open && compound) {
-      formData.name = compound.name;
-      formData.density = String(compound.density);
-      formData.iValue = compound.iValue ? String(compound.iValue) : "";
-      formData.phase = compound.phase;
-      formData.elements = compound.elements.map((e) => ({ ...e }));
-      elementTexts = compound.elements.map((e) => getLocalSymbol(e.atomicNumber));
-      weightTexts = computeInitialWeightTexts(compound.elements);
-      mode = "formula";
-      errors = {};
-      resetTransientState();
-      sortElements();
-    } else if (open && !compound) {
-      formData = { ...initialData };
-      elementTexts = ["H"];
-      weightTexts = ["100"];
-      errors = {};
-      mode = "formula";
-      resetTransientState();
-    }
+    const isOpen = open;
+    const c = compound;
+    untrack(() => {
+      if (isOpen && c) {
+        formData.name = c.name;
+        formData.density = String(c.density);
+        formData.iValue = c.iValue ? String(c.iValue) : "";
+        formData.phase = c.phase;
+        formData.elements = c.elements.map((e) => ({ ...e }));
+        elementTexts = c.elements.map((e) => getLocalSymbol(e.atomicNumber));
+        weightTexts = computeInitialWeightTexts(c.elements);
+        mode = "formula";
+        errors = {};
+        resetTransientState();
+        sortElements();
+      } else if (isOpen && !c) {
+        formData = { ...initialData };
+        elementTexts = ["H"];
+        weightTexts = ["100"];
+        errors = {};
+        mode = "formula";
+        resetTransientState();
+      }
+    });
   });
 
   function resetTransientState() {
@@ -372,7 +377,7 @@
       class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <Dialog.Content
-      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[700px] md:max-w-[1000px]"
+      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[700px] md:max-w-[1000px] max-h-[95dvh] overflow-y-auto"
     >
       <form
         onsubmit={(e) => {

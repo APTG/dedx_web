@@ -42,7 +42,7 @@
           disabled={isDisabled}
           style="grid-row: {pos.row}; grid-column: {pos.col};"
           class={cn(
-            "relative flex aspect-square flex-col items-center justify-center rounded-sm border bg-card p-0 text-center leading-none transition-colors overflow-hidden",
+            "relative flex h-8 sm:h-10 flex-col items-center justify-center rounded-sm border bg-card p-0 text-center leading-none transition-colors overflow-hidden",
             !isDisabled ? "hover:bg-accent cursor-pointer" : "opacity-40 pointer-events-none",
             isCurrent && "ring-2 ring-inset ring-orange-400 bg-orange-50/60",
           )}

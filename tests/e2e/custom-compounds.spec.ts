@@ -255,9 +255,10 @@ test.describe("Custom Compounds — Editor Modal", () => {
   test("AC-6: Delete compound confirmation", async ({ page }) => {
     // Listen to console logs from the page
     page.on("console", (msg) => {
-      if (msg.text().includes("DEBUG") || msg.text().includes("showDeleteConfirm")) {
-        console.log("PAGE CONSOLE:", msg.text());
-      }
+      console.log(`PAGE CONSOLE [${msg.type()}]:`, msg.text());
+    });
+    page.on("pageerror", (err) => {
+      console.log("PAGE ERROR:", err.message);
     });
 
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
@@ -303,7 +304,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     console.log("Modal visible before delete click:", modalVisibleBefore);
 
     // Click the first Delete button to trigger confirmation
-    await deleteBtn.click({ force: true });
+    await deleteBtn.scrollIntoViewIfNeeded();
+    await deleteBtn.click();
 
     // Confirmation dialog should appear
     const confirmText = page.getByText(/Are you sure you want to delete/i);
@@ -339,7 +341,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await expect(pickerGrid).toBeVisible();
 
     // Add Carbon (Z=6)
-    await page.getByRole("button", { name: /Pick from periodic table/i }).click();
     const carbonTile = page.getByTestId("picker-grid-tile-6").first();
     await carbonTile.click();
 
@@ -361,7 +362,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Verify H is gone and O is present
     await expect(page.getByTestId("picker-element-tile-1")).not.toBeVisible();
-    const oxygenEditBtn = page.getByTestId("picker-grid-tile-8").first();
+    const oxygenEditBtn = page.getByTestId("picker-element-tile-8").first();
     await expect(oxygenEditBtn).toBeVisible();
   });
 });
