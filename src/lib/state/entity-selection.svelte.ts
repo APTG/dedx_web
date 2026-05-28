@@ -1,8 +1,3 @@
-import {
-  getAvailablePrograms,
-  getAvailableParticles,
-  getAvailableMaterials,
-} from "./compatibility-matrix";
 import type {
   CompatibilityMatrix,
   ProgramEntity,
@@ -16,7 +11,14 @@ import type {
   ExternalOnlyParticle,
   ExternalOnlyMaterial,
 } from "./external-compatibility";
-import { getAvailableExternalPrograms, EMPTY_EXTERNAL_CONTEXT } from "./external-compatibility";
+import {
+  createEntityAvailabilityState,
+  PROTON_ID,
+  HELIUM_ID,
+  CARBON_ID,
+  WATER_ID,
+  ELECTRON_ID,
+} from "./entity-availability.svelte";
 
 export interface AutoSelectProgram {
   id: -1;
@@ -122,35 +124,7 @@ const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
   resolvedProgram: null,
 };
 
-export const PROTON_ID = 1;
-export const HELIUM_ID = 2;
-export const CARBON_ID = 6;
-export const WATER_ID = 276;
-export const ELECTRON_ID = 1001;
-const PROGRAM_ID = {
-  ASTAR: 1,
-  PSTAR: 2,
-  MSTAR: 4,
-  ICRU73_OLD: 5,
-  ICRU73: 6,
-  ICRU49: 7,
-} as const;
-
-// Program IDs follow runtime verification in wasm/verify.mjs:140-144 and
-// docs/06-wasm-api-contract.md (program enum table).
-//
-// Auto-select priority follows docs/04-feature-specs/entity-selection.md §7
-// using the currently runtime-available ICRU family:
-// Proton: ICRU49 → PSTAR
-// Alpha:  ICRU49 → ASTAR
-// Carbon/heavy ions: ICRU73 → ICRU73(old) → MSTAR
-// Electron (id=1001): N/A (ESTAR remains unimplemented)
-const AUTO_SELECT_CHAIN: Record<number, number[]> = {
-  [PROTON_ID]: [PROGRAM_ID.ICRU49, PROGRAM_ID.PSTAR],
-  [HELIUM_ID]: [PROGRAM_ID.ICRU49, PROGRAM_ID.ASTAR],
-  [CARBON_ID]: [PROGRAM_ID.ICRU73, PROGRAM_ID.ICRU73_OLD, PROGRAM_ID.MSTAR],
-};
-const DEFAULT_AUTO_SELECT_CHAIN = [PROGRAM_ID.ICRU73, PROGRAM_ID.ICRU73_OLD, PROGRAM_ID.MSTAR];
+export { PROTON_ID, HELIUM_ID, CARBON_ID, WATER_ID, ELECTRON_ID };
 
 export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
   let selectedParticleId = $state<number | string | null>(PROTON_ID);
@@ -158,134 +132,34 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   // -1 = Auto-select (built-in), number > 0 = built-in program ID, string = ExtRef for external
   let selectedProgramId = $state<number | string>(-1);
   let lastAutoFallbackMessage = $state<string | null>(null);
-  let extCtx = $state<ExternalCompatibilityContext>(EMPTY_EXTERNAL_CONTEXT);
 
   const multiState = createMultiSelectionState();
 
   // Mobile picker sheet state (issue #530 — adaptive picker kit).
   let sheetOpen = $state(false);
 
-  function resolveAutoSelect(
-    particleId: number | string | null,
-    materialId: number | string | null,
-  ): number | null {
-    if (particleId === null || materialId === null) return null;
-    if (typeof particleId !== "number") return null;
-    if (particleId === ELECTRON_ID) return null;
-    const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
-    const availablePrograms = getAvailablePrograms(
-      matrix,
-      particleId,
-      typeof materialId === "number" ? materialId : undefined,
-    );
-    const availableProgramIds = new Set(availablePrograms.map((program) => program.id));
-    for (const pid of chain) {
-      if (availableProgramIds.has(pid)) return pid;
-    }
-    return (availablePrograms[0]?.id as number | undefined) ?? null;
-  }
-
-  function getResolvedProgramId(
-    programId: number | string,
-    particleId: number | string | null,
-    materialId: number | string | null,
-  ): number | string | null {
-    if (programId === -1) {
-      return resolveAutoSelect(particleId, materialId);
-    }
-    return programId;
-  }
-
-  function computeAvailablePrograms(): ProgramEntity[] {
-    return getAvailablePrograms(
-      matrix,
-      typeof selectedParticleId === "number" ? selectedParticleId : undefined,
-      typeof selectedMaterialId === "number" ? selectedMaterialId : undefined,
-    );
-  }
-
-  function computeAvailableExternalPrograms(): ExternalProgramEntity[] {
-    return getAvailableExternalPrograms(extCtx, selectedParticleId, selectedMaterialId);
-  }
-
-  function computeAvailableParticles(): Array<ParticleEntity | ExternalOnlyParticle> {
-    // If an external program is selected, filter by its covered particles
-    if (typeof selectedProgramId === "string") {
-      const covered = extCtx.particlesByProgram.get(selectedProgramId);
-      if (!covered) return [];
-      return [
-        ...matrix.allParticles.filter((p) => covered.has(p.id as number)),
-        ...extCtx.externalOnlyParticles.filter((p) => covered.has(p.id)),
-      ];
-    }
-
-    const builtinParticles = getAvailableParticles(
-      matrix,
-      selectedProgramId === -1 ? undefined : (selectedProgramId as number),
-      typeof selectedMaterialId === "number" ? selectedMaterialId : undefined,
-    );
-
-    if (selectedProgramId !== -1) return builtinParticles;
-
-    const externalOnlyParticles = extCtx.externalOnlyParticles.filter((particle) =>
-      getAvailableExternalPrograms(extCtx, particle.id, selectedMaterialId).some(Boolean),
-    );
-    return [...builtinParticles, ...externalOnlyParticles];
-  }
-
-  function computeAvailableMaterials(): Array<MaterialEntity | ExternalOnlyMaterial> {
-    // If an external program is selected, filter by its covered materials
-    if (typeof selectedProgramId === "string") {
-      const covered = extCtx.materialsByProgram.get(selectedProgramId);
-      if (!covered) return [];
-      return [
-        ...matrix.allMaterials.filter((m) => covered.has(m.id as number)),
-        ...extCtx.externalOnlyMaterials.filter((m) => covered.has(m.id)),
-      ];
-    }
-
-    const builtinMaterials = getAvailableMaterials(
-      matrix,
-      selectedProgramId === -1 ? undefined : (selectedProgramId as number),
-      typeof selectedParticleId === "number" ? selectedParticleId : undefined,
-    );
-
-    if (selectedProgramId !== -1) return builtinMaterials;
-
-    const externalOnlyMaterials = extCtx.externalOnlyMaterials.filter((material) =>
-      getAvailableExternalPrograms(extCtx, selectedParticleId, material.id).some(Boolean),
-    );
-    return [...builtinMaterials, ...externalOnlyMaterials];
-  }
-
-  function isParticleAvailable(particleId: number | string): boolean {
-    return computeAvailableParticles().some((p) => p.id === particleId);
-  }
-
-  function isMaterialAvailable(materialId: number | string): boolean {
-    if (typeof selectedProgramId === "string") {
-      return computeAvailableMaterials().some((m) => m.id === materialId);
-    }
-    if (typeof materialId === "number") {
-      return computeAvailableMaterials().some((m) => m.id === materialId);
-    }
-    return true; // custom compounds and external-only materials are always "available"
-  }
-
-  function isBuiltinProgramAvailable(programId: number): boolean {
-    return computeAvailablePrograms().some((p) => p.id === programId);
-  }
+  const availability = createEntityAvailabilityState(matrix, {
+    get selectedParticleId() {
+      return selectedParticleId;
+    },
+    get selectedMaterialId() {
+      return selectedMaterialId;
+    },
+    get selectedProgramId() {
+      return selectedProgramId;
+    },
+  });
 
   const state: EntitySelectionState = {
     get selectedProgram(): SelectedProgram {
       // External program selected
       if (typeof selectedProgramId === "string") {
-        const ext = extCtx.programs.find((p) => p.id === selectedProgramId);
+        const ext = availability.externalContext.programs.find((p) => p.id === selectedProgramId);
         if (ext) return ext;
       }
       // Auto-select
       if (selectedProgramId === -1) {
-        const resolvedId = resolveAutoSelect(selectedParticleId, selectedMaterialId);
+        const resolvedId = availability.resolveAutoSelect();
         const resolvedProgram = resolvedId
           ? matrix.allPrograms.find((p) => p.id === resolvedId) || null
           : null;
@@ -296,7 +170,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     get resolvedProgramId(): number | string | null {
-      return getResolvedProgramId(selectedProgramId, selectedParticleId, selectedMaterialId);
+      return availability.getResolvedProgramId();
     },
 
     get selectedParticle(): ParticleEntity | ExternalOnlyParticle | null {
@@ -306,7 +180,9 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         const builtin = matrix.allParticles.find((p) => p.id === selectedParticleId);
         if (builtin) return builtin;
       } else if (selectedParticleId.startsWith("ext:")) {
-        const extParticle = extCtx.externalOnlyParticles.find((p) => p.id === selectedParticleId);
+        const extParticle = availability.externalOnlyParticles.find(
+          (p) => p.id === selectedParticleId,
+        );
         if (extParticle) return extParticle;
       }
       return null;
@@ -337,7 +213,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
       // Check external-only materials
       if (typeof selectedMaterialId === "string" && selectedMaterialId.startsWith("ext:")) {
-        const extMat = extCtx.externalOnlyMaterials.find((m) => m.id === selectedMaterialId);
+        const extMat = availability.externalOnlyMaterials.find((m) => m.id === selectedMaterialId);
         if (extMat) return extMat;
       }
 
@@ -348,15 +224,11 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       if (selectedParticleId === null || selectedMaterialId === null) return false;
       // External program: always complete if particle/material covered
       if (typeof selectedProgramId === "string") {
-        const covered = extCtx.particlesByProgram.get(selectedProgramId);
+        const covered = availability.externalContext.particlesByProgram.get(selectedProgramId);
         return covered ? covered.has(selectedParticleId) : false;
       }
       if (selectedParticleId === ELECTRON_ID) return false;
-      const resolvedId = getResolvedProgramId(
-        selectedProgramId,
-        selectedParticleId,
-        selectedMaterialId,
-      );
+      const resolvedId = availability.getResolvedProgramId();
       return resolvedId !== null;
     },
 
@@ -386,27 +258,27 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     get externalOnlyParticles(): ExternalOnlyParticle[] {
-      return extCtx.externalOnlyParticles;
+      return availability.externalOnlyParticles;
     },
 
     get externalOnlyMaterials(): ExternalOnlyMaterial[] {
-      return extCtx.externalOnlyMaterials;
+      return availability.externalOnlyMaterials;
     },
 
     get availablePrograms(): ProgramEntity[] {
-      return computeAvailablePrograms();
+      return availability.availablePrograms;
     },
 
     get availableExternalPrograms(): ExternalProgramEntity[] {
-      return computeAvailableExternalPrograms();
+      return availability.availableExternalPrograms;
     },
 
     get availableParticles(): Array<ParticleEntity | ExternalOnlyParticle> {
-      return computeAvailableParticles();
+      return availability.availableParticles;
     },
 
     get availableMaterials(): Array<MaterialEntity | ExternalOnlyMaterial> {
-      return computeAvailableMaterials();
+      return availability.availableMaterials;
     },
 
     selectProgram(programId: number | string): void {
@@ -414,13 +286,13 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
       if (typeof programId === "string") {
         // External program selected — validate particle/material against coverage
-        const covered = extCtx.particlesByProgram.get(programId);
+        const covered = availability.externalContext.particlesByProgram.get(programId);
         if (covered && selectedParticleId !== null && !covered.has(selectedParticleId)) {
           // Select first covered built-in particle
           const firstAvailable = [...covered][0] ?? null;
           selectedParticleId = firstAvailable;
         }
-        const covMat = extCtx.materialsByProgram.get(programId);
+        const covMat = availability.externalContext.materialsByProgram.get(programId);
         if (covMat && selectedMaterialId !== null && !covMat.has(selectedMaterialId)) {
           const firstMat = [...covMat].find((id): id is number => typeof id === "number");
           selectedMaterialId = firstMat ?? null;
@@ -429,14 +301,17 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       }
 
       if (programId !== -1) {
-        const availableParticles = computeAvailableParticles();
-        if (selectedParticleId !== null && !isParticleAvailable(selectedParticleId)) {
+        const availableParticles = availability.availableParticles;
+        if (selectedParticleId !== null && !availability.isParticleAvailable(selectedParticleId)) {
           const protonAvailable = availableParticles.some((p) => p.id === PROTON_ID);
           selectedParticleId = protonAvailable ? PROTON_ID : (availableParticles[0]?.id ?? null);
         }
 
-        const availableMaterials = computeAvailableMaterials();
-        if (typeof selectedMaterialId === "number" && !isMaterialAvailable(selectedMaterialId)) {
+        const availableMaterials = availability.availableMaterials;
+        if (
+          typeof selectedMaterialId === "number" &&
+          !availability.isMaterialAvailable(selectedMaterialId)
+        ) {
           const waterAvailable = availableMaterials.some((m) => m.id === WATER_ID);
           selectedMaterialId = waterAvailable ? WATER_ID : (availableMaterials[0]?.id ?? null);
         }
@@ -451,8 +326,11 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
       selectedParticleId = particleId;
 
-      if (typeof selectedMaterialId === "number" && !isMaterialAvailable(selectedMaterialId)) {
-        const availableMaterials = computeAvailableMaterials();
+      if (
+        typeof selectedMaterialId === "number" &&
+        !availability.isMaterialAvailable(selectedMaterialId)
+      ) {
+        const availableMaterials = availability.availableMaterials;
         const waterAvailable = availableMaterials.some((m) => m.id === WATER_ID);
         selectedMaterialId = waterAvailable ? WATER_ID : (availableMaterials[0]?.id ?? null);
       }
@@ -468,7 +346,10 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       const oldProgramId = selectedProgramId;
       const wasExplicitProgram = selectedProgramId !== -1;
 
-      if (selectedProgramId !== -1 && !isBuiltinProgramAvailable(selectedProgramId as number)) {
+      if (
+        selectedProgramId !== -1 &&
+        !availability.isBuiltinProgramAvailable(selectedProgramId as number)
+      ) {
         selectedProgramId = -1;
       }
 
@@ -497,8 +378,8 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
         selectedProgramId = -1;
       }
 
-      if (selectedParticleId !== null && !isParticleAvailable(selectedParticleId)) {
-        const availableParticles = computeAvailableParticles();
+      if (selectedParticleId !== null && !availability.isParticleAvailable(selectedParticleId)) {
+        const availableParticles = availability.availableParticles;
         const protonAvailable = availableParticles.some((p) => p.id === PROTON_ID);
         selectedParticleId = protonAvailable ? PROTON_ID : (availableParticles[0]?.id ?? null);
       }
@@ -512,7 +393,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       if (
         typeof selectedProgramId === "number" &&
         selectedProgramId !== -1 &&
-        !isBuiltinProgramAvailable(selectedProgramId)
+        !availability.isBuiltinProgramAvailable(selectedProgramId)
       ) {
         selectedProgramId = -1;
       }
@@ -572,11 +453,11 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     },
 
     setExternalContext(ctx: ExternalCompatibilityContext): void {
-      extCtx = ctx;
+      availability.setExternalContext(ctx);
     },
 
     get externalContext(): ExternalCompatibilityContext {
-      return extCtx;
+      return availability.externalContext;
     },
 
     get sheetOpen() {

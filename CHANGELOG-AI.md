@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-28 — **Refactoring**: Extract "Availability Computation" and "External Compatibility Context" into `entity-availability.svelte.ts` (#650). (Gemini 3.1 Pro via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-05-28-issue-650-extract-availability.md)
+
 - 2026-05-28 — **Refactoring**: Decompose `calculator.svelte.ts` and `entity-selection.svelte.ts` state monoliths into `calculator-engine.svelte.ts` and `multi-selection.svelte.ts`, with related export-button accessibility updates in `+layout.svelte`. (Antigravity via opencode)
   - **Log:** [log](docs/ai-logs/2026-05-28-issue-628.md)
 
