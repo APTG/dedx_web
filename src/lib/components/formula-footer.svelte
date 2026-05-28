@@ -36,7 +36,7 @@
         {#if formulaParts.length === 0}
           —
         {:else}
-          {#each formulaParts as part}
+          {#each formulaParts as part (part.sym)}
             {part.sym}{#if part.countStr}<sub>{part.countStr}</sub>{/if}
           {/each}
         {/if}

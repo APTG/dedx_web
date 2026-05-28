@@ -47,7 +47,7 @@
   </div>
 
   <div class="relative mt-2 h-4 w-full overflow-hidden rounded-full bg-muted">
-    {#each weightTexts as text, i}
+    {#each weightTexts as text, i (i)}
       {@const val = parseFloat(text) || 0}
       {#if val > 0}
         <div
