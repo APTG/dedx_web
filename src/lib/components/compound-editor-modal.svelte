@@ -377,7 +377,7 @@
       class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
     />
     <Dialog.Content
-      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[700px] md:max-w-[1000px] max-h-[95dvh] overflow-y-auto"
+      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[500px] md:max-w-[650px] max-h-[95dvh] overflow-y-auto"
     >
       <form
         onsubmit={(e) => {
@@ -402,26 +402,29 @@
 
         {#if !showDeleteConfirm}
           <div class="mt-4 grid gap-4">
-            <div class="grid gap-2">
-              <Label for="compound-name">Name</Label>
-              <Input
-                id="compound-name"
-                bind:value={formData.name}
-                placeholder="e.g., LiF Pellet"
-                class={cn(errors.name && "border-destructive")}
-                onkeydown={(e) => {
-                  if (e.key === "Enter") {
-                    e.preventDefault();
-                    (e.currentTarget as HTMLInputElement).blur();
-                  }
-                }}
-              />
-              {#if errors.name}
-                <p class="text-sm text-destructive">{errors.name}</p>
-              {/if}
+            <!-- Properties row 1 -->
+            <div class="flex items-center gap-4">
+              <Label for="compound-name" class="font-medium w-12">Name</Label>
+              <div class="flex-1 max-w-[20rem]">
+                <Input
+                  id="compound-name"
+                  bind:value={formData.name}
+                  placeholder="e.g., LiF Pellet"
+                  class={cn(errors.name && "border-destructive")}
+                  onkeydown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      (e.currentTarget as HTMLInputElement).blur();
+                    }
+                  }}
+                />
+                {#if errors.name}
+                  <p class="text-sm text-destructive mt-1 absolute">{errors.name}</p>
+                {/if}
+              </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-6 items-start">
+            <div class="grid grid-cols-1 md:flex md:items-center gap-4 items-start">
               <div class="flex flex-col gap-2">
                 <div class="flex items-center gap-2">
                   <Label for="compound-density" class="whitespace-nowrap">Density (g/cm³)</Label>
@@ -742,40 +745,11 @@
                 <button
                   type="button"
                   class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
-                  onclick={() => (pickerMode = pickerMode === "ADD" ? null : "ADD")}
+                  onclick={() => (pickerMode = "ADD")}
                 >
                   ⊞ Pick from periodic table
                 </button>
               </div>
-
-              <!-- Inline Picker -->
-              {#if pickerMode}
-                <div class="mt-2 rounded-md border p-2 shadow-sm bg-muted/20">
-                  <div class="mb-2 flex items-center justify-between">
-                    <span class="text-sm font-medium">
-                      {pickerMode === "ADD" ? "Add an element" : "Change element"}
-                    </span>
-                    <button
-                      type="button"
-                      class="text-xs text-muted-foreground hover:underline"
-                      onclick={() => {
-                        pickerMode = null;
-                        pickerEditIndex = null;
-                      }}
-                    >
-                      Close
-                    </button>
-                  </div>
-                  <ElementPicker
-                    mode={pickerMode}
-                    {usedZ}
-                    currentZ={pickerMode === "EDIT" && pickerEditIndex !== null
-                      ? (formData.elements[pickerEditIndex]?.atomicNumber ?? null)
-                      : null}
-                    onSelect={handlePickerSelect}
-                  />
-                </div>
-              {/if}
             </div>
           </div>
 
@@ -826,6 +800,45 @@
       <Dialog.Close
         class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
       />
+    </Dialog.Content>
+  </Dialog.Portal>
+</Dialog.Root>
+
+<Dialog.Root
+  open={!!pickerMode}
+  onOpenChange={(v) => {
+    if (!v) {
+      pickerMode = null;
+      pickerEditIndex = null;
+    }
+  }}
+>
+  <Dialog.Portal>
+    <Dialog.Overlay class="fixed inset-0 z-[60] bg-black/80" />
+    <Dialog.Content
+      class="fixed left-[50%] top-[50%] z-[60] w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-0 shadow-lg sm:max-w-[800px] overflow-hidden"
+    >
+      <div class="px-6 py-4 border-b flex justify-between items-center bg-muted/30">
+        <Dialog.Title class="text-lg font-semibold">
+          {pickerMode === "ADD" ? "Add an element" : "Change element"}
+        </Dialog.Title>
+        <Dialog.Close
+          class="rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none"
+        >
+          <span class="sr-only">Close</span>
+          <span aria-hidden="true" class="text-xl">×</span>
+        </Dialog.Close>
+      </div>
+      <div class="p-6 bg-muted/10 overflow-y-auto max-h-[80vh]">
+        <ElementPicker
+          mode={pickerMode}
+          {usedZ}
+          currentZ={pickerMode === "EDIT" && pickerEditIndex !== null
+            ? (formData.elements[pickerEditIndex]?.atomicNumber ?? null)
+            : null}
+          onSelect={handlePickerSelect}
+        />
+      </div>
     </Dialog.Content>
   </Dialog.Portal>
 </Dialog.Root>
