@@ -26,21 +26,8 @@ export interface AutoSelectProgram {
 
 export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgramEntity;
 
-/**
- * Which of the three picker tabs is currently the "active target" — the tab
- * whose list opens when the user focuses the search field, marked by the
- * coral underline in `tab-bar.svelte`.
- */
-export type PickerTabId = "particle" | "material" | "program";
-
-/**
- * Compare-across dimension (Advanced mode). Controls the multi-entity result
- * view: `"single"` shows the standard single-entity result; `"material"` and
- * `"particle"` wire `multiSelected.material` / `multiSelected.particle` into
- * `TableMulti`; `"program"` drives the existing `MultiProgramState` result
- * table.
- */
-export type AcrossDimension = "single" | "particle" | "material" | "program";
+import { createMultiSelectionState, type PickerTabId, type AcrossDimension } from "./multi-selection.svelte";
+export type { PickerTabId, AcrossDimension };
 
 export interface EntitySelectionState {
   selectedProgram: SelectedProgram;
@@ -169,14 +156,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
   let lastAutoFallbackMessage = $state<string | null>(null);
   let extCtx = $state<ExternalCompatibilityContext>(EMPTY_EXTERNAL_CONTEXT);
 
-  // New picker chrome state (entity-selector rework — see
-  // docs/04-feature-specs/entity-selection.md § Active target + expand/collapse).
-  let activeTarget = $state<PickerTabId>("particle");
-  let expanded = $state(true);
-  let across = $state<AcrossDimension>("single");
-  let multiParticle = $state<(number | string)[]>([]);
-  let multiMaterial = $state<(number | string)[]>([]);
-  let multiProgram = $state<(number | string)[]>([]);
+  const multiState = createMultiSelectionState();
 
   // Mobile picker sheet state (issue #530 — adaptive picker kit).
   let sheetOpen = $state(false);
@@ -554,105 +534,21 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       selectedMaterialId = WATER_ID;
       selectedProgramId = -1;
       lastAutoFallbackMessage = null;
-      activeTarget = "particle";
-      expanded = true;
-      across = "single";
-      multiParticle = [];
-      multiMaterial = [];
-      multiProgram = [];
+      multiState.resetAll();
     },
 
-    get activeTarget() {
-      return activeTarget;
-    },
-
-    get expanded() {
-      return expanded;
-    },
-
-    get across() {
-      return across;
-    },
-
-    get multiSelected() {
-      return {
-        particle: multiParticle,
-        material: multiMaterial,
-        program: multiProgram,
-      };
-    },
-
-    setActiveTarget(tab: PickerTabId): void {
-      activeTarget = tab;
-    },
-
-    setExpanded(value: boolean): void {
-      expanded = value;
-    },
-
-    setAcross(newAcross: AcrossDimension): void {
-      if (across === newAcross) return;
-      across = newAcross;
-      if (newAcross === "single") {
-        // Collapse all multi arrays to avoid stale selections bleeding in later.
-        if (multiParticle.length > 1) multiParticle = [multiParticle[0]!];
-        if (multiMaterial.length > 1) multiMaterial = [multiMaterial[0]!];
-        if (multiProgram.length > 1) multiProgram = [multiProgram[0]!];
-        // Don't force-open the picker or change the active tab.
-      } else {
-        // Seed multi array from current single value (preserves it as element 0).
-        if (newAcross === "program") {
-          const id = selectedProgramId;
-          multiProgram = id !== -1 ? [id] : [];
-        } else if (newAcross === "particle") {
-          multiParticle = selectedParticleId !== null ? [selectedParticleId] : [];
-        } else if (newAcross === "material") {
-          multiMaterial = selectedMaterialId !== null ? [selectedMaterialId] : [];
-        }
-        activeTarget = newAcross;
-        expanded = true;
-      }
-    },
-
-    toggleMulti(dim: AcrossDimension, id: number | string): void {
-      if (dim === "single") return;
-      const arr =
-        dim === "program" ? multiProgram : dim === "particle" ? multiParticle : multiMaterial;
-      const idx = arr.indexOf(id);
-      let next: (number | string)[];
-      if (idx >= 0) {
-        // Cannot deselect the default (first) entry — must reorder first.
-        if (idx === 0) return;
-        next = arr.filter((x) => x !== id);
-      } else {
-        next = [...arr, id];
-      }
-      if (dim === "program") multiProgram = next;
-      else if (dim === "particle") multiParticle = next;
-      else multiMaterial = next;
-    },
-
-    collapseToSingle(): void {
-      // Keep only the anchor (first) element in each multi array.
-      // If the array is empty, leave it empty (no selection to keep).
-      if (multiParticle.length > 1) multiParticle = [multiParticle[0]!];
-      if (multiMaterial.length > 1) multiMaterial = [multiMaterial[0]!];
-      if (multiProgram.length > 1) multiProgram = [multiProgram[0]!];
-    },
-
-    setMultiProgram(ids: (number | string)[]): void {
-      // Clone and de-dupe to prevent external mutation from bypassing $state
-      // reactivity and to ensure no duplicate IDs enter the internal state.
-      multiProgram = [...new Set(ids)];
-    },
-
-    setMultiMaterial(ids: (number | string)[]): void {
-      multiMaterial = [...new Set(ids)];
-    },
-
-    setMultiParticle(ids: (number | string)[]): void {
-      multiParticle = [...new Set(ids)];
-    },
+    get activeTarget() { return multiState.activeTarget; },
+    get expanded() { return multiState.expanded; },
+    get across() { return multiState.across; },
+    get multiSelected() { return multiState.multiSelected; },
+    setActiveTarget: multiState.setActiveTarget,
+    setExpanded: multiState.setExpanded,
+    setAcross: (newAcross: AcrossDimension) => multiState.setAcross(newAcross, selectedProgramId, selectedParticleId, selectedMaterialId),
+    toggleMulti: multiState.toggleMulti,
+    collapseToSingle: multiState.collapseToSingle,
+    setMultiProgram: multiState.setMultiProgram,
+    setMultiMaterial: multiState.setMultiMaterial,
+    setMultiParticle: multiState.setMultiParticle,
 
     get lastAutoFallbackMessage() {
       return lastAutoFallbackMessage;
