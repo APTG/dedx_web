@@ -9,6 +9,22 @@
 
 ---
 
+## Entry 69 — Run pnpm build before testing with Playwright
+
+**Symptom:** Running `pnpm exec playwright test` immediately after modifying `.svelte` or `.ts` files results in E2E tests executing against a stale production build.
+
+**Root cause:** Playwright is configured via `playwright.config.ts` to use `webServer: { command: "pnpm preview --host 127.0.0.1" }`. `pnpm preview` serves the compiled, static production build from the `.svelte-kit/output/` directory—it does not dynamically recompile source files like a dev server would.
+
+```text
+❌ Bad: Running `pnpm exec playwright test` immediately after modifying `.svelte` or `.ts` files. The tests use `vite preview` which serves the old production build.
+
+✅ Good: Always run `pnpm build` before running Playwright E2E tests to ensure your changes are actually being tested.
+```
+
+**Rule:** Always run `pnpm build` before running Playwright E2E tests to ensure your changes are actually being tested.
+
+---
+
 ## Entry 68 — prebuild replaces explicit deploy.json workflow steps, not pnpm build
 
 **Symptom:** After adding `prebuild: node scripts/deploy.cjs`, CI/workflow docs
