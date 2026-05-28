@@ -212,7 +212,6 @@
 
   function switchMode(newMode: "formula" | "weight") {
     if (newMode === mode) return;
-    errors = {};
     if (newMode === "weight") {
       weightTexts = computeInitialWeightTexts(formData.elements);
     } else {
@@ -666,7 +665,7 @@
                             aria-label={`Atom count for element ${index + 1}`}
                           />
                           <div class="w-16 text-right text-xs text-muted-foreground">
-                            {((massFractions[index]?.weightFraction || 0) * 100).toFixed(2)}%
+                            {((massFractions?.[index]?.weightFraction || 0) * 100).toFixed(2)}%
                           </div>
                         </div>
                       {:else}

@@ -88,8 +88,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
-    // Try to save - should fail
-    await saveBtn.click();
+    // Try to save - should fail because button is disabled
+    await expect(saveBtn).toBeDisabled();
 
     // Error message should appear
     await expect(page.getByText(/name is required/i)).toBeVisible();
@@ -133,11 +133,9 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     const saveBtn = page.getByRole("button", { name: /save/i });
     await expect(saveBtn).toBeVisible();
-    await expect(saveBtn).toBeEnabled();
 
-    await saveBtn.click();
-
-    // Wait for validation to run
+    // Save button should be disabled because density > 25
+    await expect(saveBtn).toBeDisabled();
 
     console.log("Console messages after save:", consoleMessages);
 
@@ -146,12 +144,6 @@ test.describe("Custom Compounds — Editor Modal", () => {
     console.log("Modal still open after save click:", modalStillOpen);
 
     // Try to find any error message
-    const allText = await page.getByText(/required|must be|invalid|error/i).all();
-    console.log("Found error messages:", allText.length);
-    for (let i = 0; i < allText.length && i < 5; i++) {
-      console.log(`Error ${i}:`, await allText[i]!.textContent());
-    }
-
     await expect(page.getByText(/density must be/i)).toBeVisible();
     await expect(modal).toBeVisible();
   });
@@ -773,10 +765,9 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
     await wf0.fill("50");
 
-    await page.getByRole("button", { name: /save/i }).click();
-
-    // Validation error should appear and modal should stay open.
-    // Target the destructive error paragraph specifically (not the hint text).
+    // Validation error should appear and button should be disabled
+    const saveBtn = page.getByRole("button", { name: /save/i });
+    await expect(saveBtn).toBeDisabled();
     await expect(
       page
         .locator("p.text-destructive")
