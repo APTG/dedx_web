@@ -10,6 +10,7 @@ import {
   computeWeightFractions,
   computeAtomCounts,
   normalizeAtomCounts,
+  computeBraggIValue,
 } from "$lib/utils/element-data";
 
 describe("element-data", () => {
@@ -370,6 +371,45 @@ describe("element-data", () => {
 
     test("handles empty array", () => {
       expect(normalizeAtomCounts([])).toEqual([]);
+    });
+  });
+
+  describe("computeBraggIValue", () => {
+    test("computes I-value for water (H2O)", () => {
+      const h2o = [
+        { atomicNumber: 1, atomCount: 2 },
+        { atomicNumber: 8, atomCount: 1 },
+      ];
+      // sum(n * Z) = 2*1 + 1*8 = 10
+      // sum(n * Z * ln(I)) = 2*1*ln(19.2) + 1*8*ln(95) ≈ 2 * 2.9549 + 8 * 4.5538 ≈ 5.9098 + 36.4304 = 42.3402
+      // exp(42.3402 / 10) = exp(4.234) ≈ 68.99 eV
+      // Wait, let's test it is defined and approximately correct.
+      const iValue = computeBraggIValue(h2o);
+      expect(iValue).toBeDefined();
+      expect(iValue).toBeCloseTo(69.0, 1); // Bragg rule yields ~69.0 eV
+    });
+
+    test("computes I-value for carbon dioxide (CO2)", () => {
+      const co2 = [
+        { atomicNumber: 6, atomCount: 1 },
+        { atomicNumber: 8, atomCount: 2 },
+      ];
+      const iValue = computeBraggIValue(co2);
+      expect(iValue).toBeDefined();
+      expect(iValue).toBeGreaterThan(78);
+      expect(iValue).toBeLessThan(95);
+    });
+
+    test("returns undefined if any element is missing I-value", () => {
+      const withOg = [
+        { atomicNumber: 1, atomCount: 1 },
+        { atomicNumber: 118, atomCount: 1 }, // Oganesson, no I-value
+      ];
+      expect(computeBraggIValue(withOg)).toBeUndefined();
+    });
+
+    test("returns undefined for empty array", () => {
+      expect(computeBraggIValue([])).toBeUndefined();
     });
   });
 });

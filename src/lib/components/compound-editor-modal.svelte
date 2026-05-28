@@ -237,10 +237,19 @@
   function handleRescale() {
     const sum = weightTexts.reduce((acc, val) => acc + (parseFloat(val) || 0), 0);
     if (sum > 0) {
-      weightTexts = weightTexts.map((val) => {
+      let currentSum = 0;
+      const newTexts = weightTexts.map((val, i) => {
+        if (i === weightTexts.length - 1) return "0.00"; // placeholder for the last element
         const v = parseFloat(val) || 0;
-        return ((v / sum) * 100).toFixed(2);
+        const fraction = parseFloat(((v / sum) * 100).toFixed(2));
+        currentSum += fraction;
+        return fraction.toFixed(2);
       });
+      if (weightTexts.length > 0) {
+        const remaining = Math.max(0, 100 - currentSum);
+        newTexts[newTexts.length - 1] = remaining.toFixed(2);
+      }
+      weightTexts = newTexts;
     }
   }
 
@@ -728,6 +737,7 @@
                 <p class="text-xs text-muted-foreground">
                   Fractions must total 100%. Values are stored as atomic ratios (w/M).
                 </p>
+                <SumTracker {weightTexts} elementSymbols={elementTexts} onRescale={handleRescale} />
               {/if}
 
               <!-- Add and Picker Buttons -->
@@ -770,7 +780,7 @@
               {#if mode === "formula"}
                 <FormulaFooter elements={formData.elements} iValueOverride={formData.iValue} />
               {:else}
-                <SumTracker {weightTexts} onRescale={handleRescale} />
+                <SumTracker {weightTexts} elementSymbols={elementTexts} onRescale={handleRescale} />
               {/if}
             </div>
           </div>
