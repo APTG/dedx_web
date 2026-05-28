@@ -177,7 +177,26 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
+    // Verify the duplicate was actually added — should have 2 count inputs
+    const countInputs = page.getByPlaceholder(/count/i);
+    const countInputCount = await countInputs.count();
+    console.log("Count inputs after adding duplicate H:", countInputCount);
+
+    // Check if the duplicate banner message is visible
+    const appearsText = page.getByText(/appears twice/i);
+    const appearsVisible = await appearsText.isVisible().catch(() => false);
+    console.log("'appears twice' visible:", appearsVisible);
+
+    // Check the element tiles
+    const hTiles = page.getByTestId("picker-element-tile-1");
+    const hTileCount = await hTiles.count();
+    console.log("H element tiles:", hTileCount);
+
+    // Check Save button state
     const saveBtn = page.getByRole("button", { name: /save/i });
+    const isDisabled = await saveBtn.isDisabled();
+    console.log("Save button disabled:", isDisabled);
+
     await expect(saveBtn).toBeDisabled();
     await expect(page.getByText(/appears twice/i)).toBeVisible();
   });
