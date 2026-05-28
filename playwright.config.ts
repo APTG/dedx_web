@@ -29,7 +29,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: process.env.CI ? "html" : "list",
   // Global timeout per test: 60 s. WASM loading and reactive settling can take
   // several seconds; WASM-dependent tests may use test.setTimeout() to extend
   // the limit further.
