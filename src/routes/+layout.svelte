@@ -89,9 +89,8 @@
             <div class="hidden sm:flex items-center gap-2">
               <Button
                 data-testid="export-pdf-btn"
-                variant="outline"
+                variant="secondary"
                 size="sm"
-                class="text-foreground"
                 disabled={!canExport.value}
                 aria-disabled={!canExport.value}
                 aria-label="Export PDF"
@@ -104,9 +103,8 @@
               </Button>
               <Button
                 data-testid="export-csv-btn"
-                variant="outline"
+                variant="secondary"
                 size="sm"
-                class="text-foreground"
                 disabled={!canExport.value}
                 aria-disabled={!canExport.value}
                 aria-label="Export CSV"
