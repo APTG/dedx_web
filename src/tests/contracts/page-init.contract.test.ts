@@ -24,16 +24,18 @@ function readSource(relativePath: string): string {
 }
 
 const CALCULATOR_PAGE = "src/routes/calculator/+page.svelte";
+const CALCULATOR_ORCHESTRATOR = "src/lib/state/calculator-page-orchestrator.svelte.ts";
 const PLOT_PAGE = "src/routes/plot/+page.svelte";
+const PLOT_ORCHESTRATOR = "src/lib/state/plot-page-orchestrator.svelte.ts";
 
 describe("Page-init contract — initAdvancedModeFromUrl", () => {
-  it("calculator/+page.svelte calls initAdvancedModeFromUrl", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator calls initAdvancedModeFromUrl", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     expect(source).toContain("initAdvancedModeFromUrl");
   });
 
-  it("plot/+page.svelte calls initAdvancedModeFromUrl", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator calls initAdvancedModeFromUrl", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     expect(source).toContain("initAdvancedModeFromUrl");
   });
 });
@@ -61,8 +63,8 @@ describe("Page-init contract — reactive dep snapshot pattern", () => {
     expect(hasAdvOptsKey || hasAdvOptsSnapshot).toBe(true);
   });
 
-  it("plot/+page.svelte uses advOptsKey or equivalent snapshot pattern", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator uses advOptsKey or equivalent snapshot pattern", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     const hasAdvOptsKey = source.includes("advOptsKey");
     const hasAdvOptsSnapshot =
       source.includes("advancedOptions.value") && source.includes("$derived");
@@ -80,8 +82,8 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
     }
   });
 
-  it("calculator/+page.svelte wraps replaceState calls with untrack (prevents reactive loop)", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator wraps replaceState calls with untrack (prevents reactive loop)", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     if (source.includes("import { replaceState }")) {
       expect(source).toContain("untrack");
     }
@@ -89,13 +91,13 @@ describe("Page-init contract — replaceState wrapped in untrack", () => {
 });
 
 describe("Page-init contract — urlv negotiation", () => {
-  it("calculator/+page.svelte source contains negotiateVersion call", () => {
-    const source = readSource(CALCULATOR_PAGE);
+  it("calculator orchestrator source contains negotiateVersion call", () => {
+    const source = readSource(CALCULATOR_ORCHESTRATOR);
     expect(source).toContain("negotiateVersion");
   });
 
-  it("plot page source contains negotiateVersion call", () => {
-    const source = readSource(PLOT_PAGE);
+  it("plot orchestrator source contains negotiateVersion call", () => {
+    const source = readSource(PLOT_ORCHESTRATOR);
     expect(source).toContain("negotiateVersion");
   });
 });

@@ -1,46 +1,33 @@
 <script lang="ts">
   import { browser } from "$app/environment";
-  import { page } from "$app/state";
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { Skeleton } from "$lib/components/ui/skeleton";
   import { Button } from "$lib/components/ui/button";
-  import { WATER_ID } from "$lib/state/entity-selection.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
-  import { createPlotState } from "$lib/state/plot.svelte";
-  import { computeAxisRanges, getJsrootSwatchColors } from "$lib/utils/plot-utils";
-  import { setupPlotUrlSync } from "$lib/state/plot-url-sync.svelte";
-  import { setupPlotUrlRestore } from "$lib/state/plot-url-restore.svelte";
-  import { setupPlotPreviewCalculation } from "$lib/state/plot-preview-calc.svelte";
+  import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { downloadPlotSvg, downloadPlotPng } from "$lib/export/plot-image";
-  import { getParticleLabel } from "$lib/utils/particle-label";
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
-  import { getService } from "$lib/wasm/loader";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import SeriesStrip from "./series-strip.svelte";
-  import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
-  import { negotiateVersion } from "$lib/utils/url-version.js";
+  import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
   import { goto } from "$app/navigation";
-  import {
-    advancedOptions,
-    loadAdvancedOptionsFromStorage,
-    persistAdvancedOptions,
-  } from "$lib/state/advanced-options.svelte";
-
-  const plotState = createPlotState();
   import { appInit } from "$lib/state/app-init.svelte";
+  import {
+    createPlotPageOrchestrator,
+    MAX_PLOT_SERIES,
+  } from "$lib/state/plot-page-orchestrator.svelte";
+
+  const orchestrator = createPlotPageOrchestrator();
+  const plotState = $derived(orchestrator.plotState);
 
   let entityState = $derived(appInit.entityState);
   let loadedExternalSources = $derived(appInit.loadedExternalSources);
   let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
   let externalError = $derived(appInit.error);
-
-  let materialIsGas = $state<boolean | undefined>(undefined);
-  let urlVersionMismatch = $state<{ version: number | string } | null>(null);
-  let advancedModeInitializedFromUrl = $state(false);
 
   function handleRemoveExternalSource(label: string): void {
     appInit.removeExternalSource(label);
@@ -48,7 +35,6 @@
 
   // Mobile responsive: track viewport width to pass collapsible to EntitySelection
   let isMobile = $state(false);
-  let previewError = $state<string | null>(null);
 
   $effect(() => {
     if (!browser) return;
@@ -61,159 +47,6 @@
     return () => mq.removeEventListener("change", handler);
   });
 
-  $effect(() => {
-    if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
-      appInit.initialize(page.url.searchParams);
-    }
-  });
-
-  // Initialize advanced options from localStorage on mount (runs once; browser is a constant)
-  $effect(() => {
-    if (!browser) return;
-    loadAdvancedOptionsFromStorage();
-  });
-
-  // Initialize advanced mode from URL IMMEDIATELY when WASM is ready, before the
-  // main URL init effect runs. This ensures the tabs render correctly when
-  // the page loads with ?mode=advanced — otherwise the component renders with
-  // isAdvancedMode.value = false and there's a reactivity glitch when it later
-  // becomes true inside the async callback.
-  $effect(() => {
-    if (wasmReady.value && !advancedModeInitializedFromUrl) {
-      initAdvancedModeFromUrl(page.url.searchParams);
-      advancedModeInitializedFromUrl = true;
-    }
-  });
-
-  // Handle mode switch fallback: custom compound → water when switching to Basic mode
-  $effect(() => {
-    const mode = isAdvancedMode.value;
-    if (!mode && entityState?.selectedMaterial) {
-      const matId = entityState.selectedMaterial.id;
-      if (typeof matId === "string" && matId.startsWith("cc_")) {
-        entityState.selectMaterial(WATER_ID);
-      }
-    }
-    if (!mode) {
-      for (const series of [...plotState.series]) {
-        if (typeof series.materialId === "string" && series.materialId.startsWith("cc_")) {
-          plotState.removeSeries(series.seriesId);
-        }
-      }
-    }
-  });
-
-  // Track material changes to determine gas/condensed state for the panel
-  $effect(() => {
-    if (!entityState?.selectedMaterial) {
-      materialIsGas = undefined;
-      return;
-    }
-    const resolvedId = entityState.resolvedProgramId;
-    const selMat = entityState.selectedMaterial;
-    const builtinMat = "isGasByDefault" in selMat ? selMat : null;
-    const matId = selMat.id;
-    if (isCustomMaterial(builtinMat)) {
-      materialIsGas = builtinMat.isGasByDefault;
-      return;
-    }
-    if (resolvedId === null || typeof resolvedId !== "number") {
-      materialIsGas = undefined;
-      return;
-    }
-    let cancelled = false;
-    const numericResolvedId = resolvedId;
-    getService().then((service) => {
-      if (cancelled) return;
-      const materials = service.getMaterials(numericResolvedId);
-      const mat = materials.find((m) => m.id === matId);
-      if (cancelled) return;
-      materialIsGas = mat?.isGasByDefault;
-    });
-    return () => {
-      cancelled = true;
-    };
-  });
-
-  // $derived signal to track nested advancedOptions changes.
-  // Svelte 5 fine-grained reactivity only registers a dep when a property
-  // is read synchronously.  Reading advancedOptions.value (the proxy object)
-  // does NOT register a dep on nested mutations such as
-  // `advancedOptions.value.densityOverride = 2`.  By deriving a serialised
-  // key from every relevant nested property we force $effects that read
-  // advOptsKey to re-run whenever ANY option changes.
-  const advOptsKey = $derived(
-    JSON.stringify([
-      advancedOptions.value.interpolation?.scale,
-      advancedOptions.value.interpolation?.method,
-      advancedOptions.value.densityOverride,
-      advancedOptions.value.iValueOverride,
-      advancedOptions.value.aggregateState,
-      advancedOptions.value.mstarMode,
-    ]),
-  );
-
-  // Persist advanced options to localStorage whenever they change
-  $effect(() => {
-    if (!browser) return;
-    // Read advOptsKey to track nested changes (see comment above)
-    const _advOptsKey = advOptsKey;
-    void _advOptsKey;
-    persistAdvancedOptions();
-  });
-
-  let urlVersionChecked = $state(false);
-  let urlInitialized = $state(false);
-
-  // URL version negotiation runs IMMEDIATELY (before WASM is ready)
-  $effect(() => {
-    if (!browser || urlVersionChecked) return;
-    const params = new URLSearchParams(window.location.search);
-    const urlvRaw = params.get("urlv");
-    const negotiationResult = negotiateVersion(urlvRaw);
-    if (negotiationResult.status === "mismatch") {
-      urlVersionMismatch = { version: negotiationResult.version };
-    } else {
-      urlVersionMismatch = null;
-    }
-    urlVersionChecked = true;
-  });
-
-  setupPlotUrlRestore(
-    () => plotState,
-    () => entityState,
-    () => urlInitialized,
-    () => {
-      urlInitialized = true;
-    },
-  );
-
-  setupPlotUrlSync(
-    () => plotState,
-    () => entityState,
-    () => urlInitialized,
-    () => loadedExternalSources,
-    () => advOptsKey,
-  );
-
-  setupPlotPreviewCalculation(
-    () => plotState,
-    () => entityState,
-    () => urlVersionMismatch,
-    () => advOptsKey,
-    (msg) => {
-      previewError = msg;
-    },
-  );
-
-  // ── Legend swatch colors: derived from JSROOT's actual color list so the
-  // swatch hex matches what JSROOT renders for fLineColor = colorIndex + 2. ──
-  let jsrootSwatchColors = $state<Map<number, string> | null>(null);
-  $effect(() => {
-    if (!browser || jsrootSwatchColors) return;
-    getJsrootSwatchColors().then((m) => (jsrootSwatchColors = m));
-  });
-
   // ── Derived: axis ranges from visible series ──
   const axisRanges = $derived(
     computeAxisRanges(
@@ -222,232 +55,6 @@
       plotState.stpUnit,
     ),
   );
-
-  // ── Editing series ──
-  let editingSeriesId = $state<number | null>(null);
-
-  function handleSelectSeriesForEdit(seriesId: number): void {
-    if (!entityState) return;
-    const s = plotState.series.find((x) => x.seriesId === seriesId);
-    if (!s) return;
-    editingSeriesId = seriesId;
-    entityState.selectParticle(s.particleId);
-    entityState.selectMaterial(s.materialId);
-    entityState.selectProgram(s.programId as number | string);
-    entityState.setExpanded(true);
-  }
-
-  function handleDoneEditing(): void {
-    editingSeriesId = null;
-  }
-
-  // Live-update the editing series whenever the preview changes.
-  $effect(() => {
-    if (editingSeriesId === null || !plotState.preview) return;
-    const p = plotState.preview;
-    const current = plotState.series.find((s) => s.seriesId === editingSeriesId);
-    if (
-      current &&
-      current.programId === p.programId &&
-      current.particleId === p.particleId &&
-      current.materialId === p.materialId &&
-      current.programName === p.programName &&
-      current.particleName === p.particleName &&
-      current.materialName === p.materialName &&
-      current.particleMassNumber === p.particleMassNumber &&
-      current.density === p.density &&
-      current.result === p.result
-    ) {
-      return;
-    }
-    plotState.updateSeries(editingSeriesId, {
-      programId: p.programId,
-      particleId: p.particleId,
-      materialId: p.materialId,
-      programName: p.programName,
-      particleName: p.particleName,
-      materialName: p.materialName,
-      particleMassNumber: p.particleMassNumber,
-      density: p.density,
-      result: p.result,
-    });
-  });
-
-  // ── Add Series ──
-  const MAX_PLOT_SERIES = 20;
-
-  function handleAddSeries() {
-    if (!entityState) return;
-    if (plotState.series.length >= MAX_PLOT_SERIES) return;
-    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
-    if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
-    if (!plotState.preview) return;
-
-    // Only commit the cached preview result when it matches the *current*
-    // selection; otherwise the preview is stale (e.g. from a previous
-    // particle/material) and would commit the wrong series.
-    const p = plotState.preview;
-    if (
-      p.programId !== resolvedProgramId ||
-      p.particleId !== selectedParticle.id ||
-      p.materialId !== selectedMaterial.id
-    ) {
-      return;
-    }
-
-    const added = plotState.addSeries({
-      programId: resolvedProgramId,
-      particleId: selectedParticle.id,
-      materialId: selectedMaterial.id,
-      programName: p.programName,
-      particleName: getParticleLabel(selectedParticle),
-      materialName: selectedMaterial.name,
-      particleMassNumber: p.particleMassNumber,
-      // Preserve the density that was active when the preview was computed
-      // so committed series display the same values as the preview did.
-      density: p.density,
-      result: p.result,
-    });
-
-    if (!added) {
-      console.warn("Duplicate series — not added.");
-    }
-  }
-
-  // ── Handle Add: delegate to multi-create when in advanced multi-select mode ──
-  async function handleAddOrMulti(): Promise<void> {
-    if (!entityState) return;
-    if (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES) return;
-    if (editingSeriesId !== null) {
-      handleDoneEditing();
-      return;
-    }
-    const across = entityState.across;
-    if (isAdvancedMode.value && across !== null && across !== "single") {
-      const ids = entityState.multiSelected[across];
-      if (ids.length > 1) {
-        await handleAddMultiSeries(across, ids);
-        return;
-      }
-    }
-    handleAddSeries();
-  }
-
-  async function handleAddMultiSeries(
-    across: "particle" | "material" | "program",
-    ids: (number | string)[],
-  ): Promise<void> {
-    if (!entityState) return;
-    const service = await getService();
-    const { resolvedProgramId, selectedParticle, selectedMaterial, isComplete } = entityState;
-    if (!isComplete || resolvedProgramId === null || !selectedParticle || !selectedMaterial) return;
-    const programs = service.getPrograms();
-    const toNumericId = (value: number | string): number | null => {
-      const parsed = typeof value === "number" ? value : Number(value);
-      return Number.isInteger(parsed) && parsed >= 0 ? parsed : null;
-    };
-
-    const baseProgramId = toNumericId(resolvedProgramId);
-    const baseParticleId = toNumericId(selectedParticle.id);
-    const baseMaterialId = toNumericId(selectedMaterial.id);
-    if (baseProgramId === null || baseParticleId === null || baseMaterialId === null) {
-      previewError = "Cannot add selected series: one or more base IDs are invalid.";
-      return;
-    }
-
-    let hadFailures = false;
-    for (const id of ids) {
-      try {
-        let programId = baseProgramId;
-        let particleId = baseParticleId;
-        let materialId = baseMaterialId;
-        let programName = programs.find((p) => p.id === programId)?.name ?? "";
-        let particleName = getParticleLabel(selectedParticle);
-        let materialName = selectedMaterial.name;
-        let density = selectedMaterial.density ?? 1;
-        let particleMassNumber: number | undefined =
-          "massNumber" in selectedParticle ? selectedParticle.massNumber : undefined;
-        const overrideId = toNumericId(id);
-        if (overrideId === null) {
-          hadFailures = true;
-          continue;
-        }
-
-        if (across === "program") {
-          programId = overrideId;
-          programName = programs.find((p) => p.id === overrideId)?.name ?? String(overrideId);
-        } else if (across === "particle") {
-          particleId = overrideId;
-          const particles = service.getParticles(programId);
-          const part = particles.find((p) => p.id === overrideId);
-          if (part) {
-            particleName = getParticleLabel(part);
-            particleMassNumber = part.massNumber;
-          }
-        } else if (across === "material") {
-          materialId = overrideId;
-          const materials = service.getMaterials(programId);
-          const mat = materials.find((m) => m.id === overrideId);
-          if (mat) {
-            materialName = mat.name;
-            density = mat.density;
-          }
-        }
-
-        const result = service.getPlotData(
-          programId,
-          particleId,
-          materialId,
-          500,
-          true,
-          advancedOptions.value,
-        );
-        const added = plotState.addSeries({
-          programId,
-          particleId,
-          materialId,
-          programName,
-          particleName,
-          materialName,
-          particleMassNumber,
-          density,
-          result,
-        });
-        if (!added) {
-          hadFailures = true;
-        }
-      } catch (err) {
-        hadFailures = true;
-        console.warn("Failed to add one of the multi-selected series.", err);
-      }
-    }
-    if (hadFailures) {
-      previewError = "Some selected series could not be added.";
-    }
-  }
-
-  // ── Reset All ──
-  let showResetConfirm = $state(false);
-
-  function handleResetAll() {
-    if (plotState.series.length >= 2) {
-      showResetConfirm = true;
-    } else {
-      doReset();
-    }
-  }
-
-  function doReset() {
-    plotState.resetAll();
-    entityState?.resetAll();
-    showResetConfirm = false;
-  }
-
-  function handleLoadDefaults() {
-    // Navigate to /plot without params to clear the mismatch URL
-    goto("/plot", { replaceState: true });
-    urlVersionMismatch = null;
-  }
 
   // ── SVG Export ──
   // Bound from JsrootPlot requestExportSvg, set by component's $effect
@@ -565,10 +172,10 @@
   <div class="space-y-4">
     <h1 class="text-3xl font-bold">Plot</h1>
 
-    {#if urlVersionMismatch}
+    {#if orchestrator.urlVersionMismatch}
       <UrlVersionWarningBanner
-        version={urlVersionMismatch.version}
-        onLoadDefaults={handleLoadDefaults}
+        version={orchestrator.urlVersionMismatch.version}
+        onLoadDefaults={() => orchestrator.handleLoadDefaults()}
       />
     {/if}
 
@@ -582,14 +189,14 @@
 
         <!-- Add Series / Done editing button (sidebar, desktop-primary) -->
         <button
-          disabled={(editingSeriesId === null && !entityState.isComplete) ||
-            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
-          aria-disabled={(editingSeriesId === null && !entityState.isComplete) ||
-            (editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
-          onclick={handleAddOrMulti}
+          disabled={(orchestrator.editingSeriesId === null && !entityState.isComplete) ||
+            (orchestrator.editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
+          aria-disabled={(orchestrator.editingSeriesId === null && !entityState.isComplete) ||
+            (orchestrator.editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
+          onclick={() => orchestrator.handleAddOrMulti()}
           class="w-full rounded-md bg-primary px-4 py-2 text-sm font-medium text-primary-foreground hover:bg-primary/90 disabled:pointer-events-none disabled:opacity-50 min-h-[44px]"
         >
-          {editingSeriesId !== null ? "Done editing" : "＋ Add Series"}
+          {orchestrator.editingSeriesId !== null ? "Done editing" : "＋ Add Series"}
         </button>
 
         {#if plotState.series.length >= 10}
@@ -600,7 +207,7 @@
 
         <button
           class="text-sm text-muted-foreground underline hover:no-underline min-h-[44px]"
-          onclick={handleResetAll}
+          onclick={() => orchestrator.handleResetAll()}
         >
           Reset all
         </button>
@@ -751,16 +358,16 @@
         <SeriesStrip
           series={plotState.series}
           preview={plotState.preview}
-          {editingSeriesId}
-          {jsrootSwatchColors}
+          editingSeriesId={orchestrator.editingSeriesId}
+          jsrootSwatchColors={orchestrator.jsrootSwatchColors}
           maxSeries={MAX_PLOT_SERIES}
-          {previewError}
-          onAdd={handleAddOrMulti}
+          previewError={orchestrator.previewError}
+          onAdd={() => orchestrator.handleAddOrMulti()}
           onRemove={(id) => plotState.removeSeries(id)}
           onToggleVisibility={(id) => plotState.toggleVisibility(id)}
           onTogglePreview={() => plotState.togglePreviewVisibility()}
-          onSelectForEdit={handleSelectSeriesForEdit}
-          onDone={handleDoneEditing}
+          onSelectForEdit={(id) => orchestrator.handleSelectSeriesForEdit(id)}
+          onDone={() => orchestrator.handleDoneEditing()}
         />
 
         <!-- Advanced Options Panel (visible only in Advanced mode per spec AC-1) -->
@@ -768,9 +375,9 @@
           {@const plotSelMat = entityState.selectedMaterial}
           {@const plotBuiltinMat = "isGasByDefault" in plotSelMat ? plotSelMat : null}
           <AdvancedOptionsPanel
-            materialIsGas={materialIsGas ?? false}
+            materialIsGas={orchestrator.materialIsGas ?? false}
             materialBuiltInDensity={plotBuiltinMat?.density}
-            materialBuiltInAggregateState={materialIsGas ? "gas" : "condensed"}
+            materialBuiltInAggregateState={orchestrator.materialIsGas ? "gas" : "condensed"}
             isCustomCompoundActive={isCustomMaterial(plotBuiltinMat)}
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
@@ -781,7 +388,7 @@
     </div>
 
     <!-- Reset confirmation dialog -->
-    {#if showResetConfirm}
+    {#if orchestrator.showResetConfirm}
       <div
         role="dialog"
         aria-modal="true"
@@ -792,11 +399,11 @@
           <p class="mb-4">Remove all {plotState.series.length} series and reset selections?</p>
           <div class="flex justify-end gap-2">
             <button
-              onclick={() => (showResetConfirm = false)}
+              onclick={() => (orchestrator.showResetConfirm = false)}
               class="rounded-md border px-4 py-2 text-sm font-medium hover:bg-accent">Cancel</button
             >
             <button
-              onclick={doReset}
+              onclick={() => orchestrator.doReset()}
               class="rounded-md bg-destructive px-4 py-2 text-sm font-medium text-destructive-foreground hover:bg-destructive/90"
               >Reset</button
             >
