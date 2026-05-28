@@ -1,4 +1,6 @@
+/** Picker tab IDs used by the entity selection panel state/UI. */
 export type PickerTabId = "particle" | "material" | "program";
+/** Compare-across dimension; "single" disables multi-selection mode. */
 export type AcrossDimension = "single" | "particle" | "material" | "program";
 
 export interface MultiSelectionState {

@@ -11,7 +11,6 @@ import {
 import { parseExtRef } from "$lib/external-data/ids";
 import { asBuiltinMaterial } from "$lib/utils/entity-type-guards";
 import { stpMassToKevUm, csdaGcm2ToCm } from "$lib/utils/unit-conversions";
-import { resolveParticleMass } from "./calculator.svelte";
 
 export interface CalculatorEngineState {
   isCalculating: boolean;
@@ -21,6 +20,15 @@ export interface CalculatorEngineState {
   performCalculation(energies: { rowId: string; energy: number }[]): Promise<void>;
   clearResults(): void;
   resetCache(): void;
+}
+
+function resolveParticleMass(
+  particle: EntitySelectionState["selectedParticle"],
+): { massNumber: number; atomicMass: number } | null {
+  if (!particle) return null;
+  if ("massNumber" in particle)
+    return { massNumber: particle.massNumber, atomicMass: particle.atomicMass };
+  return { massNumber: particle.A, atomicMass: particle.atomicMass };
 }
 
 export function createCalculatorEngine(

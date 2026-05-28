@@ -1,5 +1,3 @@
-- **2026-05-28** (opencode / Antigravity): Decomposed `calculator.svelte.ts` and `entity-selection.svelte.ts` state monoliths into `calculator-engine.svelte.ts` and `multi-selection.svelte.ts`. Fixed related accessibility issue with export buttons. ([docs/ai-logs/2026-05-28-issue-628.md](docs/ai-logs/2026-05-28-issue-628.md))
-
 # AI Changelog
 
 > This changelog tracks all AI-assisted coding sessions on this project.
@@ -18,6 +16,9 @@ Use one bullet per session (newest first):
   - **Log:** [log](docs/ai-logs/YYYY-MM-DD-<slug>.md)
 
 ## Entries (newest first)
+
+- 2026-05-28 — **Refactoring**: Decompose `calculator.svelte.ts` and `entity-selection.svelte.ts` state monoliths into `calculator-engine.svelte.ts` and `multi-selection.svelte.ts`, with related export-button accessibility updates in `+layout.svelte`. (Antigravity via opencode)
+  - **Log:** [log](docs/ai-logs/2026-05-28-issue-628.md)
 
 - 2026-05-28 — **Testing**: Address issue #635 stale builds in Playwright. Documented the stale-build trap and the rule to keep `package.json` E2E scripts clean while relying on Playwright `webServer.command` to run `pnpm build && pnpm preview` locally (non-CI). Created a `playwright.dev.config.ts` targeting Vite dev server on port 5173 for local HMR testing. (Gemini 3.1 Pro (High) via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-05-28-issue-635-stale-builds.md)
