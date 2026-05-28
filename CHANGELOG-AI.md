@@ -1,3 +1,5 @@
+- **2026-05-28** [Antigravity/Gemini] Refactored `entity-selection.svelte.ts` (Issue #650), extracting availability and external context into `entity-availability.svelte.ts`. See [AI Log](docs/ai-logs/2026-05-28-issue-650-extract-availability.md).
+
 # AI Changelog
 
 > This changelog tracks all AI-assisted coding sessions on this project.
