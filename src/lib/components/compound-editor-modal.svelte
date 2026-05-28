@@ -395,7 +395,7 @@
             Are you sure you want to delete "{compound?.name}"? This action cannot be undone.
           </p>
         {:else}
-          <Dialog.Description class="mt-1 text-sm text-muted-foreground">
+          <Dialog.Description class="sr-only">
             {compound ? "Update compound properties" : "Define a new compound material"}
           </Dialog.Description>
         {/if}
@@ -421,63 +421,69 @@
               {/if}
             </div>
 
-            <div class="grid grid-cols-2 gap-4">
-              <div class="grid gap-2">
-                <Label for="compound-density">Density (g/cm³)</Label>
-                <Input
-                  id="compound-density"
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  max="25"
-                  bind:value={formData.density}
-                  class={cn(errors.density && "border-destructive")}
-                />
+            <div class="grid grid-cols-1 md:grid-cols-[auto_auto_1fr] gap-6 items-start">
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  <Label for="compound-density" class="whitespace-nowrap">Density (g/cm³)</Label>
+                  <Input
+                    id="compound-density"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    max="25"
+                    bind:value={formData.density}
+                    class={cn("w-24 hide-spin-button", errors.density && "border-destructive")}
+                  />
+                </div>
                 {#if errors.density}
                   <p class="text-sm text-destructive">{errors.density}</p>
                 {/if}
               </div>
 
-              <div class="grid gap-2">
-                <Label for="compound-ivalue">I-value (eV, optional)</Label>
-                <Input
-                  id="compound-ivalue"
-                  type="number"
-                  step="1"
-                  min="0"
-                  max="10000"
-                  bind:value={formData.iValue}
-                  class={cn(errors.iValue && "border-destructive")}
-                />
+              <div class="flex flex-col gap-2">
+                <div class="flex items-center gap-2">
+                  <Label for="compound-ivalue" class="whitespace-nowrap"
+                    >I-value (eV, optional)</Label
+                  >
+                  <Input
+                    id="compound-ivalue"
+                    type="number"
+                    step="1"
+                    min="0"
+                    max="10000"
+                    bind:value={formData.iValue}
+                    class={cn("w-24 hide-spin-button", errors.iValue && "border-destructive")}
+                  />
+                </div>
                 {#if errors.iValue}
                   <p class="text-sm text-destructive">{errors.iValue}</p>
                 {/if}
               </div>
-            </div>
 
-            <div class="grid gap-2">
-              <Label>Phase</Label>
-              <div class="flex gap-4">
-                <label class="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="phase"
-                    value="condensed"
-                    checked={formData.phase === "condensed"}
-                    onchange={() => (formData.phase = "condensed")}
-                  />
-                  <span class="text-sm">Condensed</span>
-                </label>
-                <label class="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="phase"
-                    value="gas"
-                    checked={formData.phase === "gas"}
-                    onchange={() => (formData.phase = "gas")}
-                  />
-                  <span class="text-sm">Gas</span>
-                </label>
+              <div class="flex flex-col gap-2 md:ml-auto">
+                <div class="flex items-center gap-4 h-[40px]">
+                  <Label class="whitespace-nowrap">Phase</Label>
+                  <label class="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="phase"
+                      value="condensed"
+                      checked={formData.phase === "condensed"}
+                      onchange={() => (formData.phase = "condensed")}
+                    />
+                    <span class="text-sm">Condensed</span>
+                  </label>
+                  <label class="flex items-center gap-2">
+                    <input
+                      type="radio"
+                      name="phase"
+                      value="gas"
+                      checked={formData.phase === "gas"}
+                      onchange={() => (formData.phase = "gas")}
+                    />
+                    <span class="text-sm">Gas</span>
+                  </label>
+                </div>
               </div>
             </div>
 
@@ -633,7 +639,7 @@
                           type="number"
                           min="1"
                           max="1000"
-                          step="any"
+                          step="1"
                           placeholder="Count"
                           value={String(element.atomCount)}
                           oninput={(e) =>
@@ -641,7 +647,7 @@
                               index,
                               (e.currentTarget as HTMLInputElement).value,
                             )}
-                          class="w-20"
+                          class="w-32 sm:w-48"
                           aria-label={`Atom count for element ${index + 1}`}
                         />
                       {:else}
@@ -653,16 +659,16 @@
                             step="0.01"
                             placeholder="Weight %"
                             bind:value={weightTexts[index]}
-                            class="w-20 text-right"
+                            class="w-32 sm:w-48 text-right hide-spin-button"
                             aria-label={`Weight fraction % for element ${index + 1}`}
                           />
-                          <span class="text-xs text-muted-foreground">%</span>
+                          <span class="text-xs text-muted-foreground w-4">%</span>
                         </div>
                       {/if}
 
                       <button
                         type="button"
-                        class="h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors"
+                        class="flex items-center gap-1 h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors whitespace-nowrap"
                         onclick={() => {
                           confirmRemoveIndex = index;
                         }}
@@ -670,7 +676,8 @@
                         disabled={formData.elements.length === 1}
                         data-testid="picker-element-row-remove"
                       >
-                        🗑 Remove
+                        <span class="text-base leading-none">🗑</span>
+                        <span>Remove</span>
                       </button>
                     </div>
 
@@ -706,11 +713,11 @@
               {/if}
 
               <!-- Add and Picker Buttons -->
-              <div class="flex items-center gap-4 mt-2">
+              <div class="flex flex-wrap items-center gap-4 mt-2">
                 <Input
                   type="text"
                   placeholder="Type symbol or element..."
-                  class="w-40 h-8 text-sm"
+                  class="w-32 sm:w-48 h-8 text-sm"
                   onkeydown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
@@ -734,7 +741,7 @@
                 />
                 <button
                   type="button"
-                  class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline"
+                  class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
                   onclick={() => (pickerMode = pickerMode === "ADD" ? null : "ADD")}
                 >
                   ⊞ Pick from periodic table
@@ -822,3 +829,14 @@
     </Dialog.Content>
   </Dialog.Portal>
 </Dialog.Root>
+
+<style>
+  :global(.hide-spin-button::-webkit-inner-spin-button),
+  :global(.hide-spin-button::-webkit-outer-spin-button) {
+    -webkit-appearance: none;
+    margin: 0;
+  }
+  :global(.hide-spin-button) {
+    -moz-appearance: textfield;
+  }
+</style>
