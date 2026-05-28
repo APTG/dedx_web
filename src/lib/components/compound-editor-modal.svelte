@@ -831,7 +831,7 @@
       </div>
       <div class="p-6 bg-muted/10 overflow-y-auto max-h-[80vh]">
         <ElementPicker
-          mode={pickerMode}
+          mode={pickerMode || "ADD"}
           {usedZ}
           currentZ={pickerMode === "EDIT" && pickerEditIndex !== null
             ? (formData.elements[pickerEditIndex]?.atomicNumber ?? null)
@@ -851,5 +851,6 @@
   }
   :global(.hide-spin-button) {
     -moz-appearance: textfield;
+    appearance: textfield;
   }
 </style>
