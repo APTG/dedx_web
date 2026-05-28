@@ -26,7 +26,11 @@ export interface AutoSelectProgram {
 
 export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgramEntity;
 
-import { createMultiSelectionState, type PickerTabId, type AcrossDimension } from "./multi-selection.svelte";
+import {
+  createMultiSelectionState,
+  type PickerTabId,
+  type AcrossDimension,
+} from "./multi-selection.svelte";
 export type { PickerTabId, AcrossDimension };
 
 export interface EntitySelectionState {
@@ -537,13 +541,22 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       multiState.resetAll();
     },
 
-    get activeTarget() { return multiState.activeTarget; },
-    get expanded() { return multiState.expanded; },
-    get across() { return multiState.across; },
-    get multiSelected() { return multiState.multiSelected; },
+    get activeTarget() {
+      return multiState.activeTarget;
+    },
+    get expanded() {
+      return multiState.expanded;
+    },
+    get across() {
+      return multiState.across;
+    },
+    get multiSelected() {
+      return multiState.multiSelected;
+    },
     setActiveTarget: multiState.setActiveTarget,
     setExpanded: multiState.setExpanded,
-    setAcross: (newAcross: AcrossDimension) => multiState.setAcross(newAcross, selectedProgramId, selectedParticleId, selectedMaterialId),
+    setAcross: (newAcross: AcrossDimension) =>
+      multiState.setAcross(newAcross, selectedProgramId, selectedParticleId, selectedMaterialId),
     toggleMulti: multiState.toggleMulti,
     collapseToSingle: multiState.collapseToSingle,
     setMultiProgram: multiState.setMultiProgram,

@@ -5,10 +5,7 @@ import {
   convertEnergyFromMeVperNucl,
   getEnergyUnitCategory,
 } from "$lib/utils/energy-conversions";
-import {
-  formatSigFigs,
-  autoScaleLengthCm,
-} from "$lib/utils/unit-conversions";
+import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
 import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
@@ -17,9 +14,7 @@ import type { ExternalOnlyParticle } from "./external-compatibility";
 import { debounce } from "$lib/utils/debounce";
 import { advancedOptions } from "./advanced-options.svelte";
 import { isAdvancedMode } from "./advanced-mode.svelte";
-import {
-  isCustomMaterial,
-} from "$lib/utils/custom-compound-material";
+import { isCustomMaterial } from "$lib/utils/custom-compound-material";
 import type { ExternalDataService } from "$lib/external-data/service";
 import { asBuiltinParticle, asBuiltinMaterial } from "$lib/utils/entity-type-guards";
 import { createCalculatorEngine } from "./calculator-engine.svelte";
