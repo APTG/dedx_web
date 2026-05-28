@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-28 — **Stage 6.10**: Implemented live derived UI & mass-% validation for the custom compound editor (Issue #645). (Gemini 3.1 Pro via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-05-28-issue-645-derived-ui.md)
+
 - 2026-05-28 — **Stage 6.10**: Implemented periodic-table picker for compound editor and duplicate resolution logic (Issue #644). (Gemini 2.5 Pro via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-05-28-issue-644.md)
 

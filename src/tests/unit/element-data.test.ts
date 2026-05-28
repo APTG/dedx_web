@@ -24,6 +24,7 @@ describe("element-data", () => {
         symbol: "H",
         name: "Hydrogen",
         atomicWeight: 1.008,
+        meanExcitationEnergy: 19.2,
       });
     });
 
@@ -33,6 +34,7 @@ describe("element-data", () => {
         symbol: "Og",
         name: "Oganesson",
         atomicWeight: 294,
+        // Oganesson does not have a meanExcitationEnergy in ICRU 37
       });
     });
 
@@ -50,6 +52,7 @@ describe("element-data", () => {
         symbol: "H",
         name: "Hydrogen",
         atomicWeight: 1.008,
+        meanExcitationEnergy: 19.2,
       });
     });
 
@@ -59,6 +62,7 @@ describe("element-data", () => {
         symbol: "Fe",
         name: "Iron",
         atomicWeight: 55.845,
+        meanExcitationEnergy: 286,
       });
     });
 
@@ -68,6 +72,7 @@ describe("element-data", () => {
         symbol: "Fe",
         name: "Iron",
         atomicWeight: 55.845,
+        meanExcitationEnergy: 286,
       });
     });
 
@@ -77,6 +82,7 @@ describe("element-data", () => {
         symbol: "Fe",
         name: "Iron",
         atomicWeight: 55.845,
+        meanExcitationEnergy: 286,
       });
     });
 
@@ -86,6 +92,7 @@ describe("element-data", () => {
         symbol: "Fe",
         name: "Iron",
         atomicWeight: 55.845,
+        meanExcitationEnergy: 286,
       });
     });
 
@@ -95,6 +102,7 @@ describe("element-data", () => {
         symbol: "H",
         name: "Hydrogen",
         atomicWeight: 1.008,
+        meanExcitationEnergy: 19.2,
       });
     });
 
@@ -104,6 +112,7 @@ describe("element-data", () => {
         symbol: "H",
         name: "Hydrogen",
         atomicWeight: 1.008,
+        meanExcitationEnergy: 19.2,
       });
     });
 
@@ -113,6 +122,7 @@ describe("element-data", () => {
         symbol: "H",
         name: "Hydrogen",
         atomicWeight: 1.008,
+        meanExcitationEnergy: 19.2,
       });
     });
 
@@ -151,6 +161,7 @@ describe("element-data", () => {
         symbol: "Fe",
         name: "Iron",
         atomicWeight: 55.845,
+        meanExcitationEnergy: 286,
       });
     });
   });
