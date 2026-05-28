@@ -168,7 +168,13 @@
         resetTransientState();
         sortElements();
       } else if (isOpen && !c) {
-        formData = { ...initialData };
+        // Mutate in-place rather than replacing the whole object so that
+        // reactive proxies (and their subscribers) stay connected.
+        formData.name = initialData.name;
+        formData.density = initialData.density;
+        formData.iValue = initialData.iValue;
+        formData.phase = initialData.phase;
+        formData.elements = initialData.elements.map((e) => ({ ...e }));
         elementTexts = ["H"];
         weightTexts = ["100"];
         mode = "formula";
@@ -801,13 +807,12 @@
               <Button type="button" variant="outline" onclick={() => onOpenChange(false)}>
                 Cancel
               </Button>
-              <Button
-                type="button"
-                onclick={handleSave}
-                disabled={!isFormValid || !!duplicateBanner || !!editDuplicatePrompt}
-              >
-                Save
-              </Button>
+              {#if isFormValid && !duplicateBanner && !editDuplicatePrompt}
+                <Button type="button" onclick={handleSave}>Save</Button>
+              {/if}
+              {#if !isFormValid || !!duplicateBanner || !!editDuplicatePrompt}
+                <Button type="button" disabled>Save</Button>
+              {/if}
             </div>
           </div>
         {:else}
