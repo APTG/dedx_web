@@ -31,6 +31,7 @@
   import PageErrorFallback from "$lib/components/layout/page-error-fallback.svelte";
   import AdvancedHint from "$lib/components/calculator/advanced-hint.svelte";
   import SharedCompoundAlert from "$lib/components/calculator/shared-compound-alert.svelte";
+  import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import { createCalculatorPageOrchestrator } from "$lib/state/calculator-page-orchestrator.svelte";
 
   import { appInit } from "$lib/state/app-init.svelte";
@@ -121,7 +122,7 @@
     </div>
   {/if}
 
-  {#if externalLoading}
+  {#if externalLoading || !appInit.entityState || !calcState}
     <div class="mx-auto max-w-md space-y-4">
       <Skeleton class="h-8 w-3/4 mx-auto" />
       <Skeleton class="h-4 w-full" />
@@ -318,7 +319,7 @@
                 if (String(entityId).startsWith("ext:")) {
                   return es.externalOnlyMaterials.find((m) => m.id === entityId)?.density ?? 1;
                 }
-                return 1;
+                return customCompounds.getById(String(entityId))?.density ?? 1;
               }}
             />
           {:else if isAdvancedMode.value}
