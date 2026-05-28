@@ -626,7 +626,7 @@
                       {#if mode === "formula"}
                         <Input
                           type="number"
-                          min="0"
+                          min="1"
                           max="1000"
                           step="any"
                           placeholder="Count"
@@ -643,7 +643,7 @@
                         <div class="flex items-center gap-1">
                           <Input
                             type="number"
-                            min="0"
+                            min="0.01"
                             max="100"
                             step="0.01"
                             placeholder="Weight %"
@@ -684,6 +684,7 @@
                           <Button
                             size="sm"
                             variant="destructive"
+                            autofocus
                             onclick={() => handleRemoveElement(index)}>Yes, remove</Button
                           >
                         </div>
