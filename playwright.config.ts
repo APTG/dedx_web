@@ -29,7 +29,7 @@ export default defineConfig({
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: "html",
+  reporter: process.env.CI ? "html" : "list",
   // Global timeout per test: 60 s. WASM loading and reactive settling can take
   // several seconds; WASM-dependent tests may use test.setTimeout() to extend
   // the limit further.
@@ -74,8 +74,10 @@ export default defineConfig({
     },
   ],
   webServer: {
-    command: "pnpm preview --host 127.0.0.1",
+    command: process.env.CI
+      ? "pnpm preview --host 127.0.0.1"
+      : "pnpm build && pnpm preview --host 127.0.0.1",
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    reuseExistingServer: false,
   },
 });

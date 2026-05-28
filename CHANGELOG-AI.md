@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-28 — **Testing**: Address issue #635 stale builds in Playwright. Documented the stale-build trap and the rule to keep `package.json` E2E scripts clean while relying on Playwright `webServer.command` to run `pnpm build && pnpm preview` locally (non-CI). Created a `playwright.dev.config.ts` targeting Vite dev server on port 5173 for local HMR testing. (Gemini 3.1 Pro (High) via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-05-28-issue-635-stale-builds.md)
+
 - 2026-05-27 — **Refactoring**: Decompose `src/routes/plot/+page.svelte` and refactor `src/routes/calculator/+page.svelte` by extracting page orchestration into `PlotPageOrchestrator` / `CalculatorPageOrchestrator` plus shared calculator components (`page-error-fallback`, `advanced-hint`, `shared-compound-alert`) (#627). (Antigravity via opencode)
   - **Log:** [log](docs/ai-logs/2026-05-27-issue-627.md)
 

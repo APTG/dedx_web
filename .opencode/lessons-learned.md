@@ -9,6 +9,23 @@
 
 ---
 
+## Entry 69 — Let Playwright handle the local E2E build
+
+**Symptom:** E2E tests executed against a stale production build when developers forgot to run `pnpm build` manually before `playwright test`. Conversely, embedding `pnpm build` directly in `package.json` scripts caused redundant double-builds in CI environments.
+
+**Root cause:** `playwright test` starts a local web server if one isn't running. If `webServer.command` only runs `pnpm preview`, the developer must manually guarantee a fresh build beforehand. Moving the explicit build to `package.json` scripts fixed the local trap but punished CI, which already has its own dedicated build step.
+
+```text
+❌ Bad (Stale Trap): webServer command is just "pnpm preview", relying on devs to manually build first.
+❌ Bad (Double Build): "test:e2e": "pnpm build && playwright test" (forces CI to build twice).
+
+✅ Good (Smart webServer): webServer command is "process.env.CI ? 'pnpm preview' : 'pnpm build && pnpm preview'".
+```
+
+**Rule:** Keep `package.json` test scripts clean (`"test:e2e": "playwright test"`) and let Playwright's `webServer.command` conditionally trigger the local build (`pnpm build && pnpm preview`) only when NOT in CI (`process.env.CI`).
+
+---
+
 ## Entry 68 — prebuild replaces explicit deploy.json workflow steps, not pnpm build
 
 **Symptom:** After adding `prebuild: node scripts/deploy.cjs`, CI/workflow docs
