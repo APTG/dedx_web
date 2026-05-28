@@ -91,7 +91,9 @@
                 data-testid="export-pdf-btn"
                 variant="outline"
                 size="sm"
+                class="text-foreground"
                 disabled={!canExport.value}
+                aria-disabled={!canExport.value}
                 aria-label="Export PDF"
                 onclick={() => {
                   if (routePath === "/calculator") exportPdf();
@@ -104,7 +106,9 @@
                 data-testid="export-csv-btn"
                 variant="outline"
                 size="sm"
+                class="text-foreground"
                 disabled={!canExport.value}
+                aria-disabled={!canExport.value}
                 aria-label="Export CSV"
                 onclick={() => {
                   if (routePath === "/calculator") {
