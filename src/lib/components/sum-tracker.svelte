@@ -10,9 +10,16 @@
   let { weightTexts, elementSymbols, onRescale }: Props = $props();
 
   const segmentColors = [
-    "bg-blue-500", "bg-indigo-500", "bg-purple-500", "bg-pink-500",
-    "bg-rose-500", "bg-orange-500", "bg-yellow-500", "bg-green-500",
-    "bg-teal-500", "bg-cyan-500"
+    "bg-blue-500",
+    "bg-indigo-500",
+    "bg-purple-500",
+    "bg-pink-500",
+    "bg-rose-500",
+    "bg-orange-500",
+    "bg-yellow-500",
+    "bg-green-500",
+    "bg-teal-500",
+    "bg-cyan-500",
   ];
 
   let totalSum = $derived(weightTexts.reduce((sum, val) => sum + (parseFloat(val) || 0), 0));
@@ -44,7 +51,9 @@
       {@const val = parseFloat(text) || 0}
       {#if val > 0}
         <div
-          class="h-full float-left transition-all duration-300 {segmentColors[i % segmentColors.length]}"
+          class="h-full float-left transition-all duration-300 {segmentColors[
+            i % segmentColors.length
+          ]}"
           style="width: {(val / scaleMax) * 100}%"
           title="{elementSymbols[i]}: {val}%"
         ></div>

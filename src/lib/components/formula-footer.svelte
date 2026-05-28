@@ -15,12 +15,13 @@
     return elements.map((e) => {
       const sym = getElementSymbol(e.atomicNumber) || `Z${e.atomicNumber}`;
       const count = e.atomCount;
-      const countStr = count === 1 ? "" : Number.isInteger(count) ? String(count) : count.toFixed(2);
+      const countStr =
+        count === 1 ? "" : Number.isInteger(count) ? String(count) : count.toFixed(2);
       return { sym, countStr };
     });
   });
 
-  let formulaPlain = $derived(formulaParts.map(p => p.sym + p.countStr).join(""));
+  let formulaPlain = $derived(formulaParts.map((p) => p.sym + p.countStr).join(""));
   let totalAtoms = $derived(elements.reduce((sum, e) => sum + e.atomCount, 0));
 
   let braggIValue = $derived(computeBraggIValue(elements));
