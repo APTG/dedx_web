@@ -52,7 +52,7 @@
     "jsdom": "^29.1.1",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^4.0.1",
-    "svelte": "^5.55.9",
+    "svelte": "^5.55.10",
     "svelte-check": "^4.4.8",
     "tailwind-merge": "^3.6.0",
     "tailwind-variants": "^3.2.2",
