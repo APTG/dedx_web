@@ -3,7 +3,8 @@
   import type { ParticleEntity } from "$lib/wasm/types";
   import type { ExternalOnlyParticle } from "$lib/state/external-compatibility";
   import { getParticleListLabel } from "$lib/utils/particle-label";
-  import { periodicPosition, type Particle } from "./particle-tab-helpers";
+  import { type Particle } from "./particle-tab-helpers";
+  import { periodicPosition } from "$lib/utils/periodic-position";
 
   interface Props {
     /** Built-in periodic-table particles (Z=1..118), no electron, no externals. */

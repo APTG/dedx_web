@@ -17,6 +17,25 @@ export interface CompoundElementEntry {
 }
 
 /**
+ * Merge two rows of the same element, summing their atom counts.
+ * Throws if the atomic numbers do not match.
+ */
+export function mergeRows(
+  rowA: CompoundElementEntry,
+  rowB: CompoundElementEntry,
+): CompoundElementEntry {
+  if (rowA.atomicNumber !== rowB.atomicNumber) {
+    throw new Error(
+      `Cannot merge different elements: Z=${rowA.atomicNumber} and Z=${rowB.atomicNumber}`,
+    );
+  }
+  return {
+    atomicNumber: rowA.atomicNumber,
+    atomCount: rowA.atomCount + rowB.atomCount,
+  };
+}
+
+/**
  * Stored compound with full metadata.
  * This is the internal storage format.
  */

@@ -333,6 +333,51 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await page.getByTestId("picker-tab-material").click();
     await expect(page.getByText(/ToDelete/i)).not.toBeVisible();
   });
+
+  test("AC-X: Periodic table picker allows adding and editing elements", async ({ page }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
+
+    const nameInput = page.getByRole("textbox", { name: /name/i });
+    await nameInput.fill("Picker Test");
+    const densityInput = page.getByRole("spinbutton", { name: /density/i });
+    await densityInput.fill("1.0");
+
+    // Click "Pick from periodic table"
+    const pickBtn = page.getByRole("button", { name: /Pick from periodic table/i });
+    await pickBtn.click();
+
+    // The picker should appear
+    const pickerGrid = page.getByTestId("picker-element-grid");
+    await expect(pickerGrid).toBeVisible();
+
+    // Add Carbon (Z=6)
+    const carbonTile = page.getByTestId("picker-element-tile-6");
+    await carbonTile.click();
+
+    // Verify Carbon was added
+    const carbonEditBtn = page.getByTestId("picker-element-tile-6").first();
+    await expect(carbonEditBtn).toBeVisible();
+    await expect(page.getByText(/Z=6/i).first()).toBeVisible();
+
+    // Edit the first element (H)
+    const hydrogenEditBtn = page.getByTestId("picker-element-tile-1").first();
+    await hydrogenEditBtn.click();
+
+    // The picker should appear for editing
+    await expect(pickerGrid).toBeVisible();
+
+    // Change H to O (Z=8)
+    const oxygenTile = page.getByTestId("picker-element-tile-8").nth(1); // the one in the picker
+    await oxygenTile.click();
+
+    // Verify H is gone and O is present
+    await expect(page.getByTestId("picker-element-tile-1")).not.toBeVisible();
+    const oxygenEditBtn = page.getByTestId("picker-element-tile-8").first();
+    await expect(oxygenEditBtn).toBeVisible();
+  });
 });
 
 test.describe("Custom Compounds — Entity Selection Integration", () => {
