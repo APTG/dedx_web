@@ -69,6 +69,7 @@
   let showDeleteConfirm = $state(false);
   let compositionTouched = $state(false);
   let presetToConfirm = $state<CompoundPreset | null>(null);
+  let formulaToConfirm = $state<ParsedElement[] | null>(null);
 
   let isEmptyComposition = $derived(
     formData.elements.length === 0 || (!compositionTouched && !compound),
@@ -377,8 +378,8 @@
     compositionTouched = true;
   }
 
-  function handlePasteFormula(elements: ParsedElement[]) {
-    if (isEmptyComposition) {
+  function applyPasteFormulaData(elements: ParsedElement[], replace: boolean) {
+    if (replace) {
       formData.elements = [];
       elementTexts = [];
       if (mode === "weight") weightTexts = [];
@@ -398,6 +399,15 @@
       weightTexts = computeInitialWeightTexts(formData.elements);
     }
     compositionTouched = true;
+    formulaToConfirm = null;
+  }
+
+  function handlePasteFormula(elements: ParsedElement[]) {
+    if (isEmptyComposition) {
+      applyPasteFormulaData(elements, true);
+    } else {
+      formulaToConfirm = elements;
+    }
   }
 
   function applyPresetData(preset: CompoundPreset) {
@@ -970,6 +980,43 @@
             Cancel
           </Button>
           <Button variant="default" onclick={() => applyPresetData(presetToConfirm!)}>
+            Replace
+          </Button>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+{/if}
+
+{#if formulaToConfirm}
+  <Dialog.Root
+    open={!!formulaToConfirm}
+    onOpenChange={(o) => {
+      if (!o) formulaToConfirm = null;
+    }}
+  >
+    <Dialog.Portal>
+      <Dialog.Overlay class="fixed inset-0 z-[60] bg-black/80" />
+      <Dialog.Content
+        class="fixed left-[50%] top-[50%] z-[60] w-full max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg"
+      >
+        <Dialog.Title class="text-lg font-semibold">Paste Formula</Dialog.Title>
+        <p class="mt-2 text-sm text-muted-foreground">
+          Do you want to replace your current composition with the pasted formula, or append to it?
+        </p>
+        <div class="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onclick={() => (formulaToConfirm = null)}>Cancel</Button>
+          <Button
+            variant="secondary"
+            onclick={() => applyPasteFormulaData(formulaToConfirm!, false)}
+          >
+            Append
+          </Button>
+          <Button
+            variant="default"
+            onclick={() => applyPasteFormulaData(formulaToConfirm!, true)}
+            autofocus
+          >
             Replace
           </Button>
         </div>
