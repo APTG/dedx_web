@@ -846,7 +846,7 @@ test.describe("Custom Compounds — Live Derived UI (Issue #645)", () => {
     const addInput = page.getByPlaceholder(/Type symbol or element/i);
     await addInput.fill("H");
     await addInput.press("Enter");
-    
+
     // Now we have H (1), Li (3), F (9). Remove F, then Li.
     const removeBtns = page.getByTestId("picker-element-row-remove");
     await removeBtns.nth(2).click(); // Remove F

@@ -402,12 +402,12 @@
     formData.phase = preset.phase;
 
     const atomCounts = presetToAtomCounts(preset);
-    formData.elements = atomCounts.map(e => ({ ...e }));
-    elementTexts = atomCounts.map(e => getLocalSymbol(e.atomicNumber));
+    formData.elements = atomCounts.map((e) => ({ ...e }));
+    elementTexts = atomCounts.map((e) => getLocalSymbol(e.atomicNumber));
 
     if (preset.mode === "weight") {
-      weightTexts = atomCounts.map(e => {
-        const orig = preset.elements.find(x => x.atomicNumber === e.atomicNumber);
+      weightTexts = atomCounts.map((e) => {
+        const orig = preset.elements.find((x) => x.atomicNumber === e.atomicNumber);
         return orig ? String(orig.value) : "0";
       });
       mode = "weight";
