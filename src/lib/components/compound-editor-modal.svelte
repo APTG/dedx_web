@@ -21,6 +21,9 @@
   import ElementPicker from "./element-picker.svelte";
   import FormulaFooter from "./compound-editor/formula-footer.svelte";
   import SumTracker from "./compound-editor/sum-tracker.svelte";
+  import QuickStartPanel from "./compound-editor/quick-start-panel.svelte";
+  import { presetToAtomCounts, type CompoundPreset } from "$lib/data/compound-presets";
+  import type { ParsedElement } from "$lib/utils/formula-parser";
 
   interface CompoundEditorFormData {
     name: string;
@@ -53,14 +56,24 @@
     density: "",
     iValue: "",
     phase: "condensed",
-    elements: [{ atomicNumber: 1, atomCount: 1 }],
+    elements: [
+      { atomicNumber: 3, atomCount: 1 },
+      { atomicNumber: 9, atomCount: 1 },
+    ],
   };
 
   let formData = $state<CompoundEditorFormData>({ ...initialData });
-  let elementTexts = $state<string[]>(["H"]);
-  let weightTexts = $state<string[]>(["100"]);
+  let elementTexts = $state<string[]>(["Li", "F"]);
+  let weightTexts = $state<string[]>(["26.76", "73.24"]);
   let mode = $state<"formula" | "weight">("formula");
   let showDeleteConfirm = $state(false);
+  let compositionTouched = $state(false);
+  let presetToConfirm = $state<CompoundPreset | null>(null);
+  let formulaToConfirm = $state<ParsedElement[] | null>(null);
+
+  let isEmptyComposition = $derived(
+    formData.elements.length === 0 || (!compositionTouched && !compound),
+  );
 
   // Picker and UI states
   let pickerMode = $state<"ADD" | "EDIT" | null>(null);
@@ -176,12 +189,14 @@
         mode = "formula";
         resetTransientState();
         sortElements();
+        compositionTouched = false;
       } else if (isOpen && !c) {
-        formData = { ...initialData };
-        elementTexts = ["H"];
-        weightTexts = ["100"];
+        formData = { ...initialData, elements: initialData.elements.map((e) => ({ ...e })) };
+        elementTexts = ["Li", "F"];
+        weightTexts = computeInitialWeightTexts(formData.elements);
         mode = "formula";
         resetTransientState();
+        compositionTouched = false;
       }
     });
   });
@@ -231,6 +246,7 @@
       }
     }
     mode = newMode;
+    compositionTouched = true;
   }
 
   function convertWeightFractionsToAtomCounts(): CompoundElementEntry[] | null {
@@ -264,6 +280,7 @@
   function handleRescale() {
     const values = weightTexts.map((t) => parseFloat(t) || 0);
     weightTexts = rescaleTo100(values).map((v) => v.toFixed(2));
+    compositionTouched = true;
   }
 
   function handleRemoveElement(index: number) {
@@ -273,10 +290,12 @@
       weightTexts.splice(index, 1);
       confirmRemoveIndex = null;
       editDuplicatePrompt = null;
+      compositionTouched = true;
     }
   }
 
   function handleAtomCountChange(index: number, count: string) {
+    compositionTouched = true;
     const num = parseFloat(count);
     const element = formData.elements[index];
     if (!isNaN(num) && num > 0 && element) {
@@ -303,6 +322,7 @@
           element.atomicNumber = z;
           elementTexts[pickerEditIndex] = getLocalSymbol(z);
           sortElements();
+          compositionTouched = true;
         }
       }
       pickerMode = null;
@@ -325,6 +345,7 @@
     elementTexts.splice(duplicateIndex, 1);
     weightTexts.splice(duplicateIndex, 1);
     sortElements();
+    compositionTouched = true;
   }
 
   function handleRemoveDuplicateBanner() {
@@ -354,6 +375,73 @@
 
     editDuplicatePrompt = null;
     sortElements();
+    compositionTouched = true;
+  }
+
+  function applyPasteFormulaData(elements: ParsedElement[], replace: boolean) {
+    if (replace) {
+      formData.elements = [];
+      elementTexts = [];
+      if (mode === "weight") weightTexts = [];
+    }
+    for (const elem of elements) {
+      const existing = formData.elements.find((e) => e.atomicNumber === elem.atomicNumber);
+      if (existing) {
+        existing.atomCount += elem.atomCount;
+      } else {
+        formData.elements.push({ atomicNumber: elem.atomicNumber, atomCount: elem.atomCount });
+        elementTexts.push(getLocalSymbol(elem.atomicNumber));
+        if (mode === "weight") weightTexts.push("0");
+      }
+    }
+    sortElements();
+    if (mode === "weight") {
+      weightTexts = computeInitialWeightTexts(formData.elements);
+    }
+    compositionTouched = true;
+    formulaToConfirm = null;
+  }
+
+  function handlePasteFormula(elements: ParsedElement[]) {
+    if (isEmptyComposition) {
+      applyPasteFormulaData(elements, true);
+    } else {
+      formulaToConfirm = elements;
+    }
+  }
+
+  function applyPresetData(preset: CompoundPreset) {
+    formData.name = preset.name;
+    formData.density = String(preset.density);
+    formData.iValue = preset.iValue ? String(preset.iValue) : "";
+    formData.phase = preset.phase;
+
+    const atomCounts = presetToAtomCounts(preset);
+    formData.elements = atomCounts.map((e) => ({ ...e }));
+    elementTexts = atomCounts.map((e) => getLocalSymbol(e.atomicNumber));
+
+    if (preset.mode === "weight") {
+      weightTexts = atomCounts.map((e) => {
+        const orig = preset.elements.find((x) => x.atomicNumber === e.atomicNumber);
+        return orig ? String(orig.value) : "0";
+      });
+      mode = "weight";
+    } else {
+      weightTexts = computeInitialWeightTexts(formData.elements);
+      mode = "formula";
+    }
+
+    sortElements();
+    compositionTouched = true;
+    presetToConfirm = null;
+  }
+
+  function handleApplyPreset(preset: CompoundPreset) {
+    if (formData.elements.length === 0 || (!compositionTouched && !compound)) {
+      applyPresetData(preset);
+    } else {
+      presetToConfirm = preset;
+    }
   }
 
   function onKeyDown(e: KeyboardEvent) {
@@ -496,6 +584,11 @@
             </div>
 
             <div class="grid gap-2">
+              <QuickStartPanel
+                isEmpty={isEmptyComposition}
+                onPasteFormula={handlePasteFormula}
+                onApplyPreset={handleApplyPreset}
+              />
               <div class="flex items-center justify-between">
                 <Label>Elements</Label>
                 <div role="tablist" class="flex gap-2">
@@ -675,6 +768,7 @@
                             step="0.01"
                             placeholder="Weight %"
                             bind:value={weightTexts[index]}
+                            oninput={() => (compositionTouched = true)}
                             class="w-32 sm:w-48 text-right hide-spin-button"
                             aria-label={`Weight fraction % for element ${index + 1}`}
                           />
@@ -864,6 +958,72 @@
     </Dialog.Content>
   </Dialog.Portal>
 </Dialog.Root>
+
+{#if presetToConfirm}
+  <Dialog.Root
+    open={!!presetToConfirm}
+    onOpenChange={(o) => {
+      if (!o) presetToConfirm = null;
+    }}
+  >
+    <Dialog.Portal>
+      <Dialog.Overlay class="fixed inset-0 z-[60] bg-black/80" />
+      <Dialog.Content
+        class="fixed left-[50%] top-[50%] z-[60] w-full max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg"
+      >
+        <Dialog.Title class="text-lg font-semibold">Replace Composition</Dialog.Title>
+        <p class="mt-2 text-sm text-muted-foreground">
+          Replace your current composition with {presetToConfirm.name}?
+        </p>
+        <div class="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onclick={() => (presetToConfirm = null)} autofocus>
+            Cancel
+          </Button>
+          <Button variant="default" onclick={() => applyPresetData(presetToConfirm!)}>
+            Replace
+          </Button>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+{/if}
+
+{#if formulaToConfirm}
+  <Dialog.Root
+    open={!!formulaToConfirm}
+    onOpenChange={(o) => {
+      if (!o) formulaToConfirm = null;
+    }}
+  >
+    <Dialog.Portal>
+      <Dialog.Overlay class="fixed inset-0 z-[60] bg-black/80" />
+      <Dialog.Content
+        class="fixed left-[50%] top-[50%] z-[60] w-full max-w-sm translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg"
+      >
+        <Dialog.Title class="text-lg font-semibold">Paste Formula</Dialog.Title>
+        <p class="mt-2 text-sm text-muted-foreground">
+          Do you want to replace your current composition with the pasted formula, or append to it?
+        </p>
+        <div class="mt-6 flex justify-end gap-2">
+          <Button variant="outline" onclick={() => (formulaToConfirm = null)}>Cancel</Button>
+          <Button
+            variant="secondary"
+            onclick={() => applyPasteFormulaData(formulaToConfirm!, false)}
+          >
+            Append
+          </Button>
+          <Button
+            variant="default"
+            onclick={() => applyPasteFormulaData(formulaToConfirm!, true)}
+            autofocus
+          >
+            Replace
+          </Button>
+        </div>
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+{/if}
 
 <style>
   :global(.hide-spin-button::-webkit-inner-spin-button),
