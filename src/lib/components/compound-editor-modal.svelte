@@ -17,7 +17,10 @@
     normalizeAtomCounts,
   } from "$lib/utils/element-data";
   import { cn } from "$lib/utils.js";
+  import { deriveMassPercents, rescaleTo100 } from "$lib/utils/compound-derive";
   import ElementPicker from "./element-picker.svelte";
+  import FormulaFooter from "./compound-editor/formula-footer.svelte";
+  import SumTracker from "./compound-editor/sum-tracker.svelte";
 
   interface CompoundEditorFormData {
     name: string;
@@ -56,7 +59,6 @@
   let formData = $state<CompoundEditorFormData>({ ...initialData });
   let elementTexts = $state<string[]>(["H"]);
   let weightTexts = $state<string[]>(["100"]);
-  let errors = $state<Record<string, string>>({});
   let mode = $state<"formula" | "weight">("formula");
   let showDeleteConfirm = $state(false);
 
@@ -82,6 +84,83 @@
 
   let usedZ = $derived.by(() => new Set(formData.elements.map((e) => e.atomicNumber)));
 
+  // Live per-row mass percentages (formula mode only), aligned by row index.
+  let massPercents = $derived(mode === "formula" ? deriveMassPercents(formData.elements) : null);
+
+  // Pure validation: a function of the form state only, so the Save gating and
+  // inline messages stay in sync without any imperative writes.
+  let errors = $derived.by(() => {
+    const e: Record<string, string> = {};
+
+    const name = formData.name.trim();
+    if (!name) {
+      e.name = "Name is required.";
+    } else if (name.length > 80) {
+      e.name = "Name must be 80 characters or fewer.";
+    }
+
+    const density = parseFloat(formData.density);
+    if (!formData.density || isNaN(density)) {
+      e.density = "Density is required.";
+    } else if (density <= 0) {
+      e.density = "Density must be greater than zero.";
+    } else if (density > 25) {
+      e.density = "Density must be ≤ 25 g/cm³.";
+    }
+
+    if (formData.iValue) {
+      const iVal = parseFloat(formData.iValue);
+      if (isNaN(iVal) || iVal <= 0) {
+        e.iValue = "I-value must be a positive number.";
+      } else if (iVal > 10000) {
+        e.iValue = "I-value must be ≤ 10 000 eV.";
+      }
+    }
+
+    if (formData.elements.length === 0) {
+      e.elements = "At least one element is required.";
+    } else if (mode === "weight") {
+      const parsed = weightTexts.map((t) => parseFloat(t));
+      if (parsed.some((v) => isNaN(v) || v <= 0)) {
+        e.elements = "All weight fractions must be positive numbers.";
+      } else {
+        const sum = parsed.reduce((s, v) => s + v, 0);
+        if (Math.abs(sum - 100) > 0.5) {
+          e.elements = `Weight fractions must sum to 100% (current: ${sum.toFixed(1)}%).`;
+        }
+      }
+    } else {
+      for (const elem of formData.elements) {
+        if (elem.atomicNumber < 1 || elem.atomicNumber > 118) {
+          e.elements = `Unknown element: Z=${elem.atomicNumber}.`;
+          break;
+        }
+        if (elem.atomCount <= 0) {
+          e.elements = "Atom count must be greater than zero.";
+          break;
+        }
+        if (elem.atomCount > 1000) {
+          e.elements = "Atom count must be ≤ 1000.";
+          break;
+        }
+      }
+    }
+
+    return e;
+  });
+
+  // A duplicate element is surfaced by `duplicateBanner` / the edit prompt and
+  // hard-blocks Save in addition to the field errors above.
+  let canSave = $derived(
+    Object.keys(errors).length === 0 && !duplicateBanner && !editDuplicatePrompt,
+  );
+
+  let saveBlockReason = $derived.by(() => {
+    if (duplicateBanner) return "Two rows share the same element — merge them first.";
+    if (editDuplicatePrompt) return "Resolve the duplicate-element prompt first.";
+    return errors.name ?? errors.density ?? errors.iValue ?? errors.elements ?? null;
+  });
+
   $effect(() => {
     const isOpen = open;
     const c = compound;
@@ -95,14 +174,12 @@
         elementTexts = c.elements.map((e) => getLocalSymbol(e.atomicNumber));
         weightTexts = computeInitialWeightTexts(c.elements);
         mode = "formula";
-        errors = {};
         resetTransientState();
         sortElements();
       } else if (isOpen && !c) {
         formData = { ...initialData };
         elementTexts = ["H"];
         weightTexts = ["100"];
-        errors = {};
         mode = "formula";
         resetTransientState();
       }
@@ -144,7 +221,6 @@
 
   function switchMode(newMode: "formula" | "weight") {
     if (newMode === mode) return;
-    errors = {};
     if (newMode === "weight") {
       weightTexts = computeInitialWeightTexts(formData.elements);
     } else {
@@ -167,98 +243,27 @@
     return normalizeAtomCounts(result);
   }
 
-  function validate(): boolean {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.name.trim()) {
-      newErrors.name = "Name is required.";
-    } else if (formData.name.trim().length > 80) {
-      newErrors.name = "Name must be 80 characters or fewer.";
-    }
-
-    const density = parseFloat(formData.density);
-    if (!formData.density || isNaN(density)) {
-      newErrors.density = "Density is required.";
-    } else if (density <= 0) {
-      newErrors.density = "Density must be greater than zero.";
-    } else if (density > 25) {
-      newErrors.density = "Density must be ≤ 25 g/cm³.";
-    }
-
-    if (formData.iValue) {
-      const iVal = parseFloat(formData.iValue);
-      if (isNaN(iVal) || iVal <= 0) {
-        newErrors.iValue = "I-value must be a positive number.";
-      } else if (iVal > 10000) {
-        newErrors.iValue = "I-value must be ≤ 10 000 eV.";
-      }
-    }
-
-    if (mode === "weight") {
-      const sum = weightTexts.reduce((s, t) => s + (parseFloat(t) || 0), 0);
-      if (weightTexts.some((t) => isNaN(parseFloat(t)) || parseFloat(t) <= 0)) {
-        newErrors.elements = "All weight fractions must be positive numbers.";
-      } else if (Math.abs(sum - 100) > 0.5) {
-        newErrors.elements = `Weight fractions must sum to 100% (current: ${sum.toFixed(1)}%).`;
-      } else if (!formData.elements || formData.elements.length === 0) {
-        newErrors.elements = "At least one element is required.";
-      }
-    } else {
-      if (!formData.elements || formData.elements.length === 0) {
-        newErrors.elements = "At least one element is required.";
-      } else {
-        const seenZ = new Set<number>();
-        for (const elem of formData.elements) {
-          if (elem.atomicNumber < 1 || elem.atomicNumber > 118) {
-            newErrors.elements = `Unknown element: Z=${elem.atomicNumber}.`;
-            break;
-          }
-          if (seenZ.has(elem.atomicNumber)) {
-            newErrors.elements = `Element Z=${elem.atomicNumber} is listed more than once. Combine into a single row.`;
-            break;
-          }
-          seenZ.add(elem.atomicNumber);
-          if (elem.atomCount <= 0) {
-            newErrors.elements = "Atom count must be greater than zero.";
-            break;
-          } else if (elem.atomCount > 1000) {
-            newErrors.elements = "Atom count must be ≤ 1000.";
-            break;
-          }
-        }
-      }
-    }
-
-    errors = newErrors;
-    return Object.keys(errors).length === 0;
-  }
-
   function handleSave() {
-    let elementsToSave = formData.elements;
+    if (!canSave) return;
 
+    let elements = formData.elements;
     if (mode === "weight") {
       const converted = convertWeightFractionsToAtomCounts();
-      if (converted) {
-        elementsToSave = converted;
-      }
+      if (converted) elements = converted;
     }
 
-    const savedElements = formData.elements;
-    formData.elements = elementsToSave;
+    onSave({
+      name: formData.name,
+      density: parseFloat(formData.density),
+      ...(formData.iValue ? { iValue: parseFloat(formData.iValue) } : {}),
+      phase: formData.phase,
+      elements,
+    });
+  }
 
-    const valid = validate();
-    if (valid && !duplicateBanner && !editDuplicatePrompt) {
-      const data: SavedCompoundData = {
-        name: formData.name,
-        density: parseFloat(formData.density),
-        ...(formData.iValue ? { iValue: parseFloat(formData.iValue) } : {}),
-        phase: formData.phase,
-        elements: formData.elements,
-      };
-      onSave(data);
-    } else {
-      formData.elements = savedElements;
-    }
+  function handleRescale() {
+    const values = weightTexts.map((t) => parseFloat(t) || 0);
+    weightTexts = rescaleTo100(values).map((v) => v.toFixed(2));
   }
 
   function handleRemoveElement(index: number) {
@@ -650,9 +655,17 @@
                               index,
                               (e.currentTarget as HTMLInputElement).value,
                             )}
-                          class="w-32 sm:w-48"
+                          class="w-24 sm:w-32"
                           aria-label={`Atom count for element ${index + 1}`}
                         />
+                        <span
+                          class="w-24 shrink-0 text-xs text-muted-foreground tabular-nums"
+                          data-testid={`compound-mass-percent-${index}`}
+                        >
+                          {#if massPercents && massPercents[index] !== undefined}
+                            {massPercents[index]!.toFixed(1)}% by mass
+                          {/if}
+                        </span>
                       {:else}
                         <div class="flex items-center gap-1">
                           <Input
@@ -709,7 +722,14 @@
                 {/each}
               </div>
 
-              {#if mode === "weight"}
+              {#if mode === "formula"}
+                <FormulaFooter elements={formData.elements} iValueOverride={formData.iValue} />
+              {:else}
+                <SumTracker
+                  values={weightTexts.map((t) => parseFloat(t) || 0)}
+                  symbols={formData.elements.map((el) => getLocalSymbol(el.atomicNumber))}
+                  onRescale={handleRescale}
+                />
                 <p class="text-xs text-muted-foreground">
                   Fractions must total 100%. Values are stored as atomic ratios (w/M).
                 </p>
@@ -772,7 +792,9 @@
               <Button
                 type="button"
                 onclick={handleSave}
-                disabled={!!duplicateBanner || !!editDuplicatePrompt}
+                disabled={!canSave}
+                aria-disabled={!canSave}
+                title={canSave ? undefined : (saveBlockReason ?? undefined)}
               >
                 Save
               </Button>
