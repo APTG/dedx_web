@@ -185,10 +185,7 @@ describe("LibdedxServiceImpl", () => {
     test("calculate() throws LibdedxError on stp failure and frees memory", () => {
       mockModule._dedx_get_stp_table.mockReturnValue(42); // Error code 42
 
-      expect(() => {
-        service.calculate(1, 1, 1, [10.0]);
-      }).toThrowError(LibdedxError);
-
+      expect.assertions(3);
       try {
         service.calculate(1, 1, 1, [10.0]);
       } catch (e) {
@@ -204,6 +201,7 @@ describe("LibdedxServiceImpl", () => {
       mockModule._dedx_get_stp_table.mockReturnValue(0);
       mockModule._dedx_get_csda_range_table.mockReturnValue(43); // Error code 43
 
+      expect.assertions(3);
       try {
         service.calculate(1, 1, 1, [10.0]);
       } catch (e) {
