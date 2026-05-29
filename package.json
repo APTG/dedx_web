@@ -50,6 +50,7 @@
     "eslint-plugin-svelte": "^3.17.1",
     "globals": "^17.6.0",
     "jsdom": "^29.1.1",
+    "peggy": "^5.1.0",
     "prettier": "^3.5.3",
     "prettier-plugin-svelte": "^4.0.1",
     "svelte": "^5.55.9",

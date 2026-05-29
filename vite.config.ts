@@ -1,11 +1,24 @@
-import { copyFileSync } from "node:fs";
+import { copyFileSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { sveltekit } from "@sveltejs/kit/vite";
 import tailwindcss from "@tailwindcss/vite";
+import peggy from "peggy";
 import { defineConfig } from "vitest/config";
 
 export default defineConfig({
   plugins: [
+    {
+      // Compile `*.peggy` grammars to ES modules at build/test time. Keeps the
+      // grammar source as the single readable artifact (no committed generated
+      // parser). Applies to Vitest too, since it shares this config.
+      name: "peggy-loader",
+      enforce: "pre",
+      load(id: string) {
+        if (!id.endsWith(".peggy")) return null;
+        const grammar = readFileSync(id.split("?")[0], "utf8");
+        return peggy.generate(grammar, { output: "source", format: "es" });
+      },
+    },
     tailwindcss(),
     sveltekit(),
     {

@@ -17,6 +17,11 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-29 — **Refactoring**: Address PR #659 review — fully honor "rejected, not migrated" by gating URL hydration on version negotiation in both page orchestrators. An unsupported `urlv` now hydrates nothing (entity selection, energy rows, advanced mode, plot series stay at defaults) instead of only halting the calc; "Load defaults" proceeds from those defaults. Plot version negotiation moved to a synchronous pre-effect step so it resolves before init/restore; `setupPlotUrlRestore` gained a mismatch gate. Formal spec §3.1/§3.4 wording tightened. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-477-url-version-gating.md)
+
+- 2026-05-29 — **Refactoring**: Refactor URL parser to the §6 layered architecture (Issue #477) — executable Peggy grammar (`url-grammar.peggy`) → AST (`url-ast.ts`) via `parseQuery`, semantic `resolveCalculatorState`/`resolvePlotState`, shared helpers in `url-shared.ts` (de-duplicates the `mat_*`/last-wins/strict-number blocks), and span-accurate diagnostics (`url-diagnostics.ts`) for precise error messages. Retires v1 (rejected with an "unsupported link" banner, not migrated) and adds a `migrateUrl` seam. Behaviour preserved; published `/docs/technical` grammar page and formal spec updated. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-477-url-parser.md)
 - 2026-05-29 — **Testing**: Add dedicated tests for LibdedxServiceImpl directly (Issue #629). Tested memory allocation, buffer management, error boundary handling, and correct type conversions. (Gemini 3.1 Pro via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-629.md)
 - 2026-05-29 — **Stage 5**: Implement Quick Start panel & default to LiF (Antigravity via Google DeepMind)
