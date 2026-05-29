@@ -19,6 +19,8 @@ Use one bullet per session (newest first):
 
 - 2026-05-29 — **Stage 5**: Implement Quick Start panel & default to LiF (Antigravity via Google DeepMind)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-646.md)
+- 2026-05-29 — **Testing**: Clean up legacy URL tests in `calculator-url.test.ts` (Issue #632): labeled all `urlv=1` fixtures as legacy migration tests, updated non-migration tests to use `urlv=2`, added 8 new v2 tests covering `mode=basic`, `across=programs` encode/decode, `urlv=2` canonical decode, and `qfocus=both` migration round-trips. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-632-url-test-cleanup.md)
 
 - 2026-05-29 — **Stage 6.10**: Reimplemented compound editor live derived UI & mass-% validation (Issue #645) cleanly on master — pure `$derived` Save gating, formula footer (Unicode formula · atom count · Bragg I-value), weight-fraction sum tracker with auto-rescale, and live per-row mass-%. Fixes the duplicate-element Save-gating regression from PR #653 (the formula footer's keyed `{#each}` crashed on duplicate Z, leaving Save enabled). (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-645-derived-ui.md)
