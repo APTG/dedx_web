@@ -17,6 +17,8 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-29 — **WASM**: Bump `libdedx` submodule to `6313d91` to pick up the merged fix [APTG/libdedx#105](https://github.com/APTG/libdedx/pull/105) ("Fix double-call bug for custom compounds with analytical programs"), which resolves [#662](https://github.com/APTG/dedx_web/issues/662) (Bethe/Bethe-ext returned no values for custom compounds). Also corrected the submodule tracking branch from the now-deleted `master` to `main`. Requires a WASM rebuild to ship. (Claude Opus 4.8 via Claude Code)
+
 - 2026-05-29 — **Refactoring**: Address PR #659 review — fully honor "rejected, not migrated" by gating URL hydration on version negotiation in both page orchestrators. An unsupported `urlv` now hydrates nothing (entity selection, energy rows, advanced mode, plot series stay at defaults) instead of only halting the calc; "Load defaults" proceeds from those defaults. Plot version negotiation moved to a synchronous pre-effect step so it resolves before init/restore; `setupPlotUrlRestore` gained a mismatch gate. Formal spec §3.1/§3.4 wording tightened. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-477-url-version-gating.md)
 
