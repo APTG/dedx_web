@@ -88,25 +88,15 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
-    // Try to save - should fail
-    await saveBtn.click();
+    // Save is gated off while the name is empty.
+    await expect(saveBtn).toBeDisabled();
 
-    // Error message should appear
+    // Inline error explains why.
     await expect(page.getByText(/name is required/i)).toBeVisible();
     await expect(modal).toBeVisible(); // Modal should not close
   });
 
   test("AC-3: Validation — density > 25 blocks Save", async ({ page }) => {
-    // Capture console messages
-    const consoleMessages: string[] = [];
-    page.on("console", (msg) => {
-      const text = msg.text();
-      consoleMessages.push(`[${msg.type()}] ${text}`);
-      if (text.includes("DEBUG") || text.includes("handleSave") || text.includes("validate")) {
-        console.log("PAGE CONSOLE:", text);
-      }
-    });
-
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     await page.getByTestId("picker-tab-material").click();
@@ -117,41 +107,19 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Name
     const nameInput = page.getByRole("textbox", { name: /name/i });
-    await expect(nameInput).toBeVisible();
     await nameInput.fill("Dense");
 
     // Density too high
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
-    await expect(densityInput).toBeVisible();
     await densityInput.fill("30");
 
-    // One element
-    // H is present by default
+    // One element — H is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
-    await expect(atomCount).toBeVisible();
     await atomCount.fill("1");
 
+    // Save is gated off and the inline error explains why.
     const saveBtn = page.getByRole("button", { name: /save/i });
-    await expect(saveBtn).toBeVisible();
-    await expect(saveBtn).toBeEnabled();
-
-    await saveBtn.click();
-
-    // Wait for validation to run
-
-    console.log("Console messages after save:", consoleMessages);
-
-    // Check if modal is still open (it should be if validation failed)
-    const modalStillOpen = await modal.isVisible();
-    console.log("Modal still open after save click:", modalStillOpen);
-
-    // Try to find any error message
-    const allText = await page.getByText(/required|must be|invalid|error/i).all();
-    console.log("Found error messages:", allText.length);
-    for (let i = 0; i < allText.length && i < 5; i++) {
-      console.log(`Error ${i}:`, await allText[i]!.textContent());
-    }
-
+    await expect(saveBtn).toBeDisabled();
     await expect(page.getByText(/density must be/i)).toBeVisible();
     await expect(modal).toBeVisible();
   });
@@ -773,10 +741,10 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
     await wf0.fill("50");
 
-    await page.getByRole("button", { name: /save/i }).click();
+    // Save is gated off while the sum is out of tolerance.
+    await expect(page.getByRole("button", { name: /save/i })).toBeDisabled();
 
-    // Validation error should appear and modal should stay open.
-    // Target the destructive error paragraph specifically (not the hint text).
+    // The destructive error paragraph explains why (not the hint text).
     await expect(
       page
         .locator("p.text-destructive")
@@ -853,5 +821,93 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     // Verify calculation produces results (stopping power cell has value)
     const stoppingPowerValue = page.locator('[data-testid^="advanced-stp-cell-"]').first();
     await expect(stoppingPowerValue).toHaveText(/\S/, { timeout: 10000 });
+  });
+});
+
+test.describe("Custom Compounds — Live Derived UI (Issue #645)", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/calculator");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
+  });
+
+  test("Formula footer shows derived formula, atom count, and Bragg I-value in atoms mode", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
+
+    await page.getByRole("textbox", { name: /name/i }).fill("Tissue-like");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
+
+    // Build H52 C63 N3 O25 — rows sort ascending Z → H, C, N, O.
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    for (const sym of ["C", "N", "O"]) {
+      await addInput.fill(sym);
+      await addInput.press("Enter");
+    }
+    const counts = page.getByPlaceholder(/count/i);
+    await counts.nth(0).fill("52"); // H
+    await counts.nth(1).fill("63"); // C
+    await counts.nth(2).fill("3"); // N
+    await counts.nth(3).fill("25"); // O
+
+    const footer = page.getByTestId("compound-formula-footer");
+    await expect(footer).toBeVisible();
+
+    // 52 + 63 + 3 + 25 = 143 atoms; formula rendered in ascending-Z order.
+    await expect(page.getByTestId("compound-total-atoms")).toContainText("143 atoms");
+    await expect(page.getByTestId("compound-formula-string")).toContainText("H₅₂C₆₃N₃O₂₅");
+
+    // I-value is previewed via Bragg additivity (computed, not overridden).
+    await expect(page.getByTestId("compound-ivalue")).toContainText("eV");
+    await expect(page.getByTestId("compound-ivalue")).toContainText(/computed/i);
+
+    // Copy button and live per-row mass % are present.
+    await expect(page.getByTestId("compound-formula-copy")).toBeVisible();
+    await expect(page.getByTestId("compound-mass-percent-0")).toContainText(/% by mass/);
+
+    // Footer is hidden in weight-fraction mode (a formula string would mislead);
+    // the sum tracker takes its place.
+    await page.getByRole("tab", { name: /weight fraction/i }).click();
+    await expect(footer).not.toBeVisible();
+    await expect(page.getByTestId("compound-sum-tracker")).toBeVisible();
+  });
+
+  test("Sum tracker flags out-of-tolerance fractions and auto-rescales to 100%", async ({
+    page,
+  }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
+
+    await page.getByRole("textbox", { name: /name/i }).fill("Rescale Test");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
+
+    // Two rows, then switch to weight-fraction mode.
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("O");
+    await addInput.press("Enter");
+    await page.getByRole("tab", { name: /weight fraction/i }).click();
+
+    // Fractions summing to 90% — out of tolerance.
+    await page
+      .getByRole("spinbutton", { name: /weight fraction.*element 1/i })
+      .first()
+      .fill("40");
+    await page
+      .getByRole("spinbutton", { name: /weight fraction.*element 2/i })
+      .first()
+      .fill("50");
+
+    const status = page.getByTestId("compound-sum-status");
+    const saveBtn = page.getByRole("button", { name: /save/i });
+    await expect(status).toContainText(/must equal 100/i);
+    await expect(saveBtn).toBeDisabled();
+
+    // Auto-rescale normalises the fractions to exactly 100%.
+    await page.getByTestId("compound-sum-rescale").click();
+    await expect(status).toContainText(/within tolerance/i);
+    await expect(saveBtn).toBeEnabled();
   });
 });
