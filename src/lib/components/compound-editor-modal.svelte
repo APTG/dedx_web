@@ -22,6 +22,8 @@
   import FormulaFooter from "./compound-editor/formula-footer.svelte";
   import SumTracker from "./compound-editor/sum-tracker.svelte";
   import QuickStartPanel from "./compound-editor/quick-start-panel.svelte";
+  import MobileSheet from "./compound-editor/mobile-sheet.svelte";
+  import type { EditorController } from "./compound-editor/types";
   import { presetToAtomCounts, type CompoundPreset } from "$lib/data/compound-presets";
   import type { ParsedElement } from "$lib/utils/formula-parser";
 
@@ -70,6 +72,28 @@
   let compositionTouched = $state(false);
   let presetToConfirm = $state<CompoundPreset | null>(null);
   let formulaToConfirm = $state<ParsedElement[] | null>(null);
+
+  // Phone-only mobile layout: ≤ 640px AND a coarse pointer, matching the rest
+  // of the entity-selection redesign. Guarded for jsdom (no matchMedia), where
+  // it stays false so unit tests exercise the desktop layout.
+  let isMobile = $state(false);
+  let prefersReducedMotion = $state(false);
+  $effect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(max-width: 640px) and (pointer: coarse)");
+    isMobile = mq.matches;
+    const onChange = (e: MediaQueryListEvent) => (isMobile = e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
+  $effect(() => {
+    if (typeof window === "undefined" || !window.matchMedia) return;
+    const mq = window.matchMedia("(prefers-reduced-motion: reduce)");
+    prefersReducedMotion = mq.matches;
+    const onChange = (e: MediaQueryListEvent) => (prefersReducedMotion = e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  });
 
   let isEmptyComposition = $derived(
     formData.elements.length === 0 || (!compositionTouched && !compound),
@@ -303,31 +327,48 @@
     }
   }
 
-  function handlePickerSelect(z: number) {
-    if (pickerMode === "ADD") {
+  // Core selection logic, parameterised so both the desktop picker dialog and
+  // the mobile picker overlay can drive it without sharing picker UI state.
+  function applyElementSelection(z: number, selMode: "ADD" | "EDIT", selIndex: number | null) {
+    if (selMode === "ADD") {
       formData.elements.push({ atomicNumber: z, atomCount: 1 });
       elementTexts.push(getLocalSymbol(z));
       if (mode === "weight") weightTexts.push("0");
-      pickerMode = null;
+      compositionTouched = true;
       sortElements();
-    } else if (pickerMode === "EDIT" && pickerEditIndex !== null) {
+    } else if (selMode === "EDIT" && selIndex !== null) {
       const existingIndex = formData.elements.findIndex(
-        (e, i) => i !== pickerEditIndex && e.atomicNumber === z,
+        (e, i) => i !== selIndex && e.atomicNumber === z,
       );
       if (existingIndex !== -1) {
-        editDuplicatePrompt = { index: pickerEditIndex, newZ: z, existingIndex };
+        editDuplicatePrompt = { index: selIndex, newZ: z, existingIndex };
       } else {
-        const element = formData.elements[pickerEditIndex];
+        const element = formData.elements[selIndex];
         if (element) {
           element.atomicNumber = z;
-          elementTexts[pickerEditIndex] = getLocalSymbol(z);
+          elementTexts[selIndex] = getLocalSymbol(z);
           sortElements();
           compositionTouched = true;
         }
       }
-      pickerMode = null;
-      pickerEditIndex = null;
     }
+  }
+
+  function handlePickerSelect(z: number) {
+    applyElementSelection(z, pickerMode ?? "ADD", pickerEditIndex);
+    pickerMode = null;
+    pickerEditIndex = null;
+  }
+
+  function addElementBySymbol(text: string): boolean {
+    const resolved = resolveElement(text);
+    if (!resolved) return false;
+    formData.elements.push({ atomicNumber: resolved.atomicNumber, atomCount: 1 });
+    elementTexts.push(getLocalSymbol(resolved.atomicNumber));
+    if (mode === "weight") weightTexts.push("0");
+    compositionTouched = true;
+    sortElements();
+    return true;
   }
 
   function handleMergeBanner() {
@@ -444,6 +485,72 @@
     }
   }
 
+  // Single reactive surface handed to the mobile sub-components. Getters track
+  // the runes above so children stay in sync; methods mutate the same state, so
+  // step transitions never clear inputs.
+  const editor: EditorController = {
+    get formData() {
+      return formData;
+    },
+    get elementTexts() {
+      return elementTexts;
+    },
+    get weightTexts() {
+      return weightTexts;
+    },
+    get mode() {
+      return mode;
+    },
+    get duplicateBanner() {
+      return duplicateBanner;
+    },
+    get editDuplicatePrompt() {
+      return editDuplicatePrompt;
+    },
+    get massPercents() {
+      return massPercents;
+    },
+    get errors() {
+      return errors;
+    },
+    get canSave() {
+      return canSave;
+    },
+    get saveBlockReason() {
+      return saveBlockReason;
+    },
+    get isEmptyComposition() {
+      return isEmptyComposition;
+    },
+    get usedZ() {
+      return usedZ;
+    },
+    get isEditing() {
+      return !!compound;
+    },
+    getLocalSymbol,
+    getLocalName,
+    switchMode,
+    handleSave,
+    handleRescale,
+    handleRemoveElement,
+    handleAtomCountChange,
+    applyElementSelection,
+    handleMergeBanner,
+    handleRemoveDuplicateBanner,
+    handleMergePrompt,
+    handlePasteFormula,
+    handleApplyPreset,
+    addElementBySymbol,
+    setWeightText(index: number, value: string) {
+      weightTexts[index] = value;
+      compositionTouched = true;
+    },
+    cancelEditDuplicate() {
+      editDuplicatePrompt = null;
+    },
+  };
+
   function onKeyDown(e: KeyboardEvent) {
     if (e.key === "Escape") {
       if (confirmRemoveIndex !== null) {
@@ -456,469 +563,473 @@
 
 <svelte:window onkeydown={onKeyDown} />
 
-<Dialog.Root
-  {open}
-  onOpenChange={(newOpen) => {
-    if (!newOpen && showDeleteConfirm) {
-      showDeleteConfirm = false;
-    }
-    onOpenChange(newOpen);
-  }}
->
-  <Dialog.Portal>
-    <Dialog.Overlay
-      class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
-    />
-    <Dialog.Content
-      class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[500px] md:max-w-[650px] max-h-[95dvh] overflow-y-auto"
-    >
-      <form
-        onsubmit={(e) => {
-          e.preventDefault();
-          handleSave();
-        }}
+{#if isMobile && open}
+  <MobileSheet {editor} {prefersReducedMotion} onCancel={() => onOpenChange(false)} />
+{:else}
+  <Dialog.Root
+    {open}
+    onOpenChange={(newOpen) => {
+      if (!newOpen && showDeleteConfirm) {
+        showDeleteConfirm = false;
+      }
+      onOpenChange(newOpen);
+    }}
+  >
+    <Dialog.Portal>
+      <Dialog.Overlay
+        class="fixed inset-0 z-50 bg-black/80 data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0"
+      />
+      <Dialog.Content
+        class="fixed left-[50%] top-[50%] z-50 w-full max-w-[calc(100%-2rem)] translate-x-[-50%] translate-y-[-50%] rounded-md border bg-background p-6 shadow-lg data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95 sm:max-w-[500px] md:max-w-[650px] max-h-[95dvh] overflow-y-auto"
       >
-        <Dialog.Title class="text-lg font-semibold">
-          {#if showDeleteConfirm}Delete Compound{:else}{compound
-              ? "Edit Compound"
-              : "Compound Editor"}{/if}
-        </Dialog.Title>
-        {#if showDeleteConfirm}
-          <p class="mt-1 text-sm text-muted-foreground">
-            Are you sure you want to delete "{compound?.name}"? This action cannot be undone.
-          </p>
-        {:else}
-          <Dialog.Description class="sr-only">
-            {compound ? "Update compound properties" : "Define a new compound material"}
-          </Dialog.Description>
-        {/if}
+        <form
+          onsubmit={(e) => {
+            e.preventDefault();
+            handleSave();
+          }}
+        >
+          <Dialog.Title class="text-lg font-semibold">
+            {#if showDeleteConfirm}Delete Compound{:else}{compound
+                ? "Edit Compound"
+                : "Compound Editor"}{/if}
+          </Dialog.Title>
+          {#if showDeleteConfirm}
+            <p class="mt-1 text-sm text-muted-foreground">
+              Are you sure you want to delete "{compound?.name}"? This action cannot be undone.
+            </p>
+          {:else}
+            <Dialog.Description class="sr-only">
+              {compound ? "Update compound properties" : "Define a new compound material"}
+            </Dialog.Description>
+          {/if}
 
-        {#if !showDeleteConfirm}
-          <div class="mt-4 grid gap-4">
-            <!-- Properties row 1 -->
-            <div class="flex items-center gap-4">
-              <Label for="compound-name" class="font-medium w-12">Name</Label>
-              <div class="flex-1 max-w-[20rem]">
-                <Input
-                  id="compound-name"
-                  bind:value={formData.name}
-                  placeholder="e.g., LiF Pellet"
-                  class={cn(errors.name && "border-destructive")}
-                  onkeydown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      (e.currentTarget as HTMLInputElement).blur();
-                    }
-                  }}
-                />
-                {#if errors.name}
-                  <p class="text-sm text-destructive mt-1 absolute">{errors.name}</p>
-                {/if}
-              </div>
-            </div>
-
-            <div class="grid grid-cols-1 md:flex md:items-center gap-4 items-start">
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2">
-                  <Label for="compound-density" class="whitespace-nowrap">Density (g/cm³)</Label>
+          {#if !showDeleteConfirm}
+            <div class="mt-4 grid gap-4">
+              <!-- Properties row 1 -->
+              <div class="flex items-center gap-4">
+                <Label for="compound-name" class="font-medium w-12">Name</Label>
+                <div class="flex-1 max-w-[20rem]">
                   <Input
-                    id="compound-density"
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    max="25"
-                    bind:value={formData.density}
-                    class={cn("w-24 hide-spin-button", errors.density && "border-destructive")}
+                    id="compound-name"
+                    bind:value={formData.name}
+                    placeholder="e.g., LiF Pellet"
+                    class={cn(errors.name && "border-destructive")}
+                    onkeydown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        (e.currentTarget as HTMLInputElement).blur();
+                      }
+                    }}
                   />
+                  {#if errors.name}
+                    <p class="text-sm text-destructive mt-1 absolute">{errors.name}</p>
+                  {/if}
                 </div>
-                {#if errors.density}
-                  <p class="text-sm text-destructive">{errors.density}</p>
-                {/if}
               </div>
 
-              <div class="flex flex-col gap-2">
-                <div class="flex items-center gap-2">
-                  <Label for="compound-ivalue" class="whitespace-nowrap"
-                    >I-value (eV, optional)</Label
-                  >
-                  <Input
-                    id="compound-ivalue"
-                    type="number"
-                    step="1"
-                    min="0"
-                    max="10000"
-                    bind:value={formData.iValue}
-                    class={cn("w-24 hide-spin-button", errors.iValue && "border-destructive")}
-                  />
-                </div>
-                {#if errors.iValue}
-                  <p class="text-sm text-destructive">{errors.iValue}</p>
-                {/if}
-              </div>
-
-              <div class="flex flex-col gap-2 md:ml-auto">
-                <div class="flex items-center gap-4 h-[40px]">
-                  <Label class="whitespace-nowrap">Phase</Label>
-                  <label class="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="phase"
-                      value="condensed"
-                      checked={formData.phase === "condensed"}
-                      onchange={() => (formData.phase = "condensed")}
+              <div class="grid grid-cols-1 md:flex md:items-center gap-4 items-start">
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center gap-2">
+                    <Label for="compound-density" class="whitespace-nowrap">Density (g/cm³)</Label>
+                    <Input
+                      id="compound-density"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      max="25"
+                      bind:value={formData.density}
+                      class={cn("w-24 hide-spin-button", errors.density && "border-destructive")}
                     />
-                    <span class="text-sm">Condensed</span>
-                  </label>
-                  <label class="flex items-center gap-2">
-                    <input
-                      type="radio"
-                      name="phase"
-                      value="gas"
-                      checked={formData.phase === "gas"}
-                      onchange={() => (formData.phase = "gas")}
-                    />
-                    <span class="text-sm">Gas</span>
-                  </label>
-                </div>
-              </div>
-            </div>
-
-            <div class="grid gap-2">
-              <QuickStartPanel
-                isEmpty={isEmptyComposition}
-                onPasteFormula={handlePasteFormula}
-                onApplyPreset={handleApplyPreset}
-              />
-              <div class="flex items-center justify-between">
-                <Label>Elements</Label>
-                <div role="tablist" class="flex gap-2">
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === "formula"}
-                    aria-controls="elements-panel"
-                    id="formula-tab"
-                    aria-label="Formula mode"
-                    class={cn(
-                      "text-xs font-medium transition-colors hover:text-foreground",
-                      mode === "formula" ? "text-foreground" : "text-muted-foreground",
-                    )}
-                    onclick={() => switchMode("formula")}
-                  >
-                    Formula
-                  </button>
-                  <span class="text-muted-foreground">|</span>
-                  <button
-                    type="button"
-                    role="tab"
-                    aria-selected={mode === "weight"}
-                    aria-controls="elements-panel"
-                    id="weight-tab"
-                    aria-label="Weight fraction mode"
-                    class={cn(
-                      "text-xs font-medium transition-colors hover:text-foreground",
-                      mode === "weight" ? "text-foreground" : "text-muted-foreground",
-                    )}
-                    onclick={() => switchMode("weight")}
-                  >
-                    Weight fraction
-                  </button>
-                </div>
-              </div>
-
-              {#if errors.elements}
-                <p class="text-sm text-destructive">{errors.elements}</p>
-              {/if}
-
-              <div
-                class="grid gap-2"
-                id="elements-panel"
-                role="tabpanel"
-                aria-labelledby={mode === "formula" ? "formula-tab" : "weight-tab"}
-              >
-                <!-- Duplicate Banner -->
-                {#if duplicateBanner}
-                  {@const dupElName = getLocalName(duplicateBanner.z)}
-                  <div class="mb-2 rounded-md border border-destructive bg-destructive/10 p-3">
-                    <p class="text-sm font-medium text-destructive">
-                      {dupElName} (Z={duplicateBanner.z}) appears twice.
-                    </p>
-                    <p class="text-xs text-destructive mb-3">
-                      libdedx requires one row per element. URL-shared and pasted-formula inputs are
-                      de-duplicated automatically.
-                    </p>
-                    <div class="flex gap-2">
-                      <Button
-                        size="sm"
-                        variant="destructive"
-                        onclick={handleMergeBanner}
-                        data-testid="compound-editor-dup-merge"
-                      >
-                        Merge into one
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        class="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
-                        onclick={handleRemoveDuplicateBanner}
-                        data-testid="compound-editor-dup-remove"
-                      >
-                        Remove duplicate
-                      </Button>
-                    </div>
                   </div>
+                  {#if errors.density}
+                    <p class="text-sm text-destructive">{errors.density}</p>
+                  {/if}
+                </div>
+
+                <div class="flex flex-col gap-2">
+                  <div class="flex items-center gap-2">
+                    <Label for="compound-ivalue" class="whitespace-nowrap"
+                      >I-value (eV, optional)</Label
+                    >
+                    <Input
+                      id="compound-ivalue"
+                      type="number"
+                      step="1"
+                      min="0"
+                      max="10000"
+                      bind:value={formData.iValue}
+                      class={cn("w-24 hide-spin-button", errors.iValue && "border-destructive")}
+                    />
+                  </div>
+                  {#if errors.iValue}
+                    <p class="text-sm text-destructive">{errors.iValue}</p>
+                  {/if}
+                </div>
+
+                <div class="flex flex-col gap-2 md:ml-auto">
+                  <div class="flex items-center gap-4 h-[40px]">
+                    <Label class="whitespace-nowrap">Phase</Label>
+                    <label class="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="phase"
+                        value="condensed"
+                        checked={formData.phase === "condensed"}
+                        onchange={() => (formData.phase = "condensed")}
+                      />
+                      <span class="text-sm">Condensed</span>
+                    </label>
+                    <label class="flex items-center gap-2">
+                      <input
+                        type="radio"
+                        name="phase"
+                        value="gas"
+                        checked={formData.phase === "gas"}
+                        onchange={() => (formData.phase = "gas")}
+                      />
+                      <span class="text-sm">Gas</span>
+                    </label>
+                  </div>
+                </div>
+              </div>
+
+              <div class="grid gap-2">
+                <QuickStartPanel
+                  isEmpty={isEmptyComposition}
+                  onPasteFormula={handlePasteFormula}
+                  onApplyPreset={handleApplyPreset}
+                />
+                <div class="flex items-center justify-between">
+                  <Label>Elements</Label>
+                  <div role="tablist" class="flex gap-2">
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === "formula"}
+                      aria-controls="elements-panel"
+                      id="formula-tab"
+                      aria-label="Formula mode"
+                      class={cn(
+                        "text-xs font-medium transition-colors hover:text-foreground",
+                        mode === "formula" ? "text-foreground" : "text-muted-foreground",
+                      )}
+                      onclick={() => switchMode("formula")}
+                    >
+                      Formula
+                    </button>
+                    <span class="text-muted-foreground">|</span>
+                    <button
+                      type="button"
+                      role="tab"
+                      aria-selected={mode === "weight"}
+                      aria-controls="elements-panel"
+                      id="weight-tab"
+                      aria-label="Weight fraction mode"
+                      class={cn(
+                        "text-xs font-medium transition-colors hover:text-foreground",
+                        mode === "weight" ? "text-foreground" : "text-muted-foreground",
+                      )}
+                      onclick={() => switchMode("weight")}
+                    >
+                      Weight fraction
+                    </button>
+                  </div>
+                </div>
+
+                {#if errors.elements}
+                  <p class="text-sm text-destructive">{errors.elements}</p>
                 {/if}
 
-                {#each formData.elements as element, index (index)}
-                  {@const isDuplicate =
-                    duplicateBanner &&
-                    (index === duplicateBanner.firstIndex ||
-                      index === duplicateBanner.duplicateIndex)}
-
-                  <div class="relative">
-                    {#if editDuplicatePrompt && editDuplicatePrompt.index === index}
-                      <div class="mb-2 rounded-md border border-orange-400 bg-orange-50 p-3">
-                        <p class="text-sm font-medium text-orange-900">
-                          {getLocalName(editDuplicatePrompt.newZ)} (Z={editDuplicatePrompt.newZ}) is
-                          already in this compound.
-                        </p>
-                        <p class="text-xs text-orange-800 mb-3">
-                          Changing {elementTexts[index]} → {getLocalSymbol(
-                            editDuplicatePrompt.newZ,
-                          )} would create a duplicate row. Pick what to do:
-                        </p>
-                        <div class="flex gap-2">
-                          <Button
-                            size="sm"
-                            class="bg-orange-500 hover:bg-orange-600 text-white"
-                            onclick={handleMergePrompt}
-                            autofocus
-                          >
-                            Merge into existing {getLocalSymbol(editDuplicatePrompt.newZ)}
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            class="border-orange-200 text-orange-900 hover:bg-orange-100"
-                            onclick={() => (editDuplicatePrompt = null)}
-                          >
-                            Cancel — keep this row as {elementTexts[index]}
-                          </Button>
-                        </div>
+                <div
+                  class="grid gap-2"
+                  id="elements-panel"
+                  role="tabpanel"
+                  aria-labelledby={mode === "formula" ? "formula-tab" : "weight-tab"}
+                >
+                  <!-- Duplicate Banner -->
+                  {#if duplicateBanner}
+                    {@const dupElName = getLocalName(duplicateBanner.z)}
+                    <div class="mb-2 rounded-md border border-destructive bg-destructive/10 p-3">
+                      <p class="text-sm font-medium text-destructive">
+                        {dupElName} (Z={duplicateBanner.z}) appears twice.
+                      </p>
+                      <p class="text-xs text-destructive mb-3">
+                        libdedx requires one row per element. URL-shared and pasted-formula inputs
+                        are de-duplicated automatically.
+                      </p>
+                      <div class="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="destructive"
+                          onclick={handleMergeBanner}
+                          data-testid="compound-editor-dup-merge"
+                        >
+                          Merge into one
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          class="text-destructive border-destructive hover:bg-destructive hover:text-destructive-foreground"
+                          onclick={handleRemoveDuplicateBanner}
+                          data-testid="compound-editor-dup-remove"
+                        >
+                          Remove duplicate
+                        </Button>
                       </div>
-                    {/if}
+                    </div>
+                  {/if}
 
-                    <div
-                      class={cn(
-                        "flex items-center gap-2 rounded-md p-1",
-                        isDuplicate && "border border-destructive bg-destructive/10",
-                      )}
-                    >
-                      <button
-                        type="button"
-                        class="flex h-10 w-12 flex-col items-center justify-center rounded-sm border bg-card p-0 transition-colors hover:bg-accent"
-                        onclick={() => {
-                          pickerMode = "EDIT";
-                          pickerEditIndex = index;
-                        }}
-                        title="Click to change element"
-                        data-testid={`picker-element-tile-${element.atomicNumber}`}
-                      >
-                        <span class="text-[10px] text-muted-foreground leading-none"
-                          >Z={element.atomicNumber}</span
-                        >
-                        <div class="flex items-center gap-1">
-                          <span class="font-mono font-bold leading-none"
-                            >{getLocalSymbol(element.atomicNumber)}</span
-                          >
-                          <span class="text-[10px] text-muted-foreground">✎</span>
-                        </div>
-                      </button>
+                  {#each formData.elements as element, index (index)}
+                    {@const isDuplicate =
+                      duplicateBanner &&
+                      (index === duplicateBanner.firstIndex ||
+                        index === duplicateBanner.duplicateIndex)}
 
-                      {#if mode === "formula"}
-                        <Input
-                          type="number"
-                          min="1"
-                          max="1000"
-                          step="1"
-                          placeholder="Count"
-                          value={String(element.atomCount)}
-                          oninput={(e) =>
-                            handleAtomCountChange(
-                              index,
-                              (e.currentTarget as HTMLInputElement).value,
-                            )}
-                          class="w-24 sm:w-32"
-                          aria-label={`Atom count for element ${index + 1}`}
-                        />
-                        <span
-                          class="w-24 shrink-0 text-xs text-muted-foreground tabular-nums"
-                          data-testid={`compound-mass-percent-${index}`}
-                        >
-                          {#if massPercents && massPercents[index] !== undefined}
-                            {massPercents[index]!.toFixed(1)}% by mass
-                          {/if}
-                        </span>
-                      {:else}
-                        <div class="flex items-center gap-1">
-                          <Input
-                            type="number"
-                            min="0.01"
-                            max="100"
-                            step="0.01"
-                            placeholder="Weight %"
-                            bind:value={weightTexts[index]}
-                            oninput={() => (compositionTouched = true)}
-                            class="w-32 sm:w-48 text-right hide-spin-button"
-                            aria-label={`Weight fraction % for element ${index + 1}`}
-                          />
-                          <span class="text-xs text-muted-foreground w-4">%</span>
+                    <div class="relative">
+                      {#if editDuplicatePrompt && editDuplicatePrompt.index === index}
+                        <div class="mb-2 rounded-md border border-orange-400 bg-orange-50 p-3">
+                          <p class="text-sm font-medium text-orange-900">
+                            {getLocalName(editDuplicatePrompt.newZ)} (Z={editDuplicatePrompt.newZ})
+                            is already in this compound.
+                          </p>
+                          <p class="text-xs text-orange-800 mb-3">
+                            Changing {elementTexts[index]} → {getLocalSymbol(
+                              editDuplicatePrompt.newZ,
+                            )} would create a duplicate row. Pick what to do:
+                          </p>
+                          <div class="flex gap-2">
+                            <Button
+                              size="sm"
+                              class="bg-orange-500 hover:bg-orange-600 text-white"
+                              onclick={handleMergePrompt}
+                              autofocus
+                            >
+                              Merge into existing {getLocalSymbol(editDuplicatePrompt.newZ)}
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              class="border-orange-200 text-orange-900 hover:bg-orange-100"
+                              onclick={() => (editDuplicatePrompt = null)}
+                            >
+                              Cancel — keep this row as {elementTexts[index]}
+                            </Button>
+                          </div>
                         </div>
                       {/if}
 
-                      <button
-                        type="button"
-                        class="flex items-center gap-1 h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors whitespace-nowrap"
-                        onclick={() => {
-                          confirmRemoveIndex = index;
-                        }}
-                        aria-label={`Remove ${getLocalName(element.atomicNumber)}`}
-                        disabled={formData.elements.length === 1}
-                        data-testid="picker-element-row-remove"
-                      >
-                        <span class="text-base leading-none">🗑</span>
-                        <span>Remove</span>
-                      </button>
-                    </div>
-
-                    <!-- Inline remove confirm -->
-                    {#if confirmRemoveIndex === index}
                       <div
-                        class="absolute inset-0 z-10 flex items-center justify-between rounded-md border border-destructive bg-background p-1 pl-3 shadow-sm"
+                        class={cn(
+                          "flex items-center gap-2 rounded-md p-1",
+                          isDuplicate && "border border-destructive bg-destructive/10",
+                        )}
                       >
-                        <span class="text-sm">Remove {getLocalName(element.atomicNumber)}?</span>
-                        <div class="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="ghost"
-                            onclick={() => (confirmRemoveIndex = null)}>Cancel</Button
+                        <button
+                          type="button"
+                          class="flex h-10 w-12 flex-col items-center justify-center rounded-sm border bg-card p-0 transition-colors hover:bg-accent"
+                          onclick={() => {
+                            pickerMode = "EDIT";
+                            pickerEditIndex = index;
+                          }}
+                          title="Click to change element"
+                          data-testid={`picker-element-tile-${element.atomicNumber}`}
+                        >
+                          <span class="text-[10px] text-muted-foreground leading-none"
+                            >Z={element.atomicNumber}</span
                           >
-                          <Button
-                            size="sm"
-                            variant="destructive"
-                            autofocus
-                            onclick={() => handleRemoveElement(index)}>Yes, remove</Button
+                          <div class="flex items-center gap-1">
+                            <span class="font-mono font-bold leading-none"
+                              >{getLocalSymbol(element.atomicNumber)}</span
+                            >
+                            <span class="text-[10px] text-muted-foreground">✎</span>
+                          </div>
+                        </button>
+
+                        {#if mode === "formula"}
+                          <Input
+                            type="number"
+                            min="1"
+                            max="1000"
+                            step="1"
+                            placeholder="Count"
+                            value={String(element.atomCount)}
+                            oninput={(e) =>
+                              handleAtomCountChange(
+                                index,
+                                (e.currentTarget as HTMLInputElement).value,
+                              )}
+                            class="w-24 sm:w-32"
+                            aria-label={`Atom count for element ${index + 1}`}
+                          />
+                          <span
+                            class="w-24 shrink-0 text-xs text-muted-foreground tabular-nums"
+                            data-testid={`compound-mass-percent-${index}`}
                           >
-                        </div>
+                            {#if massPercents && massPercents[index] !== undefined}
+                              {massPercents[index]!.toFixed(1)}% by mass
+                            {/if}
+                          </span>
+                        {:else}
+                          <div class="flex items-center gap-1">
+                            <Input
+                              type="number"
+                              min="0.01"
+                              max="100"
+                              step="0.01"
+                              placeholder="Weight %"
+                              bind:value={weightTexts[index]}
+                              oninput={() => (compositionTouched = true)}
+                              class="w-32 sm:w-48 text-right hide-spin-button"
+                              aria-label={`Weight fraction % for element ${index + 1}`}
+                            />
+                            <span class="text-xs text-muted-foreground w-4">%</span>
+                          </div>
+                        {/if}
+
+                        <button
+                          type="button"
+                          class="flex items-center gap-1 h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors whitespace-nowrap"
+                          onclick={() => {
+                            confirmRemoveIndex = index;
+                          }}
+                          aria-label={`Remove ${getLocalName(element.atomicNumber)}`}
+                          disabled={formData.elements.length === 1}
+                          data-testid="picker-element-row-remove"
+                        >
+                          <span class="text-base leading-none">🗑</span>
+                          <span>Remove</span>
+                        </button>
                       </div>
-                    {/if}
-                  </div>
-                {/each}
-              </div>
 
-              {#if mode === "formula"}
-                <FormulaFooter elements={formData.elements} iValueOverride={formData.iValue} />
-              {:else}
-                <SumTracker
-                  values={weightTexts.map((t) => parseFloat(t) || 0)}
-                  symbols={formData.elements.map((el) => getLocalSymbol(el.atomicNumber))}
-                  onRescale={handleRescale}
-                />
-                <p class="text-xs text-muted-foreground">
-                  Fractions must total 100%. Values are stored as atomic ratios (w/M).
-                </p>
-              {/if}
+                      <!-- Inline remove confirm -->
+                      {#if confirmRemoveIndex === index}
+                        <div
+                          class="absolute inset-0 z-10 flex items-center justify-between rounded-md border border-destructive bg-background p-1 pl-3 shadow-sm"
+                        >
+                          <span class="text-sm">Remove {getLocalName(element.atomicNumber)}?</span>
+                          <div class="flex gap-2">
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              onclick={() => (confirmRemoveIndex = null)}>Cancel</Button
+                            >
+                            <Button
+                              size="sm"
+                              variant="destructive"
+                              autofocus
+                              onclick={() => handleRemoveElement(index)}>Yes, remove</Button
+                            >
+                          </div>
+                        </div>
+                      {/if}
+                    </div>
+                  {/each}
+                </div>
 
-              <!-- Add and Picker Buttons -->
-              <div class="flex flex-wrap items-center gap-4 mt-2">
-                <Input
-                  type="text"
-                  placeholder="Type symbol or element..."
-                  class="w-32 sm:w-48 h-8 text-sm"
-                  onkeydown={(e) => {
-                    if (e.key === "Enter") {
-                      e.preventDefault();
-                      const target = e.currentTarget;
-                      const text = target.value.trim();
-                      if (text) {
-                        const resolved = resolveElement(text);
-                        if (resolved) {
-                          formData.elements.push({
-                            atomicNumber: resolved.atomicNumber,
-                            atomCount: 1,
-                          });
-                          elementTexts.push(getLocalSymbol(resolved.atomicNumber));
-                          if (mode === "weight") weightTexts.push("0");
-                          sortElements();
-                          target.value = "";
+                {#if mode === "formula"}
+                  <FormulaFooter elements={formData.elements} iValueOverride={formData.iValue} />
+                {:else}
+                  <SumTracker
+                    values={weightTexts.map((t) => parseFloat(t) || 0)}
+                    symbols={formData.elements.map((el) => getLocalSymbol(el.atomicNumber))}
+                    onRescale={handleRescale}
+                  />
+                  <p class="text-xs text-muted-foreground">
+                    Fractions must total 100%. Values are stored as atomic ratios (w/M).
+                  </p>
+                {/if}
+
+                <!-- Add and Picker Buttons -->
+                <div class="flex flex-wrap items-center gap-4 mt-2">
+                  <Input
+                    type="text"
+                    placeholder="Type symbol or element..."
+                    class="w-32 sm:w-48 h-8 text-sm"
+                    onkeydown={(e) => {
+                      if (e.key === "Enter") {
+                        e.preventDefault();
+                        const target = e.currentTarget;
+                        const text = target.value.trim();
+                        if (text) {
+                          const resolved = resolveElement(text);
+                          if (resolved) {
+                            formData.elements.push({
+                              atomicNumber: resolved.atomicNumber,
+                              atomCount: 1,
+                            });
+                            elementTexts.push(getLocalSymbol(resolved.atomicNumber));
+                            if (mode === "weight") weightTexts.push("0");
+                            sortElements();
+                            target.value = "";
+                          }
                         }
                       }
-                    }
-                  }}
-                />
-                <button
-                  type="button"
-                  class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
-                  onclick={() => (pickerMode = "ADD")}
-                >
-                  ⊞ Pick from periodic table
-                </button>
+                    }}
+                  />
+                  <button
+                    type="button"
+                    class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
+                    onclick={() => (pickerMode = "ADD")}
+                  >
+                    ⊞ Pick from periodic table
+                  </button>
+                </div>
               </div>
             </div>
-          </div>
 
-          <div class="mt-6 flex justify-between">
-            {#if compound}
-              <Button
-                type="button"
-                variant="destructive"
-                onclick={() => (showDeleteConfirm = true)}
-              >
-                Delete
-              </Button>
-            {:else}
-              <div></div>
-            {/if}
-            <div class="flex gap-2">
-              <Button type="button" variant="outline" onclick={() => onOpenChange(false)}>
+            <div class="mt-6 flex justify-between">
+              {#if compound}
+                <Button
+                  type="button"
+                  variant="destructive"
+                  onclick={() => (showDeleteConfirm = true)}
+                >
+                  Delete
+                </Button>
+              {:else}
+                <div></div>
+              {/if}
+              <div class="flex gap-2">
+                <Button type="button" variant="outline" onclick={() => onOpenChange(false)}>
+                  Cancel
+                </Button>
+                <Button
+                  type="button"
+                  onclick={handleSave}
+                  disabled={!canSave}
+                  aria-disabled={!canSave}
+                  title={canSave ? undefined : (saveBlockReason ?? undefined)}
+                >
+                  Save
+                </Button>
+              </div>
+            </div>
+          {:else}
+            <div class="mt-6 flex justify-end gap-2">
+              <Button type="button" variant="outline" onclick={() => (showDeleteConfirm = false)}>
                 Cancel
               </Button>
               <Button
                 type="button"
-                onclick={handleSave}
-                disabled={!canSave}
-                aria-disabled={!canSave}
-                title={canSave ? undefined : (saveBlockReason ?? undefined)}
+                variant="destructive"
+                onclick={() => {
+                  onDelete();
+                  showDeleteConfirm = false;
+                }}
               >
-                Save
+                Delete
               </Button>
             </div>
-          </div>
-        {:else}
-          <div class="mt-6 flex justify-end gap-2">
-            <Button type="button" variant="outline" onclick={() => (showDeleteConfirm = false)}>
-              Cancel
-            </Button>
-            <Button
-              type="button"
-              variant="destructive"
-              onclick={() => {
-                onDelete();
-                showDeleteConfirm = false;
-              }}
-            >
-              Delete
-            </Button>
-          </div>
-        {/if}
-      </form>
+          {/if}
+        </form>
 
-      <Dialog.Close
-        class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
-      />
-    </Dialog.Content>
-  </Dialog.Portal>
-</Dialog.Root>
+        <Dialog.Close
+          class="absolute right-4 top-4 rounded-sm opacity-70 transition-opacity hover:opacity-100 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:pointer-events-none data-[state=open]:bg-accent data-[state=open]:text-muted-foreground"
+        />
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
+{/if}
 
 <Dialog.Root
   open={!!pickerMode}

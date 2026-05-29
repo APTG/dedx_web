@@ -17,6 +17,8 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-29 — **Stage 6.10**: Implement the mobile compound editor (Issue #647 / #606-4) — a phone-only 2-step full-screen sheet (Basics → Composition) that replaces the cramped desktop modal on `(max-width: 640px) and (pointer: coarse)`. Adds a full-screen periodic-table picker overlay, a long-press row action sheet, a compressed duplicate banner, and virtual-keyboard handling (`interactive-widget=resizes-content` + a `--vkb-offset` visual-viewport fallback). All form state stays in the parent behind a shared `EditorController`, so step transitions are non-destructive; desktop layout is unchanged. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-647-compound-editor-mobile.md)
 - 2026-05-29 — **Refactoring**: Address PR #659 review — fully honor "rejected, not migrated" by gating URL hydration on version negotiation in both page orchestrators. An unsupported `urlv` now hydrates nothing (entity selection, energy rows, advanced mode, plot series stay at defaults) instead of only halting the calc; "Load defaults" proceeds from those defaults. Plot version negotiation moved to a synchronous pre-effect step so it resolves before init/restore; `setupPlotUrlRestore` gained a mismatch gate. Formal spec §3.1/§3.4 wording tightened. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-477-url-version-gating.md)
 
