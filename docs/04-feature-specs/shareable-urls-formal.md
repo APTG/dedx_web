@@ -1,6 +1,9 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** v7 (2026-05-23) — v2 URL schema (`urlv=2`), calculator-table redesign
+> **Status:** v8 (2026-05-29) — v2 URL schema (`urlv=2`); v1 retired (no longer
+> migrated, see §3.4); parser refactored to the §6 layered architecture
+> (Peggy grammar → AST → resolver → canonical writer) with span-accurate
+> diagnostics (§3.9).
 >
 > **Cross-check:** If this file disagrees with `shareable-urls.md`, this formal contract wins.
 >
@@ -289,13 +292,14 @@ Notes:
 2. Split raw query on `&` into pairs, ignoring empty segments.
 3. For each pair, split on the first raw `=` into key/value; a bare key → empty value.
 4. Percent-decode each key/value component individually (or via `URLSearchParams`).
-5. Version detection:
-   a. Read `urlv`. If missing, assume `1`.
+5. Version detection (see `url-version.ts`):
+   a. Read `urlv`. If **missing**, treat leniently as the current schema
+   (legacy links predating versioning) and proceed.
    b. If `urlv === 2` → proceed to step 6 (native v2 parse).
-   c. If `urlv === 1` → apply v1→v2 migration mapping (§3.4 migration) to all
-   deprecated param keys/values, then continue with the migrated token set.
-   d. If `urlv > 2` → blocking modal (§7.2 of `shareable-urls.md`); halt.
-   e. If `urlv < 1` or non-integer → blocking modal, Load defaults only; halt.
+   c. If `urlv === 1` → **unsupported**. v1 is no longer migrated (§3.4); show the
+   unsupported-link banner with "Load defaults" and halt the URL-driven calc.
+   d. If `urlv > 2` → unsupported-link banner; halt.
+   e. If `urlv < 1` or non-integer → unsupported-link banner, Load defaults only; halt.
 6. For each `extdata` value, split on the first literal `:` to extract label and
    percent-encoded URL. Labels must be unique; duplicates → unknown-pair.
 7. Parse ABNF tokens.
@@ -316,9 +320,16 @@ If the same key appears multiple times, use the **last occurrence**.
 
 Unknown parameters are silently ignored and never emitted in canonical output.
 
-### 3.4 v1 → v2 Migration Mapping
+### 3.4 v1 → v2 Migration Mapping (RETIRED)
 
-Applied during step 5c when `urlv=1` or absent. Map deprecated params to v2 equivalents:
+> **Retired (v8, 2026-05-29).** v1 links are no longer migrated. An explicit
+> `urlv=1` (or any major below `MIN_SUPPORTED_URL_MAJOR = 2`) is rejected with the
+> unsupported-link banner. The migration table below is kept for historical
+> reference only; no code path applies it. The `migrateUrl` seam in
+> `url-version.ts` is the identity for the current major and is where a future
+> `v2 → v3` chain would be registered.
+
+Historical mapping (no longer applied):
 
 | Deprecated v1 key + value       | v2 equivalent                                                                                                                                                              |
 | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -471,6 +482,26 @@ Advanced Options constraints (applied when advanced mode; silently ignored in ba
 - `mstar_mode`: one of `"a"` `"b"` `"c"` `"d"` `"g"` `"h"`. Invalid → silently ignored (default `"b"`).
 - `density`: finite positive number. Zero, negative, non-numeric → silently ignored.
 - `ival`: > 0 and ≤ 10 000. Invalid → silently ignored.
+
+### 3.9 Diagnostics
+
+Both the syntactic layer (`parseQuery`) and the semantic layer (`resolveState`)
+emit `Diagnostic` records so the UI can pinpoint problems. Each carries a
+`severity` (`fatal | error | warning | info`), a stable `code`, a human message,
+an optional source `span` (character offsets into the query string), and the
+related `param`. Because every AST node retains its source span, diagnostics can
+underline the exact offending characters (caret rendering).
+
+- **fatal** — the query could not be tokenized (rare; `unknown-pair` absorbs most
+  junk) or the version is unsupported. The calculation is blocked; the user is
+  offered "Load defaults".
+- **error / warning** — a specific value is invalid (e.g. out-of-range density, an
+  unknown energy unit, an invalid custom compound). The offending part is dropped;
+  the rest proceeds (partial success per §3.7).
+- **info** — an unknown or mode-gated param was ignored.
+
+Diagnostics are side-effect free data; the banner/notification is driven entirely
+by the returned list (§6), never from within the parser.
 
 ---
 
@@ -667,17 +698,22 @@ These vectors arrive with `urlv=1` (or no `urlv`) and must be migrated to v2 can
 
 ## 6. Implementation Guidance
 
-Recommended architecture:
+Architecture (implemented):
 
-- `parseQuery(raw: string): ParsedTokens` — ABNF-equivalent parser
-- `migrateV1ToV2(tokens: ParsedTokens): ParsedTokens` — migration mapping (§3.4)
-- `resolveState(tokens, route, services): ResolvedState` — semantic pass
-- `canonicalize(state): string` — single canonical URL writer
+- `parseQuery(raw: string | URLSearchParams): QueryNode` — Peggy grammar
+  (`url-grammar.peggy`) → AST (`url-ast.ts`). Pure syntax; every node carries a
+  source span. See `url-parse.ts`.
+- `resolveCalculatorState(ast) / resolvePlotState(ast)` — semantic pass: last-wins
+  duplicate resolution, defaults, mode gating, validation. Returns typed state and
+  appends `Diagnostic`s (`url-resolve` logic lives in `calculator-url.ts` /
+  `plot-url.ts`; shared helpers in `url-shared.ts`). See §3.9.
+- `migrateUrl(fromMajor, toMajor, tokens)` — version seam in `url-version.ts`;
+  identity for the current major (v1 is rejected, not migrated — §3.4).
+- canonical URL writers (`*UrlQueryString`) emit the §4 ordered form.
 
-Validation must be deterministic and side-effect free. Migration should be a pure
-function (no I/O). The banner notification after v1 migration (§7.2 of
-`shareable-urls.md`) is triggered by the presence of the migration flag in the
-resolved state, not from within the parser.
+Validation is deterministic and side-effect free. The unsupported-link banner is
+driven by `negotiateVersion`; per-value problems are driven by the diagnostics
+list (§3.9), never from within the parser.
 
 ---
 
