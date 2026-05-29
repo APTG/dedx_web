@@ -90,7 +90,7 @@
         <div class="flex flex-col gap-2 rounded-lg border bg-card/50 p-3 shadow-sm">
           <span class="text-xs font-medium text-muted-foreground">Start from preset</span>
           <div class="flex flex-wrap gap-2">
-            {#each COMPOUND_PRESETS as preset}
+            {#each COMPOUND_PRESETS as preset (preset.shortName)}
               <Button
                 variant="secondary"
                 size="sm"
