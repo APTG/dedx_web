@@ -141,14 +141,13 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("1.0");
 
-    // First H
-    // H is present by default
+    // Li is present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("2");
 
-    // Add another H (duplicate)
+    // Add another Li (duplicate)
     const addInput = page.getByPlaceholder(/Type symbol or element/i);
-    await addInput.fill("H");
+    await addInput.fill("Li");
     await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
@@ -172,21 +171,20 @@ test.describe("Custom Compounds — Editor Modal", () => {
 
     // Fill form
     const nameInput = page.getByRole("textbox", { name: /name/i });
-    await nameInput.fill("LiF Pellet");
+    await nameInput.fill("BeO Pellet");
 
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
-    await densityInput.fill("2.20");
+    await densityInput.fill("3.01");
 
-    // Li (Z=3) - element resolves automatically on input
-    await page.getByTestId("picker-element-tile-1").first().click();
-    await page.getByTestId("picker-grid-tile-3").first().click();
+    // Change Li (Z=3) to Be (Z=4)
+    await page.getByTestId("picker-element-tile-3").first().click();
+    await page.getByTestId("picker-grid-tile-4").first().click();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
-    // Add F (Z=9)
-    const addInput = page.getByPlaceholder(/Type symbol or element/i);
-    await addInput.fill("F");
-    await addInput.press("Enter");
+    // Change F (Z=9) to O (Z=8)
+    await page.getByTestId("picker-element-tile-9").first().click();
+    await page.getByTestId("picker-grid-tile-8").first().click();
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -209,15 +207,15 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const customList = page.getByTestId("picker-material-list-custom");
     await expect(customList).toBeVisible();
 
-    // Verify LiF Pellet is visible in the custom list.
-    await expect(customList.getByText(/LiF Pellet/i)).toBeVisible();
+    // Verify BeO Pellet is visible in the custom list.
+    await expect(customList.getByText(/BeO Pellet/i)).toBeVisible();
 
     // Verify density description is visible on the custom compound row.
     await expect(
       customList
-        .locator('[data-testid^="picker-material-item-"]', { hasText: /LiF Pellet/i })
+        .locator('[data-testid^="picker-material-item-"]', { hasText: /BeO Pellet/i })
         .first(),
-    ).toContainText(/2\.20\d* g\/cm/);
+    ).toContainText(/3\.01\d* g\/cm/);
   });
 
   test("AC-6: Delete compound confirmation", async ({ page }) => {
@@ -317,19 +315,19 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await expect(carbonEditBtn).toBeVisible();
     await expect(page.getByText(/Z=6/i).first()).toBeVisible();
 
-    // Edit the first element (H)
-    const hydrogenEditBtn = page.getByTestId("picker-element-tile-1").first();
-    await hydrogenEditBtn.click();
+    // Edit the first element (Li)
+    const lithiumEditBtn = page.getByTestId("picker-element-tile-3").first();
+    await lithiumEditBtn.click();
 
     // The picker should appear for editing
     await expect(pickerGrid).toBeVisible();
 
-    // Change H to O (Z=8)
+    // Change Li to O (Z=8)
     const oxygenTile = page.getByTestId("picker-grid-tile-8").first(); // the one in the picker
     await oxygenTile.click();
 
-    // Verify H is gone and O is present
-    await expect(page.getByTestId("picker-element-tile-1")).not.toBeVisible();
+    // Verify Li is gone and O is present
+    await expect(page.getByTestId("picker-element-tile-3")).not.toBeVisible();
     const oxygenEditBtn = page.getByTestId("picker-element-tile-8").first();
     await expect(oxygenEditBtn).toBeVisible();
   });
@@ -462,15 +460,10 @@ test.describe("Custom Compounds — Program Compatibility Filter", () => {
     await densityInput.fill("2.20");
 
     // Li
-    await page.getByTestId("picker-element-tile-1").first().click();
-    await page.getByTestId("picker-grid-tile-3").first().click();
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
     // F
-    const addInput = page.getByPlaceholder(/Type symbol or element/i);
-    await addInput.fill("F");
-    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -585,9 +578,17 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("textbox", { name: /name/i }).fill("Water H2O formula");
     await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
 
+    // Change Li to H
+    await page.getByTestId("picker-element-tile-3").first().click();
+    await page.getByTestId("picker-grid-tile-1").first().click();
+
+    // Remove F
+    const removeBtn = page.getByTestId("picker-element-row-remove").nth(1);
+    await removeBtn.click();
+    const confirmBtn = page.getByRole("button", { name: "Yes, remove" });
+    await confirmBtn.click();
+
     // First element: H with atom count 2
-    // H is present by default
-    // await el0.blur();
     const count0 = page.getByPlaceholder(/count/i).first();
     await count0.fill("2");
 
@@ -655,8 +656,15 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     await page.getByRole("textbox", { name: /name/i }).fill("Water H2O weight");
     await page.getByRole("spinbutton", { name: /density/i }).fill("1.0");
 
-    // First element: H with a placeholder atom count (will be replaced by weight mode)
-    // H is present by default
+    // Change Li to H
+    await page.getByTestId("picker-element-tile-3").first().click();
+    await page.getByTestId("picker-grid-tile-1").first().click();
+
+    // Remove F
+    const removeBtn = page.getByTestId("picker-element-row-remove").nth(1);
+    await removeBtn.click();
+    const confirmBtn = page.getByRole("button", { name: "Yes, remove" });
+    await confirmBtn.click();
 
     // Switch to weight fraction mode
     const weightTab = page.getByRole("tab", { name: /weight fraction/i });
@@ -776,16 +784,10 @@ test.describe("Scenario 1: LiF pellet smoke test", () => {
     const densityInput = page.getByRole("spinbutton", { name: /density/i });
     await densityInput.fill("2.20");
 
-    // Li (Z=3)
-    await page.getByTestId("picker-element-tile-1").first().click();
-    await page.getByTestId("picker-grid-tile-3").first().click();
+    // Li and F are present by default
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
-    // F (Z=9)
-    const addInput = page.getByPlaceholder(/Type symbol or element/i);
-    await addInput.fill("F");
-    await addInput.press("Enter");
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
@@ -842,6 +844,16 @@ test.describe("Custom Compounds — Live Derived UI (Issue #645)", () => {
 
     // Build H52 C63 N3 O25 — rows sort ascending Z → H, C, N, O.
     const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("H");
+    await addInput.press("Enter");
+
+    // Now we have H (1), Li (3), F (9). Remove F, then Li.
+    const removeBtns = page.getByTestId("picker-element-row-remove");
+    await removeBtns.nth(2).click(); // Remove F
+    await page.getByRole("button", { name: "Yes, remove" }).click();
+    await removeBtns.nth(1).click(); // Remove Li
+    await page.getByRole("button", { name: "Yes, remove" }).click();
+
     for (const sym of ["C", "N", "O"]) {
       await addInput.fill(sym);
       await addInput.press("Enter");
