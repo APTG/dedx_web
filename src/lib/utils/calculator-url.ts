@@ -5,6 +5,17 @@ import type { AdvancedOptions } from "$lib/wasm/types";
 import type { EntityId, ExternalSourceDescriptor } from "$lib/external-data/types";
 import { parseEntityIdList, formatEntityIdList } from "$lib/external-data/ids";
 import { parseExtdataParams, externalDataQuerySegments } from "$lib/external-data/url";
+import { parseQuery } from "$lib/utils/url-parse";
+import type { QueryNode } from "$lib/utils/url-ast";
+import type { Diagnostic } from "$lib/utils/url-diagnostics";
+import {
+  buildTokenView,
+  parseCustomCompound,
+  encodeMatElements,
+  type MatElementUrl,
+} from "$lib/utils/url-shared";
+
+export type { MatElementUrl };
 
 /**
  * URL contract major version. Bump only on breaking changes to query
@@ -44,36 +55,6 @@ const VALID_ROW_UNITS: ReadonlySet<EnergySuffixUnit> = new Set<EnergySuffixUnit>
   "TeV/u",
   "keV/u",
 ]);
-
-const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
-const STRICT_INTEGER_RE = /^\d+$/;
-
-/**
- * Resolve duplicate URL params using "last wins" semantics per §3.2.
- * Iterates all params and uses set() which overwrites earlier values.
- */
-function resolveLastWins(params: URLSearchParams): URLSearchParams {
-  const out = new URLSearchParams();
-  for (const [key, value] of params) {
-    out.set(key, value);
-  }
-  return out;
-}
-
-function parseStrictFiniteNumber(raw: string | null): number | undefined {
-  if (raw === null) return undefined;
-  const trimmed = raw.trim();
-  if (!STRICT_NUMBER_RE.test(trimmed)) return undefined;
-  const value = Number(trimmed);
-  return Number.isFinite(value) ? value : undefined;
-}
-
-function parseStrictAtomicNumber(raw: string): number | undefined {
-  const trimmed = raw.trim();
-  if (!STRICT_INTEGER_RE.test(trimmed)) return undefined;
-  const value = Number(trimmed);
-  return Number.isInteger(value) && value >= 1 && value <= 118 ? value : undefined;
-}
 
 /**
  * Inverse lookup row — similar to CalculatorUrlRow but for inverse mode inputs.
@@ -193,12 +174,6 @@ export interface CalculatorUrlRow {
    * (per-row mode) or inherited from the master `eunit` (master mode).
    */
   unitFromSuffix: boolean;
-}
-
-/** Element specification for custom compounds in URL encoding. */
-export interface MatElementUrl {
-  atomicNumber: number;
-  atomCount: number;
 }
 
 export interface CalculatorUrlState {
@@ -389,10 +364,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
         params.set("mat_density", String(state.matDensity));
       }
       if (state.matElements && state.matElements.length > 0) {
-        // Sort by ascending Z and encode as Z:count,Z:count
-        const sorted = [...state.matElements].sort((a, b) => a.atomicNumber - b.atomicNumber);
-        const encoded = sorted.map((e) => `${e.atomicNumber}:${e.atomCount}`).join(",");
-        params.set("mat_elements", encoded);
+        params.set("mat_elements", encodeMatElements(state.matElements));
       }
       if (state.matIval !== undefined) {
         params.set("mat_ival", String(state.matIval));
@@ -522,19 +494,23 @@ export function calculatorUrlQueryString(state: CalculatorUrlState): string {
   return parts.join("&");
 }
 
-export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlState {
-  // Extract extdata BEFORE resolveLastWins; last-wins would drop all but the
-  // last occurrence, collapsing the ordered source list.
-  const { sources: externalSources } = parseExtdataParams(rawParams);
-
-  // Strip extdata from the params we pass to last-wins resolution.
-  const paramsNoExtdata = new URLSearchParams();
-  for (const [key, value] of rawParams) {
-    if (key !== "extdata") paramsNoExtdata.append(key, value);
-  }
-
-  // Resolve duplicate params using "last wins" semantics per §3.2
-  const params = resolveLastWins(paramsNoExtdata);
+/**
+ * Resolve a parsed query (AST) into calculator URL state.
+ *
+ * Applies §3 semantics: duplicate resolution (last-wins, via the token view),
+ * defaults, advanced-mode gating, and validation. External sources are
+ * resolved separately (`parseExtdataParams`) and passed in. Any `diagnostics`
+ * array is appended with dropped/invalid-param messages carrying source spans.
+ *
+ * Separately exported so the semantic layer can be unit-tested without a page
+ * render (issue #477).
+ */
+export function resolveCalculatorState(
+  ast: QueryNode,
+  externalSources: ExternalSourceDescriptor[],
+  diagnostics: Diagnostic[] = [],
+): CalculatorUrlState {
+  const t = buildTokenView(ast);
 
   const parseId = (v: string | null): number | null => {
     if (!v) return null;
@@ -542,24 +518,32 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     return Number.isFinite(n) && n > 0 ? n : null;
   };
 
-  // urlv is parsed-but-defaulted: missing → 1 (back-compat per
-  // shareable-urls §3.5). Future major bumps should branch here.
-  // The value isn't returned in CalculatorUrlState because Stage 1
-  // currently has no migration path; the parser just records the assumption
-  // explicitly.
-  const _urlv = parseInt(params.get("urlv") ?? "1", 10);
+  // urlv is parsed-but-defaulted; version negotiation happens before resolution
+  // (see url-version.ts). Recorded here only to document the assumption.
+  const _urlv = parseInt(t.get("urlv") ?? "1", 10);
   void _urlv;
 
-  const eunitRaw = params.get("eunit") ?? "MeV";
+  // Unknown params are ignored (§3.3); record them as info diagnostics.
+  for (const unknown of t.unknownPairs) {
+    diagnostics.push({
+      severity: "info",
+      code: "param.unknown",
+      message: `Unknown parameter "${unknown.key}" was ignored.`,
+      param: unknown.key,
+      span: unknown.span,
+    });
+  }
+
+  const eunitRaw = t.get("eunit") ?? "MeV";
   const masterUnit: EnergyUnit = isMasterUnit(eunitRaw) ? eunitRaw : "MeV";
 
-  const uanchorRaw = params.get("uanchor") ?? "";
+  const uanchorRaw = t.get("uanchor") ?? "";
   const energyAnchor: EnergyUnit | undefined = isUanchorSlug(uanchorRaw)
     ? UANCHOR_TO_UNIT[uanchorRaw]
     : undefined;
 
   const rows: CalculatorUrlRow[] = [];
-  const energiesParam = params.get("energies");
+  const energiesParam = t.get("energies");
   if (energiesParam) {
     for (const part of energiesParam.split(",")) {
       const colonIdx = part.lastIndexOf(":");
@@ -576,16 +560,16 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
 
   // Parse advanced mode params
-  const mode = params.get("mode");
+  const mode = t.get("mode");
   const isAdvancedMode = mode === "advanced";
 
   // across= and plural comparison lists (valid only in advanced mode per spec §3.3).
-  const acrossRaw = params.get("across");
+  const acrossRaw = t.get("across");
   const acrossCandidate = isAdvancedMode ? fromAcrossUrlToken(acrossRaw) : undefined;
 
   let selectedParticleIds: number[] | undefined;
   if (isAdvancedMode && acrossCandidate === "particle") {
-    const particlesParam = params.get("particles");
+    const particlesParam = t.get("particles");
     if (particlesParam) {
       const ids = particlesParam
         .split(",")
@@ -595,10 +579,10 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     }
   }
 
-  const programsParam = params.get("programs");
+  const programsParam = t.get("programs");
   const selectedProgramIds: EntityId[] | undefined =
     isAdvancedMode && programsParam ? parseEntityIdList(programsParam) : undefined;
-  const materialsParam = params.get("materials");
+  const materialsParam = t.get("materials");
   const selectedMaterialIds: EntityId[] | undefined =
     isAdvancedMode && acrossCandidate === "material" && materialsParam
       ? parseEntityIdList(materialsParam)
@@ -608,8 +592,8 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   // Silently drop legacy hidden_programs param (per ADR 006 / #561).
   // Parse qshow (v2) or migrate legacy qfocus (v1) per ADR 006 migration rules.
-  const qshowRaw = params.get("qshow") as "stp" | "range" | null;
-  const qfocusRaw = params.get("qfocus");
+  const qshowRaw = t.get("qshow") as "stp" | "range" | null;
+  const qfocusRaw = t.get("qfocus");
   let resolvedQshow: "stp" | "range" | null = null;
   if (qshowRaw === "stp" || qshowRaw === "range") {
     resolvedQshow = qshowRaw;
@@ -630,113 +614,18 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   let matPhase: "gas" | "condensed" | undefined;
   let fromUrlWarning: string | undefined;
 
-  if (isAdvancedMode) {
-    const materialRaw = params.get("material");
-    if (materialRaw === "custom") {
+  if (isAdvancedMode && t.get("material") === "custom") {
+    const fields = parseCustomCompound(t.get, { get: t.span }, diagnostics);
+    fromUrlWarning = fields.fromUrlWarning;
+    // On validation failure keep the warning but drop the parsed fields; the
+    // caller falls back to a built-in material (276).
+    if (!fromUrlWarning) {
       materialIsCustom = true;
-      matName = params.get("mat_name") ?? undefined;
-      const matDensityRaw = params.get("mat_density");
-      matDensity = parseStrictFiniteNumber(matDensityRaw);
-      const matElementsRaw = params.get("mat_elements");
-      const matIvalRaw = params.get("mat_ival");
-      const matPhaseRaw = params.get("mat_phase");
-
-      // Parse elements (Z:count format)
-      if (matElementsRaw) {
-        const elementMap = new Map<number, number>();
-        const entries = matElementsRaw.split(",");
-        for (const entry of entries) {
-          const colonIdx = entry.indexOf(":");
-          if (colonIdx <= 0) {
-            // Malformed entry - skip but note the issue
-            fromUrlWarning = fromUrlWarning
-              ? `${fromUrlWarning}; malformed mat_elements entry`
-              : "mat_elements: malformed entries";
-            continue;
-          }
-          const zStr = entry.slice(0, colonIdx);
-          const countStr = entry.slice(colonIdx + 1);
-          const z = parseStrictAtomicNumber(zStr);
-          const count = parseStrictFiniteNumber(countStr);
-          if (z === undefined) {
-            if (!STRICT_INTEGER_RE.test(zStr.trim())) {
-              fromUrlWarning = fromUrlWarning
-                ? `${fromUrlWarning}; malformed mat_elements entry`
-                : "mat_elements: malformed entries";
-            }
-            // Invalid Z - skip this element
-            continue;
-          }
-          if (count === undefined) {
-            fromUrlWarning = fromUrlWarning
-              ? `${fromUrlWarning}; malformed mat_elements entry`
-              : "mat_elements: malformed entries";
-            continue;
-          }
-          if (count <= 0) {
-            // Invalid atom count - skip this element
-            continue;
-          }
-          // Collapse duplicates by summing counts
-          elementMap.set(z, (elementMap.get(z) ?? 0) + count);
-        }
-        if (elementMap.size > 0) {
-          matElements = Array.from(elementMap.entries())
-            .sort((a, b) => a[0] - b[0])
-            .map(([atomicNumber, atomCount]) => ({ atomicNumber, atomCount }));
-        } else if (matElementsRaw) {
-          // All elements were invalid
-          fromUrlWarning = fromUrlWarning
-            ? `${fromUrlWarning}; mat_elements: all entries invalid`
-            : "mat_elements: all entries invalid";
-        }
-      }
-
-      matIval = parseStrictFiniteNumber(matIvalRaw);
-      if (matIvalRaw !== null && matIval === undefined) {
-        fromUrlWarning = fromUrlWarning
-          ? `${fromUrlWarning}; mat_ival invalid`
-          : "mat_ival: invalid";
-      }
-      if (matIval !== undefined && (matIval <= 0 || matIval > 10000)) {
-        // Out of range - silently ignore (don't set)
-        matIval = undefined;
-      }
-
-      matPhase = matPhaseRaw === "gas" ? "gas" : "condensed";
-
-      // Validate required fields for custom compounds
-      if (!matName || !matName.trim()) {
-        fromUrlWarning = fromUrlWarning
-          ? `${fromUrlWarning}; mat_name missing`
-          : "mat_name: required";
-      }
-      if (
-        matDensity === undefined ||
-        !Number.isFinite(matDensity) ||
-        matDensity <= 0 ||
-        matDensity > 25
-      ) {
-        fromUrlWarning = fromUrlWarning
-          ? `${fromUrlWarning}; mat_density invalid`
-          : "mat_density: required (0, 25]";
-      }
-      if (!matElements || matElements.length === 0) {
-        fromUrlWarning = fromUrlWarning
-          ? `${fromUrlWarning}; mat_elements missing/invalid`
-          : "mat_elements: required";
-      }
-
-      // If validation failed, fall back to liquid water (ID 276)
-      // But keep fromUrlWarning so we can report what went wrong
-      if (fromUrlWarning) {
-        materialIsCustom = undefined;
-        matName = undefined;
-        matDensity = undefined;
-        matElements = undefined;
-        matIval = undefined;
-        matPhase = undefined;
-      }
+      matName = fields.matName;
+      matDensity = fields.matDensity;
+      matElements = fields.matElements;
+      matIval = fields.matIval;
+      matPhase = fields.matPhase;
     }
   }
 
@@ -745,13 +634,13 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   if (isAdvancedMode) {
     const opts: Partial<AdvancedOptions> = {};
 
-    const aggState = params.get("agg_state") as "gas" | "condensed" | null;
+    const aggState = t.get("agg_state") as "gas" | "condensed" | null;
     if (aggState === "gas" || aggState === "condensed") {
       opts.aggregateState = aggState;
     }
 
-    const interpScale = params.get("interp_scale");
-    const interpMethod = params.get("interp_method");
+    const interpScale = t.get("interp_scale");
+    const interpMethod = t.get("interp_method");
     if (interpScale === "lin-lin" || interpMethod === "spline") {
       opts.interpolation = {
         scale: interpScale === "lin-lin" ? "linear" : "log",
@@ -759,12 +648,12 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
       };
     }
 
-    const mstarMode = params.get("mstar_mode");
+    const mstarMode = t.get("mstar_mode");
     if (mstarMode && mstarMode !== "b" && ["a", "c", "d", "g", "h"].includes(mstarMode)) {
       opts.mstarMode = mstarMode as MstarMode;
     }
 
-    const density = params.get("density");
+    const density = t.get("density");
     if (density !== null) {
       const d = parseFloat(density);
       if (Number.isFinite(d) && d > 0) {
@@ -772,7 +661,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
       }
     }
 
-    const ival = params.get("ival");
+    const ival = t.get("ival");
     if (ival !== null) {
       const i = parseFloat(ival);
       if (Number.isFinite(i) && i > 0 && i <= 10000) {
@@ -787,7 +676,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
 
   // Parse inverse lookup params (imode, lookups, iunit)
-  const imodeRaw = params.get("imode");
+  const imodeRaw = t.get("imode");
   const imode: InverseMode | undefined =
     imodeRaw === "csda" || imodeRaw === "stp" ? imodeRaw : undefined;
 
@@ -796,7 +685,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
 
   if (imode) {
     // v2 canonical param is `lookups=`; accept v1 `ivalues=` as fallback.
-    const lookupsParam = params.get("lookups") ?? params.get("ivalues");
+    const lookupsParam = t.get("lookups") ?? t.get("ivalues");
     if (lookupsParam) {
       lookups = [];
       for (const part of lookupsParam.split(",")) {
@@ -812,7 +701,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     }
 
     // Validate and default iunit based on imode
-    const iunitRaw = params.get("iunit") ?? undefined;
+    const iunitRaw = t.get("iunit") ?? undefined;
     if (imode === "csda") {
       iunit = iunitRaw && VALID_CSDA_MASTER_UNITS.has(iunitRaw) ? iunitRaw : "cm";
     } else if (imode === "stp") {
@@ -830,7 +719,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
 
   // Determine materialId based on custom compound parsing
-  const materialRaw = params.get("material");
+  const materialRaw = t.get("material");
   let materialId: number | null = parseId(materialRaw);
   if (materialRaw === "custom" && fromUrlWarning) {
     // Validation failed - fall back to liquid water (ID 276)
@@ -841,12 +730,9 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
   }
 
   const result: CalculatorUrlState = {
-    particleId: parseId(params.get("particle")),
+    particleId: parseId(t.get("particle")),
     materialId,
-    programId:
-      params.get("program") === "auto" || !params.get("program")
-        ? null
-        : parseId(params.get("program")),
+    programId: t.get("program") === "auto" || !t.get("program") ? null : parseId(t.get("program")),
     rows: rows.length > 0 ? rows : [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
     masterUnit,
     isAdvancedMode,
@@ -894,7 +780,7 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     result.iunit = iunit;
   }
   if (imode === "stp") {
-    const istpBranchRaw = params.get("istpbranch");
+    const istpBranchRaw = t.get("istpbranch");
     const istpBranchState: StpBranchState =
       istpBranchRaw === "both" || istpBranchRaw === "lo" ? istpBranchRaw : "hi";
     result.istpBranchState = istpBranchState;
@@ -903,4 +789,17 @@ export function decodeCalculatorUrl(rawParams: URLSearchParams): CalculatorUrlSt
     result.energyAnchor = energyAnchor;
   }
   return result;
+}
+
+/**
+ * Decode calculator URL state from a raw query string or `URLSearchParams`.
+ * Thin wrapper over the layered pipeline: extdata is resolved on the original
+ * params (ordered, may repeat), then `parseQuery` tokenizes and
+ * `resolveCalculatorState` applies semantics.
+ */
+export function decodeCalculatorUrl(input: URLSearchParams | string): CalculatorUrlState {
+  const params = typeof input === "string" ? new URLSearchParams(input) : input;
+  const { sources } = parseExtdataParams(params);
+  const ast = parseQuery(input);
+  return resolveCalculatorState(ast, sources);
 }

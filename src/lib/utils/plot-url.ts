@@ -6,6 +6,17 @@ import {
   parseExtdataParams,
   externalDataQuerySegments,
 } from "$lib/external-data/url";
+import { parseQuery } from "$lib/utils/url-parse";
+import type { QueryNode } from "$lib/utils/url-ast";
+import type { Diagnostic } from "$lib/utils/url-diagnostics";
+import {
+  buildTokenView,
+  parseCustomCompound,
+  encodeMatElements,
+  type MatElementUrl,
+} from "$lib/utils/url-shared";
+
+export type { MatElementUrl };
 
 const STP_TOKENS: Record<StpUnit, string> = {
   "keV/µm": "kev-um",
@@ -13,45 +24,9 @@ const STP_TOKENS: Record<StpUnit, string> = {
   "MeV·cm²/g": "mev-cm2-g",
 };
 
-/** Element specification for custom compounds in URL encoding. */
-export interface MatElementUrl {
-  atomicNumber: number;
-  atomCount: number;
-}
-
 const TOKEN_TO_STP: Record<string, StpUnit> = Object.fromEntries(
   Object.entries(STP_TOKENS).map(([k, v]) => [v, k as StpUnit]),
 );
-
-const STRICT_NUMBER_RE = /^[+-]?\d*\.?\d+(?:[eE][+-]?\d+)?$/;
-const STRICT_INTEGER_RE = /^\d+$/;
-
-/**
- * Resolve duplicate URL params using "last wins" semantics per §3.2.
- * Iterates all params and uses set() which overwrites earlier values.
- */
-function resolveLastWins(params: URLSearchParams): URLSearchParams {
-  const out = new URLSearchParams();
-  for (const [key, value] of params) {
-    out.set(key, value);
-  }
-  return out;
-}
-
-function parseStrictFiniteNumber(raw: string | null): number | undefined {
-  if (raw === null) return undefined;
-  const trimmed = raw.trim();
-  if (!STRICT_NUMBER_RE.test(trimmed)) return undefined;
-  const value = Number(trimmed);
-  return Number.isFinite(value) ? value : undefined;
-}
-
-function parseStrictAtomicNumber(raw: string): number | undefined {
-  const trimmed = raw.trim();
-  if (!STRICT_INTEGER_RE.test(trimmed)) return undefined;
-  const value = Number(trimmed);
-  return Number.isInteger(value) && value >= 1 && value <= 118 ? value : undefined;
-}
 
 export function stpUnitToToken(unit: StpUnit): string {
   return STP_TOKENS[unit];
@@ -134,9 +109,7 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
     }
     if (input.matElements && input.matElements.length > 0) {
       // Sort by ascending Z and encode as Z:count,Z:count
-      const sorted = [...input.matElements].sort((a, b) => a.atomicNumber - b.atomicNumber);
-      const encoded = sorted.map((e) => `${e.atomicNumber}:${e.atomCount}`).join(",");
-      params.set("mat_elements", encoded);
+      params.set("mat_elements", encodeMatElements(input.matElements));
     }
     if (input.matIval !== undefined) {
       params.set("mat_ival", String(input.matIval));
@@ -232,17 +205,18 @@ export function plotUrlQueryString(input: PlotUrlInput): string {
   return parts.join("&");
 }
 
-export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
-  // Extract extdata BEFORE resolveLastWins (last-wins would collapse the list).
-  const { sources: externalSources } = parseExtdataParams(rawParams);
-
-  const paramsNoExtdata = new URLSearchParams();
-  for (const [key, value] of rawParams) {
-    if (key !== "extdata") paramsNoExtdata.append(key, value);
-  }
-
-  // Resolve duplicate params using "last wins" semantics per §3.2
-  const params = resolveLastWins(paramsNoExtdata);
+/**
+ * Resolve a parsed query (AST) into plot URL state (§3 semantics). External
+ * sources are resolved separately and passed in. Collected `diagnostics`
+ * describe dropped/invalid params with source spans. Separately exported for
+ * unit testing without a page render (issue #477).
+ */
+export function resolvePlotState(
+  ast: QueryNode,
+  externalSources: ExternalSourceDescriptor[],
+  diagnostics: Diagnostic[] = [],
+): PlotUrlDecoded {
+  const t = buildTokenView(ast);
 
   const parseFiniteInt = (raw: string | null): number | null => {
     if (raw === null) return null;
@@ -250,7 +224,18 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
     return Number.isFinite(n) ? n : null;
   };
 
-  const particleId = params.has("particle") ? parseFiniteInt(params.get("particle")) : null;
+  // Unknown params are ignored (§3.3); record them as info diagnostics.
+  for (const unknown of t.unknownPairs) {
+    diagnostics.push({
+      severity: "info",
+      code: "param.unknown",
+      message: `Unknown parameter "${unknown.key}" was ignored.`,
+      param: unknown.key,
+      span: unknown.span,
+    });
+  }
+
+  const particleId = parseFiniteInt(t.get("particle"));
 
   // Parse custom compound material params
   let materialId: number | null = null;
@@ -262,111 +247,27 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   let matPhase: "gas" | "condensed" | undefined;
   let fromUrlWarning: string | undefined;
 
-  const materialRaw = params.get("material");
+  const materialRaw = t.get("material");
   if (materialRaw === "custom") {
-    materialIsCustom = true;
-    matName = params.get("mat_name") ?? undefined;
-    const matDensityRaw = params.get("mat_density");
-    matDensity = parseStrictFiniteNumber(matDensityRaw);
-    const matElementsRaw = params.get("mat_elements");
-    const matIvalRaw = params.get("mat_ival");
-    const matPhaseRaw = params.get("mat_phase");
-
-    // Parse elements (Z:count format)
-    if (matElementsRaw) {
-      const elementMap = new Map<number, number>();
-      const entries = matElementsRaw.split(",");
-      for (const entry of entries) {
-        const colonIdx = entry.indexOf(":");
-        if (colonIdx <= 0) {
-          fromUrlWarning = fromUrlWarning
-            ? `${fromUrlWarning}; malformed mat_elements entry`
-            : "mat_elements: malformed entries";
-          continue;
-        }
-        const zStr = entry.slice(0, colonIdx);
-        const countStr = entry.slice(colonIdx + 1);
-        const z = parseStrictAtomicNumber(zStr);
-        const count = parseStrictFiniteNumber(countStr);
-        if (z === undefined) {
-          if (!STRICT_INTEGER_RE.test(zStr.trim())) {
-            fromUrlWarning = fromUrlWarning
-              ? `${fromUrlWarning}; malformed mat_elements entry`
-              : "mat_elements: malformed entries";
-          }
-          continue;
-        }
-        if (count === undefined) {
-          fromUrlWarning = fromUrlWarning
-            ? `${fromUrlWarning}; malformed mat_elements entry`
-            : "mat_elements: malformed entries";
-          continue;
-        }
-        if (count <= 0) {
-          continue;
-        }
-        elementMap.set(z, (elementMap.get(z) ?? 0) + count);
-      }
-      if (elementMap.size > 0) {
-        matElements = Array.from(elementMap.entries())
-          .sort((a, b) => a[0] - b[0])
-          .map(([atomicNumber, atomCount]) => ({ atomicNumber, atomCount }));
-      } else if (matElementsRaw) {
-        fromUrlWarning = fromUrlWarning
-          ? `${fromUrlWarning}; mat_elements: all entries invalid`
-          : "mat_elements: all entries invalid";
-      }
-    }
-
-    matIval = parseStrictFiniteNumber(matIvalRaw);
-    if (matIvalRaw !== null && matIval === undefined) {
-      fromUrlWarning = fromUrlWarning ? `${fromUrlWarning}; mat_ival invalid` : "mat_ival: invalid";
-    }
-    if (matIval !== undefined && (matIval <= 0 || matIval > 10000)) {
-      matIval = undefined;
-    }
-
-    matPhase = matPhaseRaw === "gas" ? "gas" : "condensed";
-
-    // Validate required fields for custom compounds
-    if (!matName || !matName.trim()) {
-      fromUrlWarning = fromUrlWarning
-        ? `${fromUrlWarning}; mat_name missing`
-        : "mat_name: required";
-    }
-    if (
-      matDensity === undefined ||
-      !Number.isFinite(matDensity) ||
-      matDensity <= 0 ||
-      matDensity > 25
-    ) {
-      fromUrlWarning = fromUrlWarning
-        ? `${fromUrlWarning}; mat_density invalid`
-        : "mat_density: required (0, 25]";
-    }
-    if (!matElements || matElements.length === 0) {
-      fromUrlWarning = fromUrlWarning
-        ? `${fromUrlWarning}; mat_elements missing/invalid`
-        : "mat_elements: required";
-    }
-
-    // If validation failed, fall back to liquid water (ID 276)
+    const fields = parseCustomCompound(t.get, { get: t.span }, diagnostics);
+    fromUrlWarning = fields.fromUrlWarning;
     if (fromUrlWarning) {
-      materialIsCustom = undefined;
-      matName = undefined;
-      matDensity = undefined;
-      matElements = undefined;
-      matIval = undefined;
-      matPhase = undefined;
+      // Validation failed — fall back to liquid water (ID 276).
       materialId = 276;
     } else {
+      materialIsCustom = true;
+      matName = fields.matName;
+      matDensity = fields.matDensity;
+      matElements = fields.matElements;
+      matIval = fields.matIval;
+      matPhase = fields.matPhase;
       materialId = null;
     }
   } else if (materialRaw) {
     materialId = parseFiniteInt(materialRaw);
   }
 
-  const programParam = params.get("program");
+  const programParam = t.get("program");
   let programId: number;
   if (!programParam || programParam === "auto") {
     programId = -1;
@@ -375,7 +276,7 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
     programId = parsed ?? -1;
   }
 
-  const seriesParam = params.get("series") ?? "";
+  const seriesParam = t.get("series") ?? "";
   const series: PlotSeriesTriplet[] = seriesParam
     ? seriesParam
         .split(",")
@@ -393,34 +294,34 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
         .filter((s): s is PlotSeriesTriplet => s !== null)
     : [];
 
-  const stpUnit = tokenToStpUnit(params.get("stp_unit") ?? "");
-  const xLog = (params.get("xscale") ?? "log") === "log";
-  const yLog = (params.get("yscale") ?? "log") === "log";
-  const invStpBranch = params.get("inv_stp_branch") === "both" ? "both" : undefined;
+  const stpUnit = tokenToStpUnit(t.get("stp_unit") ?? "");
+  const xLog = (t.get("xscale") ?? "log") === "log";
+  const yLog = (t.get("yscale") ?? "log") === "log";
+  const invStpBranch = t.get("inv_stp_branch") === "both" ? "both" : undefined;
 
   // Decode advanced options
   const advancedOptions: AdvancedOptions = {};
 
   // Aggregate state
-  const aggStateParam = params.get("agg_state");
+  const aggStateParam = t.get("agg_state");
   if (aggStateParam && (aggStateParam === "gas" || aggStateParam === "condensed")) {
     advancedOptions.aggregateState = aggStateParam as "gas" | "condensed";
   }
 
   // Interpolation scale - "lin-lin" maps to "linear", default "log-log" is "log"
-  const interpScaleParam = params.get("interp_scale");
+  const interpScaleParam = t.get("interp_scale");
   if (interpScaleParam && interpScaleParam === "lin-lin") {
     advancedOptions.interpolation = { ...advancedOptions.interpolation, scale: "linear" };
   }
 
   // Interpolation method - "spline" maps to "cubic", default is "linear"
-  const interpMethodParam = params.get("interp_method");
+  const interpMethodParam = t.get("interp_method");
   if (interpMethodParam && interpMethodParam === "spline") {
     advancedOptions.interpolation = { ...advancedOptions.interpolation, method: "cubic" };
   }
 
   // MSTAR mode - must be valid and not default "b"
-  const mstarModeParam = params.get("mstar_mode");
+  const mstarModeParam = t.get("mstar_mode");
   if (
     mstarModeParam &&
     ["a", "b", "c", "d", "g", "h"].includes(mstarModeParam) &&
@@ -430,7 +331,7 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   }
 
   // Density override - must be positive number
-  const densityParam = params.get("density");
+  const densityParam = t.get("density");
   if (densityParam !== null) {
     const parsed = Number(densityParam);
     if (Number.isFinite(parsed) && parsed > 0) {
@@ -439,7 +340,7 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   }
 
   // I-value override - must be positive and <= 10000
-  const ivalParam = params.get("ival");
+  const ivalParam = t.get("ival");
   if (ivalParam !== null) {
     const parsed = Number(ivalParam);
     if (Number.isFinite(parsed) && parsed > 0 && parsed <= 10000) {
@@ -480,4 +381,16 @@ export function decodePlotUrl(rawParams: URLSearchParams): PlotUrlDecoded {
   }
 
   return result;
+}
+
+/**
+ * Decode plot URL state from a raw query string or `URLSearchParams`. Thin
+ * wrapper: extdata is resolved on the original params (ordered, may repeat),
+ * then `parseQuery` tokenizes and `resolvePlotState` applies semantics.
+ */
+export function decodePlotUrl(input: URLSearchParams | string): PlotUrlDecoded {
+  const params = typeof input === "string" ? new URLSearchParams(input) : input;
+  const { sources } = parseExtdataParams(params);
+  const ast = parseQuery(input);
+  return resolvePlotState(ast, sources);
 }
