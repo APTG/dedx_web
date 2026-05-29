@@ -39,6 +39,13 @@ async function addElement(symbol: string) {
   await fireEvent.keyDown(addInput, { key: "Enter" });
 }
 
+async function removeRow(index: number) {
+  const removeBtns = screen.getAllByTestId("picker-element-row-remove");
+  await fireEvent.click(removeBtns[index]!);
+  const confirmBtn = screen.getByRole("button", { name: "Yes, remove" });
+  await fireEvent.click(confirmBtn);
+}
+
 describe("CompoundEditorModal — Save gating & derived UI", () => {
   async function flushDialog() {
     cleanup();
@@ -65,8 +72,8 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     await fireEvent.input(nameInput(), { target: { value: "Duplicate" } });
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
 
-    // H is present by default; add a second H.
-    await addElement("H");
+    // Li is present by default; add a second Li.
+    await addElement("Li");
 
     // The duplicate banner is shown AND Save is disabled — the exact behaviour
     // PR #653 regressed (banner showed but Save stayed enabled).
@@ -94,12 +101,17 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     await fireEvent.input(nameInput(), { target: { value: "Water" } });
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
 
-    // H present; set count 2, add O count 1 → H2O.
-    const counts = screen.getAllByPlaceholderText(/count/i);
-    await fireEvent.input(counts[0]!, { target: { value: "2" } });
+    // Initially Li (3) and F (9). Add H (1) and O (8).
+    await addElement("H");
     await addElement("O");
-    const countsAfter = screen.getAllByPlaceholderText(/count/i);
-    await fireEvent.input(countsAfter[1]!, { target: { value: "1" } });
+    // Sorted order is now: H (1), Li (3), O (8), F (9)
+    await removeRow(3); // Removes F
+    await removeRow(1); // Removes Li
+
+    // Now H and O are present.
+    const counts = screen.getAllByPlaceholderText(/count/i);
+    await fireEvent.input(counts[0]!, { target: { value: "2" } }); // H
+    await fireEvent.input(counts[1]!, { target: { value: "1" } }); // O
 
     expect(screen.getByTestId("compound-formula-string")).toHaveTextContent("H₂O");
     expect(screen.getByTestId("compound-total-atoms")).toHaveTextContent("3 atoms");
