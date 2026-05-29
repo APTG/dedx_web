@@ -109,9 +109,10 @@
   <title>Plot - webdedx</title>
 </svelte:head>
 
+<h1 class="sr-only">Plot</h1>
+
 {#if wasmError.value}
   <div class="space-y-6">
-    <h1 class="text-3xl font-bold">Plot</h1>
     <div
       class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
     >
@@ -130,7 +131,6 @@
   </div>
 {:else if externalError}
   <div class="space-y-6">
-    <h1 class="text-3xl font-bold">Plot</h1>
     <div
       class="mx-auto max-w-md rounded-lg border border-destructive bg-destructive/10 p-8 text-center space-y-4"
     >
@@ -148,7 +148,6 @@
   </div>
 {:else if !wasmReady.value || !entityState}
   <div class="space-y-6">
-    <h1 class="text-3xl font-bold">Plot</h1>
     <div
       class="mx-auto max-w-4xl space-y-6"
       role="status"
@@ -170,8 +169,6 @@
   </div>
 {:else}
   <div class="space-y-4">
-    <h1 class="text-3xl font-bold">Plot</h1>
-
     {#if orchestrator.urlVersionMismatch}
       <UrlVersionWarningBanner
         version={orchestrator.urlVersionMismatch.version}
