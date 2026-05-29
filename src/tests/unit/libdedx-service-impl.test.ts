@@ -21,13 +21,13 @@ vi.mock("$lib/config/particle-aliases", () => ({
   getParticleSymbol: vi.fn(() => "X"),
 }));
 vi.mock("$lib/config/material-names", () => ({
-  getMaterialFriendlyName: vi.fn((id, name) => name),
+  getMaterialFriendlyName: vi.fn((_id, name) => name),
 }));
 vi.mock("$lib/config/program-names", () => ({
-  getProgramFriendlyName: vi.fn((id, name) => name),
+  getProgramFriendlyName: vi.fn((_id, name) => name),
 }));
 vi.mock("$lib/config/particle-names", () => ({
-  getParticleFriendlyName: vi.fn((id, name) => name),
+  getParticleFriendlyName: vi.fn((_id, name) => name),
 }));
 
 describe("LibdedxServiceImpl", () => {
@@ -87,11 +87,11 @@ describe("LibdedxServiceImpl", () => {
 
       mockModule._dedx_get_stp_table.mockImplementation(
         (
-          progId: number,
-          partId: number,
-          matId: number,
-          num: number,
-          ePtr: number,
+          _progId: number,
+          _partId: number,
+          _matId: number,
+          _num: number,
+          _ePtr: number,
           sPtr: number,
         ) => {
           mockModule.HEAPF32[sPtr / 4 + 0] = 1.1;
@@ -103,11 +103,11 @@ describe("LibdedxServiceImpl", () => {
 
       mockModule._dedx_get_csda_range_table.mockImplementation(
         (
-          progId: number,
-          partId: number,
-          matId: number,
-          num: number,
-          ePtr: number,
+          _progId: number,
+          _partId: number,
+          _matId: number,
+          _num: number,
+          _ePtr: number,
           cPtr: number,
         ) => {
           mockModule.HEAPF64[cPtr / 8 + 0] = 100.1;
@@ -151,7 +151,14 @@ describe("LibdedxServiceImpl", () => {
 
     test("getInverseStp() allocates errPtr once and frees it", () => {
       mockModule._dedx_get_inverse_stp_flat.mockImplementation(
-        (pId: number, partId: number, mId: number, stp: number, side: number, errPtr: number) => {
+        (
+          _progId: number,
+          _partId: number,
+          _matId: number,
+          stp: number,
+          _side: number,
+          errPtr: number,
+        ) => {
           mockModule.HEAP32[errPtr >>> 2] = 0; // No error
           return stp * 2; // Dummy energy value
         },
@@ -210,7 +217,14 @@ describe("LibdedxServiceImpl", () => {
 
     test("getInverseStp() returns LibdedxError object in array on failure", () => {
       mockModule._dedx_get_inverse_stp_flat.mockImplementation(
-        (pId: number, partId: number, mId: number, stp: number, side: number, errPtr: number) => {
+        (
+          _pId: number,
+          _partId: number,
+          _mId: number,
+          stp: number,
+          _side: number,
+          errPtr: number,
+        ) => {
           if (stp === 20) {
             mockModule.HEAP32[errPtr >>> 2] = -5; // Error specifically for stp=20
             return 0;
