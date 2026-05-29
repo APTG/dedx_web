@@ -185,19 +185,23 @@ describe("parseQuery — §5 conformance vectors (structure)", () => {
   });
 });
 
-describe("parseQuery — fatal syntax errors point at the exact offset", () => {
-  it("throws UrlParseError with a span when structure is broken", () => {
-    // A leading '=' has no key and cannot start a pair.
-    let thrown: unknown;
-    try {
-      parseQuery("=oops");
-    } catch (e) {
-      thrown = e;
-    }
-    expect(thrown).toBeInstanceOf(UrlParseError);
-    const err = thrown as UrlParseError;
-    expect(err.diagnostic.severity).toBe("fatal");
-    expect(err.diagnostic.code).toBe("syntax");
-    expect(err.diagnostic.span?.start).toBe(0);
+describe("parseQuery — totality (never discards valid params)", () => {
+  it("tokenizes a leading '=' (empty key) instead of throwing", () => {
+    // The grammar is total so a malformed segment is captured, not fatal.
+    const ast = parseQuery("=oops");
+    expect(ast.pairs).toEqual([
+      { type: "unknown", key: "", value: "oops", span: { start: 0, end: 5 } },
+    ]);
+  });
+
+  it("preserves valid params that sit next to a malformed segment", () => {
+    // Regression guard: a bad `=oops` segment must not drop `particle=1`.
+    const ast = parseQuery("particle=1&=oops");
+    expect(pair("particle=1&=oops", "particle")).toMatchObject({ type: "scalar", value: "1" });
+    expect(ast.pairs.some((p) => p.type === "unknown" && p.key === "")).toBe(true);
+  });
+
+  it("UrlParseError remains the defensive contract for any residual failure", () => {
+    expect(UrlParseError).toBeTypeOf("function");
   });
 });

@@ -142,9 +142,16 @@ ScalarKey
   / "density" / "ival"
 
 // ── unknown pair (forward-compatible; dropped by the resolver) ───────────────
+// Two forms so the grammar stays total over any `URLSearchParams.toString()`
+// output (which may contain empty keys, e.g. "=oops"): a non-empty key with an
+// optional value, or a leading "=" with an empty key. Keeping the grammar total
+// means a malformed segment never discards the valid params around it.
 UnknownPair
   = key:$[^&=]+ value:("=" @RawValue)? {
       return { type: "unknown", key, value: value ?? "", span: spanOf(location()) };
+    }
+  / "=" value:RawValue {
+      return { type: "unknown", key: "", value, span: spanOf(location()) };
     }
 
 // ── shared lexical rules ─────────────────────────────────────────────────────

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseQuery } from "$lib/utils/url-parse";
-import { resolveCalculatorState } from "$lib/utils/calculator-url";
-import { resolvePlotState } from "$lib/utils/plot-url";
+import { resolveCalculatorState, decodeCalculatorUrl } from "$lib/utils/calculator-url";
+import { resolvePlotState, decodePlotUrl } from "$lib/utils/plot-url";
 import type { Diagnostic } from "$lib/utils/url-diagnostics";
 
 /**
@@ -65,6 +65,23 @@ describe("resolveCalculatorState", () => {
     const densityDiag = diags.find((d) => d.param === "mat_density");
     expect(densityDiag?.severity).toBe("warning");
     expect(densityDiag?.span).toBeDefined();
+  });
+});
+
+describe("decode boundary robustness (PR #659 review)", () => {
+  it("normalizes percent-encoded keys (%70article → particle)", () => {
+    // URLSearchParams decodes the key; decode* must classify it the same way.
+    expect(decodeCalculatorUrl(new URLSearchParams("%70article=6")).particleId).toBe(6);
+    expect(decodeCalculatorUrl("%70article=6").particleId).toBe(6);
+  });
+
+  it("recovers (no throw) from a malformed query, keeping valid params", () => {
+    // A leading '=' segment must not crash page init, and must not discard
+    // the valid params around it.
+    expect(() => decodeCalculatorUrl(new URLSearchParams("particle=1&=oops"))).not.toThrow();
+    expect(decodeCalculatorUrl("particle=1&=oops").particleId).toBe(1);
+    expect(() => decodePlotUrl(new URLSearchParams("=oops"))).not.toThrow();
+    expect(decodePlotUrl("=oops").programId).toBe(-1);
   });
 });
 

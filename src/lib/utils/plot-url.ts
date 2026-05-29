@@ -6,7 +6,7 @@ import {
   parseExtdataParams,
   externalDataQuerySegments,
 } from "$lib/external-data/url";
-import { parseQuery } from "$lib/utils/url-parse";
+import { parseQuery, UrlParseError } from "$lib/utils/url-parse";
 import type { QueryNode } from "$lib/utils/url-ast";
 import type { Diagnostic } from "$lib/utils/url-diagnostics";
 import {
@@ -387,10 +387,21 @@ export function resolvePlotState(
  * Decode plot URL state from a raw query string or `URLSearchParams`. Thin
  * wrapper: extdata is resolved on the original params (ordered, may repeat),
  * then `parseQuery` tokenizes and `resolvePlotState` applies semantics.
+ *
+ * The input is normalized through `URLSearchParams` before tokenizing (so
+ * percent-encoded keys decode as the legacy decoder saw them), and an
+ * unexpected tokenizer failure falls back to defaults rather than throwing into
+ * the restore path.
  */
 export function decodePlotUrl(input: URLSearchParams | string): PlotUrlDecoded {
   const params = typeof input === "string" ? new URLSearchParams(input) : input;
   const { sources } = parseExtdataParams(params);
-  const ast = parseQuery(input);
+  let ast: QueryNode;
+  try {
+    ast = parseQuery(params);
+  } catch (error) {
+    if (!(error instanceof UrlParseError)) throw error;
+    ast = { type: "query", pairs: [] };
+  }
   return resolvePlotState(ast, sources);
 }
