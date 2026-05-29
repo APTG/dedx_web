@@ -17,6 +17,8 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-29 — **Testing**: Add dedicated tests for LibdedxServiceImpl directly (Issue #629). Tested memory allocation, buffer management, error boundary handling, and correct type conversions. (Gemini 3.1 Pro via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-629.md)
 - 2026-05-29 — **Stage 5**: Implement Quick Start panel & default to LiF (Antigravity via Google DeepMind)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-646.md)
 - 2026-05-29 — **Testing**: Clean up legacy URL tests in `calculator-url.test.ts` (Issue #632): labeled all `urlv=1` fixtures as legacy migration tests, updated non-migration tests to use `urlv=2`, added 8 new v2 tests covering `mode=basic`, `across=programs` encode/decode, `urlv=2` canonical decode, and `qfocus=both` migration round-trips. (Claude Sonnet 4.6 via Claude Code)
