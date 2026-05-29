@@ -165,7 +165,7 @@ describe("calculatorUrlQueryString", () => {
 describe("decodeCalculatorUrl", () => {
   it("decodes basic params", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV",
+      "urlv=2&particle=1&material=276&program=auto&energies=100,200&eunit=MeV",
     );
     const s = decodeCalculatorUrl(params);
     expect(s.particleId).toBe(1);
@@ -264,7 +264,7 @@ describe("decodeCalculatorUrl", () => {
 
   it("decodes advanced mode with invalid program IDs (no crash, IDs parsed as integers)", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C999&qfocus=both",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9%2C999",
     );
     const s = decodeCalculatorUrl(params);
     // Decoder parses all positive integers; validation against available programs happens at state level
@@ -472,22 +472,6 @@ describe("decodeCalculatorUrl", () => {
     expect(p.get("ival")).toBe("85.5");
   });
 
-  it("URL round-trip: encode(decode(url)) preserves all advanced options", () => {
-    const originalParams = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=gas&interp_scale=lin-lin&interp_method=spline&mstar_mode=a&density=1.5&ival=85.5",
-    );
-    const decoded = decodeCalculatorUrl(originalParams);
-    const reEncoded = encodeCalculatorUrl(decoded);
-
-    expect(reEncoded.get("mode")).toBe("advanced");
-    expect(reEncoded.get("agg_state")).toBe("gas");
-    expect(reEncoded.get("interp_scale")).toBe("lin-lin");
-    expect(reEncoded.get("interp_method")).toBe("spline");
-    expect(reEncoded.get("mstar_mode")).toBe("a");
-    expect(reEncoded.get("density")).toBe("1.5");
-    expect(reEncoded.get("ival")).toBe("85.5");
-  });
-
   it("URL round-trip with partial params: encode(decode(url)) normalises qshow=stp to absent", () => {
     const originalParams = new URLSearchParams(
       "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qshow=stp&density=1.5",
@@ -509,16 +493,26 @@ describe("decodeCalculatorUrl", () => {
 
   it("decodeCalculatorUrl returns advancedOptions only in advanced mode", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&agg_state=gas",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&agg_state=gas",
     );
     const decoded = decodeCalculatorUrl(params);
     // Without mode=advanced, agg_state is ignored
     expect(decoded.advancedOptions).toBeUndefined();
   });
 
-  it("decodeCalculatorUrl parses all advanced options correctly", () => {
+  it("explicit mode=basic is treated as basic mode (not advanced)", () => {
     const params = new URLSearchParams(
-      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=condensed&interp_scale=lin-lin&interp_method=spline&mstar_mode=c&density=2.0&ival=100",
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=basic",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.isAdvancedMode).toBe(false);
+    expect(state.across).toBeUndefined();
+    expect(state.selectedProgramIds).toBeUndefined();
+  });
+
+  it("decodeCalculatorUrl parses all advanced options correctly (v2 canonical params)", () => {
+    const params = new URLSearchParams(
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&agg_state=condensed&interp_scale=lin-lin&interp_method=spline&mstar_mode=c&density=2.0&ival=100",
     );
     const decoded = decodeCalculatorUrl(params);
     expect(decoded.isAdvancedMode).toBe(true);
@@ -701,9 +695,24 @@ describe("duplicate params — last wins (§3.2)", () => {
 // ──────────────────────────────────────────────────────────────────────────
 
 describe("unknown params dropped from canonical URL", () => {
-  it("unknown foo=bar is absent from encoded output", () => {
+  it("unknown foo=bar is absent from encoded output; urlv=1 input is upgraded to urlv=2", () => {
+    // urlv=1 here is intentional: also tests that a v1 bookmark is silently upgraded to v2
+    // by the encode/decode round-trip.
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz",
+    );
+    const state = decodeCalculatorUrl(params);
+    const encoded = encodeCalculatorUrl(state);
+    const encodedStr = encoded.toString();
+    expect(encodedStr).not.toContain("foo=");
+    expect(encodedStr).not.toContain("unknown=");
+    expect(encodedStr).toContain("urlv=2");
+    expect(encodedStr).toContain("particle=1");
+  });
+
+  it("unknown params absent from encoded output with urlv=2 input", () => {
+    const params = new URLSearchParams(
+      "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz",
     );
     const state = decodeCalculatorUrl(params);
     const encoded = encodeCalculatorUrl(state);
@@ -716,17 +725,19 @@ describe("unknown params dropped from canonical URL", () => {
 });
 
 // ──────────────────────────────────────────────────────────────────────────
-// v1 → v2 migration fixtures (shareable-urls.md §7)
+// LEGACY MIGRATION TESTS — v1 → v2 (shareable-urls.md §7)
 //
-// These tests anchor the v1→v2 migration mapping that the schema doc
-// describes. The current v1 decoder is what's being tested here — once the
-// v2 encoder/decoder lands in #555–#561, these fixtures will be updated to
-// assert the v2 canonical output and v2 migration behaviour.
+// These tests verify backward-compatibility: old bookmarks/shared URLs that
+// carry `urlv=1` (or no urlv) must decode correctly under the v2 decoder.
+// None of the assertions here reflect the canonical v2 encoding — they
+// anchor the migration mapping so that changes to the decoder cannot silently
+// break existing bookmarks.
 //
-// NOTE: v2 keeps the param names particle=, material=, program= verbatim
-// (the earlier rename to *Id was reverted, see ADR 006 §3). The only v1
-// param renames in v2 are around eunit→uanchor, qfocus→qshow, imode→mode,
-// and the silent drop of hidden_programs=.
+// Key v1 → v2 renames / removals (ADR 006):
+//   • qfocus=stp|csda|both  →  qshow=stp|range (2-state; "both" → omit)
+//   • ivalues=              →  lookups= (accepted as fallback read-only)
+//   • hidden_programs=      →  silently dropped
+//   • particle=, material=, program= names are UNCHANGED (ADR 006 §3)
 //
 // Source of truth: docs/04-feature-specs/shareable-urls.md §7 (migration rules)
 //                  docs/decisions/006-url-schema-v2.md (justification)
@@ -881,6 +892,44 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
       { rawInput: "45", unit: "um", unitFromSuffix: true },
     ]);
   });
+
+  it("v1 round-trip: qfocus=both normalises to default and all advanced options are preserved", () => {
+    // qfocus=both was the old "show both STP and Range" default; in v2 it maps to
+    // quantityFocus=undefined (omitted). The round-trip verifies that all other
+    // advanced options survive the v1→v2 migration path.
+    const originalParams = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=gas&interp_scale=lin-lin&interp_method=spline&mstar_mode=a&density=1.5&ival=85.5",
+    );
+    const decoded = decodeCalculatorUrl(originalParams);
+    const reEncoded = encodeCalculatorUrl(decoded);
+
+    expect(reEncoded.get("mode")).toBe("advanced");
+    expect(reEncoded.has("qshow")).toBe(false); // qfocus=both → omit (v2 default)
+    expect(reEncoded.get("agg_state")).toBe("gas");
+    expect(reEncoded.get("interp_scale")).toBe("lin-lin");
+    expect(reEncoded.get("interp_method")).toBe("spline");
+    expect(reEncoded.get("mstar_mode")).toBe("a");
+    expect(reEncoded.get("density")).toBe("1.5");
+    expect(reEncoded.get("ival")).toBe("85.5");
+  });
+
+  it("v1 parses all advanced options with qfocus=both (legacy qfocus param)", () => {
+    // qfocus=both is the old default that maps to quantityFocus=undefined in v2.
+    // This fixture ensures the decoder still parses all advanced options from a
+    // v1 URL that happens to carry the qfocus= param.
+    const params = new URLSearchParams(
+      "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&agg_state=condensed&interp_scale=lin-lin&interp_method=spline&mstar_mode=c&density=2.0&ival=100",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect(decoded.isAdvancedMode).toBe(true);
+    expect(decoded.quantityFocus).toBeUndefined(); // qfocus=both → omit (v2 default)
+    expect(decoded.advancedOptions?.aggregateState).toBe("condensed");
+    expect(decoded.advancedOptions?.interpolation?.scale).toBe("linear");
+    expect(decoded.advancedOptions?.interpolation?.method).toBe("cubic");
+    expect(decoded.advancedOptions?.mstarMode).toBe("c");
+    expect(decoded.advancedOptions?.densityOverride).toBe(2.0);
+    expect(decoded.advancedOptions?.iValueOverride).toBe(100);
+  });
 });
 
 // ─── Multi-particle URL encoding/decoding (issue #599) ────────────────────────
@@ -930,6 +979,16 @@ describe("encodeCalculatorUrl — multi-particle (across=particles)", () => {
     });
     expect(p.get("across")).toBe("materials");
     expect(p.has("particles")).toBe(false);
+  });
+
+  it("emits across=programs when across is program", () => {
+    const p = encodeCalculatorUrl({
+      ...advancedBase,
+      across: "program",
+      selectedProgramIds: [9, 2],
+    });
+    expect(p.get("across")).toBe("programs");
+    expect(p.get("programs")).toBe("9,2");
   });
 
   it("round-trips the canonical spec example URL", () => {
@@ -1010,5 +1069,24 @@ describe("decodeCalculatorUrl — multi-particle (across=particles)", () => {
     const state = decodeCalculatorUrl(params);
     expect(state.across).toBe("material");
     expect(state.selectedParticleIds).toBeUndefined();
+  });
+
+  it("decodes across=programs and populates selectedProgramIds", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2&energies=100&eunit=MeV&across=programs",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.across).toBe("program");
+    expect(state.selectedProgramIds).toEqual([9, 2]);
+    expect(state.selectedParticleIds).toBeUndefined();
+  });
+
+  it("accepts legacy singular across=program for backward compatibility", () => {
+    const params = new URLSearchParams(
+      "urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2&energies=100&eunit=MeV&across=program",
+    );
+    const state = decodeCalculatorUrl(params);
+    expect(state.across).toBe("program");
+    expect(state.selectedProgramIds).toEqual([9, 2]);
   });
 });
