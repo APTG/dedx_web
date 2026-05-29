@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-29 — **Stage 5**: Implement Quick Start panel & default to LiF (Antigravity via Google DeepMind)
+  - **Log:** [log](docs/ai-logs/2026-05-29-issue-646.md)
+
 - 2026-05-29 — **Stage 6.10**: Reimplemented compound editor live derived UI & mass-% validation (Issue #645) cleanly on master — pure `$derived` Save gating, formula footer (Unicode formula · atom count · Bragg I-value), weight-fraction sum tracker with auto-rescale, and live per-row mass-%. Fixes the duplicate-element Save-gating regression from PR #653 (the formula footer's keyed `{#each}` crashed on duplicate Z, leaving Save enabled). (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-645-derived-ui.md)
 
