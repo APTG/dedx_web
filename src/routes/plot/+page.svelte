@@ -109,6 +109,8 @@
   <title>Plot - webdedx</title>
 </svelte:head>
 
+<h1 class="sr-only">Plot</h1>
+
 {#if wasmError.value}
   <div class="space-y-6">
     <div
