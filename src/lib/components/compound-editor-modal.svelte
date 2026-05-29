@@ -71,7 +71,7 @@
   let presetToConfirm = $state<CompoundPreset | null>(null);
 
   let isEmptyComposition = $derived(
-    formData.elements.length === 0 || (!compositionTouched && !compound && formData.name === ""),
+    formData.elements.length === 0 || (!compositionTouched && !compound),
   );
 
   // Picker and UI states
@@ -378,6 +378,11 @@
   }
 
   function handlePasteFormula(elements: ParsedElement[]) {
+    if (isEmptyComposition) {
+      formData.elements = [];
+      elementTexts = [];
+      if (mode === "weight") weightTexts = [];
+    }
     for (const elem of elements) {
       const existing = formData.elements.find((e) => e.atomicNumber === elem.atomicNumber);
       if (existing) {
