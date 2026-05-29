@@ -37,8 +37,8 @@ async function openMobileEditor(page: Page) {
 
 test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
   test("renders the 2-step sheet and Next/Back preserve inputs @smoke", async ({ page }) => {
-    await openMobileEditor(page);
     test.skip(!(await isPhoneViewport(page)), "phone-only layout");
+    await openMobileEditor(page);
 
     const stepHook = page.getByTestId("compound-editor-mobile-step");
     await expect(stepHook).toHaveAttribute("data-step", "1");
@@ -59,8 +59,8 @@ test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
   });
 
   test("Add element opens the picker overlay and commits a selection", async ({ page }) => {
-    await openMobileEditor(page);
     test.skip(!(await isPhoneViewport(page)), "phone-only layout");
+    await openMobileEditor(page);
 
     await page.getByTestId("mobile-step1-next").click();
     const stepHook = page.getByTestId("compound-editor-mobile-step");
@@ -80,8 +80,8 @@ test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
   });
 
   test("editing a row's element tile opens the picker in EDIT mode", async ({ page }) => {
-    await openMobileEditor(page);
     test.skip(!(await isPhoneViewport(page)), "phone-only layout");
+    await openMobileEditor(page);
 
     await page.getByTestId("mobile-step1-next").click();
 
@@ -98,8 +98,8 @@ test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
   });
 
   test("long-press a row opens the action sheet and removes it", async ({ page }) => {
-    await openMobileEditor(page);
     test.skip(!(await isPhoneViewport(page)), "phone-only layout");
+    await openMobileEditor(page);
 
     await page.getByTestId("mobile-step1-next").click();
 
@@ -108,14 +108,12 @@ test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
 
     // Long-press the second row (Fluorine). The 400ms timer fires while held.
     const fluorineRow = page.getByTestId("picker-element-tile-9");
-    const box = await fluorineRow.boundingBox();
-    if (!box) throw new Error("row not found");
-    await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-    await page.mouse.down();
+    await fluorineRow.dispatchEvent("pointerdown");
     await expect(page.getByTestId("compound-editor-row-action-sheet")).toBeVisible({
       timeout: 2000,
     });
-    await page.mouse.up();
+    await fluorineRow.dispatchEvent("pointerup");
+
 
     await page.getByTestId("row-action-remove").click();
     await expect(page.getByTestId("mobile-row-actions")).toHaveCount(1);
