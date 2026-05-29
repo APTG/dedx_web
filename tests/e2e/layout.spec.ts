@@ -1,14 +1,13 @@
 import { test, expect } from "@playwright/test";
 
-const appPages = ["/calculator", "/plot", "/docs"];
-
-const pageHeadings = [
+const appPages = [
   { path: "/calculator", heading: "Calculator" },
+  { path: "/plot", heading: "Plot" },
   { path: "/docs", heading: "Documentation" },
 ];
 
 test.describe("Navigation bar", () => {
-  for (const path of appPages) {
+  for (const { path } of appPages) {
     test(`nav bar is visible on ${path}`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator("nav")).toBeVisible();
@@ -37,7 +36,7 @@ test.describe("Navigation bar", () => {
 });
 
 test.describe("Footer", () => {
-  for (const path of appPages) {
+  for (const { path } of appPages) {
     test(`footer is visible on ${path}`, async ({ page }) => {
       await page.goto(path);
       await expect(page.locator("footer")).toBeVisible();
@@ -51,7 +50,7 @@ test.describe("Footer", () => {
 });
 
 test.describe("Page headings", () => {
-  for (const { path, heading } of pageHeadings) {
+  for (const { path, heading } of appPages) {
     test(`${path} has h1 "${heading}"`, async ({ page }) => {
       await page.goto(path);
       await expect(page.getByRole("heading", { level: 1, name: heading })).toBeVisible();
