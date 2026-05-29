@@ -43,11 +43,24 @@ export class PlotPageOrchestrator {
   }
 
   setupEffects() {
-    // Removed this alias
+    // Negotiate the URL version synchronously, before any effect runs, so the
+    // result can gate hydration. $effect callbacks fire after construction, so
+    // setting this here guarantees it is resolved before init/restore.
+    if (browser && !this.urlVersionChecked) {
+      const urlvRaw = new URLSearchParams(window.location.search).get("urlv");
+      const negotiationResult = negotiateVersion(urlvRaw);
+      this.urlVersionMismatch =
+        negotiationResult.status === "mismatch" ? { version: negotiationResult.version } : null;
+      this.urlVersionChecked = true;
+    }
 
     $effect(() => {
       if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
-        appInit.initialize(page.url.searchParams);
+        // Unsupported link → initialize from defaults (empty params).
+        const sourceParams = this.urlVersionMismatch
+          ? new URLSearchParams()
+          : page.url.searchParams;
+        appInit.initialize(sourceParams);
       }
     });
 
@@ -58,7 +71,10 @@ export class PlotPageOrchestrator {
 
     $effect(() => {
       if (wasmReady.value && !this.advancedModeInitializedFromUrl) {
-        initAdvancedModeFromUrl(page.url.searchParams);
+        const sourceParams = this.urlVersionMismatch
+          ? new URLSearchParams()
+          : page.url.searchParams;
+        initAdvancedModeFromUrl(sourceParams);
         this.advancedModeInitializedFromUrl = true;
       }
     });
@@ -129,19 +145,6 @@ export class PlotPageOrchestrator {
       persistAdvancedOptions();
     });
 
-    $effect(() => {
-      if (!browser || this.urlVersionChecked) return;
-      const params = new URLSearchParams(window.location.search);
-      const urlvRaw = params.get("urlv");
-      const negotiationResult = negotiateVersion(urlvRaw);
-      if (negotiationResult.status === "mismatch") {
-        this.urlVersionMismatch = { version: negotiationResult.version };
-      } else {
-        this.urlVersionMismatch = null;
-      }
-      this.urlVersionChecked = true;
-    });
-
     setupPlotUrlRestore(
       () => this.plotState,
       () => appInit.entityState,
@@ -149,6 +152,7 @@ export class PlotPageOrchestrator {
       () => {
         this.urlInitialized = true;
       },
+      () => this.urlVersionMismatch,
     );
 
     setupPlotUrlSync(

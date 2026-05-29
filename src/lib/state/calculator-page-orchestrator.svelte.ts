@@ -77,11 +77,7 @@ export class CalculatorPageOrchestrator {
 
     // 1. Initial version negotiation & advanced mode check
     $effect(() => {
-      if (wasmReady.value && !this.advancedModeInitializedFromUrl) {
-        initAdvancedModeFromUrl(page.url.searchParams);
-        this.advancedModeInitializedFromUrl = true;
-      }
-
+      // Negotiate the URL version first so the result can gate hydration below.
       if (!this.urlVersionChecked) {
         const urlvRaw = page.url.searchParams.get("urlv");
         const negotiationResult = negotiateVersion(urlvRaw);
@@ -93,15 +89,29 @@ export class CalculatorPageOrchestrator {
         this.urlVersionChecked = true;
       }
 
+      // "Rejected, not migrated": an unsupported version hydrates nothing from
+      // the link. Initialize from defaults (empty params) and show the banner;
+      // "Load defaults" then clears the mismatch and the calc proceeds.
+      const sourceParams = this.urlVersionMismatch ? new URLSearchParams() : page.url.searchParams;
+
+      if (wasmReady.value && !this.advancedModeInitializedFromUrl) {
+        initAdvancedModeFromUrl(sourceParams);
+        this.advancedModeInitializedFromUrl = true;
+      }
+
       if (wasmReady.value && !appInit.isInitializing && !appInit.entityState && !appInit.error) {
-        appInit.initialize(page.url.searchParams);
+        appInit.initialize(sourceParams);
       }
     });
 
     // 2. Setup state from URL once appInit is ready
     $effect(() => {
       if (appInit.entityState && appInit.service && !this.calcState) {
-        const currentSearchParams = page.url.searchParams;
+        // Gate hydration on the version negotiation: an unsupported link
+        // decodes nothing, leaving the calculator at its defaults.
+        const currentSearchParams = this.urlVersionMismatch
+          ? new URLSearchParams()
+          : page.url.searchParams;
         const urlState = decodeCalculatorUrl(currentSearchParams);
         const hasEnergies = currentSearchParams.has("energies");
 
@@ -367,7 +377,13 @@ export class CalculatorPageOrchestrator {
       const newState = createMultiProgramState();
       newState.setAdvancedMode(true);
 
-      const multiParams = decodeMultiProgramUrl(new URLSearchParams(window.location.search));
+      // Advanced mode can be active via the persisted preference even on an
+      // unsupported link, so gate this decode too — hydrate nothing from it.
+      const multiParams = decodeMultiProgramUrl(
+        this.urlVersionMismatch
+          ? new URLSearchParams()
+          : new URLSearchParams(window.location.search),
+      );
 
       const defaultProgramId = appInit.entityState.resolvedProgramId as EntityId | null;
       if (defaultProgramId !== null && defaultProgramId !== -1) {

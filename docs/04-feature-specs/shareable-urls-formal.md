@@ -297,9 +297,13 @@ Notes:
    (legacy links predating versioning) and proceed.
    b. If `urlv === 2` → proceed to step 6 (native v2 parse).
    c. If `urlv === 1` → **unsupported**. v1 is no longer migrated (§3.4); show the
-   unsupported-link banner with "Load defaults" and halt the URL-driven calc.
-   d. If `urlv > 2` → unsupported-link banner; halt.
-   e. If `urlv < 1` or non-integer → unsupported-link banner, Load defaults only; halt.
+   unsupported-link banner with "Load defaults" and halt. **No state is hydrated
+   from the link** — entity selection, energy rows, advanced mode and series are
+   left at their defaults (rejected, not migrated); "Load defaults" then proceeds
+   from those defaults.
+   d. If `urlv > 2` → unsupported-link banner; halt with no hydration (as 5c).
+   e. If `urlv < 1` or non-integer → unsupported-link banner, Load defaults only;
+   halt with no hydration (as 5c).
 6. For each `extdata` value, split on the first literal `:` to extract label and
    percent-encoded URL. Labels must be unique; duplicates → unknown-pair.
 7. Parse ABNF tokens.
@@ -310,7 +314,9 @@ Notes:
 12. Validate against compatibility matrix and unit rules (§3.7, §3.8).
 13. Produce normalized canonical state.
 14. Emit canonical URL via `replaceState`.
-15. If step 5c applied: show v1-migration banner (non-blocking; see §7.2 of `shareable-urls.md`).
+
+> Steps 6–14 run only when step 5a/5b proceed. An unsupported version (5c–5e)
+> halts here: no hydration occurs and the canonical URL is emitted from defaults.
 
 ### 3.2 Duplicate Parameter Resolution
 

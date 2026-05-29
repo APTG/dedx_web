@@ -44,10 +44,20 @@ export function setupPlotUrlRestore(
   getEntityState: () => EntitySelectionState | null,
   getUrlInitialized: () => boolean,
   onComplete: () => void,
+  getUrlVersionMismatch: () => { version: number | string } | null = () => null,
 ) {
   $effect(() => {
     const entityState = getEntityState();
     if (!browser || !wasmReady.value || !entityState || getUrlInitialized()) return;
+
+    // "Rejected, not migrated": an unsupported version hydrates nothing from
+    // the link. Skip restoration (leaving plot defaults) but still flip
+    // `urlInitialized` so URL-sync can write the canonical default state; the
+    // version banner persists until the user picks "Load defaults".
+    if (getUrlVersionMismatch() !== null) {
+      onComplete();
+      return;
+    }
 
     const plotState = getPlotState();
     const params = new URLSearchParams(window.location.search);
