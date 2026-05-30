@@ -61,8 +61,10 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
     // Header now reads MeV/cm; for water (ρ=1) MeV/cm = 10 × keV/µm.
     await expect(trigger).toContainText("MeV/cm");
     await expect
-      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 5000 })
-      .toBeCloseTo(kevUmValue * 10, 1);
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? "") / kevUmValue, {
+        timeout: 5000,
+      })
+      .toBeCloseTo(10, 1);
 
     // URL carries the shared param.
     await expect
@@ -129,11 +131,11 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
 
     // Both columns re-render in the new unit (water ρ=1: MeV·cm²/g = 10 × keV/µm).
     await expect
-      .poll(async () => parseFloat((await cell7.textContent()) ?? ""), { timeout: 5000 })
-      .toBeCloseTo(before7 * 10, 1);
+      .poll(async () => parseFloat((await cell7.textContent()) ?? "") / before7, { timeout: 5000 })
+      .toBeCloseTo(10, 1);
     await expect
-      .poll(async () => parseFloat((await cell9.textContent()) ?? ""), { timeout: 5000 })
-      .toBeCloseTo(before9 * 10, 1);
+      .poll(async () => parseFloat((await cell9.textContent()) ?? "") / before9, { timeout: 5000 })
+      .toBeCloseTo(10, 1);
   });
 });
 

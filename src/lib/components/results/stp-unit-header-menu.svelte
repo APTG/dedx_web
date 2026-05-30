@@ -25,6 +25,10 @@
   let open = $state(false);
   let triggerEl = $state<HTMLButtonElement | null>(null);
   let menuEl = $state<HTMLDivElement | null>(null);
+  // Fixed-position coordinates for the desktop popover, anchored to the
+  // trigger. Using `fixed` (not `absolute`) escapes the result table's
+  // `overflow-x-auto` scroll container, which would otherwise clip the menu.
+  let menuPos = $state<{ top: number; left: number }>({ top: 0, left: 0 });
 
   // Detect a phone-sized viewport so the menu renders as a bottom sheet.
   // Guarded for jsdom / SSR where matchMedia is absent.
@@ -39,6 +43,10 @@
   });
 
   function toggle() {
+    if (!open && triggerEl && !isMobile) {
+      const r = triggerEl.getBoundingClientRect();
+      menuPos = { top: r.bottom + 4, left: r.left };
+    }
     open = !open;
   }
 
@@ -123,13 +131,15 @@
       {/each}
     </div>
   {:else}
-    <!-- Desktop popover -->
+    <!-- Desktop popover (fixed, anchored to the trigger to escape the table's
+         overflow-x-auto clip) -->
     <div
       bind:this={menuEl}
       role="menu"
       aria-label="Stopping-power unit"
       data-testid={`${testid}-menu`}
-      class="absolute z-50 mt-1 min-w-[16rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
+      style={`top: ${menuPos.top}px; left: ${menuPos.left}px;`}
+      class="fixed z-50 min-w-[16rem] rounded-md border bg-popover p-1 text-popover-foreground shadow-md"
     >
       {#each STP_UNITS as unit (unit)}
         <button
