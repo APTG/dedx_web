@@ -34,6 +34,10 @@
     return useVisualViewport((px) => el.style.setProperty("--vkb-offset", `${px}px`));
   });
 
+  // Cancel any in-flight long-press timer when the sheet unmounts, so the
+  // callback can't fire and mutate state after the component is destroyed.
+  $effect(() => () => cancelLongPress());
+
   const slideMs = $derived(prefersReducedMotion ? 0 : 180);
 
   // ── Long-press → row action sheet ──────────────────────────────────────────
