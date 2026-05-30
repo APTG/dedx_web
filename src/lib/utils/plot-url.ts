@@ -18,23 +18,10 @@ import {
 
 export type { MatElementUrl };
 
-const STP_TOKENS: Record<StpUnit, string> = {
-  "keV/µm": "kev-um",
-  "MeV/cm": "mev-cm",
-  "MeV·cm²/g": "mev-cm2-g",
-};
-
-const TOKEN_TO_STP: Record<string, StpUnit> = Object.fromEntries(
-  Object.entries(STP_TOKENS).map(([k, v]) => [v, k as StpUnit]),
-);
-
-export function stpUnitToToken(unit: StpUnit): string {
-  return STP_TOKENS[unit];
-}
-
-export function tokenToStpUnit(token: string): StpUnit {
-  return TOKEN_TO_STP[token] ?? "keV/µm";
-}
+// STP unit codec lives in a shared module so the calculator (`sunit=`) and the
+// plot page agree on the same tokens.
+import { stpUnitToToken, tokenToStpUnit } from "$lib/utils/stp-unit-codec";
+export { stpUnitToToken, tokenToStpUnit };
 
 /** A plot series triplet — each component is a built-in numeric ID or an ext-ref. */
 export interface PlotSeriesTriplet {
@@ -134,7 +121,8 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
         .join(","),
     );
   }
-  params.set("stp_unit", stpUnitToToken(input.stpUnit));
+  // `sunit` is the shared stopping-power unit param (also used by the calculator).
+  params.set("sunit", stpUnitToToken(input.stpUnit));
   params.set("xscale", input.xLog ? "log" : "lin");
   params.set("yscale", input.yLog ? "log" : "lin");
   if (input.invStpBranch === "both") {
@@ -294,7 +282,9 @@ export function resolvePlotState(
         .filter((s): s is PlotSeriesTriplet => s !== null)
     : [];
 
-  const stpUnit = tokenToStpUnit(t.get("stp_unit") ?? "");
+  // Prefer the shared `sunit` param; fall back to the legacy `stp_unit` so
+  // older shared plot links keep working.
+  const stpUnit = tokenToStpUnit(t.get("sunit") ?? t.get("stp_unit") ?? "");
   const xLog = (t.get("xscale") ?? "log") === "log";
   const yLog = (t.get("yscale") ?? "log") === "log";
   const invStpBranch = t.get("inv_stp_branch") === "both" ? "both" : undefined;

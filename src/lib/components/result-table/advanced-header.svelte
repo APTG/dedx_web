@@ -5,6 +5,8 @@
     draggableColumn,
     type ColumnReorderController,
   } from "$lib/actions/draggable-column.svelte";
+  import StpUnitHeaderMenu from "$lib/components/results/stp-unit-header-menu.svelte";
+  import type { StpUnit } from "$lib/wasm/types";
 
   interface Props {
     calcState: CalculatorState;
@@ -70,9 +72,14 @@
       <th
         scope="colgroup"
         colspan={visibleProgramIds.length}
-        class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
+        class="relative px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
       >
-        Stopping Power ({calcState.stpDisplayUnit})
+        <StpUnitHeaderMenu
+          selected={calcState.stpDisplayUnit}
+          onSelect={(u: StpUnit) => calcState.setStpDisplayUnit(u)}
+          label="Stopping Power"
+          testid="multi-stp-unit"
+        />
       </th>
     {/if}
     {#if showCsda}

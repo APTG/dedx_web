@@ -14,6 +14,8 @@ import {
   persistAdvancedOptions,
 } from "$lib/state/advanced-options.svelte";
 import { isAdvancedMode, initAdvancedModeFromUrl } from "$lib/state/advanced-mode.svelte";
+import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
+import { tokenToStpUnit } from "$lib/utils/stp-unit-codec";
 import { wasmReady } from "$lib/state/ui.svelte";
 import { WATER_ID } from "$lib/state/entity-selection.svelte";
 import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
@@ -166,6 +168,12 @@ export class CalculatorPageOrchestrator {
         }
 
         this.calcState.setMasterUnit(urlState.masterUnit);
+
+        // Restore the stopping-power output unit from the URL (`sunit=`). Absent
+        // ⇒ leave the shared override unset so the aggregate-state default wins.
+        if (urlState.sunit) {
+          stpOutputUnit.set(tokenToStpUnit(urlState.sunit));
+        }
 
         if (hasEnergies) {
           urlState.rows.forEach((r, i) => {

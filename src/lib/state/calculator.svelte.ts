@@ -5,7 +5,8 @@ import {
   convertEnergyFromMeVperNucl,
   getEnergyUnitCategory,
 } from "$lib/utils/energy-conversions";
-import { formatSigFigs, autoScaleLengthCm } from "$lib/utils/unit-conversions";
+import { formatSigFigs, autoScaleLengthCm, convertStpMass } from "$lib/utils/unit-conversions";
+import { stpOutputUnit } from "./stp-unit.svelte";
 import { LibdedxError } from "$lib/wasm/types";
 import type { EnergyUnit, StpUnit, LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
@@ -51,6 +52,7 @@ export interface CalculatorState {
   validationSummary: { valid: number; invalid: number; outOfRange: number; total: number };
   hasLargeInput: boolean;
   setMasterUnit(unit: EnergyUnit): void;
+  setStpDisplayUnit(unit: StpUnit): void;
   setRowUnit(index: number, unit: EnergyUnit): void;
   switchParticle(particleId: number | string | null): void;
   updateRowText(index: number, text: string, autoAdd?: boolean): void;
@@ -70,7 +72,7 @@ export function createCalculatorState(
   extService?: ExternalDataService,
 ): CalculatorState {
   const inputState = createEnergyInputState();
-  const engine = createCalculatorEngine(entitySelection, service, getStpDisplayUnit, extService);
+  const engine = createCalculatorEngine(entitySelection, service, extService);
 
   const debouncedCalculate = debounce(async () => {
     const energies = getValidEnergies();
@@ -158,6 +160,11 @@ export function createCalculatorState(
   let previousParticle: ParticleEntity | null = asBuiltinParticle(entitySelection.selectedParticle);
 
   function getStpDisplayUnit(): StpUnit {
+    // An explicit user choice (calculator header dropdown / plot control / URL
+    // `sunit=`) overrides the aggregate-state-derived default below.
+    if (stpOutputUnit.value !== null) {
+      return stpOutputUnit.value;
+    }
     const material = asBuiltinMaterial(entitySelection.selectedMaterial);
     if (isCustomMaterial(material)) {
       return material.isGasByDefault ? "MeV·cm²/g" : "keV/µm";
@@ -172,6 +179,21 @@ export function createCalculatorState(
       return "MeV·cm²/g";
     }
     return "keV/µm";
+  }
+
+  /** Density (g/cm³) used to convert mass stopping power to the display unit;
+   *  mirrors the resolution order used by the calculation engine. */
+  function getConversionDensity(): number {
+    const material = entitySelection.selectedMaterial;
+    const builtin = asBuiltinMaterial(material);
+    const customMaterial = isCustomMaterial(builtin) ? builtin : null;
+    return (
+      (isAdvancedMode.value && !customMaterial
+        ? advancedOptions.value.densityOverride
+        : undefined) ??
+      material?.density ??
+      1
+    );
   }
 
   function convertRowEnergyToMevNucl(
@@ -266,6 +288,7 @@ export function createCalculatorState(
       };
     }
 
+    const massStp = resultData?.stoppingPower ?? null;
     return {
       id: row.id,
       rawInput: row.text,
@@ -273,7 +296,10 @@ export function createCalculatorState(
       unit: effectiveUnit,
       unitFromSuffix,
       status: "valid",
-      stoppingPower: resultData?.stoppingPower ?? null,
+      stoppingPower:
+        massStp !== null
+          ? convertStpMass(massStp, getConversionDensity(), getStpDisplayUnit())
+          : null,
       csdaRangeCm: resultData?.csdaRangeCm ?? null,
     };
   }
@@ -363,6 +389,9 @@ export function createCalculatorState(
     },
     setMasterUnit(unit: EnergyUnit) {
       inputState.setMasterUnit(unit);
+    },
+    setStpDisplayUnit(unit: StpUnit) {
+      stpOutputUnit.set(unit);
     },
     setRowUnit(index: number, unit: EnergyUnit) {
       const row = inputState.rows[index];

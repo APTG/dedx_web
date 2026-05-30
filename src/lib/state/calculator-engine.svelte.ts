@@ -1,5 +1,5 @@
 import { LibdedxError } from "$lib/wasm/types";
-import type { StpUnit, LibdedxService } from "$lib/wasm/types";
+import type { LibdedxService } from "$lib/wasm/types";
 import type { EntitySelectionState } from "./entity-selection.svelte";
 import type { ExternalDataService } from "$lib/external-data/service";
 import { advancedOptions } from "./advanced-options.svelte";
@@ -10,7 +10,7 @@ import {
 } from "$lib/utils/custom-compound-material";
 import { parseExtRef } from "$lib/external-data/ids";
 import { asBuiltinMaterial } from "$lib/utils/entity-type-guards";
-import { stpMassToKevUm, csdaGcm2ToCm } from "$lib/utils/unit-conversions";
+import { csdaGcm2ToCm } from "$lib/utils/unit-conversions";
 
 export interface CalculatorEngineState {
   isCalculating: boolean;
@@ -34,7 +34,6 @@ function resolveParticleMass(
 export function createCalculatorEngine(
   entitySelection: EntitySelectionState,
   service: LibdedxService,
-  getStpDisplayUnit: () => StpUnit,
   extService?: ExternalDataService,
 ): CalculatorEngineState {
   let isCalculating = $state(false);
@@ -118,21 +117,13 @@ export function createCalculatorEngine(
           totalMev,
         );
         if (result.stp !== null) {
-          let stpDisplay: number | null;
-          if (getStpDisplayUnit() === "keV/µm") {
-            stpDisplay =
-              typeof conversionDensity === "number"
-                ? stpMassToKevUm(result.stp, conversionDensity)
-                : null;
-          } else {
-            stpDisplay = result.stp;
-          }
-
+          // Store the raw mass stopping power (MeV·cm²/g); unit conversion to the
+          // selected output unit happens at render time in computeRows.
           const csdaCm =
             result.csda !== null && typeof conversionDensity === "number"
               ? csdaGcm2ToCm(result.csda, conversionDensity)
               : null;
-          results.set(rowId, { stoppingPower: stpDisplay, csdaRangeCm: csdaCm });
+          results.set(rowId, { stoppingPower: result.stp, csdaRangeCm: csdaCm });
         } else {
           externalOutOfRange.add(rowId);
         }
@@ -247,16 +238,10 @@ export function createCalculatorEngine(
           });
         }
 
-        let stpDisplay: number;
-        if (getStpDisplayUnit() === "keV/µm") {
-          const converted = stpMassToKevUm(stpMass, density);
-          stpDisplay = converted ?? stpMass;
-        } else {
-          stpDisplay = stpMass;
-        }
-
+        // Store the raw mass stopping power (MeV·cm²/g); unit conversion to the
+        // selected output unit happens at render time in computeRows.
         const csdaCm = csdaGcm2ToCm(csdaGcm2, density);
-        map.set(rowId, { stoppingPower: stpDisplay, csdaRangeCm: csdaCm });
+        map.set(rowId, { stoppingPower: stpMass, csdaRangeCm: csdaCm });
       }
       return map;
     }

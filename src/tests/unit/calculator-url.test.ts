@@ -131,6 +131,24 @@ describe("encodeCalculatorUrl", () => {
     expect(p.has("uanchor")).toBe(false);
   });
 
+  it("omits sunit when no explicit stopping-power unit is chosen", () => {
+    const p = encodeCalculatorUrl(defaultState);
+    expect(p.has("sunit")).toBe(false);
+  });
+
+  it("encodes and round-trips an explicit sunit", () => {
+    for (const token of ["kev-um", "mev-cm", "mev-cm2-g"]) {
+      const p = encodeCalculatorUrl({ ...defaultState, sunit: token });
+      expect(p.get("sunit")).toBe(token);
+      expect(decodeCalculatorUrl(p).sunit).toBe(token);
+    }
+  });
+
+  it("drops an unknown sunit token on decode", () => {
+    const s = decodeCalculatorUrl(new URLSearchParams("sunit=bogus"));
+    expect(s.sunit).toBeUndefined();
+  });
+
   it("encodes non-default uanchor slugs", () => {
     const perNucleon = encodeCalculatorUrl({
       ...defaultState,

@@ -291,16 +291,22 @@ table.
 
 #### Stopping Power Column Unit
 
-The column header shows the current stopping power unit:
+The column header is a **dropdown** (issue #670): it reads
+`STP ({unit}) ▾` (single-entity) / `Stopping Power ({unit}) ▾` (multi-entity)
+and offers `keV/µm`, `MeV/cm`, `MeV·cm²/g` — the same set and order as the plot
+page. Picking a unit converts and re-renders every STP cell at display time
+(no recalculation); the CSDA Range column is untouched.
+
+Default (no explicit choice) follows the aggregate state, so existing links
+render unchanged:
 
 - **Non-gas materials:** "Stopping Power (keV/µm)"
 - **Gas materials:** "Stopping Power (MeV·cm²/g)"
 
-This changes automatically when switching between gas and non-gas materials.
-See [`unit-handling.md`](unit-handling.md) §5.1 for the rules.
-
-> **Future:** The column header will become a clickable dropdown to let
-> users switch between keV/µm, MeV/cm, and MeV·cm²/g manually.
+An explicit choice is encoded in the URL via the shared `sunit=` param (see
+[`shareable-urls.md`](shareable-urls.md) §3.9) and shared with the plot page.
+On mobile the menu renders as a bottom sheet (≥44 px rows). See
+[`unit-handling.md`](unit-handling.md) §5.1 for the conversion rules.
 
 #### CSDA Range Column Unit
 
