@@ -118,23 +118,23 @@ test.describe("PR 667 - Bethe & Bethe ext validation", () => {
     console.log("Bethe ext values:", betheExtValues);
 
     // Validate that values change across different energies
-    expect(betheValues[0].stp).not.toBeCloseTo(betheValues[1].stp, 5);
-    expect(betheValues[1].stp).not.toBeCloseTo(betheValues[2].stp, 5);
-    expect(betheValues[0].range).not.toBeCloseTo(betheValues[1].range, 5);
+    expect(betheValues[0]!.stp).not.toBeCloseTo(betheValues[1]!.stp, 5);
+    expect(betheValues[1]!.stp).not.toBeCloseTo(betheValues[2]!.stp, 5);
+    expect(betheValues[0]!.range).not.toBeCloseTo(betheValues[1]!.range, 5);
 
-    expect(betheExtValues[0].stp).not.toBeCloseTo(betheExtValues[1].stp, 5);
-    expect(betheExtValues[1].stp).not.toBeCloseTo(betheExtValues[2].stp, 5);
-    expect(betheExtValues[0].range).not.toBeCloseTo(betheExtValues[1].range, 5);
+    expect(betheExtValues[0]!.stp).not.toBeCloseTo(betheExtValues[1]!.stp, 5);
+    expect(betheExtValues[1]!.stp).not.toBeCloseTo(betheExtValues[2]!.stp, 5);
+    expect(betheExtValues[0]!.range).not.toBeCloseTo(betheExtValues[1]!.range, 5);
 
     // Validate order of magnitude with PSTAR (e.g. within 20%)
     for (let i = 0; i < 3; i++) {
       // Compare STP
-      expect(betheValues[i].stp / pstarValues[i].stp).toBeGreaterThan(0.5);
-      expect(betheValues[i].stp / pstarValues[i].stp).toBeLessThan(2.0);
+      expect(betheValues[i]!.stp / pstarValues[i]!.stp).toBeGreaterThan(0.5);
+      expect(betheValues[i]!.stp / pstarValues[i]!.stp).toBeLessThan(2.0);
 
       // Compare Range
-      expect(betheValues[i].range / pstarValues[i].range).toBeGreaterThan(0.5);
-      expect(betheValues[i].range / pstarValues[i].range).toBeLessThan(2.0);
+      expect(betheValues[i]!.range / pstarValues[i]!.range).toBeGreaterThan(0.5);
+      expect(betheValues[i]!.range / pstarValues[i]!.range).toBeLessThan(2.0);
     }
   });
 });
