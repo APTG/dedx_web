@@ -31,11 +31,18 @@
   let menuPos = $state<{ top: number; left: number }>({ top: 0, left: 0 });
 
   // Detect a phone-sized viewport so the menu renders as a bottom sheet.
+  // Initialised synchronously so the very first render already picks the right
+  // surface (sheet vs popover); the effect keeps it current across resizes.
   // Guarded for jsdom / SSR where matchMedia is absent.
-  let isMobile = $state(false);
+  const MOBILE_QUERY = "(max-width: 640px)";
+  let isMobile = $state(
+    typeof window !== "undefined" && window.matchMedia
+      ? window.matchMedia(MOBILE_QUERY).matches
+      : false,
+  );
   $effect(() => {
     if (typeof window === "undefined" || !window.matchMedia) return;
-    const mq = window.matchMedia("(max-width: 640px)");
+    const mq = window.matchMedia(MOBILE_QUERY);
     isMobile = mq.matches;
     const onChange = (e: MediaQueryListEvent) => (isMobile = e.matches);
     mq.addEventListener("change", onChange);

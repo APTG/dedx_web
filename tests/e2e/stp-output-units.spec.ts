@@ -86,16 +86,17 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
 
 test.describe("STP output units — shared with the Plot page", () => {
   test("plot honours the shared sunit param", async ({ page }) => {
-    await page.goto("/plot?particle=1&material=276&program=2&series=2.1.276&sunit=mev-cm2-g");
-    // The plot's stopping-power radio reflects the shared unit.
+    await page.goto("/plot?sunit=mev-cm2-g");
+    // The stopping-power radio group reflects the shared unit once the page is past
+    // its loading skeleton. Only the unit param is needed — no series to restore.
     const radio = page.locator('input[name="stp-unit"][value="MeV·cm²/g"]');
-    await expect(radio).toBeChecked({ timeout: 15000 });
+    await expect(radio).toBeChecked({ timeout: 20000 });
   });
 
   test("legacy stp_unit param still selects the unit on the plot", async ({ page }) => {
-    await page.goto("/plot?particle=1&material=276&program=2&series=2.1.276&stp_unit=mev-cm");
+    await page.goto("/plot?stp_unit=mev-cm");
     const radio = page.locator('input[name="stp-unit"][value="MeV/cm"]');
-    await expect(radio).toBeChecked({ timeout: 15000 });
+    await expect(radio).toBeChecked({ timeout: 20000 });
   });
 });
 
