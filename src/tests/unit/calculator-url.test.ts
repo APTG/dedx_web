@@ -975,6 +975,7 @@ describe("encodeCalculatorUrl — multi-particle (across=particles)", () => {
     const p = encodeCalculatorUrl({
       ...advancedBase,
       across: "material",
+      selectedMaterialIds: [276, 13],
       selectedParticleIds: [1, 2, 6],
     });
     expect(p.get("across")).toBe("materials");

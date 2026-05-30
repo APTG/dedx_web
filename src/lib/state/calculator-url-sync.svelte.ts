@@ -94,6 +94,12 @@ export function setupCalculatorUrlSync(
       isAdvancedMode.value && acrossDim === "particle"
         ? (entityState.multiSelected.particle.filter((id) => typeof id === "number") as number[])
         : undefined;
+    const multiMaterialIds =
+      isAdvancedMode.value && acrossDim === "material"
+        ? entityState.multiSelected.material.filter(
+            (id) => typeof id === "number" || (typeof id === "string" && id.startsWith("ext:")),
+          )
+        : undefined;
 
     const urlState = {
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
@@ -125,8 +131,14 @@ export function setupCalculatorUrlSync(
       ...(acrossDim === "particle" && multiParticleIds && multiParticleIds.length > 0
         ? { across: "particle" as const }
         : {}),
+      ...(acrossDim === "material" && multiMaterialIds && multiMaterialIds.length > 0
+        ? { across: "material" as const }
+        : {}),
       ...(multiParticleIds && multiParticleIds.length > 0
         ? { selectedParticleIds: multiParticleIds }
+        : {}),
+      ...(multiMaterialIds && multiMaterialIds.length > 0
+        ? { selectedMaterialIds: multiMaterialIds }
         : {}),
       // Include inverse mode state when active
       ...(inverseModeState || {}),

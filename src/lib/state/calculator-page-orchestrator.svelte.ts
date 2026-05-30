@@ -492,7 +492,10 @@ export class CalculatorPageOrchestrator {
           const m =
             appInit.entityState?.allMaterials.find((x) => x.id === id) ??
             appInit.entityState?.externalOnlyMaterials.find((x) => x.id === id);
-          return m?.name ?? String(id);
+          if (m) return m.name;
+          const cc = customCompounds.getById(String(id));
+          if (cc) return cc.name;
+          return String(id);
         }
         const p = appInit.entityState?.allParticles.find((x) => x.id === id);
         return p?.name ?? String(id);
