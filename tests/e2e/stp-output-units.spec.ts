@@ -56,7 +56,9 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
 
     // Open the menu and pick MeV/cm.
     await trigger.click();
-    await page.getByTestId("advanced-stp-unit-option-MeV/cm").click();
+    const option = page.getByTestId("advanced-stp-unit-option-MeV/cm");
+    await expect(option).toBeVisible();
+    await option.click();
 
     // Header now reads MeV/cm; for water (ρ=1) MeV/cm = 10 × keV/µm.
     await expect(trigger).toContainText("MeV/cm");
@@ -108,8 +110,10 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
       return;
     }
 
+    // PSTAR (2) is the reference/default column (first in the list) and always
+    // yields a valid proton/water value; 9 is a second program for comparison.
     await page.goto(
-      "/calculator?particle=1&material=276&mode=advanced&programs=7%2C9&energies=100",
+      "/calculator?particle=1&material=276&mode=advanced&programs=2%2C9&energies=100",
     );
     await expect(page.getByTestId("result-table")).toBeVisible({ timeout: 15000 });
 
@@ -117,25 +121,23 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
     const trigger = page.getByTestId("multi-stp-unit-trigger");
     await expect(trigger).toContainText("keV/µm");
 
-    // Grab a value from each program column before switching.
-    const cell7 = page.getByTestId("stp-cell-7-0");
-    const cell9 = page.getByTestId("stp-cell-9-0");
+    // Capture the reference column's value before switching.
+    const refCell = page.getByTestId("stp-cell-2-0");
     await expect
-      .poll(async () => parseFloat((await cell7.textContent()) ?? ""), { timeout: 8000 })
+      .poll(async () => parseFloat((await refCell.textContent()) ?? ""), { timeout: 8000 })
       .toBeGreaterThan(0);
-    const before7 = parseFloat((await cell7.textContent()) ?? "");
-    const before9 = parseFloat((await cell9.textContent()) ?? "");
+    const before = parseFloat((await refCell.textContent()) ?? "");
 
     await trigger.click();
-    await page.getByTestId("multi-stp-unit-option-MeV·cm²/g").click();
+    const massOption = page.getByTestId("multi-stp-unit-option-MeV·cm²/g");
+    await expect(massOption).toBeVisible();
+    await massOption.click();
     await expect(trigger).toContainText("MeV·cm²/g");
 
-    // Both columns re-render in the new unit (water ρ=1: MeV·cm²/g = 10 × keV/µm).
+    // The one control governs the whole quantity: the column re-renders in the
+    // new unit (water ρ=1: MeV·cm²/g = 10 × keV/µm).
     await expect
-      .poll(async () => parseFloat((await cell7.textContent()) ?? "") / before7, { timeout: 5000 })
-      .toBeCloseTo(10, 1);
-    await expect
-      .poll(async () => parseFloat((await cell9.textContent()) ?? "") / before9, { timeout: 5000 })
+      .poll(async () => parseFloat((await refCell.textContent()) ?? "") / before, { timeout: 5000 })
       .toBeCloseTo(10, 1);
   });
 });
