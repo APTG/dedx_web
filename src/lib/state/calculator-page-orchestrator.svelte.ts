@@ -150,7 +150,14 @@ export class CalculatorPageOrchestrator {
             }
           } else if (urlState.across === "material" && urlState.selectedMaterialIds) {
             const available = new Set(appInit.entityState.availableMaterials.map((p) => p.id));
-            const validIds = urlState.selectedMaterialIds.filter((id) => available.has(id));
+            const validIds = urlState.selectedMaterialIds.filter((id) => available.has(id)) as (
+              | number
+              | string
+            )[];
+            if (customFromUrl) {
+              // The custom compound was stripped from the plural URL param; restore it as the primary/first item
+              validIds.unshift(customFromUrl.id);
+            }
             if (validIds.length > 0) {
               appInit.entityState.setAcross(urlState.across);
               appInit.entityState.setMultiMaterial(validIds);
@@ -492,7 +499,10 @@ export class CalculatorPageOrchestrator {
           const m =
             appInit.entityState?.allMaterials.find((x) => x.id === id) ??
             appInit.entityState?.externalOnlyMaterials.find((x) => x.id === id);
-          return m?.name ?? String(id);
+          if (m) return m.name;
+          const cc = customCompounds.getById(String(id));
+          if (cc) return cc.name;
+          return String(id);
         }
         const p = appInit.entityState?.allParticles.find((x) => x.id === id);
         return p?.name ?? String(id);

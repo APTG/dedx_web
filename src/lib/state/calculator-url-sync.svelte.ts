@@ -9,7 +9,7 @@ import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
 import type { MultiProgramState } from "$lib/state/multi-program.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
-import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+import type { ExternalSourceDescriptor, EntityId } from "$lib/external-data/types";
 
 /**
  * Headless Svelte 5 state module for synchronizing Calculator state to the URL.
@@ -94,6 +94,12 @@ export function setupCalculatorUrlSync(
       isAdvancedMode.value && acrossDim === "particle"
         ? (entityState.multiSelected.particle.filter((id) => typeof id === "number") as number[])
         : undefined;
+    const multiMaterialIds =
+      isAdvancedMode.value && acrossDim === "material"
+        ? (entityState.multiSelected.material.filter(
+            (id) => typeof id === "number" || (typeof id === "string" && id.startsWith("ext:")),
+          ) as EntityId[])
+        : undefined;
 
     const urlState = {
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
@@ -125,8 +131,14 @@ export function setupCalculatorUrlSync(
       ...(acrossDim === "particle" && multiParticleIds && multiParticleIds.length > 0
         ? { across: "particle" as const }
         : {}),
+      ...(acrossDim === "material" && multiMaterialIds && multiMaterialIds.length > 0
+        ? { across: "material" as const }
+        : {}),
       ...(multiParticleIds && multiParticleIds.length > 0
         ? { selectedParticleIds: multiParticleIds }
+        : {}),
+      ...(multiMaterialIds && multiMaterialIds.length > 0
+        ? { selectedMaterialIds: multiMaterialIds }
         : {}),
       // Include inverse mode state when active
       ...(inverseModeState || {}),

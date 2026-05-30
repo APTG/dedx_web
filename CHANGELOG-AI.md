@@ -17,8 +17,14 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-30 — **WASM / Testing**: Bumped `libdedx` submodule to latest `main` and rebuilt WASM. Added E2E tests (`tests/e2e/pr667-water.spec.ts`) for custom compounds using analytical programs, validating Custom Water against Predefined Liquid Water (ID 276). Also verified table stability when dynamically adding and removing energies. (Antigravity via opencode)
+  - **Log:** [log](docs/ai-logs/2026-05-30-pr667-custom-water-stability.md)
+
+- 2026-05-29 — **WASM**: Bump `libdedx` submodule to `6313d91` to pick up the merged fix [APTG/libdedx#105](https://github.com/APTG/libdedx/pull/105) ("Fix double-call bug for custom compounds with analytical programs"), which resolves [#662](https://github.com/APTG/dedx_web/issues/662) (Bethe/Bethe-ext returned no values for custom compounds). Also corrected the submodule tracking branch from the now-deleted `master` to `main`, and added an E2E regression test (`tests/e2e/url-parser.spec.ts`) exercising the CR39 custom compound with the Bethe program. WASM is gitignored and rebuilt from the submodule by CI/deploy, so no committed binary changes. (Claude Opus 4.8 via Claude Code)
+
 - 2026-05-29 — **Stage 6.10**: Implement the mobile compound editor (Issue #647 / #606-4) — a phone-only 2-step full-screen sheet (Basics → Composition) that replaces the cramped desktop modal on `(max-width: 640px) and (pointer: coarse)`. Adds a full-screen periodic-table picker overlay, a long-press row action sheet, a compressed duplicate banner, and virtual-keyboard handling (`interactive-widget=resizes-content` + a `--vkb-offset` visual-viewport fallback). All form state stays in the parent behind a shared `EditorController`, so step transitions are non-destructive; desktop layout is unchanged. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-647-compound-editor-mobile.md)
+
 - 2026-05-29 — **Refactoring**: Address PR #659 review — fully honor "rejected, not migrated" by gating URL hydration on version negotiation in both page orchestrators. An unsupported `urlv` now hydrates nothing (entity selection, energy rows, advanced mode, plot series stay at defaults) instead of only halting the calc; "Load defaults" proceeds from those defaults. Plot version negotiation moved to a synchronous pre-effect step so it resolves before init/restore; `setupPlotUrlRestore` gained a mismatch gate. Formal spec §3.1/§3.4 wording tightened. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-29-issue-477-url-version-gating.md)
 

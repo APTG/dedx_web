@@ -332,9 +332,8 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     }
 
     // across= token: emit when a comparison dimension is active.
-    // particles= is only emitted when across=particle (state value) is set and the list is non-empty.
-    // For material/program dimensions the token is emitted without a matching list param here
-    // (the caller is responsible for populating those lists separately as needed).
+    // Plural lists (particles, materials) are emitted when their corresponding across token is active.
+    // For program dimension, the token is emitted here while programs= is emitted above.
     if (
       state.across === "particle" &&
       state.selectedParticleIds &&
@@ -342,7 +341,12 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     ) {
       params.set("particles", state.selectedParticleIds.join(","));
       params.set("across", toAcrossUrlToken(state.across));
-    } else if (state.across === "material") {
+    } else if (
+      state.across === "material" &&
+      state.selectedMaterialIds &&
+      state.selectedMaterialIds.length > 0
+    ) {
+      params.set("materials", formatEntityIdList(state.selectedMaterialIds));
       params.set("across", toAcrossUrlToken(state.across));
     } else if (state.across === "program") {
       params.set("across", toAcrossUrlToken(state.across));

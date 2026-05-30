@@ -537,7 +537,14 @@ void dedx_internal_cleanup_custom_compound(dedx_config *cfg, int *err) {
         free(cfg->elements_atoms);
         cfg->elements_atoms = NULL;
     }
-    dedx_free_config(cfg, err);
+    if (cfg->elements_mass_fraction) {
+        free(cfg->elements_mass_fraction);
+        cfg->elements_mass_fraction = NULL;
+    }
+    if (cfg->elements_i_value) {
+        free(cfg->elements_i_value);
+        cfg->elements_i_value = NULL;
+    }
 }
 
 int dedx_calculate_custom_forward_flat(
