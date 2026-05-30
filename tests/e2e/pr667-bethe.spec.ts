@@ -35,10 +35,10 @@ test.describe("PR 667 - Bethe & Bethe ext validation", () => {
       const stpCell = page.locator(`[data-testid="advanced-stp-cell-${i}"]`);
       const rangeCell = page.locator(`[data-testid="advanced-range-cell-${i}"]`);
 
-      const stp = await expect
+      await expect
         .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
-      const range = await expect
+      await expect
         .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
 
@@ -72,7 +72,7 @@ test.describe("PR 667 - Bethe & Bethe ext validation", () => {
       const stp = await expect
         .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
-      const range = await expect
+      await expect
         .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
 
@@ -103,10 +103,10 @@ test.describe("PR 667 - Bethe & Bethe ext validation", () => {
       const stpCell = page.locator(`[data-testid="advanced-stp-cell-${i}"]`);
       const rangeCell = page.locator(`[data-testid="advanced-range-cell-${i}"]`);
 
-      const stp = await expect
+      await expect
         .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
-      const range = await expect
+      await expect
         .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 10000 })
         .toBeGreaterThan(0);
 
