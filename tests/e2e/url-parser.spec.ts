@@ -120,6 +120,43 @@ test.describe("Stage 6.13 — URL parser", () => {
       .toBeGreaterThan(0);
   });
 
+  // ── Regression #662: custom compound + analytical (Bethe) program ─────────
+  // libdedx#105 fixed a double-call bug where validate_config evaluated the
+  // compound twice for program >= 100 (analytical) with a custom compound
+  // (target == 0); the second call failed with DEDX_ERR_INCONSISTENT_COMPOUND
+  // and Bethe/Bethe-ext silently returned no values. PSTAR (tabulated) worked.
+  test("custom compound with Bethe program returns values (#662) @regression", async ({ page }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip custom compound Bethe regression");
+
+    // CR39 from the issue: H:18, C:12, O:7, density 1.39, Bethe (program 100).
+    const url =
+      "/calculator?urlv=2&particle=1&material=custom&mat_name=CR39" +
+      "&mat_density=1.39&mat_elements=1%3A18%2C6%3A12%2C8%3A7" +
+      "&mode=advanced&program=100&programs=100&energies=111&eunit=MeV&qfocus=both";
+
+    await page.goto(url);
+    await page.waitForFunction(
+      () =>
+        document
+          .querySelector('[data-testid="compound-from-url-banner"]')
+          ?.textContent?.includes("CR39"),
+      { timeout: 10000 },
+    );
+
+    // Stopping power must be a real number, not empty (the #662 symptom).
+    const stpCell = page.locator('[data-testid^="advanced-stp-cell-"]').first();
+    await expect
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 10000 })
+      .toBeGreaterThan(0);
+
+    // CSDA range must also resolve (the issue reported both STP and range empty).
+    const rangeCell = page.locator('[data-testid^="advanced-range-cell-"]').first();
+    await expect
+      .poll(async () => parseFloat((await rangeCell.textContent()) ?? ""), { timeout: 10000 })
+      .toBeGreaterThan(0);
+  });
+
   test("advanced URL can switch back to Basic mode @regression", async ({ page }) => {
     const wasmOk = await checkWasmAvailable(page);
     test.skip(!wasmOk, "WASM binary absent — skip advanced mode URL restore");

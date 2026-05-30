@@ -2,7 +2,7 @@
 [submodule "libdedx"]
 	path = libdedx
 	url = https://github.com/APTG/libdedx.git
-	branch = master
+	branch = main
 	shallow = true
 [submodule "vendor/jsroot"]
 	path = vendor/jsroot
