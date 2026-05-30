@@ -9,10 +9,12 @@
     usedZ: Set<number>;
     /** The atomic number of the row being edited (used to highlight in EDIT mode) */
     currentZ?: number | null;
+    /** A pending selection to highlight regardless of mode (mobile Add flow). */
+    highlightZ?: number | null;
     onSelect: (z: number) => void;
   }
 
-  let { mode, usedZ, currentZ = null, onSelect }: Props = $props();
+  let { mode, usedZ, currentZ = null, highlightZ = null, onSelect }: Props = $props();
 </script>
 
 <div class="overflow-x-auto overflow-y-hidden pb-1">
@@ -27,7 +29,7 @@
       {@const z = el.atomicNumber}
       {@const pos = periodicPosition(z)}
       {@const isUsed = usedZ.has(z)}
-      {@const isCurrent = mode === "EDIT" && currentZ === z}
+      {@const isCurrent = (mode === "EDIT" && currentZ === z) || highlightZ === z}
       {@const isDisabled = mode === "ADD" && isUsed}
 
       {#if pos}
