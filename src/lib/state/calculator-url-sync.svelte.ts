@@ -9,7 +9,7 @@ import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
 import type { MultiProgramState } from "$lib/state/multi-program.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
-import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+import type { ExternalSourceDescriptor, EntityId } from "$lib/external-data/types";
 
 /**
  * Headless Svelte 5 state module for synchronizing Calculator state to the URL.
@@ -96,9 +96,9 @@ export function setupCalculatorUrlSync(
         : undefined;
     const multiMaterialIds =
       isAdvancedMode.value && acrossDim === "material"
-        ? entityState.multiSelected.material.filter(
+        ? (entityState.multiSelected.material.filter(
             (id) => typeof id === "number" || (typeof id === "string" && id.startsWith("ext:")),
-          )
+          ) as EntityId[])
         : undefined;
 
     const urlState = {
