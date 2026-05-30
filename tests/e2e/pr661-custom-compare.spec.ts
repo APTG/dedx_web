@@ -40,7 +40,7 @@ test.describe("PR 661: Custom compounds in compare-across", () => {
     // Wait for the custom subtab to be visible if not already
     await page.getByTestId("picker-tab-material").click();
     await page.getByTestId("material-subtab-custom").click();
-    
+
     // Select "My Cool Material"
     const customOption = page
       .getByTestId("picker-material-list-custom")
@@ -67,7 +67,7 @@ test.describe("PR 661: Custom compounds in compare-across", () => {
     // In compare-across, it should be stripped from the `materials=` parameter.
     const searchParams = await page.evaluate(() => window.location.search);
     const urlParams = new URLSearchParams(searchParams);
-    
+
     // `materials` parameter shouldn't contain `cc_`
     const materialsParam = urlParams.get("materials");
     expect(materialsParam).not.toContain("cc_");
@@ -75,7 +75,7 @@ test.describe("PR 661: Custom compounds in compare-across", () => {
     // Add a built-in material to the comparison
     await page.getByTestId("picker-tab-material").click();
     await page.getByTestId("material-subtab-elements").click();
-    
+
     const aluminumOption = page.locator('[data-testid="picker-material-item-13"]');
     await aluminumOption.click();
     await page.keyboard.press("Escape");
@@ -83,7 +83,7 @@ test.describe("PR 661: Custom compounds in compare-across", () => {
     // Check the URL again. Now it should contain valid materials
     const searchParams2 = await page.evaluate(() => window.location.search);
     const urlParams2 = new URLSearchParams(searchParams2);
-    
+
     expect(urlParams2.get("across")).toBe("materials");
     expect(urlParams2.get("materials")).toContain("13"); // Aluminum
     expect(urlParams2.get("materials")).toContain("276"); // Water
