@@ -564,7 +564,22 @@
 <svelte:window onkeydown={onKeyDown} />
 
 {#if isMobile && open}
-  <MobileSheet {editor} {prefersReducedMotion} onCancel={() => onOpenChange(false)} />
+  <!-- Wrap the full-screen mobile sheet in the same bits-ui Dialog primitive the
+       desktop path uses, so it gets a focus trap, aria-modal semantics,
+       background scroll-lock + inert, and Escape-to-close. -->
+  <Dialog.Root {open} onOpenChange={(newOpen) => onOpenChange(newOpen)}>
+    <Dialog.Portal>
+      <Dialog.Content class="fixed inset-0 z-[60] outline-none">
+        <Dialog.Title class="sr-only">
+          {compound ? "Edit Compound" : "Compound Editor"}
+        </Dialog.Title>
+        <Dialog.Description class="sr-only">
+          {compound ? "Update compound properties" : "Define a new compound material"}
+        </Dialog.Description>
+        <MobileSheet {editor} {prefersReducedMotion} onCancel={() => onOpenChange(false)} />
+      </Dialog.Content>
+    </Dialog.Portal>
+  </Dialog.Root>
 {:else}
   <Dialog.Root
     {open}
