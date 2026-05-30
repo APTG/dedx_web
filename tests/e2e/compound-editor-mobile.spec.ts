@@ -114,7 +114,6 @@ test.describe("Compound editor — mobile 2-step sheet @responsive", () => {
     });
     await fluorineRow.dispatchEvent("pointerup");
 
-
     await page.getByTestId("row-action-remove").click();
     await expect(page.getByTestId("mobile-row-actions")).toHaveCount(1);
   });
