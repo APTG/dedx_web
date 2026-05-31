@@ -32,10 +32,6 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
   test("header dropdown converts cells, writes sunit, and persists across reload", async ({
     page,
   }) => {
-    test.skip(
-      true,
-      "TEMP isolation (#670): determining whether menu interaction is the shard-3 failure",
-    );
     const hasWasm = await checkWasmPresent(page);
     if (!hasWasm) {
       test.skip(true, "WASM binary absent — skipping computation test");
