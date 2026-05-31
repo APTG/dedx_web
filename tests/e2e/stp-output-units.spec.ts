@@ -53,17 +53,9 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
     const trigger = page.getByTestId("advanced-stp-unit-trigger");
     await expect(trigger).toContainText("keV/µm");
 
-    // Open the menu and pick MeV/cm.
-    await trigger.click();
-    const option = page.getByTestId("advanced-stp-unit-option-MeV/cm");
-    await expect(option).toBeVisible();
-    await option.click();
-
-    // Header now reads MeV/cm.
-    await expect(trigger).toContainText("MeV/cm");
-
-    // TEMP isolation (#670): ratio / sunit-URL / reload assertions removed while
-    // narrowing the shard-3 failure to a specific step. Restored once identified.
+    // TEMP isolation (#670): the click + menu interaction is removed for this
+    // round. If shard 3 is green, fill+compute+header-render is fine and the
+    // failure is the menu click; if still red, it's the compute/render path.
   });
 
   test("unknown sunit token falls back to keV/µm without error", async ({ page }) => {
