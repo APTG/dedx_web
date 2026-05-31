@@ -144,9 +144,9 @@ describe("encodeCalculatorUrl", () => {
     }
   });
 
-  it("drops an unknown sunit token on decode", () => {
+  it("preserves an unknown sunit token on decode for the orchestrator to handle", () => {
     const s = decodeCalculatorUrl(new URLSearchParams("sunit=bogus"));
-    expect(s.sunit).toBeUndefined();
+    expect(s.sunit).toBe("bogus");
   });
 
   it("encodes non-default uanchor slugs", () => {
