@@ -20,7 +20,8 @@ async function checkWasmPresent(page: Page): Promise<boolean> {
 
 async function gotoAdvancedSingleEntity(page: Page): Promise<void> {
   // particle=1 (proton), material=276 (water, ρ=1), program=2 (PSTAR).
-  page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
+  page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+  await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
   await page.waitForFunction(
     () => new URLSearchParams(window.location.search).get("mode") === "advanced",
     { timeout: 15000 },
@@ -54,7 +55,7 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
     const trigger = page.getByTestId("advanced-stp-unit-trigger");
     await expect(trigger).toContainText("keV/µm");
     await expect(trigger).toBeVisible();
-    await trigger.evaluate(el => el.scrollIntoView({block: 'center'}));
+    await trigger.evaluate((el) => el.scrollIntoView({ block: "center" }));
     await trigger.click();
     const option = page.getByTestId("advanced-stp-unit-option-MeV/cm");
     await expect(option).toBeVisible();
@@ -80,7 +81,8 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
   });
 
   test("unknown sunit token falls back to keV/µm without error", async ({ page }) => {
-    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced&sunit=bogus");
+    page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+    await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced&sunit=bogus");
     await expect(page.getByTestId("advanced-combined-table")).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId("advanced-stp-unit-trigger")).toContainText("keV/µm");
   });
@@ -88,7 +90,8 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
 
 test.describe("STP output units — shared with the Plot page", () => {
   test("plot honours the shared sunit param", async ({ page }) => {
-    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/plot?sunit=mev-cm2-g");
+    page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+    await page.goto("/plot?sunit=mev-cm2-g");
     // The stopping-power radio group reflects the shared unit once the page is past
     // its loading skeleton. Only the unit param is needed — no series to restore.
     const radio = page.locator('input[name="stp-unit"][value="MeV·cm²/g"]');
@@ -96,7 +99,8 @@ test.describe("STP output units — shared with the Plot page", () => {
   });
 
   test("legacy stp_unit param still selects the unit on the plot", async ({ page }) => {
-    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/plot?stp_unit=mev-cm");
+    page.on("pageerror", (e) => console.log("PAGEERROR", e.message));
+    await page.goto("/plot?stp_unit=mev-cm");
     const radio = page.locator('input[name="stp-unit"][value="MeV/cm"]');
     await expect(radio).toBeChecked({ timeout: 20000 });
   });
@@ -128,7 +132,7 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
       .toBeGreaterThan(0);
     const before = parseFloat((await refCell.textContent()) ?? "");
 
-    await trigger.evaluate(el => el.scrollIntoView({block: 'center'}));
+    await trigger.evaluate((el) => el.scrollIntoView({ block: "center" }));
     await trigger.click();
     const massOption = page.getByTestId("multi-stp-unit-option-MeV·cm²/g");
     await expect(massOption).toBeVisible();
