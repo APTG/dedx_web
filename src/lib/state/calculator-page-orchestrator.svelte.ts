@@ -164,6 +164,8 @@ export class CalculatorPageOrchestrator {
               appInit.entityState.setAcross(urlState.across);
               appInit.entityState.setMultiMaterial(validIds);
             }
+          } else if (urlState.across === "program") {
+            appInit.entityState.setAcross(urlState.across);
           }
         }
 
