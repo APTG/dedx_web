@@ -171,10 +171,13 @@ export class CalculatorPageOrchestrator {
 
         this.calcState.setMasterUnit(urlState.masterUnit);
 
-        // Restore the stopping-power output unit from the URL (`sunit=`). Absent
-        // ⇒ leave the shared override unset so the aggregate-state default wins.
-        if (urlState.sunit) {
-          stpOutputUnit.set(tokenToStpUnit(urlState.sunit));
+        // Restore the stopping-power output unit from the URL (`sunit=`).
+        // An explicit but invalid token falls back to the default; an absent
+        // parameter leaves the shared override unset so the aggregate-state default wins.
+        if (currentSearchParams.has("sunit")) {
+          stpOutputUnit.set(tokenToStpUnit(urlState.sunit ?? ""));
+        } else {
+          stpOutputUnit.set(null);
         }
 
         if (hasEnergies) {

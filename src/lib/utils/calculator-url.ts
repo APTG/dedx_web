@@ -556,10 +556,10 @@ export function resolveCalculatorState(
     ? UANCHOR_TO_UNIT[uanchorRaw]
     : undefined;
 
-  // Stopping-power output unit token; only retained when it is a known token so
-  // an unknown/missing value falls back to the default downstream.
-  const sunitRaw = t.get("sunit") ?? "";
-  const sunit = VALID_STP_MASTER_UNITS.has(sunitRaw) ? sunitRaw : undefined;
+  // Stopping-power output unit token: passing it raw so the downstream decoder
+  // can treat an explicit but invalid parameter as a signal to fall back to the
+  // default (clearing any stale in-memory override).
+  const sunit = t.get("sunit") ?? undefined;
 
   const rows: CalculatorUrlRow[] = [];
   const energiesParam = t.get("energies");

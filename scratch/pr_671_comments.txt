@@ -1,0 +1,58 @@
+author:	Copilot (AI)
+association:	contributor
+edited:	false
+status:	commented
+--
+## Pull request overview
+
+This PR adds a stopping-power output unit selector to the Advanced calculator and unifies calculator/plot URL state around the shared `sunit=` parameter, while moving single-entity STP conversion to display time.
+
+**Changes:**
+- Adds shared STP unit codec/state plus render-time mass-to-display unit conversion.
+- Adds calculator STP header menus for single-result and multi-program result headers, including mobile sheet behavior.
+- Updates URL handling, documentation, and unit/component/E2E coverage for `sunit=` and legacy plot `stp_unit=` fallback.
+
+### Reviewed changes
+
+Copilot reviewed 27 out of 27 changed files in this pull request and generated 3 comments.
+
+<details>
+<summary>Show a summary per file</summary>
+
+| File | Description |
+| ---- | ----------- |
+| `src/lib/utils/stp-unit-codec.ts` | Adds shared STP unit token/display-label codec. |
+| `src/lib/utils/unit-conversions.ts` | Adds `convertStpMass` display conversion helper. |
+| `src/lib/state/stp-unit.svelte.ts` | Adds shared in-memory STP output unit override. |
+| `src/lib/state/calculator-engine.svelte.ts` | Stores raw mass STP instead of converting in the engine. |
+| `src/lib/state/calculator.svelte.ts` | Applies display-time STP conversion and exposes unit selection. |
+| `src/lib/state/calculator-url-sync.svelte.ts` | Encodes explicit calculator STP unit as `sunit`. |
+| `src/lib/state/calculator-page-orchestrator.svelte.ts` | Restores calculator STP unit from URL. |
+| `src/lib/utils/calculator-url.ts` | Adds calculator `sunit` encode/decode support. |
+| `src/lib/state/plot.svelte.ts` | Mirrors plot unit changes to shared STP unit state. |
+| `src/lib/state/plot-url-restore.svelte.ts` | Restores plot unit from `sunit`/legacy `stp_unit` or shared state. |
+| `src/lib/utils/plot-url.ts` | Migrates plot encoding to `sunit` with legacy decode fallback. |
+| `src/lib/components/results/stp-unit-header-menu.svelte` | Adds reusable desktop/mobile STP unit picker. |
+| `src/lib/components/results/table-advanced.svelte` | Replaces single STP header with unit menu and tint behavior. |
+| `src/lib/components/result-table/advanced-header.svelte` | Adds STP unit menu to multi-program group header. |
+| `src/lib/components/result-table/multi-entity-header.svelte` | Adjusts sticky header stacking. |
+| `src/tests/unit/stp-unit-codec.test.ts` | Covers STP codec and conversion helper. |
+| `src/tests/unit/plot-url.test.ts` | Updates plot URL expectations and fallback tests. |
+| `src/tests/unit/calculator-url.test.ts` | Adds calculator `sunit` encode/decode tests. |
+| `src/tests/unit/calculator-state.test.ts` | Adds calculator override/render-time conversion tests. |
+| `src/tests/components/stp-unit-header-menu.test.ts` | Adds component tests for the STP unit menu. |
+| `tests/e2e/stp-output-units.spec.ts` | Adds Playwright coverage for selector, URL, plot sharing, and mobile behavior. |
+| `tests/e2e/advanced-combined-table.spec.ts-snapshots/Advanced-combined-table-—-Energy-→-mode-5-row-snapshot-Energy-→-single-entity-1.aria.yml` | Updates ARIA snapshot for the new STP header button. |
+| `docs/04-feature-specs/shareable-urls.md` | Documents shared `sunit` semantics and legacy plot fallback. |
+| `docs/04-feature-specs/calculator.md` | Documents the calculator STP output unit dropdown. |
+| `docs/ai-logs/2026-05-30-stp-output-units.md` | Adds detailed AI session log. |
+| `docs/ai-logs/README.md` | Links the new AI session log. |
+| `CHANGELOG-AI.md` | Adds newest AI changelog entry. |
+</details>
+
+
+
+
+
+
+--

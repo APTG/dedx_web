@@ -183,16 +183,14 @@ export function createCalculatorState(
 
   /** Density (g/cm³) used to convert mass stopping power to the display unit;
    *  mirrors the resolution order used by the calculation engine. */
-  function getConversionDensity(): number {
+  function getConversionDensity(): number | undefined {
     const material = entitySelection.selectedMaterial;
     const builtin = asBuiltinMaterial(material);
     const customMaterial = isCustomMaterial(builtin) ? builtin : null;
     return (
       (isAdvancedMode.value && !customMaterial
         ? advancedOptions.value.densityOverride
-        : undefined) ??
-      material?.density ??
-      1
+        : undefined) ?? material?.density
     );
   }
 
@@ -289,6 +287,19 @@ export function createCalculatorState(
     }
 
     const massStp = resultData?.stoppingPower ?? null;
+    const density = getConversionDensity();
+    const stpUnit = getStpDisplayUnit();
+    const isLinearUnit = stpUnit === "keV/µm" || stpUnit === "MeV/cm";
+
+    let stoppingPower: number | null = null;
+    if (massStp !== null) {
+      if (isLinearUnit && density === undefined) {
+        stoppingPower = null;
+      } else {
+        stoppingPower = convertStpMass(massStp, density ?? 1, stpUnit);
+      }
+    }
+
     return {
       id: row.id,
       rawInput: row.text,
@@ -296,10 +307,7 @@ export function createCalculatorState(
       unit: effectiveUnit,
       unitFromSuffix,
       status: "valid",
-      stoppingPower:
-        massStp !== null
-          ? convertStpMass(massStp, getConversionDensity(), getStpDisplayUnit())
-          : null,
+      stoppingPower,
       csdaRangeCm: resultData?.csdaRangeCm ?? null,
     };
   }

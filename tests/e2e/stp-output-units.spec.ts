@@ -141,6 +141,39 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
       .poll(async () => parseFloat((await refCell.textContent()) ?? "") / before, { timeout: 5000 })
       .toBeCloseTo(10, 1);
   });
+
+  test("one unit governs every material column", async ({ page }) => {
+    const hasWasm = await checkWasmPresent(page);
+    if (!hasWasm) {
+      test.skip(true, "WASM binary absent — skipping computation test");
+      return;
+    }
+
+    await page.goto(
+      "/calculator?particle=1&programs=2&mode=advanced&across=materials&materials=276%2C274&energies=100",
+    );
+    await expect(page.getByTestId("table-multi")).toBeVisible({ timeout: 15000 });
+
+    const trigger = page.getByTestId("multi-stp-unit-trigger");
+    await expect(trigger).toContainText("keV/µm");
+
+    const refCell = page.getByTestId("stp-entity-cell-276-0");
+    await expect
+      .poll(async () => parseFloat((await refCell.textContent()) ?? ""), { timeout: 8000 })
+      .toBeGreaterThan(0);
+    const before = parseFloat((await refCell.textContent()) ?? "");
+
+    await trigger.evaluate((el) => el.scrollIntoView({ block: "center" }));
+    await trigger.click();
+    const massOption = page.getByTestId("multi-stp-unit-option-MeV·cm²/g");
+    await expect(massOption).toBeVisible();
+    await massOption.click();
+    await expect(trigger).toContainText("MeV·cm²/g");
+
+    await expect
+      .poll(async () => parseFloat((await refCell.textContent()) ?? "") / before, { timeout: 5000 })
+      .toBeCloseTo(10, 1);
+  });
 });
 
 test.describe("STP output units — mobile bottom sheet", () => {
