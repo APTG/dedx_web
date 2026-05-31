@@ -1,3 +1,5 @@
+import type { StpUnit } from "$lib/wasm/types";
+
 /** Convert mass stopping power (MeV·cm²/g) to linear stopping power (keV/µm).
  *  Formula: S_kevum = S_mass × ρ / 10   where ρ in g/cm³.
  *  Returns null when density is missing or ≤ 0. */
@@ -11,6 +13,19 @@ export function stpMassToKevUm(stpMass: number, densityGcm3: number): number | n
 export function stpMassToMeVcm(stpMass: number, densityGcm3: number): number | null {
   if (densityGcm3 <= 0) return null;
   return stpMass * densityGcm3;
+}
+
+/** Convert a single mass stopping power (MeV·cm²/g) to the requested output
+ *  unit. Density is in g/cm³. `MeV·cm²/g` is the identity. */
+export function convertStpMass(massStp: number, densityGcm3: number, targetUnit: StpUnit): number {
+  switch (targetUnit) {
+    case "keV/µm":
+      return (massStp * densityGcm3) / 10;
+    case "MeV/cm":
+      return massStp * densityGcm3;
+    case "MeV·cm²/g":
+      return massStp;
+  }
 }
 
 /** Convert CSDA range from g/cm² to cm.

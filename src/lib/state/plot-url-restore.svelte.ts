@@ -4,6 +4,7 @@ import { customCompounds } from "$lib/state/custom-compounds.svelte";
 import { externalDataService } from "$lib/external-data/service";
 import { parseExtRef, resolveExtLocalIdForLabel } from "$lib/external-data/ids";
 import { decodePlotUrl } from "$lib/utils/plot-url";
+import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
 import { getParticleLabel } from "$lib/utils/particle-label";
 import { loadExternalCalculationResult } from "$lib/utils/external-plot-series";
 import { getService } from "$lib/wasm/loader";
@@ -76,8 +77,12 @@ export function setupPlotUrlRestore(
       entityState.selectProgram(decoded.programId);
     }
 
-    if (decoded.stpUnit) {
+    // Prefer an explicit URL unit; otherwise inherit the shared override carried
+    // from the calculator across in-app navigation (no browser storage).
+    if (params.has("sunit") || params.has("stp_unit")) {
       plotState.setStpUnit(decoded.stpUnit);
+    } else if (stpOutputUnit.value !== null) {
+      plotState.setStpUnit(stpOutputUnit.value);
     }
     plotState.setAxisScale("x", decoded.xLog);
     plotState.setAxisScale("y", decoded.yLog);

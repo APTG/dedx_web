@@ -220,6 +220,10 @@ export interface CalculatorUrlState {
 
   /** Energy unit anchor selection (`uanchor=` URL param) when explicitly present and valid. */
   energyAnchor?: EnergyUnit;
+
+  /** Stopping-power output unit token (`sunit=`), present only when the user
+   *  has made an explicit choice. Shared with the plot page. */
+  sunit?: string;
 }
 
 function isMasterUnit(s: string): s is EnergyUnit {
@@ -455,6 +459,12 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     params.set("uanchor", UNIT_TO_UANCHOR[state.energyAnchor]);
   }
 
+  // Stopping-power output unit — emitted only when the user made an explicit
+  // choice (omitted ⇒ default keV/µm, so pre-existing URLs are unchanged).
+  if (state.sunit) {
+    params.set("sunit", state.sunit);
+  }
+
   return params;
 }
 
@@ -545,6 +555,11 @@ export function resolveCalculatorState(
   const energyAnchor: EnergyUnit | undefined = isUanchorSlug(uanchorRaw)
     ? UANCHOR_TO_UNIT[uanchorRaw]
     : undefined;
+
+  // Stopping-power output unit token: passing it raw so the downstream decoder
+  // can treat an explicit but invalid parameter as a signal to fall back to the
+  // default (clearing any stale in-memory override).
+  const sunit = t.get("sunit") ?? undefined;
 
   const rows: CalculatorUrlRow[] = [];
   const energiesParam = t.get("energies");
@@ -791,6 +806,9 @@ export function resolveCalculatorState(
   }
   if (energyAnchor) {
     result.energyAnchor = energyAnchor;
+  }
+  if (sunit) {
+    result.sunit = sunit;
   }
   return result;
 }

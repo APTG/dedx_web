@@ -3,6 +3,7 @@ import type { EntityId } from "$lib/external-data/types";
 import { computeSeriesLabels } from "$lib/utils/series-labels";
 import { COLOR_PALETTE, PREVIEW_COLOR } from "$lib/utils/plot-utils";
 import { allocateColor, releaseColor } from "$lib/utils/series-labels";
+import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
 
 export interface PlotSeriesData {
   programId: EntityId;
@@ -129,6 +130,8 @@ export function createPlotState(): PlotState {
 
   function setStpUnit(unit: StpUnit): void {
     stpUnit = unit;
+    // Mirror to the shared override so the choice carries to the calculator.
+    stpOutputUnit.set(unit);
   }
 
   function setAxisScale(axis: "x" | "y", log: boolean): void {

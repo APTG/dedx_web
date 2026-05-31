@@ -12,6 +12,7 @@ import {
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 import { customCompounds } from "$lib/state/custom-compounds.svelte";
+import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
 import { buildExternalCompatibilityContext } from "$lib/state/external-compatibility";
 import { makeExternalEntityStore } from "./external-entity-fixtures";
 
@@ -32,6 +33,8 @@ describe("CalculatorState", () => {
     advancedOptions.value = {};
     // Reset advanced mode so tests start in Basic mode by default
     isAdvancedMode.value = false;
+    // Reset the shared stopping-power output unit override
+    stpOutputUnit.set(null);
   });
 
   it("initializes with one pre-filled row and correct stpDisplayUnit for water", () => {
@@ -113,6 +116,33 @@ describe("CalculatorState", () => {
     expect(airMaterial).toBeDefined();
     entitySelection.selectMaterial(airMaterial!.id);
     expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
+  });
+
+  it("an explicit output unit overrides the aggregate-state default", () => {
+    const airMaterial = entitySelection.availableMaterials.find((m) => m.name === "Air");
+    entitySelection.selectMaterial(airMaterial!.id);
+    expect(calcState.stpDisplayUnit).toBe("MeV·cm²/g");
+
+    calcState.setStpDisplayUnit("MeV/cm");
+    expect(calcState.stpDisplayUnit).toBe("MeV/cm");
+  });
+
+  it("re-renders STP cells in the chosen unit without recalculating", async () => {
+    // Water (condensed, ρ=1): default keV/µm = mass/10; MeV·cm²/g = raw mass.
+    calcState.updateRowText(0, "100");
+    await calcState.triggerCalculation();
+    calcState.flushCalculation();
+    calcState.flushCalculation();
+    await Promise.resolve();
+
+    const kevUm = calcState.rows[0]!.stoppingPower;
+    expect(kevUm).not.toBeNull();
+
+    calcState.setStpDisplayUnit("MeV·cm²/g");
+    const massStp = calcState.rows[0]!.stoppingPower;
+    expect(massStp).not.toBeNull();
+    // ρ(water)=1 ⇒ keV/µm value is exactly the mass value / 10.
+    expect(kevUm!).toBeCloseTo(massStp! / 10, 9);
   });
 
   it("handles empty rows correctly", () => {

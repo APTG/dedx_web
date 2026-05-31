@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-05-30 — **Stage 8 / calculator**: Add a stopping-power **output unit** selector to the Advanced calculator (Issue #670). The STP column header is now a dropdown (`STP (keV/µm) ▾` single-entity / `Stopping Power (…) ▾` multi-entity) offering `keV/µm` · `MeV/cm` · `MeV·cm²/g`, with a desktop popover and a mobile bottom sheet (≥44 px rows). The choice is encoded in the shared `sunit=` URL param (single source of truth for both calculator and plot; plot migrated off `stp_unit=` but still reads it as a legacy fallback) and carries across in-app navigation via shared in-memory state — **no `localStorage`** (per request). Single-entity STP conversion moved to render time (engine stores raw mass `MeV·cm²/g`; `getStpDisplayUnit()` honours an explicit override over the aggregate-state default), so a unit switch re-renders without recalculating. Unknown/missing `sunit` falls back to `keV/µm`. Added unit, component, and Playwright tests. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-05-30-stp-output-units.md)
+
 - 2026-05-30 — **WASM / Testing**: Bumped `libdedx` submodule to latest `main` and rebuilt WASM. Added E2E tests (`tests/e2e/pr667-water.spec.ts`) for custom compounds using analytical programs, validating Custom Water against Predefined Liquid Water (ID 276). Also verified table stability when dynamically adding and removing energies. (Antigravity via opencode)
   - **Log:** [log](docs/ai-logs/2026-05-30-pr667-custom-water-stability.md)
 

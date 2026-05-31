@@ -364,8 +364,25 @@ Per-cell values **auto-scale** to an appropriate prefix regardless of `runit=`
 | `mev-cm`    | MeV/cm        |
 | `mev-cm2-g` | MeV·cm²/g     |
 
-Sets (1) the Stopping Power column header, (2) the unit for unsuffixed rows in
-`lookups=` when `calc=inverse-stp`.
+`sunit` is the **single source of truth** for the stopping-power unit in both
+roles, shared by the calculator and the plot page (issue #670):
+
+1. **Output display** (Energy → mode, multi-entity, future Range → energy+STP):
+   sets the Stopping Power column header and converts every STP cell. The
+   control is the column header dropdown.
+2. **Input anchor** (`calc=inverse-stp`): the unit for unsuffixed rows in
+   `lookups=`.
+
+Encoding rules:
+
+- Emitted **only when the user has made an explicit choice**. Absent ⇒ the
+  aggregate-state default above, so pre-existing URLs render unchanged.
+- An unknown / unparseable token falls back to `kev-um` (never throws).
+- The plot page reads `sunit` first and falls back to the legacy `stp_unit=`
+  for older shared plot links; it now writes `sunit=`.
+- Persistence is the URL only (no `localStorage`). The choice also carries
+  across in-app navigation between the calculator and plot via shared
+  in-memory state.
 
 ### 3.10 `qshow` — Quantity Display Toggle (replaces v1 `qfocus=`)
 
@@ -425,12 +442,12 @@ Primary persistence is `localStorage`; the URL param is an optional supplement.
 
 ### 3.14 Plot Parameters (unchanged from v1)
 
-| Param      | Example           | Default         | Notes                                                        |
-| ---------- | ----------------- | --------------- | ------------------------------------------------------------ |
-| `series`   | `9.1.276,2.6.276` | —               | Committed series: `programId.particleId.materialId` triplets |
-| `stp_unit` | `kev-um`          | `kev-um` (omit) | Plot stopping-power display unit                             |
-| `xscale`   | `log`             | `log` (omit)    | X-axis scale                                                 |
-| `yscale`   | `log`             | `log` (omit)    | Y-axis scale                                                 |
+| Param    | Example           | Default         | Notes                                                                                                                 |
+| -------- | ----------------- | --------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `series` | `9.1.276,2.6.276` | —               | Committed series: `programId.particleId.materialId` triplets                                                          |
+| `sunit`  | `kev-um`          | `kev-um` (omit) | Plot stopping-power display unit — shared with the calculator (§3.9). `stp_unit=` is still read as a legacy fallback. |
+| `xscale` | `log`             | `log` (omit)    | X-axis scale                                                                                                          |
+| `yscale` | `log`             | `log` (omit)    | Y-axis scale                                                                                                          |
 
 Auto-select is resolved to a numeric program ID before encoding into `series`.
 The literal `"auto"` never appears inside a `series` triplet.

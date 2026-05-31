@@ -9,6 +9,8 @@ import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
 import type { MultiProgramState } from "$lib/state/multi-program.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
+import { stpUnitToToken } from "$lib/utils/stp-unit-codec";
 import type { ExternalSourceDescriptor, EntityId } from "$lib/external-data/types";
 
 /**
@@ -146,6 +148,8 @@ export function setupCalculatorUrlSync(
       ...(inverseModeState?.imode === "stp" && inverseLookupState?.stpBranchState === "both"
         ? { istpBranchState: "both" as const }
         : {}),
+      // Encode the stopping-power output unit only when explicitly chosen.
+      ...(stpOutputUnit.value !== null ? { sunit: stpUnitToToken(stpOutputUnit.value) } : {}),
     };
     // Use calculatorUrlQueryString so `:` and `,` are written literally
     // (RFC 3986 §3.4 permits them unencoded in the query component).

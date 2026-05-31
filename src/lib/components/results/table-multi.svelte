@@ -3,6 +3,8 @@
   import { LibdedxError, type CalculationResult } from "$lib/wasm/types";
   import type { CalculatorState } from "$lib/state/calculator.svelte";
   import type { EntityId } from "$lib/external-data/types";
+  import type { StpUnit } from "$lib/wasm/types";
+  import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
 
   interface Props {
     calcState: CalculatorState;
@@ -43,6 +45,24 @@
 <div class="overflow-x-auto" data-testid="table-multi">
   <table class="w-full min-w-[420px] text-sm">
     <thead class="sticky top-0 bg-background">
+      {#if quantityFocus === "stp"}
+        <tr>
+          <th
+            class="sticky left-0 z-20 bg-background border-b border-r shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)]"
+          ></th>
+          <th
+            colspan={entityIds.length}
+            class="relative px-2 py-1 text-center font-semibold bg-muted/50 border-b border-l"
+          >
+            <StpUnitHeaderMenu
+              selected={calcState.stpDisplayUnit}
+              onSelect={(u: StpUnit) => calcState.setStpDisplayUnit(u)}
+              label="Stopping Power"
+              testid="multi-stp-unit"
+            />
+          </th>
+        </tr>
+      {/if}
       <tr>
         <th
           scope="col"

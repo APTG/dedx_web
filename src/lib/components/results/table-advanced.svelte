@@ -7,6 +7,8 @@
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
+  import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
+  import type { StpUnit } from "$lib/wasm/types";
 
   const RANGE_ANCHOR_OPTIONS = [
     { value: "nm", label: "nm", tooltip: "nanometres" },
@@ -50,6 +52,25 @@
   // Energy → mode: rows and derived state
   const energyRows = $derived(calcState?.rows ?? []);
   const showMevNuclColumn = $derived(calcState?.isPerRowMode ?? false);
+
+  // Tint STP cells once when the output unit changes, to signal the switch.
+  let stpFlash = $state(false);
+  let prevStpUnit: StpUnit | null = null;
+  $effect(() => {
+    const u = calcState?.stpDisplayUnit;
+    if (u === undefined) return;
+    if (prevStpUnit !== null && prevStpUnit !== u) {
+      stpFlash = true;
+      const t = setTimeout(() => (stpFlash = false), 600);
+      prevStpUnit = u;
+      return () => clearTimeout(t);
+    }
+    prevStpUnit = u;
+  });
+
+  function selectStpUnit(unit: StpUnit) {
+    calcState?.setStpDisplayUnit(unit);
+  }
 
   // Energy anchor options (energy mode only)
   const energyAnchorOptions = $derived.by(() => {
@@ -228,9 +249,17 @@
                 data-testid="mev-nucl-column-header">→ MeV/nucl</th
               >
             {/if}
-            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-              >STP ({calcState.stpDisplayUnit})</th
+            <th
+              scope="col"
+              class="relative px-2 py-2 font-medium whitespace-nowrap text-right border-b"
             >
+              <StpUnitHeaderMenu
+                selected={calcState.stpDisplayUnit}
+                onSelect={selectStpUnit}
+                label="STP"
+                testid="advanced-stp-unit"
+              />
+            </th>
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
               >CSDA Range</th
             >
@@ -287,7 +316,9 @@
 
               <!-- STP result -->
               <td
-                class={`px-2 py-2 text-right whitespace-nowrap font-mono ${cellClass(row.status)}`}
+                class={`px-2 py-2 text-right whitespace-nowrap font-mono transition-colors duration-300 ${
+                  stpFlash ? "bg-amber-100 dark:bg-amber-900/40" : ""
+                } ${cellClass(row.status)}`}
                 data-testid="advanced-stp-cell-{i}"
               >
                 {#if row.status === "out-of-range"}

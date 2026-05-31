@@ -4,7 +4,8 @@
             - columnheader "Drag handle"
             - columnheader "#"
             - columnheader "Energy (MeV)"
-            - columnheader "STP (keV/µm)"
+            - columnheader "STP (keV/µm)":
+                - button "STP (keV/µm)"
             - columnheader "CSDA Range"
             - columnheader "Delete row"
     - rowgroup:

@@ -55,7 +55,7 @@ describe("encodePlotUrl", () => {
     expect(params.get("material")).toBe("276");
     expect(params.get("program")).toBe("auto");
     expect(params.get("series")).toBe("2.1.276,9.6.276");
-    expect(params.get("stp_unit")).toBe("kev-um");
+    expect(params.get("sunit")).toBe("kev-um");
     expect(params.get("xscale")).toBe("log");
     expect(params.get("yscale")).toBe("log");
   });
@@ -72,7 +72,7 @@ describe("encodePlotUrl", () => {
     };
     const params = encodePlotUrl(input);
     expect(params.get("program")).toBe("2");
-    expect(params.get("stp_unit")).toBe("mev-cm");
+    expect(params.get("sunit")).toBe("mev-cm");
     expect(params.get("xscale")).toBe("lin");
     expect(params.get("yscale")).toBe("log");
   });
@@ -151,6 +151,21 @@ describe("decodePlotUrl", () => {
     const sp = new URLSearchParams("program=2");
     const decoded = decodePlotUrl(sp);
     expect(decoded.programId).toBe(2);
+  });
+
+  it("decodes the shared sunit param", () => {
+    const decoded = decodePlotUrl(new URLSearchParams("program=2&sunit=mev-cm2-g"));
+    expect(decoded.stpUnit).toBe("MeV·cm²/g");
+  });
+
+  it("falls back to the legacy stp_unit param", () => {
+    const decoded = decodePlotUrl(new URLSearchParams("program=2&stp_unit=mev-cm"));
+    expect(decoded.stpUnit).toBe("MeV/cm");
+  });
+
+  it("prefers sunit over a legacy stp_unit when both are present", () => {
+    const decoded = decodePlotUrl(new URLSearchParams("program=2&sunit=mev-cm2-g&stp_unit=kev-um"));
+    expect(decoded.stpUnit).toBe("MeV·cm²/g");
   });
 
   it("decodes inv_stp_branch=both", () => {
