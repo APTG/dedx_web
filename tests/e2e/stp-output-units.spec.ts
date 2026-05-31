@@ -20,7 +20,7 @@ async function checkWasmPresent(page: Page): Promise<boolean> {
 
 async function gotoAdvancedSingleEntity(page: Page): Promise<void> {
   // particle=1 (proton), material=276 (water, ρ=1), program=2 (PSTAR).
-  await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
+  page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced");
   await page.waitForFunction(
     () => new URLSearchParams(window.location.search).get("mode") === "advanced",
     { timeout: 15000 },
@@ -48,18 +48,39 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
     await expect
       .poll(async () => parseFloat((await stpCell.textContent()) ?? ""), { timeout: 8000 })
       .toBeGreaterThan(0);
+    const kevUmValue = parseFloat((await stpCell.textContent()) ?? "");
 
     // Default header reads keV/µm.
     const trigger = page.getByTestId("advanced-stp-unit-trigger");
     await expect(trigger).toContainText("keV/µm");
+    await expect(trigger).toBeVisible();
+    await trigger.evaluate(el => el.scrollIntoView({block: 'center'}));
+    await trigger.click();
+    const option = page.getByTestId("advanced-stp-unit-option-MeV/cm");
+    await expect(option).toBeVisible();
+    await option.click();
 
-    // TEMP isolation (#670): the click + menu interaction is removed for this
-    // round. If shard 3 is green, fill+compute+header-render is fine and the
-    // failure is the menu click; if still red, it's the compute/render path.
+    // Header now reads MeV/cm; for water (ρ=1) MeV/cm = 10 × keV/µm.
+    await expect(trigger).toContainText("MeV/cm");
+    await expect
+      .poll(async () => parseFloat((await stpCell.textContent()) ?? "") / kevUmValue, {
+        timeout: 5000,
+      })
+      .toBeCloseTo(10, 1);
+
+    // URL carries the shared param.
+    await expect
+      .poll(() => new URLSearchParams(new URL(page.url()).search).get("sunit"))
+      .toBe("mev-cm");
+
+    // Reload — the unit survives via the URL (no localStorage).
+    await page.reload();
+    await expect(page.getByTestId("advanced-combined-table")).toBeVisible({ timeout: 15000 });
+    await expect(page.getByTestId("advanced-stp-unit-trigger")).toContainText("MeV/cm");
   });
 
   test("unknown sunit token falls back to keV/µm without error", async ({ page }) => {
-    await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced&sunit=bogus");
+    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/calculator?particle=1&material=276&program=2&mode=advanced&sunit=bogus");
     await expect(page.getByTestId("advanced-combined-table")).toBeVisible({ timeout: 15000 });
     await expect(page.getByTestId("advanced-stp-unit-trigger")).toContainText("keV/µm");
   });
@@ -67,7 +88,7 @@ test.describe("STP output units — Advanced single-entity (Energy → mode)", (
 
 test.describe("STP output units — shared with the Plot page", () => {
   test("plot honours the shared sunit param", async ({ page }) => {
-    await page.goto("/plot?sunit=mev-cm2-g");
+    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/plot?sunit=mev-cm2-g");
     // The stopping-power radio group reflects the shared unit once the page is past
     // its loading skeleton. Only the unit param is needed — no series to restore.
     const radio = page.locator('input[name="stp-unit"][value="MeV·cm²/g"]');
@@ -75,7 +96,7 @@ test.describe("STP output units — shared with the Plot page", () => {
   });
 
   test("legacy stp_unit param still selects the unit on the plot", async ({ page }) => {
-    await page.goto("/plot?stp_unit=mev-cm");
+    page.on("pageerror", e => console.log("PAGEERROR", e.message)); await page.goto("/plot?stp_unit=mev-cm");
     const radio = page.locator('input[name="stp-unit"][value="MeV/cm"]');
     await expect(radio).toBeChecked({ timeout: 20000 });
   });
@@ -83,10 +104,6 @@ test.describe("STP output units — shared with the Plot page", () => {
 
 test.describe("STP output units — multi-entity (compare across programs)", () => {
   test("one unit governs every program column", async ({ page }) => {
-    test.skip(
-      true,
-      "TEMP isolation (#670): determining whether menu interaction is the shard-3 failure",
-    );
     const hasWasm = await checkWasmPresent(page);
     if (!hasWasm) {
       test.skip(true, "WASM binary absent — skipping computation test");
@@ -96,7 +113,7 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
     // PSTAR (2) is the reference/default column (first in the list) and always
     // yields a valid proton/water value; 9 is a second program for comparison.
     await page.goto(
-      "/calculator?particle=1&material=276&mode=advanced&programs=2%2C9&energies=100",
+      "/calculator?particle=1&material=276&mode=advanced&across=programs&programs=2%2C9&energies=100",
     );
     await expect(page.getByTestId("result-table")).toBeVisible({ timeout: 15000 });
 
@@ -111,6 +128,7 @@ test.describe("STP output units — multi-entity (compare across programs)", () 
       .toBeGreaterThan(0);
     const before = parseFloat((await refCell.textContent()) ?? "");
 
+    await trigger.evaluate(el => el.scrollIntoView({block: 'center'}));
     await trigger.click();
     const massOption = page.getByTestId("multi-stp-unit-option-MeV·cm²/g");
     await expect(massOption).toBeVisible();
@@ -129,10 +147,6 @@ test.describe("STP output units — mobile bottom sheet", () => {
   test.use({ viewport: { width: 412, height: 915 } });
 
   test("tapping the header opens a bottom sheet that updates the column", async ({ page }) => {
-    test.skip(
-      true,
-      "TEMP isolation (#670): determining whether menu interaction is the shard-3 failure",
-    );
     const hasWasm = await checkWasmPresent(page);
     if (!hasWasm) {
       test.skip(true, "WASM binary absent — skipping computation test");

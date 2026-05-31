@@ -45,7 +45,7 @@
   }
 </script>
 
-<thead class="sticky top-0 bg-background">
+<thead class="sticky top-0 z-10 bg-background">
   <tr>
     <th
       scope="col"
