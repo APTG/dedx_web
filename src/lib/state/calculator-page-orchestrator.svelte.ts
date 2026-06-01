@@ -417,7 +417,11 @@ export class CalculatorPageOrchestrator {
         );
         const validProgramIds = multiParams.parsedProgramEntityIds.filter((id) => {
           if (typeof id === "number") return availableBuiltinIds.has(id);
-          if (typeof id === "string") return availableExtIds.has(id);
+          if (typeof id === "string") {
+            // Keep syntactically valid external IDs from URL even before external
+            // compatibility availability finishes populating after reload.
+            return availableExtIds.has(id) || parseExtRef(id) !== null;
+          }
           return false;
         });
 
