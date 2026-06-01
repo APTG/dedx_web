@@ -17,6 +17,8 @@ export interface RangeRow {
   message?: string;
   /** Result energy in MeV/nucl (after inverse lookup) */
   energyMevNucl: number | null;
+  /** Stopping power at the resolved energy, in MeV·cm²/g (forward calc). */
+  stoppingPower: number | null;
 }
 
 /**
@@ -34,6 +36,9 @@ export interface InverseStpRow {
   /** Result energies in MeV/nucl */
   energyLowMevNucl: number | null;
   energyHighMevNucl: number | null;
+  /** CSDA range (cm) at each branch energy, from a forward calc. */
+  rangeLowCm: number | null;
+  rangeHighCm: number | null;
 }
 
 /**
@@ -212,6 +217,7 @@ export function createInverseLookupState(
     unitFromSuffix: false,
     status: "empty",
     energyMevNucl: null,
+    stoppingPower: null,
   });
   stpRows.push({
     id: ++stpRowIdCounter,
@@ -221,6 +227,8 @@ export function createInverseLookupState(
     status: "empty",
     energyLowMevNucl: null,
     energyHighMevNucl: null,
+    rangeLowCm: null,
+    rangeHighCm: null,
   });
 
   function validateRangeRow(row: RangeRow): void {
@@ -232,6 +240,7 @@ export function createInverseLookupState(
       row.unitFromSuffix = false;
       delete row.message;
       row.energyMevNucl = null;
+      row.stoppingPower = null;
       return;
     }
 
@@ -262,6 +271,7 @@ export function createInverseLookupState(
       }
       row.value = null;
       row.energyMevNucl = null;
+      row.stoppingPower = null;
       return;
     }
 
@@ -274,6 +284,7 @@ export function createInverseLookupState(
           row.message = `Unrecognized unit '${suffix}'`;
           row.value = null;
           row.energyMevNucl = null;
+          row.stoppingPower = null;
           return;
         }
       }
@@ -294,6 +305,8 @@ export function createInverseLookupState(
       delete row.message;
       row.energyLowMevNucl = null;
       row.energyHighMevNucl = null;
+      row.rangeLowCm = null;
+      row.rangeHighCm = null;
       return;
     }
 
@@ -312,6 +325,8 @@ export function createInverseLookupState(
       row.value = null;
       row.energyLowMevNucl = null;
       row.energyHighMevNucl = null;
+      row.rangeLowCm = null;
+      row.rangeHighCm = null;
       return;
     }
 
@@ -388,6 +403,7 @@ export function createInverseLookupState(
         unitFromSuffix: false,
         status: "empty",
         energyMevNucl: null,
+        stoppingPower: null,
       };
       rangeRows.push(newRow);
     },
@@ -416,6 +432,8 @@ export function createInverseLookupState(
         status: "empty",
         energyLowMevNucl: null,
         energyHighMevNucl: null,
+        rangeLowCm: null,
+        rangeHighCm: null,
       };
       stpRows.push(newRow);
     },
@@ -437,6 +455,7 @@ export function createInverseLookupState(
         unitFromSuffix: false,
         status: "empty",
         energyMevNucl: null,
+        stoppingPower: null,
       });
       stpRows.length = 0;
       stpRows.push({
@@ -447,6 +466,8 @@ export function createInverseLookupState(
         status: "empty",
         energyLowMevNucl: null,
         energyHighMevNucl: null,
+        rangeLowCm: null,
+        rangeHighCm: null,
       });
       meta.rangeMasterUnit = "cm";
       meta.stpMasterUnit = "kev-um";

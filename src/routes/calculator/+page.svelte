@@ -342,7 +342,19 @@
               </p>
             </div>
           {:else}
-            <TableAdvanced mode="range" {inverseLookupState} />
+            {@const rangeSelMat = es.selectedMaterial}
+            {@const rangeIsCustom = isCustomMaterial(
+              rangeSelMat && "isGasByDefault" in rangeSelMat ? rangeSelMat : null,
+            )}
+            <TableAdvanced
+              mode="range"
+              {inverseLookupState}
+              stpDisplayUnit={calcState.stpDisplayUnit}
+              onSelectStpUnit={(u) => calcState.setStpDisplayUnit(u)}
+              density={(rangeIsCustom ? undefined : advancedOptions.value.densityOverride) ??
+                rangeSelMat?.density ??
+                1}
+            />
             {#if es.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}

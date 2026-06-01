@@ -76,6 +76,17 @@ describe("setupInverseRangeCalculation", () => {
     expect(inverseLookupState.rangeRows[0]!.energyMevNucl).toBeCloseTo(7.718 * 13, 3);
   });
 
+  it("populates stoppingPower from a forward calc at the resolved energy (#673)", async () => {
+    await vi.runAllTimersAsync();
+
+    const row = inverseLookupState.rangeRows[0]!;
+    // Resolved energy = 7.718 × 13 ≈ 100.33 MeV/nucl; the mock forward calc
+    // returns stoppingPowers = log(energy + 1) in MeV·cm²/g.
+    const energy = 7.718 * 13;
+    expect(row.stoppingPower).not.toBeNull();
+    expect(row.stoppingPower!).toBeCloseTo(Math.log(energy + 1), 5);
+  });
+
   it("converts length units before calling getInverseCsda", async () => {
     const spy = vi.spyOn(service, "getInverseCsda");
     inverseLookupState.updateRangeRowText(0, "77.18 mm");
@@ -256,6 +267,30 @@ describe("setupInverseStpCalculation", () => {
     // Both branches returned the same energy → low branch is nulled out
     expect(row.energyLowMevNucl).toBeNull();
     expect(row.energyHighMevNucl).not.toBeNull();
+  });
+
+  it("populates rangeLowCm and rangeHighCm via a forward calc at each branch (#673)", async () => {
+    await vi.runAllTimersAsync();
+
+    const row = inverseLookupState.stpRows[0]!;
+    // Mock forward csdaRanges = energy^1.5 (g/cm²); density 1 → cm unchanged.
+    // Low energy < high energy, so the low-branch range is the shorter one.
+    expect(row.rangeLowCm).not.toBeNull();
+    expect(row.rangeHighCm).not.toBeNull();
+    expect(row.rangeHighCm!).toBeGreaterThan(row.rangeLowCm!);
+    expect(row.rangeHighCm!).toBeCloseTo(Math.pow(row.energyHighMevNucl!, 1.5), 3);
+  });
+
+  it("nulls rangeLowCm when the two branches collapse to a single solution (#673)", async () => {
+    vi.spyOn(service, "getInverseStp").mockImplementation((params) =>
+      params.stoppingPowers.map((stp) => ({ energy: stp * 5, stoppingPower: stp })),
+    );
+
+    await vi.runAllTimersAsync();
+
+    const row = inverseLookupState.stpRows[0]!;
+    expect(row.rangeLowCm).toBeNull();
+    expect(row.rangeHighCm).not.toBeNull();
   });
 
   it("marks rows as no-solution when both branches return errors", async () => {

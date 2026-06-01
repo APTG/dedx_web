@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
-  import { formatEnergy } from "./value-formatters";
+  import { formatEnergy, formatRangeCm } from "./value-formatters";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
 
   const STP_ANCHOR_OPTIONS = [
@@ -114,6 +114,13 @@
           >
             → Energy{showLowEColumn ? " (high-E)" : ""}
           </th>
+          <th
+            scope="col"
+            class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
+            data-testid="col-hi-range"
+          >
+            → Range{showLowEColumn ? " (high-E)" : ""}
+          </th>
           {#if showLowEColumn}
             <th
               scope="col"
@@ -121,6 +128,13 @@
               data-testid="col-lo-e"
             >
               → Energy (low-E)
+            </th>
+            <th
+              scope="col"
+              class={`px-2 py-2 font-medium whitespace-nowrap text-right border-b transition-colors duration-500 ${loEColumnJustRevealed ? "bg-amber-100/70 dark:bg-amber-900/30" : ""}`}
+              data-testid="col-lo-range"
+            >
+              → Range (low-E)
             </th>
           {/if}
           <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Actions"></th>
@@ -173,7 +187,19 @@
               {/if}
             </td>
 
-            <!-- Low-E result (only when column visible) -->
+            <!-- High-E range -->
+            <td
+              class="px-2 py-2 text-right whitespace-nowrap font-mono"
+              data-testid="inverse-stp-result-range-high-{i}"
+            >
+              {#if row.status === "valid" && row.rangeHighCm !== null}
+                <span class="text-sm font-mono">{formatRangeCm(row.rangeHighCm)}</span>
+              {:else}
+                <span class="text-muted-foreground">—</span>
+              {/if}
+            </td>
+
+            <!-- Low-E result + range (only when column visible) -->
             {#if showLowEColumn}
               <td
                 class={`px-2 py-2 text-right whitespace-nowrap font-mono transition-colors duration-500 ${loEColumnJustRevealed ? "bg-amber-100/70 dark:bg-amber-900/30" : ""}`}
@@ -181,6 +207,16 @@
               >
                 {#if row.status === "valid" && row.energyLowMevNucl !== null}
                   <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
+                {:else}
+                  <span class="text-muted-foreground">—</span>
+                {/if}
+              </td>
+              <td
+                class={`px-2 py-2 text-right whitespace-nowrap font-mono transition-colors duration-500 ${loEColumnJustRevealed ? "bg-amber-100/70 dark:bg-amber-900/30" : ""}`}
+                data-testid="inverse-stp-result-range-low-{i}"
+              >
+                {#if row.status === "valid" && row.rangeLowCm !== null}
+                  <span class="text-sm font-mono">{formatRangeCm(row.rangeLowCm)}</span>
                 {:else}
                   <span class="text-muted-foreground">—</span>
                 {/if}

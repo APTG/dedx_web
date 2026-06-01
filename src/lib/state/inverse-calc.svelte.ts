@@ -119,14 +119,49 @@ export function setupInverseRangeCalculation(
             : [];
 
         let resultIdx = 0;
+        // Rows that resolved to an energy, paired with that energy — used for a
+        // forward calc to recover the stopping power at the resolved energy.
+        const resolved: { row: (typeof inverseState.rangeRows)[number]; energy: number }[] = [];
         for (const r of inverseState.rangeRows) {
           if (r.status === "valid" || r.status === "out-of-range") {
             const result = results[resultIdx++];
             if (result instanceof Error || result === undefined) {
               r.energyMevNucl = null;
+              r.stoppingPower = null;
             } else {
               r.energyMevNucl = result.energy;
+              r.stoppingPower = null;
+              resolved.push({ row: r, energy: result.energy });
             }
+          }
+        }
+
+        // Second output column (#673): stopping power at each resolved energy.
+        // The inverse-CSDA call only echoes the input range, so we run the
+        // forward calc at the resolved energies to obtain the STP.
+        if (resolved.length > 0) {
+          try {
+            const energies = resolved.map((x) => x.energy);
+            const forward = activeCustomMaterial
+              ? service.calculateCustomCompound({
+                  programId,
+                  particleId,
+                  elements: customMaterialElementsForWasm(activeCustomMaterial),
+                  density,
+                  iValue: activeCustomMaterial.iValue,
+                  energies,
+                })
+              : typeof materialId === "number"
+                ? service.calculate(programId, particleId, materialId, energies, advOptsSnapshot)
+                : null;
+            if (forward) {
+              for (let i = 0; i < resolved.length; i++) {
+                const stp = forward.stoppingPowers[i];
+                resolved[i]!.row.stoppingPower = typeof stp === "number" ? stp : null;
+              }
+            }
+          } catch {
+            for (const x of resolved) x.row.stoppingPower = null;
           }
         }
       } catch {
@@ -135,6 +170,7 @@ export function setupInverseRangeCalculation(
             r.status = "error";
             r.message = "Inverse range lookup failed";
             r.energyMevNucl = null;
+            r.stoppingPower = null;
           }
         }
       }
@@ -263,10 +299,17 @@ export function setupInverseStpCalculation(
             : [];
 
         let resultIdx = 0;
+        // Resolved branch energies, paired with the row + branch — used for a
+        // forward calc to recover the CSDA range at each branch energy (#673).
+        const resolvedLow: { row: (typeof inverseState.stpRows)[number]; energy: number }[] = [];
+        const resolvedHigh: { row: (typeof inverseState.stpRows)[number]; energy: number }[] = [];
         for (const r of inverseState.stpRows) {
           if (r.status === "valid" || r.status === "no-solution") {
             const lowResult = lowResults[resultIdx];
             const highResult = highResults[resultIdx];
+
+            r.rangeLowCm = null;
+            r.rangeHighCm = null;
 
             if (lowResult instanceof Error && highResult instanceof Error) {
               r.status = "no-solution";
@@ -287,9 +330,58 @@ export function setupInverseStpCalculation(
                 Math.abs(lowE - highE) / Math.max(Math.abs(highE), 1e-300) < 1e-6;
               r.energyLowMevNucl = isSingleSolution ? null : lowE;
               r.energyHighMevNucl = highE;
+              if (r.energyLowMevNucl !== null)
+                resolvedLow.push({ row: r, energy: r.energyLowMevNucl });
+              if (r.energyHighMevNucl !== null)
+                resolvedHigh.push({ row: r, energy: r.energyHighMevNucl });
             }
 
             resultIdx++;
+          }
+        }
+
+        // Second output (#673): CSDA range at each resolved branch energy. The
+        // inverse-STP call only echoes the input STP, so run the forward calc at
+        // the resolved energies and convert g/cm² → cm via the material density.
+        if (density > 0) {
+          const runForward = (energies: number[]) =>
+            activeCustomMaterial
+              ? service.calculateCustomCompound({
+                  programId,
+                  particleId,
+                  elements: customMaterialElementsForWasm(activeCustomMaterial),
+                  density,
+                  iValue: activeCustomMaterial.iValue,
+                  energies,
+                })
+              : typeof materialId === "number"
+                ? service.calculate(programId, particleId, materialId, energies, advOptsSnapshot)
+                : null;
+
+          for (const [resolved, assign] of [
+            [
+              resolvedLow,
+              (row: (typeof inverseState.stpRows)[number], cm: number | null) =>
+                (row.rangeLowCm = cm),
+            ],
+            [
+              resolvedHigh,
+              (row: (typeof inverseState.stpRows)[number], cm: number | null) =>
+                (row.rangeHighCm = cm),
+            ],
+          ] as const) {
+            if (resolved.length === 0) continue;
+            try {
+              const forward = runForward(resolved.map((x) => x.energy));
+              if (forward) {
+                for (let i = 0; i < resolved.length; i++) {
+                  const gcm2 = forward.csdaRanges[i];
+                  assign(resolved[i]!.row, typeof gcm2 === "number" ? gcm2 / density : null);
+                }
+              }
+            } catch {
+              for (const x of resolved) assign(x.row, null);
+            }
           }
         }
       } catch {
@@ -299,6 +391,8 @@ export function setupInverseStpCalculation(
             r.message = "Inverse STP lookup failed";
             r.energyLowMevNucl = null;
             r.energyHighMevNucl = null;
+            r.rangeLowCm = null;
+            r.rangeHighCm = null;
           }
         }
       }

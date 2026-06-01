@@ -4,7 +4,7 @@
   import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
   import type { EnergyUnit } from "$lib/wasm/types";
   import { formatStpValue, formatRangeCm, formatEnergy } from "./value-formatters";
-  import { formatSigFigs } from "$lib/utils/unit-conversions";
+  import { formatSigFigs, convertStpMass } from "$lib/utils/unit-conversions";
   import { getAvailableEnergyUnits } from "$lib/utils/available-units";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
   import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
@@ -34,6 +34,11 @@
   type RangeModeProps = {
     mode: "range";
     inverseLookupState: InverseLookupState;
+    /** Stopping-power display unit for the → STP column (shared with the forward tab). */
+    stpDisplayUnit: StpUnit;
+    onSelectStpUnit: (unit: StpUnit) => void;
+    /** Effective material density (g/cm³) for native MeV·cm²/g → display-unit conversion. */
+    density: number;
     class?: string;
   };
 
@@ -86,8 +91,10 @@
     }));
   });
 
-  // Range → mode: rows
+  // Range → mode: rows + STP output unit
   const rangeRows = $derived(inverseLookupState?.rangeRows ?? []);
+  const rangeStpUnit = $derived(!isEnergy ? (props as RangeModeProps).stpDisplayUnit : "keV/µm");
+  const rangeDensity = $derived(!isEnergy ? (props as RangeModeProps).density : 1);
 
   function inputClass(status: string): string {
     const isError = status === "invalid" || status === "out-of-range" || status === "error";
@@ -417,6 +424,17 @@
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
               >→ Energy</th
             >
+            <th
+              scope="col"
+              class="relative px-2 py-2 font-medium whitespace-nowrap text-right border-b"
+            >
+              <StpUnitHeaderMenu
+                selected={rangeStpUnit}
+                onSelect={(u) => (props as RangeModeProps).onSelectStpUnit(u)}
+                label="→ STP"
+                testid="inverse-range-stp-unit"
+              />
+            </th>
             <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Delete row"></th>
           </tr>
         </thead>
@@ -466,6 +484,21 @@
                   <span class="text-destructive text-xs">out of range</span>
                 {:else if row.status === "invalid" || row.status === "error"}
                   <span class="text-destructive text-xs">{row.message ?? "invalid"}</span>
+                {:else}
+                  —
+                {/if}
+              </td>
+
+              <!-- → STP result -->
+              <td
+                class="px-2 py-2 text-right whitespace-nowrap font-mono"
+                data-testid="inverse-range-stp-{i}"
+              >
+                {#if row.status === "valid" && row.stoppingPower !== null}
+                  {formatStpValue(
+                    convertStpMass(row.stoppingPower, rangeDensity, rangeStpUnit),
+                    rangeStpUnit,
+                  )}
                 {:else}
                   —
                 {/if}
