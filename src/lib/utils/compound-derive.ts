@@ -123,3 +123,87 @@ export function rescaleTo100(values: number[]): number[] {
   if (sum <= 0) return values;
   return values.map((v) => (v / sum) * 100);
 }
+
+export type DisplayFormula =
+  | { kind: "exact"; unicode: string; ascii: string; totalAtoms: number }
+  | { kind: "normalized"; unicode: string; ascii: string; multiplier: number }
+  | { kind: "none" };
+
+/**
+ * Derives a display formula for a compound. Uses a heuristic to detect
+ * if the compound is defined by a simple stoichiometry or is a complex
+ * mass fraction compound.
+ */
+export function deriveDisplayFormula(elements: CompoundElementEntry[]): DisplayFormula {
+  if (elements.length === 0) return { kind: "none" };
+
+  const MAX_K = 24;
+  const EPS = 1e-6;
+  const REL_TOL = 0.02;
+
+  const counts = elements.map((e) => e.atomCount);
+
+  // Guard against transient/invalid inputs (e.g. empty or mid-edit
+  // weight-fraction fields parse to 0). Non-positive or non-finite atom
+  // counts cannot form a meaningful formula and would otherwise produce
+  // nonsense (H₀) or NaN/Infinity ratios in the heuristic below.
+  if (counts.some((c) => !Number.isFinite(c) || c <= 0)) {
+    return { kind: "none" };
+  }
+
+  // 1. Exact check
+  let isExact = true;
+  for (const c of counts) {
+    if (Math.abs(c - Math.round(c)) > EPS) {
+      isExact = false;
+      break;
+    }
+  }
+
+  if (isExact) {
+    const exactElements = elements.map((e) => ({
+      ...e,
+      atomCount: Math.round(e.atomCount),
+    }));
+    const { unicode, ascii } = deriveFormulaString(exactElements);
+    return {
+      kind: "exact",
+      unicode,
+      ascii,
+      totalAtoms: deriveTotalAtoms(exactElements),
+    };
+  }
+
+  // 2. Integer-ratio search
+  const minCount = Math.min(...counts);
+  const ratios = counts.map((c) => c / minCount);
+
+  for (let k = 1; k <= MAX_K; k++) {
+    let allMatch = true;
+    for (const r of ratios) {
+      const scaled = r * k;
+      const rounded = Math.round(scaled);
+      if (Math.abs(scaled - rounded) > REL_TOL + 1e-9) {
+        allMatch = false;
+        break;
+      }
+    }
+
+    if (allMatch) {
+      const normElements = elements.map((e, i) => ({
+        ...e,
+        atomCount: Math.round(ratios[i]! * k),
+      }));
+      const { unicode, ascii } = deriveFormulaString(normElements);
+      return {
+        kind: "normalized",
+        unicode,
+        ascii,
+        multiplier: k,
+      };
+    }
+  }
+
+  // 3. Fallback
+  return { kind: "none" };
+}

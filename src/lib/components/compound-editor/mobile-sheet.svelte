@@ -8,6 +8,8 @@
   import RowActionSheet from "./row-action-sheet.svelte";
   import type { EditorController } from "./types";
 
+  import { computeAtomCounts } from "$lib/utils/element-data";
+
   interface Props {
     editor: EditorController;
     prefersReducedMotion: boolean;
@@ -23,6 +25,18 @@
 
   // Drives the test hook so Playwright can assert which screen is active.
   let activeScreen = $derived(picker ? "picker" : String(step));
+
+  let displayElements = $derived.by(() => {
+    if (editor.mode === "formula") return editor.formData.elements;
+
+    // In weight mode, derive atom counts from weight percentages
+    const wfs = editor.weightTexts.map((t, i) => ({
+      atomicNumber: editor.formData.elements[i]?.atomicNumber ?? 1,
+      weightFraction: (parseFloat(t) || 0) / 100,
+    }));
+
+    return computeAtomCounts(wfs) || editor.formData.elements;
+  });
 
   let sheetEl: HTMLElement | null = $state(null);
   // Older engines (iOS Safari < 17) overlay the keyboard rather than shrinking
@@ -424,18 +438,19 @@
             {/each}
           </div>
 
-          {#if editor.mode === "formula"}
-            <FormulaFooter
-              elements={editor.formData.elements}
-              iValueOverride={editor.formData.iValue}
-            />
-          {:else}
-            <SumTracker
-              values={editor.weightTexts.map((t) => parseFloat(t) || 0)}
-              symbols={editor.formData.elements.map((el) => editor.getLocalSymbol(el.atomicNumber))}
-              onRescale={() => editor.handleRescale()}
-            />
-          {/if}
+          <!-- FOOTER -->
+          <div class="mt-4 shrink-0 px-4 pb-4">
+            <FormulaFooter elements={displayElements} iValueOverride={editor.formData.iValue} />
+            {#if editor.mode === "weight"}
+              <SumTracker
+                values={editor.weightTexts.map((t) => parseFloat(t) || 0)}
+                symbols={editor.formData.elements.map((el) =>
+                  editor.getLocalSymbol(el.atomicNumber),
+                )}
+                onRescale={() => editor.handleRescale()}
+              />
+            {/if}
+          </div>
 
           <button
             type="button"

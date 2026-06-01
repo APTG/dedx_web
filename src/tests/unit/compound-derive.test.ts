@@ -5,6 +5,7 @@ import {
   deriveTotalAtoms,
   deriveBraggIValue,
   rescaleTo100,
+  deriveDisplayFormula,
 } from "$lib/utils/compound-derive";
 
 describe("compound-derive", () => {
@@ -75,6 +76,73 @@ describe("compound-derive", () => {
     test("renders fractional counts to 2 decimals", () => {
       const { ascii } = deriveFormulaString([{ atomicNumber: 1, atomCount: 1.5 }]);
       expect(ascii).toBe("H1.50");
+    });
+  });
+
+  describe("deriveDisplayFormula", () => {
+    test("returns exact kind for integer compound", () => {
+      const result = deriveDisplayFormula([
+        { atomicNumber: 1, atomCount: 2 },
+        { atomicNumber: 8, atomCount: 1 },
+      ]);
+      expect(result).toEqual({
+        kind: "exact",
+        unicode: "H₂O",
+        ascii: "H2O",
+        totalAtoms: 3,
+      });
+    });
+
+    test("returns exact kind for FP-dirty integers", () => {
+      const result = deriveDisplayFormula([
+        { atomicNumber: 1, atomCount: 1.9999998 },
+        { atomicNumber: 8, atomCount: 1.0000001 },
+      ]);
+      expect(result).toEqual({
+        kind: "exact",
+        unicode: "H₂O",
+        ascii: "H2O",
+        totalAtoms: 3,
+      });
+    });
+
+    test("returns normalized kind for clean mass-fraction ratio", () => {
+      const result = deriveDisplayFormula([
+        { atomicNumber: 1, atomCount: 0.505 },
+        { atomicNumber: 8, atomCount: 0.25 },
+      ]);
+      expect(result).toEqual({
+        kind: "normalized",
+        unicode: "H₂O",
+        ascii: "H2O",
+        multiplier: 1,
+      });
+    });
+
+    test("returns normalized kind with multiplier > 1", () => {
+      const result = deriveDisplayFormula([
+        { atomicNumber: 1, atomCount: 1.505 },
+        { atomicNumber: 8, atomCount: 1.0 },
+      ]);
+      expect(result).toEqual({
+        kind: "normalized",
+        unicode: "H₃O₂",
+        ascii: "H3O2",
+        multiplier: 2,
+      });
+    });
+
+    test("returns none kind for Beer issue composition", () => {
+      const result = deriveDisplayFormula([
+        { atomicNumber: 1, atomCount: 35.46 },
+        { atomicNumber: 6, atomCount: 0.083 },
+        { atomicNumber: 8, atomCount: 1.08 },
+      ]);
+      expect(result).toEqual({ kind: "none" });
+    });
+
+    test("returns none for empty composition", () => {
+      expect(deriveDisplayFormula([])).toEqual({ kind: "none" });
     });
   });
 
