@@ -66,7 +66,7 @@
     variant="ghost"
     size="sm"
     class="h-7 shrink-0 px-2 text-xs"
-    disabled={displayFormula.kind === "none" || !displayFormula.ascii}
+    disabled={displayFormula.kind === "none" ? true : !displayFormula.ascii}
     onclick={() => {
       if (displayFormula.kind !== "none" && displayFormula.ascii) {
         void navigator.clipboard?.writeText(displayFormula.ascii);

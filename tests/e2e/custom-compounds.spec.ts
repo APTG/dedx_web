@@ -799,7 +799,6 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
 
     // The formula footer should say "Defined by mass fraction — no simple formula"
     const formulaFooter = page.getByTestId("compound-formula-footer");
-    console.log("FOOTER INNER HTML:", await formulaFooter.innerHTML());
     await expect(formulaFooter.getByTestId("compound-formula-none")).toBeVisible();
     await expect(formulaFooter.getByTestId("compound-formula-none")).toHaveText(
       "Defined by mass fraction — no simple formula",

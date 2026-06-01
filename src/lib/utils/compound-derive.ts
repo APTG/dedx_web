@@ -143,6 +143,14 @@ export function deriveDisplayFormula(elements: CompoundElementEntry[]): DisplayF
 
   const counts = elements.map((e) => e.atomCount);
 
+  // Guard against transient/invalid inputs (e.g. empty or mid-edit
+  // weight-fraction fields parse to 0). Non-positive or non-finite atom
+  // counts cannot form a meaningful formula and would otherwise produce
+  // nonsense (H₀) or NaN/Infinity ratios in the heuristic below.
+  if (counts.some((c) => !Number.isFinite(c) || c <= 0)) {
+    return { kind: "none" };
+  }
+
   // 1. Exact check
   let isExact = true;
   for (const c of counts) {
