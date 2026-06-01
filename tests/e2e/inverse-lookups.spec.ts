@@ -27,6 +27,26 @@ function parseEnergyMeV(text: string): number {
   return v;
 }
 
+/** Parse an auto-scaled CSDA range (e.g. "7.718 cm", "45 µm") to centimetres. */
+function parseRangeCm(text: string): number {
+  const m = text.trim().match(/^(\d+(?:\.\d+)?)\s*(nm|µm|um|mm|cm|m)?$/);
+  if (!m) return NaN;
+  const v = parseFloat(m[1]!);
+  switch (m[2]) {
+    case "nm":
+      return v * 1e-7;
+    case "µm":
+    case "um":
+      return v * 1e-4;
+    case "mm":
+      return v * 0.1;
+    case "m":
+      return v * 100;
+    default:
+      return v; // cm
+  }
+}
+
 function inverseUnitGroup(page: import("@playwright/test").Page, testId: string) {
   return page.getByTestId(testId);
 }
@@ -228,6 +248,49 @@ test.describe("Inverse Lookups — Range Tab", () => {
     expect(highEnergyMeV).toBeGreaterThan(0);
     // E_high (above Bragg peak, descending branch) > E_low (below Bragg peak, ascending branch)
     expect(highEnergyMeV).toBeGreaterThan(lowEnergyMeV);
+  });
+
+  test("Range tab: shows → STP at the resolved energy (#673) @regression", async ({ page }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // Proton (1) in Water (276) via PSTAR (2): 7.718 cm → ~100 MeV.
+    await page.goto(
+      "/calculator?particle=1&material=276&program=2&imode=csda&ivalues=7.718:cm&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-range-result-0"]', { timeout: 15000 });
+
+    // Energy must resolve, and the new → STP cell must show a positive number.
+    await expect(page.locator('[data-testid="inverse-range-result-0"]')).toHaveText(/\d/, {
+      timeout: 15000,
+    });
+    const stpCell = page.locator('[data-testid="inverse-range-stp-0"]');
+    await expect(stpCell).toHaveText(/\d/, { timeout: 15000 });
+    expect((await stpCell.textContent())?.trim()).not.toBe("—");
+  });
+
+  test("STP tab: shows → Range paired with each energy branch (#673) @regression", async ({
+    page,
+  }) => {
+    const wasmPresent = await checkWasmPresent(page);
+    test.skip(!wasmPresent, "WASM binary absent");
+
+    // 30 keV/µm proton/water is below the Bragg peak → two solutions, so both
+    // the high-E and low-E range columns are revealed.
+    await page.goto(
+      "/calculator?particle=1&material=276&program=2&imode=stp&ivalues=30&iunit=kev-um&advanced=1",
+    );
+    await page.waitForSelector('[data-testid="inverse-stp-input-0"]', { timeout: 15000 });
+
+    const rangeHigh = page.locator('[data-testid="inverse-stp-result-range-high-0"] span');
+    const rangeLow = page.locator('[data-testid="inverse-stp-result-range-low-0"] span');
+    await expect(rangeHigh).toHaveText(/\d/, { timeout: 15000 });
+    await expect(rangeLow).toHaveText(/\d/, { timeout: 15000 });
+
+    // High-E branch (higher energy) must have the longer CSDA range.
+    const highCm = parseRangeCm((await rangeHigh.textContent())!);
+    const lowCm = parseRangeCm((await rangeLow.textContent())!);
+    expect(highCm).toBeGreaterThan(lowCm);
   });
 
   test("Inverse STP tab: monotone branch — 1 keV/µm proton/water ICRU49 @smoke", async ({
