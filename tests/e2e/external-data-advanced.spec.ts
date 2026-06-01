@@ -13,7 +13,7 @@ const EXTERNAL_DATA_STORE_URL = normalizeStoreUrl(EXTERNAL_DATA_URL);
 const SRIM_EXTDATA = `extdata=srim:${encodeURIComponent(EXTERNAL_DATA_STORE_URL)}`;
 
 // Proton in Liquid Water with ICRU 49, 100 MeV
-const BASE_QUERY = `urlv=1&${SRIM_EXTDATA}&particle=1&material=276&program=7&energies=100&eunit=MeV`;
+const BASE_QUERY = `urlv=2&${SRIM_EXTDATA}&particle=1&material=276&program=7&energies=100&eunit=MeV`;
 
 function normalizeStoreUrl(url: string | undefined): string {
   if (!url) return "";
@@ -105,7 +105,7 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
   test("SRIM as default program shows STP values in advanced mode", async ({ page }) => {
     // Start with SRIM as the selected program (no explicit program param — rely on extdata)
     await page.goto(
-      `/calculator?urlv=1&${SRIM_EXTDATA}&particle=1&material=276&energies=100&eunit=MeV&mode=advanced`,
+      `/calculator?urlv=2&${SRIM_EXTDATA}&particle=1&material=276&energies=100&eunit=MeV&mode=advanced`,
     );
     await page.waitForFunction(
       () => new URLSearchParams(window.location.search).get("mode") === "advanced",
