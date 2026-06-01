@@ -252,7 +252,7 @@
             >
               <span class="hidden min-[400px]:block font-bold">Range →</span>
               <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy</span
+                >→ Energy, STP</span
               >
               <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
@@ -269,7 +269,7 @@
             >
               <span class="hidden min-[400px]:block font-bold">STP →</span>
               <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy</span
+                >→ Energy, Range</span
               >
               <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
@@ -342,7 +342,19 @@
               </p>
             </div>
           {:else}
-            <TableAdvanced mode="range" {inverseLookupState} />
+            {@const rangeSelMat = es.selectedMaterial}
+            {@const rangeIsCustom = isCustomMaterial(
+              rangeSelMat && "isGasByDefault" in rangeSelMat ? rangeSelMat : null,
+            )}
+            <TableAdvanced
+              mode="range"
+              {inverseLookupState}
+              stpDisplayUnit={calcState.stpDisplayUnit}
+              onSelectStpUnit={(u) => calcState.setStpDisplayUnit(u)}
+              density={(rangeIsCustom ? undefined : advancedOptions.value.densityOverride) ??
+                rangeSelMat?.density ??
+                1}
+            />
             {#if es.isComplete && energyRangeLabel}
               <p class="text-xs text-muted-foreground mt-4">
                 Valid range: {energyRangeLabel}

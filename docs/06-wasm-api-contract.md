@@ -164,6 +164,14 @@ interface InverseCsdaResult {
 }
 ```
 
+> **Second output column (issue #673).** The Range → and STP → calculator tabs
+> each display a second derived quantity (STP for Range →, CSDA range for
+> STP →). The inverse results above only return the resolved energy and echo
+> the input quantity, so the complementary value is obtained by calling the
+> existing forward `calculate()` / `calculateCustomCompound()` at the resolved
+> energy/energies — **no new WASM entry point is required**. STP → calls the
+> forward path once per resolved branch (low-E, high-E).
+
 ### 2.4 Errors
 
 ```typescript
