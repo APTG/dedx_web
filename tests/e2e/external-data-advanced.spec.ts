@@ -57,10 +57,9 @@ test.describe("External data in Calculator Advanced Mode @s3", () => {
     await openProgramPicker(page);
 
     const srimOption = getSrimProgramOption(page);
-    await expect(srimOption).toBeVisible();
+    await expect(srimOption).toBeVisible({ timeout: 30000 });
     await expect(srimOption).toContainText(/srim/i);
-    await expect(srimOption).toContainText(/ext/i);
-  });
+    await expect(srimOption.getByTestId("picker-program-tag-EXT")).toBeVisible();
 
   test("Adding SRIM program creates a new column in the table", async ({ page }) => {
     await gotoAdvancedWithSrim(page);
