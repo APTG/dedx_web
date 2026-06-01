@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-01 — **Testing**: Add edge case testing for external data validation (Issue #630). Added comprehensive unit tests for `validation.ts` covering malformed JSON, NaN, Infinity, negative boundary conditions, and improperly typed fields. (Gemini 3.1 Pro (High) via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-06-01-issue-630-validation-tests.md)
+
 - 2026-05-31 — **Stage 8 / inverse-lookups**: Extend the advanced-mode inverse tabs so each emits a second output quantity, mirroring the `Energy →` (STP, Range) layout (Issue #673). **Range →** gains a `→ STP` column (stopping power at the resolved energy, with the shared `StpUnitHeaderMenu` / `stpOutputUnit` output unit, persisted via `sunit=`). **STP →** pairs a `→ Range` column with each energy branch — high-E always shown, low-E pair revealed together when a row has two solutions. The inverse WASM calls only echo the input quantity, so the complementary value is recovered with a forward `calculate()` / `calculateCustomCompound()` at the resolved energy/energies (one extra forward call for Range →, two for STP →) — no new WASM API. State (`RangeRow.stoppingPower`, `InverseStpRow.rangeLow/HighCm`), calc orchestrators, both table components, and the `inverse-lookups.md` (v7) / `calculator.md` / `06-wasm-api-contract.md` specs updated; new unit tests for the derived outputs. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-05-31-inverse-lookups.md)
 
