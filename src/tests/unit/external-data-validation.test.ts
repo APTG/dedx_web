@@ -2,7 +2,7 @@ import { describe, it, expect } from "vitest";
 import { validateRootAttrs } from "$lib/external-data/validation.js";
 import { ExternalDataError } from "$lib/external-data/errors.js";
 
-function getValidRoot() {
+function getValidRoot(): any {
   return {
     "webdedx.magic": "webdedx-extdata",
     "webdedx.formatVersion": 1,
@@ -39,7 +39,6 @@ describe("external data validation.ts", () => {
 
     it("fails if arrays are replaced by objects or primitives", () => {
       const root = getValidRoot();
-      // @ts-expect-error forcing bad type
       root["webdedx.energyGrid"] = { "0": 1, "1": 2 };
       expect(() => validateRootAttrs(root, "l", "u")).toThrowError(/energyGrid must be an array/);
     });
@@ -108,14 +107,12 @@ describe("external data validation.ts", () => {
   describe("improperly typed fields", () => {
     it("fails if string is used instead of number", () => {
       const root = getValidRoot();
-      // @ts-expect-error forced type
       root["webdedx.energyGrid"] = [1, "2", 3];
       expect(() => validateRootAttrs(root, "l", "u")).toThrowError(/not a positive finite number/);
     });
 
     it("fails if version is a string instead of number", () => {
       const root = getValidRoot();
-      // @ts-expect-error forced type
       root["webdedx.formatVersion"] = "1";
       expect(() => validateRootAttrs(root, "l", "u")).toThrowError(
         /formatVersion must be a positive integer/,
@@ -124,7 +121,6 @@ describe("external data validation.ts", () => {
 
     it("fails if number used for id instead of string", () => {
       const root = getValidRoot();
-      // @ts-expect-error forced type
       root["webdedx.programs"][0].id = 123;
       expect(() => validateRootAttrs(root, "l", "u")).toThrowError(/id "123" is invalid/);
     });
@@ -162,7 +158,6 @@ describe("external data validation.ts", () => {
   describe("invalid enums or bounds", () => {
     it("fails on bad phase for materials", () => {
       const root = getValidRoot();
-      // @ts-expect-error forced type
       root["webdedx.materials"][0].phase = "plasma";
       expect(() => validateRootAttrs(root, "l", "u")).toThrowError(/phase "plasma" is invalid/);
     });
