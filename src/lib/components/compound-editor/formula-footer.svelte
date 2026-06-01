@@ -1,8 +1,7 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
   import {
-    deriveFormulaString,
-    deriveTotalAtoms,
+    deriveDisplayFormula,
     deriveBraggIValue,
     type CompoundElementEntry,
   } from "$lib/utils/compound-derive";
@@ -16,20 +15,12 @@
 
   let { elements, iValueOverride = "" }: Props = $props();
 
-  // Rendering the formula as a single Unicode string (rather than a keyed
-  // {#each}) keeps this crash-proof when the composition transiently contains
-  // duplicate elements.
-  let formula = $derived(deriveFormulaString(elements));
-  let totalAtoms = $derived(deriveTotalAtoms(elements));
+  let displayFormula = $derived(deriveDisplayFormula(elements));
   let braggIValue = $derived(deriveBraggIValue(elements));
   let override = $derived.by(() => {
     const parsed = parseFloat(iValueOverride);
     return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
   });
-
-  let atomsLabel = $derived(
-    Number.isInteger(totalAtoms) ? String(totalAtoms) : totalAtoms.toFixed(2),
-  );
 </script>
 
 <div
@@ -38,11 +29,26 @@
 >
   <p class="flex flex-wrap items-center gap-x-2 gap-y-1">
     <span class="font-medium text-muted-foreground">Formula</span>
-    <span class="font-mono font-semibold" data-testid="compound-formula-string">
-      {formula.unicode || "—"}
-    </span>
-    <span class="text-muted-foreground" aria-hidden="true">·</span>
-    <span data-testid="compound-total-atoms">{atomsLabel} atoms</span>
+    {#if displayFormula.kind === "exact"}
+      <span class="font-mono font-semibold" data-testid="compound-formula-string">
+        {displayFormula.unicode || "—"}
+      </span>
+      <span class="text-muted-foreground" aria-hidden="true">·</span>
+      <span data-testid="compound-total-atoms">{displayFormula.totalAtoms} atoms</span>
+    {:else if displayFormula.kind === "normalized"}
+      <span
+        class="font-mono font-semibold"
+        title="Nearest simple stoichiometry"
+        data-testid="compound-formula-string"
+      >
+        ≈ {displayFormula.unicode}
+        <span class="font-sans text-xs font-normal text-muted-foreground">(normalized)</span>
+      </span>
+    {:else}
+      <span class="text-muted-foreground italic" data-testid="compound-formula-none">
+        Defined by mass fraction — no simple formula
+      </span>
+    {/if}
     <span class="text-muted-foreground" aria-hidden="true">·</span>
     <span data-testid="compound-ivalue">
       {#if override !== null}
@@ -60,9 +66,11 @@
     variant="ghost"
     size="sm"
     class="h-7 shrink-0 px-2 text-xs"
-    disabled={!formula.ascii}
+    disabled={displayFormula.kind === "none" || !displayFormula.ascii}
     onclick={() => {
-      if (formula.ascii) void navigator.clipboard?.writeText(formula.ascii);
+      if (displayFormula.kind !== "none" && displayFormula.ascii) {
+        void navigator.clipboard?.writeText(displayFormula.ascii);
+      }
     }}
     aria-label="Copy formula to clipboard"
     title="Copy formula"

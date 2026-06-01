@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-01 — **Custom Compounds**: Implemented compound formula fallback UI for weight fractions and complex mass ratios (Issue #676). Updated `displayElements` to pass raw element counts in weight mode so the heuristic calculates formulas and defaults to "no simple formula" when complex. (Gemini 3.1 Pro via Antigravity)
+  - **Log:** [log](docs/ai-logs/2026-06-01-issue-676-formula-display.md)
+
 - 2026-06-01 — **Testing**: Add edge case testing for external data validation (Issue #630). Added comprehensive unit tests for `validation.ts` covering malformed JSON, NaN, Infinity, negative boundary conditions, and improperly typed fields. (Gemini 3.1 Pro (High) via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-06-01-issue-630-validation-tests.md)
 

@@ -761,6 +761,67 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     ).toBeVisible();
     await expect(modal).toBeVisible();
   });
+
+  test("Formula display normalizes neat ratios and suppresses complex ones", async ({ page }) => {
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    await page.getByTestId("picker-tab-material").click();
+    await page.getByTestId("picker-material-add-compound").click();
+
+    // Set up a complex compound
+    await page.getByRole("textbox", { name: /name/i }).fill("Beer");
+    await page.getByRole("spinbutton", { name: /density/i }).fill("1.01");
+
+    // Change Li to H
+    await page.getByTestId("picker-element-tile-3").first().click();
+    await page.getByTestId("picker-grid-tile-1").first().click();
+
+    // Switch to weight fraction mode
+    await page.getByRole("tab", { name: /weight fraction/i }).click();
+
+    const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
+    await wf0.fill("35.747");
+
+    // Change F to C
+    await page.getByTestId("picker-element-tile-9").first().click();
+    await page.getByTestId("picker-grid-tile-6").first().click();
+
+    const wf1 = page.getByRole("spinbutton", { name: /weight fraction.*element 2/i }).first();
+    await wf1.fill("1.0");
+
+    // Add O
+    const addInput = page.getByPlaceholder(/Type symbol or element/i);
+    await addInput.fill("O");
+    await addInput.press("Enter");
+
+    const wf2 = page.getByRole("spinbutton", { name: /weight fraction.*element 3/i }).first();
+    await wf2.fill("63.253");
+
+    // The formula footer should say "Defined by mass fraction — no simple formula"
+    const formulaFooter = page.getByTestId("compound-formula-footer");
+    console.log("FOOTER INNER HTML:", await formulaFooter.innerHTML());
+    await expect(formulaFooter.getByTestId("compound-formula-none")).toBeVisible();
+    await expect(formulaFooter.getByTestId("compound-formula-none")).toHaveText(
+      "Defined by mass fraction — no simple formula",
+    );
+    await expect(formulaFooter.getByTestId("compound-formula-copy")).toBeDisabled();
+
+    // Change to a neat ratio (H: 11.19, O: 88.81)
+    await wf0.fill("11.19");
+
+    // Remove C
+    const removeBtn = page.getByTestId("picker-element-row-remove").nth(1);
+    await removeBtn.click();
+    await page.getByRole("button", { name: "Yes, remove" }).click();
+
+    // Now O is at index 1
+    const wf1_new = page.getByRole("spinbutton", { name: /weight fraction.*element 2/i }).first();
+    await wf1_new.fill("88.81");
+
+    // Formula footer should now show H2O as normalized
+    await expect(formulaFooter.getByTestId("compound-formula-string")).toHaveText(/≈ H₂O/);
+    await expect(formulaFooter.getByTestId("compound-formula-copy")).toBeEnabled();
+  });
 });
 
 test.describe("Scenario 1: LiF pellet smoke test", () => {
@@ -879,10 +940,9 @@ test.describe("Custom Compounds — Live Derived UI (Issue #645)", () => {
     await expect(page.getByTestId("compound-formula-copy")).toBeVisible();
     await expect(page.getByTestId("compound-mass-percent-0")).toContainText(/% by mass/);
 
-    // Footer is hidden in weight-fraction mode (a formula string would mislead);
-    // the sum tracker takes its place.
+    // Footer is now visible in weight-fraction mode as well.
     await page.getByRole("tab", { name: /weight fraction/i }).click();
-    await expect(footer).not.toBeVisible();
+    await expect(footer).toBeVisible();
     await expect(page.getByTestId("compound-sum-tracker")).toBeVisible();
   });
 

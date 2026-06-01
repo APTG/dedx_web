@@ -124,6 +124,16 @@
   // Live per-row mass percentages (formula mode only), aligned by row index.
   let massPercents = $derived(mode === "formula" ? deriveMassPercents(formData.elements) : null);
 
+  let displayElements = $derived.by(() => {
+    if (mode === "formula") return formData.elements;
+
+    const wfs = weightTexts.map((t, i) => ({
+      atomicNumber: formData.elements[i]?.atomicNumber ?? 1,
+      weightFraction: (parseFloat(t) || 0) / 100,
+    }));
+    return computeAtomCounts(wfs) || formData.elements;
+  });
+
   // Pure validation: a function of the form state only, so the Save gating and
   // inline messages stay in sync without any imperative writes.
   let errors = $derived.by(() => {
@@ -941,9 +951,8 @@
                   {/each}
                 </div>
 
-                {#if mode === "formula"}
-                  <FormulaFooter elements={formData.elements} iValueOverride={formData.iValue} />
-                {:else}
+                <FormulaFooter elements={displayElements} iValueOverride={formData.iValue} />
+                {#if mode === "weight"}
                   <SumTracker
                     values={weightTexts.map((t) => parseFloat(t) || 0)}
                     symbols={formData.elements.map((el) => getLocalSymbol(el.atomicNumber))}
