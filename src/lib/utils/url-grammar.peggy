@@ -1,4 +1,4 @@
-// PEG grammar for shareable-URL query strings (v2).
+// PEG grammar for shareable-URL query strings (v2/v3).
 //
 // Normative source: docs/04-feature-specs/shareable-urls-formal.md §2.
 // Produces the AST defined in url-ast.ts. Compiled at build/test time by the
@@ -9,6 +9,9 @@
 // rule falls back to capturing the verbatim `raw` value, so the resolver can
 // apply exactly the lenient splitting the original decoder used. Every node
 // carries a source span (offsets into the query string) for precise errors.
+//
+// List separator: `~` is canonical from v3 (issue #672); the legacy `,` is
+// still accepted on read so links shared before #672 keep parsing. See ListSep.
 
 {{
   function spanOf(loc) {
@@ -61,7 +64,7 @@ EnergiesValue
   = items:EnergyItemList EndOfValue { return { items, raw: text() }; }
   / raw:RawValue { return { items: null, raw }; }
 EnergyItemList
-  = head:EnergyItem tail:("," @EnergyItem)* { return [head, ...tail]; }
+  = head:EnergyItem tail:(ListSep @EnergyItem)* { return [head, ...tail]; }
 EnergyItem
   = v:Number u:(":" @EnergyUnitToken)? {
       return { value: v, unit: u ?? null, span: spanOf(location()) };
@@ -77,7 +80,7 @@ LookupsValue
   = items:LookupItemList EndOfValue { return { items, raw: text() }; }
   / raw:RawValue { return { items: null, raw }; }
 LookupItemList
-  = head:LookupItem tail:("," @LookupItem)* { return [head, ...tail]; }
+  = head:LookupItem tail:(ListSep @LookupItem)* { return [head, ...tail]; }
 LookupItem
   = v:Number u:(":" @LookupUnitToken)? {
       return { value: v, unit: u ?? null, span: spanOf(location()) };
@@ -92,7 +95,7 @@ SeriesValue
   = items:SeriesItemList EndOfValue { return { items, raw: text() }; }
   / raw:RawValue { return { items: null, raw }; }
 SeriesItemList
-  = head:SeriesItem tail:("," @SeriesItem)* { return [head, ...tail]; }
+  = head:SeriesItem tail:(ListSep @SeriesItem)* { return [head, ...tail]; }
 SeriesItem
   = p:EntityId "." pt:EntityId "." m:EntityId {
       return { program: p, particle: pt, material: m, span: spanOf(location()) };
@@ -107,7 +110,7 @@ MatElementsValue
   = elements:MatElementList EndOfValue { return { elements, raw: text() }; }
   / raw:RawValue { return { elements: null, raw }; }
 MatElementList
-  = head:MatElement tail:("," @MatElement)* { return [head, ...tail]; }
+  = head:MatElement tail:(ListSep @MatElement)* { return [head, ...tail]; }
 MatElement
   = z:Digits ":" c:Number { return { z, count: c, span: spanOf(location()) }; }
 
@@ -121,7 +124,7 @@ EntityListValue
   = ids:EntityIdList EndOfValue { return { ids, raw: text() }; }
   / raw:RawValue { return { ids: null, raw }; }
 EntityIdList
-  = head:EntityId tail:("," @EntityId)* { return [head, ...tail]; }
+  = head:EntityId tail:(ListSep @EntityId)* { return [head, ...tail]; }
 
 // ── known scalar params (value kept verbatim) ────────────────────────────────
 ScalarPair
@@ -155,6 +158,9 @@ UnknownPair
     }
 
 // ── shared lexical rules ─────────────────────────────────────────────────────
+// list-item separator — canonical `~` (v3, issue #672) or legacy `,` (v2).
+ListSep = "~" / ","
+
 EntityId
   = $("ext:" [A-Za-z0-9_-]+ ":" [A-Za-z0-9_-]+)
   / Digits
@@ -167,7 +173,7 @@ EnergyUnitToken
 
 // lookup-unit-token — any token up to the next delimiter ('=' may not appear in
 // a value). Validation of the actual unit happens in the resolver.
-LookupUnitToken = $[^,&:]+
+LookupUnitToken = $[^,~&:]+
 
 Number "a number" = $([0-9]+ ("." [0-9]+)? ([eE] [+\-]? [0-9]+)?)
 Digits "an integer" = $[0-9]+

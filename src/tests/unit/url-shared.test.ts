@@ -103,12 +103,12 @@ describe("parseCustomCompound", () => {
 });
 
 describe("encodeMatElements", () => {
-  it("emits ascending-Z Z:count pairs", () => {
+  it("emits ascending-Z Z:count pairs joined by the ~ list separator", () => {
     expect(
       encodeMatElements([
         { atomicNumber: 8, atomCount: 2 },
         { atomicNumber: 1, atomCount: 8 },
       ]),
-    ).toBe("1:8,8:2");
+    ).toBe("1:8~8:2");
   });
 });

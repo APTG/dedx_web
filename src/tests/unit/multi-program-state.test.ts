@@ -380,7 +380,7 @@ describe("encodeMultiProgramUrl", () => {
 
     const params = encodeMultiProgramUrl(state);
     expect(params.mode).toBe("advanced");
-    expect(params.programs).toBe("9,2");
+    expect(params.programs).toBe("9~2");
     expect(params.qshow).toBeUndefined(); // stp is default — omitted per ADR 006
   });
 
@@ -421,7 +421,7 @@ describe("encodeMultiProgramUrl", () => {
     state.setProgramDisplayOrder([9, EXT_SRIM]);
 
     const params = encodeMultiProgramUrl(state);
-    expect(params.programs).toBe("9,ext:srim:srim-2013-gui");
+    expect(params.programs).toBe("9~ext:srim:srim-2013-gui");
   });
 
   it("round-trips mixed IDs through encode/decode", () => {

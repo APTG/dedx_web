@@ -12,6 +12,8 @@ import {
   buildTokenView,
   parseCustomCompound,
   encodeMatElements,
+  URL_LIST_SEPARATOR,
+  URL_LIST_SPLIT_RE,
   type MatElementUrl,
 } from "$lib/utils/url-shared";
 
@@ -22,7 +24,7 @@ export type { MatElementUrl };
  * param shape; minor/additive changes can ride along on the same major.
  * See `docs/04-feature-specs/shareable-urls.md` §3.1.
  */
-export const CALCULATOR_URL_VERSION = 2;
+export const CALCULATOR_URL_VERSION = 3;
 
 /**
  * Master `eunit` parameter — limited to the three base `EnergyUnit` values
@@ -123,7 +125,7 @@ export function decodeInverseModeFromUrl(params: URLSearchParams): InverseModeUr
   const lookupsParam = params.get("lookups") ?? params.get("ivalues");
   if (lookupsParam) {
     lookups = [];
-    for (const part of lookupsParam.split(",")) {
+    for (const part of lookupsParam.split(URL_LIST_SPLIT_RE)) {
       const colonIdx = part.lastIndexOf(":");
       if (colonIdx > 0) {
         const rawInput = part.slice(0, colonIdx);
@@ -250,10 +252,10 @@ function normalizeRowForEncoding(
   const parsed = parseEnergyInput(trimmed);
   if ("empty" in parsed || "error" in parsed) {
     // Invalid / unparseable rows are dropped from the encoded URL —
-    // emitting the raw text could otherwise inject a `,` (e.g. `1,000`)
-    // or `:` and corrupt the comma-separated `energies` tokenization
-    // when the URL is loaded back. Decoder will treat the share-URL as
-    // having one fewer row; users see an empty trailing input.
+    // emitting the raw text could otherwise inject a separator (`,`/`~`,
+    // e.g. `1,000`) or `:` and corrupt the `energies` tokenization when the
+    // URL is loaded back. Decoder will treat the share-URL as having one
+    // fewer row; users see an empty trailing input.
     return null;
   }
 
@@ -274,14 +276,14 @@ function normalizeRowForEncoding(
 }
 
 /**
- * Skip rows whose `rawInput` would corrupt the comma-separated `energies`
- * tokenization once embedded in the URL. The parser already rejects commas
- * (e.g. `1,000`) and colons (used as the per-row suffix separator), but
- * we double-check here so an invalid row never injects either character
- * into the encoded output.
+ * Skip rows whose `rawInput` would corrupt the `energies` tokenization once
+ * embedded in the URL. The parser already rejects commas (e.g. `1,000`) and
+ * colons (used as the per-row suffix separator), but we double-check here so an
+ * invalid row never injects a list separator (`,` legacy / `~` canonical) or a
+ * `:` into the encoded output.
  */
 function isUrlSafeNumeric(s: string): boolean {
-  return !s.includes(",") && !s.includes(":");
+  return !s.includes(",") && !s.includes("~") && !s.includes(":");
 }
 
 const ACROSS_TO_URL_TOKEN = {
@@ -321,7 +323,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
     encodedRows.push(norm.explicit ? `${norm.numeric}:${norm.unit}` : norm.numeric);
   }
   if (encodedRows.length > 0) {
-    params.set("energies", encodedRows.join(","));
+    params.set("energies", encodedRows.join(URL_LIST_SEPARATOR));
   }
   params.set("eunit", state.masterUnit);
 
@@ -343,7 +345,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
       state.selectedParticleIds &&
       state.selectedParticleIds.length > 0
     ) {
-      params.set("particles", state.selectedParticleIds.join(","));
+      params.set("particles", state.selectedParticleIds.join(URL_LIST_SEPARATOR));
       params.set("across", toAcrossUrlToken(state.across));
     } else if (
       state.across === "material" &&
@@ -442,7 +444,7 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
         }
       }
       if (encodedLookups.length > 0) {
-        params.set("lookups", encodedLookups.join(","));
+        params.set("lookups", encodedLookups.join(URL_LIST_SEPARATOR));
       }
     }
 
@@ -478,9 +480,10 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
  * appears as a literal colon — which would break the formal grammar's
  * `extdata-pair` rule. Only the label separator colon is emitted literally.
  *
- * For all other params we keep `:` and `,` literal (both are
- * reserved-but-permitted in the query component per RFC 3986 §3.4/2.2)
- * so shareable URLs stay human-readable.
+ * For all other params we keep `:` literal (reserved-but-permitted in the query
+ * component per RFC 3986 §3.4/2.2) and restore the `~` list separator (which
+ * `URLSearchParams` percent-encodes as `%7E`), so shareable URLs stay
+ * human-readable and survive messenger/email auto-linkification (issue #672).
  */
 export function calculatorUrlQueryString(state: CalculatorUrlState): string {
   const params = encodeCalculatorUrl(state);
@@ -502,7 +505,7 @@ export function calculatorUrlQueryString(state: CalculatorUrlState): string {
       remaining.append(key, value);
     }
   }
-  const restStr = remaining.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  const restStr = remaining.toString().replaceAll("%3A", ":").replaceAll("%7E", "~");
   if (restStr) parts.push(restStr);
 
   return parts.join("&");
@@ -564,7 +567,7 @@ export function resolveCalculatorState(
   const rows: CalculatorUrlRow[] = [];
   const energiesParam = t.get("energies");
   if (energiesParam) {
-    for (const part of energiesParam.split(",")) {
+    for (const part of energiesParam.split(URL_LIST_SPLIT_RE)) {
       const colonIdx = part.lastIndexOf(":");
       if (colonIdx > 0) {
         const rawInput = part.slice(0, colonIdx);
@@ -591,7 +594,7 @@ export function resolveCalculatorState(
     const particlesParam = t.get("particles");
     if (particlesParam) {
       const ids = particlesParam
-        .split(",")
+        .split(URL_LIST_SPLIT_RE)
         .map((s) => parseInt(s.trim(), 10))
         .filter((n) => Number.isInteger(n) && n >= 1 && n <= 118);
       if (ids.length > 0) selectedParticleIds = ids;
@@ -707,7 +710,7 @@ export function resolveCalculatorState(
     const lookupsParam = t.get("lookups") ?? t.get("ivalues");
     if (lookupsParam) {
       lookups = [];
-      for (const part of lookupsParam.split(",")) {
+      for (const part of lookupsParam.split(URL_LIST_SPLIT_RE)) {
         const colonIdx = part.lastIndexOf(":");
         if (colonIdx > 0) {
           const rawInput = part.slice(0, colonIdx);

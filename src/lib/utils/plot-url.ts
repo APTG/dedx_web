@@ -13,6 +13,8 @@ import {
   buildTokenView,
   parseCustomCompound,
   encodeMatElements,
+  URL_LIST_SEPARATOR,
+  URL_LIST_SPLIT_RE,
   type MatElementUrl,
 } from "$lib/utils/url-shared";
 
@@ -118,7 +120,7 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
           (s) =>
             `${formatEntityId(s.programId)}.${formatEntityId(s.particleId)}.${formatEntityId(s.materialId)}`,
         )
-        .join(","),
+        .join(URL_LIST_SEPARATOR),
     );
   }
   // `sunit` is the shared stopping-power unit param (also used by the calculator).
@@ -187,7 +189,10 @@ export function plotUrlQueryString(input: PlotUrlInput): string {
     if (key !== "extdata") paramsNoExtdata.append(key, value);
   }
 
-  const restStr = paramsNoExtdata.toString().replaceAll("%3A", ":").replaceAll("%2C", ",");
+  // Keep `:` literal (per-row/triplet sub-separator) and restore `~` (the list
+  // separator, which `URLSearchParams` percent-encodes as `%7E`) so shared URLs
+  // stay human-readable and survive auto-linkification (issue #672).
+  const restStr = paramsNoExtdata.toString().replaceAll("%3A", ":").replaceAll("%7E", "~");
   if (restStr) parts.push(restStr);
 
   return parts.join("&");
@@ -267,7 +272,7 @@ export function resolvePlotState(
   const seriesParam = t.get("series") ?? "";
   const series: PlotSeriesTriplet[] = seriesParam
     ? seriesParam
-        .split(",")
+        .split(URL_LIST_SPLIT_RE)
         .map((triplet): PlotSeriesTriplet | null => {
           // Split on "." only. ext-refs use ":" not ".", so this is unambiguous.
           const parts = triplet.split(".");
