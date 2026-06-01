@@ -177,8 +177,8 @@ calculation sub-modes are available via tabs.
 | Tab | Label    | Desktop sublabel        | Mobile glyph (< 400 px) | `calc=` URL token |
 | --- | -------- | ----------------------- | ----------------------- | ----------------- |
 | 1   | Energy → | → Stopping Power, Range | E→                      | `forward`         |
-| 2   | Range →  | → Energy                | R→                      | `range`           |
-| 3   | STP →    | → Energy                | S→                      | `inverse-stp`     |
+| 2   | Range →  | → Energy, STP           | R→                      | `range`           |
+| 3   | STP →    | → Energy, Range         | S→                      | `inverse-stp`     |
 
 The arrow suffix makes the **input → output** direction immediately clear
 without physics-domain knowledge:
@@ -186,11 +186,13 @@ without physics-domain knowledge:
 - **Energy →** — the user types energies and reads stopping power + CSDA range.
   This is the default tab and is also the Basic mode behaviour.
 - **Range →** — the user types CSDA range values and reads the energy that
-  produces each range (inverse CSDA range lookup).
+  produces each range (inverse CSDA range lookup), plus the stopping power at
+  that energy (recovered with a forward calc — issue #673).
 - **STP →** — the user types stopping-power values and reads the energy on the
-  high-energy branch (falling side of the Bragg peak). A second low-energy
-  column reveals automatically when a row has two solutions
-  ([ADR 012](../decisions/012-inverse-stp-sticky-high-e-default.md)).
+  high-energy branch (falling side of the Bragg peak), each energy paired with
+  the CSDA range at that energy. A second low-energy column pair reveals
+  automatically when a row has two solutions
+  ([ADR 012](../decisions/012-inverse-stp-sticky-high-e-default.md), issue #673).
 
 ---
 

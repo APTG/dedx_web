@@ -1,6 +1,6 @@
 # Feature: Inverse Lookups
 
-> **Status:** Final v6 (2026-05-07)
+> **Status:** Final v7 (2026-05-31)
 >
 > **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
 > URL contract (`urlv=2`) is in [`shareable-urls.md`](shareable-urls.md) §3.
@@ -54,6 +54,19 @@
 > tabs (Scenario 7 @regression), multi-program column layout for both tabs
 > (Scenario 8 @regression); two new `data-testid` anchors:
 > `inverse-range-row-error-{i}` and `inverse-stp-row-error-{i}`.
+>
+> **v7** (2026-05-31, issue #673): Both inverse tabs now emit a **second output
+> quantity**, mirroring the `Energy →` (STP, Range) layout. Range tab gains a
+> `→ STP` column (stopping power at the resolved energy, with the shared STP
+> output-unit header menu); Inverse STP tab pairs a `→ Range` column with each
+> energy branch (high-E always, low-E when revealed). The complementary value is
+> recovered with a forward `calculate()` at the resolved energy/energies (the
+> inverse call only echoes the input quantity) — no new WASM API. Resolves the
+> post-#552 forward-compat note above. New `data-testid` anchors:
+> `inverse-range-stp-{i}`, `inverse-range-stp-unit-*`,
+> `inverse-stp-result-range-high-{i}`, `inverse-stp-result-range-low-{i}`,
+> `col-hi-range`, `col-lo-range`. §4.2 and §5.2 column tables, §4.5/§5.5
+> wireframes, and Acceptance Criteria updated accordingly.
 >
 > **Related specs:**
 >
@@ -307,14 +320,17 @@ Result type: [`InverseCsdaResult`](../06-wasm-api-contract.md#23-calculation-res
 
 **Single-program mode:**
 
-| #   | Column          | Header            | Editable?    | Content                                                                                                                          |
-| --- | --------------- | ----------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Typed Value** | "Range"           | **Yes**      | User types a range value with an optional length suffix (e.g., `7.718 cm`, `45 µm`). Inline suffix detection applies (see §4.3). |
-| 2   | **Unit**        | "Unit"            | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode.                                                     |
-| 3   | **Energy**      | "→ Energy (auto)" | No           | Resulting energy, auto-scaled to the best SI prefix (see §6).                                                                    |
+| #   | Column          | Header             | Editable?    | Content                                                                                                                                                                                                                                             |
+| --- | --------------- | ------------------ | ------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Typed Value** | "Range"            | **Yes**      | User types a range value with an optional length suffix (e.g., `7.718 cm`, `45 µm`). Inline suffix detection applies (see §4.3).                                                                                                                    |
+| 2   | **Unit**        | "Unit"             | Via dropdown | Per-row unit dropdown in per-row mode; shows the master unit in master mode.                                                                                                                                                                        |
+| 3   | **Energy**      | "→ Energy (auto)"  | No           | Resulting energy, auto-scaled to the best SI prefix (see §6).                                                                                                                                                                                       |
+| 4   | **STP**         | "→ STP ({unit}) ▾" | No           | Stopping power at the resolved energy (issue #673). Output unit picked via the shared STP header menu (keV/µm, MeV/cm, MeV·cm²/g — same `stpOutputUnit` state as the `Energy →` tab, persisted via `sunit=`). `—` until a valid energy is resolved. |
 
 The intermediate g/cm² normalized value is an internal computation step
-and is not shown in the table.
+and is not shown in the table. The STP value is recovered by running the
+forward `calculate()` at the resolved energy — the inverse-CSDA call only
+returns the energy and echoes the input range.
 
 **Multi-program mode:** one additional energy column replaces (or extends)
 column 3 for each selected program. Column header: `{ProgramName} ({unit})`.
@@ -383,15 +399,15 @@ Conversion is invalid (row marked invalid) when neither source yields a valid ρ
 Single-program:
 
 ```
-  ┌─────────────────────┬──────┬─────────────────┐
-  │ Range               │ Unit │ → Energy (auto) │
-  ├─────────────────────┼──────┼─────────────────┤
-  │ 7.718 cm            │ cm   │ 100.0 MeV       │
-  │ 45 µm               │ µm   │ 1.234 keV       │
-  │ 1.5 mm              │ mm   │ 12.34 MeV       │
-  │ 0.2                 │ cm   │ 14.81 MeV       │
-  │ ░░░░░               │      │                 │
-  └─────────────────────┴──────┴─────────────────┘
+  ┌─────────────────────┬──────┬─────────────────┬──────────────────┐
+  │ Range               │ Unit │ → Energy (auto) │ → STP (keV/µm) ▾ │
+  ├─────────────────────┼──────┼─────────────────┼──────────────────┤
+  │ 7.718 cm            │ cm   │ 100.0 MeV       │ 7.286            │
+  │ 45 µm               │ µm   │ 1.234 keV       │ 90.12            │
+  │ 1.5 mm              │ mm   │ 12.34 MeV       │ 38.45            │
+  │ 0.2                 │ cm   │ 14.81 MeV       │ 33.21            │
+  │ ░░░░░               │      │                 │                  │
+  └─────────────────────┴──────┴─────────────────┴──────────────────┘
   Valid range: 0.001–10000 MeV/nucl (ICRU 90, Proton)  [Export CSV ↓]
 ```
 
@@ -432,16 +448,25 @@ input values. Result type: [`InverseStpResult`](../06-wasm-api-contract.md#23-ca
 
 **Single-program mode:**
 
-| #   | Column          | Header                    | Editable?    | Content                                                                                                                    |
-| --- | --------------- | ------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------- |
-| 1   | **Typed Value** | "Stopping Power ({unit})" | **Yes**      | User types a stopping power value. No inline suffix detection — unit is set via the unit dropdown (see §5.3).              |
-| 2   | **Unit**        | "Unit"                    | Via dropdown | Unit dropdown for the input value. Default mirrors the forward Calculator output unit for the current material (see §5.3). |
-| 3   | **E low**       | "E low ({unit})"          | No           | Energy on the low-energy branch (below the Bragg peak), auto-scaled (see §6). `—` when no solution exists.                 |
-| 4   | **E high**      | "E high ({unit})"         | No           | Energy on the high-energy branch (above the Bragg peak), auto-scaled (see §6). `—` when no solution exists.                |
+| #   | Column          | Header                    | Editable?    | Content                                                                                                                                      |
+| --- | --------------- | ------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | **Typed Value** | "Stopping Power ({unit})" | **Yes**      | User types a stopping power value. No inline suffix detection — unit is set via the unit dropdown (see §5.3).                                |
+| 2   | **Unit**        | "Unit"                    | Via dropdown | Unit dropdown for the input value. Default mirrors the forward Calculator output unit for the current material (see §5.3).                   |
+| 3   | **E high**      | "→ Energy (high-E)"       | No           | Energy on the high-energy branch (falling side of the Bragg peak), auto-scaled (see §6). Primary, always shown. `—` when no solution exists. |
+| 4   | **Range high**  | "→ Range (high-E)"        | No           | CSDA range at the high-E energy (issue #673), auto-scaled length (see §6). `—` when no high-E solution exists.                               |
+| 5   | **E low**       | "→ Energy (low-E)"        | No           | Energy on the low-energy branch (rising side), auto-scaled. Revealed only when a row has two solutions (see ADR 012). `—` when no solution.  |
+| 6   | **Range low**   | "→ Range (low-E)"         | No           | CSDA range at the low-E energy (issue #673), auto-scaled. Revealed together with the low-E column. `—` when no low-E solution.               |
 
-The header labels for **E low** and **E high** include the active display
-unit after auto-scaling is applied to the first valid row; if rows
-auto-scale to different units, both columns use the unit string `"(auto)"`.
+Each energy column is immediately followed by its paired range column, so
+the two physical solutions stay visually grouped. The low-E pair (columns 5–6)
+is hidden until a row resolves to two distinct energies, then revealed together
+with the existing amber-tint animation (ADR 012). The CSDA range is recovered
+by running the forward `calculate()` at each resolved branch energy — the
+inverse-STP call only returns the energy and echoes the input stopping power.
+
+The header labels include the active display unit after auto-scaling is
+applied to the first valid row; if rows auto-scale to different units, the
+header uses the unit string `"(auto)"`.
 
 **Multi-program mode:** the single E low / E high column pair is replaced by
 **one E low column and one E high column per selected program**. Column
@@ -512,24 +537,27 @@ Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)
 
 ### 5.5 Wireframe (Advanced mode, non-gas material)
 
-Single-program:
+Single-program (low-E pair revealed because rows have two solutions):
 
 ```
   Branch note: two energies are shown per row because the same stopping
   power occurs at two different energies — one below and one above the
-  Bragg peak.
+  Bragg peak. Each energy is paired with the CSDA range at that energy.
 
-  ┌────────────────────┬────────┬──────────────┬──────────────┐
-  │ Stopping Power     │ Unit   │ E low        │ E high       │
-  │ (keV/µm)           │        │ (auto)       │ (auto)       │
-  ├────────────────────┼────────┼──────────────┼──────────────┤
-  │ 45.76              │keV/µm▾ │ 100.0 MeV    │ 312.4 MeV    │
-  │ 10.00              │keV/µm▾ │ 287.1 MeV    │ 891.0 MeV    │
-  │ 999.99             │keV/µm▾ │ —            │ —            │
-  │ ░░░░░░             │        │              │              │
-  └────────────────────┴────────┴──────────────┴──────────────┘
+  ┌────────────────┬────────┬─────────────┬─────────────┬─────────────┬─────────────┐
+  │ Stopping Power │ Unit   │ → Energy    │ → Range     │ → Energy    │ → Range     │
+  │ (keV/µm)       │        │ (high-E)    │ (high-E)    │ (low-E)     │ (low-E)     │
+  ├────────────────┼────────┼─────────────┼─────────────┼─────────────┼─────────────┤
+  │ 45.76          │keV/µm▾ │ 312.4 MeV   │ 63.21 cm    │ 100.0 MeV   │ 7.718 cm    │
+  │ 10.00          │keV/µm▾ │ 891.0 MeV   │ 388.2 cm    │ 287.1 MeV   │ 51.43 cm    │
+  │ 999.99         │keV/µm▾ │ —           │ —           │ —           │ —           │
+  │ ░░░░░░         │        │             │             │             │             │
+  └────────────────┴────────┴─────────────┴─────────────┴─────────────┴─────────────┘
   Valid STP range: 0–847.3 keV/µm (ICRU 90, Proton in Water)  [Export CSV ↓]
 ```
+
+When no row has two solutions, only the high-E pair (`→ Energy (high-E)`,
+`→ Range (high-E)`) is shown and the headers drop the `(high-E)` qualifier.
 
 Multi-program (two programs, ICRU 90 + PSTAR):
 
@@ -809,6 +837,8 @@ this material."
 ### Range — Results
 
 - [ ] A single energy column is shown (no branch selection — CSDA range is monotonic).
+- [ ] A `→ STP` column shows the stopping power at the resolved energy (issue #673); `—` until a valid energy resolves.
+- [ ] The `→ STP` column unit is controlled by the shared STP header menu (`stpOutputUnit`), in sync with the `Energy →` tab and persisted via `sunit=`; switching it re-renders without recalculation.
 - [ ] Negative or zero input is rejected with a validation message.
 
 ### Inverse STP — Input
@@ -820,6 +850,9 @@ this material."
 
 ### Inverse STP — Results
 
+- [ ] Each energy column is paired with a `→ Range` column showing the CSDA range at that branch energy (issue #673), auto-scaled length.
+- [ ] The low-E energy/range pair is hidden until a row resolves to two distinct solutions, then revealed together.
+- [ ] A row that collapses to a single solution shows only the high-E energy/range pair populated (low-E cells `—`).
 - [ ] Two energy columns are shown: E low (low-energy branch) and E high (high-energy branch).
 - [ ] `getInverseStp()` is called twice per batch: once with `side = 0` and once with `side = 1`.
 - [ ] When `side = 0` returns an error (no low-energy solution), E low shows `—`.
@@ -1361,10 +1394,16 @@ The Playwright acceptance scenarios above depend on their exact string values.
 | `inverse-range-unit`                      | Range tab master unit selector                   | —                                              |
 | `inverse-range-result-{i}`                | Range tab result cell, row `i`, single-program   | text = energy + unit                           |
 | `inverse-range-result-{i}-{programId}`    | Range tab result cell, row `i`, multi-program    | —                                              |
+| `inverse-range-stp-{i}`                   | Range tab `→ STP` cell, row `i` (issue #673)     | text = stopping power; `—` until resolved      |
+| `inverse-range-stp-unit-trigger`          | Range tab `→ STP` unit header menu trigger       | shared `stpOutputUnit` state                   |
 | `inverse-stp-input-{i}`                   | Inverse STP input cell, row `i`                  | —                                              |
 | `inverse-stp-unit`                        | Inverse STP master unit selector                 | —                                              |
+| `col-hi-range`                            | Inverse STP `→ Range (high-E)` column header     | issue #673                                     |
+| `col-lo-range`                            | Inverse STP `→ Range (low-E)` column header      | present only when low-E pair revealed          |
 | `inverse-stp-result-low-{i}`              | Inverse STP E-low cell, row `i`, single-program  | `"—"` when no solution                         |
 | `inverse-stp-result-high-{i}`             | Inverse STP E-high cell, row `i`, single-program | `"—"` when no solution                         |
+| `inverse-stp-result-range-high-{i}`       | Inverse STP `→ Range (high-E)` cell (issue #673) | `"—"` when no high-E solution                  |
+| `inverse-stp-result-range-low-{i}`        | Inverse STP `→ Range (low-E)` cell (issue #673)  | present only when low-E pair revealed          |
 | `inverse-stp-result-low-{i}-{programId}`  | E-low, row `i`, multi-program                    | —                                              |
 | `inverse-stp-result-high-{i}-{programId}` | E-high, row `i`, multi-program                   | —                                              |
 | `inverse-range-row-error-{i}`             | Range tab inline validation error, row `i`       | text = error message; absent when row is valid |
