@@ -252,7 +252,7 @@
             >
               <span class="hidden min-[400px]:block font-bold">Range →</span>
               <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy</span
+                >→ Energy, STP</span
               >
               <span class="min-[400px]:hidden font-bold">R→</span>
             </button>
@@ -269,7 +269,7 @@
             >
               <span class="hidden min-[400px]:block font-bold">STP →</span>
               <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy</span
+                >→ Energy, Range</span
               >
               <span class="min-[400px]:hidden font-bold">S→</span>
             </button>
