@@ -55,7 +55,7 @@ describe("encodeCalculatorUrl", () => {
     expect(p.get("program")).toBe("4");
   });
 
-  it("encodes multiple rows as comma-separated", () => {
+  it("encodes multiple rows ~-separated (issue #672)", () => {
     const p = encodeCalculatorUrl({
       ...defaultState,
       rows: [
@@ -63,7 +63,7 @@ describe("encodeCalculatorUrl", () => {
         { rawInput: "200", unit: "MeV", unitFromSuffix: false },
       ],
     });
-    expect(p.get("energies")).toBe("100,200");
+    expect(p.get("energies")).toBe("100~200");
   });
 
   it("encodes mixed-unit rows with :unit suffix for rows that differ from masterUnit", () => {
@@ -75,7 +75,7 @@ describe("encodeCalculatorUrl", () => {
         { rawInput: "500", unit: "keV", unitFromSuffix: true },
       ],
     });
-    expect(p.get("energies")).toBe("100,500:keV");
+    expect(p.get("energies")).toBe("100~500:keV");
   });
 
   it("re-parses inline-unit rawInput so '500 keV' becomes '500:keV' (no %20 in URL)", () => {
@@ -87,7 +87,7 @@ describe("encodeCalculatorUrl", () => {
         { rawInput: "500 keV", unit: "MeV", unitFromSuffix: false },
       ],
     });
-    expect(p.get("energies")).toBe("100,500:keV");
+    expect(p.get("energies")).toBe("100~500:keV");
   });
 
   it("skips empty rows", () => {
@@ -111,7 +111,7 @@ describe("encodeCalculatorUrl", () => {
         { rawInput: "200", unit: "MeV", unitFromSuffix: false },
       ],
     });
-    expect(p.get("energies")).toBe("100,200");
+    expect(p.get("energies")).toBe("100~200");
   });
 
   it("does not emit explicit :unit when row's parsed unit equals masterUnit", () => {
@@ -175,8 +175,11 @@ describe("calculatorUrlQueryString", () => {
       ],
     });
     expect(qs).toContain("500:keV");
+    // Multi-row energies use the ~ list separator, kept literal (issue #672).
+    expect(qs).toContain("energies=100~500:keV");
     expect(qs).not.toContain("%3A");
     expect(qs).not.toContain("%2C");
+    expect(qs).not.toContain("%7E");
   });
 });
 
@@ -298,7 +301,7 @@ describe("decodeCalculatorUrl", () => {
       quantityFocus: "stp",
     } as any);
     expect(p.get("mode")).toBe("advanced");
-    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("programs")).toBe("9~2");
     expect(p.has("qshow")).toBe(false); // omitted when default (stp) per ADR 006
     expect(p.has("hidden_programs")).toBe(false);
   });
@@ -311,7 +314,7 @@ describe("decodeCalculatorUrl", () => {
       quantityFocus: "range",
     } as any);
     expect(p.get("mode")).toBe("advanced");
-    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("programs")).toBe("9~2");
     expect(p.get("qshow")).toBe("range");
     expect(p.has("hidden_programs")).toBe(false);
   });
@@ -324,7 +327,7 @@ describe("decodeCalculatorUrl", () => {
       quantityFocus: "stp",
     } as any);
     expect(p.get("mode")).toBe("advanced");
-    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("programs")).toBe("9~2");
     expect(p.has("qshow")).toBe(false); // omitted when default (stp) per ADR 006
     expect(p.has("hidden_programs")).toBe(false);
   });
@@ -349,7 +352,7 @@ describe("decodeCalculatorUrl", () => {
 
     // Compare key params that should round-trip
     expect(reEncoded.get("mode")).toBe("advanced");
-    expect(reEncoded.get("programs")).toBe("9,2");
+    expect(reEncoded.get("programs")).toBe("9~2");
     expect(reEncoded.has("qshow")).toBe(false); // stp is default — omitted in canonical form
     expect(reEncoded.get("particle")).toBe("1");
     expect(reEncoded.get("material")).toBe("276");
@@ -364,7 +367,7 @@ describe("decodeCalculatorUrl", () => {
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("mode")).toBe("advanced");
-    expect(reEncoded.get("programs")).toBe("9,2");
+    expect(reEncoded.get("programs")).toBe("9~2");
     // hidden_programs is dropped — not re-emitted
     expect(reEncoded.has("hidden_programs")).toBe(false);
     expect(reEncoded.has("qshow")).toBe(false); // stp is default — omitted in canonical form
@@ -627,7 +630,7 @@ describe("decodeCalculatorUrl", () => {
       iunit: "cm",
     } as any);
     expect(p.get("imode")).toBe("csda");
-    expect(p.get("lookups")).toBe("7.718:cm,45:um,0.2");
+    expect(p.get("lookups")).toBe("7.718:cm~45:um~0.2");
     expect(p.get("iunit")).toBe("cm");
   });
 
@@ -645,7 +648,7 @@ describe("decodeCalculatorUrl", () => {
       iunit: "kev-um",
     } as any);
     expect(p.get("imode")).toBe("stp");
-    expect(p.get("lookups")).toBe("45.76,10.00");
+    expect(p.get("lookups")).toBe("45.76~10.00");
     expect(p.get("iunit")).toBe("kev-um");
   });
 
@@ -669,7 +672,7 @@ describe("decodeCalculatorUrl", () => {
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("imode")).toBe("csda");
-    expect(reEncoded.get("lookups")).toBe("7.718:cm,45:um,0.2");
+    expect(reEncoded.get("lookups")).toBe("7.718:cm~45:um~0.2");
     expect(reEncoded.get("iunit")).toBe("cm");
   });
 
@@ -681,7 +684,7 @@ describe("decodeCalculatorUrl", () => {
     const reEncoded = encodeCalculatorUrl(decoded);
 
     expect(reEncoded.get("imode")).toBe("stp");
-    expect(reEncoded.get("lookups")).toBe("45.76,10.00");
+    expect(reEncoded.get("lookups")).toBe("45.76~10.00");
     expect(reEncoded.get("iunit")).toBe("kev-um");
   });
 });
@@ -713,8 +716,8 @@ describe("duplicate params — last wins (§3.2)", () => {
 // ──────────────────────────────────────────────────────────────────────────
 
 describe("unknown params dropped from canonical URL", () => {
-  it("unknown foo=bar is absent from encoded output; urlv=1 input is upgraded to urlv=2", () => {
-    // urlv=1 here is intentional: also tests that a v1 bookmark is silently upgraded to v2
+  it("unknown foo=bar is absent from encoded output; urlv=1 input is upgraded to urlv=3", () => {
+    // urlv=1 here is intentional: also tests that a v1 bookmark is silently upgraded to v3
     // by the encode/decode round-trip.
     const params = new URLSearchParams(
       "urlv=1&particle=1&material=276&program=auto&energies=100&eunit=MeV&foo=bar&unknown=xyz",
@@ -724,7 +727,7 @@ describe("unknown params dropped from canonical URL", () => {
     const encodedStr = encoded.toString();
     expect(encodedStr).not.toContain("foo=");
     expect(encodedStr).not.toContain("unknown=");
-    expect(encodedStr).toContain("urlv=2");
+    expect(encodedStr).toContain("urlv=3");
     expect(encodedStr).toContain("particle=1");
   });
 
@@ -737,7 +740,7 @@ describe("unknown params dropped from canonical URL", () => {
     const encodedStr = encoded.toString();
     expect(encodedStr).not.toContain("foo=");
     expect(encodedStr).not.toContain("unknown=");
-    expect(encodedStr).toContain("urlv=2");
+    expect(encodedStr).toContain("urlv=3");
     expect(encodedStr).toContain("particle=1");
   });
 });
@@ -971,7 +974,7 @@ describe("encodeCalculatorUrl — multi-particle (across=particles)", () => {
       selectedParticleIds: [1, 2, 6],
     });
     expect(p.get("across")).toBe("particles");
-    expect(p.get("particles")).toBe("1,2,6");
+    expect(p.get("particles")).toBe("1~2~6");
   });
 
   it("omits across= and particles= when across is undefined", () => {
@@ -1007,18 +1010,20 @@ describe("encodeCalculatorUrl — multi-particle (across=particles)", () => {
       selectedProgramIds: [9, 2],
     });
     expect(p.get("across")).toBe("programs");
-    expect(p.get("programs")).toBe("9,2");
+    expect(p.get("programs")).toBe("9~2");
   });
 
   it("round-trips the canonical spec example URL", () => {
-    // Spec example: particles=1,2,6&across=particles
+    // Spec example: particles=1~2~6&across=particles. URLSearchParams.toString()
+    // percent-encodes the ~ separator as %7E (the human-readable literal ~ is
+    // restored by calculatorUrlQueryString); assert the encoded form here.
     const p = encodeCalculatorUrl({
       ...advancedBase,
       across: "particle",
       selectedParticleIds: [1, 2, 6],
     });
     const qs = p.toString();
-    expect(qs).toContain("particles=1%2C2%2C6");
+    expect(qs).toContain("particles=1%7E2%7E6");
     expect(qs).toContain("across=particles");
   });
 });

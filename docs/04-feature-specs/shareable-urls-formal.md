@@ -1,9 +1,12 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
-> **Status:** v8 (2026-05-29) — v2 URL schema (`urlv=2`); v1 retired (no longer
-> migrated, see §3.4); parser refactored to the §6 layered architecture
-> (Peggy grammar → AST → resolver → canonical writer) with span-accurate
-> diagnostics (§3.9).
+> **Status:** v9 (2026-06-01) — v3 URL schema (`urlv=3`): the list-item
+> separator changed from `,` to `~` (issue #672) because messenger/email
+> auto-linkifiers truncate links at the first comma. v2 links are still accepted
+> on read (the decoders read both separators) and upgraded to canonical v3 on
+> load; v1 remains retired (no longer migrated, see §3.4). Parser uses the §6
+> layered architecture (Peggy grammar → AST → resolver → canonical writer) with
+> span-accurate diagnostics (§3.9).
 >
 > **Cross-check:** If this file disagrees with `shareable-urls.md`, this formal contract wins.
 >
@@ -23,6 +26,12 @@
 > `calc=` added for calculator operation (`forward|range|inverse-stp`);
 > `length-unit-token` extended with `dm` and `km`; deprecated v1 params marked with
 > `;(deprecated)` — still parsed for migration, never emitted in canonical v2 output.
+>
+> **v9** (2026-06-01): v3 schema (`urlv=3`). The list-item separator is now `~`
+> (RFC 3986 _unreserved_) instead of `,`; see `list-sep`. Decoders accept `~`
+> **and** the legacy `,` so pre-#672 links keep working; canonical output emits
+> `~` only. No other token changed, so `urlv=2` stays within the supported range
+> (`MIN_SUPPORTED_URL_MAJOR = 2`).
 >
 > **Normative relationship:**
 >
@@ -102,11 +111,11 @@ urlv-pair           = "urlv=" int-pos
 extdata-pair        = "extdata=" ext-label ":" url-value
                     ; label/url separator is the first literal ':' in the value
 particle-pair       = "particle=" int-pos
-particles-pair      = "particles=" entity-id *("," entity-id)   ; advanced mode, across=particles only
+particles-pair      = "particles=" entity-id *(list-sep entity-id)   ; advanced mode, across=particles only
 material-pair       = "material=" (int-pos / "custom")
-materials-pair      = "materials=" entity-id *("," entity-id)   ; advanced mode, across=materials only
+materials-pair      = "materials=" entity-id *(list-sep entity-id)   ; advanced mode, across=materials only
 program-pair        = "program=" ("auto" / int-pos)
-programs-pair       = "programs=" entity-id *("," entity-id)   ; advanced mode, across=programs only
+programs-pair       = "programs=" entity-id *(list-sep entity-id)   ; advanced mode, across=programs only
 
 ; -----------------------------
 ; v2 calculator params
@@ -130,7 +139,7 @@ across-token        = "none" / "programs" / "materials" / "particles"
 
 ; Energy input list (calc=forward only)
 energies-pair       = "energies=" energies
-energies            = energy-item *("," energy-item)
+energies            = energy-item *(list-sep energy-item)
 energy-item         = number [":" energy-unit-token]
 
 ; Energy unit anchor (replaces v1 eunit=)
@@ -143,7 +152,7 @@ uanchor-token       = "MeV" / "MeV/nucl" / "MeV/u"
 
 ; Inverse-lookup input list (calc=range or calc=inverse-stp only)
 lookups-pair        = "lookups=" lookups-list
-lookups-list        = lookup-item *("," lookup-item)
+lookups-list        = lookup-item *(list-sep lookup-item)
 lookup-item         = number [":" lookup-unit-token]
 lookup-unit-token   = length-unit-token / stp-unit-token
                     ; calc=range → length-unit-token; calc=inverse-stp → stp-unit-token
@@ -180,7 +189,7 @@ energy-unit-token   = "eV"      / "keV"      / "MeV"      / "GeV"      / "TeV"
 ; -----------------------------
 ; plot params
 ; -----------------------------
-series-pair         = "series=" series-item *("," series-item)
+series-pair         = "series=" series-item *(list-sep series-item)
 series-item         = entity-id "." entity-id "." entity-id
                     ; components are programId.particleId.materialId
 stp-unit-pair       = "stp_unit=" stp-unit-token
@@ -213,7 +222,7 @@ ival-pair           = "ival=" number
 ; -----------------------------
 mat-name-pair       = "mat_name=" value
 mat-density-pair    = "mat_density=" number
-mat-elements-pair   = "mat_elements=" mat-element *("," mat-element)
+mat-elements-pair   = "mat_elements=" mat-element *(list-sep mat-element)
 mat-element         = int-pos ":" number
 mat-ival-pair       = "mat_ival=" number
 mat-phase-pair      = "mat_phase=" ("gas" / "condensed")
@@ -234,13 +243,13 @@ qfocus-pair         = "qfocus=" ("both" / "stp" / "csda")  ;(deprecated → qsho
 imode-pair          = "imode=" ("stp" / "csda")             ;(deprecated → mode=)
 
 ivalues-pair        = "ivalues=" ivalues-list                ;(deprecated → lookups=)
-ivalues-list        = ivalue-item *("," ivalue-item)
+ivalues-list        = ivalue-item *(list-sep ivalue-item)
 ivalue-item         = number [":" ivalue-unit-token]
 ivalue-unit-token   = stp-unit-token / length-unit-token
 
 iunit-pair          = "iunit=" ivalue-unit-token            ;(deprecated → runit= / sunit=)
 
-hidden-programs-pair= "hidden_programs=" entity-id *("," entity-id)  ;(deprecated; silently dropped)
+hidden-programs-pair= "hidden_programs=" entity-id *(list-sep entity-id)  ;(deprecated; silently dropped)
 
 ; mode=basic|advanced is both the v1 picker-mode token and the v2 picker-mode
 ; token. It is preserved during migration and emitted by canonical v2 output.
@@ -252,6 +261,17 @@ entity-id           = int-pos / ext-ref
 ext-ref             = "ext:" ext-label ":" entity-local-id
 ext-label           = 1*(ALPHA / DIGIT / "_" / "-")
 entity-local-id     = 1*(ALPHA / DIGIT / "_" / "-")
+
+; -----------------------------
+; list-item separator (issue #672)
+; -----------------------------
+list-sep            = "~" / ","
+                    ; "~" is canonical from v3 (RFC 3986 unreserved; never
+                    ; truncated by messenger/email auto-linkifiers). The legacy
+                    ; "," is accepted on read so pre-#672 links keep parsing, but
+                    ; is NEVER emitted in canonical v3 output. The per-item ":"
+                    ; suffix (e.g. 500:keV, 7.72:cm) and the series "." triplet
+                    ; separator are unchanged — linkifiers keep both.
 
 ; -----------------------------
 ; lexical rules
@@ -295,13 +315,17 @@ Notes:
 5. Version detection (see `url-version.ts`):
    a. Read `urlv`. If **missing**, treat leniently as the current schema
    (legacy links predating versioning) and proceed.
-   b. If `urlv === 2` → proceed to step 6 (native v2 parse).
+   b. If `MIN_SUPPORTED_URL_MAJOR (2) ≤ urlv ≤ CURRENT_URL_MAJOR (3)` → proceed to
+   step 6 (native parse). v2 and v3 differ only in the list-item separator
+   (`,` → `~`, issue #672) and the decoders read both, so a v2 link hydrates
+   identically and is rewritten to canonical v3 on `replaceState`.
    c. If `urlv === 1` → **unsupported**. v1 is no longer migrated (§3.4); show the
    unsupported-link banner with "Load defaults" and halt. **No state is hydrated
    from the link** — entity selection, energy rows, advanced mode and series are
    left at their defaults (rejected, not migrated); "Load defaults" then proceeds
    from those defaults.
-   d. If `urlv > 2` → unsupported-link banner; halt with no hydration (as 5c).
+   d. If `urlv > CURRENT_URL_MAJOR (3)` → unsupported-link banner; halt with no
+   hydration (as 5c).
    e. If `urlv < 1` or non-integer → unsupported-link banner, Load defaults only;
    halt with no hydration (as 5c).
 6. For each `extdata` value, split on the first literal `:` to extract label and
@@ -332,8 +356,10 @@ Unknown parameters are silently ignored and never emitted in canonical output.
 > `urlv=1` (or any major below `MIN_SUPPORTED_URL_MAJOR = 2`) is rejected with the
 > unsupported-link banner. The migration table below is kept for historical
 > reference only; no code path applies it. The `migrateUrl` seam in
-> `url-version.ts` is the identity for the current major and is where a future
-> `v2 → v3` chain would be registered.
+> `url-version.ts` is the identity for the supported majors: the v2 → v3 change
+> (issue #672) needs no token rewriting because the decoders read both list
+> separators, so loading a v2 link yields the same state and `replaceState`
+> emits the canonical v3 (`~`) form.
 
 Historical mapping (no longer applied):
 
@@ -403,7 +429,7 @@ Energy/lookup precedence:
 
 Global:
 
-- `urlv=2` (canonical output always emits this)
+- `urlv=3` (canonical output always emits this; `urlv=2` accepted on read)
 - `mode=basic` (canonical calculator output always emits explicit picker mode)
 - `particle=1`
 - `material=276`
@@ -511,11 +537,17 @@ by the returned list (§6), never from within the parser.
 
 ---
 
-## 4. Canonicalization Algorithm (v2)
+## 4. Canonicalization Algorithm (v3)
+
+> **List items** are joined with the canonical `~` separator (issue #672) in all
+> list-valued params (`particles`, `materials`, `programs`, `energies`,
+> `lookups`, `series`, `mat_elements`). A bare `,` is never emitted. The
+> per-item `:unit` suffix and the `series` `.` triplet separator are kept literal
+> (both survive auto-linkification).
 
 Canonical parameter order for `/calculator`:
 
-1. `urlv` (always `2`)
+1. `urlv` (always `3`)
 2. `extdata` — one per source, label-declaration order; omitted when none.
 3. `mode` — `basic` or `advanced` (always emitted for calculator)
 4. `particle`, `material`, `program` — singular anchors
@@ -553,7 +585,7 @@ Normalization rules:
 - `mode=basic|advanced` is always emitted for calculator URLs; never infer it from entity params.
 - Plural entity lists are emitted only in `mode=advanced` and only when they match `across=`.
 - In `series`, always emit resolved `int-pos` or `ext-ref` triplets; never `auto`.
-- Comma-separated lists have no spaces.
+- List-valued params join items with `~` (issue #672) and have no spaces; a bare `,` is never emitted.
 - In `lookups=`, per-value unit suffixes use canonical token form.
 - In `mat_elements=`, elements in ascending Z order; atom counts via `Number.prototype.toString()`.
 - `mat_name` percent-encoded via `encodeURIComponent`.
@@ -563,7 +595,14 @@ Normalization rules:
 
 ## 5. Conformance Test Vectors
 
-### 5.1 Valid v2 Inputs
+> **List separator (issue #672).** Canonical output joins list items with `~`
+> and never emits a bare `,`. The `Input:` lines below keep the legacy `,`
+> on purpose — they exercise the backward-compatible read path (`urlv=2` links
+> shared before #672). Each `Canonical:` line shows the v3 form: list items use
+> `~` and `urlv=3`. Where a vector says "Canonical: unchanged", read it as "same
+> params, list items re-joined with `~`, `urlv=3`".
+
+### 5.1 Valid v2/v3 Inputs
 
 1. Basic calculator, forward mode, default params:
    - Input: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100,200&uanchor=MeV`
@@ -575,12 +614,12 @@ Normalization rules:
 
 3. Advanced calculator, range mode (input has redundant `runit=cm` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&calc=range`
-   - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=MeV&calc=range`
+   - Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm~45:um~1.5:mm&uanchor=MeV&calc=range`
    - Note: `runit=cm` equals the default → omitted in canonical output. `across=` is absent intentionally: this exercises `mode=advanced` with the default `across=none` and no comparison list.
 
 4. Advanced calculator, inverse-STP mode, both branches (input has redundant `sunit=kev-um` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`
-   - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`
+   - Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um~5.0:kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`
    - Note: `sunit=kev-um` equals the default for condensed material → omitted; `istpbranch=both` is non-default → emitted. `across=` is absent intentionally: this exercises `mode=advanced` with the default `across=none` and no comparison list.
 
 5. Compare-across programs, range display:
@@ -606,7 +645,7 @@ Normalization rules:
 10. Advanced Options — default values omitted:
 
 - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV&interp_scale=log-log&mstar_mode=b`
-- Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
+- Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
 
 11. Custom compound — PMMA, condensed, no iValue:
 
@@ -617,46 +656,46 @@ Normalization rules:
     - Input: `urlv=2&mode=basic&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl`
     - Canonical: unchanged.
 
-### 5.2 v1 → v2 Migration Vectors
+### 5.2 v1 → v3 Migration Vectors (v1 retired — historical)
 
-These vectors arrive with `urlv=1` (or no `urlv`) and must be migrated to v2 canonical form. The migration banner (§7.2 of `shareable-urls.md`) is shown after migration.
+These vectors arrive with `urlv=1` (or no `urlv`) and would map to v3 canonical form (v1 is retired since v8 — these are historical). The migration banner (§7.2 of `shareable-urls.md`) is shown after migration.
 
 1. v1 basic forward mode:
    - Input: `urlv=1&particle=1&material=276&program=auto&energies=100,200&eunit=MeV`
-   - v2 canonical: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100,200&uanchor=MeV`
+   - canonical (v3): `urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100~200&uanchor=MeV`
 
 2. v1 advanced mode, qfocus=csda:
    - Input: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=csda`
-   - v2 canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2&energies=100&uanchor=MeV&across=programs&qshow=range`
+   - canonical (v3): `urlv=3&mode=advanced&particle=1&material=276&program=9&programs=9~2&energies=100&uanchor=MeV&across=programs&qshow=range`
    - Note: `mode=advanced` is preserved explicitly; v1 `programs=` seeds `program=9` and `across=programs`.
 
 3. v1 advanced mode, qfocus=both (default — omit):
    - Input: `urlv=1&particle=1&material=276&programs=9,2&energies=100&eunit=MeV&mode=advanced&qfocus=both`
-   - v2 canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2&energies=100&uanchor=MeV&across=programs`
+   - canonical (v3): `urlv=3&mode=advanced&particle=1&material=276&program=9&programs=9~2&energies=100&uanchor=MeV&across=programs`
    - Note: `qfocus=both` → `qshow=` absent (default).
 
 4. v1 range tab (imode=csda), mixed units, iunit=cm (default):
    - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=csda&ivalues=7.718:cm,45:um,1.5:mm&iunit=cm`
-   - v2 canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&uanchor=MeV&calc=range`
+   - canonical (v3): `urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm~45:um~1.5:mm&uanchor=MeV&calc=range`
    - Note: `imode=csda` → `calc=range`; `ivalues=` → `lookups=`; `iunit=cm` → `runit=cm` (default → omitted).
 
 5. v1 inverse-STP tab, non-gas material, iunit=kev-um (default):
    - Input: `urlv=1&particle=1&material=276&programs=9&energies=100&eunit=MeV&mode=advanced&qfocus=both&imode=stp&ivalues=45.76,10.00&iunit=kev-um`
-   - v2 canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=45.76,10.00&uanchor=MeV&calc=inverse-stp`
+   - canonical (v3): `urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=45.76~10.00&uanchor=MeV&calc=inverse-stp`
    - Note: `sunit=kev-um` default → omitted.
 
 6. v1 advanced mode — hidden_programs silently dropped:
    - Input: `urlv=1&particle=1&material=276&programs=9,2,101&energies=100&eunit=MeV&mode=advanced&hidden_programs=2&qfocus=both`
-   - v2 canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2,101&energies=100&uanchor=MeV&across=programs`
+   - canonical (v3): `urlv=3&mode=advanced&particle=1&material=276&program=9&programs=9~2~101&energies=100&uanchor=MeV&across=programs`
 
 7. No urlv (legacy):
    - Input: `particle=1&material=276&program=auto`
-   - Treated as v1; v2 canonical: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
+   - Treated as v1; canonical (v3): `urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
    - Note: `energies=` default pre-fill applies.
 
 8. v1 eunit=MeV/nucl:
    - Input: `urlv=1&particle=6&material=276&program=auto&energies=10,100&eunit=MeV/nucl`
-   - v2 canonical: `urlv=2&mode=basic&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl`
+   - canonical (v3): `urlv=3&mode=basic&particle=6&material=276&program=auto&energies=10~100&uanchor=MeV/nucl`
 
 ### 5.3 Invalid / Recovery
 
@@ -671,29 +710,29 @@ These vectors arrive with `urlv=1` (or no `urlv`) and must be migrated to v2 can
 3. Advanced params in basic mode:
    - Input: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV&qshow=stp`
    - Result: `qshow=` ignored (basic mode); canonical strips it.
-   - Canonical: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
+   - Canonical: `urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 
 4. Advanced Options in basic mode — silently dropped:
    - Input: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV&density=1.2`
-   - Canonical: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
+   - Canonical: `urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 
 5. `lookups=` without `calc=range` or `calc=inverse-stp` — silently ignored:
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV&lookups=7.718`
-   - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
+   - Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
 
 6. Custom compound — PMMA, condensed (phase omitted), with iValue; element order corrected:
    - Input: `urlv=2&mode=advanced&particle=1&material=custom&program=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=8:2,1:8,6:5&mat_ival=74.0`
-   - Canonical: `urlv=2&mode=advanced&particle=1&material=custom&program=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2&mat_ival=74`
+   - Canonical: `urlv=3&mode=advanced&particle=1&material=custom&program=9&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8~6:5~8:2&mat_ival=74`
    - Note: elements re-ordered by ascending Z; `mat_ival=74` (trailing .0 dropped).
 
 7. Custom compound — mat_name missing → fall back to material 276:
    - Input: `urlv=2&mode=advanced&particle=1&material=custom&program=9&energies=100&uanchor=MeV&mat_density=1.2&mat_elements=1:8,6:5,8:2`
    - Result: `mat_name` absent → fall back to default material (276); warning banner.
-   - Canonical: `urlv=2&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
+   - Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&energies=100&uanchor=MeV`
 
 8. Custom compound — mat\_\* in basic mode — silently dropped:
    - Input: `urlv=2&mode=basic&particle=1&material=custom&program=auto&energies=100&uanchor=MeV&mat_name=PMMA&mat_density=1.2&mat_elements=1:8,6:5,8:2`
-   - Canonical: `urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
+   - Canonical: `urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
    - Note: no advanced mode → `material=custom` and `mat_*` dropped; material defaults to 276.
 
 9. `runit=km`, alpha in air, advanced range mode:

@@ -7,16 +7,19 @@
 pair         = extdata-pair / energies-pair / lookups-pair / series-pair
              / mat-elements-pair / entity-list-pair / scalar-pair / unknown-pair
 
-; structured, list-bearing params
-energies-pair     = "energies=" energy-item *("," energy-item)
+; structured, list-bearing params  (list-sep = "~" / "," — see below)
+energies-pair     = "energies=" energy-item *(list-sep energy-item)
 energy-item       = number [":" energy-unit-token]
-lookups-pair      = ("lookups=" / "ivalues=") lookup-item *("," lookup-item)
-series-pair       = "series=" series-item *("," series-item)
+lookups-pair      = ("lookups=" / "ivalues=") lookup-item *(list-sep lookup-item)
+series-pair       = "series=" series-item *(list-sep series-item)
 series-item       = entity-id "." entity-id "." entity-id   ; program.particle.material
-mat-elements-pair = "mat_elements=" mat-element *("," mat-element)
+mat-elements-pair = "mat_elements=" mat-element *(list-sep mat-element)
 mat-element       = digits ":" number                       ; Z:count
-entity-list-pair  = ("programs=" / "particles=" / "materials=") entity-id *("," entity-id)
+entity-list-pair  = ("programs=" / "particles=" / "materials=") entity-id *(list-sep entity-id)
 extdata-pair      = "extdata=" label ":" url                ; split on the first ':'
+
+; list-item separator: "~" is canonical (v3+, issue #672); legacy "," accepted on read
+list-sep          = "~" / ","
 
 ; single-valued params (value kept verbatim, then percent-decoded)
 scalar-pair  = scalar-key "=" value
@@ -49,12 +52,15 @@ digits       = 1*DIGIT`;
       <abbr title="Augmented Backus–Naur Form (RFC 5234)">ABNF</abbr>-style grammar, implemented as
       a
       <a href="https://peggyjs.org/" target="_blank" rel="noreferrer" class="underline">Peggy</a>
-      parser that produces an abstract syntax tree. The current schema is <strong>v2</strong>
-      (<code>urlv=2</code>); links using the retired v1 format are no longer parsed and instead show
-      an "unsupported link" notice with a one-click "load defaults" action.
+      parser that produces an abstract syntax tree. The current schema is <strong>v3</strong>
+      (<code>urlv=3</code>), which joins list values with <code>~</code> instead of <code>,</code>
+      so messenger and email auto-linkifiers don't truncate a shared link at the first comma. Older
+      <code>urlv=2</code> links (comma-separated) still load and are rewritten to the
+      <code>~</code> form; links using the retired v1 format are no longer parsed and instead show an
+      "unsupported link" notice with a one-click "load defaults" action.
     </p>
 
-    <h3>Grammar (v2, abridged)</h3>
+    <h3>Grammar (v3, abridged)</h3>
     <pre class="overflow-x-auto rounded-lg border bg-muted p-4 text-sm"><code>{grammar}</code></pre>
 
     <h3>How a URL is processed</h3>
@@ -83,7 +89,7 @@ digits       = 1*DIGIT`;
       with a severity, a message, and a caret underline of the offending text, for example:
     </p>
     <pre class="overflow-x-auto rounded-lg border bg-muted p-4 text-sm"><code
-        >…energies=100,200:foo
+        >…energies=100~200:foo
                  ^^^
 Expected an energy unit such as keV, MeV, or MeV/u.</code
       ></pre>

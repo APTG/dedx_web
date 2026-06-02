@@ -59,6 +59,37 @@ describe("parseQuery — structured list params", () => {
     });
   });
 
+  it("parses energies split on the canonical ~ separator (issue #672)", () => {
+    const p = pair("energies=100~200:keV", "energies");
+    expect(p).toMatchObject({
+      type: "energies",
+      raw: "100~200:keV",
+      items: [
+        { value: "100", unit: null },
+        { value: "200", unit: "keV" },
+      ],
+    });
+  });
+
+  it("parses energies with a mix of ~ and legacy , separators", () => {
+    const p = pair("energies=100,200~300", "energies");
+    expect(p).toMatchObject({
+      type: "energies",
+      items: [{ value: "100" }, { value: "200" }, { value: "300" }],
+    });
+  });
+
+  it("parses series triplets split on the canonical ~ separator", () => {
+    const p = pair("series=9.1.276~ext:cake:7.1.276", "series");
+    expect(p).toMatchObject({
+      type: "series",
+      items: [
+        { program: "9", particle: "1", material: "276" },
+        { program: "ext:cake:7", particle: "1", material: "276" },
+      ],
+    });
+  });
+
   it("falls back to raw when an energy unit is not recognized", () => {
     const p = pair("energies=100:foo", "energies");
     expect(p).toMatchObject({ type: "energies", items: null, raw: "100:foo" });
