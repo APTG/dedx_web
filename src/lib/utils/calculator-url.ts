@@ -13,6 +13,7 @@ import {
   parseCustomCompound,
   encodeMatElements,
   URL_LIST_SEPARATOR,
+  URL_LIST_SEPARATOR_ENCODED,
   URL_LIST_SPLIT_RE,
   type MatElementUrl,
 } from "$lib/utils/url-shared";
@@ -436,6 +437,11 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
       for (const row of state.lookups) {
         const trimmed = row.rawInput.trim();
         if (trimmed === "") continue;
+        // Drop rows whose token would inject a list separator (`,`/`~`) or a `:`
+        // into the canonical URL — same guard as `energies` — so a bad value
+        // (e.g. `1,000` or `100~200`) can't corrupt tokenization on reload or
+        // reintroduce the linkifier truncation of #672.
+        if (!isUrlSafeNumeric(trimmed)) continue;
         // Encode as `rawInput:unit` when unitFromSuffix, else bare `rawInput`
         if (row.unitFromSuffix) {
           encodedLookups.push(`${trimmed}:${row.unit}`);
@@ -505,7 +511,10 @@ export function calculatorUrlQueryString(state: CalculatorUrlState): string {
       remaining.append(key, value);
     }
   }
-  const restStr = remaining.toString().replaceAll("%3A", ":").replaceAll("%7E", "~");
+  const restStr = remaining
+    .toString()
+    .replaceAll("%3A", ":")
+    .replaceAll(URL_LIST_SEPARATOR_ENCODED, URL_LIST_SEPARATOR);
   if (restStr) parts.push(restStr);
 
   return parts.join("&");

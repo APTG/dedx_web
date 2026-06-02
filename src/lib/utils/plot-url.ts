@@ -7,6 +7,7 @@ import {
   externalDataQuerySegments,
 } from "$lib/external-data/url";
 import { parseQuery, UrlParseError } from "$lib/utils/url-parse";
+import { CURRENT_URL_MAJOR } from "$lib/utils/url-version";
 import type { QueryNode } from "$lib/utils/url-ast";
 import type { Diagnostic } from "$lib/utils/url-diagnostics";
 import {
@@ -14,6 +15,7 @@ import {
   parseCustomCompound,
   encodeMatElements,
   URL_LIST_SEPARATOR,
+  URL_LIST_SEPARATOR_ENCODED,
   URL_LIST_SPLIT_RE,
   type MatElementUrl,
 } from "$lib/utils/url-shared";
@@ -81,6 +83,10 @@ export interface PlotUrlDecoded {
 
 export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
   const params = new URLSearchParams();
+  // Emit the URL major so plot links carry the same version signal as calculator
+  // links: an older client opening a v3 `~`-separated `series=` list sees the
+  // unsupported-link banner instead of silently dropping the series (issue #672).
+  params.set("urlv", String(CURRENT_URL_MAJOR));
   if (input.externalSources && input.externalSources.length > 0) {
     appendExtdataParams(params, input.externalSources);
   }
@@ -171,8 +177,8 @@ export function encodePlotUrl(input: PlotUrlInput): URLSearchParams {
 
 /**
  * Build the plot query string for the URL bar.
- * Mirrors `calculatorUrlQueryString`: urlv is not part of plot URLs, so the
- * canonical order is extdata first, then the rest with `:` and `,` kept literal.
+ * Mirrors `calculatorUrlQueryString`: `urlv` first, then `extdata` (one per
+ * source), then the rest with `:` literal and the `~` list separator restored.
  * The external URL portion stays percent-encoded (see calculatorUrlQueryString
  * for the full explanation).
  */
@@ -180,19 +186,28 @@ export function plotUrlQueryString(input: PlotUrlInput): string {
   const params = encodePlotUrl(input);
   const parts: string[] = [];
 
+  // 1. urlv first.
+  const urlv = params.get("urlv");
+  if (urlv !== null) parts.push(`urlv=${urlv}`);
+
+  // 2. extdata in source declaration order (specially encoded).
   if (input.externalSources && input.externalSources.length > 0) {
     parts.push(...externalDataQuerySegments(input.externalSources));
   }
 
+  // 3. Remaining params (excluding urlv and extdata, already emitted).
   const paramsNoExtdata = new URLSearchParams();
   for (const [key, value] of params) {
-    if (key !== "extdata") paramsNoExtdata.append(key, value);
+    if (key !== "extdata" && key !== "urlv") paramsNoExtdata.append(key, value);
   }
 
-  // Keep `:` literal (per-row/triplet sub-separator) and restore `~` (the list
-  // separator, which `URLSearchParams` percent-encodes as `%7E`) so shared URLs
+  // Keep `:` literal (per-row/triplet sub-separator) and restore the `~` list
+  // separator (which `URLSearchParams` percent-encodes as `%7E`) so shared URLs
   // stay human-readable and survive auto-linkification (issue #672).
-  const restStr = paramsNoExtdata.toString().replaceAll("%3A", ":").replaceAll("%7E", "~");
+  const restStr = paramsNoExtdata
+    .toString()
+    .replaceAll("%3A", ":")
+    .replaceAll(URL_LIST_SEPARATOR_ENCODED, URL_LIST_SEPARATOR);
   if (restStr) parts.push(restStr);
 
   return parts.join("&");

@@ -38,7 +38,10 @@
       <h2 class="text-2xl font-semibold">Shareable URL examples</h2>
       <p class="text-muted-foreground">
         The app stores calculator and plot state in the URL so you can bookmark or share exact
-        scenarios. These examples use the current <code>urlv=2</code> syntax.
+        scenarios. These examples use the current <code>urlv=3</code> syntax. Lists of values
+        (energy rows, compared programs, plot series) are joined with <code>~</code> so messenger and
+        email auto-linkifiers don't truncate a shared link at a comma. Links shared before this change
+        (using commas) still open correctly.
       </p>
 
       <h3 class="mt-4 text-xl font-semibold">Basic calculator example</h3>

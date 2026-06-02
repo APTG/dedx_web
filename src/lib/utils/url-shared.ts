@@ -17,10 +17,27 @@ import type { SourceSpan, QueryNode, PairNode } from "./url-ast";
  * We emit `~` (RFC 3986 *unreserved*) rather than the `,` used through `urlv=2`:
  * messenger/email auto-linkifiers are heuristic and terminate a link at the
  * first comma (sentence punctuation), so multi-item shared links were truncated
- * (issue #672). `~` is never percent-encoded and is reliably kept inside
- * auto-links, keeping URLs both human-readable and paste-safe.
+ * (issue #672). `~` is reliably kept inside auto-links, so the URL survives
+ * pasting into Signal/iMessage/email.
+ *
+ * Note: although `~` is *unreserved*, `URLSearchParams.toString()` still
+ * percent-encodes it as `%7E` (its form-urlencoded safe set excludes `~`). The
+ * query-string writers (`calculatorUrlQueryString` / `plotUrlQueryString`)
+ * therefore restore `%7E` → `~` for readability before the URL reaches the bar.
  */
 export const URL_LIST_SEPARATOR = "~";
+
+/**
+ * The exact substring `URLSearchParams.toString()` emits for the separator
+ * (`%7E`). Derived from {@link URL_LIST_SEPARATOR} — *not* a hard-coded literal —
+ * so it cannot drift if the separator changes. Note `encodeURIComponent` is the
+ * wrong tool here: it leaves `~` untouched (unreserved), whereas the
+ * form-urlencoded serializer used by `URLSearchParams` percent-encodes it. The
+ * query-string writers restore this back to `~` for readability.
+ */
+export const URL_LIST_SEPARATOR_ENCODED = new URLSearchParams([["x", URL_LIST_SEPARATOR]])
+  .toString()
+  .slice("x=".length);
 
 /**
  * Split a list-valued query param on the canonical `~` **or** the legacy `,`,

@@ -2,7 +2,7 @@ import { browser } from "$app/environment";
 import { replaceState } from "$app/navigation";
 import { page } from "$app/state";
 import { untrack } from "svelte";
-import { encodePlotUrl } from "$lib/utils/plot-url";
+import { plotUrlQueryString } from "$lib/utils/plot-url";
 import { customMaterialUrlFields, isCustomMaterial } from "$lib/utils/custom-compound-material";
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
@@ -45,7 +45,10 @@ export function setupPlotUrlSync(
       plotState.series.some((s) => s.labelSuffix === " high-E") &&
       plotState.series.some((s) => s.labelSuffix === " low-E");
 
-    const params = encodePlotUrl({
+    // Use plotUrlQueryString (not encodePlotUrl().toString()) so the URL bar gets
+    // the canonical form: `urlv` version signal, literal `:` and `~` list
+    // separators (readable + linkifier-safe, issue #672), and ordered extdata.
+    const query = plotUrlQueryString({
       particleId: typeof selectedParticleId === "number" ? selectedParticleId : null,
       materialId: builtinUrlMat && typeof builtinUrlMat.id === "number" ? builtinUrlMat.id : null,
       programId: typeof selectedProgramId === "number" ? selectedProgramId : -1,
@@ -62,8 +65,6 @@ export function setupPlotUrlSync(
       externalSources: loadedExternalSources,
       ...customUrlFields,
     });
-
-    const query = params.toString();
     const newUrl =
       query.length > 0 ? `${window.location.pathname}?${query}` : window.location.pathname;
     const currentUrl = `${window.location.pathname}${window.location.search}`;

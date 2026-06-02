@@ -597,14 +597,15 @@ describe("Plot URL — mixed EntityId series round-trip", () => {
 });
 
 describe("plotUrlQueryString — extdata ordering and encoding", () => {
-  it("emits extdata before other params", () => {
+  it("emits urlv first, then extdata before other params", () => {
     const input: PlotUrlInput = {
       ...basePlotInput,
       externalSources: [{ label: "srim", url: "https://example.com/srim.webdedx" }],
     };
     const qs = plotUrlQueryString(input);
     const keys = qs.split("&").map((p) => p.split("=")[0]);
-    expect(keys[0]).toBe("extdata");
+    expect(keys[0]).toBe("urlv");
+    expect(keys[1]).toBe("extdata");
   });
 
   it("keeps https%3A in extdata value", () => {

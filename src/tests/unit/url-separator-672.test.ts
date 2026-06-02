@@ -224,6 +224,23 @@ describe("issue #672 — round-trip stability with the new separator", () => {
     });
     expect(p.get("energies")).toBe("100~300");
   });
+
+  it("a separator-bearing lookup rawInput is dropped, not injected (guard parity with energies)", () => {
+    // Same URL-safety guard must apply to inverse-lookup rows so a stray `,`/`~`
+    // can't reintroduce the linkifier truncation or corrupt tokenization.
+    const p = encodeCalculatorUrl({
+      ...calcBase,
+      imode: "csda",
+      iunit: "cm",
+      lookups: [
+        { rawInput: "7.72", unit: "cm", unitFromSuffix: true },
+        { rawInput: "1,000", unit: "cm", unitFromSuffix: true },
+        { rawInput: "45~9", unit: "cm", unitFromSuffix: true },
+        { rawInput: "20", unit: "cm", unitFromSuffix: true },
+      ],
+    });
+    expect(p.get("lookups")).toBe("7.72:cm~20:cm");
+  });
 });
 
 describe("issue #672 — linkifier survives the canonical URL intact", () => {
@@ -268,5 +285,26 @@ describe("issue #672 — v2 → v3 canonical-form upgrade", () => {
     expect(reEncoded).toContain("urlv=3");
     expect(reEncoded).toContain("energies=100~200~500");
     expect(reEncoded).not.toContain(",");
+  });
+
+  it("plot URLs carry the urlv version signal so old clients can detect v3", () => {
+    // Without this, an older client opening a v3 `~`-series plot link would
+    // silently drop the series instead of showing the unsupported-link banner.
+    const input: PlotUrlInput = {
+      particleId: 1,
+      materialId: 276,
+      programId: -1,
+      series: [
+        { programId: 9, particleId: 1, materialId: 276 },
+        { programId: 2, particleId: 1, materialId: 276 },
+      ],
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: true,
+      yLog: true,
+    };
+    expect(encodePlotUrl(input).get("urlv")).toBe("3");
+    const qs = plotUrlQueryString(input);
+    expect(qs.startsWith("urlv=3&")).toBe(true);
+    expect(qs).toContain("series=9.1.276~2.1.276");
   });
 });

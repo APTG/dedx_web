@@ -57,6 +57,37 @@ Key implementation points:
   of silently misparsing `100~200` as one row; making `negotiateVersion` accept
   `[2,3]` preserves backward compatibility for the new client.
 
+### Prompt 2: address PR #686 review comments + update in-app user docs
+
+Five Copilot review comments, all valid, plus the user asked whether the **in-app
+docs** (`/docs/user-guide`, `/docs/technical`) had been updated (they had not).
+
+- **Inverse-lookup `lookups=` lacked the URL-safety guard** that `energies` has —
+  a value like `1,000`/`100~200` could inject a separator. Applied
+  `isUrlSafeNumeric` to lookup rows before joining.
+- **`URL_LIST_SEPARATOR` comment** claimed `~` is "never percent-encoded"; that's
+  true for `encodeURIComponent` but **not** for `URLSearchParams.toString()`,
+  which emits `%7E`. Corrected the comment.
+- **Serializers hard-coded `"~"`/`"%7E"`** — replaced with a derived
+  `URL_LIST_SEPARATOR_ENCODED` constant (computed via `URLSearchParams` from
+  `URL_LIST_SEPARATOR`, so the two cannot drift). Caught a real bug while doing
+  this: my first attempt used `encodeURIComponent(URL_LIST_SEPARATOR)` which
+  returns `~` (unreserved), so the `%7E` was no longer restored — the derived
+  constant fixes it correctly.
+- **Plot URLs carried no `urlv`** (`encodePlotUrl` never set it and the sync used
+  `encodePlotUrl().toString()`). With the `,` → `~` change this would let an old
+  client silently drop a v3 plot series. Now `encodePlotUrl` sets `urlv`,
+  `plotUrlQueryString` emits it first (mirroring the calculator), and
+  `plot-url-sync` uses `plotUrlQueryString` — so plot links are also readable
+  (literal `:`/`~`) and version-signalled.
+- **In-app docs**: `/docs/technical` grammar now shows `list-sep = "~" / ","` and
+  v3 prose/example; `/docs/user-guide` text bumped to `urlv=3` with a separator
+  note; `external-data-example-urls.ts` example links use `urlv=3` and `~`.
+
+Added tests for the lookups guard and the plot `urlv` signal. Full unit suite
+green (except 3 pre-existing `guard-forbidden-files` cases); lint, `check`, and
+`format:check` clean.
+
 ## Tasks
 
 ### Switch list separator `,` → `~` (linkifier-safe), keep `,` on read
