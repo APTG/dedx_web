@@ -113,28 +113,27 @@ the Elements / Compounds / Custom columns in Advanced mode (less
 prominent than the columns themselves; the columns are the primary
 selection path, the pill is a less-common "create new" affordance).
 
-**Deferred to follow-up issues** (intentionally out of scope for the
-chrome+state rework PR):
+**Follow-up items.** Several items originally deferred from the
+chrome+state rework PR have since shipped during Stage 6–8 and are noted
+here for history:
 
-1. Persistent picker-level search row with chevron + dynamic placeholder
-   (the per-tab `SearchInput` instances are still the canonical search
-   today; lifting them to a single shared input is mechanical but
-   touches all three tab components).
-2. Move + redesign `external-sources-panel.svelte` into
-   `entity-selection/` with collapsible attribution rows and per-source
+1. _(Deferred)_ Persistent picker-level search row with chevron + dynamic
+   placeholder (the per-tab `search-input.svelte` instances are still the
+   canonical search today; lifting them to a single shared input touches
+   all three tab components).
+2. _(Done)_ `external-sources-panel.svelte` now lives under
+   `src/lib/components/entity-selection/` with per-source attribution and
    remove buttons.
-3. Build `load-external-modal.svelte` (URL paste + drag-drop file +
-   localStorage recents) and wire it to the disabled `Load external`
-   button.
-4. Complete `<MultiList>` interactive reorder (drag + `Alt+ArrowUp/Down`)
+3. _(Done)_ `load-external-modal.svelte` (URL paste + drag-drop file +
+   localStorage recents) is built and wired to the `Load external` button.
+4. _(Deferred)_ Complete interactive list reorder (drag + `Alt+ArrowUp/Down`)
    with `aria-live` announcements.
-5. Wire `Compare across = Materials` / `Particles` end-to-end through
-   the calculation/plot pipelines.
-6. Delete `selected-pill.svelte` and `multi-program-picker.svelte` once
-   the chrome's tab-bar inline display fully replaces the in-panel pill
-   and the Calculator results-table dropdown is reworked.
-7. Mobile Material-tab card polish (bounded scrolling, fade shadows,
-   full-screen-sheet promotion via `⤢`).
+5. _(Done)_ `Compare across = Materials` / `Particles` is wired end-to-end
+   through the calculation (`multi-entity-calc.svelte.ts`) and plot pipelines.
+6. _(Done)_ The legacy in-panel pill and the standalone multi-program picker
+   components were removed once the tab-bar inline display replaced them.
+7. _(Deferred)_ Mobile Material-tab card polish (bounded scrolling, fade
+   shadows, full-screen-sheet promotion via `⤢`).
 
 ### Collapsible panel (Calculator only)
 

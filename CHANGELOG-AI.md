@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
+
 - 2026-06-01 — **Custom Compounds**: Implemented compound formula fallback UI for weight fractions and complex mass ratios (Issue #676). Updated `displayElements` to pass raw element counts in weight mode so the heuristic calculates formulas and defaults to "no simple formula" when complex. (Gemini 3.1 Pro via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-06-01-issue-676-formula-display.md)
 
