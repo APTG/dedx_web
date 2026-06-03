@@ -597,12 +597,22 @@ The canonical ordering and versioning rules are specified in
 and the published grammar at `/docs/technical`. The current emitted version is
 `urlv=2`; `urlv=1` links are rejected (not migrated).
 
-**Why there is no infinite loop.** `replaceState` updates the URL but does NOT
-mutate any Svelte reactive state, so it cannot re-trigger the writer `$effect`.
-The effect re-runs only when the page state it reads changes, and the
-guard (`newSearch !== current`) skips no-op writes. Restore runs before the
-writer is armed, so the first writer pass at most canonicalizes the incoming
-URL.
+**Why there is no infinite loop.** `replaceState()` from `$app/navigation`
+_does_ update SvelteKit's reactive `page` store (it assigns a fresh
+`page.state` object reference), so a naive writer would re-trigger itself. The
+sync modules avoid the loop with three safeguards (see
+`calculator-url-sync.svelte.ts` / `plot-url-sync.svelte.ts`):
+
+1. The current URL is read from `window.location.pathname`/`.search` rather than
+   `page.url`, so the effect never registers a reactive dependency on the `page`
+   store that `replaceState` mutates.
+2. A no-op guard (`next === current`) skips writing when the query string would
+   not change.
+3. `replaceState(next, page.state)` is wrapped in `untrack()` so reading
+   `page.state` at write time does not register a dependency either.
+
+Restore runs before the writer is armed, so the first writer pass at most
+canonicalizes the incoming URL.
 
 ---
 
