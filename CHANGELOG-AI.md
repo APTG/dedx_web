@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-03 — **Code health / cleanup**: Removed the dead legacy entity-selection component tree (Issue #688) — `entity-combobox.svelte`, `entity-selection-comboboxes.svelte`, `entity-selection-panels.svelte`, `entity-panel.svelte` and their four test files. These were superseded by the `entity-selection/` subtree and were no longer imported by the app (only referenced by their own tests and one stale comment). Repointed the dangling comment in `utils/program-kind.ts` to describe the grouping logic directly. ~1,250 LOC of dead code + 4 dead test files removed; lint/check/format and the full unit suite pass. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-03-entity-selection.md)
+
 - 2026-06-01 — **Custom Compounds**: Implemented compound formula fallback UI for weight fractions and complex mass ratios (Issue #676). Updated `displayElements` to pass raw element counts in weight mode so the heuristic calculates formulas and defaults to "no simple formula" when complex. (Gemini 3.1 Pro via Antigravity)
   - **Log:** [log](docs/ai-logs/2026-06-01-issue-676-formula-display.md)
 
