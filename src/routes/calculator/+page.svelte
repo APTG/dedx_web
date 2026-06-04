@@ -5,7 +5,7 @@
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
-  import ResultTable from "$lib/components/result-table.svelte";
+  import ResultTable from "$lib/components/results/table-multi-program.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
