@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-04 — **Stage 8 / code-health**: Back the calculator's recompute-on-access getters with `$derived` (Issue #689). `rows`, `stpDisplayUnit`, and `validationSummary` in `src/lib/state/calculator.svelte.ts` previously ran `computeRows()` / `getStpDisplayUnit()` / `computeValidationSummary()` on **every** property access — re-parsing every row several times per frame and handing back a fresh object each read. Replaced them with module-level `$derived` values (matching `entity-availability.svelte.ts`), with `validationSummary` deriving from the memoized `rows` so a single parse pass backs both. Public getter surface unchanged; added referential-stability unit tests. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-04-issue-689-derived-getters.md)
+
 - 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
 

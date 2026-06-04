@@ -358,27 +358,29 @@ export function createCalculatorState(
       .filter((e): e is { rowId: string; energy: number } => e !== null);
   }
 
-  function computeValidationSummary(): {
-    valid: number;
-    invalid: number;
-    outOfRange: number;
-    total: number;
-  } {
-    const rows = computeRows();
+  // Memoized reactive views. `$derived` recomputes only when a tracked
+  // dependency actually changes, so templates that read these getters several
+  // times per frame (table body, footer, validation banner, export wiring)
+  // share one computation and a stable object reference instead of re-running
+  // the per-row parse/convert/lookup work on every property access.
+  const rows = $derived(computeRows());
+  const stpDisplayUnit = $derived(getStpDisplayUnit());
+  const validationSummary = $derived.by(() => {
+    const r = rows;
     return {
-      valid: rows.filter((r) => r.status === "valid").length,
-      invalid: rows.filter((r) => r.status === "invalid").length,
-      outOfRange: rows.filter((r) => r.status === "out-of-range").length,
-      total: rows.length,
+      valid: r.filter((row) => row.status === "valid").length,
+      invalid: r.filter((row) => row.status === "invalid").length,
+      outOfRange: r.filter((row) => row.status === "out-of-range").length,
+      total: r.length,
     };
-  }
+  });
 
   return {
     get rows() {
-      return computeRows();
+      return rows;
     },
     get stpDisplayUnit() {
-      return getStpDisplayUnit();
+      return stpDisplayUnit;
     },
     get masterUnit() {
       return inputState.masterUnit;
@@ -393,7 +395,7 @@ export function createCalculatorState(
       return engine.error;
     },
     get validationSummary() {
-      return computeValidationSummary();
+      return validationSummary;
     },
     setMasterUnit(unit: EnergyUnit) {
       inputState.setMasterUnit(unit);
