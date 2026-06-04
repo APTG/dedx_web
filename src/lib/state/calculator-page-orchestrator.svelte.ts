@@ -25,10 +25,8 @@ import { externalDataService } from "$lib/external-data/service";
 import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte";
 import { setupMultiProgramCalculation } from "$lib/state/multi-program-calc.svelte";
 import { setupMultiEntityCalculation } from "$lib/state/multi-entity-calc.svelte";
-import {
-  setupInverseRangeCalculation,
-  setupInverseStpCalculation,
-} from "$lib/state/inverse-calc.svelte";
+import { setupInverseRangeCalculation } from "$lib/state/inverse-range-calc.svelte";
+import { setupInverseStpCalculation } from "$lib/state/inverse-stp-calc.svelte";
 import { negotiateVersion } from "$lib/utils/url-version.js";
 import { appInit } from "$lib/state/app-init.svelte";
 import type { EntityId } from "$lib/external-data/types";
