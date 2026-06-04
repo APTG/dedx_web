@@ -4,7 +4,7 @@ import { LibdedxServiceImpl } from "$lib/wasm/__mocks__/libdedx";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { createCalculatorState } from "$lib/state/calculator.svelte";
-import ResultTable from "$lib/components/result-table.svelte";
+import ResultTable from "$lib/components/results/table-multi-program.svelte";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 

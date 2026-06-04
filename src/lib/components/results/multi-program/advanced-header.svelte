@@ -5,7 +5,7 @@
     draggableColumn,
     type ColumnReorderController,
   } from "$lib/actions/draggable-column.svelte";
-  import StpUnitHeaderMenu from "$lib/components/results/stp-unit-header-menu.svelte";
+  import StpUnitHeaderMenu from "../stp-unit-header-menu.svelte";
   import type { StpUnit } from "$lib/wasm/types";
 
   interface Props {

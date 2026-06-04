@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-04 — **Refactor / Stage 8**: Consolidate the two confusingly-named result-table locations into one canonical `results/` directory (Issue #691). Moved `result-table.svelte` → `results/table-multi-program.svelte` and folded the `result-table/` partials into `results/multi-program/` (renaming `result-table-footer.svelte` → `footer.svelte`), updating all imports, the calculator page, the moved tests, and `docs/03-architecture.md`. Pure move + rename — no logic changes. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-04-issue-691-consolidate-result-tables.md)
+
 - 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
 
