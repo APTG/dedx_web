@@ -148,19 +148,22 @@ after Phase A.
 
 ## 4. Per-repo issue & PR strategy
 
-### 4.1 libdedx — issues to open / link
+### 4.1 libdedx — issues (filed)
 
-Create one tracking issue ("Migrate dedx_web `dedx_extra.c` helpers upstream")
-that links child issues per phase. Map to existing issues where they overlap:
+Tracking epic **[libdedx#118](https://github.com/APTG/libdedx/issues/118)**
+("Migrate dedx_web `dedx_extra.c` helpers upstream") links the per-phase child
+issues below as native sub-issues. It also cross-references the broader health
+review **[#108](https://github.com/APTG/libdedx/issues/108)** (the C-API
+counterpart to that issue's Python-binding/ecosystem items).
 
-| Phase | New libdedx issue                                                                        | Links / supersedes                     |
-| ----- | ---------------------------------------------------------------------------------------- | -------------------------------------- |
-| A     | "Expose nucleon/atom-mass/density/is-gas in public header"                               | enables web #175, #176                 |
-| B     | "Public `dedx_get_material_display_name` + dedupe friendly names"                        | relates to #48 (units/labels hygiene)  |
-| C     | "Fix `dedx_get_inverse_stp` branch selection for monotone curves; add Bragg-peak tool"   | **bug fix** — highest physics value    |
-| D     | "Add flat inverse/Bragg-peak convenience wrappers"                                       | extends `dedx_wrappers.h`              |
-| E     | "Public custom-compound config builder + flat wrappers; decide fractional stoichiometry" | relates to **#6**, builds on #105/#107 |
-| F     | already **#79** (query API) — no new issue, just prioritize                              | serves web #504/#147/#51               |
+| Phase | libdedx issue                                                                                     | Links / supersedes                     |
+| ----- | ------------------------------------------------------------------------------------------------- | -------------------------------------- |
+| A     | **#119** — Expose nucleon/atom-mass/density/is-gas in public header                               | enables web #175, #176                 |
+| B     | **#120** — Public `dedx_get_material_display_name` + dedupe friendly names                        | relates to #48 (units/labels hygiene)  |
+| C     | **#121** — Fix `dedx_get_inverse_stp` branch selection for monotone curves; add Bragg-peak tool   | **bug fix** — highest physics value    |
+| D     | **#122** — Add flat inverse/Bragg-peak convenience wrappers                                       | extends `dedx_wrappers.h`              |
+| E     | **#123** — Public custom-compound config builder + flat wrappers; decide fractional stoichiometry | relates to **#6**, builds on #105/#107 |
+| F     | already **#79** (query API) — no new issue, just prioritize                                       | serves web #504/#147/#51               |
 
 Notes on existing libdedx issues:
 
