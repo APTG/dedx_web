@@ -181,7 +181,9 @@ Notes on existing libdedx issues:
 - **#95** (Bethe nucleon mass) and **#96** (table-generation script) are
   independent; not blockers, but Phase C tests should pin reference values so a
   later #95 change is caught.
-- There are currently **no open libdedx PRs** — clean slate to land Phase A.
+- Before landing Phase A, check for in-flight libdedx PRs that touch the same
+  public headers (`dedx.h` / `dedx_tools.h` / `dedx_wrappers.h`) and rebase
+  Phase A after them; Phase A is otherwise self-contained and can go first.
 
 ### 4.2 dedx_web — sequencing against the migration
 
@@ -199,10 +201,11 @@ submodule and removes the now-duplicated C/TS code:
 Relevant **open web issues** that this unblocks or touches: **#175** (display
 density), **#176** (custom density) → Phase A; **#504 / #147 / #51-equiv
 selector** → Phase F; **#663** (CR39 STP), **#480** (projected/CSDA range) →
-benefit from Phase C/E once correctness moves upstream. The current open web
-PRs (**#696–#703**) are unrelated (Svelte refactors + dependabot) and do **not**
-conflict with the migration — sequence migration PRs after the in-flight
-`dedx_extra`-touching work, of which there is none.
+benefit from Phase C/E once correctness moves upstream. Before opening a
+migration PR, sequence it after any in-flight web PR that touches
+`wasm/dedx_extra.c`, `wasm/contract-manifest.json`, or
+`docs/06-wasm-api-contract.md`; unrelated work (Svelte refactors, dependabot
+bumps) does not conflict and can proceed in parallel.
 
 > ⚠ **Submodule note:** the migration only "completes" on the web side when the
 > `libdedx/` submodule points at released upstream code. Until a phase is
