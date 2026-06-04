@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-04 — **Docs / libdedx**: Add `docs/12-libdedx-migration-plan.md` — a plan for migrating the `wasm/dedx_extra.{c,h}` C shim upstream into libdedx. Inventories the shim, ranks migration candidates (4 metadata accessors → public API; the inverse-STP monotone/`side` bug fix; flat inverse + Bragg-peak utilities; custom-compound flat API incl. the `double→int` atom-count question; friendly material names), defines a phased behaviour-preserving rollout anchored on the stable `LibdedxService` interface, and lays out the cross-repo libdedx-PR → submodule-bump → `dedx_extra`-trim → docs/verify workflow plus issue/PR strategy. Linked related issues (#175/#176 density, #663/#676/#682 compound stoichiometry). Indexed in `docs/README.md`. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-04-libdedx-migration-plan.md)
+
 - 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
 

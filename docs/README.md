@@ -19,6 +19,7 @@ Design documents and specifications for the dEdx Web redesign.
 | [opencode-prompt-authoring.md](opencode-prompt-authoring.md)           | Schema and meta-prompt for generating opencode task prompts in Claude / VS Code (the recommended Claude → file → opencode funnel)                                                                                                                                           |
 | [10-terminology.md](10-terminology.md)                                 | **Final v3** — Glossary of domain terms: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, particle vs ion, MeV/nucl vs MeV/u, etc.); §2 developer/stack terms (WASM, Emscripten, runes, dedx_config, Entity, Series, StoredCompound, etc.) |
 | [11-prototyping-spikes.md](11-prototyping-spikes.md)                   | **Final v1** — All four spikes complete (JSROOT+Svelte 5, WASM pipeline, module-level `$state`, Zarr v3 external data format)                                                                                                                                               |
+| [12-libdedx-migration-plan.md](12-libdedx-migration-plan.md)           | **Draft v1** — Plan to upstream the `wasm/dedx_extra` C shim into libdedx: ranked migration list (metadata accessors, inverse-STP bug fix, flat/compound APIs, friendly names), phased rollout, and the cross-repo issue/PR workflow                                        |
 
 ## Subdirectories
 
