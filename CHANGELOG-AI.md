@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-04 — **Stage 8 / code-health**: Align `src/lib/state/` naming/API conventions (Issue #692). Split the combined `inverse-calc.svelte.ts` into one-effect-per-file `inverse-range-calc.svelte.ts` + `inverse-stp-calc.svelte.ts` to match the `multi-*-calc` convention (orchestrator imports updated; test renamed to `inverse-calculation.test.ts`). Collapsed `activeTab` to a single mutation path — removed the redundant `set activeTab(v)` setter, keeping `setActiveTab(tab)` and marking the interface field `readonly`. No behaviour change. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-04-issue-692-state-naming.md)
+
 - 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
 
