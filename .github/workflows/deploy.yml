@@ -45,7 +45,9 @@ jobs:
           cd wasm && chmod +x build.sh && ./build.sh
 
       - name: Build SvelteKit app
-        run: pnpm build
+        run: |
+          pnpm build
+          cp llms.txt build/llms.txt
         env:
           # GitHub Pages serves APTG/web_dev at /web_dev/ sub-path
           BASE_PATH: /web_dev

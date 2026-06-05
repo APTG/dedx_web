@@ -1,0 +1,67 @@
+# dEdx Web
+
+> Browser-based calculator for charged-particle **stopping powers** (dE/dx) and **CSDA ranges**. Users pick a particle, a target material, and an energy range to get numerical results and interactive plots — all computed fully client-side. The numerics come from the [libdedx](https://github.com/APTG/libdedx) C library compiled to WebAssembly via Emscripten; the UI is a ground-up Svelte 5 rewrite of the original 2022 React app, deployed statically to GitHub Pages.
+
+This file is an LLM-oriented table of contents (see [llmstxt.org](https://llmstxt.org/)). It helps AI agents and web crawlers understand the project's architecture and constraints, then fetch only the specific deep-dive documents they need rather than ingesting the entire `docs/` tree.
+
+## Core technical constraints (non-negotiable)
+
+- **Svelte 5 runes only.** Use `$state`, `$derived`, `$effect`, `$props`, `$bindable`. Never use Svelte 4 patterns: no `export let`, no `$:` reactive statements, no `onMount`/`onDestroy`, no `svelte/store` auto-subscriptions, no `createEventDispatcher()`.
+- **TypeScript strict mode** throughout.
+- **Tailwind CSS v4** for styling — CSS variables live in `src/app.css`.
+- **UI components**: shadcn-svelte + Bits UI headless primitives.
+- **Plotting**: JSROOT (kept deliberately — see ADR 002).
+- **WASM access**: call libdedx only through the TypeScript wrapper in `src/lib/wasm/`; never invoke C functions directly from components.
+- **Code style**: Prettier (double quotes, semicolons, 2-space indent); Conventional Commits (`feat:`, `fix:`, `docs:`, `chore:`, `test:`).
+- **Tooling**: Node 24 LTS, pnpm, Vitest + Playwright. Static adapter targeting GitHub Pages.
+
+## Agent operational instructions
+
+- [CLAUDE.md](CLAUDE.md): Operating instructions for Claude Code sessions — stack rules, Svelte 5 rules, build/test commands, working process, and mandatory AI session logging.
+- [AGENTS.md](AGENTS.md): Equivalent operating instructions for opencode / Qwen sessions.
+- [CHANGELOG-AI.md](CHANGELOG-AI.md): Chronological log of AI-assisted sessions; read the top entries to understand recent history.
+
+## High-level documentation
+
+- [docs/README.md](docs/README.md): Index of all project documentation.
+- [docs/01-project-vision.md](docs/01-project-vision.md): What the project is for and who uses it.
+- [docs/02-tech-stack.md](docs/02-tech-stack.md): Full technology stack and rationale.
+- [docs/03-architecture.md](docs/03-architecture.md): System architecture and the Svelte component tree.
+- [docs/06-wasm-api-contract.md](docs/06-wasm-api-contract.md): The contract between the TypeScript wrapper and the libdedx WASM module.
+- [docs/07-testing-strategy.md](docs/07-testing-strategy.md): Unit, integration, and E2E testing approach (Vitest + Playwright).
+- [docs/08-deployment.md](docs/08-deployment.md): How the static build is deployed to GitHub Pages.
+- [docs/10-terminology.md](docs/10-terminology.md): Glossary of physics and domain terms (dE/dx, CSDA range, STP, etc.).
+
+## Architecture decisions (ADRs)
+
+- [ADR 001 — SvelteKit over React](docs/decisions/001-sveltekit-over-react.md): Why the rewrite moved from React to SvelteKit.
+- [ADR 002 — Keep JSROOT for plotting](docs/decisions/002-keep-jsroot.md): Why JSROOT remains the plotting engine.
+- [ADR 003 — WASM build pipeline](docs/decisions/003-wasm-build-pipeline.md): Docker-based Emscripten build of libdedx.
+- [ADR 004 — External data storage format](docs/decisions/004-zarr-v3-external-format.md): Zarr v3 per-ion shards for external `.webdedx` data.
+- [ADR 005 — shadcn-svelte + Bits UI](docs/decisions/005-shadcn-svelte-components.md): Choice of UI component library.
+- [ADR 006 — URL schema v2](docs/decisions/006-url-schema-v2.md): Shareable-URL parameter changes.
+- [ADR 007 — Drop the columns dropdown](docs/decisions/007-drop-columns-dropdown.md): Results-table UI simplification.
+- [ADR 008 — Drop the unit button between picker and results](docs/decisions/008-drop-unit-button-between-picker-and-results.md): Unit-handling UI simplification.
+- [ADR 009 — No autofocus on cold load](docs/decisions/009-no-autofocus-on-cold-load.md): Initial focus behaviour.
+- [ADR 010 — Inline unit grammar for energy inputs](docs/decisions/010-inline-unit-grammar.md): How units are parsed from energy fields.
+- [ADR 011 — Compare-across visible strip](docs/decisions/011-compare-across-visible-strip.md): The 4-button recipe bar.
+- [ADR 012 — Inverse STP sticky high-E default](docs/decisions/012-inverse-stp-sticky-high-e-default.md): Default branch for inverse lookups.
+- [ADR 013 — Advanced mode tab naming](docs/decisions/013-mode-tab-naming.md): Energy → / Range → / STP → tab labels.
+
+## Feature specifications
+
+- [docs/04-feature-specs/README.md](docs/04-feature-specs/README.md): Index and status of all feature specs.
+- [docs/04-feature-specs/entity-selection.md](docs/04-feature-specs/entity-selection.md): Particle and target-material selection.
+- [docs/04-feature-specs/calculator.md](docs/04-feature-specs/calculator.md): Core calculator layout and behaviour.
+- [docs/04-feature-specs/unit-handling.md](docs/04-feature-specs/unit-handling.md): Unit types, conversions, and dropdown options.
+- [docs/04-feature-specs/plot.md](docs/04-feature-specs/plot.md): Interactive plotting.
+- [docs/04-feature-specs/shareable-urls.md](docs/04-feature-specs/shareable-urls.md): Shareable URL design.
+- [docs/04-feature-specs/export.md](docs/04-feature-specs/export.md): Data export.
+- [docs/04-feature-specs/inverse-lookups.md](docs/04-feature-specs/inverse-lookups.md): Inverse (range/STP → energy) lookups.
+
+## Optional
+
+- [docs/00-redesign-plan.md](docs/00-redesign-plan.md): Stage-by-stage redesign roadmap.
+- [docs/05-ui-wireframes.md](docs/05-ui-wireframes.md): UI wireframes.
+- [docs/09-non-functional-requirements.md](docs/09-non-functional-requirements.md): Performance, accessibility, and other non-functional requirements.
+- [docs/11-prototyping-spikes.md](docs/11-prototyping-spikes.md): Risk-reduction prototyping spikes.
