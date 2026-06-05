@@ -42,7 +42,8 @@
   --secondary: oklch(0.97 0 0);
   --secondary-foreground: oklch(0.205 0 0);
   --muted: oklch(0.97 0 0);
-  --muted-foreground: oklch(0.47 0 0);
+  /* Darkened from 0.47 → 0.44 for AA contrast headroom on white (WCAG 1.4.3) */
+  --muted-foreground: oklch(0.44 0 0);
   --accent: oklch(0.97 0 0);
   --accent-foreground: oklch(0.205 0 0);
   --destructive: oklch(0.577 0.245 27.325);
@@ -79,5 +80,34 @@
 
   body {
     @apply bg-background text-foreground;
+  }
+
+  /* Global visible-focus fallback (WCAG 2.4.7). :where() keeps specificity at 0
+     so components with their own focus styles continue to win. Excludes
+     tabindex="-1" so programmatic skip targets don't show a ring. */
+  :where(
+    a,
+    button,
+    input,
+    select,
+    textarea,
+    [role="button"],
+    [tabindex]:not([tabindex="-1"])
+  ):focus-visible {
+    outline: 2px solid var(--ring, var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* Respect reduced-motion globally — neutralizes Tailwind transitions/animations
+     not already gated by per-component matchMedia checks. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 }
