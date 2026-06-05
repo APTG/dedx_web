@@ -22,7 +22,7 @@ for (const { path, label } of ROUTES) {
     }
 
     const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa"])
+      .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
       // Bits UI Combobox places the search <input role="combobox"> inside
       // div[role="listbox"], which violates aria-required-children. This is a
       // known structural limitation of the bits-ui combobox pattern and is not
