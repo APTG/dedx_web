@@ -75,7 +75,7 @@
 
 <div class="min-h-screen bg-background">
   <a href="#main-content" class="skip-link">Skip to content</a>
-  <nav class="border-b bg-card" data-testid="app-header">
+  <header class="border-b bg-card" data-testid="app-header">
     <div class="container mx-auto px-4">
       <!-- Row 1: logo + secondary controls (mode toggle, export, share) -->
       <div class="flex h-12 items-center justify-between gap-2">
@@ -168,7 +168,11 @@
       </div>
 
       <!-- Row 2: primary route navigation tabs — muted strip so active tab pops out -->
-      <div class="flex border-t border-border/40 bg-muted/60" data-testid="route-tabs">
+      <nav
+        aria-label="Primary"
+        class="flex border-t border-border/40 bg-muted/60"
+        data-testid="route-tabs"
+      >
         <a
           href={`${base}/calculator`}
           class="route-tab"
@@ -199,9 +203,9 @@
         >
           Docs
         </a>
-      </div>
+      </nav>
     </div>
-  </nav>
+  </header>
 
   {#if wasmError.value}
     <div class="bg-destructive/15 border-b border-destructive/20 px-4 py-3">
