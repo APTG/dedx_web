@@ -4,6 +4,8 @@
 
 This file is an LLM-oriented table of contents (see [llmstxt.org](https://llmstxt.org/)). It helps AI agents and web crawlers understand the project's architecture and constraints, then fetch only the specific deep-dive documents they need rather than ingesting the entire `docs/` tree.
 
+> **Resolving the links below:** all paths are relative to the repository root and are intended to be opened from a checkout of the source repository. The `docs/` tree is **not** published to GitHub Pages, so when this file is read from the deployed site (`https://aptg.github.io/web_dev/llms.txt`) the links must be resolved against the canonical repository instead: **https://github.com/APTG/dedx_web** (e.g. `docs/03-architecture.md` → `https://github.com/APTG/dedx_web/blob/master/docs/03-architecture.md`).
+
 ## Core technical constraints (non-negotiable)
 
 - **Svelte 5 runes only.** Use `$state`, `$derived`, `$effect`, `$props`, `$bindable`. Never use Svelte 4 patterns: no `export let`, no `$:` reactive statements, no `onMount`/`onDestroy`, no `svelte/store` auto-subscriptions, no `createEventDispatcher()`.
