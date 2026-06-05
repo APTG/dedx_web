@@ -74,6 +74,7 @@
 </script>
 
 <div class="min-h-screen bg-background">
+  <a href="#main-content" class="skip-link">Skip to content</a>
   <nav class="border-b bg-card" data-testid="app-header">
     <div class="container mx-auto px-4">
       <!-- Row 1: logo + secondary controls (mode toggle, export, share) -->
@@ -225,7 +226,7 @@
     </div>
   {/if}
 
-  <main class="container mx-auto px-4 pt-3 pb-6 sm:py-6">
+  <main id="main-content" tabindex="-1" class="container mx-auto px-4 pt-3 pb-6 sm:py-6">
     {@render children()}
   </main>
 
@@ -258,6 +259,33 @@
 </div>
 
 <style>
+  /* Skip link: off-screen until focused, then slides into view (WCAG 2.4.1) */
+  .skip-link {
+    position: absolute;
+    left: 0.5rem;
+    top: -3.5rem;
+    z-index: 50;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.875rem;
+    font-weight: 500;
+    border-radius: var(--radius-md);
+    background-color: var(--card);
+    color: var(--foreground);
+    box-shadow: 0 1px 3px rgb(0 0 0 / 0.2);
+    transition: top 0.15s ease;
+  }
+
+  .skip-link:focus-visible {
+    top: 0.5rem;
+    outline: 2px solid var(--ring, var(--primary));
+    outline-offset: 2px;
+  }
+
+  /* The skip target is programmatically focusable but should not show a ring */
+  #main-content:focus {
+    outline: none;
+  }
+
   .route-tab {
     display: flex;
     flex: 1 1 0%;

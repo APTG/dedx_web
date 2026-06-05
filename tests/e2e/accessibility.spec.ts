@@ -35,3 +35,18 @@ for (const { path, label } of ROUTES) {
     expect(results.violations).toEqual([]);
   });
 }
+
+test("skip link is the first tab stop and moves focus to main @regression", async ({ page }) => {
+  await page.goto("/calculator");
+  await page.waitForSelector('[data-testid="result-table"]', { timeout: 15000 });
+
+  // First Tab from the top of the document must land on the skip link.
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to content" });
+  await expect(skipLink).toBeFocused();
+
+  // Activating it moves focus to the main content landmark.
+  await page.keyboard.press("Enter");
+  const main = page.locator("#main-content");
+  await expect(main).toBeFocused();
+});
