@@ -45,12 +45,13 @@ jobs:
           cd wasm && chmod +x build.sh && ./build.sh
 
       - name: Build SvelteKit app
-        run: |
-          pnpm build
-          cp llms.txt build/llms.txt
+        run: pnpm build
         env:
           # GitHub Pages serves APTG/web_dev at /web_dev/ sub-path
           BASE_PATH: /web_dev
+
+      - name: Copy llms.txt into build output
+        run: cp llms.txt build/llms.txt
 
       - name: Deploy to APTG/web_dev
         uses: peaceiris/actions-gh-pages@v4
