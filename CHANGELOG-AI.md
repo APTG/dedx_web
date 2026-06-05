@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-05 — **Stage 8 / accessibility**: WCAG audit + fixes (Issues #708–#711). Added a skip-to-content link with an e2e assertion (SC 2.4.1, not caught by axe), a global `:focus-visible` fallback (SC 2.4.7), a `<header>` banner landmark with `<nav>` scoped to the route tabs (SC 1.3.1), extended the axe e2e to the `wcag22aa` tag set with 24px clear-button hit areas (SC 2.5.8), a global `prefers-reduced-motion` rule, and darkened `--muted-foreground` for contrast headroom (SC 1.4.3). One commit per issue. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-05-wcag-accessibility-audit.md)
+
 - 2026-06-03 — **Docs / Stage 8**: Sync `docs/03-architecture.md` with the Stage 8 codebase (Issue #631). Rewrote the project-structure tree, reactive-state topology, component tree, data-flow diagrams, error-handling, accessibility, and related-docs sections to reflect the real modules — factory-function state (`createEntitySelectionState`/`createCalculatorState`/…) + page orchestrators, `app-init.svelte.ts` bootstrap, the layered URL parser (`url-grammar.peggy` → AST, `urlv=2`), the tabbed `entity-selection/` picker, `results/table-*.svelte`, `unit-anchor-strip.svelte`, and `<svelte:boundary>` page error fallbacks. Removed the dead `EntityDropdown`/`EntityPanel`/`EnergyInput`/`UnitSelector`/`entities.svelte.ts`/`calculation.svelte.ts` references. Annotated the shipped/deferred follow-ups in `entity-selection.md`; verified `calculator.md` already uses the unit-anchor strip. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-03-issue-631-docs-sync.md)
 
