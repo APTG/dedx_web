@@ -1,0 +1,97 @@
+import { test, type Page } from "@playwright/test";
+import { mkdirSync } from "node:fs";
+
+// ─────────────────────────────────────────────────────────────────
+// Documentation screenshots (issue #594)
+//
+// Captures deterministic desktop + mobile images of the app for the
+// GitHub Pages user documentation. This file lives OUTSIDE tests/e2e/
+// so it is excluded from the normal E2E run; invoke it explicitly:
+//
+//   pnpm docs:screenshots
+//
+// Determinism:
+//   - animations / transitions / caret are frozen via injected CSS
+//   - the dynamic build-info footer (commit hash + date) is masked so
+//     the images do not churn on every commit
+//
+// Output: docs/assets/<name>-(desktop|mobile).png
+// ─────────────────────────────────────────────────────────────────
+
+const OUT_DIR = "docs/assets";
+mkdirSync(OUT_DIR, { recursive: true });
+
+const VIEWPORTS = {
+  desktop: { width: 1280, height: 720 },
+  mobile: { width: 375, height: 667 },
+} as const;
+
+// Strip all motion so a screenshot taken mid-transition is identical to one
+// taken after it settles.
+const FREEZE_CSS = `
+  *, *::before, *::after {
+    animation-duration: 0s !important;
+    animation-delay: 0s !important;
+    transition-duration: 0s !important;
+    transition-delay: 0s !important;
+    caret-color: transparent !important;
+    scroll-behavior: auto !important;
+  }
+`;
+
+/** Navigate, freeze motion, and let the page settle before shooting. */
+async function preparePage(page: Page, path: string): Promise<void> {
+  await page.goto(path);
+  await page.addStyleTag({ content: FREEZE_CSS });
+  // Let WASM load + reactive state settle (no network chatter left).
+  await page.waitForLoadState("networkidle");
+}
+
+/**
+ * Elements whose text changes every build (commit hash, build date). Masking
+ * them keeps the committed PNGs stable across commits.
+ */
+async function dynamicMasks(page: Page) {
+  const footer = page.locator("footer");
+  return (await footer.count()) > 0 ? [footer] : [];
+}
+
+interface Shot {
+  name: string;
+  path: string;
+  /** Wait for this to be visible before capturing (page-specific anchor). */
+  ready: (page: Page) => Promise<void>;
+}
+
+const SHOTS: Shot[] = [
+  {
+    name: "calculator",
+    path: "/calculator",
+    ready: async (page) => {
+      await page.getByRole("heading", { name: "Calculator" }).waitFor({ state: "visible" });
+    },
+  },
+  {
+    name: "plot",
+    path: "/plot",
+    ready: async (page) => {
+      await page.getByRole("heading", { name: "Plot" }).waitFor({ state: "visible" });
+    },
+  },
+];
+
+for (const shot of SHOTS) {
+  for (const [device, viewport] of Object.entries(VIEWPORTS)) {
+    test(`@docs ${shot.name} — ${device}`, async ({ page }) => {
+      await page.setViewportSize(viewport);
+      await preparePage(page, shot.path);
+      await shot.ready(page);
+      await page.screenshot({
+        path: `${OUT_DIR}/${shot.name}-${device}.png`,
+        fullPage: true,
+        mask: await dynamicMasks(page),
+        maskColor: "#e5e7eb",
+      });
+    });
+  }
+}
