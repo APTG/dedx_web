@@ -48,12 +48,14 @@ async function preparePage(page: Page, path: string): Promise<void> {
 }
 
 /**
- * Elements whose text changes every build (commit hash, build date). Masking
- * them keeps the committed PNGs stable across commits.
+ * The build-info badge (commit hash, build date, branch) changes every build.
+ * Masking just that span — rather than the whole footer — keeps the committed
+ * PNGs stable without hiding the static footer text. The badge only renders
+ * once deploy.json loads, so fall back to no mask when it is absent.
  */
 async function dynamicMasks(page: Page) {
-  const footer = page.locator("footer");
-  return (await footer.count()) > 0 ? [footer] : [];
+  const buildInfo = page.getByText("Deployed:");
+  return (await buildInfo.count()) > 0 ? [buildInfo] : [];
 }
 
 interface Shot {
@@ -68,14 +70,16 @@ const SHOTS: Shot[] = [
     name: "calculator",
     path: "/calculator",
     ready: async (page) => {
-      await page.getByRole("heading", { name: "Calculator" }).waitFor({ state: "visible" });
+      await page
+        .getByRole("heading", { name: "Stopping Power Calculator", exact: true })
+        .waitFor({ state: "visible" });
     },
   },
   {
     name: "plot",
     path: "/plot",
     ready: async (page) => {
-      await page.getByRole("heading", { name: "Plot" }).waitFor({ state: "visible" });
+      await page.getByRole("heading", { name: "Plot", exact: true }).waitFor({ state: "visible" });
     },
   },
 ];

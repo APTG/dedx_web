@@ -38,6 +38,8 @@ export default defineConfig({
       ? "pnpm preview --host 127.0.0.1"
       : "pnpm build && pnpm preview --host 127.0.0.1",
     url: "http://127.0.0.1:4173",
-    reuseExistingServer: !process.env.CI,
+    // Always start a fresh preview (matches playwright.config.ts) so screenshots
+    // are never taken against a stale build — determinism is the whole point here.
+    reuseExistingServer: false,
   },
 });
