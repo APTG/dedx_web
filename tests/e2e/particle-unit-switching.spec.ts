@@ -186,9 +186,9 @@ test.describe("Per-row inline unit editing — current behaviour", () => {
 //
 // Both are wrapped in `test.fixme()` so the suite stays green while the
 // gap is tracked. Note: an electron-selection scenario was intentionally
-// omitted — `entity-selection-comboboxes.svelte` blocks selecting
-// particle id 1001 (ESTAR is not implemented in libdedx v1.4.0); see
-// `src/lib/components/entity-selection-comboboxes.svelte:209-218`.
+// omitted because particle id 1001 (electron) has no implemented program
+// in libdedx v1.4.0 (ESTAR is absent), so the picker offers no valid
+// program for it.
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe("Particle/unit switching — KE conservation (pending)", () => {
