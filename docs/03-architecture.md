@@ -657,11 +657,9 @@ Inline nav-bar markup, the Advanced toggle, and the footer live directly in
     └── (static Svelte content, no WASM interaction)
 ```
 
-The legacy combobox-based picker (`entity-combobox.svelte`,
-`entity-selection-comboboxes.svelte`, `entity-selection-panels.svelte`,
-`entity-panel.svelte`) predates the tabbed `entity-selection/` subtree and is
-retained only where still referenced; the tabbed picker is the canonical entry
-point on both pages.
+The tabbed `entity-selection/` subtree is the sole picker entry point on both
+pages. The earlier combobox/panel-based picker that preceded it was removed in
+#688 (it was no longer rendered once the tabbed picker shipped).
 
 ### jsroot-plot.svelte — DOM ownership contract
 

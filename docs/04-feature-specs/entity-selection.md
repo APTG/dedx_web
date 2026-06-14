@@ -619,9 +619,9 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
   remains "Ions". Display name overrides: proton → "proton",
   alpha → "alpha particle", electron → "electron" (lowercase).
 - **Tabbed picker (15 May 2026):** Three-panel layout retired in favour
-  of the tabbed picker described above. Legacy
-  `entity-selection-comboboxes.svelte` and `entity-selection-panels.svelte`
-  components are no longer rendered.
+  of the tabbed picker described above. The legacy combobox/panel
+  components were no longer rendered after this change and were deleted
+  in #688.
 
 > **Terminology:** The libdedx C library uses the term "ion" everywhere —
 > including for the electron (ID 1001) — even though calling an electron an
@@ -798,12 +798,12 @@ Notes:
   Iodine / Copernicium displayed without a symbol) was caused by the
   table only covering Z=1..18; that has been fixed but the test suite
   should assert non-empty `chemicalSymbol` for every entry.
-- **Both layout modes share these labels** — the calculator combobox
-  (`entity-selection-comboboxes.svelte`) and the plot full-panel
-  (`entity-selection-panels.svelte`) both render via the shared helper
-  `getParticleLabel()` in `src/lib/utils/particle-label.ts`. The plot
-  page also uses this label for series names so legends read
-  "proton in Water" instead of "Hydrogen in Water".
+- **Both pages share these labels** — the calculator and plot pages
+  both render the tabbed `entity-selection/` picker, whose particle
+  labels come from the shared helper `getParticleLabel()` in
+  `src/lib/utils/particle-label.ts`. The plot page also uses this label
+  for series names so legends read "proton in Water" instead of
+  "Hydrogen in Water".
 
 ### 2. Material Selector (second — middle)
 
