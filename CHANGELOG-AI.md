@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-05 — **Stage 8 / accessibility**: WCAG audit + fixes (Issues #708–#711). Added a skip-to-content link with an e2e assertion (SC 2.4.1, not caught by axe), a global `:focus-visible` fallback (SC 2.4.7), a `<header>` banner landmark with `<nav>` scoped to the route tabs (SC 1.3.1), extended the axe e2e to the `wcag22aa` tag set with 24px clear-button hit areas (SC 2.5.8), a global `prefers-reduced-motion` rule, and darkened `--muted-foreground` for contrast headroom (SC 1.4.3). One commit per issue. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-05-wcag-accessibility-audit.md)
+
 - 2026-06-04 — **Docs / libdedx migration**: Added `docs/12-libdedx-migration-plan.md` — a phased plan to migrate C helpers from `wasm/dedx_extra.c` upstream into `libdedx`. Includes a per-symbol inventory (which of the 810 LOC belong in `dedx.h` / `dedx_tools.h` / `dedx_wrappers.h`), flags the duplicated material display-name table (C vs `src/lib/config/material-names.ts`) and the inverse-STP branch-selection bug that should be fixed upstream, and sequences the work across libdedx issues (#79, #51, #48, #6, #86, #95) and the dedx_web follow-ups (#175, #176, #504). Filed the upstream issues: tracking epic libdedx#118 with per-phase sub-issues libdedx#119–#123 (Phase F = existing #79), cross-referenced to the health-review epic #108 to avoid duplication. Indexed in `docs/README.md`. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-04-libdedx-migration-plan.md)
 
