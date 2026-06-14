@@ -9,7 +9,7 @@ const ROUTES: Array<{ path: string; label: string }> = [
 ];
 
 for (const { path, label } of ROUTES) {
-  test(`zero WCAG 2.1 AA violations on ${label} page @regression`, async ({ page }) => {
+  test(`zero WCAG 2.1/2.2 AA violations on ${label} page @regression`, async ({ page }) => {
     await page.goto(path);
     // Wait for the initial paint to settle — WASM-backed pages need the
     // result-table to render before axe can see all interactive elements.
