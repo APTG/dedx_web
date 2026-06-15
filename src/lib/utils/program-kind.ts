@@ -2,10 +2,10 @@
  * Categorise a built-in program ID into TAB (tabulated data), FN (analytical
  * model / formula), or — for external programs — EXT.
  *
- * Mirrors the v7 grouping logic in `entity-selection-comboboxes.svelte`:
- * built-in programs with `id <= 90` are tabulated (ICRU/ASTAR/PSTAR/MSTAR
- * families), `id > 90` (currently 100/101) are analytical (Bethe variants).
- * External programs use string IDs and are always EXT.
+ * Grouping logic: built-in programs with `id <= 90` are tabulated
+ * (ICRU/ASTAR/PSTAR/MSTAR families), `id > 90` (currently 100/101) are
+ * analytical (Bethe variants). External programs use string IDs and are
+ * always EXT.
  *
  * See `docs/04-feature-specs/entity-selection.md § Program tab`.
  */

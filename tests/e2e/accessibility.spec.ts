@@ -9,7 +9,7 @@ const ROUTES: Array<{ path: string; label: string }> = [
 ];
 
 for (const { path, label } of ROUTES) {
-  test(`zero WCAG 2.1 AA violations on ${label} page @regression`, async ({ page }) => {
+  test(`zero WCAG 2.1/2.2 AA violations on ${label} page @regression`, async ({ page }) => {
     await page.goto(path);
     // Wait for the initial paint to settle — WASM-backed pages need the
     // result-table to render before axe can see all interactive elements.
@@ -22,7 +22,7 @@ for (const { path, label } of ROUTES) {
     }
 
     const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa"])
+      .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
       // Bits UI Combobox places the search <input role="combobox"> inside
       // div[role="listbox"], which violates aria-required-children. This is a
       // known structural limitation of the bits-ui combobox pattern and is not
@@ -35,3 +35,18 @@ for (const { path, label } of ROUTES) {
     expect(results.violations).toEqual([]);
   });
 }
+
+test("skip link is the first tab stop and moves focus to main @regression", async ({ page }) => {
+  await page.goto("/calculator");
+  await page.waitForSelector('[data-testid="result-table"]', { timeout: 15000 });
+
+  // First Tab from the top of the document must land on the skip link.
+  await page.keyboard.press("Tab");
+  const skipLink = page.getByRole("link", { name: "Skip to content" });
+  await expect(skipLink).toBeFocused();
+
+  // Activating it moves focus to the main content landmark.
+  await page.keyboard.press("Enter");
+  const main = page.locator("#main-content");
+  await expect(main).toBeFocused();
+});

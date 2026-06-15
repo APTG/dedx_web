@@ -328,7 +328,7 @@
                       ? "Custom compounds carry their own density. Edit the compound to change density."
                       : undefined}
                     onclick={clearDensity}
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label="Clear density override"
                   >
                     <svg
@@ -385,7 +385,7 @@
                       ? "Custom compounds carry their own I-value. Edit the compound to change it."
                       : undefined}
                     onclick={clearIValue}
-                    class="absolute right-2 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                    class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
                     aria-label="Clear I-value override"
                   >
                     <svg

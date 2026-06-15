@@ -2,7 +2,7 @@
   import type { CalculatorState } from "$lib/state/calculator.svelte";
   import type { MultiEntityState } from "$lib/state/multi-entity.svelte";
   import type { EntityId } from "$lib/external-data/types";
-  import StpUnitHeaderMenu from "$lib/components/results/stp-unit-header-menu.svelte";
+  import StpUnitHeaderMenu from "../stp-unit-header-menu.svelte";
   import type { StpUnit } from "$lib/wasm/types";
 
   interface Props {
