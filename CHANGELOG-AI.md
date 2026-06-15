@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-15 — **Stage 8 / code-health**: Decompose the `calculator.svelte.ts` god module (Issue #690). Extracted the pure energy parse + unit-conversion logic into a new side-effect-free `src/lib/utils/energy-row-parse.ts` — `parseRowEnergy` (returns a discriminated `RowParseOutcome`), `convertRowTextForNewParticle` (E_nucl-conserving particle-switch rescale), and `convertRowTextToUnit` (KE-preserving `setRowUnit` conversion). `calculator.svelte.ts` now retains only state declarations + thin wiring (520 → 407 lines, no inline unit-math); removed the now-dead `parseEnergyInput` / `convertEnergyFromMeVperNucl` / `getEnergyUnitCategory` imports. Added 33 focused unit tests with no state object needed (out-of-range/non-positive energy, unknown units, SI-prefix collapse, MeV/u vs MeV/nucl, electron/proton/heavy-ion switches). No behaviour change; existing calculator tests pass unchanged. (Claude Opus 4.8 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-15-issue-690-calculator-extract-parse.md)
+
 - 2026-06-05 — **Stage 8 / accessibility**: WCAG audit + fixes (Issues #708–#711). Added a skip-to-content link with an e2e assertion (SC 2.4.1, not caught by axe), a global `:focus-visible` fallback (SC 2.4.7), a `<header>` banner landmark with `<nav>` scoped to the route tabs (SC 1.3.1), extended the axe e2e to the `wcag22aa` tag set with 24px clear-button hit areas (SC 2.5.8), a global `prefers-reduced-motion` rule, and darkened `--muted-foreground` for contrast headroom (SC 1.4.3). One commit per issue. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-05-wcag-accessibility-audit.md)
 
