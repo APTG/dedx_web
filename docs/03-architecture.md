@@ -52,8 +52,8 @@ dedx_web/
 │   │   │   └── ui.svelte.ts                       # wasmReady / wasmError flags
 │   │   ├── components/                 # UI components (§5)
 │   │   │   ├── entity-selection/       # Tabbed entity picker subtree (tabs, sheet, toolbar, views)
-│   │   │   ├── results/                # table-basic/advanced/multi/inverse-stp, unit-anchor-strip, …
-│   │   │   ├── result-table/           # Table cell/header partials
+│   │   │   ├── results/                # table-basic/advanced/multi/inverse-stp, table-multi-program, unit-anchor-strip, …
+│   │   │   │   └── multi-program/      # Multi-program comparison table cell/header partials
 │   │   │   ├── compound-editor/        # Custom-compound editor parts (desktop + mobile sheet)
 │   │   │   ├── calculator/             # advanced-hint, shared-compound-alert
 │   │   │   ├── layout/                 # page-error-fallback
@@ -638,7 +638,8 @@ Inline nav-bar markup, the Advanced toggle, and the footer live directly in
 │   │   ├── results/unit-anchor-strip.svelte      (energy unit radiogroup)
 │   │   ├── results/compare-across-strip.svelte · results/quantity-toggle.svelte
 │   │   ├── results/table-basic · table-advanced · table-multi · table-inverse-stp
-│   │   │   └── result-table/ cell + header partials; results/stp-unit-header-menu.svelte
+│   │   ├── results/table-multi-program.svelte  (multi-program comparison table)
+│   │   │   └── results/multi-program/ cell + header partials; results/stp-unit-header-menu.svelte
 │   │   ├── calculator/advanced-hint.svelte · calculator/shared-compound-alert.svelte
 │   │   ├── advanced-options-panel.svelte  (accordion, hidden in Basic mode)
 │   │   ├── url-version-warning-banner.svelte
