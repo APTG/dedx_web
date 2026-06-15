@@ -12,10 +12,8 @@ import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
 import { createCalculatorState } from "$lib/state/calculator.svelte";
 import { createInverseLookupState } from "$lib/state/inverse-lookups.svelte";
-import {
-  setupInverseRangeCalculation,
-  setupInverseStpCalculation,
-} from "$lib/state/inverse-calc.svelte";
+import { setupInverseRangeCalculation } from "$lib/state/inverse-range-calc.svelte";
+import { setupInverseStpCalculation } from "$lib/state/inverse-stp-calc.svelte";
 import { advancedOptions } from "$lib/state/advanced-options.svelte";
 import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
 import { runInEffectRoot } from "../helpers/effect-root.svelte";
