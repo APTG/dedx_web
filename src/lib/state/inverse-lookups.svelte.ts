@@ -47,7 +47,8 @@ export interface InverseStpRow {
 export type ActiveTab = "forward" | "csda" | "stp";
 
 export interface InverseLookupState {
-  activeTab: ActiveTab;
+  /** Active tab; mutate via {@link InverseLookupState.setActiveTab}. */
+  readonly activeTab: ActiveTab;
   rangeRows: RangeRow[];
   stpRows: InverseStpRow[];
   rangeMasterUnit: "nm" | "um" | "mm" | "cm" | "m";
@@ -338,9 +339,6 @@ export function createInverseLookupState(
   return {
     get activeTab() {
       return state.activeTab;
-    },
-    set activeTab(v: ActiveTab) {
-      state.activeTab = v;
     },
     get rangeRows() {
       return rangeRows;
