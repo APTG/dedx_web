@@ -4,21 +4,23 @@ import { mkdirSync } from "node:fs";
 // ─────────────────────────────────────────────────────────────────
 // Documentation screenshots (issue #594)
 //
-// Captures deterministic desktop + mobile images of the app for the
-// GitHub Pages user documentation. This file lives OUTSIDE tests/e2e/
-// so it is excluded from the normal E2E run; invoke it explicitly:
+// Captures deterministic desktop + mobile images of the app that are
+// embedded in the in-app User Guide (/docs/user-guide). They live under
+// static/ so they are served by the app (and on GitHub Pages). This file
+// lives OUTSIDE tests/e2e/ so it is excluded from the normal E2E run;
+// invoke it explicitly:
 //
 //   pnpm docs:screenshots
 //
 // Determinism:
 //   - animations / transitions / caret are frozen via injected CSS
-//   - the dynamic build-info footer (commit hash + date) is masked so
+//   - the dynamic build-info badge (commit hash + date) is masked so
 //     the images do not churn on every commit
 //
-// Output: docs/assets/<name>-(desktop|mobile).png
+// Output: static/screenshots/<name>-(desktop|mobile).png
 // ─────────────────────────────────────────────────────────────────
 
-const OUT_DIR = "docs/assets";
+const OUT_DIR = "static/screenshots";
 mkdirSync(OUT_DIR, { recursive: true });
 
 const VIEWPORTS = {
