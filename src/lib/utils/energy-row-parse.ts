@@ -79,13 +79,12 @@ export function parseRowEnergy(
   }
 
   // The parser may return SI-prefixed suffixes (e.g. `GeV`, `TeV/u`) that are
-  // not part of the base `EnergyUnit` contract; collapse those to the base
-  // display category for the row's `unit` field while keeping the original
-  // suffix string for the value conversion below.
+  // not part of the base `EnergyUnit` contract; collapse a typed suffix to its
+  // base display category (so `1 GeV` shows as `MeV`, not the master unit),
+  // while plain numbers fall back to the active master unit. The original
+  // suffix string is still used for the value conversion below.
   const effectiveUnit: EnergyUnit =
-    parsed.unit === "MeV" || parsed.unit === "MeV/nucl" || parsed.unit === "MeV/u"
-      ? parsed.unit
-      : masterUnit;
+    parsed.unit !== null ? getEnergyUnitCategory(parsed.unit) : masterUnit;
   const unitFromSuffix = parsed.unit !== null;
 
   let normalizedMevNucl: number;

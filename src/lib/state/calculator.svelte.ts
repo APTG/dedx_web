@@ -314,6 +314,10 @@ export function createCalculatorState(
         return;
       }
 
+      if (row.text.trim() === "") {
+        return;
+      }
+
       const mass = resolveParticleMass(entitySelection.selectedParticle);
       if (!mass) {
         return;

@@ -94,6 +94,19 @@ describe("parseRowEnergy", () => {
     }
   });
 
+  it("collapses a typed suffix to its base category regardless of the master unit", () => {
+    // Heavy-ion Basic mode (master unit MeV/nucl): typing "1 GeV" is total
+    // energy and must display as "MeV", not inherit the MeV/nucl master unit.
+    const out = parseRowEnergy("1 GeV", "MeV/nucl", carbon.massNumber, carbon.atomicMass);
+    expect(out.status).toBe("valid");
+    if (out.status === "valid") {
+      expect(out.unit).toBe("MeV");
+      expect(out.unitFromSuffix).toBe(true);
+      // 1 GeV = 1000 MeV total → 1000/12 ≈ 83.3 MeV/nucl for carbon.
+      expect(out.normalizedMevNucl).toBeCloseTo(1000 / 12, 4);
+    }
+  });
+
   it('normalizes "100 MeV/u" for carbon (A=12) using atomic mass', () => {
     const out = parseRowEnergy("100 MeV/u", "MeV", carbon.massNumber, carbon.atomicMass);
     expect(out.status).toBe("valid");
