@@ -1,34 +1,12 @@
 # 2026-06-05 — Issue #594: Automated documentation screenshots + quick user guide
 
+> **Follow-up (2026-06-15):** the screenshots were later moved from
+> `docs/assets/` to `static/screenshots/` and the guide was reshipped as the
+> in-app `/docs/user-guide` route (replacing `docs/user-guide.md`). See
+> [2026-06-15-issue-594-in-app-user-guide.md](2026-06-15-issue-594-in-app-user-guide.md).
+> Paths mentioned below describe this session's state at the time.
+
 ## Session Narrative
-
-### Prompt 2 (2026-06-15): "ship the guide at /docs/user-guide instead of a markdown file — human-friendly, readable, responsive for mobile + desktop"
-
-**AI response**: Converted the end-user guide from a standalone markdown file
-into the in-app route so it is served at `/docs/user-guide` (and on GitHub
-Pages):
-
-- Rewrote `src/routes/docs/user-guide/+page.svelte` into a human-readable,
-  responsive guide: short intro, an in-page jump-nav of pill links, a numbered
-  Calculator walkthrough, a Plot section, a "Good to know" tips list, and the
-  pre-existing shareable-link / external-data / keyboard-shortcut sections
-  (kept, since they were already useful). Styled with utility classes (the
-  project has no `@tailwindcss/typography`), constrained to `max-w-3xl`.
-- Each screenshot uses `<picture>` with a `(max-width: 640px)` `<source>` so
-  phones get the mobile capture and larger screens the desktop one; images are
-  `loading="lazy"` with descriptive `alt` text.
-- Moved screenshot output from `docs/assets/` to `static/screenshots/` so the
-  app serves them at `${base}/screenshots/*.png` (works on the `/dedx_web/`
-  Pages base too). Updated `tests/docs-screenshots.spec.ts` `OUT_DIR` + header.
-- Removed `docs/user-guide.md` and its `docs/README.md` index row — the route
-  is now the single source of truth.
-- Verified by building, capturing `/docs/user-guide` at 1280×720 and 375×667,
-  and confirming the layout, the mobile/desktop image swap, and that
-  `pnpm check` / `lint` / `format:check` are all clean.
-
-Branch had been fast-forwarded through Copilot's `master` merge (`b1aa90b`)
-before this work; the three earlier Copilot review threads were already
-resolved.
 
 ### Prompt 1: "create two screenshots and very short user guide, work towards issue 594. follow best practices, add ai logs."
 

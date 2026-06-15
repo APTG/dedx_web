@@ -18,7 +18,7 @@ Use one bullet per session (newest first):
 ## Entries (newest first)
 
 - 2026-06-15 — **Docs / Stage 8**: Ship the end-user guide as an in-app page (Issue #594). Rewrote `/docs/user-guide` (`src/routes/docs/user-guide/+page.svelte`) into a human-friendly, responsive guide — intro, in-page jump nav, numbered Calculator walkthrough, Plot section, "Good to know" tips, plus the existing shareable-link / external-data / keyboard-shortcut sections — with embedded screenshots that swap to the mobile capture under 640px via `<picture>`. Moved the screenshot output from `docs/assets/` to `static/screenshots/` so the images are served by the app (and on GitHub Pages), updated `tests/docs-screenshots.spec.ts` accordingly, regenerated the four PNGs, and removed the standalone `docs/user-guide.md` (single source of truth now lives in the route). (Claude Opus 4.8 via Claude Code)
-  - **Log:** [log](docs/ai-logs/2026-06-05-issue-594-screenshots-guide.md)
+  - **Log:** [log](docs/ai-logs/2026-06-15-issue-594-in-app-user-guide.md)
 
 - 2026-06-15 — **Docs / maintenance**: Resolved PR #594 merge conflicts by preserving the screenshot-session changelog/log index entries alongside newer upstream AI log and docs-index updates. (GPT-5.5 via GitHub Copilot coding agent)
 

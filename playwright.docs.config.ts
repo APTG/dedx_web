@@ -9,8 +9,9 @@ import { defineConfig, devices } from "@playwright/test";
 //   pnpm docs:screenshots
 //
 // The suite (tests/docs-screenshots.spec.ts) captures deterministic
-// desktop + mobile images into docs/assets/ for the GitHub Pages user
-// documentation. See issue #594.
+// desktop + mobile images into static/screenshots/ — served by the app
+// (and on GitHub Pages) and embedded in the in-app /docs/user-guide page.
+// See issue #594.
 // ─────────────────────────────────────────────────────────────────
 
 export default defineConfig({
