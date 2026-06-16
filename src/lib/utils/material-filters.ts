@@ -23,20 +23,32 @@ export function isExternalMaterial(m: MaterialLike): m is ExternalOnlyMaterial {
 
 /** True when the material belongs in the Elements sub-list. */
 export function inElements(m: MaterialLike): boolean {
-  if (!isExternalMaterial(m)) return isElementId(m.id as number);
-  return m.atomicNumber !== undefined && isElementId(m.atomicNumber);
+  if (isExternalMaterial(m)) {
+    return m.atomicNumber !== undefined && isElementId(m.atomicNumber);
+  }
+  return typeof m.id === "number" && isElementId(m.id);
 }
 
 /** True when the material belongs in the Compounds sub-list. */
 export function inCompounds(m: MaterialLike): boolean {
-  if (!isExternalMaterial(m)) return (m.id as number) > 98 || m.id === 906;
-  return !(m.atomicNumber !== undefined && isElementId(m.atomicNumber));
+  if (isExternalMaterial(m)) {
+    return !(m.atomicNumber !== undefined && isElementId(m.atomicNumber));
+  }
+  return typeof m.id === "number" && m.id > 98;
 }
 
 /** Sort comparator for the Elements list: ascending atomic number. */
 export function compareElements(a: MaterialLike, b: MaterialLike): number {
-  const ai = isExternalMaterial(a) ? (a.atomicNumber ?? 999) : (a.id as number);
-  const bi = isExternalMaterial(b) ? (b.atomicNumber ?? 999) : (b.id as number);
+  const ai = isExternalMaterial(a)
+    ? (a.atomicNumber ?? 999)
+    : typeof a.id === "number"
+      ? a.id
+      : 999;
+  const bi = isExternalMaterial(b)
+    ? (b.atomicNumber ?? 999)
+    : typeof b.id === "number"
+      ? b.id
+      : 999;
   return ai - bi;
 }
 
