@@ -36,6 +36,20 @@ export const advancedOptions: { value: AdvancedOptions } = $state({
 });
 
 /**
+ * Deep, reactive read of every advanced-options field.
+ *
+ * Calling this inside a `$derived` or `$effect` registers a dependency on ALL
+ * fields of `advancedOptions.value` — including nested ones (e.g.
+ * `interpolation.scale`) and any options added in the future — because
+ * `$state.snapshot` traverses the entire reactive proxy. Use it instead of a
+ * hand-maintained `JSON.stringify([...])` change key so persistence and
+ * recalculation react to any option change without enumerating fields.
+ */
+export function advancedOptionsSnapshot(): AdvancedOptions {
+  return $state.snapshot(advancedOptions.value) as AdvancedOptions;
+}
+
+/**
  * Reset all advanced options to their default (undefined) state.
  */
 export function resetAdvancedOptions(): void {

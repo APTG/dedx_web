@@ -7,7 +7,13 @@ import {
 } from "$lib/utils/url-version.js";
 
 describe("negotiateVersion", () => {
-  test("negotiateVersion(2) → ok", () => {
+  test("negotiateVersion(3) → ok (current major)", () => {
+    expect(negotiateVersion("3")).toEqual({ status: "ok" });
+  });
+
+  test("negotiateVersion(2) → ok (within supported range; decoders read both separators)", () => {
+    // v2 differs from v3 only in the list separator (`,` → `~`, issue #672) and
+    // the decoders accept both, so a pre-#672 link still hydrates natively.
     expect(negotiateVersion("2")).toEqual({ status: "ok" });
   });
 
@@ -18,6 +24,10 @@ describe("negotiateVersion", () => {
 
   test("negotiateVersion(1) → mismatch (v1 no longer supported)", () => {
     expect(negotiateVersion("1")).toEqual({ status: "mismatch", version: 1 });
+  });
+
+  test("negotiateVersion(4) → mismatch (future major above CURRENT)", () => {
+    expect(negotiateVersion("4")).toEqual({ status: "mismatch", version: 4 });
   });
 
   test("negotiateVersion(999) → mismatch with version 999", () => {
@@ -36,7 +46,7 @@ describe("negotiateVersion", () => {
 describe("migrateUrl seam", () => {
   test("v1 is below the minimum supported major (rejected, not migrated)", () => {
     expect(MIN_SUPPORTED_URL_MAJOR).toBe(2);
-    expect(CURRENT_URL_MAJOR).toBe(2);
+    expect(CURRENT_URL_MAJOR).toBe(3);
   });
 
   test("is the identity for the current major (no chain defined yet)", () => {

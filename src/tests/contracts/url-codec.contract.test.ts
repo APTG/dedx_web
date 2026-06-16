@@ -256,7 +256,7 @@ describe("URL codec contract — urlv always present", () => {
       rows: [{ rawInput: "100", unit: "MeV", unitFromSuffix: false }],
       masterUnit: "MeV",
     });
-    expect(encoded.get("urlv")).toBe("2");
+    expect(encoded.get("urlv")).toBe("3");
   });
 });
 

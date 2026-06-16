@@ -30,7 +30,7 @@ describe("encodeCalculatorUrl — custom compounds", () => {
     expect(p.get("material")).toBe("custom");
     expect(p.get("mat_name")).toBe("LiF");
     expect(p.get("mat_density")).toBe("2.64");
-    expect(p.get("mat_elements")).toBe("3:1,9:1");
+    expect(p.get("mat_elements")).toBe("3:1~9:1");
     expect(p.get("mat_phase")).toBeNull(); // condensed is default, omitted
   });
 
@@ -52,7 +52,7 @@ describe("encodeCalculatorUrl — custom compounds", () => {
     expect(p.get("material")).toBe("custom");
     expect(p.get("mat_name")).toBe("PMMA");
     expect(p.get("mat_density")).toBe("1.19");
-    expect(p.get("mat_elements")).toBe("1:8,6:5,8:2");
+    expect(p.get("mat_elements")).toBe("1:8~6:5~8:2");
     expect(p.get("mat_ival")).toBe("65");
     expect(p.has("mat_phase")).toBe(false);
   });
@@ -73,7 +73,7 @@ describe("encodeCalculatorUrl — custom compounds", () => {
     expect(p.get("material")).toBe("custom");
     expect(p.get("mat_name")).toBe("Custom Water");
     expect(p.get("mat_density")).toBe("1");
-    expect(p.get("mat_elements")).toBe("1:2,8:1");
+    expect(p.get("mat_elements")).toBe("1:2~8:1");
     expect(p.get("mat_phase")).toBe("gas");
   });
 
@@ -90,7 +90,7 @@ describe("encodeCalculatorUrl — custom compounds", () => {
         { atomicNumber: 6, atomCount: 5 },
       ],
     } as any);
-    expect(p.get("mat_elements")).toBe("1:8,6:5,8:2");
+    expect(p.get("mat_elements")).toBe("1:8~6:5~8:2");
   });
 
   it("encodes fractional atom counts", () => {
@@ -105,7 +105,7 @@ describe("encodeCalculatorUrl — custom compounds", () => {
         { atomicNumber: 8, atomCount: 0.0555 },
       ],
     } as any);
-    expect(p.get("mat_elements")).toBe("1:0.111,8:0.0555");
+    expect(p.get("mat_elements")).toBe("1:0.111~8:0.0555");
   });
 
   it("does NOT encode custom compound params when materialIsCustom is false", () => {
@@ -415,7 +415,7 @@ describe("round-trip — custom compounds", () => {
     expect(reEncoded.get("material")).toBe("custom");
     expect(reEncoded.get("mat_name")).toBe("LiF");
     expect(reEncoded.get("mat_density")).toBe("2.64");
-    expect(reEncoded.get("mat_elements")).toBe("3:1,9:1");
+    expect(reEncoded.get("mat_elements")).toBe("3:1~9:1");
     expect(reEncoded.has("mat_phase")).toBe(false);
     expect(reEncoded.has("mat_ival")).toBe(false);
   });
@@ -456,6 +456,6 @@ describe("round-trip — custom compounds", () => {
     const reEncoded = encodeCalculatorUrl(decoded);
 
     // Re-encoded should have elements in ascending Z order
-    expect(reEncoded.get("mat_elements")).toBe("1:8,6:5,8:2");
+    expect(reEncoded.get("mat_elements")).toBe("1:8~6:5~8:2");
   });
 });

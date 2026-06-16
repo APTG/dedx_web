@@ -7,7 +7,7 @@ import type { Page } from "@playwright/test";
  * Tests cover all 6 acceptance scenarios from the spec:
  * - Scenario 1a: urlv mismatch shows banner (no WASM needed)
  * - Scenario 1b: load-defaults restores calculation (WASM needed)
- * - Scenario 2: urlv=2 (current) — no warning
+ * - Scenario 2: urlv=3 (current) / urlv=2 (legacy, in range) — no warning
  * - Scenario 3: missing urlv — treated as legacy, no warning
  * - Scenario 4: custom compound round-trip (WASM needed)
  * - Scenario 5: duplicate params use last value
@@ -64,7 +64,7 @@ test.describe("Stage 6.13 — URL parser", () => {
       .toBeGreaterThan(0);
   });
 
-  // ── Scenario 2: urlv=2 (current) — no warning @regression ────────────────
+  // ── Scenario 2: urlv=3 (current) / urlv=2 (legacy) — no warning @regression ─
   test("malformed urlv: version-mismatch banner visible @regression", async ({ page }) => {
     await page.goto("/calculator?urlv=1abc&particle=1&material=276&energies=100");
     const banner = page.locator('[data-testid="url-version-warning"]');
@@ -72,8 +72,18 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(banner).toContainText("1abc");
   });
 
-  test("urlv=2: no warning banner shown @regression", async ({ page }) => {
-    await page.goto("/calculator?urlv=2&particle=1&material=276&energies=100&eunit=MeV");
+  test("urlv=3 (current): no warning banner shown @regression", async ({ page }) => {
+    await page.goto("/calculator?urlv=3&particle=1&material=276&energies=100&eunit=MeV");
+    await page.waitForLoadState("domcontentloaded");
+    await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
+      timeout: 3000,
+    });
+  });
+
+  test("urlv=2 (legacy, in range): no warning banner shown @regression", async ({ page }) => {
+    // v2 differs from v3 only in the list separator (`,` → `~`, issue #672) and
+    // the decoders read both, so a pre-#672 link hydrates with no banner.
+    await page.goto("/calculator?urlv=2&particle=1&material=276&energies=100,200&eunit=MeV");
     await page.waitForLoadState("domcontentloaded");
     await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
       timeout: 3000,

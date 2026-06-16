@@ -1,4 +1,5 @@
 import type { ExtRef, EntityId } from "./types.js";
+import { URL_LIST_SEPARATOR, URL_LIST_SPLIT_RE } from "$lib/utils/url-shared";
 
 /** Regex for external source labels and entity local IDs per the formal URL grammar. */
 const IDENTIFIER_RE = /^[A-Za-z0-9_-]+$/;
@@ -69,18 +70,19 @@ export function formatEntityId(id: EntityId): string {
 }
 
 /**
- * Parse a comma-separated list of entity IDs (mixed built-in and external).
+ * Parse a `~`-separated list of entity IDs (mixed built-in and external).
+ * The legacy `,` separator is also accepted so pre-#672 links keep working.
  * Invalid entries are silently dropped.
  */
 export function parseEntityIdList(raw: string): EntityId[] {
   return raw
-    .split(",")
+    .split(URL_LIST_SPLIT_RE)
     .map((s) => parseEntityId(s.trim()))
     .filter((id): id is EntityId => id !== null);
 }
 
 export function formatEntityIdList(ids: EntityId[]): string {
-  return ids.map(formatEntityId).join(",");
+  return ids.map(formatEntityId).join(URL_LIST_SEPARATOR);
 }
 
 /**

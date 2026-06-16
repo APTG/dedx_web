@@ -201,6 +201,25 @@ describe("CalculatorState", () => {
     expect(calcState.rows).toHaveLength(2);
   });
 
+  it("memoizes derived getters: reading twice without an input change returns the same reference", () => {
+    // Backed by $derived — repeated reads within a frame must share one
+    // computation (and a stable object identity) rather than re-parsing.
+    const rowsA = calcState.rows;
+    const rowsB = calcState.rows;
+    expect(rowsB).toBe(rowsA);
+
+    const summaryA = calcState.validationSummary;
+    const summaryB = calcState.validationSummary;
+    expect(summaryB).toBe(summaryA);
+  });
+
+  it("invalidates the memoized rows reference when an input changes", () => {
+    const before = calcState.rows;
+    calcState.updateRowText(0, "250");
+    const after = calcState.rows;
+    expect(after).not.toBe(before);
+  });
+
   it("updates validation summary correctly", () => {
     // Initial: 1 valid row with "100"
     expect(calcState.validationSummary.total).toBe(1);

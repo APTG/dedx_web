@@ -185,29 +185,43 @@ describe("formatEntityId", () => {
 // ---------------------------------------------------------------------------
 
 describe("parseEntityIdList / formatEntityIdList round-trip", () => {
-  it("parses a comma-separated list of mixed IDs", () => {
+  it("parses a ~-separated list of mixed IDs", () => {
+    const list = parseEntityIdList("9~10~ext:srim:srim-2013");
+    expect(list).toEqual([9, 10, "ext:srim:srim-2013"]);
+  });
+
+  it("parses a legacy comma-separated list of mixed IDs (pre-#672 links)", () => {
     const list = parseEntityIdList("9,10,ext:srim:srim-2013");
     expect(list).toEqual([9, 10, "ext:srim:srim-2013"]);
   });
 
-  it("drops invalid entries silently", () => {
+  it("drops invalid entries silently (legacy comma form)", () => {
     const list = parseEntityIdList("9,auto,ext:bad::,276");
     expect(list).toEqual([9, 276]);
   });
 
-  it("formats back to a comma-separated string", () => {
+  it("formats back to a ~-separated string (issue #672)", () => {
     const ids = [9, "ext:srim:srim-2013" as const, 10];
-    expect(formatEntityIdList(ids)).toBe("9,ext:srim:srim-2013,10");
+    expect(formatEntityIdList(ids)).toBe("9~ext:srim:srim-2013~10");
   });
 
-  it("round-trips numeric-only lists", () => {
-    const raw = "9,10,11";
+  it("never emits a bare comma (linkifier-safe canonical form)", () => {
+    const ids = [9, "ext:srim:srim-2013" as const, 10];
+    expect(formatEntityIdList(ids)).not.toContain(",");
+  });
+
+  it("round-trips numeric-only lists in canonical ~ form", () => {
+    const raw = "9~10~11";
     expect(formatEntityIdList(parseEntityIdList(raw))).toBe(raw);
   });
 
-  it("round-trips mixed lists", () => {
-    const raw = "9,ext:srim:prog1,10";
+  it("round-trips mixed lists in canonical ~ form", () => {
+    const raw = "9~ext:srim:prog1~10";
     expect(formatEntityIdList(parseEntityIdList(raw))).toBe(raw);
+  });
+
+  it("upgrades a legacy comma list to canonical ~ form on re-encode", () => {
+    expect(formatEntityIdList(parseEntityIdList("9,10,11"))).toBe("9~10~11");
   });
 });
 
@@ -400,7 +414,7 @@ describe("calculatorUrlQueryString — extdata ordering and encoding", () => {
     expect(qs2).not.toContain("extdata");
   });
 
-  it("still emits readable colons and commas in non-extdata params", () => {
+  it("still emits readable colons and ~ list separators in non-extdata params", () => {
     const qs = calculatorUrlQueryString({
       ...baseCalcState,
       rows: [
@@ -408,8 +422,11 @@ describe("calculatorUrlQueryString — extdata ordering and encoding", () => {
         { rawInput: "500", unit: "keV", unitFromSuffix: true },
       ],
     });
-    // energies should contain literal colon separator, not %3A
-    expect(qs).toContain("energies=100,500:keV");
+    // energies should contain literal colon suffix and the ~ list separator,
+    // never a bare comma (which messenger linkifiers truncate, issue #672).
+    expect(qs).toContain("energies=100~500:keV");
+    expect(qs).not.toContain("%3A");
+    expect(qs).not.toContain("%7E");
   });
 });
 
@@ -580,14 +597,15 @@ describe("Plot URL — mixed EntityId series round-trip", () => {
 });
 
 describe("plotUrlQueryString — extdata ordering and encoding", () => {
-  it("emits extdata before other params", () => {
+  it("emits urlv first, then extdata before other params", () => {
     const input: PlotUrlInput = {
       ...basePlotInput,
       externalSources: [{ label: "srim", url: "https://example.com/srim.webdedx" }],
     };
     const qs = plotUrlQueryString(input);
     const keys = qs.split("&").map((p) => p.split("=")[0]);
-    expect(keys[0]).toBe("extdata");
+    expect(keys[0]).toBe("urlv");
+    expect(keys[1]).toBe("extdata");
   });
 
   it("keeps https%3A in extdata value", () => {
