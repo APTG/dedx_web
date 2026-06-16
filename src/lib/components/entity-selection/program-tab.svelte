@@ -61,8 +61,10 @@
   const bucket = $derived(computeBucket(totalCount));
 
   function passesOnlySelected(id: number | string): boolean {
-    if (!showOnlySelected) return true;
-    return isMultiMode ? isMultiSelected(id) : currentProgram.id === id;
+    // The "only selected" filter is a multi-select affordance — its toggle is
+    // hidden outside multi-mode — so it never narrows the single-select list.
+    if (!showOnlySelected || !isMultiMode) return true;
+    return isMultiSelected(id);
   }
 
   const filteredBuiltin = $derived(
@@ -83,6 +85,13 @@
   // Multi-select mode: active only when the advanced toolbar is visible AND across=program.
   const isMultiMode = $derived(showAdvancedToolbar && selectionState.across === "program");
   const multiIds = $derived(selectionState.multiSelected.program);
+
+  // Drop a lingering "only selected" filter when leaving multi-mode so the
+  // single-select list is never silently narrowed (the toggle that would clear
+  // it is hidden outside multi-mode).
+  $effect(() => {
+    if (!isMultiMode && showOnlySelected) showOnlySelected = false;
+  });
 
   function isMultiSelected(id: number | string): boolean {
     return multiIds.includes(id);
