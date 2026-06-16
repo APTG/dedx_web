@@ -12,6 +12,7 @@ import type { EntityId, ExtRef } from "$lib/external-data/types";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { MultiProgramState } from "$lib/state/multi-program.svelte";
+import { runDebouncedSnapshot } from "$lib/utils/debounced-snapshot";
 
 /**
  * Headless multi-program calculation orchestrator.
@@ -75,176 +76,170 @@ export function setupMultiProgramCalculation(
           : 1;
 
     // Snapshot inputs so a stale async resolution cannot overwrite fresh results.
-    const inputSnapshot = {
-      selectedProgramIds,
-      particleId,
-      materialId,
-      energies,
-      customMaterial,
-    };
-    let cancelled = false;
+    return runDebouncedSnapshot(
+      {
+        selectedProgramIds,
+        particleId,
+        materialId,
+        energies,
+        customMaterial,
+      },
+      async (inputSnapshot, isCancelled) => {
+        const service = await getService();
+        if (isCancelled()) return;
 
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
+        const builtinProgramIds = inputSnapshot.selectedProgramIds.filter(
+          (id): id is number => typeof id === "number",
+        );
+        const extProgramIds = inputSnapshot.selectedProgramIds.filter(
+          (id): id is ExtRef => typeof id === "string",
+        );
 
-      const builtinProgramIds = inputSnapshot.selectedProgramIds.filter(
-        (id): id is number => typeof id === "number",
-      );
-      const extProgramIds = inputSnapshot.selectedProgramIds.filter(
-        (id): id is ExtRef => typeof id === "string",
-      );
+        const results = new Map<EntityId, CalculationResult | LibdedxError>();
 
-      const results = new Map<EntityId, CalculationResult | LibdedxError>();
-
-      // --- Built-in (WASM) calculations ---
-      // Range pre-check: skip WASM per program if any energy is outside its tabulated
-      // range. Some programs (e.g. ICRU 49) hang in _dedx_get_stp_table on out-of-range
-      // inputs rather than returning error code 101.
-      let safeProgramIds = builtinProgramIds;
-      if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
-        safeProgramIds = [];
-        for (const programId of builtinProgramIds) {
-          const minEnergy = service.getMinEnergy(programId, inputSnapshot.particleId);
-          const maxEnergy = service.getMaxEnergy(programId, inputSnapshot.particleId);
-          const allEnergiesInRange = inputSnapshot.energies.every(
-            (energy) => energy >= minEnergy && energy <= maxEnergy,
-          );
-          if (allEnergiesInRange) {
-            safeProgramIds.push(programId);
-          } else {
-            results.set(
-              programId,
-              new LibdedxError(
-                101,
-                `Energy out of tabulated range (${minEnergy} – ${maxEnergy} MeV/nucl)`,
-              ),
+        // --- Built-in (WASM) calculations ---
+        // Range pre-check: skip WASM per program if any energy is outside its tabulated
+        // range. Some programs (e.g. ICRU 49) hang in _dedx_get_stp_table on out-of-range
+        // inputs rather than returning error code 101.
+        let safeProgramIds = builtinProgramIds;
+        if (!inputSnapshot.customMaterial && typeof inputSnapshot.materialId === "number") {
+          safeProgramIds = [];
+          for (const programId of builtinProgramIds) {
+            const minEnergy = service.getMinEnergy(programId, inputSnapshot.particleId);
+            const maxEnergy = service.getMaxEnergy(programId, inputSnapshot.particleId);
+            const allEnergiesInRange = inputSnapshot.energies.every(
+              (energy) => energy >= minEnergy && energy <= maxEnergy,
             );
-          }
-        }
-      }
-
-      if (safeProgramIds.length > 0) {
-        if (inputSnapshot.customMaterial) {
-          for (const programId of safeProgramIds) {
-            try {
+            if (allEnergiesInRange) {
+              safeProgramIds.push(programId);
+            } else {
               results.set(
                 programId,
-                service.calculateCustomCompound({
+                new LibdedxError(
+                  101,
+                  `Energy out of tabulated range (${minEnergy} – ${maxEnergy} MeV/nucl)`,
+                ),
+              );
+            }
+          }
+        }
+
+        if (safeProgramIds.length > 0) {
+          if (inputSnapshot.customMaterial) {
+            for (const programId of safeProgramIds) {
+              try {
+                results.set(
                   programId,
-                  particleId: inputSnapshot.particleId,
-                  elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
-                  density: inputSnapshot.customMaterial.density,
-                  iValue: inputSnapshot.customMaterial.iValue,
-                  energies: inputSnapshot.energies,
-                }),
-              );
-            } catch (e) {
-              results.set(
-                programId,
-                e instanceof LibdedxError
-                  ? e
-                  : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-              );
+                  service.calculateCustomCompound({
+                    programId,
+                    particleId: inputSnapshot.particleId,
+                    elements: customMaterialElementsForWasm(inputSnapshot.customMaterial),
+                    density: inputSnapshot.customMaterial.density,
+                    iValue: inputSnapshot.customMaterial.iValue,
+                    energies: inputSnapshot.energies,
+                  }),
+                );
+              } catch (e) {
+                results.set(
+                  programId,
+                  e instanceof LibdedxError
+                    ? e
+                    : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+                );
+              }
+            }
+          } else if (typeof inputSnapshot.materialId === "number") {
+            const builtInResults = service.calculateMulti({
+              programIds: safeProgramIds,
+              particleId: inputSnapshot.particleId,
+              materialId: inputSnapshot.materialId,
+              energies: inputSnapshot.energies,
+              options: advOptsSnapshot,
+            });
+            for (const [programId, result] of builtInResults) {
+              results.set(programId, result);
             }
           }
-        } else if (typeof inputSnapshot.materialId === "number") {
-          const builtInResults = service.calculateMulti({
-            programIds: safeProgramIds,
-            particleId: inputSnapshot.particleId,
-            materialId: inputSnapshot.materialId,
-            energies: inputSnapshot.energies,
-            options: advOptsSnapshot,
-          });
-          for (const [programId, result] of builtInResults) {
-            results.set(programId, result);
+        }
+
+        // --- External (ExternalDataService) calculations ---
+        for (const extProgramId of extProgramIds) {
+          const parsed = parseExtRef(extProgramId);
+          if (!parsed) {
+            results.set(extProgramId, new LibdedxError(-1, "Invalid external program reference"));
+            continue;
           }
-        }
-      }
+          const { label, localId: localProgramId } = parsed;
 
-      // --- External (ExternalDataService) calculations ---
-      for (const extProgramId of extProgramIds) {
-        const parsed = parseExtRef(extProgramId);
-        if (!parsed) {
-          results.set(extProgramId, new LibdedxError(-1, "Invalid external program reference"));
-          continue;
-        }
-        const { label, localId: localProgramId } = parsed;
-
-        const particleLocalId = resolveExtLocalIdForLabel(
-          inputSnapshot.particleId,
-          label,
-          extCtxSnapshot.externalRefsForBuiltinParticle,
-        );
-        const materialLocalId = resolveExtLocalIdForLabel(
-          inputSnapshot.materialId as number | string,
-          label,
-          extCtxSnapshot.externalRefsForBuiltinMaterial,
-        );
-
-        if (!particleLocalId || !materialLocalId) {
-          results.set(
-            extProgramId,
-            new LibdedxError(-1, "Particle or material not covered by this external program"),
+          const particleLocalId = resolveExtLocalIdForLabel(
+            inputSnapshot.particleId,
+            label,
+            extCtxSnapshot.externalRefsForBuiltinParticle,
           );
-          continue;
-        }
+          const materialLocalId = resolveExtLocalIdForLabel(
+            inputSnapshot.materialId as number | string,
+            label,
+            extCtxSnapshot.externalRefsForBuiltinMaterial,
+          );
 
-        try {
-          const stoppingPowers: number[] = [];
-          const csdaValuesGcm2: (number | null)[] = [];
-          const validEnergies: number[] = [];
-
-          for (const energy of inputSnapshot.energies) {
-            const totalMev = energy * massASnapshot;
-            const r = await externalDataService.interpolateAt(
-              label,
-              localProgramId,
-              particleLocalId,
-              materialLocalId,
-              totalMev,
-            );
-            if (r.stp !== null) {
-              validEnergies.push(energy);
-              stoppingPowers.push(r.stp);
-              csdaValuesGcm2.push(r.csda);
-            }
-          }
-
-          if (validEnergies.length === 0) {
+          if (!particleLocalId || !materialLocalId) {
             results.set(
               extProgramId,
-              new LibdedxError(101, "Energy out of range for this external program"),
+              new LibdedxError(-1, "Particle or material not covered by this external program"),
             );
-          } else {
-            // Only include CSDA when every value is non-null (store has CSDA data).
-            const allCsdaAvailable =
-              csdaValuesGcm2.length > 0 && csdaValuesGcm2.every((v) => v !== null);
-            results.set(extProgramId, {
-              energies: validEnergies,
-              stoppingPowers,
-              csdaRanges: allCsdaAvailable ? (csdaValuesGcm2 as number[]) : [],
-            });
+            continue;
           }
-        } catch (e) {
-          results.set(
-            extProgramId,
-            e instanceof LibdedxError
-              ? e
-              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-          );
+
+          try {
+            const stoppingPowers: number[] = [];
+            const csdaValuesGcm2: (number | null)[] = [];
+            const validEnergies: number[] = [];
+
+            for (const energy of inputSnapshot.energies) {
+              const totalMev = energy * massASnapshot;
+              const r = await externalDataService.interpolateAt(
+                label,
+                localProgramId,
+                particleLocalId,
+                materialLocalId,
+                totalMev,
+              );
+              if (r.stp !== null) {
+                validEnergies.push(energy);
+                stoppingPowers.push(r.stp);
+                csdaValuesGcm2.push(r.csda);
+              }
+            }
+
+            if (validEnergies.length === 0) {
+              results.set(
+                extProgramId,
+                new LibdedxError(101, "Energy out of range for this external program"),
+              );
+            } else {
+              // Only include CSDA when every value is non-null (store has CSDA data).
+              const allCsdaAvailable =
+                csdaValuesGcm2.length > 0 && csdaValuesGcm2.every((v) => v !== null);
+              results.set(extProgramId, {
+                energies: validEnergies,
+                stoppingPowers,
+                csdaRanges: allCsdaAvailable ? (csdaValuesGcm2 as number[]) : [],
+              });
+            }
+          } catch (e) {
+            results.set(
+              extProgramId,
+              e instanceof LibdedxError
+                ? e
+                : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
+            );
+          }
         }
-      }
 
-      if (!cancelled) {
-        multiProgState.setComparisonResults(results);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+        if (!isCancelled()) {
+          multiProgState.setComparisonResults(results);
+        }
+      },
+    );
   });
 }

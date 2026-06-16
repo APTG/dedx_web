@@ -11,6 +11,7 @@ import type { EntityId } from "$lib/external-data/types";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { MultiEntityState } from "$lib/state/multi-entity.svelte";
+import { runDebouncedSnapshot } from "$lib/utils/debounced-snapshot";
 
 /**
  * Headless multi-entity (material or particle) calculation orchestrator.
@@ -78,16 +79,6 @@ export function setupMultiEntityCalculation(
 
     const energies = validRows.map((r) => r.normalizedMevNucl as number);
     const advOptsSnapshot = advancedOptions.value;
-    const inputSnapshot = {
-      programId,
-      anchorParticleId,
-      anchorMaterialId,
-      entityIds,
-      energies,
-      dim,
-      builtinMat,
-    };
-    let cancelled = false;
 
     const getCustomMaterialById = (id: EntityId) => {
       if (typeof id !== "string" || !id.startsWith("cc_")) return null;
@@ -104,85 +95,90 @@ export function setupMultiEntityCalculation(
       };
     };
 
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
+    return runDebouncedSnapshot(
+      {
+        programId,
+        anchorParticleId,
+        anchorMaterialId,
+        entityIds,
+        energies,
+        dim,
+        builtinMat,
+      },
+      async (inputSnapshot, isCancelled) => {
+        const service = await getService();
+        if (isCancelled()) return;
 
-      const results = new Map<EntityId, CalculationResult | LibdedxError>();
+        const results = new Map<EntityId, CalculationResult | LibdedxError>();
 
-      for (const entityId of inputSnapshot.entityIds) {
-        try {
-          let result: CalculationResult;
-          if (inputSnapshot.dim === "material") {
-            const customMaterial =
-              getCustomMaterialById(entityId) ??
-              (entityId === inputSnapshot.anchorMaterialId &&
-              isCustomMaterial(inputSnapshot.builtinMat)
-                ? inputSnapshot.builtinMat
-                : null);
-            if (customMaterial !== null) {
-              result = service.calculateCustomCompound({
-                programId: inputSnapshot.programId,
-                particleId: inputSnapshot.anchorParticleId,
-                elements: customMaterialElementsForWasm(customMaterial),
-                density: customMaterial.density,
-                iValue: customMaterial.iValue,
-                energies: inputSnapshot.energies,
-              });
-            } else if (typeof entityId === "number") {
+        for (const entityId of inputSnapshot.entityIds) {
+          try {
+            let result: CalculationResult;
+            if (inputSnapshot.dim === "material") {
+              const customMaterial =
+                getCustomMaterialById(entityId) ??
+                (entityId === inputSnapshot.anchorMaterialId &&
+                isCustomMaterial(inputSnapshot.builtinMat)
+                  ? inputSnapshot.builtinMat
+                  : null);
+              if (customMaterial !== null) {
+                result = service.calculateCustomCompound({
+                  programId: inputSnapshot.programId,
+                  particleId: inputSnapshot.anchorParticleId,
+                  elements: customMaterialElementsForWasm(customMaterial),
+                  density: customMaterial.density,
+                  iValue: customMaterial.iValue,
+                  energies: inputSnapshot.energies,
+                });
+              } else if (typeof entityId === "number") {
+                result = service.calculate(
+                  inputSnapshot.programId,
+                  inputSnapshot.anchorParticleId,
+                  entityId,
+                  inputSnapshot.energies,
+                  advOptsSnapshot,
+                );
+              } else {
+                throw new LibdedxError(
+                  -1,
+                  typeof entityId === "string" && entityId.startsWith("ext:")
+                    ? "Multi-material comparison does not support external-only materials."
+                    : `Unsupported material ID for multi-material comparison: ${entityId}`,
+                );
+              }
+            } else {
+              // across === "particle": iterate particleIds, fixed material
+              if (typeof entityId !== "number") {
+                throw new LibdedxError(
+                  -1,
+                  typeof entityId === "string" && entityId.startsWith("ext:")
+                    ? "Multi-particle comparison does not support external-only particles."
+                    : `Unsupported particle ID for multi-particle comparison: ${entityId}`,
+                );
+              }
               result = service.calculate(
                 inputSnapshot.programId,
-                inputSnapshot.anchorParticleId,
                 entityId,
+                inputSnapshot.anchorMaterialId as number,
                 inputSnapshot.energies,
                 advOptsSnapshot,
               );
-            } else {
-              throw new LibdedxError(
-                -1,
-                typeof entityId === "string" && entityId.startsWith("ext:")
-                  ? "Multi-material comparison does not support external-only materials."
-                  : `Unsupported material ID for multi-material comparison: ${entityId}`,
-              );
             }
-          } else {
-            // across === "particle": iterate particleIds, fixed material
-            if (typeof entityId !== "number") {
-              throw new LibdedxError(
-                -1,
-                typeof entityId === "string" && entityId.startsWith("ext:")
-                  ? "Multi-particle comparison does not support external-only particles."
-                  : `Unsupported particle ID for multi-particle comparison: ${entityId}`,
-              );
-            }
-            result = service.calculate(
-              inputSnapshot.programId,
+            results.set(entityId, result);
+          } catch (e) {
+            results.set(
               entityId,
-              inputSnapshot.anchorMaterialId as number,
-              inputSnapshot.energies,
-              advOptsSnapshot,
+              e instanceof LibdedxError
+                ? e
+                : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
             );
           }
-          results.set(entityId, result);
-        } catch (e) {
-          results.set(
-            entityId,
-            e instanceof LibdedxError
-              ? e
-              : new LibdedxError(-1, e instanceof Error ? e.message : String(e)),
-          );
         }
-      }
 
-      if (!cancelled) {
-        multiEntityState.setComparisonResults(results);
-      }
-    }, 300);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+        if (!isCancelled()) {
+          multiEntityState.setComparisonResults(results);
+        }
+      },
+    );
   });
 }

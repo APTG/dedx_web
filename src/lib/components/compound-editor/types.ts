@@ -32,6 +32,13 @@ export interface EditDuplicatePrompt {
  */
 export interface EditorController {
   readonly formData: CompoundFormData;
+  /**
+   * Element rows to render in the formula footer. In weight mode these are the
+   * atom counts derived from the weight percentages; in formula mode they are
+   * `formData.elements` directly. Derived once by the parent so desktop and
+   * mobile views never disagree.
+   */
+  readonly displayElements: CompoundElementEntry[];
   readonly elementTexts: string[];
   readonly weightTexts: string[];
   readonly mode: "formula" | "weight";
