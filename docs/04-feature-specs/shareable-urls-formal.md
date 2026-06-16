@@ -95,6 +95,7 @@ pair                = urlv-pair
                     / mat-elements-pair
                     / mat-ival-pair
                     / mat-phase-pair
+                    / matsrc-pair
                     ; Deprecated v1 pairs — still parsed for migration:
                     / eunit-pair
                     / qfocus-pair
@@ -226,6 +227,7 @@ mat-elements-pair   = "mat_elements=" mat-element *(list-sep mat-element)
 mat-element         = int-pos ":" number
 mat-ival-pair       = "mat_ival=" number
 mat-phase-pair      = "mat_phase=" ("gas" / "condensed")
+matsrc-pair         = "matsrc=" ("transient" / "saved")   ;(omitted when "saved")
 
 ; -----------------------------
 ; DEPRECATED v1 params (accepted on read for migration; never emitted in v2)
@@ -505,6 +507,7 @@ when this condition is false.
 - `mat_elements`: must have at least one valid token. Individual token errors: Z outside [1,118] → silently drop; atom count ≤ 0 → silently drop; duplicate Z → sum counts. All invalid → fall back to material 276; warning banner.
 - `mat_ival`: must be > 0 and ≤ 10 000. Out-of-range → silently ignored.
 - `mat_phase`: must be `"gas"` or `"condensed"`. Unknown → silently ignored (defaults to condensed).
+- `matsrc`: provenance hint, `"transient"` or `"saved"`. Unknown/absent → treated as `"saved"`. `"transient"` only changes the receiver's banner copy (no effect on the calculation). On validation failure the decoder still retains the best-effort `mat_*` fields so the editor can pre-fill and highlight the failed inputs.
 
 Advanced Options constraints (applied when advanced mode; silently ignored in basic mode):
 

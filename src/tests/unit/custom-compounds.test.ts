@@ -3,6 +3,7 @@ import {
   createCustomCompoundsStore,
   validateCompound,
   toCustomCompoundInput,
+  suggestCopyName,
   type StoredCompoundInternal,
 } from "$lib/state/custom-compounds.svelte";
 
@@ -654,6 +655,80 @@ describe("custom-compounds", () => {
       const store = createCustomCompoundsStore();
       expect(store.compounds.length).toBe(1);
       expect(store.compounds[0]!.name).toBe("Rehydrated");
+    });
+  });
+
+  describe("suggestCopyName", () => {
+    test("keeps the name when not taken", () => {
+      expect(suggestCopyName("Foo", () => false)).toBe("Foo");
+    });
+
+    test("appends (copy) when the base name is taken", () => {
+      const taken = new Set(["foo"]);
+      expect(suggestCopyName("Foo", (n) => taken.has(n.toLowerCase()))).toBe("Foo (copy)");
+    });
+
+    test("increments the suffix until unique", () => {
+      const taken = new Set(["foo", "foo (copy)", "foo (copy 2)"]);
+      expect(suggestCopyName("Foo", (n) => taken.has(n.toLowerCase()))).toBe("Foo (copy 3)");
+    });
+
+    test("trims surrounding whitespace before deduplicating", () => {
+      expect(suggestCopyName("  Bar  ", () => false)).toBe("Bar");
+    });
+  });
+
+  describe("editAndSaveCopy", () => {
+    test("returns source fields with an unchanged name when the library is empty", () => {
+      const store = createCustomCompoundsStore();
+      const copy = store.editAndSaveCopy({
+        name: "Shared LiF",
+        density: 2.64,
+        iValue: 94,
+        elements: [
+          { atomicNumber: 3, atomCount: 1 },
+          { atomicNumber: 9, atomCount: 1 },
+        ],
+        phase: "condensed",
+      });
+      expect(copy.name).toBe("Shared LiF");
+      expect(copy.density).toBe(2.64);
+      expect(copy.iValue).toBe(94);
+      expect(copy.phase).toBe("condensed");
+      expect(copy.elements).toEqual([
+        { atomicNumber: 3, atomCount: 1 },
+        { atomicNumber: 9, atomCount: 1 },
+      ]);
+    });
+
+    test("deduplicates the name against existing library entries", () => {
+      const store = createCustomCompoundsStore();
+      store.create({
+        name: "Water",
+        density: 1.0,
+        elements: [{ atomicNumber: 1, atomCount: 2 }],
+        phase: "condensed",
+      });
+      const copy = store.editAndSaveCopy({
+        name: "Water",
+        density: 1.0,
+        elements: [{ atomicNumber: 1, atomCount: 2 }],
+        phase: "condensed",
+      });
+      expect(copy.name).toBe("Water (copy)");
+    });
+
+    test("returns a deep copy of the element rows", () => {
+      const store = createCustomCompoundsStore();
+      const elements = [{ atomicNumber: 6, atomCount: 1 }];
+      const copy = store.editAndSaveCopy({
+        name: "Carbon",
+        density: 2.0,
+        elements,
+        phase: "condensed",
+      });
+      copy.elements[0]!.atomCount = 99;
+      expect(elements[0]!.atomCount).toBe(1);
     });
   });
 

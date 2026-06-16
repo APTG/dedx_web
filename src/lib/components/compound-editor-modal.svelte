@@ -23,7 +23,7 @@
   import SumTracker from "./compound-editor/sum-tracker.svelte";
   import QuickStartPanel from "./compound-editor/quick-start-panel.svelte";
   import MobileSheet from "./compound-editor/mobile-sheet.svelte";
-  import type { EditorController } from "./compound-editor/types";
+  import type { EditorController, CompoundEditorPrefill } from "./compound-editor/types";
   import { presetToAtomCounts, type CompoundPreset } from "$lib/data/compound-presets";
   import type { ParsedElement } from "$lib/utils/formula-parser";
 
@@ -49,9 +49,47 @@
     onOpenChange: (open: boolean) => void;
     onSave: (data: SavedCompoundData) => void;
     onDelete: () => void;
+    /**
+     * Seed values for *create* mode (used when `compound` is null) — the
+     * "Edit & save copy" / failed-URL recovery flows pre-fill the form (#648).
+     */
+    prefill?: CompoundEditorPrefill | null;
+    /**
+     * Amber notice text shown at the top of the modal when a shared URL could
+     * not be fully restored. Fields named in the text are highlighted (#648).
+     */
+    initialWarning?: string | null;
   }
 
-  let { open, compound, onOpenChange, onSave, onDelete }: Props = $props();
+  let {
+    open,
+    compound,
+    onOpenChange,
+    onSave,
+    onDelete,
+    prefill = null,
+    initialWarning = null,
+  }: Props = $props();
+
+  // Which form fields a failed shared URL flagged, derived from the warning text
+  // (see `parseCustomCompound` in url-shared.ts). A field stays highlighted only
+  // while it is still invalid, so fixing it clears the amber outline (#648).
+  let urlFailedFields = $derived.by(() => {
+    const s = new Set<string>();
+    const w = initialWarning ?? "";
+    if (w.includes("mat_name")) s.add("name");
+    if (w.includes("mat_density")) s.add("density");
+    if (w.includes("mat_ival")) s.add("iValue");
+    if (w.includes("mat_elements")) s.add("elements");
+    return s;
+  });
+  function isUrlAmber(field: string): boolean {
+    return urlFailedFields.has(field) && !!errors[field];
+  }
+  function fieldBorderClass(field: string): string {
+    if (isUrlAmber(field)) return "border-amber-500 ring-1 ring-amber-400";
+    return errors[field] ? "border-destructive" : "";
+  }
 
   const initialData: CompoundEditorFormData = {
     name: "",
@@ -211,6 +249,7 @@
   $effect(() => {
     const isOpen = open;
     const c = compound;
+    const pf = prefill;
     untrack(() => {
       if (isOpen && c) {
         formData.name = c.name;
@@ -224,6 +263,22 @@
         resetTransientState();
         sortElements();
         compositionTouched = false;
+      } else if (isOpen && pf) {
+        // Create mode, but pre-filled from a shared URL (Gap B / "Edit & save
+        // copy"). Numeric fields keep their raw text so an out-of-range value is
+        // shown for the user to fix. compositionTouched stays true so the empty
+        // placeholder composition isn't substituted.
+        formData.name = pf.name;
+        formData.density = pf.density;
+        formData.iValue = pf.iValue;
+        formData.phase = pf.phase;
+        formData.elements = pf.elements.map((e) => ({ ...e }));
+        elementTexts = pf.elements.map((e) => getLocalSymbol(e.atomicNumber));
+        weightTexts = computeInitialWeightTexts(formData.elements);
+        mode = "formula";
+        resetTransientState();
+        if (formData.elements.length > 0) sortElements();
+        compositionTouched = true;
       } else if (isOpen && !c) {
         formData = { ...initialData, elements: initialData.elements.map((e) => ({ ...e })) };
         elementTexts = ["Li", "F"];
@@ -632,6 +687,22 @@
           {/if}
 
           {#if !showDeleteConfirm}
+            {#if initialWarning}
+              <div
+                class="mt-3 rounded-md border border-amber-400 bg-amber-50 p-3 text-amber-900"
+                data-testid="compound-editor-url-warning"
+                role="status"
+                aria-live="polite"
+              >
+                <p class="text-sm">
+                  Some URL parameters couldn't be restored:
+                  <code class="font-mono">{initialWarning}</code>.
+                </p>
+                <p class="text-xs mt-1">
+                  Fix the highlighted fields and Save to keep this compound.
+                </p>
+              </div>
+            {/if}
             <div class="mt-4 grid gap-4">
               <!-- Properties row 1 -->
               <div class="flex items-center gap-4">
@@ -641,7 +712,8 @@
                     id="compound-name"
                     bind:value={formData.name}
                     placeholder="e.g., LiF Pellet"
-                    class={cn(errors.name && "border-destructive")}
+                    class={cn(fieldBorderClass("name"))}
+                    data-url-failed={isUrlAmber("name") ? "name" : undefined}
                     onkeydown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -666,7 +738,8 @@
                       min="0"
                       max="25"
                       bind:value={formData.density}
-                      class={cn("w-24 hide-spin-button", errors.density && "border-destructive")}
+                      class={cn("w-24 hide-spin-button", fieldBorderClass("density"))}
+                      data-url-failed={isUrlAmber("density") ? "density" : undefined}
                     />
                   </div>
                   {#if errors.density}
@@ -686,7 +759,8 @@
                       min="0"
                       max="10000"
                       bind:value={formData.iValue}
-                      class={cn("w-24 hide-spin-button", errors.iValue && "border-destructive")}
+                      class={cn("w-24 hide-spin-button", fieldBorderClass("iValue"))}
+                      data-url-failed={isUrlAmber("iValue") ? "iValue" : undefined}
                     />
                   </div>
                   {#if errors.iValue}
@@ -765,7 +839,15 @@
                 </div>
 
                 {#if errors.elements}
-                  <p class="text-sm text-destructive">{errors.elements}</p>
+                  <p
+                    class={cn(
+                      "text-sm",
+                      isUrlAmber("elements") ? "text-amber-700" : "text-destructive",
+                    )}
+                    data-url-failed={isUrlAmber("elements") ? "elements" : undefined}
+                  >
+                    {errors.elements}
+                  </p>
                 {/if}
 
                 <div

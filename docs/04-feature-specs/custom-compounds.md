@@ -699,6 +699,10 @@ mat-ival-pair       = "mat_ival=" number
                     ; number must be > 0 and ≤ 10000; omitted when no iValue
 mat-phase-pair      = "mat_phase=" ("gas" / "condensed")
                     ; omitted when "condensed" (default)
+matsrc-pair         = "matsrc=" ("transient" / "saved")
+                    ; provenance hint; omitted when "saved" (default).
+                    ; "transient" ⇒ the sender's compound came from another
+                    ; shared URL and was never saved to their library.
 ```
 
 These new pair types are added to the `pair` alternation in the ABNF,
@@ -715,7 +719,11 @@ a. `mat_name` — always emitted (percent-encoded)
 b. `mat_density` — always emitted; serialized via `Number.prototype.toString()` (decimal or scientific notation per ECMAScript rules)  
 c. `mat_elements` — always emitted; elements ordered by **ascending Z**; atom counts serialized via `Number.prototype.toString()`  
 d. `mat_ival` — omitted when absent; otherwise emitted as decimal eV value  
-e. `mat_phase` — omitted when `"condensed"` (default); emitted as `"gas"` otherwise
+e. `mat_phase` — omitted when `"condensed"` (default); emitted as `"gas"` otherwise  
+f. `matsrc` — omitted when `"saved"` (default); emitted as `"transient"` only
+when the selected compound is still a session-only transient (loaded from a
+shared URL and never saved). Keeps pre-existing shared URLs byte-for-byte
+unchanged.
 
 ### 6.3 Conditional enablement
 
@@ -734,10 +742,26 @@ When a URL contains `material=custom` with all required `mat_*` params:
 
 1. A transient `StoredCompound` object is reconstructed from the URL.
 2. It is selected as the active material.
-3. A dismissible banner is shown: **"Compound from shared URL — [Save to
-   library] [Dismiss]"**. Clicking "Save to library" runs the same
-   validation as the editor and (on success) adds the compound with a
-   new UUID. Dismissing keeps it active for the session only.
+3. A dismissible banner is shown with **three** actions: **[Save to
+   library] [Edit & save copy] [Dismiss]**.
+   - **Save to library** runs the same validation as the editor and (on
+     success) adds the compound with a new UUID, then dismisses the banner
+     and selects the new entry.
+   - **Edit & save copy** opens the compound editor pre-filled with the
+     transient's fields and a deduplicated name (`Foo` → `Foo (copy)` →
+     `Foo (copy 2)` when the library already holds that name). On Save it
+     creates a new library entry, dismisses the transient, and selects the
+     new entry; on Cancel the transient stays active and the banner
+     remains.
+   - **Dismiss** keeps the compound active for the session only.
+
+When the URL carried `matsrc=transient`, the banner copy changes to
+"Loaded an unsaved custom compound … from a shared URL." to signal that the
+sender never saved it.
+
+A dedicated editor instance lives on the calculator page (not the
+entity-selection picker) so "Edit & save copy" works even when the picker
+is collapsed.
 
 ### 6.5 Parse validation
 
@@ -751,6 +775,18 @@ When a URL contains `material=custom` with all required `mat_*` params:
 | Duplicate Z in URL                             | Collapse by summing counts                                        |
 | `mat_ival` out of range                        | Silently ignore; proceed without iValue                           |
 | `mat_phase` unknown token                      | Silently ignore; default to `"condensed"`                         |
+
+**Failed-URL recovery (Gap B).** When validation fails, the decoder still
+retains the best-effort fields it managed to parse (raw text for the failed
+numeric fields). The warning banner then offers **Edit & save copy**, which
+opens the editor pre-filled with those partial fields and an amber inline
+notice at the top:
+
+> Some URL parameters couldn't be restored: `mat_density invalid`. Fix the
+> highlighted fields and Save to keep this compound.
+
+The offending fields are outlined amber; Save stays disabled (re-using the
+editor's existing Save gating) until they are corrected.
 
 ### 6.6 Example URLs
 
@@ -999,9 +1035,12 @@ If an I-value override is stored on the compound, a line below the table reads:
 
 ### AC-11: Shared URL — "from URL" banner
 
-- [ ] Navigating to a URL with `material=custom` and valid `mat_*` params shows the "Compound from shared URL — Save to library / Dismiss" banner
+- [ ] Navigating to a URL with `material=custom` and valid `mat_*` params shows the "Compound from shared URL — Save to library / Edit & save copy / Dismiss" banner (three actions)
 - [ ] Clicking "Save to library" runs full validation and adds the compound with a new UUID
+- [ ] Clicking "Edit & save copy" opens the editor pre-filled with a deduplicated name; saving creates a new entry and dismisses the transient
 - [ ] Clicking "Dismiss" keeps the compound active for the session but does not persist it
+- [ ] A URL whose `mat_*` params fail validation offers "Edit & save copy", which opens the editor with the partial fields, an amber notice, and Save disabled until the flagged fields are fixed
+- [ ] `matsrc=transient` is emitted only when the selected compound is an unsaved transient; the receiver banner copy reflects the unsaved provenance
 - [ ] Invalid / incomplete `mat_*` params fall back to liquid water and show the warning banner
 
 ### AC-12: localStorage persistence

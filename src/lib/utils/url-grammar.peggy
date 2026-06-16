@@ -141,7 +141,7 @@ ScalarKey
   / "tip_seen" / "across"
   / "stp_unit" / "xscale" / "yscale" / "inv_stp_branch"
   / "agg_state" / "interp_scale" / "interp_method" / "mstar_mode"
-  / "mat_name" / "mat_density" / "mat_ival" / "mat_phase"
+  / "mat_name" / "mat_density" / "mat_ival" / "mat_phase" / "matsrc"
   / "density" / "ival"
 
 // ── unknown pair (forward-compatible; dropped by the resolver) ───────────────

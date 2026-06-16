@@ -225,4 +225,98 @@ test.describe("Stage 6.13 — URL parser", () => {
     expect(page.url()).not.toContain("unknown=");
     expect(page.url()).toContain("particle=1");
   });
+
+  // ── Issue #648: URL-sharing follow-ups for custom compounds ───────────────
+  const CUSTOM_URL =
+    "/calculator?urlv=3&particle=2&material=custom&mat_name=Water-url-test" +
+    "&mat_density=1&mat_elements=1:2~8:1&mode=advanced&program=1&programs=1&energies=5";
+
+  test("Edit & save copy: banner offers three actions and saves a deduped copy @smoke", async ({
+    page,
+  }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip custom compound editor flow");
+
+    await page.goto(CUSTOM_URL);
+    const banner = page.locator('[data-testid="compound-from-url-banner"]');
+    await expect(banner).toBeVisible({ timeout: 10000 });
+
+    // Three actions when a valid transient is present.
+    await expect(banner.getByTestId("compound-url-save")).toBeVisible();
+    await expect(banner.getByTestId("compound-url-edit-copy")).toBeVisible();
+    await expect(banner.getByTestId("compound-url-dismiss")).toBeVisible();
+
+    await banner.getByTestId("compound-url-edit-copy").click();
+
+    // Editor opens pre-filled with a deduplicated name (no existing library yet,
+    // so the name is unchanged), in create mode (no Delete button).
+    const editorDialog = page.getByRole("dialog", { name: "Compound Editor" });
+    const nameField = editorDialog.getByRole("textbox", { name: /name/i });
+    await expect(nameField).toHaveValue("Water-url-test");
+    await expect(editorDialog.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
+
+    const saveBtn = editorDialog.getByRole("button", { name: "Save", exact: true });
+    await expect(saveBtn).toBeEnabled();
+    await saveBtn.click();
+
+    // Banner is dismissed and the saved entry is now selected. URL points at the
+    // saved compound (still material=custom, but no longer a transient).
+    await expect(banner).toBeHidden({ timeout: 5000 });
+  });
+
+  test("failed URL (mat_density=99): amber notice in editor, Save disabled @regression", async ({
+    page,
+  }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip custom compound recovery flow");
+
+    await page.goto(
+      "/calculator?urlv=3&particle=2&material=custom&mat_name=Bad-Density" +
+        "&mat_density=99&mat_elements=1:2~8:1&mode=advanced&program=1&programs=1&energies=5",
+    );
+    const banner = page.locator('[data-testid="compound-from-url-banner"]');
+    await expect(banner).toBeVisible({ timeout: 10000 });
+    await expect(banner).toContainText(/could not be restored/i);
+
+    await banner.getByTestId("compound-url-edit-copy").click();
+
+    // Amber notice present, density field flagged, Save disabled until fixed.
+    await expect(page.getByTestId("compound-editor-url-warning")).toBeVisible();
+    const densityField = page.getByRole("spinbutton", { name: /density/i });
+    await expect(densityField).toHaveAttribute("data-url-failed", "density");
+    const editorDialog = page.getByRole("dialog", { name: "Compound Editor" });
+    const saveBtn = editorDialog.getByRole("button", { name: "Save", exact: true });
+    await expect(saveBtn).toBeDisabled();
+
+    await densityField.fill("2.64");
+    await expect(densityField).not.toHaveAttribute("data-url-failed");
+    await expect(saveBtn).toBeEnabled();
+  });
+
+  test("matsrc=transient: receiver banner reflects the unsaved provenance @regression", async ({
+    page,
+  }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip matsrc flow");
+
+    await page.goto(CUSTOM_URL + "&matsrc=transient");
+    const banner = page.locator('[data-testid="compound-from-url-banner"]');
+    await expect(banner).toBeVisible({ timeout: 10000 });
+    await expect(banner).toContainText(/unsaved custom compound/i);
+  });
+
+  test("transient → shared URL carries matsrc=transient @regression", async ({ page }) => {
+    const wasmOk = await checkWasmAvailable(page);
+    test.skip(!wasmOk, "WASM binary absent — skip matsrc round-trip");
+
+    // Load a transient compound (never saved), then let the URL sync re-encode.
+    await page.goto(CUSTOM_URL);
+    await expect(page.locator('[data-testid="compound-from-url-banner"]')).toBeVisible({
+      timeout: 10000,
+    });
+    await page.waitForFunction(() => window.location.search.includes("matsrc=transient"), {
+      timeout: 10000,
+    });
+    expect(page.url()).toContain("matsrc=transient");
+  });
 });

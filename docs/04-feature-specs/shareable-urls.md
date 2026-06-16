@@ -474,8 +474,10 @@ Each is omitted when at its default value.
 ### 3.16 Custom Compound Parameters (reference)
 
 `mat_name=`, `mat_density=`, `mat_elements=`, `mat_ival=`, `mat_phase=` —
-unchanged from v1. Source of truth: [`custom-compounds.md`](custom-compounds.md) §6.
-Required when `material=custom`.
+unchanged from v1. `matsrc=transient` (optional, additive; default `saved`
+omitted) is a provenance hint emitted only for unsaved transient compounds.
+Source of truth: [`custom-compounds.md`](custom-compounds.md) §6.
+Required (except `matsrc`) when `material=custom`.
 
 ---
 

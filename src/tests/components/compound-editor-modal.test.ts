@@ -96,6 +96,51 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     expect(screen.getByText(/density must be/i)).toBeInTheDocument();
   });
 
+  it("pre-fills the form from a shared-URL prefill (Edit & save copy)", async () => {
+    renderModal({
+      prefill: {
+        name: "LiF (copy)",
+        density: "2.64",
+        iValue: "",
+        phase: "condensed",
+        elements: [
+          { atomicNumber: 3, atomCount: 1 },
+          { atomicNumber: 9, atomCount: 1 },
+        ],
+      },
+    });
+    expect(nameInput()).toHaveValue("LiF (copy)");
+    expect(densityInput()).toHaveValue(2.64);
+    // No Delete button — this is create (copy) mode, not editing a library entry.
+    expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
+    expect(saveButton()).toBeEnabled();
+  });
+
+  it("shows the amber notice and disables Save for a failed-URL density (Gap B)", async () => {
+    renderModal({
+      initialWarning: "mat_density invalid",
+      prefill: {
+        name: "Bad Density",
+        density: "99",
+        iValue: "",
+        phase: "condensed",
+        elements: [
+          { atomicNumber: 1, atomCount: 2 },
+          { atomicNumber: 8, atomCount: 1 },
+        ],
+      },
+    });
+    expect(screen.getByTestId("compound-editor-url-warning")).toBeInTheDocument();
+    // Density field is amber-flagged and Save stays disabled until it's fixed.
+    expect(densityInput()).toHaveAttribute("data-url-failed", "density");
+    expect(saveButton()).toBeDisabled();
+
+    // Correcting the value clears the amber flag and re-enables Save.
+    await fireEvent.input(densityInput(), { target: { value: "2.64" } });
+    expect(densityInput()).not.toHaveAttribute("data-url-failed");
+    expect(saveButton()).toBeEnabled();
+  });
+
   it("renders the formula footer with atom count and computed I-value (no crash on duplicates)", async () => {
     renderModal();
     await fireEvent.input(nameInput(), { target: { value: "Water" } });

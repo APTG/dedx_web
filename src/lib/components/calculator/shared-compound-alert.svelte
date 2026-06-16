@@ -1,36 +1,26 @@
 <script lang="ts">
   import { Button } from "$lib/components/ui/button";
-  import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
-  import { appInit } from "$lib/state/app-init.svelte";
+  import type { StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
 
   let {
-    sharedUrlCompound = $bindable(null),
-    sharedUrlWarning = $bindable(null),
+    sharedUrlCompound = null,
+    sharedUrlWarning = null,
+    fromTransient = false,
+    canEdit = false,
+    onSaveToLibrary,
+    onEditAndSaveCopy,
+    onDismiss,
   }: {
     sharedUrlCompound: StoredCompoundInternal | null;
     sharedUrlWarning: string | null;
+    /** Sender shared an unsaved (transient) compound — changes the banner copy. */
+    fromTransient?: boolean;
+    /** Whether an editable draft exists (valid transient or recoverable partial). */
+    canEdit?: boolean;
+    onSaveToLibrary: () => void;
+    onEditAndSaveCopy: () => void;
+    onDismiss: () => void;
   } = $props();
-
-  function saveSharedUrlCompound() {
-    if (!sharedUrlCompound || !appInit.entityState) return;
-    const result = customCompounds.create({
-      name: sharedUrlCompound.name,
-      density: sharedUrlCompound.density,
-      iValue: sharedUrlCompound.iValue,
-      elements: sharedUrlCompound.elements,
-      phase: sharedUrlCompound.phase,
-    });
-    if (result.success) {
-      customCompounds.removeTransient(sharedUrlCompound.id);
-      appInit.entityState.selectMaterial(result.compound.id);
-      sharedUrlCompound = null;
-    }
-  }
-
-  function dismissSharedUrlCompound() {
-    sharedUrlCompound = null;
-    sharedUrlWarning = null;
-  }
 </script>
 
 {#if sharedUrlCompound || sharedUrlWarning}
@@ -40,16 +30,35 @@
   >
     <span role="status" aria-live="polite">
       {#if sharedUrlCompound}
-        Loaded custom compound “{sharedUrlCompound.name}” from shared URL.
+        {#if fromTransient}
+          Loaded an unsaved custom compound “{sharedUrlCompound.name}” from a shared URL.
+        {:else}
+          Loaded custom compound “{sharedUrlCompound.name}” from shared URL.
+        {/if}
       {:else}
         Custom compound URL parameters could not be restored: {sharedUrlWarning}
       {/if}
     </span>
     <div class="flex items-center gap-2">
       {#if sharedUrlCompound}
-        <Button size="sm" variant="outline" onclick={saveSharedUrlCompound}>Save to library</Button>
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={onSaveToLibrary}
+          data-testid="compound-url-save">Save to library</Button
+        >
       {/if}
-      <Button size="sm" variant="ghost" onclick={dismissSharedUrlCompound}>Dismiss</Button>
+      {#if canEdit}
+        <Button
+          size="sm"
+          variant="outline"
+          onclick={onEditAndSaveCopy}
+          data-testid="compound-url-edit-copy">Edit &amp; save copy</Button
+        >
+      {/if}
+      <Button size="sm" variant="ghost" onclick={onDismiss} data-testid="compound-url-dismiss"
+        >Dismiss</Button
+      >
     </div>
   </div>
 {/if}
