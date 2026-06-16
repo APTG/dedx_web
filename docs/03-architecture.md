@@ -1,6 +1,7 @@
 # Architecture — webdedx
 
-> **Status:** Final v1 (19 April 2026)
+> **Status:** Final v1 (19 April 2026); synced to the Stage 8 codebase
+> (3 June 2026 — Issue #631).
 >
 > Describes the SvelteKit project structure, WASM service layer, reactive
 > state topology, routing, and static adapter constraints.
@@ -19,50 +20,75 @@ dedx_web/
 │   │   │   ├── types.ts                # Re-exports from docs/06-wasm-api-contract.md
 │   │   │   ├── loader.ts               # Lazy singleton: module factory + init
 │   │   │   ├── libdedx.ts              # LibdedxService implementation
-│   │   │   └── __mocks__/
-│   │   │       └── libdedx.ts          # Vitest mock — static fixture data
+│   │   │   └── __mocks__/libdedx.ts    # Vitest mock — static fixture data
 │   │   ├── state/                      # App-wide reactive state (§4)
-│   │   │   ├── entities.svelte.ts      # Programs, particles, materials, compat matrix
-│   │   │   ├── selection.svelte.ts     # Selected program / particle / material
-│   │   │   ├── calculation.svelte.ts   # Energy inputs, results, unit settings
-│   │   │   ├── ui.svelte.ts            # Basic/Advanced mode, loading flags
-│   │   │   └── url-sync.ts             # URL ↔ state serialization
-│   │   ├── components/                 # Reusable UI components (§5)
-│   │   │   ├── EntityDropdown.svelte   # Typeahead combobox (Calculator layout)
-│   │   │   ├── EntityPanel.svelte      # Full scrollable panel (Plot layout)
-│   │   │   ├── EnergyInput.svelte      # Textarea: per-line parse + validation
-│   │   │   ├── UnitSelector.svelte     # Segmented control: MeV / MeV/nucl / MeV/u
-│   │   │   ├── ResultTable.svelte      # Unified input/result table
-│   │   │   ├── JsrootPlot.svelte       # JSROOT DOM wrapper (§4.4)
-│   │   │   ├── AdvancedOptions.svelte  # Accordion: density/I-value/state/interp/MSTAR
-│   │   │   ├── ExportToolbar.svelte    # PDF / CSV / Share buttons
-│   │   │   └── BuildBadge.svelte       # Footer: commit hash, date, branch
-│   │   ├── export/                     # Export utilities
-│   │   │   ├── csv.ts                  # CSV generation (BOM, CRLF, 4 sig figs)
-│   │   │   └── pdf.ts                  # jsPDF assembly: metadata + table + SVG
-│   │   └── units/                      # Unit conversion utilities
-│   │       ├── energy.ts               # MeV ↔ MeV/nucl ↔ MeV/u (particle-aware)
-│   │       ├── stopping-power.ts       # MeV·cm²/g ↔ MeV/cm ↔ keV/µm (density-aware)
-│   │       └── range.ts                # g/cm² ↔ cm (density-aware)
-│   └── routes/                         # SvelteKit file-based routes (§2)
-│       ├── +layout.svelte              # Shell: nav bar, Advanced toggle, footer; starts WASM via $effect
-│       ├── +layout.ts                  # Synchronous layout load; returns {} without blocking on WASM
-│       ├── +page.svelte                # Redirect → /calculator
-│       ├── +error.svelte               # Top-level error boundary (unexpected JS errors)
-│       ├── calculator/
-│       │   ├── +page.svelte            # Calculator page
-│       │   ├── +page.ts                # Prerender: export const prerender = true
-│       │   └── +error.svelte           # Calculator error boundary (nav bar stays visible)
-│       ├── plot/
-│       │   ├── +page.svelte            # Plot page
-│       │   ├── +page.ts                # Prerender: export const prerender = true
-│       │   └── +error.svelte           # Plot error boundary (nav bar stays visible)
-│       └── docs/
-│           ├── +page.svelte            # Documentation landing
-│           ├── user-guide/
-│           │   └── +page.svelte        # User guide
-│           └── technical/
-│               └── +page.svelte        # Technical reference
+│   │   │   ├── app-init.svelte.ts                # AppInitState: WASM init + compat matrices + EntitySelectionState
+│   │   │   ├── entity-selection.svelte.ts        # createEntitySelectionState factory (program/particle/material)
+│   │   │   ├── entity-availability.svelte.ts     # Availability / greying-out derivations
+│   │   │   ├── compatibility-matrix.ts           # Build + query (program,particle)→materials matrix
+│   │   │   ├── external-compatibility.ts         # Merge external .webdedx stores into compat context
+│   │   │   ├── calculator.svelte.ts              # createCalculatorState: energy rows → calculated rows
+│   │   │   ├── calculator-engine.svelte.ts       # WASM calc orchestration for the calculator
+│   │   │   ├── calculator-page-orchestrator.svelte.ts  # Wires calculator state + URL sync per page
+│   │   │   ├── calculator-url-sync.svelte.ts     # Calculator state ↔ URL ($effect writer)
+│   │   │   ├── energy-rows.svelte.ts             # Energy textarea rows + per-line parse
+│   │   │   ├── inverse-lookups.svelte.ts         # Advanced inverse (Range→, STP→) row state
+│   │   │   ├── inverse-calc.svelte.ts            # WASM orchestration for inverse lookups
+│   │   │   ├── multi-entity.svelte.ts            # Compare-across materials/particles state
+│   │   │   ├── multi-entity-calc.svelte.ts       #   …and its WASM orchestration
+│   │   │   ├── multi-program.svelte.ts           # Compare-across programs state
+│   │   │   ├── multi-program-calc.svelte.ts      #   …and its WASM orchestration
+│   │   │   ├── multi-selection.svelte.ts         # Picker tab + compare-across dimension
+│   │   │   ├── advanced-mode.svelte.ts           # Basic/Advanced toggle (localStorage + URL)
+│   │   │   ├── advanced-options.svelte.ts        # Density/I-value/state/interp/MSTAR options
+│   │   │   ├── custom-compounds.svelte.ts        # User compounds CRUD (localStorage)
+│   │   │   ├── stp-unit.svelte.ts                # Shared STP output unit (sunit=)
+│   │   │   ├── export.svelte.ts                  # CSV/PDF/image export state
+│   │   │   ├── plot.svelte.ts                    # createPlotState: series model
+│   │   │   ├── plot-preview-calc.svelte.ts       # Live preview series calc
+│   │   │   ├── plot-page-orchestrator.svelte.ts  # Wires plot state + URL sync/restore
+│   │   │   ├── plot-url-sync.svelte.ts           # Plot state → URL ($effect writer)
+│   │   │   ├── plot-url-restore.svelte.ts        # URL → plot state (hydrate on load)
+│   │   │   └── ui.svelte.ts                       # wasmReady / wasmError flags
+│   │   ├── components/                 # UI components (§5)
+│   │   │   ├── entity-selection/       # Tabbed entity picker subtree (tabs, sheet, toolbar, views)
+│   │   │   ├── results/                # table-basic/advanced/multi/inverse-stp, table-multi-program, unit-anchor-strip, …
+│   │   │   │   └── multi-program/      # Multi-program comparison table cell/header partials
+│   │   │   ├── compound-editor/        # Custom-compound editor parts (desktop + mobile sheet)
+│   │   │   ├── calculator/             # advanced-hint, shared-compound-alert
+│   │   │   ├── layout/                 # page-error-fallback
+│   │   │   ├── ui/                     # shadcn-svelte primitives (button, input, tooltip, …)
+│   │   │   ├── jsroot-plot.svelte      # JSROOT DOM wrapper (§5)
+│   │   │   ├── advanced-options-panel.svelte
+│   │   │   ├── compound-editor-modal.svelte
+│   │   │   ├── build-info-badge.svelte
+│   │   │   └── url-version-warning-banner.svelte
+│   │   ├── export/                     # csv.ts, pdf.ts, plot-csv.ts, plot-image.ts, utils.ts
+│   │   ├── external-data/              # External .webdedx (Zarr/FSDH) loader, schema, service
+│   │   ├── utils/                      # Pure helpers (unit conversions, URL grammar+AST, parsers)
+│   │   │   ├── energy-conversions.ts   # MeV ↔ MeV/nucl ↔ MeV/u (particle-aware)
+│   │   │   ├── unit-conversions.ts     # MeV·cm²/g ↔ MeV/cm ↔ keV/µm; range g/cm² ↔ cm
+│   │   │   ├── url-grammar.peggy        # Peggy grammar → url-ast.ts via url-parse.ts (§4.5)
+│   │   │   └── …                        # energy-parser, calculator-url, plot-url, inverse-*, series-labels
+│   │   ├── config/                     # Display-name tables (programs, particles, materials)
+│   │   ├── data/                       # compound-presets.ts
+│   │   ├── parse/                      # inline-unit.ts
+│   │   ├── actions/                    # draggable-column.svelte.ts (Svelte action)
+│   │   └── shims/                      # resvg-js.ts (SVG→PNG for image export)
+│   ├── routes/                         # SvelteKit file-based routes (§2)
+│   │   ├── +layout.svelte              # Shell: nav bar, Advanced toggle, footer; starts WASM via $effect
+│   │   ├── +layout.ts                  # Synchronous layout load; returns {} without blocking on WASM
+│   │   ├── +page.svelte / +page.ts     # Redirect → /calculator
+│   │   ├── +error.svelte               # Top-level error boundary (unexpected JS errors)
+│   │   ├── calculator/+page.svelte + +page.ts   # Calculator page (prerender = true)
+│   │   ├── plot/
+│   │   │   ├── +page.svelte / +page.ts          # Plot page (prerender = true)
+│   │   │   └── series-strip.svelte              # Plot series add/remove/reorder strip
+│   │   └── docs/
+│   │       ├── +page.svelte / +page.ts          # Documentation landing
+│   │       ├── user-guide/+page.svelte + +page.ts
+│   │       └── technical/+page.svelte + +page.ts
+│   └── tests/                          # Vitest tests: unit/ components/ integration/ contracts/
 ├── static/
 │   ├── wasm/
 │   │   ├── libdedx.mjs                 # Emscripten ES module glue (built artifact, ~13 KB)
@@ -79,9 +105,7 @@ dedx_web/
 │   └── output/                         # gitignored — build artifacts consumed by verify.mjs
 ├── libdedx/                            # Git submodule — upstream C library
 ├── tests/
-│   ├── unit/                           # Vitest unit tests
-│   ├── integration/                    # Vitest integration tests (real WASM)
-│   └── e2e/                            # Playwright E2E tests
+│   └── e2e/                            # Playwright E2E tests (need built WASM in static/wasm/)
 ├── svelte.config.js
 ├── vite.config.ts
 ├── tsconfig.json
@@ -347,7 +371,8 @@ once per program for its particle list and once per program for its material
 list, then recording which `(program, particle)` keys are valid:
 
 ```ts
-// Populated once in entities.svelte.ts after WASM init
+// Built once by buildCompatibilityMatrix() (state/compatibility-matrix.ts),
+// invoked from AppInitState.init() after WASM init.
 // WASM calls: 1× getParticles + 1× getMaterials per program = 2P total
 const compat: CompatibilityMatrix = new Map();
 for (const prog of programs.value) {
@@ -372,8 +397,10 @@ call is a synchronous C function that fills a pre-allocated buffer and returns.
 Total: ~20 WASM calls at startup, each completing in < 1 ms. The matrix
 construction is negligible compared to the WASM module compilation time.
 
-This is referenced by `EntityDropdown.svelte` / `EntityPanel.svelte` for
-greying-out incompatible combinations without additional WASM calls per render.
+The matrix (and its external-store overlay in `external-compatibility.ts`) is
+consumed by `entity-availability.svelte.ts`, which the entity-picker components
+(`components/entity-selection/`) read to grey out incompatible combinations
+without additional WASM calls per render.
 
 ---
 
@@ -381,8 +408,26 @@ greying-out incompatible combinations without additional WASM calls per render.
 
 All application state lives in `.svelte.ts` modules under `src/lib/state/`.
 These are plain TypeScript files that use Svelte 5 runes (`$state`, `$derived`).
-They are **not** Svelte components — they are shared state singletons imported
-by any component that needs them.
+They are **not** Svelte components.
+
+The codebase uses **two complementary patterns**:
+
+1. **Module-level singletons** — for genuinely app-wide state shared across
+   pages and never instantiated more than once: `ui.svelte.ts` (`wasmReady`),
+   `advanced-mode.svelte.ts` (`isAdvancedMode`), `advanced-options.svelte.ts`,
+   `custom-compounds.svelte.ts`, `stp-unit.svelte.ts`, and the `appInit`
+   singleton in `app-init.svelte.ts`. These export the `{ value: T }` wrapper
+   (or a small class instance) described below.
+
+2. **Factory functions** — for page-scoped state graphs that an orchestrator
+   creates once per page mount: `createEntitySelectionState()`,
+   `createCalculatorState()`, `createInverseLookupState()`, `createPlotState()`,
+   `createEnergyInputState()`. Each returns an object whose fields are backed by
+   closure-local `$state`, exposed through getters/setters. The
+   page orchestrators (`calculator-page-orchestrator.svelte.ts`,
+   `plot-page-orchestrator.svelte.ts`) wire these together with the singletons
+   and the URL-sync modules. This keeps per-page lifecycles explicit and avoids
+   leaking calculator-only state into the plot page and vice-versa.
 
 ### Module-level state pattern
 
@@ -426,72 +471,67 @@ Calling a compute function inside `$derived` or `$effect` registers its `$state`
 dependencies with Svelte's tracker exactly as if the `$state` were read directly.
 This pattern was validated in Spike 3 (see `prototypes/svelte5-state/`).
 
-### 4.1 `entities.svelte.ts`
+### 4.1 Entity lists & compatibility — `app-init.svelte.ts` + `compatibility-matrix.ts`
 
-Holds the entity lists and compatibility matrix. Set once during WASM init,
-read-only thereafter.
+The `appInit` singleton (`AppInitState` in `app-init.svelte.ts`) owns the
+one-time bootstrap: it loads the WASM service, fetches the entity lists
+(programs / particles / materials), builds the compatibility matrix via
+`buildCompatibilityMatrix()` (`compatibility-matrix.ts`), merges any loaded
+external `.webdedx` stores via `buildExternalCompatibilityContext()`
+(`external-compatibility.ts`), and creates the shared `EntitySelectionState`.
+These values are set once and treated as read-only thereafter.
 
 ```ts
-export const programs = $state<{ value: ProgramEntity[] }>({ value: [] });
-export const allParticles = $state<{ value: Map<number, ParticleEntity[]> }>({ value: new Map() });
-export const allMaterials = $state<{ value: Map<number, MaterialEntity[]> }>({ value: new Map() });
-export const compatMatrix = $state<{ value: CompatibilityMatrix }>({ value: new Map() });
+export class AppInitState {
+  service = $state<LibdedxService | null>(null);
+  compatibilityMatrix = $state<CompatibilityMatrix | null>(null);
+  entityState = $state<EntitySelectionState | null>(null);
+  // …isInitializing / error / external-source bookkeeping
+}
+export const appInit = new AppInitState();
 ```
 
-### 4.2 `selection.svelte.ts`
+### 4.2 Entity selection — `entity-selection.svelte.ts`
 
-Holds the user's current entity selection. Shared between Calculator and
-Plot pages — navigating between them preserves the selection.
+`createEntitySelectionState(matrix)` returns the user's current
+program / particle / material selection plus the auto-select logic. The
+factory's state is shared across Calculator and Plot via the orchestrators, so
+navigating between the pages preserves the selection. Availability
+(greying-out) derivations live in `entity-availability.svelte.ts`; custom
+compounds and external entities are folded into the same selection surface.
+The default material is Water (`WATER_ID`); `CUSTOM_MATERIAL_ID` /
+string ids flag custom or external materials.
 
 ```ts
-export const selectedProgramId = $state<{ value: number | null }>({ value: null });
-export const selectedParticleId = $state<{ value: number | null }>({ value: null });
-export const selectedMaterialId = $state<{ value: number | null }>({ value: null });
-
-// Compute function: resolves the best program for the current selection.
-// Implements the "auto-select best program" rule (01-project-vision.md §4.3).
-// Call inside component-level $derived — cannot export $derived from a module.
-export function computeResolvedProgram(): number | null {
-  return autoSelectProgram(
-    selectedProgramId.value,
-    selectedParticleId.value,
-    selectedMaterialId.value,
-    compatMatrix,
-  );
+export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
+  let selectedProgramId = $state<number | null>(null);
+  let selectedParticleId = $state<number | null>(null);
+  let selectedMaterialId = $state<number | string | null>(WATER_ID);
+  // …getters/setters + auto-select-best-program (01-project-vision.md §4.3)
 }
 ```
 
-### 4.3 `calculation.svelte.ts`
+### 4.3 Calculation — `calculator.svelte.ts` + `calculator-engine.svelte.ts`
 
-Holds the energy input state, active unit, and the latest calculation result.
+`createCalculatorState()` holds the energy input rows (`energy-rows.svelte.ts`),
+the active energy unit, the STP/range output units, and the derived
+`CalculatedRow[]`. The actual WASM dispatch — choosing between `calculate()`,
+`calculateCustomCompound()`, multi-entity / multi-program fan-out, and external
+data lookups — lives in `calculator-engine.svelte.ts`, which reads the
+`advanced-options.svelte.ts` and `advanced-mode.svelte.ts` singletons.
 
-```ts
-export const energyInputText = $state({ value: "" }); // raw textarea content
-export const energyUnit = $state<{ value: EnergyUnit }>({ value: "MeV" });
-export const advancedOptions = $state<{ value: AdvancedOptions }>({ value: {} });
-export const result = $state<{ value: CalculationResult | null }>({ value: null });
-export const error = $state<{ value: LibdedxError | null }>({ value: null });
-export const calculating = $state({ value: false });
-
-// Compute function: parsed energy array (valid lines only).
-// Call inside component-level $derived — cannot export $derived from a module.
-export function computeParsedEnergies(): number[] {
-  return parseEnergyInput(energyInputText.value, energyUnit.value);
-}
-```
-
-Live calculation is triggered by an `$effect` in the Calculator page that
-watches the outputs of `computeParsedEnergies()`, `computeResolvedProgram()`,
-`selectedParticleId`, `selectedMaterialId`, and `advancedOptions`. The effect
-uses `setTimeout` + the cleanup return to implement debouncing:
+Live calculation is triggered by a debounced `$effect` in the calculator page
+orchestrator that watches the parsed energies, the resolved program, the
+selected particle/material, and the advanced options. The effect uses
+`setTimeout` + the cleanup return to debounce:
 
 ```ts
 $effect(() => {
-  // Call compute functions — Svelte tracks the $state deps they read
-  const energies = computeParsedEnergies();
-  const programId = computeResolvedProgram();
-  const particle = selectedParticleId.value;
-  const material = selectedMaterialId.value;
+  // Reading the reactive state registers it as a dependency
+  const energies = calc.parsedEnergies;
+  const programId = entity.resolvedProgramId;
+  const particle = entity.selectedParticleId;
+  const material = entity.selectedMaterialId;
   const options = advancedOptions.value;
 
   const timer = setTimeout(() => {
@@ -516,100 +556,112 @@ values — correct.
 run, discarding the previous timer state. The `setTimeout` + cleanup pattern
 above does not have this problem.
 
-### 4.4 `ui.svelte.ts`
+### 4.4 `ui.svelte.ts` and `advanced-mode.svelte.ts`
 
 ```ts
-export const isAdvancedMode = $state({ value: false }); // persisted to localStorage + URL
+// ui.svelte.ts
 export const wasmReady = $state({ value: false }); // set true after WASM init
 export const wasmError = $state<{ value: Error | null }>({ value: null });
+
+// advanced-mode.svelte.ts
+export const isAdvancedMode = $state({ value: storedValue }); // persisted to localStorage + URL
 ```
 
-`isAdvancedMode` is initialized from `localStorage` (if present) or the URL
-`mode=advanced` parameter, in that order. The URL parameter takes precedence
-over localStorage when opening a shared link.
+`isAdvancedMode` lives in its own module and is hydrated from `localStorage`
+on module load so a `?mode=advanced` share link does not flash Basic mode
+before the URL is parsed. The URL parameter still takes precedence over
+`localStorage` when opening a shared link. `toggleAdvancedMode()` also applies
+the Basic-mode fallback logic when switching back down.
 
-### 4.5 `url-sync.ts`
+### 4.5 URL synchronization — layered parser + per-page sync modules
 
-Not a `.svelte.ts` file — it contains no runes itself. It exposes two pure
-functions:
+URL handling is split into a **pure parsing layer** (`src/lib/utils/`) and
+**reactive sync modules** (`src/lib/state/`):
 
-```ts
-/** Serialize current state to a URL query string. */
-export function stateToUrl(state: AppState): URLSearchParams;
+- **Parsing layer (no runes).** A Peggy grammar (`url-grammar.peggy`) compiles
+  to a parser that produces an AST (`url-ast.ts`) via `parseQuery`
+  (`url-parse.ts`); shared helpers live in `url-shared.ts` and span-accurate
+  diagnostics in `url-diagnostics.ts`. Semantic resolvers turn the AST into
+  calculator/plot state. Encoders live in `calculator-url.ts` and `plot-url.ts`.
+  Version negotiation (`url-version.ts`) rejects unsupported `urlv` values with
+  a warning banner rather than silently migrating them.
+- **Reactive sync (runes).** `calculator-url-sync.svelte.ts`,
+  `plot-url-sync.svelte.ts`, and `plot-url-restore.svelte.ts` are wired by the
+  page orchestrators. The sync writers run in an `$effect` that calls
+  `replaceState()` (from `$app/navigation`) only when the query string would
+  actually change; the restore step hydrates page state from the URL once on
+  load before the writer is armed.
 
-/** Deserialize URL query string into AppState. */
-export function urlToState(params: URLSearchParams): Partial<AppState>;
-```
+The canonical ordering and versioning rules are specified in
+[`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
+and the published grammar at `/docs/technical`. The current emitted version is
+`urlv=2`; `urlv=1` links are rejected (not migrated).
 
-The URL ↔ state round-trip follows the canonical ordering and versioning rules
-specified in [`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md). The `urlv=1`
-sentinel is always included when emitting a shareable URL.
+**Why there is no infinite loop.** `replaceState()` from `$app/navigation`
+_does_ update SvelteKit's reactive `page` store (it assigns a fresh
+`page.state` object reference), so a naive writer would re-trigger itself. The
+sync modules avoid the loop with three safeguards (see
+`calculator-url-sync.svelte.ts` / `plot-url-sync.svelte.ts`):
 
-URL sync is wired in `+layout.svelte` via a `$effect`:
+1. The current URL is read from `window.location.pathname`/`.search` rather than
+   `page.url`, so the effect never registers a reactive dependency on the `page`
+   store that `replaceState` mutates.
+2. A no-op guard (`next === current`) skips writing when the query string would
+   not change.
+3. `replaceState(next, page.state)` is wrapped in `untrack()` so reading
+   `page.state` at write time does not register a dependency either.
 
-```svelte
-$effect(() => {
-  // Read all URL-relevant state (registers reactive dependencies)
-  const params = stateToUrl(currentState);
-  const newSearch = `?${params}`;
-
-  // Guard: skip replaceState if the URL would not change.
-  // This avoids unnecessary browser history manipulation and prevents
-  // any edge case where a URL write could be mistaken for a navigation event.
-  if (newSearch !== location.search) {
-    history.replaceState(null, '', newSearch);
-  }
-});
-```
-
-**Why there is no infinite loop.** `history.replaceState` is a browser API
-call — it does NOT mutate any Svelte reactive state, so it cannot re-trigger
-the `$effect`. The effect re-runs only when the reactive state it reads
-changes. The cycle `replaceState → popstate → state change → effect` does not
-occur because (a) `replaceState` does not fire a `popstate` event (only
-`pushState` + the browser back button do), and (b) URL hydration runs once in
-`+layout.ts` before the effect is wired, so the effect's first run sees already-
-hydrated state and writes a canonical URL that is at most a normalization of
-the incoming URL (e.g., canonicalizing parameter order).
-
-On page load, `urlToState` is called once in `+layout.ts` to hydrate state
-from the URL before any component mounts.
+Restore runs before the writer is armed, so the first writer pass at most
+canonicalizes the incoming URL.
 
 ---
 
 ## 5. Component Tree
 
+Inline nav-bar markup, the Advanced toggle, and the footer live directly in
+`+layout.svelte`; only the export modal and build badge are extracted.
+
 ```
 +layout.svelte
-│   NavBar.svelte
-│   ExportToolbar.svelte (Share / Export PDF / Export CSV)
-│   BuildBadge.svelte
+│   (inline nav bar + Basic·Advanced toggle + Share / Export menu)
+│   CsvExportModal.svelte
+│   build-info-badge.svelte
 │
 ├── calculator/+page.svelte
-│   │   EntityDropdown.svelte (particle)
-│   │   EntityDropdown.svelte (material)
-│   │   EntityDropdown.svelte (program)
-│   │   EnergyInput.svelte
-│   │   UnitSelector.svelte
-│   │   ResultTable.svelte
-│   │   AdvancedOptions.svelte  (accordion, hidden in Basic mode)
-│   │   └── [ density / I-value / state / interpolation / MSTAR inputs ]
-│   └── InverseLookups.svelte   (tabs, hidden in Basic mode)
-│
+│   │   entity-selection/entity-selection.svelte   ← tabbed picker (particle/material/program)
+│   │   │   ├── tab-bar · particle-tab · material-tab · program-tab
+│   │   │   ├── advanced-toolbar · search-input · picker-sheet
+│   │   │   ├── particle-list-view / particle-grid-view · grouped-result-list
+│   │   │   └── compound-editor-modal.svelte  (+ compound-editor/ parts, mobile sheet)
+│   │   ├── external-sources-panel.svelte · load-external-modal.svelte
+│   │   ├── selection-live-region.svelte   (aria-live announcements)
+│   │   ├── results/unit-anchor-strip.svelte      (energy unit radiogroup)
+│   │   ├── results/compare-across-strip.svelte · results/quantity-toggle.svelte
+│   │   ├── results/table-basic · table-advanced · table-multi · table-inverse-stp
+│   │   ├── results/table-multi-program.svelte  (multi-program comparison table)
+│   │   │   └── results/multi-program/ cell + header partials; results/stp-unit-header-menu.svelte
+│   │   ├── calculator/advanced-hint.svelte · calculator/shared-compound-alert.svelte
+│   │   ├── advanced-options-panel.svelte  (accordion, hidden in Basic mode)
+│   │   ├── url-version-warning-banner.svelte
+│   │   └── layout/page-error-fallback.svelte
+│   │
 ├── plot/+page.svelte
-│   │   EntityPanel.svelte (particle — scrollable list)
-│   │   EntityPanel.svelte (material — scrollable list)
-│   │   EntityPanel.svelte (program — scrollable list)
-│   │   SeriesManager.svelte (add/remove/reorder series)
-│   │   JsrootPlot.svelte  ← JSROOT DOM owner
-│   │   AxisControls.svelte (log/lin toggle, unit selector)
-│   └── AdvancedOptions.svelte
-│
-└── docs/+page.svelte
-    └── (static Svelte components, no WASM interaction)
+│   │   entity-selection/entity-selection.svelte   ← same picker, always expanded
+│   │   ├── series-strip.svelte  (add/remove/reorder series; routes/plot/)
+│   │   ├── jsroot-plot.svelte   ← JSROOT DOM owner
+│   │   ├── advanced-options-panel.svelte
+│   │   ├── external-sources-panel.svelte
+│   │   └── url-version-warning-banner.svelte
+│   │
+└── docs/+page.svelte · docs/user-guide · docs/technical
+    └── (static Svelte content, no WASM interaction)
 ```
 
-### JsrootPlot.svelte — DOM ownership contract
+The tabbed `entity-selection/` subtree is the sole picker entry point on both
+pages. The earlier combobox/panel-based picker that preceded it was removed in
+#688 (it was no longer rendered once the tabbed picker shipped).
+
+### jsroot-plot.svelte — DOM ownership contract
 
 JSROOT draws into a `<div>` element that it owns completely. Svelte must not
 reconcile or re-render the contents of this element.
@@ -640,16 +692,15 @@ reconcile or re-render the contents of this element.
 ```
 
 `untrack()` prevents the cleanup call from registering `painter` as a reactive
-dependency (which would create a re-run loop). The `drawPlot` function is a
-pure async function in `src/lib/components/jsroot-helpers.ts` that constructs
-`TMultiGraph` and calls `JSROOT.draw()`. No `onMount` is needed — `$effect`
-runs after the DOM is mounted and handles both the initial draw and subsequent
-re-draws when `series` changes.
+dependency (which would create a re-run loop). The `drawPlot` helper is a local
+async function inside `jsroot-plot.svelte` that constructs `TMultiGraph` and
+calls `JSROOT.draw()`. No `onMount` is needed — `$effect` runs after the DOM is
+mounted and handles both the initial draw and subsequent re-draws when `series`
+changes.
 
 `painter` is typed `any` — a deliberate compromise. JSROOT ships TypeScript
 declarations for its public draw API but not for internal frame-painter methods.
-The type boundary is contained to `jsroot-helpers.ts`; all exported functions
-use explicit types.
+The type boundary is contained to `jsroot-plot.svelte`.
 
 ### Scroll and touch behavior
 
@@ -659,7 +710,7 @@ scroll the page. Per
 [`04-feature-specs/plot.md` §Disabled Interactions](04-feature-specs/plot.md),
 wheel zoom and touch zoom must be disabled.
 
-`jsroot-helpers.ts` sets the relevant JSROOT settings **before** calling
+`jsroot-plot.svelte` sets the relevant JSROOT settings **before** calling
 `JSROOT.draw()`:
 
 ```ts
@@ -692,26 +743,26 @@ on desktop.
 User types energy
         │
         ▼
-EnergyInput.svelte  →  energyInputText (calculation.svelte.ts)
+energy-rows.svelte.ts  →  rows (CalculatorState, calculator.svelte.ts)
                                 │
-                       computeParsedEnergies()
+                       parsed energies ($derived)
                                 │
-                         $effect (debounced 300ms)
+                         $effect (debounced 300ms, in page orchestrator)
                                 │
                     ┌───────────┴───────────────────────┐
-                    │ selection.svelte.ts                │
-                    │  computeResolvedProgram()          │
-                    │  selectedParticleId               │
-                    │  selectedMaterialId               │
+                    │ entity-selection.svelte.ts         │
+                    │  resolvedProgramId                 │
+                    │  selectedParticleId                │
+                    │  selectedMaterialId                │
                     └───────────────────────────────────┘
                                 │
-                     service.calculate(params)   ← LibdedxService
+                     calculator-engine.svelte.ts  ← dispatches to LibdedxService
                                 │
                          CalculationResult
                                 │
-                         result (calculation.svelte.ts)
+                         CalculatedRow[] (calculator.svelte.ts)
                                 │
-                         ResultTable.svelte  ←  unit conversion utilities
+                         results/table-*.svelte  ←  unit conversion utilities
                                 │
                          [ display + live update ]
 ```
@@ -724,10 +775,12 @@ The `CalculationResult` from WASM always contains:
 - `stoppingPowers` in MeV·cm²/g
 - `csdaRanges` in g/cm²
 
-The `ResultTable.svelte` component calls unit conversion utilities to display
-values in the user's selected unit. Conversion is purely JavaScript — the WASM
-result is cached as-is; re-rendering with a new unit does not trigger a new
-WASM call.
+The results tables (`results/table-basic.svelte`, `table-advanced.svelte`, …)
+call the unit-conversion helpers in `utils/` (`energy-conversions.ts`,
+`unit-conversions.ts`) to display values in the user's selected unit. Conversion
+is purely JavaScript — the WASM result is cached as-is; re-rendering with a new
+unit (e.g. via the `unit-anchor-strip` or the STP header menu) does not trigger
+a new WASM call.
 
 ---
 
@@ -737,24 +790,26 @@ WASM call.
 User adds a series (program + particle + material)
         │
         ▼
-SeriesManager  →  series[] (plot-local $state)
+series-strip.svelte  →  PlotState.series[] (plot.svelte.ts, via createPlotState)
         │
         ▼
-$effect: for each series, call service.getPlotData(500 pts, logScale=true)
+$effect: for each series, calc 500 pts (plot-preview-calc.svelte.ts → LibdedxService)
         │
         ▼
 CalculationResult[] (one per series)
         │
         ▼
-JsrootPlot.svelte: TMultiGraph construction
+jsroot-plot.svelte: TMultiGraph construction
   ├── TGraph per series (energies × stoppingPowers)
   ├── Color assigned from palette (perceptually distinct, colorblind-safe)
   └── JSROOT.draw(container, multiGraph, 'AP')
 ```
 
-The Plot page manages its own `series` state locally (not in
-`calculation.svelte.ts`) because it can hold multiple series simultaneously,
+The Plot page owns its own `PlotState` (created by `createPlotState()` in the
+plot page orchestrator) because it can hold multiple series simultaneously,
 whereas Calculator operates on a single (program, particle, material) at a time.
+The entity selection itself is still shared, so a series can be seeded from the
+current picker.
 
 ---
 
@@ -762,34 +817,38 @@ whereas Calculator operates on a single (program, particle, material) at a time.
 
 Custom compounds require the stateful `dedx_config` WASM API path. The flow:
 
-1. User defines a compound in the `CustomCompoundEditor.svelte` modal.
-2. The compound is stored in `localStorage` as a `StoredCompound`
-   (with UUID, phase, timestamp — see [`04-feature-specs/custom-compounds.md`](04-feature-specs/custom-compounds.md)).
+1. User defines a compound in the `compound-editor-modal.svelte` modal (desktop)
+   or the `compound-editor/mobile-sheet.svelte` (phones).
+2. The compound is stored in `localStorage` as a `StoredCompoundInternal`
+   (with UUID, phase, timestamp — managed by `custom-compounds.svelte.ts`; see
+   [`04-feature-specs/custom-compounds.md`](04-feature-specs/custom-compounds.md)).
 3. When selected as the active material, `selectedMaterialId` is set to the
-   special sentinel `CUSTOM_MATERIAL_ID = -1`.
-4. `calculation.svelte.ts` detects `selectedMaterialId === CUSTOM_MATERIAL_ID`
+   custom sentinel (`CUSTOM_MATERIAL_ID`); see `utils/custom-compound-material.ts`.
+4. `calculator-engine.svelte.ts` detects the custom material via `isCustomMaterial()`
    and routes to `service.calculateCustomCompound()` instead of `service.calculate()`.
-5. The `CustomCompound` type passed to WASM is stripped of localStorage
-   metadata (UUID, phase, timestamp) — it contains only `name`, `elements`,
-   `density`, and optional `iValue`.
+5. The `CustomCompound` passed to WASM is stripped of localStorage metadata
+   (UUID, phase, timestamp) — it contains only `name`, `elements`, `density`,
+   and optional `iValue`.
 
 ---
 
 ## 9. URL State Synchronization
 
-URL sync follows the canonical 10-step algorithm in
-[`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md). Key points:
+URL sync follows the canonical algorithm in
+[`04-feature-specs/shareable-urls-formal.md`](04-feature-specs/shareable-urls-formal.md)
+and the layered parser described in §4.5. Key points:
 
-- **Read on load**: `urlToState()` runs once in `+layout.ts` before any
-  component mounts. State is hydrated before the first render.
-- **Write on change**: `stateToUrl()` runs in a `$effect` in `+layout.svelte`
-  whenever any URL-relevant state changes. Uses `history.replaceState()` — no
-  page reload, no history entry.
+- **Read on load**: each page orchestrator hydrates state from the URL once on
+  mount (`plot-url-restore.svelte.ts`; the calculator restore path lives in
+  `calculator-page-orchestrator.svelte.ts`) before the sync writer is armed.
+- **Write on change**: `calculator-url-sync.svelte.ts` / `plot-url-sync.svelte.ts`
+  run in a `$effect` whenever URL-relevant state changes, calling
+  `replaceState()` (from `$app/navigation`) — no page reload, no history entry.
 - **Share button**: Copies the current URL to the clipboard. The URL already
   contains all state — no additional serialization is needed.
-- **`urlv=1` sentinel**: Always included in the emitted URL. If a future
-  breaking change increments `urlv`, the parser in `urlToState()` issues a
-  warning banner per [`04-feature-specs/shareable-urls.md` §3.1](04-feature-specs/shareable-urls.md).
+- **`urlv=2` sentinel**: Always included in the emitted URL. `urlv=1` links are
+  rejected with a warning banner (`url-version-warning-banner.svelte`) rather
+  than migrated — see [`04-feature-specs/shareable-urls.md` §3.1](04-feature-specs/shareable-urls.md).
 
 ---
 
@@ -832,9 +891,11 @@ behind a multi-MB download.
 ### WASM errors
 
 `LibdedxError` (typed, extends `Error`) is thrown by `LibdedxServiceImpl` when
-the C library returns a non-zero error code. Caught in `calculation.svelte.ts`
-and stored in `error` state. `ResultTable.svelte` renders a human-friendly
-message; a "Show details" toggle reveals the raw C error code.
+the C library returns a non-zero error code. Caught in the calc orchestration
+(`calculator-engine.svelte.ts` / `inverse-calc.svelte.ts`) and stored in the
+`CalculatorState` error fields. The results tables (`results/table-*.svelte`)
+render a human-friendly message; a "Show details" toggle reveals the raw C
+error code.
 
 ### Multi-program errors
 
@@ -852,25 +913,26 @@ Plot display the banner in place of their interactive content.
 
 ### Component rendering errors (Svelte error boundaries)
 
-When a Svelte component throws during rendering, SvelteKit catches the error
-and renders the nearest `+error.svelte` file. The error boundary hierarchy:
+Errors are handled at two levels:
 
-| File                                  | Catches                                                                                          |
-| ------------------------------------- | ------------------------------------------------------------------------------------------------ |
-| `src/routes/+error.svelte`            | Top-level unhandled errors — displays a generic "something went wrong" page with a reload button |
-| `src/routes/calculator/+error.svelte` | Calculator-specific errors — allows the nav bar to remain visible                                |
-| `src/routes/plot/+error.svelte`       | Plot-specific errors — allows the nav bar to remain visible                                      |
+| Mechanism                                                 | Catches                                                                                                                 |
+| --------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `src/routes/+error.svelte`                                | Top-level route load errors — displays a generic "something went wrong" page with a reload button                       |
+| `<svelte:boundary>` + `layout/page-error-fallback.svelte` | Per-page render errors on Calculator/Plot — keeps the nav bar visible and offers a reset, in place of a full-page crash |
 
-WASM errors and input validation errors are handled in-component (see above)
-and do NOT reach the `+error.svelte` boundary. The boundary only fires for
-unexpected JavaScript exceptions (bugs, null dereferences, type errors) that
-escape component `try/catch` blocks.
+The Calculator and Plot pages wrap their interactive content in a Svelte 5
+error boundary that renders `page-error-fallback.svelte`; the project does not
+use per-route `+error.svelte` files for these pages. WASM errors and input
+validation errors are handled in-component (see above) and do NOT reach either
+boundary — those only fire for unexpected JavaScript exceptions (bugs, null
+dereferences, type errors) that escape component handling.
 
 ### Input validation errors
 
-Energy input parsing (`parseEnergyInput()`) returns per-line validation errors.
-These are rendered inline in `EnergyInput.svelte` as red borders + tooltips —
-not as `LibdedxError` instances (they are JS-level, not C-level errors).
+Energy input parsing (`parseEnergyInput()`, `utils/energy-parser.ts`) returns
+per-line validation errors, tracked per row in `energy-rows.svelte.ts`. These
+are rendered inline on each energy row as red borders + messages — not as
+`LibdedxError` instances (they are JS-level, not C-level errors).
 
 ---
 
@@ -882,7 +944,7 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 | JSROOT bundle              | ~500 kB gzipped — lazy-loaded only when Plot page is first visited (`import('jsroot')`).                                                                                                                                                                                                                                                                                                                       |
 | Main-thread computation    | All WASM calls are synchronous. The 300 ms debounce absorbs rapid input; single-series calculations complete in < 20 ms. Worst case (8-series plot re-render) is < 160 ms — within the 500 ms plot budget. Web Worker offloading is deferred (see §3 Web Worker strategy).                                                                                                                                     |
 | Calculation debounce       | 300 ms debounce on energy input `$effect` prevents WASM calls on every keystroke.                                                                                                                                                                                                                                                                                                                              |
-| Entity list caching        | Programs / particles / materials fetched once at init; stored in `entities.svelte.ts`. No per-render WASM calls.                                                                                                                                                                                                                                                                                               |
+| Entity list caching        | Programs / particles / materials fetched once at init by `app-init.svelte.ts`; compat matrix cached in `compatibility-matrix.ts`. No per-render WASM calls.                                                                                                                                                                                                                                                    |
 | Plot data points           | 500 points per series is the default; computed once per series add. Re-rendered by JSROOT — no JS-side re-computation on zoom/pan.                                                                                                                                                                                                                                                                             |
 | `noUncheckedIndexedAccess` | TypeScript compiler flag; prevents accidental undefined access in hot WASM result array paths.                                                                                                                                                                                                                                                                                                                 |
 
@@ -892,15 +954,16 @@ not as `LibdedxError` instances (they are JS-level, not C-level errors).
 
 - All interactive controls use native HTML elements (`<button>`, `<select>`,
   `<input>`, `<textarea>`); no custom ARIA role hacks.
-- `ResultTable.svelte` renders a semantic `<table>` with `<thead>` / `<tbody>`;
-  screen readers announce column headers.
-- `JsrootPlot.svelte` wraps the canvas with `role="img"` and an
+- The results tables (`results/table-*.svelte`) render semantic `<table>`s with
+  `<thead>` / `<tbody>`; screen readers announce column headers.
+- `jsroot-plot.svelte` wraps the canvas with `role="img"` and an
   `aria-label` describing the current series (e.g., "Stopping power vs
   energy: proton in water, PSTAR"). Export to SVG provides an accessible
   alternative for screen-reader users.
 - Color palette for plot series is colorblind-safe (Okabe-Ito 8-color sequence).
-- Focus management: `EntityDropdown.svelte` uses `combobox` role with
-  `aria-expanded` and `aria-activedescendant` for typeahead accessibility.
+- Selection changes are announced via `selection-live-region.svelte` (an
+  `aria-live` region); the tabbed picker (`entity-selection/`) uses native
+  buttons and roving focus for keyboard accessibility.
 
 See [`09-non-functional-requirements.md`](09-non-functional-requirements.md) for the full WCAG 2.1 AA checklist.
 
@@ -916,7 +979,7 @@ See [`09-non-functional-requirements.md`](09-non-functional-requirements.md) for
 | [decisions/003-wasm-build-pipeline.md](decisions/003-wasm-build-pipeline.md)           | WASM build ADR                              |
 | [06-wasm-api-contract.md](06-wasm-api-contract.md)                                     | TypeScript types + LibdedxService interface |
 | [04-feature-specs/shareable-urls-formal.md](04-feature-specs/shareable-urls-formal.md) | URL canonicalization algorithm              |
-| [04-feature-specs/entity-selection.md](04-feature-specs/entity-selection.md)           | EntityDropdown / EntityPanel spec           |
+| [04-feature-specs/entity-selection.md](04-feature-specs/entity-selection.md)           | Tabbed entity picker spec                   |
 | [04-feature-specs/calculator.md](04-feature-specs/calculator.md)                       | Calculator page spec                        |
 | [04-feature-specs/plot.md](04-feature-specs/plot.md)                                   | Plot page spec                              |
 | [09-non-functional-requirements.md](09-non-functional-requirements.md)                 | WCAG, performance budgets                   |

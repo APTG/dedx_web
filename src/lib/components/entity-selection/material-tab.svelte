@@ -5,6 +5,14 @@
   import type { ExternalOnlyMaterial } from "$lib/state/external-compatibility";
   import { customCompounds, type StoredCompoundInternal } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import {
+    isElementId,
+    isExternalMaterial,
+    inElements,
+    inCompounds,
+    compareElements,
+    compareByName,
+  } from "$lib/utils/material-filters";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
 
@@ -93,16 +101,12 @@
     queueMicrotask(updateFade);
   });
 
-  function isExternal(m: Material): m is ExternalOnlyMaterial {
-    return typeof m.id === "string" && m.id.startsWith("ext:");
-  }
-
   function isGas(m: Material): boolean {
-    return !isExternal(m) && m.isGasByDefault;
+    return !isExternalMaterial(m) && m.isGasByDefault;
   }
 
   function searchText(m: Material): string {
-    if (isExternal(m)) {
+    if (isExternalMaterial(m)) {
       return `${m.localId} ${m.name} ${m.label} ext external`;
     }
     return `${m.id} ${m.name} ${m.rawName ?? ""}`;
@@ -130,36 +134,14 @@
     return searchText(m).toLowerCase().includes(trimmed);
   }
 
-  function isElementId(id: number): boolean {
-    return id >= 1 && id <= 98;
-  }
-
-  function inElements(m: Material): boolean {
-    if (!isExternal(m)) return isElementId(m.id as number);
-    return m.atomicNumber !== undefined && isElementId(m.atomicNumber);
-  }
-
-  function inCompounds(m: Material): boolean {
-    if (!isExternal(m)) return (m.id as number) > 98 || m.id === 906;
-    return !(m.atomicNumber !== undefined && isElementId(m.atomicNumber));
-  }
-
   const allMaterials = $derived<Material[]>([
     ...selectionState.allMaterials,
     ...selectionState.externalOnlyMaterials,
   ]);
 
-  const elements = $derived(
-    allMaterials.filter(inElements).sort((a, b) => {
-      const ai = isExternal(a) ? (a.atomicNumber ?? 999) : (a.id as number);
-      const bi = isExternal(b) ? (b.atomicNumber ?? 999) : (b.id as number);
-      return ai - bi;
-    }),
-  );
+  const elements = $derived(allMaterials.filter(inElements).sort(compareElements));
 
-  const compounds = $derived(
-    allMaterials.filter(inCompounds).sort((a, b) => a.name.localeCompare(b.name)),
-  );
+  const compounds = $derived(allMaterials.filter(inCompounds).sort(compareByName));
 
   const customItems = $derived.by(() => {
     if (!isAdvancedMode.value) return [];
@@ -198,7 +180,7 @@
   }
 
   function formatDensity(m: Material): string | undefined {
-    if (isExternal(m)) return m.density !== undefined ? m.density.toFixed(4) : undefined;
+    if (isExternalMaterial(m)) return m.density !== undefined ? m.density.toFixed(4) : undefined;
     return m.density.toFixed(m.density < 0.1 ? 4 : 2);
   }
 
@@ -341,7 +323,7 @@
             : 'text-muted-foreground'}">{isChecked ? "✓" : isMultiMode ? "○" : ""}</span
         >
         <span class="flex min-w-0 flex-1 items-center gap-2">
-          {#if isExternal(m)}<span aria-hidden="true">🔗</span>{/if}
+          {#if isExternalMaterial(m)}<span aria-hidden="true">🔗</span>{/if}
           <span class="truncate">
             {m.name}
             {#if dens}

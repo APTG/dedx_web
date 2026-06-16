@@ -88,8 +88,10 @@ series"). Contents:
   dimension has a filled pill. `AcrossDimension` accepts
   `"program" | "material" | "particle" | "single"`. See
   [ADR 011](../decisions/011-compare-across-visible-strip.md).
-- `🔗 Load external` — disabled placeholder; opens the load-external
-  modal in a follow-up PR.
+- `🔗 Load external` — opens the load-external modal. The button is only
+  enabled when the page passes an `onLoadExternal` handler: the Calculator page
+  wires it (button enabled), while the Plot page does not yet (button stays
+  disabled there).
 - `⊞ Explore compat` — disabled placeholder; wires up to the
   compatibility-matrix overlay in a follow-up PR.
 - `↺` reset — calls `state.resetAll()` and, on Calculator, also collapses
@@ -113,28 +115,29 @@ the Elements / Compounds / Custom columns in Advanced mode (less
 prominent than the columns themselves; the columns are the primary
 selection path, the pill is a less-common "create new" affordance).
 
-**Deferred to follow-up issues** (intentionally out of scope for the
-chrome+state rework PR):
+**Follow-up items.** Several items originally deferred from the
+chrome+state rework PR have since shipped during Stage 6–8 and are noted
+here for history:
 
-1. Persistent picker-level search row with chevron + dynamic placeholder
-   (the per-tab `SearchInput` instances are still the canonical search
-   today; lifting them to a single shared input is mechanical but
-   touches all three tab components).
-2. Move + redesign `external-sources-panel.svelte` into
-   `entity-selection/` with collapsible attribution rows and per-source
+1. _(Deferred)_ Persistent picker-level search row with chevron + dynamic
+   placeholder (the per-tab `search-input.svelte` instances are still the
+   canonical search today; lifting them to a single shared input touches
+   all three tab components).
+2. _(Done)_ `external-sources-panel.svelte` now lives under
+   `src/lib/components/entity-selection/` with per-source attribution and
    remove buttons.
-3. Build `load-external-modal.svelte` (URL paste + drag-drop file +
-   localStorage recents) and wire it to the disabled `Load external`
-   button.
-4. Complete `<MultiList>` interactive reorder (drag + `Alt+ArrowUp/Down`)
+3. _(Partly done)_ `load-external-modal.svelte` (URL paste + drag-drop file +
+   localStorage recents) is built and wired to the `Load external` button on the
+   Calculator page (`onLoadExternal` passed). The Plot page does not yet pass the
+   handler, so the button remains disabled there.
+4. _(Deferred)_ Complete interactive list reorder (drag + `Alt+ArrowUp/Down`)
    with `aria-live` announcements.
-5. Wire `Compare across = Materials` / `Particles` end-to-end through
-   the calculation/plot pipelines.
-6. Delete `selected-pill.svelte` and `multi-program-picker.svelte` once
-   the chrome's tab-bar inline display fully replaces the in-panel pill
-   and the Calculator results-table dropdown is reworked.
-7. Mobile Material-tab card polish (bounded scrolling, fade shadows,
-   full-screen-sheet promotion via `⤢`).
+5. _(Done)_ `Compare across = Materials` / `Particles` is wired end-to-end
+   through the calculation (`multi-entity-calc.svelte.ts`) and plot pipelines.
+6. _(Done)_ The legacy in-panel pill and the standalone multi-program picker
+   components were removed once the tab-bar inline display replaced them.
+7. _(Deferred)_ Mobile Material-tab card polish (bounded scrolling, fade
+   shadows, full-screen-sheet promotion via `⤢`).
 
 ### Collapsible panel (Calculator only)
 
@@ -616,9 +619,9 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
   remains "Ions". Display name overrides: proton → "proton",
   alpha → "alpha particle", electron → "electron" (lowercase).
 - **Tabbed picker (15 May 2026):** Three-panel layout retired in favour
-  of the tabbed picker described above. Legacy
-  `entity-selection-comboboxes.svelte` and `entity-selection-panels.svelte`
-  components are no longer rendered.
+  of the tabbed picker described above. The legacy combobox/panel
+  components were no longer rendered after this change and were deleted
+  in #688.
 
 > **Terminology:** The libdedx C library uses the term "ion" everywhere —
 > including for the electron (ID 1001) — even though calling an electron an
@@ -795,12 +798,12 @@ Notes:
   Iodine / Copernicium displayed without a symbol) was caused by the
   table only covering Z=1..18; that has been fixed but the test suite
   should assert non-empty `chemicalSymbol` for every entry.
-- **Both layout modes share these labels** — the calculator combobox
-  (`entity-selection-comboboxes.svelte`) and the plot full-panel
-  (`entity-selection-panels.svelte`) both render via the shared helper
-  `getParticleLabel()` in `src/lib/utils/particle-label.ts`. The plot
-  page also uses this label for series names so legends read
-  "proton in Water" instead of "Hydrogen in Water".
+- **Both pages share these labels** — the calculator and plot pages
+  both render the tabbed `entity-selection/` picker, whose particle
+  labels come from the shared helper `getParticleLabel()` in
+  `src/lib/utils/particle-label.ts`. The plot page also uses this label
+  for series names so legends read "proton in Water" instead of
+  "Hydrogen in Water".
 
 ### 2. Material Selector (second — middle)
 

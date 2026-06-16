@@ -11,16 +11,16 @@
   import type { CalculationResult } from "$lib/wasm/types";
   import { LibdedxError } from "$lib/wasm/types";
   import type { EntityId } from "$lib/external-data/types";
-  import type { ColumnDef } from "./result-table/types";
+  import type { ColumnDef } from "./multi-program/types";
 
-  import BasicHeader from "./result-table/basic-header.svelte";
-  import AdvancedHeader from "./result-table/advanced-header.svelte";
-  import MultiEntityHeader from "./result-table/multi-entity-header.svelte";
-  import InputRowCells from "./result-table/input-row-cells.svelte";
-  import BasicResultCells from "./result-table/basic-result-cells.svelte";
-  import AdvancedResultCells from "./result-table/advanced-result-cells.svelte";
-  import MultiEntityCells from "./result-table/multi-entity-cells.svelte";
-  import ResultTableFooter from "./result-table/result-table-footer.svelte";
+  import BasicHeader from "./multi-program/basic-header.svelte";
+  import AdvancedHeader from "./multi-program/advanced-header.svelte";
+  import MultiEntityHeader from "./multi-program/multi-entity-header.svelte";
+  import InputRowCells from "./multi-program/input-row-cells.svelte";
+  import BasicResultCells from "./multi-program/basic-result-cells.svelte";
+  import AdvancedResultCells from "./multi-program/advanced-result-cells.svelte";
+  import MultiEntityCells from "./multi-program/multi-entity-cells.svelte";
+  import ResultTableFooter from "./multi-program/footer.svelte";
 
   interface Props {
     calcState: CalculatorState;

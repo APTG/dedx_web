@@ -502,6 +502,9 @@
     get formData() {
       return formData;
     },
+    get displayElements() {
+      return displayElements;
+    },
     get elementTexts() {
       return elementTexts;
     },
