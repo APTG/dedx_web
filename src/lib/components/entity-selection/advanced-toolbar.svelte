@@ -33,7 +33,7 @@
     disabled={!onLoadExternal}
     title={onLoadExternal
       ? "Load an external .webdedx data source"
-      : "Load external modal ships in a follow-up PR"}
+      : "Load external is unavailable on this page"}
     onclick={() => onLoadExternal?.()}
   >
     🔗 Load external

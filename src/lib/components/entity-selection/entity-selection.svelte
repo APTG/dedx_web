@@ -31,7 +31,8 @@
     collapsible?: boolean;
     /**
      * Whether to render the Advanced-mode toolbar (Load external, Reset).
-     * Default `collapsible` — Calculator shows it, Plot hides it.
+     * Defaults to `collapsible`; a host page can override (e.g. Plot passes
+     * it explicitly so the toolbar shows in Advanced mode on any viewport).
      */
     showAdvancedToolbar?: boolean;
     /**
