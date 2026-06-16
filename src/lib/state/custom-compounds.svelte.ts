@@ -149,6 +149,25 @@ function normalizeName(name: string): string {
   return name.trim().toLowerCase();
 }
 
+/**
+ * Suggest a library-unique display name by appending `(copy)`, `(copy 2)`, …
+ * Used when copying a shared/transient compound into the local library so the
+ * receiver never silently overwrites an existing entry with the same name.
+ *
+ * `Foo` → `Foo (copy)` → `Foo (copy 2)` → …
+ */
+export function suggestCopyName(baseName: string, isTaken: (name: string) => boolean): string {
+  const trimmed = baseName.trim();
+  if (!isTaken(trimmed)) return trimmed;
+  let candidate = `${trimmed} (copy)`;
+  let n = 2;
+  while (isTaken(candidate)) {
+    candidate = `${trimmed} (copy ${n})`;
+    n++;
+  }
+  return candidate;
+}
+
 /** Validate compound data before saving */
 export interface CompoundValidationError {
   field: "name" | "density" | "iValue" | "elements" | "general";
@@ -255,6 +274,26 @@ export interface CustomCompoundsStore {
 
   /** Whether a compound id is session-only and not persisted in localStorage. */
   isTransient(id: string): boolean;
+
+  /**
+   * Prepare an editable library copy of a transient/shared compound. Returns the
+   * source fields with a library-unique name (see {@link suggestCopyName}); does
+   * NOT persist. The caller opens the editor pre-filled with this and persists
+   * via {@link CustomCompoundsStore.create} on Save.
+   */
+  editAndSaveCopy(source: {
+    name: string;
+    density: number;
+    iValue?: number | undefined;
+    elements: Array<{ atomicNumber: number; atomCount: number }>;
+    phase: "gas" | "condensed";
+  }): {
+    name: string;
+    density: number;
+    iValue?: number | undefined;
+    elements: CompoundElementEntry[];
+    phase: "gas" | "condensed";
+  };
 
   /**
    * Create a new compound.
@@ -369,6 +408,23 @@ export function createCustomCompoundsStore(): CustomCompoundsStore {
     isTransient(id: string): boolean {
       void version.count;
       return transientCompounds.some((c) => c.id === id);
+    },
+
+    editAndSaveCopy(source): {
+      name: string;
+      density: number;
+      iValue?: number | undefined;
+      elements: CompoundElementEntry[];
+      phase: "gas" | "condensed";
+    } {
+      const name = suggestCopyName(source.name, (n) => this.nameExists(n));
+      return {
+        name,
+        density: source.density,
+        iValue: source.iValue,
+        elements: source.elements.map((e) => ({ ...e })),
+        phase: source.phase,
+      };
     },
 
     create(

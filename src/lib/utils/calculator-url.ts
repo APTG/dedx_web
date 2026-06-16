@@ -16,9 +16,10 @@ import {
   URL_LIST_SEPARATOR_ENCODED,
   URL_LIST_SPLIT_RE,
   type MatElementUrl,
+  type CustomCompoundPartial,
 } from "$lib/utils/url-shared";
 
-export type { MatElementUrl };
+export type { MatElementUrl, CustomCompoundPartial };
 
 /**
  * URL contract major version. Bump only on breaking changes to query
@@ -213,6 +214,18 @@ export interface CalculatorUrlState {
   matIval?: number | undefined;
   matPhase?: "gas" | "condensed" | undefined;
   fromUrlWarning?: string | undefined; // Set by decoder when validation fails
+  /**
+   * Best-effort `mat_*` fields retained even on validation failure, so the
+   * compound editor can pre-fill and highlight failed inputs (issue #648, Gap B).
+   * Present whenever `material=custom` was seen in advanced mode.
+   */
+  matPartial?: CustomCompoundPartial | undefined;
+  /**
+   * Provenance hint (`matsrc=` URL param). `"transient"` ⇒ the sender shared a
+   * custom compound that was loaded from another URL and never saved to their
+   * library. Default/omitted ⇒ `"saved"`. Encoder emits only `"transient"`.
+   */
+  matSrc?: "transient" | "saved" | undefined;
 
   /** Inverse lookup fields (optional — only present when encoding/decoding inverse mode) */
   imode?: InverseMode;
@@ -383,6 +396,11 @@ export function encodeCalculatorUrl(state: CalculatorUrlState): URLSearchParams 
       if (state.matPhase && state.matPhase === "gas") {
         // Only encode gas; condensed is default and omitted
         params.set("mat_phase", "gas");
+      }
+      // Provenance hint — only emit "transient" (saved is the omitted default),
+      // so existing shared URLs are byte-for-byte unchanged (issue #648).
+      if (state.matSrc === "transient") {
+        params.set("matsrc", "transient");
       }
     }
   }
@@ -644,10 +662,17 @@ export function resolveCalculatorState(
   let matIval: number | undefined;
   let matPhase: "gas" | "condensed" | undefined;
   let fromUrlWarning: string | undefined;
+  let matPartial: CustomCompoundPartial | undefined;
+  let matSrc: "transient" | "saved" | undefined;
 
   if (isAdvancedMode && t.get("material") === "custom") {
     const fields = parseCustomCompound(t.get, { get: t.span }, diagnostics);
     fromUrlWarning = fields.fromUrlWarning;
+    // Retain best-effort fields regardless of validation so the editor can
+    // pre-fill and highlight failed inputs (Gap B).
+    matPartial = fields.partial;
+    const matsrcRaw = t.get("matsrc");
+    matSrc = matsrcRaw === "transient" ? "transient" : matsrcRaw === "saved" ? "saved" : undefined;
     // On validation failure keep the warning but drop the parsed fields; the
     // caller falls back to a built-in material (276).
     if (!fromUrlWarning) {
@@ -792,6 +817,12 @@ export function resolveCalculatorState(
   // Always include fromUrlWarning if set (even if validation failed)
   if (fromUrlWarning) {
     result.fromUrlWarning = fromUrlWarning;
+  }
+  if (matPartial) {
+    result.matPartial = matPartial;
+  }
+  if (matSrc) {
+    result.matSrc = matSrc;
   }
   if (materialIsCustom) {
     result.materialIsCustom = materialIsCustom;

@@ -10,6 +10,20 @@ export interface CompoundFormData {
   elements: CompoundElementEntry[];
 }
 
+/**
+ * Seed values for opening the editor pre-filled in *create* mode (no `compound`
+ * id). Used by the "Edit & save copy" flow and the failed-URL recovery flow
+ * (issue #648). Numeric fields are raw strings so an out-of-range value from a
+ * shared URL (e.g. density `"99"`) is shown verbatim for the user to correct.
+ */
+export interface CompoundEditorPrefill {
+  name: string;
+  density: string;
+  iValue: string;
+  phase: "gas" | "condensed";
+  elements: CompoundElementEntry[];
+}
+
 export interface DuplicateBanner {
   z: number;
   firstIndex: number;

@@ -1,4 +1,5 @@
 import type { CompoundElement, MaterialEntity } from "$lib/wasm/types";
+import { customCompounds } from "$lib/state/custom-compounds.svelte";
 
 export type CustomMaterialEntity = MaterialEntity & {
   id: string;
@@ -34,5 +35,8 @@ export function customMaterialUrlFields(material: CustomMaterialEntity) {
     matIval: material.iValue,
     matPhase: material.phase ?? (material.isGasByDefault ? "gas" : "condensed"),
     materialIsGas: material.isGasByDefault,
+    // Provenance hint: a compound still living in the transient store came from
+    // a shared URL and was never saved to the local library (issue #648).
+    ...(customCompounds.isTransient(material.id) ? { matSrc: "transient" as const } : {}),
   } as const;
 }

@@ -31,6 +31,7 @@
   import PageErrorFallback from "$lib/components/layout/page-error-fallback.svelte";
   import AdvancedHint from "$lib/components/calculator/advanced-hint.svelte";
   import SharedCompoundAlert from "$lib/components/calculator/shared-compound-alert.svelte";
+  import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import { createCalculatorPageOrchestrator } from "$lib/state/calculator-page-orchestrator.svelte";
 
@@ -202,8 +203,25 @@
       {/if}
 
       <SharedCompoundAlert
-        bind:sharedUrlCompound={orchestrator.sharedUrlCompound}
-        bind:sharedUrlWarning={orchestrator.sharedUrlWarning}
+        sharedUrlCompound={orchestrator.sharedUrlCompound}
+        sharedUrlWarning={orchestrator.sharedUrlWarning}
+        fromTransient={orchestrator.sharedUrlFromTransient}
+        canEdit={!!orchestrator.sharedUrlCompound || !!orchestrator.sharedUrlPartial}
+        onSaveToLibrary={() => orchestrator.saveSharedToLibrary()}
+        onEditAndSaveCopy={() => orchestrator.openSharedCompoundEditor()}
+        onDismiss={() => orchestrator.dismissSharedCompound()}
+      />
+
+      <CompoundEditorModal
+        open={orchestrator.compoundEditorOpen}
+        compound={null}
+        prefill={orchestrator.compoundEditorPrefill}
+        initialWarning={orchestrator.compoundEditorWarning}
+        onOpenChange={(open) => {
+          if (!open) orchestrator.closeSharedCompoundEditor();
+        }}
+        onSave={(data) => orchestrator.saveSharedCompoundCopy(data)}
+        onDelete={() => {}}
       />
 
       {#if isAdvancedMode.value && ((multiProgState !== null && multiProgState.selectedProgramIds.length > 1) || multiEntityState !== null)}

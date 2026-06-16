@@ -108,6 +108,41 @@ describe("encodeCalculatorUrl — custom compounds", () => {
     expect(p.get("mat_elements")).toBe("1:0.111~8:0.0555");
   });
 
+  it("emits matsrc=transient only when matSrc is 'transient'", () => {
+    const transient = encodeCalculatorUrl({
+      ...baseAdvancedState,
+      materialId: null,
+      materialIsCustom: true,
+      matName: "LiF",
+      matDensity: 2.64,
+      matElements: [{ atomicNumber: 3, atomCount: 1 }],
+      matSrc: "transient",
+    } as any);
+    expect(transient.get("matsrc")).toBe("transient");
+
+    const saved = encodeCalculatorUrl({
+      ...baseAdvancedState,
+      materialId: null,
+      materialIsCustom: true,
+      matName: "LiF",
+      matDensity: 2.64,
+      matElements: [{ atomicNumber: 3, atomCount: 1 }],
+      matSrc: "saved",
+    } as any);
+    // "saved" is the omitted default — keeps existing shared URLs unchanged.
+    expect(saved.has("matsrc")).toBe(false);
+
+    const omitted = encodeCalculatorUrl({
+      ...baseAdvancedState,
+      materialId: null,
+      materialIsCustom: true,
+      matName: "LiF",
+      matDensity: 2.64,
+      matElements: [{ atomicNumber: 3, atomCount: 1 }],
+    } as any);
+    expect(omitted.has("matsrc")).toBe(false);
+  });
+
   it("does NOT encode custom compound params when materialIsCustom is false", () => {
     const p = encodeCalculatorUrl({
       ...baseAdvancedState,
@@ -399,6 +434,45 @@ describe("decodeCalculatorUrl — custom compounds", () => {
     // Entries without colon are dropped
     expect((s as any).fromUrlWarning).toMatch(/mat_elements/);
     expect(s.materialId).toBe(276);
+  });
+
+  it("decodes matsrc=transient into matSrc", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=LiF&mat_density=2.64&mat_elements=3:1,9:1&matsrc=transient",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect(s.matSrc).toBe("transient");
+  });
+
+  it("leaves matSrc undefined when matsrc is absent", () => {
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=LiF&mat_density=2.64&mat_elements=3:1,9:1",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect(s.matSrc).toBeUndefined();
+  });
+
+  it("retains best-effort partial fields even when validation fails (Gap B)", () => {
+    // mat_density out of range — top-level fields are dropped, but matPartial
+    // keeps the raw density and the successfully parsed name + elements so the
+    // editor can pre-fill and highlight the offending field.
+    const params = new URLSearchParams(
+      "material=custom&mode=advanced&programs=9&qfocus=both" +
+        "&mat_name=Bad%20Density&mat_density=99&mat_elements=1:2,8:1",
+    );
+    const s = decodeCalculatorUrl(params);
+    expect((s as any).fromUrlWarning).toMatch(/mat_density/);
+    expect(s.materialId).toBe(276);
+    expect(s.matPartial).toBeDefined();
+    expect(s.matPartial!.name).toBe("Bad Density");
+    expect(s.matPartial!.densityRaw).toBe("99");
+    expect(s.matPartial!.density).toBeUndefined();
+    expect(s.matPartial!.elements).toEqual([
+      { atomicNumber: 1, atomCount: 2 },
+      { atomicNumber: 8, atomCount: 1 },
+    ]);
   });
 });
 

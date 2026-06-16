@@ -138,6 +138,29 @@ export interface MatElementUrl {
   atomCount: number;
 }
 
+/**
+ * Best-effort `mat_*` fields, retained even when validation fails. Unlike the
+ * top-level `mat*` fields (which are dropped on `fromUrlWarning`), this keeps
+ * whatever parsed plus the raw text of failed numeric fields so the compound
+ * editor can pre-fill the form and highlight the offending inputs (issue #648,
+ * Gap B). `density`/`iValue` are `undefined` when their raw text was invalid.
+ */
+export interface CustomCompoundPartial {
+  /** Raw `mat_name` (trimmed), may be empty when missing. */
+  name: string;
+  /** Raw `mat_density` text, kept verbatim so an out-of-range value is shown. */
+  densityRaw: string;
+  /** Parsed density, or `undefined` when the raw text was missing/invalid. */
+  density: number | undefined;
+  /** Raw `mat_ival` text, kept verbatim. */
+  iValueRaw: string;
+  /** Parsed i-value, or `undefined` when out of range / missing. */
+  iValue: number | undefined;
+  /** Best-effort parsed elements (may be empty when all entries were invalid). */
+  elements: MatElementUrl[];
+  matPhase: "gas" | "condensed";
+}
+
 /** Decoded `material=custom` fields plus a validation summary. */
 export interface CustomCompoundFields {
   materialIsCustom: true;
@@ -148,6 +171,8 @@ export interface CustomCompoundFields {
   matPhase: "gas" | "condensed";
   /** Non-empty when one or more required fields were missing/invalid. */
   fromUrlWarning: string | undefined;
+  /** Best-effort fields retained regardless of validation outcome (Gap B). */
+  partial: CustomCompoundPartial;
 }
 
 function appendWarning(current: string | undefined, message: string): string {
@@ -254,6 +279,20 @@ export function parseCustomCompound(
     );
   }
 
+  // Capture best-effort fields BEFORE dropping them below, so the editor can
+  // pre-fill and highlight failed inputs even when validation failed (Gap B).
+  const densityInRange =
+    matDensity !== undefined && Number.isFinite(matDensity) && matDensity > 0 && matDensity <= 25;
+  const partial: CustomCompoundPartial = {
+    name: (matName ?? "").trim(),
+    densityRaw: matDensityRaw ?? "",
+    density: densityInRange ? matDensity : undefined,
+    iValueRaw: matIvalRaw ?? "",
+    iValue: matIval,
+    elements: matElements ?? [],
+    matPhase,
+  };
+
   // If validation failed, drop the parsed fields (caller falls back to a
   // built-in material) but keep the warning so the UI can explain why.
   if (fromUrlWarning) {
@@ -271,6 +310,7 @@ export function parseCustomCompound(
     matIval,
     matPhase,
     fromUrlWarning,
+    partial,
   };
 }
 
