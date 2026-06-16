@@ -284,11 +284,13 @@ test.describe("Stage 6.13 — URL parser", () => {
     await expect(page.getByTestId("compound-editor-url-warning")).toBeVisible();
     const densityField = page.getByRole("spinbutton", { name: /density/i });
     await expect(densityField).toHaveAttribute("data-url-failed", "density");
-    await expect(page.getByRole("button", { name: "Save" })).toBeDisabled();
+    const editorDialog = page.getByRole("dialog", { name: "Compound Editor" });
+    const saveBtn = editorDialog.getByRole("button", { name: "Save", exact: true });
+    await expect(saveBtn).toBeDisabled();
 
     await densityField.fill("2.64");
     await expect(densityField).not.toHaveAttribute("data-url-failed");
-    await expect(page.getByRole("button", { name: "Save" })).toBeEnabled();
+    await expect(saveBtn).toBeEnabled();
   });
 
   test("matsrc=transient: receiver banner reflects the unsaved provenance @regression", async ({
