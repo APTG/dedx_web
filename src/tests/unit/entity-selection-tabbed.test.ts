@@ -559,12 +559,11 @@ describe("EntitySelection", () => {
     expect(state.expanded).toBe(true);
   });
 
-  test("compat overlay link is hidden in basic mode (advanced toolbar gated)", async () => {
+  test("advanced toolbar is hidden in basic mode", async () => {
     render(EntitySelection, { props: { selectionState: state } });
 
     // Basic mode: no advanced toolbar at all.
     expect(screen.queryByTestId("picker-advanced-toolbar")).not.toBeInTheDocument();
-    expect(screen.queryByTestId("picker-explore-compat")).not.toBeInTheDocument();
   });
 
   test("arrow keys on tab bar move focus / activate adjacent tab", async () => {
@@ -689,7 +688,7 @@ describe("EntitySelection", () => {
       expect(badge).toHaveTextContent("!");
     });
 
-    test("advanced toolbar renders in advanced mode (Calculator only); compare-across dropdown replaced by strip in results area", async () => {
+    test("advanced toolbar renders in advanced mode; compare-across dropdown replaced by strip in results area", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       isAdvancedMode.value = true;
       try {
@@ -701,20 +700,29 @@ describe("EntitySelection", () => {
 
         // Reset button exists in the advanced toolbar.
         expect(screen.getByTestId("picker-reset")).toBeInTheDocument();
-        // Load-external + Explore-compat are present but disabled (follow-up PRs).
+        // Load-external is present but disabled when no handler is passed.
         expect(screen.getByTestId("picker-load-external")).toBeDisabled();
-        expect(screen.getByTestId("picker-explore-compat")).toBeDisabled();
       } finally {
         isAdvancedMode.value = false;
       }
     });
 
-    test("advanced toolbar is hidden on Plot (collapsible=false) even in advanced mode", async () => {
+    test("advanced toolbar visibility follows showAdvancedToolbar (defaults to collapsible)", async () => {
       const { isAdvancedMode } = await import("$lib/state/advanced-mode.svelte");
       isAdvancedMode.value = true;
       try {
-        render(EntitySelection, { props: { selectionState: state, collapsible: false } });
+        // Default: showAdvancedToolbar follows collapsible, so collapsible=false hides it.
+        const { unmount } = render(EntitySelection, {
+          props: { selectionState: state, collapsible: false },
+        });
         expect(screen.queryByTestId("picker-advanced-toolbar")).not.toBeInTheDocument();
+        unmount();
+
+        // Plot opts in explicitly: toolbar shows even when collapsible=false.
+        render(EntitySelection, {
+          props: { selectionState: state, collapsible: false, showAdvancedToolbar: true },
+        });
+        expect(screen.getByTestId("picker-advanced-toolbar")).toBeInTheDocument();
       } finally {
         isAdvancedMode.value = false;
       }

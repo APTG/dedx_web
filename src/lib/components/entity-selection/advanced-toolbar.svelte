@@ -4,19 +4,13 @@
   interface Props {
     onReset: () => void;
     /**
-     * Wired in a later PR (compatibility overlay). Renders disabled with a
-     * "coming soon" tooltip until then.
-     */
-    onExploreCompat?: () => void;
-    /**
-     * Wired in a follow-up PR (load-external modal). Renders disabled with a
-     * "coming soon" tooltip until then.
+     * Opens the load-external modal. When omitted the button renders disabled.
      */
     onLoadExternal?: () => void;
     class?: string;
   }
 
-  let { onReset, onExploreCompat, onLoadExternal, class: className }: Props = $props();
+  let { onReset, onLoadExternal, class: className }: Props = $props();
 </script>
 
 <div
@@ -43,20 +37,6 @@
     onclick={() => onLoadExternal?.()}
   >
     🔗 Load external
-  </button>
-
-  <button
-    type="button"
-    class={cn(
-      "rounded px-2 py-0.5 hover:bg-accent focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring",
-      !onExploreCompat && "opacity-50 cursor-not-allowed",
-    )}
-    data-testid="picker-explore-compat"
-    disabled={!onExploreCompat}
-    title={onExploreCompat ? "Explore compatibility matrix" : "Compatibility overlay coming soon"}
-    onclick={() => onExploreCompat?.()}
-  >
-    ⊞ Explore compat
   </button>
 
   <button

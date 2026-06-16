@@ -30,9 +30,8 @@
      */
     collapsible?: boolean;
     /**
-     * Whether to render the Advanced-mode toolbar (Compare-across, Load
-     * external, Explore compat, Reset). Default `collapsible` — Calculator
-     * shows it, Plot hides it.
+     * Whether to render the Advanced-mode toolbar (Load external, Reset).
+     * Default `collapsible` — Calculator shows it, Plot hides it.
      */
     showAdvancedToolbar?: boolean;
     /**
