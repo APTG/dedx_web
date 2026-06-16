@@ -27,11 +27,11 @@ export function setupInverseRangeCalculation(
   getEntityState: () => EntitySelectionState | null,
   getInverseLookupState: () => InverseLookupState | null,
   getUrlVersionMismatch: () => unknown,
-  getAdvOptsKey: () => string,
+  getAdvOptsDep: () => unknown,
 ) {
   $effect(() => {
-    const _advOptsKey = getAdvOptsKey();
-    void _advOptsKey;
+    // Register a reactive dep on every advanced option field.
+    void getAdvOptsDep();
     if (getUrlVersionMismatch() !== null) return;
     const inverseLookupState = getInverseLookupState();
     const entityState = getEntityState();

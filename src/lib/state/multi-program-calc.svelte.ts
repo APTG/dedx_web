@@ -29,12 +29,11 @@ export function setupMultiProgramCalculation(
   getEntityState: () => EntitySelectionState | null,
   getMultiProgState: () => MultiProgramState | null,
   getUrlVersionMismatch: () => unknown,
-  getAdvOptsKey: () => string,
+  getAdvOptsDep: () => unknown,
 ) {
   $effect(() => {
-    // Register reactive dep on every advanced option field.
-    const _advOptsKey = getAdvOptsKey();
-    void _advOptsKey;
+    // Register a reactive dep on every advanced option field.
+    void getAdvOptsDep();
 
     if (getUrlVersionMismatch() !== null) return;
     const multiProgState = getMultiProgState();
