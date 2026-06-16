@@ -250,11 +250,12 @@ test.describe("Stage 6.13 — URL parser", () => {
 
     // Editor opens pre-filled with a deduplicated name (no existing library yet,
     // so the name is unchanged), in create mode (no Delete button).
-    const nameField = page.getByRole("textbox", { name: /name/i });
+    const editorDialog = page.getByRole("dialog", { name: "Compound Editor" });
+    const nameField = editorDialog.getByRole("textbox", { name: /name/i });
     await expect(nameField).toHaveValue("Water-url-test");
-    await expect(page.getByRole("button", { name: "Delete" })).toHaveCount(0);
+    await expect(editorDialog.getByRole("button", { name: "Delete", exact: true })).toHaveCount(0);
 
-    const saveBtn = page.getByRole("button", { name: "Save" });
+    const saveBtn = editorDialog.getByRole("button", { name: "Save", exact: true });
     await expect(saveBtn).toBeEnabled();
     await saveBtn.click();
 
