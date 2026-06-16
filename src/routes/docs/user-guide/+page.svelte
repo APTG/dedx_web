@@ -156,8 +156,11 @@
     <p class="text-muted-foreground">
       The app stores calculator and plot state in the URL so you can bookmark or share exact
       scenarios. These examples use the current <code class="rounded bg-muted px-1 py-0.5 text-sm"
-        >urlv=2</code
-      > syntax.
+        >urlv=3</code
+      >
+      syntax. Lists of values (energy rows, compared programs, plot series) are joined with
+      <code class="rounded bg-muted px-1 py-0.5 text-sm">~</code> so messenger and email auto-linkifiers
+      do not truncate a shared link at a comma. Older links that used commas still open correctly.
     </p>
 
     <div class="space-y-2">

@@ -57,7 +57,7 @@ test.describe("Calculator URL sync", () => {
  * Multi-particle URL round-trip (issue #599).
  *
  * Spec: docs/04-feature-specs/shareable-urls.md §3.1
- * Canonical example: particles=1,2,6&across=particles&mode=advanced
+ * Canonical example: particles=1~2~6&across=particles&mode=advanced
  */
 test.describe("Multi-particle URL encoding (across=particles)", () => {
   test("selecting multiple particles in advanced mode encodes particles= and across=particles in URL", async ({
@@ -80,7 +80,9 @@ test.describe("Multi-particle URL encoding (across=particles)", () => {
     const url = new URL(page.url());
     const particlesParam = url.searchParams.get("particles");
     expect(particlesParam).not.toBeNull();
-    const ids = particlesParam!.split(",").map(Number);
+    // Canonical list separator is `~` from v3 (issue #672); never a bare comma.
+    expect(particlesParam).not.toContain(",");
+    const ids = particlesParam!.split(/[,~]/).map(Number);
     expect(ids).toContain(1); // proton (default anchor)
     expect(ids).toContain(6); // carbon
   });
@@ -143,5 +145,49 @@ test.describe("Multi-particle URL encoding (across=particles)", () => {
     );
     expect(page.url()).not.toContain("across=particles");
     expect(page.url()).not.toContain("particles=");
+  });
+});
+
+/**
+ * Linkifier-safe list separator (issue #672).
+ *
+ * Multi-item shared links used commas, which messenger/email auto-linkifiers
+ * truncate at the first comma. The canonical separator is now `~`, and legacy
+ * comma links must still hydrate and upgrade to the `~` form on load.
+ */
+test.describe("Linkifier-safe URLs (issue #672)", () => {
+  test("multi-row energies are encoded with ~ and never a bare comma", async ({ page }) => {
+    await page.goto("/calculator?particle=1&material=276&energies=100,200,500&eunit=MeV");
+    // Decoder accepts the legacy comma form, then replaceState rewrites the URL
+    // bar to the canonical ~ form.
+    await page.waitForFunction(() => window.location.search.includes("energies=100~200~500"), {
+      timeout: 8000,
+    });
+    const search = new URL(page.url()).search;
+    expect(search).toContain("energies=100~200~500");
+    expect(search).not.toContain(",");
+    expect(search).not.toContain("%2C");
+    // The whole search string survives a comma-terminating linkifier intact.
+    expect(search.split(",")).toHaveLength(1);
+  });
+
+  test("a urlv=2 comma link still hydrates and upgrades to the urlv=3 ~ form", async ({ page }) => {
+    await page.goto("/calculator?urlv=2&particle=6&material=276&energies=100,200&eunit=MeV");
+    // No unsupported-version banner: v2 is within the supported range.
+    await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
+      timeout: 3000,
+    });
+    // Both rows restored.
+    const energyInputs = page.getByRole("textbox");
+    await expect(energyInputs.nth(0)).toHaveValue("100", { timeout: 8000 });
+    await expect(energyInputs.nth(1)).toHaveValue("200");
+    // Canonical form rewritten to urlv=3 with the ~ separator.
+    await page.waitForFunction(
+      () =>
+        window.location.search.includes("urlv=3") &&
+        window.location.search.includes("energies=100~200"),
+      { timeout: 8000 },
+    );
+    expect(new URL(page.url()).search).not.toContain(",");
   });
 });

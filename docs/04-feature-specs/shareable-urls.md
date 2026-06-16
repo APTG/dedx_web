@@ -1,6 +1,7 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
-> **Status:** v7 (2026-05-23) — v2 URL schema (`urlv=2`), calculator-table redesign
+> **Status:** v8 (2026-06-01) — v3 URL schema (`urlv=3`): list-item separator
+> changed `,` → `~` (issue #672); v2 links accepted on read
 >
 > **Cross-check:** If this file disagrees with `shareable-urls-formal.md`, the formal contract wins.
 >
@@ -20,6 +21,12 @@
 >   `ivalues=` → `lookups=`; new params `runit=`, `sunit=`, `across=`,
 >   `particles=`, `materials=`, `istpbranch=`, `tip_seen=`; `mode=basic|advanced`
 >   is an explicit picker-mode token.
+> - **v8** (2026-06-01): v3 schema (`urlv=3`). The list-item separator for
+>   `energies=`, `particles=`, `materials=`, `programs=`, `lookups=`, `series=`,
+>   and `mat_elements=` changed from `,` to `~` (issue #672) — messenger/email
+>   auto-linkifiers truncate a pasted link at the first comma, breaking shared
+>   multi-row links. Decoders still accept the legacy `,`, so every `urlv=2` link
+>   keeps working and is rewritten to the canonical `~` form on load.
 
 ---
 
@@ -64,6 +71,9 @@ URLs are the primary mechanism for **state sharing** in dEdx Web:
 - **Version-safe:** The `urlv` major integer signals the contract version. Old URLs
   load via migration rules (§7); unknown future versions trigger a modal (§7.2).
 - **Compact:** URLs are kept short enough for email, Slack, and communicators.
+- **Linkifier-safe:** list items are joined with `~` (RFC 3986 _unreserved_), not
+  `,`. Messenger/email auto-linkifiers terminate a pasted link at the first comma,
+  which truncated shared multi-row links (issue #672); `~` is never dropped.
 
 ### 1.3 Case Sensitivity Policy
 
@@ -132,7 +142,7 @@ Square brackets denote optional/conditional params (omitted at default):
 
 ```
 /calculator
-  ?urlv=2
+  ?urlv=3
   [&extdata={label}:{url}]              ← one per source, declaration order
   &mode={basic|advanced}                ← explicit picker mode
   &particle={id}
@@ -155,11 +165,11 @@ Square brackets denote optional/conditional params (omitted at default):
   [&mat_name=...] ...                   ← custom compound params
 ```
 
-#### Plot (v2, unchanged from v1)
+#### Plot (v3, unchanged from v1 except the `~` list separator)
 
 ```
 /plot
-  ?urlv=2
+  ?urlv=3
   [&extdata={label}:{url}]
   &particle={id}
   &material={id}
@@ -172,15 +182,18 @@ Square brackets denote optional/conditional params (omitted at default):
 
 ### 3.2 `urlv` — URL Contract Version
 
-| Attribute         | Value                      |
-| ----------------- | -------------------------- |
-| Type              | Positive integer           |
-| Current value     | `2`                        |
-| Default if absent | treat as `1` (legacy link) |
+| Attribute         | Value                                            |
+| ----------------- | ------------------------------------------------ |
+| Type              | Positive integer                                 |
+| Current value     | `3`                                              |
+| Accepted on read  | `2` and `3` (decoders read both list separators) |
+| Default if absent | treat as current (legacy link, pre-versioning)   |
 
-Canonical URLs always emit `urlv=2`. If absent, the parser assumes v1 and applies
-migration rules (§7). If the value is unknown future major, show the migration modal
-(§7.2).
+Canonical URLs always emit `urlv=3`. A `urlv=2` link is accepted (it differs only
+in the list separator, `,` → `~`, issue #672) and rewritten to canonical `urlv=3`
+`~` form on load. If absent, the parser assumes a current-schema legacy link. An
+explicit `urlv=1` (or any major below `MIN_SUPPORTED_URL_MAJOR = 2`) or an unknown
+future major (> 3) shows the unsupported-link banner (§7.2).
 
 ### 3.3 Entity and Picker-Mode Parameters
 
@@ -190,9 +203,9 @@ migration rules (§7). If the value is unknown future major, show the migration 
 | `particle`  | numeric ID                | `1` (proton)         | Single-particle anchor; required in both modes                       |
 | `material`  | numeric ID or `"custom"`  | `276` (water liquid) | Single-material anchor; `"custom"` only in advanced mode             |
 | `program`   | `"auto"` or numeric ID    | `"auto"`             | Single-program anchor; incompatible → fall back to `"auto"`          |
-| `particles` | comma-separated IDs       | —                    | Advanced mode only; selected comparison list when `across=particles` |
-| `materials` | comma-separated IDs       | —                    | Advanced mode only; selected comparison list when `across=materials` |
-| `programs`  | comma-separated IDs       | —                    | Advanced mode only; selected comparison list when `across=programs`  |
+| `particles` | `~`-separated IDs         | —                    | Advanced mode only; selected comparison list when `across=particles` |
+| `materials` | `~`-separated IDs         | —                    | Advanced mode only; selected comparison list when `across=materials` |
+| `programs`  | `~`-separated IDs         | —                    | Advanced mode only; selected comparison list when `across=programs`  |
 
 The picker mode is explicit. The parser must **not** infer advanced/basic from
 the presence of singular or plural entity params:
@@ -280,7 +293,7 @@ Tokens are CASE-SENSITIVE (see §1.3). Unknown / wrong-case → invalid row.
 **Worked example — mixed inline units:**
 
 ```
-?urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV,250&uanchor=MeV
+?urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100~10:keV~2:GeV~250&uanchor=MeV
 ```
 
 → Four rows: 100 MeV, 10 keV, 2 GeV, 250 MeV.
@@ -306,7 +319,7 @@ but irrelevant unit). The token preserves the physics-standard capitalisation
 **Worked example — carbon at MeV/nucl:**
 
 ```
-?urlv=2&mode=basic&particle=6&material=276&program=auto&energies=10,50,200&uanchor=MeV/nucl
+?urlv=3&mode=basic&particle=6&material=276&program=auto&energies=10~50~200&uanchor=MeV/nucl
 ```
 
 ### 3.7 `lookups` — Inverse-Lookup Input List (calc=range or calc=inverse-stp)
@@ -326,13 +339,13 @@ Per-row unit depends on mode:
 **Worked example — range lookup, mixed length units:**
 
 ```
-?urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&calc=range
+?urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm~45:um~1.5:mm&runit=cm&uanchor=MeV&calc=range
 ```
 
 **Worked example — STP inverse lookup:**
 
 ```
-?urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=45.76,10.00&sunit=kev-um&uanchor=MeV&calc=inverse-stp
+?urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=45.76~10.00&sunit=kev-um&uanchor=MeV&calc=inverse-stp
 ```
 
 ### 3.8 `runit` — Range Unit Anchor
@@ -473,37 +486,37 @@ Required when `material=custom`.
 **Basic mode:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100,200,500&uanchor=MeV
+/calculator?urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100~200~500&uanchor=MeV
 ```
 
 **Basic mode, mixed inline units:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100,10:keV,2:GeV&uanchor=MeV
+/calculator?urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100~10:keV~2:GeV&uanchor=MeV
 ```
 
 **Advanced mode, multi-program, STP column only:**
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2&energies=100,200&uanchor=MeV&across=programs&qshow=stp
+/calculator?urlv=3&mode=advanced&particle=1&material=276&program=9&programs=9~2&energies=100~200&uanchor=MeV&across=programs&qshow=stp
 ```
 
 **Carbon-12, MeV/nucl:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=6&material=276&program=auto&energies=10,100&uanchor=MeV/nucl
+/calculator?urlv=3&mode=basic&particle=6&material=276&program=auto&energies=10~100&uanchor=MeV/nucl
 ```
 
 ### 4.2 Calc = range — CSDA Range → Energy
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,20:cm&runit=cm&uanchor=MeV&calc=range
+/calculator?urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm~20:cm&runit=cm&uanchor=MeV&calc=range
 ```
 
 Large-scale (km), alpha in air:
 
 ```
-/calculator?urlv=2&mode=advanced&particle=2&material=3&program=9&lookups=1.5,3.0&runit=km&uanchor=MeV&calc=range
+/calculator?urlv=3&mode=advanced&particle=2&material=3&program=9&lookups=1.5~3.0&runit=km&uanchor=MeV&calc=range
 ```
 
 ### 4.3 Calc = inverse-stp — STP → Energy
@@ -511,19 +524,19 @@ Large-scale (km), alpha in air:
 Single branch (default hi), master STP unit:
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=45.76,10.00&sunit=kev-um&uanchor=MeV&calc=inverse-stp
+/calculator?urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=45.76~10.00&sunit=kev-um&uanchor=MeV&calc=inverse-stp
 ```
 
 Both branches visible (sticky):
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both
+/calculator?urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um~5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both
 ```
 
 ### 4.4 Compare-Across Programs (advanced)
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&program=9&programs=9,2,101&energies=100,200&uanchor=MeV&across=programs&qshow=range
+/calculator?urlv=3&mode=advanced&particle=1&material=276&program=9&programs=9~2~101&energies=100~200&uanchor=MeV&across=programs&qshow=range
 ```
 
 ### 4.5 Compare-Across Materials and Particles (advanced)
@@ -531,13 +544,13 @@ Both branches visible (sticky):
 Compare materials with one particle and one program anchor:
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&material=276&materials=276,3&program=9&energies=100,200&uanchor=MeV&across=materials
+/calculator?urlv=3&mode=advanced&particle=1&material=276&materials=276~3&program=9&energies=100~200&uanchor=MeV&across=materials
 ```
 
 Compare particles with one material and one program anchor:
 
 ```
-/calculator?urlv=2&mode=advanced&particle=1&particles=1,2,6&material=276&program=9&energies=100,200&uanchor=MeV&across=particles
+/calculator?urlv=3&mode=advanced&particle=1&particles=1~2~6&material=276&program=9&energies=100~200&uanchor=MeV&across=particles
 ```
 
 ---
@@ -547,13 +560,13 @@ Compare particles with one material and one program anchor:
 Single series, keV/µm, log-log:
 
 ```
-/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276&stp_unit=kev-um
+/plot?urlv=3&particle=1&material=276&program=auto&series=9.1.276&stp_unit=kev-um
 ```
 
 Multiple series, MeV·cm²/g, linear X:
 
 ```
-/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276,2.1.276,9.6.276&stp_unit=mev-cm2-g&xscale=lin
+/plot?urlv=3&particle=1&material=276&program=auto&series=9.1.276~2.1.276~9.6.276&stp_unit=mev-cm2-g&xscale=lin
 ```
 
 ---
@@ -627,7 +640,7 @@ A **non-blocking dismissable banner** at the top of the page content area:
 - **"Dismiss ✕"** closes the banner without any further action.
 - Banner is displayed for as long as it is not dismissed (no auto-timeout).
 - After the user dismisses or copies, the banner does not reappear on subsequent
-  page loads from the new canonical URL (which has `urlv=2`).
+  page loads from the new canonical URL (which has `urlv=3`).
 
 The calculated results are shown immediately — the banner does **not** block the
 calculation. Migration never loses data for v1 URLs (all params have defined
@@ -650,7 +663,7 @@ When `urlv > CURRENT_URL_MAJOR` (a URL from a future app version):
   even if some params are unrecognised (they are silently dropped). User sees a
   secondary notice: "Some URL parameters could not be interpreted and were ignored."
 - **"Load defaults"** — discards all URL params; loads the default calculator state
-  (`urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`).
+  (`urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`).
 - Do not calculate from unparsed parameters until user chooses a recovery action.
 
 #### Blocking modal (unsupported old version, urlv < 1)
@@ -698,7 +711,7 @@ This ensures bookmarks and shared links are always in canonical form.
 
 **Canonical rules:**
 
-- Include `urlv=2` first.
+- Include `urlv=3` first.
 - Emit only params that differ from their defaults (§3.1 square-bracket notation).
 - Emit `mode=basic|advanced` for every canonical Calculator URL; do not infer it
   from entity params.
@@ -831,13 +844,13 @@ All examples assume:
 - Proton (particle ID 1); Carbon-12 (ID 6)
 - Water liquid (material ID 276)
 - ICRU 90 (program ID 9); PSTAR (ID 2); Bethe-Ext00 (ID 101)
-- URL contract version `urlv=2`
+- URL contract version `urlv=3`
 
 ### 12.1 Round-Trip Tests
 
 **Calculator forward mode:**
 
-1. Load default calculator state → URL: `/calculator?urlv=2&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
+1. Load default calculator state → URL: `/calculator?urlv=3&mode=basic&particle=1&material=276&program=auto&energies=100&uanchor=MeV`
 2. Add 200 MeV row → URL updates via replaceState.
 3. Copy URL → open in new window → identical state.
 
@@ -850,7 +863,7 @@ All examples assume:
 **Plot round-trip:**
 
 1. Add series: ICRU 90 + Proton + Water → series=9.1.276.
-2. Change stp_unit to MeV/cm → URL: `/plot?urlv=2&particle=1&material=276&program=auto&series=9.1.276&stp_unit=mev-cm`.
+2. Change stp_unit to MeV/cm → URL: `/plot?urlv=3&particle=1&material=276&program=auto&series=9.1.276&stp_unit=mev-cm`.
 3. Open in new window → same series, same unit.
 
 ### 12.2 v1 URL Migration Tests
@@ -860,7 +873,7 @@ All examples assume:
 | `?urlv=1&particle=1&material=276&eunit=MeV/nucl&energies=100` | Parse → migrate to `mode=basic&uanchor=MeV/nucl`; show v1 banner                                                     |
 | `?urlv=1&qfocus=csda`                                         | Migrate to `qshow=range`                                                                                             |
 | `?urlv=1&mode=advanced&imode=csda&ivalues=7.72:cm&iunit=cm`   | Migrate to `mode=advanced&calc=range&lookups=7.72:cm&runit=cm`                                                       |
-| `?urlv=1&mode=advanced&hidden_programs=2&programs=9,2`        | Preserve `mode=advanced`, derive `program=9&programs=9,2&across=programs`, drop `hidden_programs=`; show all columns |
+| `?urlv=1&mode=advanced&hidden_programs=2&programs=9,2`        | Preserve `mode=advanced`, derive `program=9&programs=9~2&across=programs`, drop `hidden_programs=`; show all columns |
 | No `urlv` param                                               | Treat as v1; apply migration; show v1 banner                                                                         |
 
 ### 12.3 Invalid URL Recovery
@@ -868,7 +881,7 @@ All examples assume:
 **Nonexistent particle:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=999&energies=100&uanchor=MeV
+/calculator?urlv=3&mode=basic&particle=999&energies=100&uanchor=MeV
 ```
 
 → Fallback to `particle=1`; canonical URL rewritten.
@@ -876,7 +889,7 @@ All examples assume:
 **Incompatible program:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=1&material=276&program=50&energies=100&uanchor=MeV
+/calculator?urlv=3&mode=basic&particle=1&material=276&program=50&energies=100&uanchor=MeV
 ```
 
 → `program=auto`; toast "Program not available; using auto-select."
@@ -884,7 +897,7 @@ All examples assume:
 **Invalid energy row:**
 
 ```
-/calculator?urlv=2&mode=basic&particle=1&material=276&energies=abc,100,xyz&uanchor=MeV
+/calculator?urlv=3&mode=basic&particle=1&material=276&energies=abc~100~xyz&uanchor=MeV
 ```
 
 → Rows 1 and 3 excluded; validation summary "2 of 3 values invalid".

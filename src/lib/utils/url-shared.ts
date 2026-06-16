@@ -11,6 +11,41 @@ import type { Diagnostic } from "./url-diagnostics";
 import type { SourceSpan, QueryNode, PairNode } from "./url-ast";
 
 /**
+ * Canonical separator between items of a list-valued query param (`energies`,
+ * `particles`, `programs`, `materials`, `lookups`, `mat_elements`, `series`).
+ *
+ * We emit `~` (RFC 3986 *unreserved*) rather than the `,` used through `urlv=2`:
+ * messenger/email auto-linkifiers are heuristic and terminate a link at the
+ * first comma (sentence punctuation), so multi-item shared links were truncated
+ * (issue #672). `~` is reliably kept inside auto-links, so the URL survives
+ * pasting into Signal/iMessage/email.
+ *
+ * Note: although `~` is *unreserved*, `URLSearchParams.toString()` still
+ * percent-encodes it as `%7E` (its form-urlencoded safe set excludes `~`). The
+ * query-string writers (`calculatorUrlQueryString` / `plotUrlQueryString`)
+ * therefore restore `%7E` → `~` for readability before the URL reaches the bar.
+ */
+export const URL_LIST_SEPARATOR = "~";
+
+/**
+ * The exact substring `URLSearchParams.toString()` emits for the separator
+ * (`%7E`). Derived from {@link URL_LIST_SEPARATOR} — *not* a hard-coded literal —
+ * so it cannot drift if the separator changes. Note `encodeURIComponent` is the
+ * wrong tool here: it leaves `~` untouched (unreserved), whereas the
+ * form-urlencoded serializer used by `URLSearchParams` percent-encodes it. The
+ * query-string writers restore this back to `~` for readability.
+ */
+export const URL_LIST_SEPARATOR_ENCODED = new URLSearchParams([["x", URL_LIST_SEPARATOR]])
+  .toString()
+  .slice("x=".length);
+
+/**
+ * Split a list-valued query param on the canonical `~` **or** the legacy `,`,
+ * so links shared/bookmarked before #672 keep decoding to the same state.
+ */
+export const URL_LIST_SPLIT_RE = /[,~]/;
+
+/**
  * Decode a single query-component value the way `URLSearchParams.get` does:
  * `+` means space, then percent-decode. Malformed escapes fall through to the
  * raw text rather than throwing.
@@ -151,7 +186,7 @@ export function parseCustomCompound(
 
   if (matElementsRaw) {
     const elementMap = new Map<number, number>();
-    for (const entry of matElementsRaw.split(",")) {
+    for (const entry of matElementsRaw.split(URL_LIST_SPLIT_RE)) {
       const colonIdx = entry.indexOf(":");
       if (colonIdx <= 0) {
         fromUrlWarning = appendWarning(fromUrlWarning, "mat_elements: malformed entries");
@@ -239,10 +274,10 @@ export function parseCustomCompound(
   };
 }
 
-/** Encode `mat_elements` as ascending-Z `Z:count,Z:count`. */
+/** Encode `mat_elements` as ascending-Z `Z:count~Z:count`. */
 export function encodeMatElements(elements: MatElementUrl[]): string {
   return [...elements]
     .sort((a, b) => a.atomicNumber - b.atomicNumber)
     .map((e) => `${e.atomicNumber}:${e.atomCount}`)
-    .join(",");
+    .join(URL_LIST_SEPARATOR);
 }

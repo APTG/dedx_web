@@ -308,7 +308,7 @@ export function computeMultiProgramDerived(state: MultiProgramState): MultiProgr
  */
 export interface MultiProgramUrlParams {
   mode?: "advanced" | "basic";
-  programs?: string; // comma-separated program IDs in display order
+  programs?: string; // ~-separated program IDs in display order (issue #672)
   qshow?: "stp" | "range";
 }
 

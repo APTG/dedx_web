@@ -54,7 +54,7 @@ describe("encodePlotUrl", () => {
     expect(params.get("particle")).toBe("1");
     expect(params.get("material")).toBe("276");
     expect(params.get("program")).toBe("auto");
-    expect(params.get("series")).toBe("2.1.276,9.6.276");
+    expect(params.get("series")).toBe("2.1.276~9.6.276");
     expect(params.get("sunit")).toBe("kev-um");
     expect(params.get("xscale")).toBe("log");
     expect(params.get("yscale")).toBe("log");

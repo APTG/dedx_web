@@ -29,7 +29,7 @@ describe("encodePlotUrl — custom compounds", () => {
     expect(p.get("material")).toBe("custom");
     expect(p.get("mat_name")).toBe("LiF");
     expect(p.get("mat_density")).toBe("2.64");
-    expect(p.get("mat_elements")).toBe("3:1,9:1");
+    expect(p.get("mat_elements")).toBe("3:1~9:1");
     expect(p.get("mat_phase")).toBeNull();
   });
 
@@ -80,7 +80,7 @@ describe("encodePlotUrl — custom compounds", () => {
         { atomicNumber: 6, atomCount: 5 },
       ],
     });
-    expect(p.get("mat_elements")).toBe("1:8,6:5,8:2");
+    expect(p.get("mat_elements")).toBe("1:8~6:5~8:2");
   });
 
   it("does NOT encode custom params when materialIsCustom is false", () => {
@@ -258,7 +258,7 @@ describe("round-trip — Plot custom compounds", () => {
     expect(reEncoded.get("material")).toBe("custom");
     expect(reEncoded.get("mat_name")).toBe("LiF");
     expect(reEncoded.get("mat_density")).toBe("2.64");
-    expect(reEncoded.get("mat_elements")).toBe("3:1,9:1");
+    expect(reEncoded.get("mat_elements")).toBe("3:1~9:1");
   });
 
   it("round-trips PMMA with iValue", () => {
