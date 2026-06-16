@@ -25,12 +25,11 @@ export function setupCalculatorUrlSync(
   getMultiProgState: () => MultiProgramState | null,
   getUrlInitialized: () => boolean,
   getLoadedExternalSources: () => ExternalSourceDescriptor[],
-  getAdvOptsKey: () => string,
+  getAdvOptsDep: () => unknown,
 ) {
   $effect(() => {
-    // Read advOptsKey to establish reactive dependency on nested changes
-    const _advOptsKey = getAdvOptsKey();
-    void _advOptsKey;
+    // Register a reactive dep on every advanced option field (URL carries them).
+    void getAdvOptsDep();
 
     const urlInitialized = getUrlInitialized();
     const calcState = getCalcState();

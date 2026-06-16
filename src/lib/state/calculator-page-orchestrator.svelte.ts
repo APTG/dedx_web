@@ -10,6 +10,7 @@ import { createMultiProgramState, type MultiProgramState } from "$lib/state/mult
 import { createMultiEntityState, type MultiEntityState } from "$lib/state/multi-entity.svelte";
 import {
   advancedOptions,
+  advancedOptionsSnapshot,
   loadAdvancedOptionsFromStorage,
   persistAdvancedOptions,
 } from "$lib/state/advanced-options.svelte";
@@ -46,6 +47,13 @@ export class CalculatorPageOrchestrator {
   sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
   sharedUrlWarning = $state<string | null>(null);
 
+  // Structured, deep reactive view of all advanced options. Reading it registers
+  // a dependency on EVERY option field (including nested + future ones) via
+  // `$state.snapshot`'s deep traversal, replacing the old hand-maintained
+  // `JSON.stringify([...])` change key. Threaded into the delegated calc/sync
+  // effects so they recompute on any advanced-option change.
+  advancedOptionsDep = $derived(advancedOptionsSnapshot());
+
   constructor() {
     this.setupEffects();
   }
@@ -73,9 +81,29 @@ export class CalculatorPageOrchestrator {
   }
 
   setupEffects() {
-    // Removed this alias
+    // The phases below are ordered. The only HARD ordering requirement is
+    // Phase 1 → Phase 2: version negotiation sets `urlVersionMismatch`, which
+    // Phase 2 reads to decide whether to hydrate from the URL or from defaults,
+    // and Phase 1's `appInit.initialize()` produces the entityState/service that
+    // Phase 2 waits for. The remaining phases are independent reactive guards
+    // that converge to the same state regardless of declaration order.
+    this.setupAppBootstrap();
+    this.setupUrlHydration();
+    this.setupAdvancedOptionsPersistence();
+    this.setupSingleEntityCalculation();
+    this.setupDelegatedCalculations();
+    this.setupModeFallbacks();
+    this.setupEnergyRangeLabel();
+    this.setupMultiProgramState();
+    this.setupMultiEntityState();
+  }
 
-    // 1. Initial version negotiation & advanced mode check
+  /**
+   * Phase 1 — bootstrap. Negotiate the URL version first so the result
+   * (`urlVersionMismatch`) can gate hydration, then initialise advanced mode and
+   * kick off `appInit` once WASM is ready.
+   */
+  private setupAppBootstrap() {
     $effect(() => {
       // Negotiate the URL version first so the result can gate hydration below.
       if (!this.urlVersionChecked) {
@@ -103,8 +131,14 @@ export class CalculatorPageOrchestrator {
         appInit.initialize(sourceParams);
       }
     });
+  }
 
-    // 2. Setup state from URL once appInit is ready
+  /**
+   * Phase 2 — hydration. Once `appInit` has produced entityState + service, build
+   * the calculator/inverse state from the URL (or from defaults when Phase 1
+   * flagged an unsupported `urlVersionMismatch`).
+   */
+  private setupUrlHydration() {
     $effect(() => {
       if (appInit.entityState && appInit.service && !this.calcState) {
         // Gate hydration on the version negotiation: an unsupported link
@@ -239,39 +273,31 @@ export class CalculatorPageOrchestrator {
         this.urlInitialized = true;
       }
     });
+  }
 
-    // 3. Handle mode switch fallback
-    $effect(() => {
-      const mode = isAdvancedMode.value;
-      if (!mode && appInit.entityState?.selectedMaterial) {
-        const matId = appInit.entityState.selectedMaterial.id;
-        if (typeof matId === "string" && matId.startsWith("cc_")) {
-          appInit.entityState.selectMaterial(WATER_ID);
-        }
-      }
-    });
-
-    // 4. Track advancedOptions nested changes
-    const advOptsKey = $derived(
-      JSON.stringify([
-        advancedOptions.value.interpolation?.scale,
-        advancedOptions.value.interpolation?.method,
-        advancedOptions.value.densityOverride,
-        advancedOptions.value.iValueOverride,
-        advancedOptions.value.aggregateState,
-        advancedOptions.value.mstarMode,
-      ]),
-    );
-
+  /**
+   * Phase 3a — persist advanced options on any change.
+   *
+   * Reading the deep snapshot registers a dependency on every option field
+   * (including nested + future ones), so persistence fires for any change with no
+   * hand-maintained field list and no `void advOptsKey` boilerplate.
+   */
+  private setupAdvancedOptionsPersistence() {
     $effect(() => {
       if (!browser) return;
-      void advOptsKey;
+      advancedOptionsSnapshot();
       persistAdvancedOptions();
     });
+  }
 
+  /**
+   * Phase 3b — recompute the single-entity result. Skipped while a multi-program
+   * or multi-entity comparison is active (those have their own delegated effects).
+   */
+  private setupSingleEntityCalculation() {
     $effect(() => {
-      const _advOptsKey = advOptsKey;
-      void _advOptsKey;
+      // Re-run on any advanced-option change (deep reactive read).
+      advancedOptionsSnapshot();
       if (this.urlVersionMismatch !== null) return;
       if (!this.calcState || !appInit.entityState?.isComplete) return;
       const isMultiProgramCompare =
@@ -284,8 +310,14 @@ export class CalculatorPageOrchestrator {
       if (isMultiProgramCompare || isMultiEntityCompare) return;
       this.calcState.triggerCalculation();
     });
+  }
 
-    // Delegated state synchronizations
+  /**
+   * Delegated per-feature calculation + URL-sync effects (extracted helpers).
+   * Each receives `() => this.advancedOptionsDep` so it recomputes on any
+   * advanced-option change without re-enumerating fields.
+   */
+  private setupDelegatedCalculations() {
     setupCalculatorUrlSync(
       () => this.calcState,
       () => appInit.entityState,
@@ -293,7 +325,7 @@ export class CalculatorPageOrchestrator {
       () => this.multiProgState,
       () => this.urlInitialized,
       () => appInit.loadedExternalSources,
-      () => advOptsKey,
+      () => this.advancedOptionsDep,
     );
 
     setupMultiProgramCalculation(
@@ -301,7 +333,7 @@ export class CalculatorPageOrchestrator {
       () => appInit.entityState,
       () => this.multiProgState,
       () => this.urlVersionMismatch,
-      () => advOptsKey,
+      () => this.advancedOptionsDep,
     );
 
     setupMultiEntityCalculation(
@@ -309,7 +341,7 @@ export class CalculatorPageOrchestrator {
       () => appInit.entityState,
       () => this.multiEntityState,
       () => this.urlVersionMismatch,
-      () => advOptsKey,
+      () => this.advancedOptionsDep,
     );
 
     setupInverseRangeCalculation(
@@ -317,7 +349,7 @@ export class CalculatorPageOrchestrator {
       () => appInit.entityState,
       () => this.inverseLookupState,
       () => this.urlVersionMismatch,
-      () => advOptsKey,
+      () => this.advancedOptionsDep,
     );
 
     setupInverseStpCalculation(
@@ -325,10 +357,48 @@ export class CalculatorPageOrchestrator {
       () => appInit.entityState,
       () => this.inverseLookupState,
       () => this.urlVersionMismatch,
-      () => advOptsKey,
+      () => this.advancedOptionsDep,
     );
+  }
 
-    // Energy range label
+  /**
+   * Mode-dependent fallbacks. Leaving advanced mode must: drop custom-compound
+   * material selections (advanced-only), reset the inverse tab to "forward", and
+   * collapse any multi-entity selection back to a single entity.
+   */
+  private setupModeFallbacks() {
+    $effect(() => {
+      const mode = isAdvancedMode.value;
+      if (!mode && appInit.entityState?.selectedMaterial) {
+        const matId = appInit.entityState.selectedMaterial.id;
+        if (typeof matId === "string" && matId.startsWith("cc_")) {
+          appInit.entityState.selectMaterial(WATER_ID);
+        }
+      }
+    });
+
+    $effect(() => {
+      if (
+        !isAdvancedMode.value &&
+        this.inverseLookupState &&
+        this.inverseLookupState.activeTab !== "forward"
+      ) {
+        this.inverseLookupState.setActiveTab("forward");
+      }
+    });
+
+    $effect(() => {
+      if (!isAdvancedMode.value && appInit.entityState) {
+        appInit.entityState.collapseToSingle();
+      }
+    });
+  }
+
+  /**
+   * Energy-range label for the active program/particle. Built-in programs read
+   * the WASM min/max energy asynchronously; external programs use store metadata.
+   */
+  private setupEnergyRangeLabel() {
     $effect(() => {
       if (this.calcState && appInit.entityState?.isComplete) {
         const programId = appInit.entityState.resolvedProgramId;
@@ -373,19 +443,14 @@ export class CalculatorPageOrchestrator {
         }
       }
     });
+  }
 
-    // Tab fallback
-    $effect(() => {
-      if (
-        !isAdvancedMode.value &&
-        this.inverseLookupState &&
-        this.inverseLookupState.activeTab !== "forward"
-      ) {
-        this.inverseLookupState.setActiveTab("forward");
-      }
-    });
-
-    // Multi-program state sync
+  /**
+   * Multi-program comparison state lifecycle: create/dispose `multiProgState`
+   * with advanced mode + the program dimension, hydrate it from the URL, and keep
+   * it in sync with the entity-selection's multi-program list and default program.
+   */
+  private setupMultiProgramState() {
     $effect(() => {
       if (!isAdvancedMode.value || !appInit.entityState || !this.calcState) {
         this.multiProgState = null;
@@ -475,12 +540,6 @@ export class CalculatorPageOrchestrator {
     });
 
     $effect(() => {
-      if (!isAdvancedMode.value && appInit.entityState) {
-        appInit.entityState.collapseToSingle();
-      }
-    });
-
-    $effect(() => {
       if (!this.multiProgState || !appInit.entityState) return;
 
       const resolvedId = appInit.entityState.resolvedProgramId;
@@ -495,8 +554,13 @@ export class CalculatorPageOrchestrator {
         this.multiProgState.setDefaultProgram(defaultProgramId);
       }
     });
+  }
 
-    // Multi-entity state
+  /**
+   * Multi-entity comparison state lifecycle: create/dispose `multiEntityState`
+   * for the active material/particle dimension while in advanced mode.
+   */
+  private setupMultiEntityState() {
     $effect(() => {
       const across = appInit.entityState?.across;
       if (

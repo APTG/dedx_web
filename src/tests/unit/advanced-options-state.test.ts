@@ -491,6 +491,78 @@ describe("advanced-options state", () => {
     });
   });
 
+  describe("advancedOptionsSnapshot (deep change-tracking)", () => {
+    test("re-runs a tracking effect on nested in-place field mutation", async () => {
+      const { advancedOptions, advancedOptionsSnapshot } =
+        await import("$lib/state/advanced-options.svelte");
+      const { flushSync } = await import("svelte");
+      const { runInEffectRoot, registerEffect } = await import("../helpers/effect-root.svelte");
+
+      advancedOptions.value = {};
+
+      let runs = 0;
+      const cleanup = runInEffectRoot(() => {
+        registerEffect(() => {
+          advancedOptionsSnapshot();
+          runs++;
+        });
+      });
+      flushSync();
+      expect(runs).toBe(1);
+
+      // Establish the nested object first.
+      advancedOptions.value.interpolation = { scale: "linear" };
+      flushSync();
+      expect(runs).toBe(2);
+
+      // Mutate a field of the EXISTING nested object in place — the key behavior
+      // the deep snapshot must react to (the old stringify key only worked
+      // because it re-enumerated these fields by hand).
+      advancedOptions.value.interpolation.scale = "log";
+      flushSync();
+      expect(runs).toBe(3);
+
+      // A second in-place field on the same nested object.
+      advancedOptions.value.interpolation.method = "cubic";
+      flushSync();
+      expect(runs).toBe(4);
+
+      // Top-level scalar field.
+      advancedOptions.value.densityOverride = 1.5;
+      flushSync();
+      expect(runs).toBe(5);
+
+      cleanup();
+    });
+
+    test("tracks fields not present at first read (no hand-maintained list)", async () => {
+      const { advancedOptions, advancedOptionsSnapshot } =
+        await import("$lib/state/advanced-options.svelte");
+      const { flushSync } = await import("svelte");
+      const { runInEffectRoot, registerEffect } = await import("../helpers/effect-root.svelte");
+
+      advancedOptions.value = {};
+
+      let runs = 0;
+      const cleanup = runInEffectRoot(() => {
+        registerEffect(() => {
+          advancedOptionsSnapshot();
+          runs++;
+        });
+      });
+      flushSync();
+      expect(runs).toBe(1);
+
+      // A field absent at first snapshot still triggers the effect when added —
+      // the deep read does not depend on an enumerated field list.
+      advancedOptions.value.mstarMode = "d";
+      flushSync();
+      expect(runs).toBe(2);
+
+      cleanup();
+    });
+  });
+
   describe("local storage key prefix", () => {
     test("uses dedx_adv_ prefix for all keys", async () => {
       const { advancedOptions, persistAdvancedOptions } =
