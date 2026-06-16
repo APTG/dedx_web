@@ -52,14 +52,25 @@
     );
   }
 
+  let showOnlySelected = $state(false);
+
   const builtin = $derived(selectionState.availablePrograms);
   const external = $derived(selectionState.availableExternalPrograms);
 
   const totalCount = $derived(builtin.length + external.length);
   const bucket = $derived(computeBucket(totalCount));
 
-  const filteredBuiltin = $derived(builtin.filter((p) => matches(p, query)));
-  const filteredExternal = $derived(external.filter((p) => matches(p, query)));
+  function passesOnlySelected(id: number | string): boolean {
+    if (!showOnlySelected) return true;
+    return isMultiMode ? isMultiSelected(id) : currentProgram.id === id;
+  }
+
+  const filteredBuiltin = $derived(
+    builtin.filter((p) => matches(p, query) && passesOnlySelected(p.id)),
+  );
+  const filteredExternal = $derived(
+    external.filter((p) => matches(p, query) && passesOnlySelected(p.id)),
+  );
 
   const currentProgram = $derived(selectionState.selectedProgram);
   const isAuto = $derived(currentProgram.id === -1);
@@ -106,7 +117,12 @@
     count={summaryCount}
     {summaryLabels}
     onClear={isMultiMode ? clearAllMulti : () => selectionState.selectProgram(-1)}
-    onToggleOnlySelected={undefined}
+    onlySelected={showOnlySelected}
+    onToggleOnlySelected={isMultiMode
+      ? () => {
+          showOnlySelected = !showOnlySelected;
+        }
+      : undefined}
     testId="picker-program-selected"
   />
 

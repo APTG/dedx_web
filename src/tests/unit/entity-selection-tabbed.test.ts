@@ -641,6 +641,34 @@ describe("EntitySelection", () => {
     isAdvancedMode.value = false;
   });
 
+  test("program picker offers a Selected-only filter toggle in multi-select mode (parity with particle picker)", async () => {
+    isAdvancedMode.value = true;
+    state.selectProgram(7);
+    state.setAcross("program"); // seeds multi to [7] (anchor)
+    state.toggleMulti("program", 2); // add PSTAR as a comparison program
+    // Calculator mode (collapsible) enables the advanced toolbar → multi-select picker.
+    render(EntitySelection, { props: { selectionState: state, collapsible: true } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-program"));
+
+    // Default "All shown": selected + unselected compatible programs are listed.
+    expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument(); // anchor, selected
+    expect(screen.getByTestId("picker-program-item-2")).toBeInTheDocument(); // selected
+    expect(screen.getByTestId("picker-program-item-101")).toBeInTheDocument(); // unselected
+
+    // Flip the summary-bar filter to "Selected only".
+    const summaryBar = screen.getByTestId("picker-program-selected");
+    await user.click(within(summaryBar).getByRole("button", { name: "All shown" }));
+
+    // Only the selected programs remain visible.
+    expect(screen.getByTestId("picker-program-item-7")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-program-item-2")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-program-item-101")).not.toBeInTheDocument();
+
+    isAdvancedMode.value = false;
+  });
+
   describe("collapsible mode", () => {
     test("panel is hidden when collapsible=true and selection is complete (defaults)", () => {
       // Default state has proton + Water + Auto → isComplete = true
