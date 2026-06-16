@@ -510,15 +510,27 @@ describe("advanced-options state", () => {
       flushSync();
       expect(runs).toBe(1);
 
-      // Nested in-place mutation (how the advanced-options panel writes it).
+      // Establish the nested object first.
       advancedOptions.value.interpolation = { scale: "linear" };
       flushSync();
       expect(runs).toBe(2);
 
+      // Mutate a field of the EXISTING nested object in place — the key behavior
+      // the deep snapshot must react to (the old stringify key only worked
+      // because it re-enumerated these fields by hand).
+      advancedOptions.value.interpolation.scale = "log";
+      flushSync();
+      expect(runs).toBe(3);
+
+      // A second in-place field on the same nested object.
+      advancedOptions.value.interpolation.method = "cubic";
+      flushSync();
+      expect(runs).toBe(4);
+
       // Top-level scalar field.
       advancedOptions.value.densityOverride = 1.5;
       flushSync();
-      expect(runs).toBe(3);
+      expect(runs).toBe(5);
 
       cleanup();
     });
