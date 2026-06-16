@@ -9,6 +9,7 @@ import type { InverseCsdaResult } from "$lib/wasm/types";
 import type { CalculatorState } from "$lib/state/calculator.svelte";
 import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
 import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
+import { runDebouncedSnapshot } from "$lib/utils/debounced-snapshot";
 
 /**
  * Headless inverse-CSDA-range lookup orchestrator.
@@ -69,119 +70,117 @@ export function setupInverseRangeCalculation(
     );
     if (validRows.length === 0) return;
 
-    let cancelled = false;
+    return runDebouncedSnapshot(
+      { particleId, materialId, programId, customMaterial, validRows, advOptsSnapshot },
+      async (
+        { particleId, materialId, programId, customMaterial, validRows, advOptsSnapshot },
+        isCancelled,
+      ) => {
+        const service = await getService();
+        if (isCancelled()) return;
 
-    const timer = setTimeout(async () => {
-      if (cancelled) return;
-      const service = await getService();
-      if (cancelled) return;
+        const asyncMat = entityState.selectedMaterial;
+        const asyncBuiltinMat = asyncMat && "isGasByDefault" in asyncMat ? asyncMat : null;
+        const currentCustomMaterial = isCustomMaterial(asyncBuiltinMat) ? asyncBuiltinMat : null;
+        const density =
+          (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
+          asyncMat?.density ??
+          1;
 
-      const asyncMat = entityState.selectedMaterial;
-      const asyncBuiltinMat = asyncMat && "isGasByDefault" in asyncMat ? asyncMat : null;
-      const currentCustomMaterial = isCustomMaterial(asyncBuiltinMat) ? asyncBuiltinMat : null;
-      const density =
-        (currentCustomMaterial ? undefined : advOptsSnapshot.densityOverride) ??
-        asyncMat?.density ??
-        1;
-
-      if (density <= 0) {
-        for (const r of inverseState.rangeRows) {
-          if (r.text.trim()) {
-            r.status = "invalid";
-            r.message = "Density not available for this material";
-            r.energyMevNucl = null;
+        if (density <= 0) {
+          for (const r of inverseState.rangeRows) {
+            if (r.text.trim()) {
+              r.status = "invalid";
+              r.message = "Density not available for this material";
+              r.energyMevNucl = null;
+            }
           }
+          return;
         }
-        return;
-      }
 
-      const rangesGcm2 = validRows.map((r) => {
-        const rangeCm = r.value! * rangeUnitToCmFactor(r.unit);
-        return rangeCm * density;
-      });
+        const rangesGcm2 = validRows.map((r) => {
+          const rangeCm = r.value! * rangeUnitToCmFactor(r.unit);
+          return rangeCm * density;
+        });
 
-      try {
-        const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
-        const results: (InverseCsdaResult | Error)[] = activeCustomMaterial
-          ? service.getInverseCsdaCustomCompound({
-              programId,
-              particleId,
-              elements: customMaterialElementsForWasm(activeCustomMaterial),
-              density,
-              iValue: activeCustomMaterial.iValue,
-              ranges: rangesGcm2,
-            })
-          : typeof materialId === "number"
-            ? service.getInverseCsda({
+        try {
+          const activeCustomMaterial = customMaterial ?? currentCustomMaterial;
+          const results: (InverseCsdaResult | Error)[] = activeCustomMaterial
+            ? service.getInverseCsdaCustomCompound({
                 programId,
                 particleId,
-                materialId,
+                elements: customMaterialElementsForWasm(activeCustomMaterial),
+                density,
+                iValue: activeCustomMaterial.iValue,
                 ranges: rangesGcm2,
-                options: advOptsSnapshot,
               })
-            : [];
-
-        let resultIdx = 0;
-        // Rows that resolved to an energy, paired with that energy — used for a
-        // forward calc to recover the stopping power at the resolved energy.
-        const resolved: { row: (typeof inverseState.rangeRows)[number]; energy: number }[] = [];
-        for (const r of inverseState.rangeRows) {
-          if (r.status === "valid" || r.status === "out-of-range") {
-            const result = results[resultIdx++];
-            if (result instanceof Error || result === undefined) {
-              r.energyMevNucl = null;
-              r.stoppingPower = null;
-            } else {
-              r.energyMevNucl = result.energy;
-              r.stoppingPower = null;
-              resolved.push({ row: r, energy: result.energy });
-            }
-          }
-        }
-
-        // Second output column (#673): stopping power at each resolved energy.
-        // The inverse-CSDA call only echoes the input range, so we run the
-        // forward calc at the resolved energies to obtain the STP.
-        if (resolved.length > 0) {
-          try {
-            const energies = resolved.map((x) => x.energy);
-            const forward = activeCustomMaterial
-              ? service.calculateCustomCompound({
+            : typeof materialId === "number"
+              ? service.getInverseCsda({
                   programId,
                   particleId,
-                  elements: customMaterialElementsForWasm(activeCustomMaterial),
-                  density,
-                  iValue: activeCustomMaterial.iValue,
-                  energies,
+                  materialId,
+                  ranges: rangesGcm2,
+                  options: advOptsSnapshot,
                 })
-              : typeof materialId === "number"
-                ? service.calculate(programId, particleId, materialId, energies, advOptsSnapshot)
-                : null;
-            if (forward) {
-              for (let i = 0; i < resolved.length; i++) {
-                const stp = forward.stoppingPowers[i];
-                resolved[i]!.row.stoppingPower = typeof stp === "number" ? stp : null;
+              : [];
+
+          let resultIdx = 0;
+          // Rows that resolved to an energy, paired with that energy — used for a
+          // forward calc to recover the stopping power at the resolved energy.
+          const resolved: { row: (typeof inverseState.rangeRows)[number]; energy: number }[] = [];
+          for (const r of inverseState.rangeRows) {
+            if (r.status === "valid" || r.status === "out-of-range") {
+              const result = results[resultIdx++];
+              if (result instanceof Error || result === undefined) {
+                r.energyMevNucl = null;
+                r.stoppingPower = null;
+              } else {
+                r.energyMevNucl = result.energy;
+                r.stoppingPower = null;
+                resolved.push({ row: r, energy: result.energy });
               }
             }
-          } catch {
-            for (const x of resolved) x.row.stoppingPower = null;
           }
-        }
-      } catch {
-        for (const r of inverseState.rangeRows) {
-          if (r.status === "valid" || r.status === "out-of-range") {
-            r.status = "error";
-            r.message = "Inverse range lookup failed";
-            r.energyMevNucl = null;
-            r.stoppingPower = null;
-          }
-        }
-      }
-    }, 300);
 
-    return () => {
-      cancelled = true;
-      clearTimeout(timer);
-    };
+          // Second output column (#673): stopping power at each resolved energy.
+          // The inverse-CSDA call only echoes the input range, so we run the
+          // forward calc at the resolved energies to obtain the STP.
+          if (resolved.length > 0) {
+            try {
+              const energies = resolved.map((x) => x.energy);
+              const forward = activeCustomMaterial
+                ? service.calculateCustomCompound({
+                    programId,
+                    particleId,
+                    elements: customMaterialElementsForWasm(activeCustomMaterial),
+                    density,
+                    iValue: activeCustomMaterial.iValue,
+                    energies,
+                  })
+                : typeof materialId === "number"
+                  ? service.calculate(programId, particleId, materialId, energies, advOptsSnapshot)
+                  : null;
+              if (forward) {
+                for (let i = 0; i < resolved.length; i++) {
+                  const stp = forward.stoppingPowers[i];
+                  resolved[i]!.row.stoppingPower = typeof stp === "number" ? stp : null;
+                }
+              }
+            } catch {
+              for (const x of resolved) x.row.stoppingPower = null;
+            }
+          }
+        } catch {
+          for (const r of inverseState.rangeRows) {
+            if (r.status === "valid" || r.status === "out-of-range") {
+              r.status = "error";
+              r.message = "Inverse range lookup failed";
+              r.energyMevNucl = null;
+              r.stoppingPower = null;
+            }
+          }
+        }
+      },
+    );
   });
 }

@@ -9,6 +9,13 @@
   } from "$lib/state/external-compatibility";
   import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
+  import {
+    isExternalMaterial,
+    inElements,
+    inCompounds,
+    compareElements,
+    compareByName,
+  } from "$lib/utils/material-filters";
   import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
   import { getProgramDescription } from "$lib/config/program-names";
@@ -166,30 +173,8 @@
     ...selectionState.externalOnlyMaterials,
   ]);
 
-  function isMaterialExternal(m: Material): boolean {
-    return typeof m.id === "string" && (m.id as string).startsWith("ext:");
-  }
-
-  function isElementId(id: number): boolean {
-    return id >= 1 && id <= 98;
-  }
-
-  function inElements(m: Material): boolean {
-    if (!isMaterialExternal(m)) return isElementId(m.id as number);
-    return (
-      (m as ExternalOnlyMaterial).atomicNumber !== undefined &&
-      isElementId((m as ExternalOnlyMaterial).atomicNumber!)
-    );
-  }
-
-  function inCompounds(m: Material): boolean {
-    if (!isMaterialExternal(m)) return (m.id as number) > 98 || m.id === 906;
-    const an = (m as ExternalOnlyMaterial).atomicNumber;
-    return !(an !== undefined && isElementId(an));
-  }
-
   function materialSearchText(m: Material): string {
-    if (isMaterialExternal(m)) {
+    if (isExternalMaterial(m)) {
       const em = m as ExternalOnlyMaterial;
       return `${em.localId} ${em.name} ${em.label} ext external`;
     }
@@ -206,21 +191,13 @@
   const filteredCompounds = $derived(
     allMaterials
       .filter(inCompounds)
-      .sort((a, b) => a.name.localeCompare(b.name))
+      .sort(compareByName)
       .filter((m) => materialMatches(m, query)),
   );
   const filteredElements = $derived(
     allMaterials
       .filter(inElements)
-      .sort((a, b) => {
-        const ai = isMaterialExternal(a)
-          ? ((a as ExternalOnlyMaterial).atomicNumber ?? 999)
-          : (a.id as number);
-        const bi = isMaterialExternal(b)
-          ? ((b as ExternalOnlyMaterial).atomicNumber ?? 999)
-          : (b.id as number);
-        return ai - bi;
-      })
+      .sort(compareElements)
       .filter((m) => materialMatches(m, query)),
   );
 
@@ -243,7 +220,7 @@
 
   function formatDensity(m: Material | { density: number }): string | undefined {
     const d = (m as { density: number }).density;
-    if (isMaterialExternal(m as Material)) {
+    if (isExternalMaterial(m as Material)) {
       return d !== undefined ? d.toFixed(4) : undefined;
     }
     return d.toFixed(d < 0.1 ? 4 : 2);
