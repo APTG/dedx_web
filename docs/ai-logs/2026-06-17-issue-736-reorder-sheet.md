@@ -30,9 +30,11 @@ The anchor chip is visually distinguished (orange ⚓, no controls).
 A dedicated `role="status" aria-live="polite" aria-atomic="true"` span
 announces each move to assistive technology.
 
-*Wiring:* `material-tab.svelte` and `program-tab.svelte` pass `ids` and
+*Wiring:* `material-tab.svelte` and `particle-tab.svelte` pass `ids` and
 `onReorder` to the summary bar in multi-select mode via the conditional spread
-pattern required by `exactOptionalPropertyTypes`.
+pattern required by `exactOptionalPropertyTypes`. Program reorder is intentionally
+excluded — column order is driven by `MultiProgramState.programDisplayOrder` (column
+drag in the results table), not the picker.
 
 *⤢ button:* `material-tab.svelte` gained an `onOpenSheet` prop; when provided
 a small `sm:hidden` button (⤢) is rendered after the sub-tab pills, opening
@@ -59,7 +61,7 @@ opens the sheet.
 - **Files changed**:
   - `src/lib/components/entity-selection/picker-summary-bar.svelte`
   - `src/lib/components/entity-selection/material-tab.svelte`
-  - `src/lib/components/entity-selection/program-tab.svelte`
+  - `src/lib/components/entity-selection/particle-tab.svelte`
 - **Decision**: drag events on the ⠿ handle `<button>` (interactive element)
   rather than on the chip container, satisfying Svelte's a11y linter.
 
@@ -72,5 +74,15 @@ opens the sheet.
 
 ### Tests
 
-- **Status**: completed (7 new unit tests)
+- **Status**: completed (7 new unit tests in initial PR + 1 added in review fixes)
 - **Files changed**: `src/tests/unit/entity-selection-tabbed.test.ts`
+
+### PR #742 review comment fixes (Prompt 2)
+
+- **Status**: completed
+- **Files changed**:
+  - `src/lib/components/entity-selection/picker-summary-bar.svelte` — conditional `role="status"` (removed in reorder mode to avoid duplicate live-region announcements)
+  - `src/lib/components/entity-selection/program-tab.svelte` — removed `onReorder` wiring (program column order belongs in results table, not picker)
+  - `src/lib/components/entity-selection/particle-tab.svelte` — added `ids` + `onReorder` wiring (particle order directly drives `multi-entity-calc`)
+  - `src/lib/components/entity-selection/material-tab.svelte` — moved ⤢ button outside `role="tablist"` to satisfy ARIA spec
+  - `src/tests/unit/entity-selection-tabbed.test.ts` — added particle reorder chip test
