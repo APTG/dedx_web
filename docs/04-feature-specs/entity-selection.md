@@ -67,9 +67,10 @@ selectProgram`, then `afterSelection` advances `activeTarget` to the
 **Tab styling**
 
 - The currently-active tab keeps its existing background-swap treatment.
-- The `activeTarget` tab additionally renders a coral underline (the
-  "squiggle" in the wireframes; currently rendered as a flat coral
-  rounded bar — the squiggle SVG is a follow-up polish item).
+- The `activeTarget` tab additionally renders the coral "squiggle"
+  underline from the wireframes — an SVG wave (`squiggle-underline.svelte`)
+  drawn with a tiling `<pattern>` so the wave period stays constant
+  regardless of tab width. It is decorative (`aria-hidden`, static).
 - An empty tab — particle/material null, or `Auto-select` with no
   resolved program — gets a red dashed border and a small `!` badge with
   `data-testid="picker-tab-{id}-empty"` so E2E tests can assert it.
@@ -118,10 +119,10 @@ selection path, the pill is a less-common "create new" affordance).
 chrome+state rework PR have since shipped during Stage 6–8 and are noted
 here for history:
 
-1. _(Deferred)_ Persistent picker-level search row with chevron + dynamic
-   placeholder (the per-tab `search-input.svelte` instances are still the
-   canonical search today; lifting them to a single shared input touches
-   all three tab components).
+1. _(Done)_ Persistent picker-level search row with chevron + dynamic
+   placeholder. A single `search-input.svelte` lives in `entity-selection.svelte`
+   (shared `query`, per-tab placeholder, cleared on tab change) and feeds all
+   three tabs; the chevron `▲/▼` toggles the panel.
 2. _(Done)_ `external-sources-panel.svelte` now lives under
    `src/lib/components/entity-selection/` with per-source attribution and
    remove buttons.
@@ -136,8 +137,13 @@ here for history:
    through the calculation (`multi-entity-calc.svelte.ts`) and plot pipelines.
 6. _(Done)_ The legacy in-panel pill and the standalone multi-program picker
    components were removed once the tab-bar inline display replaced them.
-7. _(Deferred)_ Mobile Material-tab card polish (bounded scrolling, fade
-   shadows, full-screen-sheet promotion via `⤢`).
+7. _(Partly done)_ Mobile Material-tab card polish — bounded scrolling
+   (`max-h-52 overflow-auto`) and the bottom fade shadow (`showBottomFade`)
+   ship in `material-tab.svelte`. The explicit `⤢` full-screen-sheet promotion
+   affordance is still deferred (on mobile the full-screen `picker-sheet.svelte`
+   already opens by tapping the search field).
+8. _(Done)_ Active-target tab "squiggle" underline — `squiggle-underline.svelte`
+   renders the coral SVG wave (see **Tab styling** above).
 
 ### Collapsible panel (Calculator only)
 

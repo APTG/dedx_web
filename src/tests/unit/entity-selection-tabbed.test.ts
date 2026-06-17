@@ -164,6 +164,16 @@ describe("EntitySelection", () => {
     expect(programTab).toHaveAttribute("aria-selected", "false");
   });
 
+  test("only the active-target tab renders the coral squiggle underline", () => {
+    render(EntitySelection, { props: { selectionState: state } });
+
+    // Exactly one squiggle, and it lives inside the active (particle) tab.
+    const squiggles = screen.getAllByTestId("picker-tab-squiggle");
+    expect(squiggles).toHaveLength(1);
+    expect(screen.getByTestId("picker-tab-particle")).toContainElement(squiggles[0]!);
+    expect(screen.getByTestId("picker-tab-material")).not.toContainElement(squiggles[0]!);
+  });
+
   test("clicking a tab activates it and renders the matching panel", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
