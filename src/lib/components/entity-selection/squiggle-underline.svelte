@@ -1,3 +1,7 @@
+<script lang="ts" module>
+  let nextPatternId = 0;
+</script>
+
 <script lang="ts">
   import { cn } from "$lib/utils.js";
 
@@ -7,8 +11,8 @@
 
   let { class: className }: Props = $props();
 
-  // Unique pattern id so multiple instances on a page never collide.
-  const patternId = `squiggle-${Math.random().toString(36).slice(2)}`;
+  // Deterministic id avoids SSR/client hydration mismatches while staying unique per instance.
+  const patternId = `squiggle-${nextPatternId++}`;
 </script>
 
 <!--
