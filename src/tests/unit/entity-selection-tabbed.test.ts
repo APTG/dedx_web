@@ -650,6 +650,110 @@ describe("EntitySelection", () => {
     isAdvancedMode.value = false;
   });
 
+  test("reorderMulti moves a non-anchor item within the array", () => {
+    state.selectMaterial(276); // Water
+    state.setAcross("material");
+    state.toggleMulti("material", 6); // add Carbon → [276, 6]
+    state.toggleMulti("material", 1); // add Hydrogen → [276, 6, 1]
+
+    state.reorderMulti("material", 1, 1); // move Hydrogen from 2 to 1 → [276, 1, 6]
+    expect(state.multiSelected.material).toEqual([276, 1, 6]);
+  });
+
+  test("reorderMulti ignores the anchor (index 0)", () => {
+    state.selectMaterial(276);
+    state.setAcross("material");
+    state.toggleMulti("material", 6);
+
+    state.reorderMulti("material", 276, 1); // anchor cannot move
+    expect(state.multiSelected.material).toEqual([276, 6]);
+  });
+
+  test("reorderMulti clamps newIndex to valid range", () => {
+    state.selectMaterial(276);
+    state.setAcross("material");
+    state.toggleMulti("material", 6);
+    state.toggleMulti("material", 1);
+
+    state.reorderMulti("material", 6, 999); // clamp to last
+    expect(state.multiSelected.material[2]).toBe(6);
+    state.reorderMulti("material", 1, 0); // clamp to 1 (cannot reach anchor)
+    expect(state.multiSelected.material[1]).toBe(1);
+  });
+
+  test("material summary bar shows reorder chips with ▲▼ buttons in multi-mode", async () => {
+    isAdvancedMode.value = true;
+    state.selectMaterial(276); // Water
+    state.setAcross("material");
+    state.toggleMulti("material", 6); // add Carbon → [276, 6]
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+
+    const chips = screen.getByTestId("picker-material-selected-chips");
+    expect(chips).toBeInTheDocument();
+    // Chip 0 is anchor — no ▲ or ▼ buttons
+    expect(screen.queryByTestId("picker-material-selected-chip-0-up")).not.toBeInTheDocument();
+    // Chip 1 is not anchor — ▲ is disabled (can't go to index 0), ▼ disabled (last)
+    expect(screen.getByTestId("picker-material-selected-chip-1-up")).toBeDisabled();
+    expect(screen.getByTestId("picker-material-selected-chip-1-down")).toBeDisabled();
+
+    isAdvancedMode.value = false;
+  });
+
+  test("material summary bar ▼ button reorders items", async () => {
+    isAdvancedMode.value = true;
+    state.selectMaterial(276); // Water anchor
+    state.setAcross("material");
+    state.toggleMulti("material", 6); // Carbon
+    state.toggleMulti("material", 1); // Hydrogen → [276, 6, 1]
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    // Chip 1 (Carbon at index 1) should have enabled ▲ disabled, ▼ enabled
+    const downBtn = screen.getByTestId("picker-material-selected-chip-1-down");
+    expect(downBtn).not.toBeDisabled();
+    await user.click(downBtn);
+
+    // Carbon should now be at index 2, Hydrogen at index 1
+    expect(state.multiSelected.material).toEqual([276, 1, 6]);
+    isAdvancedMode.value = false;
+  });
+
+  test("particle summary bar shows reorder chips with ▲▼ buttons in multi-mode", async () => {
+    isAdvancedMode.value = true;
+    state.setAcross("particle");
+    state.toggleMulti("particle", 2); // add Helium → [1, 2]
+    render(EntitySelection, { props: { selectionState: state } });
+
+    const chips = screen.getByTestId("picker-particle-selected-chips");
+    expect(chips).toBeInTheDocument();
+    // Chip 0 is anchor — no ▲ or ▼ buttons
+    expect(screen.queryByTestId("picker-particle-selected-chip-0-up")).not.toBeInTheDocument();
+    // Chip 1 is not anchor — ▲ disabled (can't go to index 0), ▼ disabled (last)
+    expect(screen.getByTestId("picker-particle-selected-chip-1-up")).toBeDisabled();
+    expect(screen.getByTestId("picker-particle-selected-chip-1-down")).toBeDisabled();
+
+    isAdvancedMode.value = false;
+  });
+
+  test("material tab ⤢ button opens the full-screen sheet on mobile", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+
+    // ⤢ button exists in the material tab
+    const sheetBtn = screen.getByTestId("picker-material-open-sheet");
+    expect(sheetBtn).toBeInTheDocument();
+    await user.click(sheetBtn);
+
+    // Full-screen sheet should be visible
+    expect(screen.getByTestId("picker-sheet")).toBeInTheDocument();
+  });
+
   test("program picker offers a Selected-only filter toggle in multi-select mode (parity with particle picker)", async () => {
     isAdvancedMode.value = true;
     state.selectProgram(7);

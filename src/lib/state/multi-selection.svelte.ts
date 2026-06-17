@@ -21,6 +21,11 @@ export interface MultiSelectionState {
     currentSingleMaterialId: number | string | null,
   ): void;
   toggleMulti(dim: AcrossDimension, id: number | string): void;
+  /**
+   * Move `id` within `multiSelected[dim]` to `newIndex`.
+   * The anchor (index 0) cannot be moved; `newIndex` is clamped to [1, length-1].
+   */
+  reorderMulti(dim: AcrossDimension, id: number | string, newIndex: number): void;
   collapseToSingle(): void;
   setMultiProgram(ids: (number | string)[]): void;
   setMultiMaterial(ids: (number | string)[]): void;
@@ -95,6 +100,21 @@ export function createMultiSelectionState(): MultiSelectionState {
       } else {
         next = [...arr, id];
       }
+      if (dim === "program") multiProgram = next;
+      else if (dim === "particle") multiParticle = next;
+      else multiMaterial = next;
+    },
+    reorderMulti(dim: AcrossDimension, id: number | string, newIndex: number) {
+      if (dim === "single") return;
+      const arr =
+        dim === "program" ? multiProgram : dim === "particle" ? multiParticle : multiMaterial;
+      const fromIndex = arr.indexOf(id);
+      if (fromIndex <= 0) return; // not found or is the locked anchor
+      const clamped = Math.max(1, Math.min(newIndex, arr.length - 1));
+      if (fromIndex === clamped) return;
+      const next = [...arr];
+      next.splice(fromIndex, 1);
+      next.splice(clamped, 0, id);
       if (dim === "program") multiProgram = next;
       else if (dim === "particle") multiParticle = next;
       else multiMaterial = next;

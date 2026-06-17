@@ -101,6 +101,8 @@ export interface EntitySelectionState {
   setAcross(newAcross: AcrossDimension): void;
   /** Toggle an id in `multiSelected[across]` (preserving order; first is default). */
   toggleMulti(dim: AcrossDimension, id: number | string): void;
+  /** Move `id` within `multiSelected[dim]` to `newIndex` (anchor at 0 is locked). */
+  reorderMulti(dim: AcrossDimension, id: number | string, newIndex: number): void;
   /**
    * Truncate all three multi-selection arrays to at most one element (the anchor).
    * Called when switching from Advanced to Basic mode so that returning to Advanced
@@ -439,6 +441,7 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
     setAcross: (newAcross: AcrossDimension) =>
       multiState.setAcross(newAcross, selectedProgramId, selectedParticleId, selectedMaterialId),
     toggleMulti: multiState.toggleMulti,
+    reorderMulti: multiState.reorderMulti,
     collapseToSingle: multiState.collapseToSingle,
     setMultiProgram: multiState.setMultiProgram,
     setMultiMaterial: multiState.setMultiMaterial,

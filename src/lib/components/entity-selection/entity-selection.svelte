@@ -351,6 +351,7 @@
           {selectionState}
           {query}
           onSelect={handleMaterialSelect}
+          onOpenSheet={openSheet}
           onClear={() => {
             selectionState.clearMaterial();
             selectionState.setActiveTarget("material");

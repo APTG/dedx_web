@@ -25,9 +25,14 @@
     onClear: () => void;
     /** Shared search query owned by `<EntitySelection>` (picker-level row). */
     query?: string;
+    /**
+     * Called when the user taps the ⤢ expand button. Opens the full-screen
+     * picker sheet. Only rendered on small viewports (hidden on ≥ sm).
+     */
+    onOpenSheet?: () => void;
   }
 
-  let { selectionState, onSelect, onClear, query = "" }: Props = $props();
+  let { selectionState, onSelect, onClear, query = "", onOpenSheet }: Props = $props();
 
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
@@ -411,6 +416,13 @@
   <PickerSummaryBar
     count={summaryCount}
     {summaryLabels}
+    {...isMultiMode
+      ? {
+          ids: multiIds,
+          onReorder: (id: number | string, newIdx: number) =>
+            selectionState.reorderMulti("material", id, newIdx),
+        }
+      : {}}
     onClear={isMultiMode ? clearAllMulti : onClear}
     onlySelected={showOnlySelected}
     onToggleOnlySelected={isMultiMode
@@ -422,58 +434,72 @@
   />
 
   <!-- Sub-tab pills: fixed order Compounds · Elements · Custom -->
-  <div
-    class="flex gap-1"
-    role="tablist"
-    aria-label="Material sub-tabs"
-    data-testid="picker-material-subtabs"
-  >
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeSubTab === "compounds"}
-      data-testid="material-subtab-compounds"
-      class={cn(
-        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-        activeSubTab === "compounds"
-          ? "border-primary bg-primary/15 text-primary"
-          : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
-      )}
-      onclick={() => setSubTab("compounds")}
+  <div class="flex items-center gap-1">
+    <div
+      class="flex flex-1 items-center gap-1"
+      role="tablist"
+      aria-label="Material sub-tabs"
+      data-testid="picker-material-subtabs"
     >
-      Compounds {hasQuery ? filteredCompounds.length : compounds.length}
-    </button>
-    <button
-      type="button"
-      role="tab"
-      aria-selected={activeSubTab === "elements"}
-      data-testid="material-subtab-elements"
-      class={cn(
-        "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-        activeSubTab === "elements"
-          ? "border-primary bg-primary/15 text-primary"
-          : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
-      )}
-      onclick={() => setSubTab("elements")}
-    >
-      Elements {hasQuery ? filteredElements.length : elements.length}
-    </button>
-    {#if isAdvancedMode.value}
       <button
         type="button"
         role="tab"
-        aria-selected={activeSubTab === "custom"}
-        data-testid="material-subtab-custom"
+        aria-selected={activeSubTab === "compounds"}
+        data-testid="material-subtab-compounds"
         class={cn(
           "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
-          activeSubTab === "custom"
+          activeSubTab === "compounds"
             ? "border-primary bg-primary/15 text-primary"
             : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
         )}
-        onclick={() => setSubTab("custom")}
+        onclick={() => setSubTab("compounds")}
       >
-        Custom {hasQuery ? filteredCustom.length : customItems.length}
+        Compounds {hasQuery ? filteredCompounds.length : compounds.length}
       </button>
+      <button
+        type="button"
+        role="tab"
+        aria-selected={activeSubTab === "elements"}
+        data-testid="material-subtab-elements"
+        class={cn(
+          "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+          activeSubTab === "elements"
+            ? "border-primary bg-primary/15 text-primary"
+            : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+        )}
+        onclick={() => setSubTab("elements")}
+      >
+        Elements {hasQuery ? filteredElements.length : elements.length}
+      </button>
+      {#if isAdvancedMode.value}
+        <button
+          type="button"
+          role="tab"
+          aria-selected={activeSubTab === "custom"}
+          data-testid="material-subtab-custom"
+          class={cn(
+            "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
+            activeSubTab === "custom"
+              ? "border-primary bg-primary/15 text-primary"
+              : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+          )}
+          onclick={() => setSubTab("custom")}
+        >
+          Custom {hasQuery ? filteredCustom.length : customItems.length}
+        </button>
+      {/if}
+    </div>
+
+    <!-- ⤢ full-screen sheet promotion (mobile only) — must be outside role="tablist" -->
+    {#if onOpenSheet}
+      <button
+        type="button"
+        class="rounded border border-muted bg-muted/40 px-2 py-1 text-xs text-muted-foreground hover:bg-accent sm:hidden"
+        data-testid="picker-material-open-sheet"
+        aria-label="Open full-screen material search"
+        title="Open full-screen search"
+        onclick={onOpenSheet}>⤢</button
+      >
     {/if}
   </div>
 
