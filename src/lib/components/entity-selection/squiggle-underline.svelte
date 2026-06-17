@@ -1,7 +1,3 @@
-<script lang="ts" module>
-  let nextPatternId = 0;
-</script>
-
 <script lang="ts">
   import { cn } from "$lib/utils.js";
 
@@ -11,8 +7,7 @@
 
   let { class: className }: Props = $props();
 
-  // Deterministic id avoids SSR/client hydration mismatches while staying unique per instance.
-  const patternId = `squiggle-${nextPatternId++}`;
+  const patternId = "squiggle-pattern";
 </script>
 
 <!--
