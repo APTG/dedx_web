@@ -14,6 +14,10 @@
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
   import ExternalSourcesPanel from "$lib/components/entity-selection/external-sources-panel.svelte";
+  import LoadExternalModal from "$lib/components/entity-selection/load-external-modal.svelte";
+  import { externalDataService } from "$lib/external-data/service";
+  import type { ExternalSourceDescriptor } from "$lib/external-data/types";
+  import type { ExternalStoreMetadata } from "$lib/external-data/schema";
   import { goto } from "$app/navigation";
   import { appInit } from "$lib/state/app-init.svelte";
   import {
@@ -29,8 +33,18 @@
   let externalLoading = $derived(appInit.isInitializing && appInit.hasExternalSources);
   let externalError = $derived(appInit.error);
 
+  let showLoadExternalModal = $state(false);
+
   function handleRemoveExternalSource(label: string): void {
     appInit.removeExternalSource(label);
+  }
+
+  async function handleModalLoad(
+    descriptor: ExternalSourceDescriptor,
+    metadata: ExternalStoreMetadata,
+  ) {
+    showLoadExternalModal = false;
+    appInit.addExternalSource(descriptor, metadata);
   }
 
   // Mobile responsive: track viewport width to pass collapsible to EntitySelection
@@ -182,7 +196,22 @@
     <div class="grid gap-4 desktop:grid-cols-[minmax(360px,5fr)_minmax(0,7fr)]">
       <!-- ── SIDEBAR ── -->
       <aside class="flex min-w-0 flex-col gap-4">
-        <EntitySelection selectionState={entityState} collapsible={isMobile} />
+        <EntitySelection
+          selectionState={entityState}
+          collapsible={isMobile}
+          showAdvancedToolbar
+          onLoadExternal={() => (showLoadExternalModal = true)}
+        />
+
+        <LoadExternalModal
+          open={showLoadExternalModal}
+          existingLabels={new Set([
+            ...loadedExternalSources.map((s) => s.label),
+            ...externalDataService.getLoadedLabels(),
+          ])}
+          onCancel={() => (showLoadExternalModal = false)}
+          onLoad={handleModalLoad}
+        />
 
         <!-- Add Series / Done editing button (sidebar, desktop-primary) -->
         <button
