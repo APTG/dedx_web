@@ -1,6 +1,18 @@
 # Feature: Multi-Program Comparison Mode (Calculator — Advanced)
 
-> **Status:** Final v4 (25 May 2026 — issue #563)
+> **Status:** Final v5 (16 June 2026 — issue #608)
+>
+> **v5** (16 June 2026): Reconciled the multi-select program picker description
+> to the **shipped flat-list** behaviour (issue #608). The earlier #504 design
+> sketch proposed a SELECTED/AVAILABLE split with in-picker drag handles; that
+> was never shipped and is intentionally dropped. The program and particle
+> pickers are now identical flat multi-select lists: the auto-selected program
+> is the anchor (first row, cannot be unchecked), additional programs toggle in
+> selection order, and a compact summary bar offers an **All shown / Selected
+> only** filter toggle (parity with the particle picker). Program/column
+> **reordering is not done in the picker** — it lives in the comparison-column
+> headers (drag-and-drop + Alt+←/→), which is the natural place to reorder
+> columns and avoids a duplicate reorder UI.
 >
 > **v4** (25 May 2026): Aligned to shipped Stage 8 behaviour. `qfocus=` (3-state)
 > replaced by `qshow=` (2-state: `stp|range`; absent = both) per
@@ -169,16 +181,24 @@ mode. The Program selector changes behavior depending on the mode:
 
 #### Multi-Select Program Picker (Advanced Mode)
 
-| Property              | Detail                                                                                                                                                        |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Type                  | Dropdown with checkboxes (multi-select combobox)                                                                                                              |
-| Position              | Same location as the single-select Program combobox                                                                                                           |
-| Items                 | All programs compatible with the current particle + material, grouped by category (Tabulated / Analytical) as in [`entity-selection.md`](entity-selection.md) |
-| Incompatible items    | Greyed out with a tooltip: "Not available for {particle} in {material}"                                                                                       |
-| Default selection     | The auto-selected program is checked and **cannot be unchecked** (it is the reference program)                                                                |
-| Additional selections | The user checks additional programs to compare                                                                                                                |
-| Selection order       | The auto-selected program is always first. Additional programs appear in selection order.                                                                     |
-| Maximum               | No hard limit. A soft warning appears at 6 programs: "Showing many programs. Consider hiding some columns for readability."                                   |
+> **Shipped layout (v5):** a single **flat multi-select list**, identical in
+> structure to the particle picker. There is no SELECTED/AVAILABLE split and no
+> in-picker drag handle — that earlier #504 sketch was not shipped. Column
+> reordering lives in the comparison-column headers (see § Drag-and-Drop Column
+> Reordering), not in the picker.
+
+| Property              | Detail                                                                                                                                                                                                                                             |
+| --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Type                  | Flat multi-select list (`role="listbox"` + `aria-multiselectable`), same pattern as the particle picker                                                                                                                                            |
+| Position              | Same location as the single-select Program combobox                                                                                                                                                                                                |
+| Items                 | All programs compatible with the current particle + material, with the program-kind badge (TAB / FN / EXT) as in [`entity-selection.md`](entity-selection.md)                                                                                      |
+| Selection marker      | Selected rows show a `✓` and an accent ring; unselected available rows show a `○`                                                                                                                                                                  |
+| Incompatible items    | Greyed out with a tooltip: "Not available for {particle} in {material}"                                                                                                                                                                            |
+| Default selection     | The auto-selected program is the **anchor**: it is the first row, always selected, rendered `disabled`/`aria-disabled` and **cannot be unchecked**                                                                                                 |
+| Additional selections | The user toggles additional programs to compare (`toggleMulti`)                                                                                                                                                                                    |
+| Selection order       | The auto-selected anchor program is always first. Additional programs appear in selection order. This order seeds the comparison-column order.                                                                                                     |
+| Summary bar           | A compact sticky bar shows the selected count + labels, a **Clear** action (removes all non-anchor selections), and an **All shown / Selected only** toggle that filters the list to just the selected programs — parity with the particle picker. |
+| Maximum               | No hard limit. A soft warning appears at 6 programs: "Showing many programs. Consider hiding some columns for readability."                                                                                                                        |
 
 ### 4. Energy Input
 
@@ -757,9 +777,10 @@ Unchanged from Calculator — single program, five-column CSV
 
 ### Program Selection
 
-- [ ] In advanced mode, the Program selector becomes a multi-select with checkboxes.
-- [ ] The auto-selected (default) program is always checked and cannot be unchecked.
+- [ ] In advanced mode, the Program selector becomes a flat multi-select list (✓/○ markers), not a SELECTED/AVAILABLE split.
+- [ ] The auto-selected (default) program is the anchor: always selected, first, and cannot be unchecked.
 - [ ] Incompatible programs are greyed out.
+- [ ] The summary bar offers an "All shown / Selected only" filter toggle (parity with the particle picker).
 - [ ] Selecting additional programs adds columns to both the stopping power and CSDA range groups.
 - [ ] Deselecting a program removes its columns from both groups.
 
