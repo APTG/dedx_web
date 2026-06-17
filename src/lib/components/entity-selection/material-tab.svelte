@@ -25,9 +25,14 @@
     onClear: () => void;
     /** Shared search query owned by `<EntitySelection>` (picker-level row). */
     query?: string;
+    /**
+     * Called when the user taps the ⤢ expand button. Opens the full-screen
+     * picker sheet. Only rendered on small viewports (hidden on ≥ sm).
+     */
+    onOpenSheet?: () => void;
   }
 
-  let { selectionState, onSelect, onClear, query = "" }: Props = $props();
+  let { selectionState, onSelect, onClear, query = "", onOpenSheet }: Props = $props();
 
   let compoundModalOpen = $state(false);
   let editingCompound = $state<StoredCompoundInternal | null>(null);
@@ -411,6 +416,13 @@
   <PickerSummaryBar
     count={summaryCount}
     {summaryLabels}
+    {...isMultiMode
+      ? {
+          ids: multiIds,
+          onReorder: (id: number | string, newIdx: number) =>
+            selectionState.reorderMulti("material", id, newIdx),
+        }
+      : {}}
     onClear={isMultiMode ? clearAllMulti : onClear}
     onlySelected={showOnlySelected}
     onToggleOnlySelected={isMultiMode
@@ -423,7 +435,7 @@
 
   <!-- Sub-tab pills: fixed order Compounds · Elements · Custom -->
   <div
-    class="flex gap-1"
+    class="flex items-center gap-1"
     role="tablist"
     aria-label="Material sub-tabs"
     data-testid="picker-material-subtabs"
@@ -474,6 +486,18 @@
       >
         Custom {hasQuery ? filteredCustom.length : customItems.length}
       </button>
+    {/if}
+
+    <!-- ⤢ full-screen sheet promotion (mobile only) -->
+    {#if onOpenSheet}
+      <button
+        type="button"
+        class="ml-auto rounded border border-muted bg-muted/40 px-2 py-1 text-xs text-muted-foreground hover:bg-accent sm:hidden"
+        data-testid="picker-material-open-sheet"
+        aria-label="Open full-screen material search"
+        title="Open full-screen search"
+        onclick={onOpenSheet}>⤢</button
+      >
     {/if}
   </div>
 

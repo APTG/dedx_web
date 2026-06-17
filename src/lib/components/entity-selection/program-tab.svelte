@@ -125,6 +125,13 @@
   <PickerSummaryBar
     count={summaryCount}
     {summaryLabels}
+    {...isMultiMode
+      ? {
+          ids: multiIds,
+          onReorder: (id: number | string, newIdx: number) =>
+            selectionState.reorderMulti("program", id, newIdx),
+        }
+      : {}}
     onClear={isMultiMode ? clearAllMulti : () => selectionState.selectProgram(-1)}
     onlySelected={showOnlySelected}
     onToggleOnlySelected={isMultiMode
