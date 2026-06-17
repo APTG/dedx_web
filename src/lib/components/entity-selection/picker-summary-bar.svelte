@@ -115,7 +115,7 @@
     class="flex items-center gap-2 rounded-md border border-orange-200 bg-orange-50 px-2.5 py-1.5"
     data-testid={testId}
     aria-label="Selection summary: {count} selected"
-    role="status"
+    role={isReorderMode ? undefined : "status"}
   >
     <!-- Count badge -->
     <span

@@ -722,6 +722,23 @@ describe("EntitySelection", () => {
     isAdvancedMode.value = false;
   });
 
+  test("particle summary bar shows reorder chips with ▲▼ buttons in multi-mode", async () => {
+    isAdvancedMode.value = true;
+    state.setAcross("particle");
+    state.toggleMulti("particle", 2); // add Helium → [1, 2]
+    render(EntitySelection, { props: { selectionState: state } });
+
+    const chips = screen.getByTestId("picker-particle-selected-chips");
+    expect(chips).toBeInTheDocument();
+    // Chip 0 is anchor — no ▲ or ▼ buttons
+    expect(screen.queryByTestId("picker-particle-selected-chip-0-up")).not.toBeInTheDocument();
+    // Chip 1 is not anchor — ▲ disabled (can't go to index 0), ▼ disabled (last)
+    expect(screen.getByTestId("picker-particle-selected-chip-1-up")).toBeDisabled();
+    expect(screen.getByTestId("picker-particle-selected-chip-1-down")).toBeDisabled();
+
+    isAdvancedMode.value = false;
+  });
+
   test("material tab ⤢ button opens the full-screen sheet on mobile", async () => {
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
