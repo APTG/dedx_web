@@ -106,11 +106,8 @@ test.describe("Calculator page — tabbed picker", () => {
     await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
   });
 
-  test("compatibility overlay link is hidden in Basic mode (advanced toolbar gated)", async ({
-    page,
-  }) => {
+  test("advanced toolbar is hidden in Basic mode", async ({ page }) => {
     await expect(page.getByTestId("picker-advanced-toolbar")).toHaveCount(0);
-    await expect(page.getByTestId("picker-explore-compat")).toHaveCount(0);
   });
 });
 

@@ -77,10 +77,10 @@ selectProgram`, then `afterSelection` advances `activeTarget` to the
 **Advanced toolbar**
 
 `advanced-toolbar.svelte` renders above the tab strip when `isAdvancedMode`
-is true **and** the host page opts in via `showAdvancedToolbar` (defaults
-to `collapsible`, so Calculator shows it and Plot hides it — Plot's
-Advanced mode only needs part+mat+program selection for the next "Add
-series"). Contents:
+is true **and** the host page opts in via `showAdvancedToolbar`. The prop
+defaults to `collapsible`, but both the Calculator and Plot pages opt in
+(Plot passes `showAdvancedToolbar` explicitly so the toolbar shows in
+Advanced mode regardless of viewport). Contents:
 
 - **Compare-across strip** (`compare-across-strip.svelte`) — a visible
   4-button pill radiogroup replacing the earlier dropdown:
@@ -88,12 +88,11 @@ series"). Contents:
   dimension has a filled pill. `AcrossDimension` accepts
   `"program" | "material" | "particle" | "single"`. See
   [ADR 011](../decisions/011-compare-across-visible-strip.md).
-- `🔗 Load external` — opens the load-external modal. The button is only
-  enabled when the page passes an `onLoadExternal` handler: the Calculator page
-  wires it (button enabled), while the Plot page does not yet (button stays
-  disabled there).
-- `⊞ Explore compat` — disabled placeholder; wires up to the
-  compatibility-matrix overlay in a follow-up PR.
+- `🔗 Load external` — opens the load-external modal. The button is enabled
+  when the page passes an `onLoadExternal` handler; both the Calculator and Plot
+  pages wire it. (The compatibility-overlay `⊞ Explore compat` affordance is
+  not present yet — it will be (re-)introduced by the compatibility-overlay
+  issue when that lands.)
 - `↺` reset — calls `state.resetAll()` and, on Calculator, also collapses
   the panel (defaults are complete after reset).
 
@@ -126,10 +125,11 @@ here for history:
 2. _(Done)_ `external-sources-panel.svelte` now lives under
    `src/lib/components/entity-selection/` with per-source attribution and
    remove buttons.
-3. _(Partly done)_ `load-external-modal.svelte` (URL paste + drag-drop file +
-   localStorage recents) is built and wired to the `Load external` button on the
-   Calculator page (`onLoadExternal` passed). The Plot page does not yet pass the
-   handler, so the button remains disabled there.
+3. _(Done)_ `load-external-modal.svelte` (URL paste + drag-drop file +
+   localStorage recents) is built and wired to the `Load external` button on
+   both the Calculator and Plot pages (`onLoadExternal` passed). The Plot page
+   passes `showAdvancedToolbar` explicitly so the affordance is reachable in
+   Advanced mode on any viewport.
 4. _(Deferred)_ Complete interactive list reorder (drag + `Alt+ArrowUp/Down`)
    with `aria-live` announcements.
 5. _(Done)_ `Compare across = Materials` / `Particles` is wired end-to-end
