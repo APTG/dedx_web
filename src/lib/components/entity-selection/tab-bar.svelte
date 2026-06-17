@@ -7,6 +7,7 @@
   import { cn } from "$lib/utils.js";
   import type { EntitySelectionState } from "$lib/state/entity-selection.svelte";
   import { getParticleLabel } from "$lib/utils/particle-label";
+  import SquiggleUnderline from "./squiggle-underline.svelte";
 
   interface Props {
     activeTab: PickerTab;
@@ -124,11 +125,9 @@
         >
       </span>
       {#if isTarget}
-        <span
-          class="pointer-events-none absolute inset-x-2 bottom-0 h-0.5 rounded-full"
-          style="background-color: #f97316;"
-          aria-hidden="true"
-        ></span>
+        <span class="pointer-events-none absolute inset-x-2 bottom-0 h-1.5" aria-hidden="true">
+          <SquiggleUnderline />
+        </span>
       {/if}
       {#if tab.empty}
         <span
