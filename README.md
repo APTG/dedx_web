@@ -80,4 +80,6 @@ To maintain a secure and clean codebase, follow these rules when managing depend
 
 ### Team
 
-Developed by [Piotr Połeć](https://github.com/piotrpolec) and [Marek Ślązak](https://github.com/Mexolius) under supervision of [Leszek Grzanka](https://github.com/grzanka)
+v1 was developed by [Piotr Połeć](https://github.com/piotrpolec) and [Marek Ślązak](https://github.com/Mexolius) under supervision of [Leszek Grzanka](https://github.com/grzanka).
+
+v2 is led by [Leszek Grzanka](https://github.com/grzanka) with AI assistants (GitHub Copilot, Claude Code, opencode).
