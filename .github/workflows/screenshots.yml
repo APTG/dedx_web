@@ -1,0 +1,79 @@
+name: Documentation Screenshots
+
+# Regenerates static/screenshots/ after every push to master and commits the
+# results back only when at least one image actually changed. Runs in full
+# isolation — WASM is rebuilt here rather than shared from ci.yml — so this
+# workflow has no scheduling dependency on other runs.
+#
+# Anti-loop guard: the job is skipped when the triggering commit was itself
+# the screenshots bot commit (identified by its message prefix), so a single
+# push never causes more than one screenshot commit.
+#
+# Screenshots lag the deploy by one commit when they change. This is acceptable
+# for documentation images — the next real code push deploys them.
+
+on:
+  push:
+    branches: [master]
+
+permissions:
+  contents: write
+
+jobs:
+  screenshots:
+    name: Generate & commit documentation screenshots
+    runs-on: ubuntu-latest
+    if: "!startsWith(github.event.head_commit.message, 'docs: update screenshots')"
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          submodules: recursive
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@v6
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: "24"
+          cache: "pnpm"
+
+      - name: Set up Docker
+        uses: docker/setup-buildx-action@v4
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Build WASM module
+        run: |
+          mkdir -p static/wasm
+          cd wasm && chmod +x build.sh && ./build.sh
+
+      - name: Build SvelteKit app
+        run: pnpm build
+
+      - name: Install Playwright Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Generate documentation screenshots
+        run: pnpm docs:screenshots
+
+      - name: Check for screenshot changes
+        id: diff
+        run: |
+          if git diff --quiet static/screenshots/; then
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Commit and push updated screenshots
+        if: steps.diff.outputs.changed == 'true'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add static/screenshots/
+          git commit -m "docs: update screenshots [skip ci]"
+          git push origin master
