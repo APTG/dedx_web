@@ -741,6 +741,13 @@ As a second line of defence the canvas container declares
 gestures, so a non-passive listener calling `preventDefault()` cannot hijack
 them.
 
+On desktop, JSROOT's `startRectSel()` also pans the axes on a middle-button
+(`evnt.button === 1`) or left+right (`evnt.buttons === 3`) drag — there is no
+setting to disable this without also losing left-drag rectangular zoom. A
+capture-phase `mousedown` listener on the container swallows those button
+combinations before JSROOT's handler (bound on the inner `<svg>`) sees them,
+leaving left-drag zoom and double-click reset intact.
+
 ---
 
 ## 6. Data Flow: Calculator Page

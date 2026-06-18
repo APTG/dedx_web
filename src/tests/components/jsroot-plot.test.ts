@@ -283,6 +283,41 @@ describe("JsrootPlot", () => {
     expect(canvas.style.touchAction).toContain("pinch-zoom");
   });
 
+  it("swallows middle-button mousedown so a middle-drag cannot pan the plot", async () => {
+    render(JsrootPlot, {
+      props: {
+        series: [],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+      },
+    });
+    const canvas = screen.getByRole("img");
+    // JSROOT binds its mousedown handler on a descendant; emulate one and check
+    // the container's capture-phase listener stops middle-button events.
+    const inner = document.createElement("div");
+    canvas.appendChild(inner);
+    const innerListener = vi.fn();
+    inner.addEventListener("mousedown", innerListener);
+
+    // Wait for the container-binding $effect to attach the capture listener.
+    await vi.waitFor(() => {
+      const probe = new MouseEvent("mousedown", { button: 1, bubbles: true, cancelable: true });
+      inner.dispatchEvent(probe);
+      expect(probe.defaultPrevented).toBe(true);
+    });
+
+    innerListener.mockClear();
+    inner.dispatchEvent(new MouseEvent("mousedown", { button: 1, bubbles: true }));
+    expect(innerListener).not.toHaveBeenCalled();
+
+    // Left-button mousedown (rectangular zoom) must still reach JSROOT.
+    inner.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
+    expect(innerListener).toHaveBeenCalledTimes(1);
+  });
+
   it("disables ZoomWheel and keeps DragGraphs on fine-pointer (desktop) devices", async () => {
     const JSROOT = await import("jsroot");
     const settings = JSROOT.settings as { ZoomWheel: boolean; DragGraphs: boolean };

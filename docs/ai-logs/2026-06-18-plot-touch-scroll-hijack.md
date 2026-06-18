@@ -42,6 +42,23 @@ now also backstopped by CSS.
    the canvas; `DragGraphs` kept on fine pointer; `ZoomTouch`+`DragGraphs`
    disabled on coarse pointer.
 
+### Prompt 3: Middle-button drag still moves the series — study JSROOT source
+
+The maintainer found that on desktop, holding the **middle mouse button** and
+dragging slides the series sideways. Studied JSROOT 7.11.0
+`modules/gpad/TFramePainter.mjs`: `startRectSel()` is bound to `mousedown` only
+when `settings.Zooming && settings.ZoomMouse`, and its first branch
+`(evnt.buttons === 3) || (evnt.button === 1)` starts a viewBox-shift pan
+(middle button, or left+right together). There is **no** dedicated setting to
+disable just that pan without also disabling `ZoomMouse` (which would remove the
+desired left-drag rectangular zoom). Fixed by adding a capture-phase `mousedown`
+listener on the container that calls `preventDefault()` + `stopPropagation()`
+for `button === 1 || buttons === 3`, so JSROOT's handler (bound on the inner
+`<svg>`) never receives those events. Left-drag zoom and double-click reset are
+unaffected. Added a unit test and updated `plot.md` / `03-architecture.md`.
+
+(Copilot had added one doc-only commit to the PR, `7833895`; merged it forward.)
+
 ## Tasks
 
 ### Fix plot touch scroll-hijack

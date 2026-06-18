@@ -17,7 +17,7 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-- 2026-06-18 — **plot**: Fixed touch scroll-hijack on the plot canvas (#753) — a one-finger swipe over the JSROOT plot dragged data series because `DragGraphs` is on by default and was never disabled on touch; now disabled alongside `ZoomTouch` on coarse-pointer devices, and the canvas declares `touch-action: pan-x pan-y pinch-zoom` so the browser owns page scroll/pinch-zoom. (Claude Opus via Claude Code)
+- 2026-06-18 — **plot**: Fixed touch scroll-hijack on the plot canvas (#753) — a one-finger swipe over the JSROOT plot dragged data series because `DragGraphs` is on by default and was never disabled on touch; now disabled alongside `ZoomTouch` on coarse-pointer devices, and the canvas declares `touch-action: pan-x pan-y pinch-zoom` so the browser owns page scroll/pinch-zoom. Also blocked JSROOT's middle-button / left+right drag pan (`startRectSel`) via a capture-phase mousedown listener, keeping left-drag zoom + double-click reset. (Claude Opus via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-18-plot-touch-scroll-hijack.md)
 
 - 2026-06-18 — **CI / screenshots**: Added `.github/workflows/screenshots.yml` — auto-generates documentation screenshots on every push to master and commits them back only when at least one PNG actually changed. Anti-loop guard skips the job when the triggering commit is the bot's own screenshot commit. (Claude Sonnet 4.6 via Claude Code)

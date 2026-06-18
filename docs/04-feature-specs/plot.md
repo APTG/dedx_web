@@ -604,10 +604,16 @@ Zoom and pan are enabled via click-drag interactions on the canvas.
   touch-drag pass through to the browser's native scroll/zoom behavior.
   Users can still interact with the plot via the axis scale controls
   and the JSROOT toolbar (if available).
+- **Middle-button (and left+right) drag pan: disabled.** JSROOT's
+  `startRectSel()` pans the axes on `evnt.button === 1` (middle) or
+  `evnt.buttons === 3` (left+right), which looks like the data series
+  sliding sideways. There is no JSROOT setting to disable this without
+  also losing left-drag rectangular zoom, so these mousedown events are
+  swallowed in the capture phase before JSROOT's handler sees them.
 
 These restrictions ensure the plot never traps the user's scroll or
-touch gestures. On desktop, click-drag zoom and shift-drag pan remain
-available as deliberate interactions.
+touch gestures. On desktop, left-button click-drag zoom and
+double-click reset remain available as deliberate interactions.
 
 ---
 

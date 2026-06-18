@@ -182,6 +182,25 @@
     };
   });
 
+  // JSROOT pans the axes on a middle-button (or left+right) drag — its
+  // startRectSel() handles `evnt.button === 1 || evnt.buttons === 3`. That pan
+  // looks like the data series sliding sideways and there is no JSROOT setting
+  // to disable it without also losing left-drag rectangular zoom. Swallow those
+  // mousedowns in the capture phase, before JSROOT's mousedown handler (bound on
+  // the inner <svg>) ever sees them. Left-drag zoom and double-click reset stay.
+  $effect(() => {
+    if (!container) return;
+    const el = container;
+    const blockPan = (e: MouseEvent) => {
+      if (e.button === 1 || e.buttons === 3) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    el.addEventListener("mousedown", blockPan, { capture: true });
+    return () => el.removeEventListener("mousedown", blockPan, { capture: true });
+  });
+
   $effect(() => {
     if (!container) return;
     const el = container;
