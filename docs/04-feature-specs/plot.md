@@ -594,7 +594,7 @@ Zoom and pan are enabled via click-drag interactions on the canvas.
   JSROOT's wheel-zoom feature must be explicitly disabled to prevent
   the plot from hijacking page scroll.
 - **Touch interactions on mobile/tablet: disabled.** On touch devices
-  (< 900px or `pointer: coarse`), JSROOT's touch-based zoom/pan must
+  (`pointer: coarse`), JSROOT's touch-based zoom/pan must
   be disabled to ensure normal page scrolling. This means disabling
   both touch zoom (`ZoomTouch`) **and** interactive dragging of graph
   points (`DragGraphs`, on by default) — otherwise a one-finger swipe

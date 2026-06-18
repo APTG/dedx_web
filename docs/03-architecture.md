@@ -714,7 +714,9 @@ wheel zoom and touch zoom must be disabled.
 `JSROOT.draw()`:
 
 ```ts
-const settings = JSROOT.settings;
+const JSROOT = await getJsroot();
+// DragGraphs isn't in jsroot's bundled types — widen it here.
+const settings = JSROOT.settings as typeof JSROOT.settings & { DragGraphs: boolean };
 
 // Wheel scroll must scroll the page, never zoom the axes.
 settings.ZoomWheel = false;
