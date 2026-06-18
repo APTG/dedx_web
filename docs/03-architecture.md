@@ -714,6 +714,8 @@ wheel zoom and touch zoom must be disabled.
 `JSROOT.draw()`:
 
 ```ts
+const settings = JSROOT.settings;
+
 // Wheel scroll must scroll the page, never zoom the axes.
 settings.ZoomWheel = false;
 
