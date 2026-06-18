@@ -714,26 +714,30 @@ wheel zoom and touch zoom must be disabled.
 `JSROOT.draw()`:
 
 ```ts
-import JSROOT from "jsroot";
+// Wheel scroll must scroll the page, never zoom the axes.
+settings.ZoomWheel = false;
 
-export async function drawPlot(container: HTMLDivElement, series: Series[]): Promise<unknown> {
-  // Disable wheel zoom: plain scroll must scroll the page, not zoom the plot.
-  // See docs/decisions/002-keep-jsroot.md — Disabled Interactions.
-  JSROOT.settings.ZoomWheel = false;
-
-  // Disable touch zoom on coarse-pointer devices so swipe scrolls the page.
-  if (window.matchMedia("(pointer: coarse)").matches) {
-    JSROOT.settings.ZoomTouch = false;
-  }
-
-  // ... build TMultiGraph, call JSROOT.draw() ...
+// On coarse-pointer (touch) devices every gesture must pass through to the
+// browser so the page scrolls/zooms normally.
+if (window.matchMedia("(pointer: coarse)").matches) {
+  settings.ZoomTouch = false;
+  // DragGraphs ("Interactive dragging of TGraph points") is on by default in
+  // every environment — it is what makes a one-finger swipe drag a data series
+  // under the user's finger, so it must be disabled on touch.
+  settings.DragGraphs = false;
 }
 ```
 
-`JSROOT.settings` is a global object; these flags are set once before the
-first draw and do not need to be reset per-render. Click-drag zoom (controlled
-by `settings.ZoomMouse`, which remains `true`) is the intended zoom interaction
-on desktop.
+`JSROOT.settings` is a global object; these flags are snapshotted and restored
+on cleanup. Click-drag zoom (controlled by `settings.ZoomMouse`, which remains
+`true`) is the intended zoom interaction on desktop, and `DragGraphs` stays
+enabled there.
+
+As a second line of defence the canvas container declares
+`touch-action: pan-x pan-y pinch-zoom`. Even if JSROOT attaches touch handlers,
+`touch-action` makes the browser own page scrolling and pinch-zoom for those
+gestures, so a non-passive listener calling `preventDefault()` cannot hijack
+them.
 
 ---
 

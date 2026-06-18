@@ -17,6 +17,9 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-18 — **plot**: Fixed touch scroll-hijack on the plot canvas (#753) — a one-finger swipe over the JSROOT plot dragged data series because `DragGraphs` is on by default and was never disabled on touch; now disabled alongside `ZoomTouch` on coarse-pointer devices, and the canvas declares `touch-action: pan-x pan-y pinch-zoom` so the browser owns page scroll/pinch-zoom. (Claude Opus via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-18-plot-touch-scroll-hijack.md)
+
 - 2026-06-18 — **CI / screenshots**: Added `.github/workflows/screenshots.yml` — auto-generates documentation screenshots on every push to master and commits them back only when at least one PNG actually changed. Anti-loop guard skips the job when the triggering commit is the bot's own screenshot commit. (Claude Sonnet 4.6 via Claude Code)
 - 2026-06-17 — **Stage 6–8 / entity-selection**: Multi-select reorder + ⤢ sheet promotion (#736). Added `reorderMulti(dim, id, newIndex)` to `MultiSelectionState` / `EntitySelectionState` (anchor at index 0 locked; newIndex clamped to [1, length-1]). Redesigned `picker-summary-bar.svelte` to switch to individual draggable chips when `onReorder` + `ids` are provided — each non-anchor chip has a ⠿ drag-handle `<button>` with HTML5 drag-drop events and `Alt+ArrowUp/Down` shortcuts, plus ▲/▼ click buttons (disabled at limits) and a dedicated `aria-live="polite"` span for move announcements. Wired reorder in `material-tab.svelte` and `program-tab.svelte` via conditional-spread. Added `onOpenSheet` prop to `MaterialTab` and a mobile-only `⤢` button (`sm:hidden`) that opens the full-screen picker sheet; `entity-selection.svelte` passes the handler. 7 new unit tests. `pnpm check`/`lint`/`format:check` pass. (Claude Sonnet 4.6 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-17-issue-736-reorder-sheet.md)
