@@ -48,6 +48,9 @@ Playwright serves the built app with `pnpm preview`, so the safe local flow is:
 
 ```sh
 pnpm build
+```
+
+```sh
 pnpm test:e2e
 ```
 
