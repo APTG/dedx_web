@@ -48,7 +48,8 @@ async function preparePage(page: Page, path: string): Promise<void> {
   // Let WASM load + reactive state settle (no network chatter left).
   await page.waitForLoadState("networkidle");
   // Web fonts must be ready so text metrics (and wrapping) are stable across runs.
-  await page.evaluate(() => document.fonts.ready);
+  // Return void so Playwright doesn't try to serialize the FontFaceSet result.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
   // The build-info badge renders only after an async deploy.json fetch resolves
   // (build-info-badge.svelte). deploy.json is always produced by the prebuild
   // step, so the badge will appear — but waiting for networkidle alone can shoot
