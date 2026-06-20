@@ -50,7 +50,7 @@ digits       = 1*DIGIT`;
     },
     {
       title: "Feature specs",
-      href: `${repoBase}/docs/04-feature-specs/`,
+      href: "https://github.com/APTG/dedx_web/tree/master/docs/04-feature-specs/",
       description: "Per-feature specs with acceptance criteria",
     },
     {
@@ -96,7 +96,7 @@ digits       = 1*DIGIT`;
           <a
             href={doc.href}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             class="min-w-max font-medium underline hover:no-underline"
           >
             {doc.title}
