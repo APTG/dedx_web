@@ -93,7 +93,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     await saveBtn.click();
 
     // Inline error explains why.
-    await expect(page.getByText(/name is required/i)).toBeVisible();
+    await expect(page.locator("#compound-name-error")).toBeVisible();
     await expect(modal).toBeVisible(); // Modal should not close
   });
 
@@ -121,7 +121,7 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Pressing Save reveals the inline error and keeps the modal open.
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
-    await expect(page.getByText(/density must be/i)).toBeVisible();
+    await expect(page.locator("#compound-density-error")).toBeVisible();
     await expect(modal).toBeVisible();
   });
 
