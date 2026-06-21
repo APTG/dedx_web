@@ -37,10 +37,9 @@ test.describe("Contextual help — Program data source", () => {
     const pstarHint = page.getByTestId("picker-program-help-2");
     await expect(pstarHint).toBeVisible();
 
-    await pstarHint.getByRole("button").focus();
+    await pstarHint.click();
     await expect(page.getByRole("tooltip")).toContainText(/PSTAR/);
 
     // Opening the hint must not change the selected program.
     await expect(page.getByTestId("picker-tab-program")).toContainText(/Auto/);
-  });
 });
