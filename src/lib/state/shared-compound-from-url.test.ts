@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { createSharedCompoundFromUrl } from "./shared-compound-from-url.svelte";
 import { customCompounds } from "./custom-compounds.svelte";
 import type { decodeCalculatorUrl } from "$lib/utils/calculator-url";
@@ -30,6 +30,16 @@ describe("SharedCompoundFromUrl", () => {
 
   beforeEach(() => {
     flow = createSharedCompoundFromUrl();
+  });
+
+  afterEach(() => {
+    // Remove any transient compounds left by this test to avoid polluting the
+    // shared customCompounds singleton for subsequent tests in the same worker.
+    for (const c of customCompounds.compounds) {
+      if (customCompounds.isTransient(c.id)) {
+        customCompounds.removeTransient(c.id);
+      }
+    }
   });
 
   describe("restoreCustomCompoundFromUrl", () => {
