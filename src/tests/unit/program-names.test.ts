@@ -2,6 +2,10 @@ import { describe, test, expect } from "vitest";
 import {
   formatProgramName,
   getProgramFriendlyName,
+  getProgramDescription,
+  getProgramHelp,
+  PROGRAM_DESCRIPTIONS,
+  PROGRAM_HELP,
   PROGRAM_NAME_OVERRIDES,
 } from "$lib/config/program-names";
 
@@ -96,5 +100,35 @@ describe("getProgramFriendlyName", () => {
   test("falls back to formatProgramName for unknown IDs", () => {
     expect(getProgramFriendlyName(999, "NEWPROG")).toBe("NEWPROG");
     expect(getProgramFriendlyName(999, "NEW_PROG")).toBe("New Prog");
+  });
+});
+
+describe("PROGRAM_HELP", () => {
+  test("every program with a description also has a contextual-help entry", () => {
+    for (const id of PROGRAM_DESCRIPTIONS.keys()) {
+      expect(PROGRAM_HELP.has(id), `missing PROGRAM_HELP for program id ${id}`).toBe(true);
+    }
+  });
+
+  test("all help strings are non-empty and stay within the tooltip length budget", () => {
+    for (const text of PROGRAM_HELP.values()) {
+      expect(text.length).toBeGreaterThan(0);
+      expect(text.length).toBeLessThanOrEqual(150);
+    }
+  });
+
+  test("getProgramHelp returns the mapped text and undefined for unknown ids", () => {
+    expect(getProgramHelp(2)).toBe(PROGRAM_HELP.get(2));
+    expect(getProgramHelp(2)).toContain("PSTAR");
+    expect(getProgramHelp(999)).toBeUndefined();
+  });
+
+  test("contextual help is distinct from the terse subtitle", () => {
+    // The "what + why" help should be richer than the one-clause description.
+    for (const id of PROGRAM_HELP.keys()) {
+      const help = getProgramHelp(id)!;
+      const desc = getProgramDescription(id);
+      if (desc) expect(help).not.toBe(desc);
+    }
   });
 });
