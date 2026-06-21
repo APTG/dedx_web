@@ -42,4 +42,5 @@ test.describe("Contextual help — Program data source", () => {
 
     // Opening the hint must not change the selected program.
     await expect(page.getByTestId("picker-tab-program")).toContainText(/Auto/);
+  });
 });
