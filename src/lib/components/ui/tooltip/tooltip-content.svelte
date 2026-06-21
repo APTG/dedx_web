@@ -23,6 +23,7 @@
 <TooltipPortal {...portalProps}>
   <TooltipPrimitive.Content
     bind:ref
+    role="tooltip"
     data-slot="tooltip-content"
     {sideOffset}
     {side}
