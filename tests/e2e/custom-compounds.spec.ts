@@ -92,7 +92,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // and keeps the modal open instead of silently doing nothing.
     await saveBtn.click();
 
-    // Inline error explains why.
+    // Inline error explains why. Use ID to avoid strict-mode collision: the
+    // save-block-reason banner shows the same text as the field error.
     await expect(page.locator("#compound-name-error")).toBeVisible();
     await expect(modal).toBeVisible(); // Modal should not close
   });
@@ -121,6 +122,8 @@ test.describe("Custom Compounds — Editor Modal", () => {
     // Pressing Save reveals the inline error and keeps the modal open.
     const saveBtn = page.getByRole("button", { name: /save/i });
     await saveBtn.click();
+    // Use ID to avoid strict-mode collision: the save-block-reason banner
+    // shows the same text as the inline field error.
     await expect(page.locator("#compound-density-error")).toBeVisible();
     await expect(modal).toBeVisible();
   });
