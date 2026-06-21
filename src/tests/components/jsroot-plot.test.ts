@@ -40,7 +40,7 @@ afterEach(() => {
 });
 
 vi.mock("jsroot", () => ({
-  settings: { ZoomWheel: true, ZoomTouch: true },
+  settings: { ZoomWheel: true, ZoomTouch: true, DragGraphs: true },
   createTGraph: vi.fn((_n: number, _x: number[], _y: number[]) => ({
     fLineColor: 1,
     fLineWidth: 2,
@@ -265,6 +265,118 @@ describe("JsrootPlot", () => {
       fXaxis: { fTitle: string };
     };
     expect(hist.fXaxis.fTitle).toBe("Energy [MeV]");
+  });
+
+  it("declares touch-action on the canvas so swipe/pinch scroll the page", () => {
+    render(JsrootPlot, {
+      props: {
+        series: [],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+      },
+    });
+    const canvas = screen.getByRole("img");
+    expect(canvas.style.touchAction).toContain("pan-y");
+    expect(canvas.style.touchAction).toContain("pinch-zoom");
+  });
+
+  it("swallows middle-button mousedown so a middle-drag cannot pan the plot", async () => {
+    render(JsrootPlot, {
+      props: {
+        series: [],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+      },
+    });
+    const canvas = screen.getByRole("img");
+    // JSROOT binds its mousedown handler on a descendant; emulate one and check
+    // the container's capture-phase listener stops middle-button events.
+    const inner = document.createElement("div");
+    canvas.appendChild(inner);
+    const innerListener = vi.fn();
+    inner.addEventListener("mousedown", innerListener);
+
+    // Wait for the container-binding $effect to attach the capture listener.
+    await vi.waitFor(() => {
+      const probe = new MouseEvent("mousedown", { button: 1, bubbles: true, cancelable: true });
+      inner.dispatchEvent(probe);
+      expect(probe.defaultPrevented).toBe(true);
+    });
+
+    innerListener.mockClear();
+    inner.dispatchEvent(new MouseEvent("mousedown", { button: 1, bubbles: true }));
+    expect(innerListener).not.toHaveBeenCalled();
+
+    // Left-button mousedown (rectangular zoom) must still reach JSROOT.
+    inner.dispatchEvent(new MouseEvent("mousedown", { button: 0, bubbles: true }));
+    expect(innerListener).toHaveBeenCalledTimes(1);
+  });
+
+  it("disables ZoomWheel and keeps DragGraphs on fine-pointer (desktop) devices", async () => {
+    const JSROOT = await import("jsroot");
+    const settings = JSROOT.settings as { ZoomWheel: boolean; DragGraphs: boolean };
+    settings.ZoomWheel = true;
+    settings.DragGraphs = true;
+
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({})],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    expect(settings.ZoomWheel).toBe(false);
+    // Dragging TGraph points stays available on desktop (mouse only).
+    expect(settings.DragGraphs).toBe(true);
+  });
+
+  it("disables ZoomTouch and DragGraphs on coarse-pointer (touch) devices", async () => {
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: query.includes("coarse"),
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia;
+
+    try {
+      const JSROOT = await import("jsroot");
+      const settings = JSROOT.settings as { ZoomTouch: boolean; DragGraphs: boolean };
+      settings.ZoomTouch = true;
+      settings.DragGraphs = true;
+
+      render(JsrootPlot, {
+        props: {
+          series: [makeSeries({})],
+          preview: null,
+          stpUnit: "keV/µm" as StpUnit,
+          xLog: true,
+          yLog: true,
+          axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+        },
+      });
+
+      await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+      expect(settings.ZoomTouch).toBe(false);
+      expect(settings.DragGraphs).toBe(false);
+    } finally {
+      window.matchMedia = original;
+    }
   });
 
   it("sets requestExportSvg to an async function after container is bound", async () => {

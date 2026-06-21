@@ -594,15 +594,26 @@ Zoom and pan are enabled via click-drag interactions on the canvas.
   JSROOT's wheel-zoom feature must be explicitly disabled to prevent
   the plot from hijacking page scroll.
 - **Touch interactions on mobile/tablet: disabled.** On touch devices
-  (< 900px or `pointer: coarse`), JSROOT's touch-based zoom/pan must
-  be disabled to ensure normal page scrolling. Pinch-to-zoom and
-  touch-drag on the canvas must pass through to the browser's native
-  scroll/zoom behavior. Users can still interact with the plot via
-  the axis scale controls and the JSROOT toolbar (if available).
+  (`pointer: coarse`), JSROOT's touch-based zoom/pan must
+  be disabled to ensure normal page scrolling. This means disabling
+  both touch zoom (`ZoomTouch`) **and** interactive dragging of graph
+  points (`DragGraphs`, on by default) — otherwise a one-finger swipe
+  drags a data series under the user's finger instead of scrolling the
+  page. The canvas container also sets
+  `touch-action: pan-x pan-y pinch-zoom` so pinch-to-zoom and
+  touch-drag pass through to the browser's native scroll/zoom behavior.
+  Users can still interact with the plot via the axis scale controls
+  and the JSROOT toolbar (if available).
+- **Middle-button (and left+right) drag pan: disabled.** JSROOT's
+  `startRectSel()` pans the axes on `evnt.button === 1` (middle) or
+  `evnt.buttons === 3` (left+right), which looks like the data series
+  sliding sideways. There is no JSROOT setting to disable this without
+  also losing left-drag rectangular zoom, so these mousedown events are
+  swallowed in the capture phase before JSROOT's handler sees them.
 
 These restrictions ensure the plot never traps the user's scroll or
-touch gestures. On desktop, click-drag zoom and shift-drag pan remain
-available as deliberate interactions.
+touch gestures. On desktop, left-button click-drag zoom and
+double-click reset remain available as deliberate interactions.
 
 ---
 

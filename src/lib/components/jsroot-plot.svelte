@@ -182,6 +182,25 @@
     };
   });
 
+  // JSROOT pans the axes on a middle-button (or left+right) drag — its
+  // startRectSel() handles `evnt.button === 1 || evnt.buttons === 3`. That pan
+  // looks like the data series sliding sideways and there is no JSROOT setting
+  // to disable it without also losing left-drag rectangular zoom. Swallow those
+  // mousedowns in the capture phase, before JSROOT's mousedown handler (bound on
+  // the inner <svg>) ever sees them. Left-drag zoom and double-click reset stay.
+  $effect(() => {
+    if (!container) return;
+    const el = container;
+    const blockPan = (e: MouseEvent) => {
+      if (e.button === 1 || e.buttons === 3) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    };
+    el.addEventListener("mousedown", blockPan, { capture: true });
+    return () => el.removeEventListener("mousedown", blockPan, { capture: true });
+  });
+
   $effect(() => {
     if (!container) return;
     const el = container;
@@ -259,17 +278,29 @@
   ): Promise<{ painter: JsrootPainter; restore: () => void }> {
     const JSROOT = await getJsroot();
 
-    const prevZoomWheel = JSROOT.settings.ZoomWheel;
-    JSROOT.settings.ZoomWheel = false;
+    // JSROOT.settings is global; snapshot the flags we flip so cleanup can
+    // restore them (DragGraphs is not in jsroot's bundled types — widen here).
+    const settings = JSROOT.settings as typeof JSROOT.settings & { DragGraphs: boolean };
 
-    const prevZoomTouch = JSROOT.settings.ZoomTouch;
+    const prevZoomWheel = settings.ZoomWheel;
+    // Wheel scroll must scroll the page, never zoom the axes.
+    settings.ZoomWheel = false;
+
+    const prevZoomTouch = settings.ZoomTouch;
+    const prevDragGraphs = settings.DragGraphs;
     if (window.matchMedia("(pointer: coarse)").matches) {
-      JSROOT.settings.ZoomTouch = false;
+      // On touch devices every gesture must pass through to the browser so the
+      // page scrolls/zooms normally. Disable pinch-zoom of the axes (ZoomTouch)
+      // and dragging of TGraph points (DragGraphs, on by default) — the latter
+      // is what makes a one-finger swipe drag a data series under the finger.
+      settings.ZoomTouch = false;
+      settings.DragGraphs = false;
     }
 
     const restore = () => {
-      JSROOT.settings.ZoomWheel = prevZoomWheel;
-      JSROOT.settings.ZoomTouch = prevZoomTouch;
+      settings.ZoomWheel = prevZoomWheel;
+      settings.ZoomTouch = prevZoomTouch;
+      settings.DragGraphs = prevDragGraphs;
     };
 
     const mg = buildMultigraph(JSROOT, opts);
@@ -344,11 +375,13 @@
       Loading plot engine…
     </div>
   {/if}
+  <!-- touch-action lets the browser own scrolling and pinch-zoom of the page so
+       JSROOT's touch handlers can't hijack a swipe/pinch over the canvas. -->
   <div
     bind:this={container}
     role="img"
     aria-label="Stopping power vs energy plot with {numVisibleSeries} data series"
-    style="width: 100%; height: 100%;"
+    style="width: 100%; height: 100%; touch-action: pan-x pan-y pinch-zoom;"
     class:invisible={!jsrootReady}
   ></div>
 {/if}

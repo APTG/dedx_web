@@ -722,12 +722,12 @@
                     }}
                   />
                   {#if errors.name}
-                    <p class="text-sm text-destructive mt-1 absolute">{errors.name}</p>
+                    <p class="text-sm text-destructive mt-1">{errors.name}</p>
                   {/if}
                 </div>
               </div>
 
-              <div class="grid grid-cols-1 md:flex md:items-center gap-4 items-start">
+              <div class="grid grid-cols-1 md:flex items-start gap-4">
                 <div class="flex flex-col gap-2">
                   <div class="flex items-center gap-2">
                     <Label for="compound-density" class="whitespace-nowrap">Density (g/cm³)</Label>
@@ -998,7 +998,7 @@
 
                         <button
                           type="button"
-                          class="flex items-center gap-1 h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors whitespace-nowrap"
+                          class="flex items-center gap-1 h-[30px] px-2 text-xs font-medium text-muted-foreground hover:bg-destructive/10 hover:text-destructive rounded transition-colors whitespace-nowrap disabled:opacity-40 disabled:pointer-events-none disabled:hover:bg-transparent disabled:hover:text-muted-foreground"
                           onclick={() => {
                             confirmRemoveIndex = index;
                           }}

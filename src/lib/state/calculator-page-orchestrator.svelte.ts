@@ -19,15 +19,13 @@ import { stpOutputUnit } from "$lib/state/stp-unit.svelte";
 import { tokenToStpUnit } from "$lib/utils/stp-unit-codec";
 import { wasmReady } from "$lib/state/ui.svelte";
 import { WATER_ID } from "$lib/state/entity-selection.svelte";
-import {
-  customCompounds,
-  suggestCopyName,
-  type StoredCompoundInternal,
-} from "$lib/state/custom-compounds.svelte";
+import { customCompounds } from "$lib/state/custom-compounds.svelte";
 import { decodeCalculatorUrl, decodeInverseModeFromUrl } from "$lib/utils/calculator-url";
-import type { CustomCompoundPartial } from "$lib/utils/url-shared";
-import type { CompoundEditorPrefill } from "$lib/components/compound-editor/types";
 import { decodeMultiProgramUrl } from "$lib/state/multi-program.svelte";
+import {
+  createSharedCompoundFromUrl,
+  type SharedCompoundFromUrl,
+} from "$lib/state/shared-compound-from-url.svelte";
 import { externalDataService } from "$lib/external-data/service";
 import { setupCalculatorUrlSync } from "$lib/state/calculator-url-sync.svelte";
 import { setupMultiProgramCalculation } from "$lib/state/multi-program-calc.svelte";
@@ -50,20 +48,12 @@ export class CalculatorPageOrchestrator {
   multiProgState = $state<MultiProgramState | null>(null);
   multiEntityState = $state<MultiEntityState | null>(null);
   inverseLookupState = $state<InverseLookupState | null>(null);
-  sharedUrlCompound = $state<StoredCompoundInternal | null>(null);
-  sharedUrlWarning = $state<string | null>(null);
-  /** Best-effort `mat_*` fields from the URL, used to pre-fill the editor (Gap B). */
-  sharedUrlPartial = $state<CustomCompoundPartial | null>(null);
-  /** True when the shared URL carried `matsrc=transient` (sender never saved it). */
-  sharedUrlFromTransient = $state(false);
 
-  // "Edit & save copy" / failed-URL recovery editor (issue #648). A dedicated
-  // CompoundEditorModal instance lives on the calculator page so the flow works
-  // even when the entity-selection picker (which owns the library editor) is
-  // collapsed and unmounted.
-  compoundEditorOpen = $state(false);
-  compoundEditorPrefill = $state<CompoundEditorPrefill | null>(null);
-  compoundEditorWarning = $state<string | null>(null);
+  // Shared-compound-from-URL flow (banner + recovery editor, issue #648) lives in
+  // its own module (issue #763). The orchestrator holds an instance and exposes
+  // its surface via getters/delegating methods so the calculator page consumes it
+  // unchanged through this orchestrator.
+  sharedCompound: SharedCompoundFromUrl = createSharedCompoundFromUrl();
 
   // Structured, deep reactive view of all advanced options. Reading it registers
   // a dependency on EVERY option field (including nested + future ones) via
@@ -76,110 +66,49 @@ export class CalculatorPageOrchestrator {
     this.setupEffects();
   }
 
+  // --- Shared-compound-from-URL surface (delegated to `this.sharedCompound`) ---
+  // Kept on the orchestrator so `calculator/+page.svelte` consumes it unchanged.
+  // The flow itself lives in `shared-compound-from-url.svelte.ts` (issue #763).
+
+  get sharedUrlCompound() {
+    return this.sharedCompound.sharedUrlCompound;
+  }
+  get sharedUrlWarning() {
+    return this.sharedCompound.sharedUrlWarning;
+  }
+  get sharedUrlPartial() {
+    return this.sharedCompound.sharedUrlPartial;
+  }
+  get sharedUrlFromTransient() {
+    return this.sharedCompound.sharedUrlFromTransient;
+  }
+  get compoundEditorOpen() {
+    return this.sharedCompound.compoundEditorOpen;
+  }
+  get compoundEditorPrefill() {
+    return this.sharedCompound.compoundEditorPrefill;
+  }
+  get compoundEditorWarning() {
+    return this.sharedCompound.compoundEditorWarning;
+  }
+
   restoreCustomCompoundFromUrl(urlState: ReturnType<typeof decodeCalculatorUrl>) {
-    this.sharedUrlWarning = urlState.fromUrlWarning ?? null;
-    this.sharedUrlPartial = urlState.matPartial ?? null;
-    this.sharedUrlFromTransient = urlState.matSrc === "transient";
-    if (
-      !urlState.materialIsCustom ||
-      !urlState.matName ||
-      urlState.matDensity === undefined ||
-      !urlState.matElements?.length
-    ) {
-      return null;
-    }
-
-    const compound = customCompounds.addTransient({
-      name: urlState.matName,
-      density: urlState.matDensity,
-      iValue: urlState.matIval,
-      elements: urlState.matElements,
-      phase: urlState.matPhase ?? "condensed",
-    });
-    this.sharedUrlCompound = compound;
-    return compound;
+    return this.sharedCompound.restoreCustomCompoundFromUrl(urlState);
   }
-
-  /**
-   * Open the dedicated compound editor pre-filled from the shared URL — either
-   * the valid transient (deduplicated name) or, when the URL failed validation,
-   * the best-effort partial fields with an amber warning (issue #648).
-   */
   openSharedCompoundEditor() {
-    if (this.sharedUrlCompound) {
-      const copy = customCompounds.editAndSaveCopy(this.sharedUrlCompound);
-      this.compoundEditorPrefill = {
-        name: copy.name,
-        density: String(copy.density),
-        iValue: copy.iValue !== undefined ? String(copy.iValue) : "",
-        phase: copy.phase,
-        elements: copy.elements,
-      };
-    } else if (this.sharedUrlPartial) {
-      const p = this.sharedUrlPartial;
-      this.compoundEditorPrefill = {
-        name: p.name ? suggestCopyName(p.name, (n) => customCompounds.nameExists(n)) : "",
-        density: p.densityRaw,
-        iValue: p.iValueRaw,
-        phase: p.matPhase,
-        elements: p.elements.map((e) => ({ ...e })),
-      };
-    } else {
-      return;
-    }
-    this.compoundEditorWarning = this.sharedUrlWarning;
-    this.compoundEditorOpen = true;
+    this.sharedCompound.openSharedCompoundEditor();
   }
-
-  /**
-   * Persist the edited copy: create a new library entry, dismiss the transient
-   * and clear the shared-URL banner, then select the new entry.
-   */
-  saveSharedCompoundCopy(data: {
-    name: string;
-    density: number;
-    iValue?: number;
-    elements: Array<{ atomicNumber: number; atomCount: number }>;
-    phase: "gas" | "condensed";
-  }) {
-    const result = customCompounds.create(data);
-    if (!result.success) return;
-    if (this.sharedUrlCompound) {
-      customCompounds.removeTransient(this.sharedUrlCompound.id);
-    }
-    appInit.entityState?.selectMaterial(result.compound.id);
-    this.dismissSharedCompound();
-    this.closeSharedCompoundEditor();
+  saveSharedCompoundCopy(data: Parameters<SharedCompoundFromUrl["saveSharedCompoundCopy"]>[0]) {
+    this.sharedCompound.saveSharedCompoundCopy(data);
   }
-
   closeSharedCompoundEditor() {
-    this.compoundEditorOpen = false;
-    this.compoundEditorPrefill = null;
-    this.compoundEditorWarning = null;
+    this.sharedCompound.closeSharedCompoundEditor();
   }
-
-  /** Save the transient compound to the library as-is ("Save to library"). */
   saveSharedToLibrary() {
-    const c = this.sharedUrlCompound;
-    if (!c || !appInit.entityState) return;
-    const result = customCompounds.create({
-      name: c.name,
-      density: c.density,
-      iValue: c.iValue,
-      elements: c.elements,
-      phase: c.phase,
-    });
-    if (!result.success) return;
-    customCompounds.removeTransient(c.id);
-    appInit.entityState.selectMaterial(result.compound.id);
-    this.dismissSharedCompound();
+    this.sharedCompound.saveSharedToLibrary();
   }
-
   dismissSharedCompound() {
-    this.sharedUrlCompound = null;
-    this.sharedUrlWarning = null;
-    this.sharedUrlPartial = null;
-    this.sharedUrlFromTransient = false;
+    this.sharedCompound.dismissSharedCompound();
   }
 
   setupEffects() {
