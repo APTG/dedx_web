@@ -47,6 +47,16 @@ async function preparePage(page: Page, path: string): Promise<void> {
   await page.addStyleTag({ content: FREEZE_CSS });
   // Let WASM load + reactive state settle (no network chatter left).
   await page.waitForLoadState("networkidle");
+  // Web fonts must be ready so text metrics (and wrapping) are stable across runs.
+  // Return void so Playwright doesn't try to serialize the FontFaceSet result.
+  await page.evaluate(() => document.fonts.ready.then(() => undefined));
+  // The build-info badge renders only after an async deploy.json fetch resolves
+  // (build-info-badge.svelte). deploy.json is always produced by the prebuild
+  // step, so the badge will appear — but waiting for networkidle alone can shoot
+  // in the gap before it renders. Without this wait the footer is one ~16px line
+  // shorter on some runs, and fullPage:true bakes that into the PNG dimensions,
+  // churning the auto-generated screenshots PR (#755).
+  await page.getByText("Deployed:").waitFor({ state: "visible" });
 }
 
 /**
