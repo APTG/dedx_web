@@ -17,6 +17,8 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-06-20 — **Stage 8 / readme**: Rewrote README for mobile friendliness (issue #759) — replaced the "Try it" table with sub-header sections; moved developer doc links and E2E/security-policy instructions to the GitHub Pages technical-reference page (`docs/technical`); README now shows only project aim, v1/v2 history, prominent app links, and minimal "run locally" steps. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-20-readme-mobile-friendly.md)
 - 2026-06-18 — **CI / screenshots**: Fixed non-deterministic screenshot pixel dimensions (#755). `docs-screenshots.spec.ts` waited only for `networkidle`, so captures raced the async `deploy.json` fetch that renders the build-info badge — toggling one ~16px footer line that `fullPage:true` baked into the PNG height, churning the auto-update screenshots PR. `preparePage` now awaits `document.fonts.ready` and the badge (`getByText("Deployed:")`) before shooting. (Claude Opus 4.8 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-06-18-issue-755-screenshot-size.md)
 - 2026-06-18 — **CI / screenshots**: Added `.github/workflows/screenshots.yml` — auto-generates documentation screenshots on every push to master and commits them back only when at least one PNG actually changed. Anti-loop guard skips the job when the triggering commit is the bot's own screenshot commit. (Claude Sonnet 4.6 via Claude Code)
