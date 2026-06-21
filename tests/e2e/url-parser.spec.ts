@@ -280,17 +280,21 @@ test.describe("Stage 6.13 — URL parser", () => {
 
     await banner.getByTestId("compound-url-edit-copy").click();
 
-    // Amber notice present, density field flagged, Save disabled until fixed.
+    // Amber notice present, density field flagged, Save blocked until fixed.
     await expect(page.getByTestId("compound-editor-url-warning")).toBeVisible();
     const densityField = page.getByRole("spinbutton", { name: /density/i });
     await expect(densityField).toHaveAttribute("data-url-failed", "density");
     const editorDialog = page.getByRole("dialog", { name: "Compound Editor" });
     const saveBtn = editorDialog.getByRole("button", { name: "Save", exact: true });
-    await expect(saveBtn).toBeDisabled();
+    // Clicking Save while invalid keeps the editor open.
+    await saveBtn.click();
+    await expect(editorDialog).toBeVisible();
 
     await densityField.fill("2.64");
     await expect(densityField).not.toHaveAttribute("data-url-failed");
-    await expect(saveBtn).toBeEnabled();
+    // Once corrected, Save persists the compound and closes the editor.
+    await saveBtn.click();
+    await expect(editorDialog).not.toBeVisible();
   });
 
   test("matsrc=transient: receiver banner reflects the unsaved provenance @regression", async ({

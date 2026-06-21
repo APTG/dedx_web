@@ -12,16 +12,23 @@ import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
 const noop = () => {};
 
 function renderModal(overrides: Record<string, unknown> = {}) {
-  return render(CompoundEditorModal, {
+  const onSave = (overrides.onSave ?? vi.fn()) as unknown as ((data: unknown) => void) &
+    ReturnType<typeof vi.fn>;
+  const result = render(CompoundEditorModal, {
     props: {
       open: true,
       compound: null,
       onOpenChange: noop,
-      onSave: vi.fn(),
+      onSave,
       onDelete: noop,
       ...overrides,
     },
   });
+  return { ...result, onSave };
+}
+
+function blockReason() {
+  return screen.getByTestId("compound-save-block-reason");
 }
 
 function nameInput() {
@@ -60,44 +67,61 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     await flushDialog();
   });
 
-  it("enables Save for a valid single-element compound", async () => {
-    renderModal();
+  it("saves a valid single-element compound", async () => {
+    const { onSave } = renderModal();
     await fireEvent.input(nameInput(), { target: { value: "Hydrogen Gas" } });
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
-    expect(saveButton()).toBeEnabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).toHaveBeenCalledOnce();
   });
 
-  it("disables Save and shows the banner when an element appears twice", async () => {
-    renderModal();
+  it("blocks Save and shows the banner when an element appears twice", async () => {
+    const { onSave } = renderModal();
     await fireEvent.input(nameInput(), { target: { value: "Duplicate" } });
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
 
     // Li is present by default; add a second Li.
     await addElement("Li");
 
-    // The duplicate banner is shown AND Save is disabled — the exact behaviour
-    // PR #653 regressed (banner showed but Save stayed enabled).
+    // The duplicate banner is shown AND Save is blocked — the exact behaviour
+    // PR #653 regressed (banner showed but Save still saved).
     expect(screen.getByText(/appears twice/i)).toBeInTheDocument();
-    expect(saveButton()).toBeDisabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).not.toHaveBeenCalled();
+    expect(blockReason()).toHaveTextContent(/merge them first/i);
   });
 
-  it("disables Save while the name is empty", async () => {
-    renderModal();
+  it("blocks Save and reveals the reason while the name is empty", async () => {
+    const { onSave } = renderModal();
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
-    expect(saveButton()).toBeDisabled();
-    expect(screen.getByText(/name is required/i)).toBeInTheDocument();
+    // Deferred validation: nothing is flagged until the user attempts to save.
+    expect(screen.queryByText(/name is required/i)).not.toBeInTheDocument();
+    await fireEvent.click(saveButton());
+    expect(onSave).not.toHaveBeenCalled();
+    expect(blockReason()).toHaveTextContent(/name is required/i);
   });
 
-  it("disables Save when density exceeds the limit", async () => {
+  it("blocks Save when density exceeds the limit", async () => {
+    const { onSave } = renderModal();
+    await fireEvent.input(nameInput(), { target: { value: "Dense" } });
+    await fireEvent.input(densityInput(), { target: { value: "30" } });
+    await fireEvent.click(saveButton());
+    expect(onSave).not.toHaveBeenCalled();
+    expect(blockReason()).toHaveTextContent(/density must be/i);
+  });
+
+  it("defers the density error until the field is blurred", async () => {
     renderModal();
     await fireEvent.input(nameInput(), { target: { value: "Dense" } });
     await fireEvent.input(densityInput(), { target: { value: "30" } });
-    expect(saveButton()).toBeDisabled();
+    // No blur, no save attempt yet → inline error stays hidden.
+    expect(screen.queryByText(/density must be/i)).not.toBeInTheDocument();
+    await fireEvent.blur(densityInput());
     expect(screen.getByText(/density must be/i)).toBeInTheDocument();
   });
 
   it("pre-fills the form from a shared-URL prefill (Edit & save copy)", async () => {
-    renderModal({
+    const { onSave } = renderModal({
       prefill: {
         name: "LiF (copy)",
         density: "2.64",
@@ -113,11 +137,12 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     expect(densityInput()).toHaveValue(2.64);
     // No Delete button — this is create (copy) mode, not editing a library entry.
     expect(screen.queryByRole("button", { name: "Delete" })).not.toBeInTheDocument();
-    expect(saveButton()).toBeEnabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).toHaveBeenCalledOnce();
   });
 
-  it("shows the amber notice and disables Save for a failed-URL density (Gap B)", async () => {
-    renderModal({
+  it("shows the amber notice and blocks Save for a failed-URL density (Gap B)", async () => {
+    const { onSave } = renderModal({
       initialWarning: "mat_density invalid",
       prefill: {
         name: "Bad Density",
@@ -131,14 +156,16 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
       },
     });
     expect(screen.getByTestId("compound-editor-url-warning")).toBeInTheDocument();
-    // Density field is amber-flagged and Save stays disabled until it's fixed.
+    // Density field is amber-flagged and Save stays blocked until it's fixed.
     expect(densityInput()).toHaveAttribute("data-url-failed", "density");
-    expect(saveButton()).toBeDisabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).not.toHaveBeenCalled();
 
-    // Correcting the value clears the amber flag and re-enables Save.
+    // Correcting the value clears the amber flag and lets Save through.
     await fireEvent.input(densityInput(), { target: { value: "2.64" } });
     expect(densityInput()).not.toHaveAttribute("data-url-failed");
-    expect(saveButton()).toBeEnabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).toHaveBeenCalledOnce();
   });
 
   it("renders the formula footer with atom count and computed I-value (no crash on duplicates)", async () => {
@@ -171,7 +198,7 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
   });
 
   it("shows the sum tracker in weight mode and auto-rescales to 100%", async () => {
-    renderModal();
+    const { onSave } = renderModal();
     await fireEvent.input(nameInput(), { target: { value: "Rescale" } });
     await fireEvent.input(densityInput(), { target: { value: "1.0" } });
     await addElement("O");
@@ -184,11 +211,13 @@ describe("CompoundEditorModal — Save gating & derived UI", () => {
     await fireEvent.input(wf2, { target: { value: "50" } });
 
     expect(screen.getByTestId("compound-sum-status")).toHaveTextContent(/must equal 100/i);
-    expect(saveButton()).toBeDisabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).not.toHaveBeenCalled();
 
     await fireEvent.click(screen.getByTestId("compound-sum-rescale"));
 
     expect(screen.getByTestId("compound-sum-status")).toHaveTextContent(/within tolerance/i);
-    expect(saveButton()).toBeEnabled();
+    await fireEvent.click(saveButton());
+    expect(onSave).toHaveBeenCalledOnce();
   });
 });
