@@ -461,8 +461,7 @@ Blank → field cleared; `iValue` absent from stored compound.
 
 | Rule                | Error message / indicator                                              |
 | ------------------- | ---------------------------------------------------------------------- |
-| Sum ∈ [99.9, 100.1] | Live indicator shows current total; Save is blocked outside this range |
-
+| Sum ∈ [99.5, 100.5] | Live indicator shows current total; Save is blocked outside this range |
 ### 4.6 Validation interaction model (#767)
 
 Validation itself is pure (a function of form state), but **when** messages are
