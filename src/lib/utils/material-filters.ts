@@ -56,3 +56,50 @@ export function compareElements(a: MaterialLike, b: MaterialLike): number {
 export function compareByName(a: { name: string }, b: { name: string }): number {
   return a.name.localeCompare(b.name);
 }
+
+/**
+ * Searchable text index for a material row, shared by the picker surfaces.
+ * Externals expose their local id/label plus `ext external` so a free-text
+ * query for "external" surfaces them.
+ */
+export function materialSearchText(m: MaterialLike): string {
+  if (isExternalMaterial(m)) {
+    return `${m.localId} ${m.name} ${m.label} ext external`;
+  }
+  return `${m.id} ${m.name} ${m.rawName ?? ""}`;
+}
+
+/**
+ * Match the query against a material's searchable text. Supports a plain
+ * substring match plus density operators (advanced syntax):
+ *   ρ>N   ρ>=N   ρ<N   ρ<=N   ρ=N   (ASCII alias `rho` is also accepted).
+ */
+export function matchesMaterialQuery(m: MaterialLike, query: string): boolean {
+  const trimmed = query.trim().toLowerCase();
+  if (!trimmed) return true;
+  const rhoOp = trimmed.match(/^(?:ρ|rho)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)$/);
+  if (rhoOp) {
+    const density = m.density;
+    if (density === undefined) return false;
+    const n = Number(rhoOp[2]);
+    if (rhoOp[1] === ">=") return density >= n;
+    if (rhoOp[1] === "<=") return density <= n;
+    if (rhoOp[1] === ">") return density > n;
+    if (rhoOp[1] === "<") return density < n;
+    if (rhoOp[1] === "=") return Math.abs(density - n) < 0.0001;
+  }
+  return materialSearchText(m).toLowerCase().includes(trimmed);
+}
+
+/** Density value formatted for the `ρ=… g/cm³` label, or undefined if unknown. */
+export function formatDensity(m: MaterialLike): string | undefined {
+  if (isExternalMaterial(m)) {
+    return m.density !== undefined ? m.density.toFixed(4) : undefined;
+  }
+  return m.density.toFixed(m.density < 0.1 ? 4 : 2);
+}
+
+/** True when the material is a gas at standard conditions. */
+export function isGas(m: MaterialLike): boolean {
+  return !isExternalMaterial(m) && m.isGasByDefault;
+}
