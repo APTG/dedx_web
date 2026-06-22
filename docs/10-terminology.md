@@ -1,7 +1,9 @@
 # Terminology Glossary
 
-> **Status:** Final v3 (14 April 2026)
+> **Status:** Final v4 (21 June 2026)
 >
+> **v4:** Added §1 term **Program (Data Source)** — source of stopping-power /
+> range data; backs the contextual-help tooltips (`contextual-help.md`, #769).
 > **v3:** Developer/stack section expanded with four new terms: ADR, CI/CD, CORS, SSG.
 > **v2:** Terms sorted alphabetically within each section; term index added at top of page.
 > **v1:** Initial glossary — two-section structure, 29 terms.
@@ -23,22 +25,23 @@ Cross-references between terms are marked with "→ see also".
 
 ### §1 Physics & End-User Terms
 
-| Term                                                                | One-line summary                                                          |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| [Aggregate State](#aggregate-state)                                 | Gas vs condensed treatment of a material for I-value selection            |
-| [Bragg Additivity Rule](#bragg-additivity-rule)                     | Compound stopping power as weighted sum of elemental contributions        |
-| [Bragg Peak](#bragg-peak)                                           | Sharp dose maximum near the end of a charged particle's track             |
-| [CSDA Range](#csda-range)                                           | Path length to rest; integral of reciprocal stopping power                |
-| [Custom Compound](#custom-compound)                                 | User-defined material by elemental composition + density                  |
-| [ICRU 73 / ICRU 90](#icru-73--icru-90)                              | ICRU tabulated stopping-power reports for heavy ions and protons          |
-| [Mass Stopping Power](#mass-stopping-power)                         | Stopping power divided by density; unit MeV·cm²/g                         |
-| [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value) | Material constant in Bethe formula; unit eV                               |
-| [MeV/nucl vs MeV/u](#mevnucl-vs-mevu)                               | Energy per integer nucleon vs per actual atomic mass unit                 |
-| [MSTAR](#mstar)                                                     | Stopping-power program for heavy ions; 6 calculation modes                |
-| [Normalized Energy](#normalized-energy)                             | Kinetic energy expressed per unit particle mass                           |
-| [Particle](#particle)                                               | Any charged projectile (proton, ion, electron); preferred over "ion"      |
-| [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)                       | NIST stopping-power programs for protons, electrons, alphas               |
-| [Stopping Power](#stopping-power)                                   | Rate of energy loss per unit path length; electronic + nuclear components |
+| Term                                                                | One-line summary                                                           |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------------- |
+| [Aggregate State](#aggregate-state)                                 | Gas vs condensed treatment of a material for I-value selection             |
+| [Bragg Additivity Rule](#bragg-additivity-rule)                     | Compound stopping power as weighted sum of elemental contributions         |
+| [Bragg Peak](#bragg-peak)                                           | Sharp dose maximum near the end of a charged particle's track              |
+| [CSDA Range](#csda-range)                                           | Path length to rest; integral of reciprocal stopping power                 |
+| [Custom Compound](#custom-compound)                                 | User-defined material by elemental composition + density                   |
+| [ICRU 73 / ICRU 90](#icru-73--icru-90)                              | ICRU tabulated stopping-power reports for heavy ions and protons           |
+| [Mass Stopping Power](#mass-stopping-power)                         | Stopping power divided by density; unit MeV·cm²/g                          |
+| [Mean Excitation Energy (I-value)](#mean-excitation-energy-i-value) | Material constant in Bethe formula; unit eV                                |
+| [MeV/nucl vs MeV/u](#mevnucl-vs-mevu)                               | Energy per integer nucleon vs per actual atomic mass unit                  |
+| [MSTAR](#mstar)                                                     | Stopping-power program for heavy ions; 6 calculation modes                 |
+| [Normalized Energy](#normalized-energy)                             | Kinetic energy expressed per unit particle mass                            |
+| [Particle](#particle)                                               | Any charged projectile (proton, ion, electron); preferred over "ion"       |
+| [Program (Data Source)](#program-data-source)                       | Selectable source of stopping-power / range data: NIST, ICRU, MSTAR, Bethe |
+| [PSTAR / ESTAR / ASTAR](#pstar--estar--astar)                       | NIST stopping-power programs for protons, electrons, alphas                |
+| [Stopping Power](#stopping-power)                                   | Rate of energy loss per unit path length; electronic + nuclear components  |
 
 ### §2 Developer & Stack Terms
 
@@ -345,6 +348,41 @@ naming is confined to the WASM wrapper layer that calls C functions directly.
 
 Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) (preamble
 terminology note), [`06-wasm-api-contract.md`](06-wasm-api-contract.md) §2.2
+
+---
+
+### Program (Data Source)
+
+The **source of the stopping-power and CSDA-range numbers** for a calculation.
+The same particle in the same material yields slightly different values
+depending on which program is chosen, because each program is a different
+dataset or model. Choosing a program is therefore choosing a data source, not
+just a calculation mode — this is the single most common point of confusion for
+new users, so the picker labels it "data source" and offers inline help.
+
+Programs fall into three kinds (shown as the **TAB / FN / EXT** badge in the
+picker):
+
+| Kind    | Meaning                                     | Examples                              |
+| ------- | ------------------------------------------- | ------------------------------------- |
+| **TAB** | Tabulated data, interpolated from tables    | PSTAR, ASTAR, ESTAR, ICRU 49, ICRU 73 |
+| **FN**  | Analytical model computed from a formula    | Default (Bethe), Bethe Extended       |
+| **EXT** | External data loaded from a `.webdedx` file | user-supplied                         |
+
+**How to choose.** Prefer the program validated for your particle and energy
+range: PSTAR/ICRU 49 for protons, ASTAR for alphas, ESTAR for electrons,
+ICRU 73 or MSTAR for heavier ions, and the analytical Bethe formula only when no
+tabulated data exists. Programs that lack data for the current
+particle/material are greyed out, and **Auto-select** picks a sensible default.
+
+In the C API and TypeScript types a program is one kind of
+[Entity](#entity); the libdedx term is "program".
+
+→ see also: [PSTAR / ESTAR / ASTAR](#pstar--estar--astar), [MSTAR](#mstar),
+[ICRU 73 / ICRU 90](#icru-73--icru-90), [Entity](#entity)
+
+Used in: [`entity-selection.md`](04-feature-specs/entity-selection.md) § Program tab,
+[`contextual-help.md`](04-feature-specs/contextual-help.md)
 
 ---
 

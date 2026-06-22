@@ -80,3 +80,31 @@ export const PROGRAM_DESCRIPTIONS: ReadonlyMap<number, string> = new Map([
 export function getProgramDescription(id: number): string | undefined {
   return PROGRAM_DESCRIPTIONS.get(id);
 }
+
+/**
+ * Contextual-help text shown on the per-program "ⓘ" hint in the picker.
+ *
+ * Unlike {@link PROGRAM_DESCRIPTIONS} (a terse subtitle that says *what* the
+ * program covers), this map explains *what + why* — which data source it is and
+ * when it is the sensible choice. Wording is kept ≤150 chars and consistent with
+ * the PSTAR/ESTAR/ASTAR, MSTAR and ICRU entries in `docs/10-terminology.md`.
+ */
+export const PROGRAM_HELP: ReadonlyMap<number, string> = new Map([
+  [1, "ASTAR — NIST alpha-particle stopping powers (ICRU 49). Use for He-4."],
+  [2, "PSTAR — NIST proton stopping powers (ICRU 49). Best for protons in standard materials."],
+  [3, "ESTAR — NIST electron data (Berger). Covers all materials; energy entered in MeV."],
+  [4, "MSTAR — semi-empirical heavy-ion model (Z>2). Six modes available in Advanced; default B."],
+  [5, "ICRU 73 (old) — superseded revision of the ICRU heavy-ion tables; kept for comparison."],
+  [6, "ICRU 73 — tabulated heavy-ion (Z>2) stopping powers from ICRU Report 73."],
+  [7, "ICRU 49 — ICRU tabulated proton & alpha-particle stopping powers."],
+  [100, "Default (Bethe) — analytical Bethe formula for any ion. Use when no table exists."],
+  [101, "Bethe Extended — Bethe formula with extended corrections for any ion."],
+]);
+
+/**
+ * Returns the contextual-help ("what + why") text for a program, or undefined
+ * for unknown program IDs.
+ */
+export function getProgramHelp(id: number): string | undefined {
+  return PROGRAM_HELP.get(id);
+}
