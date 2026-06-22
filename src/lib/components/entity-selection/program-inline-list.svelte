@@ -3,9 +3,10 @@
   import type { ProgramEntity } from "$lib/wasm/types";
   import type { ExternalProgramEntity } from "$lib/state/external-compatibility";
   import type { SelectedProgram } from "$lib/state/entity-selection.svelte";
-  import { getProgramDescription } from "$lib/config/program-names";
+  import { getProgramDescription, getProgramHelp } from "$lib/config/program-names";
   import { programKind } from "$lib/utils/program-kind";
   import ProgramTag from "./program-tag.svelte";
+  import HelpHint from "$lib/components/help-hint.svelte";
 
   type AnyProgram = SelectedProgram | ProgramEntity | ExternalProgramEntity;
 
@@ -94,7 +95,8 @@
       {@const anchor = isMultiMode && isAnchor(program.id)}
       {@const isChecked = isMultiMode ? inMulti : isSingleSelected}
       {@const desc = getProgramDescription(program.id)}
-      <li role="presentation">
+      {@const help = getProgramHelp(program.id)}
+      <li role="presentation" class="flex items-center gap-1">
         <button
           type="button"
           role="option"
@@ -104,7 +106,7 @@
           tabindex={-1}
           disabled={isMultiMode && anchor}
           class={cn(
-            "flex w-full items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
+            "flex flex-1 items-center gap-2 rounded px-2 py-1.5 text-sm text-left hover:bg-accent",
             isChecked && "ring-1 ring-inset ring-orange-400 bg-orange-50/60 font-semibold",
           )}
           onclick={() => {
@@ -129,6 +131,15 @@
             <ProgramTag kind={programKind(program.id)} />
           </span>
         </button>
+        {#if help}
+          <HelpHint
+            text={help}
+            label="About {program.name}"
+            side="left"
+            class="mr-1"
+            testId="picker-program-help-{program.id}"
+          />
+        {/if}
       </li>
     {/each}
 

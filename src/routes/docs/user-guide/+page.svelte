@@ -37,7 +37,7 @@
     <p class="text-sm text-muted-foreground">Two-minute tour below. Jump to a section:</p>
     <nav aria-label="On this page">
       <ul class="flex flex-wrap gap-2 text-sm">
-        {#each [["calculator", "Calculator"], ["plot", "Plot"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
+        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["plot", "Plot"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
           <li>
             <a
               href={`#${id}`}
@@ -90,6 +90,43 @@
         </li>
       {/each}
     </ol>
+  </section>
+
+  <!-- 1b. CHOOSING A PROGRAM --------------------------------------------- -->
+  <section id="choosing-a-program" class="scroll-mt-24 space-y-4">
+    <h2 class="text-2xl font-semibold">Choosing a program (data source)</h2>
+    <p class="text-muted-foreground">
+      The <strong class="text-foreground">program</strong> is the
+      <strong class="text-foreground">source of the numbers</strong> — the same particle in the same
+      material gives slightly different stopping power and range depending on which dataset or model
+      you pick. That is why the picker calls it a "data source". Leave it on
+      <strong class="text-foreground">Auto-select</strong> to let webdedx choose a compatible one, or
+      pick explicitly. Programs that have no data for the current particle/material are greyed out.
+    </p>
+    <p class="text-muted-foreground">Programs come in three kinds, shown as a small badge:</p>
+    <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+      <li>
+        <strong class="text-foreground">▦ DATA (tabulated)</strong> — values interpolated from
+        published tables: <strong class="text-foreground">PSTAR</strong> (protons, NIST/ICRU 49),
+        <strong class="text-foreground">ASTAR</strong> (alpha particles),
+        <strong class="text-foreground">ESTAR</strong> (electrons),
+        <strong class="text-foreground">ICRU 73</strong> and
+        <strong class="text-foreground">MSTAR</strong> (heavier ions).
+      </li>
+      <li>
+        <strong class="text-foreground">∫ FN (analytical)</strong> — computed from a formula (<strong
+          class="text-foreground">Bethe</strong
+        >). Use when no tabulated data exists for your case.
+      </li>
+      <li>
+        <strong class="text-foreground">🔗 EXT (external)</strong> — loaded from a
+        <code>.webdedx</code> file you supply (see External data below).
+      </li>
+    </ul>
+    <p class="text-muted-foreground">
+      Rule of thumb: prefer the tabulated program validated for your particle and energy range, and
+      fall back to the analytical Bethe model only when nothing tabulated covers it.
+    </p>
   </section>
 
   <!-- 2. PLOT ------------------------------------------------------------ -->
