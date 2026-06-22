@@ -318,6 +318,57 @@ describe("JsrootPlot", () => {
     expect(innerListener).toHaveBeenCalledTimes(1);
   });
 
+  it("disables ZoomTouch and DragGraphs on touch-capable devices even when (pointer: coarse) is false", async () => {
+    // Regression test for #774: some mobile browsers return false for (pointer: coarse)
+    // even though the device is touch-capable. maxTouchPoints > 0 must also trigger protection.
+    const original = window.matchMedia;
+    window.matchMedia = ((query: string) => ({
+      matches: false, // coarse query returns false — simulates the affected environment
+      media: query,
+      onchange: null,
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    })) as typeof window.matchMedia;
+
+    const originalMaxTouchPointsDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "maxTouchPoints",
+    );
+    Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
+
+    try {
+      const JSROOT = await import("jsroot");
+      const settings = JSROOT.settings as { ZoomTouch: boolean; DragGraphs: boolean };
+      settings.ZoomTouch = true;
+      settings.DragGraphs = true;
+
+      render(JsrootPlot, {
+        props: {
+          series: [makeSeries({})],
+          preview: null,
+          stpUnit: "keV/µm" as StpUnit,
+          xLog: true,
+          yLog: true,
+          axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+        },
+      });
+
+      await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+      expect(settings.ZoomTouch).toBe(false);
+      expect(settings.DragGraphs).toBe(false);
+    } finally {
+      window.matchMedia = original;
+      if (originalMaxTouchPointsDescriptor) {
+        Object.defineProperty(navigator, "maxTouchPoints", originalMaxTouchPointsDescriptor);
+      } else {
+        delete (navigator as unknown as Record<string, unknown>)["maxTouchPoints"];
+      }
+    }
+  });
+
   it("disables ZoomWheel and keeps DragGraphs on fine-pointer (desktop) devices", async () => {
     const JSROOT = await import("jsroot");
     const settings = JSROOT.settings as { ZoomWheel: boolean; DragGraphs: boolean };

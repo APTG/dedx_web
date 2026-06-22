@@ -130,8 +130,9 @@ describe("materialSearchText", () => {
     expect(materialSearchText(water)).toBe("276 Water WATER, LIQUID");
   });
 
-  test("omits rawName when absent", () => {
-    expect(materialSearchText(builtin(6, "Carbon"))).toBe("6 Carbon ");
+  test("includes id and name when rawName is absent", () => {
+    const text = materialSearchText(builtin(6, "Carbon")).trim();
+    expect(text).toBe("6 Carbon");
   });
 
   test("exposes localId/label plus `ext external` for externals", () => {
