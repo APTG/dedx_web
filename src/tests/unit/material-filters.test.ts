@@ -6,6 +6,10 @@ import {
   inCompounds,
   compareElements,
   compareByName,
+  materialSearchText,
+  matchesMaterialQuery,
+  formatDensity,
+  isGas,
   type MaterialLike,
 } from "$lib/utils/material-filters";
 import type { MaterialEntity } from "$lib/wasm/types";
@@ -112,5 +116,100 @@ describe("compareByName", () => {
       "Beryllium",
       "Zinc",
     ]);
+  });
+});
+
+describe("materialSearchText", () => {
+  test("includes id, name and rawName for built-ins", () => {
+    const water = {
+      id: 276,
+      name: "Water",
+      rawName: "WATER, LIQUID",
+      density: 1,
+    } as MaterialEntity;
+    expect(materialSearchText(water)).toBe("276 Water WATER, LIQUID");
+  });
+
+  test("includes id and name when rawName is absent", () => {
+    const text = materialSearchText(builtin(6, "Carbon")).trim();
+    expect(text).toBe("6 Carbon");
+  });
+
+  test("exposes localId/label plus `ext external` for externals", () => {
+    expect(materialSearchText(external("c", "Carbon", 6))).toBe("c Carbon srim ext external");
+  });
+});
+
+describe("matchesMaterialQuery", () => {
+  const water = { id: 276, name: "Water", density: 1, isGasByDefault: false } as MaterialEntity;
+
+  test("empty query matches everything", () => {
+    expect(matchesMaterialQuery(water, "")).toBe(true);
+    expect(matchesMaterialQuery(water, "   ")).toBe(true);
+  });
+
+  test("plain substring match is case-insensitive", () => {
+    expect(matchesMaterialQuery(water, "wat")).toBe(true);
+    expect(matchesMaterialQuery(water, "WATER")).toBe(true);
+    expect(matchesMaterialQuery(water, "helium")).toBe(false);
+  });
+
+  test("density operators compare against the material density", () => {
+    expect(matchesMaterialQuery(water, "ρ>0.5")).toBe(true);
+    expect(matchesMaterialQuery(water, "ρ<0.5")).toBe(false);
+    expect(matchesMaterialQuery(water, "ρ>=1")).toBe(true);
+    expect(matchesMaterialQuery(water, "ρ<=1")).toBe(true);
+    expect(matchesMaterialQuery(water, "ρ=1")).toBe(true);
+    expect(matchesMaterialQuery(water, "ρ=2")).toBe(false);
+  });
+
+  test("ASCII `rho` alias is accepted", () => {
+    expect(matchesMaterialQuery(water, "rho>0.5")).toBe(true);
+  });
+
+  test("density operator fails when density is unknown", () => {
+    expect(matchesMaterialQuery(external("mix", "Mixture"), "ρ>0")).toBe(false);
+  });
+});
+
+describe("formatDensity", () => {
+  test("uses 2 decimals for built-ins at or above 0.1", () => {
+    expect(formatDensity(builtin(6))).toBe("1.00");
+  });
+
+  test("uses 4 decimals for built-ins below 0.1", () => {
+    const gas = {
+      id: 1,
+      name: "Hydrogen",
+      density: 0.00008,
+      isGasByDefault: true,
+    } as MaterialEntity;
+    expect(formatDensity(gas)).toBe("0.0001");
+  });
+
+  test("uses 4 decimals for externals with a density", () => {
+    const ext = { ...external("c", "Carbon", 6), density: 2.25 } as ExternalOnlyMaterial;
+    expect(formatDensity(ext)).toBe("2.2500");
+  });
+
+  test("returns undefined for externals without a density", () => {
+    expect(formatDensity(external("mix", "Mixture"))).toBeUndefined();
+  });
+});
+
+describe("isGas", () => {
+  test("true only for built-ins flagged gas by default", () => {
+    const gas = {
+      id: 1,
+      name: "Hydrogen",
+      density: 0.00008,
+      isGasByDefault: true,
+    } as MaterialEntity;
+    expect(isGas(gas)).toBe(true);
+    expect(isGas(builtin(6))).toBe(false);
+  });
+
+  test("externals are never reported as gas", () => {
+    expect(isGas(external("c", "Carbon", 6))).toBe(false);
   });
 });

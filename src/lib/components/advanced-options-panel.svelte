@@ -29,6 +29,8 @@
     methodToSelectValue,
     nextInterpolationForScale,
     nextInterpolationForMethod,
+    type ScaleSelectValue,
+    type MethodSelectValue,
   } from "$lib/utils/advanced-options-fields";
 
   interface Props {
@@ -172,7 +174,9 @@
 
   // Handle scale select change - maps Select values to internal values
   function handleScaleSelectChange(value: string) {
-    applyInterpolation(nextInterpolationForScale(advancedOptions.value.interpolation, value));
+    applyInterpolation(
+      nextInterpolationForScale(advancedOptions.value.interpolation, value as ScaleSelectValue),
+    );
   }
 
   // Local state for method select (maps internal "linear"/"cubic" to select values "linear"/"spline")
@@ -182,7 +186,9 @@
 
   // Handle method select change - maps "spline" -> "cubic", "linear" -> "linear" (delete)
   function handleMethodSelectChange(value: string) {
-    applyInterpolation(nextInterpolationForMethod(advancedOptions.value.interpolation, value));
+    applyInterpolation(
+      nextInterpolationForMethod(advancedOptions.value.interpolation, value as MethodSelectValue),
+    );
   }
 
   // Get current aggregate state for toggle highlighting

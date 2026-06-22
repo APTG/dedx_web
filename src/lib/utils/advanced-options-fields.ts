@@ -94,7 +94,7 @@ export function methodToSelectValue(method: Interpolation["method"]): MethodSele
  */
 export function nextInterpolationForScale(
   current: Interpolation | undefined,
-  selectValue: string,
+  selectValue: ScaleSelectValue,
 ): Interpolation | undefined {
   if (selectValue === "lin-lin") {
     return { ...current, scale: "linear" };
@@ -111,7 +111,7 @@ export function nextInterpolationForScale(
  */
 export function nextInterpolationForMethod(
   current: Interpolation | undefined,
-  selectValue: string,
+  selectValue: MethodSelectValue,
 ): Interpolation | undefined {
   if (selectValue === "spline") {
     return { ...current, method: "cubic" };

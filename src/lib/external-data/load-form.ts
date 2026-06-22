@@ -57,16 +57,16 @@ export function validateExternalUrl(url: string): string | null {
 }
 
 /**
- * Find an unused label by appending `-2`, `-3`, … to `base`. Falls back to
- * `base` itself if no free suffix is found within 100 attempts.
+ * Find an unused label by checking `base` first, then appending `-2`, `-3`, …
+ * Falls back to `base` itself if all candidates up to `-99` are taken.
  */
 export function nextAvailableLabel(base: string, existingLabels: Set<string>): string {
-  let candidate = base;
-  for (let i = 2; i < 100; i++) {
-    if (!existingLabels.has(candidate)) break;
-    candidate = `${base}-${i}`;
+  if (!existingLabels.has(base)) return base;
+  for (let i = 2; i <= 99; i++) {
+    const candidate = `${base}-${i}`;
+    if (!existingLabels.has(candidate)) return candidate;
   }
-  return candidate;
+  return base;
 }
 
 /** First http(s) URL from dropped text (uri-list/plain), or null. */
@@ -92,7 +92,9 @@ export function loadRecents(): ExternalRecent[] {
   if (typeof localStorage === "undefined") return [];
   try {
     const raw = localStorage.getItem(RECENTS_KEY);
-    return raw ? (JSON.parse(raw) as ExternalRecent[]) : [];
+    if (!raw) return [];
+    const parsed: unknown = JSON.parse(raw);
+    return Array.isArray(parsed) ? (parsed as ExternalRecent[]) : [];
   } catch {
     return [];
   }
