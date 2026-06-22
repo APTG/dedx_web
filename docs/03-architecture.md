@@ -30,6 +30,7 @@ dedx_web/
 │   │   │   ├── calculator.svelte.ts              # createCalculatorState: energy rows → calculated rows
 │   │   │   ├── calculator-engine.svelte.ts       # WASM calc orchestration for the calculator
 │   │   │   ├── calculator-page-orchestrator.svelte.ts  # Wires calculator state + URL sync per page
+│   │   │   ├── shared-compound-from-url.svelte.ts  # Shared-compound-from-URL flow (extracted from orchestrator)
 │   │   │   ├── calculator-url-sync.svelte.ts     # Calculator state ↔ URL ($effect writer)
 │   │   │   ├── energy-rows.svelte.ts             # Energy textarea rows + per-line parse
 │   │   │   ├── inverse-lookups.svelte.ts         # Advanced inverse (Range→, STP→) row state
@@ -54,6 +55,7 @@ dedx_web/
 │   │   ├── components/                 # UI components (§5)
 │   │   │   ├── entity-selection/       # Tabbed entity picker subtree (tabs, sheet, toolbar, views)
 │   │   │   ├── results/                # table-basic/advanced/multi/inverse-stp, table-multi-program, unit-anchor-strip, …
+│   │   │   │   ├── table-advanced-helpers.ts  # Pure anchor-option/class/label/paste helpers for table-advanced
 │   │   │   │   └── multi-program/      # Multi-program comparison table cell/header partials
 │   │   │   ├── compound-editor/        # Custom-compound editor parts (desktop + mobile sheet)
 │   │   │   ├── calculator/             # advanced-hint, shared-compound-alert
@@ -66,9 +68,12 @@ dedx_web/
 │   │   │   └── url-version-warning-banner.svelte
 │   │   ├── export/                     # csv.ts, pdf.ts, plot-csv.ts, plot-image.ts, utils.ts
 │   │   ├── external-data/              # External .webdedx (Zarr/FSDH) loader, schema, service
+│   │   │   └── load-form.ts            # Pure load-modal form logic (URL/label validation, recents, drop parse)
 │   │   ├── utils/                      # Pure helpers (unit conversions, URL grammar+AST, parsers)
 │   │   │   ├── energy-conversions.ts   # MeV ↔ MeV/nucl ↔ MeV/u (particle-aware)
 │   │   │   ├── unit-conversions.ts     # MeV·cm²/g ↔ MeV/cm ↔ keV/µm; range g/cm² ↔ cm
+│   │   │   ├── advanced-options-fields.ts  # Density/I-value format+validate, interpolation select mapping
+│   │   │   ├── material-filters.ts     # Material search/match (ρ operators), density format, gas flag
 │   │   │   ├── url-grammar.peggy        # Peggy grammar → url-ast.ts via url-parse.ts (§4.5)
 │   │   │   └── …                        # energy-parser, calculator-url, plot-url, inverse-*, series-labels
 │   │   ├── config/                     # Display-name tables (programs, particles, materials)
