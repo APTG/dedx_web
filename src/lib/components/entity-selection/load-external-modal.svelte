@@ -5,21 +5,17 @@
   import { ExternalDataError } from "$lib/external-data/errors";
   import type { ExternalSourceDescriptor } from "$lib/external-data/types";
   import type { ExternalStoreMetadata } from "$lib/external-data/schema";
-
-  const RECENTS_KEY = "webdedx.externalRecents.v1";
-  const MAX_RECENTS = 5;
-  const LABEL_RE = /^[A-Za-z0-9_-]+$/;
-  /** Matches https:// … .webdedx with optional trailing slash. */
-  const HTTPS_URL_RE = /^https:\/\/.+\.webdedx\/?$/i;
-  const LOCALHOST_HTTP_URL_RE =
-    /^http:\/\/(localhost|127\.0\.0\.1|\[::1\])(?::\d+)?\/.+\.webdedx\/?$/i;
-
-  interface ExternalRecent {
-    url: string;
-    label: string;
-    name: string;
-    loadedAt: number;
-  }
+  import {
+    sanitizeLabel,
+    labelFromUrl,
+    validateLabelValue,
+    validateExternalUrl,
+    nextAvailableLabel,
+    firstDroppedUrl,
+    loadRecents,
+    recordRecent,
+    type ExternalRecent,
+  } from "$lib/external-data/load-form";
 
   interface Props {
     open: boolean;
@@ -77,60 +73,6 @@
     recents = loadRecents();
   });
 
-  function loadRecents(): ExternalRecent[] {
-    if (typeof localStorage === "undefined") return [];
-    try {
-      const raw = localStorage.getItem(RECENTS_KEY);
-      return raw ? (JSON.parse(raw) as ExternalRecent[]) : [];
-    } catch {
-      return [];
-    }
-  }
-
-  function saveRecent(url: string, label: string, name: string) {
-    if (typeof localStorage === "undefined") return;
-    const entry: ExternalRecent = { url, label, name, loadedAt: Date.now() };
-    const updated = [entry, ...loadRecents().filter((r) => r.url !== url)].slice(0, MAX_RECENTS);
-    try {
-      localStorage.setItem(RECENTS_KEY, JSON.stringify(updated));
-    } catch {
-      // Best-effort persistence only — don't block a successful source load.
-    }
-    recents = updated;
-  }
-
-  function labelFromUrl(url: string): string {
-    try {
-      const u = new URL(url);
-      const stem = u.pathname.split("/").filter(Boolean).pop() ?? "";
-      return sanitizeLabel(stem.replace(/\.webdedx$/i, ""));
-    } catch {
-      return "ext";
-    }
-  }
-
-  function sanitizeLabel(raw: string): string {
-    const clean = raw
-      .replace(/[^A-Za-z0-9_-]/g, "-")
-      .replace(/-+/g, "-")
-      .replace(/^-|-$/g, "");
-    return clean.slice(0, 32) || "ext";
-  }
-
-  function validateLabelValue(value: string): string | null {
-    if (!value.trim()) return "Label is required";
-    if (!LABEL_RE.test(value)) return "Use only letters, digits, - and _";
-    if (existingLabels.has(value)) return `"${value}" is already loaded`;
-    return null;
-  }
-
-  function validateExternalUrl(url: string): string | null {
-    if (!HTTPS_URL_RE.test(url) && !LOCALHOST_HTTP_URL_RE.test(url)) {
-      return "Must be https://… .webdedx (http://localhost allowed)";
-    }
-    return null;
-  }
-
   // --- URL tab handlers ---
 
   function handleUrlInput(value: string) {
@@ -165,7 +107,7 @@
       urlError = ue;
       return;
     }
-    const le = validateLabelValue(label);
+    const le = validateLabelValue(label, existingLabels);
     if (le) {
       labelError = le;
       return;
@@ -175,7 +117,7 @@
     loadError = null;
     try {
       const metadata = await externalDataService.loadFromUrl(url, label);
-      saveRecent(url, label, metadata.name || label);
+      recents = recordRecent(url, label, metadata.name || label);
       onLoad({ label, url }, metadata);
     } catch (err) {
       loadError = err instanceof ExternalDataError ? err.message : String(err);
@@ -185,20 +127,11 @@
   }
 
   function handleRecentClick(recent: ExternalRecent) {
-    if (existingLabels.has(recent.label)) {
-      urlValue = recent.url;
-      // Generate a fresh label since the stored one is taken
-      const base = recent.label;
-      let candidate = base;
-      for (let i = 2; i < 100; i++) {
-        if (!existingLabels.has(candidate)) break;
-        candidate = `${base}-${i}`;
-      }
-      labelValue = candidate;
-    } else {
-      urlValue = recent.url;
-      labelValue = recent.label;
-    }
+    urlValue = recent.url;
+    // Generate a fresh label if the stored one is already taken.
+    labelValue = existingLabels.has(recent.label)
+      ? nextAvailableLabel(recent.label, existingLabels)
+      : recent.label;
     labelAutoFilled = false;
     urlError = null;
     labelError = null;
@@ -235,7 +168,7 @@
       return;
     }
     const label = fileLabel.trim();
-    const le = validateLabelValue(label);
+    const le = validateLabelValue(label, existingLabels);
     if (le) {
       fileLabelError = le;
       return;
@@ -287,10 +220,10 @@
     }
 
     // Fallback: check for a dragged URL (e.g. link from browser address bar)
-    const uriList = e.dataTransfer?.getData("text/uri-list");
-    const text = e.dataTransfer?.getData("text/plain");
-    const dropped = (uriList || text || "").trim().split("\n")[0]?.trim() ?? "";
-    if (/^https?:\/\//i.test(dropped)) {
+    const uriList = e.dataTransfer?.getData("text/uri-list") ?? "";
+    const text = e.dataTransfer?.getData("text/plain") ?? "";
+    const dropped = firstDroppedUrl(uriList, text);
+    if (dropped) {
       activeTab = "url";
       handleUrlInput(dropped);
       urlError = validateExternalUrl(dropped);
