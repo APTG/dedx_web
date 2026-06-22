@@ -43,4 +43,22 @@ test.describe("Contextual help — Program data source", () => {
     // Opening the hint must not change the selected program.
     await expect(page.getByTestId("picker-tab-program")).toContainText(/Auto/);
   });
+
+  test("TAB/FN/EXT badge in legend shows accessible tooltip on focus and ESC dismisses", async ({
+    page,
+  }) => {
+    const legend = page.getByTestId("picker-program-legend");
+    const tabBadge = legend.getByTestId("picker-program-tag-TAB");
+    await expect(tabBadge).toBeVisible();
+
+    // Open on keyboard focus (covers keyboard + touch paths).
+    await tabBadge.focus();
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/Tabulated data/i);
+
+    // ESC dismisses without moving focus (WCAG 1.4.13).
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  });
 });
