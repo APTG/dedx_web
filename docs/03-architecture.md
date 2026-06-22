@@ -42,6 +42,7 @@ dedx_web/
 │   │   │   ├── advanced-mode.svelte.ts           # Basic/Advanced toggle (localStorage + URL)
 │   │   │   ├── advanced-options.svelte.ts        # Density/I-value/state/interp/MSTAR options
 │   │   │   ├── custom-compounds.svelte.ts        # User compounds CRUD (localStorage)
+│   │   │   ├── compound-editor.svelte.ts         # createCompoundEditorState: shared editor logic (desktop + mobile)
 │   │   │   ├── stp-unit.svelte.ts                # Shared STP output unit (sunit=)
 │   │   │   ├── export.svelte.ts                  # CSV/PDF/image export state
 │   │   │   ├── plot.svelte.ts                    # createPlotState: series model
@@ -833,7 +834,15 @@ current picker.
 Custom compounds require the stateful `dedx_config` WASM API path. The flow:
 
 1. User defines a compound in the `compound-editor-modal.svelte` modal (desktop)
-   or the `compound-editor/mobile-sheet.svelte` (phones).
+   or the `compound-editor/mobile-sheet.svelte` (phones). Both are thin views
+   over one shared rune-based state factory,
+   `state/compound-editor.svelte.ts` (`createCompoundEditorState`), which owns
+   the editor behaviour — composition rows, atom-count vs %-by-mass mode,
+   duplicate-Z detection, sum tracking / rescale-to-100, formula & preset
+   application, deferred validation, and save/cancel. The modal only wires the
+   factory to the desktop (`compound-editor/desktop-sheet.svelte`) and mobile
+   views and runs the open/`load()` lifecycle; the pure helpers it calls live
+   in `utils/compound-derive.ts` and `utils/formula-parser.ts`.
 2. The compound is stored in `localStorage` as a `StoredCompoundInternal`
    (with UUID, phase, timestamp — managed by `custom-compounds.svelte.ts`; see
    [`04-feature-specs/custom-compounds.md`](04-feature-specs/custom-compounds.md)).
