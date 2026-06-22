@@ -13,7 +13,7 @@
 Use one bullet per session (newest first):
 
 - `<YYYY-MM-DD>` — **<stage>**: <description> (`<model> via <tool>`)
-  - **Log:** [log](docs/ai-logs/YYYY-MM-DD-<slug>.md)
+  - **Log:** [log](docs/ai-logs/YYYY-MM-DD-<slug>.md) _(omit for trivial changes: < 3 files, no decisions)_
 
 ## Entries (newest first)
 

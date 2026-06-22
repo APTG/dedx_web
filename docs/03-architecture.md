@@ -30,7 +30,7 @@ dedx_web/
 │   │   │   ├── calculator.svelte.ts              # createCalculatorState: energy rows → calculated rows
 │   │   │   ├── calculator-engine.svelte.ts       # WASM calc orchestration for the calculator
 │   │   │   ├── calculator-page-orchestrator.svelte.ts  # Wires calculator state + URL sync per page
-│   │   │   ├── shared-compound-from-url.svelte.ts # Shared-compound-from-URL flow (extracted from orchestrator)
+│   │   │   ├── shared-compound-from-url.svelte.ts  # Shared-compound-from-URL flow (extracted from orchestrator)
 │   │   │   ├── calculator-url-sync.svelte.ts     # Calculator state ↔ URL ($effect writer)
 │   │   │   ├── energy-rows.svelte.ts             # Energy textarea rows + per-line parse
 │   │   │   ├── inverse-lookups.svelte.ts         # Advanced inverse (Range→, STP→) row state
