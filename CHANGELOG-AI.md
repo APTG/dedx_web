@@ -18,6 +18,7 @@ Use one bullet per session (newest first):
 ## Entries (newest first)
 
 - 2026-06-22 — **bug fix / plot**: Hardened touch detection for JSROOT plot (#774) — combined `(pointer: coarse)` with `navigator.maxTouchPoints > 0` so touch devices where the media query returns false still have `DragGraphs` and `ZoomTouch` disabled; added regression test. (Claude Sonnet 4.6 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-06-22-issue-774-touch-detection.md)
 
 - 2026-06-21 — **CI / E2E fix**: Fixed failing "E2E Tests (Playwright 1/3)" by (1) adding `role="tooltip"` to `tooltip-content.svelte` so Playwright's `getByRole("tooltip")` locator works with Bits UI v2, and (2) adding `HelpHint` components to `ProgramInlineList` so per-program help icons (`picker-program-help-{id}`) are present in the "tiny" bucket (≤10 programs). (Claude Sonnet 4.6 via GitHub Copilot coding agent)
 

@@ -333,7 +333,10 @@ describe("JsrootPlot", () => {
       dispatchEvent: vi.fn(),
     })) as typeof window.matchMedia;
 
-    const originalMaxTouchPoints = navigator.maxTouchPoints;
+    const originalMaxTouchPointsDescriptor = Object.getOwnPropertyDescriptor(
+      navigator,
+      "maxTouchPoints",
+    );
     Object.defineProperty(navigator, "maxTouchPoints", { value: 5, configurable: true });
 
     try {
@@ -358,10 +361,11 @@ describe("JsrootPlot", () => {
       expect(settings.DragGraphs).toBe(false);
     } finally {
       window.matchMedia = original;
-      Object.defineProperty(navigator, "maxTouchPoints", {
-        value: originalMaxTouchPoints,
-        configurable: true,
-      });
+      if (originalMaxTouchPointsDescriptor) {
+        Object.defineProperty(navigator, "maxTouchPoints", originalMaxTouchPointsDescriptor);
+      } else {
+        delete (navigator as unknown as Record<string, unknown>)["maxTouchPoints"];
+      }
     }
   });
 
