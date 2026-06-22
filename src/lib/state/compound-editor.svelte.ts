@@ -9,8 +9,8 @@
  * instead of each re-implementing the flow (issue #762).
  *
  * Pure derivations stay in `utils/compound-derive.ts` (`deriveMassPercents`,
- * `rescaleTo100`) and `utils/formula-parser.ts`; this module only orchestrates
- * them around the reactive form state.
+ * `rescaleTo100`); this module orchestrates them around the reactive form state.
+ * `ParsedElement` from `utils/formula-parser.ts` is used only as a type.
  *
  * @packageDocumentation
  */
