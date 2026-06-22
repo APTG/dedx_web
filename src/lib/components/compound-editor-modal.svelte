@@ -18,6 +18,9 @@
   } from "$lib/utils/element-data";
   import { cn } from "$lib/utils.js";
   import { deriveMassPercents, rescaleTo100 } from "$lib/utils/compound-derive";
+  import Trash2 from "@lucide/svelte/icons/trash-2";
+  import Pencil from "@lucide/svelte/icons/pencil";
+  import LayoutGrid from "@lucide/svelte/icons/layout-grid";
   import ElementPicker from "./element-picker.svelte";
   import FormulaFooter from "./compound-editor/formula-footer.svelte";
   import SumTracker from "./compound-editor/sum-tracker.svelte";
@@ -88,7 +91,7 @@
   }
   function fieldBorderClass(field: string): string {
     if (isUrlAmber(field)) return "border-amber-500 ring-1 ring-amber-400";
-    return errors[field] ? "border-destructive" : "";
+    return visibleErrors[field] ? "border-destructive" : "";
   }
 
   const initialData: CompoundEditorFormData = {
@@ -108,6 +111,16 @@
   let mode = $state<"formula" | "weight">("formula");
   let showDeleteConfirm = $state(false);
   let compositionTouched = $state(false);
+
+  // Deferred validation: a field's error only surfaces once the user has
+  // touched it (blur) or after a Save attempt, so an untouched/empty form
+  // doesn't greet the user with red text. `saveAttempted` reveals everything
+  // at once when Save is pressed on an invalid form (#767).
+  let touched = $state<Set<string>>(new Set());
+  let saveAttempted = $state(false);
+  function markTouched(field: string) {
+    if (!touched.has(field)) touched = new Set(touched).add(field);
+  }
   let presetToConfirm = $state<CompoundPreset | null>(null);
   let formulaToConfirm = $state<ParsedElement[] | null>(null);
 
@@ -234,6 +247,23 @@
     return e;
   });
 
+  // The subset of `errors` that should actually be shown: a field error
+  // appears once touched or after a Save attempt (composition errors also
+  // surface as soon as the composition is edited). Save gating still uses the
+  // full `errors`/`canSave` so an untouched invalid form can't be saved (#767).
+  let visibleErrors = $derived.by(() => {
+    const out: Record<string, string> = {};
+    for (const [field, msg] of Object.entries(errors)) {
+      const show =
+        saveAttempted ||
+        touched.has(field) ||
+        (field === "elements" && compositionTouched) ||
+        urlFailedFields.has(field);
+      if (show) out[field] = msg;
+    }
+    return out;
+  });
+
   // A duplicate element is surfaced by `duplicateBanner` / the edit prompt and
   // hard-blocks Save in addition to the field errors above.
   let canSave = $derived(
@@ -279,6 +309,9 @@
         resetTransientState();
         if (formData.elements.length > 0) sortElements();
         compositionTouched = true;
+        // Recovery flow: the warning banner asks the user to fix flagged
+        // fields, so reveal their validation errors right away (#767).
+        saveAttempted = true;
       } else if (isOpen && !c) {
         formData = { ...initialData, elements: initialData.elements.map((e) => ({ ...e })) };
         elementTexts = ["Li", "F"];
@@ -295,6 +328,8 @@
     pickerEditIndex = null;
     confirmRemoveIndex = null;
     editDuplicatePrompt = null;
+    touched = new Set();
+    saveAttempted = false;
   }
 
   function sortElements() {
@@ -349,7 +384,12 @@
   }
 
   function handleSave() {
-    if (!canSave) return;
+    if (!canSave) {
+      // Surface every outstanding error and the block reason instead of a
+      // silent no-op on a disabled button (#767).
+      saveAttempted = true;
+      return;
+    }
 
     let elements = formData.elements;
     if (mode === "weight") {
@@ -581,6 +621,12 @@
     get errors() {
       return errors;
     },
+    get visibleErrors() {
+      return visibleErrors;
+    },
+    get saveAttempted() {
+      return saveAttempted;
+    },
     get canSave() {
       return canSave;
     },
@@ -596,6 +642,7 @@
     get isEditing() {
       return !!compound;
     },
+    markTouched,
     getLocalSymbol,
     getLocalName,
     switchMode,
@@ -714,6 +761,9 @@
                     placeholder="e.g., LiF Pellet"
                     class={cn(fieldBorderClass("name"))}
                     data-url-failed={isUrlAmber("name") ? "name" : undefined}
+                    aria-invalid={visibleErrors.name ? "true" : undefined}
+                    aria-describedby={visibleErrors.name ? "compound-name-error" : undefined}
+                    onblur={() => markTouched("name")}
                     onkeydown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
@@ -721,8 +771,10 @@
                       }
                     }}
                   />
-                  {#if errors.name}
-                    <p class="text-sm text-destructive mt-1">{errors.name}</p>
+                  {#if visibleErrors.name}
+                    <p id="compound-name-error" class="text-sm text-destructive mt-1">
+                      {visibleErrors.name}
+                    </p>
                   {/if}
                 </div>
               </div>
@@ -740,10 +792,17 @@
                       bind:value={formData.density}
                       class={cn("w-24 hide-spin-button", fieldBorderClass("density"))}
                       data-url-failed={isUrlAmber("density") ? "density" : undefined}
+                      aria-invalid={visibleErrors.density ? "true" : undefined}
+                      aria-describedby={visibleErrors.density
+                        ? "compound-density-error"
+                        : undefined}
+                      onblur={() => markTouched("density")}
                     />
                   </div>
-                  {#if errors.density}
-                    <p class="text-sm text-destructive">{errors.density}</p>
+                  {#if visibleErrors.density}
+                    <p id="compound-density-error" class="text-sm text-destructive">
+                      {visibleErrors.density}
+                    </p>
                   {/if}
                 </div>
 
@@ -761,10 +820,15 @@
                       bind:value={formData.iValue}
                       class={cn("w-24 hide-spin-button", fieldBorderClass("iValue"))}
                       data-url-failed={isUrlAmber("iValue") ? "iValue" : undefined}
+                      aria-invalid={visibleErrors.iValue ? "true" : undefined}
+                      aria-describedby={visibleErrors.iValue ? "compound-ivalue-error" : undefined}
+                      onblur={() => markTouched("iValue")}
                     />
                   </div>
-                  {#if errors.iValue}
-                    <p class="text-sm text-destructive">{errors.iValue}</p>
+                  {#if visibleErrors.iValue}
+                    <p id="compound-ivalue-error" class="text-sm text-destructive">
+                      {visibleErrors.iValue}
+                    </p>
                   {/if}
                 </div>
 
@@ -838,7 +902,7 @@
                   </div>
                 </div>
 
-                {#if errors.elements}
+                {#if visibleErrors.elements}
                   <p
                     class={cn(
                       "text-sm",
@@ -846,7 +910,7 @@
                     )}
                     data-url-failed={isUrlAmber("elements") ? "elements" : undefined}
                   >
-                    {errors.elements}
+                    {visibleErrors.elements}
                   </p>
                 {/if}
 
@@ -951,7 +1015,7 @@
                             <span class="font-mono font-bold leading-none"
                               >{getLocalSymbol(element.atomicNumber)}</span
                             >
-                            <span class="text-[10px] text-muted-foreground">✎</span>
+                            <Pencil class="size-2.5 text-muted-foreground" aria-hidden="true" />
                           </div>
                         </button>
 
@@ -1006,7 +1070,7 @@
                           disabled={formData.elements.length === 1}
                           data-testid="picker-element-row-remove"
                         >
-                          <span class="text-base leading-none">🗑</span>
+                          <Trash2 class="size-3.5" aria-hidden="true" />
                           <span>Remove</span>
                         </button>
                       </div>
@@ -1077,41 +1141,54 @@
                   />
                   <button
                     type="button"
-                    class="text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
+                    class="inline-flex items-center gap-1 text-sm font-medium text-muted-foreground hover:text-primary hover:underline whitespace-nowrap"
                     onclick={() => (pickerMode = "ADD")}
                   >
-                    ⊞ Pick from periodic table
+                    <LayoutGrid class="size-3.5" aria-hidden="true" />
+                    Pick from periodic table
                   </button>
                 </div>
               </div>
             </div>
 
-            <div class="mt-6 flex justify-between">
-              {#if compound}
-                <Button
-                  type="button"
-                  variant="destructive"
-                  onclick={() => (showDeleteConfirm = true)}
-                >
-                  Delete
-                </Button>
-              {:else}
-                <div></div>
-              {/if}
-              <div class="flex gap-2">
-                <Button type="button" variant="outline" onclick={() => onOpenChange(false)}>
-                  Cancel
-                </Button>
-                <Button
-                  type="button"
-                  onclick={handleSave}
-                  disabled={!canSave}
-                  aria-disabled={!canSave}
-                  title={canSave ? undefined : (saveBlockReason ?? undefined)}
-                >
-                  Save
-                </Button>
+            <div class="mt-6 flex flex-col gap-2">
+              <div class="flex justify-between">
+                {#if compound}
+                  <Button
+                    type="button"
+                    variant="destructive"
+                    onclick={() => (showDeleteConfirm = true)}
+                  >
+                    Delete
+                  </Button>
+                {:else}
+                  <div></div>
+                {/if}
+                <div class="flex gap-2">
+                  <Button type="button" variant="outline" onclick={() => onOpenChange(false)}>
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    onclick={handleSave}
+                    aria-describedby={saveAttempted && !canSave ? "compound-save-error" : undefined}
+                  >
+                    Save
+                  </Button>
+                </div>
               </div>
+              <!-- Visible reason instead of a tooltip-only hint on a disabled
+                   button: Save stays clickable and reveals what's blocking it (#767). -->
+              {#if saveAttempted && !canSave && saveBlockReason}
+                <p
+                  id="compound-save-error"
+                  class="text-sm text-destructive text-right"
+                  role="alert"
+                  data-testid="compound-save-block-reason"
+                >
+                  {saveBlockReason}
+                </p>
+              {/if}
             </div>
           {:else}
             <div class="mt-6 flex justify-end gap-2">

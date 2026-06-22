@@ -60,12 +60,23 @@ export interface EditorController {
   readonly editDuplicatePrompt: EditDuplicatePrompt | null;
   readonly massPercents: number[] | null;
   readonly errors: Record<string, string>;
+  /**
+   * The subset of `errors` that should currently be displayed. A field error
+   * only appears once the field is touched (blur) or after a Save attempt, so
+   * an untouched form isn't pre-filled with red text (#767). Save gating still
+   * uses the full `errors`/`canSave`.
+   */
+  readonly visibleErrors: Record<string, string>;
+  /** True once Save was pressed on an invalid form — reveals the block reason. */
+  readonly saveAttempted: boolean;
   readonly canSave: boolean;
   readonly saveBlockReason: string | null;
   readonly isEmptyComposition: boolean;
   readonly usedZ: Set<number>;
   readonly isEditing: boolean;
 
+  /** Mark a field as touched so its error becomes visible (blur handler). */
+  markTouched(field: string): void;
   getLocalSymbol(z: number): string;
   getLocalName(z: number): string;
   switchMode(mode: "formula" | "weight"): void;

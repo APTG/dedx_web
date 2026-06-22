@@ -126,15 +126,20 @@
                 value={editor.formData.name}
                 oninput={(e) => (editor.formData.name = e.currentTarget.value)}
                 onfocus={scrollFocusIntoView}
+                onblur={() => editor.markTouched("name")}
                 placeholder="e.g., LiF Pellet"
+                aria-invalid={editor.visibleErrors.name ? "true" : undefined}
+                aria-describedby={editor.visibleErrors.name ? "mobile-name-error" : undefined}
                 class={cn(
                   "w-full rounded-md border bg-background px-3 py-2 text-base",
-                  editor.errors.name && "border-destructive",
+                  editor.visibleErrors.name && "border-destructive",
                 )}
                 data-testid="mobile-field-name"
               />
-              {#if editor.errors.name}
-                <span class="text-sm text-destructive">{editor.errors.name}</span>
+              {#if editor.visibleErrors.name}
+                <span id="mobile-name-error" class="text-sm text-destructive"
+                  >{editor.visibleErrors.name}</span
+                >
               {/if}
             </label>
 
@@ -149,14 +154,19 @@
                 value={editor.formData.density}
                 oninput={(e) => (editor.formData.density = e.currentTarget.value)}
                 onfocus={scrollFocusIntoView}
+                onblur={() => editor.markTouched("density")}
+                aria-invalid={editor.visibleErrors.density ? "true" : undefined}
+                aria-describedby={editor.visibleErrors.density ? "mobile-density-error" : undefined}
                 class={cn(
                   "w-full rounded-md border bg-background px-3 py-2 text-base hide-spin-button",
-                  editor.errors.density && "border-destructive",
+                  editor.visibleErrors.density && "border-destructive",
                 )}
                 data-testid="mobile-field-density"
               />
-              {#if editor.errors.density}
-                <span class="text-sm text-destructive">{editor.errors.density}</span>
+              {#if editor.visibleErrors.density}
+                <span id="mobile-density-error" class="text-sm text-destructive"
+                  >{editor.visibleErrors.density}</span
+                >
               {/if}
             </label>
 
@@ -171,14 +181,19 @@
                 value={editor.formData.iValue}
                 oninput={(e) => (editor.formData.iValue = e.currentTarget.value)}
                 onfocus={scrollFocusIntoView}
+                onblur={() => editor.markTouched("iValue")}
+                aria-invalid={editor.visibleErrors.iValue ? "true" : undefined}
+                aria-describedby={editor.visibleErrors.iValue ? "mobile-ivalue-error" : undefined}
                 class={cn(
                   "w-full rounded-md border bg-background px-3 py-2 text-base hide-spin-button",
-                  editor.errors.iValue && "border-destructive",
+                  editor.visibleErrors.iValue && "border-destructive",
                 )}
                 data-testid="mobile-field-ivalue"
               />
-              {#if editor.errors.iValue}
-                <span class="text-sm text-destructive">{editor.errors.iValue}</span>
+              {#if editor.visibleErrors.iValue}
+                <span id="mobile-ivalue-error" class="text-sm text-destructive"
+                  >{editor.visibleErrors.iValue}</span
+                >
               {/if}
             </label>
 
@@ -279,8 +294,8 @@
             </div>
           </div>
 
-          {#if editor.errors.elements}
-            <p class="mb-2 text-sm text-destructive">{editor.errors.elements}</p>
+          {#if editor.visibleErrors.elements}
+            <p class="mb-2 text-sm text-destructive">{editor.visibleErrors.elements}</p>
           {/if}
 
           <!-- Duplicate banner (compressed) -->
@@ -452,27 +467,42 @@
         </div>
 
         <div
-          class="sticky bottom-0 flex gap-2 border-t bg-background p-3"
+          class="sticky bottom-0 flex flex-col gap-2 border-t bg-background p-3"
           style="padding-bottom: max(12px, env(safe-area-inset-bottom));"
         >
-          <button
-            type="button"
-            class="flex-1 rounded-md border px-4 py-3 text-base font-medium hover:bg-accent"
-            onclick={() => (step = 1)}
-            data-testid="mobile-step2-back"
-          >
-            ← Back
-          </button>
-          <button
-            type="button"
-            disabled={!editor.canSave}
-            title={editor.canSave ? undefined : (editor.saveBlockReason ?? undefined)}
-            class="flex-1 rounded-md bg-primary px-4 py-3 text-base font-semibold text-primary-foreground disabled:opacity-40"
-            onclick={() => editor.handleSave()}
-            data-testid="mobile-step2-save"
-          >
-            Save compound
-          </button>
+          <!-- Visible reason rather than a tooltip-only hint (no tooltips on
+               touch); Save stays tappable and reveals what's blocking it (#767). -->
+          {#if editor.saveAttempted && !editor.canSave && editor.saveBlockReason}
+            <p
+              id="mobile-save-error"
+              class="text-sm text-destructive"
+              role="alert"
+              data-testid="mobile-save-block-reason"
+            >
+              {editor.saveBlockReason}
+            </p>
+          {/if}
+          <div class="flex gap-2">
+            <button
+              type="button"
+              class="flex-1 rounded-md border px-4 py-3 text-base font-medium hover:bg-accent"
+              onclick={() => (step = 1)}
+              data-testid="mobile-step2-back"
+            >
+              ← Back
+            </button>
+            <button
+              type="button"
+              aria-describedby={editor.saveAttempted && !editor.canSave
+                ? "mobile-save-error"
+                : undefined}
+              class="flex-1 rounded-md bg-primary px-4 py-3 text-base font-semibold text-primary-foreground"
+              onclick={() => editor.handleSave()}
+              data-testid="mobile-step2-save"
+            >
+              Save compound
+            </button>
+          </div>
         </div>
       </section>
     </div>

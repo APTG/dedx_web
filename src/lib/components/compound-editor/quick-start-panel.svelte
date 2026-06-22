@@ -5,6 +5,7 @@
   import { parseFormula, type ParsedElement } from "$lib/utils/formula-parser";
   import { getElementSymbol } from "$lib/utils/element-data";
   import { cn } from "$lib/utils.js";
+  import Rocket from "@lucide/svelte/icons/rocket";
 
   interface Props {
     isEmpty: boolean;
@@ -54,7 +55,7 @@
   >
     <div class="p-4">
       <h3 class="mb-3 text-sm font-semibold text-foreground flex items-center gap-2">
-        <span class="text-xl leading-none">🚀</span> Quick Start
+        <Rocket class="size-4 text-primary" aria-hidden="true" /> Quick Start
       </h3>
       <div class="grid gap-6 md:grid-cols-2">
         <!-- Card 1: Paste formula -->

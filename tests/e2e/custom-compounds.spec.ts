@@ -88,11 +88,13 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
-    // Save is gated off while the name is empty.
-    await expect(saveBtn).toBeDisabled();
+    // Save stays clickable; pressing it on an invalid form reveals the reason
+    // and keeps the modal open instead of silently doing nothing.
+    await saveBtn.click();
 
-    // Inline error explains why.
-    await expect(page.getByText(/name is required/i)).toBeVisible();
+    // Inline error explains why. Use ID to avoid strict-mode collision: the
+    // save-block-reason banner shows the same text as the field error.
+    await expect(page.locator("#compound-name-error")).toBeVisible();
     await expect(modal).toBeVisible(); // Modal should not close
   });
 
@@ -117,10 +119,12 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount = page.getByPlaceholder(/count/i).first();
     await atomCount.fill("1");
 
-    // Save is gated off and the inline error explains why.
+    // Pressing Save reveals the inline error and keeps the modal open.
     const saveBtn = page.getByRole("button", { name: /save/i });
-    await expect(saveBtn).toBeDisabled();
-    await expect(page.getByText(/density must be/i)).toBeVisible();
+    await saveBtn.click();
+    // Use ID to avoid strict-mode collision: the save-block-reason banner
+    // shows the same text as the inline field error.
+    await expect(page.locator("#compound-density-error")).toBeVisible();
     await expect(modal).toBeVisible();
   });
 
@@ -152,9 +156,12 @@ test.describe("Custom Compounds — Editor Modal", () => {
     const atomCount2 = page.getByPlaceholder(/count/i).nth(1);
     await atomCount2.fill("1");
 
+    const modal = page.getByRole("dialog", { name: /compound editor/i });
     const saveBtn = page.getByRole("button", { name: /save/i });
-    await expect(saveBtn).toBeDisabled();
+    await saveBtn.click();
+    // The duplicate banner blocks Save: the modal stays open.
     await expect(page.getByText(/appears twice/i)).toBeVisible();
+    await expect(modal).toBeVisible();
   });
 
   test("AC-2: Create compound adds to library", async ({ page }) => {
@@ -749,8 +756,9 @@ test.describe("Scenario 2: Water (H2O) — formula mode and stopping power sanit
     const wf0 = page.getByRole("spinbutton", { name: /weight fraction.*element 1/i }).first();
     await wf0.fill("50");
 
-    // Save is gated off while the sum is out of tolerance.
-    await expect(page.getByRole("button", { name: /save/i })).toBeDisabled();
+    // Save is blocked while the sum is out of tolerance — clicking keeps the
+    // modal open and surfaces the reason.
+    await page.getByRole("button", { name: /save/i }).click();
 
     // The destructive error paragraph explains why (not the hint text).
     await expect(
@@ -973,12 +981,18 @@ test.describe("Custom Compounds — Live Derived UI (Issue #645)", () => {
 
     const status = page.getByTestId("compound-sum-status");
     const saveBtn = page.getByRole("button", { name: /save/i });
+    const modal = page.getByRole("dialog", { name: /compound editor/i });
     await expect(status).toContainText(/must equal 100/i);
-    await expect(saveBtn).toBeDisabled();
+    // Out of tolerance: clicking Save keeps the modal open.
+    await saveBtn.click();
+    await expect(status).toContainText(/must equal 100/i);
+    await expect(modal).toBeVisible();
 
     // Auto-rescale normalises the fractions to exactly 100%.
     await page.getByTestId("compound-sum-rescale").click();
     await expect(status).toContainText(/within tolerance/i);
-    await expect(saveBtn).toBeEnabled();
+    // Now Save succeeds and the modal closes.
+    await saveBtn.click();
+    await expect(modal).not.toBeVisible();
   });
 });

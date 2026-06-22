@@ -95,6 +95,7 @@
   - [4.3 I-Value (optional)](#43-i-value-optional)
   - [4.4 Elements — both modes](#44-elements--both-modes)
   - [4.5 Weight fractions only](#45-weight-fractions-only)
+  - [4.6 Validation interaction model (#767)](#46-validation-interaction-model-767)
 - [5. WASM Integration](#5-wasm-integration)
   - [5.1 Calculate call](#51-calculate-call)
   - [5.2 Program compatibility and Bragg additivity filtering](#52-program-compatibility-and-bragg-additivity-filtering)
@@ -458,9 +459,28 @@ Blank → field cleared; `iValue` absent from stored compound.
 
 ### 4.5 Weight fractions only
 
-| Rule                | Error message / indicator                                            |
-| ------------------- | -------------------------------------------------------------------- |
-| Sum ∈ [99.9, 100.1] | Live indicator shows current total; Save disabled outside this range |
+| Rule                | Error message / indicator                                              |
+| ------------------- | ---------------------------------------------------------------------- |
+| Sum ∈ [99.5, 100.5] | Live indicator shows current total; Save is blocked outside this range |
+
+### 4.6 Validation interaction model (#767)
+
+Validation itself is pure (a function of form state), but **when** messages are
+shown is deferred so an untouched form is never pre-filled with red text:
+
+- A field's inline error appears only once that field is **blurred** (touched)
+  or after a **Save attempt**. Composition errors also surface as soon as the
+  composition is edited. Inputs expose `aria-invalid` + `aria-describedby` so
+  screen readers announce the error.
+- The **Save button stays clickable** (not disabled). Pressing Save on an
+  invalid form does not persist; instead it reveals all outstanding errors and
+  shows the blocking reason as **visible text** next to the button (`role="alert"`)
+  rather than a tooltip-only hint (no tooltips on touch devices).
+- The failed-URL recovery flow (§6) reveals errors immediately, since the amber
+  notice already asks the user to fix the flagged fields.
+
+"Save disabled" / "blocks Save" throughout this spec refers to this gating:
+Save remains pressable but will not persist while the form is invalid.
 
 ---
 
