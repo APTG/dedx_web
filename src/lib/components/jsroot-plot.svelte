@@ -288,7 +288,10 @@
 
     const prevZoomTouch = settings.ZoomTouch;
     const prevDragGraphs = settings.DragGraphs;
-    if (window.matchMedia("(pointer: coarse)").matches) {
+    // Use both (pointer: coarse) and maxTouchPoints so that touch devices
+    // where the media query returns false (some Android browsers, hybrid
+    // laptops in touch mode) are still detected correctly.
+    if (window.matchMedia("(pointer: coarse)").matches || navigator.maxTouchPoints > 0) {
       // On touch devices every gesture must pass through to the browser so the
       // page scrolls/zooms normally. Disable pinch-zoom of the axes (ZoomTouch)
       // and dragging of TGraph points (DragGraphs, on by default) — the latter
