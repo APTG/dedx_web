@@ -1,8 +1,12 @@
 <script lang="ts">
   import { cn } from "$lib/utils.js";
-  import { Tooltip as TooltipPrimitive } from "bits-ui";
   import { getProgramKindMeta, type ProgramKind } from "$lib/utils/program-kind";
-  import { Tooltip, TooltipContent, TooltipProvider } from "$lib/components/ui/tooltip";
+  import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+  } from "$lib/components/ui/tooltip";
 
   interface Props {
     kind: ProgramKind;
@@ -22,7 +26,7 @@
 -->
 <TooltipProvider>
   <Tooltip>
-    <TooltipPrimitive.Trigger>
+    <TooltipTrigger>
       {#snippet child({ props })}
         <span
           {...props}
@@ -45,7 +49,7 @@
           <span>{meta.badge}</span>
         </span>
       {/snippet}
-    </TooltipPrimitive.Trigger>
+    </TooltipTrigger>
     <TooltipContent>{meta.description}</TooltipContent>
   </Tooltip>
 </TooltipProvider>

@@ -30,6 +30,7 @@ test.describe("Contextual help — Program data source", () => {
     // Dismissable without moving focus (WCAG 1.4.13).
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(hint).toBeFocused();
   });
 
   test("each listed program exposes a help hint", async ({ page }) => {
@@ -60,5 +61,6 @@ test.describe("Contextual help — Program data source", () => {
     // ESC dismisses without moving focus (WCAG 1.4.13).
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
+    await expect(tabBadge).toBeFocused();
   });
 });
