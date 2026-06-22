@@ -37,12 +37,15 @@ export interface EditDuplicatePrompt {
 }
 
 /**
- * Imperative + reactive surface the compound editor exposes to its mobile
- * sub-components. All form state lives in `compound-editor-modal.svelte`; the
- * mobile sheet, picker overlay, and action sheet read it through the getters
- * (which track the parent's runes) and mutate it through the methods. This
- * keeps step transitions non-destructive — switching screens never touches the
- * underlying state.
+ * Imperative + reactive surface the compound editor exposes to its desktop and
+ * mobile views. All form state lives in the shared state factory
+ * `state/compound-editor.svelte.ts` (`createCompoundEditorState`); the desktop
+ * sheet, mobile sheet, picker overlay, and action sheet read it through the
+ * getters (which track the factory's runes) and mutate it through the methods.
+ * This keeps step transitions non-destructive — switching screens never touches
+ * the underlying state. The factory returns a desktop superset
+ * (`CompoundEditorState`) that adds the secondary-dialog and `load()` members
+ * the modal needs; the mobile sheet only depends on this shared contract.
  */
 export interface EditorController {
   readonly formData: CompoundFormData;
