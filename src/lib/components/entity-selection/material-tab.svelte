@@ -12,6 +12,9 @@
     inCompounds,
     compareElements,
     compareByName,
+    matchesMaterialQuery,
+    formatDensity,
+    isGas,
   } from "$lib/utils/material-filters";
   import CompoundEditorModal from "$lib/components/compound-editor-modal.svelte";
   import PickerSummaryBar from "./picker-summary-bar.svelte";
@@ -106,39 +109,6 @@
     queueMicrotask(updateFade);
   });
 
-  function isGas(m: Material): boolean {
-    return !isExternalMaterial(m) && m.isGasByDefault;
-  }
-
-  function searchText(m: Material): string {
-    if (isExternalMaterial(m)) {
-      return `${m.localId} ${m.name} ${m.label} ext external`;
-    }
-    return `${m.id} ${m.name} ${m.rawName ?? ""}`;
-  }
-
-  /**
-   * Match the query against a material's searchable text.
-   * Supports plain substring + density operators (advanced syntax):
-   *   ρ>N   ρ>=N   ρ<N   ρ<=N   ρ=N   (also accepts ASCII alias `rho`)
-   */
-  function matches(m: Material, q: string): boolean {
-    const trimmed = q.trim().toLowerCase();
-    if (!trimmed) return true;
-    const rhoOp = trimmed.match(/^(?:ρ|rho)\s*(>=|<=|>|<|=)\s*(\d+(?:\.\d+)?)$/);
-    if (rhoOp) {
-      const density = m.density;
-      if (density === undefined) return false;
-      const n = Number(rhoOp[2]);
-      if (rhoOp[1] === ">=") return density >= n;
-      if (rhoOp[1] === "<=") return density <= n;
-      if (rhoOp[1] === ">") return density > n;
-      if (rhoOp[1] === "<") return density < n;
-      if (rhoOp[1] === "=") return Math.abs(density - n) < 0.0001;
-    }
-    return searchText(m).toLowerCase().includes(trimmed);
-  }
-
   const allMaterials = $derived<Material[]>([
     ...selectionState.allMaterials,
     ...selectionState.externalOnlyMaterials,
@@ -164,9 +134,9 @@
       }));
   });
 
-  const filteredElements = $derived(elements.filter((m) => matches(m, query)));
-  const filteredCompounds = $derived(compounds.filter((m) => matches(m, query)));
-  const filteredCustom = $derived(customItems.filter((m) => matches(m, query)));
+  const filteredElements = $derived(elements.filter((m) => matchesMaterialQuery(m, query)));
+  const filteredCompounds = $derived(compounds.filter((m) => matchesMaterialQuery(m, query)));
+  const filteredCustom = $derived(customItems.filter((m) => matchesMaterialQuery(m, query)));
   const hasQuery = $derived(query.trim().length > 0);
 
   let showOnlySelected = $state(false);
@@ -182,11 +152,6 @@
 
   function isAvailable(m: Material): boolean {
     return selectionState.availableMaterials.some((q) => q.id === m.id);
-  }
-
-  function formatDensity(m: Material): string | undefined {
-    if (isExternalMaterial(m)) return m.density !== undefined ? m.density.toFixed(4) : undefined;
-    return m.density.toFixed(m.density < 0.1 ? 4 : 2);
   }
 
   const selected = $derived(selectionState.selectedMaterial);

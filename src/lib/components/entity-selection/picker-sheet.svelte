@@ -10,11 +10,12 @@
   import { customCompounds } from "$lib/state/custom-compounds.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import {
-    isExternalMaterial,
     inElements,
     inCompounds,
     compareElements,
     compareByName,
+    materialSearchText,
+    formatDensity,
   } from "$lib/utils/material-filters";
   import { getParticleListLabel, getParticleSearchText } from "$lib/utils/particle-label";
   import { ELECTRON_ID } from "$lib/state/entity-selection.svelte";
@@ -173,15 +174,6 @@
     ...selectionState.externalOnlyMaterials,
   ]);
 
-  function materialSearchText(m: Material): string {
-    if (isExternalMaterial(m)) {
-      const em = m as ExternalOnlyMaterial;
-      return `${em.localId} ${em.name} ${em.label} ext external`;
-    }
-    const bm = m as MaterialEntity;
-    return `${bm.id} ${bm.name} ${bm.rawName ?? ""}`;
-  }
-
   function materialMatches(m: Material, q: string): boolean {
     const t = q.trim().toLowerCase();
     if (!t) return true;
@@ -217,14 +209,6 @@
       }))
       .filter((m) => materialMatches(m as unknown as Material, query));
   });
-
-  function formatDensity(m: Material | { density: number }): string | undefined {
-    const d = (m as { density: number }).density;
-    if (isExternalMaterial(m as Material)) {
-      return d !== undefined ? d.toFixed(4) : undefined;
-    }
-    return d.toFixed(d < 0.1 ? 4 : 2);
-  }
 
   function isMaterialAvailable(m: Material): boolean {
     return selectionState.availableMaterials.some((q) => q.id === m.id);
