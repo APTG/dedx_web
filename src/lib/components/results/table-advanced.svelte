@@ -5,24 +5,17 @@
   import type { EnergyUnit } from "$lib/wasm/types";
   import { formatStpValue, formatRangeCm, formatEnergy } from "./value-formatters";
   import { formatSigFigs, convertStpMass } from "$lib/utils/unit-conversions";
-  import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+  import {
+    RANGE_ANCHOR_OPTIONS,
+    buildEnergyAnchorOptions,
+    inputClass,
+    cellClass,
+    rangeUnitLabel,
+    splitPasteLines,
+  } from "./table-advanced-helpers";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
   import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
   import type { StpUnit } from "$lib/wasm/types";
-
-  const RANGE_ANCHOR_OPTIONS = [
-    { value: "nm", label: "nm", tooltip: "nanometres" },
-    { value: "um", label: "µm", tooltip: "micrometres" },
-    { value: "mm", label: "mm", tooltip: "millimetres" },
-    { value: "cm", label: "cm", tooltip: "centimetres" },
-    { value: "m", label: "m", tooltip: "metres" },
-  ];
-
-  const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
-    MeV: "Megaelectronvolts — total kinetic energy",
-    "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
-    "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
-  };
 
   type EnergyModeProps = {
     mode: "energy";
@@ -78,34 +71,18 @@
   }
 
   // Energy anchor options (energy mode only)
-  const energyAnchorOptions = $derived.by(() => {
-    if (!isEnergy || !entitySelection) return [];
-    const particle = entitySelection.selectedParticle;
-    return getAvailableEnergyUnits(
-      particle as Parameters<typeof getAvailableEnergyUnits>[0],
-      true,
-    ).map((u) => ({
-      value: u,
-      label: u,
-      tooltip: ENERGY_UNIT_TOOLTIPS[u as EnergyUnit] ?? u,
-    }));
-  });
+  const energyAnchorOptions = $derived(
+    isEnergy && entitySelection
+      ? buildEnergyAnchorOptions(
+          entitySelection.selectedParticle as Parameters<typeof buildEnergyAnchorOptions>[0],
+        )
+      : [],
+  );
 
   // Range → mode: rows + STP output unit
   const rangeRows = $derived(inverseLookupState?.rangeRows ?? []);
   const rangeStpUnit = $derived(!isEnergy ? (props as RangeModeProps).stpDisplayUnit : "keV/µm");
   const rangeDensity = $derived(!isEnergy ? (props as RangeModeProps).density : 1);
-
-  function inputClass(status: string): string {
-    const isError = status === "invalid" || status === "out-of-range" || status === "error";
-    return `w-28 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-      isError ? "border-destructive bg-destructive/5" : "border-input"
-    }`;
-  }
-
-  function cellClass(status: string): string {
-    return status === "out-of-range" ? "text-destructive" : "";
-  }
 
   // Energy → mode handlers
   function handleEnergyInput(e: Event, i: number) {
@@ -188,10 +165,7 @@
     if (!calcState) return;
     e.preventDefault();
     const text = e.clipboardData?.getData("text") ?? "";
-    const lines = text
-      .split(/\r?\n|\r/)
-      .map((l) => l.trim())
-      .filter((l) => l !== "");
+    const lines = splitPasteLines(text);
     if (lines.length === 0) return;
     for (let j = 0; j < lines.length; j++) {
       const line = lines[j];
@@ -210,11 +184,6 @@
   function handleRangeInput(e: Event, i: number) {
     if (!inverseLookupState) return;
     inverseLookupState.updateRangeRowText(i, (e.target as HTMLInputElement).value);
-  }
-
-  function rangeUnitLabel(row: (typeof rangeRows)[0]): string {
-    const u = row.unitFromSuffix ? row.unit : (inverseLookupState?.rangeMasterUnit ?? "cm");
-    return u === "um" ? "µm" : u;
   }
 </script>
 
@@ -469,7 +438,7 @@
               <!-- Unit badge -->
               <td class="px-2 py-2">
                 <span class="rounded border border-input bg-muted px-2 py-0.5 text-xs"
-                  >{rangeUnitLabel(row)}</span
+                  >{rangeUnitLabel(row, inverseLookupState?.rangeMasterUnit ?? "cm")}</span
                 >
               </td>
 

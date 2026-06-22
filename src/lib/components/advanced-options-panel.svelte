@@ -16,9 +16,22 @@
   import { NativeSelect } from "$lib/components/ui/native-select";
   import { cn } from "$lib/utils.js";
   import Info from "@lucide/svelte/icons/info";
-  import type { AggregateState, MstarMode } from "$lib/wasm/types";
+  import type { AggregateState, MstarMode, AdvancedOptions } from "$lib/wasm/types";
 
   import { advancedOptions } from "$lib/state/advanced-options.svelte";
+  import {
+    getDensityPlaceholder,
+    getDensityTooltip,
+    validateDensity,
+    validateIValue,
+    buildHeaderText,
+    scaleToSelectValue,
+    methodToSelectValue,
+    nextInterpolationForScale,
+    nextInterpolationForMethod,
+    type ScaleSelectValue,
+    type MethodSelectValue,
+  } from "$lib/utils/advanced-options-fields";
 
   interface Props {
     materialIsGas: boolean;
@@ -56,70 +69,6 @@
     densityInput = densityVal;
     iValueInput = ivalVal;
   });
-
-  // Format density for placeholder and header display
-  function formatDensityForDisplay(value: number): string {
-    if (value < 0.01) {
-      return value.toExponential(2).replace(/\.?0+e/, "e");
-    }
-    return value.toFixed(3);
-  }
-
-  // Get placeholder text for density input
-  function getDensityPlaceholder(): string {
-    if (materialBuiltInDensity === undefined) {
-      return "—";
-    }
-    return formatDensityForDisplay(materialBuiltInDensity);
-  }
-
-  // Get tooltip text for density based on material type
-  function getDensityTooltip(): string {
-    if (isCustomCompoundActive) {
-      return "Custom compounds carry their own density. Edit the compound to change density.";
-    }
-    if (materialIsGas) {
-      return "Gas density depends on pressure and temperature. The built-in value is at standard conditions (STP). Override for non-standard conditions.";
-    }
-    return "The built-in density is for bulk material at standard conditions. Override for non-standard forms (e.g., powder, pressed pellets, or machined samples).";
-  }
-
-  // Validate density input
-  function validateDensity(value: string): {
-    valid: boolean;
-    parsedValue?: number;
-    error?: string;
-  } {
-    if (value === "") {
-      return { valid: true };
-    }
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-      return { valid: false, error: "Enter a numeric value" };
-    }
-    if (parsed <= 0) {
-      return { valid: false, error: "Density must be greater than 0" };
-    }
-    return { valid: true, parsedValue: parsed };
-  }
-
-  // Validate I-value input
-  function validateIValue(value: string): { valid: boolean; parsedValue?: number; error?: string } {
-    if (value === "") {
-      return { valid: true };
-    }
-    const parsed = Number(value);
-    if (!Number.isFinite(parsed)) {
-      return { valid: false, error: "Enter a numeric value" };
-    }
-    if (parsed <= 0) {
-      return { valid: false, error: "I-value must be greater than 0" };
-    }
-    if (parsed > 10000) {
-      return { valid: false, error: "I-value exceeds 10 000 eV (physical maximum)" };
-    }
-    return { valid: true, parsedValue: parsed };
-  }
 
   // Handle density input change
   function handleDensityChange(event: Event) {
@@ -207,71 +156,39 @@
   const showAggState = $derived(materialBuiltInAggregateState !== undefined);
 
   // Get accordion header text
-  const headerText = $derived.by(() => {
-    let text = "Advanced Options";
-    const density = advancedOptions.value.densityOverride;
-    if (density !== undefined) {
-      text += ` (ρ = ${formatDensityForDisplay(density)} g/cm³)`;
-    }
-    return text;
-  });
+  const headerText = $derived(buildHeaderText(advancedOptions.value.densityOverride));
 
   const currentMstarMode = $derived(advancedOptions.value.mstarMode ?? "b");
 
-  // Local state for scale select
-  let scaleSelectValue = $state<"log-log" | "lin-lin">("log-log");
+  // Scale select value, derived from the interpolation override (mirrors methodSelectValue).
+  const scaleSelectValue = $derived(scaleToSelectValue(advancedOptions.value.interpolation?.scale));
 
-  // Sync scaleSelectValue with advancedOptions on mount and when options change
-  $effect(() => {
-    const internalScale = advancedOptions.value.interpolation?.scale;
-    scaleSelectValue = internalScale === "linear" ? "lin-lin" : "log-log";
-  });
-
-  // Handle scale select change - maps Select values to internal values
-  function handleScaleSelectChange(value: string) {
-    // value is "log-log" or "lin-lin" from Select options
-    const currentInterpolation = advancedOptions.value.interpolation;
-
-    if (value === "log-log") {
-      // "log-log" selected -> remove scale (use default)
-      if (!currentInterpolation) {
-        // already default
-      } else if (currentInterpolation.method === undefined) {
-        delete advancedOptions.value.interpolation;
-      } else {
-        // keep method, remove scale
-        advancedOptions.value.interpolation = { method: currentInterpolation.method };
-      }
+  // Apply a computed next-interpolation state to the singleton (undefined = clear).
+  function applyInterpolation(next: AdvancedOptions["interpolation"]) {
+    if (next === undefined) {
+      delete advancedOptions.value.interpolation;
     } else {
-      // "lin-lin" selected -> internal scale is "linear"
-      advancedOptions.value.interpolation = {
-        ...currentInterpolation,
-        scale: "linear",
-      };
+      advancedOptions.value.interpolation = next;
     }
   }
 
+  // Handle scale select change - maps Select values to internal values
+  function handleScaleSelectChange(value: string) {
+    applyInterpolation(
+      nextInterpolationForScale(advancedOptions.value.interpolation, value as ScaleSelectValue),
+    );
+  }
+
   // Local state for method select (maps internal "linear"/"cubic" to select values "linear"/"spline")
-  let methodSelectValue = $derived.by(() =>
-    advancedOptions.value.interpolation?.method === "cubic" ? "spline" : "linear",
+  let methodSelectValue = $derived(
+    methodToSelectValue(advancedOptions.value.interpolation?.method),
   );
 
   // Handle method select change - maps "spline" -> "cubic", "linear" -> "linear" (delete)
   function handleMethodSelectChange(value: string) {
-    if (value === "spline") {
-      advancedOptions.value.interpolation = {
-        ...advancedOptions.value.interpolation,
-        method: "cubic",
-      };
-    } else {
-      // "linear" value means delete the method (use default)
-      if (advancedOptions.value.interpolation) {
-        delete advancedOptions.value.interpolation.method;
-        if (advancedOptions.value.interpolation.scale === undefined) {
-          delete advancedOptions.value.interpolation;
-        }
-      }
-    }
+    applyInterpolation(
+      nextInterpolationForMethod(advancedOptions.value.interpolation, value as MethodSelectValue),
+    );
   }
 
   // Get current aggregate state for toggle highlighting
@@ -297,7 +214,7 @@
                   <Info class="h-3.5 w-3.5 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent side="right" class="max-w-[250px]">
-                  <p class="text-xs">{getDensityTooltip()}</p>
+                  <p class="text-xs">{getDensityTooltip(isCustomCompoundActive, materialIsGas)}</p>
                 </TooltipContent>
               </Tooltip>
             </div>
@@ -306,7 +223,7 @@
                 <Input
                   id="density-override"
                   type="text"
-                  placeholder={getDensityPlaceholder()}
+                  placeholder={getDensityPlaceholder(materialBuiltInDensity)}
                   value={densityInput}
                   disabled={isCustomCompoundActive}
                   title={isCustomCompoundActive
