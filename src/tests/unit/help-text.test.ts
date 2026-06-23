@@ -28,6 +28,36 @@ describe("help-text registry", () => {
     expect(HELP_TEXT.csdaRange.text).toMatch(/Bragg/);
   });
 
+  it("covers the PR 3 advanced-mode controls and workflow affordances", () => {
+    for (const key of [
+      "aggregateState",
+      "densityOverride",
+      "iValueOverride",
+      "mstarMode",
+      "interpolation",
+      "inverseRange",
+      "inverseStp",
+      "braggPeak",
+      "advancedMode",
+      "shareExport",
+      "customCompound",
+      "compoundComposition",
+      "compoundIValue",
+      "externalData",
+    ] as const) {
+      expect(HELP_TEXT[key]).toBeDefined();
+      assertWellFormed(HELP_TEXT[key]);
+    }
+  });
+
+  it("explains both inverse-lookup branches with Bragg-peak parity", () => {
+    // STP→ has two solutions; Range→ is one-to-one. Both must be covered.
+    expect(HELP_TEXT.inverseStp.text).toMatch(/stopping power/i);
+    expect(HELP_TEXT.inverseStp.text).toMatch(/two|both|branch/i);
+    expect(HELP_TEXT.inverseRange.text).toMatch(/range/i);
+    expect(HELP_TEXT.braggPeak.text).toMatch(/Bragg|peak|maximum/i);
+  });
+
   // Consistency test: every unit option exposed in the UI has a registry entry.
   it("has a stopping-power help entry for each STP unit shown in the picker", () => {
     for (const unit of STP_UNITS) {

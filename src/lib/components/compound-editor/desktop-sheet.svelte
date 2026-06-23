@@ -7,6 +7,7 @@
   import Trash2 from "@lucide/svelte/icons/trash-2";
   import Pencil from "@lucide/svelte/icons/pencil";
   import LayoutGrid from "@lucide/svelte/icons/layout-grid";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import ElementPicker from "../element-picker.svelte";
   import FormulaFooter from "./formula-footer.svelte";
   import SumTracker from "./sum-tracker.svelte";
@@ -138,6 +139,7 @@
         <div class="flex flex-col gap-2">
           <div class="flex items-center gap-2">
             <Label for="compound-ivalue" class="whitespace-nowrap">I-value (eV, optional)</Label>
+            <HelpHint term="compoundIValue" side="top" testId="compound-ivalue-help" />
             <Input
               id="compound-ivalue"
               type="number"
@@ -161,7 +163,10 @@
 
         <div class="flex flex-col gap-2 md:ml-auto">
           <div class="flex items-center gap-4 h-[40px]">
-            <Label class="whitespace-nowrap">Phase</Label>
+            <span class="flex items-center gap-2">
+              <Label class="whitespace-nowrap">Phase</Label>
+              <HelpHint term="aggregateState" side="top" testId="compound-phase-help" />
+            </span>
             <label class="flex items-center gap-2">
               <input
                 type="radio"
@@ -193,7 +198,10 @@
           onApplyPreset={(p) => editor.handleApplyPreset(p)}
         />
         <div class="flex items-center justify-between">
-          <Label>Elements</Label>
+          <span class="flex items-center gap-2">
+            <Label>Elements</Label>
+            <HelpHint term="compoundComposition" side="right" testId="compound-composition-help" />
+          </span>
           <div role="tablist" class="flex gap-2">
             <button
               type="button"

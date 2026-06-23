@@ -7,15 +7,9 @@
   } from "$lib/components/ui/accordion";
   import { Input } from "$lib/components/ui/input";
   import { Label } from "$lib/components/ui/label";
-  import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-    TooltipProvider,
-  } from "$lib/components/ui/tooltip";
   import { NativeSelect } from "$lib/components/ui/native-select";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import { cn } from "$lib/utils.js";
-  import Info from "@lucide/svelte/icons/info";
   import type { AggregateState, MstarMode, AdvancedOptions } from "$lib/wasm/types";
 
   import { advancedOptions } from "$lib/state/advanced-options.svelte";
@@ -197,245 +191,253 @@
   );
 </script>
 
-<TooltipProvider>
-  <Accordion type="single" collapsible class="w-full border rounded-lg bg-card">
-    <AccordionItem value="advanced-options" class="border-b-0">
-      <AccordionTrigger class="px-4 py-3 hover:no-underline">
-        <span class="text-sm font-medium">{headerText}</span>
-      </AccordionTrigger>
-      <AccordionContent class="px-4 pb-4 pt-0">
-        <div class="grid gap-4">
-          <!-- Density Override -->
-          <div class="grid gap-2">
-            <div class="flex items-center gap-2">
-              <Label for="density-override" class="text-sm font-medium">Density</Label>
-              <Tooltip>
-                <TooltipTrigger>
-                  <Info class="h-3.5 w-3.5 text-muted-foreground" />
-                </TooltipTrigger>
-                <TooltipContent side="right" class="max-w-[250px]">
-                  <p class="text-xs">{getDensityTooltip(isCustomCompoundActive, materialIsGas)}</p>
-                </TooltipContent>
-              </Tooltip>
-            </div>
-            <div class="flex items-center gap-2">
-              <div class="relative flex-1">
-                <Input
-                  id="density-override"
-                  type="text"
-                  placeholder={getDensityPlaceholder(materialBuiltInDensity)}
-                  value={densityInput}
+<Accordion type="single" collapsible class="w-full border rounded-lg bg-card">
+  <AccordionItem value="advanced-options" class="border-b-0">
+    <AccordionTrigger class="px-4 py-3 hover:no-underline">
+      <span class="text-sm font-medium">{headerText}</span>
+    </AccordionTrigger>
+    <AccordionContent class="px-4 pb-4 pt-0">
+      <div class="grid gap-4">
+        <!-- Density Override -->
+        <div class="grid gap-2">
+          <div class="flex items-center gap-2">
+            <Label for="density-override" class="text-sm font-medium">Density</Label>
+            <HelpHint
+              text={getDensityTooltip(isCustomCompoundActive, materialIsGas)}
+              href="/docs/user-guide#advanced-options"
+              side="right"
+              testId="advanced-density-help"
+            />
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <Input
+                id="density-override"
+                type="text"
+                placeholder={getDensityPlaceholder(materialBuiltInDensity)}
+                value={densityInput}
+                disabled={isCustomCompoundActive}
+                title={isCustomCompoundActive
+                  ? "Custom compounds carry their own density. Edit the compound to change density."
+                  : undefined}
+                oninput={handleDensityChange}
+                class={cn(
+                  "pr-16",
+                  densityError && "border-destructive focus-visible:ring-destructive",
+                )}
+                aria-invalid={densityError ? "true" : "false"}
+                aria-describedby={densityError ? "density-error" : undefined}
+              />
+              {#if densityInput !== ""}
+                <button
+                  type="button"
                   disabled={isCustomCompoundActive}
                   title={isCustomCompoundActive
                     ? "Custom compounds carry their own density. Edit the compound to change density."
                     : undefined}
-                  oninput={handleDensityChange}
-                  class={cn(
-                    "pr-16",
-                    densityError && "border-destructive focus-visible:ring-destructive",
-                  )}
-                  aria-invalid={densityError ? "true" : "false"}
-                  aria-describedby={densityError ? "density-error" : undefined}
-                />
-                {#if densityInput !== ""}
-                  <button
-                    type="button"
-                    disabled={isCustomCompoundActive}
-                    title={isCustomCompoundActive
-                      ? "Custom compounds carry their own density. Edit the compound to change density."
-                      : undefined}
-                    onclick={clearDensity}
-                    class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-                    aria-label="Clear density override"
+                  onclick={clearDensity}
+                  class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+                  aria-label="Clear density override"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
-                  </button>
-                {/if}
-              </div>
-              <span class="text-sm text-muted-foreground">g/cm³</span>
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
+                </button>
+              {/if}
             </div>
-            {#if densityError}
-              <p id="density-error" class="text-xs text-destructive">{densityError}</p>
-            {/if}
+            <span class="text-sm text-muted-foreground">g/cm³</span>
           </div>
+          {#if densityError}
+            <p id="density-error" class="text-xs text-destructive">{densityError}</p>
+          {/if}
+        </div>
 
-          <!-- I-Value Override -->
-          <div class="grid gap-2">
+        <!-- I-Value Override -->
+        <div class="grid gap-2">
+          <div class="flex items-center gap-2">
             <Label for="ival-override" class="text-sm font-medium">I-value</Label>
-            <div class="flex items-center gap-2">
-              <div class="relative flex-1">
-                <Input
-                  id="ival-override"
-                  type="text"
-                  placeholder="e.g., 75.0"
-                  value={iValueInput}
+            <HelpHint term="iValueOverride" side="right" testId="advanced-ivalue-help" />
+          </div>
+          <div class="flex items-center gap-2">
+            <div class="relative flex-1">
+              <Input
+                id="ival-override"
+                type="text"
+                placeholder="e.g., 75.0"
+                value={iValueInput}
+                disabled={isCustomCompoundActive}
+                title={isCustomCompoundActive
+                  ? "Custom compounds carry their own I-value. Edit the compound to change it."
+                  : undefined}
+                oninput={handleIValueChange}
+                class={cn(
+                  "pr-16",
+                  iValueError && "border-destructive focus-visible:ring-destructive",
+                )}
+                aria-invalid={iValueError ? "true" : "false"}
+                aria-describedby={iValueError ? "ival-error" : undefined}
+              />
+              {#if iValueInput !== ""}
+                <button
+                  type="button"
                   disabled={isCustomCompoundActive}
                   title={isCustomCompoundActive
                     ? "Custom compounds carry their own I-value. Edit the compound to change it."
                     : undefined}
-                  oninput={handleIValueChange}
-                  class={cn(
-                    "pr-16",
-                    iValueError && "border-destructive focus-visible:ring-destructive",
-                  )}
-                  aria-invalid={iValueError ? "true" : "false"}
-                  aria-describedby={iValueError ? "ival-error" : undefined}
-                />
-                {#if iValueInput !== ""}
-                  <button
-                    type="button"
-                    disabled={isCustomCompoundActive}
-                    title={isCustomCompoundActive
-                      ? "Custom compounds carry their own I-value. Edit the compound to change it."
-                      : undefined}
-                    onclick={clearIValue}
-                    class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
-                    aria-label="Clear I-value override"
+                  onclick={clearIValue}
+                  class="absolute right-1 top-1/2 flex h-6 w-6 -translate-y-1/2 items-center justify-center text-muted-foreground hover:text-foreground"
+                  aria-label="Clear I-value override"
+                >
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    stroke-width="2"
+                    stroke-linecap="round"
+                    stroke-linejoin="round"
                   >
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      width="16"
-                      height="16"
-                      viewBox="0 0 24 24"
-                      fill="none"
-                      stroke="currentColor"
-                      stroke-width="2"
-                      stroke-linecap="round"
-                      stroke-linejoin="round"
-                    >
-                      <path d="M18 6 6 18" />
-                      <path d="m6 6 12 12" />
-                    </svg>
-                  </button>
-                {/if}
-              </div>
-              <span class="text-sm text-muted-foreground">eV</span>
-            </div>
-            {#if iValueError}
-              <p id="ival-error" class="text-xs text-destructive">{iValueError}</p>
-            {/if}
-          </div>
-
-          <!-- Aggregate State -->
-          {#if showAggState}
-            <div class="grid gap-2">
-              <div class="grid gap-1.5">
-                <Label class="text-sm font-medium">Aggregate state</Label>
-                <p class="text-xs text-muted-foreground">
-                  Built-in: {materialIsGas ? "Gas" : "Condensed"}
-                </p>
-              </div>
-              <div class="flex gap-1">
-                <button
-                  type="button"
-                  disabled={isCustomCompoundActive}
-                  title={isCustomCompoundActive
-                    ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
-                    : undefined}
-                  onclick={() => handleAggStateChange("gas")}
-                  class={cn(
-                    "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                    currentAggState === "gas"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background hover:bg-accent",
-                  )}
-                  aria-pressed={currentAggState === "gas"}
-                >
-                  Gas
+                    <path d="M18 6 6 18" />
+                    <path d="m6 6 12 12" />
+                  </svg>
                 </button>
-                <button
-                  type="button"
-                  disabled={isCustomCompoundActive}
-                  title={isCustomCompoundActive
-                    ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
-                    : undefined}
-                  onclick={() => handleAggStateChange("condensed")}
-                  class={cn(
-                    "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
-                    currentAggState === "condensed"
-                      ? "bg-primary text-primary-foreground"
-                      : "bg-background hover:bg-accent",
-                  )}
-                  aria-pressed={currentAggState === "condensed"}
-                >
-                  Condensed
-                </button>
-              </div>
+              {/if}
             </div>
-          {/if}
-
-          <!-- Interpolation -->
-          <div class="grid gap-3">
-            <Label class="text-sm font-medium">Interpolation</Label>
-
-            <!-- Axis Scale -->
-            <div class="grid gap-1.5">
-              <Label for="interp-scale" class="text-xs text-muted-foreground">Axis scale</Label>
-              <NativeSelect
-                id="interp-scale"
-                value={scaleSelectValue}
-                onValueChange={handleScaleSelectChange}
-                options={[
-                  { value: "log-log", label: "Log-log" },
-                  { value: "lin-lin", label: "Lin-lin" },
-                ]}
-              />
-            </div>
-
-            <!-- Method -->
-            <div class="grid gap-1.5">
-              <Label for="interp-method" class="text-xs text-muted-foreground">Method</Label>
-              <NativeSelect
-                id="interp-method"
-                value={methodSelectValue}
-                onValueChange={handleMethodSelectChange}
-                options={[
-                  { value: "linear", label: "Linear" },
-                  { value: "spline", label: "Spline" },
-                ]}
-              />
-            </div>
-
-            <p class="text-xs text-muted-foreground">
-              Applies to all data sources. Mixing interpolation settings across series is not
-              supported.
-            </p>
+            <span class="text-sm text-muted-foreground">eV</span>
           </div>
-
-          <!-- MSTAR Mode -->
-          {#if isMstarSelected}
-            <div class="grid gap-2">
-              <Label for="mstar-mode" class="text-sm font-medium">MSTAR mode</Label>
-              <NativeSelect
-                id="mstar-mode"
-                value={currentMstarMode}
-                onValueChange={handleMstarModeChange}
-                options={[
-                  { value: "a", label: "A — Auto (C for condensed, G for gas)" },
-                  { value: "b", label: "B — Auto (D for condensed, H for gas) — Recommended" },
-                  { value: "c", label: "C — Condensed (standard)" },
-                  { value: "d", label: "D — Condensed (special)" },
-                  { value: "g", label: "G — Gas (standard)" },
-                  { value: "h", label: "H — Gas (special)" },
-                ]}
-              />
-            </div>
+          {#if iValueError}
+            <p id="ival-error" class="text-xs text-destructive">{iValueError}</p>
           {/if}
         </div>
-      </AccordionContent>
-    </AccordionItem>
-  </Accordion>
-</TooltipProvider>
+
+        <!-- Aggregate State -->
+        {#if showAggState}
+          <div class="grid gap-2">
+            <div class="grid gap-1.5">
+              <div class="flex items-center gap-2">
+                <Label class="text-sm font-medium">Aggregate state</Label>
+                <HelpHint term="aggregateState" side="right" testId="advanced-agg-state-help" />
+              </div>
+              <p class="text-xs text-muted-foreground">
+                Built-in: {materialIsGas ? "Gas" : "Condensed"}
+              </p>
+            </div>
+            <div class="flex gap-1">
+              <button
+                type="button"
+                disabled={isCustomCompoundActive}
+                title={isCustomCompoundActive
+                  ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
+                  : undefined}
+                onclick={() => handleAggStateChange("gas")}
+                class={cn(
+                  "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                  currentAggState === "gas"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background hover:bg-accent",
+                )}
+                aria-pressed={currentAggState === "gas"}
+              >
+                Gas
+              </button>
+              <button
+                type="button"
+                disabled={isCustomCompoundActive}
+                title={isCustomCompoundActive
+                  ? "Custom compounds carry their own aggregate state. Edit the compound to change it."
+                  : undefined}
+                onclick={() => handleAggStateChange("condensed")}
+                class={cn(
+                  "flex-1 rounded-md border px-3 py-1.5 text-sm font-medium transition-colors",
+                  currentAggState === "condensed"
+                    ? "bg-primary text-primary-foreground"
+                    : "bg-background hover:bg-accent",
+                )}
+                aria-pressed={currentAggState === "condensed"}
+              >
+                Condensed
+              </button>
+            </div>
+          </div>
+        {/if}
+
+        <!-- Interpolation -->
+        <div class="grid gap-3">
+          <div class="flex items-center gap-2">
+            <Label class="text-sm font-medium">Interpolation</Label>
+            <HelpHint term="interpolation" side="right" testId="advanced-interpolation-help" />
+          </div>
+
+          <!-- Axis Scale -->
+          <div class="grid gap-1.5">
+            <Label for="interp-scale" class="text-xs text-muted-foreground">Axis scale</Label>
+            <NativeSelect
+              id="interp-scale"
+              value={scaleSelectValue}
+              onValueChange={handleScaleSelectChange}
+              options={[
+                { value: "log-log", label: "Log-log" },
+                { value: "lin-lin", label: "Lin-lin" },
+              ]}
+            />
+          </div>
+
+          <!-- Method -->
+          <div class="grid gap-1.5">
+            <Label for="interp-method" class="text-xs text-muted-foreground">Method</Label>
+            <NativeSelect
+              id="interp-method"
+              value={methodSelectValue}
+              onValueChange={handleMethodSelectChange}
+              options={[
+                { value: "linear", label: "Linear" },
+                { value: "spline", label: "Spline" },
+              ]}
+            />
+          </div>
+
+          <p class="text-xs text-muted-foreground">
+            Applies to all data sources. Mixing interpolation settings across series is not
+            supported.
+          </p>
+        </div>
+
+        <!-- MSTAR Mode -->
+        {#if isMstarSelected}
+          <div class="grid gap-2">
+            <div class="flex items-center gap-2">
+              <Label for="mstar-mode" class="text-sm font-medium">MSTAR mode</Label>
+              <HelpHint term="mstarMode" side="right" testId="advanced-mstar-help" />
+            </div>
+            <NativeSelect
+              id="mstar-mode"
+              value={currentMstarMode}
+              onValueChange={handleMstarModeChange}
+              options={[
+                { value: "a", label: "A — Auto (C for condensed, G for gas)" },
+                { value: "b", label: "B — Auto (D for condensed, H for gas) — Recommended" },
+                { value: "c", label: "C — Condensed (standard)" },
+                { value: "d", label: "D — Condensed (special)" },
+                { value: "g", label: "G — Gas (standard)" },
+                { value: "h", label: "H — Gas (special)" },
+              ]}
+            />
+          </div>
+        {/if}
+      </div>
+    </AccordionContent>
+  </AccordionItem>
+</Accordion>

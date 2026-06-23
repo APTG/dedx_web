@@ -377,6 +377,7 @@
         disabled={inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
         data-testid="inverse-range-unit"
       />
+      <HelpHint term="inverseRange" side="bottom" testId="inverse-range-help" />
       {#if inverseLookupState.rangeRows.some((r) => r.unitFromSuffix)}
         <span class="text-xs text-muted-foreground">(per-row mode active)</span>
       {/if}

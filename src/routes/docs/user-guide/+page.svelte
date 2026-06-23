@@ -37,7 +37,7 @@
     <p class="text-sm text-muted-foreground">Two-minute tour below. Jump to a section:</p>
     <nav aria-label="On this page">
       <ul class="flex flex-wrap gap-2 text-sm">
-        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["quantities", "Quantities & units"], ["plot", "Plot"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
+        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["quantities", "Quantities & units"], ["plot", "Plot"], ["advanced-options", "Advanced mode"], ["inverse-lookups", "Inverse lookups"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
           <li>
             <a
               href={`#${id}`}
@@ -220,6 +220,129 @@
         Export the chart as an image with <strong class="text-foreground">Export image</strong>.
       </li>
     </ul>
+  </section>
+
+  <!-- 2b. ADVANCED MODE -------------------------------------------------- -->
+  <section id="advanced-options" class="scroll-mt-24 space-y-4">
+    <h2 class="text-2xl font-semibold">Advanced mode</h2>
+    <p class="text-muted-foreground">
+      The <strong class="text-foreground">Basic / Advanced</strong> switch in the top bar controls
+      how much of the app is shown. <strong class="text-foreground">Basic</strong> keeps the
+      essentials — one program, an energy table, and export.
+      <strong class="text-foreground">Advanced</strong> unlocks multi-program comparison, the inverse
+      lookups described below, custom compounds, MSTAR modes, and density / I-value overrides. The choice
+      is remembered and travels in shared links.
+    </p>
+
+    <h3 class="font-semibold">Overrides &amp; options</h3>
+    <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+      <li>
+        <strong class="text-foreground">Aggregate state (Gas / Condensed).</strong> The same
+        substance has a different <em>mean excitation energy (I-value)</em> as a gas versus condensed
+        matter, which shifts stopping power by a few percent at intermediate energies. It also sets the
+        default stopping-power unit (gas → MeV·cm²/g, condensed → keV/µm).
+      </li>
+      <li>
+        <strong class="text-foreground">Density override (g/cm³).</strong> Affects only the conversion
+        between mass units (MeV·cm²/g, g/cm²) and linear units (keV/µm, MeV/cm, cm) — the underlying mass
+        stopping power is unchanged. Useful for gases at non-standard pressure/temperature or for powders
+        and pressed pellets.
+      </li>
+      <li>
+        <strong class="text-foreground">I-value override (eV).</strong> The mean excitation energy appears
+        in the Bethe formula; a higher I-value gives a lower electronic stopping power. Leave blank to
+        use the tabulated material constant, or enter a measured value for your sample.
+      </li>
+      <li>
+        <strong class="text-foreground">Interpolation.</strong> Controls how values between
+        tabulated points are computed: the axis scale (<strong class="text-foreground"
+          >log-log</strong
+        >
+        vs
+        <strong class="text-foreground">lin-lin</strong>) and the method (<strong
+          class="text-foreground">linear</strong
+        >
+        vs <strong class="text-foreground">spline</strong>). The setting applies to every data
+        source; mixing settings across compared series is not supported.
+      </li>
+    </ul>
+
+    <h3 class="font-semibold">MSTAR modes (heavy ions)</h3>
+    <p class="text-muted-foreground">
+      When <strong class="text-foreground">MSTAR</strong> is the active program, a mode selector
+      chooses its calculation variant. <strong class="text-foreground">B</strong> (auto special) is the
+      recommended default.
+    </p>
+    <div class="overflow-x-auto">
+      <table class="w-full border-collapse text-sm">
+        <thead>
+          <tr class="border-b">
+            <th class="py-2 pr-4 text-left font-semibold">Mode</th>
+            <th class="py-2 text-left font-semibold">Meaning</th>
+          </tr>
+        </thead>
+        <tbody>
+          {#each [["A", "Auto base: C for condensed targets, G for gaseous"], ["B", "Auto special: D for condensed, H for gaseous (default)"], ["C", "Condensed standard"], ["D", "Condensed special (downgrades to C for target Z ≤ 3)"], ["G", "Gas standard"], ["H", "Gas special (projectile Z = 3–11 and 16–18; downgrades to G otherwise)"]] as [mode, meaning] (mode)}
+            <tr class="border-b border-muted/30">
+              <td class="whitespace-nowrap py-2 pr-4 font-mono">{mode}</td>
+              <td class="py-2 text-muted-foreground">{meaning}</td>
+            </tr>
+          {/each}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- INVERSE LOOKUPS --------------------------------------------------- -->
+    <div id="inverse-lookups" class="scroll-mt-24 space-y-3 pt-2">
+      <h3 class="font-semibold">Inverse lookups</h3>
+      <p class="text-muted-foreground">
+        The forward table goes energy → stopping power and range. Advanced mode adds two reverse
+        tabs that solve for the energy instead:
+      </p>
+      <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+        <li>
+          <strong class="text-foreground">Range →.</strong> Enter a target CSDA range; the app returns
+          the energy that produces it, plus the stopping power at that energy. The mapping from range
+          to energy is one-to-one.
+        </li>
+        <li>
+          <strong class="text-foreground">STP →.</strong> Enter a target stopping power; the app
+          returns the energy. Because stopping power rises to a maximum at the
+          <strong class="text-foreground">Bragg peak</strong> and falls off on either side,
+          <em>two</em> energies can give the same value — a low-energy and a high-energy branch — so both
+          are shown. A target above the Bragg-peak maximum has no solution.
+        </li>
+      </ul>
+    </div>
+
+    <!-- CUSTOM COMPOUNDS -------------------------------------------------- -->
+    <div id="custom-compounds" class="scroll-mt-24 space-y-3 pt-2">
+      <h3 class="font-semibold">Custom compounds</h3>
+      <p class="text-muted-foreground">
+        Define your own material from its elemental composition and density. Stopping powers are
+        then computed from the elements using the <strong class="text-foreground"
+          >Bragg additivity rule</strong
+        >
+        (a weight-fraction-weighted sum of the elemental mass stopping powers).
+      </p>
+      <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+        <li>
+          <strong class="text-foreground">Composition.</strong> Enter it either as
+          <strong class="text-foreground">atom counts</strong> per formula unit (Formula mode) or as
+          <strong class="text-foreground">weight fractions</strong> in % (Weight fraction mode). The two
+          views are kept in sync; weight fractions must total 100%.
+        </li>
+        <li>
+          <strong class="text-foreground">Phase.</strong> Gas or condensed — the same aggregate-state
+          choice as above, used for I-value selection and the default display unit.
+        </li>
+        <li>
+          <strong class="text-foreground">I-value (optional).</strong> Leave it blank to derive an effective
+          value from the elements via Bragg additivity, or enter a measured mean excitation energy in
+          eV.
+        </li>
+      </ul>
+    </div>
   </section>
 
   <!-- 3. TIPS ------------------------------------------------------------ -->

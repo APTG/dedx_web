@@ -103,3 +103,48 @@ test.describe("Contextual help — quantities & units", () => {
     await expect(tip).toContainText(/Bragg/);
   });
 });
+
+// Advanced-mode control & workflow hints (PR 3, #771). The hints are static, so
+// no WASM mock is needed; the inverse tabs render their (empty) tables on load.
+test.describe("Contextual help — advanced mode & workflow", () => {
+  test("explains what Advanced mode unlocks and ESC-dismisses @smoke", async ({ page }) => {
+    await page.goto("/calculator");
+
+    const hint = page.getByTestId("advanced-mode-help");
+    await hint.focus();
+
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/multi-program|inverse|custom compounds/i);
+
+    const learnMore = tip.getByRole("link", { name: /Learn more/i });
+    await expect(learnMore).toHaveAttribute("href", /\/docs\/user-guide#advanced-options/);
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  });
+
+  test("both inverse branches are explained, including the Bragg-peak validity hint", async ({
+    page,
+  }) => {
+    await page.goto("/calculator");
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    // Range → branch.
+    await page.getByTestId("inverse-tab-range").click();
+    await page.getByTestId("inverse-range-help").focus();
+    await expect(page.getByRole("tooltip")).toContainText(/range/i);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    // STP → branch (parity) plus the Bragg-peak validity hint.
+    await page.getByTestId("inverse-tab-stp").click();
+    await page.getByTestId("inverse-stp-help").focus();
+    await expect(page.getByRole("tooltip")).toContainText(/stopping power/i);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    await page.getByTestId("inverse-stp-bragg-help").focus();
+    await expect(page.getByRole("tooltip")).toContainText(/Bragg|peak|maximum/i);
+  });
+});

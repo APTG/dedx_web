@@ -1,6 +1,7 @@
 <script lang="ts">
   import { Dialog } from "bits-ui";
   import { Button } from "$lib/components/ui/button";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import { externalDataService } from "$lib/external-data/service";
   import { ExternalDataError } from "$lib/external-data/errors";
   import type { ExternalSourceDescriptor } from "$lib/external-data/types";
@@ -283,7 +284,10 @@
       {#if activeTab === "url"}
         <div class="mt-4 grid gap-3" data-testid="load-ext-url-panel">
           <div class="grid gap-1.5">
-            <label for="load-ext-url" class="text-sm font-medium">URL</label>
+            <span class="flex items-center gap-1.5">
+              <label for="load-ext-url" class="text-sm font-medium">URL</label>
+              <HelpHint term="externalData" side="right" testId="load-ext-cors-help" />
+            </span>
             <input
               id="load-ext-url"
               data-testid="load-ext-url-input"

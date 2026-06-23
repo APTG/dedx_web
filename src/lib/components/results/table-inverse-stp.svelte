@@ -2,6 +2,7 @@
   import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
   import { formatEnergy, formatRangeCm } from "./value-formatters";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
+  import HelpHint from "$lib/components/help-hint.svelte";
 
   const STP_ANCHOR_OPTIONS = [
     { value: "kev-um", label: "keV/µm", tooltip: "keV per micrometre (linear stopping power)" },
@@ -88,14 +89,18 @@
 </script>
 
 <div class={`space-y-2 ${props.class ?? ""}`}>
-  <!-- Unit anchor strip -->
-  <UnitAnchorStrip
-    options={STP_ANCHOR_OPTIONS}
-    selected={props.inverseLookupState.stpMasterUnit}
-    onSelect={(v) =>
-      props.inverseLookupState.setStpMasterUnit(v as "kev-um" | "mev-cm" | "mev-cm2-g")}
-    data-testid="inverse-stp-unit"
-  />
+  <!-- Unit anchor strip + branch / Bragg-peak help -->
+  <div class="flex items-center gap-3">
+    <UnitAnchorStrip
+      options={STP_ANCHOR_OPTIONS}
+      selected={props.inverseLookupState.stpMasterUnit}
+      onSelect={(v) =>
+        props.inverseLookupState.setStpMasterUnit(v as "kev-um" | "mev-cm" | "mev-cm2-g")}
+      data-testid="inverse-stp-unit"
+    />
+    <HelpHint term="inverseStp" side="bottom" testId="inverse-stp-help" />
+    <HelpHint term="braggPeak" side="bottom" testId="inverse-stp-bragg-help" />
+  </div>
 
   <div class="overflow-x-auto">
     <table class="w-full min-w-[400px] text-sm border-collapse" data-testid="inverse-stp-table">
