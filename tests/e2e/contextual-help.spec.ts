@@ -134,14 +134,15 @@ test.describe("Contextual help — advanced mode & workflow", () => {
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Range → branch.
+    // Use click() rather than focus() for freshly-mounted HelpHints: click
+    // triggers pointerenter first (starting Bits UI's 150 ms open timer), giving
+    // the tooltip's attachRef $effect time to register the trigger before
+    // handleOpen fires.  Programmatic focus() is immediate — if it races the
+    // Svelte effect queue the root context is null and the tooltip never opens.
     await page.getByTestId("inverse-tab-range").click();
-    // Wait for the tab content to fully mount before interacting — the HelpHint
-    // is inside a freshly-rendered component; Bits UI needs one Playwright
-    // polling cycle to settle its focus listeners (same pattern as the
-    // picker-program-help test).
     const rangeHelp = page.getByTestId("inverse-range-help");
     await expect(rangeHelp).toBeVisible();
-    await rangeHelp.focus();
+    await rangeHelp.click();
     const rangeTip = page.getByRole("tooltip");
     await expect(rangeTip).toBeVisible();
     await expect(rangeTip).toContainText(/range/i);
@@ -152,7 +153,7 @@ test.describe("Contextual help — advanced mode & workflow", () => {
     await page.getByTestId("inverse-tab-stp").click();
     const stpHelp = page.getByTestId("inverse-stp-help");
     await expect(stpHelp).toBeVisible();
-    await stpHelp.focus();
+    await stpHelp.click();
     const stpTip = page.getByRole("tooltip");
     await expect(stpTip).toBeVisible();
     await expect(stpTip).toContainText(/stopping power/i);
@@ -161,7 +162,7 @@ test.describe("Contextual help — advanced mode & workflow", () => {
 
     const braggHelp = page.getByTestId("inverse-stp-bragg-help");
     await expect(braggHelp).toBeVisible();
-    await braggHelp.focus();
+    await braggHelp.click();
     const braggTip = page.getByRole("tooltip");
     await expect(braggTip).toBeVisible();
     await expect(braggTip).toContainText(/Bragg|peak|maximum/i);
