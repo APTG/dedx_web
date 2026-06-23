@@ -79,7 +79,8 @@ test.describe("Contextual help — quantities & units", () => {
   test("explains the stopping-power quantity and links to the glossary @smoke", async ({
     page,
   }) => {
-    const hint = page.getByTestId("basic-stp-help").getByRole("button");
+    // HelpHint applies the testId directly to its trigger <button>.
+    const hint = page.getByTestId("basic-stp-help");
     await hint.focus();
 
     const tip = page.getByRole("tooltip");
@@ -94,7 +95,7 @@ test.describe("Contextual help — quantities & units", () => {
   });
 
   test("gives CSDA range equal weight with its own hint", async ({ page }) => {
-    const hint = page.getByTestId("basic-range-help").getByRole("button");
+    const hint = page.getByTestId("basic-range-help");
     await hint.focus();
 
     const tip = page.getByRole("tooltip");
