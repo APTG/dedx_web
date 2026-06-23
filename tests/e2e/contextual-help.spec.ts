@@ -28,6 +28,9 @@ test.describe("Contextual help — Program data source", () => {
     await expect(learnMore).toHaveAttribute("href", /\/docs\/user-guide#choosing-a-program/);
 
     // Dismissable without moving focus (WCAG 1.4.13).
+    // Note: the Calculator page's global ESC handler intentionally blurs and
+    // collapses the picker (documented behaviour), so we verify tooltip
+    // dismissal only — not focus retention — in this context.
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
@@ -42,5 +45,24 @@ test.describe("Contextual help — Program data source", () => {
 
     // Opening the hint must not change the selected program.
     await expect(page.getByTestId("picker-tab-program")).toContainText(/Auto/);
+  });
+
+  test("TAB/FN/EXT badge in legend shows accessible tooltip on focus and ESC dismisses", async ({
+    page,
+  }) => {
+    const legend = page.getByTestId("picker-program-legend");
+    const tabBadge = legend.getByTestId("picker-program-tag-TAB");
+    await expect(tabBadge).toBeVisible();
+
+    // Open on keyboard focus (covers keyboard + touch paths).
+    await tabBadge.focus();
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/Tabulated data/i);
+
+    // ESC dismisses the tooltip. The Calculator page's global ESC handler also
+    // blurs picker focus by design, so we verify tooltip dismissal only.
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
 });
