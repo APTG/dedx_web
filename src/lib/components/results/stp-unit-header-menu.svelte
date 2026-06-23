@@ -17,8 +17,10 @@
 
   let { selected, onSelect, label = "STP", testid = "stp-unit" }: Props = $props();
 
-  // In-menu descriptors are sourced from the contextual-help registry so the
-  // wording stays in sync with the ⓘ hints and the glossary.
+  // Terse per-unit captions for the dropdown rows. The fuller, glossary-sourced
+  // copy lives in STP_UNIT_HELP (help-text.ts) and is surfaced via the
+  // stopping-power ⓘ hint beside the trigger; these short labels are kept
+  // deliberately compact for the menu and so are intentionally local.
   const DESCRIPTORS: Record<StpUnit, string> = {
     "keV/µm": "Linear — energy loss per micron",
     "MeV/cm": "Linear — energy loss per centimetre",

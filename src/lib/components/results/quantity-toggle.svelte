@@ -50,7 +50,7 @@
 
 <div
   bind:this={containerRef}
-  class={`inline-flex items-center rounded-md border bg-background p-1 ${className ?? ""}`}
+  class={`inline-flex items-center gap-2 rounded-md border bg-background p-1 ${className ?? ""}`}
   role="radiogroup"
   aria-label="Quantity"
   data-testid="quantity-toggle"
@@ -59,7 +59,7 @@
     <!-- The ⓘ hint is a sibling of (not nested inside) the radio button, so it
          never nests one interactive control inside another. The roving-tabindex
          logic only targets [role="radio"], so the hint does not disturb it. -->
-    <span class="inline-flex items-center">
+    <span class="inline-flex items-center gap-1">
       <button
         type="button"
         role="radio"
@@ -73,7 +73,7 @@
       >
         {opt.label}
       </button>
-      <HelpHint term={opt.help} side="bottom" class="mr-1" testId={`quantity-help-${opt.value}`} />
+      <HelpHint term={opt.help} side="bottom" testId={`quantity-help-${opt.value}`} />
     </span>
   {/each}
 </div>
