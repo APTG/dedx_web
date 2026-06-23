@@ -1,12 +1,14 @@
 - table:
     - rowgroup:
-        - 'row "Drag handle # Energy (MeV) STP (keV/µm) CSDA Range Delete row"':
+        - row:
             - columnheader "Drag handle"
             - columnheader "#"
             - columnheader "Energy (MeV)"
-            - columnheader "STP (keV/µm)":
+            - columnheader /STP \(keV\/µm\)/:
                 - button "STP (keV/µm)"
-            - columnheader "CSDA Range"
+                - button /More information/
+            - columnheader /CSDA Range/:
+                - button /More information/
             - columnheader "Delete row"
     - rowgroup:
         - row /1 \d+ \d+\.\d+ \d+\.\d+ mm Delete row 1/:

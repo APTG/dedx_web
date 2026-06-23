@@ -4,6 +4,7 @@
   import { formatSigFigs } from "$lib/utils/unit-conversions";
   import { formatRangeCm } from "./value-formatters";
   import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
+  import HelpHint from "$lib/components/help-hint.svelte";
 
   interface Props {
     calcState: CalculatorState;
@@ -297,15 +298,19 @@
 
         <div class="grid grid-cols-2 gap-4 rounded-md border bg-muted/20 p-4">
           <div>
-            <div class="text-xs font-medium text-muted-foreground mb-1">
-              Stopping Power ({calcState.stpDisplayUnit})
+            <div class="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+              <span>Stopping Power ({calcState.stpDisplayUnit})</span>
+              <HelpHint term="stoppingPower" side="bottom" testId="basic-stp-help" />
             </div>
             <div class="text-2xl font-mono font-semibold" data-testid="stp-cell-0">
               {stpDisplay(row)}
             </div>
           </div>
           <div>
-            <div class="text-xs font-medium text-muted-foreground mb-1">CSDA Range</div>
+            <div class="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
+              <span>CSDA Range</span>
+              <HelpHint term="csdaRange" side="bottom" testId="basic-range-help" />
+            </div>
             <div class="text-2xl font-mono font-semibold" data-testid="range-cell-0">
               {rangeDisplay(row)}
             </div>
@@ -328,13 +333,19 @@
                 scope="col"
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
-                Stopping Power ({calcState.stpDisplayUnit})
+                <span class="inline-flex items-center gap-1">
+                  Stopping Power ({calcState.stpDisplayUnit})
+                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
+                </span>
               </th>
               <th
                 scope="col"
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
-                CSDA Range
+                <span class="inline-flex items-center gap-1">
+                  CSDA Range
+                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+                </span>
               </th>
             </tr>
           </thead>

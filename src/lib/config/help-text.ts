@@ -17,6 +17,8 @@
  *  - PR 3 (#771): advanced-mode controls & workflow affordances.
  */
 
+import type { StpUnit, EnergyUnit } from "$lib/wasm/types";
+
 export interface HelpEntry {
   /** Short plain-language gloss, ≤150 chars. Source: docs/10-terminology.md. */
   text: string;
@@ -29,6 +31,52 @@ export const HELP_TEXT = {
     text: "The data source for the result: NIST tables, ICRU reports, the MSTAR ion model, or the analytical Bethe formula. Incompatible programs are greyed out.",
     href: "/docs/user-guide#choosing-a-program",
   },
+  stoppingPower: {
+    text: "Rate of energy loss per unit path length. Total = electronic (collisions with electrons) + nuclear (elastic collisions with nuclei).",
+    href: "/docs/user-guide#quantities",
+  },
+  csdaRange: {
+    text: "Continuous-Slowing-Down range: total path length to rest, the integral of 1/stopping power. The Bragg peak sits just before its end.",
+    href: "/docs/user-guide#quantities",
+  },
 } satisfies Record<string, HelpEntry>;
 
 export type HelpKey = keyof typeof HELP_TEXT;
+
+/**
+ * Per-unit help for the stopping-power output units (`StpUnit`). Mass units are
+ * geometry-independent; linear units need the material density to convert.
+ */
+export const STP_UNIT_HELP = {
+  "MeV·cm²/g": {
+    text: "Mass stopping power — stopping power ÷ density. Geometry-independent, so values are comparable across materials.",
+    href: "/docs/user-guide#units",
+  },
+  "keV/µm": {
+    text: "Linear stopping power — energy lost per micron of path. Requires the material density to convert from the mass unit.",
+    href: "/docs/user-guide#units",
+  },
+  "MeV/cm": {
+    text: "Linear stopping power — energy lost per centimetre of path. Requires the material density to convert from the mass unit.",
+    href: "/docs/user-guide#units",
+  },
+} satisfies Record<StpUnit, HelpEntry>;
+
+/**
+ * Per-unit help for the energy input units (`EnergyUnit`). MeV/nucl vs MeV/u is
+ * the glossary's documented "often confused" pair; electrons (ESTAR) use MeV.
+ */
+export const ENERGY_UNIT_HELP = {
+  MeV: {
+    text: "Total kinetic energy, in megaelectronvolts. Used for electrons (ESTAR), where per-nucleon energy is undefined.",
+    href: "/docs/user-guide#units",
+  },
+  "MeV/nucl": {
+    text: "Energy ÷ mass number A (integer nucleon count). The app default for ions and what libdedx uses internally.",
+    href: "/docs/user-guide#units",
+  },
+  "MeV/u": {
+    text: "Energy ÷ actual atomic mass in u. Differs from MeV/nucl by ~0.8% for a proton; the two are equal for carbon-12.",
+    href: "/docs/user-guide#units",
+  },
+} satisfies Record<EnergyUnit, HelpEntry>;

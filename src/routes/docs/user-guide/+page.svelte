@@ -37,7 +37,7 @@
     <p class="text-sm text-muted-foreground">Two-minute tour below. Jump to a section:</p>
     <nav aria-label="On this page">
       <ul class="flex flex-wrap gap-2 text-sm">
-        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["plot", "Plot"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
+        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["quantities", "Quantities & units"], ["plot", "Plot"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
           <li>
             <a
               href={`#${id}`}
@@ -127,6 +127,60 @@
       Rule of thumb: prefer the tabulated program validated for your particle and energy range, and
       fall back to the analytical Bethe model only when nothing tabulated covers it.
     </p>
+  </section>
+
+  <!-- 1c. QUANTITIES & UNITS --------------------------------------------- -->
+  <section id="quantities" class="scroll-mt-24 space-y-4">
+    <h2 class="text-2xl font-semibold">Quantities &amp; units</h2>
+    <p class="text-muted-foreground">
+      Every result is one of two quantities. Both are reported side by side — range is a distinct
+      physical quantity, not an afterthought.
+    </p>
+    <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+      <li>
+        <strong class="text-foreground">Stopping power</strong> — the rate of energy loss per unit
+        path length. It is the sum of an <strong class="text-foreground">electronic</strong>
+        component (collisions with atomic electrons, dominant at most energies) and a
+        <strong class="text-foreground">nuclear</strong> component (elastic collisions with nuclei, dominant
+        only at very low energy).
+      </li>
+      <li>
+        <strong class="text-foreground">CSDA range</strong> — the
+        Continuous-Slowing-Down-Approximation range: the total path length a particle travels before
+        coming to rest, obtained by integrating 1 / stopping power over energy. The
+        <strong class="text-foreground">Bragg peak</strong> — the sharp dose maximum at the end of the
+        track — sits just before the CSDA range.
+      </li>
+    </ul>
+
+    <div id="units" class="scroll-mt-24 space-y-3">
+      <h3 class="font-semibold">Units</h3>
+      <ul class="ml-1 list-disc space-y-2 pl-5 text-muted-foreground">
+        <li>
+          <strong class="text-foreground">Stopping power.</strong>
+          <strong class="text-foreground">MeV·cm²/g</strong> is the
+          <em>mass</em> stopping power (stopping power ÷ density) — geometry-independent, so values
+          are comparable across materials. <strong class="text-foreground">keV/µm</strong> and
+          <strong class="text-foreground">MeV/cm</strong> are <em>linear</em> units (energy lost per unit
+          length) and need the material density to convert.
+        </li>
+        <li>
+          <strong class="text-foreground">CSDA range.</strong>
+          <strong class="text-foreground">g/cm²</strong> is the geometry-independent
+          <em>mass</em> range; <strong class="text-foreground">cm</strong> is the physical depth,
+          obtained by dividing by the density (R<sub>cm</sub> = R<sub>g/cm²</sub> / ρ).
+        </li>
+        <li>
+          <strong class="text-foreground">Energy.</strong> For ions, energy is normalised by mass:
+          <strong class="text-foreground">MeV/nucl</strong> divides by the integer mass number A,
+          while
+          <strong class="text-foreground">MeV/u</strong> divides by the actual atomic mass in
+          unified mass units — the two differ by ~0.8% for a proton but are equal for carbon-12.
+          Electrons (ESTAR) use plain <strong class="text-foreground">MeV</strong>, since
+          per-nucleon energy is undefined for leptons.
+        </li>
+      </ul>
+    </div>
   </section>
 
   <!-- 2. PLOT ------------------------------------------------------------ -->

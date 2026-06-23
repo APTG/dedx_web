@@ -15,6 +15,8 @@
   } from "./table-advanced-helpers";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
   import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
+  import HelpHint from "$lib/components/help-hint.svelte";
+  import { ENERGY_UNIT_HELP } from "$lib/config/help-text";
   import type { StpUnit } from "$lib/wasm/types";
 
   type EnergyModeProps = {
@@ -191,13 +193,21 @@
   {#if isEnergy && calcState && entitySelection}
     <!-- Energy → mode: compact unit selector above table -->
     {#if energyAnchorOptions.length > 0}
-      <UnitAnchorStrip
-        options={energyAnchorOptions}
-        selected={calcState.masterUnit}
-        onSelect={(v) => calcState?.setMasterUnit(v as EnergyUnit)}
-        disabled={calcState.isPerRowMode}
-        data-testid="advanced-energy-unit-strip"
-      />
+      <div class="flex items-center gap-1">
+        <UnitAnchorStrip
+          options={energyAnchorOptions}
+          selected={calcState.masterUnit}
+          onSelect={(v) => calcState?.setMasterUnit(v as EnergyUnit)}
+          disabled={calcState.isPerRowMode}
+          data-testid="advanced-energy-unit-strip"
+        />
+        <HelpHint
+          text={ENERGY_UNIT_HELP[calcState.masterUnit].text}
+          href={ENERGY_UNIT_HELP[calcState.masterUnit].href}
+          side="bottom"
+          testId="advanced-energy-unit-help"
+        />
+      </div>
     {/if}
 
     <div class="overflow-x-auto">
@@ -236,9 +246,12 @@
                 testid="advanced-stp-unit"
               />
             </th>
-            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b"
-              >CSDA Range</th
-            >
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b">
+              <span class="inline-flex items-center gap-1">
+                CSDA Range
+                <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+              </span>
+            </th>
             <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Delete row"></th>
           </tr>
         </thead>
@@ -384,9 +397,12 @@
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b w-8"
               >#</th
             >
-            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
-              >Range</th
-            >
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b">
+              <span class="inline-flex items-center gap-1">
+                Range
+                <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+              </span>
+            </th>
             <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-left border-b"
               >Unit</th
             >

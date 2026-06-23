@@ -1,6 +1,12 @@
 # Feature: Contextual Help (tooltips & "ⓘ" hints)
 
-> **Status:** Draft v1 (2026-06-21)
+> **Status:** Draft v2 (2026-06-23)
+>
+> **v2:** PR 2 (#770) landed — quantity & unit hints with stopping-power /
+> CSDA-range parity, plus the MeV/nucl-vs-MeV/u energy distinction. Added
+> `stoppingPower` / `csdaRange` concept keys and the `STP_UNIT_HELP` /
+> `ENERGY_UNIT_HELP` per-unit maps to `help-text.ts`, and a "Quantities & units"
+> deep-link section to the user guide.
 >
 > **Related specs:**
 >
@@ -60,6 +66,16 @@ Program-specific "what + why" strings live in `PROGRAM_HELP` (keyed by libdedx
 program id) in `src/lib/config/program-names.ts`, alongside the existing
 `PROGRAM_DESCRIPTIONS` (terse subtitle) and `PROGRAM_NAME_OVERRIDES`.
 
+PR 2 adds two further registry shapes in `help-text.ts`:
+
+- `stoppingPower` / `csdaRange` **concept** keys in `HELP_TEXT` (used via the
+  `term` prop on the result-table quantity headers and the quantity toggle).
+- `STP_UNIT_HELP` (keyed by `StpUnit`) and `ENERGY_UNIT_HELP` (keyed by
+  `EnergyUnit`) **per-unit** maps. `energy-anchor-options.ts` re-uses
+  `ENERGY_UNIT_HELP` text for the strip's hover tooltips, so the short tooltip
+  and the ⓘ hint never drift. A unit-test consistency check asserts every unit
+  the UI can expose has a registry entry.
+
 ### Accessibility (WCAG 2.1 AA — SC 1.4.13 Content on Hover or Focus)
 
 The Bits UI tooltip provides the three required behaviours: the hint is
@@ -84,6 +100,21 @@ hint is never the only path to the information.
 - **TAB / FN / EXT badge meaning** is conveyed by the always-visible **legend**
   at the bottom of the Program panel (visible text > hover-only tooltip), so no
   per-badge tooltip is added.
+- **Quantity & unit hints (PR 2)** sit beside — never inside — the interactive
+  control they explain:
+  - The **`stoppingPower`** hint is a sibling of the `StpUnitHeaderMenu` trigger
+    button (it stops click propagation, so it never opens the unit menu) and of
+    the Basic-table "Stopping Power" header text.
+  - The **`csdaRange`** hint sits beside every "CSDA Range" / "Range" header
+    (Basic card + table, Advanced energy & range tabs, multi-program and
+    multi-entity colgroup headers) and the Basic-table card label.
+  - The **quantity toggle** (`quantity-toggle.svelte`) wraps each radio in a
+    span with a trailing hint, so both quantities are explained at the toggle
+    too. The roving-tabindex logic only targets `[role="radio"]`, so the hints
+    do not disturb arrow-key navigation.
+  - The **energy unit** hint sits beside the `UnitAnchorStrip` and reflects the
+    currently selected unit (the MeV/nucl-vs-MeV/u distinction); the strip's own
+    per-option hover tooltips share the same registry copy.
 
 ---
 
@@ -155,11 +186,21 @@ apply.
   - [ ] Renders the "Learn more" link with the base-prepended `href` when present
   - [ ] Omits the link when no `href` is resolvable
 
+- `src/tests/components/quantity-toggle.test.ts` (PR 2)
+  - [x] Renders a hint per quantity with glossary-sourced accessible names
+  - [x] Hints stay out of the roving radio tab order (still exactly two radios)
+- `src/tests/components/stp-unit-header-menu.test.ts` (PR 2, extend)
+  - [x] Renders the `stoppingPower` concept hint beside the unit trigger
+
 ### Unit tests (Vitest)
 
 - `src/tests/unit/program-names.test.ts` (extend)
   - [ ] Every program id with a friendly name also has a `PROGRAM_HELP` entry
   - [ ] All `PROGRAM_HELP` strings are non-empty and ≤150 chars
+- `src/tests/unit/help-text.test.ts` (PR 2)
+  - [x] Consistency: every STP unit and every energy unit has a registry entry
+  - [x] All glosses non-empty, ≤150 chars, with a base-relative href
+  - [x] Energy strip tooltips are sourced from `ENERGY_UNIT_HELP`
 
 ### E2E tests (Playwright)
 
@@ -167,12 +208,14 @@ apply.
   - `@smoke` — open the Program data-source hint, assert content + "Learn more"
     link, dismiss with `Escape` (runs against the real app; no WASM mock needed —
     the hint is static)
+  - `@smoke` (PR 2) — open the Basic-card stopping-power hint, assert content +
+    deep-link to `#quantities`; assert the CSDA-range hint renders with parity
 
 ---
 
 ## Out of Scope / Deferred
 
-- Quantity & unit hints (stopping power + CSDA range) — **PR 2 / #770**
+- ~~Quantity & unit hints (stopping power + CSDA range) — **PR 2 / #770**~~ ✅ landed
 - Advanced-mode control & workflow hints — **PR 3 / #771**
 - Onboarding tours / coach-marks and the `tip_seen` URL flag — owned by
   `multi-program.md`; not part of this spec

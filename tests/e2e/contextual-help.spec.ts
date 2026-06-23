@@ -66,3 +66,40 @@ test.describe("Contextual help — Program data source", () => {
     await expect(page.getByRole("tooltip")).toHaveCount(0);
   });
 });
+
+// Quantity & unit hints (PR 2, #770). Parity: both stopping power AND CSDA range
+// expose a concept hint on the result card. The default proton/water selection
+// computes on load, so the Basic single-row card is present.
+test.describe("Contextual help — quantities & units", () => {
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/calculator");
+    await expect(page.getByTestId("basic-single-row-card")).toBeVisible();
+  });
+
+  test("explains the stopping-power quantity and links to the glossary @smoke", async ({
+    page,
+  }) => {
+    // HelpHint applies the testId directly to its trigger <button>.
+    const hint = page.getByTestId("basic-stp-help");
+    await hint.focus();
+
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/electronic/i);
+
+    const learnMore = tip.getByRole("link", { name: /Learn more/i });
+    await expect(learnMore).toHaveAttribute("href", /\/docs\/user-guide#quantities/);
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  });
+
+  test("gives CSDA range equal weight with its own hint", async ({ page }) => {
+    const hint = page.getByTestId("basic-range-help");
+    await hint.focus();
+
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/Bragg/);
+  });
+});
