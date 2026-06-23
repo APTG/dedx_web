@@ -37,7 +37,7 @@
     <p class="text-sm text-muted-foreground">Two-minute tour below. Jump to a section:</p>
     <nav aria-label="On this page">
       <ul class="flex flex-wrap gap-2 text-sm">
-        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["quantities", "Quantities & units"], ["plot", "Plot"], ["advanced-options", "Advanced mode"], ["inverse-lookups", "Inverse lookups"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
+        {#each [["calculator", "Calculator"], ["choosing-a-program", "Programs"], ["quantities", "Quantities & units"], ["plot", "Plot"], ["advanced-options", "Advanced mode"], ["inverse-lookups", "Inverse lookups"], ["custom-compounds", "Custom compounds"], ["tips", "Tips"], ["sharing", "Shareable links"], ["external-data", "External data"], ["keyboard", "Keyboard"]] as [id, label] (id)}
           <li>
             <a
               href={`#${id}`}

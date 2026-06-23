@@ -128,23 +128,32 @@ test.describe("Contextual help — advanced mode & workflow", () => {
     page,
   }) => {
     await page.goto("/calculator");
+    // Wait for the app to hydrate before toggling mode — the inverse tabs only
+    // mount once Advanced mode is on and the entity selection exists.
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
 
     // Range → branch.
     await page.getByTestId("inverse-tab-range").click();
     await page.getByTestId("inverse-range-help").focus();
-    await expect(page.getByRole("tooltip")).toContainText(/range/i);
+    const rangeTip = page.getByRole("tooltip");
+    await expect(rangeTip).toBeVisible();
+    await expect(rangeTip).toContainText(/range/i);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
 
     // STP → branch (parity) plus the Bragg-peak validity hint.
     await page.getByTestId("inverse-tab-stp").click();
     await page.getByTestId("inverse-stp-help").focus();
-    await expect(page.getByRole("tooltip")).toContainText(/stopping power/i);
+    const stpTip = page.getByRole("tooltip");
+    await expect(stpTip).toBeVisible();
+    await expect(stpTip).toContainText(/stopping power/i);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
 
     await page.getByTestId("inverse-stp-bragg-help").focus();
-    await expect(page.getByRole("tooltip")).toContainText(/Bragg|peak|maximum/i);
+    const braggTip = page.getByRole("tooltip");
+    await expect(braggTip).toBeVisible();
+    await expect(braggTip).toContainText(/Bragg|peak|maximum/i);
   });
 });

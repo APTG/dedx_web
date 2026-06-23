@@ -134,7 +134,15 @@
             {/if}
           </Button>
           {#if !routePath.startsWith("/docs")}
-            <HelpHint term="shareExport" side="bottom" testId="share-export-help" />
+            <!-- Hidden on mobile to match the Export buttons (hidden sm:flex):
+                 the hint references Export, which isn't in the mobile header. -->
+            <HelpHint
+              term="shareExport"
+              label="Sharing and exporting help"
+              side="bottom"
+              testId="share-export-help"
+              class="hidden sm:inline-flex"
+            />
           {/if}
 
           {#if !routePath.startsWith("/docs")}
@@ -167,7 +175,12 @@
                 Advanced
               </button>
             </div>
-            <HelpHint term="advancedMode" side="bottom" testId="advanced-mode-help" />
+            <HelpHint
+              term="advancedMode"
+              label="Advanced mode help"
+              side="bottom"
+              testId="advanced-mode-help"
+            />
           {/if}
         </div>
       </div>
