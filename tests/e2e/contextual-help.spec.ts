@@ -135,7 +135,13 @@ test.describe("Contextual help — advanced mode & workflow", () => {
 
     // Range → branch.
     await page.getByTestId("inverse-tab-range").click();
-    await page.getByTestId("inverse-range-help").focus();
+    // Wait for the tab content to fully mount before interacting — the HelpHint
+    // is inside a freshly-rendered component; Bits UI needs one Playwright
+    // polling cycle to settle its focus listeners (same pattern as the
+    // picker-program-help test).
+    const rangeHelp = page.getByTestId("inverse-range-help");
+    await expect(rangeHelp).toBeVisible();
+    await rangeHelp.focus();
     const rangeTip = page.getByRole("tooltip");
     await expect(rangeTip).toBeVisible();
     await expect(rangeTip).toContainText(/range/i);
@@ -144,14 +150,18 @@ test.describe("Contextual help — advanced mode & workflow", () => {
 
     // STP → branch (parity) plus the Bragg-peak validity hint.
     await page.getByTestId("inverse-tab-stp").click();
-    await page.getByTestId("inverse-stp-help").focus();
+    const stpHelp = page.getByTestId("inverse-stp-help");
+    await expect(stpHelp).toBeVisible();
+    await stpHelp.focus();
     const stpTip = page.getByRole("tooltip");
     await expect(stpTip).toBeVisible();
     await expect(stpTip).toContainText(/stopping power/i);
     await page.keyboard.press("Escape");
     await expect(page.getByRole("tooltip")).toHaveCount(0);
 
-    await page.getByTestId("inverse-stp-bragg-help").focus();
+    const braggHelp = page.getByTestId("inverse-stp-bragg-help");
+    await expect(braggHelp).toBeVisible();
+    await braggHelp.focus();
     const braggTip = page.getByRole("tooltip");
     await expect(braggTip).toBeVisible();
     await expect(braggTip).toContainText(/Bragg|peak|maximum/i);
