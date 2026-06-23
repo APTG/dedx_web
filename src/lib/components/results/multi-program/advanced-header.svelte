@@ -6,6 +6,7 @@
     type ColumnReorderController,
   } from "$lib/actions/draggable-column.svelte";
   import StpUnitHeaderMenu from "../stp-unit-header-menu.svelte";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import type { StpUnit } from "$lib/wasm/types";
 
   interface Props {
@@ -88,7 +89,10 @@
         colspan={visibleProgramIds.length}
         class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
       >
-        CSDA Range
+        <span class="inline-flex items-center gap-1">
+          CSDA Range
+          <HelpHint term="csdaRange" side="bottom" class="font-normal" testId="multi-csda-help" />
+        </span>
       </th>
     {/if}
   </tr>

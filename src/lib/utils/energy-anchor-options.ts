@@ -1,10 +1,16 @@
 import { getAvailableEnergyUnits } from "$lib/utils/available-units";
+import { ENERGY_UNIT_HELP } from "$lib/config/help-text";
 import type { EnergyUnit } from "$lib/wasm/types";
 
+/**
+ * Short hover-tooltip copy for the energy unit strip, sourced from the
+ * contextual-help registry so the wording stays in sync with the ⓘ hints and
+ * the glossary (`docs/10-terminology.md`).
+ */
 export const ENERGY_UNIT_TOOLTIPS: Record<EnergyUnit, string> = {
-  MeV: "Megaelectronvolts — total kinetic energy",
-  "MeV/nucl": "MeV per nucleon — kinetic energy per nucleon (equals MeV for proton)",
-  "MeV/u": "MeV per unified atomic mass unit — differs from MeV by ~0.001 for proton",
+  MeV: ENERGY_UNIT_HELP.MeV.text,
+  "MeV/nucl": ENERGY_UNIT_HELP["MeV/nucl"].text,
+  "MeV/u": ENERGY_UNIT_HELP["MeV/u"].text,
 };
 
 export interface EnergyAnchorOption {

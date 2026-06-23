@@ -1,6 +1,7 @@
 <script lang="ts">
   import { browser } from "$app/environment";
   import { STP_UNITS } from "$lib/utils/stp-unit-codec";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import type { StpUnit } from "$lib/wasm/types";
 
   interface Props {
@@ -16,6 +17,8 @@
 
   let { selected, onSelect, label = "STP", testid = "stp-unit" }: Props = $props();
 
+  // In-menu descriptors are sourced from the contextual-help registry so the
+  // wording stays in sync with the ⓘ hints and the glossary.
   const DESCRIPTORS: Record<StpUnit, string> = {
     "keV/µm": "Linear — energy loss per micron",
     "MeV/cm": "Linear — energy loss per centimetre",
@@ -87,20 +90,23 @@
 
 <svelte:window onkeydown={onKeydown} />
 
-<button
-  bind:this={triggerEl}
-  type="button"
-  onclick={toggle}
-  aria-haspopup="menu"
-  aria-expanded={open}
-  data-testid={`${testid}-trigger`}
-  class="inline-flex min-h-[44px] items-center gap-1 font-medium decoration-dotted underline-offset-4
-         hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-  title="Change stopping-power unit"
->
-  <span style="text-decoration: underline dotted;">{label} ({selected})</span>
-  <span aria-hidden="true" class="text-xs">▾</span>
-</button>
+<span class="inline-flex items-center gap-1">
+  <button
+    bind:this={triggerEl}
+    type="button"
+    onclick={toggle}
+    aria-haspopup="menu"
+    aria-expanded={open}
+    data-testid={`${testid}-trigger`}
+    class="inline-flex min-h-[44px] items-center gap-1 font-medium decoration-dotted underline-offset-4
+           hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+    title="Change stopping-power unit"
+  >
+    <span style="text-decoration: underline dotted;">{label} ({selected})</span>
+    <span aria-hidden="true" class="text-xs">▾</span>
+  </button>
+  <HelpHint term="stoppingPower" side="bottom" class="font-normal" testId={`${testid}-help`} />
+</span>
 
 {#if open}
   {#if isMobile}

@@ -1,6 +1,7 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/svelte";
 import StpUnitHeaderMenu from "$lib/components/results/stp-unit-header-menu.svelte";
+import { HELP_TEXT } from "$lib/config/help-text";
 import type { StpUnit } from "$lib/wasm/types";
 
 describe("StpUnitHeaderMenu", () => {
@@ -11,6 +12,15 @@ describe("StpUnitHeaderMenu", () => {
       props: { selected: "keV/µm" as StpUnit, onSelect: () => {}, label: "STP" },
     });
     expect(screen.getByTestId("stp-unit-trigger").textContent).toContain("STP (keV/µm)");
+  });
+
+  it("renders a stopping-power concept hint beside the trigger", () => {
+    render(StpUnitHeaderMenu, {
+      props: { selected: "keV/µm" as StpUnit, onSelect: () => {} },
+    });
+    expect(screen.getByTestId("stp-unit-help")).toHaveAccessibleName(
+      new RegExp(HELP_TEXT.stoppingPower.text.slice(0, 20)),
+    );
   });
 
   it("opens the menu and offers the three units in order", async () => {

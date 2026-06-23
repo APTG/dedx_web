@@ -1,4 +1,7 @@
 <script lang="ts">
+  import HelpHint from "$lib/components/help-hint.svelte";
+  import type { HelpKey } from "$lib/config/help-text";
+
   interface Props {
     value: "stp" | "range";
     onChange: (v: "stp" | "range") => void;
@@ -7,9 +10,9 @@
 
   let { value, onChange, class: className }: Props = $props();
 
-  const OPTIONS: Array<{ value: "stp" | "range"; label: string }> = [
-    { value: "stp", label: "Stopping Power" },
-    { value: "range", label: "CSDA Range" },
+  const OPTIONS: Array<{ value: "stp" | "range"; label: string; help: HelpKey }> = [
+    { value: "stp", label: "Stopping Power", help: "stoppingPower" },
+    { value: "range", label: "CSDA Range", help: "csdaRange" },
   ];
 
   let containerRef = $state<HTMLElement | null>(null);
@@ -53,18 +56,24 @@
   data-testid="quantity-toggle"
 >
   {#each OPTIONS as opt, index (opt.value)}
-    <button
-      type="button"
-      role="radio"
-      aria-checked={value === opt.value}
-      tabindex={focusedIndex === index ? 0 : -1}
-      class="rounded-sm px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-      class:bg-accent={value === opt.value}
-      onclick={() => onChange(opt.value)}
-      onkeydown={handleKeyDown}
-      data-testid={`quantity-toggle-${opt.value}`}
-    >
-      {opt.label}
-    </button>
+    <!-- The ⓘ hint is a sibling of (not nested inside) the radio button, so it
+         never nests one interactive control inside another. The roving-tabindex
+         logic only targets [role="radio"], so the hint does not disturb it. -->
+    <span class="inline-flex items-center">
+      <button
+        type="button"
+        role="radio"
+        aria-checked={value === opt.value}
+        tabindex={focusedIndex === index ? 0 : -1}
+        class="rounded-sm px-3 py-1.5 text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
+        class:bg-accent={value === opt.value}
+        onclick={() => onChange(opt.value)}
+        onkeydown={handleKeyDown}
+        data-testid={`quantity-toggle-${opt.value}`}
+      >
+        {opt.label}
+      </button>
+      <HelpHint term={opt.help} side="bottom" class="mr-1" testId={`quantity-help-${opt.value}`} />
+    </span>
   {/each}
 </div>
