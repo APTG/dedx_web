@@ -6,6 +6,7 @@
   import { wasmReady, wasmError } from "$lib/state/ui.svelte";
   import { isAdvancedMode, toggleAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import { Button } from "$lib/components/ui/button";
+  import HelpHint from "$lib/components/help-hint.svelte";
   import CsvExportModal from "$lib/components/CsvExportModal.svelte";
   import {
     canExport,
@@ -132,6 +133,17 @@
               Share URL
             {/if}
           </Button>
+          {#if !routePath.startsWith("/docs")}
+            <!-- Hidden on mobile to match the Export buttons (hidden sm:flex):
+                 the hint references Export, which isn't in the mobile header. -->
+            <HelpHint
+              term="shareExport"
+              label="Sharing and exporting help"
+              side="bottom"
+              testId="share-export-help"
+              class="hidden sm:inline-flex"
+            />
+          {/if}
 
           {#if !routePath.startsWith("/docs")}
             <!-- Basic/Advanced mode toggle chip: hidden on Docs (not applicable there) -->
@@ -163,6 +175,12 @@
                 Advanced
               </button>
             </div>
+            <HelpHint
+              term="advancedMode"
+              label="Advanced mode help"
+              side="bottom"
+              testId="advanced-mode-help"
+            />
           {/if}
         </div>
       </div>

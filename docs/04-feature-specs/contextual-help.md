@@ -1,6 +1,16 @@
 # Feature: Contextual Help (tooltips & "ⓘ" hints)
 
-> **Status:** Draft v2 (2026-06-23)
+> **Status:** Draft v3 (2026-06-23)
+>
+> **v3:** PR 3 (#771) landed — advanced-mode control & workflow hints. Added
+> concept keys for the aggregate-state toggle, density / I-value overrides,
+> MSTAR mode, interpolation, the two inverse-lookup branches (`inverseRange` /
+> `inverseStp`) with the `braggPeak` validity hint, and the workflow affordances
+> (`advancedMode`, `shareExport`, `customCompound` / `compoundComposition` /
+> `compoundIValue`, `externalData` / CORS). Standardised the advanced-options
+> panel on `HelpHint` (dropped its raw `Info` + tooltip). New `#advanced-options`
+> user-guide section (with the MSTAR mode table), plus `#inverse-lookups` and
+> `#custom-compounds` deep-link targets.
 >
 > **v2:** PR 2 (#770) landed — quantity & unit hints with stopping-power /
 > CSDA-range parity, plus the MeV/nucl-vs-MeV/u energy distinction. Added
@@ -115,6 +125,27 @@ hint is never the only path to the information.
   - The **energy unit** hint sits beside the `UnitAnchorStrip` and reflects the
     currently selected unit (the MeV/nucl-vs-MeV/u distinction); the strip's own
     per-option hover tooltips share the same registry copy.
+- **Advanced-mode control hints (PR 3)** sit beside their `Label`, never inside
+  the input / select they explain:
+  - In `advanced-options-panel.svelte` the raw `Info` + Bits UI tooltip is
+    replaced by `HelpHint` on the **density** (keeps the context-sensitive
+    `getDensityTooltip` copy via `text=`, adds a deep-link), **I-value**,
+    **aggregate state**, **interpolation**, and **MSTAR mode** controls. The
+    aggregate-state and MSTAR hints render only when their control does.
+  - The **inverse Range→** hint (`inverseRange`) sits beside the range unit
+    strip in `table-advanced.svelte` (mode `range`); the **inverse STP→** hint
+    (`inverseStp`) and the **Bragg-peak** validity hint (`braggPeak`) sit beside
+    the STP unit strip in `table-inverse-stp.svelte`. Range→/STP→ keep parity.
+- **Workflow affordance hints (PR 3)** are header- or modal-level:
+  - `advancedMode` beside the Basic/Advanced toggle and `shareExport` beside the
+    Share URL button, both in the root layout action bar (siblings of the
+    controls, not nested in them).
+  - In the **custom-compound editor** (`compound-editor/desktop-sheet.svelte`):
+    `compoundComposition` beside the Formula / Weight-fraction mode switch,
+    `aggregateState` beside the Phase radios, `compoundIValue` beside the
+    optional I-value field.
+  - `externalData` (the CORS hosting requirement) beside the URL field in
+    `load-external-modal.svelte`.
 
 ---
 
@@ -191,6 +222,13 @@ apply.
   - [x] Hints stay out of the roving radio tab order (still exactly two radios)
 - `src/tests/components/stp-unit-header-menu.test.ts` (PR 2, extend)
   - [x] Renders the `stoppingPower` concept hint beside the unit trigger
+- `src/tests/components/advanced-options-panel.test.ts` (PR 3, extend)
+  - [x] Renders the I-value & interpolation concept hints with glossary copy
+  - [x] Aggregate-state hint appears only when the phase toggle is shown
+  - [x] MSTAR-mode hint appears only when MSTAR is the active program
+- `src/tests/components/inverse-lookup-help.test.ts` (PR 3)
+  - [x] STP→ branch hint + Bragg-peak validity hint render
+  - [x] Range→ branch hint renders (parity with STP→)
 
 ### Unit tests (Vitest)
 
@@ -210,13 +248,16 @@ apply.
     the hint is static)
   - `@smoke` (PR 2) — open the Basic-card stopping-power hint, assert content +
     deep-link to `#quantities`; assert the CSDA-range hint renders with parity
+  - `@smoke` (PR 3) — open the Advanced-mode toggle hint, assert content +
+    deep-link to `#advanced-options`, ESC-dismiss; in Advanced mode, open both
+    inverse-branch hints (Range→, STP→) and the Bragg-peak validity hint
 
 ---
 
 ## Out of Scope / Deferred
 
 - ~~Quantity & unit hints (stopping power + CSDA range) — **PR 2 / #770**~~ ✅ landed
-- Advanced-mode control & workflow hints — **PR 3 / #771**
+- ~~Advanced-mode control & workflow hints — **PR 3 / #771**~~ ✅ landed
 - Onboarding tours / coach-marks and the `tip_seen` URL flag — owned by
   `multi-program.md`; not part of this spec
 - Converting trivial icon-button `title=` labels (e.g. "List view") to tooltips —

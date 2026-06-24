@@ -103,3 +103,68 @@ test.describe("Contextual help — quantities & units", () => {
     await expect(tip).toContainText(/Bragg/);
   });
 });
+
+// Advanced-mode control & workflow hints (PR 3, #771). The hints are static, so
+// no WASM mock is needed; the inverse tabs render their (empty) tables on load.
+test.describe("Contextual help — advanced mode & workflow", () => {
+  test("explains what Advanced mode unlocks and ESC-dismisses @smoke", async ({ page }) => {
+    await page.goto("/calculator");
+
+    const hint = page.getByTestId("advanced-mode-help");
+    await hint.focus();
+
+    const tip = page.getByRole("tooltip");
+    await expect(tip).toBeVisible();
+    await expect(tip).toContainText(/multi-program|inverse|custom compounds/i);
+
+    const learnMore = tip.getByRole("link", { name: /Learn more/i });
+    await expect(learnMore).toHaveAttribute("href", /\/docs\/user-guide#advanced-options/);
+
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+  });
+
+  test("both inverse branches are explained, including the Bragg-peak validity hint", async ({
+    page,
+  }) => {
+    await page.goto("/calculator");
+    // Wait for the app to hydrate before toggling mode — the inverse tabs only
+    // mount once Advanced mode is on and the entity selection exists.
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    // Range → branch.
+    // Use click() rather than focus() for freshly-mounted HelpHints: click
+    // triggers pointerenter first (starting Bits UI's 150 ms open timer), giving
+    // the tooltip's attachRef $effect time to register the trigger before
+    // handleOpen fires.  Programmatic focus() is immediate — if it races the
+    // Svelte effect queue the root context is null and the tooltip never opens.
+    await page.getByTestId("inverse-tab-range").click();
+    const rangeHelp = page.getByTestId("inverse-range-help");
+    await expect(rangeHelp).toBeVisible();
+    await rangeHelp.click();
+    const rangeTip = page.getByRole("tooltip");
+    await expect(rangeTip).toBeVisible();
+    await expect(rangeTip).toContainText(/range/i);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    // STP → branch (parity) plus the Bragg-peak validity hint.
+    await page.getByTestId("inverse-tab-stp").click();
+    const stpHelp = page.getByTestId("inverse-stp-help");
+    await expect(stpHelp).toBeVisible();
+    await stpHelp.click();
+    const stpTip = page.getByRole("tooltip");
+    await expect(stpTip).toBeVisible();
+    await expect(stpTip).toContainText(/stopping power/i);
+    await page.keyboard.press("Escape");
+    await expect(page.getByRole("tooltip")).toHaveCount(0);
+
+    const braggHelp = page.getByTestId("inverse-stp-bragg-help");
+    await expect(braggHelp).toBeVisible();
+    await braggHelp.click();
+    const braggTip = page.getByRole("tooltip");
+    await expect(braggTip).toBeVisible();
+    await expect(braggTip).toContainText(/Bragg|peak|maximum/i);
+  });
+});

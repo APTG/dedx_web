@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from "vitest";
 import { render, fireEvent, screen, cleanup } from "@testing-library/svelte";
 import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
 import { advancedOptions, resetAdvancedOptions } from "$lib/state/advanced-options.svelte";
+import { HELP_TEXT } from "$lib/config/help-text";
 
 // Reset module-level singleton and DOM between tests
 beforeEach(() => {
@@ -293,6 +294,43 @@ describe("AdvancedOptionsPanel", () => {
       delete next.mstarMode;
       advancedOptions.value = next;
       expect(advancedOptions.value.mstarMode).toBeUndefined();
+    });
+  });
+
+  // Contextual help (#771): each advanced control gets a non-redundant ⓘ hint
+  // placed beside — never inside — its interactive control.
+  describe("Contextual help hints", () => {
+    it("renders the I-value and interpolation concept hints with glossary copy", () => {
+      render(AdvancedOptionsPanel, { props: { materialIsGas: false } });
+
+      expect(screen.getByTestId("advanced-ivalue-help")).toHaveAccessibleName(
+        new RegExp(HELP_TEXT.iValueOverride.text.slice(0, 20)),
+      );
+      expect(screen.getByTestId("advanced-interpolation-help")).toHaveAccessibleName(
+        new RegExp(HELP_TEXT.interpolation.text.slice(0, 20)),
+      );
+    });
+
+    it("renders the aggregate-state hint only when the phase toggle is shown", () => {
+      const { rerender } = render(AdvancedOptionsPanel, { props: { materialIsGas: false } });
+      expect(screen.queryByTestId("advanced-agg-state-help")).not.toBeInTheDocument();
+
+      rerender({ materialIsGas: true, materialBuiltInAggregateState: "gas" });
+      expect(screen.getByTestId("advanced-agg-state-help")).toHaveAccessibleName(
+        new RegExp(HELP_TEXT.aggregateState.text.slice(0, 20)),
+      );
+    });
+
+    it("renders the MSTAR-mode hint only when MSTAR is the active program", () => {
+      const { rerender } = render(AdvancedOptionsPanel, {
+        props: { materialIsGas: false, selectedProgram: "PSTAR" },
+      });
+      expect(screen.queryByTestId("advanced-mstar-help")).not.toBeInTheDocument();
+
+      rerender({ materialIsGas: false, selectedProgram: "MSTAR" });
+      expect(screen.getByTestId("advanced-mstar-help")).toHaveAccessibleName(
+        new RegExp(HELP_TEXT.mstarMode.text.slice(0, 20)),
+      );
     });
   });
 
