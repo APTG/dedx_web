@@ -9,6 +9,8 @@
     buildDrawOptions,
     getPlotEnergyAxisLabel,
     getPlotEnergyAxisUnit,
+    AXIS_X_TITLE_OFFSET,
+    AXIS_Y_TITLE_OFFSET,
   } from "$lib/utils/plot-utils";
 
   type JSROOTModule = typeof JSROOTNs;
@@ -352,6 +354,11 @@
     hist.fXaxis.fXmin = opts.axisRanges.xMin;
     hist.fXaxis.fXmax = opts.axisRanges.xMax;
     hist.fYaxis.fTitle = `Stopping Power [${opts.stpUnit}]`;
+    // Push the axis titles clear of their tick labels. JSROOT resets these on
+    // every redraw, so they are re-applied here on each (re)build — covering
+    // log↔lin toggles, series add/remove, resize, and the off-screen export pad.
+    hist.fXaxis.fTitleOffset = AXIS_X_TITLE_OFFSET;
+    hist.fYaxis.fTitleOffset = AXIS_Y_TITLE_OFFSET;
     hist.fMinimum = opts.axisRanges.yMin;
     hist.fMaximum = opts.axisRanges.yMax;
     hist.fXaxis.InvertBit(JSROOT_any.BIT(12));

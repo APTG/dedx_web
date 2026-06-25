@@ -555,11 +555,34 @@ Axis ranges are auto-computed from the visible series data:
   xMin = 10^floor(log10(min(all visible energies)))
   xMax = 10^ceil(log10(max(all visible energies)))
   ```
-- **Y-axis:** Same power-of-10 rounding applied to the converted
+- **Y-axis (log):** Same power-of-10 rounding applied to the converted
   stopping power values.
+- **Y-axis (linear):** "Nice ceiling" auto-range (#796). The max is rounded
+  up to the next 1 / 2 / 2.5 / 5 × 10ⁿ via `niceCeil(dataMax)` and the min is
+  pinned to `0`, so the curve fills the plot height instead of leaving ~75%
+  blank (e.g. a proton-in-water peak at ~2262 → ceiling 2500 rather than
+  JSROOT's default ~10000). `dataMax` is the max over **visible** series only,
+  so hiding the tallest series re-ranges the axis on the next redraw. Log-Y is
+  unaffected — `niceCeil` is never applied to a log axis.
+- **Manual override:** when the Advanced panel (#798) supplies an explicit
+  `yMin` / `yMax`, those values are used verbatim and the auto-range (including
+  `niceCeil`) is skipped. `computeAxisRanges` reads them via its `opts`
+  argument; the UI to enter them is owned by #798.
 
 If no series are visible, use default placeholder ranges (0.001–10000
 for X, 0.1–1000 for Y).
+
+### Axis Title Margins
+
+JSROOT's default `fTitleOffset` is too small for our tick-label font, so the
+axis titles ("Energy […]", "Stopping Power […]") collide with their tick
+numbers — most visibly in linear-Y mode. The fix (#795) sets
+`hist.fXaxis.fTitleOffset = AXIS_X_TITLE_OFFSET` and
+`hist.fYaxis.fTitleOffset = AXIS_Y_TITLE_OFFSET` (shared constants in
+`plot-utils.ts`). JSROOT **resets axis attributes on every redraw**, so these
+are re-applied on each (re)build of the histogram — covering log↔lin toggles,
+series add/remove, resize, and the off-screen export pad (so exports match the
+on-screen plot).
 
 ### Container Sizing
 
@@ -980,8 +1003,12 @@ const isDuplicate: boolean = $derived(
 /** JSROOT draw options string. */
 const drawOptions: string = $derived(buildDrawOptions(state.xLog, state.yLog));
 
-/** Auto-computed axis ranges from visible data. */
-const axisRanges = $derived(computeAxisRanges(visibleSeries, state.preview, state.stpUnit));
+/** Auto-computed axis ranges from visible data. `yLog` selects log vs
+ *  nice-ceiling linear ranging; manual yMin/yMax overrides (Advanced, #798)
+ *  pass through the same opts argument. */
+const axisRanges = $derived(
+  computeAxisRanges(visibleSeries, state.preview, state.stpUnit, { yLog: state.yLog }),
+);
 ```
 
 ### Reactivity Chain

@@ -62,11 +62,15 @@
   });
 
   // ── Derived: axis ranges from visible series ──
+  // Linear-Y uses a "nice ceiling" so the curve fills the plot; log-Y keeps
+  // power-of-ten rounding. Manual yMin/yMax overrides are owned by the Advanced
+  // panel (#798) — pass them through here once that state exists.
   const axisRanges = $derived(
     computeAxisRanges(
       [...plotState.series, ...(plotState.preview ? [plotState.preview] : [])],
       null,
       plotState.stpUnit,
+      { yLog: plotState.yLog },
     ),
   );
 

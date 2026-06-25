@@ -172,6 +172,30 @@ describe("JsrootPlot", () => {
     expect(canvas.getAttribute("aria-label")).toContain("Stopping power");
   });
 
+  it("applies the axis title offsets so titles clear their tick labels (#795)", async () => {
+    const JSROOT = await import("jsroot");
+    const { AXIS_X_TITLE_OFFSET, AXIS_Y_TITLE_OFFSET } = await import("$lib/utils/plot-utils");
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({})],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: false,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 0, yMax: 2500 },
+      },
+    });
+
+    await vi.waitFor(() => {
+      const hist = vi.mocked(JSROOT.createHistogram).mock.results.at(-1)?.value as {
+        fXaxis: { fTitleOffset: number };
+        fYaxis: { fTitleOffset: number };
+      };
+      expect(hist.fXaxis.fTitleOffset).toBe(AXIS_X_TITLE_OFFSET);
+      expect(hist.fYaxis.fTitleOffset).toBe(AXIS_Y_TITLE_OFFSET);
+    });
+  });
+
   it("uses MeV for proton-only energy axis", async () => {
     const JSROOT = await import("jsroot");
     render(JsrootPlot, {
