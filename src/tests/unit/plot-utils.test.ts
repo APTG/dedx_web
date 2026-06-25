@@ -170,7 +170,7 @@ describe("computeAxisRanges", () => {
 });
 
 describe("niceCeil", () => {
-  it("rounds up to the next 1/2/5 ×10ⁿ", () => {
+  it("rounds up to the next 1/2/2.5/5 ×10ⁿ", () => {
     expect(niceCeil(2262)).toBe(2500);
     expect(niceCeil(2500)).toBe(2500);
     expect(niceCeil(2501)).toBe(5000);

@@ -66,12 +66,9 @@
   // power-of-ten rounding. Manual yMin/yMax overrides are owned by the Advanced
   // panel (#798) — pass them through here once that state exists.
   const axisRanges = $derived(
-    computeAxisRanges(
-      [...plotState.series, ...(plotState.preview ? [plotState.preview] : [])],
-      null,
-      plotState.stpUnit,
-      { yLog: plotState.yLog },
-    ),
+    computeAxisRanges(plotState.series, plotState.preview, plotState.stpUnit, {
+      yLog: plotState.yLog,
+    }),
   );
 
   // ── SVG Export ──

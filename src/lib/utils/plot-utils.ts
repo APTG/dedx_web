@@ -23,16 +23,19 @@ export const PREVIEW_COLOR = "#000000";
  * Axis-title offsets (in JSROOT `fTitleOffset` units, multiples of the tick
  * label height). JSROOT's defaults are too small for our tick-label font, so
  * the titles ("Energy [MeV]", "Stopping Power […]") collide with their tick
- * numbers — most visibly in linear-Y mode where the Y tick labels are wide.
+ * numbers — most visibly in log-X and linear-Y modes.
  *
- * These are tuned empirically against our label font size; the Y title needs
- * more room than X because the (rotated) title sits beside multi-digit tick
- * labels. JSROOT resets axis attributes on every redraw, so these MUST be
- * re-applied after each (re)draw — see `buildMultigraph` in jsroot-plot.svelte,
- * which rebuilds the histogram (and thus re-applies these) on every draw.
+ * Tuned empirically against a real JSROOT render across all four X/Y
+ * log×lin combinations and several landscape container sizes: the default
+ * (~1.0) and 1.2 still overlap the X tick numbers in log-X, while 1.4 is the
+ * first value that clears every combination. 1.6 keeps a safety margin for
+ * font/aspect-ratio variation. JSROOT reads `axis.fTitleOffset` directly when
+ * drawing the title (TAxisPainter), so these are honoured; the histogram is
+ * rebuilt on every (re)draw — see `buildMultigraph` in jsroot-plot.svelte —
+ * so the offsets are re-applied after each redraw and on the export pad.
  */
-export const AXIS_X_TITLE_OFFSET = 1.2;
-export const AXIS_Y_TITLE_OFFSET = 1.4;
+export const AXIS_X_TITLE_OFFSET = 1.6;
+export const AXIS_Y_TITLE_OFFSET = 1.6;
 
 /**
  * Round `x` up to the next 1, 2, 2.5, or 5 times a power of ten.
@@ -214,8 +217,8 @@ interface RangeOptions {
  *
  * X is always rounded to powers of 10 (floor for min, ceil for max). Y depends
  * on `opts.yLog`: log-Y rounds to powers of 10 like X; linear-Y rounds the max
- * up to the next nice ceiling (1/2/5 ×10ⁿ) and floors the min to 0. A manual
- * `opts.yMin` / `opts.yMax` overrides the corresponding auto-computed bound.
+ * up to the next nice ceiling (1/2/2.5/5 ×10ⁿ) and floors the min to 0. A
+ * manual `opts.yMin` / `opts.yMax` overrides the corresponding auto bound.
  */
 export function computeAxisRanges(
   series: SeriesForRange[],
