@@ -584,6 +584,19 @@ are re-applied on each (re)build of the histogram — covering log↔lin toggles
 series add/remove, resize, and the off-screen export pad (so exports match the
 on-screen plot).
 
+Pushing the titles out with a larger offset is only half the fix: JSROOT's
+default **pad margins** (~0.1) only reserve room for the tick numbers, so the
+pushed-out titles ended up flush against the SVG edge and were clipped from
+outside (the top of the "S" in "Stopping Power", the descender of the "y" in
+"Energy"). To give the titles breathing space _inside_ the SVG, the left and
+bottom pad margins are widened via `gStyle` before each draw —
+`gStyle.fPadLeftMargin = PAD_LEFT_MARGIN`,
+`gStyle.fPadBottomMargin = PAD_BOTTOM_MARGIN` (shared constants in
+`plot-utils.ts`). JSROOT creates a fresh pad on every draw and reads its margins
+from `gStyle`, so the widened margins are snapshotted/restored around each draw
+(on-screen and the export pad) to avoid leaking the change globally. Top/right
+keep JSROOT's defaults since nothing is clipped there.
+
 ### Container Sizing
 
 The JSROOT container div uses:

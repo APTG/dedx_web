@@ -11,6 +11,8 @@
     getPlotEnergyAxisUnit,
     AXIS_X_TITLE_OFFSET,
     AXIS_Y_TITLE_OFFSET,
+    PAD_LEFT_MARGIN,
+    PAD_BOTTOM_MARGIN,
   } from "$lib/utils/plot-utils";
 
   type JSROOTModule = typeof JSROOTNs;
@@ -65,6 +67,30 @@
 
     g[JSROOT_PROMISE_KEY] = jsrootPromise;
     return jsrootPromise;
+  }
+
+  // JSROOT creates a fresh canvas/pad on every draw, reading its margins from
+  // the global `gStyle`. Widen the left/bottom margins so the pushed-out axis
+  // titles (see AXIS_*_TITLE_OFFSET) sit inside the SVG instead of being clipped
+  // at its edge. Snapshot and restore so we never leak the change to other
+  // plots (e.g. the off-screen export pad runs its own apply/restore). gStyle is
+  // not in jsroot's bundled types, so widen it locally; if it is unavailable the
+  // restore is a no-op and the plot simply keeps JSROOT's defaults.
+  function applyPadMargins(JSROOT: JSROOTModule): () => void {
+    const gStyle = (
+      JSROOT as unknown as {
+        gStyle?: { fPadLeftMargin: number; fPadBottomMargin: number };
+      }
+    ).gStyle;
+    if (!gStyle) return () => {};
+    const prevLeft = gStyle.fPadLeftMargin;
+    const prevBottom = gStyle.fPadBottomMargin;
+    gStyle.fPadLeftMargin = PAD_LEFT_MARGIN;
+    gStyle.fPadBottomMargin = PAD_BOTTOM_MARGIN;
+    return () => {
+      gStyle.fPadLeftMargin = prevLeft;
+      gStyle.fPadBottomMargin = prevBottom;
+    };
   }
 
   interface AxisRanges {
@@ -235,8 +261,12 @@
       offscreen.style.cssText =
         "position:fixed;visibility:hidden;pointer-events:none;width:800px;height:600px;top:-9999px;left:-9999px;";
       document.body.appendChild(offscreen);
+      let restorePadMargins: (() => void) | null = null;
       try {
         const JSROOT = await getJsroot();
+        // Widen the pad margins so the exported SVG matches the on-screen plot
+        // (titles inside the frame, not clipped); restored in finally.
+        restorePadMargins = applyPadMargins(JSROOT);
         // Read current reactive values at call time; exclude preview (preview: null)
         const mg = buildMultigraph(JSROOT, {
           series,
@@ -259,6 +289,7 @@
         // Return null so the caller falls back to DOM serialization or empty canvas.
         return null;
       } finally {
+        restorePadMargins?.();
         if (offscreen.parentNode) offscreen.parentNode.removeChild(offscreen);
       }
     };
@@ -302,10 +333,13 @@
       settings.DragGraphs = false;
     }
 
+    const restorePadMargins = applyPadMargins(JSROOT);
+
     const restore = () => {
       settings.ZoomWheel = prevZoomWheel;
       settings.ZoomTouch = prevZoomTouch;
       settings.DragGraphs = prevDragGraphs;
+      restorePadMargins();
     };
 
     const mg = buildMultigraph(JSROOT, opts);

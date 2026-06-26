@@ -38,6 +38,22 @@ export const AXIS_X_TITLE_OFFSET = 1.6;
 export const AXIS_Y_TITLE_OFFSET = 1.6;
 
 /**
+ * Pad margins (as fractions of the pad width/height) reserved around the frame
+ * for tick labels and axis titles. JSROOT's defaults (~0.1) only leave room for
+ * the tick numbers, not the pushed-out titles: with `AXIS_*_TITLE_OFFSET = 1.6`
+ * the rotated Y title and the X title sit right at the SVG edge and get clipped
+ * (the top of the "S" in "Stopping Power", the descender of the "y" in
+ * "Energy"). Enlarging the left and bottom margins shifts the whole frame — and
+ * the titles that hang off it — inward, so the titles get a little breathing
+ * space inside the SVG instead of being cut off from outside. Applied via
+ * `gStyle` before each draw (see `jsroot-plot.svelte`) so every freshly created
+ * pad reads them; top/right keep JSROOT's defaults since nothing is clipped
+ * there and the tick labels stay clear of the canvas edge.
+ */
+export const PAD_LEFT_MARGIN = 0.14;
+export const PAD_BOTTOM_MARGIN = 0.14;
+
+/**
  * Round `x` up to the next 1, 2, 2.5, or 5 times a power of ten.
  *
  * Used for linear-Y auto-ranging so the curve fills the plot height instead of

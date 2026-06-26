@@ -44,6 +44,32 @@ async function titleOverlapsTicks(page: Page, titleMatch: string): Promise<boole
   }, titleMatch);
 }
 
+/**
+ * Returns true when the given axis title text is clipped by the SVG edge — i.e.
+ * any part of the title's bounding box falls outside the SVG's own box. The
+ * larger title offsets pushed the titles to the canvas edge (#801), so the pad
+ * margins must keep them fully inside. A 1px tolerance absorbs sub-pixel
+ * rounding.
+ */
+async function titleClippedBySvg(page: Page, titleMatch: string): Promise<boolean> {
+  return page.evaluate((needle) => {
+    const svg = document.querySelector('[role="img"][aria-label*="plot"] svg');
+    if (!svg) return true;
+    const texts = Array.from(svg.querySelectorAll("text")) as SVGTextElement[];
+    const title = texts.find((t) => (t.textContent ?? "").includes(needle));
+    if (!title) return true;
+    const svgRect = svg.getBoundingClientRect();
+    const r = title.getBoundingClientRect();
+    const tol = 1;
+    return (
+      r.left < svgRect.left - tol ||
+      r.right > svgRect.right + tol ||
+      r.top < svgRect.top - tol ||
+      r.bottom > svgRect.bottom + tol
+    );
+  }, titleMatch);
+}
+
 async function toggleScale(page: Page, axis: "X" | "Y", label: "Log" | "Lin"): Promise<void> {
   const group = page.getByRole("radiogroup", { name: `${axis} axis scale` });
   await group.getByText(`${axis}: ${label}`, { exact: true }).click();
@@ -77,5 +103,23 @@ test.describe("Plot axis title margins (#795)", () => {
         .poll(() => titleOverlapsTicks(page, "Stopping Power"), { timeout: 10000 })
         .toBe(false);
     }
+  });
+
+  test("titles stay fully inside the SVG (not clipped at the edge) @regression", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await waitForPlotReady(page);
+
+    // Linear-Y is where the clipping was most visible (#801): the Y title sat at
+    // the left edge and the X title at the bottom edge. Check both axes there.
+    await toggleScale(page, "X", "Log");
+    await toggleScale(page, "Y", "Lin");
+
+    await expect
+      .poll(() => titleClippedBySvg(page, "Stopping Power"), { timeout: 10000 })
+      .toBe(false);
+    await expect.poll(() => titleClippedBySvg(page, "Energy"), { timeout: 10000 }).toBe(false);
   });
 });
