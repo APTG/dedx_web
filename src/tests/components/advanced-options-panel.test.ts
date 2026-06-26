@@ -334,6 +334,26 @@ describe("AdvancedOptionsPanel", () => {
     });
   });
 
+  // #798 — plot disclosure presentation (gear header + test ids) is opt-in via
+  // the persistKey prop; the calculator (no persistKey) keeps the plain panel.
+  describe("Plot disclosure presentation", () => {
+    it("renders the gear header, content hint, and test ids when persistKey is set", () => {
+      render(AdvancedOptionsPanel, {
+        props: { materialIsGas: false, persistKey: "webdedx.plot.advancedOpen.v1" },
+      });
+      const toggle = screen.getByTestId("plot-advanced-toggle");
+      expect(toggle).toHaveTextContent("Advanced options");
+      expect(toggle).toHaveTextContent("density · interpolation");
+      expect(screen.getByTestId("plot-advanced-panel")).toBeInTheDocument();
+    });
+
+    it("does not expose the plot test ids on the calculator (no persistKey)", () => {
+      render(AdvancedOptionsPanel, { props: { materialIsGas: false } });
+      expect(screen.queryByTestId("plot-advanced-toggle")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("plot-advanced-panel")).not.toBeInTheDocument();
+    });
+  });
+
   describe("Accordion behavior", () => {
     it("renders as collapsible accordion", () => {
       render(AdvancedOptionsPanel, {

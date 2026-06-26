@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { browser } from "$app/environment";
   import {
     Accordion,
     AccordionContent,
@@ -33,6 +34,13 @@
     materialBuiltInAggregateState?: "gas" | "condensed" | undefined;
     selectedProgram?: string | undefined;
     isCustomCompoundActive?: boolean | undefined;
+    /**
+     * localStorage key persisting open/closed for the plot disclosure (#798).
+     * When supplied, the panel presents as the plot's `⚙ Advanced options`
+     * disclosure (gear header, content hint, persisted open state, test ids).
+     * The calculator omits this prop and keeps the plain accordion.
+     */
+    persistKey?: string | undefined;
   }
 
   let {
@@ -41,7 +49,31 @@
     materialBuiltInAggregateState,
     selectedProgram,
     isCustomCompoundActive = false,
+    persistKey,
   }: Props = $props();
+
+  // Plot disclosure mode (#798): gear header + content hint + persistence.
+  const isPlotDisclosure = $derived(persistKey !== undefined);
+
+  // Accordion open/closed value ("" = collapsed, ITEM_VALUE = open). In plot
+  // disclosure mode we control it so the choice can persist to localStorage;
+  // the calculator leaves it uncontrolled (collapsed default).
+  const ITEM_VALUE = "advanced-options";
+  let openValue = $state("");
+
+  // Hydrate the persisted open/closed state once on mount (browser only).
+  $effect(() => {
+    if (!browser || !persistKey) return;
+    openValue = localStorage.getItem(persistKey) === "1" ? ITEM_VALUE : "";
+  });
+
+  function handleOpenChange(value: string | undefined) {
+    openValue = value ?? "";
+    if (browser && persistKey) {
+      if (openValue === ITEM_VALUE) localStorage.setItem(persistKey, "1");
+      else localStorage.removeItem(persistKey);
+    }
+  }
 
   // Local state for input values and validation
   let densityInput = $state("");
@@ -149,8 +181,16 @@
   // Check if aggregate state section should be shown
   const showAggState = $derived(materialBuiltInAggregateState !== undefined);
 
-  // Get accordion header text
-  const headerText = $derived(buildHeaderText(advancedOptions.value.densityOverride));
+  // Get accordion header text. Plot disclosure mode uses the fixed
+  // "⚙ Advanced options" label; the calculator keeps the density-aware text.
+  const headerText = $derived(
+    isPlotDisclosure
+      ? "⚙ Advanced options"
+      : buildHeaderText(advancedOptions.value.densityOverride),
+  );
+
+  // Muted hint of what's inside, shown beside the plot disclosure header.
+  const contentHint = "density · interpolation";
 
   const currentMstarMode = $derived(advancedOptions.value.mstarMode ?? "b");
 
@@ -191,10 +231,28 @@
   );
 </script>
 
-<Accordion type="single" collapsible class="w-full border rounded-lg bg-card">
-  <AccordionItem value="advanced-options" class="border-b-0">
-    <AccordionTrigger class="px-4 py-3 hover:no-underline">
-      <span class="text-sm font-medium">{headerText}</span>
+<Accordion
+  type="single"
+  collapsible
+  class="w-full border rounded-lg bg-card"
+  value={openValue}
+  onValueChange={(v) => handleOpenChange(v as string | undefined)}
+>
+  <AccordionItem
+    value={ITEM_VALUE}
+    class="border-b-0"
+    data-testid={isPlotDisclosure ? "plot-advanced-panel" : undefined}
+  >
+    <AccordionTrigger
+      class="px-4 py-3 hover:no-underline"
+      data-testid={isPlotDisclosure ? "plot-advanced-toggle" : undefined}
+    >
+      <span class="flex flex-wrap items-baseline gap-x-2 gap-y-0.5">
+        <span class="text-sm font-medium">{headerText}</span>
+        {#if isPlotDisclosure}
+          <span class="text-xs font-normal text-muted-foreground">{contentHint}</span>
+        {/if}
+      </span>
     </AccordionTrigger>
     <AccordionContent class="px-4 pb-4 pt-0">
       <div class="grid gap-4">
