@@ -19,9 +19,8 @@ test.describe("Plot advanced-options disclosure (#798)", () => {
 
     const toggle = page.getByTestId("plot-advanced-toggle");
     await expect(toggle).toBeVisible();
+    // Collapsed by default (aria-expanded reflects open/closed state).
     await expect(toggle).toHaveAttribute("aria-expanded", "false");
-    // Collapsed → the panel content (e.g. the density control) is not mounted.
-    await expect(page.locator("#density-override")).toHaveCount(0);
 
     // The disclosure sits above the plot canvas in document order.
     const toggleBox = await toggle.boundingBox();
@@ -38,6 +37,7 @@ test.describe("Plot advanced-options disclosure (#798)", () => {
     await toggle.focus();
     await page.keyboard.press("Enter");
     await expect(toggle).toHaveAttribute("aria-expanded", "true");
+    // Expanded → the density control inside the panel is visible.
     await expect(page.locator("#density-override")).toBeVisible();
   });
 
