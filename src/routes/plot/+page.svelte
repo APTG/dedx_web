@@ -63,13 +63,10 @@
 
   // ── Derived: axis ranges from visible series ──
   // Linear-Y uses a "nice ceiling" so the curve fills the plot; log-Y keeps
-  // power-of-ten rounding. Manual yMin/yMax overrides from the Advanced panel
-  // (#798) win verbatim over the auto-range.
+  // power-of-ten rounding.
   const axisRanges = $derived(
     computeAxisRanges(plotState.series, plotState.preview, plotState.stpUnit, {
       yLog: plotState.yLog,
-      yMin: plotState.yMin,
-      yMax: plotState.yMax,
     }),
   );
 
@@ -370,10 +367,9 @@
         </div>
 
         <!-- Advanced options disclosure (#798): collapsed by default, mounted
-             directly above the plot so it's discoverable on cold load. Holds the
-             manual Y-range override (always) plus the physics controls (Advanced
-             mode only). -->
-        {#if entityState.selectedMaterial}
+             directly above the plot. Visible only in Advanced mode (per AC-1);
+             open/closed state persists across reloads. -->
+        {#if isAdvancedMode.value && entityState.selectedMaterial}
           {@const plotSelMat = entityState.selectedMaterial}
           {@const plotBuiltinMat = "isGasByDefault" in plotSelMat ? plotSelMat : null}
           <AdvancedOptionsPanel
@@ -384,13 +380,7 @@
             selectedProgram={"resolvedProgram" in entityState.selectedProgram
               ? (entityState.selectedProgram.resolvedProgram?.name ?? "")
               : entityState.selectedProgram.name}
-            showCalculationControls={isAdvancedMode.value}
             persistKey={ADVANCED_OPEN_KEY}
-            plotRanges={{
-              yMin: plotState.yMin,
-              yMax: plotState.yMax,
-              setYRange: (bound, value) => plotState.setYRange(bound, value),
-            }}
           />
         {/if}
 

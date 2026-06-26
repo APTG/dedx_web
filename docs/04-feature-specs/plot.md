@@ -207,13 +207,15 @@ A small text link below the "Add Series" button: "Reset all".
 
 The advanced options live in an inline collapsible **disclosure mounted
 directly above the plot canvas** (between the controls bar and the JSROOT
-container), so they are discoverable on a cold load without scrolling — the
-decision (Q3) deliberately rejected a drawer or a tab in favour of an
-in-flow disclosure that costs zero vertical space until opened.
+container) instead of below the fold under the series list. The decision (Q3)
+deliberately rejected a drawer or a tab in favour of an in-flow disclosure
+that costs zero vertical space until opened.
 
+- **Advanced mode only (AC-1).** The disclosure is rendered only when Advanced
+  mode is active; Basic mode shows no advanced panel at all.
 - **Header:** `⚙ Advanced options` plus a muted content hint
-  (`Y-range` in Basic mode, `Y-range · density · interpolation` in Advanced
-  mode) and a chevron that reflects the open/closed state.
+  (`density · interpolation`) and a chevron that reflects the open/closed
+  state.
 - **Collapsed by default.** Expanding pushes the plot down **in flow** — it
   never overlays the canvas.
 - **Persistence:** the open/closed state is stored under the owned
@@ -221,16 +223,11 @@ in-flow disclosure that costs zero vertical space until opened.
   open is not re-collapsed on the next visit.
 - **Accessibility:** rendered as an ARIA disclosure button
   (`aria-expanded`), keyboard-toggleable with `Enter` / `Space`.
-- **Manual Y-range override:** a `yMin` / `yMax` pair. A value here is read by
-  `computeAxisRanges` and **wins verbatim** over the auto-range (including the
-  #796 `niceCeil` linear ceiling); an empty field means auto. The bounds live
-  in plot state and are cleared by "Reset all".
-- **Physics controls** (density, I-value, aggregate state, interpolation,
-  MSTAR mode) render inside the same disclosure **only in Advanced mode** —
+- **Controls** (density, I-value, aggregate state, interpolation, MSTAR mode):
   their behaviour and the shared `advanced-options-panel.svelte` component are
-  unchanged; only their container moved.
-- **Test ids:** `plot-advanced-toggle`, `plot-advanced-panel`, `plot-ymin`,
-  `plot-ymax`.
+  unchanged; only their container moved (from below the series list to above
+  the plot) and gained the persisted disclosure presentation.
+- **Test ids:** `plot-advanced-toggle`, `plot-advanced-panel`.
 
 ---
 
@@ -593,10 +590,10 @@ Axis ranges are auto-computed from the visible series data:
   JSROOT's default ~10000). `dataMax` is the max over **visible** series only,
   so hiding the tallest series re-ranges the axis on the next redraw. Log-Y is
   unaffected — `niceCeil` is never applied to a log axis.
-- **Manual override:** when the Advanced panel (#798) supplies an explicit
-  `yMin` / `yMax`, those values are used verbatim and the auto-range (including
-  `niceCeil`) is skipped. `computeAxisRanges` reads them via its `opts`
-  argument; the UI to enter them is owned by #798.
+- **Manual override (latent):** `computeAxisRanges` accepts explicit
+  `yMin` / `yMax` via its `opts` argument (added in #796) — when supplied they
+  are used verbatim and the auto-range (including `niceCeil`) is skipped. No UI
+  currently feeds these; the override is reserved for a future control.
 
 If no series are visible, use default placeholder ranges (0.001–10000
 for X, 0.1–1000 for Y).
@@ -704,10 +701,9 @@ to the Calculator page:
 - Preview series
 - Stopping power unit selection
 - Axis scale settings (log/lin)
-- Manual Y-range override (`yMin` / `yMax`, #798)
 
 The Advanced-options disclosure open/closed state is persisted separately in
-`localStorage` (`webdedx.plot.advancedOpen.v1`), not in the URL.
+`localStorage` (`webdedx.plot.advancedOpen.v1`, #798), not in the URL.
 
 This state **does** persist in the URL for shareability (see § URL State
 Encoding), and survives navigation away from and back to the Plot page
@@ -1050,8 +1046,8 @@ const isDuplicate: boolean = $derived(
 const drawOptions: string = $derived(buildDrawOptions(state.xLog, state.yLog));
 
 /** Auto-computed axis ranges from visible data. `yLog` selects log vs
- *  nice-ceiling linear ranging; manual yMin/yMax overrides (Advanced, #798)
- *  pass through the same opts argument. */
+ *  nice-ceiling linear ranging; `computeAxisRanges` also accepts latent
+ *  yMin/yMax overrides via the same opts argument (#796, no UI yet). */
 const axisRanges = $derived(
   computeAxisRanges(visibleSeries, state.preview, state.stpUnit, { yLog: state.yLog }),
 );

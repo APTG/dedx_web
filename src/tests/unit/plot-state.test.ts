@@ -142,23 +142,6 @@ describe("createPlotState", () => {
     expect(state.yLog).toBe(false);
   });
 
-  it("setYRange sets and clears the manual Y bounds (#798)", () => {
-    const state = createPlotState();
-    expect(state.yMin).toBeUndefined();
-    expect(state.yMax).toBeUndefined();
-
-    state.setYRange("max", 3000);
-    expect(state.yMax).toBe(3000);
-    expect(state.yMin).toBeUndefined();
-
-    state.setYRange("min", 1);
-    expect(state.yMin).toBe(1);
-
-    state.setYRange("max", undefined);
-    expect(state.yMax).toBeUndefined();
-    expect(state.yMin).toBe(1);
-  });
-
   it("setPreview sets the preview series", () => {
     const state = createPlotState();
     state.setPreview({ ...mockSeries(), result: mockResult, density: 1.0 });
@@ -177,15 +160,6 @@ describe("createPlotState", () => {
     expect(state.stpUnit).toBe("keV/µm");
     expect(state.xLog).toBe(true);
     expect(state.yLog).toBe(true);
-  });
-
-  it("resetAll clears the manual Y bounds (#798)", () => {
-    const state = createPlotState();
-    state.setYRange("min", 1);
-    state.setYRange("max", 3000);
-    state.resetAll();
-    expect(state.yMin).toBeUndefined();
-    expect(state.yMax).toBeUndefined();
   });
 
   it("recomputes labels on add (single series → full label)", () => {
