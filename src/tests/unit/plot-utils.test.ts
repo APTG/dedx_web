@@ -3,6 +3,7 @@ import {
   convertStpForDisplay,
   buildDrawOptions,
   computeAxisRanges,
+  niceCeil,
   COLOR_PALETTE,
   PREVIEW_COLOR,
 } from "$lib/utils/plot-utils";
@@ -105,6 +106,83 @@ describe("computeAxisRanges", () => {
       yMin: 0.1,
       yMax: 1000,
     });
+  });
+
+  it("uses a nice ceiling and zero floor for linear-Y", () => {
+    const series: StubSeries[] = [
+      {
+        result: { energies: [1, 10, 100], stoppingPowers: [100, 2262, 50] },
+        density: 1.0,
+        visible: true,
+      },
+    ];
+    const result = computeAxisRanges(series, null, "MeV·cm²/g" as StpUnit, { yLog: false });
+    // ~2262 fills the plot at 2500 instead of jumping to 10000, with a 0 floor.
+    expect(result.yMin).toBe(0);
+    expect(result.yMax).toBe(2500);
+  });
+
+  it("keeps power-of-ten Y rounding when yLog is true", () => {
+    const series: StubSeries[] = [
+      {
+        result: { energies: [1, 10, 100], stoppingPowers: [100, 2262, 50] },
+        density: 1.0,
+        visible: true,
+      },
+    ];
+    const result = computeAxisRanges(series, null, "MeV·cm²/g" as StpUnit, { yLog: true });
+    expect(result.yMax).toBe(10000);
+  });
+
+  it("re-ranges linear-Y down when the tallest series is hidden", () => {
+    const series: StubSeries[] = [
+      {
+        result: { energies: [1, 10], stoppingPowers: [100, 2262] },
+        density: 1.0,
+        visible: false,
+      },
+      {
+        result: { energies: [1, 10], stoppingPowers: [100, 420] },
+        density: 1.0,
+        visible: true,
+      },
+    ];
+    const result = computeAxisRanges(series, null, "MeV·cm²/g" as StpUnit, { yLog: false });
+    expect(result.yMax).toBe(500);
+  });
+
+  it("honours a manual yMax override over the nice ceiling", () => {
+    const series: StubSeries[] = [
+      {
+        result: { energies: [1, 10, 100], stoppingPowers: [100, 2262, 50] },
+        density: 1.0,
+        visible: true,
+      },
+    ];
+    const result = computeAxisRanges(series, null, "MeV·cm²/g" as StpUnit, {
+      yLog: false,
+      yMax: 3000,
+      yMin: 10,
+    });
+    expect(result.yMax).toBe(3000);
+    expect(result.yMin).toBe(10);
+  });
+});
+
+describe("niceCeil", () => {
+  it("rounds up to the next 1/2/2.5/5 ×10ⁿ", () => {
+    expect(niceCeil(2262)).toBe(2500);
+    expect(niceCeil(2500)).toBe(2500);
+    expect(niceCeil(2501)).toBe(5000);
+    expect(niceCeil(9999)).toBe(10000);
+    expect(niceCeil(0.42)).toBe(0.5);
+  });
+
+  it("guards non-positive and non-finite inputs", () => {
+    expect(niceCeil(0)).toBe(1);
+    expect(niceCeil(-5)).toBe(1);
+    expect(niceCeil(Number.NaN)).toBe(1);
+    expect(niceCeil(Number.POSITIVE_INFINITY)).toBe(1);
   });
 });
 

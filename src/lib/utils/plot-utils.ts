@@ -20,6 +20,57 @@ export const COLOR_PALETTE: readonly string[] = [
 export const PREVIEW_COLOR = "#000000";
 
 /**
+ * Axis-title offsets (in JSROOT `fTitleOffset` units, multiples of the tick
+ * label height). JSROOT's defaults are too small for our tick-label font, so
+ * the titles ("Energy [MeV]", "Stopping Power […]") collide with their tick
+ * numbers — most visibly in log-X and linear-Y modes.
+ *
+ * Tuned empirically against a real JSROOT render across all four X/Y
+ * log×lin combinations and several landscape container sizes: the default
+ * (~1.0) and 1.2 still overlap the X tick numbers in log-X, while 1.4 is the
+ * first value that clears every combination. 1.6 keeps a safety margin for
+ * font/aspect-ratio variation. JSROOT reads `axis.fTitleOffset` directly when
+ * drawing the title (TAxisPainter), so these are honoured; the histogram is
+ * rebuilt on every (re)draw — see `buildMultigraph` in jsroot-plot.svelte —
+ * so the offsets are re-applied after each redraw and on the export pad.
+ */
+export const AXIS_X_TITLE_OFFSET = 1.6;
+export const AXIS_Y_TITLE_OFFSET = 1.6;
+
+/**
+ * Pad margins (as fractions of the pad width/height) reserved around the frame
+ * for tick labels and axis titles. JSROOT's defaults (~0.1) only leave room for
+ * the tick numbers, not the pushed-out titles: with `AXIS_*_TITLE_OFFSET = 1.6`
+ * the rotated Y title and the X title sit right at the SVG edge and get clipped
+ * (the top of the "S" in "Stopping Power", the descender of the "y" in
+ * "Energy"). Enlarging the left and bottom margins shifts the whole frame — and
+ * the titles that hang off it — inward, so the titles get a little breathing
+ * space inside the SVG instead of being cut off from outside. Applied via
+ * `gStyle` before each draw (see `jsroot-plot.svelte`) so every freshly created
+ * pad reads them; top/right keep JSROOT's defaults since nothing is clipped
+ * there and the tick labels stay clear of the canvas edge.
+ */
+export const PAD_LEFT_MARGIN = 0.14;
+export const PAD_BOTTOM_MARGIN = 0.14;
+
+/**
+ * Round `x` up to the next 1, 2, 2.5, or 5 times a power of ten.
+ *
+ * Used for linear-Y auto-ranging so the curve fills the plot height instead of
+ * leaving most of it blank (e.g. a proton-in-water peak at ~2262 → 2500 rather
+ * than JSROOT's default ~10000). The 2.5 step is what gives 2262 → 2500 and
+ * 0.42 → 0.5 (see #796 acceptance criteria). Non-positive / non-finite inputs
+ * fall back to 1 so the axis is always drawable.
+ */
+export function niceCeil(x: number): number {
+  if (!(x > 0) || !Number.isFinite(x)) return 1;
+  const p = Math.pow(10, Math.floor(Math.log10(x)));
+  const f = x / p;
+  const n = f <= 1 ? 1 : f <= 2 ? 2 : f <= 2.5 ? 2.5 : f <= 5 ? 5 : 10;
+  return p * n;
+}
+
+/**
  * Resolve the actual color JSROOT uses to draw a series with the given
  * palette `colorIndex`. JSROOT's TGraph painter renders `fLineColor` by
  * looking the index up in its global ROOT color list, so the legend swatch
@@ -163,13 +214,33 @@ const DEFAULT_RANGES: AxisRanges = {
 };
 
 /**
+ * Optional Y-axis ranging controls.
+ *
+ * `yLog` selects the rounding strategy: log-Y keeps the power-of-ten rounding,
+ * linear-Y uses a "nice ceiling" (`niceCeil`) with a zero floor so the curve
+ * fills the plot height. `yMin` / `yMax` are manual overrides from the Advanced
+ * panel — when present they win verbatim and skip the auto-range entirely. The
+ * Advanced-panel UI that supplies them is #798; this only reads them.
+ */
+interface RangeOptions {
+  yLog?: boolean;
+  yMin?: number | undefined;
+  yMax?: number | undefined;
+}
+
+/**
  * Auto-compute axis ranges from all visible series data.
- * Rounds to powers of 10 (floor for min, ceil for max).
+ *
+ * X is always rounded to powers of 10 (floor for min, ceil for max). Y depends
+ * on `opts.yLog`: log-Y rounds to powers of 10 like X; linear-Y rounds the max
+ * up to the next nice ceiling (1/2/2.5/5 ×10ⁿ) and floors the min to 0. A
+ * manual `opts.yMin` / `opts.yMax` overrides the corresponding auto bound.
  */
 export function computeAxisRanges(
   series: SeriesForRange[],
   preview: SeriesForRange | null,
   stpUnit: StpUnit,
+  opts: RangeOptions = {},
 ): AxisRanges {
   const allVisible = [
     ...(preview && preview.visible ? [preview] : []),
@@ -201,10 +272,16 @@ export function computeAxisRanges(
 
   if (!isFinite(xMinRaw) || !isFinite(xMaxRaw)) return DEFAULT_RANGES;
 
+  // Linear-Y: fill the plot with a nice ceiling and a zero floor. Log-Y keeps
+  // power-of-ten rounding. Manual overrides (Advanced panel, #798) win verbatim.
+  const autoYMin = opts.yLog === false ? 0 : Math.pow(10, Math.floor(Math.log10(yMinRaw)));
+  const autoYMax =
+    opts.yLog === false ? niceCeil(yMaxRaw) : Math.pow(10, Math.ceil(Math.log10(yMaxRaw)));
+
   return {
     xMin: Math.pow(10, Math.floor(Math.log10(xMinRaw))),
     xMax: Math.pow(10, Math.ceil(Math.log10(xMaxRaw))),
-    yMin: Math.pow(10, Math.floor(Math.log10(yMinRaw))),
-    yMax: Math.pow(10, Math.ceil(Math.log10(yMaxRaw))),
+    yMin: opts.yMin ?? autoYMin,
+    yMax: opts.yMax ?? autoYMax,
   };
 }
