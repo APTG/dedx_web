@@ -203,6 +203,35 @@ A small text link below the "Add Series" button: "Reset all".
 "Remove all _N_ series and reset selections?" with **Cancel** and
 **Reset** buttons. Only proceeds on "Reset" confirmation.
 
+### 8. Advanced Options Disclosure (#798)
+
+The advanced options live in an inline collapsible **disclosure mounted
+directly above the plot canvas** (between the controls bar and the JSROOT
+container), so they are discoverable on a cold load without scrolling — the
+decision (Q3) deliberately rejected a drawer or a tab in favour of an
+in-flow disclosure that costs zero vertical space until opened.
+
+- **Header:** `⚙ Advanced options` plus a muted content hint
+  (`Y-range` in Basic mode, `Y-range · density · interpolation` in Advanced
+  mode) and a chevron that reflects the open/closed state.
+- **Collapsed by default.** Expanding pushes the plot down **in flow** — it
+  never overlays the canvas.
+- **Persistence:** the open/closed state is stored under the owned
+  `localStorage` key `webdedx.plot.advancedOpen.v1`, so a user who keeps it
+  open is not re-collapsed on the next visit.
+- **Accessibility:** rendered as an ARIA disclosure button
+  (`aria-expanded`), keyboard-toggleable with `Enter` / `Space`.
+- **Manual Y-range override:** a `yMin` / `yMax` pair. A value here is read by
+  `computeAxisRanges` and **wins verbatim** over the auto-range (including the
+  #796 `niceCeil` linear ceiling); an empty field means auto. The bounds live
+  in plot state and are cleared by "Reset all".
+- **Physics controls** (density, I-value, aggregate state, interpolation,
+  MSTAR mode) render inside the same disclosure **only in Advanced mode** —
+  their behaviour and the shared `advanced-options-panel.svelte` component are
+  unchanged; only their container moved.
+- **Test ids:** `plot-advanced-toggle`, `plot-advanced-panel`, `plot-ymin`,
+  `plot-ymax`.
+
 ---
 
 ## Behavior
@@ -675,6 +704,10 @@ to the Calculator page:
 - Preview series
 - Stopping power unit selection
 - Axis scale settings (log/lin)
+- Manual Y-range override (`yMin` / `yMax`, #798)
+
+The Advanced-options disclosure open/closed state is persisted separately in
+`localStorage` (`webdedx.plot.advancedOpen.v1`), not in the URL.
 
 This state **does** persist in the URL for shareability (see § URL State
 Encoding), and survives navigation away from and back to the Plot page

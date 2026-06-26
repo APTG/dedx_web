@@ -142,11 +142,22 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
 });
 
 test.describe("Plot page — Advanced Options panel gating (AC-1)", () => {
-  test("Advanced Options panel is absent in Basic mode", async ({ page }) => {
+  // #798 moved the Advanced options into a disclosure above the plot that is
+  // discoverable on a Basic-mode cold load. The disclosure (and its Y-range
+  // override) is present in Basic mode, but the physics controls (density etc.)
+  // stay gated to Advanced mode — so they must not render until the user opts in.
+  test("Advanced Options disclosure is present in Basic mode but physics controls are not", async ({
+    page,
+  }) => {
     await page.goto("/plot");
-    // Advanced Options accordion should NOT be present in Basic mode
-    const panel = page.locator('button:has-text("Advanced Options")');
-    await expect(panel).toHaveCount(0);
+    await page.waitForSelector('[data-testid="plot-advanced-toggle"]', { timeout: WASM_TIMEOUT });
+
+    // Disclosure present (collapsed) with the Y-range override available…
+    await page.click('[data-testid="plot-advanced-toggle"]');
+    await expect(page.getByTestId("plot-ymax")).toBeVisible();
+
+    // …but no density/physics controls in Basic mode.
+    await expect(page.locator("#density-override")).toHaveCount(0);
   });
 });
 

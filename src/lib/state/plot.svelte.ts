@@ -33,6 +33,10 @@ export interface PlotState {
   stpUnit: StpUnit;
   xLog: boolean;
   yLog: boolean;
+  /** Manual Y-axis lower bound (#798). `undefined` = auto-range. */
+  yMin: number | undefined;
+  /** Manual Y-axis upper bound (#798). `undefined` = auto-range. Overrides `niceCeil`. */
+  yMax: number | undefined;
   nextSeriesId: number;
 
   addSeries(data: PlotSeriesData): boolean;
@@ -44,6 +48,7 @@ export interface PlotState {
   togglePreviewVisibility(): void;
   setStpUnit(unit: StpUnit): void;
   setAxisScale(axis: "x" | "y", log: boolean): void;
+  setYRange(bound: "min" | "max", value: number | undefined): void;
   resetAll(): void;
 }
 
@@ -53,6 +58,8 @@ export function createPlotState(): PlotState {
   let stpUnit = $state<StpUnit>("keV/µm");
   let xLog = $state(true);
   let yLog = $state(true);
+  let yMin = $state<number | undefined>(undefined);
+  let yMax = $state<number | undefined>(undefined);
   let nextSeriesId = $state(1);
   // eslint-disable-next-line prefer-const -- $state needed for Svelte reactivity
   let availableColorIndices = $state<Set<number>>(new Set(COLOR_PALETTE.map((_, i) => i)));
@@ -139,6 +146,11 @@ export function createPlotState(): PlotState {
     else yLog = log;
   }
 
+  function setYRange(bound: "min" | "max", value: number | undefined): void {
+    if (bound === "min") yMin = value;
+    else yMax = value;
+  }
+
   function resetAll(): void {
     for (const s of series) {
       releaseColor(availableColorIndices, s.colorIndex);
@@ -148,6 +160,8 @@ export function createPlotState(): PlotState {
     stpUnit = "keV/µm";
     xLog = true;
     yLog = true;
+    yMin = undefined;
+    yMax = undefined;
     nextSeriesId = 1;
   }
 
@@ -167,6 +181,12 @@ export function createPlotState(): PlotState {
     get yLog() {
       return yLog;
     },
+    get yMin() {
+      return yMin;
+    },
+    get yMax() {
+      return yMax;
+    },
     get nextSeriesId() {
       return nextSeriesId;
     },
@@ -179,6 +199,7 @@ export function createPlotState(): PlotState {
     togglePreviewVisibility,
     setStpUnit,
     setAxisScale,
+    setYRange,
     resetAll,
   };
 }

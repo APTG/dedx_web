@@ -334,6 +334,58 @@ describe("AdvancedOptionsPanel", () => {
     });
   });
 
+  // #798 — manual Y-range override + plot disclosure presentation.
+  describe("Plot Y-range override", () => {
+    const plotProps = (yMin?: number, yMax?: number) => {
+      const calls: Array<["min" | "max", number | undefined]> = [];
+      return {
+        props: {
+          materialIsGas: false,
+          showCalculationControls: false,
+          plotRanges: {
+            yMin,
+            yMax,
+            setYRange: (bound: "min" | "max", value: number | undefined) =>
+              calls.push([bound, value]),
+          },
+        },
+        calls,
+      };
+    };
+
+    it("renders the gear header with a content hint when plotRanges is supplied", () => {
+      render(AdvancedOptionsPanel, { props: plotProps().props });
+      expect(screen.getByTestId("plot-advanced-toggle")).toHaveTextContent("Advanced options");
+      expect(screen.getByTestId("plot-advanced-toggle")).toHaveTextContent("Y-range");
+    });
+
+    it("renders Y-min / Y-max inputs and hides physics controls in Basic mode", () => {
+      render(AdvancedOptionsPanel, { props: plotProps().props });
+      expect(screen.getByTestId("plot-ymin")).toBeInTheDocument();
+      expect(screen.getByTestId("plot-ymax")).toBeInTheDocument();
+      // showCalculationControls=false → density/I-value are not rendered.
+      expect(screen.queryByLabelText("Density")).not.toBeInTheDocument();
+    });
+
+    it("writes a parsed yMax to state and clears it on empty input", async () => {
+      const { props, calls } = plotProps();
+      render(AdvancedOptionsPanel, { props });
+
+      const yMax = screen.getByTestId("plot-ymax");
+      await fireEvent.input(yMax, { target: { value: "3000" } });
+      expect(calls.at(-1)).toEqual(["max", 3000]);
+
+      await fireEvent.input(yMax, { target: { value: "" } });
+      expect(calls.at(-1)).toEqual(["max", undefined]);
+    });
+
+    it("does not render Y-range inputs on the calculator (no plotRanges)", () => {
+      render(AdvancedOptionsPanel, { props: { materialIsGas: false } });
+      expect(screen.queryByTestId("plot-ymin")).not.toBeInTheDocument();
+      expect(screen.queryByTestId("plot-advanced-toggle")).not.toBeInTheDocument();
+    });
+  });
+
   describe("Accordion behavior", () => {
     it("renders as collapsible accordion", () => {
       render(AdvancedOptionsPanel, {
