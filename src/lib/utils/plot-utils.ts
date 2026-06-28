@@ -2,6 +2,35 @@ import type { StpUnit } from "$lib/wasm/types";
 
 export type PlotEnergyAxisUnit = "MeV" | "MeV/nucl";
 
+/** A 1-D axis range `[min, max]` used by the zoom helpers. */
+export interface AxisRange {
+  min: number;
+  max: number;
+}
+
+/**
+ * Compute a new axis range zoomed toward its centre by `factor` (the fraction
+ * of the current span to keep): `factor < 1` zooms in, `factor > 1` zooms out.
+ * For log axes the interpolation runs in log10 space so the centre stays put
+ * visually. Used by the toolbar − / + buttons (#794).
+ */
+export function zoomRange(min: number, max: number, isLog: boolean, factor: number): AxisRange {
+  if (isLog && min > 0 && max > 0) {
+    const lmin = Math.log10(min);
+    const lmax = Math.log10(max);
+    const centre = (lmin + lmax) / 2;
+    const half = ((lmax - lmin) / 2) * factor;
+    return { min: 10 ** (centre - half), max: 10 ** (centre + half) };
+  }
+  const centre = (min + max) / 2;
+  const half = ((max - min) / 2) * factor;
+  return { min: centre - half, max: centre + half };
+}
+
+/** Fraction of the visible span kept by a single − / + zoom step (#794). */
+export const ZOOM_STEP_IN = 0.6;
+export const ZOOM_STEP_OUT = 1 / ZOOM_STEP_IN;
+
 const ELECTRON_PARTICLE_ID = 1001;
 
 export const COLOR_PALETTE: readonly string[] = [

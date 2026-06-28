@@ -5,8 +5,8 @@
   import { Button } from "$lib/components/ui/button";
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
+  import PlotToolbar from "$lib/components/plot-toolbar.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
-  import { downloadPlotSvg, downloadPlotPng } from "$lib/export/plot-image";
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
@@ -85,41 +85,11 @@
     };
   });
 
-  // Dropdown state
-  let showExportMenu = $state(false);
-  let exportMenuId = $state("export-menu-" + Math.random().toString(36).slice(2));
-
-  function toggleExportMenu() {
-    if (!canExport.value) return;
-    showExportMenu = !showExportMenu;
-  }
-
-  $effect(() => {
-    if (!showExportMenu) return;
-    const closeMenu = (e: MouseEvent) => {
-      const target = e.target as HTMLElement;
-      if (
-        !target.closest(`[aria-controls="${exportMenuId}"]`) &&
-        !target.closest(`#${exportMenuId}`)
-      ) {
-        showExportMenu = false;
-      }
-    };
-    document.addEventListener("click", closeMenu);
-    return () => document.removeEventListener("click", closeMenu);
-  });
-
-  $effect(() => {
-    const handleEscape = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        showExportMenu = false;
-      }
-    };
-    if (showExportMenu) {
-      document.addEventListener("keydown", handleEscape);
-      return () => document.removeEventListener("keydown", handleEscape);
-    }
-  });
+  // ── Plot toolbar zoom controls (#794) ──
+  // Imperative handlers bound from JsrootPlot; the toolbar calls them.
+  let resetZoom: (() => void) | null = $state(null);
+  let zoomIn: (() => void) | null = $state(null);
+  let zoomOut: (() => void) | null = $state(null);
 </script>
 
 <svelte:head>
@@ -244,7 +214,7 @@
 
       <!-- ── MAIN AREA ── -->
       <div class="flex min-w-0 flex-col gap-4">
-        <!-- Controls bar: stp unit + axis scale + export -->
+        <!-- Controls bar: stp unit + axis scale -->
         <div class="flex flex-wrap items-center justify-between gap-4">
           <!-- Left: stp unit + axis scale controls -->
           <div class="flex flex-wrap items-center gap-4">
@@ -308,62 +278,6 @@
               {/each}
             </div>
           </div>
-
-          <!-- Right: Export image dropdown -->
-          <div class="relative">
-            <button
-              data-testid="export-image-btn"
-              aria-label="Export plot as image"
-              aria-haspopup="true"
-              aria-expanded={showExportMenu}
-              aria-controls={exportMenuId}
-              onclick={toggleExportMenu}
-              disabled={!canExport.value}
-              class="inline-flex items-center gap-1 rounded-md border bg-background px-3 py-2 text-sm font-medium hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
-            >
-              Export image ▾
-            </button>
-
-            {#if showExportMenu}
-              <div
-                id={exportMenuId}
-                role="menu"
-                aria-label="Export options"
-                class="absolute right-0 top-full z-50 mt-1 min-w-[160px] overflow-hidden rounded-md border bg-popover p-1 shadow-md"
-              >
-                <button
-                  data-testid="export-image-svg"
-                  role="menuitem"
-                  onclick={async () => {
-                    try {
-                      await downloadPlotSvg(getSvg);
-                    } finally {
-                      showExportMenu = false;
-                    }
-                  }}
-                  class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                >
-                  SVG vector
-                </button>
-                {#if isAdvancedMode.value}
-                  <button
-                    data-testid="export-image-png"
-                    role="menuitem"
-                    onclick={async () => {
-                      try {
-                        await downloadPlotPng(getSvg);
-                      } finally {
-                        showExportMenu = false;
-                      }
-                    }}
-                    class="w-full rounded-sm px-2 py-1.5 text-left text-sm hover:bg-accent"
-                  >
-                    PNG image
-                  </button>
-                {/if}
-              </div>
-            {/if}
-          </div>
         </div>
 
         <!-- Advanced options disclosure (#798): collapsed by default, mounted
@@ -384,7 +298,16 @@
           />
         {/if}
 
-        <!-- JSROOT canvas — 50vh on mobile (<600px), min(60vh,600px) on desktop -->
+        <!-- App toolbar (#794): − / + / Reset zoom / Export, mounted directly
+             above the canvas in place of JSROOT's native on-canvas chrome. -->
+        <PlotToolbar
+          onZoomIn={() => zoomIn?.()}
+          onZoomOut={() => zoomOut?.()}
+          onResetZoom={() => resetZoom?.()}
+          {getSvg}
+        />
+
+        <!-- JSROOT canvas — 50vh on mobile (<600px), min(60vh,600px) on desktop. -->
         <div
           style:width="100%"
           style:height={isMobile ? "50vh" : "min(60vh, 600px)"}
@@ -398,6 +321,9 @@
             yLog={plotState.yLog}
             {axisRanges}
             bind:requestExportSvg={getSvg}
+            bind:resetZoom
+            bind:zoomIn
+            bind:zoomOut
           />
         </div>
 

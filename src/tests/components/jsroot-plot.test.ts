@@ -40,7 +40,13 @@ afterEach(() => {
 });
 
 vi.mock("jsroot", () => ({
-  settings: { ZoomWheel: true, ZoomTouch: true, DragGraphs: true },
+  settings: {
+    ZoomWheel: true,
+    ZoomTouch: true,
+    DragGraphs: true,
+    ToolBar: "popup",
+    ContextMenu: true,
+  },
   gStyle: { fPadLeftMargin: 0.1, fPadBottomMargin: 0.1 },
   createTGraph: vi.fn((_n: number, _x: number[], _y: number[]) => ({
     fLineColor: 1,
@@ -554,5 +560,110 @@ describe("JsrootPlot", () => {
     const result = await capturedExportFn!();
     expect(result).not.toBeNull();
     expect(result).toContain("<svg");
+  });
+
+  it("disables JSROOT's native ToolBar and ContextMenu while mounted (#794)", async () => {
+    const JSROOT = await import("jsroot");
+    const settings = JSROOT.settings as { ToolBar: boolean | string; ContextMenu: boolean };
+    settings.ToolBar = "popup";
+    settings.ContextMenu = true;
+
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({})],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    expect(settings.ToolBar).toBe(false);
+    expect(settings.ContextMenu).toBe(false);
+  });
+
+  it("exposes resetZoom (unzoom xyz) and zoom-out clamped to the full range (#794)", async () => {
+    const JSROOT = await import("jsroot");
+    const unzoom = vi.fn(async () => true);
+    const zoom = vi.fn(async () => true);
+    // Frame painter zoomed in to the middle of a [1,100]×[1,1000] full range.
+    const framePainter = {
+      xmin: 1,
+      xmax: 100,
+      ymin: 1,
+      ymax: 1000,
+      scale_xmin: 5,
+      scale_xmax: 50,
+      scale_ymin: 5,
+      scale_ymax: 500,
+      // Linear axes keep the arithmetic simple to assert clamping.
+      logx: 0,
+      logy: 0,
+      zoom,
+      unzoom,
+    };
+    vi.mocked(JSROOT.draw).mockImplementation(async () => ({
+      cleanup: vi.fn(),
+      getFramePainter: () => framePainter,
+    }));
+
+    let resetZoomFn: (() => void) | null = null;
+    let zoomOutFn: (() => void) | null = null;
+    const propsBase = {
+      series: [makeSeries({})],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: false,
+      yLog: false,
+      axisRanges: { xMin: 1, xMax: 100, yMin: 1, yMax: 1000 },
+    };
+    const props = Object.defineProperties(propsBase, {
+      resetZoom: {
+        get() {
+          return resetZoomFn;
+        },
+        set(v: (() => void) | null) {
+          resetZoomFn = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+      zoomOut: {
+        get() {
+          return zoomOutFn;
+        },
+        set(v: (() => void) | null) {
+          zoomOutFn = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+    }) as typeof propsBase & {
+      resetZoom?: (() => void) | null;
+      zoomOut?: (() => void) | null;
+    };
+
+    render(JsrootPlot, { props });
+
+    // The controls are exposed on mount but only wire to the frame painter once
+    // the async draw resolves — wait for the draw, then drive them.
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+
+    await vi.waitFor(() => {
+      resetZoomFn!();
+      expect(unzoom).toHaveBeenCalledWith("xyz");
+    });
+
+    zoomOutFn!();
+    await vi.waitFor(() => expect(zoom).toHaveBeenCalled());
+    // Zoom-out expands the [5,50]×[5,500] view but must never exceed the full
+    // [1,100]×[1,1000] data range.
+    const [xMin, xMax, yMin, yMax] = vi.mocked(zoom).mock.calls.at(-1) as number[];
+    expect(xMin).toBeGreaterThanOrEqual(1);
+    expect(xMax).toBeLessThanOrEqual(100);
+    expect(yMin).toBeGreaterThanOrEqual(1);
+    expect(yMax).toBeLessThanOrEqual(1000);
   });
 });
