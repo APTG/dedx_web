@@ -128,6 +128,34 @@ describe("createPlotState", () => {
     expect(state.series.find((s) => s.seriesId === sid)?.visible).toBe(true);
   });
 
+  it("reorderSeries moves a series and preserves its identity/colour (#793)", () => {
+    const state = createPlotState();
+    state.addSeries(mockSeries({ programId: 1 }));
+    state.addSeries(mockSeries({ programId: 2 }));
+    state.addSeries(mockSeries({ programId: 3 }));
+    const ids = state.series.map((s) => s.seriesId);
+    const colors = new Map(state.series.map((s) => [s.seriesId, s.colorIndex]));
+
+    // Move the first series to the end.
+    state.reorderSeries(0, 2);
+    expect(state.series.map((s) => s.seriesId)).toEqual([ids[1], ids[2], ids[0]]);
+    // Colours are tied to the series, not the position — no reassignment.
+    for (const s of state.series) {
+      expect(s.colorIndex).toBe(colors.get(s.seriesId));
+    }
+  });
+
+  it("reorderSeries ignores out-of-range or no-op indices", () => {
+    const state = createPlotState();
+    state.addSeries(mockSeries({ programId: 1 }));
+    state.addSeries(mockSeries({ programId: 2 }));
+    const before = state.series.map((s) => s.seriesId);
+    state.reorderSeries(0, 0); // no-op
+    state.reorderSeries(-1, 1); // out of range
+    state.reorderSeries(0, 5); // out of range
+    expect(state.series.map((s) => s.seriesId)).toEqual(before);
+  });
+
   it("setStpUnit changes unit", () => {
     const state = createPlotState();
     state.setStpUnit("MeV/cm" as StpUnit);

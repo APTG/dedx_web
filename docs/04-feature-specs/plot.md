@@ -111,25 +111,45 @@ Plot page. The "Add Series" button is enabled only when
 | Behavior       | Adds the current (resolvedProgramId, particle, material) triplet as a new series to the plot. See § Add Series Flow.                                                                                                                                                                                      |
 | Soft limit     | When 10 series already exist, show an inline warning below the button: "10 series displayed. Adding more may reduce readability." The button remains enabled.                                                                                                                                             |
 | Post-add hint  | After the first 1–2 "Add Series" clicks (tracked across sessions via `localStorage`), show a brief inline hint below the button: _"Change particle, material, or program to compare."_ The hint dismisses on the next user interaction with any entity selector. Suppressed permanently after 2 showings. |
+| Single entry   | **This sidebar button is the only place to add a series (#793).** While a series is being edited it switches to "Done editing". Test id `plot-add-series`. The series strip below the plot deliberately carries **no** add control.                                                                       |
 
-### 3. Series List
+### 3. Series Strip (interactive legend, #793)
 
-The series list appears in the **main area, below the JSROOT canvas**.
+The series strip appears in the **main area, below the JSROOT canvas**.
 It displays all added series and the preview series (if any). Placing
 it below the canvas keeps it spatially close to the plot it describes
 and always visible alongside the chart. The sidebar stays focused on
 entity selection + "Add Series".
 
-Each series entry shows:
+**The strip is the on-screen interactive legend** (per epic #800, Q1): full
+styling plus hide / reorder / delete control. The in-canvas `TLegend` exists
+only on the off-screen export pad (#797, see § Export) — the live plot keeps
+the styled HTML strip and never double-draws a ROOT legend.
 
-| Element               | Detail                                                                                                                                                             |
-| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| **Color swatch**      | 16×16px square filled with the series' assigned color, followed by a short line sample (~24px) in the series' line style (solid for committed, dashed for preview) |
-| **Label**             | Auto-generated context-aware label (see § Smart Series Labels)                                                                                                     |
-| **Visibility toggle** | Eye icon button — toggles the series on/off on the plot. Hidden series have reduced opacity (~0.4) in the list.                                                    |
-| **Remove button**     | × icon button — removes the series from the plot and list. Not shown for the preview series.                                                                       |
+Each series renders as a **bordered card** (`series-strip.svelte`) with:
 
-The series list is scrollable if it exceeds a maximum height of ~200px.
+| Element               | Detail                                                                                                                                                                                                                                          |
+| --------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Drag handle**       | A grip icon that initiates HTML5 drag-to-reorder; also keyboard-accessible (`ArrowUp` / `ArrowDown` while focused). Reordering changes the plotted draw order. Test id `plot-series-drag-{idx}`.                                                |
+| **Line-swatch**       | A short curve stroke (inline SVG) in the series' colour — reads as "a curve", matching the plotted legend entry. Dashed for preview and external-data series, solid otherwise.                                                                  |
+| **Label**             | Auto-generated context-aware label (see § Smart Series Labels), truncated with an ellipsis. Clicking it selects the series for live editing. Struck through when hidden.                                                                        |
+| **Visibility toggle** | Eye / eye-off `IconButton` — toggles the series on/off on the plot. Always visible (no hover-reveal), with a tooltip + accessible name. Hidden series have reduced opacity (~0.4) and a struck-through label. Test id `plot-series-hide-{idx}`. |
+| **Remove button**     | Trash `IconButton` — removes the series from the plot and strip. Always visible, with a tooltip + accessible name. Not shown for the preview series. Test id `plot-series-remove-{idx}`.                                                        |
+
+The eye and trash actions are **persistent real buttons** (Q5), each a
+[`IconButton`](../../src/lib/components/ui/icon-button/icon-button.svelte) with
+an honest target size: **≥36px on desktop, ≥44px below `sm`** (per the project
+mobile-target rule). They are never hover-revealed (which fails on touch) and
+never hidden behind a per-row context menu (which would bury the two actions
+that matter).
+
+The strip header shows a **count** (`N series`, test id `plot-series-count`)
+and — when empty — a muted hint pointing at the single add entry point
+(`add from the sidebar →`). The strip itself carries **no** "Add series"
+control: adding a series lives only in the sidebar button (§2).
+
+Hidden series are excluded from auto-ranging (#796) and from the export
+legend (#797), and their curves are omitted from the plot.
 
 ### 4. Stopping Power Unit Selector
 
@@ -835,7 +855,28 @@ A dropdown button offering two formats:
 
 Both formats capture all **visible** series, axis labels, gridlines, and
 axis ticks. Both exclude hidden series, the preview series, the sidebar,
-and the series list below the canvas.
+and the series strip below the canvas.
+
+#### In-canvas legend (#797)
+
+The on-screen plot relies on the HTML series strip for its legend, which can't
+be captured into a ROOT export — so an exported file would otherwise have no
+series names. To fix this, the off-screen export pad gets its **own in-canvas
+`TLegend`**, built from the visible series and attached to the export
+multigraph's `fFunctions` (so the `TMultiGraphPainter` draws it alongside the
+curves). The builder is the pure, unit-tested
+[`buildExportLegend`](../../src/lib/utils/plot-utils.ts):
+
+- One entry per **visible** series, in the same order as the on-screen strip;
+  hidden series are excluded (they're already excluded from the curves).
+- Each entry uses the series' graph for its line sample, so the legend line
+  matches the curve's colour and style, and the same human-readable label shown
+  in the strip (e.g. `proton · Water · ICRU-49`).
+- Placed top-right inside the frame (NDC coordinates). Proton-in-water peaks on
+  the left, so top-right is usually clear.
+- Added to the **export pad only** — never the live painter (which keeps the
+  HTML strip as its only legend, per Q1/#793). Applies to both the SVG and PNG
+  paths (PNG is rasterised from the same off-screen SVG).
 
 > Full image export spec (keyboard behaviour, `aria-*` contract):
 > [`export.md`](export.md) §4.1.

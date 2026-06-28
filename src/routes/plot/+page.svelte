@@ -186,8 +186,9 @@
           onLoad={handleModalLoad}
         />
 
-        <!-- Add Series / Done editing button (sidebar, desktop-primary) -->
+        <!-- Add Series / Done editing button — the single add entry point (#793). -->
         <button
+          data-testid="plot-add-series"
           disabled={(orchestrator.editingSeriesId === null && !entityState.isComplete) ||
             (orchestrator.editingSeriesId === null && plotState.series.length >= MAX_PLOT_SERIES)}
           aria-disabled={(orchestrator.editingSeriesId === null && !entityState.isComplete) ||
@@ -333,14 +334,13 @@
           preview={plotState.preview}
           editingSeriesId={orchestrator.editingSeriesId}
           jsrootSwatchColors={orchestrator.jsrootSwatchColors}
-          maxSeries={MAX_PLOT_SERIES}
           previewError={orchestrator.previewError}
-          onAdd={() => orchestrator.handleAddOrMulti()}
           onRemove={(id) => plotState.removeSeries(id)}
           onToggleVisibility={(id) => plotState.toggleVisibility(id)}
           onTogglePreview={() => plotState.togglePreviewVisibility()}
           onSelectForEdit={(id) => orchestrator.handleSelectSeriesForEdit(id)}
           onDone={() => orchestrator.handleDoneEditing()}
+          onReorder={(from, to) => plotState.reorderSeries(from, to)}
         />
       </div>
     </div>
