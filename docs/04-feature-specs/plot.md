@@ -5,8 +5,8 @@
 > **v6** (28 June 2026): App toolbar + Reset zoom (#794). JSROOT's native
 > on-canvas toolbar and right-click context menu are disabled and replaced
 > by an app-level toolbar above the canvas (− / + / Reset zoom / Export
-> image), plus a transient zoom hint. The "Export image ▾" dropdown moved
-> from the controls bar into this toolbar. See § App Toolbar & Reset Zoom.
+> image). The "Export image ▾" dropdown moved from the controls bar into
+> this toolbar. See § App Toolbar & Reset Zoom.
 >
 > **v5** (13 April 2026): Export layout updated per `export.md` v3 §0.
 > "Export PDF" and "Export CSV ↓" moved from controls bar to the **app
@@ -652,33 +652,24 @@ ROOT-style fit/draw options) that mean nothing to a web user. They are
 replaced by a small **app-level toolbar mounted directly above the canvas**
 (`plot-toolbar.svelte`) carrying the only four controls web users need:
 
-| Control      | `data-testid`      | Action                                                            |
-| ------------ | ------------------ | ----------------------------------------------------------------- |
-| `−` zoom out | `plot-zoom-out`    | Steps the visible range out around its centre (log-aware).        |
-| `+` zoom in  | `plot-zoom-in`     | Steps the visible range in around its centre (log-aware).         |
-| Reset zoom   | `plot-reset-zoom`  | `painter.unzoom("xyz")` — returns **both** axes to full range.    |
-| Export image | `export-image-btn` | The image-export dropdown (relocated here from the controls bar). |
+| Control      | `data-testid`      | Action                                                                                     |
+| ------------ | ------------------ | ------------------------------------------------------------------------------------------ |
+| `−` zoom out | `plot-zoom-out`    | Steps the visible range out around its centre (log-aware), clamped to the full data range. |
+| `+` zoom in  | `plot-zoom-in`     | Steps the visible range in around its centre (log-aware).                                  |
+| Reset zoom   | `plot-reset-zoom`  | `painter.unzoom("xyz")` — returns **both** axes to full range.                             |
+| Export image | `export-image-btn` | The image-export dropdown (relocated here from the controls bar).                          |
 
 - **Reset zoom** is always visible with a coral accent — the discoverable
   primary path back to full range. Unzoom triggers a JSROOT pad redraw, so
   the axis titles/margins (#795/#801) re-apply automatically.
+- The `−` / `+` steps scale the visible range toward its centre via the
+  log-aware `zoomRange()` helper (`plot-utils.ts`); the result is clamped to
+  the full data range so zoom-out never expands past it (and zoom-out at full
+  range is a no-op).
 - The native chrome is suppressed via `settings.ToolBar = false` and
   `settings.ContextMenu = false`. Both are global JSROOT settings, snapshotted
-  and restored on teardown so the change never leaks to the off-screen export
-  pad or other plots.
-
-#### Transient zoom hint
-
-When any axis is zoomed in (or panned) away from full range, a small
-non-modal hint — `Zoomed — press Reset zoom to fit` (`plot-zoom-hint`) —
-appears near the top of the plot. It **persists until the zoom is cleared**
-(no auto-hide timer) and disappears the moment the view returns to full
-range. Zoom state is detected by comparing the frame painter's current scale
-range against the full data range (`isZoomed(current, full)` in
-`plot-utils.ts`); the signal is refreshed on every zoom/unzoom — box-zoom,
-wheel-zoom, double-click reset, and the toolbar buttons — by wrapping the
-frame painter's `zoom`/`unzoom` after each draw. The hint is
-`pointer-events: none` so it never traps clicks meant for the canvas.
+  and restored on teardown (including after a failed draw) so the change never
+  leaks to the off-screen export pad or other plots.
 
 ### Interactive Features (JSROOT built-in)
 

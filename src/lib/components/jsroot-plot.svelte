@@ -13,7 +13,6 @@
     AXIS_Y_TITLE_OFFSET,
     PAD_LEFT_MARGIN,
     PAD_BOTTOM_MARGIN,
-    isZoomed,
     zoomRange,
     ZOOM_STEP_IN,
     ZOOM_STEP_OUT,
@@ -120,10 +119,6 @@
     zoomIn = $bindable<(() => void) | null>(null),
     // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
     zoomOut = $bindable<(() => void) | null>(null),
-    // True whenever any axis is zoomed/panned away from full range — drives the
-    // transient "Zoomed — press Reset zoom to fit" hint in the parent.
-    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
-    zoomed = $bindable<boolean>(false),
   }: {
     series: PlotSeries[];
     preview: PlotSeries | null;
@@ -135,7 +130,6 @@
     resetZoom?: (() => void) | null | undefined;
     zoomIn?: (() => void) | null | undefined;
     zoomOut?: (() => void) | null | undefined;
-    zoomed?: boolean | undefined;
   } = $props();
 
   let container = $state<HTMLDivElement | null>(null);
@@ -171,59 +165,25 @@
   }
   let currentPainter = $state<JsrootPainter | null>(null);
   // Latest frame painter, refreshed on every (re)draw. Read by the imperative
-  // zoom controls and the zoom-state notifier; plain `let` (not reactive) since
-  // only the exposed callbacks consume it, at call time.
+  // zoom controls; plain `let` (not reactive) since only the exposed callbacks
+  // consume it, at call time.
   let currentFrame: JsrootFramePainter | null = null;
 
-  // Recompute the `zoomed` signal from the frame painter's current vs full range.
-  function refreshZoomState(fp: JsrootFramePainter | null): void {
-    if (!fp) {
-      zoomed = false;
-      return;
-    }
-    const x = isZoomed({ min: fp.scale_xmin, max: fp.scale_xmax }, { min: fp.xmin, max: fp.xmax });
-    const y = isZoomed({ min: fp.scale_ymin, max: fp.scale_ymax }, { min: fp.ymin, max: fp.ymax });
-    zoomed = x || y;
-  }
-
-  // Wrap the frame painter's zoom/unzoom so every interactive path (box-zoom,
-  // wheel-zoom, double-click reset, touch) — plus our own toolbar buttons —
-  // refreshes the zoom signal once JSROOT has finished its redraw. Each draw
-  // creates a fresh frame painter, so the wrapper is reinstalled per draw.
-  function trackZoom(fp: JsrootFramePainter): void {
-    const origZoom = fp.zoom.bind(fp);
-    fp.zoom = (...args: Parameters<JsrootFramePainter["zoom"]>) =>
-      Promise.resolve(origZoom(...args)).then((r) => {
-        refreshZoomState(fp);
-        return r;
-      });
-    const origUnzoom = fp.unzoom.bind(fp);
-    fp.unzoom = (...args: Parameters<JsrootFramePainter["unzoom"]>) =>
-      Promise.resolve(origUnzoom(...args)).then((r) => {
-        refreshZoomState(fp);
-        return r;
-      });
-  }
-
+  // Apply a single − / + zoom step around the centre of the visible range,
+  // honouring each axis's log/lin scale. The result is clamped to the full data
+  // range so zoom-out never expands past it (and zoom-out at full range is a
+  // no-op — JSROOT treats a full-range zoom as an unzoom).
   function applyZoomStep(factor: number): void {
     const fp = currentFrame;
     if (!fp) return;
-
-    const xRaw = zoomRange(fp.scale_xmin, fp.scale_xmax, fp.logx !== 0, factor);
-    const yRaw = zoomRange(fp.scale_ymin, fp.scale_ymax, fp.logy !== 0, factor);
-
-    // Clamp to the full data range so zooming out from full range is a no-op and
-    // repeated zoom-out cannot overshoot into a "more than full" view.
-    const x = {
-      min: Math.max(fp.xmin, Math.min(fp.xmax, xRaw.min)),
-      max: Math.max(fp.xmin, Math.min(fp.xmax, xRaw.max)),
-    };
-    const y = {
-      min: Math.max(fp.ymin, Math.min(fp.ymax, yRaw.min)),
-      max: Math.max(fp.ymin, Math.min(fp.ymax, yRaw.max)),
-    };
-
-    void fp.zoom(x.min, x.max, y.min, y.max);
+    const x = zoomRange(fp.scale_xmin, fp.scale_xmax, fp.logx !== 0, factor);
+    const y = zoomRange(fp.scale_ymin, fp.scale_ymax, fp.logy !== 0, factor);
+    void fp.zoom(
+      Math.max(x.min, fp.xmin),
+      Math.min(x.max, fp.xmax),
+      Math.max(y.min, fp.ymin),
+      Math.min(y.max, fp.ymax),
+    );
   }
 
   // Expose the imperative zoom controls to the parent toolbar. resetZoom calls
@@ -275,7 +235,6 @@
           currentPainter?.cleanup?.();
           currentPainter = null;
           currentFrame = null;
-          zoomed = false;
           el.innerHTML = "";
         });
       return;
@@ -297,9 +256,6 @@
         currentPainter = painter;
         restoreSettings = restore;
         currentFrame = painter.getFramePainter?.() ?? null;
-        if (currentFrame) trackZoom(currentFrame);
-        // A fresh draw starts at full range; reset the hint regardless.
-        refreshZoomState(currentFrame);
         jsrootError = null;
         jsrootReady = true;
       })
@@ -483,7 +439,17 @@
     const mg = buildMultigraph(JSROOT, opts);
     const drawOpts = buildDrawOptions(opts.xLog, opts.yLog);
 
-    const painter = (await JSROOT.draw(el, mg, drawOpts)) as JsrootPainter;
+    let painter: JsrootPainter;
+    try {
+      painter = (await JSROOT.draw(el, mg, drawOpts)) as JsrootPainter;
+    } catch (err) {
+      // If the draw rejects, restore the global settings/margins here — the
+      // caller only receives (and invokes) `restore` on success, so without
+      // this the flipped ToolBar/ContextMenu/margins would leak into the next
+      // draw or other pads after a transient failure.
+      restore();
+      throw err;
+    }
     return { painter, restore };
   }
 

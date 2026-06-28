@@ -48,6 +48,30 @@ Key decisions and findings:
 - **Double-click reset** is retained as the power-user shortcut; the labelled,
   coral-accented Reset zoom button is the discoverable primary path.
 
+### Prompt 2: Reply to review comments, fix failing tests, remove the zoom hint
+
+**AI response**: All CI was green; the two items were Copilot review comments
+plus a UX request from the repo owner.
+
+- **Removed the transient zoom hint.** The owner found `Zoomed — press Reset
+  zoom to fit` wasted vertical space between the plot and the toolbar. Deleted
+  the hint element and, since it was the only consumer, the whole zoom-state
+  machinery — the `zoomed` bindable, the `isZoomed` helper (+ its unit tests),
+  and the `zoom`/`unzoom` wrapping that refreshed it. The toolbar buttons and
+  `resetZoom`/`zoomIn`/`zoomOut` are unchanged.
+- **Copilot #1 — zoom-out beyond the data range.** `applyZoomStep` now clamps
+  the `zoomRange()` result to the frame painter's full `{x,y}{min,max}` before
+  calling `fp.zoom(...)`, so zoom-out never expands past the data and is a
+  no-op at full range.
+- **Copilot #2 — `restore()` leak on draw failure.** Wrapped `JSROOT.draw()` in
+  `drawPlot` so `restore()` runs (and rethrows) if the draw rejects — a
+  transient failure can no longer leak the flipped `ToolBar`/`ContextMenu`/
+  margins into the next draw or other pads.
+- **Tests updated.** Dropped the `isZoomed` and hint assertions; the component
+  test now also asserts zoom-out is clamped to the full range, and the
+  Playwright spec asserts box-zoom / `+` change the axis tick labels and Reset
+  restores them (instead of watching the removed hint).
+
 ## Tasks
 
 ### App toolbar + Reset zoom (#794)

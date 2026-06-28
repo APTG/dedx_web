@@ -4,7 +4,6 @@ import {
   buildDrawOptions,
   computeAxisRanges,
   niceCeil,
-  isZoomed,
   zoomRange,
   ZOOM_STEP_IN,
   ZOOM_STEP_OUT,
@@ -187,29 +186,6 @@ describe("niceCeil", () => {
     expect(niceCeil(-5)).toBe(1);
     expect(niceCeil(Number.NaN)).toBe(1);
     expect(niceCeil(Number.POSITIVE_INFINITY)).toBe(1);
-  });
-});
-
-describe("isZoomed", () => {
-  it("returns false when the current range equals the full range", () => {
-    expect(isZoomed({ min: 0.001, max: 10000 }, { min: 0.001, max: 10000 })).toBe(false);
-  });
-
-  it("returns false within floating-point tolerance of the full range", () => {
-    // A round-trip through JSROOT can perturb the bounds by a hair.
-    expect(isZoomed({ min: 1.0000000001, max: 100 }, { min: 1, max: 100 })).toBe(false);
-  });
-
-  it("returns true when zoomed in (narrower span)", () => {
-    expect(isZoomed({ min: 10, max: 100 }, { min: 1, max: 1000 })).toBe(true);
-  });
-
-  it("returns true when panned (same span, shifted)", () => {
-    expect(isZoomed({ min: 100, max: 200 }, { min: 1, max: 1000 })).toBe(true);
-  });
-
-  it("returns true when only one bound moved", () => {
-    expect(isZoomed({ min: 1, max: 500 }, { min: 1, max: 1000 })).toBe(true);
   });
 });
 

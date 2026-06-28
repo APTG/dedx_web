@@ -2,7 +2,7 @@ import { test, expect, type Page } from "@playwright/test";
 
 // #794 · App toolbar + Reset zoom — JSROOT's native on-canvas toolbar and
 // right-click context menu are replaced by an app-level toolbar (− / + / Reset
-// zoom / Export) plus a transient "Zoomed" hint.
+// zoom / Export).
 
 const WASM_TIMEOUT = 20000;
 
@@ -15,6 +15,22 @@ async function waitForPlotReady(page: Page): Promise<void> {
     () => !!document.querySelector('[role="img"][aria-label*="plot"] svg path'),
     { timeout: 15000 },
   );
+}
+
+/**
+ * A signature of the plot's numeric axis tick labels. Zooming changes the
+ * visible range and therefore the tick labels, so this is a stable,
+ * implementation-agnostic proxy for "is the plot zoomed" across reset.
+ */
+async function axisTickSignature(page: Page): Promise<string> {
+  return page.evaluate(() => {
+    const svg = document.querySelector('[role="img"][aria-label*="plot"] svg');
+    if (!svg) return "";
+    return Array.from(svg.querySelectorAll("text"))
+      .map((t) => (t.textContent ?? "").trim())
+      .filter((s) => /^[-+]?\d/.test(s))
+      .join("|");
+  });
 }
 
 /** Box-zoom a central region of the plot frame via a left-button drag. */
@@ -69,37 +85,37 @@ test.describe("Plot toolbar & reset zoom (#794)", () => {
     await expect(page.locator(".jsroot_ctxt_container")).toHaveCount(0);
   });
 
-  test("box-zoom shows the hint; Reset zoom clears it @regression", async ({ page }) => {
-    test.setTimeout(60000);
-    await page.goto("/plot");
-    await waitForPlotReady(page);
-
-    const hint = page.getByTestId("plot-zoom-hint");
-    await expect(hint).toHaveCount(0);
-
-    await boxZoom(page);
-    await expect(hint).toBeVisible({ timeout: 10000 });
-
-    await page.getByTestId("plot-reset-zoom").click();
-    await expect(hint).toHaveCount(0, { timeout: 10000 });
-  });
-
-  test("− / + buttons step the zoom and reflect state in the hint @regression", async ({
+  test("box-zoom changes the axes; Reset zoom restores full range @regression", async ({
     page,
   }) => {
     test.setTimeout(60000);
     await page.goto("/plot");
     await waitForPlotReady(page);
 
-    const hint = page.getByTestId("plot-zoom-hint");
-    await expect(hint).toHaveCount(0);
+    const full = await axisTickSignature(page);
+    expect(full).not.toBe("");
 
-    // Zooming in pushes the view off full range → hint appears.
-    await page.getByTestId("plot-zoom-in").click();
-    await expect(hint).toBeVisible({ timeout: 10000 });
+    await boxZoom(page);
+    await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).not.toBe(full);
 
-    // Reset returns to full range → hint clears.
     await page.getByTestId("plot-reset-zoom").click();
-    await expect(hint).toHaveCount(0, { timeout: 10000 });
+    await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).toBe(full);
+  });
+
+  test("− / + buttons step the zoom; Reset restores full range @regression", async ({ page }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await waitForPlotReady(page);
+
+    const full = await axisTickSignature(page);
+    expect(full).not.toBe("");
+
+    // Zooming in narrows the visible range → axis tick labels change.
+    await page.getByTestId("plot-zoom-in").click();
+    await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).not.toBe(full);
+
+    // Reset returns to full range.
+    await page.getByTestId("plot-reset-zoom").click();
+    await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).toBe(full);
   });
 });

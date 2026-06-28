@@ -86,12 +86,10 @@
   });
 
   // ── Plot toolbar zoom controls (#794) ──
-  // Imperative handlers + zoom-state signal bound from JsrootPlot; the toolbar
-  // calls the handlers and the transient hint reads `plotZoomed`.
+  // Imperative handlers bound from JsrootPlot; the toolbar calls them.
   let resetZoom: (() => void) | null = $state(null);
   let zoomIn: (() => void) | null = $state(null);
   let zoomOut: (() => void) | null = $state(null);
-  let plotZoomed = $state(false);
 </script>
 
 <svelte:head>
@@ -309,10 +307,8 @@
           {getSvg}
         />
 
-        <!-- JSROOT canvas — 50vh on mobile (<600px), min(60vh,600px) on desktop.
-             `relative` so the transient zoom hint can overlay the plot. -->
+        <!-- JSROOT canvas — 50vh on mobile (<600px), min(60vh,600px) on desktop. -->
         <div
-          class="relative"
           style:width="100%"
           style:height={isMobile ? "50vh" : "min(60vh, 600px)"}
           style:min-height={isMobile ? "300px" : "400px"}
@@ -328,22 +324,7 @@
             bind:resetZoom
             bind:zoomIn
             bind:zoomOut
-            bind:zoomed={plotZoomed}
           />
-
-          <!-- Transient zoom hint: shown only while a zoom/pan is active, clears
-               when the view returns to full range. Persists until cleared (no
-               auto-hide timer). Non-modal, pointer-events-none so it never traps
-               clicks meant for the canvas. -->
-          {#if plotZoomed}
-            <div
-              data-testid="plot-zoom-hint"
-              role="status"
-              class="pointer-events-none absolute left-1/2 top-2 z-10 -translate-x-1/2 rounded-full border bg-background/90 px-3 py-1 text-xs font-medium text-muted-foreground shadow-sm"
-            >
-              Zoomed — press Reset zoom to fit
-            </div>
-          {/if}
         </div>
 
         <!-- Series strip (legend + add/edit/remove) -->

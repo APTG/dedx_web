@@ -9,20 +9,6 @@ export interface AxisRange {
 }
 
 /**
- * Zoom-state detection for the plot toolbar/hint (#794).
- *
- * A view is "zoomed" whenever the currently displayed range no longer matches
- * the full data range — whether the user zoomed *in* (narrower span) or *panned*
- * (same span, shifted). Compared with a relative tolerance so floating-point
- * round-trips through JSROOT's frame painter do not register as a phantom zoom.
- */
-export function isZoomed(current: AxisRange, full: AxisRange): boolean {
-  const span = Math.abs(full.max - full.min);
-  const tol = (span || 1) * 1e-6;
-  return Math.abs(current.min - full.min) > tol || Math.abs(current.max - full.max) > tol;
-}
-
-/**
  * Compute a new axis range zoomed toward its centre by `factor` (the fraction
  * of the current span to keep): `factor < 1` zooms in, `factor > 1` zooms out.
  * For log axes the interpolation runs in log10 space so the centre stays put
