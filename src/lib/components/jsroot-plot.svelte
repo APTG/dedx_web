@@ -205,13 +205,24 @@
       });
   }
 
-  // Apply a single − / + zoom step around the centre of the visible range,
-  // honouring each axis's log/lin scale.
   function applyZoomStep(factor: number): void {
     const fp = currentFrame;
     if (!fp) return;
-    const x = zoomRange(fp.scale_xmin, fp.scale_xmax, fp.logx !== 0, factor);
-    const y = zoomRange(fp.scale_ymin, fp.scale_ymax, fp.logy !== 0, factor);
+
+    const xRaw = zoomRange(fp.scale_xmin, fp.scale_xmax, fp.logx !== 0, factor);
+    const yRaw = zoomRange(fp.scale_ymin, fp.scale_ymax, fp.logy !== 0, factor);
+
+    // Clamp to the full data range so zooming out from full range is a no-op and
+    // repeated zoom-out cannot overshoot into a "more than full" view.
+    const x = {
+      min: Math.max(fp.xmin, Math.min(fp.xmax, xRaw.min)),
+      max: Math.max(fp.xmin, Math.min(fp.xmax, xRaw.max)),
+    };
+    const y = {
+      min: Math.max(fp.ymin, Math.min(fp.ymax, yRaw.min)),
+      max: Math.max(fp.ymin, Math.min(fp.ymax, yRaw.max)),
+    };
+
     void fp.zoom(x.min, x.max, y.min, y.max);
   }
 
