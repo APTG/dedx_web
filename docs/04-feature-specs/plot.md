@@ -1,6 +1,12 @@
 # Feature: Plot Page (Interactive Stopping-Power-vs-Energy Chart)
 
-> **Status:** Final v5 (13 April 2026)
+> **Status:** Final v6 (28 June 2026)
+>
+> **v6** (28 June 2026): App toolbar + Reset zoom (#794). JSROOT's native
+> on-canvas toolbar and right-click context menu are disabled and replaced
+> by an app-level toolbar above the canvas (− / + / Reset zoom / Export
+> image), plus a transient zoom hint. The "Export image ▾" dropdown moved
+> from the controls bar into this toolbar. See § App Toolbar & Reset Zoom.
 >
 > **v5** (13 April 2026): Export layout updated per `export.md` v3 §0.
 > "Export PDF" and "Export CSV ↓" moved from controls bar to the **app
@@ -65,10 +71,10 @@ The Plot page uses the **full panel mode** entity selection layout
 
 The page is split into two regions:
 
-| Region                | Content                                                                         | Width (desktop)             |
-| --------------------- | ------------------------------------------------------------------------------- | --------------------------- |
-| **Sidebar** (left)    | Entity selection panels (Particle, Material, Program) + "Add Series" button     | ~30% (`minmax(360px, 3fr)`) |
-| **Main area** (right) | Controls bar (unit + axis controls + export) + JSROOT plot canvas + series list | ~70% (`7fr`)                |
+| Region                | Content                                                                                        | Width (desktop)             |
+| --------------------- | ---------------------------------------------------------------------------------------------- | --------------------------- |
+| **Sidebar** (left)    | Entity selection panels (Particle, Material, Program) + "Add Series" button                    | ~30% (`minmax(360px, 3fr)`) |
+| **Main area** (right) | Controls bar (unit + axis) + plot toolbar (− / + / Reset zoom / Export) + canvas + series list | ~70% (`7fr`)                |
 
 On tablet and mobile, the sidebar folds above the main area (see
 Responsive Layout).
@@ -638,13 +644,50 @@ JSROOT is loaded dynamically (it is a large library). The component
 shows a loading spinner ("Loading plot engine…") until JSROOT is ready.
 Use dynamic `import()` or a script tag — architecture TBD.
 
+### App Toolbar & Reset Zoom (#794)
+
+JSROOT's **native on-canvas toolbar and right-click context menu are
+disabled** — they expose ROOT-desktop controls (file I/O, stats box,
+ROOT-style fit/draw options) that mean nothing to a web user. They are
+replaced by a small **app-level toolbar mounted directly above the canvas**
+(`plot-toolbar.svelte`) carrying the only four controls web users need:
+
+| Control      | `data-testid`      | Action                                                            |
+| ------------ | ------------------ | ----------------------------------------------------------------- |
+| `−` zoom out | `plot-zoom-out`    | Steps the visible range out around its centre (log-aware).        |
+| `+` zoom in  | `plot-zoom-in`     | Steps the visible range in around its centre (log-aware).         |
+| Reset zoom   | `plot-reset-zoom`  | `painter.unzoom("xyz")` — returns **both** axes to full range.    |
+| Export image | `export-image-btn` | The image-export dropdown (relocated here from the controls bar). |
+
+- **Reset zoom** is always visible with a coral accent — the discoverable
+  primary path back to full range. Unzoom triggers a JSROOT pad redraw, so
+  the axis titles/margins (#795/#801) re-apply automatically.
+- The native chrome is suppressed via `settings.ToolBar = false` and
+  `settings.ContextMenu = false`. Both are global JSROOT settings, snapshotted
+  and restored on teardown so the change never leaks to the off-screen export
+  pad or other plots.
+
+#### Transient zoom hint
+
+When any axis is zoomed in (or panned) away from full range, a small
+non-modal hint — `Zoomed — press Reset zoom to fit` (`plot-zoom-hint`) —
+appears near the top of the plot. It **persists until the zoom is cleared**
+(no auto-hide timer) and disappears the moment the view returns to full
+range. Zoom state is detected by comparing the frame painter's current scale
+range against the full data range (`isZoomed(current, full)` in
+`plot-utils.ts`); the signal is refreshed on every zoom/unzoom — box-zoom,
+wheel-zoom, double-click reset, and the toolbar buttons — by wrapping the
+frame painter's `zoom`/`unzoom` after each draw. The hint is
+`pointer-events: none` so it never traps clicks meant for the canvas.
+
 ### Interactive Features (JSROOT built-in)
 
 JSROOT provides built-in interactivity:
 
 - **Zoom:** Click-drag on the canvas to zoom into a region.
 - **Pan:** Right-click-drag (or shift+drag) to pan.
-- **Reset zoom:** Double-click to reset to the auto-computed axis ranges.
+- **Reset zoom:** Double-click to reset to the auto-computed axis ranges —
+  kept as the power-user shortcut alongside the discoverable toolbar button.
 - **Tooltip:** Hovering over a line shows the (x, y) value at that point.
 
 Zoom and pan are enabled via click-drag interactions on the canvas.
@@ -665,7 +708,7 @@ Zoom and pan are enabled via click-drag interactions on the canvas.
   `touch-action: pan-x pan-y pinch-zoom` so pinch-to-zoom and
   touch-drag pass through to the browser's native scroll/zoom behavior.
   Users can still interact with the plot via the axis scale controls
-  and the JSROOT toolbar (if available).
+  and the app toolbar (− / + / Reset zoom, see above).
 - **Middle-button (and left+right) drag pan: disabled.** JSROOT's
   `startRectSel()` pans the axes on `evnt.button === 1` (middle) or
   `evnt.buttons === 3` (left+right), which looks like the data series
@@ -781,13 +824,14 @@ Export controls are split between two locations:
 
 | Control      | Location                    | Type            | Label            |
 | ------------ | --------------------------- | --------------- | ---------------- |
-| Image export | Controls bar, right-aligned | Dropdown button | "Export image ▾" |
+| Image export | Plot toolbar, right-aligned | Dropdown button | "Export image ▾" |
 | PDF export   | App toolbar, upper-right    | Button          | "Export PDF"     |
 | CSV export   | App toolbar, upper-right    | Button          | "Export CSV ↓"   |
 
-The image export sits next to the canvas it captures. PDF and CSV are
-sharing/archiving actions and live in the toolbar beside "Share URL"
-(see [`export.md`](export.md) §0).
+The image export sits in the plot toolbar directly above the canvas it
+captures (relocated there in #794). PDF and CSV are sharing/archiving actions
+and live in the app toolbar beside "Share URL" (see [`export.md`](export.md)
+§0).
 
 ### Export image ▾
 

@@ -40,7 +40,13 @@ afterEach(() => {
 });
 
 vi.mock("jsroot", () => ({
-  settings: { ZoomWheel: true, ZoomTouch: true, DragGraphs: true },
+  settings: {
+    ZoomWheel: true,
+    ZoomTouch: true,
+    DragGraphs: true,
+    ToolBar: "popup",
+    ContextMenu: true,
+  },
   gStyle: { fPadLeftMargin: 0.1, fPadBottomMargin: 0.1 },
   createTGraph: vi.fn((_n: number, _x: number[], _y: number[]) => ({
     fLineColor: 1,
@@ -554,5 +560,96 @@ describe("JsrootPlot", () => {
     const result = await capturedExportFn!();
     expect(result).not.toBeNull();
     expect(result).toContain("<svg");
+  });
+
+  it("disables JSROOT's native ToolBar and ContextMenu while mounted (#794)", async () => {
+    const JSROOT = await import("jsroot");
+    const settings = JSROOT.settings as { ToolBar: boolean | string; ContextMenu: boolean };
+    settings.ToolBar = "popup";
+    settings.ContextMenu = true;
+
+    render(JsrootPlot, {
+      props: {
+        series: [makeSeries({})],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 1, xMax: 2, yMin: 1, yMax: 100 },
+      },
+    });
+
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    expect(settings.ToolBar).toBe(false);
+    expect(settings.ContextMenu).toBe(false);
+  });
+
+  it("exposes resetZoom which unzooms all axes, and tracks the zoom signal (#794)", async () => {
+    const JSROOT = await import("jsroot");
+    const unzoom = vi.fn(async () => true);
+    // A frame painter sitting at full range (scale == full) → not zoomed.
+    const framePainter = {
+      xmin: 1,
+      xmax: 100,
+      ymin: 1,
+      ymax: 1000,
+      scale_xmin: 1,
+      scale_xmax: 100,
+      scale_ymin: 1,
+      scale_ymax: 1000,
+      logx: 1,
+      logy: 1,
+      zoom: vi.fn(async () => true),
+      unzoom,
+    };
+    vi.mocked(JSROOT.draw).mockImplementation(async () => ({
+      cleanup: vi.fn(),
+      getFramePainter: () => framePainter,
+    }));
+
+    let resetZoomFn: (() => void) | null = null;
+    let zoomedSignal = false;
+    const propsBase = {
+      series: [makeSeries({})],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: true,
+      yLog: true,
+      axisRanges: { xMin: 1, xMax: 100, yMin: 1, yMax: 1000 },
+    };
+    const props = Object.defineProperties(propsBase, {
+      resetZoom: {
+        get() {
+          return resetZoomFn;
+        },
+        set(v: (() => void) | null) {
+          resetZoomFn = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+      zoomed: {
+        get() {
+          return zoomedSignal;
+        },
+        set(v: boolean) {
+          zoomedSignal = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+    }) as typeof propsBase & { resetZoom?: (() => void) | null; zoomed?: boolean };
+
+    render(JsrootPlot, { props });
+
+    // resetZoom is exposed on mount, but only wires to the frame painter once
+    // the async draw resolves — wait for the wrapped unzoom to be installed.
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    await vi.waitFor(() => {
+      resetZoomFn!();
+      expect(unzoom).toHaveBeenCalledWith("xyz");
+    });
+    // Full-range draw leaves the hint off.
+    expect(zoomedSignal).toBe(false);
   });
 });

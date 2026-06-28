@@ -13,6 +13,10 @@
     AXIS_Y_TITLE_OFFSET,
     PAD_LEFT_MARGIN,
     PAD_BOTTOM_MARGIN,
+    isZoomed,
+    zoomRange,
+    ZOOM_STEP_IN,
+    ZOOM_STEP_OUT,
   } from "$lib/utils/plot-utils";
 
   type JSROOTModule = typeof JSROOTNs;
@@ -109,6 +113,17 @@
     axisRanges,
     // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
     requestExportSvg = $bindable<(() => Promise<string | null>) | null>(null),
+    // Imperative zoom controls exposed to the parent's plot toolbar (#794).
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    resetZoom = $bindable<(() => void) | null>(null),
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    zoomIn = $bindable<(() => void) | null>(null),
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    zoomOut = $bindable<(() => void) | null>(null),
+    // True whenever any axis is zoomed/panned away from full range — drives the
+    // transient "Zoomed — press Reset zoom to fit" hint in the parent.
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    zoomed = $bindable<boolean>(false),
   }: {
     series: PlotSeries[];
     preview: PlotSeries | null;
@@ -117,16 +132,105 @@
     yLog: boolean;
     axisRanges: AxisRanges;
     requestExportSvg?: (() => Promise<string | null>) | null | undefined;
+    resetZoom?: (() => void) | null | undefined;
+    zoomIn?: (() => void) | null | undefined;
+    zoomOut?: (() => void) | null | undefined;
+    zoomed?: boolean | undefined;
   } = $props();
 
   let container = $state<HTMLDivElement | null>(null);
   let jsrootReady = $state(false);
   let jsrootError = $state<string | null>(null);
 
+  // JSROOT frame painter — the object that owns axis ranges and zoom/unzoom.
+  // Its full data range lives in `{x,y}{min,max}` and the currently displayed
+  // range in `scale_{x,y}{min,max}`; `logx`/`logy` are non-zero on log axes.
+  interface JsrootFramePainter {
+    xmin: number;
+    xmax: number;
+    ymin: number;
+    ymax: number;
+    scale_xmin: number;
+    scale_xmax: number;
+    scale_ymin: number;
+    scale_ymax: number;
+    logx: number;
+    logy: number;
+    zoom: (
+      xmin?: number,
+      xmax?: number,
+      ymin?: number,
+      ymax?: number,
+    ) => Promise<boolean> | boolean;
+    unzoom: (kind?: string) => Promise<boolean> | boolean;
+  }
+
   interface JsrootPainter {
     cleanup?: () => void;
+    getFramePainter?: () => JsrootFramePainter | null | undefined;
   }
   let currentPainter = $state<JsrootPainter | null>(null);
+  // Latest frame painter, refreshed on every (re)draw. Read by the imperative
+  // zoom controls and the zoom-state notifier; plain `let` (not reactive) since
+  // only the exposed callbacks consume it, at call time.
+  let currentFrame: JsrootFramePainter | null = null;
+
+  // Recompute the `zoomed` signal from the frame painter's current vs full range.
+  function refreshZoomState(fp: JsrootFramePainter | null): void {
+    if (!fp) {
+      zoomed = false;
+      return;
+    }
+    const x = isZoomed({ min: fp.scale_xmin, max: fp.scale_xmax }, { min: fp.xmin, max: fp.xmax });
+    const y = isZoomed({ min: fp.scale_ymin, max: fp.scale_ymax }, { min: fp.ymin, max: fp.ymax });
+    zoomed = x || y;
+  }
+
+  // Wrap the frame painter's zoom/unzoom so every interactive path (box-zoom,
+  // wheel-zoom, double-click reset, touch) — plus our own toolbar buttons —
+  // refreshes the zoom signal once JSROOT has finished its redraw. Each draw
+  // creates a fresh frame painter, so the wrapper is reinstalled per draw.
+  function trackZoom(fp: JsrootFramePainter): void {
+    const origZoom = fp.zoom.bind(fp);
+    fp.zoom = (...args: Parameters<JsrootFramePainter["zoom"]>) =>
+      Promise.resolve(origZoom(...args)).then((r) => {
+        refreshZoomState(fp);
+        return r;
+      });
+    const origUnzoom = fp.unzoom.bind(fp);
+    fp.unzoom = (...args: Parameters<JsrootFramePainter["unzoom"]>) =>
+      Promise.resolve(origUnzoom(...args)).then((r) => {
+        refreshZoomState(fp);
+        return r;
+      });
+  }
+
+  // Apply a single − / + zoom step around the centre of the visible range,
+  // honouring each axis's log/lin scale.
+  function applyZoomStep(factor: number): void {
+    const fp = currentFrame;
+    if (!fp) return;
+    const x = zoomRange(fp.scale_xmin, fp.scale_xmax, fp.logx !== 0, factor);
+    const y = zoomRange(fp.scale_ymin, fp.scale_ymax, fp.logy !== 0, factor);
+    void fp.zoom(x.min, x.max, y.min, y.max);
+  }
+
+  // Expose the imperative zoom controls to the parent toolbar. resetZoom calls
+  // unzoom across all axes; JSROOT then redraws the pad, re-rendering the
+  // full-range axes/titles (the title offsets and pad margins from #795/#801
+  // persist on the histogram/gStyle, so they re-apply on that redraw).
+  $effect(() => {
+    resetZoom = () => {
+      void currentFrame?.unzoom("xyz");
+    };
+    zoomIn = () => applyZoomStep(ZOOM_STEP_IN);
+    zoomOut = () => applyZoomStep(ZOOM_STEP_OUT);
+    return () => {
+      resetZoom = null;
+      zoomIn = null;
+      zoomOut = null;
+    };
+  });
   // Serialize draw/cleanup operations so a re-render (or fast page navigation)
   // never calls JSROOT.cleanup() while a previous JSROOT.draw() is still
   // in flight on the same element — that produces JSROOT's
@@ -159,6 +263,8 @@
         .then(() => {
           currentPainter?.cleanup?.();
           currentPainter = null;
+          currentFrame = null;
+          zoomed = false;
           el.innerHTML = "";
         });
       return;
@@ -179,6 +285,10 @@
         }
         currentPainter = painter;
         restoreSettings = restore;
+        currentFrame = painter.getFramePainter?.() ?? null;
+        if (currentFrame) trackZoom(currentFrame);
+        // A fresh draw starts at full range; reset the hint regardless.
+        refreshZoomState(currentFrame);
         jsrootError = null;
         jsrootReady = true;
       })
@@ -198,6 +308,7 @@
       drawChain = job.then(async () => {
         currentPainter?.cleanup?.();
         currentPainter = null;
+        currentFrame = null;
         restoreSettings?.();
         restoreSettings = null;
         try {
@@ -312,12 +423,26 @@
     const JSROOT = await getJsroot();
 
     // JSROOT.settings is global; snapshot the flags we flip so cleanup can
-    // restore them (DragGraphs is not in jsroot's bundled types — widen here).
-    const settings = JSROOT.settings as typeof JSROOT.settings & { DragGraphs: boolean };
+    // restore them (DragGraphs/ToolBar/ContextMenu are not in jsroot's bundled
+    // types — widen here).
+    const settings = JSROOT.settings as typeof JSROOT.settings & {
+      DragGraphs: boolean;
+      ToolBar: boolean | string;
+      ContextMenu: boolean;
+    };
 
     const prevZoomWheel = settings.ZoomWheel;
     // Wheel scroll must scroll the page, never zoom the axes.
     settings.ZoomWheel = false;
+
+    // Replace JSROOT's native chrome with our app toolbar (#794): hide the
+    // on-canvas ROOT toolbar and the right-click ROOT context menu, neither of
+    // which makes sense for a web user. Snapshot/restore so the global change
+    // never leaks to other plots (e.g. the off-screen export pad).
+    const prevToolBar = settings.ToolBar;
+    settings.ToolBar = false;
+    const prevContextMenu = settings.ContextMenu;
+    settings.ContextMenu = false;
 
     const prevZoomTouch = settings.ZoomTouch;
     const prevDragGraphs = settings.DragGraphs;
@@ -339,6 +464,8 @@
       settings.ZoomWheel = prevZoomWheel;
       settings.ZoomTouch = prevZoomTouch;
       settings.DragGraphs = prevDragGraphs;
+      settings.ToolBar = prevToolBar;
+      settings.ContextMenu = prevContextMenu;
       restorePadMargins();
     };
 
