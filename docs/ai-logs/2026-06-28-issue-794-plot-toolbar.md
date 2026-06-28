@@ -83,22 +83,22 @@ plus a UX request from the repo owner.
     above the canvas; owns the relocated export-image dropdown.
   - `src/lib/components/jsroot-plot.svelte` — disable `settings.ToolBar` /
     `settings.ContextMenu` (snapshot/restore); expose `resetZoom`/`zoomIn`/
-    `zoomOut`/`zoomed`; wrap frame-painter `zoom`/`unzoom` to track zoom state.
+    `zoomOut` via `$bindable`; clamp zoom-out to the full data range; restore
+    settings/margins even if `JSROOT.draw()` rejects.
   - `src/routes/plot/+page.svelte` — mount the toolbar above the canvas, remove
-    the export dropdown from the controls bar, render the transient zoom hint
-    over the (now `relative`) canvas container.
-  - `src/lib/utils/plot-utils.ts` — pure `isZoomed`, `zoomRange`, and the
+    the export dropdown from the controls bar, and bind zoom handlers from
+    `JsrootPlot`.
+  - `src/lib/utils/plot-utils.ts` — log-aware `zoomRange()` helper plus the
     `ZOOM_STEP_IN`/`ZOOM_STEP_OUT` constants.
-  - `src/tests/unit/plot-utils.test.ts` — `isZoomed` (equal/zoomed/panned/
-    tolerance) + `zoomRange` (linear/log centre, reciprocal round-trip).
-  - `src/tests/components/jsroot-plot.test.ts` — native chrome disabled; exposed
-    `resetZoom` calls `unzoom("xyz")`; mock settings widened with
-    `ToolBar`/`ContextMenu`.
+  - `src/tests/unit/plot-utils.test.ts` — unit tests for `zoomRange`.
+  - `src/tests/components/jsroot-plot.test.ts` — native chrome disabled while
+    mounted; exposed `resetZoom` calls `unzoom("xyz")`; zoom-out clamps to the
+    full range; mock settings widened with `ToolBar`/`ContextMenu`.
   - `tests/e2e/plot-toolbar.spec.ts` (new) — toolbar renders; no native toolbar;
-    no ROOT context menu on right-click; box-zoom shows hint → Reset clears it;
-    − / + reflect state.
-  - `docs/04-feature-specs/plot.md` — app toolbar, native-chrome removal,
-    reset/hint behaviour, export relocation, layout overview.
+    no ROOT context menu on right-click; box-zoom changes axes → Reset restores
+    full range; − / + step zoom.
+  - `docs/04-feature-specs/plot.md` — app toolbar, native-chrome removal, reset
+    behaviour, export relocation.
 - **Decision**: Detect zoom by comparing the frame painter's `scale_*` range to
   its full `{x,y}{min,max}` range rather than relying on JSROOT's internal
   `zoom_*` flags, and refresh via a thin wrapper around `zoom`/`unzoom` — robust
