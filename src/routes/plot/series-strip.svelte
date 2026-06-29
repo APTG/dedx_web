@@ -91,13 +91,8 @@
           !preview.visible && "opacity-40",
         )}
       >
-        <svg
-          class="h-4 w-7 shrink-0"
-          viewBox="0 0 28 16"
-          role="img"
-          aria-label="Preview curve"
-          aria-hidden="true"
-        >
+        <!-- Decorative swatch; the preview label text conveys the meaning. -->
+        <svg class="h-4 w-7 shrink-0" viewBox="0 0 28 16" aria-hidden="true">
           <path
             d="M1 14 C 8 14, 9 2, 14 2 S 20 14, 27 14"
             fill="none"
@@ -111,7 +106,7 @@
         </span>
         <IconButton
           label={preview.visible ? "Hide preview" : "Show preview"}
-          pressed={!preview.visible}
+          pressed={preview.visible}
           onclick={onTogglePreview}
         >
           {#if preview.visible}
@@ -172,8 +167,9 @@
         </button>
 
         <!-- Line-swatch: a short curve stroke in the series colour — reads as
-             "a curve", matching the plotted legend entry. -->
-        <svg class="h-4 w-7 shrink-0" viewBox="0 0 28 16" role="img" aria-label="{color} curve">
+             "a curve", matching the plotted legend entry. Decorative: the
+             label text already names the series. -->
+        <svg class="h-4 w-7 shrink-0" viewBox="0 0 28 16" aria-hidden="true">
           <path
             d="M1 14 C 8 14, 9 2, 14 2 S 20 14, 27 14"
             fill="none"
@@ -205,7 +201,7 @@
         <IconButton
           testid="plot-series-hide-{idx}"
           label={s.visible ? `Hide series ${s.label}` : `Show series ${s.label}`}
-          pressed={!s.visible}
+          pressed={s.visible}
           onclick={() => onToggleVisibility(s.seriesId)}
         >
           {#if s.visible}

@@ -1,3 +1,7 @@
-import IconButton from "./icon-button.svelte";
+import Root from "./icon-button.svelte";
 
-export { IconButton, IconButton as Root };
+export {
+  Root,
+  //
+  Root as IconButton,
+};
