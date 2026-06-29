@@ -58,17 +58,22 @@ for (const vp of [
       await expect(toolbar).toBeVisible();
 
       // One row: the toolbar is no taller than a single ~36px control row.
+      // (A wrap to a second row would roughly double this height.) Width is
+      // covered by expectNoHorizontalOverflow below, which is robust to the
+      // sub-pixel/font-rendering differences a strict width assertion is not.
       const toolbarBox = await toolbar.boundingBox();
       expect(toolbarBox).not.toBeNull();
-      expect(toolbarBox!.width).toBeLessThanOrEqual(vp.width);
       expect(toolbarBox!.height, "toolbar must not wrap to a second row").toBeLessThan(60);
 
       // Reset zoom keeps its visible label (the discoverability anchor).
       await expect(page.getByTestId("plot-reset-zoom")).toHaveText(/Reset zoom/);
 
-      // Export is icon-only below xs (420px) — its text label is not rendered.
-      await expect(page.getByTestId("export-image-btn")).toBeVisible();
-      await expect(page.getByTestId("export-image-btn")).not.toContainText("Export image");
+      // Export is icon-only below xs (420px): the icon shows, the text label is
+      // display:none (so it is hidden, even though it stays in the DOM).
+      const exportBtn = page.getByTestId("export-image-btn");
+      await expect(exportBtn).toBeVisible();
+      await expect(exportBtn.locator("svg")).toBeVisible();
+      await expect(exportBtn.getByText("Export image", { exact: false })).toBeHidden();
 
       await expectNoHorizontalOverflow(page, "plot toolbar must not overflow horizontally");
     });
@@ -127,8 +132,9 @@ for (const vp of [
       const full = await axisTickSignature(page);
       expect(full).not.toBe("");
 
-      // Touch devices replace double-click with pinch; the toolbar − / + and the
-      // persistent Reset button are the reliable, finger-sized escape hatch.
+      // On touch, axis pinch-zoom stays disabled, so the toolbar − / + are the
+      // only way to zoom the axes and the persistent Reset button is the
+      // finger-sized escape hatch back to full range.
       await page.getByTestId("plot-zoom-in").click();
       await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).not.toBe(full);
 

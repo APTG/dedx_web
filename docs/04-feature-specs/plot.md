@@ -1048,8 +1048,9 @@ by the mobile-picker work — this covers only the plot column.
 
 - **App toolbar (#794):** reflows to a single row that never wraps. The
   `−` / `+` zoom controls are icon-only at every width; **Reset zoom**
-  flex-grows and keeps its label (it is the discoverability anchor, and on
-  touch the only reliable way back from a pinch-zoom). The Export button
+  flex-grows and keeps its label (it is the discoverability anchor, and the
+  only reliable way back to full range on touch — see _Touch zoom_ below).
+  The Export button
   collapses to an icon below the `xs` (420px) breakpoint and regains its
   label from `xs` up, where a flex spacer also restores the desktop layout
   (zoom + Reset left, Export right).
@@ -1060,11 +1061,12 @@ by the mobile-picker work — this covers only the plot column.
 - **Plot height:** the canvas container is `height: 50vh` with a
   `min-height` of 300px on mobile (well above the ~170px legibility floor)
   so the Bragg peak stays readable; JSROOT honours the container box.
-- **Touch zoom (#794):** double-click reset is a desktop/pointer shortcut;
-  on touch, axis pinch-zoom and graph-drag stay disabled so the page keeps
-  its native scroll/pinch (see _Disabled Interactions_). The toolbar
-  `−` / `+` and the persistent **Reset zoom** button are the finger-sized
-  zoom controls, and Reset is always reachable after a pinch.
+- **Touch zoom (#794):** box-zoom and double-click reset are desktop/pointer
+  interactions. On touch, axis pinch-zoom (`ZoomTouch`) and graph-drag stay
+  disabled so a pinch zooms the _page_, not the axes, and the page keeps its
+  native scroll/pinch (see _Disabled Interactions_). The toolbar `−` / `+`
+  are therefore the only way to zoom the axes on touch, and the persistent
+  **Reset zoom** button is always reachable to return to full range.
 - **Advanced disclosure (#798):** full-width and collapsed by default;
   sitting directly above the plot, opening it pushes the plot down but
   must not shove it entirely off a short (375×667) viewport.
