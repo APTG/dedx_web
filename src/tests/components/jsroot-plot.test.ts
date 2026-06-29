@@ -55,11 +55,17 @@ vi.mock("jsroot", () => ({
     fTitle: "",
     InvertBit: vi.fn(),
   })),
-  createTMultiGraph: vi.fn((_graphs: unknown[]) => ({
+  createTMultiGraph: vi.fn((..._graphs: unknown[]) => ({
     fGraphs: { Add: vi.fn() },
+    fFunctions: { arr: [] as unknown[], opt: [] as string[], Add: vi.fn() },
     fHistogram: null,
     fTitle: "",
   })),
+  create: vi.fn((typename: string) => {
+    if (typename === "TLegend") return { fPrimitives: { arr: [], opt: [] } };
+    if (typename === "TList") return { arr: [], opt: [], Add: vi.fn() };
+    return {};
+  }),
   createHistogram: vi.fn(() => ({
     fXaxis: { fTitle: "", fXmin: 0, fXmax: 1, InvertBit: vi.fn() },
     fYaxis: { fTitle: "", InvertBit: vi.fn() },
@@ -560,6 +566,54 @@ describe("JsrootPlot", () => {
     const result = await capturedExportFn!();
     expect(result).not.toBeNull();
     expect(result).toContain("<svg");
+  });
+
+  it("attaches a TLegend to the off-screen export multigraph for visible series (#797)", async () => {
+    const JSROOT = await import("jsroot");
+
+    let capturedExportFn: (() => Promise<string | null>) | null = null;
+    const propsBase = {
+      series: [
+        makeSeries({ seriesId: 1, label: "p in Water" }),
+        makeSeries({ seriesId: 2, label: "α in Water", visible: false }),
+      ],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: true,
+      yLog: true,
+      axisRanges: { xMin: 1, xMax: 100, yMin: 1, yMax: 1000 },
+    };
+    const props = Object.defineProperty(propsBase, "requestExportSvg", {
+      get() {
+        return capturedExportFn;
+      },
+      set(v: (() => Promise<string | null>) | null) {
+        capturedExportFn = v;
+      },
+      enumerable: true,
+      configurable: true,
+    }) as typeof propsBase & { requestExportSvg?: (() => Promise<string | null>) | null };
+
+    render(JsrootPlot, { props });
+    await vi.waitFor(() => expect(capturedExportFn).not.toBeNull());
+
+    vi.mocked(JSROOT.createTMultiGraph).mockClear();
+    await capturedExportFn!();
+
+    // Only the export pad gets a legend (the live draw never does), so exactly
+    // one created multigraph carries a non-empty fFunctions list.
+    type MgWithLegend = {
+      fFunctions: { arr: Array<{ fPrimitives: { arr: Array<{ fLabel: string }> } }> };
+    };
+    const results = vi.mocked(JSROOT.createTMultiGraph).mock.results as Array<{ value: unknown }>;
+    const withLegend = results
+      .map((r): MgWithLegend => r.value as MgWithLegend)
+      .filter((mg: MgWithLegend) => mg.fFunctions.arr.length > 0);
+    expect(withLegend).toHaveLength(1);
+    // The single legend lists only the visible series (hidden α excluded).
+    expect(
+      withLegend[0]!.fFunctions.arr[0]!.fPrimitives.arr.map((e: { fLabel: string }) => e.fLabel),
+    ).toEqual(["p in Water"]);
   });
 
   it("disables JSROOT's native ToolBar and ContextMenu while mounted (#794)", async () => {

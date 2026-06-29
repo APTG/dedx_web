@@ -45,6 +45,62 @@ export const COLOR_PALETTE: readonly string[] = [
   "#17becf", // cyan
 ];
 
+// ── Export legend (#797) ──────────────────────────────────────────────────
+// The on-screen plot uses the custom HTML series strip as its legend, which
+// can't be captured into a ROOT export. So the off-screen export pad gets its
+// own in-canvas TLegend, mirroring the strip: one entry per visible series,
+// same colour (taken from the graph) and label, in strip order.
+
+/** One legend entry: the drawn TGraph plus its strip label. */
+export interface ExportLegendItem {
+  /** The JSROOT TGraph object — supplies the line colour/style for the sample. */
+  graph: unknown;
+  /** Human-readable series name, as shown in the HTML strip. */
+  label: string;
+  /** Hidden series are excluded from the legend (already excluded from curves). */
+  hidden?: boolean;
+}
+
+// Top-right placement inside the frame (pad NDC). Proton-in-water peaks on the
+// left, so top-right is usually clear (epic open question 1).
+const LEGEND_X1_NDC = 0.62;
+const LEGEND_X2_NDC = 0.9;
+const LEGEND_Y2_NDC = 0.88;
+const LEGEND_ROW_NDC = 0.055;
+const LEGEND_Y1_MIN_NDC = 0.4;
+
+/**
+ * Build a ROOT TLegend object from the visible series, for the export pad only.
+ * Pure: `create` is JSROOT's class factory (injected so this is unit-testable
+ * without the JSROOT bundle). Returns `null` when there are no visible series.
+ */
+export function buildExportLegend(
+  create: (typename: string) => Record<string, unknown>,
+  items: ExportLegendItem[],
+): Record<string, unknown> | null {
+  const visible = items.filter((it) => !it.hidden);
+  if (visible.length === 0) return null;
+
+  const legend = create("TLegend");
+  legend.fX1NDC = LEGEND_X1_NDC;
+  legend.fX2NDC = LEGEND_X2_NDC;
+  legend.fY2NDC = LEGEND_Y2_NDC;
+  legend.fY1NDC = Math.max(LEGEND_Y1_MIN_NDC, LEGEND_Y2_NDC - LEGEND_ROW_NDC * visible.length);
+  legend.fOption = "brNDC";
+  legend.fBorderSize = 1;
+
+  const primitives = legend.fPrimitives as { arr: unknown[]; opt: string[] };
+  for (const it of visible) {
+    const entry = create("TLegendEntry");
+    entry.fObject = it.graph;
+    entry.fLabel = it.label;
+    entry.fOption = "l"; // 'l' = line sample, matches the drawn curve
+    primitives.arr.push(entry);
+    primitives.opt.push("");
+  }
+  return legend;
+}
+
 /** Black is reserved exclusively for the preview series. */
 export const PREVIEW_COLOR = "#000000";
 

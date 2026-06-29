@@ -65,7 +65,7 @@ test.describe("Plot — add-series flow", () => {
     await expect(page.getByTestId("plot-series-row-0")).toHaveCount(0);
   });
 
-  test("clicking series label enters editing mode (ring highlight + editing label)", async ({
+  test("clicking series label enters editing mode (ring highlight + sidebar Done)", async ({
     page,
   }) => {
     await page.getByTestId("plot-add-series").click();
@@ -73,19 +73,19 @@ test.describe("Plot — add-series flow", () => {
     // Click the series label to start editing
     await row.getByRole("button", { name: /edit series/i }).click();
     await expect(row).toHaveClass(/ring-2/);
-    await expect(page.getByTestId("plot-series-done")).toBeVisible();
+    // The single add/done control lives in the sidebar; it switches to "Done editing".
+    await expect(page.getByTestId("plot-add-series")).toHaveText(/done editing/i);
   });
 
-  test("Done editing button exits edit mode", async ({ page }) => {
+  test("sidebar Done editing button exits edit mode", async ({ page }) => {
     await page.getByTestId("plot-add-series").click();
     await page
       .getByTestId("plot-series-row-0")
       .getByRole("button", { name: /edit series/i })
       .click();
-    await expect(page.getByTestId("plot-series-done")).toBeVisible();
+    await expect(page.getByTestId("plot-add-series")).toHaveText(/done editing/i);
 
-    await page.getByTestId("plot-series-done").click();
-    await expect(page.getByTestId("plot-series-done")).toHaveCount(0);
-    await expect(page.getByTestId("plot-add-series")).toBeVisible();
+    await page.getByTestId("plot-add-series").click();
+    await expect(page.getByTestId("plot-add-series")).toHaveText(/add series/i);
   });
 });

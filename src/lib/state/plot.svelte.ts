@@ -39,6 +39,7 @@ export interface PlotState {
   removeSeries(seriesId: number): void;
   updateSeries(seriesId: number, data: PlotSeriesData): void;
   toggleVisibility(seriesId: number): void;
+  reorderSeries(fromIndex: number, toIndex: number): void;
   setPreview(data: PlotSeriesData): void;
   clearPreview(): void;
   togglePreviewVisibility(): void;
@@ -105,6 +106,21 @@ export function createPlotState(): PlotState {
 
   function toggleVisibility(seriesId: number): void {
     series = series.map((s) => (s.seriesId === seriesId ? { ...s, visible: !s.visible } : s));
+  }
+
+  // Move a series from one position to another. The array order is the plot
+  // draw order, so reordering the strip reorders the plotted curves (#793).
+  // Labels and colours are tied to each series (not its position), so they are
+  // intentionally left untouched.
+  function reorderSeries(fromIndex: number, toIndex: number): void {
+    if (fromIndex === toIndex) return;
+    if (fromIndex < 0 || fromIndex >= series.length) return;
+    if (toIndex < 0 || toIndex >= series.length) return;
+    const next = [...series];
+    const [moved] = next.splice(fromIndex, 1);
+    if (!moved) return;
+    next.splice(toIndex, 0, moved);
+    series = next;
   }
 
   function setPreview(data: PlotSeriesData): void {
@@ -174,6 +190,7 @@ export function createPlotState(): PlotState {
     removeSeries,
     updateSeries,
     toggleVisibility,
+    reorderSeries,
     setPreview,
     clearPreview,
     togglePreviewVisibility,

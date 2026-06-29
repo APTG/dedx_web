@@ -16,6 +16,8 @@
     zoomRange,
     ZOOM_STEP_IN,
     ZOOM_STEP_OUT,
+    buildExportLegend,
+    type ExportLegendItem,
   } from "$lib/utils/plot-utils";
 
   type JSROOTModule = typeof JSROOTNs;
@@ -351,6 +353,7 @@
           preview: null,
           stpUnit,
           axisRanges,
+          withLegend: true,
         });
         const drawOpts = buildDrawOptions(xLog, yLog);
         await JSROOT.draw(offscreen, mg, drawOpts);
@@ -460,6 +463,9 @@
       preview: PlotSeries | null;
       stpUnit: StpUnit;
       axisRanges: AxisRanges;
+      // Attach an in-canvas TLegend (#797). Export pad only — never the live
+      // plot, which keeps the HTML strip as its legend (per Q1, #793).
+      withLegend?: boolean;
     },
   ) {
     const JSROOT_any = JSROOT as any;
@@ -471,6 +477,7 @@
 
     const energyAxisUnit = getPlotEnergyAxisUnit(allVisible);
 
+    const legendItems: ExportLegendItem[] = [];
     const graphs = allVisible.map((s) => {
       const xData = convertEnergyForDisplay(s.result.energies, s, energyAxisUnit);
       const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
@@ -482,10 +489,24 @@
       tgraph.fLineStyle = isPreview || isExternal ? 2 : 1;
       tgraph.fTitle = "";
       tgraph.InvertBit(JSROOT_any.BIT(18));
+      // The preview is ephemeral and never appears in exports, so it is also
+      // omitted from the legend (the export path passes preview: null anyway).
+      if (!isPreview) legendItems.push({ graph: tgraph, label: s.label });
       return tgraph;
     });
 
     const mg = JSROOT_any.createTMultiGraph(...graphs);
+
+    if (opts.withLegend) {
+      const legend = buildExportLegend((t) => JSROOT_any.create(t), legendItems);
+      if (legend) {
+        // TMultiGraph's painter draws everything in fFunctions, so the legend
+        // rides along with the curves on the export pad.
+        if (!mg.fFunctions) mg.fFunctions = JSROOT_any.create("TList");
+        mg.fFunctions.arr.push(legend);
+        mg.fFunctions.opt.push("");
+      }
+    }
 
     const hist = JSROOT_any.createHistogram("TH1F", 20);
     hist.fXaxis.fTitle = getPlotEnergyAxisLabel(allVisible);
