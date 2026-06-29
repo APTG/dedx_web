@@ -2,6 +2,7 @@
   import ZoomIn from "@lucide/svelte/icons/zoom-in";
   import ZoomOut from "@lucide/svelte/icons/zoom-out";
   import RotateCcw from "@lucide/svelte/icons/rotate-ccw";
+  import ImageDown from "@lucide/svelte/icons/image-down";
   import { canExport } from "$lib/state/export.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import { downloadPlotSvg, downloadPlotPng } from "$lib/export/plot-image";
@@ -56,48 +57,58 @@
   });
 </script>
 
+<!-- Single row that never wraps, even at 360px (#799): icon-only − / +, a
+     flex-grow Reset zoom that keeps its label (the discoverability anchor for
+     touch, where pinch is the only other way back), and an Export button whose
+     label collapses to an icon below the `xs` (420px) breakpoint. On `xs` and
+     up a flex spacer pushes Export to the right, restoring the desktop layout
+     (zoom + Reset left, Export right). -->
 <div
   data-testid="plot-toolbar"
-  class="flex flex-wrap items-center justify-between gap-2"
+  class="flex flex-nowrap items-center gap-1.5"
   role="toolbar"
   aria-label="Plot controls"
 >
-  <!-- Left: zoom controls -->
-  <div class="flex items-center gap-1">
-    <button
-      data-testid="plot-zoom-out"
-      aria-label="Zoom out"
-      onclick={onZoomOut}
-      class="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background hover:bg-accent"
-    >
-      <ZoomOut class="h-4 w-4" aria-hidden="true" />
-    </button>
-    <button
-      data-testid="plot-zoom-in"
-      aria-label="Zoom in"
-      onclick={onZoomIn}
-      class="inline-flex h-9 w-9 items-center justify-center rounded-md border bg-background hover:bg-accent"
-    >
-      <ZoomIn class="h-4 w-4" aria-hidden="true" />
-    </button>
-    <!-- Reset zoom — always visible, coral accent so it reads as the primary
-         "get me back" affordance (double-click stays as the power-user shortcut).
-         Uses the darker coral #c2410c: the brand coral #e7663b is only 3.3:1 on
-         white, below the WCAG 2 AA 4.5:1 text-contrast threshold, while #c2410c
-         is ~5.2:1 and still reads as the same accent. -->
-    <button
-      data-testid="plot-reset-zoom"
-      aria-label="Reset zoom"
-      onclick={onResetZoom}
-      class="ml-1 inline-flex h-9 items-center gap-1.5 rounded-md border border-[#c2410c] px-3 text-sm font-medium text-[#c2410c] hover:bg-[#c2410c]/10"
-    >
-      <RotateCcw class="h-4 w-4" aria-hidden="true" />
-      Reset zoom
-    </button>
-  </div>
+  <!-- Zoom controls (icon-only on every width) -->
+  <button
+    data-testid="plot-zoom-out"
+    aria-label="Zoom out"
+    onclick={onZoomOut}
+    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background hover:bg-accent"
+  >
+    <ZoomOut class="h-4 w-4" aria-hidden="true" />
+  </button>
+  <button
+    data-testid="plot-zoom-in"
+    aria-label="Zoom in"
+    onclick={onZoomIn}
+    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background hover:bg-accent"
+  >
+    <ZoomIn class="h-4 w-4" aria-hidden="true" />
+  </button>
+  <!-- Reset zoom — always visible with its label, coral accent so it reads as
+       the primary "get me back" affordance (double-click/pinch stay as the
+       power-user shortcuts). Below `xs` it flex-grows to fill the row; from
+       `xs` up it sizes to content and the spacer below pushes Export right.
+       Uses the darker coral #c2410c: the brand coral #e7663b is only 3.3:1 on
+       white, below the WCAG 2 AA 4.5:1 text-contrast threshold, while #c2410c
+       is ~5.2:1 and still reads as the same accent. -->
+  <button
+    data-testid="plot-reset-zoom"
+    aria-label="Reset zoom"
+    onclick={onResetZoom}
+    class="ml-0.5 inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[#c2410c] px-3 text-sm font-medium text-[#c2410c] hover:bg-[#c2410c]/10 xs:ml-1 xs:flex-none xs:justify-start"
+  >
+    <RotateCcw class="h-4 w-4 shrink-0" aria-hidden="true" />
+    Reset zoom
+  </button>
 
-  <!-- Right: export image dropdown -->
-  <div class="relative">
+  <!-- Spacer (xs and up): pushes Export to the right edge like the desktop
+       layout. Hidden below xs so Reset can flex-grow into the gap instead. -->
+  <div class="hidden flex-1 xs:block"></div>
+
+  <!-- Export image dropdown: icon-only below xs, icon + label from xs up. -->
+  <div class="relative shrink-0">
     <button
       data-testid="export-image-btn"
       aria-label="Export plot as image"
@@ -106,9 +117,10 @@
       aria-controls={exportMenuId}
       onclick={toggleExportMenu}
       disabled={!canExport.value}
-      class="inline-flex h-9 items-center gap-1 rounded-md border bg-background px-3 text-sm font-medium hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
+      class="inline-flex h-9 w-9 items-center justify-center gap-1 rounded-md border bg-background px-0 text-sm font-medium hover:bg-accent disabled:pointer-events-none disabled:opacity-50 xs:w-auto xs:px-3"
     >
-      Export image ▾
+      <ImageDown class="h-4 w-4 shrink-0 xs:hidden" aria-hidden="true" />
+      <span class="hidden xs:inline">Export image ▾</span>
     </button>
 
     {#if showExportMenu}
