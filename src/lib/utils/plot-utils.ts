@@ -61,31 +61,161 @@ export interface ExportLegendItem {
   hidden?: boolean;
 }
 
-// Top-right placement inside the frame (pad NDC). Proton-in-water peaks on the
-// left, so top-right is usually clear (epic open question 1).
+// Default top-right placement inside the frame (pad NDC). Proton-in-water peaks
+// on the left, so top-right is usually clear (epic open question 1). When the
+// caller passes sample data, the legend is instead auto-placed into the emptiest
+// corner (see `chooseLegendCorner`); top-right stays the tie-break default and
+// the no-data fallback so behaviour is unchanged when no points are supplied.
 const LEGEND_X1_NDC = 0.62;
 const LEGEND_X2_NDC = 0.9;
 const LEGEND_Y2_NDC = 0.88;
 const LEGEND_ROW_NDC = 0.055;
 const LEGEND_Y1_MIN_NDC = 0.4;
 
+/** Box width in pad NDC — kept equal to the historical top-right width. */
+const LEGEND_BOX_W_NDC = LEGEND_X2_NDC - LEGEND_X1_NDC; // 0.28
+/** Gap between the legend box and the frame edge it hugs (pad NDC). */
+const LEGEND_INSET_NDC = 0.02;
+/** Cap the box height so a long series list can't overrun the frame. */
+const LEGEND_MAX_H_NDC = 0.5;
+
+/** JSROOT pad right/top margins — we only widen left/bottom (PAD_*_MARGIN), so
+ *  these stay at JSROOT's gStyle defaults; used to derive the frame in NDC. */
+const PAD_RIGHT_MARGIN_DEFAULT = 0.1;
+const PAD_TOP_MARGIN_DEFAULT = 0.1;
+
+/** The four inside-frame anchors the export legend can occupy. */
+export type LegendCorner = "tr" | "tl" | "br" | "bl";
+
+/** A legend rectangle in pad NDC. */
+export interface LegendBoxNDC {
+  fX1NDC: number;
+  fX2NDC: number;
+  fY1NDC: number;
+  fY2NDC: number;
+}
+
+/** Visible-series sample data + axis context, used to auto-place the legend. */
+export interface LegendPlacementInput {
+  /** Per-series sample points, in the same display units as the axis ranges. */
+  series: ReadonlyArray<{ x: readonly number[]; y: readonly number[] }>;
+  ranges: { xMin: number; xMax: number; yMin: number; yMax: number };
+  xLog: boolean;
+  yLog: boolean;
+}
+
+/** The drawable plot area (frame) in pad NDC, inside the export pad margins. */
+function exportFrameNDC(): { left: number; right: number; bottom: number; top: number } {
+  return {
+    left: PAD_LEFT_MARGIN,
+    right: 1 - PAD_RIGHT_MARGIN_DEFAULT,
+    bottom: PAD_BOTTOM_MARGIN,
+    top: 1 - PAD_TOP_MARGIN_DEFAULT,
+  };
+}
+
+/** Fraction [0,1] of a value across an axis, honouring log scale. NaN if the
+ *  value/bounds are invalid for the scale (e.g. non-positive on a log axis). */
+function axisFraction(value: number, min: number, max: number, isLog: boolean): number {
+  if (isLog) {
+    if (!(value > 0) || !(min > 0) || !(max > 0)) return NaN;
+    return (Math.log10(value) - Math.log10(min)) / (Math.log10(max) - Math.log10(min));
+  }
+  return (value - min) / (max - min);
+}
+
+/**
+ * The legend rectangle anchored to a given frame corner, sized for `rows`
+ * entries. Horizontally flush to the frame side, inset vertically; `"tr"` with
+ * a small row count reproduces the historical top-right box exactly.
+ */
+export function legendBoxForCorner(corner: LegendCorner, rows: number): LegendBoxNDC {
+  const frame = exportFrameNDC();
+  const h = Math.min(LEGEND_MAX_H_NDC, LEGEND_ROW_NDC * Math.max(1, rows));
+  const isTop = corner === "tr" || corner === "tl";
+  const isRight = corner === "tr" || corner === "br";
+  const fX1NDC = isRight ? frame.right - LEGEND_BOX_W_NDC : frame.left;
+  const fX2NDC = isRight ? frame.right : frame.left + LEGEND_BOX_W_NDC;
+  const fY2NDC = isTop ? frame.top - LEGEND_INSET_NDC : frame.bottom + LEGEND_INSET_NDC + h;
+  const fY1NDC = isTop ? frame.top - LEGEND_INSET_NDC - h : frame.bottom + LEGEND_INSET_NDC;
+  return { fX1NDC, fX2NDC, fY1NDC, fY2NDC };
+}
+
+/** Map every in-frame sample point to pad NDC (off-frame points are dropped). */
+function placementPointsNDC(input: LegendPlacementInput): Array<{ x: number; y: number }> {
+  const frame = exportFrameNDC();
+  const out: Array<{ x: number; y: number }> = [];
+  for (const s of input.series) {
+    const n = Math.min(s.x.length, s.y.length);
+    for (let i = 0; i < n; i++) {
+      const fx = axisFraction(s.x[i]!, input.ranges.xMin, input.ranges.xMax, input.xLog);
+      const fy = axisFraction(s.y[i]!, input.ranges.yMin, input.ranges.yMax, input.yLog);
+      if (!Number.isFinite(fx) || !Number.isFinite(fy)) continue;
+      if (fx < 0 || fx > 1 || fy < 0 || fy > 1) continue;
+      out.push({
+        x: frame.left + fx * (frame.right - frame.left),
+        y: frame.bottom + fy * (frame.top - frame.bottom),
+      });
+    }
+  }
+  return out;
+}
+
+/**
+ * Pick the emptiest corner for a `rows`-entry legend: the candidate box that
+ * overlaps the fewest drawn sample points. Ties resolve to top-right first
+ * (then top-left, bottom-right, bottom-left), so the proton-in-water default
+ * stays top-right and the choice only moves when a curve would be occluded
+ * (epic open question 1).
+ */
+export function chooseLegendCorner(input: LegendPlacementInput, rows: number): LegendCorner {
+  const points = placementPointsNDC(input);
+  const order: LegendCorner[] = ["tr", "tl", "br", "bl"];
+  let best: LegendCorner = "tr";
+  let bestCount = Infinity;
+  for (const corner of order) {
+    const box = legendBoxForCorner(corner, rows);
+    let count = 0;
+    for (const p of points) {
+      if (p.x >= box.fX1NDC && p.x <= box.fX2NDC && p.y >= box.fY1NDC && p.y <= box.fY2NDC) count++;
+    }
+    if (count < bestCount) {
+      bestCount = count;
+      best = corner;
+    }
+  }
+  return best;
+}
+
 /**
  * Build a ROOT TLegend object from the visible series, for the export pad only.
  * Pure: `create` is JSROOT's class factory (injected so this is unit-testable
  * without the JSROOT bundle). Returns `null` when there are no visible series.
+ *
+ * When `placement` sample data is supplied the legend is auto-placed into the
+ * emptiest frame corner; without it the legend keeps the fixed top-right box.
  */
 export function buildExportLegend(
   create: (typename: string) => Record<string, unknown>,
   items: ExportLegendItem[],
+  placement?: LegendPlacementInput,
 ): Record<string, unknown> | null {
   const visible = items.filter((it) => !it.hidden);
   if (visible.length === 0) return null;
 
   const legend = create("TLegend");
-  legend.fX1NDC = LEGEND_X1_NDC;
-  legend.fX2NDC = LEGEND_X2_NDC;
-  legend.fY2NDC = LEGEND_Y2_NDC;
-  legend.fY1NDC = Math.max(LEGEND_Y1_MIN_NDC, LEGEND_Y2_NDC - LEGEND_ROW_NDC * visible.length);
+  if (placement) {
+    const box = legendBoxForCorner(chooseLegendCorner(placement, visible.length), visible.length);
+    legend.fX1NDC = box.fX1NDC;
+    legend.fX2NDC = box.fX2NDC;
+    legend.fY1NDC = box.fY1NDC;
+    legend.fY2NDC = box.fY2NDC;
+  } else {
+    legend.fX1NDC = LEGEND_X1_NDC;
+    legend.fX2NDC = LEGEND_X2_NDC;
+    legend.fY2NDC = LEGEND_Y2_NDC;
+    legend.fY1NDC = Math.max(LEGEND_Y1_MIN_NDC, LEGEND_Y2_NDC - LEGEND_ROW_NDC * visible.length);
+  }
   legend.fOption = "brNDC";
   legend.fBorderSize = 1;
 
