@@ -81,12 +81,15 @@
       <ZoomIn class="h-4 w-4" aria-hidden="true" />
     </button>
     <!-- Reset zoom — always visible, coral accent so it reads as the primary
-         "get me back" affordance (double-click stays as the power-user shortcut). -->
+         "get me back" affordance (double-click stays as the power-user shortcut).
+         Uses the darker coral #c2410c: the brand coral #e7663b is only 3.3:1 on
+         white, below the WCAG 2 AA 4.5:1 text-contrast threshold, while #c2410c
+         is ~5.2:1 and still reads as the same accent. -->
     <button
       data-testid="plot-reset-zoom"
       aria-label="Reset zoom"
       onclick={onResetZoom}
-      class="ml-1 inline-flex h-9 items-center gap-1.5 rounded-md border border-[#e7663b] px-3 text-sm font-medium text-[#e7663b] hover:bg-[#e7663b]/10"
+      class="ml-1 inline-flex h-9 items-center gap-1.5 rounded-md border border-[#c2410c] px-3 text-sm font-medium text-[#c2410c] hover:bg-[#c2410c]/10"
     >
       <RotateCcw class="h-4 w-4" aria-hidden="true" />
       Reset zoom

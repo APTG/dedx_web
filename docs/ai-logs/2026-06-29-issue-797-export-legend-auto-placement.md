@@ -64,6 +64,22 @@ from the export path into the builder.
 - **Issue**: none outstanding. The on-screen plot is unaffected — it never
   receives a legend (HTML strip remains its only legend, per Q1/#793).
 
+### Prompt 2: "Reply to review comments, fix failing CI issues"
+
+**AI response**: Two follow-ups on PR #807:
+
+- **Review comment** (Copilot): `buildMultigraph`'s `opts` made `xLog`/`yLog`
+  optional even on the export path, so a future `withLegend: true` call could
+  omit them and the auto-placement would silently assume linear axes. Reworked
+  `opts` into a discriminated union on `withLegend` so TypeScript enforces
+  `xLog`/`yLog` whenever the legend is drawn; dropped the `?? false` fallbacks.
+- **Failing CI** (`accessibility.spec.ts` — zero WCAG AA violations on the plot
+  page): the **Reset zoom** button (from #794's `plot-toolbar.svelte`, not this
+  PR) used coral `#e7663b` text on white = 3.3:1, below the 4.5:1 AA threshold.
+  Pre-existing on master, but fixed here at the user's request: darkened the
+  button text/border to `#c2410c` (~5.2:1, same accent identity). No test
+  asserts the colour, so behaviour coverage is unaffected.
+
 ## Verification
 
 - `vitest run` on `build-export-legend.test.ts` (14), `jsroot-plot.test.ts`
