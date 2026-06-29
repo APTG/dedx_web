@@ -465,13 +465,15 @@
       preview: PlotSeries | null;
       stpUnit: StpUnit;
       axisRanges: AxisRanges;
-      // Attach an in-canvas TLegend (#797). Export pad only — never the live
-      // plot, which keeps the HTML strip as its legend (per Q1, #793). xLog/yLog
-      // are read only to auto-place the legend into the emptiest frame corner.
-      withLegend?: boolean;
-      xLog?: boolean;
-      yLog?: boolean;
-    },
+    } & (
+      | // Attach an in-canvas TLegend (#797). Export pad only — never the live
+      // plot, which keeps the HTML strip as its legend (per Q1, #793). The
+      // legend auto-places into the emptiest frame corner, so the export caller
+      // MUST supply the axis log flags it maps the sample points with — the
+      // union makes TypeScript enforce that whenever `withLegend` is set.
+      { withLegend: true; xLog: boolean; yLog: boolean }
+      | { withLegend?: false; xLog?: boolean; yLog?: boolean }
+    ),
   ) {
     const JSROOT_any = JSROOT as any;
 
@@ -512,8 +514,8 @@
       const legend = buildExportLegend((t) => JSROOT_any.create(t), legendItems, {
         series: legendPoints,
         ranges: opts.axisRanges,
-        xLog: opts.xLog ?? false,
-        yLog: opts.yLog ?? false,
+        xLog: opts.xLog,
+        yLog: opts.yLog,
       });
       if (legend) {
         // TMultiGraph's painter draws everything in fFunctions, so the legend
