@@ -25,6 +25,7 @@
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
+  --breakpoint-xs: 420px;
   --breakpoint-tablet: 600px;
   --breakpoint-desktop: 900px;
 }

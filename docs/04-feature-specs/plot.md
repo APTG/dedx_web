@@ -1039,6 +1039,36 @@ The collapsed entity header shows the current selection summary
 selected without expanding. When expanded, the panels stack vertically
 as full-width sections (same as before but inside the accordion/sheet).
 
+#### Plot-column adaptations at phone width (#799)
+
+The redesign artboards are desktop frames; the landed plot fixes (#793,
+#794, #798) are re-verified and adapted for the plot column at `< sm`
+(target 375px, smoke at 360px). The sidebar→sheet collapse above is owned
+by the mobile-picker work — this covers only the plot column.
+
+- **App toolbar (#794):** reflows to a single row that never wraps. The
+  `−` / `+` zoom controls are icon-only at every width; **Reset zoom**
+  flex-grows and keeps its label (it is the discoverability anchor, and on
+  touch the only reliable way back from a pinch-zoom). The Export button
+  collapses to an icon below the `xs` (420px) breakpoint and regains its
+  label from `xs` up, where a flex spacer also restores the desktop layout
+  (zoom + Reset left, Export right).
+- **Series rows (#793):** full-bleed, full-width cards; the eye and trash
+  controls are ≥44px touch targets below `sm` (the shared `IconButton`
+  rule), the label truncates with an ellipsis, and the line-swatch stays
+  visible. The two-button row fits 375px without horizontal scroll.
+- **Plot height:** the canvas container is `height: 50vh` with a
+  `min-height` of 300px on mobile (well above the ~170px legibility floor)
+  so the Bragg peak stays readable; JSROOT honours the container box.
+- **Touch zoom (#794):** double-click reset is a desktop/pointer shortcut;
+  on touch, axis pinch-zoom and graph-drag stay disabled so the page keeps
+  its native scroll/pinch (see _Disabled Interactions_). The toolbar
+  `−` / `+` and the persistent **Reset zoom** button are the finger-sized
+  zoom controls, and Reset is always reachable after a pinch.
+- **Advanced disclosure (#798):** full-width and collapsed by default;
+  sitting directly above the plot, opening it pushes the plot down but
+  must not shove it entirely off a short (375×667) viewport.
+
 ---
 
 ## State Management
