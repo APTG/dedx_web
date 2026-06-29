@@ -872,8 +872,14 @@ curves). The builder is the pure, unit-tested
 - Each entry uses the series' graph for its line sample, so the legend line
   matches the curve's colour and style, and the same human-readable label shown
   in the strip (e.g. `proton · Water · ICRU-49`).
-- Placed top-right inside the frame (NDC coordinates). Proton-in-water peaks on
-  the left, so top-right is usually clear.
+- **Auto-placed into the emptiest frame corner** (NDC coordinates):
+  [`chooseLegendCorner`](../../src/lib/utils/plot-utils.ts) maps the visible
+  sample points into the four candidate boxes (top-right, top-left,
+  bottom-right, bottom-left) and picks the one overlapping the fewest points, so
+  the legend never sits on top of a curve (epic open question 1). Ties resolve
+  to top-right first — the proton-in-water default (its peak is on the left)
+  stays top-right and the box only moves when a curve would be occluded. With no
+  sample data the builder falls back to the fixed top-right box.
 - Added to the **export pad only** — never the live painter (which keeps the
   HTML strip as its only legend, per Q1/#793). Applies to both the SVG and PNG
   paths (PNG is rasterised from the same off-screen SVG).

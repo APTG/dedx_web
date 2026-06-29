@@ -354,6 +354,8 @@
           stpUnit,
           axisRanges,
           withLegend: true,
+          xLog,
+          yLog,
         });
         const drawOpts = buildDrawOptions(xLog, yLog);
         await JSROOT.draw(offscreen, mg, drawOpts);
@@ -463,10 +465,15 @@
       preview: PlotSeries | null;
       stpUnit: StpUnit;
       axisRanges: AxisRanges;
-      // Attach an in-canvas TLegend (#797). Export pad only — never the live
-      // plot, which keeps the HTML strip as its legend (per Q1, #793).
-      withLegend?: boolean;
-    },
+    } & (
+      | // Attach an in-canvas TLegend (#797). Export pad only — never the live
+      // plot, which keeps the HTML strip as its legend (per Q1, #793). The
+      // legend auto-places into the emptiest frame corner, so the export caller
+      // MUST supply the axis log flags it maps the sample points with — the
+      // union makes TypeScript enforce that whenever `withLegend` is set.
+      { withLegend: true; xLog: boolean; yLog: boolean }
+      | { withLegend?: false; xLog?: boolean; yLog?: boolean }
+    ),
   ) {
     const JSROOT_any = JSROOT as any;
 
@@ -478,6 +485,7 @@
     const energyAxisUnit = getPlotEnergyAxisUnit(allVisible);
 
     const legendItems: ExportLegendItem[] = [];
+    const legendPoints: Array<{ x: number[]; y: number[] }> = [];
     const graphs = allVisible.map((s) => {
       const xData = convertEnergyForDisplay(s.result.energies, s, energyAxisUnit);
       const yData = convertStpForDisplay(s.result.stoppingPowers, s.density, opts.stpUnit);
@@ -491,14 +499,24 @@
       tgraph.InvertBit(JSROOT_any.BIT(18));
       // The preview is ephemeral and never appears in exports, so it is also
       // omitted from the legend (the export path passes preview: null anyway).
-      if (!isPreview) legendItems.push({ graph: tgraph, label: s.label });
+      if (!isPreview) {
+        legendItems.push({ graph: tgraph, label: s.label });
+        legendPoints.push({ x: xData, y: yData });
+      }
       return tgraph;
     });
 
     const mg = JSROOT_any.createTMultiGraph(...graphs);
 
     if (opts.withLegend) {
-      const legend = buildExportLegend((t) => JSROOT_any.create(t), legendItems);
+      // Auto-place the legend into the emptiest frame corner so it never sits
+      // on top of a curve (epic open question 1).
+      const legend = buildExportLegend((t) => JSROOT_any.create(t), legendItems, {
+        series: legendPoints,
+        ranges: opts.axisRanges,
+        xLog: opts.xLog,
+        yLog: opts.yLog,
+      });
       if (legend) {
         // TMultiGraph's painter draws everything in fFunctions, so the legend
         // rides along with the curves on the export pad.
