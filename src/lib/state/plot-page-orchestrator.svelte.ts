@@ -299,6 +299,7 @@ export class PlotPageOrchestrator {
 
     let hadFailures = false;
     let addedCount = 0;
+    let duplicateCount = 0;
     for (const id of ids) {
       try {
         let programId = baseProgramId;
@@ -359,7 +360,10 @@ export class PlotPageOrchestrator {
         if (added) {
           addedCount += 1;
         } else {
-          hadFailures = true;
+          // addSeries returns false only for an already-present series (see
+          // plot.svelte.ts) — a duplicate, not a failure. Count it separately
+          // so it never surfaces the "could not be added" error below.
+          duplicateCount += 1;
         }
       } catch (err) {
         hadFailures = true;
@@ -368,6 +372,14 @@ export class PlotPageOrchestrator {
     }
     if (addedCount > 0) {
       this.announceSeriesFeedback(`Added ${addedCount} series to the plot`);
+    } else if (duplicateCount > 0 && !hadFailures) {
+      // Nothing new was added and there were no real failures — every selected
+      // series was already on the plot. Mirror the single-add duplicate notice.
+      this.announceSeriesFeedback(
+        duplicateCount === 1
+          ? "That series is already on the plot"
+          : "Those series are already on the plot",
+      );
     }
     if (hadFailures) {
       this.previewError = "Some selected series could not be added.";

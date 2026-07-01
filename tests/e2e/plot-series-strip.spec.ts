@@ -71,10 +71,16 @@ test.describe("Plot — series strip rework (#793)", () => {
       .getByRole("button", { name: /hide preview/i })
       .click();
 
-    // The empty framed axes stay on screen — no "Loading plot engine…" fallback,
-    // and the plot SVG (its axis frame) is still rendered.
+    // The empty framed axes stay on screen — no "Loading plot engine…" fallback.
+    // The JSROOT canvas SVG is still rendered (not the placeholder), and its
+    // axis tick labels draw even with no curves — proof the framed axes remain.
+    // Scope to the outer `svg.root_canvas` so the nested `main_layer` <svg>
+    // doesn't trip Playwright's strict-mode single-element check.
     await expect(page.getByText("Loading plot engine")).toHaveCount(0);
-    await expect(canvas.locator("svg")).toBeVisible();
+    await expect(canvas.locator("svg.root_canvas")).toBeVisible();
+    await expect
+      .poll(() => canvas.locator("svg text").count(), { timeout: 10000 })
+      .toBeGreaterThan(0);
   });
 
   test("trash button removes a series", async ({ page }) => {

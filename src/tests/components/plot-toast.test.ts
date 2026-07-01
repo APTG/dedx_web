@@ -72,4 +72,17 @@ describe("PlotToast (#812)", () => {
     flushSync();
     expect(screen.getByTestId("plot-toast")).toBeInTheDocument();
   });
+
+  it("hides a visible toast when the parent clears feedback (no stuck toast)", async () => {
+    const { rerender } = render(PlotToast, {
+      props: { feedback: { text: "Added series", token: 1 }, onDismiss: () => {} },
+    });
+    expect(screen.getByTestId("plot-toast")).toBeInTheDocument();
+
+    // The parent hides the toast by nulling the signal (independent of our own
+    // dismiss) — it must disappear rather than stay stuck on screen.
+    await rerender({ feedback: null, onDismiss: () => {} });
+    flushSync();
+    expect(screen.queryByTestId("plot-toast")).toBeNull();
+  });
 });

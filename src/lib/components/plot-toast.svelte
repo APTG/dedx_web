@@ -27,7 +27,14 @@
   }
 
   $effect(() => {
-    if (!feedback) return;
+    if (!feedback) {
+      // The parent cleared the signal (e.g. it hid the toast itself). Tear down
+      // any visible toast and its pending timer so it can't stay stuck on
+      // screen when `feedback` goes null independently of our own dismiss.
+      clearTimer();
+      visibleText = null;
+      return;
+    }
     // Read token so an identical-text re-announcement still re-runs the effect.
     void feedback.token;
     visibleText = feedback.text;
