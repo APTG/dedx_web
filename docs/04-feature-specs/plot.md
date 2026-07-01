@@ -355,6 +355,15 @@ Clicking the eye icon on a series entry:
 4. Hidden series are excluded from CSV export but remain in the series
    list. Visibility state is **not** persisted in the URL — a shared
    URL always restores all series as visible.
+5. **Hiding _every_ series keeps the framed canvas (#812 follow-up):**
+   when no series are visible but data is still configured, `JsrootPlot`
+   draws the empty framed axes (placeholder ranges, see § Y-Axis Auto-Range)
+   rather than falling back to the "Loading plot engine…" placeholder — that
+   text is reserved for the genuine initial-load state (no series and no
+   preview yet). `JsrootPlot`'s draw guard fires whenever any series/preview
+   carries real data, regardless of its `visible` flag; `buildMultigraph`
+   then plots only the visible curves but always builds the histogram frame,
+   so the axes stay on screen and only the curves disappear.
 
 ### Entity Selection Changes
 
@@ -668,7 +677,11 @@ The JSROOT container div uses:
 
 JSROOT is loaded dynamically (it is a large library). The component
 shows a loading spinner ("Loading plot engine…") until JSROOT is ready.
-Use dynamic `import()` or a script tag — architecture TBD.
+Use dynamic `import()` or a script tag — architecture TBD. This
+placeholder is shown **only** for the genuine initial-load state (no
+series and no preview computed yet); once any series or preview data
+exists the plot draws the framed axes even if every curve is hidden
+(see § Toggle Series Visibility, #812 follow-up).
 
 ### App Toolbar & Reset Zoom (#794)
 

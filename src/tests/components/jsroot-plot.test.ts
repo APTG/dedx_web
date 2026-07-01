@@ -170,6 +170,25 @@ describe("JsrootPlot", () => {
     expect(JSROOT.draw).not.toHaveBeenCalled();
   });
 
+  it("draws framed axes (not the loading placeholder) when every series is hidden (#812 follow-up)", async () => {
+    const JSROOT = await import("jsroot");
+    const { container } = render(JsrootPlot, {
+      props: {
+        series: [makeSeries({ visible: false })],
+        preview: null,
+        stpUnit: "keV/µm" as StpUnit,
+        xLog: true,
+        yLog: true,
+        axisRanges: { xMin: 0.001, xMax: 10000, yMin: 0.1, yMax: 1000 },
+      },
+    });
+    // The series is hidden but still configured with real data, so the plot
+    // draws an empty framed canvas instead of collapsing to "Loading plot
+    // engine…".
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    await vi.waitFor(() => expect(container.textContent).not.toContain("Loading plot engine"));
+  });
+
   it("has aria-label describing the plot", () => {
     render(JsrootPlot, {
       props: {

@@ -250,19 +250,22 @@
     const el = container;
     if (!el) return;
 
-    // Guard: do not call JSROOT.draw() with an empty multigraph — it triggers a
-    // module-evaluation race in ObjectPainter that throws on first navigation
-    // before the default proton+water preview has been computed.
-    // The "Loading plot engine…" placeholder stays visible during this brief window.
-    const hasDrawableSeries = (s: PlotSeries): boolean =>
-      s.visible &&
+    // Draw whenever any series/preview carries real data — even if every curve
+    // is currently hidden (all eyes toggled off). buildMultigraph then plots
+    // only the visible curves but always builds the histogram frame, so an
+    // all-hidden plot shows the empty framed axes rather than collapsing to the
+    // "Loading…" placeholder — hiding the last series leaves the canvas on
+    // screen (#812 follow-up). The placeholder is reserved for the genuinely
+    // empty initial state (no series, no preview): drawing an empty multigraph
+    // there races the ObjectPainter module evaluation and throws.
+    const hasConfiguredData = (s: PlotSeries): boolean =>
       Array.isArray(s.result.energies) &&
       Array.isArray(s.result.stoppingPowers) &&
       s.result.energies.length > 0 &&
       s.result.stoppingPowers.length > 0;
     const hasData =
-      (snapshot.preview !== null && hasDrawableSeries(snapshot.preview)) ||
-      snapshot.series.some((s) => hasDrawableSeries(s));
+      (snapshot.preview !== null && hasConfiguredData(snapshot.preview)) ||
+      snapshot.series.some((s) => hasConfiguredData(s));
     if (!hasData) {
       jsrootError = null;
       jsrootReady = false;
