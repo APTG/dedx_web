@@ -21,8 +21,10 @@ test.describe("Entity picker — keyboard navigation", () => {
   });
 
   test("/ key focuses the search input", async ({ page }) => {
-    // Click elsewhere to ensure search input doesn't already have focus.
-    await page.locator("body").click();
+    // Click the (non-interactive) page heading to blur the search input
+    // without landing on some other focusable control — a plain body click
+    // targets the viewport center, whose contents shift with page layout.
+    await page.locator("h1").click();
     await page.keyboard.press("/");
     const searchInput = page.getByTestId("picker-particle-search");
     await expect(searchInput).toBeFocused();
@@ -32,7 +34,7 @@ test.describe("Entity picker — keyboard navigation", () => {
     // Collapse the panel first.
     await page.getByTestId("picker-toggle").click();
     await expect(page.getByTestId("picker-tab-panel")).toHaveCount(0);
-    await page.locator("body").click();
+    await page.locator("h1").click();
     await page.keyboard.press("/");
     await expect(page.getByTestId("picker-tab-panel")).toBeVisible();
     await expect(page.getByTestId("picker-particle-search")).toBeFocused();
