@@ -306,8 +306,8 @@ When the user clicks "Add Series":
 
 1. **Duplicate check:** If a series with the same (resolvedProgramId,
    particleId, materialId) triplet already exists in the committed series
-   list, show a brief toast notification: "This series is already plotted."
-   Do not add a duplicate.
+   list, show a brief toast notification: "That series is already on the
+   plot." Do not add a duplicate.
 2. **Create series:** Copy the current preview series data into a new
    committed series entry with:
    - A unique `seriesId` (incrementing integer, starting at 1).
@@ -325,6 +325,12 @@ When the user clicks "Add Series":
 5. **Recompute labels:** All series labels are recomputed — the smart
    labeling algorithm may simplify or expand labels as the set of series
    changes (see § Smart Series Labels).
+6. **Confirm (#812):** A transient toast (`plot-toast`, `role="status"`,
+   auto-dismiss ~4 s, manually dismissible) confirms the curve landed —
+   "Added _{label}_ to the plot" for a single add, "Added _N_ series to the
+   plot" for a multi-select add. The toast is its own polite live region so
+   screen-reader users hear the same confirmation. Driven by an
+   `announceSeriesFeedback()` signal on the plot-page orchestrator.
 
 ### Remove Series
 
@@ -349,6 +355,15 @@ Clicking the eye icon on a series entry:
 4. Hidden series are excluded from CSV export but remain in the series
    list. Visibility state is **not** persisted in the URL — a shared
    URL always restores all series as visible.
+5. **Hiding _every_ series keeps the framed canvas (#812 follow-up):**
+   when no series are visible but data is still configured, `JsrootPlot`
+   draws the empty framed axes (placeholder ranges, see § Y-Axis Auto-Range)
+   rather than falling back to the "Loading plot engine…" placeholder — that
+   text is reserved for the genuine initial-load state (no series and no
+   preview yet). `JsrootPlot`'s draw guard fires whenever any series/preview
+   carries real data, regardless of its `visible` flag; `buildMultigraph`
+   then plots only the visible curves but always builds the histogram frame,
+   so the axes stay on screen and only the curves disappear.
 
 ### Entity Selection Changes
 
@@ -662,7 +677,11 @@ The JSROOT container div uses:
 
 JSROOT is loaded dynamically (it is a large library). The component
 shows a loading spinner ("Loading plot engine…") until JSROOT is ready.
-Use dynamic `import()` or a script tag — architecture TBD.
+Use dynamic `import()` or a script tag — architecture TBD. This
+placeholder is shown **only** for the genuine initial-load state (no
+series and no preview computed yet); once any series or preview data
+exists the plot draws the framed axes even if every curve is hidden
+(see § Toggle Series Visibility, #812 follow-up).
 
 ### App Toolbar & Reset Zoom (#794)
 
@@ -682,10 +701,20 @@ replaced by a small **app-level toolbar mounted directly above the canvas**
 - **Reset zoom** is always visible with a coral accent — the discoverable
   primary path back to full range. Unzoom triggers a JSROOT pad redraw, so
   the axis titles/margins (#795/#801) re-apply automatically.
+- **Reset zoom and Zoom out are disabled while the plot is already at full
+  range (#812)** — there is nothing to reset, and stepping out further would
+  be a clamped no-op. `JsrootPlot` exposes a bindable `isZoomed` flag, kept in
+  sync by wrapping the frame painter's `zoom()` / `unzoom()` (so it reflects
+  box-drag, double-click, and the toolbar `−` / `+` / Reset alike); the pure
+  `isRangeZoomed()` helper (`plot-utils.ts`) decides it by comparing the
+  displayed range to the full data range (in log space for log axes). Any
+  data/scale change redraws to full range, which clears the flag, disabling
+  both `canReset` and `canZoomOut` on `plot-toolbar.svelte` together.
 - The `−` / `+` steps scale the visible range toward its centre via the
   log-aware `zoomRange()` helper (`plot-utils.ts`); the result is clamped to
   the full data range so zoom-out never expands past it (and zoom-out at full
-  range is a no-op).
+  range is a no-op — which is why the button disables itself there instead of
+  sitting active but inert).
 - The native chrome is suppressed via `settings.ToolBar = false` and
   `settings.ContextMenu = false`. Both are global JSROOT settings, snapshotted
   and restored on teardown (including after a failed draw) so the change never

@@ -300,6 +300,10 @@ rather than a real `<input>`. Tapping it opens a full-screen overlay
 (`picker-sheet.svelte`) with:
 
 - Autofocused `<input data-testid="picker-sheet-input">`
+- A Clear (×) button (`data-testid="picker-sheet-clear"`) that appears **only
+  when the field has text** (#812) — a persistent × beside an empty field reads
+  as a close affordance and misleads. The input suppresses the browser's native
+  `::-webkit-search-cancel-button`, so a filled field never shows two ×'s.
 - Full focus trap (Tab cycling, Escape to close)
 - Body scroll lock (`document.body.style.overflow = "hidden"`) while open
 - Hardware Back support (`history.pushState` + `popstate` listener)

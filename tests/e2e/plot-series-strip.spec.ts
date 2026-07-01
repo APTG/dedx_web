@@ -47,6 +47,42 @@ test.describe("Plot — series strip rework (#793)", () => {
     await expect(row.getByRole("button", { name: /hide series/i })).toBeVisible();
   });
 
+  test("hiding every series keeps the framed canvas, not the loading text (#812 follow-up) @regression", async ({
+    page,
+  }) => {
+    // Commit a series so the strip holds both the preview and a committed curve.
+    await page.getByTestId("plot-add-series").click();
+    const row = page.getByTestId("plot-series-row-0");
+    await expect(row).toBeVisible();
+
+    // Wait until JSROOT has actually drawn a curve, so we exercise the
+    // drawn → all-hidden transition rather than the initial-load placeholder.
+    const canvas = page.locator('[role="img"][aria-label*="plot"]');
+    await expect(page.getByText("Loading plot engine")).toHaveCount(0, { timeout: 20000 });
+    await page.waitForFunction(
+      () => !!document.querySelector('[role="img"][aria-label*="plot"] svg path'),
+      { timeout: 15000 },
+    );
+
+    // Hide the committed series and the preview → nothing left visible.
+    await row.getByRole("button", { name: /hide series/i }).click();
+    await page
+      .getByTestId("preview-series")
+      .getByRole("button", { name: /hide preview/i })
+      .click();
+
+    // The empty framed axes stay on screen — no "Loading plot engine…" fallback.
+    // The JSROOT canvas SVG is still rendered (not the placeholder), and its
+    // axis tick labels draw even with no curves — proof the framed axes remain.
+    // Scope to the outer `svg.root_canvas` so the nested `main_layer` <svg>
+    // doesn't trip Playwright's strict-mode single-element check.
+    await expect(page.getByText("Loading plot engine")).toHaveCount(0);
+    await expect(canvas.locator("svg.root_canvas")).toBeVisible();
+    await expect
+      .poll(() => canvas.locator("svg text").count(), { timeout: 10000 })
+      .toBeGreaterThan(0);
+  });
+
   test("trash button removes a series", async ({ page }) => {
     await page.getByTestId("plot-add-series").click();
     await expect(page.getByTestId("plot-series-row-0")).toBeVisible();
