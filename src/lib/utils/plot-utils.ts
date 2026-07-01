@@ -64,6 +64,17 @@ export function isRangeZoomed(fp: FrameZoomState): boolean {
     fullMax: number,
     isLog: boolean,
   ): boolean => {
+    // A NaN or ±Infinity in any bound means the frame is not fully drawn yet;
+    // treat that axis as not zoomed rather than let an infinity slip past the
+    // tolerance check below and spuriously enable Reset zoom.
+    if (
+      !Number.isFinite(scaleMin) ||
+      !Number.isFinite(scaleMax) ||
+      !Number.isFinite(fullMin) ||
+      !Number.isFinite(fullMax)
+    ) {
+      return false;
+    }
     let sMin = scaleMin;
     let sMax = scaleMax;
     let fMin = fullMin;

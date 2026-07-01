@@ -17,20 +17,33 @@
   } = $props();
 
   let visibleText = $state<string | null>(null);
+  let timer: ReturnType<typeof setTimeout> | null = null;
+
+  function clearTimer(): void {
+    if (timer !== null) {
+      clearTimeout(timer);
+      timer = null;
+    }
+  }
 
   $effect(() => {
     if (!feedback) return;
     // Read token so an identical-text re-announcement still re-runs the effect.
     void feedback.token;
     visibleText = feedback.text;
-    const id = setTimeout(() => {
+    clearTimer();
+    timer = setTimeout(() => {
+      timer = null;
       visibleText = null;
       onDismiss();
     }, durationMs);
-    return () => clearTimeout(id);
+    return clearTimer;
   });
 
   function dismiss(): void {
+    // Cancel the pending auto-dismiss so onDismiss fires exactly once even if
+    // the parent doesn't synchronously clear `feedback`.
+    clearTimer();
     visibleText = null;
     onDismiss();
   }

@@ -38,14 +38,21 @@ describe("PlotToast (#812)", () => {
     expect(screen.queryByTestId("plot-toast")).toBeNull();
   });
 
-  it("dismisses immediately when the close button is clicked", async () => {
+  it("dismisses immediately on close click and cancels the pending auto-dismiss", async () => {
+    vi.useFakeTimers();
     const onDismiss = vi.fn();
     render(PlotToast, {
-      props: { feedback: { text: "Added series", token: 1 }, onDismiss },
+      props: { feedback: { text: "Added series", token: 1 }, onDismiss, durationMs: 3000 },
     });
     await fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
     expect(onDismiss).toHaveBeenCalledTimes(1);
     expect(screen.queryByTestId("plot-toast")).toBeNull();
+
+    // The auto-dismiss timer must have been cleared, so onDismiss stays at 1
+    // even after the original duration elapses.
+    vi.advanceTimersByTime(3000);
+    flushSync();
+    expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
   it("re-shows for a new token even when the text repeats", async () => {

@@ -276,6 +276,10 @@ describe("isRangeZoomed", () => {
 
   it("treats a half-initialised frame (non-finite fields) as not zoomed", () => {
     expect(isRangeZoomed(make({ scale_xmin: NaN, scale_xmax: NaN }))).toBe(false);
+    // ±Infinity must not slip past the tolerance check and enable Reset zoom.
+    expect(isRangeZoomed(make({ scale_xmax: Infinity }))).toBe(false);
+    expect(isRangeZoomed(make({ scale_ymin: -Infinity }))).toBe(false);
+    expect(isRangeZoomed(make({ xmax: Infinity }))).toBe(false);
   });
 });
 
