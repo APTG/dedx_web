@@ -105,9 +105,12 @@
 <div class="container mx-auto max-w-6xl p-4 sm:p-6 lg:p-8">
   <div class="mb-8 flex flex-wrap items-end justify-between gap-4">
     <div>
-      <h1 class="text-3xl font-bold tracking-tight text-foreground">Stopping Power Calculator</h1>
+      <h1 class="text-3xl font-bold tracking-tight text-foreground">
+        Range &amp; Stopping Power Calculator
+      </h1>
       <p class="text-muted-foreground mt-2">
-        Calculate dE/dx and ranges for various particles and materials.
+        Find how deep a charged particle travels — its CSDA range — and how fast it loses energy —
+        its stopping power (dE/dx) — in any material. Runs entirely in your browser.
       </p>
     </div>
   </div>

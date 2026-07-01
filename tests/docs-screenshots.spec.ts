@@ -83,7 +83,7 @@ const SHOTS: Shot[] = [
     path: "/calculator",
     ready: async (page) => {
       await page
-        .getByRole("heading", { name: "Stopping Power Calculator", exact: true })
+        .getByRole("heading", { name: "Range & Stopping Power Calculator", exact: true })
         .waitFor({ state: "visible" });
     },
   },
