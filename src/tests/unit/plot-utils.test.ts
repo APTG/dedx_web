@@ -7,9 +7,11 @@ import {
   zoomRange,
   ZOOM_STEP_IN,
   ZOOM_STEP_OUT,
+  isRangeZoomed,
   COLOR_PALETTE,
   PREVIEW_COLOR,
 } from "$lib/utils/plot-utils";
+import type { FrameZoomState } from "$lib/utils/plot-utils";
 import type { StpUnit } from "$lib/wasm/types";
 
 describe("convertStpForDisplay", () => {
@@ -220,6 +222,60 @@ describe("zoomRange", () => {
     const outR = zoomRange(inR.min, inR.max, false, ZOOM_STEP_OUT);
     expect(outR.min).toBeCloseTo(0, 6);
     expect(outR.max).toBeCloseTo(100, 6);
+  });
+});
+
+describe("isRangeZoomed", () => {
+  // Full data range shared by the cases below; scale_* overrides pick the view.
+  const full = { xmin: 1, xmax: 100, ymin: 1, ymax: 1000 };
+  const make = (over: Partial<FrameZoomState>): FrameZoomState => ({
+    ...full,
+    scale_xmin: full.xmin,
+    scale_xmax: full.xmax,
+    scale_ymin: full.ymin,
+    scale_ymax: full.ymax,
+    logx: 0,
+    logy: 0,
+    ...over,
+  });
+
+  it("is false when the displayed range equals the full range", () => {
+    expect(isRangeZoomed(make({}))).toBe(false);
+  });
+
+  it("is true when zoomed on the x-axis only", () => {
+    expect(isRangeZoomed(make({ scale_xmin: 5, scale_xmax: 50 }))).toBe(true);
+  });
+
+  it("is true when zoomed on the y-axis only", () => {
+    expect(isRangeZoomed(make({ scale_ymin: 10, scale_ymax: 500 }))).toBe(true);
+  });
+
+  it("ignores float noise within the tolerance", () => {
+    // A sub-0.01% wobble on a 99-wide span is not a real zoom.
+    expect(isRangeZoomed(make({ scale_xmin: 1 + 1e-6, scale_xmax: 100 - 1e-6 }))).toBe(false);
+  });
+
+  it("detects a zoom into the low decade of a wide log axis", () => {
+    // Linearly 0.001→0.01 is a tiny slice of a [0.001, 10000] span, but in log
+    // space it is a full decade — the log-aware comparison must catch it.
+    const logFull = {
+      xmin: 0.001,
+      xmax: 10000,
+      ymin: 1,
+      ymax: 1000,
+      scale_xmin: 0.001,
+      scale_xmax: 0.01,
+      scale_ymin: 1,
+      scale_ymax: 1000,
+      logx: 1,
+      logy: 1,
+    };
+    expect(isRangeZoomed(logFull)).toBe(true);
+  });
+
+  it("treats a half-initialised frame (non-finite fields) as not zoomed", () => {
+    expect(isRangeZoomed(make({ scale_xmin: NaN, scale_xmax: NaN }))).toBe(false);
   });
 });
 

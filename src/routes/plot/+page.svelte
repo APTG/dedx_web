@@ -6,6 +6,7 @@
   import EntitySelection from "$lib/components/entity-selection/entity-selection.svelte";
   import JsrootPlot from "$lib/components/jsroot-plot.svelte";
   import PlotToolbar from "$lib/components/plot-toolbar.svelte";
+  import PlotToast from "$lib/components/plot-toast.svelte";
   import { computeAxisRanges } from "$lib/utils/plot-utils";
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
@@ -90,6 +91,9 @@
   let resetZoom: (() => void) | null = $state(null);
   let zoomIn: (() => void) | null = $state(null);
   let zoomOut: (() => void) | null = $state(null);
+  // Tracks whether the plot is currently zoomed in, so the toolbar can disable
+  // Reset zoom when there is nothing to reset (#812).
+  let plotZoomed = $state(false);
 </script>
 
 <svelte:head>
@@ -305,6 +309,7 @@
           onZoomIn={() => zoomIn?.()}
           onZoomOut={() => zoomOut?.()}
           onResetZoom={() => resetZoom?.()}
+          canReset={plotZoomed}
           {getSvg}
         />
 
@@ -325,6 +330,7 @@
             bind:resetZoom
             bind:zoomIn
             bind:zoomOut
+            bind:isZoomed={plotZoomed}
           />
         </div>
 
@@ -369,5 +375,11 @@
         </div>
       </div>
     {/if}
+
+    <!-- Add-series confirmation toast (#812). -->
+    <PlotToast
+      feedback={orchestrator.seriesFeedback}
+      onDismiss={() => (orchestrator.seriesFeedback = null)}
+    />
   </div>
 {/if}

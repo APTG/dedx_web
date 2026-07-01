@@ -37,6 +37,17 @@ export class PlotPageOrchestrator {
   editingSeriesId = $state<number | null>(null);
   showResetConfirm = $state(false);
 
+  // Transient confirmation shown after Add Series so the user sees the curve
+  // landed on the plot (#812). The token makes each announcement distinct, so
+  // adding two identical-label series in a row still re-triggers the toast.
+  seriesFeedback = $state<{ text: string; token: number } | null>(null);
+  #feedbackToken = 0;
+
+  announceSeriesFeedback(text: string): void {
+    this.#feedbackToken += 1;
+    this.seriesFeedback = { text, token: this.#feedbackToken };
+  }
+
   constructor() {
     this.plotState = createPlotState();
     this.setupEffects();
@@ -255,8 +266,11 @@ export class PlotPageOrchestrator {
       result: p.result,
     });
 
-    if (!added) {
-      console.warn("Duplicate series — not added.");
+    if (added) {
+      const label = this.plotState.series.at(-1)?.label ?? "series";
+      this.announceSeriesFeedback(`Added ${label} to the plot`);
+    } else {
+      this.announceSeriesFeedback("That series is already on the plot");
     }
   }
 
@@ -284,6 +298,7 @@ export class PlotPageOrchestrator {
     }
 
     let hadFailures = false;
+    let addedCount = 0;
     for (const id of ids) {
       try {
         let programId = baseProgramId;
@@ -341,13 +356,18 @@ export class PlotPageOrchestrator {
           density,
           result,
         });
-        if (!added) {
+        if (added) {
+          addedCount += 1;
+        } else {
           hadFailures = true;
         }
       } catch (err) {
         hadFailures = true;
         console.warn("Failed to add one of the multi-selected series.", err);
       }
+    }
+    if (addedCount > 0) {
+      this.announceSeriesFeedback(`Added ${addedCount} series to the plot`);
     }
     if (hadFailures) {
       this.previewError = "Some selected series could not be added.";

@@ -16,6 +16,7 @@
     zoomRange,
     ZOOM_STEP_IN,
     ZOOM_STEP_OUT,
+    isRangeZoomed,
     buildExportLegend,
     type ExportLegendItem,
   } from "$lib/utils/plot-utils";
@@ -121,6 +122,10 @@
     zoomIn = $bindable<(() => void) | null>(null),
     // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
     zoomOut = $bindable<(() => void) | null>(null),
+    // True while the plot is zoomed in past its full data range; lets the parent
+    // disable "Reset zoom" when there is nothing to reset (#812).
+    // eslint-disable-next-line no-useless-assignment -- $bindable creates parent binding
+    isZoomed = $bindable(false),
   }: {
     series: PlotSeries[];
     preview: PlotSeries | null;
@@ -132,6 +137,7 @@
     resetZoom?: (() => void) | null | undefined;
     zoomIn?: (() => void) | null | undefined;
     zoomOut?: (() => void) | null | undefined;
+    isZoomed?: boolean | undefined;
   } = $props();
 
   let container = $state<HTMLDivElement | null>(null);
@@ -188,6 +194,35 @@
     );
   }
 
+  // Keep `isZoomed` in sync with the frame painter (#812). Every zoom path —
+  // box-drag, double-click reset, and the toolbar − / + / Reset — funnels
+  // through the frame painter's zoom()/unzoom(), so wrapping them (rather than
+  // polling) catches them all. Each (re)draw builds a fresh frame painter, so we
+  // re-wrap and re-read on every draw; a data/scale change redraws to the full
+  // range → not zoomed. The `currentFrame === fp` guard drops a stale async
+  // result from a frame painter that a newer draw has already superseded.
+  function trackZoomState(fp: JsrootFramePainter): void {
+    // A fresh (re)draw always renders the full range, so start unzoomed and let
+    // the wrapped zoom()/unzoom() drive the flag from the first interaction —
+    // more robust than measuring scale_* against a range JSROOT may round.
+    isZoomed = false;
+    const refresh = () => {
+      if (currentFrame === fp) isZoomed = isRangeZoomed(fp);
+    };
+    const origZoom = fp.zoom.bind(fp);
+    const origUnzoom = fp.unzoom.bind(fp);
+    fp.zoom = (...args: Parameters<JsrootFramePainter["zoom"]>) => {
+      const r = origZoom(...args);
+      Promise.resolve(r).then(refresh, refresh);
+      return r;
+    };
+    fp.unzoom = (kind?: string) => {
+      const r = origUnzoom(kind);
+      Promise.resolve(r).then(refresh, refresh);
+      return r;
+    };
+  }
+
   // Expose the imperative zoom controls to the parent toolbar. resetZoom calls
   // unzoom across all axes; JSROOT then redraws the pad, re-rendering the
   // full-range axes/titles (the title offsets and pad margins from #795/#801
@@ -237,6 +272,7 @@
           currentPainter?.cleanup?.();
           currentPainter = null;
           currentFrame = null;
+          isZoomed = false;
           el.innerHTML = "";
         });
       return;
@@ -258,6 +294,8 @@
         currentPainter = painter;
         restoreSettings = restore;
         currentFrame = painter.getFramePainter?.() ?? null;
+        if (currentFrame) trackZoomState(currentFrame);
+        else isZoomed = false;
         jsrootError = null;
         jsrootReady = true;
       })
@@ -278,6 +316,7 @@
         currentPainter?.cleanup?.();
         currentPainter = null;
         currentFrame = null;
+        isZoomed = false;
         restoreSettings?.();
         restoreSettings = null;
         try {

@@ -720,4 +720,102 @@ describe("JsrootPlot", () => {
     expect(yMin).toBeGreaterThanOrEqual(1);
     expect(yMax).toBeLessThanOrEqual(1000);
   });
+
+  it("keeps isZoomed in sync with the frame painter (#812)", async () => {
+    const JSROOT = await import("jsroot");
+    // A frame painter that starts at full range; zoom()/unzoom() mutate scale_*
+    // the way JSROOT does, so isRangeZoomed() flips as the view changes.
+    const framePainter = {
+      xmin: 1,
+      xmax: 100,
+      ymin: 1,
+      ymax: 1000,
+      scale_xmin: 1,
+      scale_xmax: 100,
+      scale_ymin: 1,
+      scale_ymax: 1000,
+      logx: 0,
+      logy: 0,
+      zoom: vi.fn(async (xmin: number, xmax: number, ymin: number, ymax: number) => {
+        framePainter.scale_xmin = xmin;
+        framePainter.scale_xmax = xmax;
+        framePainter.scale_ymin = ymin;
+        framePainter.scale_ymax = ymax;
+        return true;
+      }),
+      unzoom: vi.fn(async () => {
+        framePainter.scale_xmin = framePainter.xmin;
+        framePainter.scale_xmax = framePainter.xmax;
+        framePainter.scale_ymin = framePainter.ymin;
+        framePainter.scale_ymax = framePainter.ymax;
+        return true;
+      }),
+    };
+    vi.mocked(JSROOT.draw).mockImplementation(async () => ({
+      cleanup: vi.fn(),
+      getFramePainter: () => framePainter,
+    }));
+
+    let isZoomedVal: boolean = false;
+    let zoomInFn: (() => void) | null = null;
+    let resetZoomFn: (() => void) | null = null;
+    const propsBase = {
+      series: [makeSeries({})],
+      preview: null,
+      stpUnit: "keV/µm" as StpUnit,
+      xLog: false,
+      yLog: false,
+      axisRanges: { xMin: 1, xMax: 100, yMin: 1, yMax: 1000 },
+    };
+    const props = Object.defineProperties(propsBase, {
+      isZoomed: {
+        get() {
+          return isZoomedVal;
+        },
+        set(v: boolean) {
+          isZoomedVal = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+      zoomIn: {
+        get() {
+          return zoomInFn;
+        },
+        set(v: (() => void) | null) {
+          zoomInFn = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+      resetZoom: {
+        get() {
+          return resetZoomFn;
+        },
+        set(v: (() => void) | null) {
+          resetZoomFn = v;
+        },
+        enumerable: true,
+        configurable: true,
+      },
+    }) as typeof propsBase & {
+      isZoomed?: boolean;
+      zoomIn?: (() => void) | null;
+      resetZoom?: (() => void) | null;
+    };
+
+    render(JsrootPlot, { props });
+
+    await vi.waitFor(() => expect(JSROOT.draw).toHaveBeenCalled());
+    // Fresh draw sits at full range → nothing to reset.
+    await vi.waitFor(() => expect(isZoomedVal).toBe(false));
+
+    // Zooming in shrinks the view → Reset zoom becomes meaningful.
+    zoomInFn!();
+    await vi.waitFor(() => expect(isZoomedVal).toBe(true));
+
+    // Reset returns to the full range → zoomed flag clears again.
+    resetZoomFn!();
+    await vi.waitFor(() => expect(isZoomedVal).toBe(false));
+  });
 });

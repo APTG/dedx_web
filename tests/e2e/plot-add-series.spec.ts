@@ -27,6 +27,14 @@ test.describe("Plot — add-series flow", () => {
     await expect(page.getByTestId("plot-series-row-0")).toBeVisible();
   });
 
+  test("shows a confirmation toast after adding a series (#812) @regression", async ({ page }) => {
+    await expect(page.getByTestId("plot-series-row-0")).toHaveCount(0);
+    await page.getByTestId("plot-add-series").click();
+    const toast = page.getByTestId("plot-toast");
+    await expect(toast).toBeVisible();
+    await expect(toast).toContainText(/added/i);
+  });
+
   test("add 2 series with different particles and assert strip count", async ({ page }) => {
     // Add proton series
     await page.getByTestId("plot-add-series").click();

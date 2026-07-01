@@ -16,11 +16,14 @@
     onZoomOut,
     onResetZoom,
     getSvg,
+    canReset = true,
   }: {
     onZoomIn: () => void;
     onZoomOut: () => void;
     onResetZoom: () => void;
     getSvg: (() => Promise<string | null>) | null;
+    /** When false the plot is already at full range, so Reset zoom is disabled (#812). */
+    canReset?: boolean;
   } = $props();
 
   // ── Export image dropdown (relocated here from the controls bar) ──
@@ -97,7 +100,9 @@
     data-testid="plot-reset-zoom"
     aria-label="Reset zoom"
     onclick={onResetZoom}
-    class="ml-0.5 inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[#c2410c] px-3 text-sm font-medium text-[#c2410c] hover:bg-[#c2410c]/10 xs:ml-1 xs:flex-none xs:justify-start"
+    disabled={!canReset}
+    aria-disabled={!canReset}
+    class="ml-0.5 inline-flex h-9 min-w-0 flex-1 items-center justify-center gap-1.5 rounded-md border border-[#c2410c] px-3 text-sm font-medium text-[#c2410c] hover:bg-[#c2410c]/10 disabled:pointer-events-none disabled:border-border disabled:text-muted-foreground disabled:opacity-50 xs:ml-1 xs:flex-none xs:justify-start"
   >
     <RotateCcw class="h-4 w-4 shrink-0" aria-hidden="true" />
     Reset zoom

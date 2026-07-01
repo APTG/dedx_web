@@ -258,22 +258,29 @@
       bind:this={inputEl}
       bind:value={query}
       {placeholder}
-      class="flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+      class="search-no-native-clear flex-1 rounded-md border bg-background px-3 py-1.5 text-sm focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
       data-testid="picker-sheet-input"
       autocomplete="off"
       autocorrect="off"
       autocapitalize="off"
       spellcheck="false"
     />
-    <button
-      type="button"
-      class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-      aria-label="Clear search"
-      onclick={() => {
-        query = "";
-        inputEl?.focus();
-      }}>×</button
-    >
+    <!-- Clear button shows only when there is text to clear (#812): a persistent
+         "×" beside an empty field reads as a close affordance and is misleading.
+         The native search-clear glyph is suppressed (see <style>) so a filled
+         field never shows two ×'s. -->
+    {#if query.length > 0}
+      <button
+        type="button"
+        class="rounded-md p-1.5 text-muted-foreground hover:bg-accent hover:text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+        aria-label="Clear search"
+        data-testid="picker-sheet-clear"
+        onclick={() => {
+          query = "";
+          inputEl?.focus();
+        }}>×</button
+      >
+    {/if}
   </div>
 
   <!-- Results -->
@@ -445,3 +452,12 @@
     </div>
   {/if}
 </div>
+
+<style>
+  /* Hide WebKit/Blink's built-in search-clear "×" so the field never shows two
+     clear affordances alongside our own conditional Clear button (#812). */
+  .search-no-native-clear::-webkit-search-cancel-button {
+    -webkit-appearance: none;
+    appearance: none;
+  }
+</style>

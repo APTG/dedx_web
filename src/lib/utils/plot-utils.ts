@@ -31,6 +31,59 @@ export function zoomRange(min: number, max: number, isLog: boolean, factor: numb
 export const ZOOM_STEP_IN = 0.6;
 export const ZOOM_STEP_OUT = 1 / ZOOM_STEP_IN;
 
+/** The JSROOT frame-painter fields the zoom-state check reads. */
+export interface FrameZoomState {
+  /** Full data range. */
+  xmin: number;
+  xmax: number;
+  ymin: number;
+  ymax: number;
+  /** Currently displayed (possibly zoomed) range. */
+  scale_xmin: number;
+  scale_xmax: number;
+  scale_ymin: number;
+  scale_ymax: number;
+  /** Non-zero on a log axis. */
+  logx?: number;
+  logy?: number;
+}
+
+/**
+ * True when the displayed range is a strict sub-range of the full data range on
+ * either axis — i.e. the plot is zoomed in and "Reset zoom" is meaningful (#812).
+ * Comparison runs in log10 space for log axes so a zoom into the low decade of a
+ * wide log range (e.g. 0.001 → 0.01 with xmax = 10000) is still detected. A small
+ * relative tolerance absorbs the float noise JSROOT introduces on redraw; any
+ * non-finite field reads as "not zoomed" so a half-initialised frame is safe.
+ */
+export function isRangeZoomed(fp: FrameZoomState): boolean {
+  const axisZoomed = (
+    scaleMin: number,
+    scaleMax: number,
+    fullMin: number,
+    fullMax: number,
+    isLog: boolean,
+  ): boolean => {
+    let sMin = scaleMin;
+    let sMax = scaleMax;
+    let fMin = fullMin;
+    let fMax = fullMax;
+    if (isLog && sMin > 0 && sMax > 0 && fMin > 0 && fMax > 0) {
+      sMin = Math.log10(sMin);
+      sMax = Math.log10(sMax);
+      fMin = Math.log10(fMin);
+      fMax = Math.log10(fMax);
+    }
+    const span = Math.abs(fMax - fMin);
+    const tol = span > 0 ? span * 1e-4 : 1e-9;
+    return sMin - fMin > tol || fMax - sMax > tol;
+  };
+  return (
+    axisZoomed(fp.scale_xmin, fp.scale_xmax, fp.xmin, fp.xmax, (fp.logx ?? 0) !== 0) ||
+    axisZoomed(fp.scale_ymin, fp.scale_ymax, fp.ymin, fp.ymax, (fp.logy ?? 0) !== 0)
+  );
+}
+
 const ELECTRON_PARTICLE_ID = 1001;
 
 export const COLOR_PALETTE: readonly string[] = [

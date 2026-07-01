@@ -28,6 +28,25 @@ test.describe("Mobile picker — adaptive kit (issue #530 PR A)", () => {
     await expect(page.getByTestId("picker-sheet-input")).toBeVisible();
   });
 
+  test("search Clear button appears only when there is text (#812)", async ({ page }) => {
+    await page.getByTestId("picker-tab-particle").click();
+    await page.getByTestId("picker-particle-search").click();
+    await expect(page.getByTestId("picker-sheet")).toBeVisible();
+
+    // Empty field on open → no misleading "×" beside the search bar.
+    await expect(page.getByTestId("picker-sheet-clear")).toHaveCount(0);
+
+    // Typing reveals the clear button.
+    await page.getByTestId("picker-sheet-input").fill("carbon");
+    const clear = page.getByTestId("picker-sheet-clear");
+    await expect(clear).toBeVisible();
+
+    // Clicking it empties the field and the button hides itself again.
+    await clear.click();
+    await expect(page.getByTestId("picker-sheet-input")).toHaveValue("");
+    await expect(page.getByTestId("picker-sheet-clear")).toHaveCount(0);
+  });
+
   test("Back closes sheet without leaving the page", async ({ page }) => {
     await page.getByTestId("picker-tab-particle").click();
     await page.getByTestId("picker-particle-search").click();

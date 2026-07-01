@@ -102,6 +102,24 @@ test.describe("Plot toolbar & reset zoom (#794)", () => {
     await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).toBe(full);
   });
 
+  test("Reset zoom is disabled until the plot is zoomed (#812) @regression", async ({ page }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await waitForPlotReady(page);
+
+    const reset = page.getByTestId("plot-reset-zoom");
+    // A freshly drawn plot sits at full range, so there is nothing to reset.
+    await expect(reset).toBeDisabled();
+
+    // Zooming in gives Reset something to do → it becomes enabled.
+    await boxZoom(page);
+    await expect(reset).toBeEnabled();
+
+    // Resetting returns to full range → the button disables itself again.
+    await reset.click();
+    await expect(reset).toBeDisabled();
+  });
+
   test("− / + buttons step the zoom; Reset restores full range @regression", async ({ page }) => {
     test.setTimeout(60000);
     await page.goto("/plot");
