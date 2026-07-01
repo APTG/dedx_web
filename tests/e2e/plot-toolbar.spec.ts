@@ -120,6 +120,49 @@ test.describe("Plot toolbar & reset zoom (#794)", () => {
     await expect(reset).toBeDisabled();
   });
 
+  test("Zoom out is disabled until the plot is zoomed (#812) @regression", async ({ page }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await waitForPlotReady(page);
+
+    const zoomOut = page.getByTestId("plot-zoom-out");
+    // A freshly drawn plot sits at full range, so zooming out further is a no-op.
+    await expect(zoomOut).toBeDisabled();
+
+    // Zooming in gives Zoom out something to do → it becomes enabled.
+    await boxZoom(page);
+    await expect(zoomOut).toBeEnabled();
+
+    // Resetting returns to full range → Zoom out disables itself again, same as Reset.
+    await page.getByTestId("plot-reset-zoom").click();
+    await expect(zoomOut).toBeDisabled();
+  });
+
+  test("clicking Zoom out down to full range disables it and Reset alike (#812) @regression", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await waitForPlotReady(page);
+
+    const zoomOut = page.getByTestId("plot-zoom-out");
+    const reset = page.getByTestId("plot-reset-zoom");
+    const full = await axisTickSignature(page);
+
+    // Zoom in first so there is somewhere to zoom back out from.
+    await boxZoom(page);
+    await expect(zoomOut).toBeEnabled();
+
+    // Keep stepping out — each step is clamped to the full data range — until
+    // Zoom out disables itself, mirroring the max-zoom-out report in #812.
+    for (let i = 0; i < 10 && !(await zoomOut.isDisabled()); i++) {
+      await zoomOut.click();
+    }
+    await expect.poll(() => axisTickSignature(page), { timeout: 10000 }).toBe(full);
+    await expect(zoomOut).toBeDisabled();
+    await expect(reset).toBeDisabled();
+  });
+
   test("− / + buttons step the zoom; Reset restores full range @regression", async ({ page }) => {
     test.setTimeout(60000);
     await page.goto("/plot");

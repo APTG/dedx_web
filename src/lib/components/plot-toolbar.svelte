@@ -17,6 +17,7 @@
     onResetZoom,
     getSvg,
     canReset = true,
+    canZoomOut = true,
   }: {
     onZoomIn: () => void;
     onZoomOut: () => void;
@@ -24,6 +25,8 @@
     getSvg: (() => Promise<string | null>) | null;
     /** When false the plot is already at full range, so Reset zoom is disabled (#812). */
     canReset?: boolean;
+    /** When false the plot is already at full range, so Zoom out would be a no-op (#812). */
+    canZoomOut?: boolean;
   } = $props();
 
   // ── Export image dropdown (relocated here from the controls bar) ──
@@ -77,7 +80,9 @@
     data-testid="plot-zoom-out"
     aria-label="Zoom out"
     onclick={onZoomOut}
-    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background hover:bg-accent"
+    disabled={!canZoomOut}
+    aria-disabled={!canZoomOut}
+    class="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-md border bg-background hover:bg-accent disabled:pointer-events-none disabled:opacity-50"
   >
     <ZoomOut class="h-4 w-4" aria-hidden="true" />
   </button>

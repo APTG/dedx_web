@@ -688,17 +688,20 @@ replaced by a small **app-level toolbar mounted directly above the canvas**
 - **Reset zoom** is always visible with a coral accent — the discoverable
   primary path back to full range. Unzoom triggers a JSROOT pad redraw, so
   the axis titles/margins (#795/#801) re-apply automatically.
-- **Reset zoom is disabled while the plot is already at full range (#812)** —
-  there is nothing to reset. `JsrootPlot` exposes a bindable `isZoomed` flag,
-  kept in sync by wrapping the frame painter's `zoom()` / `unzoom()` (so it
-  reflects box-drag, double-click, and the toolbar `−` / `+` / Reset alike);
-  the pure `isRangeZoomed()` helper (`plot-utils.ts`) decides it by comparing
-  the displayed range to the full data range (in log space for log axes). Any
-  data/scale change redraws to full range, which clears the flag.
+- **Reset zoom and Zoom out are disabled while the plot is already at full
+  range (#812)** — there is nothing to reset, and stepping out further would
+  be a clamped no-op. `JsrootPlot` exposes a bindable `isZoomed` flag, kept in
+  sync by wrapping the frame painter's `zoom()` / `unzoom()` (so it reflects
+  box-drag, double-click, and the toolbar `−` / `+` / Reset alike); the pure
+  `isRangeZoomed()` helper (`plot-utils.ts`) decides it by comparing the
+  displayed range to the full data range (in log space for log axes). Any
+  data/scale change redraws to full range, which clears the flag, disabling
+  both `canReset` and `canZoomOut` on `plot-toolbar.svelte` together.
 - The `−` / `+` steps scale the visible range toward its centre via the
   log-aware `zoomRange()` helper (`plot-utils.ts`); the result is clamped to
   the full data range so zoom-out never expands past it (and zoom-out at full
-  range is a no-op).
+  range is a no-op — which is why the button disables itself there instead of
+  sitting active but inert).
 - The native chrome is suppressed via `settings.ToolBar = false` and
   `settings.ContextMenu = false`. Both are global JSROOT settings, snapshotted
   and restored on teardown (including after a failed draw) so the change never

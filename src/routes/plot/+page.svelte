@@ -92,7 +92,7 @@
   let zoomIn: (() => void) | null = $state(null);
   let zoomOut: (() => void) | null = $state(null);
   // Tracks whether the plot is currently zoomed in, so the toolbar can disable
-  // Reset zoom when there is nothing to reset (#812).
+  // Reset zoom and Zoom out when there is nothing to reset/zoom out to (#812).
   let plotZoomed = $state(false);
 </script>
 
@@ -310,6 +310,7 @@
           onZoomOut={() => zoomOut?.()}
           onResetZoom={() => resetZoom?.()}
           canReset={plotZoomed}
+          canZoomOut={plotZoomed}
           {getSvg}
         />
 
