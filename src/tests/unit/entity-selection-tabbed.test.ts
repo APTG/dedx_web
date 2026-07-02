@@ -133,6 +133,10 @@ describe("EntitySelection", () => {
 
   beforeEach(() => {
     cleanup();
+    // Default to Basic mode; program-tab tests opt into Advanced explicitly.
+    // Resetting here prevents a leaked `true` from an earlier test that threw
+    // before its own reset (#816).
+    isAdvancedMode.value = false;
     const service = new MockLibdedxService();
     const matrix = buildCompatibilityMatrix(service as any);
     state = createEntitySelectionState(matrix);
@@ -152,7 +156,8 @@ describe("EntitySelection", () => {
     expect(screen.getByTestId("picker-tab-material")).toHaveTextContent(/Water/);
   });
 
-  test("renders three tabs in order: Particle, Material, Program", () => {
+  test("Advanced mode renders three tabs in order: Particle, Material, Program", () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
 
     const particleTab = screen.getByTestId("picker-tab-particle");
@@ -162,6 +167,36 @@ describe("EntitySelection", () => {
     expect(particleTab).toHaveAttribute("aria-selected", "true");
     expect(materialTab).toHaveAttribute("aria-selected", "false");
     expect(programTab).toHaveAttribute("aria-selected", "false");
+  });
+
+  test("Basic mode hides the Program tab (auto-selected behind the scenes, #816)", () => {
+    render(EntitySelection, { props: { selectionState: state } });
+
+    // Only Particle + Material tabs render; Program is gone in Basic mode.
+    expect(screen.getByTestId("picker-tab-particle")).toBeInTheDocument();
+    expect(screen.getByTestId("picker-tab-material")).toBeInTheDocument();
+    expect(screen.queryByTestId("picker-tab-program")).not.toBeInTheDocument();
+
+    // The program is still resolved behind the scenes (Auto-select default).
+    expect(state.selectedProgram.id).toBe(-1);
+  });
+
+  test("switching Advanced → Basic while Program tab active retargets to a visible tab", async () => {
+    isAdvancedMode.value = true;
+    render(EntitySelection, { props: { selectionState: state } });
+
+    state.setActiveTarget("program");
+    await tick();
+    expect(state.activeTarget).toBe("program");
+
+    // Drop to Basic mode: the now-hidden Program tab must not stay active.
+    isAdvancedMode.value = true; // ensure known start
+    await tick();
+    isAdvancedMode.value = false;
+    await tick();
+
+    expect(state.activeTarget).not.toBe("program");
+    expect(screen.queryByTestId("picker-tab-program")).not.toBeInTheDocument();
   });
 
   test("only the active-target tab renders the coral squiggle underline", () => {
@@ -185,6 +220,7 @@ describe("EntitySelection", () => {
   });
 
   test("clicking a tab activates it and sets activeTarget on state", async () => {
+    isAdvancedMode.value = true; // Program tab is Advanced-only (#816)
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -196,6 +232,7 @@ describe("EntitySelection", () => {
   });
 
   test("picker-level search row is persistent and changes placeholder per active tab", async () => {
+    isAdvancedMode.value = true; // needs the Program tab for the program placeholder (#816)
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -372,6 +409,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search supports `tag=fn` operator", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -384,6 +422,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search supports `tag=tab` operator", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -395,6 +434,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search `tag=data` is an alias for `tag=tab`", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -406,6 +446,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search supports `tag=ext` for external programs", async () => {
+    isAdvancedMode.value = true;
     state.setExternalContext(
       buildExternalCompatibilityContext(
         [makeExternalEntityStore()],
@@ -424,6 +465,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search supports `v=` version operator", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -436,6 +478,7 @@ describe("EntitySelection", () => {
   });
 
   test("program search `v=` with no match hides all programs", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -512,6 +555,7 @@ describe("EntitySelection", () => {
   });
 
   test("program tab renders the Auto-select hero card and a TAB/FN/EXT legend", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -525,6 +569,7 @@ describe("EntitySelection", () => {
   });
 
   test("program rows carry inline TAB tags for tabulated programs", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -535,6 +580,7 @@ describe("EntitySelection", () => {
   });
 
   test("program rows carry inline FN tags for analytical programs", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 
@@ -545,6 +591,7 @@ describe("EntitySelection", () => {
   });
 
   test("selecting a program updates state without auto-advance (Program is last)", async () => {
+    isAdvancedMode.value = true;
     render(EntitySelection, { props: { selectionState: state } });
     const user = userEvent.setup();
 

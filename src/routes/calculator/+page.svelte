@@ -10,6 +10,7 @@
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
+  import ProgramAnnotation from "$lib/components/program-annotation.svelte";
   import CompareAcrossStrip from "$lib/components/results/compare-across-strip.svelte";
   import TableMulti from "$lib/components/results/table-multi.svelte";
   import QuantityToggle from "$lib/components/results/quantity-toggle.svelte";
@@ -83,18 +84,17 @@
     });
   });
 
-  let programLabel = $derived.by(() => {
-    if (!appInit.entityState) return "";
+  // "Calculated with <program> (auto-selected)" annotation (#816). Basic mode
+  // hides the program selector, so this names the auto-selected program; in
+  // Advanced mode it reflects the user's explicit choice (no "auto-selected").
+  let programAnnotation = $derived.by<{ name: string; autoSelected: boolean } | null>(() => {
+    if (!appInit.entityState) return null;
     const program = appInit.entityState.selectedProgram;
     if (program.id === -1) {
       const resolvedName = (program as AutoSelectProgram).resolvedProgram?.name;
-      if (resolvedName) {
-        return `Results calculated using ${resolvedName} (auto-selected)`;
-      }
-    } else if (program.id !== -1) {
-      return `Results calculated using ${program.name}`;
+      return resolvedName ? { name: resolvedName, autoSelected: true } : null;
     }
-    return "";
+    return { name: program.name, autoSelected: false };
   });
 </script>
 
@@ -431,20 +431,21 @@
         </div>
       {/if}
 
-      {#if es.isComplete && energyRangeLabel}
-        <p class="text-xs text-muted-foreground">
-          Valid range: {energyRangeLabel}
-          ({es.selectedProgram.id === -1
-            ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-            : es.selectedProgram.name},
-          {es.selectedParticle?.name ?? ""})
-        </p>
-      {/if}
-
-      {#if programLabel}
-        <p class="text-xs text-muted-foreground border-t pt-2">
-          {programLabel}
-        </p>
+      <!-- Single compact row (#816 follow-up): the program name and the valid
+           energy range used to sit on two separate lines and repeated the
+           program name. They are merged here — "Calculated with <program>
+           (auto-selected) · valid range … for <particle>" — to save vertical
+           space. The valid range depends on program + particle, so the particle
+           is kept; the program is named once by the annotation itself. -->
+      {#if programAnnotation}
+        <ProgramAnnotation
+          programName={programAnnotation.name}
+          autoSelected={programAnnotation.autoSelected}
+          detail={es.isComplete && energyRangeLabel
+            ? `valid range ${energyRangeLabel} for ${es.selectedParticle?.name ?? ""}`
+            : ""}
+          class="border-t pt-2"
+        />
       {/if}
     </div>
   {/if}

@@ -21,6 +21,13 @@
      * focused via keyboard.
      */
     activeTarget?: PickerTab;
+    /**
+     * Which tabs to render, in order. Basic mode drops the Program tab
+     * (auto-selected behind the scenes — see issue #816), so the host passes a
+     * two-tab list; Advanced mode passes all three. Keyboard cycling is scoped
+     * to this list too.
+     */
+    visibleTabs?: readonly PickerTab[];
     class?: string;
   }
 
@@ -30,6 +37,7 @@
     onActivate,
     panelOpen = true,
     activeTarget = activeTab,
+    visibleTabs = PICKER_TAB_ORDER,
     class: className,
   }: Props = $props();
 
@@ -63,10 +71,9 @@
   function handleKeyDown(event: KeyboardEvent, current: PickerTab): void {
     if (event.key !== "ArrowLeft" && event.key !== "ArrowRight") return;
     event.preventDefault();
-    const idx = PICKER_TAB_ORDER.indexOf(current);
+    const idx = visibleTabs.indexOf(current);
     const delta = event.key === "ArrowRight" ? 1 : -1;
-    const next =
-      PICKER_TAB_ORDER[(idx + delta + PICKER_TAB_ORDER.length) % PICKER_TAB_ORDER.length];
+    const next = visibleTabs[(idx + delta + visibleTabs.length) % visibleTabs.length];
     if (next) onActivate(next);
   }
 
@@ -77,11 +84,13 @@
     value: string;
     empty: boolean;
   };
-  const tabs = $derived<readonly Spec[]>([
+  const allTabs = $derived<readonly Spec[]>([
     { id: "particle", numeral: "①", title: "Particle", value: particleValue, empty: particleEmpty },
     { id: "material", numeral: "②", title: "Material", value: materialValue, empty: materialEmpty },
     { id: "program", numeral: "③", title: "Program", value: programValue, empty: programEmpty },
   ]);
+  // Render only the host-requested tabs, preserving the ① ② ③ order.
+  const tabs = $derived<readonly Spec[]>(allTabs.filter((t) => visibleTabs.includes(t.id)));
 </script>
 
 <div

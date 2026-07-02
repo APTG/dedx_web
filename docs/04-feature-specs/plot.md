@@ -436,6 +436,33 @@ cause the first series' label to change from "Proton in Water" to
 
 ---
 
+## "Calculated with …" annotation (Basic mode, #816)
+
+Basic mode hides the Program tab (the picker offers only Particle and
+Material — see [`entity-selection.md`](entity-selection.md) § Basic vs
+Advanced mode). Because the program is auto-selected behind the scenes, a
+small "Calculated with **PSTAR**" annotation renders below the series strip so
+the user still knows which data source produced the curves.
+
+- Rendered by the shared `program-annotation.svelte` component.
+- Shows the **distinct** program names across the committed series, joined by
+  ", " (e.g. "Calculated with **PSTAR**, **ASTAR**" when a proton and an alpha
+  series resolve to different programs). When programs differ, the smart series
+  labels above already carry the program name per curve.
+- **No "(auto-selected)" qualifier here — unlike the Calculator.** The plot
+  annotation summarises a _committed set_ of series, and that set can mix
+  auto-selected curves with explicitly-chosen ones: a series added in Advanced
+  mode, or restored from a shared `series=` URL, keeps whatever program it was
+  built with, even while the page is in Basic mode. Claiming they were all
+  auto-selected would therefore be inaccurate (flagged in the PR #821 review),
+  so the plot just names the program(s). The qualifier stays on the Calculator,
+  where it tracks the single live selection and is always correct.
+- Only shown in **Basic mode** and only when at least one series exists.
+  Advanced mode is unchanged: it has no page-level annotation (the program is
+  a user choice, visible in the picker and, when it varies, in the legend).
+
+---
+
 ## Color Palette
 
 Series colors are assigned sequentially from a fixed palette. The palette

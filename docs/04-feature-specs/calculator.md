@@ -461,15 +461,20 @@ Each row in the unified table is validated independently:
 
 ### Energy Range Display
 
-Below the unified table, show the valid energy range for the current selection:
+The valid energy range for the current selection is shown **inline with the
+"Calculated with …" annotation** as a single compact row below the results
+(see § Resolved Program Label), instead of on its own line:
 
 ```
-Valid range: 0.001 – 10000 MeV/nucl (PSTAR, Proton)
+Calculated with PSTAR (auto-selected) · valid range 0.001 – 10000 MeV/nucl for proton
 ```
 
-This updates when the program, particle, or energy unit changes. The range
-values are displayed in the user's selected energy unit (converted from
-the C API's MeV/nucl).
+Merging the two lines avoids repeating the program name — it is already named
+by the annotation — and reclaims a row of vertical space (#816 follow-up). The
+range is program- and particle-specific, so the particle is named ("for
+proton") while the program is named once, by the annotation. It updates when
+the program, particle, or energy unit changes; the values are displayed in the
+user's selected energy unit (converted from the C API's MeV/nucl).
 
 ### Handling Entity Selection Changes
 
@@ -551,14 +556,29 @@ for column layout.
 
 ### Resolved Program Label
 
-When "Auto-select" is the active program, display the resolved concrete
-program below the result table header or inline with the table:
+A single compact "Calculated with …" row below the results names the program
+that produced the numbers and — inline, after a "·" separator — the valid
+energy range for the current program + particle:
 
 ```
-Results calculated using ICRU 90 (auto-selected)
+Calculated with ICRU 90 (auto-selected) · valid range 0.001 – 10000 MeV/nucl for proton
 ```
 
 This ensures the user always knows the data source, per project vision §4.3.
+It is rendered by the shared `program-annotation.svelte` component (the program
+name is bold). The "(auto-selected)" qualifier is driven by the **live
+selection state**, so it stays accurate in both modes: it is shown whenever the
+active program is Auto-select and dropped when the user has explicitly chosen a
+program in Advanced mode.
+
+**Basic mode has no program selector and always auto-selects (issue #816).**
+The Program tab is Advanced-only; in Basic mode the program is auto-selected
+behind the scenes and this annotation is the only place its identity appears.
+Because Basic mode always auto-selects, a program the user pinned in Advanced
+mode is **discarded when they switch back to Basic** — a Basic → Advanced →
+Basic round-trip returns to Auto-select rather than silently keeping a hidden
+explicit choice the user can no longer see. See
+[`entity-selection.md`](entity-selection.md) § Basic vs Advanced mode.
 
 ### Export
 
@@ -707,7 +727,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 │  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV             │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
-│  Results calculated using ICRU 90 (auto-selected)                          │
+│  [Advanced-mode wireframe; "Calculated with ..." row shown below the table]│
 │  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────────┐  │
 │  │ Energy (MeV) │→ MeV/nucl│ Unit │Stp Power (keV/µm)│ CSDA Range      │  │
 │  ├──────────────┼──────────┼──────┼──────────────────┼──────────────────┤  │
@@ -716,7 +736,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 │  │ 500          │ 500      │ MeV  │ 13.92            │ 116.1 cm        │  │
 │  │ ░░░░░░░░░░░░ │          │      │                  │                  │  │
 │  └──────────────┴──────────┴──────┴──────────────────┴──────────────────┘  │
-│  Valid range: 0.001–10000 MeV                                              │
+│  Calculated with ICRU 90 (auto-selected) · valid range 0.001–10000 MeV     │
 └────────────────────────────────────────────────────────────────────────────┘
 ```
 
@@ -896,7 +916,7 @@ entitySelection changes
 
 - [ ] On first load (no URL params), the page shows: Proton / Water (liquid) / Auto-select / 100 MeV.
 - [ ] A result row is visible immediately without user interaction, with stopping power in keV/µm and CSDA range in auto-scaled length.
-- [ ] The resolved program name is displayed (e.g., "ICRU 90 (auto-selected)").
+- [ ] The resolved program name and valid range share one row (e.g., "Calculated with ICRU 90 (auto-selected) · valid range 0.001 – 10000 MeV/nucl for proton").
 - [ ] The material phase badge shows "liquid" for Water.
 - [ ] An empty row appears below the pre-filled row for additional input.
 

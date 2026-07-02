@@ -91,7 +91,8 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
     // ICRU49 available in the program panel.  Selecting PSTAR previously caused
     // each_key_duplicate because programItems pushed state.selectedProgram
     // (id=2) as the first entry AND PSTAR also appeared in availablePrograms.
-    await page.goto("/plot");
+    // The program selector is Advanced-only now (#816).
+    await page.goto("/plot?mode=advanced");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
       timeout: WASM_TIMEOUT,
     });
@@ -118,7 +119,8 @@ test.describe("Plot page — program selection (each_key_duplicate regression)",
   test("each program appears exactly once in the panel after switching programs", async ({
     page,
   }) => {
-    await page.goto("/plot");
+    // The program selector is Advanced-only now (#816).
+    await page.goto("/plot?mode=advanced");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
       timeout: WASM_TIMEOUT,
     });
@@ -147,6 +149,61 @@ test.describe("Plot page — Advanced Options panel gating (AC-1)", () => {
     // Advanced Options accordion should NOT be present in Basic mode
     const panel = page.locator('button:has-text("Advanced Options")');
     await expect(panel).toHaveCount(0);
+  });
+});
+
+test.describe("Plot page — 'Calculated with …' annotation (#816)", () => {
+  test("annotation appears in Basic mode after adding a series and names the program", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
+
+    // No series yet → no annotation.
+    await expect(page.getByTestId("program-annotation")).toHaveCount(0);
+
+    // Wait for the live preview (needs a WASM calc) before committing — the
+    // Add Series button is a no-op until the preview matches the selection.
+    await expect
+      .poll(async () => (await page.locator('[data-testid="preview-series"]').count()) > 0, {
+        timeout: 15000,
+      })
+      .toBe(true);
+
+    // Default selection (proton + Water) is complete — commit it as a series.
+    await page.getByTestId("plot-add-series").click();
+
+    const annotation = page.getByTestId("program-annotation");
+    await expect(annotation).toBeVisible({ timeout: 15000 });
+    await expect(annotation).toContainText(/Calculated with/i);
+    // The plot annotation names the program(s) behind the committed series but
+    // does NOT append "(auto-selected)": a committed set can mix auto-selected
+    // and explicitly-chosen curves, so the qualifier would not be reliably
+    // accurate here (PR #821 review). It is the Calculator's job to show it.
+    await expect(annotation).not.toContainText(/auto-selected/i);
+  });
+
+  test("annotation is absent in Advanced mode (unchanged, series carry program in legend)", async ({
+    page,
+  }) => {
+    test.setTimeout(60000);
+    await page.goto("/plot?mode=advanced");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
+
+    await expect
+      .poll(async () => (await page.locator('[data-testid="preview-series"]').count()) > 0, {
+        timeout: 15000,
+      })
+      .toBe(true);
+
+    await page.getByTestId("plot-add-series").click();
+    // Advanced mode is unchanged — no page-level annotation.
+    await expect(page.getByTestId("program-annotation")).toHaveCount(0);
   });
 });
 

@@ -82,6 +82,9 @@ test.describe("Mobile picker — adaptive kit (issue #530 PR A)", () => {
   });
 
   test("Program tab with ≤10 programs has no search field visible", async ({ page }) => {
+    // The Program tab is Advanced-only now (#816).
+    await page.goto("/calculator?mode=advanced");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByTestId("picker-tab-program").click();
     // On mobile with tiny bucket: search row exists but Program tab shows inline list, not search.
     // The program items should be directly visible without needing to tap search.

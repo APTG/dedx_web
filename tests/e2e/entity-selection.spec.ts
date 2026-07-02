@@ -7,12 +7,15 @@ test.describe("Calculator page — entity selection (tabbed picker)", () => {
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
-  test("tab bar shows proton, Water, Auto by default (no recipe bar)", async ({ page }) => {
+  test("tab bar shows proton, Water by default; no Program tab in Basic (no recipe bar)", async ({
+    page,
+  }) => {
     // Recipe bar removed in the entity-selector rework — selections show inline in tabs.
     await expect(page.getByTestId("picker-recipe-bar")).toHaveCount(0);
     await expect(page.getByTestId("picker-tab-particle")).toContainText(/proton/i);
     await expect(page.getByTestId("picker-tab-material")).toContainText(/water/i);
-    await expect(page.getByTestId("picker-tab-program")).toContainText(/auto/i);
+    // Program tab is Advanced-only now — auto-selected behind the scenes (#816).
+    await expect(page.getByTestId("picker-tab-program")).toHaveCount(0);
   });
 
   test("typing carbon in the particle search filters the list and shows Carbon (C, Z=6)", async ({
@@ -29,6 +32,10 @@ test.describe("Calculator page — entity selection (tabbed picker)", () => {
   test("selecting Carbon removes incompatible programs (PSTAR proton-only disappears)", async ({
     page,
   }) => {
+    // The program list lives in the Advanced-mode picker now (#816).
+    await page.goto("/calculator?mode=advanced");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
+
     // Open particle tab and select Carbon
     await page.getByTestId("picker-tab-particle").click();
     await page.getByTestId("picker-particle-search").fill("carbon");
@@ -75,6 +82,9 @@ test.describe("Calculator page — entity selection (tabbed picker)", () => {
   test("DEDX_ICRU internal selector (ID 9) does not appear in the program tab", async ({
     page,
   }) => {
+    // The program tab is Advanced-only now (#816).
+    await page.goto("/calculator?mode=advanced");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
     await page.getByTestId("picker-tab-program").click();
     // ICRU (ID 9) is excluded via EXCLUDED_FROM_UI set.
     await expect(page.getByTestId("picker-program-item-9")).toHaveCount(0);
