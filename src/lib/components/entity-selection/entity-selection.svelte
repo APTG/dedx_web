@@ -51,6 +51,15 @@
     onLoadExternal,
   }: Props = $props();
 
+  // Basic mode hides the Program tab entirely — the program is auto-selected
+  // behind the scenes and surfaced only as a "Calculated with …" annotation
+  // near the results (issue #816). Advanced mode keeps the full three-tab
+  // picker. Tab rendering, keyboard cycling, and next-empty-tab advance all
+  // scope to this list.
+  const visibleTabs = $derived<readonly PickerTab[]>(
+    isAdvancedMode.value ? PICKER_TAB_ORDER : PICKER_TAB_ORDER.filter((t) => t !== "program"),
+  );
+
   // Initial expand/collapse rule (spec § Active target + expand/collapse, rule B):
   // - Calculator (collapsible=true): expanded = !isComplete on first mount.
   // - Plot (collapsible=false): expanded = true always.
@@ -65,15 +74,27 @@
     }
   });
 
+  // If the active tab is no longer visible — e.g. the user switches
+  // Advanced → Basic while the Program tab is active — retarget to the first
+  // visible tab so the search row and panel keep pointing at a real tab (#816).
+  $effect(() => {
+    if (!visibleTabs.includes(selectionState.activeTarget as PickerTab)) {
+      selectionState.setActiveTarget(visibleTabs[0] ?? "particle");
+    }
+  });
+
   function activateTab(tab: PickerTab): void {
     selectionState.setActiveTarget(tab);
     selectionState.setExpanded(true);
   }
 
   function nextEmptyTab(after: PickerTab): PickerTab | null {
-    const startIdx = PICKER_TAB_ORDER.indexOf(after) + 1;
-    for (let i = startIdx; i < PICKER_TAB_ORDER.length; i++) {
-      const tab = PICKER_TAB_ORDER[i]!;
+    // Scope the advance to the currently visible tabs — in Basic mode the
+    // Program tab is absent, so selection never auto-advances onto it (#816).
+    const order = visibleTabs;
+    const startIdx = order.indexOf(after) + 1;
+    for (let i = startIdx; i < order.length; i++) {
+      const tab = order[i]!;
       if (tab === "material" && !selectionState.selectedMaterial) return tab;
       if (tab === "program" && selectionState.selectedProgram.id === -1) {
         const auto = selectionState.selectedProgram;
@@ -81,8 +102,8 @@
         if (!hasResolved) return tab;
       }
     }
-    for (let i = 0; i <= PICKER_TAB_ORDER.indexOf(after); i++) {
-      const tab = PICKER_TAB_ORDER[i]!;
+    for (let i = 0; i <= order.indexOf(after); i++) {
+      const tab = order[i]!;
       if (tab === "particle" && !selectionState.selectedParticle) return tab;
       if (tab === "material" && !selectionState.selectedMaterial) return tab;
     }
@@ -167,10 +188,9 @@
       const inPicker = pickerRoot?.contains(active);
       if (active === null || active === document.body || inPicker) {
         event.preventDefault();
-        const idx = PICKER_TAB_ORDER.indexOf(activeTab);
+        const idx = visibleTabs.indexOf(activeTab);
         const delta = event.key === "ArrowRight" ? 1 : -1;
-        const next =
-          PICKER_TAB_ORDER[(idx + delta + PICKER_TAB_ORDER.length) % PICKER_TAB_ORDER.length];
+        const next = visibleTabs[(idx + delta + visibleTabs.length) % visibleTabs.length];
         if (next) activateTab(next);
       }
     }
@@ -289,6 +309,7 @@
     activeTarget={activeTab}
     {selectionState}
     {panelOpen}
+    {visibleTabs}
     onActivate={(tab) => activateTab(tab)}
   />
 

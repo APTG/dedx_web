@@ -15,7 +15,9 @@ test.describe("Tab bar — ArrowLeft / ArrowRight cycling @firefox", () => {
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/calculator");
+    // Three-tab cycling is an Advanced-mode behaviour now — Basic mode drops
+    // the Program tab (#816). Basic-mode two-tab cycling is covered separately.
+    await page.goto("/calculator?mode=advanced");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
       timeout: WASM_TIMEOUT,
     });
@@ -114,7 +116,9 @@ test.describe("Entity picker — global ArrowLeft/ArrowRight tab switching", () 
   test.use({ viewport: { width: 1280, height: 800 } });
 
   test.beforeEach(async ({ page }) => {
-    await page.goto("/calculator");
+    // Three-tab cycling is an Advanced-mode behaviour now — Basic mode drops
+    // the Program tab (#816). Basic-mode two-tab cycling is covered separately.
+    await page.goto("/calculator?mode=advanced");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
       timeout: WASM_TIMEOUT,
     });
@@ -166,5 +170,45 @@ test.describe("Entity picker — global ArrowLeft/ArrowRight tab switching", () 
     await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
     // Only one tab may have aria-selected=true.
     await expect(page.locator('[data-testid^="picker-tab-"][aria-selected="true"]')).toHaveCount(1);
+  });
+});
+
+// ── Basic mode: two-tab cycling, Program tab absent (#816) ────────────────────
+//
+// Basic mode hides the Program tab (auto-selected behind the scenes), so
+// keyboard cycling wraps between Particle and Material only.
+
+test.describe("Tab bar — Basic mode cycling (no Program tab) @firefox", () => {
+  test.use({ viewport: { width: 1280, height: 800 } });
+
+  test.beforeEach(async ({ page }) => {
+    await page.goto("/calculator");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
+  });
+
+  test("Program tab is absent in Basic mode", async ({ page }) => {
+    await expect(page.getByTestId("picker-tab-particle")).toBeVisible();
+    await expect(page.getByTestId("picker-tab-material")).toBeVisible();
+    await expect(page.getByTestId("picker-tab-program")).toHaveCount(0);
+  });
+
+  test("ArrowRight on Particle activates Material; ArrowRight again wraps to Particle", async ({
+    page,
+  }) => {
+    await page.getByTestId("picker-tab-particle").focus();
+    await page.keyboard.press("ArrowRight");
+    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
+
+    await page.getByTestId("picker-tab-material").focus();
+    await page.keyboard.press("ArrowRight"); // wraps back to Particle (2-tab)
+    await expect(page.getByTestId("picker-tab-particle")).toHaveAttribute("aria-selected", "true");
+  });
+
+  test("ArrowLeft on Particle wraps to Material (2-tab)", async ({ page }) => {
+    await page.getByTestId("picker-tab-particle").focus();
+    await page.keyboard.press("ArrowLeft");
+    await expect(page.getByTestId("picker-tab-material")).toHaveAttribute("aria-selected", "true");
   });
 });

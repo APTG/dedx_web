@@ -555,10 +555,18 @@ When "Auto-select" is the active program, display the resolved concrete
 program below the result table header or inline with the table:
 
 ```
-Results calculated using ICRU 90 (auto-selected)
+Calculated with ICRU 90 (auto-selected)
 ```
 
 This ensures the user always knows the data source, per project vision §4.3.
+It is rendered by the shared `program-annotation.svelte` component (the program
+name is bold; the "(auto-selected)" qualifier is dropped when the user has
+explicitly chosen a program in Advanced mode).
+
+**Basic mode has no program selector (issue #816).** The Program tab is
+Advanced-only; in Basic mode the program is auto-selected behind the scenes and
+this annotation is the only place its identity appears. See
+[`entity-selection.md`](entity-selection.md) § Basic vs Advanced mode.
 
 ### Export
 
@@ -707,7 +715,7 @@ Centered content column, max-width ~720px. Layout as shown in the
 │  │  Program: [Auto-select → ICRU 90 ▾]   Energy: (•) MeV             │  │
 │  └──────────────────────────────────────────────────────────────────────┘  │
 │                                                                            │
-│  Results calculated using ICRU 90 (auto-selected)                          │
+│  Calculated with ICRU 90 (auto-selected)   [Advanced-mode wireframe]       │
 │  ┌──────────────┬──────────┬──────┬──────────────────┬──────────────────┐  │
 │  │ Energy (MeV) │→ MeV/nucl│ Unit │Stp Power (keV/µm)│ CSDA Range      │  │
 │  ├──────────────┼──────────┼──────┼──────────────────┼──────────────────┤  │
@@ -896,7 +904,7 @@ entitySelection changes
 
 - [ ] On first load (no URL params), the page shows: Proton / Water (liquid) / Auto-select / 100 MeV.
 - [ ] A result row is visible immediately without user interaction, with stopping power in keV/µm and CSDA range in auto-scaled length.
-- [ ] The resolved program name is displayed (e.g., "ICRU 90 (auto-selected)").
+- [ ] The resolved program name is displayed (e.g., "Calculated with ICRU 90 (auto-selected)").
 - [ ] The material phase badge shows "liquid" for Water.
 - [ ] An empty row appears below the pre-filled row for additional input.
 

@@ -407,10 +407,21 @@ lists what Advanced unlocks inside the picker.
 | Particle tab — periodic-grid scan view (Z layout)     | —     | ✅             |
 | Material tab — Elements + Compounds columns           | ✅    | ✅             |
 | Material tab — **Custom** column + editor entry point | —     | ✅             |
-| Program tab — single-program selection                | ✅    | —              |
+| Program tab — shown at all                            | — ¹   | ✅             |
+| Program tab — single-program selection                | —     | ✅             |
 | Program tab — multi-program (for plot comparison)     | —     | ✅ (always on) |
 | Compatibility overlay (`⊞ explore compat` link)       | —     | ✅             |
 | Advanced filter syntax in search (`z=6`, `v=2013`)    | —     | ✅             |
+
+> ¹ **Program tab removed from Basic mode (issue #816).** Basic mode shows only
+> the Particle and Material tabs (`① ②`). The program is auto-selected behind
+> the scenes using the existing default logic (unchanged); its identity is
+> surfaced as a small "Calculated with **PSTAR** (auto-selected)" annotation
+> near the results on both the Calculator and Plot pages, rather than as a
+> control the user must operate. Keyboard tab-cycling, next-empty-tab advance,
+> and the mobile search sheet all scope to the two visible tabs in Basic mode.
+> Advanced mode keeps the full three-tab picker unchanged. Switching
+> Advanced → Basic while the Program tab is active retargets to a visible tab.
 
 Mode persistence:
 
@@ -479,6 +490,11 @@ Search supports name, ID, and advanced density operator syntax:
 External-only materials without a declared density are excluded by any `ρ` operator.
 
 ### Program tab
+
+> **Advanced-only (issue #816).** The Program tab renders only in Advanced
+> mode. In Basic mode it is hidden entirely — the program is auto-selected
+> behind the scenes and shown as a "Calculated with … (auto-selected)"
+> annotation near the results. Everything below describes the Advanced-mode tab.
 
 No section headers — each row carries its own inline tag:
 
@@ -574,6 +590,9 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
 
 #### Program
 
+- [x] Basic mode hides the Program tab entirely; the program is auto-selected
+      and shown as a "Calculated with … (auto-selected)" annotation near the
+      results on the Calculator and Plot pages (#816).
 - [ ] No "Tabulated / Analytical / External" section headers.
 - [ ] Each row shows a DATA / FN / EXT tag with hover tooltip.
 - [x] Search operators `tag=fn`, `tag=tab`, `tag=data`, `tag=ext`, `v=<string>` work (#609).
@@ -588,7 +607,7 @@ array and seeds a fresh selection. No sidebar, no full-panel mode.
       comparison lists are valid only in advanced mode with matching `across=`
       (see [`shareable-urls.md`](shareable-urls.md) §3.3).
 - [ ] Compatibility overlay, multi-program, periodic-grid, Custom
-      sub-tab — none are available in Basic.
+      sub-tab, **Program tab** — none are available in Basic.
 
 ### Cross-spec touch points
 

@@ -10,6 +10,7 @@
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
+  import ProgramAnnotation from "$lib/components/program-annotation.svelte";
   import CompareAcrossStrip from "$lib/components/results/compare-across-strip.svelte";
   import TableMulti from "$lib/components/results/table-multi.svelte";
   import QuantityToggle from "$lib/components/results/quantity-toggle.svelte";
@@ -83,18 +84,17 @@
     });
   });
 
-  let programLabel = $derived.by(() => {
-    if (!appInit.entityState) return "";
+  // "Calculated with <program> (auto-selected)" annotation (#816). Basic mode
+  // hides the program selector, so this names the auto-selected program; in
+  // Advanced mode it reflects the user's explicit choice (no "auto-selected").
+  let programAnnotation = $derived.by<{ name: string; autoSelected: boolean } | null>(() => {
+    if (!appInit.entityState) return null;
     const program = appInit.entityState.selectedProgram;
     if (program.id === -1) {
       const resolvedName = (program as AutoSelectProgram).resolvedProgram?.name;
-      if (resolvedName) {
-        return `Results calculated using ${resolvedName} (auto-selected)`;
-      }
-    } else if (program.id !== -1) {
-      return `Results calculated using ${program.name}`;
+      return resolvedName ? { name: resolvedName, autoSelected: true } : null;
     }
-    return "";
+    return { name: program.name, autoSelected: false };
   });
 </script>
 
@@ -441,10 +441,12 @@
         </p>
       {/if}
 
-      {#if programLabel}
-        <p class="text-xs text-muted-foreground border-t pt-2">
-          {programLabel}
-        </p>
+      {#if programAnnotation}
+        <ProgramAnnotation
+          programName={programAnnotation.name}
+          autoSelected={programAnnotation.autoSelected}
+          class="border-t pt-2"
+        />
       {/if}
     </div>
   {/if}

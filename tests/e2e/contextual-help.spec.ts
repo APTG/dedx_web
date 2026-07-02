@@ -5,7 +5,8 @@ import { test, expect } from "@playwright/test";
 // WASM mock injection.
 test.describe("Contextual help — Program data source", () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto("/calculator");
+    // The Program tab is Advanced-only now (#816); its help hints live there.
+    await page.goto("/calculator?mode=advanced");
     // Open the picker on the Program tab.
     await page.getByTestId("picker-tab-program").click();
     await expect(page.getByTestId("picker-program-tab")).toBeVisible();

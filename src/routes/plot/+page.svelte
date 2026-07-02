@@ -11,6 +11,7 @@
   import { isCustomMaterial } from "$lib/utils/custom-compound-material";
   import { initPlotExportState, canExport } from "$lib/state/export.svelte";
   import AdvancedOptionsPanel from "$lib/components/advanced-options-panel.svelte";
+  import ProgramAnnotation from "$lib/components/program-annotation.svelte";
   import SeriesStrip from "./series-strip.svelte";
   import { isAdvancedMode } from "$lib/state/advanced-mode.svelte";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
@@ -28,6 +29,15 @@
 
   const orchestrator = createPlotPageOrchestrator();
   const plotState = $derived(orchestrator.plotState);
+
+  // "Calculated with <program> (auto-selected)" annotation for Basic mode
+  // (#816): the program selector is hidden and each series is auto-selected
+  // behind the scenes, so surface the distinct program(s) that produced the
+  // plotted series. Advanced mode is unchanged (no annotation — series carry
+  // their own program in the legend when programs differ).
+  const plotProgramNames = $derived([
+    ...new Set(plotState.series.map((s) => s.programName).filter(Boolean)),
+  ]);
 
   let entityState = $derived(appInit.entityState);
   let loadedExternalSources = $derived(appInit.loadedExternalSources);
@@ -349,6 +359,10 @@
           onDone={() => orchestrator.handleDoneEditing()}
           onReorder={(from, to) => plotState.reorderSeries(from, to)}
         />
+
+        {#if !isAdvancedMode.value && plotProgramNames.length > 0}
+          <ProgramAnnotation programName={plotProgramNames.join(", ")} autoSelected />
+        {/if}
       </div>
     </div>
 
