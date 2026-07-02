@@ -148,7 +148,9 @@ test.describe("Calculator page — Program tab (Advanced mode, #816)", () => {
     await page.getByTestId("picker-tab-program").click();
     const pstar = page.getByTestId("picker-program-item-2");
     await pstar.click();
-    await expect(pstar).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
+    // Calculator mode auto-collapses the picker once the selection is complete,
+    // so assert via the stable tab summary instead of the soon-to-be-removed row.
+    await expect(page.getByTestId("picker-tab-program")).toContainText(/PSTAR/);
 
     // Basic mode has no program selector and always auto-selects, so the pinned
     // PSTAR must be discarded on a Basic → Advanced round-trip — the user's
