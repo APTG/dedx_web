@@ -30,11 +30,15 @@
   const orchestrator = createPlotPageOrchestrator();
   const plotState = $derived(orchestrator.plotState);
 
-  // "Calculated with <program> (auto-selected)" annotation for Basic mode
-  // (#816): the program selector is hidden and each series is auto-selected
-  // behind the scenes, so surface the distinct program(s) that produced the
-  // plotted series. Advanced mode is unchanged (no annotation — series carry
-  // their own program in the legend when programs differ).
+  // "Calculated with <program>" annotation for Basic mode (#816): the program
+  // selector is hidden, so surface the distinct program(s) that produced the
+  // plotted series. Unlike the Calculator, this does NOT append
+  // "(auto-selected)": the plot aggregates a committed *set* of series that can
+  // mix auto-selected curves with explicitly-chosen ones (added in Advanced
+  // mode or restored from a shared URL), so it just names the program(s) rather
+  // than claim they were all auto-selected (PR #821 review). Advanced mode is
+  // unchanged (no annotation — series carry their own program in the legend
+  // when programs differ).
   const plotProgramNames = $derived([
     ...new Set(plotState.series.map((s) => s.programName).filter(Boolean)),
   ]);
@@ -361,7 +365,7 @@
         />
 
         {#if !isAdvancedMode.value && plotProgramNames.length > 0}
-          <ProgramAnnotation programName={plotProgramNames.join(", ")} autoSelected />
+          <ProgramAnnotation programName={plotProgramNames.join(", ")} />
         {/if}
       </div>
     </div>

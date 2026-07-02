@@ -152,7 +152,7 @@ test.describe("Plot page — Advanced Options panel gating (AC-1)", () => {
   });
 });
 
-test.describe("Plot page — 'Calculated with … (auto-selected)' annotation (#816)", () => {
+test.describe("Plot page — 'Calculated with …' annotation (#816)", () => {
   test("annotation appears in Basic mode after adding a series and names the program", async ({
     page,
   }) => {
@@ -179,7 +179,11 @@ test.describe("Plot page — 'Calculated with … (auto-selected)' annotation (#
     const annotation = page.getByTestId("program-annotation");
     await expect(annotation).toBeVisible({ timeout: 15000 });
     await expect(annotation).toContainText(/Calculated with/i);
-    await expect(annotation).toContainText(/auto-selected/i);
+    // The plot annotation names the program(s) behind the committed series but
+    // does NOT append "(auto-selected)": a committed set can mix auto-selected
+    // and explicitly-chosen curves, so the qualifier would not be reliably
+    // accurate here (PR #821 review). It is the Calculator's job to show it.
+    await expect(annotation).not.toContainText(/auto-selected/i);
   });
 
   test("annotation is absent in Advanced mode (unchanged, series carry program in legend)", async ({

@@ -44,6 +44,29 @@ describe("ProgramAnnotation (#816)", () => {
     expect(screen.queryByTestId("program-annotation")).not.toBeInTheDocument();
   });
 
+  test("appends an inline detail after the program when provided", () => {
+    render(ProgramAnnotation, {
+      props: {
+        programName: "ICRU 49",
+        autoSelected: true,
+        detail: "valid range 0.001 – 10,000 MeV/nucl for proton",
+      },
+    });
+
+    const el = screen.getByTestId("program-annotation");
+    // Single compact line: program, qualifier, and the range detail together.
+    expect(el.textContent).toContain("Calculated with");
+    expect(el.textContent).toContain("ICRU 49");
+    expect(el.textContent).toContain("(auto-selected)");
+    expect(el.textContent).toContain("valid range 0.001 – 10,000 MeV/nucl for proton");
+  });
+
+  test("omits the detail separator when no detail is given", () => {
+    render(ProgramAnnotation, { props: { programName: "PSTAR" } });
+
+    expect(screen.getByTestId("program-annotation").textContent).not.toContain("·");
+  });
+
   test("supports a custom testId (multiple annotations on one page)", () => {
     render(ProgramAnnotation, {
       props: { programName: "PSTAR", autoSelected: true, testId: "plot-program-annotation" },

@@ -107,6 +107,18 @@ export class PlotPageOrchestrator {
       }
     });
 
+    // Basic mode has no program selector — it always uses Auto-select (#816).
+    // Discard any program the user pinned in Advanced mode so a
+    // Basic → Advanced → Basic round-trip returns to auto. A dedicated effect
+    // keyed only on the mode + state identity so it fires on the mode switch
+    // (and first load), not on every material/series change — which keeps
+    // per-series editing (`selectProgram(series.programId)`) unaffected.
+    $effect(() => {
+      if (!isAdvancedMode.value) {
+        appInit.entityState?.selectProgram(-1); // -1 = Auto-select
+      }
+    });
+
     $effect(() => {
       if (!appInit.entityState?.selectedMaterial) {
         this.materialIsGas = undefined;

@@ -140,6 +140,32 @@ test.describe("Calculator page — Program tab (Advanced mode, #816)", () => {
     await expect(page.getByTestId("picker-program-tab")).toBeVisible();
     await expect(page.getByTestId("picker-program-legend")).toBeVisible();
   });
+
+  test("returning to Basic overwrites an Advanced program choice with Auto (#816 round-trip)", async ({
+    page,
+  }) => {
+    // Pin an explicit program (PSTAR, id 2) in Advanced mode.
+    await page.getByTestId("picker-tab-program").click();
+    const pstar = page.getByTestId("picker-program-item-2");
+    await pstar.click();
+    await expect(pstar).toHaveAttribute("aria-selected", "true", { timeout: 3000 });
+
+    // Basic mode has no program selector and always auto-selects, so the pinned
+    // PSTAR must be discarded on a Basic → Advanced round-trip — the user's
+    // Advanced choice is not silently retained behind the hidden tab.
+    await page.getByRole("button", { name: "Switch to Basic mode" }).click();
+    await page.getByRole("button", { name: "Switch to Advanced mode" }).click();
+
+    await page.getByTestId("picker-tab-program").click();
+    await expect(page.getByTestId("picker-program-auto-hero")).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    await expect(page.getByTestId("picker-program-item-2")).toHaveAttribute(
+      "aria-selected",
+      "false",
+    );
+  });
 });
 
 test.describe("Plot page — tabbed picker", () => {

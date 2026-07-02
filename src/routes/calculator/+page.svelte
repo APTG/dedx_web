@@ -431,20 +431,19 @@
         </div>
       {/if}
 
-      {#if es.isComplete && energyRangeLabel}
-        <p class="text-xs text-muted-foreground">
-          Valid range: {energyRangeLabel}
-          ({es.selectedProgram.id === -1
-            ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-            : es.selectedProgram.name},
-          {es.selectedParticle?.name ?? ""})
-        </p>
-      {/if}
-
+      <!-- Single compact row (#816 follow-up): the program name and the valid
+           energy range used to sit on two separate lines and repeated the
+           program name. They are merged here — "Calculated with <program>
+           (auto-selected) · valid range … for <particle>" — to save vertical
+           space. The valid range depends on program + particle, so the particle
+           is kept; the program is named once by the annotation itself. -->
       {#if programAnnotation}
         <ProgramAnnotation
           programName={programAnnotation.name}
           autoSelected={programAnnotation.autoSelected}
+          detail={es.isComplete && energyRangeLabel
+            ? `valid range ${energyRangeLabel} for ${es.selectedParticle?.name ?? ""}`
+            : ""}
           class="border-t pt-2"
         />
       {/if}

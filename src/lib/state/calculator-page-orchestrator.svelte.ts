@@ -394,8 +394,9 @@ export class CalculatorPageOrchestrator {
 
   /**
    * Mode-dependent fallbacks. Leaving advanced mode must: drop custom-compound
-   * material selections (advanced-only), reset the inverse tab to "forward", and
-   * collapse any multi-entity selection back to a single entity.
+   * material selections (advanced-only), reset the inverse tab to "forward",
+   * collapse any multi-entity selection back to a single entity, and reset the
+   * program to Auto-select (Basic mode always auto-selects, #816).
    */
   private setupModeFallbacks() {
     $effect(() => {
@@ -405,6 +406,17 @@ export class CalculatorPageOrchestrator {
         if (typeof matId === "string" && matId.startsWith("cc_")) {
           appInit.entityState.selectMaterial(WATER_ID);
         }
+      }
+    });
+
+    // Basic mode has no program selector — it always uses Auto-select (#816).
+    // Discard any program the user pinned in Advanced mode so a
+    // Basic → Advanced → Basic round-trip returns to auto rather than silently
+    // keeping a hidden explicit choice. Tracks only the mode + state identity,
+    // so it fires on the mode switch (and first load), not on every selection.
+    $effect(() => {
+      if (!isAdvancedMode.value) {
+        appInit.entityState?.selectProgram(-1); // -1 = Auto-select
       }
     });
 
