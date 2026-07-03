@@ -532,6 +532,9 @@ tint is used only to mark computed results.
   inside the (orange) cell; invalid / out-of-range flips the label, input border,
   and message to the `destructive` red treatment. The proton ↔ heavy-ion "unit
   changed" ghost note is preserved.
+  Below the input a **fixed-height slot** always reserves space for the hint /
+  error message, so the cell does **not** grow (and shove the row) when the hint
+  appears on focus.
 - **② CSDA range** (left) and **③ stopping power** (right) — the result cells,
   each with its quantity label + existing `HelpHint` above a large `font-mono`
   value. The two cells are equal height and each value is pinned to the **bottom**
@@ -539,12 +542,21 @@ tint is used only to mark computed results.
   one label wraps to more lines than the other** (e.g. the long "Stopping Power
   (keV/µm)" label on a narrow screen). A subtle `→` connector sits between the
   input and the results on desktop.
+- **All three cells are the same size** — the row is `items-stretch`, so the
+  result cells match the (taller) input cell rather than shrinking to their own
+  content; combined with the reserved hint slot the sizes stay stable as the user
+  focuses/types.
 - **Desktop** (`sm`+) lays the input cell, connector, and the two result cells
   on one flex row, the energy cell wider (`flex-[1.4]`) as the focal point.
   **Mobile** stacks: the full-width energy input on top, the two result cells
   side-by-side below.
 - The particle/material selectors are unchanged; the "+ Add row" affordance is
-  kept — adding a second value switches to the existing multi-row table.
+  kept — adding a second value switches to the multi-row table (whose columns are
+  ordered **Energy | CSDA Range | Stopping Power**, i.e. range left / dE/dx right,
+  matching the hero).
+- A **shared/restored URL with a single energy value renders this hero layout**,
+  not the multi-row table: the URL-load path restores exactly one row
+  (`autoAdd = false`) instead of appending a trailing empty row.
 - The program annotation ("Calculated with … (auto-selected)") still renders
   below the results (unchanged, page-level).
 

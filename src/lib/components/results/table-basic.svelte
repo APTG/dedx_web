@@ -230,7 +230,7 @@
         ? "Kinetic energy"
         : `Kinetic energy (${calcState.masterUnit})`}
       <div data-testid="basic-single-row-card">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
           <!-- ① Kinetic energy — the input (orange = what you type in) -->
           <div
             class={`rounded-lg border p-4 transition-colors sm:flex-[1.4] ${
@@ -269,20 +269,22 @@
               onpaste={(e) => handlePaste(e, 0)}
               disabled={calcState.isCalculating}
             />
-            {#if row.message && isError}
-              <div class="mt-1.5 text-xs text-red-600 dark:text-red-400" role="alert">
-                {row.message}
-              </div>
-            {/if}
-            {#if hintVisible}
-              <p
-                class="mt-1.5 text-xs text-orange-700 dark:text-orange-300"
-                role="status"
-                data-testid="inline-unit-hint"
-              >
-                type a unit too — e.g. <code class="font-mono font-medium">10 keV</code>
-              </p>
-            {/if}
+            <!-- Reserved fixed-height slot for the message/hint so the input
+                 cell doesn't grow (and shove the whole row) when the hint
+                 appears on focus — the three cells stay the same size (#823). -->
+            <div class="mt-1.5 min-h-[1.25rem] text-xs">
+              {#if row.message && isError}
+                <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
+              {:else if hintVisible}
+                <span
+                  class="text-orange-700 dark:text-orange-300"
+                  role="status"
+                  data-testid="inline-unit-hint"
+                >
+                  type a unit too — e.g. <code class="font-mono font-medium">10 keV</code>
+                </span>
+              {/if}
+            </div>
           </div>
 
           <!-- connector: input → results (desktop only) -->
@@ -347,8 +349,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  Stopping Power ({calcState.stpDisplayUnit})
-                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
+                  CSDA Range
+                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
                 </span>
               </th>
               <th
@@ -356,8 +358,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  CSDA Range
-                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+                  Stopping Power ({calcState.stpDisplayUnit})
+                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
                 </span>
               </th>
             </tr>
@@ -391,15 +393,15 @@
                 </td>
                 <td
                   class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
-                  data-testid={`stp-cell-${i}`}
-                >
-                  {stpDisplay(row)}
-                </td>
-                <td
-                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
                   data-testid={`range-cell-${i}`}
                 >
                   {rangeDisplay(row)}
+                </td>
+                <td
+                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
+                  data-testid={`stp-cell-${i}`}
+                >
+                  {stpDisplay(row)}
                 </td>
               </tr>
             {/each}

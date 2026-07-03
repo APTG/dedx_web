@@ -244,13 +244,16 @@ export class CalculatorPageOrchestrator {
         }
 
         if (hasEnergies) {
+          // Pass autoAdd=false so a single-energy link restores exactly one row
+          // (the Basic hero layout) instead of appending a trailing empty row
+          // that would flip it into the multi-row table (#823 feedback).
           urlState.rows.forEach((r, i) => {
             const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
             if (i === 0) {
-              this.calcState!.updateRowText(0, text);
+              this.calcState!.updateRowText(0, text, false);
             } else {
               this.calcState!.addRow();
-              this.calcState!.updateRowText(i, text);
+              this.calcState!.updateRowText(i, text, false);
             }
           });
         }

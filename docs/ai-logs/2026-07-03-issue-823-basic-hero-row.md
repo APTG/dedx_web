@@ -115,6 +115,44 @@ Re-verified with the throwaway preview at 1000 / 390 / 360 px, light + dark,
 across default / typed-unit / long-number / out-of-range states. `svelte-check` +
 `tsc` clean; ESLint + Prettier clean.
 
+### Prompt 3: Second round of feedback (PR #824)
+
+**Request.** Four more points:
+
+1. The energy and result rectangles are **different sizes**, and the energy cell
+   **grows** when the "type a unit too" hint appears — they should stay the same
+   size.
+2. A **shared URL with a single energy** (e.g.
+   `?…&energies=1&eunit=MeV/nucl`) should land on the **hero view (colored
+   rectangles)**, not the multi-row table — as should a link shared from the
+   running app.
+3. Same as 2 (screen-sharing the live app should show the hero, not the
+   multi-energy table).
+4. The **multi-row Basic table** should also put **range on the left, stopping
+   power on the right**.
+
+**AI response.**
+
+- **Equal, stable sizes (1):** switched the row back to `sm:items-stretch` so the
+  result cells match the (taller) input cell, and added a **fixed-height slot**
+  (`min-h-[1.25rem]`) that always reserves room for the hint/error line — so the
+  input cell no longer changes height when the hint shows on focus. Verified in a
+  preview that the "no hint" and "hint visible" rows are the same height.
+- **Single-energy URL → hero (2, 3):** root-caused to
+  `calculator-page-orchestrator.svelte.ts` — the URL-load path called
+  `updateRowText(0, text)` with the default `autoAdd = true`, which appended a
+  trailing empty row (2 rows → `isSingleRow` false → multi-row table). Passed
+  `autoAdd = false` for the URL-restored rows, so a single-energy link now
+  restores exactly one row (the hero) and a multi-energy link restores N rows
+  with no phantom trailing empty. Checked the URL e2e specs
+  (`calculator-url.spec.ts`, `url-parser.spec.ts`) — they assert cell values by
+  test id / row `nth`, not a trailing-empty row, so the change is safe.
+- **Table column order (4):** swapped the `<th>`/`<td>` pairs in the multi-row
+  Basic table so the columns read **Energy | CSDA Range | Stopping Power**,
+  matching the hero (test ids `range-cell-*` / `stp-cell-*` are order-independent).
+
+`svelte-check` + `tsc` clean; ESLint + Prettier clean.
+
 ## Tasks
 
 ### Basic single-energy hero row
