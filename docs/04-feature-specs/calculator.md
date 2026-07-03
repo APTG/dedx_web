@@ -514,23 +514,36 @@ results**: the kinetic-energy input, then CSDA range, then stopping power
 puts cause→effect on one line, replacing the earlier stacked "narrow input above
 a results card" layout.
 
-- **① Kinetic energy** is the orange-accented hero cell (`border-orange-300 /
-bg-orange-50`, dark variants from the orange scale): an eyebrow label
-  "Kinetic energy", the value in large `font-mono` with the master-unit pill
-  kept **tight against the number** (no dead space between value and unit), and
-  invalid / out-of-range input flips the cell to the `destructive` red treatment
-  with the inline message. The first-focus inline-unit hint and the
-  proton ↔ heavy-ion "unit changed" ghost note are preserved.
-- **② CSDA range** and **③ stopping power** are neutral result cells
-  (`bg-muted/20`), each with the quantity label + its existing `HelpHint`
-  affordance above a large `font-mono` value. A subtle `→` connector sits
-  between the input and the results on desktop.
-- **Desktop** (`sm`+) lays the three cells (plus the connector) on one flex row,
-  the energy cell wider (`flex-[1.4]`) as the focal point. **Mobile** stacks
-  into two rows: the centered energy hero on top, the two result cells
-  side-by-side below; the energy value stays the largest element for hierarchy.
-- Orange remains the app's single accent, reserved for the energy affordance;
-  the particle/material selectors are unchanged. The "+ Add row" affordance is
+A light, two-tone tint separates **what you type in** from **what comes out**:
+the input cell is **orange** (`border-orange-200 / bg-orange-50` + dark orange
+variants), the two result cells are a delicate **cool tint** (`border-sky-200 /
+bg-sky-50` + dark sky variants). Orange stays the energy/active accent; the cool
+tint is used only to mark computed results.
+
+- **① Kinetic energy** — the input cell. A bold (not uppercased) `muted` label
+  reads **"Kinetic energy (MeV)"** — the unit shown is the master anchor
+  (`MeV`, or `MeV/nucl` for heavy ions). The value sits in a **normal bordered
+  text input** (`bg-background`, rounded, large `font-mono`) that is wide enough
+  for long values (e.g. `0.1234546`). When the user types their own unit suffix
+  (`10 keV`), the row's `unitFromSuffix` flips and the label's `(MeV)` qualifier
+  is **dropped** (→ just "Kinetic energy"), so the label never contradicts the
+  typed unit. There is **no** separate unit pill/button beside the number.
+  Focusing the input reveals the inline hint _"type a unit too — e.g. `10 keV`"_
+  inside the (orange) cell; invalid / out-of-range flips the label, input border,
+  and message to the `destructive` red treatment. The proton ↔ heavy-ion "unit
+  changed" ghost note is preserved.
+- **② CSDA range** (left) and **③ stopping power** (right) — the result cells,
+  each with its quantity label + existing `HelpHint` above a large `font-mono`
+  value. The two cells are equal height and each value is pinned to the **bottom**
+  (`mt-auto`), so the two numbers stay **aligned on the same baseline even when
+  one label wraps to more lines than the other** (e.g. the long "Stopping Power
+  (keV/µm)" label on a narrow screen). A subtle `→` connector sits between the
+  input and the results on desktop.
+- **Desktop** (`sm`+) lays the input cell, connector, and the two result cells
+  on one flex row, the energy cell wider (`flex-[1.4]`) as the focal point.
+  **Mobile** stacks: the full-width energy input on top, the two result cells
+  side-by-side below.
+- The particle/material selectors are unchanged; the "+ Add row" affordance is
   kept — adding a second value switches to the existing multi-row table.
 - The program annotation ("Calculated with … (auto-selected)") still renders
   below the results (unchanged, page-level).
