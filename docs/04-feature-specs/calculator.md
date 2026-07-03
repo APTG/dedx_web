@@ -505,6 +505,36 @@ result table. Each valid row's Stopping Power and CSDA Range cells are
 populated after calculation. See "Unified Input/Result Table" in Inputs §3
 for column layout.
 
+#### Basic single-energy hero row (issue #823)
+
+In **Basic mode with a single energy value** (`isSingleRow`), the table
+collapses into a three-cell "hero row" that reads left-to-right as **input →
+results**: the kinetic-energy input, then CSDA range, then stopping power
+(dE/dx). This gives the energy input the visual weight issue #665 asked for and
+puts cause→effect on one line, replacing the earlier stacked "narrow input above
+a results card" layout.
+
+- **① Kinetic energy** is the orange-accented hero cell (`border-orange-300 /
+bg-orange-50`, dark variants from the orange scale): an eyebrow label
+  "Kinetic energy", the value in large `font-mono` with the master-unit pill
+  kept **tight against the number** (no dead space between value and unit), and
+  invalid / out-of-range input flips the cell to the `destructive` red treatment
+  with the inline message. The first-focus inline-unit hint and the
+  proton ↔ heavy-ion "unit changed" ghost note are preserved.
+- **② CSDA range** and **③ stopping power** are neutral result cells
+  (`bg-muted/20`), each with the quantity label + its existing `HelpHint`
+  affordance above a large `font-mono` value. A subtle `→` connector sits
+  between the input and the results on desktop.
+- **Desktop** (`sm`+) lays the three cells (plus the connector) on one flex row,
+  the energy cell wider (`flex-[1.4]`) as the focal point. **Mobile** stacks
+  into two rows: the centered energy hero on top, the two result cells
+  side-by-side below; the energy value stays the largest element for hierarchy.
+- Orange remains the app's single accent, reserved for the energy affordance;
+  the particle/material selectors are unchanged. The "+ Add row" affordance is
+  kept — adding a second value switches to the existing multi-row table.
+- The program annotation ("Calculated with … (auto-selected)") still renders
+  below the results (unchanged, page-level).
+
 #### Number Formatting
 
 - **Stopping power** values use **4 significant figures** with SI prefix
