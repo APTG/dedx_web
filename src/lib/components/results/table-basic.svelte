@@ -349,8 +349,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  CSDA Range
-                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+                  Stopping Power ({calcState.stpDisplayUnit})
+                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
                 </span>
               </th>
               <th
@@ -358,8 +358,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  Stopping Power ({calcState.stpDisplayUnit})
-                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
+                  CSDA Range
+                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
                 </span>
               </th>
             </tr>
@@ -393,15 +393,15 @@
                 </td>
                 <td
                   class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
-                  data-testid={`range-cell-${i}`}
-                >
-                  {rangeDisplay(row)}
-                </td>
-                <td
-                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
                   data-testid={`stp-cell-${i}`}
                 >
                   {stpDisplay(row)}
+                </td>
+                <td
+                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
+                  data-testid={`range-cell-${i}`}
+                >
+                  {rangeDisplay(row)}
                 </td>
               </tr>
             {/each}
