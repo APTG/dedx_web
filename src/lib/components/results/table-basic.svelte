@@ -51,49 +51,13 @@
     }
   });
 
-  // First-focus inline-unit hint — shown once per browser session.
+  // Inline-unit hint — shown while the single-row hero input is focused, as a
+  // gentle reminder that a unit suffix can be typed (e.g. "10 keV"). Focus-
+  // driven so it reappears whenever the field is active (#823 feedback).
   let hintVisible = $state(false);
-  let hintTimerId: ReturnType<typeof setTimeout> | null = null;
 
-  function maybeShowHint(index: number) {
-    if (index !== 0) return;
-    if (typeof localStorage === "undefined") return;
-    try {
-      if (localStorage.getItem("dedx_tip_inline_unit_seen")) return;
-    } catch {
-      return;
-    }
-    hintVisible = true;
-    hintTimerId = setTimeout(dismissHint, 10_000);
-  }
-
-  function dismissHint() {
-    hintVisible = false;
-    if (hintTimerId !== null) {
-      clearTimeout(hintTimerId);
-      hintTimerId = null;
-    }
-    if (typeof localStorage !== "undefined") {
-      try {
-        localStorage.setItem("dedx_tip_inline_unit_seen", "1");
-      } catch {
-        // Best-effort only.
-      }
-    }
-  }
-
-  $effect(() => {
-    return () => {
-      if (hintTimerId !== null) {
-        clearTimeout(hintTimerId);
-        hintTimerId = null;
-      }
-    };
-  });
-
-  function handleInputFocus(event: Event, index: number) {
+  function handleInputFocus(event: Event) {
     (event.target as HTMLInputElement).select();
-    maybeShowHint(index);
   }
 
   function focusRowInput(targetIndex: number): boolean {
@@ -250,69 +214,130 @@
     {/if}
 
     {#if isSingleRow}
-      <!-- Single-row card layout -->
+      <!-- Single-energy "hero row" (#823): the kinetic-energy input sits on the
+           same row as its two outputs — energy → range → dE/dx — so cause→effect
+           reads left-to-right as input → results. The input cell is orange-
+           accented (the only accent hue); result cells use neutral surface
+           tokens. On mobile it stacks: the full-width energy input on top, the
+           two result cells side-by-side below. Adding a second row switches to
+           the multi-row table layout below. -->
       {@const row = calcState.rows[0]!}
-      <div class="space-y-3" data-testid="basic-single-row-card">
-        <div>
-          <label
-            for="basic-energy-input"
-            class="block text-xs font-medium text-muted-foreground mb-1">{energyLabel}</label
+      {@const isError = row.status === "invalid" || row.status === "out-of-range"}
+      <!-- The unit lives in the label ("Kinetic energy (MeV)"), matching the
+           master anchor; once the user types their own unit suffix it is
+           dropped so the label never contradicts the typed value (#823). -->
+      {@const energyHeroLabel = row.unitFromSuffix
+        ? "Kinetic energy"
+        : `Kinetic energy (${calcState.masterUnit})`}
+      <div data-testid="basic-single-row-card">
+        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+          <!-- ① Kinetic energy — the input (orange = what you type in) -->
+          <div
+            class={`flex flex-col rounded-lg border px-4 py-3 transition-colors sm:flex-[1.4] ${
+              isError
+                ? "border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+                : "border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/30"
+            }`}
           >
-          <input
-            id="basic-energy-input"
-            type="text"
-            inputmode="text"
-            aria-label="Energy value row 1"
-            data-row-index={0}
-            data-testid="energy-input-0"
-            value={row.rawInput}
-            placeholder="e.g. 100 keV"
-            class={inputClass(row)}
-            onfocus={(e) => handleInputFocus(e, 0)}
-            onkeydown={(e) => handleInputKeyDown(e, 0)}
-            oninput={(e) => handleInputChange(e, 0)}
-            onpaste={(e) => handlePaste(e, 0)}
-            disabled={calcState.isCalculating}
-          />
-          {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
-            <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
-              {row.message}
-            </div>
-          {/if}
-          {#if hintVisible}
-            <div
-              class="mt-1 flex items-center gap-2 rounded border border-dashed border-muted-foreground/40 px-2 py-1 text-xs text-muted-foreground"
-              role="status"
-              data-testid="inline-unit-hint"
+            <label
+              for="basic-energy-input"
+              class={`mb-1 flex items-start gap-1 text-xs font-semibold ${
+                isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+              }`}>{energyHeroLabel}</label
             >
-              <span>type a unit too — e.g. <code class="font-mono">10 keV</code></span>
-              <button
-                type="button"
-                class="ml-auto text-muted-foreground/60 hover:text-muted-foreground leading-none"
-                aria-label="Dismiss hint"
-                onclick={dismissHint}>×</button
-              >
-            </div>
-          {/if}
-        </div>
-
-        <div class="grid grid-cols-2 gap-4 rounded-md border bg-muted/20 p-4">
-          <div>
-            <div class="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-              <span>Stopping Power ({calcState.stpDisplayUnit})</span>
-              <HelpHint term="stoppingPower" side="bottom" testId="basic-stp-help" />
-            </div>
-            <div class="text-2xl font-mono font-semibold" data-testid="stp-cell-0">
-              {stpDisplay(row)}
+            <input
+              id="basic-energy-input"
+              type="text"
+              inputmode="text"
+              aria-label="Energy value row 1"
+              data-row-index={0}
+              data-testid="energy-input-0"
+              value={row.rawInput}
+              placeholder="e.g. 100"
+              class={`mt-auto w-full rounded-md border bg-background px-3 py-1.5 font-mono text-2xl font-semibold focus:outline-none focus:ring-2 disabled:opacity-60 ${
+                isError
+                  ? "border-red-400 focus:ring-red-400/50"
+                  : "border-input focus:ring-orange-400/60"
+              }`}
+              onfocus={(e) => {
+                handleInputFocus(e);
+                hintVisible = true;
+              }}
+              onblur={() => (hintVisible = false)}
+              onkeydown={(e) => handleInputKeyDown(e, 0)}
+              oninput={(e) => handleInputChange(e, 0)}
+              onpaste={(e) => handlePaste(e, 0)}
+              disabled={calcState.isCalculating}
+            />
+            <!-- Reserved fixed-height slot for the message/hint so the input
+                 cell doesn't grow (and shove the whole row) when the hint
+                 appears on focus — the three cells stay the same size (#823). -->
+            <div class="mt-1 min-h-[1rem] text-xs">
+              {#if row.message && isError}
+                <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
+              {:else if hintVisible}
+                <span
+                  class="text-orange-700 dark:text-orange-300"
+                  role="status"
+                  data-testid="inline-unit-hint"
+                >
+                  type a unit too — e.g. <code class="font-mono font-medium">10 keV</code>
+                </span>
+              {/if}
             </div>
           </div>
-          <div>
-            <div class="text-xs font-medium text-muted-foreground mb-1 flex items-center gap-1">
-              <span>CSDA Range</span>
-              <HelpHint term="csdaRange" side="bottom" testId="basic-range-help" />
+
+          <!-- connector: input → results (desktop only) -->
+          <div
+            class="hidden text-xl text-muted-foreground/50 sm:flex sm:items-center sm:self-stretch"
+            aria-hidden="true"
+          >
+            →
+          </div>
+
+          <!-- ② CSDA range and ③ stopping power — the results (cool = what
+               comes out). The two cells are equal height (grid on mobile,
+               flex on desktop) and each value is pinned to the bottom
+               (mt-auto) plus a bottom slot mirroring the input's hint slot, so
+               all three value lines share one baseline — the input and both
+               results — and the two numbers stay aligned even when one label
+               wraps to more lines than the other. The transparent border +
+               py-1.5 give the plain result text the same line box as the boxed
+               input, so glyphs land on the same level (#823 feedback). -->
+          <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-[2.4] sm:items-stretch">
+            <div
+              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
+            >
+              <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
+                <span>CSDA Range</span>
+                <HelpHint term="csdaRange" side="bottom" testId="basic-range-help" />
+              </div>
+              <div
+                class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
+                data-testid="range-cell-0"
+              >
+                {rangeDisplay(row)}
+              </div>
+              <!-- Mirrors the input cell's hint slot so all three value lines
+                   share the same bottom offset and land on one baseline. -->
+              <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
             </div>
-            <div class="text-2xl font-mono font-semibold" data-testid="range-cell-0">
-              {rangeDisplay(row)}
+            <div
+              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
+            >
+              <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
+                <span>Stopping Power ({calcState.stpDisplayUnit})</span>
+                <HelpHint term="stoppingPower" side="bottom" testId="basic-stp-help" />
+              </div>
+              <div
+                class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
+                data-testid="stp-cell-0"
+              >
+                {stpDisplay(row)}
+              </div>
+              <!-- Mirrors the input cell's hint slot so all three value lines
+                   share the same bottom offset and land on one baseline. -->
+              <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
             </div>
           </div>
         </div>
@@ -334,8 +359,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  Stopping Power ({calcState.stpDisplayUnit})
-                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
+                  CSDA Range
+                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
                 </span>
               </th>
               <th
@@ -343,8 +368,8 @@
                 class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
               >
                 <span class="inline-flex items-center gap-1">
-                  CSDA Range
-                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+                  Stopping Power ({calcState.stpDisplayUnit})
+                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
                 </span>
               </th>
             </tr>
@@ -364,7 +389,7 @@
                     value={row.rawInput}
                     placeholder="e.g. 100 keV"
                     class={inputClass(row)}
-                    onfocus={(e) => handleInputFocus(e, i)}
+                    onfocus={(e) => handleInputFocus(e)}
                     onkeydown={(e) => handleInputKeyDown(e, i)}
                     oninput={(e) => handleInputChange(e, i)}
                     onpaste={(e) => handlePaste(e, i)}
@@ -378,15 +403,15 @@
                 </td>
                 <td
                   class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
-                  data-testid={`stp-cell-${i}`}
-                >
-                  {stpDisplay(row)}
-                </td>
-                <td
-                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
                   data-testid={`range-cell-${i}`}
                 >
                   {rangeDisplay(row)}
+                </td>
+                <td
+                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
+                  data-testid={`stp-cell-${i}`}
+                >
+                  {stpDisplay(row)}
                 </td>
               </tr>
             {/each}

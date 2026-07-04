@@ -98,16 +98,6 @@
         monospace: false,
       },
       {
-        id: "stopping-power",
-        header: (s) => `Stopping Power (${s.stpDisplayUnit})`,
-        getValue: (row, s) => {
-          if (s.isCalculating) return "—";
-          if (row.stoppingPower !== null) return formatSigFigs(row.stoppingPower, 4);
-          return "-";
-        },
-        align: "right",
-      },
-      {
         id: "csda-range",
         header: () => "CSDA Range",
         getValue: (row, s) => {
@@ -116,6 +106,16 @@
             const scaled = autoScaleLengthCm(row.csdaRangeCm);
             return `${formatSigFigs(scaled.value, 4)} ${scaled.unit}`;
           }
+          return "-";
+        },
+        align: "right",
+      },
+      {
+        id: "stopping-power",
+        header: (s) => `Stopping Power (${s.stpDisplayUnit})`,
+        getValue: (row, s) => {
+          if (s.isCalculating) return "—";
+          if (row.stoppingPower !== null) return formatSigFigs(row.stoppingPower, 4);
           return "-";
         },
         align: "right",

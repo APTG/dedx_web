@@ -331,7 +331,7 @@ the top-right action bar.
 4. The auto-selected program is pre-checked and highlighted as the
    default.
 5. The unified table immediately adopts the grouped-header structure:
-   a "Stopping Power" group header and a "CSDA Range" group header span
+   a "CSDA Range" group header and a "Stopping Power" group header span
    the respective columns — even though only one column exists in each
    group at this point. This signals to the user that additional program
    columns can be added to each group.

@@ -44,9 +44,9 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
   });
 
   test("shows the result table with three columns in Basic mode", async ({ page }) => {
-    // After #556, Basic mode uses a 3-column table (Energy, STP, CSDA Range).
-    // Typing triggers auto-append, switching from card to multi-row table mode.
-    // Clear advanced-mode flag set by beforeEach so the page loads in Basic mode.
+    // After #556, Basic mode uses a 3-column table (Energy, CSDA Range, STP).
+    // Basic mode passes autoAdd=false so the single-energy hero row stays until
+    // the user explicitly clicks "+ Add row", which switches to multi-row table mode.
     await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
@@ -58,8 +58,8 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     const headers = page.locator("thead th");
     await expect(headers).toHaveCount(3, { timeout: 5000 });
     await expect(headers.nth(0)).toContainText(/Energy/i);
-    await expect(headers.nth(1)).toContainText(/Stopping Power/i);
-    await expect(headers.nth(2)).toContainText(/CSDA Range/i);
+    await expect(headers.nth(1)).toContainText(/CSDA Range/i);
+    await expect(headers.nth(2)).toContainText(/Stopping Power/i);
   });
 
   test("default row '100' keeps the compact table without a → MeV/nucl column", async ({
@@ -71,7 +71,7 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
   test("editing the energy row triggers recalculation and shows STP result", async ({ page }) => {
     await typeInRow(page, 0, "12");
     // After typing the STP column should populate (not show "-")
-    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    const stpCell = page.getByTestId("advanced-stp-cell-0");
     await expect(stpCell).not.toContainText("-", { timeout: 5000 });
   });
 
@@ -81,8 +81,8 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     const rows = page.locator("tbody tr");
     // Two data rows (plus the empty sentinel row = 3 total)
     await expect(rows).toHaveCount(3);
-    const firstStp = rows.first().locator("td").nth(3);
-    const secondStp = rows.nth(1).locator("td").nth(3);
+    const firstStp = page.getByTestId("advanced-stp-cell-0");
+    const secondStp = page.getByTestId("advanced-stp-cell-1");
     // Check that results are populated (not empty dash)
     // Note: values may be subnormal (e.g. "3.8e-314") due to Issue #7
     await expect(firstStp).not.toHaveText(/^-$/, { timeout: 5000 });
@@ -312,7 +312,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await waitForTable(page);
     await typeInRow(page, 0, "100 MeV/nucl");
 
-    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    const stpCell = page.getByTestId("advanced-stp-cell-0");
     // Only treat the bare placeholder dash as "no result" — scientific-notation
     // values like "3.8e-314" legitimately contain "-" in the exponent.
     await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
@@ -325,7 +325,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await waitForTable(page);
     await typeInRow(page, 0, "50 MeV/nucl");
 
-    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    const stpCell = page.getByTestId("advanced-stp-cell-0");
     // Only treat the bare placeholder dash as "no result" — scientific-notation
     // values like "3.8e-314" legitimately contain "-" in the exponent.
     await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });
@@ -355,7 +355,7 @@ test.describe("Calculator — heavy-ion calculations (Carbon, Helium)", () => {
     await expect(page.locator("table")).toBeVisible();
     await expect(page.locator("body")).not.toContainText("RangeError");
 
-    const stpCell = page.locator("tbody tr").first().locator("td").nth(3);
+    const stpCell = page.getByTestId("advanced-stp-cell-0");
     // Only treat the bare placeholder dash as "no result" — scientific-notation
     // values like "3.8e-314" legitimately contain "-" in the exponent.
     await expect(stpCell).not.toHaveText(/^-$/, { timeout: 5000 });

@@ -501,9 +501,68 @@ When the user changes particle, material, or program via the compact selectors:
 ### Inline Results
 
 Results are shown **inline in the unified table** — there is no separate
-result table. Each valid row's Stopping Power and CSDA Range cells are
+result table. Each valid row's CSDA Range and Stopping Power cells are
 populated after calculation. See "Unified Input/Result Table" in Inputs §3
 for column layout.
+
+#### Basic single-energy hero row (issue #823)
+
+In **Basic mode with a single energy value** (`isSingleRow`), the table
+collapses into a three-cell "hero row" that reads left-to-right as **input →
+results**: the kinetic-energy input, then CSDA range, then stopping power
+(dE/dx). This gives the energy input the visual weight issue #665 asked for and
+puts cause→effect on one line, replacing the earlier stacked "narrow input above
+a results card" layout.
+
+A light, two-tone tint separates **what you type in** from **what comes out**:
+the input cell is **orange** (`border-orange-200 / bg-orange-50` + dark orange
+variants), the two result cells are a delicate **cool tint** (`border-sky-200 /
+bg-sky-50` + dark sky variants). Orange stays the energy/active accent; the cool
+tint is used only to mark computed results.
+
+- **① Kinetic energy** — the input cell. A bold (not uppercased) `muted` label
+  reads **"Kinetic energy (MeV)"** — the unit shown is the master anchor
+  (`MeV`, or `MeV/nucl` for heavy ions). The value sits in a **normal bordered
+  text input** (`bg-background`, rounded, large `font-mono`) that is wide enough
+  for long values (e.g. `0.1234546`). When the user types their own unit suffix
+  (`10 keV`), the row's `unitFromSuffix` flips and the label's `(MeV)` qualifier
+  is **dropped** (→ just "Kinetic energy"), so the label never contradicts the
+  typed unit. There is **no** separate unit pill/button beside the number.
+  Focusing the input reveals the inline hint _"type a unit too — e.g. `10 keV`"_
+  inside the (orange) cell; invalid / out-of-range flips the label, input border,
+  and message to the `destructive` red treatment. The proton ↔ heavy-ion "unit
+  changed" ghost note is preserved.
+  Below the input a **fixed-height slot** always reserves space for the hint /
+  error message, so the cell does **not** grow (and shove the row) when the hint
+  appears on focus.
+- **② CSDA range** (left) and **③ stopping power** (right) — the result cells,
+  each with its quantity label + existing `HelpHint` above a large `font-mono`
+  value. All three cells are equal height and each value line is pinned to the
+  **bottom** (`mt-auto`) above an identical fixed-height slot; the plain result
+  values carry a transparent border + matching vertical padding so they share the
+  **same line box as the boxed input**. As a result **all three value lines —
+  the input and both results — land on one baseline**, and the two result numbers
+  stay aligned even when one label wraps to more lines than the other (e.g. the
+  long "Stopping Power (keV/µm)" label on a narrow screen). Cell padding is kept
+  **compact** (`px-4 py-3`, input/value `py-1.5`) so the cells don't feel empty.
+  A subtle `→` connector sits between the input and the results on desktop.
+- **All three cells are the same size** — the row is `items-stretch`, so the
+  result cells match the (taller) input cell rather than shrinking to their own
+  content; combined with the reserved hint slot the sizes stay stable as the user
+  focuses/types.
+- **Desktop** (`sm`+) lays the input cell, connector, and the two result cells
+  on one flex row, the energy cell wider (`flex-[1.4]`) as the focal point.
+  **Mobile** stacks: the full-width energy input on top, the two result cells
+  side-by-side below.
+- The particle/material selectors are unchanged; the "+ Add row" affordance is
+  kept — adding a second value switches to the multi-row table (whose columns are
+  ordered **Energy | CSDA Range | Stopping Power**, i.e. range left / dE/dx right,
+  matching the hero).
+- A **shared/restored URL with a single energy value renders this hero layout**,
+  not the multi-row table: the URL-load path restores exactly one row
+  (`autoAdd = false`) instead of appending a trailing empty row.
+- The program annotation ("Calculated with … (auto-selected)") still renders
+  below the results (unchanged, page-level).
 
 #### Number Formatting
 
@@ -922,9 +981,9 @@ entitySelection changes
 
 ### Unified Input/Result Table
 
-- [ ] The table has 5 columns: Typed Value, → MeV/nucl, Unit, Stopping Power, CSDA Range.
+- [ ] The table has 5 columns: Typed Value, → MeV/nucl, Unit, CSDA Range, Stopping Power.
 - [ ] Each row has an editable input cell in the Typed Value column.
-- [ ] Typing a value and waiting 300ms shows results in the same row's Stopping Power and CSDA Range cells.
+- [ ] Typing a value and waiting 300ms shows results in the same row's CSDA Range and Stopping Power cells.
 - [ ] An always-empty-row appears at the bottom of the table for new entries.
 - [ ] Clearing a row's typed value removes the row (unless it's the only row or the empty row).
 - [ ] Pasting multi-line text into an input cell creates multiple rows.

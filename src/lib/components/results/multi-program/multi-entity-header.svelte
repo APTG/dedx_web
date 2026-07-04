@@ -43,18 +43,6 @@
     <th
       scope="colgroup"
       colspan={entityIds.length}
-      class="relative px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
-    >
-      <StpUnitHeaderMenu
-        selected={calcState.stpDisplayUnit}
-        onSelect={(u: StpUnit) => calcState.setStpDisplayUnit(u)}
-        label="Stopping Power"
-        testid="multi-stp-unit"
-      />
-    </th>
-    <th
-      scope="colgroup"
-      colspan={entityIds.length}
       class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
     >
       <span class="inline-flex items-center gap-1">
@@ -66,6 +54,18 @@
           testId="multi-entity-csda-help"
         />
       </span>
+    </th>
+    <th
+      scope="colgroup"
+      colspan={entityIds.length}
+      class="relative px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
+    >
+      <StpUnitHeaderMenu
+        selected={calcState.stpDisplayUnit}
+        onSelect={(u: StpUnit) => calcState.setStpDisplayUnit(u)}
+        label="Stopping Power"
+        testid="multi-stp-unit"
+      />
     </th>
   </tr>
   <tr class="bg-background">
