@@ -216,9 +216,9 @@
     {#if isSingleRow}
       <!-- Single-energy "hero row" (#823): the kinetic-energy input sits on the
            same row as its two outputs — energy → range → dE/dx — so cause→effect
-           reads left-to-right as input → results. A light two-tone tint marks in
-           vs out: orange for the input cell, a cool sky tint for the result
-           cells. On mobile it stacks: the full-width energy input on top, the
+           reads left-to-right as input → results. The input cell is orange-
+           accented (the only accent hue); result cells use neutral surface
+           tokens. On mobile it stacks: the full-width energy input on top, the
            two result cells side-by-side below. Adding a second row switches to
            the multi-row table layout below. -->
       {@const row = calcState.rows[0]!}
@@ -306,7 +306,7 @@
                input, so glyphs land on the same level (#823 feedback). -->
           <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-[2.4] sm:items-stretch">
             <div
-              class="flex flex-col rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/50 dark:bg-sky-950/30 sm:flex-1"
+              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
             >
               <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
                 <span>CSDA Range</span>
@@ -323,7 +323,7 @@
               <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
             </div>
             <div
-              class="flex flex-col rounded-lg border border-sky-200 bg-sky-50 px-4 py-3 dark:border-sky-900/50 dark:bg-sky-950/30 sm:flex-1"
+              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
             >
               <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
                 <span>Stopping Power ({calcState.stpDisplayUnit})</span>

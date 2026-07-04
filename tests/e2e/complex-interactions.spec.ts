@@ -45,8 +45,8 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
 
   test("shows the result table with three columns in Basic mode", async ({ page }) => {
     // After #556, Basic mode uses a 3-column table (Energy, CSDA Range, STP).
-    // Typing triggers auto-append, switching from card to multi-row table mode.
-    // Clear advanced-mode flag set by beforeEach so the page loads in Basic mode.
+    // Basic mode passes autoAdd=false so the single-energy hero row stays until
+    // the user explicitly clicks "+ Add row", which switches to multi-row table mode.
     await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
