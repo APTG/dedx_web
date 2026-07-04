@@ -31,6 +31,15 @@ still starts with "docs: update screenshots", so the merge does not retrigger
 the job). Validated the YAML parses and both embedded shell scripts pass
 `bash -n`.
 
+### Prompt 2: File an issue for this problem, then implement a solution and make a PR
+
+**AI response**: Filed issue #825 (root cause + evidence + acceptance
+criteria) documenting the reused-branch / `gh pr view` matching-a-merged-PR
+bug, then opened a pull request from `claude/screenshot-pr-workflow-fl2okg`
+(base `master`) carrying the already-implemented fix, with `Closes #825` in
+the body. No PR/issue templates exist in the repo, so both were written from
+scratch.
+
 ## Tasks
 
 ### Screenshots workflow: unique branch + new PR per run
