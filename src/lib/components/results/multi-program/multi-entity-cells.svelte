@@ -31,6 +31,29 @@
   {@const idx = stpIndexFor(result)}
   <td
     data-entity-id={entityId}
+    data-testid={`range-entity-cell-${entityId}-${rowIndex}`}
+    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${isAnchor ? "bg-blue-50" : ""}`}
+  >
+    {#if result instanceof LibdedxError}
+      <span title={result.message}>— ⚠️</span>
+    {:else if result && idx !== -1 && result.csdaRanges.length > 0}
+      {@const csdaGcm2 = result.csdaRanges[idx]!}
+      {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
+      {@const scaled = autoScaleLengthCm(csdaCm)}
+      {formatSigFigs(scaled.value, 4)}
+      {scaled.unit}
+    {:else}
+      —
+    {/if}
+  </td>
+{/each}
+{#each entityIds as entityId (entityId)}
+  {@const isAnchor = entityId === anchorId}
+  {@const result = multiEntityState.comparisonResults.get(entityId)}
+  {@const density = getEntityDensity(entityId)}
+  {@const idx = stpIndexFor(result)}
+  <td
+    data-entity-id={entityId}
     data-testid={`stp-entity-cell-${entityId}-${rowIndex}`}
     class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${isAnchor ? "bg-blue-50" : ""}`}
   >
@@ -45,29 +68,6 @@
       {:else}
         {formatSigFigs(stpMass, 4)}
       {/if}
-    {:else}
-      —
-    {/if}
-  </td>
-{/each}
-{#each entityIds as entityId (entityId)}
-  {@const isAnchor = entityId === anchorId}
-  {@const result = multiEntityState.comparisonResults.get(entityId)}
-  {@const density = getEntityDensity(entityId)}
-  {@const idx = stpIndexFor(result)}
-  <td
-    data-entity-id={entityId}
-    data-testid={`range-entity-cell-${entityId}-${rowIndex}`}
-    class={`px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono ${isAnchor ? "bg-blue-50" : ""}`}
-  >
-    {#if result instanceof LibdedxError}
-      <span title={result.message}>— ⚠️</span>
-    {:else if result && idx !== -1 && result.csdaRanges.length > 0}
-      {@const csdaGcm2 = result.csdaRanges[idx]!}
-      {@const csdaCm = density > 0 ? csdaGcm2 / density : csdaGcm2}
-      {@const scaled = autoScaleLengthCm(csdaCm)}
-      {formatSigFigs(scaled.value, 4)}
-      {scaled.unit}
     {:else}
       —
     {/if}

@@ -69,6 +69,18 @@
     >
       Unit
     </th>
+    {#if showCsda}
+      <th
+        scope="colgroup"
+        colspan={visibleProgramIds.length}
+        class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
+      >
+        <span class="inline-flex items-center gap-1">
+          CSDA Range
+          <HelpHint term="csdaRange" side="bottom" class="font-normal" testId="multi-csda-help" />
+        </span>
+      </th>
+    {/if}
     {#if showStp}
       <th
         scope="colgroup"
@@ -83,21 +95,9 @@
         />
       </th>
     {/if}
-    {#if showCsda}
-      <th
-        scope="colgroup"
-        colspan={visibleProgramIds.length}
-        class="px-2 sm:px-4 py-2 font-semibold text-center border-b border-l bg-muted/50"
-      >
-        <span class="inline-flex items-center gap-1">
-          CSDA Range
-          <HelpHint term="csdaRange" side="bottom" class="font-normal" testId="multi-csda-help" />
-        </span>
-      </th>
-    {/if}
   </tr>
   <tr class="bg-background">
-    {#if showStp}
+    {#if showCsda}
       {#each visibleProgramIds as programId (programId)}
         <th
           scope="col"
@@ -123,7 +123,7 @@
         </th>
       {/each}
     {/if}
-    {#if showCsda}
+    {#if showStp}
       {#each visibleProgramIds as programId (programId)}
         <th
           scope="col"

@@ -235,6 +235,12 @@
                 data-testid="mev-nucl-column-header">→ MeV/nucl</th
               >
             {/if}
+            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b">
+              <span class="inline-flex items-center gap-1">
+                CSDA Range
+                <HelpHint term="csdaRange" side="bottom" class="font-normal" />
+              </span>
+            </th>
             <th
               scope="col"
               class="relative px-2 py-2 font-medium whitespace-nowrap text-right border-b"
@@ -245,12 +251,6 @@
                 label="STP"
                 testid="advanced-stp-unit"
               />
-            </th>
-            <th scope="col" class="px-2 py-2 font-medium whitespace-nowrap text-right border-b">
-              <span class="inline-flex items-center gap-1">
-                CSDA Range
-                <HelpHint term="csdaRange" side="bottom" class="font-normal" />
-              </span>
             </th>
             <th scope="col" class="px-1 py-2 font-medium border-b w-6" aria-label="Delete row"></th>
           </tr>
@@ -303,6 +303,20 @@
                 </td>
               {/if}
 
+              <!-- CSDA Range result -->
+              <td
+                class={`px-2 py-2 text-right whitespace-nowrap font-mono ${cellClass(row.status)}`}
+                data-testid="advanced-range-cell-{i}"
+              >
+                {#if row.status === "out-of-range"}
+                  <span class="text-destructive text-xs">out of range</span>
+                {:else if row.csdaRangeCm !== null && !calcState.isCalculating}
+                  {formatRangeCm(row.csdaRangeCm)}
+                {:else}
+                  —
+                {/if}
+              </td>
+
               <!-- STP result -->
               <td
                 class={`px-2 py-2 text-right whitespace-nowrap font-mono transition-colors duration-300 ${
@@ -314,20 +328,6 @@
                   <span class="text-destructive text-xs">out of range</span>
                 {:else if row.stoppingPower !== null && !calcState.isCalculating}
                   {formatStpValue(row.stoppingPower, calcState.stpDisplayUnit)}
-                {:else}
-                  —
-                {/if}
-              </td>
-
-              <!-- CSDA Range result -->
-              <td
-                class={`px-2 py-2 text-right whitespace-nowrap font-mono ${cellClass(row.status)}`}
-                data-testid="advanced-range-cell-{i}"
-              >
-                {#if row.status === "out-of-range"}
-                  <span class="text-destructive text-xs">out of range</span>
-                {:else if row.csdaRangeCm !== null && !calcState.isCalculating}
-                  {formatRangeCm(row.csdaRangeCm)}
                 {:else}
                   —
                 {/if}

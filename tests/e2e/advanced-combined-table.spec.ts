@@ -41,7 +41,7 @@ test.describe("Advanced combined table — Energy → mode", () => {
     await expect(table.locator("thead")).toBeVisible();
     await expect(table.locator("tbody")).toBeVisible();
 
-    // Column headers: #, Energy, STP, CSDA Range (MeV/nucl conditional column absent at start).
+    // Column headers: #, Energy, CSDA Range, STP (MeV/nucl conditional column absent at start).
     const thead = table.locator("thead th");
     const headerTexts = await thead.allInnerTexts();
     const joined = headerTexts.join(" ");

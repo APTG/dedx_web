@@ -501,7 +501,7 @@ When the user changes particle, material, or program via the compact selectors:
 ### Inline Results
 
 Results are shown **inline in the unified table** — there is no separate
-result table. Each valid row's Stopping Power and CSDA Range cells are
+result table. Each valid row's CSDA Range and Stopping Power cells are
 populated after calculation. See "Unified Input/Result Table" in Inputs §3
 for column layout.
 
@@ -537,11 +537,15 @@ tint is used only to mark computed results.
   appears on focus.
 - **② CSDA range** (left) and **③ stopping power** (right) — the result cells,
   each with its quantity label + existing `HelpHint` above a large `font-mono`
-  value. The two cells are equal height and each value is pinned to the **bottom**
-  (`mt-auto`), so the two numbers stay **aligned on the same baseline even when
-  one label wraps to more lines than the other** (e.g. the long "Stopping Power
-  (keV/µm)" label on a narrow screen). A subtle `→` connector sits between the
-  input and the results on desktop.
+  value. All three cells are equal height and each value line is pinned to the
+  **bottom** (`mt-auto`) above an identical fixed-height slot; the plain result
+  values carry a transparent border + matching vertical padding so they share the
+  **same line box as the boxed input**. As a result **all three value lines —
+  the input and both results — land on one baseline**, and the two result numbers
+  stay aligned even when one label wraps to more lines than the other (e.g. the
+  long "Stopping Power (keV/µm)" label on a narrow screen). Cell padding is kept
+  **compact** (`px-4 py-3`, input/value `py-1.5`) so the cells don't feel empty.
+  A subtle `→` connector sits between the input and the results on desktop.
 - **All three cells are the same size** — the row is `items-stretch`, so the
   result cells match the (taller) input cell rather than shrinking to their own
   content; combined with the reserved hint slot the sizes stay stable as the user
@@ -977,9 +981,9 @@ entitySelection changes
 
 ### Unified Input/Result Table
 
-- [ ] The table has 5 columns: Typed Value, → MeV/nucl, Unit, Stopping Power, CSDA Range.
+- [ ] The table has 5 columns: Typed Value, → MeV/nucl, Unit, CSDA Range, Stopping Power.
 - [ ] Each row has an editable input cell in the Typed Value column.
-- [ ] Typing a value and waiting 300ms shows results in the same row's Stopping Power and CSDA Range cells.
+- [ ] Typing a value and waiting 300ms shows results in the same row's CSDA Range and Stopping Power cells.
 - [ ] An always-empty-row appears at the bottom of the table for new entries.
 - [ ] Clearing a row's typed value removes the row (unless it's the only row or the empty row).
 - [ ] Pasting multi-line text into an input cell creates multiple rows.
