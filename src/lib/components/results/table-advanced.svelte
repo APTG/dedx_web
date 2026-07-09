@@ -15,6 +15,7 @@
   } from "./table-advanced-helpers";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
   import StpUnitHeaderMenu from "./stp-unit-header-menu.svelte";
+  import RowDeleteButton from "./row-delete-button.svelte";
   import HelpHint from "$lib/components/help-hint.svelte";
   import { ENERGY_UNIT_HELP } from "$lib/config/help-text";
   import type { StpUnit } from "$lib/wasm/types";
@@ -335,15 +336,12 @@
 
               <!-- Delete row -->
               <td class="px-1 py-2 text-center">
-                {#if energyRows.length > 1}
-                  <button
-                    type="button"
-                    aria-label="Delete row {i + 1}"
-                    data-testid="advanced-delete-row-{i}"
-                    class="text-muted-foreground/50 hover:text-destructive text-base leading-none"
-                    onclick={() => calcState?.removeRow(i)}>×</button
-                  >
-                {/if}
+                <RowDeleteButton
+                  label={`Delete row ${i + 1}`}
+                  testId={`advanced-delete-row-${i}`}
+                  disabled={energyRows.length <= 1}
+                  onDelete={() => calcState?.removeRow(i)}
+                />
               </td>
             </tr>
           {/each}
@@ -492,15 +490,12 @@
 
               <!-- Delete row -->
               <td class="px-1 py-2 text-center">
-                {#if rangeRows.length > 1}
-                  <button
-                    type="button"
-                    aria-label="Delete range row {i + 1}"
-                    data-testid="inverse-range-delete-{i}"
-                    class="text-muted-foreground/50 hover:text-destructive text-base leading-none"
-                    onclick={() => inverseLookupState?.removeRangeRow(i)}>×</button
-                  >
-                {/if}
+                <RowDeleteButton
+                  label={`Delete range row ${i + 1}`}
+                  testId={`inverse-range-delete-${i}`}
+                  disabled={rangeRows.length <= 1}
+                  onDelete={() => inverseLookupState?.removeRangeRow(i)}
+                />
               </td>
             </tr>
           {/each}

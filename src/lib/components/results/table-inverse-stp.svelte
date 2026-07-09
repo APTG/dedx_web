@@ -2,6 +2,7 @@
   import type { InverseLookupState } from "$lib/state/inverse-lookups.svelte";
   import { formatEnergy, formatRangeCm } from "./value-formatters";
   import UnitAnchorStrip from "./unit-anchor-strip.svelte";
+  import RowDeleteButton from "./row-delete-button.svelte";
   import HelpHint from "$lib/components/help-hint.svelte";
 
   const STP_ANCHOR_OPTIONS = [
@@ -242,15 +243,12 @@
                     Plot
                   </button>
                 {/if}
-                <button
-                  type="button"
-                  aria-label="Delete row {i + 1}"
-                  aria-disabled={!canDeleteRows}
-                  data-testid="inverse-stp-delete-{i}"
+                <RowDeleteButton
+                  label={`Delete row ${i + 1}`}
+                  testId={`inverse-stp-delete-${i}`}
                   disabled={!canDeleteRows}
-                  class={`text-base leading-none ${canDeleteRows ? "text-muted-foreground/50 hover:text-destructive" : "text-muted-foreground/25 cursor-not-allowed"}`}
-                  onclick={() => onDeleteRow(i)}>×</button
-                >
+                  onDelete={() => onDeleteRow(i)}
+                />
               </div>
             </td>
           </tr>
