@@ -5,6 +5,7 @@
   import { formatRangeCm } from "./value-formatters";
   import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
   import HelpHint from "$lib/components/help-hint.svelte";
+  import RowDeleteButton from "./row-delete-button.svelte";
 
   interface Props {
     calcState: CalculatorState;
@@ -372,6 +373,7 @@
                   <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
                 </span>
               </th>
+              <th scope="col" class="w-10 px-1 py-2 border-b" aria-label="Delete row"></th>
             </tr>
           </thead>
           <tbody>
@@ -412,6 +414,13 @@
                   data-testid={`stp-cell-${i}`}
                 >
                   {stpDisplay(row)}
+                </td>
+                <td class="px-1 py-2 text-center">
+                  <RowDeleteButton
+                    label={`Delete row ${i + 1}`}
+                    testId={`basic-delete-row-${i}`}
+                    onDelete={() => calcState.removeRow(i)}
+                  />
                 </td>
               </tr>
             {/each}

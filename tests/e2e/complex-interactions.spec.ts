@@ -43,8 +43,9 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     await waitForTable(page);
   });
 
-  test("shows the result table with three columns in Basic mode", async ({ page }) => {
-    // After #556, Basic mode uses a 3-column table (Energy, CSDA Range, STP).
+  test("shows the result table with three data columns in Basic mode", async ({ page }) => {
+    // Basic mode multi-row table has 4 <th> elements: Energy, CSDA Range, STP,
+    // and a visually-empty delete-button column (aria-label="Delete row").
     // Basic mode passes autoAdd=false so the single-energy hero row stays until
     // the user explicitly clicks "+ Add row", which switches to multi-row table mode.
     await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
@@ -56,7 +57,7 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     await typeInRow(page, 0, "100");
     await page.getByRole("button", { name: /\+\s*Add row/i }).click();
     const headers = page.locator("thead th");
-    await expect(headers).toHaveCount(3, { timeout: 5000 });
+    await expect(headers).toHaveCount(4, { timeout: 5000 });
     await expect(headers.nth(0)).toContainText(/Energy/i);
     await expect(headers.nth(1)).toContainText(/CSDA Range/i);
     await expect(headers.nth(2)).toContainText(/Stopping Power/i);
