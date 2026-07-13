@@ -12,10 +12,13 @@
     isGas: boolean;
     /** Effective material density (g/cm³) for the STP unit conversion. */
     density: number;
+    /** True for heavy ions — the resolved "Energy" output is shown in
+     *  MeV/nucl instead of MeV, matching the Energy tab's auto unit switch. */
+    isHeavyIon: boolean;
     class?: string;
   }
 
-  let { inverseLookupState, isGas, density, class: className = "" }: Props = $props();
+  let { inverseLookupState, isGas, density, isHeavyIon, class: className = "" }: Props = $props();
 
   // Basic mode has no Add Row (#840) — always the first (and only) row.
   const row = $derived(inverseLookupState.rangeRows[0]!);
@@ -61,7 +64,7 @@
 
   function energyDisplay(): string {
     if (row.status === "valid" && row.energyMevNucl !== null)
-      return formatEnergy(row.energyMevNucl);
+      return formatEnergy(row.energyMevNucl, isHeavyIon);
     if (row.status === "out-of-range") return "out of range";
     return "—";
   }

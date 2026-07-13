@@ -19,6 +19,9 @@
     inverseLookupState: InverseLookupState;
     /** Called when user clicks "Plot" on a 2-solution row. Parent handles navigation. */
     onPlotRow?: (rowIndex: number) => void;
+    /** True for heavy ions — the resolved "→ Energy" columns are shown in
+     *  MeV/nucl instead of MeV, matching the Energy tab's auto unit switch. */
+    isHeavyIon: boolean;
     class?: string;
   };
 
@@ -183,7 +186,9 @@
               data-testid="inverse-stp-result-high-{i}"
             >
               {#if row.status === "valid" && row.energyHighMevNucl !== null}
-                <span class="text-sm font-mono">{formatEnergy(row.energyHighMevNucl)}</span>
+                <span class="text-sm font-mono"
+                  >{formatEnergy(row.energyHighMevNucl, props.isHeavyIon)}</span
+                >
               {:else if row.status === "no-solution"}
                 <span class="text-muted-foreground text-xs">—</span>
               {:else if row.status === "error"}
@@ -212,7 +217,9 @@
                 data-testid="inverse-stp-result-low-{i}"
               >
                 {#if row.status === "valid" && row.energyLowMevNucl !== null}
-                  <span class="text-sm font-mono">{formatEnergy(row.energyLowMevNucl)}</span>
+                  <span class="text-sm font-mono"
+                    >{formatEnergy(row.energyLowMevNucl, props.isHeavyIon)}</span
+                  >
                 {:else}
                   <span class="text-muted-foreground">—</span>
                 {/if}

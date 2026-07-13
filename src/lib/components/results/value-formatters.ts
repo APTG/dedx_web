@@ -12,7 +12,9 @@ export function formatStpValue(value: number, unit: StpUnit): string {
   return _formatStpValue(value, unit);
 }
 
-/** Format an energy in MeV/nucl as an auto-scaled string (e.g. "500.0 keV"). */
-export function formatEnergy(energyMevNucl: number): string {
-  return formatEnergyWithUnit(energyMevNucl, "MeV");
+/** Format an energy in MeV/nucl as an auto-scaled string (e.g. "500.0 keV").
+ *  Pass `isHeavyIon` to label it "MeV/nucl" (etc.) instead of plain "MeV",
+ *  matching the Energy tab's auto unit switch for heavy ions. */
+export function formatEnergy(energyMevNucl: number, isHeavyIon = false): string {
+  return formatEnergyWithUnit(energyMevNucl, isHeavyIon ? "MeV/nucl" : "MeV");
 }

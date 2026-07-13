@@ -24,7 +24,7 @@ describe("Inverse lookup contextual help", () => {
 
   describe("STP→ branch", () => {
     beforeEach(() => {
-      render(TableInverseStp, { props: { inverseLookupState: makeState() } });
+      render(TableInverseStp, { props: { inverseLookupState: makeState(), isHeavyIon: false } });
     });
 
     it("explains the STP→ lookup with two-branch wording", () => {
@@ -49,6 +49,7 @@ describe("Inverse lookup contextual help", () => {
           stpDisplayUnit: "keV/µm",
           onSelectStpUnit: vi.fn(),
           density: 1,
+          isHeavyIon: false,
         },
       });
 

@@ -8,10 +8,13 @@
     /** Whether the current material is a gas by default — picks the fixed
      *  STP input unit (issue #840: Basic mode has no unit dropdown). */
     isGas: boolean;
+    /** True for heavy ions — the resolved "Energy" outputs are shown in
+     *  MeV/nucl instead of MeV, matching the Energy tab's auto unit switch. */
+    isHeavyIon: boolean;
     class?: string;
   }
 
-  let { inverseLookupState, isGas, class: className = "" }: Props = $props();
+  let { inverseLookupState, isGas, isHeavyIon, class: className = "" }: Props = $props();
 
   // Basic mode has no Add Row (#840) — always the first (and only) row.
   const row = $derived(inverseLookupState.stpRows[0]!);
@@ -43,7 +46,7 @@
   }
 
   function energyDisplay(mevNucl: number | null): string {
-    return mevNucl !== null ? formatEnergy(mevNucl) : "—";
+    return mevNucl !== null ? formatEnergy(mevNucl, isHeavyIon) : "—";
   }
 
   function rangeDisplay(cm: number | null): string {

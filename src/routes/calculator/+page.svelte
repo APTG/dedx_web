@@ -21,6 +21,7 @@
   import { initExportState } from "$lib/state/export.svelte";
   import { advancedOptions } from "$lib/state/advanced-options.svelte";
   import { getEnergyAnchorOptions } from "$lib/utils/energy-anchor-options";
+  import { isHeavyIonParticle } from "$lib/utils/available-units";
   import { buildCalculatorPdfMetadata } from "$lib/utils/calculator-pdf-metadata";
   import { type EnergyUnit } from "$lib/wasm/types";
   import UrlVersionWarningBanner from "$lib/components/url-version-warning-banner.svelte";
@@ -136,6 +137,7 @@
     </div>
   {:else if appInit.entityState && calcState}
     {@const es = appInit.entityState}
+    {@const isHeavyIon = isHeavyIonParticle(es.selectedParticle)}
     <div class="space-y-6">
       <SelectionLiveRegion state={es} />
 
@@ -375,6 +377,7 @@
               density={(rangeIsCustom ? undefined : advancedOptions.value.densityOverride) ??
                 rangeSelMat?.density ??
                 1}
+              {isHeavyIon}
             />
           {:else}
             {@const basicRangeSelMat = es.selectedMaterial}
@@ -384,6 +387,7 @@
               {inverseLookupState}
               isGas={basicRangeBuiltinMat?.isGasByDefault ?? false}
               density={basicRangeSelMat?.density ?? 1}
+              {isHeavyIon}
             />
           {/if}
           {#if es.across === "single" && es.isComplete && energyRangeLabel}
@@ -412,6 +416,7 @@
           {:else if isAdvancedMode.value}
             <TableInverseStp
               {inverseLookupState}
+              {isHeavyIon}
               onPlotRow={(rowIndex) => {
                 const row = inverseLookupState?.stpRows[rowIndex];
                 if (!row || row.energyHighMevNucl === null || row.energyLowMevNucl === null) return;
@@ -434,6 +439,7 @@
             <TableBasicStp
               {inverseLookupState}
               isGas={basicStpBuiltinMat?.isGasByDefault ?? false}
+              {isHeavyIon}
             />
           {/if}
           {#if es.across === "single" && es.isComplete && energyRangeLabel}

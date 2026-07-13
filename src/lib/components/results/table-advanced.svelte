@@ -35,6 +35,9 @@
     onSelectStpUnit: (unit: StpUnit) => void;
     /** Effective material density (g/cm³) for native MeV·cm²/g → display-unit conversion. */
     density: number;
+    /** True for heavy ions — the resolved "→ Energy" column is shown in
+     *  MeV/nucl instead of MeV, matching the Energy tab's auto unit switch. */
+    isHeavyIon: boolean;
     class?: string;
   };
 
@@ -86,6 +89,7 @@
   const rangeRows = $derived(inverseLookupState?.rangeRows ?? []);
   const rangeStpUnit = $derived(!isEnergy ? (props as RangeModeProps).stpDisplayUnit : "keV/µm");
   const rangeDensity = $derived(!isEnergy ? (props as RangeModeProps).density : 1);
+  const rangeIsHeavyIon = $derived(!isEnergy ? (props as RangeModeProps).isHeavyIon : false);
 
   // Energy → mode handlers
   function handleEnergyInput(e: Event, i: number) {
@@ -463,7 +467,7 @@
                 data-testid="inverse-range-result-{i}"
               >
                 {#if row.status === "valid" && row.energyMevNucl !== null}
-                  {formatEnergy(row.energyMevNucl)}
+                  {formatEnergy(row.energyMevNucl, rangeIsHeavyIon)}
                 {:else if row.status === "out-of-range"}
                   <span class="text-destructive text-xs">out of range</span>
                 {:else if row.status === "invalid" || row.status === "error"}
