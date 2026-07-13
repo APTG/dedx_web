@@ -1053,8 +1053,8 @@ round-trip instead.
 
 - DOM: `[data-testid="basic-range-card"]` is visible (the simplified hero
   card, not `[data-testid="advanced-range-table"]`)
-- DOM: `[data-testid="basic-range-unit-strip"]` is visible; no element with
-  text "(per-row mode active)" is present
+- DOM: the input label reads "Range (cm)" (unit embedded in label, no separate unit-anchor strip);
+  no element with text "(per-row mode active)" is present
 
 **When** the user enables Advanced mode
 

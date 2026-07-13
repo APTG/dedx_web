@@ -7,11 +7,12 @@
 > only, per `inverse-lookups.md` §1) — each tab renders a simplified
 > single-row hero card in Basic mode instead of the Advanced multi-row table.
 > "+ Add row" moved to Advanced-only; Basic mode is always exactly one row in
-> all three tabs. New Basic-mode Range → and STP → hero cards: unit-anchor
-> strip (Range only) with no per-row "Unit" column or "per-row mode active"
-> text; STP output/input fixed to the material-phase unit (keV/µm non-gas,
-> MeV·cm²/g gas), bypassing the Advanced STP-unit override; STP → keeps the
-> high-/low-energy branch reveal. `calc=`/`lookups=`/`runit=`/`sunit=`/
+> all three tabs. New Basic-mode Range → and STP → hero cards: unit embedded
+> in the input label (e.g. "Range (cm)") with no separate unit-anchor strip,
+> no per-row "Unit" column or "per-row mode active" text; STP output/input
+> fixed to the material-phase unit (keV/µm non-gas, MeV·cm²/g gas), bypassing
+> the Advanced STP-unit override; STP → keeps the high-/low-energy branch
+> reveal. `calc=`/`lookups=`/`runit=`/`sunit=`/
 > `istpbranch=` are no longer Advanced-mode-only in the URL contract (see
 > `shareable-urls.md`).
 >
@@ -231,10 +232,10 @@ units, and unit dropdowns are Advanced-only (issue #840):
 - **Energy →** — unchanged from the pre-#840 Basic hero row (see
   [Basic single-energy hero row](#basic-single-energy-hero-row-issue-823)
   below): one energy input, CSDA range and stopping power outputs.
-- **Range →** — a unit-anchor strip (nm/µm/mm/cm/m, same options as Advanced)
-  sits above a hero card with one range input (typed unit suffix supported,
-  e.g. `5 mm`) and two outputs: Energy and Stopping Power. Unlike Advanced,
-  there is no per-row "Unit" column (only one row exists) and no
+- **Range →** — a hero card with one range input (typed unit suffix supported,
+  e.g. `5 mm`); the unit is shown in the input label (e.g. "Range (cm)") with
+  no separate unit-anchor strip. Two outputs: Energy and Stopping Power. Unlike
+  Advanced, there is no per-row "Unit" column (only one row exists) and no
   "per-row mode active" indicator. The stopping-power output unit is
   **fixed** to keV/µm for solid/liquid materials or MeV·cm²/g for gases —
   computed directly from the material's phase, independent of the Advanced

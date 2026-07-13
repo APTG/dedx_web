@@ -49,6 +49,12 @@
   function rangeDisplay(cm: number | null): string {
     return cm !== null ? formatRangeCm(cm) : "—";
   }
+
+  // Error state: "invalid" and "error" are both failure states — style
+  // the input card the same way so styling and message are always in sync.
+  // Note: InverseStpRow.status has no "out-of-range" (unlike RangeRow); the
+  // STP WASM lookup returns "no-solution" for domain failures instead.
+  const isError = $derived(row.status === "invalid" || row.status === "error");
 </script>
 
 <div class={`space-y-3 ${className}`} data-testid="basic-stp-card">
@@ -56,7 +62,7 @@
     <!-- ① Stopping power — the input (orange = what you type in) -->
     <div
       class={`flex flex-col rounded-lg border px-4 py-3 transition-colors sm:flex-[1.4] ${
-        row.status === "invalid"
+        isError
           ? "border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
           : "border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/30"
       }`}
@@ -64,7 +70,7 @@
       <label
         for="basic-stp-input"
         class={`mb-1 flex items-start gap-1 text-xs font-semibold ${
-          row.status === "invalid" ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+          isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
         }`}
         >Stopping Power ({fixedUnitLabel})
         <HelpHint term="braggPeak" side="bottom" testId="basic-stp-bragg-help" />
@@ -78,15 +84,13 @@
         value={row.text}
         placeholder="e.g. 30"
         class={`mt-auto w-full rounded-md border bg-background px-3 py-1.5 font-mono text-2xl font-semibold focus:outline-none focus:ring-2 disabled:opacity-60 ${
-          row.status === "invalid"
-            ? "border-red-400 focus:ring-red-400/50"
-            : "border-input focus:ring-orange-400/60"
+          isError ? "border-red-400 focus:ring-red-400/50" : "border-input focus:ring-orange-400/60"
         }`}
         onkeydown={handleKeyDown}
         oninput={handleStpInput}
       />
       <div class="mt-1 min-h-[1rem] text-xs">
-        {#if row.message && (row.status === "invalid" || row.status === "error")}
+        {#if row.message && isError}
           <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
         {/if}
       </div>
