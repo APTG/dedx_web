@@ -1,7 +1,7 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
 > **Status:** v10 (2026-07-13) — issue #840: `calc=`, `lookups=`, `runit=`,
-> `sunit=`, and `istpbranch=` are no longer basic-mode-only (§3.5, §4 items
+> `sunit=`, and `istpbranch=` are no longer advanced-mode-only (§3.5, §4 items
 > 8/12/14) — the Energy→/Range→/STP→ tab selector is shared state between
 > basic and advanced mode. Added an implementation-gap note (§3.5): the
 > shipped `calculator-url.ts` still uses the retired v1 names `imode=`/

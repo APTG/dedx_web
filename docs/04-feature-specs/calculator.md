@@ -202,7 +202,7 @@ the same tab.
 
 | Tab | Label    | Desktop sublabel        | Mobile glyph (< 400 px) | `calc=` URL token |
 | --- | -------- | ----------------------- | ----------------------- | ----------------- |
-| 1   | Energy → | → Stopping Power, Range | E→                      | `forward`         |
+| 1   | Energy → | → Range, Stopping Power | E→                      | `forward`         |
 | 2   | Range →  | → Energy, STP           | R→                      | `range`           |
 | 3   | STP →    | → Energy, Range         | S→                      | `inverse-stp`     |
 

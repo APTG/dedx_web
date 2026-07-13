@@ -3,8 +3,6 @@
   import type { StpUnit } from "$lib/wasm/types";
   import { formatEnergy, formatStpValue } from "./value-formatters";
   import { convertStpMass } from "$lib/utils/unit-conversions";
-  import { RANGE_ANCHOR_OPTIONS } from "./table-advanced-helpers";
-  import UnitAnchorStrip from "./unit-anchor-strip.svelte";
   import HelpHint from "$lib/components/help-hint.svelte";
 
   interface Props {
@@ -28,6 +26,14 @@
   // can't violate the "fixed unit" requirement in Basic mode.
   const fixedStpUnit: StpUnit = $derived(isGas ? "MeV·cm²/g" : "keV/µm");
 
+  // The unit lives in the label ("Range (cm)"), matching the master anchor
+  // (like Kinetic energy's "MeV" label); once the user types their own unit
+  // suffix it is dropped so the label never contradicts the typed value.
+  const rangeUnitDisplay = $derived(
+    inverseLookupState.rangeMasterUnit === "um" ? "µm" : inverseLookupState.rangeMasterUnit,
+  );
+  const rangeHeroLabel = $derived(row.unitFromSuffix ? "Range" : `Range (${rangeUnitDisplay})`);
+
   function handleRangeInput(event: Event) {
     inverseLookupState.updateRangeRowText(0, (event.target as HTMLInputElement).value);
   }
@@ -39,8 +45,12 @@
     }
   }
 
-  function selectRangeUnit(unit: string) {
-    inverseLookupState.setRangeMasterUnit(unit as "nm" | "um" | "mm" | "cm" | "m");
+  // Inline-unit hint — shown while the range input is focused, mirroring the
+  // Kinetic energy hero's hint (table-basic.svelte).
+  let hintVisible = $state(false);
+
+  function handleInputFocus(event: Event) {
+    (event.target as HTMLInputElement).select();
   }
 
   function energyDisplay(): string {
@@ -60,20 +70,6 @@
 </script>
 
 <div class={`space-y-3 ${className}`} data-testid="basic-range-card">
-  <!-- Unit-anchor strip: shown per the Range → design (unlike Energy → hero,
-       which has no unit control). No "(per-row mode active)" text — Basic
-       mode is always a single row, so per-row mode is moot (#840). -->
-  <div class="flex items-center gap-1">
-    <UnitAnchorStrip
-      options={RANGE_ANCHOR_OPTIONS}
-      selected={inverseLookupState.rangeMasterUnit}
-      onSelect={selectRangeUnit}
-      disabled={row.unitFromSuffix}
-      data-testid="basic-range-unit-strip"
-    />
-    <HelpHint term="inverseRange" side="bottom" testId="basic-range-unit-help" />
-  </div>
-
   <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
     <!-- ① Range — the input (orange = what you type in) -->
     <div
@@ -87,7 +83,7 @@
         for="basic-range-input"
         class={`mb-1 flex items-start gap-1 text-xs font-semibold ${
           row.status === "invalid" ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
-        }`}>Range</label
+        }`}>{rangeHeroLabel}</label
       >
       <input
         id="basic-range-input"
@@ -102,12 +98,25 @@
             ? "border-red-400 focus:ring-red-400/50"
             : "border-input focus:ring-orange-400/60"
         }`}
+        onfocus={(e) => {
+          handleInputFocus(e);
+          hintVisible = true;
+        }}
+        onblur={() => (hintVisible = false)}
         onkeydown={handleKeyDown}
         oninput={handleRangeInput}
       />
       <div class="mt-1 min-h-[1rem] text-xs">
         {#if row.message && row.status === "invalid"}
           <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
+        {:else if hintVisible}
+          <span
+            class="text-orange-700 dark:text-orange-300"
+            role="status"
+            data-testid="inline-range-unit-hint"
+          >
+            type a unit too — e.g. <code class="font-mono font-medium">10 um</code>
+          </span>
         {/if}
       </div>
     </div>

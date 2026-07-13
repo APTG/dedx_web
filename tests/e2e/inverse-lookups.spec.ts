@@ -404,7 +404,10 @@ test.describe("Basic vs Advanced Layout", () => {
     await page.click('[data-testid="inverse-tab-range"]');
     await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
     await expect(page.locator('[data-testid="advanced-range-table"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="basic-range-unit-strip"]')).toBeVisible();
+    // No unit-anchor strip in Basic mode (#840 follow-up) — the fixed unit
+    // lives in the input label instead, mirroring the Kinetic energy hero.
+    await expect(page.locator('[data-testid="basic-range-unit-strip"]')).toHaveCount(0);
+    await expect(page.getByText("Range (cm)")).toBeVisible();
     await expect(page.getByText("per-row mode active")).toHaveCount(0);
     await expect(page.locator('button:has-text("+ Add row")')).toHaveCount(0);
   });

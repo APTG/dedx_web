@@ -257,7 +257,7 @@
           >
             <span class="hidden min-[400px]:block font-bold">Energy →</span>
             <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-              >→ STP, Range</span
+              >→ Range, STP</span
             >
             <span class="min-[400px]:hidden font-bold">E→</span>
           </button>

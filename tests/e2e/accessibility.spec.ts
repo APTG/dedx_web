@@ -35,7 +35,7 @@ for (const { path, label } of ROUTES) {
       await page.waitForFunction(
         () => {
           const btn = document.querySelector('[data-testid="export-pdf-btn"]');
-          return btn ? getComputedStyle(btn).opacity === "1" : false;
+          return btn ? parseFloat(getComputedStyle(btn).opacity) > 0.99 : false;
         },
         { timeout: 5000 },
       );

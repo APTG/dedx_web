@@ -1,5 +1,5 @@
 import { describe, it, expect, afterEach } from "vitest";
-import { render, screen, cleanup } from "@testing-library/svelte";
+import { render, screen, cleanup, fireEvent } from "@testing-library/svelte";
 import { flushSync } from "svelte";
 import TableBasicRange from "$lib/components/results/table-basic-range.svelte";
 import TableBasicStp from "$lib/components/results/table-basic-stp.svelte";
@@ -44,7 +44,7 @@ describe("TableBasicRange", () => {
     expect(screen.getByText("Stopping Power (MeV·cm²/g)")).toBeInTheDocument();
   });
 
-  it("converts a resolved stopping power to the fixed unit, ignoring density for keV/µm math", () => {
+  it("converts a resolved stopping power to the fixed keV/µm display unit", () => {
     const state = makeState();
     render(TableBasicRange, { props: { inverseLookupState: state, isGas: false, density: 1 } });
 
@@ -54,8 +54,40 @@ describe("TableBasicRange", () => {
     state.rangeRows[0]!.stoppingPower = 25; // MeV·cm²/g, native
     flushSync();
 
-    // keV/µm = massStp * density / 10 = 25 * 1 / 10 = 2.5
+    // keV/µm = massStp * density / 10 = 25 * 1 / 10 = 2.5 (convertStpMass
+    // does depend on density; it's 1 here so the factor is a no-op).
     expect(screen.getByTestId("basic-range-stp-cell")).toHaveTextContent("2.5");
+  });
+
+  it("shows the fixed master unit in the label, with no unit-anchor strip", () => {
+    render(TableBasicRange, {
+      props: { inverseLookupState: makeState(), isGas: false, density: 1 },
+    });
+    expect(screen.getByText("Range (cm)")).toBeInTheDocument();
+    expect(screen.queryByTestId("basic-range-unit-strip")).not.toBeInTheDocument();
+  });
+
+  it("shows a 'type a unit too' hint while the range input is focused", async () => {
+    render(TableBasicRange, {
+      props: { inverseLookupState: makeState(), isGas: false, density: 1 },
+    });
+    const input = screen.getByTestId("basic-range-input");
+    expect(screen.queryByTestId("inline-range-unit-hint")).not.toBeInTheDocument();
+    await fireEvent.focus(input);
+    expect(screen.getByTestId("inline-range-unit-hint")).toBeInTheDocument();
+    await fireEvent.blur(input);
+    expect(screen.queryByTestId("inline-range-unit-hint")).not.toBeInTheDocument();
+  });
+
+  it("drops the unit from the label once the user types a unit suffix", () => {
+    const state = makeState();
+    render(TableBasicRange, { props: { inverseLookupState: state, isGas: false, density: 1 } });
+
+    state.updateRangeRowText(0, "10um");
+    flushSync();
+
+    expect(screen.getByText("Range")).toBeInTheDocument();
+    expect(screen.queryByText("Range (cm)")).not.toBeInTheDocument();
   });
 });
 

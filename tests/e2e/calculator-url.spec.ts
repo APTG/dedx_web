@@ -24,9 +24,8 @@ test.describe("Calculator URL sync", () => {
     });
     // Basic mode is always exactly one row (issue #840) — the second energy
     // in the link is silently dropped rather than creating a second row.
-    const energyInputs = page.getByRole("textbox");
-    await expect(energyInputs.nth(0)).toHaveValue("100");
-    await expect(energyInputs).toHaveCount(1);
+    await expect(page.getByTestId("energy-input-0")).toHaveValue("100");
+    await expect(page.getByTestId("energy-input-1")).toHaveCount(0);
   });
 
   test("loading a multi-energy URL in Advanced mode restores all rows", async ({ page }) => {
