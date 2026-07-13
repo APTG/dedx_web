@@ -10,7 +10,7 @@ import type {
   EnergyUnit,
   CompoundElement,
 } from "./types.js";
-import { LibdedxError } from "./types.js";
+import { LibdedxError, DEDX_ERR_COMBINATION_NOT_FOUND } from "./types.js";
 import { getParticleAliases, getParticleSymbol } from "$lib/config/particle-aliases.js";
 import { getMaterialFriendlyName } from "$lib/config/material-names.js";
 import { getProgramFriendlyName } from "$lib/config/program-names.js";
@@ -142,6 +142,17 @@ interface EmscriptenModule {
   HEAP32: Int32Array;
   HEAPF32: Float32Array;
   HEAPF64: Float64Array;
+}
+
+/**
+ * Translate a libdedx error code into a message safe to show directly to end users.
+ * Falls back to the generic caller-supplied message for codes with no dedicated copy.
+ */
+function describeLibdedxError(code: number, fallback: string): string {
+  if (code === DEDX_ERR_COMBINATION_NOT_FOUND) {
+    return "No stopping-power data available for this particle + material combination in the selected program.";
+  }
+  return fallback;
 }
 
 /** Read a sentinel-terminated int32 array from WASM heap. Stops at 0 or negative. */
@@ -312,7 +323,7 @@ export class LibdedxServiceImpl implements LibdedxService {
         stpPtr,
       );
       if (stpErr !== 0) {
-        throw new LibdedxError(stpErr, "WASM STP calculation failed");
+        throw new LibdedxError(stpErr, describeLibdedxError(stpErr, "WASM STP calculation failed"));
       }
 
       // Call 2: CSDA ranges (6 args: program, ion, target, n, energies*, csda*)
@@ -328,7 +339,10 @@ export class LibdedxServiceImpl implements LibdedxService {
           csdaPtr,
         );
         if (csdaErr !== 0) {
-          throw new LibdedxError(csdaErr, "WASM CSDA calculation failed");
+          throw new LibdedxError(
+            csdaErr,
+            describeLibdedxError(csdaErr, "WASM CSDA calculation failed"),
+          );
         }
       }
 
@@ -549,7 +563,12 @@ export class LibdedxServiceImpl implements LibdedxService {
 
         const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0) {
-          results.push(new LibdedxError(errCode, `Inverse STP lookup failed for stp=${stp}`));
+          results.push(
+            new LibdedxError(
+              errCode,
+              describeLibdedxError(errCode, `Inverse STP lookup failed for stp=${stp}`),
+            ),
+          );
         } else {
           results.push({ energy, stoppingPower: stp });
         }
@@ -587,7 +606,12 @@ export class LibdedxServiceImpl implements LibdedxService {
 
         const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
         if (errCode !== 0) {
-          results.push(new LibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`));
+          results.push(
+            new LibdedxError(
+              errCode,
+              describeLibdedxError(errCode, `Inverse CSDA lookup failed for range=${range}`),
+            ),
+          );
         } else if (energy < 0) {
           results.push(
             new LibdedxError(
@@ -625,7 +649,10 @@ export class LibdedxServiceImpl implements LibdedxService {
 
       const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (errCode !== 0) {
-        throw new LibdedxError(errCode, "Bragg peak STP lookup failed");
+        throw new LibdedxError(
+          errCode,
+          describeLibdedxError(errCode, "Bragg peak STP lookup failed"),
+        );
       }
 
       return braggPeakStp;
@@ -746,7 +773,11 @@ export class LibdedxServiceImpl implements LibdedxService {
 
       const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (err !== 0 || errCode !== 0) {
-        throw new LibdedxError(errCode || err, "Custom compound forward calculation failed");
+        const finalCode = errCode || err;
+        throw new LibdedxError(
+          finalCode,
+          describeLibdedxError(finalCode, "Custom compound forward calculation failed"),
+        );
       }
 
       const stoppingPowers: number[] = [];
@@ -809,7 +840,10 @@ export class LibdedxServiceImpl implements LibdedxService {
           results.push(
             new LibdedxError(
               errCode,
-              `Inverse STP lookup failed for stp=${stp} (energy=${energy})`,
+              describeLibdedxError(
+                errCode,
+                `Inverse STP lookup failed for stp=${stp} (energy=${energy})`,
+              ),
             ),
           );
         } else {
@@ -860,7 +894,10 @@ export class LibdedxServiceImpl implements LibdedxService {
           results.push(
             new LibdedxError(
               errCode,
-              `Inverse CSDA lookup failed for range=${range} (energy=${energy})`,
+              describeLibdedxError(
+                errCode,
+                `Inverse CSDA lookup failed for range=${range} (energy=${energy})`,
+              ),
             ),
           );
         } else {
@@ -902,7 +939,10 @@ export class LibdedxServiceImpl implements LibdedxService {
 
       const errCode = this.module.HEAP32[errPtr >>> 2] ?? 0;
       if (errCode !== 0) {
-        throw new LibdedxError(errCode, "Bragg peak STP lookup failed for custom compound");
+        throw new LibdedxError(
+          errCode,
+          describeLibdedxError(errCode, "Bragg peak STP lookup failed for custom compound"),
+        );
       }
 
       return braggPeakStp;

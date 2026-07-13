@@ -7,13 +7,15 @@ import type {
 } from "$lib/wasm/types";
 
 // DEDX_ICRU (id=9) is the internal auto-selector in libdedx — it picks the best
-// ICRU dataset for the current particle/material at the C layer.
+// ICRU dataset for the current particle/material at the C layer. DEDX_AUTO (id=10,
+// added in libdedx#144) does the same tabulated-report selection but additionally
+// falls back to the Bethe-Bloch formula for elements no tabulated report covers.
 // Spec references:
-// - docs/04-feature-specs/entity-selection.md ("Hidden programs": ID 9 excluded)
-// - docs/06-wasm-api-contract.md §10.3 (ID 9 used internally by Auto-select)
-// The UI exposes a synthetic "Auto-select" entry instead, so showing ID 9 directly
-// would duplicate behavior and confuse users.
-const EXCLUDED_FROM_UI = new Set([9]);
+// - docs/04-feature-specs/entity-selection.md ("Hidden programs": IDs 9 and 10 excluded)
+// - docs/06-wasm-api-contract.md §10.3 (IDs 9 and 10 used internally by Auto-select)
+// The UI exposes a synthetic "Auto-select" entry instead, so showing either ID
+// directly would duplicate behavior and confuse users — see dedx_web#844.
+const EXCLUDED_FROM_UI = new Set([9, 10]);
 
 export function buildCompatibilityMatrix(service: LibdedxService): CompatibilityMatrix {
   const programs = service.getPrograms();
