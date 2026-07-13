@@ -17,6 +17,30 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-13 — **wasm / #844**: Closed out the frontend side of the stale material-availability
+  table bug (proton+Boron → opaque `LibdedxError code: 202`), now that the libdedx root cause
+  (`libdedx#51`) was fixed upstream in `libdedx#144`. Bumped the `libdedx` submodule pin
+  (`60d05f0` → `9ec008f`) to pull in the corrected `dedx_program_available_materials` table,
+  the new ion-aware `dedx_get_material_list_for_ion()`, and a new `DEDX_AUTO` program (id 10)
+  with a Bethe-Bloch fallback. Added `10` to `EXCLUDED_FROM_UI` in `compatibility-matrix.ts`
+  (verified in-browser it would otherwise show up as a confusing raw "AUTO" tile alongside the
+  existing "Auto-select" hero) — Boron now cleanly falls through to the pre-existing, universal
+  `DEDX_DEFAULT` ("Default (Bethe)") fallback instead, giving a real computed value with no
+  error. Added a shared `describeLibdedxError()` translation in `libdedx.ts` so code 202
+  (`DEDX_ERR_COMBINATION_NOT_FOUND`, new named constant in `types.ts`) shows a clear message in
+  both the Basic-mode error banner and the Advanced-mode per-cell tooltip instead of the raw
+  "WASM STP calculation failed", as defense-in-depth for any combination that still reaches a
+  real 202 (e.g. an explicit invalid `program=` forced via URL). Also split
+  `calculator-engine.svelte.ts`'s single silently-clearing guard so a particle+material pair
+  with zero available programs sets an explicit error instead of silently emptying results.
+  New tests in `libdedx-service-impl.test.ts`, `compatibility-matrix.test.ts`,
+  `calculator-state.test.ts`; full Vitest (1954) + svelte-check/tsc/ESLint/Prettier clean;
+  verified end-to-end against a locally rebuilt WASM binary via throwaway Playwright scripts.
+  Surfaced (not fixed — flagged to the user) a separate, pre-existing URL-hydration-ordering
+  bug where an explicit `program=` silently reverts an incompatible `material=`/`particle=` to
+  a default with no warning, previously masked by the same stale table. (Claude Sonnet 5 via
+  Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-13-issue-844-boron-availability.md)
 - 2026-07-13 — **calculator**: Fixed a heavy-ion unit bug in the Range →/STP → inverse-lookup tabs (Basic and Advanced). The Energy tab already auto-switches its unit to MeV/nucl for heavy ions (e.g. alpha particles), but the resolved "Energy" output in Range → and STP → always showed plain "MeV" regardless of particle — `value-formatters.ts`'s `formatEnergy` hardcoded `"MeV"` as the base unit even though the underlying value is already per-nucleon. Added `isHeavyIonParticle` to `available-units.ts` (same rule as `CalculatorState.switchParticle`'s existing heavy-ion check), gave `formatEnergy` an `isHeavyIon` param, and threaded an `isHeavyIon` prop (computed once in `+page.svelte` from the shared `EntitySelectionState`) through `table-basic-range.svelte`, `table-basic-stp.svelte`, `table-advanced.svelte`'s Range mode, and `table-inverse-stp.svelte`. Verified end-to-end with a real WASM build: alpha particle now shows "31.98 MeV/nucl" (Range →) and "5.309 MeV/nucl" / "2.009 keV/nucl" (STP → high-E/low-E), proton control unaffected ("32.08 MeV"). New tests per surface + a dedicated `isHeavyIonParticle` unit test; svelte-check/tsc/ESLint/Prettier clean; full Vitest (1949) green. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-13-heavy-ion-unit-range-stp.md)
 - 2026-07-13 — **calculator / PR #842 review**: Follow-ups on the just-opened Basic-mode Energy→/Range→/STP→ PR (#842, issue #840). Fixed the Energy → tab's desktop sublabel, which read "→ STP, Range" while the hero card actually shows CSDA Range before Stopping Power — now "→ Range, STP" (shared markup, fixes both Basic and Advanced). Simplified the Basic Range → card (`table-basic-range.svelte`): removed the nm/µm/mm/cm/m unit-anchor strip entirely, mirroring the Kinetic-energy hero's unit-in-label pattern — the label now reads `Range (${rangeMasterUnit})` (shared state with Advanced mode's own Range → unit strip, defaulting to "cm"), drops to plain "Range" once the row has a typed unit suffix (`unitFromSuffix`), and gained the same focus-driven "type a unit too" hint as the Kinetic-energy input. Addressed all four pending Copilot review comments on PR #842: `calculator-url.spec.ts`'s fragile `getByRole("textbox")` count check → `energy-input-0`/`energy-input-1` testids; `accessibility.spec.ts`'s exact `opacity === "1"` wait → `parseFloat(opacity) > 0.99`; a misleadingly-titled test in `table-basic-range-stp.test.ts` that claimed to ignore density while its formula (`convertStpMass`) does multiply by density → renamed/reworded; `shareable-urls-formal.md`'s inverted status-header wording ("no longer basic-mode-only" → "no longer advanced-mode-only"). svelte-check/tsc/ESLint/Prettier clean; full Vitest (1935) green; targeted Playwright (32) green; manually verified in-browser via a throwaway driver script (screenshots reviewed, scratch file removed before commit). (Claude Sonnet 5 via Claude Code)

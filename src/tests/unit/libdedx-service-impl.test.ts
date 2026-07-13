@@ -185,16 +185,49 @@ describe("LibdedxServiceImpl", () => {
     test("calculate() throws LibdedxError on stp failure and frees memory", () => {
       mockModule._dedx_get_stp_table.mockReturnValue(42); // Error code 42
 
-      expect.assertions(3);
+      expect.assertions(4);
       try {
         service.calculate(1, 1, 1, [10.0]);
       } catch (e) {
         expect(e).toBeInstanceOf(LibdedxError);
         expect((e as LibdedxError).code).toBe(42);
+        expect((e as LibdedxError).message).toBe("WASM STP calculation failed");
       }
 
       // Memory should be freed despite exception
       expect(mockModule._free).toHaveBeenCalled();
+    });
+
+    // Regression test for dedx_web#844: code 202 (DEDX_ERR_COMBINATION_NOT_FOUND) previously
+    // surfaced as the opaque "WASM STP calculation failed" — e.g. proton+Boron in PSTAR/ICRU49,
+    // where the (now-fixed) stale libdedx table used to falsely claim the material was available.
+    test("calculate() translates code 202 into a user-facing 'not supported' message", () => {
+      mockModule._dedx_get_stp_table.mockReturnValue(202);
+
+      expect.assertions(2);
+      try {
+        service.calculate(2, 1, 5, [100.0]);
+      } catch (e) {
+        expect(e).toBeInstanceOf(LibdedxError);
+        expect((e as LibdedxError).message).toBe(
+          "No stopping-power data available for this particle + material combination in the selected program.",
+        );
+      }
+    });
+
+    test("calculate() translates code 202 from the CSDA call the same way", () => {
+      mockModule._dedx_get_stp_table.mockReturnValue(0);
+      mockModule._dedx_get_csda_range_table.mockReturnValue(202);
+
+      expect.assertions(2);
+      try {
+        service.calculate(2, 1, 5, [100.0]);
+      } catch (e) {
+        expect(e).toBeInstanceOf(LibdedxError);
+        expect((e as LibdedxError).message).toBe(
+          "No stopping-power data available for this particle + material combination in the selected program.",
+        );
+      }
     });
 
     test("calculate() throws LibdedxError on csda failure and frees memory", () => {

@@ -6,14 +6,17 @@ import type {
   LibdedxService,
 } from "$lib/wasm/types";
 
-// DEDX_ICRU (id=9) is the internal auto-selector in libdedx — it picks the best
-// ICRU dataset for the current particle/material at the C layer.
+// DEDX_ICRU (id=9) and DEDX_AUTO (id=10, added in libdedx#144) are internal
+// libdedx helper programs — they must NOT appear as selectable tiles in the
+// program picker, as they would create duplicate/confusing entries.
+// dedx_web's "Auto-select" feature resolves to concrete user-facing program IDs
+// (e.g. MSTAR/PSTAR/ASTAR/Default) in TypeScript via AUTO_SELECT_CHAIN in
+// entity-availability.svelte.ts; it does NOT call programs 9 or 10 directly.
 // Spec references:
-// - docs/04-feature-specs/entity-selection.md ("Hidden programs": ID 9 excluded)
-// - docs/06-wasm-api-contract.md §10.3 (ID 9 used internally by Auto-select)
-// The UI exposes a synthetic "Auto-select" entry instead, so showing ID 9 directly
-// would duplicate behavior and confuse users.
-const EXCLUDED_FROM_UI = new Set([9]);
+// - docs/04-feature-specs/entity-selection.md ("Hidden programs": IDs 9 and 10 excluded)
+// - docs/06-wasm-api-contract.md §10.3 (IDs 9 and 10 are internal libdedx programs,
+//   filtered from the picker)
+const EXCLUDED_FROM_UI = new Set([9, 10]);
 
 export function buildCompatibilityMatrix(service: LibdedxService): CompatibilityMatrix {
   const programs = service.getPrograms();

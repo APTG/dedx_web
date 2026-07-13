@@ -159,8 +159,21 @@ export function createCalculatorEngine(
     const builtinMaterial = asBuiltinMaterial(material);
     const customMaterial = isCustomMaterial(builtinMaterial) ? builtinMaterial : null;
 
-    if (!resolvedProgramId || !particleId || !materialId) {
+    if (!particleId || !materialId) {
       calculationResults = new Map();
+      isCalculating = false;
+      return;
+    }
+
+    if (!resolvedProgramId) {
+      // A particle and material are both selected, but no available program supports
+      // this combination (e.g. reached via a shared URL that bypassed the picker's
+      // greying-out) — show an explicit message instead of silently clearing results.
+      calculationResults = new Map();
+      error = new LibdedxError(
+        -1,
+        "No available program supports this particle + material combination.",
+      );
       isCalculating = false;
       return;
     }

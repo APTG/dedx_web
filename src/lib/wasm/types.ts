@@ -104,6 +104,14 @@ export class LibdedxError extends Error {
   }
 }
 
+/**
+ * libdedx C error code: no stopping-power data exists for this ion+material+program
+ * combination (a program claims the material via its material list, but the
+ * embedded table has no entry for it — e.g. proton+Boron in PSTAR/ICRU49). See
+ * dedx_web#844 and libdedx#51/#144.
+ */
+export const DEDX_ERR_COMBINATION_NOT_FOUND = 202;
+
 export interface LibdedxService {
   init(): Promise<void>;
   getPrograms(): ProgramEntity[];

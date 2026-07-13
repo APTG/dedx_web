@@ -1073,16 +1073,29 @@ const name = module.ccall("dedx_get_ion_name", "string", ["number"], [ionId]);
 const displayName = ionId === 1001 ? "Electron" : toTitleCase(name);
 ```
 
-### 10.3 Program list includes ICRU auto-selector (ID=9)
+### 10.3 Program list includes ICRU auto-selector (ID=9) and Bethe-fallback auto-selector (ID=10)
 
-`dedx_get_program_list()` returns 10 program IDs: 1–7, 9, 100, 101.
-ID=9 (`DEDX_ICRU`) is the internal auto-selector used by the "Auto-select"
-virtual entry in the UI. It must **not** appear as a selectable program in the
-program picker — filter it from `getPrograms()` output:
+`dedx_get_program_list()` returns 11 program IDs: 1–7, 9, 10, 100, 101.
+ID=9 (`DEDX_ICRU`) and ID=10 (`DEDX_AUTO`, added in libdedx#144) are both
+internal libdedx helper programs and must be filtered from the program picker
+to avoid duplicate/confusing tiles. `DEDX_ICRU` picks the best tabulated ICRU
+report for the ion at the C layer, and `DEDX_AUTO` does the same but
+additionally falls back to the Bethe-Bloch formula for elements no tabulated
+report covers (e.g. Boron). dedx_web's "Auto-select" feature does **not** call
+these programs — it resolves to concrete user-facing program IDs
+(e.g. MSTAR/PSTAR/ASTAR/Default) in TypeScript via `AUTO_SELECT_CHAIN`
+(see `entity-availability.svelte.ts`). Filter both from `getPrograms()` output:
 
 ```typescript
-const EXCLUDED_FROM_UI = new Set([9]); // DEDX_ICRU — internal auto-selector
+const EXCLUDED_FROM_UI = new Set([9, 10]); // DEDX_ICRU, DEDX_AUTO — internal auto-selectors
 ```
+
+> **dedx_web#844:** the frontend does not currently call `dedx_get_stp_table()`
+> with program 10 anywhere, so excluding it here means combinations only
+> `DEDX_AUTO`'s Bethe fallback could serve (Boron, Ni, Zr, In, Gd, Ta as protons/ions)
+> are treated as unavailable rather than computed — consistent with `DEDX_ICRU`'s
+> existing treatment, not a regression. Adopting `DEDX_AUTO` for real fallback
+> values is a separate, deliberate feature (see issue #844 "Suggested direction").
 
 ### 10.4 MSTAR ion list: Z=2–18 only from the C API
 

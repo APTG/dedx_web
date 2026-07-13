@@ -4,6 +4,7 @@ import { LibdedxError } from "$lib/wasm/types";
 import type { AdvancedOptions, CalculationResult } from "$lib/wasm/types";
 import { buildCompatibilityMatrix } from "$lib/state/compatibility-matrix";
 import { createEntitySelectionState } from "$lib/state/entity-selection.svelte";
+import { createCalculatorEngine } from "$lib/state/calculator-engine.svelte";
 import {
   createCalculatorState,
   formatStpValue,
@@ -915,6 +916,44 @@ describe("WASM out-of-range energy (LibdedxError code 101)", () => {
     expect(calcState.rows[0]!.stoppingPower).not.toBeNull();
     expect(calcState.rows[1]!.status).toBe("out-of-range");
     expect(calcState.rows[1]!.stoppingPower).toBeNull();
+  });
+});
+
+// Regression test for dedx_web#844: a particle and material can both be selected (e.g. via a
+// shared URL that bypasses the picker's greying-out) while no available program supports the
+// pair. This must surface a clear error rather than silently clearing results with no feedback —
+// mirroring the "Advanced mode silently renders blank cells" failure mode from the original issue.
+describe("no available program for a valid particle+material selection", () => {
+  it("sets an explicit error instead of silently clearing results", async () => {
+    const service = new LibdedxServiceImpl();
+    const stubEntitySelection = {
+      resolvedProgramId: null,
+      selectedParticle: { id: 1, name: "Hydrogen", massNumber: 1, atomicMass: 1.007, symbol: "H" },
+      selectedMaterial: { id: 5, name: "Boron", density: 2.34, isGasByDefault: false },
+    } as any;
+
+    const engine = createCalculatorEngine(stubEntitySelection, service);
+    await engine.performCalculation([{ rowId: "row-0", energy: 100 }]);
+
+    expect(engine.error).toBeInstanceOf(LibdedxError);
+    expect(engine.error!.message).toBe(
+      "No available program supports this particle + material combination.",
+    );
+    expect(engine.calculationResults.size).toBe(0);
+  });
+
+  it("does nothing (no error) when particle or material isn't selected yet", async () => {
+    const service = new LibdedxServiceImpl();
+    const stubEntitySelection = {
+      resolvedProgramId: null,
+      selectedParticle: null,
+      selectedMaterial: null,
+    } as any;
+
+    const engine = createCalculatorEngine(stubEntitySelection, service);
+    await engine.performCalculation([{ rowId: "row-0", energy: 100 }]);
+
+    expect(engine.error).toBeNull();
   });
 });
 

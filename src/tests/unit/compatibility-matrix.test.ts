@@ -20,7 +20,7 @@ class MockLibdedxService {
       { id: 2, name: "PSTAR", version: "1.0" },
       { id: 4, name: "MSTAR", version: "1.0" },
       { id: 9, name: "ICRU", version: "1.0" }, // DEDX_ICRU - internal auto-selector
-      { id: 10, name: "Bethe-ext", version: "1.0" },
+      { id: 100, name: "Bethe-ext", version: "1.0" },
     ];
   }
 
@@ -94,7 +94,8 @@ class MockLibdedxService {
           },
         ],
       ], // DEDX_ICRU: proton
-      [10, []], // Bethe-ext: zero particles (to test exclusion)
+      [10, []], // DEDX_ICRU proton-only is already tested above; id=10 kept empty here
+      [100, []], // Bethe-ext: zero particles (to test zero-particle exclusion)
     ]);
     return particles.get(programId) || [];
   }
@@ -111,7 +112,8 @@ class MockLibdedxService {
         ],
       ], // MSTAR: water, air
       [9, [{ id: 276, name: "Water (liquid)", density: 1.0, isGasByDefault: false }]], // DEDX_ICRU: water
-      [10, []], // Bethe-ext: zero materials (to test exclusion)
+      [10, []], // DEDX_AUTO slot kept empty (id=10 covered by its own exclusion test below)
+      [100, []], // Bethe-ext: zero materials (to test zero-materials exclusion)
     ]);
     return materials.get(programId) || [];
   }
@@ -138,8 +140,32 @@ describe("buildCompatibilityMatrix", () => {
 
   test("allPrograms excludes programs with zero particles", () => {
     const matrix = buildCompatibilityMatrix(service as any);
-    const betheExt = matrix.allPrograms.find((p) => p.id === 10);
+    const betheExt = matrix.allPrograms.find((p) => p.id === 100);
     expect(betheExt).toBeUndefined();
+  });
+
+  test("allPrograms excludes DEDX_AUTO (id=10) even when it has particles/materials", () => {
+    // Regression test for dedx_web#844: libdedx#144 added DEDX_AUTO (id=10), an internal
+    // auto-selector with a Bethe-Bloch fallback. It must stay hidden like DEDX_ICRU (id=9),
+    // not merely happen to be excluded because the fixture gives it zero particles/materials.
+    class ServiceWithPopulatedAuto extends MockLibdedxService {
+      getPrograms(): ProgramEntity[] {
+        return [
+          ...super.getPrograms().filter((p) => p.id !== 10),
+          { id: 10, name: "AUTO", version: "1.0" },
+        ];
+      }
+      getParticles(programId: number): ParticleEntity[] {
+        if (programId === 10) return super.getParticles(9); // same as DEDX_ICRU fixture
+        return super.getParticles(programId);
+      }
+      getMaterials(programId: number): MaterialEntity[] {
+        if (programId === 10) return super.getMaterials(9);
+        return super.getMaterials(programId);
+      }
+    }
+    const matrix = buildCompatibilityMatrix(new ServiceWithPopulatedAuto() as any);
+    expect(matrix.allPrograms.find((p) => p.id === 10)).toBeUndefined();
   });
 
   test("allParticles is the union across all programs, no duplicates", () => {
