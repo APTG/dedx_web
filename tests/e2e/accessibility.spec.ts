@@ -21,6 +21,26 @@ for (const { path, label } of ROUTES) {
       await page.waitForLoadState("networkidle");
     }
 
+    if (path === "/calculator") {
+      // The header's Export PDF/CSV buttons animate opacity (`transition-all`)
+      // from their disabled (50%-opacity) state to fully enabled once a result
+      // is available (always true on /calculator's default load). Scanning
+      // mid-transition can sample a blended color that dips below the AA
+      // contrast threshold even though the settled state is compliant — wait
+      // for the transition to actually finish before axe runs. (The /plot
+      // page is excluded: its Export buttons legitimately stay disabled until
+      // the user adds a series, so waiting for "enabled" would hang there.)
+      const exportBtn = page.getByTestId("export-pdf-btn");
+      await expect(exportBtn).toBeEnabled({ timeout: 15000 });
+      await page.waitForFunction(
+        () => {
+          const btn = document.querySelector('[data-testid="export-pdf-btn"]');
+          return btn ? getComputedStyle(btn).opacity === "1" : false;
+        },
+        { timeout: 5000 },
+      );
+    }
+
     const results = await new AxeBuilder({ page })
       .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
       // Bits UI Combobox places the search <input role="combobox"> inside

@@ -1,5 +1,14 @@
 # Feature: Shareable URLs — Formal Contract (ABNF + Semantic Rules)
 
+> **Status:** v10 (2026-07-13) — issue #840: `calc=`, `lookups=`, `runit=`,
+> `sunit=`, and `istpbranch=` are no longer basic-mode-only (§3.5, §4 items
+> 8/12/14) — the Energy→/Range→/STP→ tab selector is shared state between
+> basic and advanced mode. Added an implementation-gap note (§3.5): the
+> shipped `calculator-url.ts` still uses the retired v1 names `imode=`/
+> `iunit=` for two of these tokens rather than the v3-canonical `calc=`/
+> `runit=`/`sunit=`; reconciling that is tracked separately from #840. New
+> conformance vector 3a (§5.1).
+>
 > **Status:** v9 (2026-06-01) — v3 URL schema (`urlv=3`): the list-item
 > separator changed from `,` to `~` (issue #672) because messenger/email
 > auto-linkifiers truncate links at the first comma. v2 links are still accepted
@@ -401,11 +410,27 @@ After mapping, all subsequent processing uses the v2 param names.
 
 When basic mode:
 
-- Ignore `particles=`, `materials=`, `programs=`, `across=`, `qshow=`,
-  `calc=` (except the default `forward`), inverse-lookup params, and custom
-  compound params.
+- Ignore `particles=`, `materials=`, `programs=`, `across=`, `qshow=`, and
+  custom compound params.
 - Advanced Options params (`agg_state`, etc.) are silently dropped.
 - Use singular anchors: `particle=`, `material=`, `program=`.
+- **`calc=`, `lookups=`, `runit=`, `sunit=`, and `istpbranch=` are honored in
+  basic mode too (issue #840).** The Energy→/Range→/STP→ tab selector and its
+  row(s) are shared state between basic and advanced mode — a basic-mode
+  `calc=range` link opens the Range→ tab (in its simplified basic-mode
+  layout), and switching to advanced mode from there stays on the same tab.
+  Only the per-entity comparison params above (`across=`, plural entity
+  lists, `qshow=`) remain advanced-only, since multi-entity/multi-program
+  comparison itself is advanced-only.
+
+> **Implementation note (issue #840):** as of this writing, the shipped
+> `calculator-url.ts` does not yet emit/read `calc=`, `runit=`, or `sunit=`
+> for the inverse-lookup fields — it still uses the retired v1 names
+> `imode=`/`iunit=` directly (only `ivalues=` → `lookups=` was migrated). The
+> mode-gating rule above is the correct behavior in both the v3-canonical
+> form (`calc=`/`runit=`/`sunit=`) and the as-shipped form (`imode=`/`iunit=`)
+> — only the token names differ. Reconciling the as-shipped names with this
+> formal contract is tracked separately, not as part of #840.
 
 When advanced mode:
 
@@ -557,13 +582,13 @@ Canonical parameter order for `/calculator`:
 5. Matching plural entity list — `particles`, `materials`, or `programs`; emitted only in advanced mode when `across` matches.
 6. `across` — advanced mode only; omitted when `"none"` (default)
 7. `energies` — emitted only when `calc=forward`; omitted otherwise
-8. `lookups` — emitted only when advanced mode and `calc=range` or `calc=inverse-stp`; omitted otherwise
+8. `lookups` — emitted only when `calc=range` or `calc=inverse-stp` (either mode, issue #840); omitted otherwise
 9. `uanchor` — always emitted
 10. `runit` — omitted when `"cm"` (default)
 11. `sunit` — omitted when equal to default for material phase
-12. `calc` — advanced mode only; omitted when `"forward"` (default)
+12. `calc` — emitted in either mode (issue #840); omitted when `"forward"` (default)
 13. `qshow` — advanced mode only; omitted when both quantities visible (default = absence)
-14. `istpbranch` — advanced mode only; omitted when `"hi"` (default)
+14. `istpbranch` — emitted in either mode (issue #840); omitted when `"hi"` (default)
 15. `tip_seen` — omitted unless tip dismissed
 16. Advanced Options params — each omitted when at default; sub-order:
     `agg_state`, `interp_scale`, `interp_method`, `mstar_mode`, `density`, `ival`
@@ -619,6 +644,15 @@ Normalization rules:
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm,45:um,1.5:mm&runit=cm&uanchor=MeV&calc=range`
    - Canonical: `urlv=3&mode=advanced&particle=1&material=276&program=9&lookups=7.718:cm~45:um~1.5:mm&uanchor=MeV&calc=range`
    - Note: `runit=cm` equals the default → omitted in canonical output. `across=` is absent intentionally: this exercises `mode=advanced` with the default `across=none` and no comparison list.
+
+3a. Basic calculator, range mode (issue #840 — `calc=range` is no longer
+advanced-only; `mode=` is omitted since basic is the default): - Input: `urlv=3&particle=1&material=276&program=9&lookups=7.718:cm&uanchor=MeV&calc=range` - Canonical: unchanged. - Note: the basic-mode Range→ card shows a single row with no `runit=`/
+per-row "Unit" column; this vector only exercises URL round-tripping.
+**As shipped**, the equivalent live URL uses the retired v1 names
+instead of `lookups=`/`calc=` for two of these three tokens — see the
+implementation note in §3.5 — i.e. today's real query string is
+`...&energies=100&eunit=MeV&imode=csda&lookups=7.718:cm&iunit=cm`
+(no `mode=` param since basic is the default in both schemes).
 
 4. Advanced calculator, inverse-STP mode, both branches (input has redundant `sunit=kev-um` default):
    - Input: `urlv=2&mode=advanced&particle=1&material=276&program=9&lookups=10.0:kev-um,5.0:kev-um&sunit=kev-um&uanchor=MeV&calc=inverse-stp&istpbranch=both`

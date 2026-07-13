@@ -1,5 +1,13 @@
 # Feature: Shareable URLs (URL State Encoding & Restoration)
 
+> **Status:** v9 (2026-07-13) — issue #840: `calc=`, `lookups=`, `runit=`,
+> `sunit=`, and `istpbranch=` are no longer advanced-mode-only. The
+> Energy→/Range→/STP→ tab and its row(s) are shared state between basic and
+> advanced mode; basic mode renders a simplified single-row card per tab
+> instead of the advanced table. See `shareable-urls-formal.md` §3.5 for the
+> normative rule and an implementation-gap note on the as-shipped `imode=`/
+> `iunit=` param names.
+>
 > **Status:** v8 (2026-06-01) — v3 URL schema (`urlv=3`): list-item separator
 > changed `,` → `~` (issue #672); v2 links accepted on read
 >
@@ -153,13 +161,13 @@ Square brackets denote optional/conditional params (omitted at default):
   [&programs={ids}]                     ← advanced only, required when across=programs
   [&across={dimension}]                 ← advanced only; omit when "none" (default)
   [&energies={value-list}]              ← only when calc=forward (default)
-  [&lookups={value-list}]               ← advanced only, when calc=range or calc=inverse-stp
+  [&lookups={value-list}]               ← when calc=range or calc=inverse-stp (either mode, #840)
   &uanchor={token}                      ← always emitted
   [&runit={token}]                      ← omit when "cm" (default)
   [&sunit={token}]                      ← omit when default for material phase
-  [&calc={forward|range|inverse-stp}]   ← advanced only; omit when "forward" (default)
+  [&calc={forward|range|inverse-stp}]   ← either mode (#840); omit when "forward" (default)
   [&qshow={stp|range}]                  ← advanced only; omit when both visible (default)
-  [&istpbranch={hi|lo|both}]            ← advanced only; omit when "hi" (default)
+  [&istpbranch={hi|lo|both}]            ← either mode (#840); omit when "hi" (default)
   [&tip_seen=inline_unit]               ← omit unless tip dismissed
   [&agg_state=...] [&interp_scale=...] ...  ← advanced options; omit at default
   [&mat_name=...] ...                   ← custom compound params
@@ -210,9 +218,13 @@ future major (> 3) shows the unsupported-link banner (§7.2).
 The picker mode is explicit. The parser must **not** infer advanced/basic from
 the presence of singular or plural entity params:
 
-- `mode=basic` → use only `particle=`, `material=`, `program=`, `energies=`,
-  and `uanchor=`; silently drop advanced-only params.
-- `mode=advanced` → enable compare-across lists, inverse modes, quantity
+- `mode=basic` → use `particle=`, `material=`, `program=`, `energies=`,
+  `uanchor=`, and — since issue #840 — `calc=`, `lookups=`, `runit=`,
+  `sunit=`, and `istpbranch=` (the Energy→/Range→/STP→ tab and its row(s) are
+  shared state with advanced mode, just rendered as simplified single-row
+  cards); silently drop the remaining advanced-only params (compare-across
+  lists, quantity display toggle, custom compounds, Advanced Options).
+- `mode=advanced` → additionally enable compare-across lists, quantity
   display toggles, custom compounds, and Advanced Options.
 
 When `mode=advanced`, `across=` determines which plural list is meaningful:
@@ -232,12 +244,12 @@ the singular anchors.
 
 ### 3.4 `calc` — Calculator Operation Mode
 
-| Attribute     | Value                                                               |
-| ------------- | ------------------------------------------------------------------- |
-| Type          | `"forward"` \| `"range"` \| `"inverse-stp"`                         |
-| Default       | `"forward"` (omitted from canonical URL)                            |
-| v1 equivalent | implicit `"forward"` + `imode=csda\|stp` for inverse modes          |
-| Mode          | Advanced only; basic mode ignores non-forward `calc` and `lookups=` |
+| Attribute     | Value                                                                                                                                                                                |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Type          | `"forward"` \| `"range"` \| `"inverse-stp"`                                                                                                                                          |
+| Default       | `"forward"` (omitted from canonical URL)                                                                                                                                             |
+| v1 equivalent | implicit `"forward"` + `imode=csda\|stp` for inverse modes                                                                                                                           |
+| Mode          | Either mode (issue #840) — the tab and its row(s) are shared state between basic and advanced; basic mode renders a simplified single-row card per tab instead of the advanced table |
 
 | Token         | Input column                | Output column    | UI tab  |
 | ------------- | --------------------------- | ---------------- | ------- |

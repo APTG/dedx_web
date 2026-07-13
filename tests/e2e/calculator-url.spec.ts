@@ -22,9 +22,18 @@ test.describe("Calculator URL sync", () => {
     await expect(page.getByTestId("picker-tab-particle")).toContainText(/Carbon \(C/, {
       timeout: 8000,
     });
+    // Basic mode is always exactly one row (issue #840) — the second energy
+    // in the link is silently dropped rather than creating a second row.
     const energyInputs = page.getByRole("textbox");
     await expect(energyInputs.nth(0)).toHaveValue("100");
-    await expect(energyInputs.nth(1)).toHaveValue("200");
+    await expect(energyInputs).toHaveCount(1);
+  });
+
+  test("loading a multi-energy URL in Advanced mode restores all rows", async ({ page }) => {
+    await page.goto("/calculator?mode=advanced&particle=6&material=276&energies=100,200&eunit=MeV");
+    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 10000 });
+    await expect(page.getByTestId("advanced-energy-input-0")).toHaveValue("100");
+    await expect(page.getByTestId("advanced-energy-input-1")).toHaveValue("200");
   });
 
   test("invalid URL params fall back to defaults without error", async ({ page }) => {
@@ -34,22 +43,42 @@ test.describe("Calculator URL sync", () => {
   });
 
   test("mixed-unit rows encoded with :unit suffix", async ({ page }) => {
-    await page.goto("/calculator");
-    await page.waitForSelector('[data-testid="result-table"]', { timeout: 10000 });
+    // Add Row is Advanced-only since issue #840 — mixed-unit rows require a
+    // second row, which Basic mode (always exactly one row) cannot produce.
+    await page.goto("/calculator?mode=advanced");
+    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 10000 });
 
-    const energyInput = page.locator('[data-testid="energy-input-0"]');
+    const energyInput = page.locator('[data-testid="advanced-energy-input-0"]');
     await energyInput.fill("100 MeV");
     await energyInput.blur();
 
     const addRowBtn = page.getByRole("button", { name: /add row/i });
     await addRowBtn.click();
 
-    const energyInput2 = page.locator('[data-testid="energy-input-1"]');
+    const energyInput2 = page.locator('[data-testid="advanced-energy-input-1"]');
     await energyInput2.fill("500 keV");
     await energyInput2.blur();
 
     await page.waitForFunction(() => window.location.search.includes("500:keV"), { timeout: 5000 });
     expect(page.url()).toContain("500:keV");
+  });
+
+  test("Basic mode: a shared calc=range (as-shipped imode=csda) link stays on the Range tab and round-trips without mode=advanced", async ({
+    page,
+  }) => {
+    // Issue #840: calc=/lookups=/runit= (as-shipped: imode=/lookups=/iunit=)
+    // are no longer advanced-mode-only.
+    await page.goto("/calculator?particle=1&material=276&imode=csda&ivalues=7.718:cm");
+    await page.waitForSelector('[data-testid="basic-range-card"]', { timeout: 10000 });
+
+    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator('[data-testid="basic-range-input"]')).toHaveValue("7.718 cm");
+
+    await waitForUrl(page, "imode=csda");
+    expect(page.url()).not.toContain("mode=advanced");
   });
 });
 
@@ -156,8 +185,13 @@ test.describe("Multi-particle URL encoding (across=particles)", () => {
  * comma links must still hydrate and upgrade to the `~` form on load.
  */
 test.describe("Linkifier-safe URLs (issue #672)", () => {
+  // Multiple energy rows are Advanced-only since issue #840 (Basic mode is
+  // always exactly one row), so these list-separator regressions now exercise
+  // Advanced mode — the `,` → `~` behavior itself is mode-independent.
   test("multi-row energies are encoded with ~ and never a bare comma", async ({ page }) => {
-    await page.goto("/calculator?particle=1&material=276&energies=100,200,500&eunit=MeV");
+    await page.goto(
+      "/calculator?mode=advanced&particle=1&material=276&energies=100,200,500&eunit=MeV",
+    );
     // Decoder accepts the legacy comma form, then replaceState rewrites the URL
     // bar to the canonical ~ form.
     await page.waitForFunction(() => window.location.search.includes("energies=100~200~500"), {
@@ -172,15 +206,17 @@ test.describe("Linkifier-safe URLs (issue #672)", () => {
   });
 
   test("a urlv=2 comma link still hydrates and upgrades to the urlv=3 ~ form", async ({ page }) => {
-    await page.goto("/calculator?urlv=2&particle=6&material=276&energies=100,200&eunit=MeV");
+    await page.goto(
+      "/calculator?urlv=2&mode=advanced&particle=6&material=276&energies=100,200&eunit=MeV",
+    );
     // No unsupported-version banner: v2 is within the supported range.
     await expect(page.locator('[data-testid="url-version-warning"]')).not.toBeVisible({
       timeout: 3000,
     });
-    // Both rows restored.
-    const energyInputs = page.getByRole("textbox");
-    await expect(energyInputs.nth(0)).toHaveValue("100", { timeout: 8000 });
-    await expect(energyInputs.nth(1)).toHaveValue("200");
+    // Both rows restored (Advanced mode).
+    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 10000 });
+    await expect(page.getByTestId("advanced-energy-input-0")).toHaveValue("100", { timeout: 8000 });
+    await expect(page.getByTestId("advanced-energy-input-1")).toHaveValue("200");
     // Canonical form rewritten to urlv=3 with the ~ separator.
     await page.waitForFunction(
       () =>

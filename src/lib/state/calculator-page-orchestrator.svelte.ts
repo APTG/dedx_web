@@ -247,7 +247,10 @@ export class CalculatorPageOrchestrator {
           // Pass autoAdd=false so a single-energy link restores exactly one row
           // (the Basic hero layout) instead of appending a trailing empty row
           // that would flip it into the multi-row table (#823 feedback).
+          // In Basic mode, Add Row is unavailable (#840) — only row 0 is
+          // restored and any extra values in the link are dropped.
           urlState.rows.forEach((r, i) => {
+            if (i > 0 && !isAdvancedMode.value) return;
             const text = r.unitFromSuffix ? `${r.rawInput} ${r.unit}` : r.rawInput;
             if (i === 0) {
               this.calcState!.updateRowText(0, text, false);
@@ -258,14 +261,26 @@ export class CalculatorPageOrchestrator {
           });
         }
 
+        // The active Energy→/Range→/STP→ tab and its row(s) are shared between
+        // Basic and Advanced (#840) — restored regardless of mode.
         const inverseMode = decodeInverseModeFromUrl(currentSearchParams);
-        if (inverseMode && isAdvancedMode.value) {
+        if (inverseMode) {
           this.inverseLookupState!.setActiveTab(inverseMode.imode);
           if (inverseMode.lookups && inverseMode.lookups.length > 0) {
-            this.inverseLookupState!.rangeRows.length = 0;
-            this.inverseLookupState!.stpRows.length = 0;
+            // Only clear the array for the active imode — the other tab's
+            // array keeps its default single empty row. (Clearing both
+            // unconditionally left the inactive tab with zero rows and no
+            // way to recover in Basic mode, which has no Add Row button.)
+            if (inverseMode.imode === "csda") {
+              this.inverseLookupState!.rangeRows.length = 0;
+            } else {
+              this.inverseLookupState!.stpRows.length = 0;
+            }
 
-            for (let i = 0; i < inverseMode.lookups.length; i++) {
+            // Basic mode has no Add Row (#840) — only the first lookup value
+            // is restored, extras are dropped.
+            const lookupCount = isAdvancedMode.value ? inverseMode.lookups.length : 1;
+            for (let i = 0; i < lookupCount; i++) {
               const ival = inverseMode.lookups[i]!;
               const text = ival.unitFromSuffix ? `${ival.rawInput} ${ival.unit}` : ival.rawInput;
               if (inverseMode.imode === "csda") {
@@ -397,9 +412,10 @@ export class CalculatorPageOrchestrator {
 
   /**
    * Mode-dependent fallbacks. Leaving advanced mode must: drop custom-compound
-   * material selections (advanced-only), reset the inverse tab to "forward",
-   * collapse any multi-entity selection back to a single entity, and reset the
-   * program to Auto-select (Basic mode always auto-selects, #816).
+   * material selections (advanced-only), collapse any multi-entity selection
+   * back to a single entity, and reset the program to Auto-select (Basic mode
+   * always auto-selects, #816). The active Energy→/Range→/STP→ tab is shared
+   * between Basic and Advanced (#840) and is deliberately not reset here.
    */
   private setupModeFallbacks() {
     $effect(() => {
@@ -420,16 +436,6 @@ export class CalculatorPageOrchestrator {
     $effect(() => {
       if (!isAdvancedMode.value) {
         appInit.entityState?.selectProgram(-1); // -1 = Auto-select
-      }
-    });
-
-    $effect(() => {
-      if (
-        !isAdvancedMode.value &&
-        this.inverseLookupState &&
-        this.inverseLookupState.activeTab !== "forward"
-      ) {
-        this.inverseLookupState.setActiveTab("forward");
       }
     });
 

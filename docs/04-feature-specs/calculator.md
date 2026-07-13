@@ -1,6 +1,19 @@
 # Feature: Calculator Page
 
-> **Status:** Final v9 (25 May 2026)
+> **Status:** Final v10 (13 July 2026)
+>
+> **v10** (13 July 2026 — Stage 8, issue #840): Basic mode now shares the
+> Energy →/Range →/STP → tab strip with Advanced mode (previously Advanced-
+> only, per `inverse-lookups.md` §1) — each tab renders a simplified
+> single-row hero card in Basic mode instead of the Advanced multi-row table.
+> "+ Add row" moved to Advanced-only; Basic mode is always exactly one row in
+> all three tabs. New Basic-mode Range → and STP → hero cards: unit-anchor
+> strip (Range only) with no per-row "Unit" column or "per-row mode active"
+> text; STP output/input fixed to the material-phase unit (keV/µm non-gas,
+> MeV·cm²/g gas), bypassing the Advanced STP-unit override; STP → keeps the
+> high-/low-energy branch reveal. `calc=`/`lookups=`/`runit=`/`sunit=`/
+> `istpbranch=` are no longer Advanced-mode-only in the URL contract (see
+> `shareable-urls.md`).
 >
 > **v9** (25 May 2026 — Stage 8, issue #563): Aligned to shipped behaviour.
 > Advanced mode tabs renamed Energy → / Range → / STP → ([ADR 013](../decisions/013-mode-tab-naming.md)).
@@ -163,16 +176,29 @@ On cold load (no URL parameters):
 
 ### Basic / Advanced toggle
 
-The app-wide Basic/Advanced toggle (top-right action bar) switches between two
-table layouts. In **Basic** mode the table has one energy input column and two
-output columns (stopping power, CSDA range). In **Advanced** mode, three
-calculation sub-modes are available via tabs.
+The app-wide Basic/Advanced toggle (top-right action bar) switches how much
+control surface is shown (entity comparison, Advanced Options, per-row units,
+Add Row) — not which calculation directions are available. **Since issue
+#840, the Energy →/Range →/STP → tab strip below is shared between Basic and
+Advanced mode**: the active tab and its row(s) are the same state in both
+modes, so switching modes mid-session (or opening a shared link) keeps you on
+the same tab.
 
-### Advanced sub-mode tabs
+- **Basic** mode renders each tab as a simplified single-row "hero card" (see
+  [Basic-mode tab layouts](#basic-mode-tab-layouts) below) — one input, its
+  output(s), no per-row units, no Add Row.
+- **Advanced** mode renders the full table for each tab (per-row units, unit
+  dropdowns, multiple rows, Add Row).
+
+### Energy →/Range →/STP → tabs
 
 > **Stage 8 update:** tabs renamed from Forward/Range/Inverse STP to the
 > arrow-notation scheme below. See
 > [ADR 013](../decisions/013-mode-tab-naming.md).
+>
+> **Issue #840:** the tab strip itself is no longer Advanced-only (see
+> [Basic / Advanced toggle](#basic--advanced-toggle) above) — only the
+> full multi-row table (vs. the Basic single-row card) is mode-dependent.
 
 | Tab | Label    | Desktop sublabel        | Mobile glyph (< 400 px) | `calc=` URL token |
 | --- | -------- | ----------------------- | ----------------------- | ----------------- |
@@ -184,15 +210,41 @@ The arrow suffix makes the **input → output** direction immediately clear
 without physics-domain knowledge:
 
 - **Energy →** — the user types energies and reads stopping power + CSDA range.
-  This is the default tab and is also the Basic mode behaviour.
+  This is the default tab.
 - **Range →** — the user types CSDA range values and reads the energy that
   produces each range (inverse CSDA range lookup), plus the stopping power at
   that energy (recovered with a forward calc — issue #673).
 - **STP →** — the user types stopping-power values and reads the energy on the
   high-energy branch (falling side of the Bragg peak), each energy paired with
-  the CSDA range at that energy. A second low-energy column pair reveals
+  the CSDA range at that energy. A second low-energy result reveals
   automatically when a row has two solutions
   ([ADR 012](../decisions/012-inverse-stp-sticky-high-e-default.md), issue #673).
+
+All three tabs are available in **both** Basic and Advanced mode (issue
+#840) — only the layout differs; see below.
+
+### Basic-mode tab layouts
+
+Each tab's Basic-mode card always shows exactly one row — Add Row, per-row
+units, and unit dropdowns are Advanced-only (issue #840):
+
+- **Energy →** — unchanged from the pre-#840 Basic hero row (see
+  [Basic single-energy hero row](#basic-single-energy-hero-row-issue-823)
+  below): one energy input, CSDA range and stopping power outputs.
+- **Range →** — a unit-anchor strip (nm/µm/mm/cm/m, same options as Advanced)
+  sits above a hero card with one range input (typed unit suffix supported,
+  e.g. `5 mm`) and two outputs: Energy and Stopping Power. Unlike Advanced,
+  there is no per-row "Unit" column (only one row exists) and no
+  "per-row mode active" indicator. The stopping-power output unit is
+  **fixed** to keV/µm for solid/liquid materials or MeV·cm²/g for gases —
+  computed directly from the material's phase, independent of the Advanced
+  STP-unit dropdown / `sunit=` override.
+- **STP →** — one stopping-power input, its unit **fixed** the same way as
+  Range → (no dropdown — Advanced offers keV/µm, MeV/cm, MeV·cm²/g; Basic
+  always uses the material-phase default). Output is a high-energy-branch
+  card (Energy + Range) always shown, and — only when the input resolves to
+  two Bragg-peak solutions — a second low-energy-branch card revealed below
+  it with the same two fields.
 
 ---
 
@@ -322,6 +374,10 @@ The unit is displayed **inline with each cell value**, not in the header.
 See [`unit-handling.md`](unit-handling.md) §6 for auto-scaling rules.
 
 #### Row Behavior
+
+> **Issue #840:** the always-empty-row / Add Row growth described below is
+> **Advanced-mode-only**. Basic mode's table is always exactly one row —
+> see [Basic-mode tab layouts](#basic-mode-tab-layouts).
 
 - **Always-empty-row-at-bottom:** The table always has one empty row at
   the bottom. When the user types a value in the empty row, a new empty
@@ -507,12 +563,15 @@ for column layout.
 
 #### Basic single-energy hero row (issue #823)
 
-In **Basic mode with a single energy value** (`isSingleRow`), the table
-collapses into a three-cell "hero row" that reads left-to-right as **input →
-results**: the kinetic-energy input, then CSDA range, then stopping power
-(dE/dx). This gives the energy input the visual weight issue #665 asked for and
-puts cause→effect on one line, replacing the earlier stacked "narrow input above
-a results card" layout.
+**Basic mode's Energy → tab is always this three-cell "hero row"** that reads
+left-to-right as **input → results**: the kinetic-energy input, then CSDA
+range, then stopping power (dE/dx). This gives the energy input the visual
+weight issue #665 asked for and puts cause→effect on one line, replacing the
+earlier stacked "narrow input above a results card" layout. (Prior to issue
+#840, this layout only applied when the table held a single row and a second
+row switched it to a multi-row table; Basic mode is now always exactly one
+row, so the hero row is unconditional — see
+[Basic-mode tab layouts](#basic-mode-tab-layouts).)
 
 A light, two-tone tint separates **what you type in** from **what comes out**:
 the input cell is **orange** (`border-orange-200 / bg-orange-50` + dark orange
@@ -554,13 +613,15 @@ tint is used only to mark computed results.
   on one flex row, the energy cell wider (`flex-[1.4]`) as the focal point.
   **Mobile** stacks: the full-width energy input on top, the two result cells
   side-by-side below.
-- The particle/material selectors are unchanged; the "+ Add row" affordance is
-  kept — adding a second value switches to the multi-row table (whose columns are
-  ordered **Energy | CSDA Range | Stopping Power**, i.e. range left / dE/dx right,
-  matching the hero).
-- A **shared/restored URL with a single energy value renders this hero layout**,
-  not the multi-row table: the URL-load path restores exactly one row
-  (`autoAdd = false`) instead of appending a trailing empty row.
+- The particle/material selectors are unchanged. **Since issue #840, "+ Add
+  row" is Advanced-only** — Basic mode's Energy → tab never grows past this
+  one hero row (the Advanced multi-row table, whose columns are ordered
+  **Energy | CSDA Range | Stopping Power** i.e. range left / dE/dx right
+  matching the hero, is unaffected).
+- A **shared/restored URL always renders this hero layout in Basic mode**: the
+  URL-load path restores only the first energy value (`autoAdd = false`); any
+  additional values in an `energies=` list are dropped when `mode=basic` (they
+  are preserved when `mode=advanced`).
 - The program annotation ("Calculated with … (auto-selected)") still renders
   below the results (unchanged, page-level).
 
@@ -730,6 +791,14 @@ inputs and results.
 | `energies` | `100,200:keV,500` | Comma-separated values with optional per-value unit suffix (see below)                                    |
 | `uanchor`  | `MeV`             | Master energy unit anchor (replaces v1 `eunit=`). Omitted when MeV (default).                             |
 | `calc`     | `forward`         | Calculator operation: `forward` (Energy →), `range` (Range →), `inverse-stp` (STP →). Absent = `forward`. |
+
+> **Issue #840:** `calc=` (and its companion `lookups=`/`runit=`/`sunit=`/
+> `istpbranch=` params) are no longer Advanced-mode-only — they now apply in
+> Basic mode too, rendering the simplified single-row card described in
+> [Basic-mode tab layouts](#basic-mode-tab-layouts) instead of the Advanced
+> table. This section is a summary; [`shareable-urls.md`](shareable-urls.md)
+> and its formal companion are authoritative, including a note there on the
+> as-shipped `imode=`/`iunit=` param names for this field.
 
 ### Mixed-Unit URL Encoding
 

@@ -1,5 +1,20 @@
 # Feature: Inverse Lookups
 
+> **Status:** Final v8 (2026-07-13)
+>
+> **v8** (2026-07-13, issue #840): §1 rewritten from "Feature Gate — Advanced
+> Mode Only" to "Basic vs. Advanced Layout" — the Range → and STP → tabs are
+> no longer hidden in Basic mode; they render a simplified single-row hero
+> card there instead of the full table described in §4/§5 (unchanged for
+> Advanced mode). The active tab and its row(s) are shared state between
+> Basic and Advanced. Scenario 4 rewritten (previously asserted the tabs were
+> absent in Basic mode); Acceptance Criteria "Feature Gate" section renamed
+> and rewritten; Cross-Page Parity Checklist "Panel gating" pillar updated.
+> See [`calculator.md`](calculator.md) § Basic-mode tab layouts for the new
+> Basic-mode card details (that's where the Basic-specific layout is
+> normatively described; this spec keeps describing the shared calculation
+> semantics and the Advanced-mode table).
+>
 > **Status:** Final v7 (2026-05-31)
 >
 > **⚠ URL examples in this spec use the v1 schema (`urlv=1`).** The canonical v2
@@ -82,7 +97,7 @@
 ## Table of Contents
 
 - [User Story](#user-story)
-- [1. Feature Gate — Advanced Mode Only](#1-feature-gate--advanced-mode-only)
+- [1. Basic vs. Advanced Layout](#1-basic-vs-advanced-layout)
   - [Visibility Rule](#visibility-rule)
 - [2. Tab Layout](#2-tab-layout)
 - [3. Shared Context](#3-shared-context)
@@ -120,7 +135,7 @@
   - [Density Unavailable](#density-unavailable)
 - [Dependencies](#dependencies)
 - [Acceptance Criteria](#acceptance-criteria)
-  - [Feature Gate](#feature-gate)
+  - [Basic vs. Advanced Layout](#basic-vs-advanced-layout)
   - [Tab Switching](#tab-switching)
   - [Range — Input](#range--input)
   - [Range — Results](#range--results)
@@ -137,7 +152,7 @@
   - [Scenario 1: Range tab — energy from CSDA range (primary flow) @smoke](#scenario-1-range-tab--energy-from-csda-range-primary-flow-smoke)
   - [Scenario 2: URL round-trip — Range tab persists across reload](#scenario-2-url-round-trip--range-tab-persists-across-reload)
   - [Scenario 3: Inverse STP — no-solution cell shows em-dash @regression](#scenario-3-inverse-stp--no-solution-cell-shows-em-dash-regression)
-  - [Scenario 4: Advanced-mode gate — tabs absent in Basic mode @regression](#scenario-4-advanced-mode-gate--tabs-absent-in-basic-mode-regression)
+  - [Scenario 4: Basic mode — Range → and STP → tabs present with simplified layout @regression](#scenario-4-basic-mode--range--and-stp--tabs-present-with-simplified-layout-regression)
   - [Scenario 5: Inverse STP — dual-branch energies (primary flow) @smoke](#scenario-5-inverse-stp--dual-branch-energies-primary-flow-smoke)
   - [Scenario 6: Range tab — non-standard length unit (30 m, proton in air) @regression](#scenario-6-range-tab--non-standard-length-unit-30-m-proton-in-air-regression)
   - [Scenario 7: Invalid input — out-of-range and non-numeric rejection @regression](#scenario-7-invalid-input--out-of-range-and-non-numeric-rejection-regression)
@@ -170,38 +185,40 @@ produce it (one below and one above the Bragg peak),
 
 ---
 
-## 1. Feature Gate — Advanced Mode Only
+## 1. Basic vs. Advanced Layout
 
-Inverse lookups are an **advanced feature**. They are hidden in Basic mode
-to keep the standard Calculator page uncluttered for the majority of users
-who only need forward (energy → stopping power / range) lookups.
+> **Issue #840 superseded the original "Advanced Mode Only" gate below** —
+> the Range → and STP → tabs (renamed from "Range"/"Inverse STP" per
+> [ADR 013](../decisions/013-mode-tab-naming.md)) are now available in
+> **both** Basic and Advanced mode; only the table layout is mode-dependent.
+> This keeps the pre-#840 rationale intact for the parts that still apply
+> (Basic mode stays uncluttered — a single row, no per-row units, no Add
+> Row) while making the calculation directions themselves available to
+> casual users, per the parent feature request.
 
 ### Visibility Rule
 
-| App mode            | Tab bar on Calculator page                                       |
-| ------------------- | ---------------------------------------------------------------- |
-| **Basic** (default) | `[ Forward ]` — only the Forward tab is shown                    |
-| **Advanced**        | `[ Forward ]  [ Range ]  [ Inverse STP ]` — all three tabs shown |
+| App mode     | Tab bar on Calculator page                                    | Tab content layout                                                                                                                       |
+| ------------ | ------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| **Basic**    | `[ Energy → ]  [ Range → ]  [ STP → ]` — all three tabs shown | Simplified single-row hero card per tab (see `calculator.md` § Basic-mode tab layouts) — no per-row units, no unit dropdowns, no Add Row |
+| **Advanced** | `[ Energy → ]  [ Range → ]  [ STP → ]` — all three tabs shown | Full multi-row table as described in §4/§5 below — per-row units, unit dropdowns, Add Row                                                |
 
 The Advanced mode toggle is the app-wide Basic/Advanced control in the
 top-right action bar, as defined in
-[`../01-project-vision.md`](../01-project-vision.md) §4.4.
+[`../01-project-vision.md`](../01-project-vision.md) §4.4. It no longer
+changes which tabs exist — only which component renders each tab's content,
+and whether comparison features (multi-program, multi-entity, Advanced
+Options) are available alongside it.
 
-When the user enables Advanced mode, the two inverse tabs appear in the
-tab bar with no further interaction required. When the user disables
-Advanced mode while an Inverse tab is active, the view switches back to
-the Forward tab automatically.
-
-> **Rationale:** Hiding (not locking) the inverse tabs in Basic mode
-> ensures they are completely invisible to casual users. There is no
-> "locked" icon and no upsell prompt — the feature simply does not exist
-> in the standard experience.
+The active tab and its row(s) are **shared state** between Basic and
+Advanced (`InverseLookupState.activeTab`, `rangeRows`, `stpRows`) — switching
+modes mid-session keeps you on the same tab; a Basic-mode Range →/STP → link
+opens on the same tab in Advanced mode too (see `shareable-urls.md` §3.4).
 
 > **Note on `qfocus`:** The quantity-focus setting (`qfocus=stp`,
 > `qfocus=csda`, `qfocus=both`) controls which forward result columns are
-> shown in multi-program mode. It does **not** gate or hide the inverse
-> tabs — both inverse tabs are always available when Advanced mode is on,
-> regardless of the current `qfocus` value.
+> shown in multi-program mode (Advanced-only, unaffected by #840). It does
+> **not** gate or hide the Energy →/Range →/STP → tabs themselves.
 
 ---
 
@@ -809,12 +826,13 @@ this material."
 
 ## Acceptance Criteria
 
-### Feature Gate
+### Basic vs. Advanced Layout
 
-- [ ] In Basic mode, the Range and Inverse STP tabs are **not visible**. The tab bar shows only "Forward".
-- [ ] Enabling Advanced mode makes both inverse tabs appear in the tab bar immediately.
-- [ ] Disabling Advanced mode while an inverse tab is active switches the view to the Forward tab.
-- [ ] URL parameter `imode` is ignored (tabs not activated) when Advanced mode is off on load.
+- [ ] In Basic mode, all three tabs (`Energy →`, `Range →`, `STP →`) are **visible** and clickable.
+- [ ] In Basic mode, the Range → and STP → tabs render a simplified single-row hero card (no per-row units, no unit dropdowns, no "+ Add row" button).
+- [ ] Toggling Basic/Advanced mode while a Range →/STP → tab is active keeps the same tab selected — only the rendered component (hero card vs. full table) changes.
+- [ ] The active tab and its row(s) are preserved across a Basic ↔ Advanced round-trip (shared `InverseLookupState`).
+- [ ] A shared URL with `calc=range` or `calc=inverse-stp` (as-shipped: `imode=csda`/`imode=stp`) activates the tab in both Basic and Advanced mode.
 
 ### Tab Switching
 
@@ -1016,21 +1034,63 @@ proton in water (e.g., `500 keV/µm`, which exceeds the Bragg peak ≈ 80 keV/µ
 
 ---
 
-### Scenario 4: Advanced-mode gate — tabs absent in Basic mode @regression
+### Scenario 4: Basic mode — Range → and STP → tabs present with simplified layout @regression
+
+Supersedes the pre-#840 "Advanced-mode gate" scenario, which asserted the
+tabs were absent in Basic mode. Since #840 they are present in both modes;
+this scenario now verifies the Basic-mode layout and the Basic↔Advanced
+round-trip instead.
 
 **Given** the user is on `/calculator` with Advanced mode **off**
 
 **Then**
 
-- DOM: `[data-testid="inverse-tab-range"]` is **not present** in the DOM
-- DOM: `[data-testid="inverse-tab-stp"]` is **not present** in the DOM
+- DOM: `[data-testid="inverse-tab-range"]` and `[data-testid="inverse-tab-stp"]` **are present** and clickable
+
+**When** the user clicks the Range → tab
+
+**Then**
+
+- DOM: `[data-testid="basic-range-card"]` is visible (the simplified hero
+  card, not `[data-testid="advanced-range-table"]`)
+- DOM: `[data-testid="basic-range-unit-strip"]` is visible; no element with
+  text "(per-row mode active)" is present
 
 **When** the user enables Advanced mode
 
 **Then**
 
-- DOM: `[data-testid="inverse-tab-range"]` becomes present immediately (no
-  page reload required)
+- DOM: `[data-testid="inverse-tab-range"]` still has `aria-selected="true"` (same tab, no reset)
+- DOM: `[data-testid="advanced-range-table"]` becomes visible (the full table replaces the hero card)
+
+**When** the user disables Advanced mode again
+
+**Then**
+
+- DOM: `[data-testid="basic-range-card"]` is visible again — the tab selection round-trips without resetting to Energy →
+
+```typescript
+test("Basic mode: Range/STP tabs present with simplified layout @regression", async ({ page }) => {
+  await page.goto("/calculator?particle=1&material=276");
+  await expect(page.locator('[data-testid="inverse-tab-range"]')).toBeVisible();
+  await expect(page.locator('[data-testid="inverse-tab-stp"]')).toBeVisible();
+
+  await page.click('[data-testid="inverse-tab-range"]');
+  await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
+  await expect(page.locator('[data-testid="advanced-range-table"]')).toHaveCount(0);
+  await expect(page.getByText("per-row mode active")).toHaveCount(0);
+
+  await page.click("text=Advanced");
+  await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
+    "aria-selected",
+    "true",
+  );
+  await expect(page.locator('[data-testid="advanced-range-table"]')).toBeVisible();
+
+  await page.click("text=Basic");
+  await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
+});
+```
 
 ---
 
@@ -1366,12 +1426,12 @@ test("Inverse STP tab: multi-program shows E-low and E-high per program @regress
 
 ### Required pillars
 
-| Pillar                                                                   | Calculator  |
-| ------------------------------------------------------------------------ | ----------- |
-| Panel gating (`isAdvancedMode.value` guard on tab rendering)             | ✅ required |
-| URL init (`imode` / `ivalues` / `iunit` parsed inside the URL `$effect`) | ✅ required |
-| Persistence (URL updated when tab, values, or unit changes)              | ✅ required |
-| Reactive-dep snapshot (all reactive state read **before** any `.then()`) | ✅ required |
+| Pillar                                                                                                                     | Calculator  |
+| -------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| Component gating (`isAdvancedMode.value` selects hero card vs. full table — tabs themselves are unconditional, issue #840) | ✅ required |
+| URL init (`imode` / `ivalues` / `iunit` parsed inside the URL `$effect`, regardless of mode)                               | ✅ required |
+| Persistence (URL updated when tab, values, or unit changes, regardless of mode)                                            | ✅ required |
+| Reactive-dep snapshot (all reactive state read **before** any `.then()`)                                                   | ✅ required |
 
 **Implementer contract:** Before declaring `TASK DONE`, verify that every ✅
 cell above has a corresponding wired `$effect` or reactive binding, and that

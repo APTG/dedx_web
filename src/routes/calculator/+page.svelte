@@ -7,6 +7,8 @@
   import SelectionLiveRegion from "$lib/components/selection-live-region.svelte";
   import ResultTable from "$lib/components/results/table-multi-program.svelte";
   import TableBasic from "$lib/components/results/table-basic.svelte";
+  import TableBasicRange from "$lib/components/results/table-basic-range.svelte";
+  import TableBasicStp from "$lib/components/results/table-basic-stp.svelte";
   import TableAdvanced from "$lib/components/results/table-advanced.svelte";
   import TableInverseStp from "$lib/components/results/table-inverse-stp.svelte";
   import UnitAnchorStrip from "$lib/components/results/unit-anchor-strip.svelte";
@@ -239,67 +241,65 @@
         />
       {/if}
 
-      {#if isAdvancedMode.value}
-        <!-- Tab switcher for Advanced mode -->
-        <div class="border-b">
-          <div class="flex gap-2" role="tablist" aria-label="Calculator mode">
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "forward"}
-              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "forward"}
-              class:border-transparent={inverseLookupState?.activeTab !== "forward"}
-              class:text-foreground={inverseLookupState?.activeTab === "forward"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
-              onclick={() => inverseLookupState?.setActiveTab("forward")}
-              data-testid="inverse-tab-forward"
+      <!-- Tab switcher: shared between Basic and Advanced modes (issue #840) -->
+      <div class="border-b">
+        <div class="flex gap-2" role="tablist" aria-label="Calculator mode">
+          <button
+            role="tab"
+            aria-selected={inverseLookupState?.activeTab === "forward"}
+            class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
+            class:border-primary={inverseLookupState?.activeTab === "forward"}
+            class:border-transparent={inverseLookupState?.activeTab !== "forward"}
+            class:text-foreground={inverseLookupState?.activeTab === "forward"}
+            class:text-muted-foreground={inverseLookupState?.activeTab !== "forward"}
+            onclick={() => inverseLookupState?.setActiveTab("forward")}
+            data-testid="inverse-tab-forward"
+          >
+            <span class="hidden min-[400px]:block font-bold">Energy →</span>
+            <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+              >→ STP, Range</span
             >
-              <span class="hidden min-[400px]:block font-bold">Energy →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ STP, Range</span
-              >
-              <span class="min-[400px]:hidden font-bold">E→</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "csda"}
-              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "csda"}
-              class:border-transparent={inverseLookupState?.activeTab !== "csda"}
-              class:text-foreground={inverseLookupState?.activeTab === "csda"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
-              onclick={() => inverseLookupState?.setActiveTab("csda")}
-              data-testid="inverse-tab-range"
+            <span class="min-[400px]:hidden font-bold">E→</span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={inverseLookupState?.activeTab === "csda"}
+            class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
+            class:border-primary={inverseLookupState?.activeTab === "csda"}
+            class:border-transparent={inverseLookupState?.activeTab !== "csda"}
+            class:text-foreground={inverseLookupState?.activeTab === "csda"}
+            class:text-muted-foreground={inverseLookupState?.activeTab !== "csda"}
+            onclick={() => inverseLookupState?.setActiveTab("csda")}
+            data-testid="inverse-tab-range"
+          >
+            <span class="hidden min-[400px]:block font-bold">Range →</span>
+            <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+              >→ Energy, STP</span
             >
-              <span class="hidden min-[400px]:block font-bold">Range →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy, STP</span
-              >
-              <span class="min-[400px]:hidden font-bold">R→</span>
-            </button>
-            <button
-              role="tab"
-              aria-selected={inverseLookupState?.activeTab === "stp"}
-              class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
-              class:border-primary={inverseLookupState?.activeTab === "stp"}
-              class:border-transparent={inverseLookupState?.activeTab !== "stp"}
-              class:text-foreground={inverseLookupState?.activeTab === "stp"}
-              class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
-              onclick={() => inverseLookupState?.setActiveTab("stp")}
-              data-testid="inverse-tab-stp"
+            <span class="min-[400px]:hidden font-bold">R→</span>
+          </button>
+          <button
+            role="tab"
+            aria-selected={inverseLookupState?.activeTab === "stp"}
+            class="flex flex-col items-start px-4 py-2 text-sm border-b-2 transition-colors"
+            class:border-primary={inverseLookupState?.activeTab === "stp"}
+            class:border-transparent={inverseLookupState?.activeTab !== "stp"}
+            class:text-foreground={inverseLookupState?.activeTab === "stp"}
+            class:text-muted-foreground={inverseLookupState?.activeTab !== "stp"}
+            onclick={() => inverseLookupState?.setActiveTab("stp")}
+            data-testid="inverse-tab-stp"
+          >
+            <span class="hidden min-[400px]:block font-bold">STP →</span>
+            <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
+              >→ Energy, Range</span
             >
-              <span class="hidden min-[400px]:block font-bold">STP →</span>
-              <span class="hidden min-[400px]:block text-xs font-normal text-muted-foreground"
-                >→ Energy, Range</span
-              >
-              <span class="min-[400px]:hidden font-bold">S→</span>
-            </button>
-          </div>
+            <span class="min-[400px]:hidden font-bold">S→</span>
+          </button>
         </div>
-      {/if}
+      </div>
 
       <!-- Forward tab content (default) -->
-      {#if !inverseLookupState || !isAdvancedMode.value || inverseLookupState.activeTab === "forward"}
+      {#if !inverseLookupState || inverseLookupState.activeTab === "forward"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           {#if isAdvancedMode.value && es.across === "program" && multiProgState && multiProgState.selectedProgramIds.length > 1}
             <div class="mb-3">
@@ -352,7 +352,7 @@
       {/if}
 
       <!-- Range lookup tab content -->
-      {#if inverseLookupState && isAdvancedMode.value && inverseLookupState.activeTab === "csda"}
+      {#if inverseLookupState && inverseLookupState.activeTab === "csda"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           {#if es.across !== "single"}
             <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-800 mb-4">
@@ -362,7 +362,7 @@
                 material, and program.
               </p>
             </div>
-          {:else}
+          {:else if isAdvancedMode.value}
             {@const rangeSelMat = es.selectedMaterial}
             {@const rangeIsCustom = isCustomMaterial(
               rangeSelMat && "isGasByDefault" in rangeSelMat ? rangeSelMat : null,
@@ -376,21 +376,30 @@
                 rangeSelMat?.density ??
                 1}
             />
-            {#if es.isComplete && energyRangeLabel}
-              <p class="text-xs text-muted-foreground mt-4">
-                Valid range: {energyRangeLabel}
-                ({es.selectedProgram.id === -1
-                  ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-                  : es.selectedProgram.name},
-                {es.selectedParticle?.name ?? ""})
-              </p>
-            {/if}
+          {:else}
+            {@const basicRangeSelMat = es.selectedMaterial}
+            {@const basicRangeBuiltinMat =
+              basicRangeSelMat && "isGasByDefault" in basicRangeSelMat ? basicRangeSelMat : null}
+            <TableBasicRange
+              {inverseLookupState}
+              isGas={basicRangeBuiltinMat?.isGasByDefault ?? false}
+              density={basicRangeSelMat?.density ?? 1}
+            />
+          {/if}
+          {#if es.across === "single" && es.isComplete && energyRangeLabel}
+            <p class="text-xs text-muted-foreground mt-4">
+              Valid range: {energyRangeLabel}
+              ({es.selectedProgram.id === -1
+                ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+                : es.selectedProgram.name},
+              {es.selectedParticle?.name ?? ""})
+            </p>
           {/if}
         </div>
       {/if}
 
       <!-- STP lookup tab content -->
-      {#if inverseLookupState && isAdvancedMode.value && inverseLookupState.activeTab === "stp"}
+      {#if inverseLookupState && inverseLookupState.activeTab === "stp"}
         <div class="rounded-lg border bg-card p-3 sm:p-6">
           {#if es.across !== "single"}
             <div class="rounded-md border border-amber-200 bg-amber-50 p-4 text-amber-800 mb-4">
@@ -400,7 +409,7 @@
                 material, and program.
               </p>
             </div>
-          {:else}
+          {:else if isAdvancedMode.value}
             <TableInverseStp
               {inverseLookupState}
               onPlotRow={(rowIndex) => {
@@ -418,15 +427,23 @@
                 goto(`/plot?particle=${pId}&material=${mId}&program=${progId}&inv_stp_branch=both`);
               }}
             />
-            {#if es.isComplete && energyRangeLabel}
-              <p class="text-xs text-muted-foreground mt-4">
-                Valid range: {energyRangeLabel}
-                ({es.selectedProgram.id === -1
-                  ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
-                  : es.selectedProgram.name},
-                {es.selectedParticle?.name ?? ""})
-              </p>
-            {/if}
+          {:else}
+            {@const basicStpSelMat = es.selectedMaterial}
+            {@const basicStpBuiltinMat =
+              basicStpSelMat && "isGasByDefault" in basicStpSelMat ? basicStpSelMat : null}
+            <TableBasicStp
+              {inverseLookupState}
+              isGas={basicStpBuiltinMat?.isGasByDefault ?? false}
+            />
+          {/if}
+          {#if es.across === "single" && es.isComplete && energyRangeLabel}
+            <p class="text-xs text-muted-foreground mt-4">
+              Valid range: {energyRangeLabel}
+              ({es.selectedProgram.id === -1
+                ? ((es.selectedProgram as AutoSelectProgram).resolvedProgram?.name ?? "auto")
+                : es.selectedProgram.name},
+              {es.selectedParticle?.name ?? ""})
+            </p>
           {/if}
         </div>
       {/if}
