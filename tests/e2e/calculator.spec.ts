@@ -12,7 +12,8 @@ test.describe("Calculator Page - Smoke Test", () => {
     await page.waitForSelector('[data-testid="result-table"]', { timeout: 30000 });
 
     await expect(page.locator('[data-testid="energy-input-0"]')).toBeVisible();
-    await expect(page.getByRole("button", { name: /\+ Add row/i })).toBeVisible();
+    // Add Row is Advanced-only since issue #840 — Basic mode never shows it.
+    await expect(page.getByRole("button", { name: /\+ Add row/i })).toHaveCount(0);
     await expect(page.locator('[data-testid="picker-entity-selection"]')).toBeVisible();
   });
 });

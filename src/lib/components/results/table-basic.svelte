@@ -5,7 +5,6 @@
   import { formatRangeCm } from "./value-formatters";
   import { ELECTRON_UNSUPPORTED_MESSAGE } from "$lib/config/libdedx-version";
   import HelpHint from "$lib/components/help-hint.svelte";
-  import RowDeleteButton from "./row-delete-button.svelte";
 
   interface Props {
     calcState: CalculatorState;
@@ -61,17 +60,9 @@
     (event.target as HTMLInputElement).select();
   }
 
-  function focusRowInput(targetIndex: number): boolean {
-    const inputs = document.querySelectorAll<HTMLInputElement>("input[data-row-index]");
-    const target = inputs[targetIndex];
-    if (target) {
-      target.focus();
-      return true;
-    }
-    return false;
-  }
-
-  function handleInputKeyDown(event: KeyboardEvent, index: number) {
+  // Basic mode is always exactly one row — Add Row is Advanced-only (#840).
+  // So there is no other row to navigate to; Enter just commits the value.
+  function handleInputKeyDown(event: KeyboardEvent) {
     if (event.key === "Escape") {
       event.preventDefault();
       (event.target as HTMLInputElement).blur();
@@ -80,78 +71,28 @@
 
     if (event.key === "Enter") {
       event.preventDefault();
-      calcState.handleBlur(index);
-      if (event.shiftKey) return;
-      const moved = focusRowInput(index + 1);
-      if (!moved) {
-        calcState.addRow();
-        queueMicrotask(() => focusRowInput(index + 1));
-      }
-      return;
-    }
-
-    if (event.key === "Tab") {
-      const targetIndex = event.shiftKey ? index - 1 : index + 1;
-      const inputs = document.querySelectorAll<HTMLInputElement>("input[data-row-index]");
-      const targetInput = inputs[targetIndex];
-      if (targetInput) {
-        event.preventDefault();
-        calcState.handleBlur(index);
-        targetInput.focus();
-      }
-      return;
-    }
-
-    if (event.key === "ArrowUp" || event.key === "ArrowDown") {
-      if (event.ctrlKey || event.metaKey) {
-        event.preventDefault();
-        const direction = event.key === "ArrowUp" ? "up" : "down";
-        calcState.moveRow(index, direction);
-        const newIndex = direction === "up" ? index - 1 : index + 1;
-        queueMicrotask(() => focusRowInput(newIndex));
-      } else {
-        event.preventDefault();
-        focusRowInput(event.key === "ArrowUp" ? index - 1 : index + 1);
-      }
-      return;
-    }
-
-    if (event.key === "Backspace") {
-      const input = event.target as HTMLInputElement;
-      if (input.value === "" && calcState.rows.length > 1) {
-        event.preventDefault();
-        calcState.removeRow(index);
-        queueMicrotask(() => focusRowInput(Math.max(0, index - 1)));
-      }
+      calcState.handleBlur(0);
+      (event.target as HTMLInputElement).blur();
     }
   }
 
-  function handleInputChange(event: Event, index: number) {
+  function handleInputChange(event: Event) {
     const target = event.target as HTMLInputElement;
-    // autoAdd=false: layout stays as card until user explicitly adds a row
-    // (Enter key or "+ Add row" button). Advanced mode uses the default autoAdd=true.
-    calcState.updateRowText(index, target.value, false);
+    calcState.updateRowText(0, target.value, false);
     calcState.triggerCalculation();
   }
 
-  function handlePaste(event: ClipboardEvent, index: number) {
+  // Only the first pasted line is used — Basic mode has no Add Row to grow
+  // into a multi-row table (#840).
+  function handlePaste(event: ClipboardEvent) {
     event.preventDefault();
     const pastedText = event.clipboardData?.getData("text") || "";
-    const lines = pastedText
+    const firstLine = pastedText
       .split(/\r?\n|\r/)
       .map((l) => l.trim())
-      .filter((l) => l !== "");
-    if (lines.length === 0) return;
-    for (let i = 0; i < lines.length; i++) {
-      const line = lines[i];
-      if (!line) continue;
-      const targetIndex = index + i;
-      if (targetIndex >= calcState.rows.length) {
-        calcState.updateRowText(calcState.rows.length - 1, line);
-      } else {
-        calcState.updateRowText(targetIndex, line);
-      }
-    }
+      .find((l) => l !== "");
+    if (firstLine === undefined) return;
+    calcState.updateRowText(0, firstLine, false);
     calcState.triggerCalculation();
   }
 
@@ -167,15 +108,6 @@
     return "-";
   }
 
-  function inputClass(row: (typeof calcState.rows)[0]): string {
-    const isError = row.status === "invalid" || row.status === "out-of-range";
-    return `w-24 px-2 py-1 border rounded bg-background text-sm focus:outline-none focus:ring-2 focus:ring-primary ${
-      isError ? "border-red-500 bg-red-50 dark:bg-red-950" : "border-input"
-    }`;
-  }
-
-  const isSingleRow = $derived(calcState.rows.length === 1);
-  const energyLabel = $derived(`Energy (${calcState.masterUnit})`);
   const noteText = $derived(
     currentIsHeavyIon
       ? "unit is now MeV/nucl — value unchanged"
@@ -214,220 +146,134 @@
       </div>
     {/if}
 
-    {#if isSingleRow}
-      <!-- Single-energy "hero row" (#823): the kinetic-energy input sits on the
-           same row as its two outputs — energy → range → dE/dx — so cause→effect
-           reads left-to-right as input → results. The input cell is orange-
-           accented (the only accent hue); result cells use neutral surface
-           tokens. On mobile it stacks: the full-width energy input on top, the
-           two result cells side-by-side below. Adding a second row switches to
-           the multi-row table layout below. -->
-      {@const row = calcState.rows[0]!}
-      {@const isError = row.status === "invalid" || row.status === "out-of-range"}
-      <!-- The unit lives in the label ("Kinetic energy (MeV)"), matching the
-           master anchor; once the user types their own unit suffix it is
-           dropped so the label never contradicts the typed value (#823). -->
-      {@const energyHeroLabel = row.unitFromSuffix
-        ? "Kinetic energy"
-        : `Kinetic energy (${calcState.masterUnit})`}
-      <div data-testid="basic-single-row-card">
-        <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
-          <!-- ① Kinetic energy — the input (orange = what you type in) -->
-          <div
-            class={`flex flex-col rounded-lg border px-4 py-3 transition-colors sm:flex-[1.4] ${
+    <!-- Single-energy "hero row" (#823): the kinetic-energy input sits on the
+         same row as its two outputs — energy → range → dE/dx — so cause→effect
+         reads left-to-right as input → results. The input cell is orange-
+         accented (the only accent hue); result cells use neutral surface
+         tokens. On mobile it stacks: the full-width energy input on top, the
+         two result cells side-by-side below. Basic mode is always exactly one
+         row — Add Row is Advanced-only (#840). -->
+    {@const row = calcState.rows[0]!}
+    {@const isError = row.status === "invalid" || row.status === "out-of-range"}
+    <!-- The unit lives in the label ("Kinetic energy (MeV)"), matching the
+         master anchor; once the user types their own unit suffix it is
+         dropped so the label never contradicts the typed value (#823). -->
+    {@const energyHeroLabel = row.unitFromSuffix
+      ? "Kinetic energy"
+      : `Kinetic energy (${calcState.masterUnit})`}
+    <div data-testid="basic-single-row-card">
+      <div class="flex flex-col gap-3 sm:flex-row sm:items-stretch">
+        <!-- ① Kinetic energy — the input (orange = what you type in) -->
+        <div
+          class={`flex flex-col rounded-lg border px-4 py-3 transition-colors sm:flex-[1.4] ${
+            isError
+              ? "border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
+              : "border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/30"
+          }`}
+        >
+          <label
+            for="basic-energy-input"
+            class={`mb-1 flex items-start gap-1 text-xs font-semibold ${
+              isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
+            }`}>{energyHeroLabel}</label
+          >
+          <input
+            id="basic-energy-input"
+            type="text"
+            inputmode="text"
+            aria-label="Energy value row 1"
+            data-row-index={0}
+            data-testid="energy-input-0"
+            value={row.rawInput}
+            placeholder="e.g. 100"
+            class={`mt-auto w-full rounded-md border bg-background px-3 py-1.5 font-mono text-2xl font-semibold focus:outline-none focus:ring-2 disabled:opacity-60 ${
               isError
-                ? "border-red-300 bg-red-50 dark:border-red-900/50 dark:bg-red-950/30"
-                : "border-orange-200 bg-orange-50 dark:border-orange-800/50 dark:bg-orange-950/30"
+                ? "border-red-400 focus:ring-red-400/50"
+                : "border-input focus:ring-orange-400/60"
             }`}
-          >
-            <label
-              for="basic-energy-input"
-              class={`mb-1 flex items-start gap-1 text-xs font-semibold ${
-                isError ? "text-red-600 dark:text-red-400" : "text-muted-foreground"
-              }`}>{energyHeroLabel}</label
-            >
-            <input
-              id="basic-energy-input"
-              type="text"
-              inputmode="text"
-              aria-label="Energy value row 1"
-              data-row-index={0}
-              data-testid="energy-input-0"
-              value={row.rawInput}
-              placeholder="e.g. 100"
-              class={`mt-auto w-full rounded-md border bg-background px-3 py-1.5 font-mono text-2xl font-semibold focus:outline-none focus:ring-2 disabled:opacity-60 ${
-                isError
-                  ? "border-red-400 focus:ring-red-400/50"
-                  : "border-input focus:ring-orange-400/60"
-              }`}
-              onfocus={(e) => {
-                handleInputFocus(e);
-                hintVisible = true;
-              }}
-              onblur={() => (hintVisible = false)}
-              onkeydown={(e) => handleInputKeyDown(e, 0)}
-              oninput={(e) => handleInputChange(e, 0)}
-              onpaste={(e) => handlePaste(e, 0)}
-              disabled={calcState.isCalculating}
-            />
-            <!-- Reserved fixed-height slot for the message/hint so the input
-                 cell doesn't grow (and shove the whole row) when the hint
-                 appears on focus — the three cells stay the same size (#823). -->
-            <div class="mt-1 min-h-[1rem] text-xs">
-              {#if row.message && isError}
-                <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
-              {:else if hintVisible}
-                <span
-                  class="text-orange-700 dark:text-orange-300"
-                  role="status"
-                  data-testid="inline-unit-hint"
-                >
-                  type a unit too — e.g. <code class="font-mono font-medium">10 keV</code>
-                </span>
-              {/if}
-            </div>
+            onfocus={(e) => {
+              handleInputFocus(e);
+              hintVisible = true;
+            }}
+            onblur={() => (hintVisible = false)}
+            onkeydown={handleInputKeyDown}
+            oninput={handleInputChange}
+            onpaste={handlePaste}
+            disabled={calcState.isCalculating}
+          />
+          <!-- Reserved fixed-height slot for the message/hint so the input
+               cell doesn't grow (and shove the whole row) when the hint
+               appears on focus — the three cells stay the same size (#823). -->
+          <div class="mt-1 min-h-[1rem] text-xs">
+            {#if row.message && isError}
+              <span class="text-red-600 dark:text-red-400" role="alert">{row.message}</span>
+            {:else if hintVisible}
+              <span
+                class="text-orange-700 dark:text-orange-300"
+                role="status"
+                data-testid="inline-unit-hint"
+              >
+                type a unit too — e.g. <code class="font-mono font-medium">10 keV</code>
+              </span>
+            {/if}
           </div>
+        </div>
 
-          <!-- connector: input → results (desktop only) -->
+        <!-- connector: input → results (desktop only) -->
+        <div
+          class="hidden text-xl text-muted-foreground/50 sm:flex sm:items-center sm:self-stretch"
+          aria-hidden="true"
+        >
+          →
+        </div>
+
+        <!-- ② CSDA range and ③ stopping power — the results (cool = what
+             comes out). The two cells are equal height (grid on mobile,
+             flex on desktop) and each value is pinned to the bottom
+             (mt-auto) plus a bottom slot mirroring the input's hint slot, so
+             all three value lines share one baseline — the input and both
+             results — and the two numbers stay aligned even when one label
+             wraps to more lines than the other. The transparent border +
+             py-1.5 give the plain result text the same line box as the boxed
+             input, so glyphs land on the same level (#823 feedback). -->
+        <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-[2.4] sm:items-stretch">
           <div
-            class="hidden text-xl text-muted-foreground/50 sm:flex sm:items-center sm:self-stretch"
-            aria-hidden="true"
+            class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
           >
-            →
+            <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
+              <span>CSDA Range</span>
+              <HelpHint term="csdaRange" side="bottom" testId="basic-range-help" />
+            </div>
+            <div
+              class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
+              data-testid="range-cell-0"
+            >
+              {rangeDisplay(row)}
+            </div>
+            <!-- Mirrors the input cell's hint slot so all three value lines
+                 share the same bottom offset and land on one baseline. -->
+            <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
           </div>
-
-          <!-- ② CSDA range and ③ stopping power — the results (cool = what
-               comes out). The two cells are equal height (grid on mobile,
-               flex on desktop) and each value is pinned to the bottom
-               (mt-auto) plus a bottom slot mirroring the input's hint slot, so
-               all three value lines share one baseline — the input and both
-               results — and the two numbers stay aligned even when one label
-               wraps to more lines than the other. The transparent border +
-               py-1.5 give the plain result text the same line box as the boxed
-               input, so glyphs land on the same level (#823 feedback). -->
-          <div class="grid grid-cols-2 gap-3 sm:flex sm:flex-[2.4] sm:items-stretch">
-            <div
-              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
-            >
-              <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
-                <span>CSDA Range</span>
-                <HelpHint term="csdaRange" side="bottom" testId="basic-range-help" />
-              </div>
-              <div
-                class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
-                data-testid="range-cell-0"
-              >
-                {rangeDisplay(row)}
-              </div>
-              <!-- Mirrors the input cell's hint slot so all three value lines
-                   share the same bottom offset and land on one baseline. -->
-              <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
+          <div
+            class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
+          >
+            <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
+              <span>Stopping Power ({calcState.stpDisplayUnit})</span>
+              <HelpHint term="stoppingPower" side="bottom" testId="basic-stp-help" />
             </div>
             <div
-              class="flex flex-col rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-1"
+              class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
+              data-testid="stp-cell-0"
             >
-              <div class="mb-1 flex items-start gap-1 text-xs font-medium text-muted-foreground">
-                <span>Stopping Power ({calcState.stpDisplayUnit})</span>
-                <HelpHint term="stoppingPower" side="bottom" testId="basic-stp-help" />
-              </div>
-              <div
-                class="mt-auto border border-transparent py-1.5 font-mono text-xl font-semibold whitespace-nowrap sm:text-2xl"
-                data-testid="stp-cell-0"
-              >
-                {stpDisplay(row)}
-              </div>
-              <!-- Mirrors the input cell's hint slot so all three value lines
-                   share the same bottom offset and land on one baseline. -->
-              <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
+              {stpDisplay(row)}
             </div>
+            <!-- Mirrors the input cell's hint slot so all three value lines
+                 share the same bottom offset and land on one baseline. -->
+            <div class="mt-1 min-h-[1rem]" aria-hidden="true"></div>
           </div>
         </div>
       </div>
-    {:else}
-      <!-- Multi-row compact table layout -->
-      <div class="overflow-x-auto" data-testid="basic-multi-row-table">
-        <table class="w-full min-w-[400px] text-sm" data-testid="basic-result-table">
-          <thead class="sticky top-0 bg-background">
-            <tr>
-              <th
-                scope="col"
-                class="sticky left-0 z-20 bg-background shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)] px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-left border-b"
-              >
-                {energyLabel}
-              </th>
-              <th
-                scope="col"
-                class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
-              >
-                <span class="inline-flex items-center gap-1">
-                  CSDA Range
-                  <HelpHint term="csdaRange" side="bottom" class="font-normal" />
-                </span>
-              </th>
-              <th
-                scope="col"
-                class="px-2 sm:px-4 py-2 font-medium whitespace-nowrap text-right border-b"
-              >
-                <span class="inline-flex items-center gap-1">
-                  Stopping Power ({calcState.stpDisplayUnit})
-                  <HelpHint term="stoppingPower" side="bottom" class="font-normal" />
-                </span>
-              </th>
-              <th scope="col" class="w-10 px-1 py-2 border-b" aria-label="Delete row"></th>
-            </tr>
-          </thead>
-          <tbody>
-            {#each calcState.rows as row, i (row.id)}
-              <tr class="even:bg-muted/30">
-                <td
-                  class={`sticky left-0 z-10 px-2 sm:px-4 py-2 shadow-[2px_0_3px_-1px_rgba(0,0,0,0.08)] ${i % 2 === 1 ? "bg-muted/30" : "bg-background"}`}
-                >
-                  <input
-                    type="text"
-                    inputmode="text"
-                    aria-label={`Energy value row ${i + 1}`}
-                    data-row-index={i}
-                    data-testid={`energy-input-${i}`}
-                    value={row.rawInput}
-                    placeholder="e.g. 100 keV"
-                    class={inputClass(row)}
-                    onfocus={(e) => handleInputFocus(e)}
-                    onkeydown={(e) => handleInputKeyDown(e, i)}
-                    oninput={(e) => handleInputChange(e, i)}
-                    onpaste={(e) => handlePaste(e, i)}
-                    disabled={calcState.isCalculating}
-                  />
-                  {#if row.message && (row.status === "invalid" || row.status === "out-of-range")}
-                    <div class="mt-0.5 text-xs text-red-600 dark:text-red-400" role="alert">
-                      {row.message}
-                    </div>
-                  {/if}
-                </td>
-                <td
-                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
-                  data-testid={`range-cell-${i}`}
-                >
-                  {rangeDisplay(row)}
-                </td>
-                <td
-                  class="px-2 sm:px-4 py-2 text-right whitespace-nowrap font-mono"
-                  data-testid={`stp-cell-${i}`}
-                >
-                  {stpDisplay(row)}
-                </td>
-                <td class="px-1 py-2 text-center">
-                  <RowDeleteButton
-                    label={`Delete row ${i + 1}`}
-                    testId={`basic-delete-row-${i}`}
-                    onDelete={() => calcState.removeRow(i)}
-                  />
-                </td>
-              </tr>
-            {/each}
-          </tbody>
-        </table>
-      </div>
-    {/if}
+    </div>
 
     {#if calcState.validationSummary.invalid > 0 || calcState.validationSummary.outOfRange > 0}
       <div class="text-sm text-muted-foreground border-t pt-2">
@@ -456,15 +302,5 @@
         </details>
       </div>
     {/if}
-
-    <div class="flex justify-start">
-      <button
-        type="button"
-        class="inline-flex items-center rounded-md border border-input bg-background px-3 py-1.5 text-sm font-medium transition-colors hover:bg-accent hover:text-accent-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background disabled:pointer-events-none disabled:opacity-50"
-        onclick={() => calcState.addRow()}
-      >
-        + Add row
-      </button>
-    </div>
   {/if}
 </div>

@@ -32,3 +32,17 @@ export function getAvailableEnergyUnits(
   }
   return ["MeV", "MeV/nucl"];
 }
+
+/**
+ * True for heavy ions (mass number > 1, excluding the electron sentinel id
+ * 1001) — the particles for which Basic mode auto-switches the Energy tab's
+ * unit to MeV/nucl (see `CalculatorState.switchParticle`). Any quantity
+ * displayed in MeV/nucl-native units (e.g. the Range →/STP → inverse-lookup
+ * "Energy" output) should use the same rule so its unit label matches.
+ */
+export function isHeavyIonParticle(particle: EnergyUnitParticle | null | undefined): boolean {
+  if (!particle) return false;
+  if (particle.id === 1001) return false;
+  const massNumber = "massNumber" in particle ? particle.massNumber : particle.A;
+  return massNumber > 1;
+}

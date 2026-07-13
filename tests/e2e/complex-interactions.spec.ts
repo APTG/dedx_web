@@ -43,11 +43,13 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     await waitForTable(page);
   });
 
-  test("shows the result table with three data columns in Basic mode", async ({ page }) => {
-    // Basic mode multi-row table has 4 <th> elements: Energy, CSDA Range, STP,
-    // and a visually-empty delete-button column (aria-label="Delete row").
-    // Basic mode passes autoAdd=false so the single-energy hero row stays until
-    // the user explicitly clicks "+ Add row", which switches to multi-row table mode.
+  test("shows the three-cell hero card (Energy, CSDA Range, STP) in Basic mode", async ({
+    page,
+  }) => {
+    // Since issue #840, Basic mode is always exactly one row — no Add Row,
+    // no multi-row table — so this checks the hero card's three cells
+    // instead of a <thead>/<th> table header.
+    // Clear advanced-mode flag set by beforeEach so the page loads in Basic mode.
     await page.evaluate(() => localStorage.removeItem("dedx_advanced_mode"));
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', {
@@ -55,12 +57,13 @@ test.describe("Calculator — default state (Hydrogen + Water + Auto-select)", (
     });
     await waitForTable(page);
     await typeInRow(page, 0, "100");
-    await page.getByRole("button", { name: /\+\s*Add row/i }).click();
-    const headers = page.locator("thead th");
-    await expect(headers).toHaveCount(4, { timeout: 5000 });
-    await expect(headers.nth(0)).toContainText(/Energy/i);
-    await expect(headers.nth(1)).toContainText(/CSDA Range/i);
-    await expect(headers.nth(2)).toContainText(/Stopping Power/i);
+
+    const card = page.locator('[data-testid="basic-single-row-card"]');
+    await expect(card).toBeVisible({ timeout: 5000 });
+    await expect(card).toContainText(/Kinetic energy/i);
+    await expect(card).toContainText(/CSDA Range/i);
+    await expect(card).toContainText(/Stopping Power/i);
+    await expect(page.getByRole("button", { name: /\+\s*Add row/i })).toHaveCount(0);
   });
 
   test("default row '100' keeps the compact table without a → MeV/nucl column", async ({

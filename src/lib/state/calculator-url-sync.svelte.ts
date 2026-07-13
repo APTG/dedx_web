@@ -44,9 +44,11 @@ export function setupCalculatorUrlSync(
     // session) before the multiProgState effect has had a chance to read it.
     if (isAdvancedMode.value && multiProgState === null) return;
 
-    // Build inverse mode state for URL encoding
+    // Build inverse mode state for URL encoding. The active Energy→/Range→/
+    // STP→ tab is shared between Basic and Advanced (#840), so this is not
+    // gated by isAdvancedMode.
     let inverseModeState: InverseModeUrlState | undefined;
-    if (inverseLookupState && isAdvancedMode.value) {
+    if (inverseLookupState) {
       if (inverseLookupState.activeTab === "csda") {
         inverseModeState = {
           imode: "csda",

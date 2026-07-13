@@ -380,49 +380,72 @@ test.describe("Inverse Lookups — Range Tab", () => {
   });
 });
 
-test.describe("Advanced Mode Gate", () => {
+test.describe("Basic vs Advanced Layout", () => {
   test.beforeEach(async ({ page }) => {
     await page.goto("/calculator");
     await page.waitForSelector('[data-testid="picker-entity-selection"]', { timeout: 15000 });
   });
 
-  test("Advanced-mode gate: inverse tabs absent in Basic mode @regression", async ({ page }) => {
-    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="inverse-tab-stp"]')).toHaveCount(0);
-
-    await page.locator('button[aria-label="Switch to Advanced mode"]').click();
-    await page.waitForSelector('button:has-text("Advanced Options")', { timeout: 5000 });
-    await page.waitForSelector('[data-testid="inverse-tab-range"]', { timeout: 5000 });
-
-    await expect(page.locator('[data-testid="inverse-tab-range"]')).toBeVisible();
-    await expect(page.locator('[data-testid="inverse-tab-stp"]')).toBeVisible();
-  });
-
-  test("Advanced-mode gate: switching to Basic while on Range tab shows Forward content @regression", async ({
+  test("Basic mode: Energy/Range/STP tabs are present and clickable @regression", async ({
     page,
   }) => {
-    // Enable advanced mode and switch to Range tab
-    await page.locator('button[aria-label="Switch to Advanced mode"]').click();
-    await page.waitForSelector('[data-testid="inverse-tab-range"]', { timeout: 5000 });
+    await expect(page.locator('[data-testid="inverse-tab-forward"]')).toBeVisible();
+    await expect(page.locator('[data-testid="inverse-tab-range"]')).toBeVisible();
+    await expect(page.locator('[data-testid="inverse-tab-stp"]')).toBeVisible();
+
+    // Advanced-only chrome (Advanced Options, per-row Add Row) must still be absent in Basic.
+    await expect(page.locator('button:has-text("Advanced Options")')).toHaveCount(0);
+    await expect(page.locator('button:has-text("+ Add row")')).toHaveCount(0);
+  });
+
+  test("Basic mode: Range tab shows the simplified hero card, not the Advanced table @regression", async ({
+    page,
+  }) => {
     await page.click('[data-testid="inverse-tab-range"]');
+    await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
+    await expect(page.locator('[data-testid="advanced-range-table"]')).toHaveCount(0);
+    // No unit-anchor strip in Basic mode (#840 follow-up) — the fixed unit
+    // lives in the input label instead, mirroring the Kinetic energy hero.
+    await expect(page.locator('[data-testid="basic-range-unit-strip"]')).toHaveCount(0);
+    await expect(page.getByText("Range (cm)")).toBeVisible();
+    await expect(page.getByText("per-row mode active")).toHaveCount(0);
+    await expect(page.locator('button:has-text("+ Add row")')).toHaveCount(0);
+  });
+
+  test("Basic mode: STP tab shows the simplified hero card, not the Advanced table @regression", async ({
+    page,
+  }) => {
+    await page.click('[data-testid="inverse-tab-stp"]');
+    await expect(page.locator('[data-testid="basic-stp-card"]')).toBeVisible();
+    await expect(page.locator('[data-testid="inverse-stp-table"]')).toHaveCount(0);
+    await expect(page.locator('button:has-text("+ Add row")')).toHaveCount(0);
+  });
+
+  test("Tab selection round-trips across a Basic ↔ Advanced switch @regression", async ({
+    page,
+  }) => {
+    // Select the Range tab while in Basic mode.
+    await page.click('[data-testid="inverse-tab-range"]');
+    await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
+
+    // Switch to Advanced — same tab stays selected, but the full table renders instead.
+    await page.locator('button[aria-label="Switch to Advanced mode"]').click();
+    await page.waitForSelector('button:has-text("Advanced Options")', { timeout: 5000 });
     await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
       "aria-selected",
       "true",
     );
+    await expect(page.locator('[data-testid="advanced-range-table"]')).toBeVisible();
 
-    // Switch back to basic mode
+    // Switch back to Basic — still on the Range tab, back to the simplified card.
     await page.locator('button[aria-label="Switch to Basic mode"]').click();
     await page.waitForFunction(() => !window.location.search.includes("mode=advanced"), {
       timeout: 5000,
     });
-
-    // Tab switcher must be gone
-    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveCount(0);
-    await expect(page.locator('[data-testid="inverse-tab-stp"]')).toHaveCount(0);
-
-    // Forward tab content must be visible — the result table heading or energy input
-    await expect(page.locator('[data-testid="inverse-tab-forward"]')).toHaveCount(0);
-    // The forward result table should be in the DOM (it renders when activeTab === "forward")
-    await expect(page.locator('[data-testid="result-table"]')).toBeVisible({ timeout: 5000 });
+    await expect(page.locator('[data-testid="inverse-tab-range"]')).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+    await expect(page.locator('[data-testid="basic-range-card"]')).toBeVisible();
   });
 });

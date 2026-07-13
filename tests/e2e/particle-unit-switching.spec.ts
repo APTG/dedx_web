@@ -235,29 +235,16 @@ test.describe("Particle/unit switching — KE conservation (pending)", () => {
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Add-row UX — explicit "+ Add row" button rendered below the table.
+// Advanced-only since issue #840 (Basic mode is always exactly one row).
 // ─────────────────────────────────────────────────────────────────────────────
 
 test.describe("Add row UX", () => {
   test.beforeEach(async ({ page }) => {
-    await waitForWasm(page);
+    await page.goto("/calculator?advanced=1");
+    await page.waitForSelector('[data-testid="picker-entity-selection"]', {
+      timeout: WASM_TIMEOUT,
+    });
     await waitForTable(page);
-  });
-
-  test("typing in the last row does not auto-append; + Add row appends explicitly", async ({
-    page,
-  }) => {
-    // Basic mode keeps single-row card layout until the user explicitly adds rows.
-    const initialCount = await page.locator("input[data-row-index]").count();
-    expect(initialCount).toBeGreaterThanOrEqual(1);
-
-    // Typing does not auto-append.
-    await typeInRow(page, initialCount - 1, "200");
-    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount);
-
-    // Explicit + Add row appends one empty row.
-    const addBtn = page.getByRole("button", { name: /\+\s*Add row/i });
-    await addBtn.click();
-    await expect(page.locator("input[data-row-index]")).toHaveCount(initialCount + 1);
   });
 
   test("explicit '+ Add row' button is rendered and appends an empty row when clicked", async ({
