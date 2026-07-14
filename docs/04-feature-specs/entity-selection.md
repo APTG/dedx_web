@@ -283,13 +283,22 @@ pill buttons switching between sub-tabs:
 - **Default active sub-tab**: `"compounds"`
 - **Persistence**: `localStorage["webdedx.materialSubtab"]` — survives reload
 - **Scroll memory**: each sub-tab's scroll position is saved/restored on switch
-- **Auto-switch**: if the selected material is in a different sub-tab, the
-  tab silently switches to show it (no user interaction required)
+- **Auto-switch**: when the _selected material itself changes_ (e.g. picked
+  from a list, restored from a URL) and lands in a different sub-tab, the
+  tab silently switches to show it. This is keyed off the selection's
+  identity, not the active sub-tab — clicking a pill by hand never gets
+  silently reverted while the same material stays selected (#847).
+- **Attract highlight**: when the active sub-tab's search query has zero
+  matches and another sub-tab has matches, that other pill (or pills) gets
+  an accent highlight (`data-attract="true"`) to draw the eye — the switch
+  itself is always manual, never automatic. No highlight when the query is
+  empty or the active sub-tab already has matches.
 - **Bottom fade**: a gradient fade at the bottom of the list hints at overflow
 
 Test IDs:
 
 - Sub-tab pills: `material-subtab-compounds`, `material-subtab-elements`, `material-subtab-custom`
+  (each also carries `data-attract="true"|"false"`)
 - Active list: `picker-material-list-{activeSubTab}`
 - Add compound: `picker-material-add-compound` (unchanged for backward compat)
 

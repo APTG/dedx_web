@@ -17,6 +17,41 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-14 — **entity-selection / #847**: Fixed a bug reported from live use: clicking the
+  "Compounds" sub-tab pill silently did nothing after selecting an element (e.g. Boron) and then
+  typing a search query matching zero elements — the Elements pill stayed stuck selected.
+  Reproduced first with a disposable Vitest component test before filing
+  [APTG/dedx_web#847](https://github.com/APTG/dedx_web/issues/847). Root cause:
+  `material-tab.svelte`'s auto-switch `$effect` read `activeSubTab` in its own reactive
+  dependencies (`activeSubTab !== "elements"` / `!== "custom"` guards), so a manual pill click
+  re-armed the effect; since the selected material was still an element, the guard was
+  immediately true again and it called `setSubTab("elements")`, reverting the user's own click.
+  Fixed by gating the effect on a plain (non-reactive) snapshot of the selected material's own
+  `id` instead of reading `activeSubTab` at all — the effect now only fires when the _selection_
+  changes, never when the active sub-tab changes, so a manual click can no longer be reverted.
+  Also added the requested "attract" highlight: when the active sub-tab's filtered query has zero
+  matches and another sub-tab has matches, that pill gets an accent ring + `data-attract="true"`
+  instead of any forced/automatic switch — the user still picks manually. New regression tests in
+  `entity-selection-tabbed.test.ts`; fixed a pre-existing test-isolation gap the new tests
+  surfaced (`localStorage["webdedx.materialSubtab"]` leaking the active sub-tab across tests in
+  the same file with no `beforeEach` clear, same class of issue as the existing `isAdvancedMode`
+  reset for #816). Updated `entity-selection.md`'s sub-tab-pill spec section. svelte-check/tsc/
+  ESLint/Prettier clean; full Vitest (1958) green. Live-browser verification was attempted but not
+  achieved: this remote environment's egress policy blocks both the Docker registry CDN
+  (`docker pull emscripten/emsdk`) and the GitHub Actions artifact blob-storage host needed to
+  obtain a real `libdedx.wasm` (confirmed as explicit policy denials via the proxy status
+  endpoint, not client misconfiguration) — flagged rather than silently skipped, since the bug and
+  fix are entirely client-side picker state with no WASM involved, component tests exercising the
+  real reported click sequence via `@testing-library/svelte` + `user-event` were relied on instead.
+  **PR #848 review follow-ups** (GitHub Copilot): (1) `autoSwitchedForId` was never reset when
+  `selectedMaterial` became `null` (reachable via the summary bar's Clear button), so clearing then
+  re-selecting the _same_ material id was silently swallowed by the `sel.id === autoSwitchedForId`
+  guard and skipped the auto-switch — fixed by resetting the guard to `null` whenever the selection
+  itself is cleared, with a new regression test that fails without the fix (verified by reverting
+  it locally). (2) `beforeEach`'s `localStorage.clear()` wiped all persisted keys, not just the
+  sub-tab choice — narrowed to `localStorage.removeItem("webdedx.materialSubtab")`. Full Vitest
+  (1959) + svelte-check/tsc/ESLint/Prettier still clean. (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-14-issue-847-material-subtab-pill-fix.md)
 - 2026-07-13 — **wasm / #844**: Closed out the frontend side of the stale material-availability
   table bug (proton+Boron → opaque `LibdedxError code: 202`), now that the libdedx root cause
   (`libdedx#51`) was fixed upstream in `libdedx#144`. Bumped the `libdedx` submodule pin
