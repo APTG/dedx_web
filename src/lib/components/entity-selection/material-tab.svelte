@@ -139,6 +139,22 @@
   const filteredCustom = $derived(customItems.filter((m) => matchesMaterialQuery(m, query)));
   const hasQuery = $derived(query.trim().length > 0);
 
+  function filteredCountFor(tab: SubTab): number {
+    if (tab === "elements") return filteredElements.length;
+    if (tab === "custom") return filteredCustom.length;
+    return filteredCompounds.length;
+  }
+
+  // When the active sub-tab's query has zero matches, draw attention to
+  // whichever other sub-tab(s) do have matches instead of forcing a switch
+  // (#847) — the user picks manually, we just point at where to look.
+  const activeFilteredCount = $derived(filteredCountFor(activeSubTab));
+  const attractOthers = $derived(hasQuery && activeFilteredCount === 0);
+
+  function isAttracted(tab: SubTab): boolean {
+    return attractOthers && tab !== activeSubTab && filteredCountFor(tab) > 0;
+  }
+
   let showOnlySelected = $state(false);
 
   const filteredActive = $derived.by<Material[]>(() => {
@@ -236,20 +252,22 @@
     editingCompound = null;
   }
 
-  // If a selection lands in a different sub-tab than the active one, silently switch.
+  // When a *newly selected* material lands in a different sub-tab than the
+  // active one, jump to it so the selection stays visible. Gated on the
+  // material's own id rather than reading `activeSubTab` — reading it here
+  // would re-arm this effect on every manual pill click and immediately
+  // revert it back while the same element/compound stays selected (#847).
+  let autoSwitchedForId: Material["id"] | null = null;
   $effect(() => {
     const sel = selectionState.selectedMaterial;
-    if (!sel) return;
-    if (inElements(sel) && activeSubTab !== "elements") {
+    if (!sel || sel.id === autoSwitchedForId) return;
+    autoSwitchedForId = sel.id;
+    if (inElements(sel)) {
       const id = (sel as MaterialEntity).id;
       if (typeof id === "number" && isElementId(id)) {
         setSubTab("elements");
       }
-    } else if (
-      typeof sel.id === "string" &&
-      sel.id.startsWith("cc_") &&
-      activeSubTab !== "custom"
-    ) {
+    } else if (typeof sel.id === "string" && sel.id.startsWith("cc_")) {
       setSubTab("custom");
     }
   });
@@ -411,11 +429,14 @@
         role="tab"
         aria-selected={activeSubTab === "compounds"}
         data-testid="material-subtab-compounds"
+        data-attract={isAttracted("compounds")}
         class={cn(
           "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           activeSubTab === "compounds"
             ? "border-primary bg-primary/15 text-primary"
-            : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+            : isAttracted("compounds")
+              ? "border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-300 dark:border-orange-500 dark:bg-orange-950/30 dark:text-orange-300"
+              : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
         )}
         onclick={() => setSubTab("compounds")}
       >
@@ -426,11 +447,14 @@
         role="tab"
         aria-selected={activeSubTab === "elements"}
         data-testid="material-subtab-elements"
+        data-attract={isAttracted("elements")}
         class={cn(
           "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
           activeSubTab === "elements"
             ? "border-primary bg-primary/15 text-primary"
-            : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+            : isAttracted("elements")
+              ? "border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-300 dark:border-orange-500 dark:bg-orange-950/30 dark:text-orange-300"
+              : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
         )}
         onclick={() => setSubTab("elements")}
       >
@@ -442,11 +466,14 @@
           role="tab"
           aria-selected={activeSubTab === "custom"}
           data-testid="material-subtab-custom"
+          data-attract={isAttracted("custom")}
           class={cn(
             "rounded-full border px-3 py-1 text-xs font-medium transition-colors",
             activeSubTab === "custom"
               ? "border-primary bg-primary/15 text-primary"
-              : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
+              : isAttracted("custom")
+                ? "border-orange-400 bg-orange-50 text-orange-700 ring-1 ring-orange-300 dark:border-orange-500 dark:bg-orange-950/30 dark:text-orange-300"
+                : "border-muted bg-muted/40 text-muted-foreground hover:bg-accent",
           )}
           onclick={() => setSubTab("custom")}
         >

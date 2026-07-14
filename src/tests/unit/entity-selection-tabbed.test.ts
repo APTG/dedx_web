@@ -137,6 +137,11 @@ describe("EntitySelection", () => {
     // Resetting here prevents a leaked `true` from an earlier test that threw
     // before its own reset (#816).
     isAdvancedMode.value = false;
+    // MaterialTab persists its active sub-tab pill to localStorage (jsdom's
+    // window/localStorage survives across tests in the same file), so a test
+    // that switches to Elements/Custom otherwise leaks that choice into
+    // whichever test runs next (#847).
+    localStorage.clear();
     const service = new MockLibdedxService();
     const matrix = buildCompatibilityMatrix(service as any);
     state = createEntitySelectionState(matrix);
@@ -516,6 +521,107 @@ describe("EntitySelection", () => {
     );
     // Compounds list is visible.
     expect(screen.getByTestId("picker-material-list-compounds")).toBeInTheDocument();
+  });
+
+  test("clicking a sub-tab pill actually switches even while an element stays selected (#847)", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.click(screen.getByTestId("material-subtab-elements"));
+    await user.click(screen.getByTestId("picker-material-item-6")); // Carbon
+    expect(state.selectedMaterial?.id).toBe(6);
+    // Auto-switch effect jumps to Elements to keep the new selection visible.
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+
+    // Manually click Compounds — must actually switch, not get silently
+    // reverted back to Elements by the auto-switch effect.
+    await user.click(screen.getByTestId("material-subtab-compounds"));
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("aria-selected")).toBe(
+      "false",
+    );
+    expect(screen.getByTestId("picker-material-list-compounds")).toBeInTheDocument();
+
+    // And it stays switched — re-clicking Elements then Compounds again
+    // continues to work (not a one-shot escape).
+    await user.click(screen.getByTestId("material-subtab-elements"));
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    await user.click(screen.getByTestId("material-subtab-compounds"));
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+  });
+
+  test("highlights other sub-tab pills when the active one has zero query matches (#847)", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.click(screen.getByTestId("material-subtab-elements"));
+    await user.click(screen.getByTestId("picker-material-item-6")); // Carbon selected, Elements active
+
+    await user.type(screen.getByTestId("picker-material-search"), "Water");
+
+    // Elements has 0 matches for "Water"; Compounds has 1 (Water). Compounds
+    // should be visually attracted, but the sub-tab must NOT auto-switch.
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("data-attract")).toBe(
+      "true",
+    );
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("data-attract")).toBe(
+      "false",
+    );
+
+    // Selection is still made manually by the user.
+    await user.click(screen.getByTestId("material-subtab-compounds"));
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+    expect(screen.getByTestId("picker-material-item-276")).toBeInTheDocument(); // Water visible
+    // Once the active tab has its own match, the highlight clears.
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("data-attract")).toBe(
+      "false",
+    );
+  });
+
+  test("does not highlight pills when there is no search query", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.click(screen.getByTestId("material-subtab-elements"));
+
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("data-attract")).toBe(
+      "false",
+    );
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("data-attract")).toBe(
+      "false",
+    );
+  });
+
+  test("does not highlight other pills when the active sub-tab already has matches", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    // Compounds is active by default and "Water" matches within it.
+    await user.type(screen.getByTestId("picker-material-search"), "Water");
+
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("data-attract")).toBe(
+      "false",
+    );
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("data-attract")).toBe(
+      "false",
+    );
   });
 
   test("material picker-sheet locks body scroll and restores on close", async () => {
