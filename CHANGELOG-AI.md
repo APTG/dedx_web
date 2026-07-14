@@ -43,7 +43,14 @@ Use one bullet per session (newest first):
   endpoint, not client misconfiguration) — flagged rather than silently skipped, since the bug and
   fix are entirely client-side picker state with no WASM involved, component tests exercising the
   real reported click sequence via `@testing-library/svelte` + `user-event` were relied on instead.
-  (Claude Sonnet 5 via Claude Code)
+  **PR #848 review follow-ups** (GitHub Copilot): (1) `autoSwitchedForId` was never reset when
+  `selectedMaterial` became `null` (reachable via the summary bar's Clear button), so clearing then
+  re-selecting the _same_ material id was silently swallowed by the `sel.id === autoSwitchedForId`
+  guard and skipped the auto-switch — fixed by resetting the guard to `null` whenever the selection
+  itself is cleared, with a new regression test that fails without the fix (verified by reverting
+  it locally). (2) `beforeEach`'s `localStorage.clear()` wiped all persisted keys, not just the
+  sub-tab choice — narrowed to `localStorage.removeItem("webdedx.materialSubtab")`. Full Vitest
+  (1959) + svelte-check/tsc/ESLint/Prettier still clean. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-14-issue-847-material-subtab-pill-fix.md)
 - 2026-07-13 — **wasm / #844**: Closed out the frontend side of the stale material-availability
   table bug (proton+Boron → opaque `LibdedxError code: 202`), now that the libdedx root cause

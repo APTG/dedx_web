@@ -33,6 +33,28 @@ criteria.
 
 **AI response**: See Tasks below.
 
+### Prompt 3: GitHub Copilot's automated review on PR #848
+
+**AI response**: Copilot's review left two inline comments, both genuine
+findings. (1) On `material-tab.svelte`'s new `autoSwitchedForId` guard:
+`selectedMaterial` can become `null` (the summary bar's Clear button calls
+`clearMaterial()`, confirmed by reading `entity-selection.svelte.ts`), and
+the effect's `if (!sel || sel.id === autoSwitchedForId) return;` didn't
+reset the guard on that branch — so clearing then re-selecting the *same*
+material id left `autoSwitchedForId` stale and the guard swallowed the
+re-selection, skipping the auto-switch that should show it. Fixed by
+resetting `autoSwitchedForId = null` whenever `sel` is null, before the
+identity check. Added a regression test and verified it fails without the
+fix (temporarily reverted the fix, confirmed the new test failed with the
+expected assertion mismatch, then restored it) before trusting it as a real
+regression guard. (2) On the test file's `beforeEach`: `localStorage.clear()`
+wipes every persisted key, not just the sub-tab choice, which is more than
+the fix needed and could reset state a future test in this file relies on.
+Narrowed to `localStorage.removeItem("webdedx.materialSubtab")` — the exact
+key `material-tab.svelte` uses. Re-ran the full suite (1959 tests) plus
+svelte-check/tsc/ESLint/Prettier, all clean, then pushed as a follow-up
+commit to the same PR.
+
 ## Tasks
 
 ### Fix the auto-switch effect reverting manual pill clicks

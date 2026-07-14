@@ -260,7 +260,15 @@
   let autoSwitchedForId: Material["id"] | null = null;
   $effect(() => {
     const sel = selectionState.selectedMaterial;
-    if (!sel || sel.id === autoSwitchedForId) return;
+    if (!sel) {
+      // Reset the guard so a later re-selection of the *same* id (e.g. clear
+      // then pick the same material again) still auto-switches — the guard
+      // only exists to no-op a manual pill click while the selection itself
+      // hasn't changed, not to suppress a null → id transition.
+      autoSwitchedForId = null;
+      return;
+    }
+    if (sel.id === autoSwitchedForId) return;
     autoSwitchedForId = sel.id;
     if (inElements(sel)) {
       const id = (sel as MaterialEntity).id;

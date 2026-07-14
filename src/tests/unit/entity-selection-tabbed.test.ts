@@ -140,8 +140,10 @@ describe("EntitySelection", () => {
     // MaterialTab persists its active sub-tab pill to localStorage (jsdom's
     // window/localStorage survives across tests in the same file), so a test
     // that switches to Elements/Custom otherwise leaks that choice into
-    // whichever test runs next (#847).
-    localStorage.clear();
+    // whichever test runs next (#847). Remove only this key — a blanket
+    // localStorage.clear() would also wipe unrelated persisted state (e.g.
+    // Advanced-mode options) that other tests in this file may rely on.
+    localStorage.removeItem("webdedx.materialSubtab");
     const service = new MockLibdedxService();
     const matrix = buildCompatibilityMatrix(service as any);
     state = createEntitySelectionState(matrix);
@@ -621,6 +623,34 @@ describe("EntitySelection", () => {
     );
     expect(screen.getByTestId("material-subtab-elements").getAttribute("data-attract")).toBe(
       "false",
+    );
+  });
+
+  test("re-selecting the same material after clearing still auto-switches the sub-tab (#848 review)", async () => {
+    render(EntitySelection, { props: { selectionState: state } });
+    const user = userEvent.setup();
+
+    await user.click(screen.getByTestId("picker-tab-material"));
+    await user.click(screen.getByTestId("material-subtab-elements"));
+    await user.click(screen.getByTestId("picker-material-item-6")); // Carbon selected, Elements active
+    expect(state.selectedMaterial?.id).toBe(6);
+
+    // Manually switch away from Elements (allowed since #847).
+    await user.click(screen.getByTestId("material-subtab-compounds"));
+    expect(screen.getByTestId("material-subtab-compounds").getAttribute("aria-selected")).toBe(
+      "true",
+    );
+
+    // Clear the selection, then re-select the SAME material id (Carbon). The
+    // auto-switch guard must not stay stuck on id=6 from before the clear —
+    // it should still jump back to Elements to show the reselection.
+    state.clearMaterial();
+    await tick();
+    state.selectMaterial(6);
+    await tick();
+
+    expect(screen.getByTestId("material-subtab-elements").getAttribute("aria-selected")).toBe(
+      "true",
     );
   });
 
