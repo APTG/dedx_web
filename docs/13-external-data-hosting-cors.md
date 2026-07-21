@@ -166,21 +166,27 @@ send before a `Range` request:
 curl -sD - -o /dev/null \
   -H "Origin: https://aptg.github.io" \
   https://s3p.cloud.cyfronet.pl/dedxweb/dedxweb/srim-gui.webdedx/zarr.json \
-  | grep -i "^HTTP\|access-control"
+  | grep -Ei "^(HTTP|access-control)"
 
-# Preflight OPTIONS — checks Allow-Methods/Allow-Headers/Expose-Headers
+# Preflight OPTIONS — checks Allow-Methods/Allow-Headers
 curl -sD - -o /dev/null -X OPTIONS \
   -H "Origin: https://aptg.github.io" \
   -H "Access-Control-Request-Method: GET" \
   -H "Access-Control-Request-Headers: range" \
   https://s3p.cloud.cyfronet.pl/dedxweb/dedxweb/srim-gui.webdedx/zarr.json \
-  | grep -i "^HTTP\|access-control"
+  | grep -Ei "^(HTTP|access-control)"
 ```
 
-Expect to see `access-control-allow-origin`, `access-control-allow-methods`,
-and (on the preflight) `access-control-expose-headers` containing
-`Content-Range,Content-Length,Accept-Ranges`. If any of these are missing,
-the browser will still block the request even though `curl` sees a
+On the **simple `GET`**, expect `access-control-allow-origin` and
+`access-control-expose-headers` containing
+`Content-Range,Content-Length,Accept-Ranges` — this is what lets the
+browser's `fetch()` read those response headers cross-origin.
+`Access-Control-Expose-Headers` is a directive the browser reads off the
+actual `GET`/`HEAD` response, not the preflight, so don't expect (or
+require) it there. On the **preflight `OPTIONS`**, expect
+`access-control-allow-origin`, `access-control-allow-methods`, and
+`access-control-allow-headers` (covering `range`). If any of these are
+missing, the browser will still block the request even though `curl` sees a
 successful `200`/`204`.
 
 Finally, confirm end-to-end in the app itself: load the "Calculator with the

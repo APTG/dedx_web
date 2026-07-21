@@ -17,22 +17,18 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-- 2026-07-21 — **external-data**: Updated the SRIM reference-dataset example URL
+- 2026-07-21 — **external-data**: Migrated the hosted SRIM reference-dataset example URL
   (`src/lib/utils/external-data-example-urls.ts`, used by the in-app user guide and calculator/
-  plot example links) to the new hosting location: host moved from `s3.cloud.cyfronet.pl` to
+  plot example links) to its new location: host moved from `s3.cloud.cyfronet.pl` to
   `s3p.cloud.cyfronet.pl`, and the object path gained an extra `dedxweb/` prefix segment
-  (`dedxweb/dedxweb/srim-gui.webdedx/...`). Verified the new path resolves (`zarr.json` returns
-  200), but confirmed via `curl` with an `Origin` header that the new endpoint does **not** send
-  `Access-Control-Allow-Origin` (the old host did) — CORS needs to be reconfigured on the new
-  bucket/endpoint before browser-side loads will work; this is outside the repo (bucket-side
-  config) so flagged to the user rather than changed here. (Claude Sonnet 5 via Claude Code)
-
-- 2026-07-21 — **docs**: Added `docs/13-external-data-hosting-cors.md`, an ops runbook for
-  configuring S3 bucket CORS with `s3cmd` (prerequisites, `cors.xml` templates — open `*` vs.
-  restricted origin list, `setcors`/`delcors`, `curl`-based verification including the preflight
-  `OPTIONS` check) for the Cyfronet-hosted SRIM/Geant4 reference datasets. Cross-linked from
-  `docs/README.md`, `docs/08-deployment.md` §7, and `docs/04-feature-specs/external-data.md` §10.4.
+  (`dedxweb/dedxweb/srim-gui.webdedx/...`). The new bucket initially had no CORS configuration
+  (confirmed via `curl`/`s3cmd info`), which would have silently broken browser-side loads; added
+  `docs/13-external-data-hosting-cors.md`, an `s3cmd`-based CORS setup runbook, cross-linked from
+  `docs/README.md`, `docs/08-deployment.md`, and `docs/04-feature-specs/external-data.md` §10.4.
+  The bucket owner has since applied CORS following the runbook; re-verified via `curl` that both
+  the simple `GET` and the preflight `OPTIONS` now return the expected `Access-Control-*` headers.
   (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-21-srim-s3p-migration.md)
 
 - 2026-07-14 — **entity-selection / #847**: Fixed a bug reported from live use: clicking the
   "Compounds" sub-tab pill silently did nothing after selecting an element (e.g. Boron) and then
