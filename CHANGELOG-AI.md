@@ -27,6 +27,13 @@ Use one bullet per session (newest first):
   bucket/endpoint before browser-side loads will work; this is outside the repo (bucket-side
   config) so flagged to the user rather than changed here. (Claude Sonnet 5 via Claude Code)
 
+- 2026-07-21 — **docs**: Added `docs/13-external-data-hosting-cors.md`, an ops runbook for
+  configuring S3 bucket CORS with `s3cmd` (prerequisites, `cors.xml` templates — open `*` vs.
+  restricted origin list, `setcors`/`delcors`, `curl`-based verification including the preflight
+  `OPTIONS` check) for the Cyfronet-hosted SRIM/Geant4 reference datasets. Cross-linked from
+  `docs/README.md`, `docs/08-deployment.md` §7, and `docs/04-feature-specs/external-data.md` §10.4.
+  (Claude Sonnet 5 via Claude Code)
+
 - 2026-07-14 — **entity-selection / #847**: Fixed a bug reported from live use: clicking the
   "Compounds" sub-tab pill silently did nothing after selecting an element (e.g. Boron) and then
   typing a search query matching zero elements — the Elements pill stayed stuck selected.

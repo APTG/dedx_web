@@ -215,13 +215,14 @@ for the reasoning.
 
 ## 7. Cross-references
 
-| Topic                                   | Canonical location                                                                |
-| --------------------------------------- | --------------------------------------------------------------------------------- |
-| Deployment target decision              | [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)           |
-| WASM build flags and rationale          | [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md)             |
-| WASM TypeScript API contract            | [06-wasm-api-contract.md](06-wasm-api-contract.md)                                |
-| Performance budgets (FCP, TTI)          | [09-non-functional-requirements.md §3](09-non-functional-requirements.md)         |
-| Browser caching details                 | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)       |
-| Browser support matrix                  | [09-non-functional-requirements.md §4](09-non-functional-requirements.md)         |
-| Stage 9 scope                           | [00-redesign-plan.md §8](00-redesign-plan.md)                                     |
-| Legacy CI workflow (deleted in Stage 3) | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |
+| Topic                                     | Canonical location                                                                |
+| ----------------------------------------- | --------------------------------------------------------------------------------- |
+| Deployment target decision                | [ADR 001 — SvelteKit over React](decisions/001-sveltekit-over-react.md)           |
+| WASM build flags and rationale            | [ADR 003 — WASM Build Pipeline](decisions/003-wasm-build-pipeline.md)             |
+| WASM TypeScript API contract              | [06-wasm-api-contract.md](06-wasm-api-contract.md)                                |
+| Performance budgets (FCP, TTI)            | [09-non-functional-requirements.md §3](09-non-functional-requirements.md)         |
+| Browser caching details                   | [09-non-functional-requirements.md §3.1](09-non-functional-requirements.md)       |
+| Browser support matrix                    | [09-non-functional-requirements.md §4](09-non-functional-requirements.md)         |
+| Stage 9 scope                             | [00-redesign-plan.md §8](00-redesign-plan.md)                                     |
+| Legacy CI workflow (deleted in Stage 3)   | [.github/workflows/test_and_deploy.yml](../.github/workflows/test_and_deploy.yml) |
+| External data bucket CORS setup (`s3cmd`) | [13-external-data-hosting-cors.md](13-external-data-hosting-cors.md)              |
