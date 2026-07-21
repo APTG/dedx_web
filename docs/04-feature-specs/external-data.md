@@ -924,6 +924,9 @@ intentionally inert.
   provide a CORS proxy.
 - When webdedx is served over HTTPS, external sources must also use HTTPS
   (except `localhost`). This is enforced by the browser's mixed-content policy.
+- For the project-hosted reference datasets (S3), see
+  [13-external-data-hosting-cors.md](../13-external-data-hosting-cors.md) for
+  the `s3cmd`-based CORS setup runbook.
 
 ---
 

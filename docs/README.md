@@ -20,6 +20,7 @@ Design documents and specifications for the dEdx Web redesign.
 | [10-terminology.md](10-terminology.md)                                 | **Final v3** — Glossary of domain terms: §1 physics/end-user terms (stopping power, CSDA range, Bragg additivity, I-value, particle vs ion, MeV/nucl vs MeV/u, etc.); §2 developer/stack terms (WASM, Emscripten, runes, dedx_config, Entity, Series, StoredCompound, etc.) |
 | [11-prototyping-spikes.md](11-prototyping-spikes.md)                   | **Final v1** — All four spikes complete (JSROOT+Svelte 5, WASM pipeline, module-level `$state`, Zarr v3 external data format)                                                                                                                                               |
 | [12-libdedx-migration-plan.md](12-libdedx-migration-plan.md)           | **Draft v1** — Plan to migrate C helpers from `wasm/dedx_extra.c` upstream into `libdedx`: per-symbol inventory, phased PRs, and how to sequence libdedx + dedx_web issues/PRs                                                                                              |
+| [13-external-data-hosting-cors.md](13-external-data-hosting-cors.md)   | Ops runbook — configuring S3 bucket CORS with `s3cmd` for the hosted SRIM/Geant4 reference datasets (Cyfronet `s3p.cloud.cyfronet.pl`)                                                                                                                                      |
 
 ## Subdirectories
 
