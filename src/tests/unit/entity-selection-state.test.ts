@@ -507,6 +507,13 @@ describe("createEntitySelectionState", () => {
 
       expect(state.selectedProgram.id).toBe(-1); // still Auto-select, per selectMaterial()
       expect(state.resolvedProgramId).toBe("ext:srim:srim-2013-gui");
+
+      // The "Auto-select → …" annotation/summary must also reflect the
+      // resolved external program, not silently stay unresolved (review
+      // follow-up on #861/PR #862).
+      const selected = state.selectedProgram;
+      expect("resolvedProgram" in selected && selected.resolvedProgram?.name).toBe("SRIM GUI");
+      expect(state.selectionSummary).toContain("Auto-select → SRIM GUI");
     });
   });
 });

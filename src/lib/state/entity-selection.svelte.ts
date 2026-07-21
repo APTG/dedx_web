@@ -23,7 +23,7 @@ import {
 export interface AutoSelectProgram {
   id: -1;
   name: "Auto-select";
-  resolvedProgram: ProgramEntity | null;
+  resolvedProgram: ProgramEntity | ExternalProgramEntity | null;
 }
 
 export type SelectedProgram = ProgramEntity | AutoSelectProgram | ExternalProgramEntity;
@@ -161,10 +161,17 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
       }
       // Auto-select
       if (selectedProgramId === -1) {
-        const resolvedId = availability.resolveAutoSelect();
-        const resolvedProgram = resolvedId
-          ? matrix.allPrograms.find((p) => p.id === resolvedId) || null
-          : null;
+        // getResolvedProgramId() (not resolveAutoSelect(), which is built-in-only)
+        // so this reflects the external-program fallback for external-only
+        // particles/materials (e.g. SRIM's "Epoxy") — see #861.
+        const resolvedId = availability.getResolvedProgramId();
+        let resolvedProgram: ProgramEntity | ExternalProgramEntity | null = null;
+        if (typeof resolvedId === "number") {
+          resolvedProgram = matrix.allPrograms.find((p) => p.id === resolvedId) ?? null;
+        } else if (typeof resolvedId === "string") {
+          resolvedProgram =
+            availability.externalContext.programs.find((p) => p.id === resolvedId) ?? null;
+        }
         return { ...AUTO_SELECT_PROGRAM, resolvedProgram };
       }
       // Built-in

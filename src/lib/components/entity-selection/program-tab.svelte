@@ -77,7 +77,7 @@
 
   const currentProgram = $derived(selectionState.selectedProgram);
   const isAuto = $derived(currentProgram.id === -1);
-  const autoResolved = $derived.by<ProgramEntity | null>(() => {
+  const autoResolved = $derived.by<ProgramEntity | ExternalProgramEntity | null>(() => {
     if (!isAuto) return null;
     const p = currentProgram as AutoSelectProgram;
     return p.resolvedProgram;
@@ -182,8 +182,9 @@
           {/if}
           <p class="text-xs text-muted-foreground mt-0.5">
             {#if autoResolved}
-              {getProgramDescription(autoResolved.id) ??
-                "Recommended for the current particle/material."}
+              {(typeof autoResolved.id === "number"
+                ? getProgramDescription(autoResolved.id)
+                : undefined) ?? "Recommended for the current particle/material."}
             {:else}
               No compatible program for the current particle / material.
             {/if}
