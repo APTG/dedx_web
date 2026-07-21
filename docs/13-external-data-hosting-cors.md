@@ -104,21 +104,29 @@ If you'd rather restrict to known origins (matching how the old
 wildcard), use one `<AllowedOrigin>` element per origin instead:
 
 ```xml
-<CORSRule>
-  <AllowedOrigin>https://aptg.github.io</AllowedOrigin>
-  <AllowedOrigin>http://localhost:5173</AllowedOrigin>
-  <AllowedOrigin>http://127.0.0.1:5173</AllowedOrigin>
-  <AllowedOrigin>http://localhost:4173</AllowedOrigin>
-  <AllowedMethod>GET</AllowedMethod>
-  <AllowedMethod>HEAD</AllowedMethod>
-  <AllowedHeader>*</AllowedHeader>
-  <ExposeHeader>Content-Length</ExposeHeader>
-  <ExposeHeader>Content-Range</ExposeHeader>
-  <ExposeHeader>Accept-Ranges</ExposeHeader>
-  <ExposeHeader>ETag</ExposeHeader>
-  <MaxAgeSeconds>3600</MaxAgeSeconds>
-</CORSRule>
+<?xml version="1.0" encoding="UTF-8"?>
+<CORSConfiguration>
+  <CORSRule>
+    <AllowedOrigin>https://aptg.github.io</AllowedOrigin>
+    <AllowedOrigin>http://localhost:5173</AllowedOrigin>
+    <AllowedOrigin>http://127.0.0.1:5173</AllowedOrigin>
+    <AllowedOrigin>http://localhost:4173</AllowedOrigin>
+    <AllowedMethod>GET</AllowedMethod>
+    <AllowedMethod>HEAD</AllowedMethod>
+    <AllowedHeader>*</AllowedHeader>
+    <ExposeHeader>Content-Length</ExposeHeader>
+    <ExposeHeader>Content-Range</ExposeHeader>
+    <ExposeHeader>Accept-Ranges</ExposeHeader>
+    <ExposeHeader>ETag</ExposeHeader>
+    <MaxAgeSeconds>3600</MaxAgeSeconds>
+  </CORSRule>
+</CORSConfiguration>
 ```
+
+Both snippets above are complete, standalone `cors.xml` files (top-level
+`<CORSConfiguration>` root with the XML declaration) — copy either one in
+full; don't paste just the inner `<CORSRule>` block on its own, `s3cmd` will
+reject it with `ERROR: S3 error: 400 (MalformedXML)`.
 
 (`5173` is Vite's dev-server default port, `4173` is `vite preview`'s
 default — used by `pnpm test:e2e` locally.)
