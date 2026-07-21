@@ -486,5 +486,34 @@ describe("createEntitySelectionState", () => {
         expect.arrayContaining([276, "ext:srim:poly"]),
       );
     });
+
+    // Regression test for #861: selecting an external-only material (no
+    // built-in libdedx match, e.g. SRIM's "Epoxy") while the program is on
+    // Auto-select must resolve to the external program that actually covers
+    // it. Previously resolveAutoSelect() ignored the material's type and
+    // resolved to a mismatched built-in program id, so the material could
+    // never actually be calculated.
+    test("selecting an external-only material under Auto-select resolves to the covering external program, not a mismatched built-in one", () => {
+      const state = createEntitySelectionState(matrix);
+      state.setExternalContext(
+        buildExternalCompatibilityContext(
+          [makeExternalEntityStore()],
+          matrix.allParticles,
+          matrix.allMaterials,
+        ),
+      );
+
+      state.selectMaterial("ext:srim:poly");
+
+      expect(state.selectedProgram.id).toBe(-1); // still Auto-select, per selectMaterial()
+      expect(state.resolvedProgramId).toBe("ext:srim:srim-2013-gui");
+
+      // The "Auto-select → …" annotation/summary must also reflect the
+      // resolved external program, not silently stay unresolved (review
+      // follow-up on #861/PR #862).
+      const selected = state.selectedProgram;
+      expect("resolvedProgram" in selected && selected.resolvedProgram?.name).toBe("SRIM GUI");
+      expect(state.selectionSummary).toContain("Auto-select → SRIM GUI");
+    });
   });
 });

@@ -17,6 +17,24 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-21 — **entity-selection / #861**: Fixed a bug reported from live use: selecting an
+  external-only material (present only in a loaded external `.webdedx` store, no built-in
+  libdedx match — e.g. SRIM's "Epoxy") silently produced empty stopping-power/range results for
+  every energy, with no error shown. Reproduced first with a disposable Vitest state test before
+  filing [APTG/dedx_web#861](https://github.com/APTG/dedx_web/issues/861). Root cause:
+  `resolveAutoSelect()` in `entity-availability.svelte.ts` only guarded the selected particle's
+  type, not the material's — when the material ID was an `ext:` string,
+  `computeAvailablePrograms()` silently dropped the material filter and Auto-select resolved to
+  a mismatched built-in program (e.g. ICRU 49) that has no data for the material at all.
+  `calculator-engine.svelte.ts` then hit `callService()`'s `materialId` type-guard, got `null`
+  back, and cleared results without ever setting `error`. Fixed by making `resolveAutoSelect()`
+  bail out for external-only materials and having `getResolvedProgramId()` fall back to
+  `getAvailableExternalPrograms()` when no built-in program covers the selection; also made the
+  `callService() === null` branch in `calculator-engine.svelte.ts` set an explicit error instead
+  of failing silently. Added a regression test in `entity-selection-state.test.ts`.
+  (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-21-external-only-material-autoselect.md)
+
 - 2026-07-21 — **external-data**: Migrated the hosted SRIM reference-dataset example URL
   (`src/lib/utils/external-data-example-urls.ts`, used by the in-app user guide and calculator/
   plot example links) to its new location: host moved from `s3.cloud.cyfronet.pl` to

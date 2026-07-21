@@ -18,11 +18,18 @@ export function buildCalculatorPdfMetadata(
 
   if (!particle || !material) return null;
 
-  const programs: { name: string; type: "built-in" }[] = [];
+  const programs: { name: string; type: "built-in" | "external" }[] = [];
   if ("resolvedProgram" in program && program.resolvedProgram) {
-    programs.push({ name: program.resolvedProgram.name, type: "built-in" });
+    const resolved = program.resolvedProgram;
+    programs.push({
+      name: resolved.name,
+      type: typeof resolved.id === "number" ? "built-in" : "external",
+    });
   } else {
-    programs.push({ name: program.name, type: "built-in" });
+    programs.push({
+      name: program.name,
+      type: typeof program.id === "number" ? "built-in" : "external",
+    });
   }
 
   const builtinParticle = "massNumber" in particle ? particle : null;

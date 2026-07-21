@@ -16,7 +16,7 @@
     currentProgram: SelectedProgram;
     isMultiMode: boolean;
     multiIds: (number | string)[];
-    autoResolved: ProgramEntity | null;
+    autoResolved: ProgramEntity | ExternalProgramEntity | null;
     onSelect: (program: AnyProgram) => void;
     onAutoSelect: () => void;
     onToggleMulti: (id: number | string) => void;
@@ -70,8 +70,9 @@
         {/if}
         <p class="text-xs text-muted-foreground mt-0.5">
           {#if autoResolved}
-            {getProgramDescription(autoResolved.id) ??
-              "Recommended for the current particle/material."}
+            {(typeof autoResolved.id === "number"
+              ? getProgramDescription(autoResolved.id)
+              : undefined) ?? "Recommended for the current particle/material."}
           {:else}
             No compatible program for the current particle / material.
           {/if}
