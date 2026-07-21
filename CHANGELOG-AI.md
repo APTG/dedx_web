@@ -17,6 +17,16 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-21 — **external-data**: Updated the SRIM reference-dataset example URL
+  (`src/lib/utils/external-data-example-urls.ts`, used by the in-app user guide and calculator/
+  plot example links) to the new hosting location: host moved from `s3.cloud.cyfronet.pl` to
+  `s3p.cloud.cyfronet.pl`, and the object path gained an extra `dedxweb/` prefix segment
+  (`dedxweb/dedxweb/srim-gui.webdedx/...`). Verified the new path resolves (`zarr.json` returns
+  200), but confirmed via `curl` with an `Origin` header that the new endpoint does **not** send
+  `Access-Control-Allow-Origin` (the old host did) — CORS needs to be reconfigured on the new
+  bucket/endpoint before browser-side loads will work; this is outside the repo (bucket-side
+  config) so flagged to the user rather than changed here. (Claude Sonnet 5 via Claude Code)
+
 - 2026-07-14 — **entity-selection / #847**: Fixed a bug reported from live use: clicking the
   "Compounds" sub-tab pill silently did nothing after selecting an element (e.g. Boron) and then
   typing a search query matching zero elements — the Elements pill stayed stuck selected.
