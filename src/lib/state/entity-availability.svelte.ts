@@ -184,6 +184,13 @@ export function createEntityAvailabilityState(
       if (particleId === null || materialId === null) return null;
       if (typeof particleId !== "number") return null;
       if (particleId === ELECTRON_ID) return null;
+      // External-only materials (present only in a loaded external store, no
+      // built-in libdedx match) can never be computed by a built-in program —
+      // computeAvailablePrograms() ignores non-numeric material IDs, so without
+      // this guard the chain below would pick a built-in program that has no
+      // data for the material at all. Let getResolvedProgramId() try an
+      // external program instead.
+      if (typeof materialId === "string" && materialId.startsWith("ext:")) return null;
       const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
       const availableProgramIds = new Set(availablePrograms.map((program) => program.id));
       for (const pid of chain) {
@@ -194,10 +201,20 @@ export function createEntityAvailabilityState(
 
     getResolvedProgramId(): number | string | null {
       const programId = selection.selectedProgramId;
-      if (programId === -1) {
-        return this.resolveAutoSelect();
-      }
-      return programId;
+      if (programId !== -1) return programId;
+
+      const builtinResolved = this.resolveAutoSelect();
+      if (builtinResolved !== null) return builtinResolved;
+
+      // No built-in program covers this selection — this happens whenever the
+      // particle or material is external-only (e.g. a material that exists
+      // only in a loaded SRIM/.webdedx store, like SRIM's "Epoxy"). Fall back
+      // to the first external program that covers both.
+      const particleId = selection.selectedParticleId;
+      const materialId = selection.selectedMaterialId;
+      if (particleId === null || materialId === null) return null;
+      const extPrograms = getAvailableExternalPrograms(extCtx, particleId, materialId);
+      return extPrograms[0]?.id ?? null;
     },
 
     isParticleAvailable(particleId: number | string): boolean {

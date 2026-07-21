@@ -296,7 +296,15 @@ export function createCalculatorEngine(
     try {
       const result = callService(uncachedItems.map((e) => e.energy));
       if (!result) {
+        // Only reachable when materialId is neither a built-in numeric ID nor
+        // a custom compound (e.g. an external-only material paired with a
+        // resolved built-in program) — a real incompatible combination, not
+        // an empty/loading state, so surface it instead of failing silently.
         calculationResults = new Map();
+        error = new LibdedxError(
+          -1,
+          "No available program supports this particle + material combination.",
+        );
         isCalculating = false;
         return;
       }
