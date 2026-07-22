@@ -8,6 +8,7 @@ import type {
   ProgramEntity,
   ParticleEntity,
   MaterialEntity,
+  LibdedxService,
 } from "$lib/wasm/types";
 import { getAvailableExternalPrograms, EMPTY_EXTERNAL_CONTEXT } from "./external-compatibility";
 import type {
@@ -73,7 +74,11 @@ export function createEntityAvailabilityState(
     get selectedParticleId(): number | string | null;
     get selectedMaterialId(): number | string | null;
     get selectedProgramId(): number | string;
+    /** Current energy (MeV/nucleon) auto-select should resolve against, or null
+     * if none is known yet. See resolveAutoSelect() below. */
+    get autoSelectEnergyMevNucl(): number | null;
   },
+  service?: LibdedxService,
 ): EntityAvailabilityState {
   let extCtx = $state<ExternalCompatibilityContext>(EMPTY_EXTERNAL_CONTEXT);
 
@@ -193,6 +198,24 @@ export function createEntityAvailabilityState(
       if (typeof materialId === "string" && materialId.startsWith("ext:")) return null;
       const chain = AUTO_SELECT_CHAIN[particleId] ?? DEFAULT_AUTO_SELECT_CHAIN;
       const availableProgramIds = new Set(availablePrograms.map((program) => program.id));
+
+      // Prefer the first chain candidate that both has tabulated data for this
+      // particle/material AND covers the requested energy (issue #871) — e.g. a
+      // heavy ion below ICRU 73's energy floor should fall through to MSTAR
+      // rather than being reported "out of range" while MSTAR could compute it.
+      const energyHint = selection.autoSelectEnergyMevNucl;
+      if (service && energyHint !== null && Number.isFinite(energyHint)) {
+        for (const pid of chain) {
+          if (!availableProgramIds.has(pid)) continue;
+          const minE = service.getMinEnergy(pid, particleId);
+          const maxE = service.getMaxEnergy(pid, particleId);
+          if (energyHint >= minE && energyHint <= maxE) return pid;
+        }
+      }
+
+      // Energy-blind fallback: today's "first chain member with any tabulated
+      // data" behavior, used when no energy hint is available yet or no chain
+      // member covers the requested energy.
       for (const pid of chain) {
         if (availableProgramIds.has(pid)) return pid;
       }

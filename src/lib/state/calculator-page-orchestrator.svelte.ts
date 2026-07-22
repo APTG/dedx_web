@@ -121,6 +121,7 @@ export class CalculatorPageOrchestrator {
     this.setupAppBootstrap();
     this.setupUrlHydration();
     this.setupAdvancedOptionsPersistence();
+    this.setupAutoSelectEnergyHint();
     this.setupSingleEntityCalculation();
     this.setupDelegatedCalculations();
     this.setupModeFallbacks();
@@ -335,6 +336,23 @@ export class CalculatorPageOrchestrator {
       if (!browser) return;
       advancedOptionsSnapshot();
       persistAdvancedOptions();
+    });
+  }
+
+  /**
+   * Feed Auto-select the first row's parsed energy so it can skip chain
+   * candidates whose tabulated range excludes it (issue #871) instead of
+   * committing to a program before any energy is known. Reads
+   * `calcState.rows[0]` directly (parsed from raw text, independent of the
+   * resolved program) rather than `resolvedProgramId`, avoiding a cycle.
+   */
+  private setupAutoSelectEnergyHint() {
+    $effect(() => {
+      if (!appInit.entityState || !this.calcState) return;
+      const firstRow = this.calcState.rows[0];
+      const energy =
+        typeof firstRow?.normalizedMevNucl === "number" ? firstRow.normalizedMevNucl : null;
+      appInit.entityState.setAutoSelectEnergyHint(energy);
     });
   }
 

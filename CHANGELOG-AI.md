@@ -17,6 +17,15 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-22 — **entity-selection / #871**: Fixed Auto-select resolving a program from
+  particle+material alone, ignoring energy — a heavy ion below a chain candidate's energy
+  floor (e.g. Boron below ICRU 73's 0.025 MeV/nucleon floor) got stuck reporting "out of
+  range" even when a later chain candidate (MSTAR) covers it. `resolveAutoSelect()` now
+  consults `getMinEnergy`/`getMaxEnergy` via a settable energy hint threaded from the
+  calculator's first energy row, falling through to the next chain candidate when the
+  current one's range excludes it; energy-blind fallback is preserved when no hint/service
+  is available. (Claude Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-auto-select-energy-aware.md)
 - 2026-07-22 — **CI / screenshots / #865**: Fixed the documentation-screenshots workflow firing an auto-PR with no visible UI change — root cause was Chromium's font-fallback resolution drifting between Playwright version bumps, since the app has no self-hosted font. Pinned self-hosted Inter (sans) and JetBrains Mono (mono) fonts, scoped to the screenshot test only, via Tailwind's own `--font-sans`/`--font-mono` theme variables so numeric result cells keep their real monospace styling. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-22-screenshot-font-drift.md)
 - 2026-07-21 — **entity-selection / #861**: Fixed a bug reported from live use: selecting an
