@@ -1,14 +1,7 @@
 type ClassDictionary = Record<string, unknown>;
 type ClassArray = ClassValue[];
 type ClassValue =
-  | string
-  | number
-  | bigint
-  | boolean
-  | null
-  | undefined
-  | ClassDictionary
-  | ClassArray;
+  string | number | bigint | boolean | null | undefined | ClassDictionary | ClassArray;
 
 function flattenClass(value: ClassValue | null | undefined | false): string[] {
   if (value === null || value === undefined || value === false || value === true) return [];

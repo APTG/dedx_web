@@ -28,14 +28,9 @@
       // Load saved preferences from localStorage on mount
       if (typeof localStorage !== "undefined") {
         const savedSeparator = localStorage.getItem("csvExportSeparator") as
-          | "comma"
-          | "semicolon"
-          | "tab"
-          | null;
+          "comma" | "semicolon" | "tab" | null;
         const savedLineEndings = localStorage.getItem("csvExportLineEndings") as
-          | "crlf"
-          | "lf"
-          | null;
+          "crlf" | "lf" | null;
 
         // Only apply if valid values
         if (savedSeparator && ["comma", "semicolon", "tab"].includes(savedSeparator)) {

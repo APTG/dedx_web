@@ -548,28 +548,31 @@ and wrapped by `dedx_extra.c` as the public `dedx_get_density()` for Stage 3.
 3 compounds tested via `dedx_get_composition()`:
 
 **Water (id=276):** 2 elements
-| Z | Mass fraction |
-|---|--------------|
-| 1 (H) | 0.111894 |
-| 8 (O) | 0.888106 |
-| **Sum** | **1.000000** |
+
+| Z       | Mass fraction |
+| ------- | ------------- |
+| 1 (H)   | 0.111894      |
+| 8 (O)   | 0.888106      |
+| **Sum** | **1.000000**  |
 
 **Air (id=104):** 4 elements
-| Z | Mass fraction |
-|---|--------------|
-| 6 (C) | 0.000124 |
-| 7 (N) | 0.755267 |
-| 8 (O) | 0.231781 |
-| 18 (Ar) | 0.012827 |
-| **Sum** | **0.999999** |
+
+| Z       | Mass fraction |
+| ------- | ------------- |
+| 6 (C)   | 0.000124      |
+| 7 (N)   | 0.755267      |
+| 8 (O)   | 0.231781      |
+| 18 (Ar) | 0.012827      |
+| **Sum** | **0.999999**  |
 
 **PMMA (id=223):** 3 elements
-| Z | Mass fraction |
-|---|--------------|
-| 1 (H) | 0.080538 |
-| 6 (C) | 0.599848 |
-| 8 (O) | 0.319614 |
-| **Sum** | **1.000000** |
+
+| Z       | Mass fraction |
+| ------- | ------------- |
+| 1 (H)   | 0.080538      |
+| 6 (C)   | 0.599848      |
+| 8 (O)   | 0.319614      |
+| **Sum** | **1.000000**  |
 
 **Format confirmed:** `[Z, mass_fraction]` float pairs (matches `06-wasm-api-contract.md`
 and `custom-compounds.md`). Mass fractions sum to 1.0 within float precision.

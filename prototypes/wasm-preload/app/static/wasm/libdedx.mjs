@@ -1013,7 +1013,7 @@ async function Module(moduleArg = {}) {
       // round size grow request up to wasm page size (fixed 64KB per spec)
       wasmMemory.grow(pages); // .grow() takes a delta compared to the previous size
       updateMemoryViews();
-      return 1 /*success*/;
+      return 1; /*success*/
     } catch (e) {
       err(
         `growMemory: Attempted to grow heap from ${oldHeapSize} bytes to ${size} bytes, but got error: ${e}`,
