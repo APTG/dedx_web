@@ -3,6 +3,7 @@ import type {
   ProgramEntity,
   ParticleEntity,
   MaterialEntity,
+  LibdedxService,
 } from "$lib/wasm/types";
 import { customCompounds } from "./custom-compounds.svelte";
 import type {
@@ -118,6 +119,14 @@ export interface EntitySelectionState {
   setMultiMaterial(ids: (number | string)[]): void;
   /** Directly set the particle multi-selection array from URL restore. */
   setMultiParticle(ids: (number | string)[]): void;
+  /**
+   * Feed the currently-relevant energy (MeV/nucleon, typically the first
+   * energy row) into Auto-select's program resolution so it can skip chain
+   * candidates whose tabulated range excludes it (issue #871). Pass null when
+   * no energy is known/parsed yet — resolution falls back to the energy-blind
+   * "first available program in the chain" behavior.
+   */
+  setAutoSelectEnergyHint(energyMevNucl: number | null): void;
 }
 
 const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
@@ -128,29 +137,40 @@ const AUTO_SELECT_PROGRAM: AutoSelectProgram = {
 
 export { PROTON_ID, HELIUM_ID, CARBON_ID, WATER_ID, ELECTRON_ID };
 
-export function createEntitySelectionState(matrix: CompatibilityMatrix): EntitySelectionState {
+export function createEntitySelectionState(
+  matrix: CompatibilityMatrix,
+  service?: LibdedxService,
+): EntitySelectionState {
   let selectedParticleId = $state<number | string | null>(PROTON_ID);
   let selectedMaterialId = $state<number | string | null>(WATER_ID);
   // -1 = Auto-select (built-in), number > 0 = built-in program ID, string = ExtRef for external
   let selectedProgramId = $state<number | string>(-1);
   let lastAutoFallbackMessage = $state<string | null>(null);
+  let autoSelectEnergyMevNucl = $state<number | null>(null);
 
   const multiState = createMultiSelectionState();
 
   // Mobile picker sheet state (issue #530 — adaptive picker kit).
   let sheetOpen = $state(false);
 
-  const availability = createEntityAvailabilityState(matrix, {
-    get selectedParticleId() {
-      return selectedParticleId;
+  const availability = createEntityAvailabilityState(
+    matrix,
+    {
+      get selectedParticleId() {
+        return selectedParticleId;
+      },
+      get selectedMaterialId() {
+        return selectedMaterialId;
+      },
+      get selectedProgramId() {
+        return selectedProgramId;
+      },
+      get autoSelectEnergyMevNucl() {
+        return autoSelectEnergyMevNucl;
+      },
     },
-    get selectedMaterialId() {
-      return selectedMaterialId;
-    },
-    get selectedProgramId() {
-      return selectedProgramId;
-    },
-  });
+    service,
+  );
 
   const state: EntitySelectionState = {
     get selectedProgram(): SelectedProgram {
@@ -460,6 +480,10 @@ export function createEntitySelectionState(matrix: CompatibilityMatrix): EntityS
 
     clearAutoFallbackMessage(): void {
       lastAutoFallbackMessage = null;
+    },
+
+    setAutoSelectEnergyHint(energyMevNucl: number | null): void {
+      autoSelectEnergyMevNucl = energyMevNucl;
     },
 
     setExternalContext(ctx: ExternalCompatibilityContext): void {

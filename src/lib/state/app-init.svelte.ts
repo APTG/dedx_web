@@ -63,7 +63,7 @@ export class AppInitState {
           matrix.allMaterials,
         );
 
-        const newEntityState = createEntitySelectionState(matrix);
+        const newEntityState = createEntitySelectionState(matrix, service);
         newEntityState.setExternalContext(extCtx);
 
         this.entityState = newEntityState;
