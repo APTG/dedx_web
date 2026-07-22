@@ -615,7 +615,7 @@ describe("decodeCalculatorUrl", () => {
     expect((decoded as any).imode).toBeUndefined();
   });
 
-  it("encodes imode=csda, lookups with mixed per-row suffixes, iunit=cm", () => {
+  it("encodes calc=range (csda), lookups with mixed per-row suffixes; runit=cm default is omitted", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
@@ -629,12 +629,25 @@ describe("decodeCalculatorUrl", () => {
       ],
       iunit: "cm",
     } as any);
-    expect(p.get("imode")).toBe("csda");
+    expect(p.get("calc")).toBe("range");
+    expect(p.has("imode")).toBe(false);
     expect(p.get("lookups")).toBe("7.718:cm~45:um~0.2");
-    expect(p.get("iunit")).toBe("cm");
+    expect(p.has("runit")).toBe(false); // "cm" is the default — omitted
+    expect(p.has("iunit")).toBe(false); // retired name never emitted
   });
 
-  it("encodes imode=stp, lookups without per-row suffixes, iunit=kev-um", () => {
+  it("encodes calc=range (csda) with a non-default runit", () => {
+    const p = encodeCalculatorUrl({
+      ...baseState,
+      imode: "csda",
+      lookups: [{ rawInput: "7.718", unit: "mm", unitFromSuffix: false }],
+      iunit: "mm",
+    } as any);
+    expect(p.get("calc")).toBe("range");
+    expect(p.get("runit")).toBe("mm");
+  });
+
+  it("encodes calc=inverse-stp (stp), lookups without per-row suffixes; sunit=kev-um default is omitted", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
@@ -647,45 +660,96 @@ describe("decodeCalculatorUrl", () => {
       ],
       iunit: "kev-um",
     } as any);
-    expect(p.get("imode")).toBe("stp");
+    expect(p.get("calc")).toBe("inverse-stp");
+    expect(p.has("imode")).toBe(false);
     expect(p.get("lookups")).toBe("45.76~10.00");
-    expect(p.get("iunit")).toBe("kev-um");
+    expect(p.has("sunit")).toBe(false); // "kev-um" is the default — omitted
+    expect(p.has("iunit")).toBe(false); // retired name never emitted
   });
 
-  it("does not emit imode/lookups/iunit when imode is undefined", () => {
+  it("encodes calc=inverse-stp (stp) with a non-default sunit — shares the wire param with the Stopping Power column unit", () => {
+    const p = encodeCalculatorUrl({
+      ...baseState,
+      imode: "stp",
+      lookups: [{ rawInput: "45.76", unit: "mev-cm", unitFromSuffix: false }],
+      iunit: "mev-cm",
+    } as any);
+    expect(p.get("calc")).toBe("inverse-stp");
+    expect(p.get("sunit")).toBe("mev-cm");
+  });
+
+  it("does not emit calc/lookups/runit/sunit when imode is undefined", () => {
     const p = encodeCalculatorUrl({
       ...baseState,
       isAdvancedMode: true,
       selectedProgramIds: [9],
       quantityFocus: "both",
     } as any);
+    expect(p.has("calc")).toBe(false);
     expect(p.has("imode")).toBe(false);
     expect(p.has("lookups")).toBe(false);
-    expect(p.has("iunit")).toBe(false);
+    expect(p.has("runit")).toBe(false);
+    expect(p.has("sunit")).toBe(false);
   });
 
-  it("URL round-trip: imode=csda with mixed per-row suffixes (v2 lookups=)", () => {
+  it("URL round-trip: legacy imode=csda&iunit=cm link re-encodes to canonical calc=range (v2 lookups=)", () => {
     const originalParams = new URLSearchParams(
       "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=csda&lookups=7.718:cm,45:um,0.2&iunit=cm",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
-    expect(reEncoded.get("imode")).toBe("csda");
+    expect(reEncoded.get("calc")).toBe("range");
+    expect(reEncoded.has("imode")).toBe(false);
     expect(reEncoded.get("lookups")).toBe("7.718:cm~45:um~0.2");
-    expect(reEncoded.get("iunit")).toBe("cm");
+    expect(reEncoded.has("runit")).toBe(false); // default "cm" — omitted in canonical output
   });
 
-  it("URL round-trip: imode=stp with master unit only (v2 lookups=)", () => {
+  it("URL round-trip: legacy imode=stp&iunit=kev-um link re-encodes to canonical calc=inverse-stp (v2 lookups=)", () => {
     const originalParams = new URLSearchParams(
       "urlv=2&particle=1&material=276&program=auto&energies=100&eunit=MeV&mode=advanced&programs=9&qfocus=both&imode=stp&lookups=45.76,10.00&iunit=kev-um",
     );
     const decoded = decodeCalculatorUrl(originalParams);
     const reEncoded = encodeCalculatorUrl(decoded);
 
-    expect(reEncoded.get("imode")).toBe("stp");
+    expect(reEncoded.get("calc")).toBe("inverse-stp");
+    expect(reEncoded.has("imode")).toBe(false);
     expect(reEncoded.get("lookups")).toBe("45.76~10.00");
-    expect(reEncoded.get("iunit")).toBe("kev-um");
+    expect(reEncoded.has("sunit")).toBe(false); // default "kev-um" — omitted in canonical output
+  });
+
+  it("decodes canonical calc=range&runit=mm (v3) directly", () => {
+    const params = new URLSearchParams(
+      "urlv=3&particle=1&material=276&program=auto&energies=100&eunit=MeV&calc=range&lookups=7.718&runit=mm",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect((decoded as any).imode).toBe("csda");
+    expect((decoded as any).iunit).toBe("mm");
+  });
+
+  it("decodes canonical calc=inverse-stp&sunit=mev-cm (v3) directly", () => {
+    const params = new URLSearchParams(
+      "urlv=3&particle=1&material=276&program=auto&energies=100&eunit=MeV&calc=inverse-stp&lookups=45.76&sunit=mev-cm",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect((decoded as any).imode).toBe("stp");
+    expect((decoded as any).iunit).toBe("mev-cm");
+  });
+
+  it("calc= takes precedence over a stale legacy imode= when both are present", () => {
+    const params = new URLSearchParams(
+      "urlv=3&particle=1&material=276&program=auto&energies=100&eunit=MeV&calc=forward&imode=stp&lookups=45.76",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect((decoded as any).imode).toBeUndefined();
+  });
+
+  it("runit=/sunit= take precedence over a stale legacy iunit= when both are present", () => {
+    const params = new URLSearchParams(
+      "urlv=3&particle=1&material=276&program=auto&energies=100&eunit=MeV&calc=range&lookups=7.718&runit=mm&iunit=um",
+    );
+    const decoded = decodeCalculatorUrl(params);
+    expect((decoded as any).iunit).toBe("mm");
   });
 });
 
@@ -865,7 +929,7 @@ describe("v1 → v2 migration fixture (shareable-urls.md §7)", () => {
       istpBranchState: "both",
     });
     expect(encoded.get("istpbranch")).toBe("both");
-    expect(encoded.get("imode")).toBe("stp");
+    expect(encoded.get("calc")).toBe("inverse-stp");
   });
 
   it("istpbranch defaults to hi when absent", () => {

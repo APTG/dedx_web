@@ -2,6 +2,15 @@
 
 > **Status:** Final v8 (2026-07-13)
 >
+> **Note (2026-07-22, issue #841):** `calculator-url.ts` now emits/reads the
+> v3-canonical `calc=`/`runit=`/`sunit=` tokens described in
+> `shareable-urls-formal.md`, closing the implementation gap #840 had left
+> open. The `imode=`/`iunit=`/`ivalues=` examples throughout this spec are
+> still the pre-existing v1-schema examples (see the v7 note below,
+> tracked for realignment under #560) — they continue to decode correctly
+> via backward-compat fallback, but no longer reflect the canonical
+> re-encoded URL.
+>
 > **v8** (2026-07-13, issue #840): §1 rewritten from "Feature Gate — Advanced
 > Mode Only" to "Basic vs. Advanced Layout" — the Range → and STP → tabs are
 > no longer hidden in Basic mode; they render a simplified single-row hero

@@ -17,6 +17,22 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
+- 2026-07-22 — **shareable-urls / #841**: Reconciled the shipped
+  `imode=`/`iunit=` calculator URL params with the v3-canonical
+  `calc=`/`runit=`/`sunit=` names documented in `shareable-urls-formal.md`.
+  `calculator-url.ts` now emits `calc=range|inverse-stp` and
+  `runit=`/`sunit=` in canonical output; the retired `imode=`/`iunit=` names
+  are accepted on decode only, as a fallback when the canonical tokens are
+  absent, so existing shared links keep working. `iunit=` for the STP tab
+  now folds into the same `sunit=` param already used for the Stopping
+  Power column header unit (they always shared the URL contract's intent —
+  confirmed the two in-app controls are mutually exclusive in the UI, so
+  merging them is safe). `calculator-page-orchestrator.svelte.ts` updated so
+  a legacy `imode=stp&iunit=` link also seeds the shared output-unit state.
+  Updated `calculator-url.test.ts` (added canonical round-trip + precedence
+  cases) and two e2e specs asserting the literal wire param names. (Claude
+  Sonnet 5 via Claude Code)
+  - **Log:** [log](docs/ai-logs/2026-07-22-issue-841-calc-runit-sunit-rename.md)
 - 2026-07-22 — **entity-selection / #869**: Follow-up to the Basic-mode `program=`
   toast — manual local verification found it easy to miss at the bottom of the
   screen. Added an optional `position: "top" | "bottom"` prop to `notice-toast.svelte`
