@@ -1,5 +1,7 @@
 import { test, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─────────────────────────────────────────────────────────────────
 // Documentation screenshots (issue #594)
@@ -41,10 +43,56 @@ const FREEZE_CSS = `
   }
 `;
 
+// The app has no self-hosted font, so both body text (Tailwind's generic
+// `sans-serif` stack) and numeric results (`font-mono`, e.g. the CSDA
+// Range / Stopping Power values) render in whatever concrete font Chromium
+// resolves those generic stacks to. That resolution can shift between
+// Chromium builds (i.e. every time `@playwright/test` bumps), changing
+// glyph metrics enough to reflow text and churn the committed PNGs with no
+// actual app change (issue #865).
+//
+// Pin self-hosted fonts here — scoped to this test only, not the production
+// app — by overriding the same Tailwind v4 theme variables the app's own
+// CSS reads (`--font-sans`/`--default-font-family` for body text,
+// `--font-mono`/`--default-mono-font-family` for `.font-mono` and the
+// `code/kbd/samp/pre` reset). This is preferred over a blanket
+// `* { font-family: ... !important }`: it flows through the app's existing
+// sans/mono distinction instead of collapsing it, so `font-mono` numeric
+// cells stay visually monospace in the screenshots (matching the real app)
+// while both families are pinned to committed font bytes.
+function loadFontBase64(filename: string): string {
+  const path = join(dirname(fileURLToPath(import.meta.url)), "fixtures/fonts", filename);
+  return readFileSync(path).toString("base64");
+}
+const INTER_BASE64 = loadFontBase64("inter-variable-latin.woff2");
+const JETBRAINS_MONO_BASE64 = loadFontBase64("jetbrains-mono-variable-latin.woff2");
+const FONT_CSS = `
+  @font-face {
+    font-family: "Docs Screenshot Sans";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: block;
+    src: url(data:font/woff2;base64,${INTER_BASE64}) format("woff2");
+  }
+  @font-face {
+    font-family: "Docs Screenshot Mono";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: block;
+    src: url(data:font/woff2;base64,${JETBRAINS_MONO_BASE64}) format("woff2");
+  }
+  :root {
+    --font-sans: "Docs Screenshot Sans", sans-serif;
+    --default-font-family: "Docs Screenshot Sans", sans-serif;
+    --font-mono: "Docs Screenshot Mono", monospace;
+    --default-mono-font-family: "Docs Screenshot Mono", monospace;
+  }
+`;
+
 /** Navigate, freeze motion, and let the page settle before shooting. */
 async function preparePage(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.addStyleTag({ content: FREEZE_CSS });
+  await page.addStyleTag({ content: FREEZE_CSS + FONT_CSS });
   // Let WASM load + reactive state settle (no network chatter left).
   await page.waitForLoadState("networkidle");
   // Web fonts must be ready so text metrics (and wrapping) are stable across runs.
