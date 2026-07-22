@@ -41,9 +41,17 @@ jobs:
           else
             # GitHub push payload uses all-zero SHA when there is no previous commit on ref
             BEFORE="${{ github.event.before }}"
+            NEEDS_FALLBACK=0
             if [ "$BEFORE" = "0000000000000000000000000000000000000000" ]; then
-              # Initial push on a new branch: diff against the branch point, not the
-              # empty tree, so inherited vendor submodules don't look like new gitlinks.
+              NEEDS_FALLBACK=1
+            elif ! git cat-file -e "${BEFORE}^{commit}" 2>/dev/null; then
+              # Force-push (e.g. after a rebase) rewrote history: the previous tip is no
+              # longer reachable from any ref, so actions/checkout never fetched it.
+              NEEDS_FALLBACK=1
+            fi
+            if [ "$NEEDS_FALLBACK" = "1" ]; then
+              # Diff against the branch point, not the empty tree or a missing SHA, so
+              # inherited vendor submodules don't look like new gitlinks.
               DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
               git fetch --no-tags origin "$DEFAULT_BRANCH:refs/remotes/origin/$DEFAULT_BRANCH"
               BEFORE="$(git merge-base "${{ github.sha }}" "origin/$DEFAULT_BRANCH")"
