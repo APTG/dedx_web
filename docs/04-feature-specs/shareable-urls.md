@@ -700,6 +700,16 @@ if incompatible combination after resolution       → use particle=1, material=
 Silently fall back; do not show an error. If a program is incompatible, show a brief
 toast: "Program not available; using auto-select."
 
+> **Basic mode is a separate case (issue #869).** The rules above are about a
+> `program=` ID that's invalid or incompatible with the matrix. Independently
+> of that, `entity-selection.md`'s "Basic mode always auto-selects" rule
+> (issue #816) means Basic-mode links always discard an explicit `program=`,
+> valid or not — `mode=advanced` must also be present for it to stick. That
+> case is implemented with its own toast, "Basic mode ignores the link's
+> program; using auto-select.", fired once during URL hydration
+> (`calculator-page-orchestrator.svelte.ts`). The generic
+> matrix-incompatibility toast text above is not yet wired up.
+
 ### 8.2 Energy/Lookup Parsing
 
 For each item in `energies=` or `lookups=`:

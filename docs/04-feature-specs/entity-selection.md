@@ -435,7 +435,13 @@ lists what Advanced unlocks inside the picker.
 > change. Keyboard tab-cycling, next-empty-tab advance, and the mobile search
 > sheet all scope to the two visible tabs in Basic mode. Advanced mode keeps the
 > full three-tab picker unchanged. Switching Advanced → Basic while the Program
-> tab is active retargets to a visible tab.
+> tab is active retargets to a visible tab. **A Basic-mode URL with an explicit
+> `program=` is discarded the same way (issue #869)** — a third party generating
+> a link (e.g. an external tool linking into a specific program's result) must
+> also include `mode=advanced` for the program to stick, or the calculator
+> shows a brief toast — "Basic mode ignores the link's program; using
+> auto-select." — explaining why the link's choice didn't apply. See
+> [`shareable-urls.md`](shareable-urls.md) §8.1.
 
 Mode persistence:
 
