@@ -5,7 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
-  cookie@<0.7.0: '>=0.7.0'
+  cookie@<0.7.0: ^0.7.0
   devalue@>=5.6.3 <=5.8.0: '>=5.8.1'
   svelte@<=5.55.6: '>=5.55.7'
   svelte@>=5.46.0 <=5.55.6: '>=5.55.7'
@@ -375,9 +375,9 @@ packages:
     resolution: {integrity: sha512-eYm0QWBtUrBWZWG0d386OGAw16Z995PiOVo2B7bjWSbHedGl5e0ZWaq65kOGgUSNesEIDkB9ISbTg/JK9dhCZA==}
     engines: {node: '>=6'}
 
-  cookie@2.0.1:
-    resolution: {integrity: sha512-yuToqVvRrj6pfDXREyQAAv8SkAEk/8GS3jQRTiUMm66TVtBYmqQeoEjL2Lmq8Rpo6271vH76InTChTitEAm65w==}
-    engines: {node: '>=22'}
+  cookie@0.7.2:
+    resolution: {integrity: sha512-yki5XnKuf750l50uGTllt6kKILY4nQ1eNIQatoXEByZ5dWgnKqbnqmTrBE5B4N7lrMJKQ2ytWMiTO2o0v6Ew/w==}
+    engines: {node: '>= 0.6'}
 
   deepmerge@4.3.1:
     resolution: {integrity: sha512-3sUqbMEc77XqpdNO7FRyRog+eW3ph+GYCbj+rK+uYyRMuwsVy0rMiVtPn+QJlKFvWP/1PYpapqYn0Me2knFn+A==}
@@ -756,7 +756,7 @@ snapshots:
       '@sveltejs/vite-plugin-svelte': 7.2.0(svelte@5.56.7)(vite@8.1.5)
       '@types/cookie': 0.6.0
       acorn: 8.17.0
-      cookie: 2.0.1
+      cookie: 0.7.2
       devalue: 5.8.2
       esm-env: 1.2.2
       kleur: 4.1.5
@@ -863,7 +863,7 @@ snapshots:
 
   clsx@2.1.1: {}
 
-  cookie@2.0.1: {}
+  cookie@0.7.2: {}
 
   deepmerge@4.3.1: {}
 
