@@ -41,8 +41,7 @@
           inputText.value = (e.target as HTMLTextAreaElement).value;
         }}
         rows="4"
-        cols="30"
-      ></textarea>
+        cols="30"></textarea>
     </label>
   </div>
 

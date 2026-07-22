@@ -256,7 +256,7 @@ the dropdown, below the built-in compound list.
 | Element          | Detail                                                                                      |
 | ---------------- | ------------------------------------------------------------------------------------------- |
 | Group header     | "Custom Compounds" — always visible in Advanced mode regardless of the active text filter   |
-| Compound entry   | Name (bold) + density in g/cm³ (secondary text) + edit icon (✏) + delete icon (🗑)          |
+| Compound entry   | Name (bold) + density in g/cm³ (secondary text) + edit icon (✏) + delete icon (🗑)           |
 | Text filter      | Filters custom compound entries by name (same filter input as built-in materials)           |
 | "+ Add compound" | Button at the bottom of the custom-compounds group; opens the compound editor in "new" mode |
 

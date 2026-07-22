@@ -216,8 +216,7 @@ export class CalculatorPageOrchestrator {
           } else if (urlState.across === "material" && urlState.selectedMaterialIds) {
             const available = new Set(appInit.entityState.availableMaterials.map((p) => p.id));
             const validIds = urlState.selectedMaterialIds.filter((id) => available.has(id)) as (
-              | number
-              | string
+              number | string
             )[];
             if (customFromUrl) {
               // The custom compound was stripped from the plural URL param; restore it as the primary/first item

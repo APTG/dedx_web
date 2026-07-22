@@ -659,8 +659,7 @@ export const computationCount = $state<{ value: number }>({ value: 0 });
           inputText.value = (e.target as HTMLTextAreaElement).value;
         }}
         rows="4"
-        cols="30"
-      ></textarea>
+        cols="30"></textarea>
     </label>
   </div>
 
@@ -922,21 +921,21 @@ detector gases (P10, CF₄, SF₆…), and nuclear fuels (UO₂, MOX, UN, UC).
 
 ### Acceptance Criteria
 
-| #   | Criterion                                      | Pass condition                                                 |
+| # | Criterion | Pass condition |
 | --- | ---------------------------------------------- | -------------------------------------------------------------- | -------------- | --------------------------------- |
-| 1   | `generate_data.py` produces correct shape      | Prints "287 particles, 379 materials"; exits 0                 |
-| 2   | Zarr single-shard round-trip                   | Read-back values match within `float32` epsilon                |
-| 3   | Zarr per-ion round-trip                        | Same                                                           |
-| 4   | Parquet round-trip                             | Same                                                           |
-| 5   | Electron chunk present and non-zero            | `stp_array[286, :, :]` finite, distinct from H-1               |
-| 6   | Custom material Bragg additivity works         | `SS316L` STP ≠ `IRON` STP and is a plausible mix               |
-| 7   | Per-particle Zarr chunk < Parquet row group    | Compressed bytes: Zarr chunk < Parquet RG                      |
-| 8   | `run_benchmark.py` prints full table           | No exceptions; all metrics reported                            |
-| 9   | Browser local panels: values match             | `max                                                           | zarr - parquet | < 1e-5` for H-1, electron, SS316L |
-| 10  | Browser S3 single-shard panel: reads correctly | Wall-clock time recorded; DevTools shows Range requests        |
-| 11  | Browser S3 per-ion panel: reads correctly      | Wall-clock time recorded; DevTools shows HEAD + Range sequence |
-| 12  | `zarrita` bundle ≤ 50 KB minified              | `vite build --report`                                          |
-| 13  | No CORS errors from Vite dev server or S3      | DevTools console clean for all panels                          |
+| 1 | `generate_data.py` produces correct shape | Prints "287 particles, 379 materials"; exits 0 |
+| 2 | Zarr single-shard round-trip | Read-back values match within `float32` epsilon |
+| 3 | Zarr per-ion round-trip | Same |
+| 4 | Parquet round-trip | Same |
+| 5 | Electron chunk present and non-zero | `stp_array[286, :, :]` finite, distinct from H-1 |
+| 6 | Custom material Bragg additivity works | `SS316L` STP ≠ `IRON` STP and is a plausible mix |
+| 7 | Per-particle Zarr chunk < Parquet row group | Compressed bytes: Zarr chunk < Parquet RG |
+| 8 | `run_benchmark.py` prints full table | No exceptions; all metrics reported |
+| 9 | Browser local panels: values match | `max                                                           | zarr - parquet | < 1e-5` for H-1, electron, SS316L |
+| 10 | Browser S3 single-shard panel: reads correctly | Wall-clock time recorded; DevTools shows Range requests |
+| 11 | Browser S3 per-ion panel: reads correctly | Wall-clock time recorded; DevTools shows HEAD + Range sequence |
+| 12 | `zarrita` bundle ≤ 50 KB minified | `vite build --report` |
+| 13 | No CORS errors from Vite dev server or S3 | DevTools console clean for all panels |
 
 ### Deliverables
 

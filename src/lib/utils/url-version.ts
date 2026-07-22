@@ -12,8 +12,7 @@ export const CURRENT_URL_MAJOR = 3;
 export const MIN_SUPPORTED_URL_MAJOR = 2;
 
 export type VersionNegotiationResult =
-  | { status: "ok" }
-  | { status: "mismatch"; version: number | string };
+  { status: "ok" } | { status: "mismatch"; version: number | string };
 
 export function negotiateVersion(version: string | null | undefined): VersionNegotiationResult {
   // Absent urlv is treated leniently as the current schema (legacy links that
