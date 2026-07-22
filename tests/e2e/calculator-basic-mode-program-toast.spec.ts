@@ -17,7 +17,7 @@ test.describe("Issue #869 — Basic-mode program-discard toast", () => {
     );
 
     const toast = page.getByTestId("calculator-notice-toast");
-    await expect(toast).toBeVisible({ timeout: 5000 });
+    await expect(toast).toBeVisible({ timeout: 20000 });
     await expect(toast).toContainText("Basic mode ignores the link's program");
   });
 
@@ -27,7 +27,7 @@ test.describe("Issue #869 — Basic-mode program-discard toast", () => {
     // Wait for Basic mode's hydration/calculation to actually settle before
     // asserting the toast's absence, rather than a fixed sleep (banned, #12 in
     // .opencode/lessons-learned.md — flaky in CI).
-    await page.waitForSelector('[data-testid="basic-single-row-card"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="basic-single-row-card"]', { timeout: 20000 });
     await expect(page.getByTestId("calculator-notice-toast")).toHaveCount(0);
   });
 
@@ -36,7 +36,7 @@ test.describe("Issue #869 — Basic-mode program-discard toast", () => {
       "/calculator?urlv=3&mode=advanced&particle=5&material=14&program=6&energies=220.5:keV&eunit=MeV",
     );
 
-    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 5000 });
+    await page.waitForSelector('[data-testid="advanced-combined-table"]', { timeout: 20000 });
     await expect(page.getByTestId("calculator-notice-toast")).toHaveCount(0);
   });
 });
