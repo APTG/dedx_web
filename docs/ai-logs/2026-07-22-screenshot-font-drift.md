@@ -55,6 +55,42 @@ were regenerated and committed with the new stable renders (one intentional
 one-time re-baseline, since Inter's metrics differ slightly from whatever
 the host previously resolved).
 
+### Prompt 3: Address Copilot's review comments
+
+**AI response**: Copilot flagged two rounds of comments on this PR. First
+round (wording accuracy, already fixed before this prompt): the session log
+overclaimed "byte-identical" while only describing a pixel-diff verification
+method, and twice misstated the font as covering "weights 400–700" when the
+committed file and the test's `@font-face` both span the full variable
+weight axis (100–900) — both corrected to describe what was actually
+verified/shipped, with the byte-identical claim now backed by a real
+`sha256sum` check.
+
+Second round caught a real regression the first fix introduced: `FONT_CSS`
+forced `font-family: "Inter", sans-serif !important` onto `html, body, *`,
+which also clobbered Tailwind's `.font-mono` utility — used on every numeric
+result cell (kinetic energy input, CSDA Range, Stopping Power) — so the
+committed screenshots no longer matched the real app's typography for
+numbers. Rather than just carving out an exception for `.font-mono` (which
+would leave those numeric cells rendering through Chromium's *monospace*
+fallback stack — the exact same class of nondeterminism this PR exists to
+fix, just relocated), pinned a second self-hosted font
+(`jetbrains-mono-variable-latin.woff2`, SIL OFL 1.1, ~31 KB) and switched
+the injection mechanism entirely: instead of a blanket `*`-selector
+`!important` override, the test now redefines the same Tailwind v4 theme
+CSS custom properties the app's own compiled CSS already reads —
+`--font-sans`/`--default-font-family` (consumed by the Preflight base rule
+and any `.font-sans` utility) and `--font-mono`/`--default-mono-font-family`
+(consumed by `.font-mono` and the `code/kbd/samp/pre` reset). Confirmed the
+four variable names by grepping the built CSS output. This flows through
+the app's existing sans/mono distinction instead of collapsing it: numeric
+cells stay visually monospace (now via a pinned mono font instead of a
+drifting system one), body text stays sans, and no `!important` fights are
+needed since nothing is overridden that shouldn't be. Re-verified: rebuilt,
+regenerated all four screenshots (now showing correct monospace numerals),
+ran `pnpm docs:screenshots` twice more and confirmed `sha256sum` still
+matches across runs.
+
 ## Tasks
 
 ### Pin a self-hosted font for documentation screenshots
@@ -64,19 +100,28 @@ the host previously resolved).
 - **Files changed**:
   - `tests/docs-screenshots.spec.ts`
   - `tests/fixtures/fonts/inter-variable-latin.woff2` (new)
-  - `tests/fixtures/fonts/OFL.txt` (new)
+  - `tests/fixtures/fonts/jetbrains-mono-variable-latin.woff2` (new)
+  - `tests/fixtures/fonts/OFL-inter.txt` (new)
+  - `tests/fixtures/fonts/OFL-jetbrains-mono.txt` (new)
   - `static/screenshots/*.png` (regenerated)
   - `CHANGELOG-AI.md`
   - `docs/ai-logs/2026-07-22-screenshot-font-drift.md`
-- **Decision**: Scoped the font to the test only (injected as a data URI via
+- **Decision**: Scoped both fonts to the test only (injected as data URIs via
   `addStyleTag`, not added to `static/` or `src/app.css`) rather than giving
-  the whole app a custom typeface. The goal was fixing CI determinism, not
+  the whole app custom typefaces. The goal was fixing CI determinism, not
   changing the product's visual design — that's a separate decision for the
   team to make deliberately, not as a side effect of a screenshot-stability
-  fix. Used a single variable-font file (one file covers the full weight
-  axis, matching the `font-weight: 100 900` declared in the test's
-  `@font-face`) to keep the fixture small (~47 KB) and the injected CSS
-  simple.
+  fix. Pinned both sans (Inter) and mono (JetBrains Mono) — not sans alone —
+  because the numeric result cells use `font-mono`, which resolves through
+  the exact same kind of Chromium-version-dependent generic-family fallback
+  as the sans text did; pinning only one would have left the other free to
+  drift. Overrode Tailwind's own theme CSS variables
+  (`--font-sans`/`--default-font-family`/`--font-mono`/
+  `--default-mono-font-family`) rather than a blanket `* { !important }`
+  rule, so the app's existing sans/mono distinction is preserved instead of
+  collapsed. Used single variable-font files for each (one file covers the
+  full weight axis) to keep the fixtures small (~47 KB + ~31 KB combined)
+  and the injected CSS simple.
 - **Issue**: None outstanding. Future Playwright/Chromium bumps should no
   longer regenerate the committed screenshots on their own; a real UI change
   is still expected to change them as before.

@@ -17,7 +17,7 @@ Use one bullet per session (newest first):
 
 ## Entries (newest first)
 
-- 2026-07-22 — **CI / screenshots / #865**: Fixed the documentation-screenshots workflow firing an auto-PR with no visible UI change — root cause was Chromium's font-fallback resolution drifting between Playwright version bumps, since the app has no self-hosted font. Pinned a self-hosted Inter font scoped to the screenshot test only. (Claude Sonnet 5 via Claude Code)
+- 2026-07-22 — **CI / screenshots / #865**: Fixed the documentation-screenshots workflow firing an auto-PR with no visible UI change — root cause was Chromium's font-fallback resolution drifting between Playwright version bumps, since the app has no self-hosted font. Pinned self-hosted Inter (sans) and JetBrains Mono (mono) fonts, scoped to the screenshot test only, via Tailwind's own `--font-sans`/`--font-mono` theme variables so numeric result cells keep their real monospace styling. (Claude Sonnet 5 via Claude Code)
   - **Log:** [log](docs/ai-logs/2026-07-22-screenshot-font-drift.md)
 - 2026-07-21 — **entity-selection / #861**: Fixed a bug reported from live use: selecting an
   external-only material (present only in a loaded external `.webdedx` store, no built-in
