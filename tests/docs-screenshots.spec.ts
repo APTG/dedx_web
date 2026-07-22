@@ -1,5 +1,7 @@
 import { test, type Page } from "@playwright/test";
-import { mkdirSync } from "node:fs";
+import { mkdirSync, readFileSync } from "node:fs";
+import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
 
 // ─────────────────────────────────────────────────────────────────
 // Documentation screenshots (issue #594)
@@ -41,10 +43,35 @@ const FREEZE_CSS = `
   }
 `;
 
+// The app has no self-hosted font, so text renders in whatever concrete font
+// Chromium resolves the generic `sans-serif` stack to. That resolution can
+// shift between Chromium builds (i.e. every time `@playwright/test` bumps),
+// changing glyph metrics enough to reflow text and churn the committed PNGs
+// with no actual app change (issue #865). Pinning a self-hosted font here —
+// scoped to this test only, not the production app — makes glyph metrics
+// depend on committed font bytes instead of the host's font stack.
+const INTER_FONT_PATH = join(
+  dirname(fileURLToPath(import.meta.url)),
+  "fixtures/fonts/inter-variable-latin.woff2",
+);
+const INTER_FONT_BASE64 = readFileSync(INTER_FONT_PATH).toString("base64");
+const FONT_CSS = `
+  @font-face {
+    font-family: "Inter";
+    font-style: normal;
+    font-weight: 100 900;
+    font-display: block;
+    src: url(data:font/woff2;base64,${INTER_FONT_BASE64}) format("woff2");
+  }
+  html, body, * {
+    font-family: "Inter", sans-serif !important;
+  }
+`;
+
 /** Navigate, freeze motion, and let the page settle before shooting. */
 async function preparePage(page: Page, path: string): Promise<void> {
   await page.goto(path);
-  await page.addStyleTag({ content: FREEZE_CSS });
+  await page.addStyleTag({ content: FREEZE_CSS + FONT_CSS });
   // Let WASM load + reactive state settle (no network chatter left).
   await page.waitForLoadState("networkidle");
   // Web fonts must be ready so text metrics (and wrapping) are stable across runs.
